@@ -1,10 +1,6 @@
 A modern, cross-platform mobile application built with React Native (Expo) for ClaudyGod Music Ministry to share gospel music, connect with followers, and spread the message of faith through digital ministry.
 
-https://img.shields.io/badge/Platform-iOS%2520%2526%2520Android-lightgrey.svg
-https://img.shields.io/badge/Framework-React%2520Native-61dafb.svg
-https://img.shields.io/badge/Styled_with-Tailwind%2520CSS-38b2ac.svg
-https://img.shields.io/badge/TypeScript-5.0-3178C6?logo=typescript&logoColor=white
-https://img.shields.io/badge/Expo_Router-3.0-4630EB?logo=expo&logoColor=white
+
 
 🎵 Features
 🎤 Ministry Features
