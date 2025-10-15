@@ -100,7 +100,7 @@ For technical support and ministry inquiries:
 with my mouth I will make your faithfulness known through all generations."*  
 — **Psalm 89:1**
 
-[![GitHub Stars](https://img.shields.io/github/stars/ClaudyGod/mobile-app.svg?style=social)](https://github.com/ClaudyGod/mobile-app)
+
 
 ⭐ **Star us on GitHub to support this ministry!**
 
