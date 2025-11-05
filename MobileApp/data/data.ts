@@ -15,6 +15,27 @@
       imageUrl: 'https://example.com/image2.jpg',
       songCount: 15
     },
+     {
+      id: '3',
+      title: 'Gospel Mix',
+      description: 'Inspiring gospel tracks',
+      imageUrl: 'https://example.com/image2.jpg',
+      songCount: 15
+    },
+     {
+      id: '4',
+      title: 'Gospel Mix',
+      description: 'Inspiring gospel tracks',
+      imageUrl: 'https://example.com/image2.jpg',
+      songCount: 15
+    },
+     {
+      id: '5',
+      title: 'Gospel Mix',
+      description: 'Inspiring gospel tracks',
+      imageUrl: 'https://example.com/image2.jpg',
+      songCount: 15
+    },
     // Add more playlists...
   ];
 
