@@ -1,5 +1,6 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 import React, { useState } from "react";
-import { View, Text, TouchableOpacity, Animated } from "react-native";
+import { View, Text, TouchableOpacity, Animated, Image } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 
 const Header = ({ title = "ClaudyGod" }) => {
@@ -15,11 +16,19 @@ const Header = ({ title = "ClaudyGod" }) => {
       <View className="flex-row justify-between items-center">
         {/* Column 1: Logo and Name */}
         <View className="flex-row items-center">
-          <View className="w-10 h-10 bg-yellow-400 rounded-full justify-center items-center mr-3">
-            <Text className="text-black font-bold text-lg">CG</Text>
-          </View>
-          <Text className="text-white text-xl font-bold">{title}</Text>
-        </View>
+  <View className="w-10 h-10 rounded-full justify-center items-center mr-3 border border-white">
+    <Image 
+      source={require("../assets/images/ClaudyGoLogo.webp")} // Adjust path as needed
+      className="w-8 h-8 rounded-full"
+      resizeMode="cover"
+    />
+  </View>
+  
+  <View className="flex-col">
+    <Text className="text-black text-lg font-bold">ClaudyGod</Text>
+    <Text className="text-white text-sm">Music & Ministries</Text>
+  </View>
+</View>
 
         {/* Column 2: Hamburger Menu */}
         <TouchableOpacity 
@@ -29,7 +38,7 @@ const Header = ({ title = "ClaudyGod" }) => {
           <MaterialIcons 
             name={isMenuOpen ? "close" : "menu"} 
             size={28} 
-            color="#FFD700" 
+            color="bg-red-900" 
           />
         </TouchableOpacity>
       </View>

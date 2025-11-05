@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 import React, { useState, useRef } from "react";
 import {
   View,
@@ -5,8 +6,10 @@ import {
   TouchableOpacity,
   Animated,
   Pressable,
+  Image,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
+import { CustomText } from "./CustomText";
 
 interface AnimatedHeaderProps {
   title?: string;
@@ -15,7 +18,7 @@ interface AnimatedHeaderProps {
 }
 
 const AnimatedHeader = ({
-  title = "ClaudyGod",
+
   onMenuToggle,
   onPressHome,
 }: AnimatedHeaderProps) => {
@@ -52,7 +55,8 @@ const AnimatedHeader = ({
   ];
 
   return (
-    <View className="bg-black border-b border-gray-800">
+   <View className="bg-transparent border-b border-gray-300">
+
 
       {/* Header */}
       <View className="flex-row justify-between items-center px-4 py-3">
@@ -63,13 +67,23 @@ const AnimatedHeader = ({
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           className="flex-row items-center"
         >
-          <View className="w-10 h-10 bg-yellow-400 rounded-full justify-center items-center mr-3">
-            <Text className="text-black font-bold text-lg">CG</Text>
-          </View>
-          <View>
-            <Text className="text-white text-xl font-bold">{title}</Text>
-            <Text className="text-gray-400 text-xs">Music App</Text>
-          </View>
+  <View className="flex-row items-center">
+  <View className="w-8 h-8 rounded-full justify-center items-center border border-gray-100">
+    <Image 
+      source={require("../assets/images/ClaudyGoLogo.webp")}
+      className="w-7 h-7 rounded-full"
+      resizeMode="cover"
+    />
+  </View>
+  
+  {/* Very thin vertical green line placed close to logo */}
+  <View className="h-6 w-[0.5px] bg-gray-700 mx-2" />
+  
+  <View className="flex-col">
+    <CustomText className="text-black">ClaudyGod</CustomText>
+    <Text className="text-purple-800 text-sm">Music & Ministries</Text>
+  </View>
+</View>
         </Pressable>
 
         {/* ✅ Menu button only toggles menu */}
@@ -77,11 +91,11 @@ const AnimatedHeader = ({
           onPress={toggleMenu}
           className="w-10 h-10 justify-center items-center"
         >
-          <MaterialIcons
-            name={isMenuOpen ? "close" : "menu"}
-            size={28}
-            color="#FFD700"
-          />
+        <MaterialIcons
+  name={isMenuOpen ? "close" : "menu"}
+  size={20}
+  color="#8B5CF6" // Purple color
+/>
         </TouchableOpacity>
       </View>
 
@@ -106,7 +120,7 @@ const AnimatedHeader = ({
             }}
             className="flex-row items-center px-6 py-4 border-b border-gray-800 active:bg-gray-800"
           >
-            <MaterialIcons name={item.icon} size={22} color="#D1D1D1" />
+            <MaterialIcons name={item.icon} size={22} color="#fff" />
             <Text className={`ml-4 text-white text-lg ${item.color || ""}`}>
               {item.label}
             </Text>
