@@ -16,14 +16,14 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
   };
 
   return (
-<View
-  className="flex-row bg-black border-t border-gray-700 rounded-full absolute left-0 right-0 mx-4"
-  style={{
-    bottom: 8, // Add some bottom margin
-    height: 60,
-    paddingTop: 5,
-  }}
->
+    <View
+      className="flex-row bg-black border-t border-gray-800 rounded-full absolute left-0 right-0 mx-4"
+      style={{
+        bottom: 8,
+        height: 56, // Slightly reduced height
+        paddingTop: 4,
+      }}
+    >
       {state.routes.map((route, index) => {
         const isFocused = state.index === index;
         const config = (tabConfig as any)[route.name];
@@ -32,41 +32,42 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
 
         const onPress = () => navigation.navigate(route.name);
 
-        // Center Play Button - Using CustomButton for the play button
+        // Center Play Button
         if (config.isCenter) {
           return (
             <TouchableOpacity
               key={route.key}
               onPress={onPress}
               className="flex-1 items-center justify-center"
-              style={{ marginTop: -45 }}
+              style={{ marginTop: -40 }} // Reduced negative margin
             >
-              <View className="w-[65px] h-[65px] rounded-full bg-purple-900 justify-center items-center shadow-2xl shadow-black/50 ">
-                <MaterialIcons name="play-arrow" size={34} color="#FFFFFF" />
+              <View className="w-[58px] h-[58px] rounded-full bg-purple-700 justify-center items-center shadow-lg shadow-black/40 border border-purple-500">
+                <MaterialIcons name="play-arrow" size={26} color="#FFFFFF" />
               </View>
             </TouchableOpacity>
           );
         }
 
-        // Regular Tabs - Using CustomText for labels
+        // Regular Tabs
         return (
           <TouchableOpacity
             key={route.key}
             onPress={onPress}
             className="flex-1 items-center justify-center"
-            style={{ paddingTop: 2 }}
+            style={{ paddingTop: 4 }}
           >
             <View className="items-center">
               <MaterialIcons 
                 name={config.icon} 
-                size={24} 
-                color={isFocused ? "#FFFFFF" : "#888888"} 
+                size={22} // Reduced from 24 to 22
+                color={isFocused ? "#FFFFFF" : "#9CA3AF"} // Better gray color
               />
               <CustomText
                 variant="caption"
                 className={`mt-1 ${
-                  isFocused ? "text-white" : "text-gray-300"
+                  isFocused ? "text-white font-medium" : "text-gray-400"
                 }`}
+                style={{ fontSize: 11 }} // Smaller, more refined font size
               >
                 {config.label}
               </CustomText>
