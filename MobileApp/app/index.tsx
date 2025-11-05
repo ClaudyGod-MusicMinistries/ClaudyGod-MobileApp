@@ -2,44 +2,43 @@
 import React, { useEffect } from 'react';
 import { View, StatusBar, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { useSharedValue, withSpring, useAnimatedStyle } from 'react-native-reanimated';
+import Animated, { 
+    useSharedValue, 
+    withSpring, 
+    useAnimatedStyle,
+    withTiming 
+} from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { CustomText } from '../components/CustomText'; 
-import { useColorScheme } from '../util/colorScheme';
-import { colors } from '../constants/color';
-
 
 const WelcomePage = () => {
-    const ringPadding = useSharedValue(0);
-    const ringPadding2 = useSharedValue(0);
+    const ringScale = useSharedValue(1);
+    const ringOpacity = useSharedValue(0);
     const router = useRouter();
-    const colorScheme = useColorScheme();
-    const currentColors = colors[colorScheme];
 
     useEffect(() => {
-        ringPadding.value = 0;
-        ringPadding2.value = 0;
+        ringScale.value = 1;
+        ringOpacity.value = 0;
         
-        // Use fixed pixel values
-        setTimeout(() => ringPadding.value = withSpring(30), 100);
-        setTimeout(() => ringPadding2.value = withSpring(20), 300);
+        // First ring animation
+        ringScale.value = withSpring(2.5, {
+            damping: 15,
+            stiffness: 100,
+        });
+        ringOpacity.value = withTiming(0.3, { duration: 800 });
         
         setTimeout(() => {
             router.replace('/home');
         }, 2500);
     }, []);
 
-    const outerRingStyle = useAnimatedStyle(() => ({
+    const ringStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: ringScale.value }],
+        opacity: ringOpacity.value,
         backgroundColor: 'rgba(255,255,255,0.15)',
         borderRadius: 1000,
-        padding: ringPadding.value,
-        marginBottom: 60,
-    }));
-
-    const innerRingStyle = useAnimatedStyle(() => ({
-        backgroundColor: 'rgba(255,255,255,0.15)',
-        borderRadius: 1000,
-        padding: ringPadding2.value,
+        padding: 40,
+        position: 'absolute',
     }));
 
     return (
@@ -75,24 +74,26 @@ const WelcomePage = () => {
             >
                 <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
                 
-                <Animated.View style={outerRingStyle}>
-                    <Animated.View style={innerRingStyle}>
-                        <Image 
-                            source={require("../assets/images/ClaudyGoLogo.webp")}
-                            style={{ 
-                                width: 80,
-                                height: 80,
-                                borderRadius: 40,
-                            }}
-                            resizeMode="cover" 
-                        />
-                    </Animated.View>
-                </Animated.View>
+                {/* Static Logo */}
+                <View style={{ marginBottom: 60 }}>
+                    <Image 
+                        source={require("../assets/images/ClaudyGoLogo.webp")}
+                        style={{ 
+                            width: 80,
+                            height: 80,
+                            borderRadius: 40,
+                            zIndex: 10,
+                        }}
+                        resizeMode="cover" 
+                    />
+                    
+                    {/* Animated Ring */}
+                    <Animated.View style={ringStyle} />
+                </View>
                 
                 <View 
                     style={{
                         alignItems: 'center',
-                        marginBottom: 60,
                         gap: 16,
                     }}
                 >
@@ -100,7 +101,9 @@ const WelcomePage = () => {
                         variant="heading"
                         style={{
                             textAlign: 'center',
-                            color: currentColors.text.primary,
+                            color: '#FFFFFF',
+                            fontSize: 32,
+                            fontWeight: 'bold',
                         }}
                     >
                         Music App
@@ -109,7 +112,7 @@ const WelcomePage = () => {
                         variant="body"
                         style={{
                             textAlign: 'center',
-                            color: currentColors.text.secondary,
+                            color: 'rgba(255,255,255,0.8)',
                             lineHeight: 22,
                             paddingHorizontal: 16,
                         }}

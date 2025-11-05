@@ -1,6 +1,5 @@
 // components/music/PlaylistGrid.tsx
-
-import { Grid } from './Grid';
+import { ScrollView} from 'react-native';
 import { MediaCard } from './mediaCard';
 
 interface Playlist {
@@ -21,18 +20,23 @@ export const PlaylistGrid: React.FC<PlaylistGridProps> = ({
   onPlaylistPress
 }) => {
   return (
-    <Grid cols={2} gap={4}>
+    <ScrollView 
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 8 }}
+    >
       {playlists.map((playlist) => (
-        <MediaCard
-          key={playlist.id}
-          imageUrl={playlist.imageUrl}
-          title={playlist.title}
-          subtitle={`${playlist.songCount} songs`}
-          onPress={() => onPlaylistPress(playlist)}
-          size="md"
-        />
+        <View key={playlist.id} style={{ marginRight: 16 }}>
+          <MediaCard
+            imageUrl={playlist.imageUrl}
+            title={playlist.title}
+            subtitle={`${playlist.songCount} songs`}
+            onPress={() => onPlaylistPress(playlist)}
+            size="md"
+          />
+        </View>
       ))}
-    </Grid>
+    </ScrollView>
   );
 };
 
