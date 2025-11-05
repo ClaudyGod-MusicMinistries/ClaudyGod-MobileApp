@@ -1,14 +1,20 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 import React, { useEffect } from 'react';
-import { View, Text, StatusBar, Image } from 'react-native';
+import { View, StatusBar, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { useSharedValue, withSpring, useAnimatedStyle } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
+import { CustomText } from '../components/CustomText'; 
+import { useColorScheme } from '../util/colorScheme';
+import { colors } from '../constants/color';
+
 
 const WelcomePage = () => {
     const ringPadding = useSharedValue(0);
     const ringPadding2 = useSharedValue(0);
     const router = useRouter();
+    const colorScheme = useColorScheme();
+    const currentColors = colors[colorScheme];
 
     useEffect(() => {
         ringPadding.value = 0;
@@ -90,27 +96,26 @@ const WelcomePage = () => {
                         gap: 16,
                     }}
                 >
-                    <Text 
+                    <CustomText 
+                        variant="heading"
                         style={{
-                            fontSize: 32,
-                            fontWeight: 'bold',
-                            color: 'white',
                             textAlign: 'center',
+                            color: currentColors.text.primary,
                         }}
                     >
                         Music App
-                    </Text>
-                    <Text 
+                    </CustomText>
+                    <CustomText 
+                        variant="body"
                         style={{
-                            fontSize: 16,
-                            color: 'rgba(255,255,255,0.9)',
                             textAlign: 'center',
+                            color: currentColors.text.secondary,
                             lineHeight: 22,
                             paddingHorizontal: 16,
                         }}
                     >
                         Discover and listen to your favorite music anytime, anywhere
-                    </Text>
+                    </CustomText>
                 </View>
             </View>
         </View>
