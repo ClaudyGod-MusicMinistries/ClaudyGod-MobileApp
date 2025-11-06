@@ -3,10 +3,15 @@ import { Tabs } from "expo-router";
 import TabBar from "../../components/TabBar";
 import AnimatedHeader from "../../components/AnimatedHeader";
 import { View } from "react-native";
+import { useColorScheme } from "../../util/colorScheme";
+import { colors } from "../../constants/color";
 
 export default function TabsLayout() {
+  const colorScheme = useColorScheme();
+  const currentColors = colors[colorScheme];
+
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: currentColors.background }}>
       {/* Header with built-in safe area handling */}
       <AnimatedHeader />
       

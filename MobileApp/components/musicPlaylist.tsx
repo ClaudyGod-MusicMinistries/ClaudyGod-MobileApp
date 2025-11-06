@@ -46,18 +46,20 @@ import { View, TouchableOpacity } from 'react-native';
 import { CustomText } from './CustomText';
 import { MaterialIcons } from '@expo/vector-icons';
 
-interface Song {
-  id: string;
+export interface Song {
+    id: string;
   title: string;
   artist: string;
-  duration: string;
   album: string;
+  duration: string;
 }
 
 interface SongListProps {
   songs: Song[];
   onSongPress: (song: Song) => void;
   currentSongId?: string;
+    showActions?: boolean; // Add this
+  onRemove?: (song: Song) => void; // Add this
 }
 
 export const SongList: React.FC<SongListProps> = ({
