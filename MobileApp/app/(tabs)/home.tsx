@@ -1,79 +1,103 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { View, StatusBar, ScrollView } from "react-native";
+import { ScrollView, View, useWindowDimensions } from "react-native";
 import { Container } from "../../components/Container";
 import { CustomText } from "../../components/CustomText";
-// import { NowPlayingCard } from "../../components/Card";
 import { PlaylistGrid } from "../../components/musicPlaylist";
-import { SongList } from "../../components/musicPlaylist";
-import { currentSong, featuredPlaylists, recentSongs } from "../../data/data";
+import { featuredPlaylists } from "../../data/data";
 import { TopAnimatedSection } from "../../components/topAnimatedFrame";
 import { CustomButton } from "../../components/CustomButton";
 import { useColorScheme } from "../../util/colorScheme";
 import { colors } from "../../constants/color";
 import Icon from 'react-native-vector-icons/Feather';
 import { RecentSongsSection } from "../../components/RecentSongs";
+import { TabScreenWrapper } from "./TextWrapper";
+
 
 export default function HomeScreen() {
   const colorScheme = useColorScheme();
   const currentColors = colors[colorScheme];
+  const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = useWindowDimensions();
+
+  // Responsive padding and spacing
+  const getResponsiveSpacing = () => {
+    if (SCREEN_WIDTH < 375) {
+      return { 
+        paddingBottom: 80, 
+        paddingTop: 4, 
+        sectionSpacing: 20,
+        cardPadding: 16,
+        buttonPadding: 12
+      };
+    } else if (SCREEN_WIDTH < 414) {
+      return { 
+        paddingBottom: 90, 
+        paddingTop: 6, 
+        sectionSpacing: 24,
+        cardPadding: 20,
+        buttonPadding: 14
+      };
+    } else {
+      return { 
+        paddingBottom: 100, 
+        paddingTop: 8, 
+        sectionSpacing: 24,
+        cardPadding: 24,
+        buttonPadding: 16
+      };
+    }
+  };
+
+  const spacing = getResponsiveSpacing();
+
+  // Responsive font sizes
+  const getResponsiveFontSize = () => {
+    if (SCREEN_WIDTH < 375) {
+      return { heading: 16, body: 14, caption: 12, icon: 14 };
+    } else if (SCREEN_WIDTH < 414) {
+      return { heading: 17, body: 15, caption: 13, icon: 15 };
+    } else {
+      return { heading: 18, body: 16, caption: 14, icon: 16 };
+    }
+  };
+
+  const fontSize = getResponsiveFontSize();
 
   return (
-    <View style={{ flex: 1, backgroundColor: currentColors.background }}>
-      <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
+    <TabScreenWrapper>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 100 }}
-        className="flex-1"
+        contentContainerStyle={{ 
+          paddingBottom: spacing.paddingBottom,
+          paddingTop: spacing.paddingTop,
+        }}
+        style={{ flex: 1 }}
       >
         {/* Top Animated Section */}
         <TopAnimatedSection />
 
-        {/* Now Playing Section with proper spacing */}
-        {/* <Container className="mt-6 mb-6">
-          <View className="flex-row justify-between items-center mb-4">
-            <CustomText variant="heading" style={{ color: currentColors.text.primary }}>
-              Now Playing
+        {/* Featured Playlists Section */}
+        <Container style={{ marginBottom: spacing.sectionSpacing, marginTop: spacing.sectionSpacing }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <CustomText style={{ fontSize: fontSize.heading, fontWeight: 'bold', color: currentColors.text.primary }}>
+              ClaudyGod Music
             </CustomText>
             <CustomButton
               variant="text"
-              onPress={() => console.log('View all now playing')}
+              onPress={() => console.log('View all playlists')}
             >
-              <View className="flex-row items-center">
-                <CustomText variant="body" style={{ color: currentColors.primary, marginRight: 4 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <CustomText
+                  style={{ 
+                    fontSize: fontSize.caption,
+                    color: currentColors.primary, 
+                    marginRight: 4 
+                  }}
+                >
                   View All
                 </CustomText>
-                <Icon name="arrow-right" size={16} color={currentColors.primary} />
+                <Icon name="arrow-right" size={fontSize.icon} color={currentColors.primary} />
               </View>
             </CustomButton>
-          </View>
-          <NowPlayingCard 
-            song={currentSong}
-            isPlaying={true}
-            onPlayPause={() => console.log('Play/Pause')}
-          />
-        </Container> */}
-
-        {/* Featured Playlists Section */}
-        <Container className="mb-6 mt-6">
-          <View className="flex-row justify-between items-center mb-4">
-   <CustomText variant="heading" style={{ fontSize: 18 }}>
-  ClaudyGod Music
-</CustomText>
-       <CustomButton
-  variant="text"
-  onPress={() => console.log('View all playlists')}>
-  <View className="flex-row items-center">
-    <CustomText
-      variant="caption"
-      style={{ color: currentColors.primary, marginRight: 4 }}
-    >
-      View All
-    </CustomText>
-
-    <Icon name="arrow-right" size={16} color={currentColors.primary} />
-  </View>
-</CustomButton>
-
           </View>
           <PlaylistGrid 
             playlists={featuredPlaylists}
@@ -82,137 +106,184 @@ export default function HomeScreen() {
         </Container>
 
         {/* Recent Songs Section */}
+        <RecentSongsSection />
 
-<RecentSongsSection />
-
- <Container className="mb-6 mt-6">
-          <View className="flex-row justify-between items-center mb-4">
-   <CustomText variant="heading" style={{ fontSize: 18 }}>
-  ClaudyGod's Nugget of Truth
-</CustomText>
-      <CustomButton
-  variant="text"
-  onPress={() => console.log('View all playlists')}>
-  <View className="flex-row items-center">
-    <CustomText
-      variant="caption"
-      style={{ color: currentColors.primary, marginRight: 4 }}
-    >
-      View All
-    </CustomText>
-
-    <Icon name="arrow-right" size={16} color={currentColors.primary} />
-  </View>
-</CustomButton>
-
-          </View>
-          <PlaylistGrid 
-            playlists={featuredPlaylists}
-            onPlaylistPress={(playlist) => console.log('Playlist pressed:', playlist)}
-          />
-        </Container>
-         <Container className="mb-6 mt-6">
-          <View className="flex-row justify-between items-center mb-4">
-    <CustomText variant="heading" style={{ fontSize: 18 }}>
-  ClaudyGod Kids & teens Channel
-</CustomText>
-       <CustomButton
-  variant="text"
-  onPress={() => console.log('View all playlists')}>
-  <View className="flex-row items-center">
-    <CustomText
-      variant="caption"
-      style={{ color: currentColors.primary, marginRight: 4 }}
-    >
-      View All
-    </CustomText>
-
-    <Icon name="arrow-right" size={16} color={currentColors.primary} />
-  </View>
-</CustomButton>
-
-          </View>
-          <PlaylistGrid 
-            playlists={featuredPlaylists}
-            onPlaylistPress={(playlist) => console.log('Playlist pressed:', playlist)}
-          />
-        </Container>
-         <Container className="mb-6 mt-6">
-          <View className="flex-row justify-between items-center mb-4">
-   <CustomText variant="heading" style={{ fontSize: 18 }}>
-  ClaudyGod Audio
-</CustomText>
-       <CustomButton
-  variant="text"
-  onPress={() => console.log('View all playlists')}>
-  <View className="flex-row items-center">
-    <CustomText
-      variant="caption"
-      style={{ color: currentColors.primary, marginRight: 4 }}
-    >
-      View All
-    </CustomText>
-
-    <Icon name="arrow-right" size={16} color={currentColors.primary} />
-  </View>
-</CustomButton>
-
-          </View>
-          <PlaylistGrid 
-            playlists={featuredPlaylists}
-            onPlaylistPress={(playlist) => console.log('Playlist pressed:', playlist)}
-          />
-        </Container>
-        {/* For You Section */}
-        <Container className="mb-6">
-          <View className="flex-row justify-between items-center mb-4">
-            <CustomText variant="heading" style={{ fontSize: 18 }}>
-              ClaudyGod Teaching's
+        {/* ClaudyGod's Nugget of Truth Section */}
+        <Container style={{ marginBottom: spacing.sectionSpacing, marginTop: spacing.sectionSpacing }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <CustomText style={{ fontSize: fontSize.heading, fontWeight: 'bold', color: currentColors.text.primary }}>
+              ClaudyGod's Nugget of Truth
             </CustomText>
-               <CustomButton
-  variant="text"
-  onPress={() => console.log('View all playlists')}>
-  <View className="flex-row items-center">
-    <CustomText
-      variant="caption"
-      style={{ color: currentColors.primary, marginRight: 4 }}
-    >
-      View All
-    </CustomText>
-
-    <Icon name="arrow-right" size={16} color={currentColors.primary} />
-  </View>
-</CustomButton>
+            <CustomButton
+              variant="text"
+              onPress={() => console.log('View all playlists')}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <CustomText
+                  style={{ 
+                    fontSize: fontSize.caption,
+                    color: currentColors.primary, 
+                    marginRight: 4 
+                  }}
+                >
+                  View All
+                </CustomText>
+                <Icon name="arrow-right" size={fontSize.icon} color={currentColors.primary} />
+              </View>
+            </CustomButton>
           </View>
           <PlaylistGrid 
-            playlists={featuredPlaylists.slice(0, 2)}
+            playlists={featuredPlaylists}
             onPlaylistPress={(playlist) => console.log('Playlist pressed:', playlist)}
           />
+        </Container>
+
+        {/* ClaudyGod Kids & Teens Channel Section */}
+        <Container style={{ marginBottom: spacing.sectionSpacing, marginTop: spacing.sectionSpacing }}>
+          <View 
+            style={{ 
+              borderRadius: 16, 
+              padding: spacing.cardPadding,
+              backgroundColor: currentColors.surface 
+            }}
+          >
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <CustomText style={{ fontSize: fontSize.heading, fontWeight: 'bold', color: currentColors.text.primary }}>
+                ClaudyGod Kids & Teens Channel
+              </CustomText>
+              <CustomButton
+                variant="text"
+                onPress={() => console.log('View all playlists')}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <CustomText
+                    style={{ 
+                      fontSize: fontSize.caption,
+                      color: currentColors.primary, 
+                      marginRight: 4 
+                    }}
+                  >
+                    View All
+                  </CustomText>
+                  <Icon name="arrow-right" size={fontSize.icon} color={currentColors.primary} />
+                </View>
+              </CustomButton>
+            </View>
+            <PlaylistGrid 
+              playlists={featuredPlaylists}
+              onPlaylistPress={(playlist) => console.log('Playlist pressed:', playlist)}
+            />
+          </View>
+        </Container>
+
+        {/* ClaudyGod Audio Section */}
+        <Container style={{ marginBottom: spacing.sectionSpacing, marginTop: spacing.sectionSpacing }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <CustomText style={{ fontSize: fontSize.heading, fontWeight: 'bold', color: currentColors.text.primary }}>
+              ClaudyGod Audio
+            </CustomText>
+            <CustomButton
+              variant="text"
+              onPress={() => console.log('View all playlists')}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <CustomText
+                  style={{ 
+                    fontSize: fontSize.caption,
+                    color: currentColors.primary, 
+                    marginRight: 4 
+                  }}
+                >
+                  View All
+                </CustomText>
+                <Icon name="arrow-right" size={fontSize.icon} color={currentColors.primary} />
+              </View>
+            </CustomButton>
+          </View>
+          <PlaylistGrid 
+            playlists={featuredPlaylists}
+            onPlaylistPress={(playlist) => console.log('Playlist pressed:', playlist)}
+          />
+        </Container>
+
+        {/* ClaudyGod Teaching's Section */}
+        <Container style={{ marginBottom: spacing.sectionSpacing, marginTop: spacing.sectionSpacing }}>
+          <View 
+            style={{ 
+              borderRadius: 16, 
+              padding: spacing.cardPadding,
+              backgroundColor: currentColors.surface 
+            }}
+          >
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <CustomText style={{ fontSize: fontSize.heading, fontWeight: 'bold', color: currentColors.text.primary }}>
+                ClaudyGod Teaching's
+              </CustomText>
+              <CustomButton
+                variant="text"
+                onPress={() => console.log('View all playlists')}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <CustomText
+                    style={{ 
+                      fontSize: fontSize.caption,
+                      color: currentColors.primary, 
+                      marginRight: 4 
+                    }}
+                  >
+                    View All
+                  </CustomText>
+                  <Icon name="arrow-right" size={fontSize.icon} color={currentColors.primary} />
+                </View>
+              </CustomButton>
+            </View>
+            <PlaylistGrid 
+              playlists={featuredPlaylists.slice(0, 2)}
+              onPlaylistPress={(playlist) => console.log('Playlist pressed:', playlist)}
+            />
+          </View>
         </Container>
 
         {/* Popular Artists Section */}
-        <Container className="mb-6">
-          <CustomText variant="heading" style={{ color: currentColors.text.primary }} className="mb-4">
+        <Container style={{ marginBottom: spacing.sectionSpacing }}>
+          <CustomText style={{ 
+            fontSize: fontSize.heading, 
+            fontWeight: 'bold', 
+            color: currentColors.text.primary,
+            marginBottom: 16 
+          }}>
             Popular Artists
           </CustomText>
-          <View className="flex-row justify-between">
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
             <CustomButton
               variant="outline"
               onPress={() => console.log('Artist 1')}
-              style={{ flex: 1, marginRight: 8 }}
+              style={{ 
+                flex: 1, 
+                marginRight: 8,
+                paddingVertical: spacing.buttonPadding
+              }}
             >
-              Artist 1
+              <CustomText style={{ fontSize: fontSize.body, color: currentColors.text.primary }}>
+                Artist 1
+              </CustomText>
             </CustomButton>
             <CustomButton
               variant="outline"
               onPress={() => console.log('Artist 2')}
-              style={{ flex: 1, marginLeft: 8 }}
+              style={{ 
+                flex: 1, 
+                marginLeft: 8,
+                paddingVertical: spacing.buttonPadding
+              }}
             >
-              Artist 2
+              <CustomText style={{ fontSize: fontSize.body, color: currentColors.text.primary }}>
+                Artist 2
+              </CustomText>
             </CustomButton>
           </View>
         </Container>
       </ScrollView>
-    </View>
+    </TabScreenWrapper>
   );
 }
