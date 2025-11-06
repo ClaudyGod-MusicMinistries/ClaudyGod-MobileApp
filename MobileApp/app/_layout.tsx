@@ -1,9 +1,9 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+// app/_layout.tsx
 import { Stack } from 'expo-router';
 import '../global.css';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useEffect, useState } from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, StatusBar } from 'react-native';
 import { loadFonts } from '../util/fonts';
 
 export default function RootLayout() {
@@ -23,39 +23,35 @@ export default function RootLayout() {
     prepare();
   }, []);
 
-  // Show a loading screen while fonts are loading
   if (!fontsLoaded) {
     return (
       <SafeAreaProvider>
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#000000', justifyContent: 'center', alignItems: 'center' }}>
+        <View style={{ flex: 1, backgroundColor: '#000000', justifyContent: 'center', alignItems: 'center' }}>
           <Text style={{ color: 'white' }}>Loading...</Text>
-        </SafeAreaView>
+        </View>
       </SafeAreaProvider>
     );
   }
 
   return (
     <SafeAreaProvider>
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#000000' }}>
+      {/* Remove SafeAreaView and use regular View to take full screen */}
+      <View style={{ flex: 1, backgroundColor: '#000000' }}>
+        <StatusBar 
+          translucent 
+          backgroundColor="transparent" 
+          barStyle="light-content" 
+        />
         <Stack
           screenOptions={{
             headerShown: false,
           }}
         >
-          <Stack.Screen 
-            name="index" 
-            options={{ headerShown: false }} 
-          />
-          <Stack.Screen 
-            name="Welcome" 
-            options={{ headerShown: false }} 
-          />
-          <Stack.Screen 
-            name="(tabs)" 
-            options={{ headerShown: false }} 
-          />
+          <Stack.Screen name="index" />
+          <Stack.Screen name="Welcome" />
+          <Stack.Screen name="(tabs)" />
         </Stack>
-      </SafeAreaView>
+      </View>
     </SafeAreaProvider>
   );
 }

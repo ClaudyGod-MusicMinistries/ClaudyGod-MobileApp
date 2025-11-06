@@ -1,14 +1,24 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Dimensions, Image, TouchableOpacity, Animated, NativeScrollEvent, NativeSyntheticEvent, ScrollView } from 'react-native';
+import { 
+  View, 
+  useWindowDimensions, 
+  Image, 
+  TouchableOpacity, 
+  Animated, 
+  NativeScrollEvent, 
+  NativeSyntheticEvent, 
+  ScrollView 
+} from 'react-native';
 import { CustomText } from './CustomText';
 import { LinearGradient } from 'expo-linear-gradient';
 import { defaultSlides } from '../data/data';
 import { useColorScheme } from 'react-native';
 import { colors } from '../constants/color';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const SLIDER_HEIGHT = 360;
+// Remove fixed dimensions, use responsive ones
+const SLIDER_HEIGHT_RATIO = 0.4; // 40% of screen height
+const CONTENT_PADDING_RATIO = 0.04; // 4% of screen width
 
 export const TopAnimatedSection = ({
   slides = defaultSlides,
@@ -22,6 +32,11 @@ export const TopAnimatedSection = ({
   
   const colorScheme = useColorScheme();
   const currentColors = colors[colorScheme || 'light'];
+  const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = useWindowDimensions();
+
+  // Responsive dimensions
+  const SLIDER_HEIGHT = SCREEN_HEIGHT * SLIDER_HEIGHT_RATIO;
+  const CONTENT_PADDING = SCREEN_WIDTH * CONTENT_PADDING_RATIO;
 
   const onScroll = Animated.event(
     [{ nativeEvent: { contentOffset: { x: scrollX } } }],
@@ -47,23 +62,22 @@ export const TopAnimatedSection = ({
   };
 
   useEffect(() => {
-  if (!autoPlay) return;
+    if (!autoPlay) return;
 
-  if (autoPlayTimer.current) {
-    clearInterval(autoPlayTimer.current);
-  }
-
-  autoPlayTimer.current = setInterval(() => {
-    handleNext();
-  }, interval);
-
-  return () => {
     if (autoPlayTimer.current) {
       clearInterval(autoPlayTimer.current);
     }
-  };
-}, [currentIndex, autoPlay, interval, slides.length]);
 
+    autoPlayTimer.current = setInterval(() => {
+      handleNext();
+    }, interval);
+
+    return () => {
+      if (autoPlayTimer.current) {
+        clearInterval(autoPlayTimer.current);
+      }
+    };
+  }, [currentIndex, autoPlay, interval, slides.length]);
 
   const getDotOpacity = (index: number) => {
     return scrollX.interpolate({
@@ -89,15 +103,40 @@ export const TopAnimatedSection = ({
     });
   };
 
+  // Responsive font sizes based on screen width
+  const getResponsiveFontSize = () => {
+    if (SCREEN_WIDTH < 375) { // Small phones
+      return {
+        title: 22,
+        subtitle: 14,
+        cta: 14,
+      };
+    } else if (SCREEN_WIDTH < 414) { // Medium phones
+      return {
+        title: 26,
+        subtitle: 16,
+        cta: 15,
+      };
+    } else { // Large phones
+      return {
+        title: 30,
+        subtitle: 18,
+        cta: 16,
+      };
+    }
+  };
+
+  const fontSize = getResponsiveFontSize();
+
   return (
-    <View style={{ paddingHorizontal: 12, paddingTop: 4 }}>
+    <View style={{ paddingHorizontal: CONTENT_PADDING, paddingTop: 8 }}>
       <View 
         className="w-full overflow-hidden"
         style={{ 
           height: SLIDER_HEIGHT,
           backgroundColor: currentColors.background,
           borderRadius: 20,
-          overflow: 'hidden' // VERY IMPORTANT
+          overflow: 'hidden'
         }}
       >
         {/* ScrollView for horizontal sliding */}
@@ -112,11 +151,11 @@ export const TopAnimatedSection = ({
           decelerationRate="fast"
         >
           {slides.map((slide) => (
-            <View key={slide.id} style={{ width: SCREEN_WIDTH }} className="relative">
+            <View key={slide.id} style={{ width: SCREEN_WIDTH - (CONTENT_PADDING * 2) }} className="relative">
               {/* Background Image */}
               <Image 
                 source={typeof slide.backgroundImage === 'string' ? { uri: slide.backgroundImage } : slide.backgroundImage}
-                className="w-full h-full"
+                style={{ width: '100%', height: '100%' }}
                 resizeMode="cover"
               />
               
@@ -134,27 +173,55 @@ export const TopAnimatedSection = ({
                   ? ['transparent','rgba(0,0,0,0.7)','rgba(0,0,0,0.9)']
                   : ['transparent','rgba(0,0,0,0.5)','rgba(0,0,0,0.8)']
                 }
-                style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 140 }}
+                style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: SLIDER_HEIGHT * 0.4 }}
               />
 
               {/* Content */}
               <View className="absolute inset-0 px-6 justify-center">
-                <View className="max-w-[80%]">
-                  <CustomText variant="display" className="mb-3" style={{ color: '#FFFFFF' }} numberOfLines={3}>
+                <View style={{ maxWidth: '80%' }}>
+                  <CustomText 
+                    style={{ 
+                      fontSize: fontSize.title,
+                      color: '#FFFFFF',
+                      fontWeight: 'bold',
+                      lineHeight: fontSize.title * 1.2
+                    }} 
+                    numberOfLines={3}
+                  >
                     {slide.title}
                   </CustomText>
 
-                  <CustomText variant="caption" className="text-lg mb-4" style={{ color: '#E0B3FF' }}>
+                  <CustomText 
+                    style={{ 
+                      fontSize: fontSize.subtitle,
+                      color: '#E0B3FF',
+                      marginTop: 8,
+                      marginBottom: 16,
+                      lineHeight: fontSize.subtitle * 1.3
+                    }}
+                    numberOfLines={2}
+                  >
                     {slide.subtitle}
                   </CustomText>
 
                   {slide.ctaText && (
                     <TouchableOpacity 
-                      style={{ backgroundColor: currentColors.primary }}
-                      className="px-8 py-4 rounded-2xl self-start shadow-lg"
+                      style={{ 
+                        backgroundColor: currentColors.primary,
+                        paddingHorizontal: SCREEN_WIDTH * 0.06,
+                        paddingVertical: SCREEN_HEIGHT * 0.015,
+                        borderRadius: 16,
+                        alignSelf: 'flex-start'
+                      }}
                       activeOpacity={0.8}
                     >
-                      <CustomText variant="body" className="font-bold text-base" style={{ color: 'white' }}>
+                      <CustomText 
+                        style={{ 
+                          fontSize: fontSize.cta,
+                          color: 'white',
+                          fontWeight: 'bold'
+                        }}
+                      >
                         {slide.ctaText}
                       </CustomText>
                     </TouchableOpacity>
@@ -166,12 +233,29 @@ export const TopAnimatedSection = ({
         </Animated.ScrollView>
 
         {/* Indicator dots */}
-        <View className="absolute bottom-8 left-0 right-0 flex-row justify-center items-center space-x-3">
+        <View 
+          style={{ 
+            position: 'absolute', 
+            bottom: SLIDER_HEIGHT * 0.06, 
+            left: 0, 
+            right: 0, 
+            flexDirection: 'row', 
+            justifyContent: 'center', 
+            alignItems: 'center',
+            gap: 12
+          }}
+        >
           {slides.map((_, index) => (
-            <TouchableOpacity key={index} onPress={() => goToSlide(index)} className="p-1" activeOpacity={0.7}>
+            <TouchableOpacity 
+              key={index} 
+              onPress={() => goToSlide(index)} 
+              style={{ padding: 4 }} 
+              activeOpacity={0.7}
+            >
               <Animated.View 
-                className="h-1.5 rounded-full"
                 style={{
+                  height: 6,
+                  borderRadius: 3,
                   opacity: getDotOpacity(index),
                   transform: [{ scale: getDotScale(index) }],
                   width: getDotWidth(index),
