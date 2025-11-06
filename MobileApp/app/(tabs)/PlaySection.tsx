@@ -1,6 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-// components/play/PlaySection.tsx
+// app/(tabs)/PlaySection.tsx
 import React, { useState, useRef } from 'react';
 import { 
   View, 
@@ -8,14 +7,15 @@ import {
   TouchableOpacity, 
   Animated, 
   useWindowDimensions,
-  Keyboard 
+  Keyboard
 } from "react-native";
-import { MasonryList } from '@shopify/flash-list';
-import { CustomButton } from '../../components/CustomButton';
-import { useColorScheme } from '../../util/colorScheme';
+import { FlashList } from "@shopify/flash-list";
 import { CustomText } from '../../components/CustomText';
+import { useColorScheme } from '../../util/colorScheme';
 import { colors } from '../../constants/color';
 import { MaterialIcons } from '@expo/vector-icons';
+import { RecentSongsSection } from '../../components/RecentSongs';
+import { TabScreenWrapper } from './TextWrapper';
 
 interface GridItem {
   id: string;
@@ -23,7 +23,7 @@ interface GridItem {
   subtitle: string;
   imageUrl: string;
   type: 'song' | 'playlist' | 'album';
-  height: number; // Dynamic height for masonry layout
+  height: number;
 }
 
 export default function PlaySection() {
@@ -31,7 +31,7 @@ export default function PlaySection() {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const colorScheme = useColorScheme();
   const currentColors = colors[colorScheme];
-  const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = useWindowDimensions();
+  const { width: SCREEN_WIDTH } = useWindowDimensions();
   const scrollY = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const searchIconAnim = useRef(new Animated.Value(1)).current;
@@ -48,7 +48,9 @@ export default function PlaySection() {
         fontSize: 14,
         headerMargin: 8,
         cardSpacing: 12,
-        numColumns: 2
+        numColumns: 2,
+        baseCardHeight: 180,
+        heightVariation: 40
       };
     } else if (SCREEN_WIDTH < 414) {
       return {
@@ -59,7 +61,9 @@ export default function PlaySection() {
         fontSize: 15,
         headerMargin: 12,
         cardSpacing: 14,
-        numColumns: 2
+        numColumns: 2,
+        baseCardHeight: 200,
+        heightVariation: 50
       };
     } else {
       return {
@@ -70,14 +74,37 @@ export default function PlaySection() {
         fontSize: 16,
         headerMargin: 16,
         cardSpacing: 16,
-        numColumns: 2
+        numColumns: 2,
+        baseCardHeight: 220,
+        heightVariation: 60
       };
     }
   };
 
   const sizes = getResponsiveSizes();
 
-  // Sample data for the masonry grid with dynamic heights
+  // Generate subtle height variations
+  const generateSubtleHeights = () => {
+    const patterns = [
+      sizes.baseCardHeight,
+      sizes.baseCardHeight + (sizes.heightVariation * 0.3),
+      sizes.baseCardHeight + (sizes.heightVariation * 0.6),
+      sizes.baseCardHeight - (sizes.heightVariation * 0.2),
+      sizes.baseCardHeight + (sizes.heightVariation * 0.8),
+      sizes.baseCardHeight - (sizes.heightVariation * 0.1),
+      sizes.baseCardHeight + (sizes.heightVariation * 0.4),
+      sizes.baseCardHeight - (sizes.heightVariation * 0.3),
+      sizes.baseCardHeight + (sizes.heightVariation * 0.7),
+      sizes.baseCardHeight,
+      sizes.baseCardHeight + (sizes.heightVariation * 0.5),
+      sizes.baseCardHeight - (sizes.heightVariation * 0.15),
+    ];
+    return patterns;
+  };
+
+  const heightPatterns = generateSubtleHeights();
+
+  // Sample data for the masonry grid
   const gridItems: GridItem[] = [
     {
       id: '1',
@@ -85,15 +112,15 @@ export default function PlaySection() {
       subtitle: 'Latest worship songs collection',
       imageUrl: 'https://images.unsplash.com/photo-1571330735066-03aaa9429d89?ixlib=rb-4.0.3',
       type: 'playlist',
-      height: 200 // Short card
+      height: heightPatterns[0]
     },
     {
       id: '2',
-      title: 'Gospel Mix & Spiritual Upliftment',
+      title: 'Gospel Mix',
       subtitle: 'Powerful gospel songs for your soul',
       imageUrl: 'https://images.unsplash.com/photo-1501281667305-0d4ebdb2c8e6?ixlib=rb-4.0.3',
       type: 'playlist',
-      height: 280 // Tall card
+      height: heightPatterns[1]
     },
     {
       id: '3',
@@ -101,55 +128,55 @@ export default function PlaySection() {
       subtitle: 'Songs for meditation and prayer',
       imageUrl: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?ixlib=rb-4.0.3',
       type: 'playlist',
-      height: 240 // Medium card
+      height: heightPatterns[2]
     },
     {
       id: '4',
-      title: 'Sunday Service Live Recording',
+      title: 'Sunday Service',
       subtitle: 'Complete Sunday worship experience',
       imageUrl: 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?ixlib=rb-4.0.3',
       type: 'playlist',
-      height: 320 // Very tall card
+      height: heightPatterns[3]
     },
     {
       id: '5',
-      title: 'Kids Praise & Worship',
+      title: 'Kids Praise',
       subtitle: 'Fun songs for children',
       imageUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?ixlib=rb-4.0.3',
       type: 'playlist',
-      height: 180 // Short card
+      height: heightPatterns[4]
     },
     {
       id: '6',
-      title: 'Youth Anthem Revolution',
+      title: 'Youth Anthem',
       subtitle: 'Modern worship for the youth',
       imageUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?ixlib=rb-4.0.3',
       type: 'playlist',
-      height: 260 // Tall card
+      height: heightPatterns[5]
     },
     {
       id: '7',
-      title: 'Healing Songs Collection',
+      title: 'Healing Songs',
       subtitle: 'Music for comfort and healing',
       imageUrl: 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?ixlib=rb-4.0.3',
       type: 'playlist',
-      height: 220 // Medium card
+      height: heightPatterns[6]
     },
     {
       id: '8',
-      title: 'Christmas Joy & Celebration',
+      title: 'Christmas Joy',
       subtitle: 'Festive songs for the holiday season',
       imageUrl: 'https://images.unsplash.com/photo-1544717301-9cdcb1f5940f?ixlib=rb-4.0.3',
       type: 'playlist',
-      height: 300 // Tall card
+      height: heightPatterns[7]
     },
     {
       id: '9',
-      title: 'African Praise Beats',
+      title: 'African Praise',
       subtitle: 'Rhythmic African worship music',
       imageUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?ixlib=rb-4.0.3',
       type: 'playlist',
-      height: 240 // Medium card
+      height: heightPatterns[8]
     },
     {
       id: '10',
@@ -157,7 +184,7 @@ export default function PlaySection() {
       subtitle: 'Calming songs for your evening devotion',
       imageUrl: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?ixlib=rb-4.0.3',
       type: 'playlist',
-      height: 280 // Tall card
+      height: heightPatterns[9]
     },
     {
       id: '11',
@@ -165,7 +192,7 @@ export default function PlaySection() {
       subtitle: 'Start your day with uplifting music',
       imageUrl: 'https://images.unsplash.com/photo-1501281667305-0d4ebdb2c8e6?ixlib=rb-4.0.3',
       type: 'playlist',
-      height: 200 // Short card
+      height: heightPatterns[10]
     },
     {
       id: '12',
@@ -173,7 +200,7 @@ export default function PlaySection() {
       subtitle: 'Powerful songs for spiritual awakening',
       imageUrl: 'https://images.unsplash.com/photo-1571330735066-03aaa9429d89?ixlib=rb-4.0.3',
       type: 'playlist',
-      height: 340 // Very tall card
+      height: heightPatterns[11]
     }
   ];
 
@@ -215,16 +242,13 @@ export default function PlaySection() {
   const handleSearch = () => {
     console.log('Searching for:', searchQuery);
     Keyboard.dismiss();
-    // Implement search functionality
   };
 
   const handleItemPress = (item: GridItem) => {
     console.log('Item pressed:', item.title);
-    // Navigate to item detail or play music
   };
 
   React.useEffect(() => {
-    // Initial fade in animation
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 800,
@@ -238,48 +262,45 @@ export default function PlaySection() {
   });
 
   // Render individual masonry card
-  const renderMasonryCard = ({ item, index }: { item: GridItem; index: number }) => {
+  const renderMasonryCard = ({ item }: { item: GridItem }) => {
     const cardColors = [
-      currentColors.primary + '20',
-      currentColors.primary + '30',
-      currentColors.primary + '40',
+      `${currentColors.primary}20`,
+      `${currentColors.primary}30`,
+      `${currentColors.primary}40`,
     ];
-    const backgroundColor = cardColors[index % cardColors.length];
+    const backgroundColor = cardColors[parseInt(item.id) % cardColors.length];
 
     return (
       <TouchableOpacity
         onPress={() => handleItemPress(item)}
         activeOpacity={0.8}
+        className="rounded-2xl border overflow-hidden"
         style={{ 
-          borderRadius: 20,
           backgroundColor: currentColors.surface,
-          margin: sizes.cardSpacing / 2,
-          shadowColor: currentColors.text.primary,
-          shadowOffset: { width: 0, height: 8 },
-          shadowOpacity: 0.15,
-          shadowRadius: 12,
-          elevation: 6,
-          overflow: 'hidden',
-          borderWidth: 1,
           borderColor: currentColors.border,
+          margin: sizes.cardSpacing / 2,
+          height: item.height,
+          shadowColor: currentColors.text.primary,
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.1,
+          shadowRadius: 8,
+          elevation: 4,
         }}
       >
         {/* Card Content */}
         <View 
+          className="justify-between p-4"
           style={{ 
-            height: item.height,
             backgroundColor: backgroundColor,
-            justifyContent: 'space-between',
-            padding: 16,
+            height: item.height,
           }}
         >
           {/* Top Section - Icon and Type */}
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <View className="flex-row justify-between items-start">
             <View 
+              className="rounded-xl p-2"
               style={{
-                backgroundColor: currentColors.primary + '40',
-                borderRadius: 12,
-                padding: 8,
+                backgroundColor: `${currentColors.primary}40`,
               }}
             >
               <MaterialIcons 
@@ -291,18 +312,14 @@ export default function PlaySection() {
             
             {/* Play Button */}
             <TouchableOpacity
+              className="w-9 h-9 rounded-full justify-center items-center"
               style={{
                 backgroundColor: currentColors.primary,
-                width: 36,
-                height: 36,
-                borderRadius: 18,
-                justifyContent: 'center',
-                alignItems: 'center',
                 shadowColor: currentColors.primary,
-                shadowOffset: { width: 0, height: 4 },
+                shadowOffset: { width: 0, height: 2 },
                 shadowOpacity: 0.3,
-                shadowRadius: 8,
-                elevation: 4,
+                shadowRadius: 4,
+                elevation: 3,
               }}
               onPress={() => handleItemPress(item)}
             >
@@ -315,14 +332,13 @@ export default function PlaySection() {
           </View>
 
           {/* Bottom Section - Text Content */}
-          <View>
+          <View className="mt-auto">
             <CustomText 
+              className="font-bold mb-1"
               style={{ 
                 fontSize: sizes.fontSize + 1,
-                fontWeight: '700',
                 color: currentColors.text.primary,
-                marginBottom: 6,
-                lineHeight: sizes.fontSize + 4,
+                lineHeight: sizes.fontSize + 6,
               }}
               numberOfLines={2}
             >
@@ -340,24 +356,12 @@ export default function PlaySection() {
             </CustomText>
           </View>
         </View>
-
-        {/* Gradient Overlay for better text readability */}
-        <View
-          style={{
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: 80,
-            background: `linear-gradient(transparent, ${currentColors.surface})`,
-          }}
-        />
       </TouchableOpacity>
     );
   };
 
   return (
-    <View className="flex-1" style={{ backgroundColor: currentColors.background }}>
+    <TabScreenWrapper>
       <Animated.ScrollView
         showsVerticalScrollIndicator={false}
         onScroll={Animated.event(
@@ -369,16 +373,15 @@ export default function PlaySection() {
           paddingBottom: 100,
           paddingTop: sizes.headerMargin
         }}
+        style={{ opacity: fadeAnim }}
       >
         {/* Search Section */}
-        <View style={{ paddingHorizontal: sizes.containerPadding, marginTop: sizes.headerMargin }}>
+        <View className="mb-5" style={{ paddingHorizontal: sizes.containerPadding, marginTop: sizes.headerMargin }}>
           <CustomText 
-            variant="heading" 
+            className="font-bold mb-5"
             style={{ 
               color: currentColors.text.primary,
               fontSize: sizes.fontSize + 6,
-              fontWeight: '700',
-              marginBottom: 20 
             }}
           >
             Discover Music
@@ -386,14 +389,12 @@ export default function PlaySection() {
           
           {/* Curved Search Container */}
           <Animated.View
+            className="flex-row items-center border-2"
             style={[
               {
-                flexDirection: 'row',
-                alignItems: 'center',
                 height: sizes.searchHeight,
                 borderRadius: sizes.searchBorderRadius,
                 backgroundColor: currentColors.surface,
-                borderWidth: 2,
                 borderColor: isSearchFocused ? currentColors.primary : currentColors.border,
                 paddingHorizontal: 16,
                 shadowColor: currentColors.text.primary,
@@ -434,12 +435,11 @@ export default function PlaySection() {
               onChangeText={setSearchQuery}
               onFocus={handleSearchFocus}
               onBlur={handleSearchBlur}
+              className="flex-1 py-2"
               style={{ 
-                flex: 1,
-                marginLeft: 12,
                 fontSize: sizes.fontSize,
                 color: currentColors.text.primary,
-                paddingVertical: 8,
+                marginLeft: 12,
               }}
               returnKeyType="search"
               onSubmitEditing={handleSearch}
@@ -450,19 +450,16 @@ export default function PlaySection() {
               <TouchableOpacity
                 onPress={handleSearch}
                 activeOpacity={0.8}
+                className="px-4 py-2 ml-2"
                 style={{
                   backgroundColor: currentColors.primary,
                   borderRadius: sizes.searchBorderRadius - 8,
-                  paddingHorizontal: 16,
-                  paddingVertical: 8,
-                  marginLeft: 8,
                 }}
               >
                 <CustomText
+                  className="text-white font-semibold"
                   style={{
-                    color: 'white',
                     fontSize: sizes.fontSize - 2,
-                    fontWeight: '600',
                   }}
                 >
                   Search
@@ -473,35 +470,39 @@ export default function PlaySection() {
         </View>
 
         {/* Masonry Grid Section */}
-        <View style={{ paddingHorizontal: sizes.containerPadding, marginTop: 32 }}>
+        <View className="flex-1" style={{ paddingHorizontal: sizes.containerPadding, marginTop: 8 }}>
           <CustomText 
+            className="font-bold mb-5"
             style={{ 
               color: currentColors.text.primary,
               fontSize: sizes.fontSize + 4,
-              fontWeight: '700',
-              marginBottom: 20
             }}
           >
             Featured Playlists
           </CustomText>
 
-          {/* Masonry List */}
-          <MasonryList
-            data={gridItems}
-            keyExtractor={(item: { id: any; }) => item.id}
-            numColumns={sizes.numColumns}
-            renderItem={renderMasonryCard}
-            showsVerticalScrollIndicator={false}
-            estimatedItemSize={200}
-            contentContainerStyle={{
-              paddingBottom: 20,
-            }}
-          />
+          {/* FlashList for Masonry Layout */}
+          <View style={{ minHeight: 800 }}>
+            <FlashList
+              data={gridItems}
+              keyExtractor={(item) => item.id}
+              numColumns={sizes.numColumns}
+              renderItem={renderMasonryCard}
+              showsVerticalScrollIndicator={false}
+             // estimatedItemSize={sizes.baseCardHeight}
+              scrollEnabled={false}
+            />
+          </View>
+        </View>
+
+        {/* Recent Songs Section */}
+        <View style={{ marginTop: 24 }}>
+          <RecentSongsSection />
         </View>
 
         {/* Empty space at bottom for better scrolling */}
-        <View style={{ height: 40 }} />
+        <View className="h-2" />
       </Animated.ScrollView>
-    </View>
+    </TabScreenWrapper>
   );
 }
