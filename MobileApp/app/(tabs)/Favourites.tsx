@@ -1,225 +1,147 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 // app/(tabs)/Favourites.tsx
 import React, { useState } from 'react';
-import { 
-  View, 
-  ScrollView,
-  TouchableOpacity,
-  useWindowDimensions
-} from "react-native";
-import { CustomText } from '../../components/CustomText';
-import { useColorScheme } from '../../util/colorScheme';
-import { colors } from '../../constants/color';
-import { MaterialIcons } from '@expo/vector-icons';
+import { View, ScrollView, TouchableOpacity } from 'react-native';
 import { TabScreenWrapper } from './TextWrapper';
-import { TopAnimatedSection } from '../../components/topAnimatedFrame';
-import { PlaylistGrid, SongList } from '../../components/musicPlaylist';
-import { favouriteSongs, favouritePlaylists, recentlyAdded } from '../../data/data';
-import type { Song } from '../../components/musicPlaylist';
+import { useAppTheme } from '../../util/colorScheme';
+import { CustomText } from '../../components/CustomText';
+import { Chip } from '../../components/ui/Chip';
+import { MediaRail } from '../../components/sections/MediaRail';
+import { PosterCard } from '../../components/ui/PosterCard';
+import { favouritePlaylists, favouriteSongs, recentlyAdded } from '../../data/data';
+import { MaterialIcons } from '@expo/vector-icons';
 
 export default function Favourites() {
-  const [activeTab, setActiveTab] = useState<'favourites' | 'recent'>('favourites');
-  const colorScheme = useColorScheme();
-  const currentColors = colors[colorScheme];
-  const { width: SCREEN_WIDTH } = useWindowDimensions();
-
-  // Responsive calculations
-  const getResponsiveSizes = () => {
-    if (SCREEN_WIDTH < 375) {
-      return {
-        containerPadding: 16,
-        iconSize: 18,
-        fontSize: 14,
-        headerMargin: 8,
-      };
-    } else if (SCREEN_WIDTH < 414) {
-      return {
-        containerPadding: 20,
-        iconSize: 20,
-        fontSize: 15,
-        headerMargin: 12,
-      };
-    } else {
-      return {
-        containerPadding: 24,
-        iconSize: 22,
-        fontSize: 16,
-        headerMargin: 16,
-      };
-    }
-  };
-
-  const sizes = getResponsiveSizes();
-
-  const handleRemoveFavourite = (song: Song) => {
-    console.log('Remove favourite:', song.id);
-  };
-
-  const handlePlayAll = () => {
-    console.log('Play all favourites');
-  };
-
-  const handleSongPress = (song: Song) => {
-    console.log('Song pressed:', song);
-  };
-
-  const handlePlaylistPress = (playlist: any) => {
-    console.log('Playlist pressed:', playlist);
-  };
+  const theme = useAppTheme();
+  const [tab, setTab] = useState<'library' | 'recent' | 'downloads'>('library');
 
   return (
     <TabScreenWrapper>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ 
-          paddingBottom: 100,
-          paddingTop: sizes.headerMargin
-        }}
+        contentContainerStyle={{ paddingBottom: 140, paddingTop: theme.spacing.md }}
       >
-        {/* Top Animated Section */}
-        <TopAnimatedSection />
+        <View style={{ paddingHorizontal: theme.spacing.lg }}>
+          <CustomText className="font-bold" style={{ color: theme.colors.text.primary, fontSize: 24 }}>
+            Your Library
+          </CustomText>
+          <CustomText style={{ color: theme.colors.text.secondary, marginTop: 4 }}>
+            Favorites, playlists, and offline downloads.
+          </CustomText>
 
-        {/* Header Section */}
-        <View style={{ paddingHorizontal: sizes.containerPadding, marginTop: sizes.headerMargin }}>
-          <View className="flex-row justify-between items-center mb-6">
-            <View>
-              <CustomText 
-                className="font-bold"
-                style={{ 
-                  color: currentColors.text.primary,
-                  fontSize: sizes.fontSize + 6,
-                }}
-              >
-                My Library
-              </CustomText>
-              <CustomText 
-                style={{ 
-                  color: currentColors.text.secondary,
-                  fontSize: sizes.fontSize,
-                }}
-              >
-                Your favorite songs and playlists
-              </CustomText>
-            </View>
-            <TouchableOpacity
-              onPress={handlePlayAll}
-              className="flex-row items-center px-4 py-2 rounded-2xl"
-              style={{ backgroundColor: currentColors.primary }}
-            >
-              <MaterialIcons name="play-arrow" size={sizes.iconSize} color="white" />
-              <CustomText 
-                className="ml-2 font-semibold"
-                style={{ color: 'white', fontSize: sizes.fontSize }}
-              >
-                Play All
-              </CustomText>
-            </TouchableOpacity>
+          <View style={{ flexDirection: 'row', gap: theme.spacing.sm, marginTop: theme.spacing.md }}>
+            <Chip label="Library" active={tab === 'library'} onPress={() => setTab('library')} />
+            <Chip label="Recent" active={tab === 'recent'} onPress={() => setTab('recent')} />
+            <Chip label="Downloads" active={tab === 'downloads'} onPress={() => setTab('downloads')} />
           </View>
 
-          {/* Tab Navigation */}
-          <View className="flex-row mb-6 rounded-2xl p-1" style={{ backgroundColor: currentColors.surface }}>
-            <TouchableOpacity
-              onPress={() => setActiveTab('favourites')}
-              className={`flex-1 py-3 rounded-2xl ${activeTab === 'favourites' ? '' : ''}`}
-              style={{ 
-                backgroundColor: activeTab === 'favourites' ? currentColors.primary : 'transparent',
-                alignItems: 'center',
-              }}
-            >
-              <CustomText 
-                className="font-semibold"
-                style={{ 
-                  color: activeTab === 'favourites' ? 'white' : currentColors.text.primary,
-                  fontSize: sizes.fontSize,
-                }}
-              >
-                Favourites ({favouriteSongs.length})
-              </CustomText>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => setActiveTab('recent')}
-              className={`flex-1 py-3 rounded-2xl ${activeTab === 'recent' ? '' : ''}`}
-              style={{ 
-                backgroundColor: activeTab === 'recent' ? currentColors.primary : 'transparent',
-                alignItems: 'center',
-              }}
-            >
-              <CustomText 
-                className="font-semibold"
-                style={{ 
-                  color: activeTab === 'recent' ? 'white' : currentColors.text.primary,
-                  fontSize: sizes.fontSize,
-                }}
-              >
-                Recently Added ({recentlyAdded.length})
-              </CustomText>
-            </TouchableOpacity>
-          </View>
-
-          {/* Content based on active tab */}
-          {activeTab === 'favourites' ? (
-            <View>
-              {/* Favourite Songs */}
-              <View className="mb-8">
-                <CustomText 
-                  className="font-bold mb-4"
-                  style={{ 
-                    color: currentColors.text.primary,
-                    fontSize: sizes.fontSize + 2,
-                  }}
-                >
-                  Favourite Songs
+          {tab === 'library' && (
+            <>
+              <View style={{ marginTop: theme.spacing.lg }}>
+                <CustomText className="font-bold" style={{ color: theme.colors.text.primary, fontSize: 18 }}>
+                  Quick actions
                 </CustomText>
-                <SongList 
-                  songs={favouriteSongs}
-                  onSongPress={handleSongPress}
-                  showActions={true}
-                  onRemove={handleRemoveFavourite}
-                />
+                <View style={{ flexDirection: 'row', gap: theme.spacing.sm, marginTop: theme.spacing.sm }}>
+                  {[
+                    { icon: 'shuffle', label: 'Shuffle' },
+                    { icon: 'download', label: 'Download' },
+                    { icon: 'playlist-add', label: 'New Playlist' },
+                  ].map((action) => (
+                    <TouchableOpacity
+                      key={action.label}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        paddingHorizontal: theme.spacing.md,
+                        paddingVertical: theme.spacing.sm,
+                        borderRadius: theme.radius.pill,
+                        backgroundColor: `${theme.colors.primary}18`,
+                        borderWidth: 1,
+                        borderColor: `${theme.colors.primary}40`,
+                      }}
+                    >
+                      <MaterialIcons name={action.icon as any} size={18} color={theme.colors.primary} />
+                      <CustomText style={{ color: theme.colors.text.primary, marginLeft: 8 }}>
+                        {action.label}
+                      </CustomText>
+                    </TouchableOpacity>
+                  ))}
+                </View>
               </View>
 
-              {/* Favourite Playlists */}
-              <View>
-                <CustomText 
-                  className="font-bold mb-4"
-                  style={{ 
-                    color: currentColors.text.primary,
-                    fontSize: sizes.fontSize + 2,
-                  }}
-                >
-                  Favourite Playlists
-                </CustomText>
-                <PlaylistGrid 
-                  playlists={favouritePlaylists}
-                  onPlaylistPress={handlePlaylistPress}
+              <MediaRail
+                title="Favourite playlists"
+                actionLabel="Manage"
+                onAction={() => console.log('Manage playlists')}
+                data={favouritePlaylists}
+                renderItem={(playlist) => (
+                  <PosterCard
+                    key={playlist.id}
+                    imageUrl={playlist.imageUrl}
+                    title={playlist.title}
+                    subtitle={`${playlist.songCount} songs`}
+                    onPress={() => console.log('Open playlist', playlist.id)}
+                  />
+                )}
+              />
+
+              <MediaRail
+                title="Favourite songs"
+                actionLabel="Play all"
+                onAction={() => console.log('Play favourites')}
+                data={favouriteSongs}
+                renderItem={(song) => (
+                  <PosterCard
+                    key={song.id}
+                    imageUrl={song.imageUrl}
+                    title={song.title}
+                    subtitle={song.artist}
+                    size="sm"
+                    onPress={() => console.log('Play song', song.id)}
+                  />
+                )}
+              />
+            </>
+          )}
+
+          {tab === 'recent' && (
+            <MediaRail
+              title="Recently added"
+              actionLabel="Clear"
+              onAction={() => console.log('Clear recent')}
+              data={recentlyAdded}
+              renderItem={(song) => (
+                <PosterCard
+                  key={song.id}
+                  imageUrl={song.imageUrl}
+                  title={song.title}
+                  subtitle={song.artist}
+                  size="sm"
+                  onPress={() => console.log('Play recent', song.id)}
                 />
-              </View>
-            </View>
-          ) : (
-            <View>
-              {/* Recently Added Songs */}
-              <View>
-                <CustomText 
-                  className="font-bold mb-4"
-                  style={{ 
-                    color: currentColors.text.primary,
-                    fontSize: sizes.fontSize + 2,
-                  }}
-                >
-                  Recently Added
-                </CustomText>
-                <SongList 
-                  songs={recentlyAdded}
-                  onSongPress={handleSongPress}
-                  showActions={false}
-                />
-              </View>
+              )}
+            />
+          )}
+
+          {tab === 'downloads' && (
+            <View
+              style={{
+                marginTop: theme.spacing.lg,
+                backgroundColor: theme.colors.surface,
+                borderRadius: theme.radius.lg,
+                padding: theme.spacing.lg,
+                borderWidth: 1,
+                borderColor: theme.colors.border,
+              }}
+            >
+              <CustomText className="font-bold" style={{ color: theme.colors.text.primary, fontSize: 18 }}>
+                Downloads
+              </CustomText>
+              <CustomText style={{ color: theme.colors.text.secondary, marginTop: 6 }}>
+                No downloads yet. Tap the download icon on any song or playlist to listen offline.
+              </CustomText>
             </View>
           )}
         </View>
-
-        {/* Empty space at bottom for better scrolling */}
-        <View className="h-10" />
       </ScrollView>
     </TabScreenWrapper>
   );

@@ -4,8 +4,7 @@ import { View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { SettingsScaffold } from './Scaffold';
 import { CustomText } from '../../components/CustomText';
-import { useColorScheme } from '../../util/colorScheme';
-import { colors } from '../../constants/color';
+import { useAppTheme } from '../../util/colorScheme';
 import { spacing, radius, shadows } from '../../styles/designTokens';
 
 const sections = [
@@ -48,28 +47,27 @@ const sections = [
 ];
 
 export default function Privacy() {
-  const scheme = useColorScheme();
-  const palette = colors[scheme];
+  const theme = useAppTheme();
 
   const Card: React.FC<{ title: string; items: string[] }> = ({ title, items }) => (
     <View
       style={{
-        backgroundColor: palette.surface,
+        backgroundColor: theme.colors.surface,
         borderRadius: radius.lg,
         padding: spacing.lg,
         borderWidth: 1,
-        borderColor: palette.border,
+        borderColor: theme.colors.border,
         marginBottom: spacing.md,
         ...shadows.soft,
       }}
     >
-      <CustomText className="font-bold" style={{ color: palette.text.primary, fontSize: 18, marginBottom: spacing.sm }}>
+      <CustomText className="font-bold" style={{ color: theme.colors.text.primary, fontSize: 18, marginBottom: spacing.sm }}>
         {title}
       </CustomText>
       {items.map((item) => (
         <View key={item} style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: spacing.xs }}>
-          <MaterialIcons name="check-circle" size={18} color={palette.primary} style={{ marginTop: 2 }} />
-          <CustomText style={{ color: palette.text.secondary, marginLeft: spacing.sm, flex: 1, lineHeight: 20 }}>
+          <MaterialIcons name="check-circle" size={18} color={theme.colors.primary} style={{ marginTop: 2 }} />
+          <CustomText style={{ color: theme.colors.text.secondary, marginLeft: spacing.sm, flex: 1, lineHeight: 20 }}>
             {item}
           </CustomText>
         </View>
@@ -84,19 +82,19 @@ export default function Privacy() {
       hero={
         <View
           style={{
-            backgroundColor: palette.surface,
+            backgroundColor: theme.colors.surface,
             borderRadius: radius.lg,
             padding: spacing.lg,
             borderWidth: 1,
-            borderColor: palette.border,
+            borderColor: theme.colors.border,
             marginBottom: spacing.lg,
             ...shadows.card,
           }}
         >
-          <CustomText style={{ color: palette.text.primary, fontWeight: '800', fontSize: 20, marginBottom: spacing.sm }}>
+          <CustomText style={{ color: theme.colors.text.primary, fontWeight: '800', fontSize: 20, marginBottom: spacing.sm }}>
             Your data. Your call.
           </CustomText>
-          <CustomText style={{ color: palette.text.secondary, lineHeight: 22 }}>
+          <CustomText style={{ color: theme.colors.text.secondary, lineHeight: 22 }}>
             We keep only what’s needed to stream seamlessly across mobile and TV, and you can export or delete it any time.
           </CustomText>
         </View>
@@ -108,19 +106,19 @@ export default function Privacy() {
 
       <View
         style={{
-          backgroundColor: `${palette.primary}12`,
+          backgroundColor: `${theme.colors.primary}12`,
           borderRadius: radius.lg,
           padding: spacing.lg,
           borderWidth: 1,
-          borderColor: `${palette.primary}55`,
+          borderColor: `${theme.colors.primary}55`,
           marginTop: spacing.lg,
           marginBottom: spacing.xl,
         }}
       >
-        <CustomText style={{ color: palette.text.primary, fontWeight: '700', fontSize: 16 }}>
+        <CustomText style={{ color: theme.colors.text.primary, fontWeight: '700', fontSize: 16 }}>
           Need anything removed or exported?
         </CustomText>
-        <CustomText style={{ color: palette.text.secondary, marginTop: 6 }}>
+        <CustomText style={{ color: theme.colors.text.secondary, marginTop: 6 }}>
           Email privacy@claudygodmusic.com and we’ll respond within 24 hours.
         </CustomText>
       </View>

@@ -4,14 +4,12 @@ import { View, TouchableOpacity, Linking } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { SettingsScaffold } from './Scaffold';
 import { CustomText } from '../../components/CustomText';
-import { useColorScheme } from '../../util/colorScheme';
-import { colors } from '../../constants/color';
+import { useAppTheme } from '../../util/colorScheme';
 import { spacing, radius, shadows } from '../../styles/designTokens';
 import { useRouter } from 'expo-router';
 
 export default function Rate() {
-  const scheme = useColorScheme();
-  const palette = colors[scheme];
+  const theme = useAppTheme();
   const router = useRouter();
   const [rating, setRating] = useState(0);
 
@@ -25,19 +23,19 @@ export default function Rate() {
       hero={
         <View
           style={{
-            backgroundColor: palette.surface,
+            backgroundColor: theme.colors.surface,
             borderRadius: radius.lg,
             padding: spacing.lg,
             borderWidth: 1,
-            borderColor: palette.border,
+            borderColor: theme.colors.border,
             marginBottom: spacing.lg,
             ...shadows.card,
           }}
         >
-          <CustomText style={{ color: palette.text.primary, fontWeight: '800', fontSize: 22 }}>
+          <CustomText style={{ color: theme.colors.text.primary, fontWeight: '800', fontSize: 22 }}>
             Love the experience?
           </CustomText>
-          <CustomText style={{ color: palette.text.secondary, marginTop: 6, lineHeight: 22 }}>
+          <CustomText style={{ color: theme.colors.text.secondary, marginTop: 6, lineHeight: 22 }}>
             Ratings boost discoverability on TVs and app stores. If something’s off, we’ll fix it fast.
           </CustomText>
         </View>
@@ -51,12 +49,12 @@ export default function Rate() {
               <MaterialIcons
                 name={rating >= star ? 'star' : 'star-border'}
                 size={32}
-                color={rating >= star ? '#FFC107' : palette.text.secondary}
+                color={rating >= star ? '#FFC107' : theme.colors.text.secondary}
               />
             </TouchableOpacity>
           ))}
         </View>
-        <CustomText style={{ color: palette.text.secondary, marginTop: spacing.sm }}>
+        <CustomText style={{ color: theme.colors.text.secondary, marginTop: spacing.sm }}>
           Tap to choose 1–5 stars
         </CustomText>
       </View>
@@ -68,7 +66,7 @@ export default function Rate() {
           disabled={rating === 0}
           style={{
             opacity: rating === 0 ? 0.6 : 1,
-            backgroundColor: palette.primary,
+            backgroundColor: theme.colors.primary,
             borderRadius: radius.pill,
             paddingVertical: spacing.md,
             alignItems: 'center',
@@ -83,23 +81,23 @@ export default function Rate() {
         <TouchableOpacity
           onPress={openFeedback}
           style={{
-            backgroundColor: palette.surface,
+            backgroundColor: theme.colors.surface,
             borderRadius: radius.pill,
             paddingVertical: spacing.md,
             alignItems: 'center',
             borderWidth: 1,
-            borderColor: palette.border,
+            borderColor: theme.colors.border,
           }}
         >
-          <CustomText style={{ color: palette.text.primary, fontWeight: '700' }}>
+          <CustomText style={{ color: theme.colors.text.primary, fontWeight: '700' }}>
             Send feedback to the team
           </CustomText>
         </TouchableOpacity>
       </View>
 
-      <View style={{ marginTop: spacing.lg, padding: spacing.md, backgroundColor: `${palette.primary}12`, borderRadius: radius.md }}>
-        <CustomText style={{ color: palette.text.primary, fontWeight: '700' }}>What happens next?</CustomText>
-        <CustomText style={{ color: palette.text.secondary, marginTop: 4 }}>
+      <View style={{ marginTop: spacing.lg, padding: spacing.md, backgroundColor: `${theme.colors.primary}12`, borderRadius: radius.md }}>
+        <CustomText style={{ color: theme.colors.text.primary, fontWeight: '700' }}>What happens next?</CustomText>
+        <CustomText style={{ color: theme.colors.text.secondary, marginTop: 4 }}>
           4–5 stars open the store to post a review. 1–3 stars route you to support so we can respond within a day.
         </CustomText>
       </View>

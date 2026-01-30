@@ -15,3 +15,8 @@ export function useColorSchemeToggle() {
 export function useThemeContext() {
   return useTheme();
 }
+
+export function useAppTheme() {
+  const { theme } = useTheme();
+  return theme;
+}

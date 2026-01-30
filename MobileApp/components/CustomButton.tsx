@@ -3,7 +3,7 @@ import React, { ReactNode } from 'react';
 import { TouchableOpacity, TouchableOpacityProps, Platform } from 'react-native';
 import { CustomText } from './CustomText';
 import { radius, spacing, tv as tvTokens, shadows } from '../styles/designTokens';
-import { colors, ColorScheme } from '../constants/color';
+import { colors } from '../constants/color';
 import { useColorScheme } from '../util/colorScheme';
 
 interface CustomButtonProps extends TouchableOpacityProps {

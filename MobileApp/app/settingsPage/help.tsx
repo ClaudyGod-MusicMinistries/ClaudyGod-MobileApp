@@ -3,8 +3,7 @@ import React, { useState } from 'react';
 import { View, TouchableOpacity, Linking } from 'react-native';
 import { SettingsScaffold } from './Scaffold';
 import { CustomText } from '../../components/CustomText';
-import { useColorScheme } from '../../util/colorScheme';
-import { colors } from '../../constants/color';
+import { useAppTheme } from '../../util/colorScheme';
 import { spacing, radius, shadows } from '../../styles/designTokens';
 import { MaterialIcons } from '@expo/vector-icons';
 
@@ -22,8 +21,7 @@ const faqs = [
 ];
 
 export default function Help() {
-  const scheme = useColorScheme();
-  const palette = colors[scheme];
+  const theme = useAppTheme();
   const [expanded, setExpanded] = useState<string | null>(null);
 
   return (
@@ -33,19 +31,19 @@ export default function Help() {
       hero={
         <View
           style={{
-            backgroundColor: palette.surface,
+            backgroundColor: theme.colors.surface,
             borderRadius: radius.lg,
             padding: spacing.lg,
             borderWidth: 1,
-            borderColor: palette.border,
+            borderColor: theme.colors.border,
             marginBottom: spacing.lg,
             ...shadows.card,
           }}
         >
-          <CustomText style={{ color: palette.text.primary, fontWeight: '800', fontSize: 22 }}>
+          <CustomText style={{ color: theme.colors.text.primary, fontWeight: '800', fontSize: 22 }}>
             We keep you streaming.
           </CustomText>
-          <CustomText style={{ color: palette.text.secondary, marginTop: 6, lineHeight: 22 }}>
+          <CustomText style={{ color: theme.colors.text.secondary, marginTop: 6, lineHeight: 22 }}>
             Reach us anytime or browse quick fixes below. Optimized for remote navigation and touch.
           </CustomText>
         </View>
@@ -62,9 +60,9 @@ export default function Help() {
               alignItems: 'center',
               padding: spacing.md,
               borderRadius: radius.md,
-              backgroundColor: palette.surface,
+              backgroundColor: theme.colors.surface,
               borderWidth: 1,
-              borderColor: palette.border,
+              borderColor: theme.colors.border,
               ...shadows.soft,
             }}
           >
@@ -73,25 +71,25 @@ export default function Help() {
                 width: 44,
                 height: 44,
                 borderRadius: radius.md,
-                backgroundColor: `${palette.primary}22`,
+                backgroundColor: `${theme.colors.primary}22`,
                 alignItems: 'center',
                 justifyContent: 'center',
                 marginRight: spacing.md,
               }}
             >
-              <MaterialIcons name={item.icon as any} size={20} color={palette.primary} />
+              <MaterialIcons name={item.icon as any} size={20} color={theme.colors.primary} />
             </View>
             <View style={{ flex: 1 }}>
-              <CustomText style={{ color: palette.text.primary, fontWeight: '700' }}>{item.title}</CustomText>
-              <CustomText style={{ color: palette.text.secondary }}>{item.desc}</CustomText>
+              <CustomText style={{ color: theme.colors.text.primary, fontWeight: '700' }}>{item.title}</CustomText>
+              <CustomText style={{ color: theme.colors.text.secondary }}>{item.desc}</CustomText>
             </View>
-            <MaterialIcons name="chevron-right" size={20} color={palette.text.secondary} />
+            <MaterialIcons name="chevron-right" size={20} color={theme.colors.text.secondary} />
           </TouchableOpacity>
         ))}
       </View>
 
       {/* FAQs */}
-      <CustomText className="font-bold" style={{ color: palette.text.primary, fontSize: 18, marginBottom: spacing.sm }}>
+      <CustomText className="font-bold" style={{ color: theme.colors.text.primary, fontSize: 18, marginBottom: spacing.sm }}>
         Quick answers
       </CustomText>
       <View style={{ gap: spacing.sm, marginBottom: spacing.xl }}>
@@ -101,22 +99,22 @@ export default function Help() {
             <TouchableOpacity
               key={faq.q}
               onPress={() => setExpanded(open ? null : faq.q)}
-              style={{
-                backgroundColor: palette.surface,
+            style={{
+                backgroundColor: theme.colors.surface,
                 borderRadius: radius.md,
                 padding: spacing.md,
                 borderWidth: 1,
-                borderColor: palette.border,
+                borderColor: theme.colors.border,
               }}
             >
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <MaterialIcons name={open ? 'expand-less' : 'expand-more'} size={20} color={palette.text.secondary} />
-                <CustomText style={{ color: palette.text.primary, marginLeft: spacing.sm, flex: 1, fontWeight: '700' }}>
+                <MaterialIcons name={open ? 'expand-less' : 'expand-more'} size={20} color={theme.colors.text.secondary} />
+                <CustomText style={{ color: theme.colors.text.primary, marginLeft: spacing.sm, flex: 1, fontWeight: '700' }}>
                   {faq.q}
                 </CustomText>
               </View>
               {open && (
-                <CustomText style={{ color: palette.text.secondary, marginTop: spacing.xs, lineHeight: 20 }}>
+                <CustomText style={{ color: theme.colors.text.secondary, marginTop: spacing.xs, lineHeight: 20 }}>
                   {faq.a}
                 </CustomText>
               )}

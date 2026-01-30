@@ -1,153 +1,91 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 // components/AnimatedHeader.tsx
-import React from "react";
-import {
-  View,
-  TouchableOpacity,
-  Pressable,
-  Image,
-  StatusBar,
-  Platform,
-} from "react-native";
-import { MaterialIcons } from "@expo/vector-icons";
-import { CustomText } from "./CustomText";
-import { useColorScheme } from "../util/colorScheme";
-import { colors } from "../constants/color";
+import React from 'react';
+import { View, TouchableOpacity, Image, StatusBar, Platform } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
+import { CustomText } from './CustomText';
+import { useAppTheme } from '../util/colorScheme';
 
 interface AnimatedHeaderProps {
   onPressHome?: () => void;
   onPressNotifications?: () => void;
-  onPressMenu?: () => void;
+  onPressSearch?: () => void;
+  onPressCast?: () => void;
+  onPressProfile?: () => void;
 }
 
 export const AnimatedHeader = ({
   onPressHome,
   onPressNotifications,
-  onPressMenu,
+  onPressSearch,
+  onPressCast,
+  onPressProfile,
 }: AnimatedHeaderProps) => {
-  const colorScheme = useColorScheme();
-  const currentColors = colors[colorScheme];
-
-  // Get status bar height (approx 44 for iPhone, 56 for Android with notch, etc.)
+  const theme = useAppTheme();
   const STATUS_BAR_HEIGHT = Platform.OS === 'ios' ? 44 : StatusBar.currentHeight || 28;
-  
-  const sizes = {
-    containerHeight: 60 + STATUS_BAR_HEIGHT, // Header height + status bar area
-    contentHeight: 60, // Actual header content height
-    logoSize: 32,
-    iconSize: 20,
-    paddingHorizontal: 16,
-    brandFontSize: 16,
-    taglineFontSize: 12,
-    separatorHeight: 24,
-    iconButtonSize: 40,
-  };
 
   return (
-    <View 
+    <View
       style={{
-        backgroundColor: currentColors.background,
-        borderBottomColor: currentColors.border,
+        backgroundColor: theme.colors.background,
+        borderBottomColor: theme.colors.border,
         borderBottomWidth: 1,
-        height: sizes.containerHeight,
-        paddingTop: STATUS_BAR_HEIGHT, // Push content below status bar
+        paddingTop: STATUS_BAR_HEIGHT,
       }}
     >
-      {/* Header Content */}
-      <View 
-        style={{ 
-          height: sizes.contentHeight,
-          paddingHorizontal: sizes.paddingHorizontal,
+      <View
+        style={{
+          height: 64,
+          paddingHorizontal: theme.spacing.lg,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: theme.spacing.md,
         }}
-        className="flex-row justify-between items-center"
       >
-        
-        {/* Logo + Brand */}
-        <Pressable
-          onPress={onPressHome}
-          className="flex-row items-center flex-1"
-        >
-          <View className="flex-row items-center">
-            <Image 
-              source={require("../assets/images/ClaudyGoLogo.webp")}
-              style={{ 
-                width: sizes.logoSize, 
-                height: sizes.logoSize,
-                borderRadius: sizes.logoSize / 2,
-              }}
-              resizeMode="cover"
-            />
-            
-            {/* Separator line */}
-            <View 
-              style={{ 
-                height: sizes.separatorHeight,
-                backgroundColor: currentColors.border,
-              }}
-              className="w-px mx-3"
-            />
-            
-            <View className="flex-col">
-              <CustomText 
-                style={{ 
-                  fontSize: sizes.brandFontSize,
-                  color: currentColors.text.primary,
-                  fontWeight: '500'
-                }}
-              >
-                ClaudyGod
-              </CustomText>
-              <CustomText 
-                style={{ 
-                  fontSize: sizes.taglineFontSize,
-                  color: currentColors.primary,
-                }}
-              >
-                Music & Ministries
-              </CustomText>
-            </View>
+        <TouchableOpacity onPress={onPressHome} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <Image
+            source={require('../assets/images/ClaudyGoLogo.webp')}
+            style={{ width: 34, height: 34, borderRadius: 10 }}
+          />
+          <View>
+            <CustomText style={{ color: theme.colors.text.primary, fontWeight: '800' }}>
+              ClaudyGod
+            </CustomText>
+            <CustomText style={{ color: theme.colors.text.secondary, fontSize: 12 }}>
+              Music + Video
+            </CustomText>
           </View>
-        </Pressable>
+        </TouchableOpacity>
 
-        {/* Right side icons */}
-        <View className="flex-row items-center space-x-2">
-          {/* Notification Bell */}
-          <TouchableOpacity
-            onPress={onPressNotifications}
-            style={{ 
-              width: sizes.iconButtonSize, 
-              height: sizes.iconButtonSize,
-            }}
-            className="justify-center items-center"
-            activeOpacity={0.7}
-          >
-            <MaterialIcons
-              name="notifications"
-              size={sizes.iconSize}
-              color={currentColors.primary}
-            />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <TouchableOpacity onPress={onPressSearch} style={iconButton(theme)}>
+            <MaterialIcons name="search" size={20} color={theme.colors.text.primary} />
           </TouchableOpacity>
-
-          {/* 3-dot vertical menu icon */}
-          <TouchableOpacity
-            onPress={onPressMenu}
-            style={{ 
-              width: sizes.iconButtonSize, 
-              height: sizes.iconButtonSize,
-            }}
-            className="justify-center items-center"
-            activeOpacity={0.7}
-          >
-            <MaterialIcons
-              name="more-vert"
-              size={sizes.iconSize}
-              color={currentColors.primary}
-            />
+          <TouchableOpacity onPress={onPressCast} style={iconButton(theme)}>
+            <MaterialIcons name="cast" size={20} color={theme.colors.text.primary} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={onPressNotifications} style={iconButton(theme)}>
+            <MaterialIcons name="notifications" size={20} color={theme.colors.text.primary} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={onPressProfile} style={iconButton(theme)}>
+            <MaterialIcons name="account-circle" size={22} color={theme.colors.primary} />
           </TouchableOpacity>
         </View>
       </View>
     </View>
   );
 };
+
+const iconButton = (theme: ReturnType<typeof useAppTheme>) => ({
+  width: 40,
+  height: 40,
+  borderRadius: theme.radius.md,
+  alignItems: 'center',
+  justifyContent: 'center',
+  backgroundColor: theme.colors.surface,
+  borderWidth: 1,
+  borderColor: theme.colors.border,
+});
 
 export default AnimatedHeader;
