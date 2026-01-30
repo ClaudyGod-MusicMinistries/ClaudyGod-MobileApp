@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 // components/AnimatedHeader.tsx
 import React, { useMemo } from 'react';
-import { View, TouchableOpacity, Image, StatusBar, Platform } from 'react-native';
+import { View, TouchableOpacity, Image, StatusBar, Platform, StyleSheet, ViewStyle } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from './CustomText';
 import { useAppTheme } from '../util/colorScheme';
@@ -25,24 +25,25 @@ export const AnimatedHeader = ({
   const STATUS_BAR_HEIGHT = Platform.OS === 'ios' ? 44 : StatusBar.currentHeight || 28;
 
   const headerStyles = useMemo(
-    () => ({
-      container: {
-        backgroundColor: theme.colors.background,
-        borderBottomColor: theme.colors.border,
-        borderBottomWidth: 1,
-        paddingTop: STATUS_BAR_HEIGHT,
-      },
-      row: {
-        height: 64,
-        paddingHorizontal: theme.spacing.lg,
-        flexDirection: 'row' as const,
-        alignItems: 'center' as const,
-        justifyContent: 'space-between' as const,
-      },
-      brand: { flexDirection: 'row' as const, alignItems: 'center' as const },
-      actionRow: { flexDirection: 'row' as const, alignItems: 'center' as const },
-      actionSpacer: { marginRight: 10 },
-    }),
+    () =>
+      StyleSheet.create({
+        container: {
+          backgroundColor: theme.colors.background,
+          borderBottomColor: theme.colors.border,
+          borderBottomWidth: 1,
+          paddingTop: STATUS_BAR_HEIGHT,
+        },
+        row: {
+          height: 64,
+          paddingHorizontal: theme.spacing.lg,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        },
+        brand: { flexDirection: 'row', alignItems: 'center' },
+        actionRow: { flexDirection: 'row', alignItems: 'center' },
+        actionSpacer: { marginRight: 10 },
+      }),
     [STATUS_BAR_HEIGHT, theme],
   );
 
@@ -87,7 +88,7 @@ export const AnimatedHeader = ({
   );
 };
 
-const iconButton = (theme: ReturnType<typeof useAppTheme>) => ({
+const iconButton = (theme: ReturnType<typeof useAppTheme>): ViewStyle => ({
   width: 40,
   height: 40,
   borderRadius: theme.radius.md,
