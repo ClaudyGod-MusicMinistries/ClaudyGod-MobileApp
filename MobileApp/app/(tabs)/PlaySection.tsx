@@ -7,7 +7,8 @@ import {
   TouchableOpacity, 
   Animated, 
   useWindowDimensions,
-  Keyboard
+  Keyboard,
+  Platform
 } from "react-native";
 import { FlashList } from "@shopify/flash-list";
 import { CustomText } from '../../components/CustomText';
@@ -16,6 +17,7 @@ import { colors } from '../../constants/color';
 import { MaterialIcons } from '@expo/vector-icons';
 import { RecentSongsSection } from '../../components/RecentSongs';
 import { TabScreenWrapper } from './TextWrapper';
+import { tv as tvTokens } from '../../styles/designTokens';
 
 interface GridItem {
   id: string;
@@ -32,6 +34,7 @@ export default function PlaySection() {
   const colorScheme = useColorScheme();
   const currentColors = colors[colorScheme];
   const { width: SCREEN_WIDTH } = useWindowDimensions();
+  const isTV = Platform.isTV;
   const scrollY = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const searchIconAnim = useRef(new Animated.Value(1)).current;
@@ -286,6 +289,9 @@ export default function PlaySection() {
           shadowRadius: 8,
           elevation: 4,
         }}
+        focusable
+        hitSlop={tvTokens.hitSlop}
+        hasTVPreferredFocus={isTV && item.id === '1'}
       >
         {/* Card Content */}
         <View 

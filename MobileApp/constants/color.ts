@@ -1,40 +1,42 @@
 export const colors = {
   light: {
-    background: '#FFFFFF',
-    surface: '#F8FAFC',
+    background: '#F8FAFC',
+    surface: '#FFFFFF',
     text: {
-      primary: '#000000',
+      primary: '#0B1221',
       secondary: '#4B5563',
-      accent: '#6B21A8',
-      inverse: '#FFFFFF' // Add inverse text color for dark backgrounds
+      accent: '#1ED760',
+      inverse: '#FFFFFF',
     },
-    primary: '#6B21A8', // purple-900
-    secondary: '#9333EA', // purple-700
-    accent: '#A855F7', // purple-500 for better visibility
-    border: '#D1D5DB',
+    primary: '#1ED760', // Spotify‑style action green
+    secondary: '#FF3B30', // YouTube‑style alert red
+    accent: '#22D3EE', // Cyan for highlights
+    border: '#E5E7EB',
+    muted: '#EEF2F7',
     gradient: {
-      primary: ['#6B21A8', '#7C3AED'],
-      secondary: ['#FFFFFF', '#F3F4F6']
-    }
+      primary: ['#1ED760', '#16A34A'],
+      secondary: ['#FFFFFF', '#EEF2F7'],
+    },
   },
   dark: {
-    background: '#000000',
-    surface: '#111827',
+    background: '#05060D',
+    surface: '#0F1118',
     text: {
-      primary: '#FFFFFF',
-      secondary: '#E5E7EB', // Lighter gray for better contrast
-      accent: '#D8B4FE', // Light purple for accent text
-      inverse: '#000000' // Add inverse text color for light backgrounds
+      primary: '#F8FAFC',
+      secondary: '#A1A5B3',
+      accent: '#1ED760',
+      inverse: '#05060D',
     },
-    primary: '#6B21A8', // purple-900
-    secondary: '#9333EA', // purple-700
-    accent: '#C084FC', // Brighter purple for better visibility
-    border: '#374151',
+    primary: '#1ED760',
+    secondary: '#FF3B30',
+    accent: '#22D3EE',
+    border: '#1F2937',
+    muted: '#111827',
     gradient: {
-      primary: ['#000000', '#6B21A8'],
-      secondary: ['#1F2937', '#374151']
-    }
-  }
+      primary: ['#05060D', '#0F1118'],
+      secondary: ['#0F1118', '#111827'],
+    },
+  },
 };
 
 export type ColorScheme = 'light' | 'dark';
