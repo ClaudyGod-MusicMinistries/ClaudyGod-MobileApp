@@ -42,7 +42,7 @@ export const PlaylistGrid: React.FC<PlaylistGridProps> = ({
 
 // components/music/SongList.tsx
 import React from 'react';
-import { View, TouchableOpacity } from 'react-native';
+import { TouchableOpacity } from 'react-native';
 import { CustomText } from './CustomText';
 import { MaterialIcons } from '@expo/vector-icons';
 
