@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 // components/AnimatedHeader.tsx
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, TouchableOpacity, Image, StatusBar, Platform } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from './CustomText';
@@ -24,31 +24,41 @@ export const AnimatedHeader = ({
   const theme = useAppTheme();
   const STATUS_BAR_HEIGHT = Platform.OS === 'ios' ? 44 : StatusBar.currentHeight || 28;
 
-  return (
-    <View
-      style={{
+  const headerStyles = useMemo(
+    () => ({
+      container: {
         backgroundColor: theme.colors.background,
         borderBottomColor: theme.colors.border,
         borderBottomWidth: 1,
         paddingTop: STATUS_BAR_HEIGHT,
-      }}
+      },
+      row: {
+        height: 64,
+        paddingHorizontal: theme.spacing.lg,
+        flexDirection: 'row' as const,
+        alignItems: 'center' as const,
+        justifyContent: 'space-between' as const,
+      },
+      brand: { flexDirection: 'row' as const, alignItems: 'center' as const },
+      actionRow: { flexDirection: 'row' as const, alignItems: 'center' as const },
+      actionSpacer: { marginRight: 10 },
+    }),
+    [STATUS_BAR_HEIGHT, theme],
+  );
+
+  return (
+    <View
+      style={headerStyles.container}
     >
       <View
-        style={{
-          height: 64,
-          paddingHorizontal: theme.spacing.lg,
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: theme.spacing.md,
-        }}
+        style={headerStyles.row}
       >
-        <TouchableOpacity onPress={onPressHome} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        <TouchableOpacity onPress={onPressHome} style={headerStyles.brand}>
           <Image
             source={require('../assets/images/ClaudyGoLogo.webp')}
             style={{ width: 34, height: 34, borderRadius: 10 }}
           />
-          <View>
+          <View style={{ marginLeft: 10 }}>
             <CustomText style={{ color: theme.colors.text.primary, fontWeight: '800' }}>
               ClaudyGod
             </CustomText>
@@ -58,14 +68,14 @@ export const AnimatedHeader = ({
           </View>
         </TouchableOpacity>
 
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          <TouchableOpacity onPress={onPressSearch} style={iconButton(theme)}>
+        <View style={headerStyles.actionRow}>
+          <TouchableOpacity onPress={onPressSearch} style={[iconButton(theme), headerStyles.actionSpacer]}>
             <MaterialIcons name="search" size={20} color={theme.colors.text.primary} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={onPressCast} style={iconButton(theme)}>
+          <TouchableOpacity onPress={onPressCast} style={[iconButton(theme), headerStyles.actionSpacer]}>
             <MaterialIcons name="cast" size={20} color={theme.colors.text.primary} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={onPressNotifications} style={iconButton(theme)}>
+          <TouchableOpacity onPress={onPressNotifications} style={[iconButton(theme), headerStyles.actionSpacer]}>
             <MaterialIcons name="notifications" size={20} color={theme.colors.text.primary} />
           </TouchableOpacity>
           <TouchableOpacity onPress={onPressProfile} style={iconButton(theme)}>
