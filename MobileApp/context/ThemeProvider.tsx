@@ -1,12 +1,14 @@
 // util/ThemeContext.tsx
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo } from 'react';
 import { useColorScheme as useRNColorScheme } from 'react-native';
 import { ColorScheme } from '../constants/color';
+import { getTheme, AppTheme } from '../theme';
 
 interface ThemeContextType {
   colorScheme: ColorScheme;
   toggleColorScheme: () => void;
   setColorScheme: (scheme: ColorScheme) => void;
+  theme: AppTheme;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -30,10 +32,13 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     setColorScheme(prev => prev === 'light' ? 'dark' : 'light');
   };
 
+  const theme = useMemo(() => getTheme(colorScheme), [colorScheme]);
+
   const value = {
     colorScheme,
     toggleColorScheme,
     setColorScheme,
+    theme,
   };
 
   return (

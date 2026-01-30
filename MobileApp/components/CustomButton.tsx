@@ -1,7 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { ReactNode } from 'react';
-import { TouchableOpacity, TouchableOpacityProps } from 'react-native';
+import { TouchableOpacity, TouchableOpacityProps, Platform } from 'react-native';
 import { CustomText } from './CustomText';
+import { radius, spacing, tv as tvTokens, shadows } from '../styles/designTokens';
+import { colors } from '../constants/color';
+import { useColorScheme } from '../util/colorScheme';
 
 interface CustomButtonProps extends TouchableOpacityProps {
   variant?: 'primary' | 'secondary' | 'outline' | 'text';
@@ -21,31 +24,62 @@ export const CustomButton: React.FC<CustomButtonProps> = ({
   textClassName,
   ...props
 }) => {
+  const colorScheme = useColorScheme();
+  const palette = colors[colorScheme];
+  const isTV = Platform.isTV;
+
   const baseStyle = `items-center justify-center`;
 
   const variantStyle =
     variant === 'primary'
-      ? 'bg-primary rounded-full'
+      ? {
+          backgroundColor: palette.primary,
+          borderColor: palette.primary,
+          borderWidth: 0,
+        }
       : variant === 'secondary'
-      ? 'bg-secondary rounded-full'
+      ? {
+          backgroundColor: palette.secondary,
+          borderColor: palette.secondary,
+          borderWidth: 0,
+        }
       : variant === 'outline'
-      ? 'border border-primary bg-transparent rounded-full'
-      : 'bg-transparent';
+      ? {
+          backgroundColor: 'transparent',
+          borderColor: palette.primary,
+          borderWidth: 1,
+        }
+      : {
+          backgroundColor: 'transparent',
+          borderWidth: 0,
+        };
 
   const sizeStyle =
     size === 'sm'
-      ? variant === 'text' ? 'px-2 py-1' : 'px-4 py-2'
+      ? {
+          paddingHorizontal: spacing.sm,
+          paddingVertical: spacing.xs,
+          minHeight: 40,
+        }
       : size === 'lg'
-      ? variant === 'text' ? 'px-4 py-2' : 'px-8 py-4'
-      : variant === 'text' ? 'px-3 py-1' : 'px-6 py-3';
+      ? {
+          paddingHorizontal: spacing.lg,
+          paddingVertical: spacing.md,
+          minHeight: 56,
+        }
+      : {
+          paddingHorizontal: spacing.md,
+          paddingVertical: spacing.sm,
+          minHeight: 48,
+        };
 
   // Only wrap with CustomText if children is a string
   const renderContent = () => {
     if (typeof children === 'string') {
       return (
         <CustomText 
-          className={`${textColor} ${textClassName || ''}`}
-          style={textStyle}
+          className={`${textClassName || ''}`}
+          style={[{ color: textColor }, textStyle]}
           variant={size === 'sm' ? 'caption' : 'body'}
         >
           {children}
@@ -57,14 +91,22 @@ export const CustomButton: React.FC<CustomButtonProps> = ({
 
   const textColor =
     variant === 'outline'
-      ? 'text-primary'
+      ? palette.primary
       : variant === 'text'
-      ? 'text-primary'
-      : 'text-white';
+      ? palette.primary
+      : '#FFFFFF';
 
   return (
     <TouchableOpacity
-      className={`${baseStyle} ${variantStyle} ${sizeStyle} ${className || ''}`}
+      className={`${baseStyle} ${className || ''}`}
+      style={{
+        borderRadius: radius.pill,
+        ...variantStyle,
+        ...sizeStyle,
+        ...(isTV ? tvTokens.focusShadow : shadows.soft),
+      }}
+      focusable
+      hitSlop={tvTokens.hitSlop}
       {...props}
     >
       {renderContent()}
