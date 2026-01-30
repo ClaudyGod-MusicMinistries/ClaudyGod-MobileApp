@@ -32,6 +32,12 @@ import {
 import * as Font from 'expo-font';
 
 export const fontConfig = {
+  hero: {
+    fontFamily: 'Poppins_900Black',
+    fontSize: 40,
+    lineHeight: 48,
+    fontWeight: '900' as const,
+  },
   display: {
     fontFamily: 'Poppins_900Black', // Using Poppins for maximum impact
     fontSize: 36,
@@ -50,11 +56,23 @@ export const fontConfig = {
     lineHeight: 28,
     fontWeight: '700' as const,
   },
+  subtitle: {
+    fontFamily: 'WorkSans_500Medium',
+    fontSize: 18,
+    lineHeight: 26,
+    fontWeight: '500' as const,
+  },
   body: {
     fontFamily: 'WorkSans_400Regular', // Keeping Work Sans for body text
     fontSize: 16,
     lineHeight: 24,
     fontWeight: '400' as const,
+  },
+  label: {
+    fontFamily: 'WorkSans_600SemiBold',
+    fontSize: 14,
+    lineHeight: 18,
+    fontWeight: '600' as const,
   },
   caption: {
     fontFamily: 'WorkSans_300Light',

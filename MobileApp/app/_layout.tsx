@@ -2,12 +2,12 @@
 import { Stack } from 'expo-router';
 import '../global.css';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { useEffect, useState } from 'react';
+import { useContext } from 'react';
 import { View, Text, StatusBar } from 'react-native';
-import { loadFonts } from '../util/fonts';
 import { ThemeProvider } from '../context/ThemeProvider';
 import { useColorScheme } from '../util/colorScheme';
 import { colors } from '../constants/color';
+import { FontProvider, FontContext } from '../context/FontContext';
 
 // Component to handle status bar and background color based on theme
 function ThemedLayout({ children }: { children: React.ReactNode }) {
@@ -43,48 +43,36 @@ function LoadingScreen() {
   );
 }
 
-export default function RootLayout() {
-  const [fontsLoaded, setFontsLoaded] = useState(false);
-
-  useEffect(() => {
-    async function prepare() {
-      try {
-        await loadFonts();
-      } catch (e) {
-        console.warn(e);
-      } finally {
-        setFontsLoaded(true);
-      }
-    }
-
-    prepare();
-  }, []);
+function RootLayoutInner() {
+  const { fontsLoaded } = useContext(FontContext);
 
   if (!fontsLoaded) {
-    return (
-      <ThemeProvider>
-        <SafeAreaProvider>
-          <LoadingScreen />
-        </SafeAreaProvider>
-      </ThemeProvider>
-    );
+    return <LoadingScreen />;
   }
 
   return (
+    <ThemedLayout>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+        }}
+      >
+        <Stack.Screen name="index" />
+        <Stack.Screen name="Welcome" />
+        <Stack.Screen name="(tabs)" />
+      </Stack>
+    </ThemedLayout>
+  );
+}
+
+export default function RootLayout() {
+  return (
     <ThemeProvider>
-      <SafeAreaProvider>
-        <ThemedLayout>
-          <Stack
-            screenOptions={{
-              headerShown: false,
-            }}
-          >
-            <Stack.Screen name="index" />
-            <Stack.Screen name="Welcome" />
-            <Stack.Screen name="(tabs)" />
-          </Stack>
-        </ThemedLayout>
-      </SafeAreaProvider>
+      <FontProvider>
+        <SafeAreaProvider>
+          <RootLayoutInner />
+        </SafeAreaProvider>
+      </FontProvider>
     </ThemeProvider>
   );
 }

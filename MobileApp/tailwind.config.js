@@ -9,18 +9,15 @@ module.exports = {
   presets: [require("nativewind/preset")],
   theme: {
     extend: {
-      // Add your custom colors to match your design system
+      // Streamer-inspired palette (dark-first) with light fallbacks
       colors: {
-        primary: {
-          50: '#fdf2f8',
-          500: '#E1306C', // Your pink color
-          600: '#be185d',
-          700: '#9d174d',
-        },
-        purple: {
-          500: '#8B5CF6', // Your purple color
-          600: '#7C3AED',
-        }
+        primary: '#1ED760',      // Spotify-esque green for actions
+        secondary: '#FF3B30',    // YouTube-inspired red for alerts/accents
+        accent: '#22D3EE',       // Cyan for highlights and chips
+        surface: '#0F1118',      // Card / panel background
+        canvas: '#05060D',       // App background
+        muted: '#1F2937',        // Muted surfaces/borders
+        'muted-foreground': '#9CA3AF',
       },
       // Add custom font families if needed
       fontFamily: {
