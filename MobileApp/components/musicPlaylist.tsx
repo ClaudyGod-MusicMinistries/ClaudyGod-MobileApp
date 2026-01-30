@@ -1,5 +1,5 @@
 // components/music/PlaylistGrid.tsx
-import { ScrollView} from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { MediaCard } from './mediaCard';
 
 interface Playlist {

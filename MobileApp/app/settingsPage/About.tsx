@@ -1,516 +1,202 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 // app/settingsPage/About.tsx
-import React, { useEffect, useRef } from 'react';
-import { 
-  View, 
-  ScrollView,
-  TouchableOpacity,
-  useWindowDimensions,
-  Linking,
-  Animated
-} from "react-native";
+// Clean, Spotify/YouTube-inspired about page using shared scaffold + tokens
+import React from 'react';
+import { View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { MaterialIcons } from '@expo/vector-icons';
+import { SettingsScaffold } from './Scaffold';
 import { CustomText } from '../../components/CustomText';
 import { useColorScheme } from '../../util/colorScheme';
 import { colors } from '../../constants/color';
-import { MaterialIcons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { spacing, radius, shadows } from '../../styles/designTokens';
+
+const featureChips = [
+  { icon: 'library-music', label: 'Massive catalog' },
+  { icon: 'cloud-download', label: 'Offline ready' },
+  { icon: 'equalizer', label: 'Adaptive streaming' },
+  { icon: 'cast', label: 'TV & Cast' },
+  { icon: 'lock', label: 'Privacy-first' },
+  { icon: 'groups', label: 'Community playlists' },
+];
+
+const team = [
+  { name: 'Claudy God', role: 'Founder & Lead Artist', desc: 'Vision, music direction, and weekly drops.' },
+  { name: 'Product Crew', role: 'Experience', desc: 'Design, user research, and accessibility.' },
+  { name: 'Engineering', role: 'Playback & APIs', desc: 'Streaming, downloads, and multi-device sync.' },
+];
+
+const social = [
+  { icon: 'smart-display', label: 'YouTube', url: 'https://youtube.com/claudygodmusic' },
+  { icon: 'photo-camera', label: 'Instagram', url: 'https://instagram.com/claudygodmusic' },
+  { icon: 'facebook', label: 'Facebook', url: 'https://facebook.com/claudygodmusic' },
+  { icon: 'alternate-email', label: 'Newsletter', url: 'mailto:hello@claudygodmusic.com' },
+];
 
 export default function About() {
-  const colorScheme = useColorScheme();
-  const currentColors = colors[colorScheme];
-  const { width: SCREEN_WIDTH } = useWindowDimensions();
-  const router = useRouter();
+  const scheme = useColorScheme();
+  const palette = colors[scheme];
 
-  // Animation values
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(30)).current;
-  const scaleAnim = useRef(new Animated.Value(0.95)).current;
-
-  // Responsive calculations
-  const getResponsiveSizes = () => {
-    if (SCREEN_WIDTH < 375) {
-      return {
-        containerPadding: 16,
-        iconSize: 20,
-        fontSize: 14,
-        headerMargin: 8,
-      };
-    } else if (SCREEN_WIDTH < 414) {
-      return {
-        containerPadding: 20,
-        iconSize: 22,
-        fontSize: 15,
-        headerMargin: 12,
-      };
-    } else {
-      return {
-        containerPadding: 24,
-        iconSize: 24,
-        fontSize: 16,
-        headerMargin: 16,
-      };
-    }
-  };
-
-  const sizes = getResponsiveSizes();
-
-  // Animation on mount
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 500,
-        useNativeDriver: true,
-      }),
-      Animated.timing(scaleAnim, {
-        toValue: 1,
-        duration: 500,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, []);
-
-  const teamMembers = [
-    {
-      name: 'Claudy God',
-      role: 'Founder & Lead Artist',
-      description: 'Worship leader and music creator passionate about spreading gospel music worldwide.'
-    },
-    {
-      name: 'Development Team',
-      role: 'Mobile App Development',
-      description: 'Dedicated team of developers creating the best music streaming experience.'
-    },
-    {
-      name: 'Music Team',
-      role: 'Content & Curation',
-      description: 'Curating the best worship and gospel music from around the world.'
-    }
-  ];
-
-  const appFeatures = [
-    '50+ million songs and growing',
-    'High quality audio streaming',
-    'Offline listening',
-    'Personalized recommendations',
-    'Create and share playlists',
-    'Cross-platform sync',
-    'Ad-free experience (Premium)',
-    'Family sharing options'
-  ];
-
-  const socialLinks = [
-    {
-      icon: 'facebook',
-      name: 'Facebook',
-      url: 'https://facebook.com/claudygodmusic'
-    },
-    {
-      icon: 'instagram',
-      name: 'Instagram',
-      url: 'https://instagram.com/claudygodmusic'
-    },
-    {
-      icon: 'twitter',
-      name: 'Twitter',
-      url: 'https://twitter.com/claudygodmusic'
-    },
-    {
-      icon: 'youtube',
-      name: 'YouTube',
-      url: 'https://youtube.com/claudygodmusic'
-    }
-  ];
-
-  const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
+  const Stat = ({ label, value }: { label: string; value: string }) => (
+    <View
+      style={{
+        padding: spacing.md,
+        borderRadius: radius.md,
+        backgroundColor: palette.surface,
+        borderWidth: 1,
+        borderColor: palette.border,
+        ...shadows.soft,
+      }}
+    >
+      <CustomText style={{ color: palette.text.primary, fontWeight: '800', fontSize: 20 }}>{value}</CustomText>
+      <CustomText style={{ color: palette.text.secondary, marginTop: 4 }}>{label}</CustomText>
+    </View>
+  );
 
   return (
-    <View style={{ flex: 1, backgroundColor: currentColors.background }}>
-      {/* Header */}
-      <View style={{ 
-        paddingHorizontal: sizes.containerPadding, 
-        paddingTop: sizes.headerMargin + 40,
-        paddingBottom: 20,
-        borderBottomWidth: 1,
-        borderBottomColor: currentColors.border
-      }}>
-        <View className="flex-row items-center">
-          <TouchableOpacity
-            onPress={() => router.back()}
-            className="p-2 mr-4"
-          >
-            <MaterialIcons 
-              name="arrow-back" 
-              size={sizes.iconSize} 
-              color={currentColors.text.primary} 
-            />
-          </TouchableOpacity>
-          <View>
-            <CustomText 
-              className="font-bold"
-              style={{ 
-                color: currentColors.text.primary,
-                fontSize: sizes.fontSize + 6,
-              }}
-            >
-              About
-            </CustomText>
-            <CustomText 
-              style={{ 
-                color: currentColors.text.secondary,
-                fontSize: sizes.fontSize,
-              }}
-            >
-              Learn more about ClaudyGod Music
-            </CustomText>
-          </View>
-        </View>
-      </View>
-
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ 
-          paddingBottom: 100,
-        }}
-      >
-        <Animated.View 
+    <SettingsScaffold
+      title="About ClaudyGod"
+      subtitle="The story, team, and promise behind the music."
+      hero={
+        <LinearGradient
+          colors={[palette.gradient.primary[0], palette.gradient.primary[1]]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
           style={{
-            paddingHorizontal: sizes.containerPadding,
-            paddingTop: 24,
-            opacity: fadeAnim,
-            transform: [
-              { translateY: slideAnim },
-              { scale: scaleAnim }
-            ],
+            borderRadius: radius.lg,
+            padding: spacing.lg,
+            marginBottom: spacing.lg,
+            ...shadows.card,
           }}
         >
-
-          {/* App Logo & Version */}
-          <Animated.View 
-            className="items-center mb-8"
+          <CustomText
+            className="font-bold"
+            style={{ color: '#FFFFFF', fontSize: 26, marginBottom: spacing.sm }}
+          >
+            Built for worshipers, crafted for creators.
+          </CustomText>
+          <CustomText style={{ color: '#E5E7EB', lineHeight: 22 }}>
+            ClaudyGod is a modern streaming home for sermons, worship, and inspirational audio/video that plays beautifully on phones, cars, and TVs.
+          </CustomText>
+          <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: spacing.md }}>
+            <Stat label="Monthly listeners" value="3.2M" />
+            <Stat label="Countries" value="48" />
+            <Stat label="Avg uptime" value="99.96%" />
+          </View>
+        </LinearGradient>
+      }
+    >
+      {/* Feature chips */}
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.lg }}>
+        {featureChips.map((chip) => (
+          <View
+            key={chip.label}
             style={{
-              transform: [{
-                translateY: fadeAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [50, 0],
-                })
-              }]
+              flexDirection: 'row',
+              alignItems: 'center',
+              paddingHorizontal: spacing.md,
+              paddingVertical: spacing.sm,
+              borderRadius: radius.pill,
+              backgroundColor: `${palette.primary}20`,
+              borderWidth: 1,
+              borderColor: `${palette.primary}50`,
+              gap: spacing.xs,
             }}
           >
-            <Animated.View 
-              className="w-20 h-20 rounded-2xl mb-4 items-center justify-center" 
-              style={{ 
-                backgroundColor: currentColors.primary,
-                transform: [{
-                  scale: fadeAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0.5, 1],
-                  })
-                }]
-              }}
-            >
-              <MaterialIcons name="music-note" size={40} color="white" />
-            </Animated.View>
-            <CustomText 
-              className="font-bold mb-2"
-              style={{ 
-                color: currentColors.text.primary,
-                fontSize: sizes.fontSize + 4,
-              }}
-            >
-              ClaudyGod Music
-            </CustomText>
-            <CustomText 
-              style={{ 
-                color: currentColors.text.secondary,
-                fontSize: sizes.fontSize,
-              }}
-            >
-              Version 1.0.0
-            </CustomText>
-          </Animated.View>
+            <MaterialIcons name={chip.icon as any} size={18} color={palette.primary} />
+            <CustomText style={{ color: palette.text.primary, fontSize: 14 }}>{chip.label}</CustomText>
+          </View>
+        ))}
+      </View>
 
-          {/* Mission Statement */}
-          <Animated.View 
-            className="mb-8"
+      {/* Mission card */}
+      <View
+        style={{
+          backgroundColor: palette.surface,
+          borderRadius: radius.lg,
+          padding: spacing.lg,
+          borderWidth: 1,
+          borderColor: palette.border,
+          marginBottom: spacing.lg,
+          ...shadows.soft,
+        }}
+      >
+        <CustomText className="font-bold" style={{ color: palette.text.primary, fontSize: 18, marginBottom: spacing.sm }}>
+          Our mission
+        </CustomText>
+        <CustomText style={{ color: palette.text.secondary, lineHeight: 22 }}>
+          Empower every believer and creator with a stage that is fast, beautiful, and safe—whether they’re streaming to a phone, casting to a TV, or downloading for the road.
+        </CustomText>
+      </View>
+
+      {/* Team */}
+      <CustomText className="font-bold" style={{ color: palette.text.primary, fontSize: 18, marginBottom: spacing.sm }}>
+        Team
+      </CustomText>
+      <View style={{ gap: spacing.sm, marginBottom: spacing.lg }}>
+        {team.map((member) => (
+          <View
+            key={member.name}
             style={{
-              transform: [{
-                translateY: fadeAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [30, 0],
-                })
-              }]
+              backgroundColor: palette.surface,
+              borderRadius: radius.md,
+              padding: spacing.md,
+              borderWidth: 1,
+              borderColor: palette.border,
+              ...shadows.soft,
             }}
           >
-            <CustomText 
-              className="font-bold mb-3 text-center"
-              style={{ 
-                color: currentColors.text.primary,
-                fontSize: sizes.fontSize + 2,
-              }}
-            >
-              Our Mission
+            <CustomText style={{ color: palette.text.primary, fontWeight: '700', fontSize: 16 }}>
+              {member.name}
             </CustomText>
-            <CustomText 
-              style={{ 
-                color: currentColors.text.secondary,
-                fontSize: sizes.fontSize,
-                lineHeight: 24,
-                textAlign: 'center',
-              }}
-            >
-              To spread the message of hope and faith through music, providing a platform where worship and gospel music can inspire, uplift, and bring people closer to God.
-            </CustomText>
-          </Animated.View>
+            <CustomText style={{ color: palette.primary, marginTop: 2 }}>{member.role}</CustomText>
+            <CustomText style={{ color: palette.text.secondary, marginTop: 6 }}>{member.desc}</CustomText>
+          </View>
+        ))}
+      </View>
 
-          {/* Features */}
-          <Animated.View 
-            className="mb-8"
+      {/* Social links */}
+      <CustomText className="font-bold" style={{ color: palette.text.primary, fontSize: 18, marginBottom: spacing.sm }}>
+        Connect
+      </CustomText>
+      <View style={{ gap: spacing.sm, marginBottom: spacing.lg }}>
+        {social.map((item) => (
+          <View
+            key={item.label}
             style={{
-              transform: [{
-                translateY: fadeAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [40, 0],
-                })
-              }]
+              flexDirection: 'row',
+              alignItems: 'center',
+              padding: spacing.md,
+              borderRadius: radius.md,
+              backgroundColor: palette.surface,
+              borderWidth: 1,
+              borderColor: palette.border,
             }}
           >
-            <CustomText 
-              className="font-bold mb-4"
-              style={{ 
-                color: currentColors.text.primary,
-                fontSize: sizes.fontSize + 2,
-              }}
-            >
-              App Features
+            <MaterialIcons name={item.icon as any} size={20} color={palette.primary} />
+            <CustomText style={{ color: palette.text.primary, marginLeft: spacing.sm, flex: 1 }}>
+              {item.label}
             </CustomText>
-            
-            <View className="rounded-2xl p-4" style={{ backgroundColor: currentColors.surface }}>
-              <View className="flex-row flex-wrap justify-between">
-                {appFeatures.map((feature, index) => (
-                  <Animated.View 
-                    key={feature} 
-                    className="w-1/2 mb-3 flex-row items-center"
-                    style={{
-                      transform: [{
-                        translateX: fadeAnim.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [index % 2 === 0 ? -50 : 50, 0],
-                        })
-                      }]
-                    }}
-                  >
-                    <MaterialIcons 
-                      name="check-circle" 
-                      size={sizes.iconSize - 2} 
-                      color={currentColors.primary} 
-                    />
-                    <CustomText 
-                      className="ml-2 flex-1"
-                      style={{ 
-                        color: currentColors.text.primary,
-                        fontSize: sizes.fontSize - 1,
-                      }}
-                    >
-                      {feature}
-                    </CustomText>
-                  </Animated.View>
-                ))}
-              </View>
-            </View>
-          </Animated.View>
+            <MaterialIcons name="open-in-new" size={18} color={palette.text.secondary} />
+          </View>
+        ))}
+      </View>
 
-          {/* Team */}
-          <Animated.View 
-            className="mb-8"
-            style={{
-              transform: [{
-                translateY: fadeAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [50, 0],
-                })
-              }]
-            }}
-          >
-            <CustomText 
-              className="font-bold mb-4"
-              style={{ 
-                color: currentColors.text.primary,
-                fontSize: sizes.fontSize + 2,
-              }}
-            >
-              Our Team
-            </CustomText>
-            
-            <View className="rounded-2xl overflow-hidden" style={{ backgroundColor: currentColors.surface }}>
-              {teamMembers.map((member, index) => (
-                <Animated.View 
-                  key={member.name}
-                  className={`p-4 ${index < teamMembers.length - 1 ? 'border-b' : ''}`}
-                  style={{ 
-                    borderBottomColor: currentColors.border,
-                    transform: [{
-                      translateY: fadeAnim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [20 * (index + 1), 0],
-                      })
-                    }]
-                  }}
-                >
-                  <CustomText 
-                    className="font-semibold mb-1"
-                    style={{ 
-                      color: currentColors.text.primary,
-                      fontSize: sizes.fontSize,
-                    }}
-                  >
-                    {member.name}
-                  </CustomText>
-                  <CustomText 
-                    className="mb-2"
-                    style={{ 
-                      color: currentColors.primary,
-                      fontSize: sizes.fontSize - 1,
-                    }}
-                  >
-                    {member.role}
-                  </CustomText>
-                  <CustomText 
-                    style={{ 
-                      color: currentColors.text.secondary,
-                      fontSize: sizes.fontSize - 1,
-                      lineHeight: 20,
-                    }}
-                  >
-                    {member.description}
-                  </CustomText>
-                </Animated.View>
-              ))}
-            </View>
-          </Animated.View>
-
-          {/* Social Links */}
-          <Animated.View 
-            className="mb-8"
-            style={{
-              transform: [{
-                translateY: fadeAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [60, 0],
-                })
-              }]
-            }}
-          >
-            <CustomText 
-              className="font-bold mb-4"
-              style={{ 
-                color: currentColors.text.primary,
-                fontSize: sizes.fontSize + 2,
-              }}
-            >
-              Connect With Us
-            </CustomText>
-            
-            <View className="rounded-2xl overflow-hidden" style={{ backgroundColor: currentColors.surface }}>
-              {socialLinks.map((social, index) => (
-                <AnimatedTouchable
-                  key={social.name}
-                  onPress={() => Linking.openURL(social.url)}
-                  className={`flex-row items-center py-4 px-4 ${
-                    index < socialLinks.length - 1 ? 'border-b' : ''
-                  }`}
-                  style={{ 
-                    borderBottomColor: currentColors.border,
-                    borderBottomWidth: index < socialLinks.length - 1 ? 1 : 0,
-                    transform: [{
-                      translateX: fadeAnim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [50 * (index + 1), 0],
-                      })
-                    }]
-                  }}
-                >
-                  <MaterialIcons 
-                    name={social.icon as any} 
-                    size={sizes.iconSize} 
-                    color={currentColors.primary} 
-                  />
-                  <CustomText 
-                    className="ml-4 flex-1"
-                    style={{ 
-                      color: currentColors.text.primary,
-                      fontSize: sizes.fontSize,
-                    }}
-                  >
-                    {social.name}
-                  </CustomText>
-                  <MaterialIcons 
-                    name="open-in-new" 
-                    size={sizes.iconSize - 2} 
-                    color={currentColors.text.secondary} 
-                  />
-                </AnimatedTouchable>
-              ))}
-            </View>
-          </Animated.View>
-
-          {/* Legal Info */}
-          <Animated.View 
-            className="rounded-2xl p-4 mb-4" 
-            style={{ 
-              backgroundColor: currentColors.surface,
-              transform: [{
-                translateY: fadeAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [70, 0],
-                })
-              }]
-            }}
-          >
-            <CustomText 
-              className="text-center mb-2"
-              style={{ 
-                color: currentColors.text.secondary,
-                fontSize: sizes.fontSize - 1,
-              }}
-            >
-              © 2024 ClaudyGod Music. All rights reserved.
-            </CustomText>
-            <View className="flex-row justify-center space-x-4">
-              <TouchableOpacity onPress={() => router.push('/settingsPage/Privacy')}>
-                <CustomText 
-                  style={{ 
-                    color: currentColors.primary,
-                    fontSize: sizes.fontSize - 1,
-                  }}
-                >
-                  Privacy Policy
-                </CustomText>
-              </TouchableOpacity>
-              <CustomText style={{ color: currentColors.text.secondary }}>•</CustomText>
-              <TouchableOpacity onPress={() => console.log('Terms of Service')}>
-                <CustomText 
-                  style={{ 
-                    color: currentColors.primary,
-                    fontSize: sizes.fontSize - 1,
-                  }}
-                >
-                  Terms of Service
-                </CustomText>
-              </TouchableOpacity>
-            </View>
-          </Animated.View>
-
-          {/* Empty space at bottom */}
-          <View className="h-20" />
-        </Animated.View>
-      </ScrollView>
-    </View>
+      {/* Version */}
+      <View
+        style={{
+          backgroundColor: palette.surface,
+          borderRadius: radius.md,
+          padding: spacing.md,
+          borderWidth: 1,
+          borderColor: palette.border,
+          marginBottom: spacing.xl,
+        }}
+      >
+        <CustomText style={{ color: palette.text.primary, fontWeight: '700' }}>Version 1.0.0</CustomText>
+        <CustomText style={{ color: palette.text.secondary, marginTop: 4 }}>
+          Multiplatform: Android, iOS, Roku, Fire TV, Apple TV, Web.
+        </CustomText>
+      </View>
+    </SettingsScaffold>
   );
 }
