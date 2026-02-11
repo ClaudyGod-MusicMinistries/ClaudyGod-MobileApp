@@ -60,14 +60,14 @@ export function PosterCard({
         ) : null}
       </View>
       <CustomText
-        className="font-semibold"
+        variant="label"
         style={{ color: theme.colors.text.primary, marginTop: 6 }}
         numberOfLines={1}
       >
         {title}
       </CustomText>
       {subtitle ? (
-        <CustomText style={{ color: theme.colors.text.secondary }} numberOfLines={1}>
+        <CustomText variant="caption" style={{ color: theme.colors.text.secondary }} numberOfLines={1}>
           {subtitle}
         </CustomText>
       ) : null}

@@ -41,6 +41,7 @@ export function SearchBar({ placeholder, value, onChangeText, onSubmit }: Search
           paddingVertical: theme.spacing.sm,
           paddingHorizontal: theme.spacing.sm,
           color: theme.colors.text.primary,
+          fontSize: theme.typography.body,
         }}
       />
       {value.length > 0 ? (

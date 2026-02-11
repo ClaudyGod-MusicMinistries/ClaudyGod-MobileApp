@@ -40,10 +40,10 @@ export default function Help() {
             ...shadows.card,
           }}
         >
-          <CustomText style={{ color: theme.colors.text.primary, fontWeight: '800', fontSize: 22 }}>
+          <CustomText variant="heading" style={{ color: theme.colors.text.primary }}>
             We keep you streaming.
           </CustomText>
-          <CustomText style={{ color: theme.colors.text.secondary, marginTop: 6, lineHeight: 22 }}>
+          <CustomText variant="body" style={{ color: theme.colors.text.secondary, marginTop: 6 }}>
             Reach us anytime or browse quick fixes below. Optimized for remote navigation and touch.
           </CustomText>
         </View>
@@ -80,8 +80,12 @@ export default function Help() {
               <MaterialIcons name={item.icon as any} size={20} color={theme.colors.primary} />
             </View>
             <View style={{ flex: 1 }}>
-              <CustomText style={{ color: theme.colors.text.primary, fontWeight: '700' }}>{item.title}</CustomText>
-              <CustomText style={{ color: theme.colors.text.secondary }}>{item.desc}</CustomText>
+              <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
+                {item.title}
+              </CustomText>
+              <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
+                {item.desc}
+              </CustomText>
             </View>
             <MaterialIcons name="chevron-right" size={20} color={theme.colors.text.secondary} />
           </TouchableOpacity>
@@ -89,7 +93,7 @@ export default function Help() {
       </View>
 
       {/* FAQs */}
-      <CustomText className="font-bold" style={{ color: theme.colors.text.primary, fontSize: 18, marginBottom: spacing.sm }}>
+      <CustomText variant="subtitle" style={{ color: theme.colors.text.primary, marginBottom: spacing.sm }}>
         Quick answers
       </CustomText>
       <View style={{ gap: spacing.sm, marginBottom: spacing.xl }}>
@@ -99,7 +103,7 @@ export default function Help() {
             <TouchableOpacity
               key={faq.q}
               onPress={() => setExpanded(open ? null : faq.q)}
-            style={{
+              style={{
                 backgroundColor: theme.colors.surface,
                 borderRadius: radius.md,
                 padding: spacing.md,
@@ -109,12 +113,12 @@ export default function Help() {
             >
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <MaterialIcons name={open ? 'expand-less' : 'expand-more'} size={20} color={theme.colors.text.secondary} />
-                <CustomText style={{ color: theme.colors.text.primary, marginLeft: spacing.sm, flex: 1, fontWeight: '700' }}>
+                <CustomText variant="body" style={{ color: theme.colors.text.primary, marginLeft: spacing.sm, flex: 1 }}>
                   {faq.q}
                 </CustomText>
               </View>
               {open && (
-                <CustomText style={{ color: theme.colors.text.secondary, marginTop: spacing.xs, lineHeight: 20 }}>
+                <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: spacing.xs }}>
                   {faq.a}
                 </CustomText>
               )}

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 import React, { useEffect } from 'react';
-import { View, StatusBar, Image, TouchableOpacity } from 'react-native';
+import { View, StatusBar, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   useSharedValue,
@@ -11,6 +11,7 @@ import Animated, {
 import { useRouter } from 'expo-router';
 import { CustomText } from '../components/CustomText';
 import { useAppTheme } from '../util/colorScheme';
+import { AppButton } from '../components/ui/AppButton';
 
 const WelcomePage = () => {
   const router = useRouter();
@@ -67,53 +68,44 @@ const WelcomePage = () => {
               style={{ width: 44, height: 44, borderRadius: 8 }}
             />
             <View style={{ marginLeft: 12 }}>
-              <CustomText style={{ color: '#F8FAFC', fontWeight: '800', fontSize: 16 }}>
+              <CustomText style={{ color: '#F8FAFC', fontWeight: '700', fontSize: 14 }}>
                 ClaudyGod Music
               </CustomText>
-              <CustomText style={{ color: '#CBD5F5', fontSize: 11 }}>
+              <CustomText style={{ color: '#CBD5F5', fontSize: 10 }}>
                 Stream • Watch • Download
               </CustomText>
             </View>
           </View>
 
-          <CustomText
-            variant="display"
-            style={{ color: '#F8FAFC', fontSize: 20, lineHeight: 26 }}
-          >
+          <CustomText variant="display" style={{ color: '#F8FAFC' }}>
             Premium worship streaming.
           </CustomText>
           <CustomText
             variant="body"
-            style={{ color: '#CBD5F5', marginTop: 6, lineHeight: 18, fontSize: 12 }}
+            style={{ color: '#CBD5F5', marginTop: 6 }}
           >
             Curated audio and live sessions with TV‑ready playback and offline support.
           </CustomText>
 
-          <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
-            <TouchableOpacity
+          <View style={{ flexDirection: 'row', marginTop: 16 }}>
+            <AppButton
+              title="Get Started"
+              size="sm"
+              variant="primary"
               onPress={() => router.replace('/home')}
-              style={{
-                backgroundColor: theme.colors.primary,
-                paddingHorizontal: 18,
-                paddingVertical: 9,
-                borderRadius: 10,
-              }}
-            >
-              <CustomText style={{ color: theme.colors.text.inverse, fontWeight: '700' }}>Get Started</CustomText>
-            </TouchableOpacity>
-            <TouchableOpacity
+              style={{ marginRight: 10 }}
+            />
+            <AppButton
+              title="Explore"
+              size="sm"
+              variant="outline"
               onPress={() => router.replace('/home')}
+              textColor="#E2E8F0"
               style={{
+                borderColor: 'rgba(255,255,255,0.2)',
                 backgroundColor: 'rgba(255,255,255,0.08)',
-                paddingHorizontal: 16,
-                paddingVertical: 9,
-                borderRadius: 10,
-                borderWidth: 1,
-                borderColor: 'rgba(255,255,255,0.15)',
               }}
-            >
-              <CustomText style={{ color: '#E2E8F0', fontWeight: '600' }}>Explore</CustomText>
-            </TouchableOpacity>
+            />
           </View>
         </Animated.View>
 
@@ -127,10 +119,10 @@ const WelcomePage = () => {
               padding: 12,
             }}
           >
-            <CustomText style={{ color: '#E2E8F0', fontSize: 12, fontWeight: '700' }}>
+            <CustomText variant="label" style={{ color: '#E2E8F0' }}>
               Live now
             </CustomText>
-            <CustomText style={{ color: '#CBD5F5', fontSize: 11, marginTop: 4 }}>
+            <CustomText variant="caption" style={{ color: '#CBD5F5', marginTop: 4 }}>
               ClaudyGod • Evening worship session
             </CustomText>
           </View>
@@ -147,7 +139,7 @@ const WelcomePage = () => {
                   borderColor: 'rgba(255,255,255,0.12)',
                 }}
               >
-                <CustomText style={{ color: '#E2E8F0', fontSize: 11 }}>{tag}</CustomText>
+                <CustomText variant="caption" style={{ color: '#E2E8F0' }}>{tag}</CustomText>
               </View>
             ))}
           </View>

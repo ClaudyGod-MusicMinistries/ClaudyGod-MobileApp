@@ -55,7 +55,7 @@ export default function HomeScreen() {
 
           {/* Continue Watching */}
           <FadeIn delay={120} style={{ marginBottom: theme.spacing.lg }}>
-            <CustomText className="font-bold" style={{ color: theme.colors.text.primary, fontSize: theme.typography.title }}>
+            <CustomText variant="title" style={{ color: theme.colors.text.primary }}>
               Continue Watching
             </CustomText>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: theme.spacing.sm }}>
@@ -75,10 +75,10 @@ export default function HomeScreen() {
                 >
                   <Image source={{ uri: item.imageUrl }} style={{ width: '100%', height: 140 }} resizeMode="cover" />
                   <View style={{ padding: theme.spacing.sm }}>
-                    <CustomText className="font-semibold" style={{ color: theme.colors.text.primary }}>
+                    <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
                       {item.title}
                     </CustomText>
-                    <CustomText style={{ color: theme.colors.text.secondary, marginTop: 4 }}>
+                    <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 4 }}>
                       {item.subtitle}
                     </CustomText>
                   </View>
@@ -139,7 +139,7 @@ export default function HomeScreen() {
                 marginTop: theme.spacing.md,
               }}
             >
-            <CustomText className="font-bold" style={{ color: theme.colors.text.primary, fontSize: theme.typography.title }}>
+            <CustomText variant="title" style={{ color: theme.colors.text.primary }}>
               Quick actions
             </CustomText>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm, marginTop: theme.spacing.sm }}>
@@ -162,9 +162,11 @@ export default function HomeScreen() {
                     borderColor: `${theme.colors.primary}40`,
                   }}
                   onPress={() => console.log(action.label)}
-                >
-                  <MaterialIcons name={action.icon as any} size={18} color={theme.colors.primary} />
-                  <CustomText style={{ color: theme.colors.text.primary, marginLeft: 8 }}>{action.label}</CustomText>
+                  >
+                    <MaterialIcons name={action.icon as any} size={18} color={theme.colors.primary} />
+                  <CustomText variant="label" style={{ color: theme.colors.text.primary, marginLeft: 8 }}>
+                    {action.label}
+                  </CustomText>
                 </TouchableOpacity>
               ))}
             </View>

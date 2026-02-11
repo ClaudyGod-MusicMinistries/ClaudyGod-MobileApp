@@ -45,8 +45,8 @@ export default function About() {
         ...shadows.soft,
       }}
     >
-      <CustomText style={{ color: theme.colors.text.primary, fontWeight: '800', fontSize: 20 }}>{value}</CustomText>
-      <CustomText style={{ color: theme.colors.text.secondary, marginTop: 4 }}>{label}</CustomText>
+      <CustomText variant="heading" style={{ color: theme.colors.text.primary }}>{value}</CustomText>
+      <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 4 }}>{label}</CustomText>
     </View>
   );
 
@@ -66,10 +66,10 @@ export default function About() {
             ...shadows.card,
           }}
         >
-          <CustomText className="font-bold" style={{ color: '#FFFFFF', fontSize: 26, marginBottom: spacing.sm }}>
+          <CustomText variant="heading" style={{ color: '#FFFFFF', marginBottom: spacing.sm }}>
             Built for worshipers, crafted for creators.
           </CustomText>
-          <CustomText style={{ color: '#E5E7EB', lineHeight: 22 }}>
+          <CustomText variant="body" style={{ color: '#E5E7EB' }}>
             ClaudyGod is a modern streaming home for sermons, worship, and inspirational audio/video that plays beautifully on phones, cars, and TVs.
           </CustomText>
           <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: spacing.md }}>
@@ -98,7 +98,7 @@ export default function About() {
             }}
           >
             <MaterialIcons name={chip.icon as any} size={18} color={theme.colors.primary} />
-            <CustomText style={{ color: theme.colors.text.primary, fontSize: 14 }}>{chip.label}</CustomText>
+            <CustomText variant="label" style={{ color: theme.colors.text.primary }}>{chip.label}</CustomText>
           </View>
         ))}
       </View>
@@ -115,16 +115,16 @@ export default function About() {
           ...shadows.soft,
         }}
       >
-        <CustomText className="font-bold" style={{ color: theme.colors.text.primary, fontSize: 18, marginBottom: spacing.sm }}>
+        <CustomText variant="subtitle" style={{ color: theme.colors.text.primary, marginBottom: spacing.sm }}>
           Our mission
         </CustomText>
-        <CustomText style={{ color: theme.colors.text.secondary, lineHeight: 22 }}>
+        <CustomText variant="body" style={{ color: theme.colors.text.secondary }}>
           Empower every believer and creator with a stage that is fast, beautiful, and safe—whether they’re streaming to a phone, casting to a TV, or downloading for the road.
         </CustomText>
       </View>
 
       {/* Team */}
-      <CustomText className="font-bold" style={{ color: theme.colors.text.primary, fontSize: 18, marginBottom: spacing.sm }}>
+      <CustomText variant="subtitle" style={{ color: theme.colors.text.primary, marginBottom: spacing.sm }}>
         Team
       </CustomText>
       <View style={{ gap: spacing.sm, marginBottom: spacing.lg }}>
@@ -140,17 +140,17 @@ export default function About() {
               ...shadows.soft,
             }}
           >
-            <CustomText style={{ color: theme.colors.text.primary, fontWeight: '700', fontSize: 16 }}>
+            <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
               {member.name}
             </CustomText>
-            <CustomText style={{ color: theme.colors.primary, marginTop: 2 }}>{member.role}</CustomText>
-            <CustomText style={{ color: theme.colors.text.secondary, marginTop: 6 }}>{member.desc}</CustomText>
+            <CustomText variant="caption" style={{ color: theme.colors.primary, marginTop: 2 }}>{member.role}</CustomText>
+            <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 6 }}>{member.desc}</CustomText>
           </View>
         ))}
       </View>
 
       {/* Social links */}
-      <CustomText className="font-bold" style={{ color: theme.colors.text.primary, fontSize: 18, marginBottom: spacing.sm }}>
+      <CustomText variant="subtitle" style={{ color: theme.colors.text.primary, marginBottom: spacing.sm }}>
         Connect
       </CustomText>
       <View style={{ gap: spacing.sm, marginBottom: spacing.lg }}>
@@ -168,7 +168,7 @@ export default function About() {
             }}
           >
             <MaterialIcons name={item.icon as any} size={20} color={theme.colors.primary} />
-            <CustomText style={{ color: theme.colors.text.primary, marginLeft: spacing.sm, flex: 1 }}>
+            <CustomText variant="body" style={{ color: theme.colors.text.primary, marginLeft: spacing.sm, flex: 1 }}>
               {item.label}
             </CustomText>
             <MaterialIcons name="open-in-new" size={18} color={theme.colors.text.secondary} />
@@ -187,8 +187,8 @@ export default function About() {
           marginBottom: spacing.xl,
         }}
       >
-        <CustomText style={{ color: theme.colors.text.primary, fontWeight: '700' }}>Version 1.0.0</CustomText>
-        <CustomText style={{ color: theme.colors.text.secondary, marginTop: 4 }}>
+        <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>Version 1.0.0</CustomText>
+        <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 4 }}>
           Multiplatform: Android, iOS, Roku, Fire TV, Apple TV, Web.
         </CustomText>
       </View>
