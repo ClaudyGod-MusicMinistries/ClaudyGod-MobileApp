@@ -2,6 +2,7 @@
   "expo": {
     "name": "ClaudyGod App",
     "slug": "MobileApp",
+    "scheme": "claudygod",
     "version": "1.0.0",
     "orientation": "default",
     "icon": "./assets/icon.png",
