@@ -5,7 +5,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { SettingsScaffold } from './Scaffold';
 import { CustomText } from '../../components/CustomText';
 import { useAppTheme } from '../../util/colorScheme';
-import { spacing, radius, shadows } from '../../styles/designTokens';
+import { spacing, radius } from '../../styles/designTokens';
 
 const sections = [
   {
@@ -58,16 +58,15 @@ export default function Privacy() {
         borderWidth: 1,
         borderColor: theme.colors.border,
         marginBottom: spacing.md,
-        ...shadows.soft,
       }}
     >
-      <CustomText className="font-bold" style={{ color: theme.colors.text.primary, fontSize: 18, marginBottom: spacing.sm }}>
+      <CustomText variant="subtitle" style={{ color: theme.colors.text.primary, marginBottom: spacing.sm }}>
         {title}
       </CustomText>
       {items.map((item) => (
         <View key={item} style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: spacing.xs }}>
           <MaterialIcons name="check-circle" size={18} color={theme.colors.primary} style={{ marginTop: 2 }} />
-          <CustomText style={{ color: theme.colors.text.secondary, marginLeft: spacing.sm, flex: 1, lineHeight: 20 }}>
+          <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginLeft: spacing.sm, flex: 1 }}>
             {item}
           </CustomText>
         </View>
@@ -88,13 +87,12 @@ export default function Privacy() {
             borderWidth: 1,
             borderColor: theme.colors.border,
             marginBottom: spacing.lg,
-            ...shadows.card,
           }}
         >
-          <CustomText style={{ color: theme.colors.text.primary, fontWeight: '800', fontSize: 20, marginBottom: spacing.sm }}>
+          <CustomText variant="heading" style={{ color: theme.colors.text.primary, marginBottom: spacing.sm }}>
             Your data. Your call.
           </CustomText>
-          <CustomText style={{ color: theme.colors.text.secondary, lineHeight: 22 }}>
+          <CustomText variant="body" style={{ color: theme.colors.text.secondary }}>
             We keep only what’s needed to stream seamlessly across mobile and TV, and you can export or delete it any time.
           </CustomText>
         </View>
@@ -115,10 +113,10 @@ export default function Privacy() {
           marginBottom: spacing.xl,
         }}
       >
-        <CustomText style={{ color: theme.colors.text.primary, fontWeight: '700', fontSize: 16 }}>
+        <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
           Need anything removed or exported?
         </CustomText>
-        <CustomText style={{ color: theme.colors.text.secondary, marginTop: 6 }}>
+        <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 6 }}>
           Email privacy@claudygodmusic.com and we’ll respond within 24 hours.
         </CustomText>
       </View>

@@ -10,26 +10,26 @@ export const spacing = {
 };
 
 export const radius = {
-  sm: 10,
-  md: 16,
-  lg: 24,
+  sm: 6,
+  md: 10,
+  lg: 14,
   pill: 999,
 };
 
 export const shadows = {
   card: {
-    shadowColor: '#000000',
+    shadowColor: '#0B1120',
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.35,
-    shadowRadius: 16,
-    elevation: 12,
+    elevation: 4,
   },
   soft: {
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.18,
+    shadowColor: '#0B1120',
+    shadowOpacity: 0.08,
     shadowRadius: 8,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
 };
 
@@ -38,27 +38,26 @@ export const blur = {
 };
 
 export const typography = {
-  hero: 32,
-  headline: 24,
-  title: 20,
-  body: 16,
-  label: 14,
-  caption: 12,
+  hero: 28,
+  headline: 20,
+  title: 17,
+  body: 14,
+  label: 12,
+  caption: 11,
 };
 
 export const tv = {
   hitSlop: { top: 12, bottom: 12, left: 12, right: 12 },
   focusScale: 1.06,
   focusShadow: {
-    shadowColor: '#22D3EE',
-    shadowOpacity: 0.45,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 14,
+    shadowColor: '#3B82F6',
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
   },
 };
 
 export const layout = {
   maxContentWidth: 1280, // helps on tablets/TV by clamping overly wide rows
 };
-

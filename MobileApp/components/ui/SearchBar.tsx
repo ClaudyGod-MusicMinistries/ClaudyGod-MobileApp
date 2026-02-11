@@ -1,5 +1,5 @@
 // components/ui/SearchBar.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import { View, TextInput, TouchableOpacity } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useAppTheme } from '../../util/colorScheme';
@@ -13,6 +13,7 @@ interface SearchBarProps {
 
 export function SearchBar({ placeholder, value, onChangeText, onSubmit }: SearchBarProps) {
   const theme = useAppTheme();
+  const [focused, setFocused] = useState(false);
 
   return (
     <View
@@ -20,10 +21,10 @@ export function SearchBar({ placeholder, value, onChangeText, onSubmit }: Search
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: theme.colors.surface,
-        borderRadius: theme.radius.pill,
+        borderRadius: 8,
         paddingHorizontal: theme.spacing.md,
-        borderWidth: 1,
-        borderColor: theme.colors.border,
+        borderWidth: focused ? 1 : 0,
+        borderColor: focused ? theme.colors.border : 'transparent',
       }}
     >
       <MaterialIcons name="search" size={18} color={theme.colors.text.secondary} />
@@ -33,11 +34,14 @@ export function SearchBar({ placeholder, value, onChangeText, onSubmit }: Search
         value={value}
         onChangeText={onChangeText}
         onSubmitEditing={onSubmit}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
         style={{
           flex: 1,
           paddingVertical: theme.spacing.sm,
           paddingHorizontal: theme.spacing.sm,
           color: theme.colors.text.primary,
+          fontSize: theme.typography.body,
         }}
       />
       {value.length > 0 ? (
@@ -48,4 +52,3 @@ export function SearchBar({ placeholder, value, onChangeText, onSubmit }: Search
     </View>
   );
 }
-

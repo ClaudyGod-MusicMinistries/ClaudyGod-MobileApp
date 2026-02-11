@@ -44,7 +44,8 @@ export const recentSongs = [
     title: 'Amazing Grace',
     artist: 'ClaudyGod',
     duration: '4:32',
-    album: 'Worship Collection'
+    album: 'Worship Collection',
+    mediaUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
   },
 ];
 
@@ -54,7 +55,8 @@ export const currentSong = {
   artist: 'ClaudyGod',
   album: 'Worship Collection',
   duration: '4:32',
-  imageUrl: 'https://example.com/current.jpg'
+  imageUrl: 'https://example.com/current.jpg',
+  mediaUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
 };
 
 // Add these new arrays for Favourites
@@ -65,7 +67,8 @@ export const favouriteSongs = [
     artist: 'ClaudyGod',
     duration: '4:32',
     album: 'Worship Collection',
-    imageUrl: 'https://example.com/song1.jpg'
+    imageUrl: 'https://example.com/song1.jpg',
+    mediaUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
   },
   {
     id: '2',
@@ -73,7 +76,8 @@ export const favouriteSongs = [
     artist: 'Chris Rice',
     duration: '5:15',
     album: 'Peace Like a River',
-    imageUrl: 'https://example.com/song2.jpg'
+    imageUrl: 'https://example.com/song2.jpg',
+    mediaUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
   },
   {
     id: '3',
@@ -81,7 +85,8 @@ export const favouriteSongs = [
     artist: 'Hillsong Worship',
     duration: '4:18',
     album: 'Let There Be Light',
-    imageUrl: 'https://example.com/song3.jpg'
+    imageUrl: 'https://example.com/song3.jpg',
+    mediaUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
   },
   {
     id: '4',
@@ -89,7 +94,8 @@ export const favouriteSongs = [
     artist: 'Bethel Music',
     duration: '4:56',
     album: 'Victory',
-    imageUrl: 'https://example.com/song4.jpg'
+    imageUrl: 'https://example.com/song4.jpg',
+    mediaUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
   },
   {
     id: '5',
@@ -97,7 +103,8 @@ export const favouriteSongs = [
     artist: 'Hillsong UNITED',
     duration: '8:56',
     album: 'Zion',
-    imageUrl: 'https://example.com/song5.jpg'
+    imageUrl: 'https://example.com/song5.jpg',
+    mediaUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3',
   },
   {
     id: '6',
@@ -105,7 +112,8 @@ export const favouriteSongs = [
     artist: 'All Sons & Daughters',
     duration: '4:42',
     album: 'The Longing',
-    imageUrl: 'https://example.com/song6.jpg'
+    imageUrl: 'https://example.com/song6.jpg',
+    mediaUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3',
   }
 ];
 
@@ -162,7 +170,8 @@ export const recentlyAdded = [
     duration: '4:25',
     album: 'Awake',
     imageUrl: 'https://example.com/song7.jpg',
-    addedDate: '2024-01-15'
+    addedDate: '2024-01-15',
+    mediaUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3',
   },
   {
     id: '8',
@@ -171,7 +180,8 @@ export const recentlyAdded = [
     duration: '4:12',
     album: 'Pat Barrett',
     imageUrl: 'https://example.com/song8.jpg',
-    addedDate: '2024-01-14'
+    addedDate: '2024-01-14',
+    mediaUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3',
   },
   {
     id: '9',
@@ -180,7 +190,8 @@ export const recentlyAdded = [
     duration: '5:43',
     album: 'Graves Into Gardens',
     imageUrl: 'https://example.com/song9.jpg',
-    addedDate: '2024-01-13'
+    addedDate: '2024-01-13',
+    mediaUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3',
   },
   {
     id: '10',
@@ -189,7 +200,8 @@ export const recentlyAdded = [
     duration: '6:18',
     album: 'The Blessing',
     imageUrl: 'https://example.com/song10.jpg',
-    addedDate: '2024-01-12'
+    addedDate: '2024-01-12',
+    mediaUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3',
   },
   {
     id: '11',
@@ -251,4 +263,22 @@ export const searchCategories = [
   { id: '4', name: 'Meditation' },
   { id: '5', name: 'Praise' },
   { id: '6', name: 'African' },
+];
+
+export const featuredVideos = [
+  {
+    id: 'v1',
+    title: 'Sunday Worship Live',
+    mediaUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+  },
+  {
+    id: 'v2',
+    title: 'Night of Praise',
+    mediaUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+  },
+  {
+    id: 'v3',
+    title: 'Prayer & Healing',
+    mediaUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
+  },
 ];

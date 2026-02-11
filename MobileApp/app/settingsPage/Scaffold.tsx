@@ -6,6 +6,7 @@ import { CustomText } from '../../components/CustomText';
 import { useRouter } from 'expo-router';
 import { useAppTheme } from '../../util/colorScheme';
 import { spacing, radius } from '../../styles/designTokens';
+import { Screen } from '../../components/layout/Screen';
 
 interface ScaffoldProps {
   title: string;
@@ -51,14 +52,11 @@ export function SettingsScaffold({ title, subtitle, children, hero }: ScaffoldPr
           <MaterialIcons name="arrow-back" size={22} color={theme.colors.text.primary} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
-          <CustomText
-            className="font-bold"
-            style={{ color: theme.colors.text.primary, fontSize: 22 }}
-          >
+          <CustomText variant="heading" style={{ color: theme.colors.text.primary }}>
             {title}
           </CustomText>
           {subtitle ? (
-            <CustomText style={{ color: theme.colors.text.secondary, marginTop: 2 }}>
+            <CustomText variant="body" style={{ color: theme.colors.text.secondary, marginTop: 2 }}>
               {subtitle}
             </CustomText>
           ) : null}
@@ -67,10 +65,12 @@ export function SettingsScaffold({ title, subtitle, children, hero }: ScaffoldPr
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingBottom: 120, paddingTop: spacing.md }}
+        contentContainerStyle={{ paddingBottom: 120, paddingTop: spacing.md }}
       >
-        {hero}
-        {children}
+        <Screen>
+          {hero}
+          {children}
+        </Screen>
       </ScrollView>
     </View>
   );
