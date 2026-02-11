@@ -1,47 +1,87 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
-import React, { useEffect } from 'react';
-import { View, StatusBar, Image } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Image, ScrollView, StatusBar, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
-  useSharedValue,
-  withTiming,
   useAnimatedStyle,
-  interpolate,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
 } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { CustomText } from '../components/CustomText';
-import { useAppTheme } from '../util/colorScheme';
 import { AppButton } from '../components/ui/AppButton';
+import { Screen } from '../components/layout/Screen';
+import { useAppTheme } from '../util/colorScheme';
 
-const WelcomePage = () => {
+const HOLD_MS = 5 * 60 * 1000; // 5 minutes
+
+const tips = [
+  { title: 'Search fast', desc: 'Use the top search icon to find songs, sermons, or artists in seconds.' },
+  { title: 'Play instantly', desc: 'Tap any card to start audio or video with TV‑ready playback.' },
+  { title: 'Build your library', desc: 'Save favorites and playlists to access them across devices.' },
+  { title: 'Offline ready', desc: 'Download content to listen without a connection.' },
+];
+
+const Landing = () => {
   const router = useRouter();
   const theme = useAppTheme();
+  const [remainingMs, setRemainingMs] = useState(HOLD_MS);
 
-  const fade = useSharedValue(0);
-  const slide = useSharedValue(30);
+  const fadeIn = useSharedValue(0);
+  const logoPulse = useSharedValue(1);
+  const floatIn = useSharedValue(16);
 
   useEffect(() => {
-    fade.value = withTiming(1, { duration: 650 });
-    slide.value = withTiming(0, { duration: 650 });
+    fadeIn.value = withTiming(1, { duration: 800 });
+    floatIn.value = withTiming(0, { duration: 800 });
+    logoPulse.value = withRepeat(
+      withSequence(
+        withTiming(1.04, { duration: 1400 }),
+        withTiming(1, { duration: 1400 })
+      ),
+      -1,
+      false
+    );
+
     const timer = setTimeout(() => {
       router.replace('/home');
-    }, 2600);
-    return () => clearTimeout(timer);
-  }, [fade, slide, router]);
+    }, HOLD_MS);
+
+    const ticker = setInterval(() => {
+      setRemainingMs((prev) => Math.max(0, prev - 1000));
+    }, 1000);
+
+    return () => {
+      clearTimeout(timer);
+      clearInterval(ticker);
+    };
+  }, [fadeIn, floatIn, logoPulse, router]);
 
   const heroStyle = useAnimatedStyle(() => ({
-    opacity: fade.value,
-    transform: [{ translateY: slide.value }],
+    opacity: fadeIn.value,
+    transform: [{ translateY: floatIn.value }],
   }));
 
-  const badgeStyle = useAnimatedStyle(() => ({
-    opacity: fade.value,
-    transform: [{ translateY: interpolate(fade.value, [0, 1], [10, 0]) }],
+  const logoStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: logoPulse.value }],
   }));
+
+  const timeLabel = useMemo(() => {
+    const totalSeconds = Math.floor(remainingMs / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  }, [remainingMs]);
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-      <StatusBar barStyle={theme.scheme === 'dark' ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent />
+      <StatusBar
+        barStyle={theme.scheme === 'dark' ? 'light-content' : 'dark-content'}
+        backgroundColor="transparent"
+        translucent
+      />
 
       <Image
         source={require('../assets/images/manBack.webp')}
@@ -56,97 +96,109 @@ const WelcomePage = () => {
       />
 
       <LinearGradient
-        colors={['rgba(11,15,26,0.2)', 'rgba(11,15,26,0.75)', 'rgba(11,15,26,0.95)']}
+        colors={['rgba(7,12,20,0.25)', 'rgba(7,12,20,0.75)', 'rgba(7,12,20,0.95)']}
         style={{ position: 'absolute', width: '100%', height: '100%' }}
       />
 
-      <View style={{ flex: 1, paddingHorizontal: 20, paddingTop: 80 }}>
-        <Animated.View style={heroStyle}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 14 }}>
-            <Image
-              source={require('../assets/images/ClaudyGoLogo.webp')}
-              style={{ width: 44, height: 44, borderRadius: 8 }}
-            />
-            <View style={{ marginLeft: 12 }}>
-              <CustomText style={{ color: '#F8FAFC', fontWeight: '700', fontSize: 14 }}>
-                ClaudyGod Music
-              </CustomText>
-              <CustomText style={{ color: '#CBD5F5', fontSize: 10 }}>
-                Stream • Watch • Download
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingTop: 70, paddingBottom: 90 }}
+      >
+        <Screen>
+          <Animated.View style={heroStyle}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+              <Animated.View style={logoStyle}>
+                <Image
+                  source={require('../assets/images/ClaudyGoLogo.webp')}
+                  style={{ width: 52, height: 52, borderRadius: 12 }}
+                />
+              </Animated.View>
+              <View style={{ marginLeft: 12 }}>
+                <CustomText variant="subtitle" style={{ color: '#F8FAFC' }}>
+                  ClaudyGod Music
+                </CustomText>
+                <CustomText variant="caption" style={{ color: '#CBD5F5', marginTop: 2 }}>
+                  Stream • Watch • Download
+                </CustomText>
+              </View>
+            </View>
+
+            <CustomText variant="display" style={{ color: '#F8FAFC' }}>
+              Modern worship, beautifully organized.
+            </CustomText>
+            <CustomText variant="body" style={{ color: '#CBD5F5', marginTop: 6 }}>
+              A premium experience built for phones, tablets, and TVs — with fast search, offline playback, and rich media.
+            </CustomText>
+
+            <View style={{ flexDirection: 'row', marginTop: 16 }}>
+              <AppButton
+                title="Get Started"
+                size="sm"
+                variant="primary"
+                onPress={() => router.replace('/home')}
+                style={{ marginRight: 10 }}
+              />
+              <AppButton
+                title="Skip intro"
+                size="sm"
+                variant="outline"
+                onPress={() => router.replace('/home')}
+                textColor="#E2E8F0"
+                style={{
+                  borderColor: 'rgba(255,255,255,0.2)',
+                  backgroundColor: 'rgba(255,255,255,0.08)',
+                }}
+              />
+            </View>
+
+            <View
+              style={{
+                marginTop: 16,
+                alignSelf: 'flex-start',
+                paddingHorizontal: 10,
+                paddingVertical: 6,
+                borderRadius: 999,
+                backgroundColor: 'rgba(255,255,255,0.08)',
+                borderWidth: 1,
+                borderColor: 'rgba(255,255,255,0.18)',
+              }}
+            >
+              <CustomText variant="caption" style={{ color: '#E2E8F0' }}>
+                Auto‑starts in {timeLabel}
               </CustomText>
             </View>
-          </View>
+          </Animated.View>
 
-          <CustomText variant="display" style={{ color: '#F8FAFC' }}>
-            Premium worship streaming.
-          </CustomText>
-          <CustomText
-            variant="body"
-            style={{ color: '#CBD5F5', marginTop: 6 }}
-          >
-            Curated audio and live sessions with TV‑ready playback and offline support.
-          </CustomText>
-
-          <View style={{ flexDirection: 'row', marginTop: 16 }}>
-            <AppButton
-              title="Get Started"
-              size="sm"
-              variant="primary"
-              onPress={() => router.replace('/home')}
-              style={{ marginRight: 10 }}
-            />
-            <AppButton
-              title="Explore"
-              size="sm"
-              variant="outline"
-              onPress={() => router.replace('/home')}
-              textColor="#E2E8F0"
-              style={{
-                borderColor: 'rgba(255,255,255,0.2)',
-                backgroundColor: 'rgba(255,255,255,0.08)',
-              }}
-            />
-          </View>
-        </Animated.View>
-
-        <Animated.View style={[badgeStyle, { marginTop: 18 }]}>
-          <View
-            style={{
-              backgroundColor: 'rgba(255,255,255,0.06)',
-              borderWidth: 1,
-              borderColor: 'rgba(255,255,255,0.12)',
-              borderRadius: 10,
-              padding: 12,
-            }}
-          >
-            <CustomText variant="label" style={{ color: '#E2E8F0' }}>
-              Live now
+          <View style={{ marginTop: 26 }}>
+            <CustomText variant="title" style={{ color: '#F8FAFC' }}>
+              Quick tips
             </CustomText>
-            <CustomText variant="caption" style={{ color: '#CBD5F5', marginTop: 4 }}>
-              ClaudyGod • Evening worship session
-            </CustomText>
+            <View style={{ marginTop: 12, gap: 12 }}>
+              {tips.map((tip) => (
+                <View
+                  key={tip.title}
+                  style={{
+                    backgroundColor: 'rgba(255,255,255,0.06)',
+                    borderRadius: 14,
+                    padding: 14,
+                    borderWidth: 1,
+                    borderColor: 'rgba(255,255,255,0.12)',
+                  }}
+                >
+                  <CustomText variant="subtitle" style={{ color: '#F8FAFC' }}>
+                    {tip.title}
+                  </CustomText>
+                  <CustomText variant="caption" style={{ color: '#CBD5F5', marginTop: 4 }}>
+                    {tip.desc}
+                  </CustomText>
+                </View>
+              ))}
+            </View>
           </View>
-          <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
-            {['Offline Ready', 'TV Optimized', 'High Quality'].map((tag) => (
-              <View
-                key={tag}
-                style={{
-                  paddingHorizontal: 10,
-                  paddingVertical: 6,
-                  borderRadius: 8,
-                  backgroundColor: 'rgba(255,255,255,0.08)',
-                  borderWidth: 1,
-                  borderColor: 'rgba(255,255,255,0.12)',
-                }}
-              >
-                <CustomText variant="caption" style={{ color: '#E2E8F0' }}>{tag}</CustomText>
-              </View>
-            ))}
-          </View>
-        </Animated.View>
-      </View>
+        </Screen>
+      </ScrollView>
     </View>
   );
 };
 
-export default WelcomePage;
+export default Landing;

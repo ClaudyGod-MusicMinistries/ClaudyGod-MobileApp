@@ -10,7 +10,8 @@
     "lint": "expo lint",
     "lint:fix": "eslint . --fix",
     "lint-staged": "lint-staged",
-    "prepare": "husky install"
+    "typecheck": "tsc --noEmit",
+    "postinstall": "lefthook install || true"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",
@@ -58,7 +59,7 @@
     "@types/react-native-vector-icons": "^6.4.18",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
-    "husky": "^9.1.7",
+    "lefthook": "^1.7.15",
     "lint-staged": "^15.2.10",
     "prettier-plugin-tailwindcss": "^0.5.11",
     "tailwindcss": "^3.4.17",
@@ -66,7 +67,7 @@
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
-      "eslint --fix"
+      "eslint --max-warnings=0"
     ]
   },
   "private": true
