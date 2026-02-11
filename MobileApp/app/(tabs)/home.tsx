@@ -10,6 +10,7 @@ import { CustomText } from '../../components/CustomText';
 import { featuredPlaylists, recentSongs } from '../../data/data';
 import { MaterialIcons } from '@expo/vector-icons';
 import { FadeIn } from '../../components/ui/FadeIn';
+import { Screen } from '../../components/layout/Screen';
 
 const trendingVideos = [
   {
@@ -41,7 +42,7 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 140, paddingTop: theme.spacing.md }}
       >
-        <View style={{ paddingHorizontal: theme.spacing.lg }}>
+        <Screen>
           <FadeIn>
             <HeroBanner
               imageUrl="https://images.unsplash.com/photo-1459749411175-04bf5292ceea?auto=format&fit=crop&w=1200&q=80"
@@ -169,7 +170,7 @@ export default function HomeScreen() {
             </View>
             </View>
           </FadeIn>
-        </View>
+        </Screen>
       </ScrollView>
     </TabScreenWrapper>
   );

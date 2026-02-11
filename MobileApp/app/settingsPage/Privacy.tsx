@@ -5,7 +5,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { SettingsScaffold } from './Scaffold';
 import { CustomText } from '../../components/CustomText';
 import { useAppTheme } from '../../util/colorScheme';
-import { spacing, radius, shadows } from '../../styles/designTokens';
+import { spacing, radius } from '../../styles/designTokens';
 
 const sections = [
   {
@@ -58,7 +58,6 @@ export default function Privacy() {
         borderWidth: 1,
         borderColor: theme.colors.border,
         marginBottom: spacing.md,
-        ...shadows.soft,
       }}
     >
       <CustomText className="font-bold" style={{ color: theme.colors.text.primary, fontSize: 18, marginBottom: spacing.sm }}>
@@ -88,7 +87,6 @@ export default function Privacy() {
             borderWidth: 1,
             borderColor: theme.colors.border,
             marginBottom: spacing.lg,
-            ...shadows.card,
           }}
         >
           <CustomText style={{ color: theme.colors.text.primary, fontWeight: '800', fontSize: 20, marginBottom: spacing.sm }}>

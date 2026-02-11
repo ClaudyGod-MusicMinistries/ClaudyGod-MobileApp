@@ -35,12 +35,11 @@ export function PosterCard({
         style={{
           width: sizes.w,
           height: sizes.h,
-          borderRadius: theme.radius.md,
-          overflow: 'hidden',
-          backgroundColor: theme.colors.surface,
-          ...theme.shadows.soft,
-        }}
-      >
+        borderRadius: theme.radius.md,
+        overflow: 'hidden',
+        backgroundColor: theme.colors.surface,
+      }}
+    >
         <Image source={{ uri: imageUrl }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
         {showPlay ? (
           <View
@@ -75,4 +74,3 @@ export function PosterCard({
     </TouchableOpacity>
   );
 }
-

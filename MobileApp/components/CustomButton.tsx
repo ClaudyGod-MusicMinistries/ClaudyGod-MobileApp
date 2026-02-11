@@ -2,7 +2,7 @@
 import React, { ReactNode } from 'react';
 import { TouchableOpacity, TouchableOpacityProps, Platform } from 'react-native';
 import { CustomText } from './CustomText';
-import { radius, spacing, tv as tvTokens, shadows } from '../styles/designTokens';
+import { radius, spacing, tv as tvTokens } from '../styles/designTokens';
 import { colors } from '../constants/color';
 import { useColorScheme } from '../util/colorScheme';
 
@@ -103,7 +103,6 @@ export const CustomButton: React.FC<CustomButtonProps> = ({
         borderRadius: radius.pill,
         ...variantStyle,
         ...sizeStyle,
-        ...(isTV ? tvTokens.focusShadow : shadows.soft),
       }}
       focusable
       hitSlop={tvTokens.hitSlop}
