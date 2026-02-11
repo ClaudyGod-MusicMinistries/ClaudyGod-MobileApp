@@ -1,5 +1,5 @@
 // components/music/PlaylistGrid.tsx
-import { ScrollView, View } from 'react-native';
+import { ScrollView, TouchableOpacity, View } from 'react-native';
 import { MediaCard } from './mediaCard';
 
 interface Playlist {
@@ -42,9 +42,9 @@ export const PlaylistGrid: React.FC<PlaylistGridProps> = ({
 
 // components/music/SongList.tsx
 import React from 'react';
-import { TouchableOpacity } from 'react-native';
 import { CustomText } from './CustomText';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useAppTheme } from '../util/colorScheme';
 
 export interface Song {
     id: string;
@@ -52,6 +52,7 @@ export interface Song {
   artist: string;
   album: string;
   duration: string;
+  mediaUrl?: string;
 }
 
 interface SongListProps {
@@ -67,37 +68,47 @@ export const SongList: React.FC<SongListProps> = ({
   onSongPress,
   currentSongId
 }) => {
+  const theme = useAppTheme();
   return (
-    <View className="px-4">
+    <View style={{ paddingHorizontal: theme.spacing.md }}>
       {songs.map((song, index) => (
         <TouchableOpacity
           key={song.id}
           onPress={() => onSongPress(song)}
-          className={`flex-row items-center py-3 ${index !== songs.length - 1 ? 'border-b border-gray-800' : ''}`}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingVertical: theme.spacing.sm,
+            borderBottomWidth: index !== songs.length - 1 ? 1 : 0,
+            borderBottomColor: theme.colors.border,
+          }}
         >
-          <View className="w-8 items-center">
+          <View style={{ width: 28, alignItems: 'center' }}>
             {currentSongId === song.id ? (
-              <MaterialIcons name="equalizer" size={20} color="#E1306C" />
+              <MaterialIcons name="equalizer" size={18} color={theme.colors.primary} />
             ) : (
-              <CustomText variant="caption" className="text-gray-500">
+              <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
                 {index + 1}
               </CustomText>
             )}
           </View>
           
-          <View className="flex-1 ml-3">
-            <CustomText 
-              variant="body" 
-              className={`${currentSongId === song.id ? 'text-purple-500' : 'text-white'} font-semibold`}
+          <View style={{ flex: 1, marginLeft: theme.spacing.sm }}>
+            <CustomText
+              variant="body"
+              style={{
+                color: currentSongId === song.id ? theme.colors.primary : theme.colors.text.primary,
+                fontWeight: '600',
+              }}
             >
               {song.title}
             </CustomText>
-            <CustomText variant="caption" className="text-gray-400">
+            <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 2 }}>
               {song.artist}
             </CustomText>
           </View>
           
-          <CustomText variant="caption" className="text-gray-500">
+          <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
             {song.duration}
           </CustomText>
         </TouchableOpacity>

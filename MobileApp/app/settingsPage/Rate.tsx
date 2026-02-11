@@ -7,6 +7,7 @@ import { CustomText } from '../../components/CustomText';
 import { useAppTheme } from '../../util/colorScheme';
 import { spacing, radius, shadows } from '../../styles/designTokens';
 import { useRouter } from 'expo-router';
+import { AppButton } from '../../components/ui/AppButton';
 
 export default function Rate() {
   const theme = useAppTheme();
@@ -32,10 +33,10 @@ export default function Rate() {
             ...shadows.card,
           }}
         >
-          <CustomText style={{ color: theme.colors.text.primary, fontWeight: '800', fontSize: 22 }}>
+          <CustomText variant="heading" style={{ color: theme.colors.text.primary }}>
             Love the experience?
           </CustomText>
-          <CustomText style={{ color: theme.colors.text.secondary, marginTop: 6, lineHeight: 22 }}>
+          <CustomText variant="body" style={{ color: theme.colors.text.secondary, marginTop: 6 }}>
             Ratings boost discoverability on TVs and app stores. If something’s off, we’ll fix it fast.
           </CustomText>
         </View>
@@ -54,50 +55,34 @@ export default function Rate() {
             </TouchableOpacity>
           ))}
         </View>
-        <CustomText style={{ color: theme.colors.text.secondary, marginTop: spacing.sm }}>
+        <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: spacing.sm }}>
           Tap to choose 1–5 stars
         </CustomText>
       </View>
 
       {/* Actions */}
       <View style={{ gap: spacing.md }}>
-        <TouchableOpacity
+        <AppButton
+          title="Publish to App Store / Play Store"
+          variant="primary"
+          size="md"
           onPress={goStore}
           disabled={rating === 0}
-          style={{
-            opacity: rating === 0 ? 0.6 : 1,
-            backgroundColor: theme.colors.primary,
-            borderRadius: radius.pill,
-            paddingVertical: spacing.md,
-            alignItems: 'center',
-            ...shadows.soft,
-          }}
-        >
-          <CustomText style={{ color: '#05060D', fontWeight: '800' }}>
-            Publish to App Store / Play Store
-          </CustomText>
-        </TouchableOpacity>
+          style={rating === 0 ? { opacity: 0.6 } : undefined}
+          textColor={theme.colors.text.inverse}
+        />
 
-        <TouchableOpacity
+        <AppButton
+          title="Send feedback to the team"
+          variant="outline"
+          size="md"
           onPress={openFeedback}
-          style={{
-            backgroundColor: theme.colors.surface,
-            borderRadius: radius.pill,
-            paddingVertical: spacing.md,
-            alignItems: 'center',
-            borderWidth: 1,
-            borderColor: theme.colors.border,
-          }}
-        >
-          <CustomText style={{ color: theme.colors.text.primary, fontWeight: '700' }}>
-            Send feedback to the team
-          </CustomText>
-        </TouchableOpacity>
+        />
       </View>
 
       <View style={{ marginTop: spacing.lg, padding: spacing.md, backgroundColor: `${theme.colors.primary}12`, borderRadius: radius.md }}>
-        <CustomText style={{ color: theme.colors.text.primary, fontWeight: '700' }}>What happens next?</CustomText>
-        <CustomText style={{ color: theme.colors.text.secondary, marginTop: 4 }}>
+        <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>What happens next?</CustomText>
+        <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 4 }}>
           4–5 stars open the store to post a review. 1–3 stars route you to support so we can respond within a day.
         </CustomText>
       </View>

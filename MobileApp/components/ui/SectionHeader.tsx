@@ -16,10 +16,7 @@ export function SectionHeader({ title, actionLabel, onAction }: SectionHeaderPro
 
   return (
     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-      <CustomText
-        className="font-bold"
-        style={{ color: theme.colors.text.primary, fontSize: theme.typography.title }}
-      >
+      <CustomText variant="title" style={{ color: theme.colors.text.primary }}>
         {title}
       </CustomText>
       {actionLabel ? (
@@ -27,7 +24,7 @@ export function SectionHeader({ title, actionLabel, onAction }: SectionHeaderPro
           onPress={onAction}
           style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
         >
-          <CustomText style={{ color: theme.colors.primary, fontSize: theme.typography.label }}>
+          <CustomText variant="label" style={{ color: theme.colors.primary }}>
             {actionLabel}
           </CustomText>
           <MaterialIcons name="chevron-right" size={18} color={theme.colors.primary} />
@@ -36,4 +33,3 @@ export function SectionHeader({ title, actionLabel, onAction }: SectionHeaderPro
     </View>
   );
 }
-

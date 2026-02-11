@@ -1,10 +1,9 @@
 // services/api.ts
 import { ApiResponse, MediaItem } from './types';
-
-const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000';
+import { ENV } from './config';
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetch(`${ENV.apiUrl}${path}`, {
     headers: { 'Content-Type': 'application/json', ...(options?.headers || {}) },
     ...options,
   });
@@ -25,4 +24,3 @@ export const api = {
     });
   },
 };
-

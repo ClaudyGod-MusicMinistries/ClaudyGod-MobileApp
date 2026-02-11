@@ -6,7 +6,7 @@ import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { CustomText } from "../components/CustomText";
 import { useColorScheme } from "../util/colorScheme";
 import { colors } from "../constants/color";
-import { spacing, radius, tv as tvTokens, shadows } from "../styles/designTokens";
+import { spacing, tv as tvTokens } from "../styles/designTokens";
 
 const TabBar = ({ state, navigation }: BottomTabBarProps) => {
   const colorScheme = useColorScheme();
@@ -20,49 +20,49 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
     // TV gets larger hit targets automatically
     if (isTV) {
       return {
-        containerHeight: 88,
-        centerButtonSize: 76,
-        centerIconSize: 34,
-        regularIconSize: 26,
-        fontSize: 14,
-        bottomMargin: 32,
-        containerMargin: 32,
-        centerButtonOffset: -36
+        containerHeight: 84,
+        centerButtonSize: 72,
+        centerIconSize: 32,
+        regularIconSize: 24,
+        fontSize: 12,
+        bottomMargin: 0,
+        containerMargin: 0,
+        centerButtonOffset: -24
       };
     }
 
     if (SCREEN_WIDTH < 375) {
       return {
-        containerHeight: 60,
-        centerButtonSize: 56,
-        centerIconSize: 24,
-        regularIconSize: 20,
+        containerHeight: 64,
+        centerButtonSize: 54,
+        centerIconSize: 22,
+        regularIconSize: 18,
         fontSize: 10,
-        bottomMargin: 16,
-        containerMargin: 12,
-        centerButtonOffset: -28
+        bottomMargin: 0,
+        containerMargin: 0,
+        centerButtonOffset: -20
       };
     } else if (SCREEN_WIDTH < 414) {
       return {
-        containerHeight: 64,
-        centerButtonSize: 60,
-        centerIconSize: 26,
-        regularIconSize: 22,
+        containerHeight: 66,
+        centerButtonSize: 56,
+        centerIconSize: 24,
+        regularIconSize: 20,
         fontSize: 11,
-        bottomMargin: 20,
-        containerMargin: 16,
-        centerButtonOffset: -30
+        bottomMargin: 0,
+        containerMargin: 0,
+        centerButtonOffset: -22
       };
     } else {
       return {
         containerHeight: 68,
-        centerButtonSize: 64,
-        centerIconSize: 28,
-        regularIconSize: 24,
+        centerButtonSize: 58,
+        centerIconSize: 26,
+        regularIconSize: 22,
         fontSize: 12,
-        bottomMargin: 24,
-        containerMargin: 20,
-        centerButtonOffset: -32
+        bottomMargin: 0,
+        containerMargin: 0,
+        centerButtonOffset: -22
       };
     }
   };
@@ -81,17 +81,16 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
     <View
       style={{
         position: 'absolute',
-        left: sizes.containerMargin,
-        right: sizes.containerMargin,
-        bottom: sizes.bottomMargin,
+        left: 0,
+        right: 0,
+        bottom: 0,
         height: sizes.containerHeight,
         flexDirection: 'row',
         backgroundColor: currentColors.surface,
-        borderRadius: radius.lg,
-        borderWidth: 1,
-        borderColor: currentColors.border,
-        paddingHorizontal: spacing.sm,
-        ...shadows.card,
+        borderRadius: 0,
+        borderTopWidth: 1,
+        borderTopColor: currentColors.border,
+        paddingHorizontal: spacing.md,
       }}
     >
       {state.routes.map((route, index) => {
@@ -105,7 +104,6 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
         // Center Play Button - Professional floating design
         const focusRingStyle = focusedKey === route.key ? {
           transform: [{ scale: tvTokens.focusScale }],
-          ...tvTokens.focusShadow,
         } : null;
 
         if (config.isCenter) {
@@ -134,16 +132,8 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
                   backgroundColor: currentColors.primary,
                   justifyContent: 'center',
                   alignItems: 'center',
-                  shadowColor: currentColors.primary,
-                  shadowOffset: {
-                    width: 0,
-                    height: 6,
-                  },
-                  shadowOpacity: 0.4,
-                  shadowRadius: 12,
-                  elevation: 12,
-                  borderWidth: 2,
-                  borderColor: `${currentColors.primary}80`,
+                  borderWidth: 1,
+                  borderColor: currentColors.primary,
                 }}
               >
                 <MaterialIcons 

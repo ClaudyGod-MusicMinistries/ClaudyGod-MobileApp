@@ -4,6 +4,7 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import { supabase } from '../lib/supabase';
+import { ENV } from './config';
 
 // Type-safe notification handler
 const notificationHandler: Notifications.NotificationHandler = {
@@ -81,7 +82,7 @@ export class PushNotificationService {
         return null;
       }
 
-      const projectId = process.env.EXPO_PUBLIC_EAS_PROJECT_ID;
+      const projectId = ENV.easProjectId;
       if (!projectId) {
         console.log('EXPO_PUBLIC_EAS_PROJECT_ID not found');
         return null;

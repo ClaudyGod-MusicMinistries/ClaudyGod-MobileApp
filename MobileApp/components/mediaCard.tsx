@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { View, TouchableOpacity, Image, Platform } from 'react-native';
 import { CustomText } from './CustomText';
-import { radius, spacing, shadows, tv as tvTokens } from '../styles/designTokens';
+import { radius, tv as tvTokens } from '../styles/designTokens';
 import { useColorScheme } from '../util/colorScheme';
 import { colors } from '../constants/color';
 
@@ -47,7 +47,6 @@ export const MediaCard: React.FC<MediaCardProps> = ({
         style={{
           borderRadius: radius.md,
           backgroundColor: palette.surface,
-          ...shadows.soft,
         }}
       >
         <Image 

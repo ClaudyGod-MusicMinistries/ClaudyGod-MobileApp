@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { ReactNode } from 'react';
-import { TouchableOpacity, TouchableOpacityProps, Platform } from 'react-native';
+import { TouchableOpacity, TouchableOpacityProps } from 'react-native';
 import { CustomText } from './CustomText';
-import { radius, spacing, tv as tvTokens, shadows } from '../styles/designTokens';
+import { radius, spacing, tv as tvTokens } from '../styles/designTokens';
 import { colors } from '../constants/color';
 import { useColorScheme } from '../util/colorScheme';
 
@@ -22,11 +22,11 @@ export const CustomButton: React.FC<CustomButtonProps> = ({
   className,
   textStyle,
   textClassName,
+  style,
   ...props
 }) => {
   const colorScheme = useColorScheme();
   const palette = colors[colorScheme];
-  const isTV = Platform.isTV;
 
   const baseStyle = `items-center justify-center`;
 
@@ -99,12 +99,17 @@ export const CustomButton: React.FC<CustomButtonProps> = ({
   return (
     <TouchableOpacity
       className={`${baseStyle} ${className || ''}`}
-      style={{
-        borderRadius: radius.pill,
-        ...variantStyle,
-        ...sizeStyle,
-        ...(isTV ? tvTokens.focusShadow : shadows.soft),
-      }}
+      style={[
+        {
+          borderRadius: radius.pill,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          ...variantStyle,
+          ...sizeStyle,
+        },
+        style,
+      ]}
       focusable
       hitSlop={tvTokens.hitSlop}
       {...props}
