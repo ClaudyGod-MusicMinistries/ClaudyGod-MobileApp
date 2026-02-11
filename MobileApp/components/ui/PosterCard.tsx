@@ -1,9 +1,10 @@
 // components/ui/PosterCard.tsx
 import React from 'react';
-import { View, Image, TouchableOpacity } from 'react-native';
+import { Platform, View, Image, TouchableOpacity } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../CustomText';
 import { useAppTheme } from '../../util/colorScheme';
+import { tv as tvTokens } from '../../styles/designTokens';
 
 interface PosterCardProps {
   imageUrl: string;
@@ -23,6 +24,7 @@ export function PosterCard({
   showPlay = true,
 }: PosterCardProps) {
   const theme = useAppTheme();
+  const isTV = Platform.isTV;
   const sizes = {
     sm: { w: 120, h: 140 },
     md: { w: 160, h: 200 },
@@ -30,7 +32,12 @@ export function PosterCard({
   }[size];
 
   return (
-    <TouchableOpacity onPress={onPress} style={{ width: sizes.w, marginRight: theme.spacing.md }}>
+    <TouchableOpacity
+      onPress={onPress}
+      focusable
+      hitSlop={isTV ? tvTokens.hitSlop : undefined}
+      style={{ width: sizes.w, marginRight: theme.spacing.md }}
+    >
       <View
         style={{
           width: sizes.w,
