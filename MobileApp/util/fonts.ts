@@ -6,45 +6,37 @@ import {
   Inter_600SemiBold,
   Inter_700Bold,
 } from '@expo-google-fonts/inter';
-import {
-  Roboto_100Thin,
-  Roboto_300Light,
-  Roboto_400Regular,
-  Roboto_500Medium,
-  Roboto_700Bold,
-  Roboto_900Black,
-} from '@expo-google-fonts/roboto';
 import * as Font from 'expo-font';
 
 export const fontConfig = {
   hero: {
     fontFamily: 'Inter_700Bold',
-    fontSize: 34,
-    lineHeight: 40,
-    fontWeight: '900' as const,
+    fontSize: 28,
+    lineHeight: 34,
+    fontWeight: '700' as const,
   },
   display: {
-    fontFamily: 'Inter_700Bold',
-    fontSize: 30,
-    lineHeight: 36,
-    fontWeight: '900' as const,
-  },
-  heading: {
     fontFamily: 'Inter_600SemiBold',
     fontSize: 24,
     lineHeight: 30,
-    fontWeight: '800' as const,
+    fontWeight: '600' as const,
+  },
+  heading: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 20,
+    lineHeight: 26,
+    fontWeight: '600' as const,
   },
   title: {
     fontFamily: 'Inter_600SemiBold',
-    fontSize: 18,
-    lineHeight: 24,
-    fontWeight: '700' as const,
+    fontSize: 17,
+    lineHeight: 22,
+    fontWeight: '600' as const,
   },
   subtitle: {
     fontFamily: 'Inter_500Medium',
-    fontSize: 16,
-    lineHeight: 22,
+    fontSize: 15,
+    lineHeight: 20,
     fontWeight: '500' as const,
   },
   body: {
@@ -54,16 +46,16 @@ export const fontConfig = {
     fontWeight: '400' as const,
   },
   label: {
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 13,
-    lineHeight: 18,
-    fontWeight: '600' as const,
+    fontFamily: 'Inter_500Medium',
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: '500' as const,
   },
   caption: {
     fontFamily: 'Inter_400Regular',
-    fontSize: 12,
-    lineHeight: 16,
-    fontWeight: '300' as const,
+    fontSize: 11,
+    lineHeight: 15,
+    fontWeight: '400' as const,
   },
 };
 
@@ -75,14 +67,6 @@ export const loadFonts = async () => {
     Inter_500Medium,
     Inter_600SemiBold,
     Inter_700Bold,
-
-    // Roboto
-    Roboto_100Thin,
-    Roboto_300Light,
-    Roboto_400Regular,
-    Roboto_500Medium,
-    Roboto_700Bold,
-    Roboto_900Black,
   });
 };
 

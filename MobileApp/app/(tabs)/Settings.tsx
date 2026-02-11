@@ -57,7 +57,7 @@ export default function Settings() {
         contentContainerStyle={{ paddingBottom: 140, paddingTop: theme.spacing.md }}
       >
         <Screen>
-          <CustomText className="font-bold" style={{ color: theme.colors.text.primary, fontSize: 24 }}>
+          <CustomText variant="heading" style={{ color: theme.colors.text.primary }}>
             Settings
           </CustomText>
           <CustomText style={{ color: theme.colors.text.secondary, marginTop: 4 }}>
@@ -66,7 +66,7 @@ export default function Settings() {
 
           {sections.map((section) => (
             <View key={section.title} style={{ marginTop: theme.spacing.lg }}>
-              <CustomText className="font-bold" style={{ color: theme.colors.text.primary, fontSize: 18 }}>
+              <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
                 {section.title}
               </CustomText>
               <View style={{ marginTop: theme.spacing.sm, gap: theme.spacing.sm }}>

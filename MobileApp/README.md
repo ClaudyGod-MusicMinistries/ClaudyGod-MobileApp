@@ -64,6 +64,18 @@ Expo Go app on your mobile device
 
 Git
 
+## 🚀 Deployment (EAS)
+
+1. Copy `.env.example` to `.env` and fill in your backend + Supabase keys.
+2. Set the same values in EAS secrets or `eas.json`.
+3. Update `app.json` with your real bundle identifiers:
+   - `ios.bundleIdentifier`
+   - `android.package`
+   - `extra.eas.projectId`
+4. Build:
+   - `eas build --profile preview --platform all`
+   - `eas build --profile production --platform all`
+
 ## 📄 License
 
 This project is licensed under the **MIT License** — see the [LICENSE](./LICENSE) file for details.

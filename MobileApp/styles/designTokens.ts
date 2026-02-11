@@ -17,8 +17,20 @@ export const radius = {
 };
 
 export const shadows = {
-  card: {},
-  soft: {},
+  card: {
+    shadowColor: '#0B1120',
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 4,
+  },
+  soft: {
+    shadowColor: '#0B1120',
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
+  },
 };
 
 export const blur = {
@@ -26,12 +38,12 @@ export const blur = {
 };
 
 export const typography = {
-  hero: 32,
-  headline: 24,
-  title: 20,
-  body: 16,
-  label: 14,
-  caption: 12,
+  hero: 28,
+  headline: 20,
+  title: 17,
+  body: 14,
+  label: 12,
+  caption: 11,
 };
 
 export const tv = {

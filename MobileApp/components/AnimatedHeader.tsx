@@ -60,10 +60,10 @@ export const AnimatedHeader = ({
             style={{ width: 34, height: 34, borderRadius: 10 }}
           />
           <View style={{ marginLeft: 10 }}>
-            <CustomText style={{ color: theme.colors.text.primary, fontWeight: '800' }}>
+            <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
               ClaudyGod
             </CustomText>
-            <CustomText style={{ color: theme.colors.text.secondary, fontSize: 12 }}>
+            <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
               Music + Video
             </CustomText>
           </View>

@@ -27,7 +27,9 @@ export function Chip({ label, active, onPress }: ChipProps) {
         borderColor: active ? theme.colors.primary : theme.colors.border,
       }}
     >
-      <CustomText style={{ color, fontSize: 12 }}>{label}</CustomText>
+      <CustomText variant="label" style={{ color }}>
+        {label}
+      </CustomText>
     </TouchableOpacity>
   );
 }

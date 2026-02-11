@@ -88,10 +88,10 @@ export default function Search() {
       >
         <Screen>
           <FadeIn>
-            <CustomText className="font-bold" style={{ color: theme.colors.text.primary, fontSize: 20 }}>
+            <CustomText variant="heading" style={{ color: theme.colors.text.primary }}>
               Discover
             </CustomText>
-            <CustomText style={{ color: theme.colors.text.secondary, marginTop: 2, fontSize: 12 }}>
+            <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 2 }}>
               Search by keyword, category, or creator.
             </CustomText>
           </FadeIn>

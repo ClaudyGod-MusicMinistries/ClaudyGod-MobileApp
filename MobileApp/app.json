@@ -3,9 +3,9 @@
     "name": "ClaudyGod App",
     "slug": "MobileApp",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
@@ -13,17 +13,30 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.claudygod.app",
+      "buildNumber": "1"
     },
     "android": {
+      "package": "com.claudygod.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "versionCode": 1
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "EXPO_PUBLIC_API_URL": "https://api.example.com",
+      "EXPO_PUBLIC_SUPABASE_URL": "https://your-project.supabase.co",
+      "EXPO_PUBLIC_SUPABASE_ANON_KEY": "",
+      "EXPO_PUBLIC_EAS_PROJECT_ID": "",
+      "eas": {
+        "projectId": "00000000-0000-0000-0000-000000000000"
+      }
     },
     "plugins": [
       "expo-font",
