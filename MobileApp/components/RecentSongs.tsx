@@ -52,24 +52,7 @@ export function RecentSongsSection() {
     ]
   }));
 
-  const borderAnimatedStyle = useAnimatedStyle(() => {
-    const glowIntensity = interpolate(
-      borderGlow.value,
-      [0, 1],
-      [0, 0.3],
-      Extrapolate.CLAMP
-    );
-    
-    return {
-      shadowOpacity: glowIntensity,
-      shadowRadius: interpolate(
-        borderGlow.value,
-        [0, 1],
-        [5, 15],
-        Extrapolate.CLAMP
-      ),
-    };
-  });
+  const borderAnimatedStyle = useAnimatedStyle(() => ({}));
 
   const headerAnimatedStyle = useAnimatedStyle(() => ({
     opacity: containerOpacity.value,
@@ -84,11 +67,8 @@ export function RecentSongsSection() {
       style={[
         {
           backgroundColor: '#000000',
-          borderRadius: 20,
+          borderRadius: 12,
           padding: 20,
-          shadowColor: currentColors.primary,
-          shadowOffset: { width: 0, height: 0 },
-          elevation: 8,
           borderWidth: 1,
           borderColor: 'rgba(255,255,255,0.1)',
           overflow: 'hidden',

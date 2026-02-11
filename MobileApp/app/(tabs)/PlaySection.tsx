@@ -5,6 +5,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { TabScreenWrapper } from './TextWrapper';
 import { useAppTheme } from '../../util/colorScheme';
 import { CustomText } from '../../components/CustomText';
+import { Screen } from '../../components/layout/Screen';
 
 const demoTrack = {
   title: 'Amazing Grace',
@@ -20,8 +21,9 @@ export default function PlaySection() {
 
   return (
     <TabScreenWrapper>
-      <View style={{ flex: 1, paddingHorizontal: theme.spacing.lg, paddingTop: theme.spacing.lg }}>
-        <View style={{ alignItems: 'center' }}>
+      <View style={{ flex: 1, paddingTop: theme.spacing.lg, paddingBottom: 140 }}>
+        <Screen>
+          <View style={{ alignItems: 'center' }}>
           <Image
             source={{ uri: demoTrack.imageUrl }}
             style={{
@@ -115,7 +117,8 @@ export default function PlaySection() {
               <MaterialIcons name="shuffle" size={24} color={theme.colors.text.secondary} />
             </TouchableOpacity>
           </View>
-        </View>
+          </View>
+        </Screen>
       </View>
     </TabScreenWrapper>
   );

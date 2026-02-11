@@ -6,6 +6,7 @@ import { useAppTheme, useColorSchemeToggle } from '../../util/colorScheme';
 import { CustomText } from '../../components/CustomText';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { Screen } from '../../components/layout/Screen';
 
 export default function Settings() {
   const theme = useAppTheme();
@@ -55,7 +56,7 @@ export default function Settings() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 140, paddingTop: theme.spacing.md }}
       >
-        <View style={{ paddingHorizontal: theme.spacing.lg }}>
+        <Screen>
           <CustomText className="font-bold" style={{ color: theme.colors.text.primary, fontSize: 24 }}>
             Settings
           </CustomText>
@@ -86,16 +87,16 @@ export default function Settings() {
                   >
                     <View
                       style={{
-                        width: 44,
-                        height: 44,
-                        borderRadius: theme.radius.md,
+                        width: 40,
+                        height: 40,
+                        borderRadius: 8,
                         alignItems: 'center',
                         justifyContent: 'center',
-                        backgroundColor: `${theme.colors.primary}22`,
+                        backgroundColor: `${theme.colors.primary}18`,
                         marginRight: theme.spacing.md,
                       }}
                     >
-                      <MaterialIcons name={item.icon as any} size={20} color={theme.colors.primary} />
+                      <MaterialIcons name={item.icon as any} size={18} color={theme.colors.primary} />
                     </View>
                     <CustomText style={{ color: theme.colors.text.primary, flex: 1 }}>
                       {item.label}
@@ -104,8 +105,8 @@ export default function Settings() {
                       <Switch
                         value={item.value}
                         onValueChange={item.onToggle}
-                        trackColor={{ true: theme.colors.primary, false: theme.colors.muted }}
-                        thumbColor={theme.colors.text.inverse}
+                        trackColor={{ true: theme.colors.border, false: theme.colors.border }}
+                        thumbColor={item.value ? theme.colors.primary : theme.colors.text.secondary}
                       />
                     ) : (
                       <MaterialIcons name="chevron-right" size={20} color={theme.colors.text.secondary} />
@@ -115,7 +116,7 @@ export default function Settings() {
               </View>
             </View>
           ))}
-        </View>
+        </Screen>
       </ScrollView>
     </TabScreenWrapper>
   );

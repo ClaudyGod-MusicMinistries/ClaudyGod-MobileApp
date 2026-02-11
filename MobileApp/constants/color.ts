@@ -1,40 +1,40 @@
 export const colors = {
   light: {
-    background: '#F8FAFC',
-    surface: '#FFFFFF',
+    background: '#FFFFFF',
+    surface: '#F7F7FB',
     text: {
-      primary: '#0B1221',
+      primary: '#0B0B0E',
       secondary: '#4B5563',
-      accent: '#1ED760',
+      accent: '#6B21A8',
       inverse: '#FFFFFF',
     },
-    primary: '#1ED760', // Spotify‑style action green
-    secondary: '#FF3B30', // YouTube‑style alert red
-    accent: '#22D3EE', // Cyan for highlights
+    primary: '#6B21A8', // Purple brand
+    secondary: '#9333EA',
+    accent: '#C084FC',
     border: '#E5E7EB',
-    muted: '#EEF2F7',
+    muted: '#F2F3F7',
     gradient: {
-      primary: ['#1ED760', '#16A34A'],
-      secondary: ['#FFFFFF', '#EEF2F7'],
+      primary: ['#6B21A8', '#7C3AED'],
+      secondary: ['#FFFFFF', '#F3F4F6'],
     },
   },
   dark: {
-    background: '#05060D',
-    surface: '#0F1118',
+    background: '#000000',
+    surface: '#111827',
     text: {
-      primary: '#F8FAFC',
-      secondary: '#A1A5B3',
-      accent: '#1ED760',
-      inverse: '#05060D',
+      primary: '#FFFFFF',
+      secondary: '#E5E7EB',
+      accent: '#D8B4FE',
+      inverse: '#000000',
     },
-    primary: '#1ED760',
-    secondary: '#FF3B30',
-    accent: '#22D3EE',
+    primary: '#6B21A8',
+    secondary: '#9333EA',
+    accent: '#C084FC',
     border: '#1F2937',
     muted: '#111827',
     gradient: {
-      primary: ['#05060D', '#0F1118'],
-      secondary: ['#0F1118', '#111827'],
+      primary: ['#000000', '#6B21A8'],
+      secondary: ['#1F2937', '#374151'],
     },
   },
 };

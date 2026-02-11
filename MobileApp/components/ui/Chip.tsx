@@ -19,16 +19,15 @@ export function Chip({ label, active, onPress }: ChipProps) {
     <TouchableOpacity
       onPress={onPress}
       style={{
-        paddingHorizontal: theme.spacing.md,
-        paddingVertical: theme.spacing.xs,
-        borderRadius: theme.radius.pill,
+        paddingHorizontal: theme.spacing.sm,
+        paddingVertical: 6,
+        borderRadius: 8,
         backgroundColor: background,
         borderWidth: 1,
         borderColor: active ? theme.colors.primary : theme.colors.border,
       }}
     >
-      <CustomText style={{ color, fontSize: theme.typography.label }}>{label}</CustomText>
+      <CustomText style={{ color, fontSize: 12 }}>{label}</CustomText>
     </TouchableOpacity>
   );
 }
-

@@ -10,27 +10,15 @@ export const spacing = {
 };
 
 export const radius = {
-  sm: 10,
-  md: 16,
-  lg: 24,
+  sm: 6,
+  md: 10,
+  lg: 14,
   pill: 999,
 };
 
 export const shadows = {
-  card: {
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.35,
-    shadowRadius: 16,
-    elevation: 12,
-  },
-  soft: {
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.18,
-    shadowRadius: 8,
-    elevation: 6,
-  },
+  card: {},
+  soft: {},
 };
 
 export const blur = {
@@ -49,16 +37,9 @@ export const typography = {
 export const tv = {
   hitSlop: { top: 12, bottom: 12, left: 12, right: 12 },
   focusScale: 1.06,
-  focusShadow: {
-    shadowColor: '#22D3EE',
-    shadowOpacity: 0.45,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 14,
-  },
+  focusShadow: {},
 };
 
 export const layout = {
   maxContentWidth: 1280, // helps on tablets/TV by clamping overly wide rows
 };
-
