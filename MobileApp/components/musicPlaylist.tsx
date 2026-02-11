@@ -1,5 +1,5 @@
 // components/music/PlaylistGrid.tsx
-import { ScrollView, View } from 'react-native';
+import { ScrollView, TouchableOpacity, View } from 'react-native';
 import { MediaCard } from './mediaCard';
 
 interface Playlist {
@@ -42,7 +42,6 @@ export const PlaylistGrid: React.FC<PlaylistGridProps> = ({
 
 // components/music/SongList.tsx
 import React from 'react';
-import { TouchableOpacity, View } from 'react-native';
 import { CustomText } from './CustomText';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useAppTheme } from '../util/colorScheme';
