@@ -1,6 +1,6 @@
 // components/cards/MediaCard.tsx
 import React, { useState } from 'react';
-import { View, TouchableOpacity, Image, Platform } from 'react-native';
+import { View, TouchableOpacity, Image } from 'react-native';
 import { CustomText } from './CustomText';
 import { radius, tv as tvTokens } from '../styles/designTokens';
 import { useColorScheme } from '../util/colorScheme';
@@ -24,7 +24,6 @@ export const MediaCard: React.FC<MediaCardProps> = ({
   const colorScheme = useColorScheme();
   const palette = colors[colorScheme];
   const [focused, setFocused] = useState(false);
-  const isTV = Platform.isTV;
 
   const sizeClasses = {
     sm: 'w-32 h-32',

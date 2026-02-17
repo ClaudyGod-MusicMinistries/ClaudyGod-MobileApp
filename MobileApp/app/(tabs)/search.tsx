@@ -1,6 +1,6 @@
 // app/(tabs)/search.tsx
 import React, { useMemo, useState } from 'react';
-import { View, ScrollView, TouchableOpacity, useWindowDimensions } from 'react-native';
+import { View, ScrollView, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { TabScreenWrapper } from './TextWrapper';
 import { useAppTheme } from '../../util/colorScheme';
@@ -13,6 +13,7 @@ import { FadeIn } from '../../components/ui/FadeIn';
 import { Screen } from '../../components/layout/Screen';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { AppButton } from '../../components/ui/AppButton';
+import { TVTouchable } from '../../components/ui/TVTouchable';
 
 const categories = ['All', 'Worship', 'Sermons', 'Podcasts', 'Kids', 'Live', 'Playlists'];
 
@@ -126,7 +127,7 @@ export default function Search() {
 
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm, marginTop: theme.spacing.md }}>
                 {quickShortcuts.map((shortcut) => (
-                  <TouchableOpacity
+                  <TVTouchable
                     key={shortcut.label}
                     onPress={() => {
                       setQuery(shortcut.query);
@@ -138,15 +139,16 @@ export default function Search() {
                       borderWidth: 1,
                       borderColor: theme.colors.border,
                       backgroundColor: theme.colors.surface,
-                      paddingVertical: 10,
-                      paddingHorizontal: 10,
+                      paddingVertical: 11,
+                      paddingHorizontal: 11,
                     }}
+                    showFocusBorder={false}
                   >
                     <MaterialIcons name={shortcut.icon as any} size={16} color={theme.colors.primary} />
                     <CustomText variant="caption" style={{ color: theme.colors.text.primary, marginTop: 6 }}>
                       {shortcut.label}
                     </CustomText>
-                  </TouchableOpacity>
+                  </TVTouchable>
                 ))}
               </View>
             </SurfaceCard>

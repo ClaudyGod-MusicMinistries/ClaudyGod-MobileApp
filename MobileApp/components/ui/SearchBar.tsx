@@ -1,8 +1,9 @@
 // components/ui/SearchBar.tsx
 import React, { useState } from 'react';
-import { View, TextInput, TouchableOpacity } from 'react-native';
+import { View, TextInput } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useAppTheme } from '../../util/colorScheme';
+import { TVTouchable } from './TVTouchable';
 
 interface SearchBarProps {
   placeholder?: string;
@@ -20,10 +21,10 @@ export function SearchBar({ placeholder, value, onChangeText, onSubmit }: Search
       style={{
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: theme.colors.surface,
-        borderRadius: theme.radius.md,
+        backgroundColor: theme.colors.surfaceAlt,
+        borderRadius: theme.radius.lg,
         paddingHorizontal: theme.spacing.sm,
-        minHeight: 48,
+        minHeight: 46,
         borderWidth: 1,
         borderColor: focused ? theme.colors.primary : theme.colors.border,
       }}
@@ -57,12 +58,12 @@ export function SearchBar({ placeholder, value, onChangeText, onSubmit }: Search
         }}
       />
       {value.length > 0 ? (
-        <TouchableOpacity onPress={() => onChangeText('')} style={{ marginHorizontal: 4 }}>
+        <TVTouchable onPress={() => onChangeText('')} style={{ marginHorizontal: 4 }} showFocusBorder={false}>
           <MaterialIcons name="close" size={18} color={theme.colors.text.secondary} />
-        </TouchableOpacity>
+        </TVTouchable>
       ) : null}
       {onSubmit ? (
-        <TouchableOpacity
+        <TVTouchable
           onPress={onSubmit}
           style={{
             backgroundColor: theme.colors.primary,
@@ -70,9 +71,10 @@ export function SearchBar({ placeholder, value, onChangeText, onSubmit }: Search
             paddingVertical: 8,
             borderRadius: theme.radius.pill,
           }}
+          showFocusBorder={false}
         >
           <MaterialIcons name="arrow-forward" size={16} color={theme.colors.text.inverse} />
-        </TouchableOpacity>
+        </TVTouchable>
       ) : null}
     </View>
   );

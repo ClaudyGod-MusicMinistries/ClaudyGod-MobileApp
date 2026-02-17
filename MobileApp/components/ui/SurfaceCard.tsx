@@ -10,7 +10,7 @@ export function SurfaceCard({ tone = 'default', style, children, ...props }: Sur
   const theme = useAppTheme();
   const baseBackground =
     tone === 'strong'
-      ? theme.colors.surface
+      ? theme.colors.surfaceAlt
       : tone === 'subtle'
       ? theme.colors.surfaceAlt
       : theme.colors.surface;
@@ -24,6 +24,7 @@ export function SurfaceCard({ tone = 'default', style, children, ...props }: Sur
           borderRadius: theme.radius.lg,
           borderWidth: 1,
           borderColor: theme.colors.border,
+          overflow: 'hidden',
           ...theme.shadows.soft,
         },
         style,

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, TouchableOpacity, Linking } from 'react-native';
+import { View, Linking } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { SettingsScaffold } from './Scaffold';
@@ -9,6 +9,7 @@ import { spacing } from '../../styles/designTokens';
 import { AppButton } from '../../components/ui/AppButton';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { FadeIn } from '../../components/ui/FadeIn';
+import { TVTouchable } from '../../components/ui/TVTouchable';
 
 export default function Rate() {
   const theme = useAppTheme();
@@ -51,17 +52,18 @@ export default function Rate() {
           </CustomText>
           <View style={{ flexDirection: 'row', marginTop: spacing.md }}>
             {[1, 2, 3, 4, 5].map((star, index) => (
-              <TouchableOpacity
+              <TVTouchable
                 key={star}
                 onPress={() => setRating(star)}
                 style={{ marginRight: index === 4 ? 0 : spacing.sm }}
+                showFocusBorder={false}
               >
                 <MaterialIcons
                   name={rating >= star ? 'star' : 'star-border'}
                   size={34}
                   color={rating >= star ? '#FFC107' : theme.colors.text.secondary}
                 />
-              </TouchableOpacity>
+              </TVTouchable>
             ))}
           </View>
           <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: spacing.sm }}>

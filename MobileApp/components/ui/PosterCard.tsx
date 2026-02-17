@@ -1,10 +1,11 @@
 // components/ui/PosterCard.tsx
 import React from 'react';
-import { Platform, View, Image, TouchableOpacity } from 'react-native';
+import { View, Image } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../CustomText';
 import { useAppTheme } from '../../util/colorScheme';
-import { tv as tvTokens } from '../../styles/designTokens';
+import { TVTouchable } from './TVTouchable';
 
 interface PosterCardProps {
   imageUrl: string;
@@ -24,18 +25,15 @@ export function PosterCard({
   showPlay = true,
 }: PosterCardProps) {
   const theme = useAppTheme();
-  const isTV = Platform.isTV;
   const sizes = {
-    sm: { w: 124, h: 150 },
-    md: { w: 164, h: 204 },
-    lg: { w: 204, h: 248 },
+    sm: { w: 126, h: 156 },
+    md: { w: 160, h: 200 },
+    lg: { w: 202, h: 244 },
   }[size];
 
   return (
-    <TouchableOpacity
+    <TVTouchable
       onPress={onPress}
-      focusable
-      hitSlop={isTV ? tvTokens.hitSlop : undefined}
       style={{ width: sizes.w, marginRight: theme.spacing.md }}
       activeOpacity={0.9}
     >
@@ -52,6 +50,10 @@ export function PosterCard({
         }}
       >
         <Image source={{ uri: imageUrl }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+        <LinearGradient
+          colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.55)']}
+          style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 70 }}
+        />
         {showPlay ? (
           <View
             style={{
@@ -72,16 +74,16 @@ export function PosterCard({
       </View>
       <CustomText
         variant="label"
-        style={{ color: theme.colors.text.primary, marginTop: 8 }}
+        style={{ color: theme.colors.text.primary, marginTop: 8, fontSize: 12.5, lineHeight: 16 }}
         numberOfLines={1}
       >
         {title}
       </CustomText>
       {subtitle ? (
-        <CustomText variant="caption" style={{ color: theme.colors.text.secondary }} numberOfLines={1}>
+        <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 1 }} numberOfLines={1}>
           {subtitle}
         </CustomText>
       ) : null}
-    </TouchableOpacity>
+    </TVTouchable>
   );
 }

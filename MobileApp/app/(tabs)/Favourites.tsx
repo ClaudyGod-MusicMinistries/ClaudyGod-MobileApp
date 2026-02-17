@@ -1,6 +1,6 @@
 // app/(tabs)/Favourites.tsx
 import React, { useMemo, useState } from 'react';
-import { View, ScrollView, TouchableOpacity, useWindowDimensions } from 'react-native';
+import { View, ScrollView, useWindowDimensions } from 'react-native';
 import { TabScreenWrapper } from './TextWrapper';
 import { useAppTheme } from '../../util/colorScheme';
 import { CustomText } from '../../components/CustomText';
@@ -17,6 +17,7 @@ import { AudioPlayer, AudioTrack } from '../../components/media/AudioPlayer';
 import { VideoPlayer } from '../../components/media/VideoPlayer';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { FadeIn } from '../../components/ui/FadeIn';
+import { TVTouchable } from '../../components/ui/TVTouchable';
 
 export default function Favourites() {
   const theme = useAppTheme();
@@ -197,7 +198,7 @@ export default function Favourites() {
                     { icon: 'playlist-add', label: 'New Playlist', hint: 'Organize media' },
                     { icon: 'insights', label: 'Insights', hint: 'Usage summary' },
                   ].map((action) => (
-                    <TouchableOpacity
+                    <TVTouchable
                       key={action.label}
                       onPress={() => console.log(action.label)}
                       style={{
@@ -208,6 +209,7 @@ export default function Favourites() {
                         borderWidth: 1,
                         borderColor: theme.colors.border,
                       }}
+                      showFocusBorder={false}
                     >
                       <View
                         style={{
@@ -228,7 +230,7 @@ export default function Favourites() {
                       <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 2 }}>
                         {action.hint}
                       </CustomText>
-                    </TouchableOpacity>
+                    </TVTouchable>
                   ))}
                 </View>
               </View>
@@ -334,7 +336,7 @@ export default function Favourites() {
 
               <View style={{ gap: theme.spacing.sm }}>
                 {videoItems.map((video) => (
-                  <TouchableOpacity
+                  <TVTouchable
                     key={video.id}
                     onPress={() => setActiveVideo(video)}
                     style={{
@@ -347,6 +349,7 @@ export default function Favourites() {
                       alignItems: 'center',
                       justifyContent: 'space-between',
                     }}
+                    showFocusBorder={false}
                   >
                     <View style={{ flex: 1, marginRight: theme.spacing.sm }}>
                       <CustomText variant="body" style={{ color: theme.colors.text.primary }}>
@@ -357,7 +360,7 @@ export default function Favourites() {
                       </CustomText>
                     </View>
                     <MaterialIcons name="play-arrow" size={20} color={theme.colors.primary} />
-                  </TouchableOpacity>
+                  </TVTouchable>
                 ))}
               </View>
             </FadeIn>

@@ -19,8 +19,8 @@ export const TabScreenWrapper: React.FC<TabScreenWrapperProps> = ({ children }) 
       <LinearGradient
         colors={
           colorScheme === 'dark'
-            ? ['rgba(76,29,149,0.2)', 'rgba(10,10,15,0)']
-            : ['rgba(124,58,237,0.12)', 'rgba(255,255,255,0)']
+            ? ['rgba(109,40,217,0.24)', 'rgba(6,4,13,0)']
+            : ['rgba(109,40,217,0.14)', 'rgba(244,241,250,0)']
         }
         start={{ x: 0.1, y: 0 }}
         end={{ x: 0.7, y: 0.8 }}
@@ -42,7 +42,7 @@ export const TabScreenWrapper: React.FC<TabScreenWrapperProps> = ({ children }) 
           width: 220,
           height: 220,
           borderRadius: 220,
-          backgroundColor: colorScheme === 'dark' ? 'rgba(192,132,252,0.08)' : 'rgba(124,58,237,0.08)',
+          backgroundColor: colorScheme === 'dark' ? 'rgba(192,132,252,0.1)' : 'rgba(124,58,237,0.1)',
         }}
       />
       <View style={{ flex: 1 }}>
