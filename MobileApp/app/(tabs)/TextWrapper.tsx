@@ -1,26 +1,50 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // components/layout/TabScreenWrapper.tsx
 import React from 'react';
 import { View, StatusBar } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useColorScheme } from '../../util/colorScheme';
 import { colors } from '../../constants/color';
 
 interface TabScreenWrapperProps {
   children: React.ReactNode;
-  scrollable?: boolean;
 }
 
-export const TabScreenWrapper: React.FC<TabScreenWrapperProps> = ({
-  children,
-  scrollable = true
-}) => {
+export const TabScreenWrapper: React.FC<TabScreenWrapperProps> = ({ children }) => {
   const colorScheme = useColorScheme();
   const currentColors = colors[colorScheme];
 
   return (
     <View style={{ flex: 1, backgroundColor: currentColors.background }}>
       <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
-      {/* Remove AnimatedHeader from here since it's in the layout */}
+      <LinearGradient
+        colors={
+          colorScheme === 'dark'
+            ? ['rgba(76,29,149,0.2)', 'rgba(10,10,15,0)']
+            : ['rgba(124,58,237,0.12)', 'rgba(255,255,255,0)']
+        }
+        start={{ x: 0.1, y: 0 }}
+        end={{ x: 0.7, y: 0.8 }}
+        pointerEvents="none"
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 280,
+        }}
+      />
+      <View
+        pointerEvents="none"
+        style={{
+          position: 'absolute',
+          top: 90,
+          right: -70,
+          width: 220,
+          height: 220,
+          borderRadius: 220,
+          backgroundColor: colorScheme === 'dark' ? 'rgba(192,132,252,0.08)' : 'rgba(124,58,237,0.08)',
+        }}
+      />
       <View style={{ flex: 1 }}>
         {children}
       </View>

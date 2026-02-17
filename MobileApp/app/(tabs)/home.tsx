@@ -1,6 +1,6 @@
 // app/(tabs)/home.tsx
 import React from 'react';
-import { View, ScrollView, TouchableOpacity, Image } from 'react-native';
+import { View, ScrollView, TouchableOpacity, Image, useWindowDimensions } from 'react-native';
 import { TabScreenWrapper } from './TextWrapper';
 import { useAppTheme } from '../../util/colorScheme';
 import { HeroBanner } from '../../components/sections/HeroBanner';
@@ -11,6 +11,8 @@ import { featuredPlaylists, recentSongs } from '../../data/data';
 import { MaterialIcons } from '@expo/vector-icons';
 import { FadeIn } from '../../components/ui/FadeIn';
 import { Screen } from '../../components/layout/Screen';
+import { SurfaceCard } from '../../components/ui/SurfaceCard';
+import { useRouter } from 'expo-router';
 
 const trendingVideos = [
   {
@@ -35,6 +37,16 @@ const trendingVideos = [
 
 export default function HomeScreen() {
   const theme = useAppTheme();
+  const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isCompact = width < 360;
+  const actionCardWidth = isCompact ? '100%' : '48%';
+  const quickActions = [
+    { icon: 'library-music', label: 'My Library', subtitle: 'Saved songs and playlists', route: '/(tabs)/Favourites' },
+    { icon: 'offline-pin', label: 'Downloads', subtitle: 'Listen offline anywhere', route: '/(tabs)/Favourites' },
+    { icon: 'notifications-active', label: 'Alerts', subtitle: 'Live session reminders', route: '/(tabs)/Settings' },
+    { icon: 'live-tv', label: 'Live', subtitle: 'Watch active broadcasts', route: '/(tabs)/PlaySection' },
+  ];
 
   return (
     <TabScreenWrapper>
@@ -43,6 +55,66 @@ export default function HomeScreen() {
         contentContainerStyle={{ paddingBottom: 140, paddingTop: theme.spacing.md }}
       >
         <Screen>
+          <FadeIn>
+            <SurfaceCard
+              tone="subtle"
+              style={{
+                padding: theme.spacing.lg,
+                marginBottom: theme.spacing.lg,
+              }}
+            >
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <View>
+                  <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
+                    Welcome back
+                  </CustomText>
+                  <CustomText variant="heading" style={{ color: theme.colors.text.primary, marginTop: 4 }}>
+                    ClaudyGod Studio
+                  </CustomText>
+                </View>
+                <View
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: theme.radius.md,
+                    backgroundColor: `${theme.colors.primary}16`,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <MaterialIcons name="equalizer" size={20} color={theme.colors.primary} />
+                </View>
+              </View>
+
+              <View style={{ flexDirection: 'row', gap: theme.spacing.sm, marginTop: theme.spacing.md }}>
+                {[
+                  { label: 'Active users', value: '82.4K' },
+                  { label: 'Live now', value: '03' },
+                  { label: 'Playlists', value: '146' },
+                ].map((stat) => (
+                  <View
+                    key={stat.label}
+                    style={{
+                      flex: 1,
+                      borderRadius: theme.radius.md,
+                      borderWidth: 1,
+                      borderColor: theme.colors.border,
+                      backgroundColor: theme.colors.surface,
+                      padding: theme.spacing.sm,
+                    }}
+                  >
+                    <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
+                      {stat.value}
+                    </CustomText>
+                    <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 2 }}>
+                      {stat.label}
+                    </CustomText>
+                  </View>
+                ))}
+              </View>
+            </SurfaceCard>
+          </FadeIn>
+
           <FadeIn>
             <HeroBanner
               imageUrl="https://images.unsplash.com/photo-1459749411175-04bf5292ceea?auto=format&fit=crop&w=1200&q=80"
@@ -53,7 +125,6 @@ export default function HomeScreen() {
             />
           </FadeIn>
 
-          {/* Continue Watching */}
           <FadeIn delay={120} style={{ marginBottom: theme.spacing.lg }}>
             <CustomText variant="title" style={{ color: theme.colors.text.primary }}>
               Continue Watching
@@ -74,6 +145,21 @@ export default function HomeScreen() {
                   onPress={() => console.log(item.title)}
                 >
                   <Image source={{ uri: item.imageUrl }} style={{ width: '100%', height: 140 }} resizeMode="cover" />
+                  <View
+                    style={{
+                      position: 'absolute',
+                      right: theme.spacing.sm,
+                      top: theme.spacing.sm,
+                      width: 34,
+                      height: 34,
+                      borderRadius: 17,
+                      backgroundColor: 'rgba(0,0,0,0.5)',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <MaterialIcons name="play-arrow" size={18} color="#FFFFFF" />
+                  </View>
                   <View style={{ padding: theme.spacing.sm }}>
                     <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
                       {item.title}
@@ -87,7 +173,6 @@ export default function HomeScreen() {
             </ScrollView>
           </FadeIn>
 
-          {/* Trending Playlists */}
           <FadeIn delay={200}>
             <MediaRail
               title="Trending Playlists"
@@ -107,7 +192,6 @@ export default function HomeScreen() {
             />
           </FadeIn>
 
-          {/* New Releases */}
           <FadeIn delay={260}>
             <MediaRail
               title="New Releases"
@@ -127,50 +211,53 @@ export default function HomeScreen() {
             />
           </FadeIn>
 
-          {/* Quick Actions */}
           <FadeIn delay={320}>
-            <View
+            <SurfaceCard
               style={{
-                backgroundColor: theme.colors.surface,
-                borderRadius: theme.radius.lg,
                 padding: theme.spacing.lg,
-                borderWidth: 1,
-                borderColor: theme.colors.border,
                 marginTop: theme.spacing.md,
               }}
             >
-            <CustomText variant="title" style={{ color: theme.colors.text.primary }}>
-              Quick actions
-            </CustomText>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm, marginTop: theme.spacing.sm }}>
-              {[
-                { icon: 'library-music', label: 'My Library' },
-                { icon: 'offline-pin', label: 'Downloads' },
-                { icon: 'notifications-active', label: 'Alerts' },
-                { icon: 'live-tv', label: 'Live' },
-              ].map((action) => (
-                <TouchableOpacity
-                  key={action.label}
+              <CustomText variant="title" style={{ color: theme.colors.text.primary }}>
+                Quick actions
+              </CustomText>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm, marginTop: theme.spacing.sm }}>
+                {quickActions.map((action) => (
+                  <TouchableOpacity
+                    key={action.label}
                   style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    paddingHorizontal: theme.spacing.md,
-                    paddingVertical: theme.spacing.sm,
-                    borderRadius: theme.radius.pill,
-                    backgroundColor: `${theme.colors.primary}18`,
-                    borderWidth: 1,
-                    borderColor: `${theme.colors.primary}40`,
-                  }}
-                  onPress={() => console.log(action.label)}
+                    width: actionCardWidth,
+                      borderRadius: theme.radius.md,
+                      borderWidth: 1,
+                      borderColor: theme.colors.border,
+                      backgroundColor: theme.colors.surfaceAlt,
+                      padding: theme.spacing.md,
+                    }}
+                    onPress={() => router.push(action.route as any)}
                   >
-                    <MaterialIcons name={action.icon as any} size={18} color={theme.colors.primary} />
-                  <CustomText variant="label" style={{ color: theme.colors.text.primary, marginLeft: 8 }}>
-                    {action.label}
-                  </CustomText>
-                </TouchableOpacity>
-              ))}
-            </View>
-            </View>
+                    <View
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 10,
+                        backgroundColor: `${theme.colors.primary}18`,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginBottom: 8,
+                      }}
+                    >
+                      <MaterialIcons name={action.icon as any} size={18} color={theme.colors.primary} />
+                    </View>
+                    <CustomText variant="label" style={{ color: theme.colors.text.primary }}>
+                      {action.label}
+                    </CustomText>
+                    <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 4 }}>
+                      {action.subtitle}
+                    </CustomText>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </SurfaceCard>
           </FadeIn>
         </Screen>
       </ScrollView>

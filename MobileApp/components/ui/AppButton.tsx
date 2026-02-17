@@ -40,6 +40,7 @@ export function AppButton({
   const resolvedTextColor =
     textColor ??
     (isPrimary || isSecondary ? theme.colors.text.inverse : theme.colors.primary);
+  const useShadow = isPrimary || isSecondary;
 
   const sizeStyle =
     size === 'sm'
@@ -62,6 +63,7 @@ export function AppButton({
         setFocused(false);
         props.onBlur?.(event);
       }}
+      activeOpacity={0.9}
       style={[
         {
           ...sizeStyle,
@@ -80,6 +82,7 @@ export function AppButton({
           alignItems: 'center',
           justifyContent: 'center',
           alignSelf: fullWidth ? 'stretch' : 'flex-start',
+          ...(useShadow ? theme.shadows.soft : null),
         },
         isTV && focused
           ? {
@@ -98,20 +101,22 @@ export function AppButton({
           color={resolvedTextColor}
         />
       ) : (
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          {leftIcon ? <View style={{ marginRight: 8 }}>{leftIcon}</View> : null}
+        <View style={{ flexDirection: 'row', alignItems: 'center', maxWidth: '100%' }}>
+          {leftIcon ? <View style={{ marginRight: 8, alignItems: 'center', justifyContent: 'center' }}>{leftIcon}</View> : null}
           <CustomText
             variant={size === 'sm' ? 'label' : 'body'}
             style={{
               color: resolvedTextColor,
               fontWeight: '600',
               textAlign: 'center',
+              flexShrink: 1,
               ...(textStyle || {}),
             }}
+            numberOfLines={1}
           >
             {title}
           </CustomText>
-          {rightIcon ? <View style={{ marginLeft: 8 }}>{rightIcon}</View> : null}
+          {rightIcon ? <View style={{ marginLeft: 8, alignItems: 'center', justifyContent: 'center' }}>{rightIcon}</View> : null}
         </View>
       )}
     </TouchableOpacity>

@@ -1,6 +1,7 @@
 // app/(tabs)/search.tsx
 import React, { useMemo, useState } from 'react';
-import { View, ScrollView } from 'react-native';
+import { View, ScrollView, TouchableOpacity, useWindowDimensions } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import { TabScreenWrapper } from './TextWrapper';
 import { useAppTheme } from '../../util/colorScheme';
 import { SearchBar } from '../../components/ui/SearchBar';
@@ -10,8 +11,16 @@ import { PosterCard } from '../../components/ui/PosterCard';
 import { CustomText } from '../../components/CustomText';
 import { FadeIn } from '../../components/ui/FadeIn';
 import { Screen } from '../../components/layout/Screen';
+import { SurfaceCard } from '../../components/ui/SurfaceCard';
+import { AppButton } from '../../components/ui/AppButton';
 
 const categories = ['All', 'Worship', 'Sermons', 'Podcasts', 'Kids', 'Live', 'Playlists'];
+
+const quickShortcuts = [
+  { icon: 'graphic-eq', label: 'Trending worship', query: 'worship' },
+  { icon: 'mic', label: 'Live sermons', query: 'live' },
+  { icon: 'queue-music', label: 'Morning playlist', query: 'playlist' },
+];
 
 const discoverSets = [
   {
@@ -63,22 +72,21 @@ const topCreators = [
 
 export default function Search() {
   const theme = useAppTheme();
+  const { width } = useWindowDimensions();
+  const isCompact = width < 360;
+  const shortcutWidth = isCompact ? '100%' : '48%';
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
 
-  const allItems = [...discoverSets, ...topCreators];
-
   const filtered = useMemo(() => {
+    const allItems = [...discoverSets, ...topCreators];
     const q = query.trim().toLowerCase();
     return allItems.filter((item) => {
-      const matchesText =
-        !q ||
-        item.title.toLowerCase().includes(q) ||
-        item.subtitle.toLowerCase().includes(q);
+      const matchesText = !q || item.title.toLowerCase().includes(q) || item.subtitle.toLowerCase().includes(q);
       const matchesCategory = activeCategory === 'All' || item.type === activeCategory;
       return matchesText && matchesCategory;
     });
-  }, [activeCategory, allItems, query]);
+  }, [activeCategory, query]);
 
   return (
     <TabScreenWrapper>
@@ -88,19 +96,63 @@ export default function Search() {
       >
         <Screen>
           <FadeIn>
-            <CustomText variant="heading" style={{ color: theme.colors.text.primary }}>
-              Discover
-            </CustomText>
-            <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 2 }}>
-              Search by keyword, category, or creator.
-            </CustomText>
+            <SurfaceCard tone="subtle" style={{ padding: theme.spacing.lg }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <View style={{ flex: 1 }}>
+                  <CustomText variant="heading" style={{ color: theme.colors.text.primary }}>
+                    Search Workspace
+                  </CustomText>
+                  <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 4 }}>
+                    Find songs, videos, playlists, and creators with precise filters.
+                  </CustomText>
+                </View>
+                <View
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: theme.radius.md,
+                    backgroundColor: `${theme.colors.primary}18`,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <MaterialIcons name="travel-explore" size={18} color={theme.colors.primary} />
+                </View>
+              </View>
+
+              <View style={{ marginTop: theme.spacing.md }}>
+                <SearchBar value={query} onChangeText={setQuery} onSubmit={() => console.log('search', query)} />
+              </View>
+
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm, marginTop: theme.spacing.md }}>
+                {quickShortcuts.map((shortcut) => (
+                  <TouchableOpacity
+                    key={shortcut.label}
+                    onPress={() => {
+                      setQuery(shortcut.query);
+                      setActiveCategory('All');
+                    }}
+                    style={{
+                      width: shortcutWidth,
+                      borderRadius: theme.radius.md,
+                      borderWidth: 1,
+                      borderColor: theme.colors.border,
+                      backgroundColor: theme.colors.surface,
+                      paddingVertical: 10,
+                      paddingHorizontal: 10,
+                    }}
+                  >
+                    <MaterialIcons name={shortcut.icon as any} size={16} color={theme.colors.primary} />
+                    <CustomText variant="caption" style={{ color: theme.colors.text.primary, marginTop: 6 }}>
+                      {shortcut.label}
+                    </CustomText>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </SurfaceCard>
           </FadeIn>
 
-          <FadeIn delay={120} style={{ marginTop: theme.spacing.md }}>
-            <SearchBar value={query} onChangeText={setQuery} onSubmit={() => console.log('search', query)} />
-          </FadeIn>
-
-          <FadeIn delay={160}>
+          <FadeIn delay={120}>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -117,10 +169,10 @@ export default function Search() {
             </ScrollView>
           </FadeIn>
 
-          <FadeIn delay={220} style={{ marginTop: theme.spacing.sm }}>
+          <FadeIn delay={200}>
             <MediaRail
               title="Results"
-              actionLabel={filtered.length ? `${filtered.length} found` : undefined}
+              actionLabel={`${filtered.length} found`}
               data={filtered}
               renderItem={(item) => (
                 <PosterCard
@@ -133,6 +185,31 @@ export default function Search() {
               )}
             />
           </FadeIn>
+
+          {!filtered.length ? (
+            <FadeIn delay={260}>
+              <SurfaceCard style={{ padding: theme.spacing.lg }}>
+                <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
+                  No matches found
+                </CustomText>
+                <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 4 }}>
+                  Try a broader keyword or reset your active category.
+                </CustomText>
+                <View style={{ marginTop: theme.spacing.md }}>
+                  <AppButton
+                    title="Reset filters"
+                    variant="outline"
+                    size="sm"
+                    fullWidth
+                    onPress={() => {
+                      setActiveCategory('All');
+                      setQuery('');
+                    }}
+                  />
+                </View>
+              </SurfaceCard>
+            </FadeIn>
+          ) : null}
         </Screen>
       </ScrollView>
     </TabScreenWrapper>
