@@ -1,6 +1,6 @@
 // app/(tabs)/Settings.tsx
 import React, { useState } from 'react';
-import { View, ScrollView, TouchableOpacity, Switch } from 'react-native';
+import { View, ScrollView, Switch } from 'react-native';
 import { TabScreenWrapper } from './TextWrapper';
 import { useAppTheme, useColorSchemeToggle } from '../../util/colorScheme';
 import { CustomText } from '../../components/CustomText';
@@ -9,6 +9,7 @@ import { useRouter } from 'expo-router';
 import { Screen } from '../../components/layout/Screen';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { FadeIn } from '../../components/ui/FadeIn';
+import { TVTouchable } from '../../components/ui/TVTouchable';
 
 type SettingItem = {
   icon: string;
@@ -95,7 +96,7 @@ export default function Settings() {
                 </CustomText>
                 <SurfaceCard style={{ marginTop: theme.spacing.sm, paddingVertical: 2 }}>
                   {section.items.map((item, index) => (
-                    <TouchableOpacity
+                    <TVTouchable
                       key={item.label}
                       onPress={item.action}
                       disabled={item.type === 'switch'}
@@ -106,6 +107,7 @@ export default function Settings() {
                         borderBottomWidth: index === section.items.length - 1 ? 0 : 1,
                         borderBottomColor: theme.colors.border,
                       }}
+                      showFocusBorder={false}
                     >
                       <View
                         style={{
@@ -140,7 +142,7 @@ export default function Settings() {
                       ) : (
                         <MaterialIcons name="chevron-right" size={20} color={theme.colors.text.secondary} />
                       )}
-                    </TouchableOpacity>
+                    </TVTouchable>
                   ))}
                 </SurfaceCard>
               </View>

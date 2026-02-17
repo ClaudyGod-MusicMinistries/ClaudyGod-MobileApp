@@ -1,6 +1,6 @@
 // app/settingsPage/Donate.tsx
 import React from 'react';
-import { View, TouchableOpacity, useWindowDimensions } from 'react-native';
+import { View, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { SettingsScaffold } from './Scaffold';
 import { CustomText } from '../../components/CustomText';
@@ -9,6 +9,7 @@ import { spacing, radius } from '../../styles/designTokens';
 import { FadeIn } from '../../components/ui/FadeIn';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { AppButton } from '../../components/ui/AppButton';
+import { TVTouchable } from '../../components/ui/TVTouchable';
 
 const tiers = [
   { id: 't1', title: 'Supporter', amount: '$5', description: 'Keep the streams flowing.', tag: 'Starter' },
@@ -104,7 +105,7 @@ export default function Donate() {
         </CustomText>
         <View style={{ gap: spacing.sm, marginBottom: spacing.xl }}>
           {actions.map((action) => (
-            <TouchableOpacity
+            <TVTouchable
               key={action.label}
               style={{
                 flexDirection: 'row',
@@ -116,6 +117,7 @@ export default function Donate() {
                 backgroundColor: theme.colors.surfaceAlt,
               }}
               onPress={() => console.log(action.label)}
+              showFocusBorder={false}
             >
               <View
                 style={{
@@ -139,7 +141,7 @@ export default function Donate() {
                 </CustomText>
               </View>
               <MaterialIcons name="chevron-right" size={18} color={theme.colors.text.secondary} />
-            </TouchableOpacity>
+            </TVTouchable>
           ))}
         </View>
       </FadeIn>

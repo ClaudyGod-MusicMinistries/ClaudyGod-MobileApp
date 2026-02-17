@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, TouchableOpacity, Linking, useWindowDimensions } from 'react-native';
+import { View, Linking, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { SettingsScaffold } from './Scaffold';
@@ -8,6 +8,7 @@ import { useAppTheme } from '../../util/colorScheme';
 import { spacing } from '../../styles/designTokens';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { FadeIn } from '../../components/ui/FadeIn';
+import { TVTouchable } from '../../components/ui/TVTouchable';
 
 const featureChips = [
   { icon: 'library-music', label: 'Massive catalog' },
@@ -180,12 +181,13 @@ export default function About() {
         </CustomText>
         <View>
           {social.map((item) => (
-            <TouchableOpacity
+            <TVTouchable
               key={item.label}
               onPress={() => Linking.openURL(item.url)}
               style={{
                 marginBottom: spacing.sm,
               }}
+              showFocusBorder={false}
             >
               <SurfaceCard tone="subtle" style={{ padding: spacing.md, flexDirection: 'row', alignItems: 'center' }}>
                 <View
@@ -206,7 +208,7 @@ export default function About() {
                 </CustomText>
                 <MaterialIcons name="open-in-new" size={18} color={theme.colors.text.secondary} />
               </SurfaceCard>
-            </TouchableOpacity>
+            </TVTouchable>
           ))}
         </View>
       </FadeIn>

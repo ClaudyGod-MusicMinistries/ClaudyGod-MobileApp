@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, TouchableOpacity, Linking, useWindowDimensions } from 'react-native';
+import { View, Linking, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { SettingsScaffold } from './Scaffold';
 import { CustomText } from '../../components/CustomText';
@@ -8,6 +8,7 @@ import { spacing } from '../../styles/designTokens';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { FadeIn } from '../../components/ui/FadeIn';
 import { AppButton } from '../../components/ui/AppButton';
+import { TVTouchable } from '../../components/ui/TVTouchable';
 
 const sections = [
   {
@@ -128,7 +129,7 @@ export default function Privacy() {
       ))}
 
       <FadeIn delay={300}>
-        <TouchableOpacity onPress={() => Linking.openURL('mailto:privacy@claudygodmusic.com')}>
+        <TVTouchable onPress={() => Linking.openURL('mailto:privacy@claudygodmusic.com')} showFocusBorder={false}>
           <SurfaceCard tone="subtle" style={{ padding: spacing.md, marginTop: spacing.sm, marginBottom: spacing.xl }}>
             <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
               Need data exported or removed?
@@ -137,7 +138,7 @@ export default function Privacy() {
               Email privacy@claudygodmusic.com and our team responds within 24 hours.
             </CustomText>
           </SurfaceCard>
-        </TouchableOpacity>
+        </TVTouchable>
       </FadeIn>
     </SettingsScaffold>
   );

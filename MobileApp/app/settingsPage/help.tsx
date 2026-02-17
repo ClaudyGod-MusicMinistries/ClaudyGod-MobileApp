@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, TouchableOpacity, Linking } from 'react-native';
+import { View, Linking } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { SettingsScaffold } from './Scaffold';
 import { CustomText } from '../../components/CustomText';
@@ -8,6 +8,7 @@ import { spacing } from '../../styles/designTokens';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { FadeIn } from '../../components/ui/FadeIn';
 import { AppButton } from '../../components/ui/AppButton';
+import { TVTouchable } from '../../components/ui/TVTouchable';
 
 const contact = [
   { icon: 'chat-bubble', title: 'Live chat', desc: 'Average response under 2 minutes', action: () => console.log('chat') },
@@ -57,7 +58,7 @@ export default function Help() {
         </CustomText>
         <View style={{ marginBottom: spacing.lg }}>
           {contact.map((item) => (
-            <TouchableOpacity key={item.title} onPress={item.action} style={{ marginBottom: spacing.sm }}>
+            <TVTouchable key={item.title} onPress={item.action} style={{ marginBottom: spacing.sm }} showFocusBorder={false}>
               <SurfaceCard style={{ padding: spacing.md, flexDirection: 'row', alignItems: 'center' }}>
                 <View
                   style={{
@@ -82,7 +83,7 @@ export default function Help() {
                 </View>
                 <MaterialIcons name="chevron-right" size={20} color={theme.colors.text.secondary} />
               </SurfaceCard>
-            </TouchableOpacity>
+            </TVTouchable>
           ))}
         </View>
       </FadeIn>
@@ -95,10 +96,11 @@ export default function Help() {
           {faqs.map((faq) => {
             const open = expanded === faq.q;
             return (
-              <TouchableOpacity
+              <TVTouchable
                 key={faq.q}
                 onPress={() => setExpanded(open ? null : faq.q)}
                 style={{ marginBottom: spacing.sm }}
+                showFocusBorder={false}
               >
                 <SurfaceCard tone={open ? 'subtle' : 'default'} style={{ padding: spacing.md }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -117,7 +119,7 @@ export default function Help() {
                     </CustomText>
                   ) : null}
                 </SurfaceCard>
-              </TouchableOpacity>
+              </TVTouchable>
             );
           })}
         </View>

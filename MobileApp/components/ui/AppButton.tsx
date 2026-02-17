@@ -1,9 +1,9 @@
 // components/ui/AppButton.tsx
-import React, { ReactNode, useState } from 'react';
-import { ActivityIndicator, Platform, TextStyle, TouchableOpacity, TouchableOpacityProps, View } from 'react-native';
+import React, { ReactNode } from 'react';
+import { ActivityIndicator, TextStyle, TouchableOpacityProps, View } from 'react-native';
 import { CustomText } from '../CustomText';
 import { useAppTheme } from '../../util/colorScheme';
-import { tv as tvTokens } from '../../styles/designTokens';
+import { TVTouchable } from './TVTouchable';
 
 interface AppButtonProps extends TouchableOpacityProps {
   title: string;
@@ -31,8 +31,6 @@ export function AppButton({
   ...props
 }: AppButtonProps) {
   const theme = useAppTheme();
-  const isTV = Platform.isTV;
-  const [focused, setFocused] = useState(false);
   const isPrimary = variant === 'primary';
   const isSecondary = variant === 'secondary';
   const isOutline = variant === 'outline';
@@ -44,25 +42,15 @@ export function AppButton({
 
   const sizeStyle =
     size === 'sm'
-      ? { minHeight: 36, paddingHorizontal: theme.spacing.md, paddingVertical: 8 }
+      ? { minHeight: 36, paddingHorizontal: theme.spacing.md, paddingVertical: 7 }
       : size === 'lg'
-      ? { minHeight: 52, paddingHorizontal: theme.spacing.lg, paddingVertical: 14 }
-      : { minHeight: 44, paddingHorizontal: theme.spacing.lg, paddingVertical: 10 };
+      ? { minHeight: 50, paddingHorizontal: theme.spacing.lg, paddingVertical: 12 }
+      : { minHeight: 42, paddingHorizontal: theme.spacing.lg, paddingVertical: 9 };
 
   return (
-    <TouchableOpacity
+    <TVTouchable
       {...props}
       disabled={loading || props.disabled}
-      focusable
-      hitSlop={tvTokens.hitSlop}
-      onFocus={(event) => {
-        setFocused(true);
-        props.onFocus?.(event);
-      }}
-      onBlur={(event) => {
-        setFocused(false);
-        props.onBlur?.(event);
-      }}
       activeOpacity={0.9}
       style={[
         {
@@ -82,16 +70,9 @@ export function AppButton({
           alignItems: 'center',
           justifyContent: 'center',
           alignSelf: fullWidth ? 'stretch' : 'flex-start',
+          gap: 8,
           ...(useShadow ? theme.shadows.soft : null),
         },
-        isTV && focused
-          ? {
-              transform: [{ scale: theme.tv.focusScale }],
-              borderWidth: 1,
-              borderColor: theme.colors.primary,
-              ...theme.tv.focusShadow,
-            }
-          : null,
         style,
       ]}
     >
@@ -101,8 +82,12 @@ export function AppButton({
           color={resolvedTextColor}
         />
       ) : (
-        <View style={{ flexDirection: 'row', alignItems: 'center', maxWidth: '100%' }}>
-          {leftIcon ? <View style={{ marginRight: 8, alignItems: 'center', justifyContent: 'center' }}>{leftIcon}</View> : null}
+        <View style={{ flexDirection: 'row', alignItems: 'center', maxWidth: '100%', gap: 8 }}>
+          {leftIcon ? (
+            <View style={{ width: 18, alignItems: 'center', justifyContent: 'center' }}>
+              {leftIcon}
+            </View>
+          ) : null}
           <CustomText
             variant={size === 'sm' ? 'label' : 'body'}
             style={{
@@ -116,9 +101,13 @@ export function AppButton({
           >
             {title}
           </CustomText>
-          {rightIcon ? <View style={{ marginLeft: 8, alignItems: 'center', justifyContent: 'center' }}>{rightIcon}</View> : null}
+          {rightIcon ? (
+            <View style={{ width: 18, alignItems: 'center', justifyContent: 'center' }}>
+              {rightIcon}
+            </View>
+          ) : null}
         </View>
       )}
-    </TouchableOpacity>
+    </TVTouchable>
   );
 }

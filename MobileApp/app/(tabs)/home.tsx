@@ -1,266 +1,275 @@
-// app/(tabs)/home.tsx
-import React from 'react';
-import { View, ScrollView, TouchableOpacity, Image, useWindowDimensions } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { Image, ScrollView, View, useWindowDimensions } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { TabScreenWrapper } from './TextWrapper';
 import { useAppTheme } from '../../util/colorScheme';
-import { HeroBanner } from '../../components/sections/HeroBanner';
-import { MediaRail } from '../../components/sections/MediaRail';
-import { PosterCard } from '../../components/ui/PosterCard';
-import { CustomText } from '../../components/CustomText';
-import { featuredPlaylists, recentSongs } from '../../data/data';
-import { MaterialIcons } from '@expo/vector-icons';
 import { FadeIn } from '../../components/ui/FadeIn';
 import { Screen } from '../../components/layout/Screen';
+import { CustomText } from '../../components/CustomText';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
-import { useRouter } from 'expo-router';
+import { AppButton } from '../../components/ui/AppButton';
+import { TVTouchable } from '../../components/ui/TVTouchable';
 
-const trendingVideos = [
+const topAlbums = [
   {
-    id: 'v1',
-    title: 'Sunday Worship Live',
-    subtitle: '2.1M views • 2 days ago',
-    imageUrl: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=800&q=80',
+    id: 'a1',
+    title: 'Die Lit',
+    artist: 'Playboi Carti',
+    imageUrl: 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=900&q=80',
   },
   {
-    id: 'v2',
-    title: 'Night of Praise',
-    subtitle: '540K views • 1 week ago',
-    imageUrl: 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=800&q=80',
+    id: 'a2',
+    title: 'Joanne',
+    artist: 'Lady Gaga',
+    imageUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?auto=format&fit=crop&w=900&q=80',
   },
   {
-    id: 'v3',
-    title: 'Prayer & Healing',
-    subtitle: '320K views • 2 weeks ago',
-    imageUrl: 'https://images.unsplash.com/photo-1501281667305-0d4ebdb2c8e6?auto=format&fit=crop&w=800&q=80',
+    id: 'a3',
+    title: 'Blue Neighbourhood',
+    artist: 'Troye Sivan',
+    imageUrl: 'https://images.unsplash.com/photo-1461783436728-0a9217714694?auto=format&fit=crop&w=900&q=80',
   },
+  {
+    id: 'a4',
+    title: 'The Dawn',
+    artist: 'Oscar Hayes',
+    imageUrl: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=900&q=80',
+  },
+];
+
+const popularTracks = [
+  { id: 't1', title: 'Praise The Lord', artist: 'ASAP Rocky', duration: '3:25', imageUrl: 'https://images.unsplash.com/photo-1509869175650-a1d97972541a?auto=format&fit=crop&w=500&q=80' },
+  { id: 't2', title: 'Circles', artist: 'Mac Miller', duration: '3:12', imageUrl: 'https://images.unsplash.com/photo-1460723237483-7a6dc9d0b212?auto=format&fit=crop&w=500&q=80' },
+  { id: 't3', title: 'Humble.', artist: 'Kendrick Lamar', duration: '3:22', imageUrl: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=500&q=80' },
+  { id: 't4', title: 'The Dawn', artist: 'Oscar Hayes', duration: '3:02', imageUrl: 'https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?auto=format&fit=crop&w=500&q=80' },
 ];
 
 export default function HomeScreen() {
   const theme = useAppTheme();
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const isCompact = width < 360;
-  const actionCardWidth = isCompact ? '100%' : '48%';
-  const quickActions = [
-    { icon: 'library-music', label: 'My Library', subtitle: 'Saved songs and playlists', route: '/(tabs)/Favourites' },
-    { icon: 'offline-pin', label: 'Downloads', subtitle: 'Listen offline anywhere', route: '/(tabs)/Favourites' },
-    { icon: 'notifications-active', label: 'Alerts', subtitle: 'Live session reminders', route: '/(tabs)/Settings' },
-    { icon: 'live-tv', label: 'Live', subtitle: 'Watch active broadcasts', route: '/(tabs)/PlaySection' },
-  ];
+  const compact = width < 390;
+  const [activeTrackId, setActiveTrackId] = useState(popularTracks[2].id);
+  const activeTrack = useMemo(
+    () => popularTracks.find((track) => track.id === activeTrackId) ?? popularTracks[0],
+    [activeTrackId],
+  );
 
   return (
     <TabScreenWrapper>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 140, paddingTop: theme.spacing.md }}
+        contentContainerStyle={{ paddingTop: theme.spacing.md, paddingBottom: 220 }}
       >
         <Screen>
           <FadeIn>
-            <SurfaceCard
-              tone="subtle"
-              style={{
-                padding: theme.spacing.lg,
-                marginBottom: theme.spacing.lg,
-              }}
-            >
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <View>
-                  <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
-                    Welcome back
-                  </CustomText>
-                  <CustomText variant="heading" style={{ color: theme.colors.text.primary, marginTop: 4 }}>
-                    ClaudyGod Studio
-                  </CustomText>
-                </View>
-                <View
-                  style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: theme.radius.md,
-                    backgroundColor: `${theme.colors.primary}16`,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <MaterialIcons name="equalizer" size={20} color={theme.colors.primary} />
-                </View>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: theme.spacing.md }}>
+              <View>
+                <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
+                  Discover
+                </CustomText>
+                <CustomText variant="heading" style={{ color: theme.colors.text.primary, marginTop: 2 }}>
+                  Top Albums
+                </CustomText>
               </View>
+              <TVTouchable
+                onPress={() => router.push('/(tabs)/search')}
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: theme.colors.border,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: theme.colors.surface,
+                }}
+                showFocusBorder={false}
+              >
+                <MaterialIcons name="search" size={20} color={theme.colors.text.primary} />
+              </TVTouchable>
+            </View>
+          </FadeIn>
 
-              <View style={{ flexDirection: 'row', gap: theme.spacing.sm, marginTop: theme.spacing.md }}>
-                {[
-                  { label: 'Active users', value: '82.4K' },
-                  { label: 'Live now', value: '03' },
-                  { label: 'Playlists', value: '146' },
-                ].map((stat) => (
-                  <View
-                    key={stat.label}
+          <FadeIn delay={80}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: theme.spacing.sm }}>
+              {topAlbums.map((album) => (
+                <TVTouchable
+                  key={album.id}
+                  onPress={() => {
+                    setActiveTrackId(popularTracks[2].id);
+                    router.push('/(tabs)/PlaySection');
+                  }}
+                  style={{ width: compact ? 138 : 152, marginRight: theme.spacing.md }}
+                  showFocusBorder={false}
+                >
+                  <Image
+                    source={{ uri: album.imageUrl }}
                     style={{
-                      flex: 1,
-                      borderRadius: theme.radius.md,
+                      width: '100%',
+                      height: compact ? 148 : 164,
+                      borderRadius: 18,
                       borderWidth: 1,
                       borderColor: theme.colors.border,
-                      backgroundColor: theme.colors.surface,
-                      padding: theme.spacing.sm,
                     }}
-                  >
-                    <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
-                      {stat.value}
-                    </CustomText>
-                    <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 2 }}>
-                      {stat.label}
-                    </CustomText>
-                  </View>
-                ))}
-              </View>
-            </SurfaceCard>
-          </FadeIn>
-
-          <FadeIn>
-            <HeroBanner
-              imageUrl="https://images.unsplash.com/photo-1459749411175-04bf5292ceea?auto=format&fit=crop&w=1200&q=80"
-              title="Worship Essentials"
-              subtitle="Stream the latest live sessions and exclusive audio drops."
-              onPlay={() => console.log('Play hero')}
-              onSave={() => console.log('Save hero')}
-            />
-          </FadeIn>
-
-          <FadeIn delay={120} style={{ marginBottom: theme.spacing.lg }}>
-            <CustomText variant="title" style={{ color: theme.colors.text.primary }}>
-              Continue Watching
-            </CustomText>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: theme.spacing.sm }}>
-              {trendingVideos.map((item) => (
-                <TouchableOpacity
-                  key={item.id}
-                  style={{
-                    width: 260,
-                    marginRight: theme.spacing.md,
-                    borderRadius: theme.radius.md,
-                    overflow: 'hidden',
-                    backgroundColor: theme.colors.surface,
-                    borderWidth: 1,
-                    borderColor: theme.colors.border,
-                  }}
-                  onPress={() => console.log(item.title)}
-                >
-                  <Image source={{ uri: item.imageUrl }} style={{ width: '100%', height: 140 }} resizeMode="cover" />
-                  <View
-                    style={{
-                      position: 'absolute',
-                      right: theme.spacing.sm,
-                      top: theme.spacing.sm,
-                      width: 34,
-                      height: 34,
-                      borderRadius: 17,
-                      backgroundColor: 'rgba(0,0,0,0.5)',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <MaterialIcons name="play-arrow" size={18} color="#FFFFFF" />
-                  </View>
-                  <View style={{ padding: theme.spacing.sm }}>
-                    <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
-                      {item.title}
-                    </CustomText>
-                    <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 4 }}>
-                      {item.subtitle}
-                    </CustomText>
-                  </View>
-                </TouchableOpacity>
+                  />
+                  <CustomText variant="subtitle" style={{ color: theme.colors.text.primary, marginTop: 8 }} numberOfLines={1}>
+                    {album.title}
+                  </CustomText>
+                  <CustomText variant="caption" style={{ color: theme.colors.text.secondary }} numberOfLines={1}>
+                    {album.artist}
+                  </CustomText>
+                </TVTouchable>
               ))}
             </ScrollView>
           </FadeIn>
 
-          <FadeIn delay={200}>
-            <MediaRail
-              title="Trending Playlists"
-              actionLabel="See all"
-              onAction={() => console.log('See all trending')}
-              data={featuredPlaylists}
-              renderItem={(playlist) => (
-                <PosterCard
-                  key={playlist.id}
-                  imageUrl={playlist.imageUrl}
-                  title={playlist.title}
-                  subtitle={`${playlist.songCount} songs`}
-                  onPress={() => console.log('Open playlist', playlist.id)}
-                  size="md"
-                />
-              )}
-            />
-          </FadeIn>
-
-          <FadeIn delay={260}>
-            <MediaRail
-              title="New Releases"
-              actionLabel="More"
-              onAction={() => console.log('See all new')}
-              data={recentSongs}
-              renderItem={(song) => (
-                <PosterCard
-                  key={song.id}
-                  imageUrl="https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=600&q=80"
-                  title={song.title}
-                  subtitle={song.artist}
-                  onPress={() => console.log('Play song', song.id)}
-                  size="sm"
-                />
-              )}
-            />
-          </FadeIn>
-
-          <FadeIn delay={320}>
-            <SurfaceCard
-              style={{
-                padding: theme.spacing.lg,
-                marginTop: theme.spacing.md,
-              }}
-            >
-              <CustomText variant="title" style={{ color: theme.colors.text.primary }}>
-                Quick actions
-              </CustomText>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm, marginTop: theme.spacing.sm }}>
-                {quickActions.map((action) => (
-                  <TouchableOpacity
-                    key={action.label}
+          <FadeIn delay={140}>
+            <SurfaceCard style={{ marginTop: theme.spacing.lg, padding: theme.spacing.md }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: theme.spacing.sm }}>
+                <CustomText variant="title" style={{ color: theme.colors.text.primary }}>
+                  Popular
+                </CustomText>
+                <TVTouchable
+                  onPress={() => router.push('/(tabs)/Favourites')}
                   style={{
-                    width: actionCardWidth,
-                      borderRadius: theme.radius.md,
-                      borderWidth: 1,
-                      borderColor: theme.colors.border,
-                      backgroundColor: theme.colors.surfaceAlt,
-                      padding: theme.spacing.md,
+                    width: 32,
+                    height: 32,
+                    borderRadius: 16,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: `${theme.colors.primary}16`,
+                  }}
+                  showFocusBorder={false}
+                >
+                  <MaterialIcons name="chevron-right" size={18} color={theme.colors.primary} />
+                </TVTouchable>
+              </View>
+
+              {popularTracks.map((track) => {
+                const active = track.id === activeTrackId;
+                return (
+                  <TVTouchable
+                    key={track.id}
+                    onPress={() => setActiveTrackId(track.id)}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      paddingVertical: 9,
+                      paddingHorizontal: 8,
+                      borderRadius: 14,
+                      marginBottom: 6,
+                      backgroundColor: active ? `${theme.colors.primary}18` : 'transparent',
                     }}
-                    onPress={() => router.push(action.route as any)}
+                    showFocusBorder={false}
                   >
+                    <Image
+                      source={{ uri: track.imageUrl }}
+                      style={{ width: 44, height: 44, borderRadius: 12, marginRight: 10 }}
+                    />
+                    <View style={{ flex: 1 }}>
+                      <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }} numberOfLines={1}>
+                        {track.title}
+                      </CustomText>
+                      <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 2 }} numberOfLines={1}>
+                        {track.artist}
+                      </CustomText>
+                    </View>
+                    <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginRight: 10 }}>
+                      {track.duration}
+                    </CustomText>
                     <View
                       style={{
-                        width: 36,
-                        height: 36,
-                        borderRadius: 10,
-                        backgroundColor: `${theme.colors.primary}18`,
+                        width: 32,
+                        height: 32,
+                        borderRadius: 16,
                         alignItems: 'center',
                         justifyContent: 'center',
-                        marginBottom: 8,
+                        backgroundColor: active ? theme.colors.primary : theme.colors.surfaceAlt,
                       }}
                     >
-                      <MaterialIcons name={action.icon as any} size={18} color={theme.colors.primary} />
+                      <MaterialIcons
+                        name={active ? 'pause' : 'play-arrow'}
+                        size={17}
+                        color={active ? theme.colors.text.inverse : theme.colors.text.primary}
+                      />
                     </View>
-                    <CustomText variant="label" style={{ color: theme.colors.text.primary }}>
-                      {action.label}
-                    </CustomText>
-                    <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 4 }}>
-                      {action.subtitle}
-                    </CustomText>
-                  </TouchableOpacity>
-                ))}
-              </View>
+                  </TVTouchable>
+                );
+              })}
             </SurfaceCard>
+          </FadeIn>
+
+          <FadeIn delay={220}>
+            <View style={{ marginTop: theme.spacing.lg, flexDirection: 'row', gap: theme.spacing.sm }}>
+              <AppButton
+                title="Open Player"
+                size="sm"
+                variant="primary"
+                onPress={() => router.push('/(tabs)/PlaySection')}
+                leftIcon={<MaterialIcons name="music-note" size={16} color={theme.colors.text.inverse} />}
+                style={{ flex: 1 }}
+              />
+              <AppButton
+                title="Your Profile"
+                size="sm"
+                variant="outline"
+                onPress={() => router.push('/profile')}
+                leftIcon={<MaterialIcons name="person" size={16} color={theme.colors.primary} />}
+                style={{ flex: 1 }}
+              />
+            </View>
           </FadeIn>
         </Screen>
       </ScrollView>
+
+      <View
+        pointerEvents="box-none"
+        style={{
+          position: 'absolute',
+          left: 16,
+          right: 16,
+          bottom: 82,
+        }}
+      >
+        <TVTouchable
+          onPress={() => router.push('/(tabs)/PlaySection')}
+          style={{
+            borderRadius: 18,
+            borderWidth: 1,
+            borderColor: `${theme.colors.primary}55`,
+            backgroundColor: theme.colors.surface,
+            padding: 10,
+            flexDirection: 'row',
+            alignItems: 'center',
+            ...theme.shadows.card,
+          }}
+          showFocusBorder={false}
+        >
+          <Image source={{ uri: activeTrack.imageUrl }} style={{ width: 44, height: 44, borderRadius: 12, marginRight: 10 }} />
+          <View style={{ flex: 1 }}>
+            <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }} numberOfLines={1}>
+              {activeTrack.title}
+            </CustomText>
+            <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 2 }} numberOfLines={1}>
+              {activeTrack.artist}
+            </CustomText>
+          </View>
+          <View
+            style={{
+              width: 34,
+              height: 34,
+              borderRadius: 17,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: theme.colors.primary,
+            }}
+          >
+            <MaterialIcons name="pause" size={17} color={theme.colors.text.inverse} />
+          </View>
+        </TVTouchable>
+      </View>
     </TabScreenWrapper>
   );
 }

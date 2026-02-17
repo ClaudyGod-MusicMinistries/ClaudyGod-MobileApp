@@ -1,6 +1,6 @@
 // app/settingsPage/Scaffold.tsx
 import React from 'react';
-import { View, ScrollView, TouchableOpacity, StatusBar } from 'react-native';
+import { View, ScrollView, StatusBar } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../../components/CustomText';
@@ -8,6 +8,7 @@ import { useRouter } from 'expo-router';
 import { useAppTheme } from '../../util/colorScheme';
 import { spacing, radius } from '../../styles/designTokens';
 import { Screen } from '../../components/layout/Screen';
+import { TVTouchable } from '../../components/ui/TVTouchable';
 
 interface ScaffoldProps {
   title: string;
@@ -54,7 +55,7 @@ export function SettingsScaffold({ title, subtitle, children, hero }: ScaffoldPr
           backgroundColor: theme.colors.surface,
         }}
       >
-        <TouchableOpacity
+        <TVTouchable
           onPress={() => router.back()}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           style={{
@@ -67,9 +68,10 @@ export function SettingsScaffold({ title, subtitle, children, hero }: ScaffoldPr
             borderWidth: 1,
             borderColor: theme.colors.border,
           }}
+          showFocusBorder={false}
         >
           <MaterialIcons name="arrow-back" size={22} color={theme.colors.text.primary} />
-        </TouchableOpacity>
+        </TVTouchable>
         <View style={{ flex: 1 }}>
           <CustomText variant="heading" style={{ color: theme.colors.text.primary }}>
             {title}

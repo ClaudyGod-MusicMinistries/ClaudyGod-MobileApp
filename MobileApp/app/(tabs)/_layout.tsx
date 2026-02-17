@@ -15,7 +15,7 @@ export default function TabsLayout() {
     <View style={{ flex: 1, backgroundColor: currentColors.background }}>
       {/* Header with built-in safe area handling */}
       <AnimatedHeader
-        onPressHome={() => router.push('/home')}
+        onPressHome={() => router.replace('/(tabs)/home')}
         onPressSearch={() => router.push('/(tabs)/search')}
         onPressProfile={() => router.push('/profile')}
       />

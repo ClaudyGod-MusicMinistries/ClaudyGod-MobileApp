@@ -1,80 +1,35 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState } from "react";
-import { View, TouchableOpacity, useWindowDimensions, Platform } from "react-native";
-import { MaterialIcons } from "@expo/vector-icons";
-import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
-import { CustomText } from "../components/CustomText";
-import { useColorScheme } from "../util/colorScheme";
-import { colors } from "../constants/color";
-import { spacing, tv as tvTokens } from "../styles/designTokens";
+import React from 'react';
+import { View, useWindowDimensions, Platform } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
+import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import { CustomText } from '../components/CustomText';
+import { useColorScheme } from '../util/colorScheme';
+import { colors } from '../constants/color';
+import { spacing } from '../styles/designTokens';
+import { TVTouchable } from './ui/TVTouchable';
 
 const TabBar = ({ state, navigation }: BottomTabBarProps) => {
   const colorScheme = useColorScheme();
   const currentColors = colors[colorScheme];
   const { width: SCREEN_WIDTH } = useWindowDimensions();
   const isTV = Platform.isTV;
-  const [focusedKey, setFocusedKey] = useState<string | null>(null);
-  
-  // Responsive sizing based on screen width
-  const getResponsiveSizes = () => {
-    // TV gets larger hit targets automatically
-    if (isTV) {
-      return {
-        containerHeight: 84,
-        centerButtonSize: 72,
-        centerIconSize: 32,
-        regularIconSize: 24,
-        fontSize: 12,
-        bottomMargin: 0,
-        containerMargin: 0,
-        centerButtonOffset: -24
-      };
-    }
-
-    if (SCREEN_WIDTH < 375) {
-      return {
-        containerHeight: 64,
-        centerButtonSize: 54,
-        centerIconSize: 22,
-        regularIconSize: 18,
-        fontSize: 10,
-        bottomMargin: 0,
-        containerMargin: 0,
-        centerButtonOffset: -20
-      };
-    } else if (SCREEN_WIDTH < 414) {
-      return {
-        containerHeight: 66,
-        centerButtonSize: 56,
-        centerIconSize: 24,
-        regularIconSize: 20,
-        fontSize: 11,
-        bottomMargin: 0,
-        containerMargin: 0,
-        centerButtonOffset: -22
-      };
-    } else {
-      return {
-        containerHeight: 68,
-        centerButtonSize: 58,
-        centerIconSize: 26,
-        regularIconSize: 22,
-        fontSize: 12,
-        bottomMargin: 0,
-        containerMargin: 0,
-        centerButtonOffset: -22
-      };
-    }
+  const compact = SCREEN_WIDTH < 380;
+  const sizes = {
+    containerHeight: isTV ? 90 : compact ? 70 : 74,
+    centerButtonSize: isTV ? 70 : compact ? 56 : 60,
+    centerIconSize: isTV ? 30 : compact ? 24 : 26,
+    regularIconSize: isTV ? 24 : compact ? 19 : 21,
+    fontSize: isTV ? 12 : compact ? 10 : 11,
+    centerButtonOffset: isTV ? -24 : compact ? -18 : -20,
   };
 
-  const sizes = getResponsiveSizes();
-
   const tabConfig = {
-    home: { icon: "home" as const, label: "Home" },
-    search: { icon: "search" as const, label: "Search" },
-    Settings: { icon: "settings" as const, label: "Settings" },
-    Favourites: { icon: "favorite" as const, label: "Library" },
-    PlaySection: { icon: "play-arrow" as const, label: "Play", isCenter: true },
+    home: { icon: 'home' as const, label: 'Home' },
+    search: { icon: 'search' as const, label: 'Search' },
+    Settings: { icon: 'settings' as const, label: 'Settings' },
+    Favourites: { icon: 'favorite' as const, label: 'Library' },
+    PlaySection: { icon: 'music-note' as const, label: 'Play', isCenter: true },
   };
 
   return (
@@ -96,35 +51,27 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
       {state.routes.map((route, index) => {
         const isFocused = state.index === index;
         const config = (tabConfig as any)[route.name];
-        
+
         if (!config) return null;
 
-        const onPress = () => navigation.navigate(route.name);
-
-        // Center Play Button - Professional floating design
-        const focusRingStyle = focusedKey === route.key ? {
-          transform: [{ scale: tvTokens.focusScale }],
-        } : null;
+        const onPress = () => navigation.navigate(route.name as never);
 
         if (config.isCenter) {
           return (
-            <TouchableOpacity
+            <TVTouchable
               key={route.key}
               onPress={onPress}
-              onFocus={() => setFocusedKey(route.key)}
-              style={{ 
-                flex: 1, 
-                alignItems: 'center', 
+              style={{
+                flex: 1,
+                alignItems: 'center',
                 justifyContent: 'center',
                 marginTop: sizes.centerButtonOffset,
-                ...(focusRingStyle || {}),
               }}
               activeOpacity={0.9}
-              focusable
               hasTVPreferredFocus={index === 2}
-              hitSlop={tvTokens.hitSlop}
+              showFocusBorder={false}
             >
-              <View 
+              <View
                 style={{
                   width: sizes.centerButtonSize,
                   height: sizes.centerButtonSize,
@@ -132,45 +79,46 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
                   backgroundColor: currentColors.primary,
                   justifyContent: 'center',
                   alignItems: 'center',
-                  borderWidth: 1,
-                  borderColor: currentColors.primary,
+                  borderWidth: isFocused ? 1 : 0,
+                  borderColor: isFocused ? currentColors.accent : 'transparent',
+                  shadowColor: currentColors.primary,
+                  shadowOpacity: 0.35,
+                  shadowRadius: 14,
+                  shadowOffset: { width: 0, height: 6 },
+                  elevation: 8,
                 }}
               >
-                <MaterialIcons 
-                  name={config.icon} 
-                  size={sizes.centerIconSize} 
-                  color="#FFFFFF" 
+                <MaterialIcons
+                  name={config.icon}
+                  size={sizes.centerIconSize}
+                  color="#FFFFFF"
                 />
               </View>
-            </TouchableOpacity>
+            </TVTouchable>
           );
         }
 
-        // Regular Tabs - Professional minimal design
         return (
-          <TouchableOpacity
+          <TVTouchable
             key={route.key}
             onPress={onPress}
-            onFocus={() => setFocusedKey(route.key)}
-            style={{ 
-              flex: 1, 
-              alignItems: 'center', 
+            style={{
+              flex: 1,
+              alignItems: 'center',
               justifyContent: 'center',
               paddingVertical: 8,
-              ...(focusRingStyle || {}),
             }}
             activeOpacity={0.7}
-            focusable
-            hitSlop={tvTokens.hitSlop}
+            showFocusBorder={false}
           >
             <View style={{ alignItems: 'center', gap: 4 }}>
-              <MaterialIcons 
-                name={config.icon} 
+              <MaterialIcons
+                name={config.icon}
                 size={sizes.regularIconSize}
                 color={isFocused ? currentColors.primary : currentColors.text.secondary}
               />
               <CustomText
-                style={{ 
+                style={{
                   fontSize: sizes.fontSize,
                   color: isFocused ? currentColors.primary : currentColors.text.secondary,
                   fontWeight: isFocused ? '600' : '400',
@@ -180,10 +128,9 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
               >
                 {config.label}
               </CustomText>
-              
-              {/* Active indicator dot */}
+
               {isFocused && (
-                <View 
+                <View
                   style={{
                     width: 4,
                     height: 4,
@@ -194,7 +141,7 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
                 />
               )}
             </View>
-          </TouchableOpacity>
+          </TVTouchable>
         );
       })}
     </View>

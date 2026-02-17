@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Image, Pressable, ScrollView, StatusBar, View, useWindowDimensions } from 'react-native';
+import { Image, ScrollView, StatusBar, View, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   Extrapolate,
@@ -18,6 +18,7 @@ import { useRouter } from 'expo-router';
 import { CustomText } from '../components/CustomText';
 import { AppButton } from '../components/ui/AppButton';
 import { useAppTheme } from '../util/colorScheme';
+import { TVTouchable } from '../components/ui/TVTouchable';
 
 const tips = [
   {
@@ -46,7 +47,7 @@ const tips = [
     title: 'Cast to TV',
     desc: 'Enjoy a big‑screen worship experience.',
     action: 'Explore Home',
-    route: '/home',
+    route: '/(tabs)/home',
   },
 ];
 
@@ -96,17 +97,17 @@ const TipCard = ({
         animatedStyle,
       ]}
     >
-      <Pressable
+      <TVTouchable
         onPress={onPress}
-        style={({ pressed }) => ({
+        style={{
           backgroundColor: 'rgba(255,255,255,0.06)',
           borderRadius: 16,
           padding: 18,
           borderWidth: 1,
           borderColor: 'rgba(255,255,255,0.12)',
           alignItems: 'center',
-          transform: [{ scale: pressed ? 0.98 : 1 }],
-        })}
+        }}
+        showFocusBorder={false}
       >
         <View
           style={{
@@ -130,10 +131,13 @@ const TipCard = ({
         >
           {tip.desc}
         </CustomText>
-        <View style={{ marginTop: 12, alignSelf: 'stretch' }}>
-          <AppButton title={tip.action} size="sm" variant="outline" fullWidth />
+        <View style={{ marginTop: 12, flexDirection: 'row', alignItems: 'center' }}>
+          <CustomText variant="label" style={{ color: theme.colors.accent }}>
+            {tip.action}
+          </CustomText>
+          <MaterialIcons name="arrow-forward" size={16} color={theme.colors.accent} style={{ marginLeft: 6 }} />
         </View>
-      </Pressable>
+      </TVTouchable>
     </Animated.View>
   );
 };
@@ -344,7 +348,7 @@ const Landing = () => {
             title="Get Started"
             size="sm"
             variant="primary"
-            onPress={() => router.replace('/home')}
+            onPress={() => router.replace('/(tabs)/home')}
           />
         </Animated.View>
 

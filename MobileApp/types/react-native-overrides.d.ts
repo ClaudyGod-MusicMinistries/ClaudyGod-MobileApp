@@ -9,5 +9,11 @@ declare module 'react-native' {
 
   interface TouchableOpacityProps {
     focusable?: boolean;
+    hasTVPreferredFocus?: boolean;
+    nextFocusDown?: number;
+    nextFocusForward?: number;
+    nextFocusLeft?: number;
+    nextFocusRight?: number;
+    nextFocusUp?: number;
   }
 }
