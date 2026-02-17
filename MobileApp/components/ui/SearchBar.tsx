@@ -21,13 +21,25 @@ export function SearchBar({ placeholder, value, onChangeText, onSubmit }: Search
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: theme.colors.surface,
-        borderRadius: 8,
-        paddingHorizontal: theme.spacing.md,
-        borderWidth: focused ? 1 : 0,
-        borderColor: focused ? theme.colors.border : 'transparent',
+        borderRadius: theme.radius.md,
+        paddingHorizontal: theme.spacing.sm,
+        minHeight: 48,
+        borderWidth: 1,
+        borderColor: focused ? theme.colors.primary : theme.colors.border,
       }}
     >
-      <MaterialIcons name="search" size={18} color={theme.colors.text.secondary} />
+      <View
+        style={{
+          width: 32,
+          height: 32,
+          borderRadius: 8,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: `${theme.colors.primary}12`,
+        }}
+      >
+        <MaterialIcons name="search" size={18} color={theme.colors.primary} />
+      </View>
       <TextInput
         placeholder={placeholder || 'Search songs, albums, artists'}
         placeholderTextColor={theme.colors.text.secondary}
@@ -45,8 +57,21 @@ export function SearchBar({ placeholder, value, onChangeText, onSubmit }: Search
         }}
       />
       {value.length > 0 ? (
-        <TouchableOpacity onPress={() => onChangeText('')}>
+        <TouchableOpacity onPress={() => onChangeText('')} style={{ marginHorizontal: 4 }}>
           <MaterialIcons name="close" size={18} color={theme.colors.text.secondary} />
+        </TouchableOpacity>
+      ) : null}
+      {onSubmit ? (
+        <TouchableOpacity
+          onPress={onSubmit}
+          style={{
+            backgroundColor: theme.colors.primary,
+            paddingHorizontal: 12,
+            paddingVertical: 8,
+            borderRadius: theme.radius.pill,
+          }}
+        >
+          <MaterialIcons name="arrow-forward" size={16} color={theme.colors.text.inverse} />
         </TouchableOpacity>
       ) : null}
     </View>

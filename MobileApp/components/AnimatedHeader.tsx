@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-require-imports */
 // components/AnimatedHeader.tsx
 import React, { useMemo } from 'react';
 import { View, TouchableOpacity, Image, StatusBar, Platform, StyleSheet, ViewStyle } from 'react-native';

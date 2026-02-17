@@ -5,6 +5,8 @@ import { CustomText } from '../components/CustomText';
 import { AppButton } from '../components/ui/AppButton';
 import { useAppTheme } from '../util/colorScheme';
 import { spacing, radius } from '../styles/designTokens';
+import { SurfaceCard } from '../components/ui/SurfaceCard';
+import { FadeIn } from '../components/ui/FadeIn';
 
 export default function Profile() {
   const theme = useAppTheme();
@@ -18,43 +20,51 @@ export default function Profile() {
       title="Profile"
       subtitle="Update your account details and preferences."
       hero={
-        <View
-          style={{
-            backgroundColor: theme.colors.surface,
-            borderRadius: radius.lg,
-            padding: spacing.lg,
-            borderWidth: 1,
-            borderColor: theme.colors.border,
-            marginBottom: spacing.lg,
-            alignItems: 'center',
-          }}
-        >
-          <Image
-            source={require('../assets/images/ClaudyGoLogo.webp')}
-            style={{ width: 72, height: 72, borderRadius: 18, marginBottom: 12 }}
-          />
-          <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
-            ClaudyGod Music
-          </CustomText>
-          <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 4 }}>
-            Creator account • Streaming ministry
-          </CustomText>
-        </View>
+        <FadeIn>
+          <SurfaceCard
+            tone="subtle"
+            style={{
+              padding: spacing.lg,
+              marginBottom: spacing.lg,
+              alignItems: 'center',
+            }}
+          >
+            <Image
+              source={require('../assets/images/ClaudyGoLogo.webp')}
+              style={{ width: 72, height: 72, borderRadius: 18, marginBottom: 12 }}
+            />
+            <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
+              ClaudyGod Music
+            </CustomText>
+            <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 4 }}>
+              Creator account • Streaming ministry
+            </CustomText>
+          </SurfaceCard>
+        </FadeIn>
       }
     >
-      <View style={{ gap: spacing.md }}>
-        <ProfileField label="Full name" value={name} onChangeText={setName} />
-        <ProfileField label="Email address" value={email} onChangeText={setEmail} keyboardType="email-address" />
-        <ProfileField label="Phone" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
-        <ProfileField label="Location" value={location} onChangeText={setLocation} />
-      </View>
+      <FadeIn delay={90}>
+        <SurfaceCard style={{ padding: spacing.md }}>
+          <CustomText variant="subtitle" style={{ color: theme.colors.text.primary, marginBottom: spacing.sm }}>
+            Personal information
+          </CustomText>
+          <View style={{ gap: spacing.md }}>
+            <ProfileField label="Full name" value={name} onChangeText={setName} />
+            <ProfileField label="Email address" value={email} onChangeText={setEmail} keyboardType="email-address" />
+            <ProfileField label="Phone" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
+            <ProfileField label="Location" value={location} onChangeText={setLocation} />
+          </View>
+        </SurfaceCard>
+      </FadeIn>
 
-      <View style={{ marginTop: spacing.lg }}>
-        <AppButton title="Save changes" variant="primary" fullWidth />
-        <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 8 }}>
-          We’ll connect this to your backend once endpoints are ready.
-        </CustomText>
-      </View>
+      <FadeIn delay={150}>
+        <View style={{ marginTop: spacing.lg, marginBottom: spacing.sm }}>
+          <AppButton title="Save changes" variant="primary" fullWidth />
+          <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 8 }}>
+            We’ll connect this to your backend once endpoints are ready.
+          </CustomText>
+        </View>
+      </FadeIn>
     </SettingsScaffold>
   );
 }

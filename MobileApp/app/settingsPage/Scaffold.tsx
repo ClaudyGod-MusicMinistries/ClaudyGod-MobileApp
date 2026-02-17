@@ -1,6 +1,7 @@
 // app/settingsPage/Scaffold.tsx
 import React from 'react';
 import { View, ScrollView, TouchableOpacity, StatusBar } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../../components/CustomText';
 import { useRouter } from 'expo-router';
@@ -22,6 +23,23 @@ export function SettingsScaffold({ title, subtitle, children, hero }: ScaffoldPr
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <StatusBar barStyle={theme.scheme === 'dark' ? 'light-content' : 'dark-content'} />
+      <LinearGradient
+        colors={
+          theme.scheme === 'dark'
+            ? ['rgba(76,29,149,0.22)', 'rgba(10,10,15,0)']
+            : ['rgba(124,58,237,0.12)', 'rgba(255,255,255,0)']
+        }
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        pointerEvents="none"
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 260,
+        }}
+      />
       {/* Header */}
       <View
         style={{
@@ -33,6 +51,7 @@ export function SettingsScaffold({ title, subtitle, children, hero }: ScaffoldPr
           flexDirection: 'row',
           alignItems: 'center',
           gap: spacing.md,
+          backgroundColor: theme.colors.surface,
         }}
       >
         <TouchableOpacity
@@ -44,7 +63,7 @@ export function SettingsScaffold({ title, subtitle, children, hero }: ScaffoldPr
             borderRadius: radius.md,
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: `${theme.colors.surface}AA`,
+            backgroundColor: theme.colors.surfaceAlt,
             borderWidth: 1,
             borderColor: theme.colors.border,
           }}

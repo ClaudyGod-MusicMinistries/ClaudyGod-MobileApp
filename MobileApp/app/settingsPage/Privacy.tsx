@@ -1,125 +1,144 @@
-// app/settingsPage/Privacy.tsx
 import React from 'react';
-import { View } from 'react-native';
+import { View, TouchableOpacity, Linking, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { SettingsScaffold } from './Scaffold';
 import { CustomText } from '../../components/CustomText';
 import { useAppTheme } from '../../util/colorScheme';
-import { spacing, radius } from '../../styles/designTokens';
+import { spacing } from '../../styles/designTokens';
+import { SurfaceCard } from '../../components/ui/SurfaceCard';
+import { FadeIn } from '../../components/ui/FadeIn';
+import { AppButton } from '../../components/ui/AppButton';
 
 const sections = [
   {
     title: 'What we collect',
     items: [
-      'Account basics (email, name) for login and support',
-      'Playback activity to keep your place across devices',
-      'Device + diagnostics to improve app stability',
-      'Optional downloads metadata to manage storage',
+      'Account basics (email and name) for authentication and support.',
+      'Playback activity to continue from where you stopped.',
+      'Device diagnostics to improve stability and crash recovery.',
+      'Optional download metadata to manage offline storage.',
     ],
   },
   {
     title: 'How we use it',
     items: [
-      'Personalize recommendations and mixes',
-      'Sync library/favorites across phone, car, and TV',
-      'Detect crashes and improve stream quality',
-      'Keep your account secure (fraud detection, abuse)',
+      'Personalize recommendations and curated mixes.',
+      'Sync favorites and library across devices.',
+      'Improve quality of service for video and audio playback.',
+      'Protect your account from abuse and suspicious activity.',
     ],
   },
   {
     title: 'Your controls',
     items: [
-      'Export your data anytime',
-      'Delete account + purge personal data',
-      'Disable ad/promo emails',
-      'Reset recommendations by clearing history',
+      'Request full data export anytime.',
+      'Delete account and purge personal profile data.',
+      'Disable product and marketing emails.',
+      'Reset recommendations by clearing activity history.',
     ],
   },
   {
-    title: 'Third parties',
+    title: 'Third-party services',
     items: [
-      'Analytics and crash reporting (aggregated)',
-      'No selling of personal data—ever',
-      'Content delivery network for fast streams',
-      'Payment processors for subscriptions',
+      'Analytics and crash monitoring (aggregated only).',
+      'Global CDN for faster stream delivery.',
+      'Certified payment processors for subscriptions.',
+      'We do not sell personal data.',
     ],
   },
 ];
 
 export default function Privacy() {
   const theme = useAppTheme();
-
-  const Card: React.FC<{ title: string; items: string[] }> = ({ title, items }) => (
-    <View
-      style={{
-        backgroundColor: theme.colors.surface,
-        borderRadius: radius.lg,
-        padding: spacing.lg,
-        borderWidth: 1,
-        borderColor: theme.colors.border,
-        marginBottom: spacing.md,
-      }}
-    >
-      <CustomText variant="subtitle" style={{ color: theme.colors.text.primary, marginBottom: spacing.sm }}>
-        {title}
-      </CustomText>
-      {items.map((item) => (
-        <View key={item} style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: spacing.xs }}>
-          <MaterialIcons name="check-circle" size={18} color={theme.colors.primary} style={{ marginTop: 2 }} />
-          <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginLeft: spacing.sm, flex: 1 }}>
-            {item}
-          </CustomText>
-        </View>
-      ))}
-    </View>
-  );
+  const { width } = useWindowDimensions();
+  const isCompact = width < 390;
 
   return (
     <SettingsScaffold
       title="Privacy & Security"
-      subtitle="Clear policies, fast controls, zero data selling."
+      subtitle="Clear controls, transparent processing, enterprise practices."
       hero={
-        <View
-          style={{
-            backgroundColor: theme.colors.surface,
-            borderRadius: radius.lg,
-            padding: spacing.lg,
-            borderWidth: 1,
-            borderColor: theme.colors.border,
-            marginBottom: spacing.lg,
-          }}
-        >
-          <CustomText variant="heading" style={{ color: theme.colors.text.primary, marginBottom: spacing.sm }}>
-            Your data. Your call.
-          </CustomText>
-          <CustomText variant="body" style={{ color: theme.colors.text.secondary }}>
-            We keep only what’s needed to stream seamlessly across mobile and TV, and you can export or delete it any time.
-          </CustomText>
-        </View>
+        <FadeIn>
+          <SurfaceCard tone="subtle" style={{ padding: spacing.lg, marginBottom: spacing.lg }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <View
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 12,
+                  backgroundColor: `${theme.colors.primary}20`,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginRight: spacing.sm,
+                }}
+              >
+                <MaterialIcons name="shield" size={20} color={theme.colors.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <CustomText variant="heading" style={{ color: theme.colors.text.primary }}>
+                  Your data. Your control.
+                </CustomText>
+                <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 4 }}>
+                  Export, update, or remove your data at any time.
+                </CustomText>
+              </View>
+            </View>
+            <View style={{ marginTop: spacing.md, flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+              <AppButton
+                title="Export data"
+                size="sm"
+                variant="outline"
+                fullWidth={isCompact}
+                onPress={() => console.log('Export data')}
+              />
+              <AppButton
+                title="Delete account"
+                size="sm"
+                variant="ghost"
+                fullWidth={isCompact}
+                onPress={() => console.log('Delete account')}
+              />
+            </View>
+          </SurfaceCard>
+        </FadeIn>
       }
     >
-      {sections.map((section) => (
-        <Card key={section.title} title={section.title} items={section.items} />
+      {sections.map((section, index) => (
+        <FadeIn key={section.title} delay={80 + index * 50}>
+          <SurfaceCard style={{ padding: spacing.md, marginBottom: spacing.sm }}>
+            <CustomText variant="subtitle" style={{ color: theme.colors.text.primary, marginBottom: spacing.sm }}>
+              {section.title}
+            </CustomText>
+            {section.items.map((item) => (
+              <View
+                key={item}
+                style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: spacing.xs }}
+              >
+                <MaterialIcons name="check-circle" size={16} color={theme.colors.primary} style={{ marginTop: 2 }} />
+                <CustomText
+                  variant="caption"
+                  style={{ color: theme.colors.text.secondary, marginLeft: spacing.sm, flex: 1 }}
+                >
+                  {item}
+                </CustomText>
+              </View>
+            ))}
+          </SurfaceCard>
+        </FadeIn>
       ))}
 
-      <View
-        style={{
-          backgroundColor: `${theme.colors.primary}12`,
-          borderRadius: radius.lg,
-          padding: spacing.lg,
-          borderWidth: 1,
-          borderColor: `${theme.colors.primary}55`,
-          marginTop: spacing.lg,
-          marginBottom: spacing.xl,
-        }}
-      >
-        <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
-          Need anything removed or exported?
-        </CustomText>
-        <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 6 }}>
-          Email privacy@claudygodmusic.com and we’ll respond within 24 hours.
-        </CustomText>
-      </View>
+      <FadeIn delay={300}>
+        <TouchableOpacity onPress={() => Linking.openURL('mailto:privacy@claudygodmusic.com')}>
+          <SurfaceCard tone="subtle" style={{ padding: spacing.md, marginTop: spacing.sm, marginBottom: spacing.xl }}>
+            <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
+              Need data exported or removed?
+            </CustomText>
+            <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 6 }}>
+              Email privacy@claudygodmusic.com and our team responds within 24 hours.
+            </CustomText>
+          </SurfaceCard>
+        </TouchableOpacity>
+      </FadeIn>
     </SettingsScaffold>
   );
 }

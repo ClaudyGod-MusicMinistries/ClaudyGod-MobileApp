@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-require-imports */
 import React, { useEffect, useRef, useState } from 'react';
 import { Image, Pressable, ScrollView, StatusBar, View, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -14,14 +13,11 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import type { SharedValue } from 'react-native-reanimated';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { CustomText } from '../components/CustomText';
 import { AppButton } from '../components/ui/AppButton';
 import { useAppTheme } from '../util/colorScheme';
-
-const HOLD_MS = 5 * 60 * 1000; // 5 minutes
 
 const tips = [
   {
@@ -54,6 +50,8 @@ const tips = [
   },
 ];
 
+const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
+
 const TipCard = ({
   tip,
   index,
@@ -71,7 +69,7 @@ const TipCard = ({
   cardWidth: number;
   cardSpacing: number;
   snapInterval: number;
-  scrollX: SharedValue<number>;
+  scrollX: any;
   onPress: () => void;
   theme: ReturnType<typeof useAppTheme>;
 }) => {
@@ -149,7 +147,7 @@ const Landing = () => {
   const cardSpacing = 16;
   const sidePadding = Math.max(16, (width - cardWidth) / 2);
   const snapInterval = cardWidth + cardSpacing;
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<React.ComponentRef<typeof AnimatedScrollView>>(null);
   const scrollX = useSharedValue(0);
 
   const fadeIn = useSharedValue(0);
@@ -158,6 +156,8 @@ const Landing = () => {
   const titleFloat = useSharedValue(12);
   const subtitleFloat = useSharedValue(16);
   const ctaScale = useSharedValue(0.92);
+  const ringRotate = useSharedValue(0);
+  const orbDrift = useSharedValue(0);
 
   useEffect(() => {
     fadeIn.value = withTiming(1, { duration: 800 });
@@ -176,21 +176,16 @@ const Landing = () => {
     titleFloat.value = withTiming(0, { duration: 900 });
     subtitleFloat.value = withDelay(80, withTiming(0, { duration: 900 }));
     ctaScale.value = withDelay(200, withSpring(1, { damping: 10, stiffness: 140 }));
-
-    const timer = setTimeout(() => {
-      router.replace('/home');
-    }, HOLD_MS);
-
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [fadeIn, glowPulse, logoBounce, router]);
+    ringRotate.value = withRepeat(withTiming(360, { duration: 12000 }), -1, false);
+    orbDrift.value = withRepeat(withSequence(withTiming(1, { duration: 2600 }), withTiming(0, { duration: 2600 })), -1, true);
+  }, [ctaScale, fadeIn, glowPulse, logoBounce, orbDrift, ringRotate, subtitleFloat, titleFloat]);
 
   useEffect(() => {
     const interval = setInterval(() => {
       setActiveTip((prev) => {
         const next = (prev + 1) % tips.length;
-        scrollRef.current?.scrollTo({ x: next * snapInterval, animated: true });
+        const scrollNode = scrollRef.current as unknown as ScrollView | null;
+        scrollNode?.scrollTo({ x: next * snapInterval, animated: true });
         return next;
       });
     }, 4500);
@@ -218,8 +213,20 @@ const Landing = () => {
     transform: [{ scale: ctaScale.value }],
   }));
 
+  const ringStyle = useAnimatedStyle(() => ({
+    transform: [{ rotateZ: `${ringRotate.value}deg` }, { scale: glowPulse.value }],
+  }));
+
+  const orbTopStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: interpolate(orbDrift.value, [0, 1], [0, -18]) }],
+  }));
+
+  const orbBottomStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: interpolate(orbDrift.value, [0, 1], [0, 14]) }],
+  }));
+
   const onScroll = useAnimatedScrollHandler({
-    onScroll: (event) => {
+    onScroll: (event: any) => {
       scrollX.value = event.contentOffset.x;
     },
   });
@@ -248,6 +255,36 @@ const Landing = () => {
         colors={['rgba(3,6,12,0.75)', 'rgba(3,6,12,0.88)', 'rgba(3,6,12,0.98)']}
         style={{ position: 'absolute', width: '100%', height: '100%' }}
       />
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          orbTopStyle,
+          {
+            position: 'absolute',
+            top: 86,
+            right: -62,
+            width: 220,
+            height: 220,
+            borderRadius: 220,
+            backgroundColor: 'rgba(192,132,252,0.15)',
+          },
+        ]}
+      />
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          orbBottomStyle,
+          {
+            position: 'absolute',
+            bottom: 110,
+            left: -70,
+            width: 210,
+            height: 210,
+            borderRadius: 210,
+            backgroundColor: 'rgba(124,58,237,0.14)',
+          },
+        ]}
+      />
 
       <Animated.View
         style={[
@@ -271,6 +308,20 @@ const Landing = () => {
             },
           ]}
         >
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              ringStyle,
+              {
+                position: 'absolute',
+                width: 128,
+                height: 128,
+                borderRadius: 64,
+                borderWidth: 1,
+                borderColor: 'rgba(192,132,252,0.25)',
+              },
+            ]}
+          />
           <Image
             source={require('../assets/images/ClaudyGoLogo.webp')}
             style={{ width: 64, height: 64, borderRadius: 16 }}
@@ -284,7 +335,7 @@ const Landing = () => {
         </Animated.View>
         <Animated.View style={subtitleStyle}>
           <CustomText variant="body" style={{ color: '#CBD5F5', marginTop: 6, textAlign: 'center' }}>
-            A premium worship streaming experience for mobile and TV.
+            Premium worship streaming engineered for mobile, TV, and cast devices.
           </CustomText>
         </Animated.View>
 
@@ -305,7 +356,7 @@ const Landing = () => {
             Swipe to explore key actions.
           </CustomText>
 
-          <Animated.ScrollView
+          <AnimatedScrollView
             ref={scrollRef}
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -317,7 +368,7 @@ const Landing = () => {
               paddingHorizontal: sidePadding,
               paddingVertical: 16,
             }}
-            onMomentumScrollEnd={(event) => {
+            onMomentumScrollEnd={(event: any) => {
               const index = Math.round(event.nativeEvent.contentOffset.x / snapInterval);
               setActiveTip(index);
             }}
@@ -336,7 +387,7 @@ const Landing = () => {
                 theme={theme}
               />
             ))}
-          </Animated.ScrollView>
+          </AnimatedScrollView>
 
           <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 4 }}>
             {tips.map((_, index) => (

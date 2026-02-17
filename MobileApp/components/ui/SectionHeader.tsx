@@ -15,14 +15,29 @@ export function SectionHeader({ title, actionLabel, onAction }: SectionHeaderPro
   const theme = useAppTheme();
 
   return (
-    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+    <View
+      style={{
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 2,
+      }}
+    >
       <CustomText variant="title" style={{ color: theme.colors.text.primary }}>
         {title}
       </CustomText>
       {actionLabel ? (
         <TouchableOpacity
           onPress={onAction}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 6,
+            paddingHorizontal: 10,
+            paddingVertical: 6,
+            borderRadius: theme.radius.pill,
+            backgroundColor: `${theme.colors.primary}14`,
+          }}
         >
           <CustomText variant="label" style={{ color: theme.colors.primary }}>
             {actionLabel}

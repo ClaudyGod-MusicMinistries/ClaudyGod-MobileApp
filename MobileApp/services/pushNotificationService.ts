@@ -47,15 +47,15 @@ export class PushNotificationService {
     if (this.isInitialized) return true;
 
     try {
-      const { status: existingStatus } = await Notifications.getPermissionsAsync();
-      let finalStatus = existingStatus;
+      const existingPermission = await Notifications.getPermissionsAsync();
+      let isGranted = existingPermission.granted;
 
-      if (existingStatus !== 'granted') {
-        const { status } = await Notifications.requestPermissionsAsync();
-        finalStatus = status;
+      if (!isGranted) {
+        const requestedPermission = await Notifications.requestPermissionsAsync();
+        isGranted = requestedPermission.granted;
       }
 
-      if (finalStatus !== 'granted') {
+      if (!isGranted) {
         console.log('Failed to get push token for push notification!');
         return false;
       }
@@ -155,7 +155,9 @@ export class PushNotificationService {
       const notificationId = await Notifications.scheduleNotificationAsync({
         content: notificationContent,
         trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
           seconds: delayInSeconds,
+          repeats: false,
         },
       });
 
@@ -175,8 +177,8 @@ export class PushNotificationService {
   }
 
   async getPermissionStatus(): Promise<Notifications.PermissionStatus> {
-    const { status } = await Notifications.getPermissionsAsync();
-    return status;
+    const permissions = await Notifications.getPermissionsAsync();
+    return permissions.status;
   }
 
   async removePushToken(): Promise<void> {

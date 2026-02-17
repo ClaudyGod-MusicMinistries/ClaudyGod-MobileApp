@@ -26,9 +26,9 @@ export function PosterCard({
   const theme = useAppTheme();
   const isTV = Platform.isTV;
   const sizes = {
-    sm: { w: 120, h: 140 },
-    md: { w: 160, h: 200 },
-    lg: { w: 200, h: 240 },
+    sm: { w: 124, h: 150 },
+    md: { w: 164, h: 204 },
+    lg: { w: 204, h: 248 },
   }[size];
 
   return (
@@ -37,38 +37,42 @@ export function PosterCard({
       focusable
       hitSlop={isTV ? tvTokens.hitSlop : undefined}
       style={{ width: sizes.w, marginRight: theme.spacing.md }}
+      activeOpacity={0.9}
     >
       <View
         style={{
           width: sizes.w,
           height: sizes.h,
-        borderRadius: theme.radius.md,
-        overflow: 'hidden',
-        backgroundColor: theme.colors.surface,
-      }}
-    >
+          borderRadius: theme.radius.md,
+          overflow: 'hidden',
+          backgroundColor: theme.colors.surface,
+          borderWidth: 1,
+          borderColor: theme.colors.border,
+          ...theme.shadows.soft,
+        }}
+      >
         <Image source={{ uri: imageUrl }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
         {showPlay ? (
           <View
             style={{
               position: 'absolute',
               right: theme.spacing.sm,
-              bottom: theme.spacing.sm,
+              top: theme.spacing.sm,
               width: 36,
               height: 36,
               borderRadius: 18,
-              backgroundColor: theme.colors.primary,
+              backgroundColor: 'rgba(0,0,0,0.55)',
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <MaterialIcons name="play-arrow" size={20} color={theme.colors.text.inverse} />
+            <MaterialIcons name="play-arrow" size={18} color="#FFFFFF" />
           </View>
         ) : null}
       </View>
       <CustomText
         variant="label"
-        style={{ color: theme.colors.text.primary, marginTop: 6 }}
+        style={{ color: theme.colors.text.primary, marginTop: 8 }}
         numberOfLines={1}
       >
         {title}

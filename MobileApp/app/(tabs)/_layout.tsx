@@ -1,7 +1,7 @@
 // app/(tabs)/_layout.tsx
 import { Tabs, useRouter } from "expo-router";
 import TabBar from "../../components/TabBar";
-import AnimatedHeader from "../../components/AnimatedHeader";
+import { AnimatedHeader } from "../../components/AnimatedHeader";
 import { View } from "react-native";
 import { useColorScheme } from "../../util/colorScheme";
 import { colors } from "../../constants/color";
