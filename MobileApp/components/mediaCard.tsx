@@ -1,10 +1,11 @@
 // components/cards/MediaCard.tsx
-import React, { useState } from 'react';
-import { View, TouchableOpacity, Image } from 'react-native';
+import React from 'react';
+import { View, Image } from 'react-native';
 import { CustomText } from './CustomText';
-import { radius, tv as tvTokens } from '../styles/designTokens';
+import { radius } from '../styles/designTokens';
 import { useColorScheme } from '../util/colorScheme';
 import { colors } from '../constants/color';
+import { TVTouchable } from './ui/TVTouchable';
 
 interface MediaCardProps {
   imageUrl: string;
@@ -23,7 +24,6 @@ export const MediaCard: React.FC<MediaCardProps> = ({
 }) => {
   const colorScheme = useColorScheme();
   const palette = colors[colorScheme];
-  const [focused, setFocused] = useState(false);
 
   const sizeClasses = {
     sm: 'w-32 h-32',
@@ -32,14 +32,10 @@ export const MediaCard: React.FC<MediaCardProps> = ({
   };
 
   return (
-    <TouchableOpacity
+    <TVTouchable
       onPress={onPress}
       className="mb-4"
-      focusable
-      hitSlop={tvTokens.hitSlop}
-      onFocus={() => setFocused(true)}
-      onBlur={() => setFocused(false)}
-      style={focused ? { transform: [{ scale: tvTokens.focusScale }], ...tvTokens.focusShadow } : undefined}
+      showFocusBorder={false}
     >
       <View
         className={`${sizeClasses[size]} overflow-hidden mb-2`}
@@ -72,6 +68,6 @@ export const MediaCard: React.FC<MediaCardProps> = ({
           </CustomText>
         )}
       </View>
-    </TouchableOpacity>
+    </TVTouchable>
   );
 };

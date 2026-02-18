@@ -22,7 +22,8 @@ module.exports = {
       // Add custom font families if needed
       fontFamily: {
         'poppins': ['Poppins', 'sans-serif'],
-        'work-sans': ['Work Sans', 'sans-serif'],
+        'inter': ['Inter', 'sans-serif'],
+        'roboto': ['Roboto', 'sans-serif'],
       },
     },
   },
