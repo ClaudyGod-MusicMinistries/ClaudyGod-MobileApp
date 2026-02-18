@@ -1,35 +1,40 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from 'react';
-import { View, useWindowDimensions, Platform } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import { Platform, View, useWindowDimensions } from 'react-native';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import { CustomText } from '../components/CustomText';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useColorScheme } from '../util/colorScheme';
 import { colors } from '../constants/color';
-import { spacing } from '../styles/designTokens';
 import { TVTouchable } from './ui/TVTouchable';
 
 const TabBar = ({ state, navigation }: BottomTabBarProps) => {
   const colorScheme = useColorScheme();
-  const currentColors = colors[colorScheme];
-  const { width: SCREEN_WIDTH } = useWindowDimensions();
+  const palette = colors[colorScheme];
   const isTV = Platform.isTV;
-  const compact = SCREEN_WIDTH < 380;
+  const { width } = useWindowDimensions();
+  const compact = width < 370;
+
   const sizes = {
-    containerHeight: isTV ? 90 : compact ? 70 : 74,
-    centerButtonSize: isTV ? 70 : compact ? 56 : 60,
-    centerIconSize: isTV ? 30 : compact ? 24 : 26,
-    regularIconSize: isTV ? 24 : compact ? 19 : 21,
-    fontSize: isTV ? 12 : compact ? 10 : 11,
-    centerButtonOffset: isTV ? -24 : compact ? -18 : -20,
+    barHeight: isTV ? 90 : compact ? 70 : 74,
+    buttonSize: isTV ? 48 : 42,
+    iconSize: isTV ? 24 : 22,
+    centerSize: isTV ? 62 : 54,
+    paddingX: isTV ? 18 : 16,
   };
 
   const tabConfig = {
     home: { icon: 'home' as const, label: 'Home' },
     search: { icon: 'search' as const, label: 'Search' },
-    Settings: { icon: 'settings' as const, label: 'Settings' },
-    Favourites: { icon: 'favorite' as const, label: 'Library' },
-    PlaySection: { icon: 'music-note' as const, label: 'Play', isCenter: true },
+    PlaySection: { icon: 'music-note' as const, label: 'Player', isCenter: true },
+    Favourites: { icon: 'favorite-border' as const, label: 'Library' },
+    Settings: { icon: 'person-outline' as const, label: 'Profile' },
+  };
+
+  const getIconColor = (focused: boolean, isCenter?: boolean) => {
+    if (isCenter) {
+      return focused ? '#FFFFFF' : palette.text.secondary;
+    }
+    return focused ? '#FFFFFF' : palette.text.secondary;
   };
 
   return (
@@ -39,108 +44,57 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
         left: 0,
         right: 0,
         bottom: 0,
-        height: sizes.containerHeight,
-        flexDirection: 'row',
-        backgroundColor: currentColors.surface,
-        borderRadius: 0,
+        height: sizes.barHeight,
         borderTopWidth: 1,
-        borderTopColor: currentColors.border,
-        paddingHorizontal: spacing.md,
+        borderTopColor: colorScheme === 'dark' ? '#252332' : '#DFDFE4',
+        backgroundColor: colorScheme === 'dark' ? '#11111A' : '#F3F3F5',
+        paddingHorizontal: sizes.paddingX,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
       }}
     >
       {state.routes.map((route, index) => {
-        const isFocused = state.index === index;
         const config = (tabConfig as any)[route.name];
-
         if (!config) return null;
 
-        const onPress = () => navigation.navigate(route.name as never);
-
-        if (config.isCenter) {
-          return (
-            <TVTouchable
-              key={route.key}
-              onPress={onPress}
-              style={{
-                flex: 1,
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginTop: sizes.centerButtonOffset,
-              }}
-              activeOpacity={0.9}
-              hasTVPreferredFocus={index === 2}
-              showFocusBorder={false}
-            >
-              <View
-                style={{
-                  width: sizes.centerButtonSize,
-                  height: sizes.centerButtonSize,
-                  borderRadius: sizes.centerButtonSize / 2,
-                  backgroundColor: currentColors.primary,
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  borderWidth: isFocused ? 1 : 0,
-                  borderColor: isFocused ? currentColors.accent : 'transparent',
-                  shadowColor: currentColors.primary,
-                  shadowOpacity: 0.35,
-                  shadowRadius: 14,
-                  shadowOffset: { width: 0, height: 6 },
-                  elevation: 8,
-                }}
-              >
-                <MaterialIcons
-                  name={config.icon}
-                  size={sizes.centerIconSize}
-                  color="#FFFFFF"
-                />
-              </View>
-            </TVTouchable>
-          );
-        }
+        const focused = state.index === index;
+        const isCenter = Boolean(config.isCenter);
+        const baseSize = isCenter ? sizes.centerSize : sizes.buttonSize;
+        const backgroundColor = focused
+          ? '#111217'
+          : colorScheme === 'dark'
+          ? '#1A1924'
+          : '#ECECF0';
 
         return (
           <TVTouchable
             key={route.key}
-            onPress={onPress}
+            accessibilityRole="button"
+            accessibilityLabel={config.label}
+            hasTVPreferredFocus={index === 0}
+            onPress={() => navigation.navigate(route.name as never)}
             style={{
-              flex: 1,
+              width: baseSize,
+              height: baseSize,
+              borderRadius: baseSize / 2,
               alignItems: 'center',
               justifyContent: 'center',
-              paddingVertical: 8,
+              backgroundColor,
+              borderWidth: focused ? 0 : 1,
+              borderColor: colorScheme === 'dark' ? '#2E2B3F' : '#DADBE2',
+              marginTop: isCenter ? -12 : 0,
             }}
-            activeOpacity={0.7}
+            focusStyle={{
+              transform: [{ scale: isTV ? 1.1 : 1.04 }],
+            }}
             showFocusBorder={false}
           >
-            <View style={{ alignItems: 'center', gap: 4 }}>
-              <MaterialIcons
-                name={config.icon}
-                size={sizes.regularIconSize}
-                color={isFocused ? currentColors.primary : currentColors.text.secondary}
-              />
-              <CustomText
-                style={{
-                  fontSize: sizes.fontSize,
-                  color: isFocused ? currentColors.primary : currentColors.text.secondary,
-                  fontWeight: isFocused ? '600' : '400',
-                  letterSpacing: 0.2,
-                }}
-                numberOfLines={1}
-              >
-                {config.label}
-              </CustomText>
-
-              {isFocused && (
-                <View
-                  style={{
-                    width: 4,
-                    height: 4,
-                    borderRadius: 2,
-                    backgroundColor: currentColors.primary,
-                    marginTop: 2,
-                  }}
-                />
-              )}
-            </View>
+            <MaterialIcons
+              name={config.icon}
+              size={isCenter ? sizes.iconSize + 2 : sizes.iconSize}
+              color={getIconColor(focused, isCenter)}
+            />
           </TVTouchable>
         );
       })}
