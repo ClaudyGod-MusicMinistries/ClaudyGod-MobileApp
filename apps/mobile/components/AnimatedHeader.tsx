@@ -1,0 +1,102 @@
+// components/AnimatedHeader.tsx
+import React, { useMemo } from 'react';
+import { View, Image, StatusBar, Platform, StyleSheet, ViewStyle } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
+import { CustomText } from './CustomText';
+import { useAppTheme } from '../util/colorScheme';
+import { TVTouchable } from './ui/TVTouchable';
+
+interface AnimatedHeaderProps {
+  onPressHome?: () => void;
+  onPressNotifications?: () => void;
+  onPressSearch?: () => void;
+  onPressCast?: () => void;
+  onPressProfile?: () => void;
+}
+
+export const AnimatedHeader = ({
+  onPressHome,
+  onPressNotifications,
+  onPressSearch,
+  onPressCast,
+  onPressProfile,
+}: AnimatedHeaderProps) => {
+  const theme = useAppTheme();
+  const STATUS_BAR_HEIGHT = Platform.OS === 'ios' ? 44 : StatusBar.currentHeight || 28;
+
+  const headerStyles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          backgroundColor: theme.colors.background,
+          borderBottomColor: theme.colors.border,
+          borderBottomWidth: 1,
+          paddingTop: STATUS_BAR_HEIGHT,
+        },
+        row: {
+          height: 62,
+          paddingHorizontal: theme.spacing.lg,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        },
+        brand: { flexDirection: 'row', alignItems: 'center' },
+        actionRow: { flexDirection: 'row', alignItems: 'center' },
+        actionSpacer: { marginRight: 10 },
+      }),
+    [STATUS_BAR_HEIGHT, theme],
+  );
+
+  return (
+    <View
+      style={headerStyles.container}
+    >
+      <View
+        style={headerStyles.row}
+      >
+        <TVTouchable onPress={onPressHome} style={headerStyles.brand} showFocusBorder={false}>
+          <Image
+            source={require('../assets/images/ClaudyGoLogo.webp')}
+            style={{ width: 34, height: 34, borderRadius: 10 }}
+          />
+          <View style={{ marginLeft: 10 }}>
+            <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
+              ClaudyGod
+            </CustomText>
+            <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
+              Music + Video
+            </CustomText>
+          </View>
+        </TVTouchable>
+
+        <View style={headerStyles.actionRow}>
+          <TVTouchable onPress={onPressSearch} style={[iconButton(theme), headerStyles.actionSpacer]}>
+            <MaterialIcons name="search" size={20} color={theme.colors.text.primary} />
+          </TVTouchable>
+          <TVTouchable onPress={onPressCast} style={[iconButton(theme), headerStyles.actionSpacer]}>
+            <MaterialIcons name="cast" size={20} color={theme.colors.text.primary} />
+          </TVTouchable>
+          <TVTouchable onPress={onPressNotifications} style={[iconButton(theme), headerStyles.actionSpacer]}>
+            <MaterialIcons name="notifications" size={20} color={theme.colors.text.primary} />
+          </TVTouchable>
+          <TVTouchable onPress={onPressProfile} style={iconButton(theme)}>
+            <MaterialIcons name="account-circle" size={22} color={theme.colors.primary} />
+          </TVTouchable>
+        </View>
+      </View>
+    </View>
+  );
+};
+
+const iconButton = (theme: ReturnType<typeof useAppTheme>): ViewStyle => ({
+  width: 40,
+  height: 40,
+  borderRadius: theme.radius.md,
+  alignItems: 'center',
+  justifyContent: 'center',
+  backgroundColor: theme.colors.surface,
+  borderWidth: 1,
+  borderColor: theme.colors.border,
+});
+
+export default AnimatedHeader;
