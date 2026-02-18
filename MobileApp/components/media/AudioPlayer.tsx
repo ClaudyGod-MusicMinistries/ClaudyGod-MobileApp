@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, TouchableOpacity } from 'react-native';
+import { View } from 'react-native';
 import { Audio, AVPlaybackStatus } from 'expo-av';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../CustomText';
 import { useAppTheme } from '../../util/colorScheme';
+import { TVTouchable } from '../ui/TVTouchable';
 
 export interface AudioTrack {
   id: string;
@@ -115,7 +116,7 @@ export function AudioPlayer({ track, autoPlay = true, onClose, compact }: AudioP
         ) : (
           <View style={{ flex: 1 }} />
         )}
-        <TouchableOpacity
+        <TVTouchable
           onPress={togglePlay}
           style={{
             width: 46,
@@ -125,13 +126,14 @@ export function AudioPlayer({ track, autoPlay = true, onClose, compact }: AudioP
             alignItems: 'center',
             justifyContent: 'center',
           }}
+          showFocusBorder={false}
         >
           <MaterialIcons
             name={isPlaying ? 'pause' : 'play-arrow'}
             size={24}
             color={theme.colors.text.inverse}
           />
-        </TouchableOpacity>
+        </TVTouchable>
       </View>
 
       <View style={{ marginTop: theme.spacing.md }}>
@@ -162,11 +164,11 @@ export function AudioPlayer({ track, autoPlay = true, onClose, compact }: AudioP
       </View>
 
       {onClose ? (
-        <TouchableOpacity onPress={onClose} style={{ marginTop: theme.spacing.md, alignSelf: 'flex-start' }}>
+        <TVTouchable onPress={onClose} style={{ marginTop: theme.spacing.md, alignSelf: 'flex-start' }} showFocusBorder={false}>
           <CustomText variant="label" style={{ color: theme.colors.primary }}>
             Close player
           </CustomText>
-        </TouchableOpacity>
+        </TVTouchable>
       ) : null}
     </View>
   );

@@ -1,10 +1,10 @@
-/* eslint-disable @typescript-eslint/no-require-imports */
 // components/AnimatedHeader.tsx
 import React, { useMemo } from 'react';
-import { View, TouchableOpacity, Image, StatusBar, Platform, StyleSheet, ViewStyle } from 'react-native';
+import { View, Image, StatusBar, Platform, StyleSheet, ViewStyle } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from './CustomText';
 import { useAppTheme } from '../util/colorScheme';
+import { TVTouchable } from './ui/TVTouchable';
 
 interface AnimatedHeaderProps {
   onPressHome?: () => void;
@@ -34,7 +34,7 @@ export const AnimatedHeader = ({
           paddingTop: STATUS_BAR_HEIGHT,
         },
         row: {
-          height: 64,
+          height: 62,
           paddingHorizontal: theme.spacing.lg,
           flexDirection: 'row',
           alignItems: 'center',
@@ -54,7 +54,7 @@ export const AnimatedHeader = ({
       <View
         style={headerStyles.row}
       >
-        <TouchableOpacity onPress={onPressHome} style={headerStyles.brand}>
+        <TVTouchable onPress={onPressHome} style={headerStyles.brand} showFocusBorder={false}>
           <Image
             source={require('../assets/images/ClaudyGoLogo.webp')}
             style={{ width: 34, height: 34, borderRadius: 10 }}
@@ -67,21 +67,21 @@ export const AnimatedHeader = ({
               Music + Video
             </CustomText>
           </View>
-        </TouchableOpacity>
+        </TVTouchable>
 
         <View style={headerStyles.actionRow}>
-          <TouchableOpacity onPress={onPressSearch} style={[iconButton(theme), headerStyles.actionSpacer]}>
+          <TVTouchable onPress={onPressSearch} style={[iconButton(theme), headerStyles.actionSpacer]}>
             <MaterialIcons name="search" size={20} color={theme.colors.text.primary} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={onPressCast} style={[iconButton(theme), headerStyles.actionSpacer]}>
+          </TVTouchable>
+          <TVTouchable onPress={onPressCast} style={[iconButton(theme), headerStyles.actionSpacer]}>
             <MaterialIcons name="cast" size={20} color={theme.colors.text.primary} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={onPressNotifications} style={[iconButton(theme), headerStyles.actionSpacer]}>
+          </TVTouchable>
+          <TVTouchable onPress={onPressNotifications} style={[iconButton(theme), headerStyles.actionSpacer]}>
             <MaterialIcons name="notifications" size={20} color={theme.colors.text.primary} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={onPressProfile} style={iconButton(theme)}>
+          </TVTouchable>
+          <TVTouchable onPress={onPressProfile} style={iconButton(theme)}>
             <MaterialIcons name="account-circle" size={22} color={theme.colors.primary} />
-          </TouchableOpacity>
+          </TVTouchable>
         </View>
       </View>
     </View>

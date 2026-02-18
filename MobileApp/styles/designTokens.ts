@@ -7,29 +7,31 @@ export const spacing = {
   md: 16,
   lg: 24,
   xl: 32,
+  xxl: 40,
 };
 
 export const radius = {
-  sm: 6,
-  md: 10,
-  lg: 14,
+  sm: 8,
+  md: 12,
+  lg: 18,
+  xl: 26,
   pill: 999,
 };
 
 export const shadows = {
   card: {
-    shadowColor: '#0B1120',
-    shadowOpacity: 0.12,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 4,
+    shadowColor: '#12092A',
+    shadowOpacity: 0.2,
+    shadowRadius: 26,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 9,
   },
   soft: {
-    shadowColor: '#0B1120',
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
+    shadowColor: '#12092A',
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
+    elevation: 3,
   },
 };
 
@@ -38,26 +40,26 @@ export const blur = {
 };
 
 export const typography = {
-  hero: 28,
-  headline: 20,
-  title: 17,
-  body: 14,
+  hero: 24,
+  headline: 18,
+  title: 16,
+  body: 13,
   label: 12,
-  caption: 11,
+  caption: 10,
 };
 
 export const tv = {
   hitSlop: { top: 12, bottom: 12, left: 12, right: 12 },
-  focusScale: 1.06,
+  focusScale: 1.08,
   focusShadow: {
-    shadowColor: '#3B82F6',
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 6,
+    shadowColor: '#9A6BFF',
+    shadowOpacity: 0.45,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 8,
   },
 };
 
 export const layout = {
-  maxContentWidth: 1280, // helps on tablets/TV by clamping overly wide rows
+  maxContentWidth: 1360, // helps on tablets/TV by clamping overly wide rows
 };
