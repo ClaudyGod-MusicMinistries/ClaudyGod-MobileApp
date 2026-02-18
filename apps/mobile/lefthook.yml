@@ -1,0 +1,13 @@
+pre-commit:
+  parallel: false
+  commands:
+    staged-lint:
+      run: yarn lint-staged
+
+pre-push:
+  parallel: false
+  commands:
+    typecheck:
+      run: yarn typecheck
+    lint:
+      run: yarn lint
