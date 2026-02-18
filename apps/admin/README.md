@@ -40,3 +40,4 @@ cd ../web && npm install && npm run dev -- --host
 - API stores in-memory (replace with DB later) and exposes GET `/v1/content`
 - Mobile app can consume these endpoints directly or via your existing backend gateway.
 
+
