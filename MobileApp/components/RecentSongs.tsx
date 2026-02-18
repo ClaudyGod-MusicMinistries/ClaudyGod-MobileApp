@@ -13,8 +13,7 @@ import { SongList } from './musicPlaylist';
 import { recentSongs } from '../data/data';
 import { CustomButton } from './CustomButton';
 import { useAppTheme } from '../util/colorScheme';
-
-import Icon from 'react-native-vector-icons/Feather';
+import { Feather } from '@expo/vector-icons';
 
 const AnimatedContainer = Animated.createAnimatedComponent(Container);
 
@@ -31,7 +30,7 @@ export function RecentSongsSection() {
     containerOpacity.value = withDelay(300, withSpring(1, { damping: 15 }));
     containerScale.value = withDelay(300, withSpring(1, { damping: 15 }));
     containerTranslateY.value = withDelay(300, withSpring(0, { damping: 15 }));
-  }, []);
+  }, [containerOpacity, containerScale, containerTranslateY]);
 
   const containerAnimatedStyle = useAnimatedStyle(() => ({
     opacity: containerOpacity.value,
@@ -120,7 +119,7 @@ export function RecentSongsSection() {
             >
               View All
             </CustomText>
-            <Icon 
+            <Feather
               name="arrow-right" 
               size={14} 
               color={theme.colors.primary} 

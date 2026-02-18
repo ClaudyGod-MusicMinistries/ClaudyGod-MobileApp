@@ -1,23 +1,26 @@
-// app/settingsPage/help.tsx
 import React, { useState } from 'react';
-import { View, TouchableOpacity, Linking } from 'react-native';
+import { View, Linking } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import { SettingsScaffold } from './Scaffold';
 import { CustomText } from '../../components/CustomText';
 import { useAppTheme } from '../../util/colorScheme';
-import { spacing, radius, shadows } from '../../styles/designTokens';
-import { MaterialIcons } from '@expo/vector-icons';
+import { spacing } from '../../styles/designTokens';
+import { SurfaceCard } from '../../components/ui/SurfaceCard';
+import { FadeIn } from '../../components/ui/FadeIn';
+import { AppButton } from '../../components/ui/AppButton';
+import { TVTouchable } from '../../components/ui/TVTouchable';
 
 const contact = [
-  { icon: 'chat-bubble', title: 'Live chat', desc: 'Avg response < 2 min', action: () => console.log('chat') },
-  { icon: 'email', title: 'Email', desc: 'support@claudygodmusic.com', action: () => Linking.openURL('mailto:support@claudygodmusic.com') },
-  { icon: 'phone', title: 'Call', desc: '+1 (800) 252-8394', action: () => Linking.openURL('tel:+18002528394') },
+  { icon: 'chat-bubble', title: 'Live chat', desc: 'Average response under 2 minutes', action: () => console.log('chat') },
+  { icon: 'email', title: 'Email support', desc: 'support@claudygodmusic.com', action: () => Linking.openURL('mailto:support@claudygodmusic.com') },
+  { icon: 'phone', title: 'Call support', desc: '+1 (800) 252-8394', action: () => Linking.openURL('tel:+18002528394') },
 ];
 
 const faqs = [
-  { q: 'Playback buffering on TV?', a: 'Use Ethernet/5GHz and choose Adaptive in Settings → Playback.' },
-  { q: 'Downloads not showing?', a: 'Toggle airplane mode off/on, then refresh Library → Downloads.' },
-  { q: 'Wrong recommendations?', a: 'Clear history in Settings → Privacy → Reset recommendations.' },
-  { q: 'Report content?', a: 'Open the track ••• menu → Report, or email the link to support.' },
+  { q: 'Playback buffering on TV?', a: 'Use Ethernet or 5GHz Wi-Fi and keep playback quality on Adaptive mode.' },
+  { q: 'Downloads not showing?', a: 'Open Library → Downloads and refresh. Check if storage permission is allowed.' },
+  { q: 'Wrong recommendations?', a: 'Clear watch and listen history in Privacy settings to reset suggestions.' },
+  { q: 'How do I report content?', a: 'Open track menu and tap Report, or send the media link to support email.' },
 ];
 
 export default function Help() {
@@ -27,105 +30,100 @@ export default function Help() {
   return (
     <SettingsScaffold
       title="Help & Support"
-      subtitle="Always-on assistance for mobile and TV."
+      subtitle="Fast support built for mobile and TV users."
       hero={
-        <View
-          style={{
-            backgroundColor: theme.colors.surface,
-            borderRadius: radius.lg,
-            padding: spacing.lg,
-            borderWidth: 1,
-            borderColor: theme.colors.border,
-            marginBottom: spacing.lg,
-            ...shadows.card,
-          }}
-        >
-          <CustomText variant="heading" style={{ color: theme.colors.text.primary }}>
-            We keep you streaming.
-          </CustomText>
-          <CustomText variant="body" style={{ color: theme.colors.text.secondary, marginTop: 6 }}>
-            Reach us anytime or browse quick fixes below. Optimized for remote navigation and touch.
-          </CustomText>
-        </View>
+        <FadeIn>
+          <SurfaceCard tone="subtle" style={{ padding: spacing.lg, marginBottom: spacing.lg }}>
+            <CustomText variant="heading" style={{ color: theme.colors.text.primary }}>
+              We keep you streaming
+            </CustomText>
+            <CustomText variant="body" style={{ color: theme.colors.text.secondary, marginTop: 6 }}>
+              Reach support anytime or use the quick fixes below for playback, library, and account issues.
+            </CustomText>
+            <View style={{ marginTop: spacing.md }}>
+              <AppButton
+                title="Open Support Center"
+                size="sm"
+                variant="primary"
+                onPress={() => console.log('Open support center')}
+              />
+            </View>
+          </SurfaceCard>
+        </FadeIn>
       }
     >
-      {/* Contact cards */}
-      <View style={{ gap: spacing.sm, marginBottom: spacing.lg }}>
-        {contact.map((item) => (
-          <TouchableOpacity
-            key={item.title}
-            onPress={item.action}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              padding: spacing.md,
-              borderRadius: radius.md,
-              backgroundColor: theme.colors.surface,
-              borderWidth: 1,
-              borderColor: theme.colors.border,
-              ...shadows.soft,
-            }}
-          >
-            <View
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: radius.md,
-                backgroundColor: `${theme.colors.primary}22`,
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginRight: spacing.md,
-              }}
-            >
-              <MaterialIcons name={item.icon as any} size={20} color={theme.colors.primary} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
-                {item.title}
-              </CustomText>
-              <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
-                {item.desc}
-              </CustomText>
-            </View>
-            <MaterialIcons name="chevron-right" size={20} color={theme.colors.text.secondary} />
-          </TouchableOpacity>
-        ))}
-      </View>
+      <FadeIn delay={90}>
+        <CustomText variant="subtitle" style={{ color: theme.colors.text.primary, marginBottom: spacing.sm }}>
+          Contact options
+        </CustomText>
+        <View style={{ marginBottom: spacing.lg }}>
+          {contact.map((item) => (
+            <TVTouchable key={item.title} onPress={item.action} style={{ marginBottom: spacing.sm }} showFocusBorder={false}>
+              <SurfaceCard style={{ padding: spacing.md, flexDirection: 'row', alignItems: 'center' }}>
+                <View
+                  style={{
+                    width: 42,
+                    height: 42,
+                    borderRadius: 12,
+                    backgroundColor: `${theme.colors.primary}1F`,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginRight: spacing.md,
+                  }}
+                >
+                  <MaterialIcons name={item.icon as any} size={20} color={theme.colors.primary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <CustomText variant="body" style={{ color: theme.colors.text.primary }}>
+                    {item.title}
+                  </CustomText>
+                  <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 2 }}>
+                    {item.desc}
+                  </CustomText>
+                </View>
+                <MaterialIcons name="chevron-right" size={20} color={theme.colors.text.secondary} />
+              </SurfaceCard>
+            </TVTouchable>
+          ))}
+        </View>
+      </FadeIn>
 
-      {/* FAQs */}
-      <CustomText variant="subtitle" style={{ color: theme.colors.text.primary, marginBottom: spacing.sm }}>
-        Quick answers
-      </CustomText>
-      <View style={{ gap: spacing.sm, marginBottom: spacing.xl }}>
-        {faqs.map((faq) => {
-          const open = expanded === faq.q;
-          return (
-            <TouchableOpacity
-              key={faq.q}
-              onPress={() => setExpanded(open ? null : faq.q)}
-              style={{
-                backgroundColor: theme.colors.surface,
-                borderRadius: radius.md,
-                padding: spacing.md,
-                borderWidth: 1,
-                borderColor: theme.colors.border,
-              }}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <MaterialIcons name={open ? 'expand-less' : 'expand-more'} size={20} color={theme.colors.text.secondary} />
-                <CustomText variant="body" style={{ color: theme.colors.text.primary, marginLeft: spacing.sm, flex: 1 }}>
-                  {faq.q}
-                </CustomText>
-              </View>
-              {open && (
-                <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: spacing.xs }}>
-                  {faq.a}
-                </CustomText>
-              )}
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+      <FadeIn delay={160}>
+        <CustomText variant="subtitle" style={{ color: theme.colors.text.primary, marginBottom: spacing.sm }}>
+          Quick answers
+        </CustomText>
+        <View style={{ marginBottom: spacing.xl }}>
+          {faqs.map((faq) => {
+            const open = expanded === faq.q;
+            return (
+              <TVTouchable
+                key={faq.q}
+                onPress={() => setExpanded(open ? null : faq.q)}
+                style={{ marginBottom: spacing.sm }}
+                showFocusBorder={false}
+              >
+                <SurfaceCard tone={open ? 'subtle' : 'default'} style={{ padding: spacing.md }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <MaterialIcons
+                      name={open ? 'expand-less' : 'expand-more'}
+                      size={20}
+                      color={theme.colors.text.secondary}
+                    />
+                    <CustomText variant="body" style={{ color: theme.colors.text.primary, marginLeft: spacing.sm, flex: 1 }}>
+                      {faq.q}
+                    </CustomText>
+                  </View>
+                  {open ? (
+                    <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: spacing.sm }}>
+                      {faq.a}
+                    </CustomText>
+                  ) : null}
+                </SurfaceCard>
+              </TVTouchable>
+            );
+          })}
+        </View>
+      </FadeIn>
     </SettingsScaffold>
   );
 }

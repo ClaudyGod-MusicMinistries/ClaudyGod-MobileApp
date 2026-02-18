@@ -1,6 +1,6 @@
 // app/(tabs)/Favourites.tsx
 import React, { useMemo, useState } from 'react';
-import { View, ScrollView, TouchableOpacity } from 'react-native';
+import { View, ScrollView, useWindowDimensions } from 'react-native';
 import { TabScreenWrapper } from './TextWrapper';
 import { useAppTheme } from '../../util/colorScheme';
 import { CustomText } from '../../components/CustomText';
@@ -15,9 +15,15 @@ import { AppButton } from '../../components/ui/AppButton';
 import * as DocumentPicker from 'expo-document-picker';
 import { AudioPlayer, AudioTrack } from '../../components/media/AudioPlayer';
 import { VideoPlayer } from '../../components/media/VideoPlayer';
+import { SurfaceCard } from '../../components/ui/SurfaceCard';
+import { FadeIn } from '../../components/ui/FadeIn';
+import { TVTouchable } from '../../components/ui/TVTouchable';
 
 export default function Favourites() {
   const theme = useAppTheme();
+  const { width } = useWindowDimensions();
+  const isCompact = width < 360;
+  const actionWidth = isCompact ? '100%' : '48%';
   const [tab, setTab] = useState<'library' | 'local' | 'videos' | 'downloads'>('library');
   const [activeTrack, setActiveTrack] = useState<AudioTrack | null>(null);
   const [localTracks, setLocalTracks] = useState<AudioTrack[]>([]);
@@ -106,28 +112,76 @@ export default function Favourites() {
         contentContainerStyle={{ paddingBottom: 140, paddingTop: theme.spacing.md }}
       >
         <Screen>
-          <CustomText variant="title" style={{ color: theme.colors.text.primary }}>
-            Your Library
-          </CustomText>
-          <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 2 }}>
-            Favorites, playlists, and offline downloads.
-          </CustomText>
+          <FadeIn>
+            <SurfaceCard tone="subtle" style={{ padding: theme.spacing.lg }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <View style={{ flex: 1 }}>
+                  <CustomText variant="heading" style={{ color: theme.colors.text.primary }}>
+                    Your Library
+                  </CustomText>
+                  <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 4 }}>
+                    Favorites, playlists, downloads, and your local media.
+                  </CustomText>
+                </View>
+                <View
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: theme.radius.md,
+                    backgroundColor: `${theme.colors.primary}18`,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <MaterialIcons name="library-music" size={18} color={theme.colors.primary} />
+                </View>
+              </View>
+              <View style={{ flexDirection: 'row', gap: theme.spacing.sm, marginTop: theme.spacing.md }}>
+                {[
+                  { label: 'Playlists', value: `${favouritePlaylists.length}` },
+                  { label: 'Songs', value: `${allSongs.length}` },
+                  { label: 'Videos', value: `${videoItems.length}` },
+                ].map((stat) => (
+                  <View
+                    key={stat.label}
+                    style={{
+                      flex: 1,
+                      borderRadius: theme.radius.md,
+                      borderWidth: 1,
+                      borderColor: theme.colors.border,
+                      backgroundColor: theme.colors.surface,
+                      padding: theme.spacing.sm,
+                    }}
+                  >
+                    <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
+                      {stat.value}
+                    </CustomText>
+                    <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 2 }}>
+                      {stat.label}
+                    </CustomText>
+                  </View>
+                ))}
+              </View>
+            </SurfaceCard>
+          </FadeIn>
 
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingVertical: theme.spacing.sm }}
-          >
-            <View style={{ flexDirection: 'row', gap: theme.spacing.sm }}>
-              <Chip label="Library" active={tab === 'library'} onPress={() => setTab('library')} />
-              <Chip label="Local" active={tab === 'local'} onPress={() => setTab('local')} />
-              <Chip label="Videos" active={tab === 'videos'} onPress={() => setTab('videos')} />
-              <Chip label="Downloads" active={tab === 'downloads'} onPress={() => setTab('downloads')} />
-            </View>
-          </ScrollView>
+          <FadeIn delay={80}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingVertical: theme.spacing.md }}
+            >
+              <View style={{ flexDirection: 'row', gap: theme.spacing.sm }}>
+                <Chip label="Library" active={tab === 'library'} onPress={() => setTab('library')} />
+                <Chip label="Local" active={tab === 'local'} onPress={() => setTab('local')} />
+                <Chip label="Videos" active={tab === 'videos'} onPress={() => setTab('videos')} />
+                <Chip label="Downloads" active={tab === 'downloads'} onPress={() => setTab('downloads')} />
+              </View>
+            </ScrollView>
+          </FadeIn>
 
           {tab === 'library' && (
-            <>
+            <FadeIn delay={140}>
               {activeTrack ? (
                 <View style={{ marginTop: theme.spacing.md }}>
                   <AudioPlayer track={activeTrack} onClose={() => setActiveTrack(null)} />
@@ -137,30 +191,46 @@ export default function Favourites() {
                 <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
                   Quick actions
                 </CustomText>
-                <View style={{ marginTop: theme.spacing.sm, gap: theme.spacing.sm }}>
+                <View style={{ marginTop: theme.spacing.sm, flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm }}>
                   {[
-                    { icon: 'shuffle', label: 'Shuffle' },
-                    { icon: 'download', label: 'Download' },
-                    { icon: 'playlist-add', label: 'New Playlist' },
+                    { icon: 'shuffle', label: 'Shuffle', hint: 'Play random' },
+                    { icon: 'download', label: 'Download', hint: 'Save offline' },
+                    { icon: 'playlist-add', label: 'New Playlist', hint: 'Organize media' },
+                    { icon: 'insights', label: 'Insights', hint: 'Usage summary' },
                   ].map((action) => (
-                    <TouchableOpacity
+                    <TVTouchable
                       key={action.label}
+                      onPress={() => console.log(action.label)}
                       style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        paddingHorizontal: theme.spacing.md,
-                        paddingVertical: theme.spacing.sm,
-                        borderRadius: 8,
-                        backgroundColor: theme.colors.surface,
+                        width: actionWidth,
+                        padding: theme.spacing.md,
+                        borderRadius: theme.radius.md,
+                        backgroundColor: theme.colors.surfaceAlt,
                         borderWidth: 1,
                         borderColor: theme.colors.border,
                       }}
+                      showFocusBorder={false}
                     >
-                      <MaterialIcons name={action.icon as any} size={16} color={theme.colors.primary} />
-                      <CustomText variant="label" style={{ color: theme.colors.text.primary, marginLeft: 8 }}>
+                      <View
+                        style={{
+                          width: 34,
+                          height: 34,
+                          borderRadius: 10,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          backgroundColor: `${theme.colors.primary}16`,
+                          marginBottom: 8,
+                        }}
+                      >
+                        <MaterialIcons name={action.icon as any} size={16} color={theme.colors.primary} />
+                      </View>
+                      <CustomText variant="label" style={{ color: theme.colors.text.primary }}>
                         {action.label}
                       </CustomText>
-                    </TouchableOpacity>
+                      <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 2 }}>
+                        {action.hint}
+                      </CustomText>
+                    </TVTouchable>
                   ))}
                 </View>
               </View>
@@ -188,14 +258,10 @@ export default function Favourites() {
                 <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
                   All songs
                 </CustomText>
-                <View
+                <SurfaceCard
                   style={{
                     marginTop: theme.spacing.sm,
-                    borderWidth: 1,
-                    borderColor: theme.colors.border,
-                    borderRadius: 8,
                     overflow: 'hidden',
-                    backgroundColor: theme.colors.surface,
                   }}
                 >
                   <SongList
@@ -203,13 +269,13 @@ export default function Favourites() {
                     onSongPress={onLibrarySongPress}
                     currentSongId={activeTrack?.id}
                   />
-                </View>
+                </SurfaceCard>
               </View>
-            </>
+            </FadeIn>
           )}
 
           {tab === 'local' && (
-            <View style={{ marginTop: theme.spacing.md }}>
+            <FadeIn delay={140} style={{ marginTop: theme.spacing.md }}>
               <AppButton
                 title="Import audio files"
                 variant="outline"
@@ -224,14 +290,10 @@ export default function Favourites() {
                 </View>
               ) : null}
 
-              <View
+              <SurfaceCard
                 style={{
                   marginTop: theme.spacing.md,
-                  borderWidth: 1,
-                  borderColor: theme.colors.border,
-                  borderRadius: 8,
                   overflow: 'hidden',
-                  backgroundColor: theme.colors.surface,
                 }}
               >
                 <SongList
@@ -248,18 +310,18 @@ export default function Favourites() {
                   }}
                   currentSongId={activeTrack?.id}
                 />
-              </View>
+              </SurfaceCard>
 
               {localTracks.length === 0 ? (
                 <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: theme.spacing.sm }}>
                   Import audio files from your device to play them here.
                 </CustomText>
               ) : null}
-            </View>
+            </FadeIn>
           )}
 
           {tab === 'videos' && (
-            <View style={{ marginTop: theme.spacing.md, gap: theme.spacing.md }}>
+            <FadeIn delay={140} style={{ marginTop: theme.spacing.md, gap: theme.spacing.md }}>
               <AppButton
                 title="Add video"
                 variant="outline"
@@ -274,19 +336,20 @@ export default function Favourites() {
 
               <View style={{ gap: theme.spacing.sm }}>
                 {videoItems.map((video) => (
-                  <TouchableOpacity
+                  <TVTouchable
                     key={video.id}
                     onPress={() => setActiveVideo(video)}
                     style={{
                       padding: theme.spacing.md,
-                      borderRadius: 10,
+                      borderRadius: theme.radius.md,
                       borderWidth: 1,
                       borderColor: theme.colors.border,
-                      backgroundColor: theme.colors.surface,
+                      backgroundColor: theme.colors.surfaceAlt,
                       flexDirection: 'row',
                       alignItems: 'center',
                       justifyContent: 'space-between',
                     }}
+                    showFocusBorder={false}
                   >
                     <View style={{ flex: 1, marginRight: theme.spacing.sm }}>
                       <CustomText variant="body" style={{ color: theme.colors.text.primary }}>
@@ -297,30 +360,28 @@ export default function Favourites() {
                       </CustomText>
                     </View>
                     <MaterialIcons name="play-arrow" size={20} color={theme.colors.primary} />
-                  </TouchableOpacity>
+                  </TVTouchable>
                 ))}
               </View>
-            </View>
+            </FadeIn>
           )}
 
           {tab === 'downloads' && (
-            <View
-              style={{
-                marginTop: theme.spacing.lg,
-                backgroundColor: theme.colors.surface,
-                borderRadius: 12,
-                padding: theme.spacing.lg,
-                borderWidth: 1,
-                borderColor: theme.colors.border,
-              }}
-            >
-              <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
-                Downloads
-              </CustomText>
-              <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 6 }}>
-                No downloads yet. Tap the download icon on any song or playlist to listen offline.
-              </CustomText>
-            </View>
+            <FadeIn delay={140}>
+              <SurfaceCard
+                style={{
+                  marginTop: theme.spacing.lg,
+                  padding: theme.spacing.lg,
+                }}
+              >
+                <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
+                  Downloads
+                </CustomText>
+                <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 6 }}>
+                  No downloads yet. Tap the download icon on any song or playlist to listen offline.
+                </CustomText>
+              </SurfaceCard>
+            </FadeIn>
           )}
         </Screen>
       </ScrollView>

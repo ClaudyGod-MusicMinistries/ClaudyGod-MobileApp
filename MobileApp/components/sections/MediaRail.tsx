@@ -22,16 +22,15 @@ export function MediaRail<T>({
   const theme = useAppTheme();
 
   return (
-    <View style={{ marginBottom: theme.spacing.lg }}>
+    <View style={{ marginBottom: theme.spacing.xl }}>
       <SectionHeader title={title} actionLabel={actionLabel} onAction={onAction} />
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingVertical: theme.spacing.sm }}
+        contentContainerStyle={{ paddingVertical: theme.spacing.sm, paddingRight: theme.spacing.sm }}
       >
         {data.map((item, index) => renderItem(item, index))}
       </ScrollView>
     </View>
   );
 }
-

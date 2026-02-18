@@ -1,6 +1,10 @@
-// components/music/PlaylistGrid.tsx
-import { ScrollView, TouchableOpacity, View } from 'react-native';
+import React from 'react';
+import { ScrollView, View } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import { MediaCard } from './mediaCard';
+import { CustomText } from './CustomText';
+import { useAppTheme } from '../util/colorScheme';
+import { TVTouchable } from './ui/TVTouchable';
 
 interface Playlist {
   id: string;
@@ -15,12 +19,9 @@ interface PlaylistGridProps {
   onPlaylistPress: (playlist: Playlist) => void;
 }
 
-export const PlaylistGrid: React.FC<PlaylistGridProps> = ({
-  playlists,
-  onPlaylistPress
-}) => {
+export const PlaylistGrid: React.FC<PlaylistGridProps> = ({ playlists, onPlaylistPress }) => {
   return (
-    <ScrollView 
+    <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 8 }}
@@ -40,14 +41,8 @@ export const PlaylistGrid: React.FC<PlaylistGridProps> = ({
   );
 };
 
-// components/music/SongList.tsx
-import React from 'react';
-import { CustomText } from './CustomText';
-import { MaterialIcons } from '@expo/vector-icons';
-import { useAppTheme } from '../util/colorScheme';
-
 export interface Song {
-    id: string;
+  id: string;
   title: string;
   artist: string;
   album: string;
@@ -59,60 +54,93 @@ interface SongListProps {
   songs: Song[];
   onSongPress: (song: Song) => void;
   currentSongId?: string;
-    showActions?: boolean; // Add this
-  onRemove?: (song: Song) => void; // Add this
+  showActions?: boolean;
+  onRemove?: (song: Song) => void;
 }
 
 export const SongList: React.FC<SongListProps> = ({
   songs,
   onSongPress,
-  currentSongId
+  currentSongId,
+  showActions,
+  onRemove,
 }) => {
   const theme = useAppTheme();
+
   return (
     <View style={{ paddingHorizontal: theme.spacing.md }}>
-      {songs.map((song, index) => (
-        <TouchableOpacity
-          key={song.id}
-          onPress={() => onSongPress(song)}
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            paddingVertical: theme.spacing.sm,
-            borderBottomWidth: index !== songs.length - 1 ? 1 : 0,
-            borderBottomColor: theme.colors.border,
-          }}
-        >
-          <View style={{ width: 28, alignItems: 'center' }}>
-            {currentSongId === song.id ? (
-              <MaterialIcons name="equalizer" size={18} color={theme.colors.primary} />
-            ) : (
-              <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
-                {index + 1}
-              </CustomText>
-            )}
-          </View>
-          
-          <View style={{ flex: 1, marginLeft: theme.spacing.sm }}>
-            <CustomText
-              variant="body"
+      {songs.map((song, index) => {
+        const active = currentSongId === song.id;
+        return (
+          <TVTouchable
+            key={song.id}
+            onPress={() => onSongPress(song)}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              paddingVertical: theme.spacing.sm,
+              borderBottomWidth: index !== songs.length - 1 ? 1 : 0,
+              borderBottomColor: theme.colors.border,
+              backgroundColor: active ? `${theme.colors.primary}14` : 'transparent',
+              borderRadius: active ? theme.radius.md : 0,
+              paddingHorizontal: 6,
+            }}
+            showFocusBorder={false}
+          >
+            <View
               style={{
-                color: currentSongId === song.id ? theme.colors.primary : theme.colors.text.primary,
-                fontWeight: '600',
+                width: 38,
+                height: 38,
+                borderRadius: 10,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: active ? `${theme.colors.primary}22` : theme.colors.surfaceAlt,
+                borderWidth: 1,
+                borderColor: theme.colors.border,
               }}
             >
-              {song.title}
-            </CustomText>
-            <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 2 }}>
-              {song.artist}
-            </CustomText>
-          </View>
-          
-          <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
-            {song.duration}
-          </CustomText>
-        </TouchableOpacity>
-      ))}
+              {active ? (
+                <MaterialIcons name="equalizer" size={18} color={theme.colors.primary} />
+              ) : (
+                <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
+                  {index + 1}
+                </CustomText>
+              )}
+            </View>
+
+            <View style={{ flex: 1, marginLeft: theme.spacing.sm }}>
+              <CustomText
+                variant="body"
+                style={{
+                  color: active ? theme.colors.primary : theme.colors.text.primary,
+                  fontWeight: '600',
+                }}
+                numberOfLines={1}
+              >
+                {song.title}
+              </CustomText>
+              <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 2 }} numberOfLines={1}>
+                {song.artist}
+              </CustomText>
+            </View>
+
+            <View style={{ alignItems: 'flex-end' }}>
+              <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
+                {song.duration}
+              </CustomText>
+              {showActions && onRemove ? (
+                <TVTouchable
+                  onPress={() => onRemove(song)}
+                  style={{ marginTop: 4 }}
+                  showFocusBorder={false}
+                >
+                  <MaterialIcons name="more-horiz" size={16} color={theme.colors.text.secondary} />
+                </TVTouchable>
+              ) : null}
+            </View>
+          </TVTouchable>
+        );
+      })}
     </View>
   );
 };

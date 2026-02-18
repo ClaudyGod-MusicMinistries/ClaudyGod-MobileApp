@@ -1,12 +1,14 @@
 // app/settingsPage/Scaffold.tsx
 import React from 'react';
-import { View, ScrollView, TouchableOpacity, StatusBar } from 'react-native';
+import { View, ScrollView, StatusBar } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../../components/CustomText';
 import { useRouter } from 'expo-router';
 import { useAppTheme } from '../../util/colorScheme';
 import { spacing, radius } from '../../styles/designTokens';
 import { Screen } from '../../components/layout/Screen';
+import { TVTouchable } from '../../components/ui/TVTouchable';
 
 interface ScaffoldProps {
   title: string;
@@ -22,6 +24,23 @@ export function SettingsScaffold({ title, subtitle, children, hero }: ScaffoldPr
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <StatusBar barStyle={theme.scheme === 'dark' ? 'light-content' : 'dark-content'} />
+      <LinearGradient
+        colors={
+          theme.scheme === 'dark'
+            ? ['rgba(76,29,149,0.22)', 'rgba(10,10,15,0)']
+            : ['rgba(124,58,237,0.12)', 'rgba(255,255,255,0)']
+        }
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        pointerEvents="none"
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 260,
+        }}
+      />
       {/* Header */}
       <View
         style={{
@@ -33,9 +52,10 @@ export function SettingsScaffold({ title, subtitle, children, hero }: ScaffoldPr
           flexDirection: 'row',
           alignItems: 'center',
           gap: spacing.md,
+          backgroundColor: theme.colors.surface,
         }}
       >
-        <TouchableOpacity
+        <TVTouchable
           onPress={() => router.back()}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           style={{
@@ -44,13 +64,14 @@ export function SettingsScaffold({ title, subtitle, children, hero }: ScaffoldPr
             borderRadius: radius.md,
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: `${theme.colors.surface}AA`,
+            backgroundColor: theme.colors.surfaceAlt,
             borderWidth: 1,
             borderColor: theme.colors.border,
           }}
+          showFocusBorder={false}
         >
           <MaterialIcons name="arrow-back" size={22} color={theme.colors.text.primary} />
-        </TouchableOpacity>
+        </TVTouchable>
         <View style={{ flex: 1 }}>
           <CustomText variant="heading" style={{ color: theme.colors.text.primary }}>
             {title}
