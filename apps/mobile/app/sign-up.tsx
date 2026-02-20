@@ -61,6 +61,7 @@ export default function SignUpScreen() {
           showsVerticalScrollIndicator={false}
           bounces={false}
           alwaysBounceVertical={false}
+          overScrollMode="never"
           keyboardShouldPersistTaps="handled"
         >
           <Screen style={{ flex: 1 }} contentStyle={{ flex: 1, justifyContent: 'center' }}>
