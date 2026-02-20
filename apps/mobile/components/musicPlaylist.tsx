@@ -71,6 +71,7 @@ export const SongList: React.FC<SongListProps> = ({
     <View style={{ paddingHorizontal: theme.spacing.md }}>
       {songs.map((song, index) => {
         const active = currentSongId === song.id;
+
         return (
           <TVTouchable
             key={song.id}
@@ -78,10 +79,11 @@ export const SongList: React.FC<SongListProps> = ({
             style={{
               flexDirection: 'row',
               alignItems: 'center',
-              paddingVertical: theme.spacing.sm,
+              paddingVertical: 9,
               borderBottomWidth: index !== songs.length - 1 ? 1 : 0,
-              borderBottomColor: theme.colors.border,
-              backgroundColor: active ? `${theme.colors.primary}14` : 'transparent',
+              borderBottomColor:
+                theme.scheme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(17,18,23,0.08)',
+              backgroundColor: active ? `${theme.colors.primary}12` : 'transparent',
               borderRadius: active ? theme.radius.md : 0,
               paddingHorizontal: 6,
             }}
@@ -94,7 +96,7 @@ export const SongList: React.FC<SongListProps> = ({
                 borderRadius: 10,
                 alignItems: 'center',
                 justifyContent: 'center',
-                backgroundColor: active ? `${theme.colors.primary}22` : theme.colors.surfaceAlt,
+                backgroundColor: active ? `${theme.colors.primary}1E` : theme.colors.surfaceAlt,
                 borderWidth: 1,
                 borderColor: theme.colors.border,
               }}
@@ -113,13 +115,16 @@ export const SongList: React.FC<SongListProps> = ({
                 variant="body"
                 style={{
                   color: active ? theme.colors.primary : theme.colors.text.primary,
-                  fontWeight: '600',
                 }}
                 numberOfLines={1}
               >
                 {song.title}
               </CustomText>
-              <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 2 }} numberOfLines={1}>
+              <CustomText
+                variant="caption"
+                style={{ color: theme.colors.text.secondary, marginTop: 2 }}
+                numberOfLines={1}
+              >
                 {song.artist}
               </CustomText>
             </View>
@@ -129,12 +134,8 @@ export const SongList: React.FC<SongListProps> = ({
                 {song.duration}
               </CustomText>
               {showActions && onRemove ? (
-                <TVTouchable
-                  onPress={() => onRemove(song)}
-                  style={{ marginTop: 4 }}
-                  showFocusBorder={false}
-                >
-                  <MaterialIcons name="more-vert" size={16} color={theme.colors.text.secondary} />
+                <TVTouchable onPress={() => onRemove(song)} style={{ marginTop: 4 }} showFocusBorder={false}>
+                  <MaterialIcons name="more-horiz" size={16} color={theme.colors.text.secondary} />
                 </TVTouchable>
               ) : null}
             </View>
