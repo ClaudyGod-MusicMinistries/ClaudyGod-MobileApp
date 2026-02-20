@@ -11,14 +11,14 @@ import { FontProvider, FontContext } from '../context/FontContext';
 
 function ThemedLayout({ children }: { children: ReactNode }) {
   const colorScheme = useColorScheme();
-  const currentColors = colors[colorScheme];
+  const currentColors = colors[colorScheme] ?? colors.dark;
 
   return (
     <View style={{ flex: 1, backgroundColor: currentColors.background }}>
       <StatusBar
-        translucent
-        backgroundColor="transparent"
-        barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'}
+        translucent={false}
+        backgroundColor={currentColors.background}
+        barStyle="light-content"
       />
       {children}
     </View>
@@ -93,14 +93,14 @@ function LoadingScreen() {
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
       />
 
-      <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#06040D' }} edges={['top', 'bottom']}>
         <View
           style={{
             flex: 1,
             alignItems: 'center',
             justifyContent: 'center',
             paddingHorizontal: 24,
-            paddingBottom: 80,
+            paddingBottom: 24,
           }}
         >
           <Animated.View
@@ -197,7 +197,7 @@ function LoadingScreen() {
           </Text>
         </View>
 
-        <View style={{ alignItems: 'center', paddingHorizontal: 20, paddingBottom: 14 }}>
+        <View style={{ alignItems: 'center', paddingHorizontal: 20, paddingBottom: 14, paddingTop: 8 }}>
           <Text
             style={{
               color: 'rgba(223,212,249,0.9)',

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Image, ScrollView, View } from 'react-native';
+import { Image, Platform, ScrollView, View, useWindowDimensions } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -66,6 +66,11 @@ const queue: QueueTrack[] = [
 export default function PlaySection() {
   const theme = useAppTheme();
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isTV = Platform.isTV;
+  const isTablet = width >= 768 && !isTV;
+  const artworkSize = isTV ? 360 : isTablet ? 320 : Math.min(272, width - 92);
+  const titleSize = isTV ? 30 : isTablet ? 27 : 22;
 
   const [activeId, setActiveId] = useState(queue[0].id);
   const [isPlaying, setIsPlaying] = useState(true);
@@ -90,8 +95,11 @@ export default function PlaySection() {
   return (
     <TabScreenWrapper>
       <ScrollView
+        style={{ flex: 1, backgroundColor: 'transparent' }}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingTop: theme.spacing.md, paddingBottom: 170 }}
+        bounces={false}
+        alwaysBounceVertical={false}
       >
         <Screen>
           <FadeIn>
@@ -147,7 +155,7 @@ export default function PlaySection() {
               <View style={{ alignItems: 'center', marginTop: 14 }}>
                 <Image
                   source={{ uri: active.artwork }}
-                  style={{ width: 272, height: 272, borderRadius: 36 }}
+                  style={{ width: artworkSize, height: artworkSize, borderRadius: 36 }}
                   resizeMode="cover"
                 />
               </View>
@@ -159,8 +167,8 @@ export default function PlaySection() {
                     color: theme.colors.text.primary,
                     textAlign: 'center',
                     fontFamily: 'ClashDisplay_700Bold',
-                    fontSize: 24,
-                    lineHeight: 30,
+                    fontSize: titleSize,
+                    lineHeight: titleSize + 6,
                   }}
                 >
                   {active.title}

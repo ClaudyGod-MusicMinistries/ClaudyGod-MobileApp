@@ -6,13 +6,14 @@ import { colors } from '../../constants/color';
 
 export default function TabsLayout() {
   const colorScheme = useColorScheme();
-  const currentColors = colors[colorScheme];
+  const currentColors = colors[colorScheme] ?? colors.dark;
 
   return (
     <View style={{ flex: 1, backgroundColor: currentColors.background }}>
       <Tabs
         screenOptions={{
           headerShown: false,
+          sceneStyle: { backgroundColor: currentColors.background },
         }}
         tabBar={(props) => <TabBar {...props} />}
       >

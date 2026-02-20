@@ -1,5 +1,5 @@
 import React from 'react';
-import { Image, ScrollView, View } from 'react-native';
+import { Image, Platform, ScrollView, View, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -70,12 +70,20 @@ const playlists = [
 export default function VideosScreen() {
   const theme = useAppTheme();
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isTV = Platform.isTV;
+  const isTablet = width >= 768 && !isTV;
+  const featureHeight = isTV ? 280 : isTablet ? 250 : 220;
+  const quickCardWidth = isTV ? 300 : isTablet ? 240 : 196;
 
   return (
     <TabScreenWrapper>
       <ScrollView
+        style={{ flex: 1, backgroundColor: 'transparent' }}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingTop: theme.spacing.md, paddingBottom: 150 }}
+        bounces={false}
+        alwaysBounceVertical={false}
       >
         <Screen>
           <FadeIn>
@@ -132,7 +140,7 @@ export default function VideosScreen() {
               }}
               showFocusBorder={false}
             >
-              <Image source={{ uri: featured.imageUrl }} style={{ width: '100%', height: 220 }} />
+              <Image source={{ uri: featured.imageUrl }} style={{ width: '100%', height: featureHeight }} />
               <LinearGradient
                 colors={['rgba(0,0,0,0.02)', 'rgba(0,0,0,0.58)']}
                 style={{ position: 'absolute', left: 0, right: 0, bottom: 70, height: 90 }}
@@ -185,7 +193,7 @@ export default function VideosScreen() {
                     key={item.id}
                     onPress={() => router.push('/(tabs)/PlaySection')}
                     style={{
-                      width: 196,
+                      width: quickCardWidth,
                       marginRight: 10,
                       borderRadius: 16,
                       overflow: 'hidden',
