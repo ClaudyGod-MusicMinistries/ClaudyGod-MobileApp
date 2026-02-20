@@ -1,13 +1,76 @@
 version: '3.9'
 
 services:
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=claudy_admin
+      - POSTGRES_USER=claudy
+      - POSTGRES_PASSWORD=claudy_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U claudy -d claudy_admin"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
   api:
     build: ./api
     ports:
       - "4000:4000"
     environment:
+      - NODE_ENV=production
       - API_PORT=4000
       - API_HOST=0.0.0.0
+      - DATABASE_URL=postgres://claudy:claudy_password@postgres:5432/claudy_admin
+      - REDIS_URL=redis://redis:6379
+      - JWT_ACCESS_SECRET=change-this-jwt-secret-before-production-please-123456789
+      - JWT_ACCESS_TTL=1d
+      - BCRYPT_ROUNDS=12
+      - CORS_ORIGIN=http://localhost:5173
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  worker:
+    build: ./api
+    command: ["node", "dist/worker.js"]
+    environment:
+      - NODE_ENV=production
+      - API_PORT=4000
+      - API_HOST=0.0.0.0
+      - DATABASE_URL=postgres://claudy:claudy_password@postgres:5432/claudy_admin
+      - REDIS_URL=redis://redis:6379
+      - JWT_ACCESS_SECRET=change-this-jwt-secret-before-production-please-123456789
+      - JWT_ACCESS_TTL=1d
+      - BCRYPT_ROUNDS=12
+      - CORS_ORIGIN=http://localhost:5173
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     restart: unless-stopped
 
   web:
@@ -21,3 +84,7 @@ services:
     depends_on:
       - api
     restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:

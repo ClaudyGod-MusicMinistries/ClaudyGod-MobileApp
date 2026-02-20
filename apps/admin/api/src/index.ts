@@ -1,53 +1,42 @@
-import express from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
-import morgan from 'morgan';
-import { v4 as uuid } from 'uuid';
+import { createApp } from './app';
+import { env } from './config/env';
+import { runMigrations } from './db/migrate';
+import { closePool, pool } from './db/pool';
+import { closeRedis, redis } from './infra/redis';
+import { contentQueue } from './queues/contentQueue';
 
-const app = express();
-const PORT = parseInt(process.env.API_PORT || '4000', 10);
-const HOST = process.env.API_HOST || '0.0.0.0';
+const boot = async (): Promise<void> => {
+  await runMigrations();
+  await pool.query('SELECT 1');
+  await redis.ping();
 
-app.use(helmet());
-app.use(cors());
-app.use(express.json());
-app.use(morgan('tiny'));
+  const app = createApp();
+  const server = app.listen(env.API_PORT, env.API_HOST, () => {
+    console.log(`Admin API listening on http://${env.API_HOST}:${env.API_PORT}`);
+  });
 
-// In-memory store (swap with DB later)
-interface ContentItem {
-  id: string;
-  title: string;
-  description: string;
-  type: 'audio' | 'video' | 'playlist' | 'announcement';
-  url?: string;
-  createdAt: string;
-}
+  const shutdown = async (signal: string): Promise<void> => {
+    console.log(`${signal} received, shutting down API server...`);
 
-const content: ContentItem[] = [];
+    server.close(async () => {
+      await Promise.allSettled([contentQueue.close(), closeRedis(), closePool()]);
+      process.exit(0);
+    });
 
-app.get('/health', (_req, res) => res.json({ status: 'ok', ts: new Date().toISOString() }));
-
-app.get('/v1/content', (_req, res) => {
-  res.json({ items: content });
-});
-
-app.post('/v1/content', (req, res) => {
-  const { title, description, type, url } = req.body;
-  if (!title || !description || !type) {
-    return res.status(400).json({ error: 'title, description, and type are required' });
-  }
-  const item: ContentItem = {
-    id: uuid(),
-    title,
-    description,
-    type,
-    url,
-    createdAt: new Date().toISOString(),
+    setTimeout(() => process.exit(1), 10000).unref();
   };
-  content.unshift(item);
-  res.status(201).json(item);
-});
 
-app.listen(PORT, HOST, () => {
-  console.log(`Admin API listening on http://${HOST}:${PORT}`);
+  process.on('SIGINT', () => {
+    void shutdown('SIGINT');
+  });
+
+  process.on('SIGTERM', () => {
+    void shutdown('SIGTERM');
+  });
+};
+
+boot().catch(async (error) => {
+  console.error('Fatal API startup error:', error);
+  await Promise.allSettled([contentQueue.close(), closeRedis(), closePool()]);
+  process.exit(1);
 });
