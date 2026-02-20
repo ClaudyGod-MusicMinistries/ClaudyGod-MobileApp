@@ -13,14 +13,19 @@ export function Screen({ children, style, contentStyle }: ScreenProps) {
   const { width } = useWindowDimensions();
   const isTV = Platform.isTV;
   const isTablet = width >= 768 && !isTV;
-  const paddingX = isTV ? 42 : isTablet ? 24 : width < 360 ? 14 : 18;
-  const maxContentWidth = isTV ? 1240 : isTablet ? 940 : Math.min(560, width - paddingX * 2);
+
+  const paddingX = isTV ? 48 : isTablet ? 30 : width >= 390 ? 18 : 14;
+  const maxContentWidth = isTV ? 1280 : isTablet ? 960 : Math.min(540, width - paddingX * 2);
 
   return (
     <View style={[{ width: '100%', paddingHorizontal: paddingX }, style]}>
       <View
         style={[
-          { width: '100%', maxWidth: Math.min(maxContentWidth, layout.maxContentWidth), alignSelf: 'center' },
+          {
+            width: '100%',
+            maxWidth: Math.min(maxContentWidth, layout.maxContentWidth),
+            alignSelf: 'center',
+          },
           contentStyle,
         ]}
       >

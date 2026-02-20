@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Image, ScrollView, View } from 'react-native';
+import { Image, Platform, ScrollView, View, useWindowDimensions, type StyleProp, type ViewStyle } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { TabScreenWrapper } from './TextWrapper';
@@ -13,6 +13,11 @@ import { favouritePlaylists, favouriteSongs, recentlyAdded } from '../../data/da
 export default function LibraryScreen() {
   const theme = useAppTheme();
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isTV = Platform.isTV;
+  const isTablet = width >= 768 && !isTV;
+  const isCompact = width < 360;
+  const playlistWidth = isTV ? '23.5%' : isTablet ? '31.8%' : '48.5%';
 
   const liked = useMemo(() => favouriteSongs.slice(0, 8), []);
   const downloaded = useMemo(() => recentlyAdded.slice(0, 5), []);
@@ -21,8 +26,11 @@ export default function LibraryScreen() {
   return (
     <TabScreenWrapper>
       <ScrollView
+        style={{ flex: 1, backgroundColor: 'transparent' }}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingTop: theme.spacing.md, paddingBottom: 150 }}
+        bounces={false}
+        alwaysBounceVertical={false}
       >
         <Screen>
           <FadeIn>
@@ -63,10 +71,18 @@ export default function LibraryScreen() {
                 </TVTouchable>
               </View>
 
-              <View style={{ marginTop: 12, flexDirection: 'row', gap: 8 }}>
-                <StatCard label="Liked" value={liked.length} />
-                <StatCard label="Downloaded" value={downloaded.length} />
-                <StatCard label="Playlists" value={playlists.length} />
+              <View style={{ marginTop: 12, flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                <StatCard label="Liked" value={liked.length} style={{ flexBasis: isCompact ? '48%' : '31.8%' }} />
+                <StatCard
+                  label="Downloaded"
+                  value={downloaded.length}
+                  style={{ flexBasis: isCompact ? '48%' : '31.8%' }}
+                />
+                <StatCard
+                  label="Playlists"
+                  value={playlists.length}
+                  style={{ flexBasis: isCompact ? '48%' : '31.8%' }}
+                />
               </View>
             </View>
           </FadeIn>
@@ -111,7 +127,7 @@ export default function LibraryScreen() {
                   key={playlist.id}
                   onPress={() => router.push('/(tabs)/PlaySection')}
                   style={{
-                    width: '48.5%',
+                    width: playlistWidth,
                     borderRadius: 16,
                     overflow: 'hidden',
                     backgroundColor: theme.colors.surface,
@@ -172,20 +188,31 @@ function SectionHeader({
   );
 }
 
-function StatCard({ label, value }: { label: string; value: number }) {
+function StatCard({
+  label,
+  value,
+  style,
+}: {
+  label: string;
+  value: number;
+  style?: StyleProp<ViewStyle>;
+}) {
   const theme = useAppTheme();
 
   return (
     <View
-      style={{
-        flex: 1,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: theme.colors.border,
-        backgroundColor: theme.colors.surfaceAlt,
-        paddingHorizontal: 8,
-        paddingVertical: 8,
-      }}
+      style={[
+        {
+          flexGrow: 1,
+          borderRadius: 12,
+          borderWidth: 1,
+          borderColor: theme.colors.border,
+          backgroundColor: theme.colors.surfaceAlt,
+          paddingHorizontal: 8,
+          paddingVertical: 8,
+        },
+        style,
+      ]}
     >
       <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
         {value}

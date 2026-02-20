@@ -75,7 +75,8 @@ export default function Search() {
   const theme = useAppTheme();
   const { width } = useWindowDimensions();
   const isCompact = width < 360;
-  const shortcutWidth = isCompact ? '100%' : '48%';
+  const isTablet = width >= 768;
+  const shortcutWidth = isCompact ? '100%' : isTablet ? '31.8%' : '48%';
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
 
@@ -92,8 +93,11 @@ export default function Search() {
   return (
     <TabScreenWrapper>
       <ScrollView
+        style={{ flex: 1, backgroundColor: 'transparent' }}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 140, paddingTop: theme.spacing.md }}
+        bounces={false}
+        alwaysBounceVertical={false}
       >
         <Screen>
           <FadeIn>

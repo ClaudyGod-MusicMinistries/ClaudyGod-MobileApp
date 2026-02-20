@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Image, ScrollView, View, useWindowDimensions } from 'react-native';
+import { Image, Platform, ScrollView, View, useWindowDimensions } from 'react-native';
 import Animated, {
   Extrapolate,
   interpolate,
@@ -215,6 +215,8 @@ export default function HomeScreen() {
   const theme = useAppTheme();
   const router = useRouter();
   const { width } = useWindowDimensions();
+  const isTV = Platform.isTV;
+  const isTablet = width >= 768 && !isTV;
 
   const [activeTrackId, setActiveTrackId] = useState(popularTracks[0].id);
   const activeTrack = useMemo(
@@ -246,15 +248,22 @@ export default function HomeScreen() {
     opacity: interpolate(scrollY.value, [0, 220], [1, 0.93], Extrapolate.CLAMP),
   }));
 
-  const sectionCardWidth = Math.min(188, width * 0.58);
+  const heroHeight = isTV ? 360 : isTablet ? 320 : 280;
+  const heroTitleSize = isTV ? 34 : isTablet ? 30 : width < 380 ? 22 : 24;
+  const popularCardWidth = isTV ? 244 : isTablet ? 210 : 160;
+  const sectionCardWidth = isTV ? 300 : isTablet ? Math.min(280, width * 0.34) : Math.min(188, width * 0.58);
+  const miniPlayerBottom = isTV ? 138 : isTablet ? 114 : 100;
 
   return (
     <TabScreenWrapper>
       <AnimatedScrollView
+        style={{ flex: 1, backgroundColor: 'transparent' }}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingTop: theme.spacing.md, paddingBottom: 200 }}
         onScroll={onScroll}
         scrollEventThrottle={16}
+        bounces={false}
+        alwaysBounceVertical={false}
       >
         <Screen>
           <FadeIn>
@@ -296,7 +305,7 @@ export default function HomeScreen() {
             <View
               style={{
                 marginTop: 14,
-                height: 280,
+                height: heroHeight,
                 borderRadius: 28,
                 overflow: 'hidden',
                 borderWidth: 1,
@@ -308,7 +317,7 @@ export default function HomeScreen() {
                 source={{
                   uri: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?auto=format&fit=crop&w=1600&q=80',
                 }}
-                style={[{ width: '100%', height: 330 }, heroImageStyle]}
+                style={[{ width: '100%', height: heroHeight + 56 }, heroImageStyle]}
                 resizeMode="cover"
               />
 
@@ -326,8 +335,8 @@ export default function HomeScreen() {
                   style={{
                     marginTop: 4,
                     color: '#F8F7FC',
-                    fontSize: 25,
-                    lineHeight: 30,
+                    fontSize: heroTitleSize,
+                    lineHeight: heroTitleSize + 5,
                     fontFamily: 'ClashDisplay_700Bold',
                   }}
                 >
@@ -378,7 +387,7 @@ export default function HomeScreen() {
                       onPress={() => setActiveTrackId(track.id)}
                       hasTVPreferredFocus={index === 0}
                       style={{
-                        width: 160,
+                        width: popularCardWidth,
                         marginRight: 12,
                         borderRadius: 20,
                         padding: 10,
@@ -471,12 +480,12 @@ export default function HomeScreen() {
 
       <Animated.View
         style={[
-          {
-            position: 'absolute',
-            left: 14,
-            right: 14,
-            bottom: 84,
-          },
+              {
+                position: 'absolute',
+                left: 14,
+                right: 14,
+                bottom: miniPlayerBottom,
+              },
           miniPlayerStyle,
         ]}
       >

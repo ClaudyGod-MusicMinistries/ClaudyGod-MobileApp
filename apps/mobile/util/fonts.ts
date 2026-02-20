@@ -10,32 +10,32 @@ import * as Font from 'expo-font';
 export const fontConfig = {
   hero: {
     fontFamily: 'ClashDisplay_700Bold',
-    fontSize: 28,
-    lineHeight: 35,
+    fontSize: 26,
+    lineHeight: 32,
     fontWeight: '700' as const,
   },
   display: {
     fontFamily: 'ClashDisplay_700Bold',
-    fontSize: 22,
-    lineHeight: 29,
+    fontSize: 20,
+    lineHeight: 27,
     fontWeight: '700' as const,
   },
   heading: {
     fontFamily: 'ClashDisplay_600SemiBold',
-    fontSize: 17,
-    lineHeight: 24,
+    fontSize: 16,
+    lineHeight: 22,
     fontWeight: '600' as const,
   },
   title: {
     fontFamily: 'SpaceGrotesk_600SemiBold',
-    fontSize: 15,
-    lineHeight: 21,
+    fontSize: 14,
+    lineHeight: 20,
     fontWeight: '600' as const,
   },
   subtitle: {
     fontFamily: 'SpaceGrotesk_500Medium',
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 13,
+    lineHeight: 19,
     fontWeight: '500' as const,
   },
   body: {

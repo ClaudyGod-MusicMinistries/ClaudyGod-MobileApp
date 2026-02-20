@@ -2,12 +2,14 @@
 import React from 'react';
 import { View, ScrollView, StatusBar } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { MaterialIcons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { CustomText } from '../../components/CustomText';
 import { useRouter } from 'expo-router';
 import { useAppTheme } from '../../util/colorScheme';
-import { spacing } from '../../styles/designTokens';
+import { spacing, radius } from '../../styles/designTokens';
 import { Screen } from '../../components/layout/Screen';
-import { BrandedHeaderCard } from '../../components/layout/BrandedHeaderCard';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { TVTouchable } from '../../components/ui/TVTouchable';
 
 interface ScaffoldProps {
   title: string;
@@ -19,23 +21,12 @@ interface ScaffoldProps {
 export function SettingsScaffold({ title, subtitle, children, hero }: ScaffoldProps) {
   const theme = useAppTheme();
   const router = useRouter();
-  const insets = useSafeAreaInsets();
-  const isDark = theme.scheme === 'dark';
-
-  const ui = {
-    stickyBg: isDark ? '#06040D' : theme.colors.background,
-    stickyBorder: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(20,16,33,0.08)',
-  } as const;
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-      <StatusBar barStyle={theme.scheme === 'dark' ? 'light-content' : 'dark-content'} />
+      <StatusBar translucent={false} barStyle="light-content" backgroundColor={theme.colors.background} />
       <LinearGradient
-        colors={
-          theme.scheme === 'dark'
-            ? ['rgba(76,29,149,0.22)', 'rgba(10,10,15,0)']
-            : ['rgba(124,58,237,0.12)', 'rgba(255,255,255,0)']
-        }
+        colors={['rgba(76,29,149,0.22)', 'rgba(10,10,15,0)']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         pointerEvents="none"
@@ -47,37 +38,61 @@ export function SettingsScaffold({ title, subtitle, children, hero }: ScaffoldPr
           height: 260,
         }}
       />
-      <View
-        style={{
-          paddingHorizontal: spacing.lg,
-          paddingTop: insets.top + 8,
-          paddingBottom: spacing.sm,
-          borderBottomWidth: 1,
-          borderBottomColor: ui.stickyBorder,
-          backgroundColor: ui.stickyBg,
-        }}
-      >
-        <BrandedHeaderCard
-          title={title}
-          subtitle={subtitle}
-          showEyebrow={false}
-          leadingAction={{ icon: 'arrow-back', onPress: () => router.back(), accessibilityLabel: 'Go back' }}
-          actions={[]}
-        />
-      </View>
+      <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+        {/* Header */}
+        <View
+          style={{
+            paddingHorizontal: spacing.lg,
+            paddingTop: spacing.md,
+            paddingBottom: spacing.md,
+            borderBottomWidth: 1,
+            borderBottomColor: theme.colors.border,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: spacing.md,
+            backgroundColor: theme.colors.surface,
+          }}
+        >
+          <TVTouchable
+            onPress={() => router.back()}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: radius.md,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: theme.colors.surfaceAlt,
+              borderWidth: 1,
+              borderColor: theme.colors.border,
+            }}
+            showFocusBorder={false}
+          >
+            <MaterialIcons name="arrow-back" size={22} color={theme.colors.text.primary} />
+          </TVTouchable>
+          <View style={{ flex: 1 }}>
+            <CustomText variant="heading" style={{ color: theme.colors.text.primary }}>
+              {title}
+            </CustomText>
+            {subtitle ? (
+              <CustomText variant="body" style={{ color: theme.colors.text.secondary, marginTop: 2 }}>
+                {subtitle}
+              </CustomText>
+            ) : null}
+          </View>
+        </View>
 
-      <ScrollView
-        style={{ flex: 1, backgroundColor: theme.colors.background }}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 120, paddingTop: spacing.md, flexGrow: 1 }}
-        bounces={false}
-        overScrollMode="never"
-      >
-        <Screen>
-          {hero}
-          {children}
-        </Screen>
-      </ScrollView>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          style={{ flex: 1, backgroundColor: theme.colors.background }}
+          contentContainerStyle={{ paddingBottom: 120, paddingTop: spacing.md }}
+        >
+          <Screen>
+            {hero}
+            {children}
+          </Screen>
+        </ScrollView>
+      </SafeAreaView>
     </View>
   );
 }
