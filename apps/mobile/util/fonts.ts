@@ -4,33 +4,32 @@ import {
   SpaceGrotesk_600SemiBold,
   SpaceGrotesk_700Bold,
 } from '@expo-google-fonts/space-grotesk';
-import { Syne_600SemiBold, Syne_700Bold } from '@expo-google-fonts/syne';
 import { Sora_400Regular, Sora_500Medium, Sora_600SemiBold } from '@expo-google-fonts/sora';
 import * as Font from 'expo-font';
 
 export const fontConfig = {
   hero: {
     fontFamily: 'ClashDisplay_700Bold',
-    fontSize: 30,
-    lineHeight: 38,
+    fontSize: 28,
+    lineHeight: 35,
     fontWeight: '700' as const,
   },
   display: {
     fontFamily: 'ClashDisplay_700Bold',
-    fontSize: 24,
-    lineHeight: 31,
+    fontSize: 22,
+    lineHeight: 29,
     fontWeight: '700' as const,
   },
   heading: {
     fontFamily: 'ClashDisplay_600SemiBold',
-    fontSize: 19,
-    lineHeight: 25,
+    fontSize: 17,
+    lineHeight: 24,
     fontWeight: '600' as const,
   },
   title: {
     fontFamily: 'SpaceGrotesk_600SemiBold',
-    fontSize: 16,
-    lineHeight: 22,
+    fontSize: 15,
+    lineHeight: 21,
     fontWeight: '600' as const,
   },
   subtitle: {
@@ -46,7 +45,7 @@ export const fontConfig = {
     fontWeight: '400' as const,
   },
   label: {
-    fontFamily: 'SpaceGrotesk_500Medium',
+    fontFamily: 'Sora_500Medium',
     fontSize: 12,
     lineHeight: 17,
     fontWeight: '500' as const,
@@ -61,8 +60,9 @@ export const fontConfig = {
 
 export const loadFonts = async () => {
   await Font.loadAsync({
-    ClashDisplay_600SemiBold: Syne_600SemiBold,
-    ClashDisplay_700Bold: Syne_700Bold,
+    // Keep existing "ClashDisplay" keys for compatibility, but remap to readable families.
+    ClashDisplay_600SemiBold: SpaceGrotesk_600SemiBold,
+    ClashDisplay_700Bold: SpaceGrotesk_700Bold,
 
     SpaceGrotesk_400Regular,
     SpaceGrotesk_500Medium,

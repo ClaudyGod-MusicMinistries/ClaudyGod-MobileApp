@@ -1,27 +1,16 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Animated,
-  Easing,
-  ScrollView,
-  StatusBar,
-  TextInput,
-  View,
-  useWindowDimensions,
-} from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { ScrollView, StatusBar, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { AppButton } from '../components/ui/AppButton';
 import { CustomText } from '../components/CustomText';
-import { TVTouchable } from '../components/ui/TVTouchable';
+import { AppButton } from '../components/ui/AppButton';
 import { Screen } from '../components/layout/Screen';
+import { TVTouchable } from '../components/ui/TVTouchable';
 
 export default function SignUpScreen() {
   const router = useRouter();
-  const { width, height } = useWindowDimensions();
-  const isTablet = width >= 768;
-  const compact = width < 360 || height < 740;
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -34,147 +23,114 @@ export default function SignUpScreen() {
     [confirmPassword, email, name, password],
   );
 
-  const fade = useRef(new Animated.Value(0)).current;
-  const rise = useRef(new Animated.Value(16)).current;
-
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fade, {
-        toValue: 1,
-        duration: 420,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.timing(rise, {
-        toValue: 0,
-        duration: 420,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [fade, rise]);
-
   return (
-    <View style={{ flex: 1, backgroundColor: '#06040D' }}>
-      <StatusBar translucent={false} barStyle="light-content" backgroundColor="#06040D" />
+    <View style={{ flex: 1, backgroundColor: '#07050F' }}>
+      <StatusBar translucent={false} backgroundColor="#07050F" barStyle="light-content" />
+
       <LinearGradient
-        colors={['#130A29', '#06040D', '#06040D']}
+        colors={['rgba(154,107,255,0.32)', 'rgba(15,10,29,0)']}
         start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}
+        end={{ x: 0.9, y: 1 }}
+        style={{ position: 'absolute', left: -40, top: -30, width: 320, height: 320, borderRadius: 320 }}
       />
 
       <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
-        <ScrollView
-          style={{ flex: 1, backgroundColor: 'transparent' }}
-          contentContainerStyle={{ flexGrow: 1, paddingBottom: 16 }}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          bounces={false}
-          alwaysBounceVertical={false}
-          overScrollMode="never"
-        >
-          <Screen style={{ flex: 1 }} contentStyle={{ flexGrow: 1 }}>
-            <View style={{ flex: 1, justifyContent: 'center', paddingTop: compact ? 8 : 16 }}>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 26 }}>
+          <Screen>
+            <View style={{ paddingTop: 16 }}>
               <TVTouchable
                 onPress={() => router.back()}
                 style={{
-                  width: 42,
-                  height: 42,
-                  borderRadius: 21,
+                  width: 44,
+                  height: 44,
+                  borderRadius: 22,
+                  borderWidth: 1,
+                  borderColor: 'rgba(255,255,255,0.18)',
+                  backgroundColor: 'rgba(255,255,255,0.06)',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  borderWidth: 1,
-                  borderColor: 'rgba(255,255,255,0.16)',
-                  backgroundColor: 'rgba(255,255,255,0.04)',
-                  marginBottom: 12,
                 }}
                 showFocusBorder={false}
               >
-                <MaterialIcons name="arrow-back" size={20} color="#F8F7FC" />
+                <MaterialIcons name="arrow-back" size={22} color="#F8F7FC" />
               </TVTouchable>
 
-              <Animated.View
+              <View
                 style={{
-                  opacity: fade,
-                  transform: [{ translateY: rise }],
-                  width: '100%',
-                  alignSelf: 'center',
-                  maxWidth: isTablet ? 580 : 520,
+                  marginTop: 18,
                   borderRadius: 22,
+                  padding: 18,
+                  backgroundColor: 'rgba(13,10,22,0.86)',
                   borderWidth: 1,
-                  borderColor: 'rgba(255,255,255,0.1)',
-                  backgroundColor: 'rgba(10,8,17,0.92)',
-                  padding: compact ? 16 : 20,
+                  borderColor: 'rgba(235,226,255,0.12)',
                 }}
               >
-                <CustomText variant="display" style={{ color: '#F8F7FC', fontSize: 20, lineHeight: 25 }}>
-                  Create your account
+                <CustomText variant="display" style={{ color: '#F8F7FC' }}>
+                  Create Account
                 </CustomText>
-                <CustomText variant="body" style={{ marginTop: 6, color: 'rgba(203,196,226,0.88)' }}>
-                  Save your profile, most played content, live notifications and playlists.
+                <CustomText variant="body" style={{ color: 'rgba(203,196,226,0.86)', marginTop: 8 }}>
+                  Set up your workspace for music, videos, and ministry channels.
                 </CustomText>
 
-                <View style={{ marginTop: 14, gap: 10 }}>
-                  <Field>
-                    <TextInput value={name} onChangeText={setName} placeholder="Full name" placeholderTextColor="rgba(207,200,228,0.62)" style={inputStyle} />
-                  </Field>
-                  <Field>
-                    <TextInput
-                      value={email}
-                      onChangeText={setEmail}
-                      autoCapitalize="none"
-                      keyboardType="email-address"
-                      placeholder="Email address"
-                      placeholderTextColor="rgba(207,200,228,0.62)"
-                      style={inputStyle}
-                    />
-                  </Field>
-                  <Field row>
-                    <TextInput
-                      value={password}
-                      onChangeText={setPassword}
-                      secureTextEntry={hidePassword}
-                      placeholder="Password"
-                      placeholderTextColor="rgba(207,200,228,0.62)"
-                      style={[inputStyle, { flex: 1 }]}
-                    />
-                    <TVTouchable onPress={() => setHidePassword((v) => !v)} showFocusBorder={false}>
-                      <MaterialIcons name={hidePassword ? 'visibility' : 'visibility-off'} size={20} color="rgba(226,218,247,0.9)" />
-                    </TVTouchable>
-                  </Field>
-                  <Field>
-                    <TextInput
-                      value={confirmPassword}
-                      onChangeText={setConfirmPassword}
-                      secureTextEntry={hidePassword}
-                      placeholder="Confirm password"
-                      placeholderTextColor="rgba(207,200,228,0.62)"
-                      style={inputStyle}
-                    />
-                  </Field>
-                </View>
-
-                <View style={{ marginTop: 14 }}>
-                  <AppButton
-                    title="Create Account"
-                    size="lg"
-                    fullWidth
-                    disabled={!canSubmit}
-                    onPress={() => router.replace('/(tabs)/home')}
-                    style={{ borderRadius: 16 }}
+                <View style={{ marginTop: 16, gap: 10 }}>
+                  <AuthField value={name} onChangeText={setName} placeholder="Full name" />
+                  <AuthField
+                    value={email}
+                    onChangeText={setEmail}
+                    placeholder="Email address"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
                   />
-                  <CustomText variant="caption" style={{ color: 'rgba(184,175,209,0.86)', marginTop: 8 }}>
-                    Create your account to save playlists, favorites, and preferences.
-                  </CustomText>
+
+                  <AuthField
+                    value={password}
+                    onChangeText={setPassword}
+                    placeholder="Password"
+                    secureTextEntry={hidePassword}
+                    trailing={
+                      <TVTouchable onPress={() => setHidePassword((prev) => !prev)} showFocusBorder={false}>
+                        <MaterialIcons
+                          name={hidePassword ? 'visibility' : 'visibility-off'}
+                          size={20}
+                          color="rgba(226,218,247,0.9)"
+                        />
+                      </TVTouchable>
+                    }
+                  />
+
+                  <AuthField
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    placeholder="Confirm password"
+                    secureTextEntry={hidePassword}
+                  />
                 </View>
 
-                <TVTouchable onPress={() => router.push('/sign-in')} showFocusBorder={false} style={{ alignSelf: 'center', marginTop: 14 }}>
+                <AppButton
+                  title="Create Account"
+                  size="lg"
+                  fullWidth
+                  onPress={() => router.replace('/(tabs)/home')}
+                  disabled={!canSubmit}
+                  style={{ marginTop: 16, borderRadius: 16 }}
+                />
+
+                <TVTouchable
+                  onPress={() => router.push('/sign-in')}
+                  style={{ alignSelf: 'center', marginTop: 12 }}
+                  showFocusBorder={false}
+                >
                   <CustomText variant="label" style={{ color: '#CDB9FF' }}>
                     Already have an account? Sign In
                   </CustomText>
                 </TVTouchable>
-              </Animated.View>
+              </View>
+
+              <View style={{ marginTop: 12, alignItems: 'center' }}>
+                <CustomText variant="caption" style={{ color: 'rgba(177,170,201,0.74)' }}>
+                  ClaudyGod Music Ministries
+                </CustomText>
+              </View>
             </View>
           </Screen>
         </ScrollView>
@@ -183,27 +139,52 @@ export default function SignUpScreen() {
   );
 }
 
-function Field({ children, row }: { children: React.ReactNode; row?: boolean }) {
+function AuthField({
+  value,
+  onChangeText,
+  placeholder,
+  keyboardType,
+  autoCapitalize,
+  secureTextEntry,
+  trailing,
+}: {
+  value: string;
+  onChangeText: (_text: string) => void;
+  placeholder: string;
+  keyboardType?: 'default' | 'email-address';
+  autoCapitalize?: 'none' | 'sentences';
+  secureTextEntry?: boolean;
+  trailing?: React.ReactNode;
+}) {
   return (
     <View
       style={{
         borderRadius: 14,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.12)',
-        backgroundColor: 'rgba(255,255,255,0.03)',
+        borderColor: 'rgba(255,255,255,0.16)',
+        backgroundColor: 'rgba(255,255,255,0.05)',
         paddingHorizontal: 14,
-        flexDirection: row ? 'row' : 'column',
-        alignItems: row ? 'center' : undefined,
+        flexDirection: 'row',
+        alignItems: 'center',
       }}
     >
-      {children}
+      <TextInput
+        value={value}
+        onChangeText={onChangeText}
+        keyboardType={keyboardType}
+        autoCapitalize={autoCapitalize}
+        secureTextEntry={secureTextEntry}
+        placeholder={placeholder}
+        placeholderTextColor="rgba(207,200,228,0.68)"
+        style={{
+          flex: 1,
+          minHeight: 52,
+          color: '#F8F7FC',
+          fontSize: 14,
+          fontFamily: 'SpaceGrotesk_500Medium',
+        }}
+      />
+      {trailing ? <View style={{ marginLeft: 10 }}>{trailing}</View> : null}
     </View>
   );
 }
-
-const inputStyle = {
-  minHeight: 50,
-  color: '#F8F7FC',
-  fontSize: 14,
-  fontFamily: 'SpaceGrotesk_500Medium',
-} as const;
