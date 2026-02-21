@@ -1,12 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Image, Platform, ScrollView, View, useWindowDimensions } from 'react-native';
-import Animated, {
-  Extrapolate,
-  interpolate,
-  useAnimatedScrollHandler,
-  useAnimatedStyle,
-  useSharedValue,
-} from 'react-native-reanimated';
+import { ActivityIndicator, Image, Platform, ScrollView, View, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -16,200 +9,12 @@ import { Screen } from '../../components/layout/Screen';
 import { FadeIn } from '../../components/ui/FadeIn';
 import { CustomText } from '../../components/CustomText';
 import { TVTouchable } from '../../components/ui/TVTouchable';
+import { useContentFeed } from '../../hooks/useContentFeed';
+import { pushNotificationService } from '../../services/pushNotificationService';
+import { subscribeToLiveAlerts, trackPlayEvent } from '../../services/supabaseAnalytics';
+import type { FeedCardItem } from '../../services/contentService';
 
-type MediaItem = {
-  id: string;
-  title: string;
-  subtitle: string;
-  duration: string;
-  imageUrl: string;
-};
-
-type ChannelSection = {
-  id: string;
-  title: string;
-  description: string;
-  music: MediaItem[];
-  videos: MediaItem[];
-};
-
-const popularTracks: MediaItem[] = [
-  {
-    id: 'pt-1',
-    title: 'Worthy Is The Lamb',
-    subtitle: 'ClaudyGod Live',
-    duration: '4:18',
-    imageUrl:
-      'https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=900&q=80',
-  },
-  {
-    id: 'pt-2',
-    title: 'Morning Mercy',
-    subtitle: 'Worship Team',
-    duration: '3:52',
-    imageUrl:
-      'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?auto=format&fit=crop&w=900&q=80',
-  },
-  {
-    id: 'pt-3',
-    title: 'Revival Fire',
-    subtitle: 'Prayer Circle',
-    duration: '5:01',
-    imageUrl:
-      'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=900&q=80',
-  },
-  {
-    id: 'pt-4',
-    title: 'Grace Upon Grace',
-    subtitle: 'Nuggets Session',
-    duration: '3:41',
-    imageUrl:
-      'https://images.unsplash.com/photo-1461783436728-0a9217714694?auto=format&fit=crop&w=900&q=80',
-  },
-];
-
-const recentlyPlayed: MediaItem[] = [
-  {
-    id: 'rp-1',
-    title: 'The Name Above All Names',
-    subtitle: 'ClaudyGod Messages',
-    duration: '5:14',
-    imageUrl:
-      'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=900&q=80',
-  },
-  {
-    id: 'rp-2',
-    title: 'Faith Builder Daily',
-    subtitle: 'Nuggets of Truth',
-    duration: '4:09',
-    imageUrl:
-      'https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?auto=format&fit=crop&w=900&q=80',
-  },
-  {
-    id: 'rp-3',
-    title: 'Teens Worship Room',
-    subtitle: 'Youth Channel',
-    duration: '3:46',
-    imageUrl:
-      'https://images.unsplash.com/photo-1458560871784-56d23406c091?auto=format&fit=crop&w=900&q=80',
-  },
-  {
-    id: 'rp-4',
-    title: 'Victory Hour',
-    subtitle: 'Worship Hour',
-    duration: '6:02',
-    imageUrl:
-      'https://images.unsplash.com/photo-1504893524553-b855bce32c67?auto=format&fit=crop&w=900&q=80',
-  },
-];
-
-const baseMusic: MediaItem[] = [
-  {
-    id: 'm-1',
-    title: 'Healing Anthem',
-    subtitle: 'Live Session',
-    duration: '4:09',
-    imageUrl:
-      'https://images.unsplash.com/photo-1509869175650-a1d97972541a?auto=format&fit=crop&w=900&q=80',
-  },
-  {
-    id: 'm-2',
-    title: 'Spirit Move',
-    subtitle: 'Worship Flow',
-    duration: '5:12',
-    imageUrl:
-      'https://images.unsplash.com/photo-1460723237483-7a6dc9d0b212?auto=format&fit=crop&w=900&q=80',
-  },
-  {
-    id: 'm-3',
-    title: 'Grace Notes',
-    subtitle: 'Devotional Mix',
-    duration: '3:37',
-    imageUrl:
-      'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?auto=format&fit=crop&w=900&q=80',
-  },
-];
-
-const baseVideos: MediaItem[] = [
-  {
-    id: 'v-1',
-    title: 'Worship Live Replay',
-    subtitle: 'Video Session',
-    duration: '22:41',
-    imageUrl:
-      'https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=900&q=80',
-  },
-  {
-    id: 'v-2',
-    title: 'Word + Worship',
-    subtitle: 'Ministry Broadcast',
-    duration: '16:54',
-    imageUrl:
-      'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?auto=format&fit=crop&w=900&q=80',
-  },
-  {
-    id: 'v-3',
-    title: 'Prayer Room Night',
-    subtitle: 'Special Stream',
-    duration: '19:08',
-    imageUrl:
-      'https://images.unsplash.com/photo-1510915361894-db8b60106cb1?auto=format&fit=crop&w=900&q=80',
-  },
-];
-
-const channelSections: ChannelSection[] = [
-  {
-    id: 'c1',
-    title: 'ClaudyGod Music',
-    description: 'Songs and ministry sounds for daily devotion.',
-    music: baseMusic.map((item) => ({ ...item, id: `c1-${item.id}` })),
-    videos: baseVideos.map((item) => ({ ...item, id: `c1-${item.id}` })),
-  },
-  {
-    id: 'c2',
-    title: 'ClaudyGod Nuggets of Truth',
-    description: 'Short form truth capsules in audio and video.',
-    music: baseMusic.map((item) => ({ ...item, id: `c2-${item.id}` })),
-    videos: baseVideos.map((item) => ({ ...item, id: `c2-${item.id}` })),
-  },
-  {
-    id: 'c3',
-    title: 'ClaudyGod Worship Hour',
-    description: 'Extended worship moments and live recordings.',
-    music: baseMusic.map((item) => ({ ...item, id: `c3-${item.id}` })),
-    videos: baseVideos.map((item) => ({ ...item, id: `c3-${item.id}` })),
-  },
-  {
-    id: 'c4',
-    title: 'ClaudyGod Teens Youth Channel',
-    description: 'Youth-focused praise, word, and real-life guidance.',
-    music: baseMusic.map((item) => ({ ...item, id: `c4-${item.id}` })),
-    videos: baseVideos.map((item) => ({ ...item, id: `c4-${item.id}` })),
-  },
-  {
-    id: 'c5',
-    title: 'ClaudyGod Messages',
-    description: 'Message streams and sermon highlights.',
-    music: baseMusic.map((item) => ({ ...item, id: `c5-${item.id}` })),
-    videos: baseVideos.map((item) => ({ ...item, id: `c5-${item.id}` })),
-  },
-  {
-    id: 'c6',
-    title: 'ClaudyGod Music (Audio)',
-    description: 'Audio-first curation for uninterrupted listening.',
-    music: baseMusic.map((item) => ({ ...item, id: `c6-${item.id}` })),
-    videos: baseVideos.map((item) => ({ ...item, id: `c6-${item.id}` })),
-  },
-  {
-    id: 'c7',
-    title: 'ClaudyGod Worship Hour (Audio)',
-    description: 'Long-form worship audio sessions.',
-    music: baseMusic.map((item) => ({ ...item, id: `c7-${item.id}` })),
-    videos: baseVideos.map((item) => ({ ...item, id: `c7-${item.id}` })),
-  },
-];
-
-const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
+const ALL_FILTER = 'All';
 
 export default function HomeScreen() {
   const theme = useAppTheme();
@@ -218,52 +23,66 @@ export default function HomeScreen() {
   const isTV = Platform.isTV;
   const isTablet = width >= 768 && !isTV;
 
-  const [activeTrackId, setActiveTrackId] = useState(popularTracks[0].id);
-  const activeTrack = useMemo(
-    () => popularTracks.find((track) => track.id === activeTrackId) ?? popularTracks[0],
-    [activeTrackId],
-  );
+  const { feed, loading, error, refresh } = useContentFeed();
+  const [activeCategory, setActiveCategory] = useState<string>(ALL_FILTER);
 
-  const scrollY = useSharedValue(0);
+  const itemCardWidth = isTV ? 280 : isTablet ? 220 : 162;
+  const adCardWidth = isTV ? 360 : isTablet ? 280 : 230;
+  const heroHeight = isTV ? 370 : isTablet ? 320 : 272;
 
-  const onScroll = useAnimatedScrollHandler({
-    onScroll: (event) => {
-      scrollY.value = event.contentOffset.y;
-    },
-  });
+  const filteredFeed = useMemo(() => {
+    if (activeCategory === ALL_FILTER) {
+      return feed;
+    }
 
-  const heroImageStyle = useAnimatedStyle(() => ({
-    transform: [
-      {
-        translateY: interpolate(scrollY.value, [0, 260], [0, -56], Extrapolate.CLAMP),
-      },
-      {
-        scale: interpolate(scrollY.value, [-120, 0], [1.14, 1], Extrapolate.CLAMP),
-      },
-    ],
-  }));
+    switch (activeCategory.toLowerCase()) {
+      case 'music':
+        return { ...feed, videos: [], playlists: [], live: [], ads: [] };
+      case 'videos':
+        return { ...feed, music: [], playlists: [], live: [], ads: [] };
+      case 'live':
+        return { ...feed, music: [], videos: [], playlists: [], ads: [] };
+      case 'playlists':
+        return { ...feed, music: [], videos: [], live: [], ads: [] };
+      case 'ads':
+        return { ...feed, music: [], videos: [], live: [], playlists: [] };
+      default:
+        return feed;
+    }
+  }, [activeCategory, feed]);
 
-  const miniPlayerStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: interpolate(scrollY.value, [0, 230], [0, -12], Extrapolate.CLAMP) }],
-    opacity: interpolate(scrollY.value, [0, 220], [1, 0.93], Extrapolate.CLAMP),
-  }));
+  const featured = filteredFeed.featured;
+  const pinnedPlayer = filteredFeed.mostPlayed[0] ?? filteredFeed.music[0] ?? filteredFeed.videos[0] ?? null;
 
-  const heroHeight = isTV ? 360 : isTablet ? 320 : 280;
-  const heroTitleSize = isTV ? 34 : isTablet ? 30 : width < 380 ? 22 : 24;
-  const popularCardWidth = isTV ? 244 : isTablet ? 210 : 160;
-  const sectionCardWidth = isTV ? 300 : isTablet ? Math.min(280, width * 0.34) : Math.min(188, width * 0.58);
-  const miniPlayerBottom = isTV ? 138 : isTablet ? 114 : 100;
+  const openPlayer = async (item: FeedCardItem, source: string) => {
+    await trackPlayEvent({
+      contentId: item.id,
+      contentType: item.type,
+      title: item.title,
+      source,
+    });
+    router.push('/(tabs)/PlaySection');
+  };
+
+  const onLiveNotify = async (item: FeedCardItem) => {
+    await subscribeToLiveAlerts(item.id);
+    await pushNotificationService.initialize();
+    await pushNotificationService.scheduleLocalNotification(
+      'Live alert enabled',
+      `${item.title} will notify you when the channel goes live.`,
+      { channelId: item.id },
+    );
+  };
 
   return (
     <TabScreenWrapper>
-      <AnimatedScrollView
+      <ScrollView
         style={{ flex: 1, backgroundColor: 'transparent' }}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: theme.spacing.md, paddingBottom: 200 }}
-        onScroll={onScroll}
-        scrollEventThrottle={16}
+        contentContainerStyle={{ paddingTop: theme.spacing.md, paddingBottom: 190 }}
         bounces={false}
         alwaysBounceVertical={false}
+        overScrollMode="never"
       >
         <Screen>
           <FadeIn>
@@ -286,151 +105,310 @@ export default function HomeScreen() {
                 />
                 <View style={{ marginLeft: 10, flex: 1 }}>
                   <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
-                    Good evening
+                    ClaudyGod Streaming Suite
                   </CustomText>
                   <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }} numberOfLines={1}>
-                    ClaudyGod Ministry
+                    Music, Videos, Live, Ads
                   </CustomText>
                 </View>
               </View>
 
               <View style={{ flexDirection: 'row', gap: 8 }}>
-                <IconCircle icon="search" onPress={() => router.push('/(tabs)/search')} />
-                <IconCircle icon="notifications-none" onPress={() => console.log('notifications')} />
+                <CircleIcon icon="search" onPress={() => router.push('/(tabs)/search')} />
+                <CircleIcon icon="person-outline" onPress={() => router.push('/profile')} />
               </View>
             </View>
           </FadeIn>
 
-          <FadeIn delay={50}>
+          <FadeIn delay={30}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              overScrollMode="never"
+              contentContainerStyle={{ paddingTop: 12, paddingBottom: 2, paddingRight: 6 }}
+            >
+              {feed.topCategories.map((category) => {
+                const active = activeCategory === category;
+                return (
+                  <TVTouchable
+                    key={category}
+                    onPress={() => setActiveCategory(category)}
+                    style={{
+                      marginRight: 8,
+                      borderRadius: 999,
+                      borderWidth: 1,
+                      borderColor: active ? 'rgba(154,107,255,0.56)' : theme.colors.border,
+                      backgroundColor: active ? 'rgba(154,107,255,0.17)' : theme.colors.surface,
+                      paddingHorizontal: 14,
+                      paddingVertical: 8,
+                    }}
+                    showFocusBorder={false}
+                  >
+                    <CustomText variant="label" style={{ color: active ? theme.colors.primary : theme.colors.text.primary }}>
+                      {category}
+                    </CustomText>
+                  </TVTouchable>
+                );
+              })}
+            </ScrollView>
+          </FadeIn>
+
+          {loading ? (
+            <View
+              style={{
+                marginTop: 20,
+                borderRadius: 18,
+                borderWidth: 1,
+                borderColor: theme.colors.border,
+                padding: 22,
+                alignItems: 'center',
+                backgroundColor: theme.colors.surface,
+              }}
+            >
+              <ActivityIndicator size="small" color={theme.colors.primary} />
+              <CustomText variant="caption" style={{ marginTop: 8, color: theme.colors.text.secondary }}>
+                Loading channel content...
+              </CustomText>
+            </View>
+          ) : null}
+
+          {error ? (
             <View
               style={{
                 marginTop: 14,
-                height: heroHeight,
-                borderRadius: 28,
-                overflow: 'hidden',
+                borderRadius: 16,
                 borderWidth: 1,
-                borderColor: theme.scheme === 'dark' ? '#2A1F44' : '#D7CCF5',
-                backgroundColor: '#0E081A',
+                borderColor: 'rgba(248,113,113,0.38)',
+                backgroundColor: 'rgba(126,34,34,0.18)',
+                padding: 12,
               }}
             >
-              <Animated.Image
-                source={{
-                  uri: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?auto=format&fit=crop&w=1600&q=80',
-                }}
-                style={[{ width: '100%', height: heroHeight + 56 }, heroImageStyle]}
-                resizeMode="cover"
-              />
-
-              <LinearGradient
-                colors={['rgba(7,4,14,0.05)', 'rgba(7,4,14,0.62)', 'rgba(7,4,14,0.96)']}
-                style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 200 }}
-              />
-
-              <View style={{ position: 'absolute', top: 16, left: 16, right: 16 }}>
-                <CustomText variant="label" style={{ color: '#DAC9FF' }}>
-                  Hero Drop
+              <CustomText variant="caption" style={{ color: '#fecaca' }}>
+                Feed sync issue: {error}
+              </CustomText>
+              <TVTouchable onPress={refresh} showFocusBorder={false} style={{ marginTop: 6, alignSelf: 'flex-start' }}>
+                <CustomText variant="label" style={{ color: '#fda4af' }}>
+                  Retry
                 </CustomText>
-                <CustomText
-                  variant="display"
-                  style={{
-                    marginTop: 4,
-                    color: '#F8F7FC',
-                    fontSize: heroTitleSize,
-                    lineHeight: heroTitleSize + 5,
-                    fontFamily: 'ClashDisplay_700Bold',
-                  }}
-                >
-                  ClaudyGod Live Session
-                </CustomText>
-                <CustomText variant="body" style={{ color: 'rgba(227,220,246,0.88)', marginTop: 6 }}>
-                  Structured streams, curated tracks, and ministry videos in one flow.
-                </CustomText>
-              </View>
+              </TVTouchable>
+            </View>
+          ) : null}
 
+          {featured ? (
+            <FadeIn delay={60}>
               <TVTouchable
-                onPress={() => router.push('/(tabs)/PlaySection')}
+                onPress={() => openPlayer(featured, 'home_featured')}
                 style={{
-                  position: 'absolute',
-                  right: 16,
-                  bottom: 18,
-                  width: 60,
-                  height: 60,
-                  borderRadius: 30,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: '#9A6BFF',
+                  marginTop: 14,
+                  height: heroHeight,
+                  borderRadius: 26,
+                  overflow: 'hidden',
                   borderWidth: 1,
-                  borderColor: 'rgba(255,255,255,0.46)',
-                  shadowColor: '#9A6BFF',
-                  shadowOpacity: 0.58,
-                  shadowRadius: 24,
-                  shadowOffset: { width: 0, height: 12 },
-                  elevation: 14,
+                  borderColor: theme.colors.border,
+                  backgroundColor: '#0E081A',
                 }}
                 showFocusBorder={false}
               >
-                <MaterialIcons name="play-arrow" size={30} color="#FFFFFF" />
+                <Image source={{ uri: featured.imageUrl }} style={{ width: '100%', height: heroHeight + 20 }} />
+
+                <LinearGradient
+                  colors={['rgba(5,4,9,0.08)', 'rgba(5,4,9,0.65)', 'rgba(5,4,9,0.95)']}
+                  style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 180 }}
+                />
+
+                <View style={{ position: 'absolute', left: 16, right: 16, top: 14 }}>
+                  <CustomText variant="label" style={{ color: '#DCCAFF' }}>
+                    Featured Channel Drop
+                  </CustomText>
+                  <CustomText
+                    variant="display"
+                    style={{
+                      marginTop: 4,
+                      color: '#F8F7FC',
+                      fontSize: isTV ? 34 : isTablet ? 29 : 23,
+                      lineHeight: isTV ? 40 : isTablet ? 34 : 28,
+                    }}
+                  >
+                    {featured.title}
+                  </CustomText>
+                  <CustomText variant="body" style={{ color: 'rgba(231,223,249,0.92)', marginTop: 6 }} numberOfLines={2}>
+                    {featured.description}
+                  </CustomText>
+                </View>
+
+                <View
+                  style={{
+                    position: 'absolute',
+                    right: 14,
+                    bottom: 16,
+                    width: 56,
+                    height: 56,
+                    borderRadius: 28,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: '#9A6BFF',
+                    borderWidth: 1,
+                    borderColor: 'rgba(255,255,255,0.45)',
+                  }}
+                >
+                  <MaterialIcons name="play-arrow" size={28} color="#FFFFFF" />
+                </View>
               </TVTouchable>
-            </View>
-          </FadeIn>
+            </FadeIn>
+          ) : null}
 
-          <FadeIn delay={80}>
-            <View style={{ marginTop: 16 }}>
-              <RowHeader title="Popular Tracks" actionLabel="See all" onPress={() => router.push('/(tabs)/search')} />
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                {popularTracks.map((track, index) => {
-                  const active = track.id === activeTrackId;
-
-                  return (
-                    <TVTouchable
-                      key={track.id}
-                      onPress={() => setActiveTrackId(track.id)}
-                      hasTVPreferredFocus={index === 0}
-                      style={{
-                        width: popularCardWidth,
-                        marginRight: 12,
-                        borderRadius: 20,
-                        padding: 10,
-                        borderWidth: 1,
-                        borderColor: active ? 'rgba(154,107,255,0.54)' : theme.colors.border,
-                        backgroundColor: active ? 'rgba(154,107,255,0.12)' : theme.colors.surface,
-                      }}
-                      showFocusBorder={false}
-                    >
-                      <Image
-                        source={{ uri: track.imageUrl }}
-                        style={{ width: '100%', height: 124, borderRadius: 16 }}
-                        resizeMode="cover"
-                      />
-                      <CustomText
-                        variant="subtitle"
-                        style={{ color: theme.colors.text.primary, marginTop: 10 }}
-                        numberOfLines={1}
-                      >
-                        {track.title}
-                      </CustomText>
-                      <CustomText
-                        variant="caption"
-                        style={{ color: theme.colors.text.secondary, marginTop: 2 }}
-                        numberOfLines={1}
-                      >
-                        {track.subtitle}
-                      </CustomText>
-                    </TVTouchable>
-                  );
-                })}
-              </ScrollView>
-            </View>
-          </FadeIn>
-
-          <FadeIn delay={110}>
-            <View style={{ marginTop: 18 }}>
-              <RowHeader title="Recently Played" actionLabel="Open player" onPress={() => router.push('/(tabs)/PlaySection')} />
-              <View style={{ gap: 8 }}>
-                {recentlyPlayed.map((item) => (
+          <FadeIn delay={90}>
+            <SectionHeader title="Live Now" actionLabel="See all" onPress={() => router.push('/(tabs)/videos')} />
+            {filteredFeed.live.length > 0 ? (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} overScrollMode="never">
+                {filteredFeed.live.map((item) => (
                   <TVTouchable
                     key={item.id}
-                    onPress={() => router.push('/(tabs)/PlaySection')}
+                    onPress={() => openPlayer(item, 'home_live')}
+                    style={{
+                      width: itemCardWidth,
+                      marginRight: 10,
+                      borderRadius: 16,
+                      overflow: 'hidden',
+                      borderWidth: 1,
+                      borderColor: 'rgba(248,113,113,0.46)',
+                      backgroundColor: theme.colors.surface,
+                    }}
+                    showFocusBorder={false}
+                  >
+                    <Image source={{ uri: item.imageUrl }} style={{ width: '100%', height: 110 }} />
+                    <View style={{ padding: 10 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#ef4444' }} />
+                        <CustomText variant="caption" style={{ color: '#ef9a9a' }}>
+                          LIVE • {item.liveViewerCount ?? 0} watching
+                        </CustomText>
+                      </View>
+                      <CustomText variant="body" style={{ color: theme.colors.text.primary, marginTop: 6 }} numberOfLines={1}>
+                        {item.title}
+                      </CustomText>
+                      <TVTouchable onPress={() => onLiveNotify(item)} showFocusBorder={false} style={{ marginTop: 6 }}>
+                        <CustomText variant="label" style={{ color: theme.colors.primary }}>
+                          Notify me
+                        </CustomText>
+                      </TVTouchable>
+                    </View>
+                  </TVTouchable>
+                ))}
+              </ScrollView>
+            ) : (
+              <EmptyHint text="No live channels yet. When your client goes live, it will appear here." />
+            )}
+          </FadeIn>
+
+          <FadeIn delay={120}>
+            <SectionHeader title="Sponsored Ads" actionLabel="Manage" onPress={() => router.push('/(tabs)/videos')} />
+            {filteredFeed.ads.length > 0 ? (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} overScrollMode="never">
+                {filteredFeed.ads.map((item) => (
+                  <TVTouchable
+                    key={item.id}
+                    onPress={() => openPlayer(item, 'home_ads')}
+                    style={{
+                      width: adCardWidth,
+                      marginRight: 12,
+                      borderRadius: 18,
+                      overflow: 'hidden',
+                      borderWidth: 1,
+                      borderColor: theme.colors.border,
+                      backgroundColor: theme.colors.surface,
+                    }}
+                    showFocusBorder={false}
+                  >
+                    <Image source={{ uri: item.imageUrl }} style={{ width: '100%', height: 128 }} />
+                    <View style={{ padding: 10 }}>
+                      <CustomText variant="caption" style={{ color: theme.colors.primary }}>
+                        Sponsored
+                      </CustomText>
+                      <CustomText variant="subtitle" style={{ color: theme.colors.text.primary, marginTop: 4 }} numberOfLines={1}>
+                        {item.title}
+                      </CustomText>
+                      <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 2 }} numberOfLines={1}>
+                        {item.description}
+                      </CustomText>
+                    </View>
+                  </TVTouchable>
+                ))}
+              </ScrollView>
+            ) : (
+              <EmptyHint text="No ad slots published yet." />
+            )}
+          </FadeIn>
+
+          <FadeIn delay={140}>
+            <SectionHeader title="Music" actionLabel="Open" onPress={() => router.push('/(tabs)/library')} />
+            {filteredFeed.music.length > 0 ? (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} overScrollMode="never">
+                {filteredFeed.music.map((item) => (
+                  <MediaTile key={item.id} item={item} width={itemCardWidth} onPress={() => openPlayer(item, 'home_music')} />
+                ))}
+              </ScrollView>
+            ) : (
+              <EmptyHint text="No music uploaded yet." />
+            )}
+          </FadeIn>
+
+          <FadeIn delay={160}>
+            <SectionHeader title="Videos" actionLabel="Open" onPress={() => router.push('/(tabs)/videos')} />
+            {filteredFeed.videos.length > 0 ? (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} overScrollMode="never">
+                {filteredFeed.videos.map((item) => (
+                  <MediaTile key={item.id} item={item} width={itemCardWidth} onPress={() => openPlayer(item, 'home_videos')} />
+                ))}
+              </ScrollView>
+            ) : (
+              <EmptyHint text="No videos uploaded yet." />
+            )}
+          </FadeIn>
+
+          <FadeIn delay={180}>
+            <SectionHeader title="Playlists" actionLabel="Open" onPress={() => router.push('/(tabs)/library')} />
+            {filteredFeed.playlists.length > 0 ? (
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 10 }}>
+                {filteredFeed.playlists.slice(0, isTV ? 8 : 6).map((item) => (
+                  <TVTouchable
+                    key={item.id}
+                    onPress={() => openPlayer(item, 'home_playlists')}
+                    style={{
+                      width: isTV ? '24%' : isTablet ? '32%' : '48.5%',
+                      borderRadius: 16,
+                      overflow: 'hidden',
+                      borderWidth: 1,
+                      borderColor: theme.colors.border,
+                      backgroundColor: theme.colors.surface,
+                    }}
+                    showFocusBorder={false}
+                  >
+                    <Image source={{ uri: item.imageUrl }} style={{ width: '100%', height: 104 }} />
+                    <View style={{ padding: 10 }}>
+                      <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }} numberOfLines={1}>
+                        {item.title}
+                      </CustomText>
+                      <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 2 }} numberOfLines={1}>
+                        {item.subtitle}
+                      </CustomText>
+                    </View>
+                  </TVTouchable>
+                ))}
+              </View>
+            ) : (
+              <EmptyHint text="No playlists created yet." />
+            )}
+          </FadeIn>
+
+          <FadeIn delay={210}>
+            <SectionHeader title="Recently Added" actionLabel="Refresh" onPress={refresh} />
+            {filteredFeed.recent.length > 0 ? (
+              <View style={{ gap: 8 }}>
+                {filteredFeed.recent.slice(0, 8).map((item) => (
+                  <TVTouchable
+                    key={item.id}
+                    onPress={() => openPlayer(item, 'home_recent')}
                     style={{
                       minHeight: 64,
                       borderRadius: 16,
@@ -449,90 +427,72 @@ export default function HomeScreen() {
                       <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }} numberOfLines={1}>
                         {item.title}
                       </CustomText>
-                      <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 2 }}>
+                      <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 2 }} numberOfLines={1}>
                         {item.subtitle}
                       </CustomText>
                     </View>
-                    <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginRight: 8 }}>
-                      {item.duration}
-                    </CustomText>
                     <MaterialIcons name="play-circle-outline" size={22} color={theme.colors.primary} />
                   </TVTouchable>
                 ))}
               </View>
-            </View>
-          </FadeIn>
-
-          <FadeIn delay={140}>
-            <View style={{ marginTop: 18, gap: 14 }}>
-              {channelSections.map((channel) => (
-                <ChannelSectionCard
-                  key={channel.id}
-                  channel={channel}
-                  cardWidth={sectionCardWidth}
-                  onPlay={() => router.push('/(tabs)/PlaySection')}
-                />
-              ))}
-            </View>
+            ) : (
+              <EmptyHint text="No recent uploads yet." />
+            )}
           </FadeIn>
         </Screen>
-      </AnimatedScrollView>
+      </ScrollView>
 
-      <Animated.View
-        style={[
-              {
-                position: 'absolute',
-                left: 14,
-                right: 14,
-                bottom: miniPlayerBottom,
-              },
-          miniPlayerStyle,
-        ]}
-      >
-        <TVTouchable
-          onPress={() => router.push('/(tabs)/PlaySection')}
+      {pinnedPlayer ? (
+        <View
           style={{
-            borderRadius: 20,
-            padding: 10,
-            borderWidth: 1,
-            borderColor: 'rgba(227,218,246,0.2)',
-            backgroundColor: theme.scheme === 'dark' ? 'rgba(17,13,29,0.84)' : 'rgba(255,255,255,0.9)',
-            flexDirection: 'row',
-            alignItems: 'center',
+            position: 'absolute',
+            left: 14,
+            right: 14,
+            bottom: isTV ? 142 : isTablet ? 118 : 102,
           }}
-          showFocusBorder={false}
         >
-          <Image
-            source={{ uri: activeTrack.imageUrl }}
-            style={{ width: 46, height: 46, borderRadius: 13, marginRight: 10 }}
-          />
-          <View style={{ flex: 1 }}>
-            <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }} numberOfLines={1}>
-              {activeTrack.title}
-            </CustomText>
-            <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 2 }} numberOfLines={1}>
-              {activeTrack.subtitle}
-            </CustomText>
-          </View>
-          <View
+          <TVTouchable
+            onPress={() => openPlayer(pinnedPlayer, 'home_miniplayer')}
             style={{
-              width: 36,
-              height: 36,
-              borderRadius: 18,
+              borderRadius: 20,
+              padding: 10,
+              borderWidth: 1,
+              borderColor: 'rgba(227,218,246,0.2)',
+              backgroundColor: 'rgba(17,13,29,0.90)',
+              flexDirection: 'row',
               alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: theme.colors.primary,
             }}
+            showFocusBorder={false}
           >
-            <MaterialIcons name="play-arrow" size={20} color={theme.colors.text.inverse} />
-          </View>
-        </TVTouchable>
-      </Animated.View>
+            <Image source={{ uri: pinnedPlayer.imageUrl }} style={{ width: 46, height: 46, borderRadius: 13, marginRight: 10 }} />
+            <View style={{ flex: 1 }}>
+              <CustomText variant="subtitle" style={{ color: '#F8F7FC' }} numberOfLines={1}>
+                {pinnedPlayer.title}
+              </CustomText>
+              <CustomText variant="caption" style={{ color: '#BFB5DA', marginTop: 2 }} numberOfLines={1}>
+                {pinnedPlayer.subtitle}
+              </CustomText>
+            </View>
+            <View
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 18,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: theme.colors.primary,
+              }}
+            >
+              <MaterialIcons name="play-arrow" size={20} color={theme.colors.text.inverse} />
+            </View>
+          </TVTouchable>
+        </View>
+      ) : null}
     </TabScreenWrapper>
   );
 }
 
-function RowHeader({
+function SectionHeader({
   title,
   actionLabel,
   onPress,
@@ -546,10 +506,11 @@ function RowHeader({
   return (
     <View
       style={{
+        marginTop: 18,
+        marginBottom: 10,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: 10,
       }}
     >
       <CustomText variant="heading" style={{ color: theme.colors.text.primary }}>
@@ -564,13 +525,7 @@ function RowHeader({
   );
 }
 
-function IconCircle({
-  icon,
-  onPress,
-}: {
-  icon: React.ComponentProps<typeof MaterialIcons>['name'];
-  onPress: () => void;
-}) {
+function CircleIcon({ icon, onPress }: { icon: React.ComponentProps<typeof MaterialIcons>['name']; onPress: () => void }) {
   const theme = useAppTheme();
 
   return (
@@ -593,132 +548,53 @@ function IconCircle({
   );
 }
 
-function ChannelSectionCard({
-  channel,
-  cardWidth,
-  onPlay,
-}: {
-  channel: ChannelSection;
-  cardWidth: number;
-  onPlay: () => void;
-}) {
+function MediaTile({ item, width, onPress }: { item: FeedCardItem; width: number; onPress: () => void }) {
+  const theme = useAppTheme();
+
+  return (
+    <TVTouchable
+      onPress={onPress}
+      style={{
+        width,
+        marginRight: 12,
+        borderRadius: 18,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+        backgroundColor: theme.colors.surface,
+      }}
+      showFocusBorder={false}
+    >
+      <Image source={{ uri: item.imageUrl }} style={{ width: '100%', height: 120 }} />
+      <View style={{ padding: 10 }}>
+        <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }} numberOfLines={1}>
+          {item.title}
+        </CustomText>
+        <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 2 }} numberOfLines={1}>
+          {item.subtitle}
+        </CustomText>
+      </View>
+    </TVTouchable>
+  );
+}
+
+function EmptyHint({ text }: { text: string }) {
   const theme = useAppTheme();
 
   return (
     <View
       style={{
-        borderRadius: 20,
+        borderRadius: 14,
         borderWidth: 1,
         borderColor: theme.colors.border,
+        paddingVertical: 12,
+        paddingHorizontal: 12,
         backgroundColor: theme.colors.surface,
-        padding: 12,
       }}
     >
-      <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
-        {channel.title}
+      <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
+        {text}
       </CustomText>
-      <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 3 }}>
-        {channel.description}
-      </CustomText>
-
-      <View style={{ marginTop: 10 }}>
-        <CustomText variant="label" style={{ color: theme.colors.primary, marginBottom: 6 }}>
-          Music
-        </CustomText>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {channel.music.map((item) => (
-            <TVTouchable
-              key={item.id}
-              onPress={onPlay}
-              style={{
-                width: cardWidth,
-                marginRight: 10,
-                borderRadius: 14,
-                overflow: 'hidden',
-                borderWidth: 1,
-                borderColor: theme.colors.border,
-                backgroundColor: theme.colors.surfaceAlt,
-              }}
-              showFocusBorder={false}
-            >
-              <Image source={{ uri: item.imageUrl }} style={{ width: '100%', height: 96 }} />
-              <View style={{ padding: 8 }}>
-                <CustomText variant="body" style={{ color: theme.colors.text.primary }} numberOfLines={1}>
-                  {item.title}
-                </CustomText>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 2 }}>
-                  <CustomText variant="caption" style={{ color: theme.colors.text.secondary }} numberOfLines={1}>
-                    {item.subtitle}
-                  </CustomText>
-                  <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
-                    {item.duration}
-                  </CustomText>
-                </View>
-              </View>
-            </TVTouchable>
-          ))}
-        </ScrollView>
-      </View>
-
-      <View style={{ marginTop: 10 }}>
-        <CustomText variant="label" style={{ color: theme.colors.primary, marginBottom: 6 }}>
-          Videos
-        </CustomText>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {channel.videos.map((item) => (
-            <TVTouchable
-              key={item.id}
-              onPress={onPlay}
-              style={{
-                width: cardWidth,
-                marginRight: 10,
-                borderRadius: 14,
-                overflow: 'hidden',
-                borderWidth: 1,
-                borderColor: theme.colors.border,
-                backgroundColor: theme.colors.surfaceAlt,
-              }}
-              showFocusBorder={false}
-            >
-              <View>
-                <Image source={{ uri: item.imageUrl }} style={{ width: '100%', height: 96 }} />
-                <LinearGradient
-                  colors={['rgba(0,0,0,0.05)', 'rgba(0,0,0,0.55)']}
-                  style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 52 }}
-                />
-                <View
-                  style={{
-                    position: 'absolute',
-                    right: 8,
-                    bottom: 8,
-                    width: 30,
-                    height: 30,
-                    borderRadius: 15,
-                    backgroundColor: 'rgba(154,107,255,0.92)',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <MaterialIcons name="play-arrow" size={18} color="#fff" />
-                </View>
-              </View>
-              <View style={{ padding: 8 }}>
-                <CustomText variant="body" style={{ color: theme.colors.text.primary }} numberOfLines={1}>
-                  {item.title}
-                </CustomText>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 2 }}>
-                  <CustomText variant="caption" style={{ color: theme.colors.text.secondary }} numberOfLines={1}>
-                    {item.subtitle}
-                  </CustomText>
-                  <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
-                    {item.duration}
-                  </CustomText>
-                </View>
-              </View>
-            </TVTouchable>
-          ))}
-        </ScrollView>
-      </View>
     </View>
   );
 }

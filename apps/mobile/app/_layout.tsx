@@ -2,7 +2,7 @@ import { Stack } from 'expo-router';
 import '../global.css';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { useContext, useEffect, useRef, useState, type ReactNode } from 'react';
-import { View, StatusBar, Animated, Image, Text } from 'react-native';
+import { View, StatusBar, Animated, Image, Text, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ThemeProvider } from '../context/ThemeProvider';
 import { useColorScheme } from '../util/colorScheme';
@@ -26,16 +26,22 @@ function ThemedLayout({ children }: { children: ReactNode }) {
 }
 
 function LoadingScreen() {
-  const pulse = useRef(new Animated.Value(0.92)).current;
+  const { width } = useWindowDimensions();
+  const compact = width < 380;
+  const ringSize = compact ? 126 : 144;
+  const logoSize = compact ? 58 : 66;
+
+  const pulse = useRef(new Animated.Value(0.94)).current;
   const spin = useRef(new Animated.Value(0)).current;
   const shimmer = useRef(new Animated.Value(0)).current;
   const breath = useRef(new Animated.Value(0)).current;
+  const barAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const pulseLoop = Animated.loop(
       Animated.sequence([
-        Animated.timing(pulse, { toValue: 1.04, duration: 850, useNativeDriver: true }),
-        Animated.timing(pulse, { toValue: 0.92, duration: 850, useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 1.05, duration: 800, useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 0.94, duration: 800, useNativeDriver: true }),
       ]),
     );
 
@@ -49,8 +55,15 @@ function LoadingScreen() {
 
     const breathLoop = Animated.loop(
       Animated.sequence([
-        Animated.timing(breath, { toValue: 1, duration: 2200, useNativeDriver: true }),
-        Animated.timing(breath, { toValue: 0, duration: 2200, useNativeDriver: true }),
+        Animated.timing(breath, { toValue: 1, duration: 2400, useNativeDriver: true }),
+        Animated.timing(breath, { toValue: 0, duration: 2400, useNativeDriver: true }),
+      ]),
+    );
+
+    const barsLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(barAnim, { toValue: 1, duration: 900, useNativeDriver: true }),
+        Animated.timing(barAnim, { toValue: 0, duration: 900, useNativeDriver: true }),
       ]),
     );
 
@@ -58,14 +71,16 @@ function LoadingScreen() {
     spinLoop.start();
     shimmerLoop.start();
     breathLoop.start();
+    barsLoop.start();
 
     return () => {
       pulseLoop.stop();
       spinLoop.stop();
       shimmerLoop.stop();
       breathLoop.stop();
+      barsLoop.stop();
     };
-  }, [breath, pulse, shimmer, spin]);
+  }, [barAnim, breath, pulse, shimmer, spin]);
 
   const rotation = spin.interpolate({
     inputRange: [0, 1],
@@ -80,6 +95,19 @@ function LoadingScreen() {
   const breathScale = breath.interpolate({
     inputRange: [0, 1],
     outputRange: [1, 1.18],
+  });
+
+  const barScaleA = barAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.35, 1],
+  });
+  const barScaleB = barAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.8, 0.45],
+  });
+  const barScaleC = barAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.5, 0.95],
   });
 
   return (
@@ -100,15 +128,15 @@ function LoadingScreen() {
             alignItems: 'center',
             justifyContent: 'center',
             paddingHorizontal: 24,
-            paddingBottom: 24,
+            paddingBottom: 16,
           }}
         >
           <Animated.View
             style={{
               position: 'absolute',
-              width: 280,
-              height: 280,
-              borderRadius: 280,
+              width: 300,
+              height: 300,
+              borderRadius: 300,
               backgroundColor: 'rgba(154,107,255,0.24)',
               transform: [{ scale: breathScale }],
               opacity: 0.9,
@@ -117,9 +145,9 @@ function LoadingScreen() {
 
           <Animated.View
             style={{
-              width: 140,
-              height: 140,
-              borderRadius: 70,
+              width: ringSize,
+              height: ringSize,
+              borderRadius: ringSize / 2,
               borderWidth: 1,
               borderColor: 'rgba(234,223,255,0.35)',
               alignItems: 'center',
@@ -129,9 +157,9 @@ function LoadingScreen() {
           >
             <View
               style={{
-                width: 110,
-                height: 110,
-                borderRadius: 34,
+                width: ringSize - 28,
+                height: ringSize - 28,
+                borderRadius: (ringSize - 28) / 2,
                 borderWidth: 1,
                 borderColor: 'rgba(255,255,255,0.25)',
                 backgroundColor: 'rgba(255,255,255,0.08)',
@@ -147,17 +175,47 @@ function LoadingScreen() {
             >
               <Image
                 source={require('../assets/images/ClaudyGoLogo.webp')}
-                style={{ width: 64, height: 64, borderRadius: 18 }}
+                style={{ width: logoSize, height: logoSize, borderRadius: logoSize / 2 }}
               />
             </View>
           </Animated.View>
 
+          <View style={{ marginTop: 20, flexDirection: 'row', gap: 6, alignItems: 'flex-end', height: 22 }}>
+            <Animated.View
+              style={{
+                width: 6,
+                height: 22,
+                borderRadius: 999,
+                backgroundColor: 'rgba(154,107,255,0.96)',
+                transform: [{ scaleY: barScaleA }],
+              }}
+            />
+            <Animated.View
+              style={{
+                width: 6,
+                height: 22,
+                borderRadius: 999,
+                backgroundColor: 'rgba(189,161,255,0.94)',
+                transform: [{ scaleY: barScaleB }],
+              }}
+            />
+            <Animated.View
+              style={{
+                width: 6,
+                height: 22,
+                borderRadius: 999,
+                backgroundColor: 'rgba(154,107,255,0.96)',
+                transform: [{ scaleY: barScaleC }],
+              }}
+            />
+          </View>
+
           <View
             style={{
-              width: 150,
+              width: compact ? 136 : 154,
               height: 5,
               borderRadius: 999,
-              marginTop: 28,
+              marginTop: 16,
               backgroundColor: 'rgba(255,255,255,0.14)',
               overflow: 'hidden',
             }}
@@ -177,7 +235,7 @@ function LoadingScreen() {
             style={{
               marginTop: 14,
               color: '#F7F1FF',
-              fontSize: 14,
+              fontSize: compact ? 13 : 14,
               letterSpacing: 0.2,
               fontFamily: 'SpaceGrotesk_600SemiBold',
             }}
@@ -188,12 +246,12 @@ function LoadingScreen() {
             style={{
               marginTop: 5,
               color: 'rgba(214,198,247,0.9)',
-              fontSize: 12,
+              fontSize: compact ? 11 : 12,
               fontFamily: 'Sora_400Regular',
               textAlign: 'center',
             }}
           >
-            Loading your personalized audio and video channels...
+            Loading your personalized audio, video, and live channels...
           </Text>
         </View>
 
