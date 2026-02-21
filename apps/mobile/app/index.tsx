@@ -4,6 +4,7 @@ import {
   Easing,
   Image,
   Platform,
+  ScrollView,
   StatusBar,
   View,
   useWindowDimensions,
@@ -16,6 +17,8 @@ import { AppButton } from '../components/ui/AppButton';
 import { CustomText } from '../components/CustomText';
 import { TVTouchable } from '../components/ui/TVTouchable';
 import { Screen } from '../components/layout/Screen';
+
+const landingQuickRail = ['Music', 'Videos', 'Live', 'Ads', 'Playlists'];
 
 export default function Landing() {
   const router = useRouter();
@@ -193,8 +196,34 @@ export default function Landing() {
                 <CustomText variant="caption" style={{ color: '#EADFFF' }}>
                   Skip
                 </CustomText>
-              </TVTouchable>
-            </Animated.View>
+                </TVTouchable>
+              </Animated.View>
+
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              overScrollMode="never"
+              contentContainerStyle={{ paddingTop: 10, paddingBottom: 2, paddingRight: 6 }}
+            >
+              {landingQuickRail.map((item) => (
+                <View
+                  key={item}
+                  style={{
+                    marginRight: 8,
+                    borderRadius: 999,
+                    borderWidth: 1,
+                    borderColor: 'rgba(227,217,251,0.32)',
+                    backgroundColor: 'rgba(255,255,255,0.05)',
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                  }}
+                >
+                  <CustomText variant="caption" style={{ color: 'rgba(232,222,255,0.93)' }}>
+                    {item}
+                  </CustomText>
+                </View>
+              ))}
+            </ScrollView>
 
             <View style={{ flex: 1, justifyContent: 'center' }}>
               <Animated.View

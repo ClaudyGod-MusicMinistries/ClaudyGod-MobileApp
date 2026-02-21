@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { Image, Platform, ScrollView, View, useWindowDimensions, type StyleProp, type ViewStyle } from 'react-native';
+import React from 'react';
+import { Image, Platform, ScrollView, View, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { TabScreenWrapper } from './TextWrapper';
@@ -8,7 +8,9 @@ import { Screen } from '../../components/layout/Screen';
 import { FadeIn } from '../../components/ui/FadeIn';
 import { CustomText } from '../../components/CustomText';
 import { TVTouchable } from '../../components/ui/TVTouchable';
-import { favouritePlaylists, favouriteSongs, recentlyAdded } from '../../data/data';
+import { useContentFeed } from '../../hooks/useContentFeed';
+import { trackPlayEvent } from '../../services/supabaseAnalytics';
+import type { FeedCardItem } from '../../services/contentService';
 
 export default function LibraryScreen() {
   const theme = useAppTheme();
@@ -17,11 +19,24 @@ export default function LibraryScreen() {
   const isTV = Platform.isTV;
   const isTablet = width >= 768 && !isTV;
   const isCompact = width < 360;
+
+  const { feed } = useContentFeed();
+
+  const liked = feed.mostPlayed;
+  const downloaded = feed.music;
+  const playlists = feed.playlists;
+
   const playlistWidth = isTV ? '23.5%' : isTablet ? '31.8%' : '48.5%';
 
-  const liked = useMemo(() => favouriteSongs.slice(0, 8), []);
-  const downloaded = useMemo(() => recentlyAdded.slice(0, 5), []);
-  const playlists = useMemo(() => favouritePlaylists.slice(0, 6), []);
+  const openPlayer = async (item: FeedCardItem, source: string) => {
+    await trackPlayEvent({
+      contentId: item.id,
+      contentType: item.type,
+      title: item.title,
+      source,
+    });
+    router.push('/(tabs)/PlaySection');
+  };
 
   return (
     <TabScreenWrapper>
@@ -31,6 +46,7 @@ export default function LibraryScreen() {
         contentContainerStyle={{ paddingTop: theme.spacing.md, paddingBottom: 150 }}
         bounces={false}
         alwaysBounceVertical={false}
+        overScrollMode="never"
       >
         <Screen>
           <FadeIn>
@@ -49,7 +65,7 @@ export default function LibraryScreen() {
                     Your Library
                   </CustomText>
                   <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 2 }}>
-                    Spotify/Audiomack-style structure for easy content mapping.
+                    Spotify-style structure: liked, downloaded, playlists.
                   </CustomText>
                 </View>
 
@@ -89,65 +105,77 @@ export default function LibraryScreen() {
 
           <FadeIn delay={90}>
             <SectionHeader title="Liked Songs" actionLabel="Play all" onPress={() => router.push('/(tabs)/PlaySection')} />
-            <View style={{ gap: 8 }}>
-              {liked.map((song) => (
-                <ListRow
-                  key={song.id}
-                  title={song.title}
-                  subtitle={song.artist}
-                  meta={song.duration}
-                  imageUrl={song.imageUrl}
-                  onPress={() => router.push('/(tabs)/PlaySection')}
-                />
-              ))}
-            </View>
+            {liked.length > 0 ? (
+              <View style={{ gap: 8 }}>
+                {liked.slice(0, 8).map((song) => (
+                  <ListRow
+                    key={song.id}
+                    title={song.title}
+                    subtitle={song.subtitle}
+                    meta={song.duration}
+                    imageUrl={song.imageUrl}
+                    onPress={() => openPlayer(song, 'library_liked')}
+                  />
+                ))}
+              </View>
+            ) : (
+              <EmptyHint text="No liked songs yet." />
+            )}
           </FadeIn>
 
           <FadeIn delay={120}>
-            <SectionHeader title="Downloaded" actionLabel="Manage" onPress={() => console.log('manage downloads')} />
-            <View style={{ gap: 8 }}>
-              {downloaded.map((song) => (
-                <ListRow
-                  key={song.id}
-                  title={song.title}
-                  subtitle={song.artist}
-                  meta={song.duration}
-                  imageUrl={song.imageUrl}
-                  onPress={() => router.push('/(tabs)/PlaySection')}
-                />
-              ))}
-            </View>
+            <SectionHeader title="Downloaded" actionLabel="Manage" onPress={() => router.push('/(tabs)/library')} />
+            {downloaded.length > 0 ? (
+              <View style={{ gap: 8 }}>
+                {downloaded.slice(0, 8).map((song) => (
+                  <ListRow
+                    key={song.id}
+                    title={song.title}
+                    subtitle={song.subtitle}
+                    meta={song.duration}
+                    imageUrl={song.imageUrl}
+                    onPress={() => openPlayer(song, 'library_downloaded')}
+                  />
+                ))}
+              </View>
+            ) : (
+              <EmptyHint text="No downloaded songs yet." />
+            )}
           </FadeIn>
 
           <FadeIn delay={150}>
-            <SectionHeader title="Playlists" actionLabel="Create" onPress={() => console.log('create playlist')} />
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 10 }}>
-              {playlists.map((playlist) => (
-                <TVTouchable
-                  key={playlist.id}
-                  onPress={() => router.push('/(tabs)/PlaySection')}
-                  style={{
-                    width: playlistWidth,
-                    borderRadius: 16,
-                    overflow: 'hidden',
-                    backgroundColor: theme.colors.surface,
-                    borderWidth: 1,
-                    borderColor: theme.colors.border,
-                  }}
-                  showFocusBorder={false}
-                >
-                  <Image source={{ uri: playlist.imageUrl }} style={{ width: '100%', height: 106 }} />
-                  <View style={{ padding: 10 }}>
-                    <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }} numberOfLines={1}>
-                      {playlist.title}
-                    </CustomText>
-                    <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 2 }}>
-                      {playlist.songCount} songs
-                    </CustomText>
-                  </View>
-                </TVTouchable>
-              ))}
-            </View>
+            <SectionHeader title="Playlists" actionLabel="Create" onPress={() => router.push('/(tabs)/search')} />
+            {playlists.length > 0 ? (
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 10 }}>
+                {playlists.map((playlist) => (
+                  <TVTouchable
+                    key={playlist.id}
+                    onPress={() => openPlayer(playlist, 'library_playlist')}
+                    style={{
+                      width: playlistWidth,
+                      borderRadius: 16,
+                      overflow: 'hidden',
+                      backgroundColor: theme.colors.surface,
+                      borderWidth: 1,
+                      borderColor: theme.colors.border,
+                    }}
+                    showFocusBorder={false}
+                  >
+                    <Image source={{ uri: playlist.imageUrl }} style={{ width: '100%', height: 106 }} />
+                    <View style={{ padding: 10 }}>
+                      <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }} numberOfLines={1}>
+                        {playlist.title}
+                      </CustomText>
+                      <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 2 }}>
+                        {playlist.subtitle}
+                      </CustomText>
+                    </View>
+                  </TVTouchable>
+                ))}
+              </View>
+            ) : (
+              <EmptyHint text="No playlists yet." />
+            )}
           </FadeIn>
         </Screen>
       </ScrollView>
@@ -188,31 +216,21 @@ function SectionHeader({
   );
 }
 
-function StatCard({
-  label,
-  value,
-  style,
-}: {
-  label: string;
-  value: number;
-  style?: StyleProp<ViewStyle>;
-}) {
+function StatCard({ label, value, style }: { label: string; value: number; style?: object }) {
   const theme = useAppTheme();
 
   return (
     <View
-      style={[
-        {
-          flexGrow: 1,
-          borderRadius: 12,
-          borderWidth: 1,
-          borderColor: theme.colors.border,
-          backgroundColor: theme.colors.surfaceAlt,
-          paddingHorizontal: 8,
-          paddingVertical: 8,
-        },
-        style,
-      ]}
+      style={{
+        flexGrow: 1,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+        backgroundColor: theme.colors.surfaceAlt,
+        paddingHorizontal: 8,
+        paddingVertical: 8,
+        ...(style || {}),
+      }}
     >
       <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
         {value}
@@ -268,5 +286,26 @@ function ListRow({
         {meta}
       </CustomText>
     </TVTouchable>
+  );
+}
+
+function EmptyHint({ text }: { text: string }) {
+  const theme = useAppTheme();
+
+  return (
+    <View
+      style={{
+        borderRadius: 14,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+        paddingVertical: 12,
+        paddingHorizontal: 12,
+        backgroundColor: theme.colors.surface,
+      }}
+    >
+      <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
+        {text}
+      </CustomText>
+    </View>
   );
 }

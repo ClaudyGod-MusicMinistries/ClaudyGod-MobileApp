@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Image, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { SettingsScaffold } from './settingsPage/Scaffold';
@@ -9,6 +9,7 @@ import { SurfaceCard } from '../components/ui/SurfaceCard';
 import { FadeIn } from '../components/ui/FadeIn';
 import { TVTouchable } from '../components/ui/TVTouchable';
 import { AppButton } from '../components/ui/AppButton';
+import { fetchUserProfileMetrics } from '../services/supabaseAnalytics';
 
 const groups = [
   {
@@ -20,10 +21,10 @@ const groups = [
     ],
   },
   {
-    title: 'Experience',
+    title: 'Platform',
     items: [
-      { icon: 'notifications-none', label: 'Notifications' },
-      { icon: 'tune', label: 'Playback Preferences' },
+      { icon: 'notifications-none', label: 'Live Notifications' },
+      { icon: 'bar-chart', label: 'Most Played Analytics' },
       { icon: 'devices', label: 'Connected Devices' },
     ],
   },
@@ -38,11 +39,21 @@ const groups = [
 
 export default function Profile() {
   const theme = useAppTheme();
+  const [metrics, setMetrics] = useState({
+    email: '',
+    displayName: 'ClaudyGod User',
+    totalPlays: 0,
+    liveSubscriptions: 0,
+  });
+
+  useEffect(() => {
+    fetchUserProfileMetrics().then(setMetrics);
+  }, []);
 
   return (
     <SettingsScaffold
       title="Profile"
-      subtitle="Manage your account and listening environment."
+      subtitle="Manage account, analytics, and live subscriptions."
       hero={
         <FadeIn>
           <SurfaceCard
@@ -55,9 +66,9 @@ export default function Profile() {
           >
             <View
               style={{
-                width: 124,
-                height: 124,
-                borderRadius: 62,
+                width: 114,
+                height: 114,
+                borderRadius: 57,
                 alignItems: 'center',
                 justifyContent: 'center',
                 borderWidth: 1,
@@ -67,7 +78,7 @@ export default function Profile() {
             >
               <Image
                 source={require('../assets/images/ClaudyGoLogo.webp')}
-                style={{ width: 98, height: 98, borderRadius: 49 }}
+                style={{ width: 90, height: 90, borderRadius: 45 }}
               />
             </View>
 
@@ -76,35 +87,20 @@ export default function Profile() {
               style={{
                 color: theme.colors.text.primary,
                 marginTop: 14,
-                fontSize: 28,
-                lineHeight: 34,
+                fontSize: 25,
+                lineHeight: 31,
                 fontFamily: 'ClashDisplay_700Bold',
               }}
             >
-              Claudy God
+              {metrics.displayName}
             </CustomText>
             <CustomText variant="body" style={{ color: theme.colors.text.secondary, marginTop: 4 }}>
-              hello@claudygodmusic.com
+              {metrics.email || 'Sign in to sync your profile'}
             </CustomText>
 
-            <View
-              style={{
-                marginTop: 10,
-                paddingHorizontal: 12,
-                paddingVertical: 6,
-                borderRadius: 999,
-                borderWidth: 1,
-                borderColor: 'rgba(205,182,255,0.48)',
-                backgroundColor: 'rgba(154,107,255,0.12)',
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 6,
-              }}
-            >
-              <MaterialIcons name="workspace-premium" size={15} color={theme.colors.primary} />
-              <CustomText variant="label" style={{ color: theme.colors.primary }}>
-                Premium Worship Pass
-              </CustomText>
+            <View style={{ marginTop: 12, flexDirection: 'row', gap: 8 }}>
+              <StatBadge icon="play-circle-outline" label={`${metrics.totalPlays} Plays`} />
+              <StatBadge icon="wifi-tethering" label={`${metrics.liveSubscriptions} Live Alerts`} />
             </View>
           </SurfaceCard>
         </FadeIn>
@@ -183,5 +179,30 @@ export default function Profile() {
         />
       </FadeIn>
     </SettingsScaffold>
+  );
+}
+
+function StatBadge({ icon, label }: { icon: React.ComponentProps<typeof MaterialIcons>['name']; label: string }) {
+  const theme = useAppTheme();
+
+  return (
+    <View
+      style={{
+        borderRadius: 999,
+        borderWidth: 1,
+        borderColor: 'rgba(205,182,255,0.48)',
+        backgroundColor: 'rgba(154,107,255,0.12)',
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 11,
+        paddingVertical: 6,
+        gap: 6,
+      }}
+    >
+      <MaterialIcons name={icon} size={14} color={theme.colors.primary} />
+      <CustomText variant="label" style={{ color: theme.colors.primary }}>
+        {label}
+      </CustomText>
+    </View>
   );
 }

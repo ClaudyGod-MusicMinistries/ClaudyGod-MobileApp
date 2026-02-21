@@ -86,6 +86,7 @@ export function SettingsScaffold({ title, subtitle, children, hero }: ScaffoldPr
           showsVerticalScrollIndicator={false}
           style={{ flex: 1, backgroundColor: theme.colors.background }}
           contentContainerStyle={{ paddingBottom: 120, paddingTop: spacing.md }}
+          overScrollMode="never"
         >
           <Screen>
             {hero}
