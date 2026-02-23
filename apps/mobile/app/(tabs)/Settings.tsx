@@ -70,8 +70,11 @@ export default function Settings() {
   return (
     <TabScreenWrapper>
       <ScrollView
+        style={{ flex: 1, backgroundColor: 'transparent' }}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 140, paddingTop: theme.spacing.md }}
+        bounces={false}
+        overScrollMode="never"
       >
         <Screen>
           <FadeIn>

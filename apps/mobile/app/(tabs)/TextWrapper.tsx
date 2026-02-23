@@ -2,6 +2,7 @@
 import React from 'react';
 import { View, StatusBar } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorScheme } from '../../util/colorScheme';
 import { colors } from '../../constants/color';
 
@@ -11,17 +12,13 @@ interface TabScreenWrapperProps {
 
 export const TabScreenWrapper: React.FC<TabScreenWrapperProps> = ({ children }) => {
   const colorScheme = useColorScheme();
-  const currentColors = colors[colorScheme];
+  const currentColors = colors[colorScheme] ?? colors.dark;
 
   return (
     <View style={{ flex: 1, backgroundColor: currentColors.background }}>
-      <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
+      <StatusBar translucent={false} barStyle="light-content" backgroundColor={currentColors.background} />
       <LinearGradient
-        colors={
-          colorScheme === 'dark'
-            ? ['rgba(255,255,255,0.03)', 'rgba(6,4,13,0)']
-            : ['rgba(255,255,255,0.92)', 'rgba(244,241,250,0.25)']
-        }
+        colors={['rgba(154,107,255,0.08)', 'rgba(6,4,13,0)']}
         start={{ x: 0.2, y: 0 }}
         end={{ x: 0.8, y: 0.95 }}
         pointerEvents="none"
@@ -42,12 +39,12 @@ export const TabScreenWrapper: React.FC<TabScreenWrapperProps> = ({ children }) 
           width: 260,
           height: 260,
           borderRadius: 260,
-          backgroundColor: colorScheme === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(17,18,23,0.035)',
+          backgroundColor: 'rgba(17,18,23,0.08)',
         }}
       />
-      <View style={{ flex: 1 }}>
-        {children}
-      </View>
+      <SafeAreaView style={{ flex: 1, backgroundColor: currentColors.background }} edges={['top', 'left', 'right']}>
+        <View style={{ flex: 1 }}>{children}</View>
+      </SafeAreaView>
     </View>
   );
 };

@@ -9,6 +9,7 @@ import { useAppTheme } from '../../util/colorScheme';
 import { spacing, radius } from '../../styles/designTokens';
 import { Screen } from '../../components/layout/Screen';
 import { TVTouchable } from '../../components/ui/TVTouchable';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface ScaffoldProps {
   title: string;
@@ -20,6 +21,7 @@ interface ScaffoldProps {
 export function SettingsScaffold({ title, subtitle, children, hero }: ScaffoldProps) {
   const theme = useAppTheme();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
@@ -45,7 +47,7 @@ export function SettingsScaffold({ title, subtitle, children, hero }: ScaffoldPr
       <View
         style={{
           paddingHorizontal: spacing.lg,
-          paddingTop: spacing.lg + 24,
+          paddingTop: insets.top + 10,
           paddingBottom: spacing.md,
           borderBottomWidth: 1,
           borderBottomColor: theme.colors.border,
@@ -85,8 +87,11 @@ export function SettingsScaffold({ title, subtitle, children, hero }: ScaffoldPr
       </View>
 
       <ScrollView
+        style={{ flex: 1, backgroundColor: theme.colors.background }}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 120, paddingTop: spacing.md }}
+        contentContainerStyle={{ paddingBottom: 120, paddingTop: spacing.md, flexGrow: 1 }}
+        bounces={false}
+        overScrollMode="never"
       >
         <Screen>
           {hero}

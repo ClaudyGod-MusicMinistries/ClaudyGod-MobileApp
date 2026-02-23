@@ -1,390 +1,270 @@
-// app/(tabs)/Favourites.tsx
 import React, { useMemo, useState } from 'react';
-import { View, ScrollView, useWindowDimensions } from 'react-native';
-import { TabScreenWrapper } from './TextWrapper';
-import { useAppTheme } from '../../util/colorScheme';
-import { CustomText } from '../../components/CustomText';
-import { Chip } from '../../components/ui/Chip';
-import { MediaRail } from '../../components/sections/MediaRail';
-import { PosterCard } from '../../components/ui/PosterCard';
-import { favouritePlaylists, favouriteSongs, featuredVideos } from '../../data/data';
+import { Image, ScrollView, View, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { TabScreenWrapper } from './TextWrapper';
 import { Screen } from '../../components/layout/Screen';
-import { SongList, Song } from '../../components/musicPlaylist';
-import { AppButton } from '../../components/ui/AppButton';
-import * as DocumentPicker from 'expo-document-picker';
-import { AudioPlayer, AudioTrack } from '../../components/media/AudioPlayer';
-import { VideoPlayer } from '../../components/media/VideoPlayer';
-import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { FadeIn } from '../../components/ui/FadeIn';
+import { CustomText } from '../../components/CustomText';
 import { TVTouchable } from '../../components/ui/TVTouchable';
+import { useAppTheme } from '../../util/colorScheme';
+import { useContentFeed } from '../../hooks/useContentFeed';
+import type { FeedCardItem } from '../../services/contentService';
+import { trackPlayEvent } from '../../services/supabaseAnalytics';
 
-export default function Favourites() {
+const tabs = ['Liked Songs', 'Downloaded', 'Playlists', 'History'] as const;
+type LibraryTab = (typeof tabs)[number];
+
+export default function LibraryScreen() {
+  const router = useRouter();
   const theme = useAppTheme();
   const { width } = useWindowDimensions();
-  const isCompact = width < 360;
-  const actionWidth = isCompact ? '100%' : '48%';
-  const [tab, setTab] = useState<'library' | 'local' | 'videos' | 'downloads'>('library');
-  const [activeTrack, setActiveTrack] = useState<AudioTrack | null>(null);
-  const [localTracks, setLocalTracks] = useState<AudioTrack[]>([]);
-  const [videoItems, setVideoItems] = useState(featuredVideos);
-  const [activeVideo, setActiveVideo] = useState(featuredVideos[0]);
+  const isTablet = width >= 768;
+  const [activeTab, setActiveTab] = useState<LibraryTab>('Liked Songs');
+  const { feed, loading, refresh } = useContentFeed();
 
-  const allSongs: Song[] = useMemo(
-    () =>
-      favouriteSongs.map((song) => ({
-        id: song.id,
-        title: song.title,
-        artist: song.artist,
-        album: song.album,
-        duration: song.duration,
-        mediaUrl: song.mediaUrl,
-      })),
-    [],
-  );
+  const listItems = useMemo(() => {
+    switch (activeTab) {
+      case 'Downloaded':
+        return feed.music.slice(0, 12);
+      case 'Playlists':
+        return feed.playlists.slice(0, 12);
+      case 'History':
+        return feed.recent.slice(0, 12);
+      case 'Liked Songs':
+      default:
+        return (feed.mostPlayed.length ? feed.mostPlayed : feed.music).slice(0, 12);
+    }
+  }, [activeTab, feed]);
 
-  const onLibrarySongPress = (song: Song) => {
-    if (!song.mediaUrl) return;
-    setActiveTrack({
-      id: song.id,
-      title: song.title,
-      artist: song.artist,
-      uri: song.mediaUrl,
-      duration: song.duration,
-    });
-  };
+  const quickStats = [
+    { label: 'Liked', value: `${feed.music.length}` },
+    { label: 'Playlists', value: `${feed.playlists.length}` },
+    { label: 'Recent', value: `${feed.recent.length}` },
+  ];
 
-  const pickAudio = async () => {
-    const result = await DocumentPicker.getDocumentAsync({
-      type: 'audio/*',
-      multiple: true,
-      copyToCacheDirectory: true,
-    });
-
-    if ('canceled' in result && result.canceled) return;
-    const assets =
-      'assets' in result
-        ? result.assets ?? []
-        : (result as any).type === 'success'
-        ? [result as any]
-        : [];
-
-    const pickedTracks = assets.map((asset, index) => ({
-      id: `${asset.name ?? 'local'}-${Date.now()}-${index}`,
-      title: asset.name ?? 'Local audio',
-      artist: 'Local file',
-      uri: asset.uri,
-      duration: '--:--',
-    }));
-
-    setLocalTracks((prev) => [...pickedTracks, ...prev]);
-  };
-
-  const pickVideo = async () => {
-    const result = await DocumentPicker.getDocumentAsync({
-      type: 'video/*',
-      multiple: false,
-      copyToCacheDirectory: true,
-    });
-
-    if ('canceled' in result && result.canceled) return;
-    const assets =
-      'assets' in result
-        ? result.assets ?? []
-        : (result as any).type === 'success'
-        ? [result as any]
-        : [];
-    const asset = assets[0];
-    if (!asset) return;
-    const newVideo = {
-      id: `${asset.name ?? 'video'}-${Date.now()}`,
-      title: asset.name ?? 'Local video',
-      mediaUrl: asset.uri,
-    };
-    setVideoItems((prev) => [newVideo, ...prev]);
-    setActiveVideo(newVideo);
+  const onOpen = async (item: FeedCardItem) => {
+    await trackPlayEvent({ contentId: item.id, contentType: item.type, title: item.title, source: 'library' });
+    router.push('/(tabs)/PlaySection');
   };
 
   return (
     <TabScreenWrapper>
       <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingTop: theme.spacing.md, paddingBottom: 148 }}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 140, paddingTop: theme.spacing.md }}
+        bounces={false}
+        overScrollMode="never"
+        onScrollEndDrag={() => {
+          if (!loading) return;
+        }}
       >
         <Screen>
           <FadeIn>
-            <SurfaceCard tone="subtle" style={{ padding: theme.spacing.lg }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <View style={{ flex: 1 }}>
-                  <CustomText variant="heading" style={{ color: theme.colors.text.primary }}>
-                    Your Library
+            <View
+              style={{
+                borderRadius: 22,
+                borderWidth: 1,
+                borderColor: 'rgba(255,255,255,0.08)',
+                backgroundColor: 'rgba(12,9,20,0.88)',
+                padding: 16,
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <View style={{ flex: 1, marginRight: 10 }}>
+                  <CustomText variant="caption" style={{ color: 'rgba(194,185,220,0.9)' }}>
+                    Library
                   </CustomText>
-                  <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 4 }}>
-                    Favorites, playlists, downloads, and your local media.
+                  <CustomText variant="display" style={{ color: '#F8F7FC', marginTop: 4, fontSize: 19, lineHeight: 24 }}>
+                    Your music and playlists
+                  </CustomText>
+                  <CustomText variant="caption" style={{ color: 'rgba(194,185,220,0.9)', marginTop: 5 }}>
+                    Spotify/Audiomack-style library shell connected to content feed and play analytics.
                   </CustomText>
                 </View>
-                <View
+                <TVTouchable
+                  onPress={refresh}
                   style={{
                     width: 40,
                     height: 40,
-                    borderRadius: theme.radius.md,
-                    backgroundColor: `${theme.colors.primary}18`,
+                    borderRadius: 20,
+                    borderWidth: 1,
+                    borderColor: 'rgba(255,255,255,0.14)',
+                    backgroundColor: 'rgba(255,255,255,0.04)',
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
+                  showFocusBorder={false}
                 >
-                  <MaterialIcons name="library-music" size={18} color={theme.colors.primary} />
-                </View>
+                  <MaterialIcons name="refresh" size={20} color="#EFE7FF" />
+                </TVTouchable>
               </View>
-              <View style={{ flexDirection: 'row', gap: theme.spacing.sm, marginTop: theme.spacing.md }}>
-                {[
-                  { label: 'Playlists', value: `${favouritePlaylists.length}` },
-                  { label: 'Songs', value: `${allSongs.length}` },
-                  { label: 'Videos', value: `${videoItems.length}` },
-                ].map((stat) => (
+
+              <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+                {quickStats.map((stat) => (
                   <View
                     key={stat.label}
                     style={{
                       flex: 1,
-                      borderRadius: theme.radius.md,
+                      borderRadius: 14,
                       borderWidth: 1,
-                      borderColor: theme.colors.border,
-                      backgroundColor: theme.colors.surface,
-                      padding: theme.spacing.sm,
+                      borderColor: 'rgba(255,255,255,0.08)',
+                      backgroundColor: 'rgba(255,255,255,0.03)',
+                      padding: 10,
                     }}
                   >
-                    <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
+                    <CustomText variant="subtitle" style={{ color: '#F8F7FC' }}>
                       {stat.value}
                     </CustomText>
-                    <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 2 }}>
+                    <CustomText variant="caption" style={{ color: 'rgba(194,185,220,0.9)', marginTop: 2 }}>
                       {stat.label}
                     </CustomText>
                   </View>
                 ))}
               </View>
-            </SurfaceCard>
+            </View>
           </FadeIn>
 
-          <FadeIn delay={80}>
+          <FadeIn delay={90}>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingVertical: theme.spacing.md }}
+              bounces={false}
+              overScrollMode="never"
+              contentContainerStyle={{ paddingTop: 12, paddingRight: 8 }}
             >
-              <View style={{ flexDirection: 'row', gap: theme.spacing.sm }}>
-                <Chip label="Library" active={tab === 'library'} onPress={() => setTab('library')} />
-                <Chip label="Local" active={tab === 'local'} onPress={() => setTab('local')} />
-                <Chip label="Videos" active={tab === 'videos'} onPress={() => setTab('videos')} />
-                <Chip label="Downloads" active={tab === 'downloads'} onPress={() => setTab('downloads')} />
-              </View>
-            </ScrollView>
-          </FadeIn>
-
-          {tab === 'library' && (
-            <FadeIn delay={140}>
-              {activeTrack ? (
-                <View style={{ marginTop: theme.spacing.md }}>
-                  <AudioPlayer track={activeTrack} onClose={() => setActiveTrack(null)} />
-                </View>
-              ) : null}
-              <View style={{ marginTop: theme.spacing.md }}>
-                <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
-                  Quick actions
-                </CustomText>
-                <View style={{ marginTop: theme.spacing.sm, flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm }}>
-                  {[
-                    { icon: 'shuffle', label: 'Shuffle', hint: 'Play random' },
-                    { icon: 'download', label: 'Download', hint: 'Save offline' },
-                    { icon: 'playlist-add', label: 'New Playlist', hint: 'Organize media' },
-                    { icon: 'insights', label: 'Insights', hint: 'Usage summary' },
-                  ].map((action) => (
-                    <TVTouchable
-                      key={action.label}
-                      onPress={() => console.log(action.label)}
-                      style={{
-                        width: actionWidth,
-                        padding: theme.spacing.md,
-                        borderRadius: theme.radius.md,
-                        backgroundColor: theme.colors.surfaceAlt,
-                        borderWidth: 1,
-                        borderColor: theme.colors.border,
-                      }}
-                      showFocusBorder={false}
-                    >
-                      <View
-                        style={{
-                          width: 34,
-                          height: 34,
-                          borderRadius: 10,
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          backgroundColor: `${theme.colors.primary}16`,
-                          marginBottom: 8,
-                        }}
-                      >
-                        <MaterialIcons name={action.icon as any} size={16} color={theme.colors.primary} />
-                      </View>
-                      <CustomText variant="label" style={{ color: theme.colors.text.primary }}>
-                        {action.label}
-                      </CustomText>
-                      <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 2 }}>
-                        {action.hint}
-                      </CustomText>
-                    </TVTouchable>
-                  ))}
-                </View>
-              </View>
-
-              <View style={{ marginTop: theme.spacing.md }}>
-                <MediaRail
-                  title="Favourite playlists"
-                  actionLabel="Manage"
-                  onAction={() => console.log('Manage playlists')}
-                  data={favouritePlaylists}
-                  renderItem={(playlist) => (
-                    <PosterCard
-                      key={playlist.id}
-                      imageUrl={playlist.imageUrl}
-                      title={playlist.title}
-                      subtitle={`${playlist.songCount} songs`}
-                      onPress={() => console.log('Open playlist', playlist.id)}
-                      size="sm"
-                    />
-                  )}
-                />
-              </View>
-
-              <View style={{ marginTop: theme.spacing.md }}>
-                <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
-                  All songs
-                </CustomText>
-                <SurfaceCard
-                  style={{
-                    marginTop: theme.spacing.sm,
-                    overflow: 'hidden',
-                  }}
-                >
-                  <SongList
-                    songs={allSongs}
-                    onSongPress={onLibrarySongPress}
-                    currentSongId={activeTrack?.id}
-                  />
-                </SurfaceCard>
-              </View>
-            </FadeIn>
-          )}
-
-          {tab === 'local' && (
-            <FadeIn delay={140} style={{ marginTop: theme.spacing.md }}>
-              <AppButton
-                title="Import audio files"
-                variant="outline"
-                size="sm"
-                onPress={pickAudio}
-                leftIcon={<MaterialIcons name="library-music" size={18} color={theme.colors.primary} />}
-              />
-
-              {activeTrack ? (
-                <View style={{ marginTop: theme.spacing.md }}>
-                  <AudioPlayer track={activeTrack} onClose={() => setActiveTrack(null)} />
-                </View>
-              ) : null}
-
-              <SurfaceCard
-                style={{
-                  marginTop: theme.spacing.md,
-                  overflow: 'hidden',
-                }}
-              >
-                <SongList
-                  songs={localTracks.map((track) => ({
-                    id: track.id,
-                    title: track.title,
-                    artist: track.artist || 'Local file',
-                    album: 'Local',
-                    duration: track.duration || '--:--',
-                  }))}
-                  onSongPress={(song) => {
-                    const selected = localTracks.find((track) => track.id === song.id);
-                    if (selected) setActiveTrack(selected);
-                  }}
-                  currentSongId={activeTrack?.id}
-                />
-              </SurfaceCard>
-
-              {localTracks.length === 0 ? (
-                <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: theme.spacing.sm }}>
-                  Import audio files from your device to play them here.
-                </CustomText>
-              ) : null}
-            </FadeIn>
-          )}
-
-          {tab === 'videos' && (
-            <FadeIn delay={140} style={{ marginTop: theme.spacing.md, gap: theme.spacing.md }}>
-              <AppButton
-                title="Add video"
-                variant="outline"
-                size="sm"
-                onPress={pickVideo}
-                leftIcon={<MaterialIcons name="video-library" size={18} color={theme.colors.primary} />}
-              />
-
-              {activeVideo ? (
-                <VideoPlayer title={activeVideo.title} sourceUri={activeVideo.mediaUrl} />
-              ) : null}
-
-              <View style={{ gap: theme.spacing.sm }}>
-                {videoItems.map((video) => (
+              {tabs.map((tab) => {
+                const active = tab === activeTab;
+                return (
                   <TVTouchable
-                    key={video.id}
-                    onPress={() => setActiveVideo(video)}
+                    key={tab}
+                    onPress={() => setActiveTab(tab)}
                     style={{
-                      padding: theme.spacing.md,
-                      borderRadius: theme.radius.md,
+                      marginRight: 8,
+                      borderRadius: 999,
                       borderWidth: 1,
-                      borderColor: theme.colors.border,
-                      backgroundColor: theme.colors.surfaceAlt,
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
+                      borderColor: active ? 'rgba(216,194,255,0.3)' : 'rgba(255,255,255,0.1)',
+                      backgroundColor: active ? 'rgba(154,107,255,0.14)' : 'rgba(255,255,255,0.03)',
+                      paddingHorizontal: 12,
+                      paddingVertical: 8,
                     }}
                     showFocusBorder={false}
                   >
-                    <View style={{ flex: 1, marginRight: theme.spacing.sm }}>
-                      <CustomText variant="body" style={{ color: theme.colors.text.primary }}>
-                        {video.title}
-                      </CustomText>
-                      <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 2 }}>
-                        Tap to play
-                      </CustomText>
-                    </View>
-                    <MaterialIcons name="play-arrow" size={20} color={theme.colors.primary} />
+                    <CustomText variant="caption" style={{ color: active ? '#F1E7FF' : '#CEC4E7' }}>
+                      {tab}
+                    </CustomText>
                   </TVTouchable>
-                ))}
-              </View>
-            </FadeIn>
-          )}
+                );
+              })}
+            </ScrollView>
+          </FadeIn>
 
-          {tab === 'downloads' && (
-            <FadeIn delay={140}>
-              <SurfaceCard
-                style={{
-                  marginTop: theme.spacing.lg,
-                  padding: theme.spacing.lg,
-                }}
-              >
-                <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
-                  Downloads
-                </CustomText>
-                <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 6 }}>
-                  No downloads yet. Tap the download icon on any song or playlist to listen offline.
-                </CustomText>
-              </SurfaceCard>
-            </FadeIn>
-          )}
+          <FadeIn delay={140}>
+            <View style={{ marginTop: 12, gap: 10 }}>
+              {listItems.length ? (
+                listItems.map((item, index) => (
+                  <LibraryRow
+                    key={`${activeTab}-${item.id}-${index}`}
+                    item={item}
+                    onPress={() => onOpen(item)}
+                    compact={!isTablet}
+                  />
+                ))
+              ) : (
+                <EmptyLibraryState tab={activeTab} loading={loading} />
+              )}
+            </View>
+          </FadeIn>
+
+          <FadeIn delay={200}>
+            <View
+              style={{
+                marginTop: 18,
+                borderRadius: 16,
+                borderWidth: 1,
+                borderColor: 'rgba(255,255,255,0.07)',
+                backgroundColor: 'rgba(12,9,20,0.76)',
+                padding: 12,
+              }}
+            >
+              <CustomText variant="label" style={{ color: '#F8F7FC' }}>
+                Downloads and offline mode
+              </CustomText>
+              <CustomText variant="caption" style={{ color: 'rgba(194,185,220,0.9)', marginTop: 4 }}>
+                UI structure is ready. Connect your download storage layer and Supabase user tables to persist offline items per account.
+              </CustomText>
+            </View>
+          </FadeIn>
         </Screen>
       </ScrollView>
     </TabScreenWrapper>
+  );
+}
+
+function LibraryRow({
+  item,
+  onPress,
+  compact,
+}: {
+  item: FeedCardItem;
+  onPress: () => void;
+  compact: boolean;
+}) {
+  return (
+    <TVTouchable
+      onPress={onPress}
+      style={{
+        minHeight: compact ? 68 : 72,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.07)',
+        backgroundColor: 'rgba(12,9,20,0.84)',
+        paddingHorizontal: 10,
+        paddingVertical: 8,
+        flexDirection: 'row',
+        alignItems: 'center',
+      }}
+      showFocusBorder={false}
+    >
+      <Image source={{ uri: item.imageUrl }} style={{ width: 48, height: 48, borderRadius: 12, marginRight: 10 }} resizeMode="cover" />
+      <View style={{ flex: 1 }}>
+        <CustomText variant="label" style={{ color: '#F8F7FC' }} numberOfLines={1}>
+          {item.title}
+        </CustomText>
+        <CustomText variant="caption" style={{ color: 'rgba(194,185,220,0.9)', marginTop: 2 }} numberOfLines={1}>
+          {item.subtitle}
+        </CustomText>
+      </View>
+      <View style={{ alignItems: 'flex-end' }}>
+        <CustomText variant="caption" style={{ color: 'rgba(171,162,198,0.9)' }}>
+          {item.duration || '--:--'}
+        </CustomText>
+        <MaterialIcons name="more-vert" size={18} color="rgba(171,162,198,0.9)" />
+      </View>
+    </TVTouchable>
+  );
+}
+
+function EmptyLibraryState({ tab, loading }: { tab: LibraryTab; loading: boolean }) {
+  return (
+    <View
+      style={{
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.07)',
+        backgroundColor: 'rgba(12,9,20,0.76)',
+        padding: 12,
+      }}
+    >
+      <CustomText variant="label" style={{ color: '#F8F7FC' }}>
+        {loading ? 'Loading library...' : `${tab} is empty`}
+      </CustomText>
+      <CustomText variant="caption" style={{ color: 'rgba(194,185,220,0.9)', marginTop: 4 }}>
+        {loading
+          ? 'Fetching content from the feed service.'
+          : 'This section will fill automatically when users start playing or saving content.'}
+      </CustomText>
+    </View>
   );
 }

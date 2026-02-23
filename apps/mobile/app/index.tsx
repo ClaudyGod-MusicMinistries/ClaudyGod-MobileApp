@@ -1,416 +1,354 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Image, ScrollView, StatusBar, View, useWindowDimensions } from 'react-native';
+import React, { useEffect, useMemo, useRef } from 'react';
+import {
+  Animated,
+  Easing,
+  Image,
+  Platform,
+  ScrollView,
+  StatusBar,
+  View,
+  useWindowDimensions,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, {
-  Extrapolate,
-  interpolate,
-  useAnimatedStyle,
-  useAnimatedScrollHandler,
-  useSharedValue,
-  withDelay,
-  withRepeat,
-  withSequence,
-  withSpring,
-  withTiming,
-} from 'react-native-reanimated';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { CustomText } from '../components/CustomText';
 import { AppButton } from '../components/ui/AppButton';
-import { useAppTheme } from '../util/colorScheme';
+import { CustomText } from '../components/CustomText';
 import { TVTouchable } from '../components/ui/TVTouchable';
+import { Screen } from '../components/layout/Screen';
 
-const tips = [
-  {
-    icon: 'search',
-    title: 'Search fast',
-    desc: 'Find songs, sermons, or artists instantly.',
-    action: 'Open Search',
-    route: '/(tabs)/search',
-  },
-  {
-    icon: 'play-circle',
-    title: 'Play instantly',
-    desc: 'Tap any card for audio or video.',
-    action: 'Open Player',
-    route: '/(tabs)/PlaySection',
-  },
-  {
-    icon: 'library-music',
-    title: 'Build library',
-    desc: 'Save favorites and playlists.',
-    action: 'Go to Library',
-    route: '/(tabs)/Favourites',
-  },
-  {
-    icon: 'cast',
-    title: 'Cast to TV',
-    desc: 'Enjoy a big‑screen worship experience.',
-    action: 'Explore Home',
-    route: '/(tabs)/home',
-  },
-];
+const topChips = ['Music', 'Videos', 'Live', 'Ads', 'Playlists', 'Messages', 'Worship'];
 
-const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
-
-const TipCard = ({
-  tip,
-  index,
-  isLast,
-  cardWidth,
-  cardSpacing,
-  snapInterval,
-  scrollX,
-  onPress,
-  theme,
-}: {
-  tip: (typeof tips)[number];
-  index: number;
-  isLast: boolean;
-  cardWidth: number;
-  cardSpacing: number;
-  snapInterval: number;
-  scrollX: any;
-  onPress: () => void;
-  theme: ReturnType<typeof useAppTheme>;
-}) => {
-  const animatedStyle = useAnimatedStyle(() => {
-    const inputRange = [
-      (index - 1) * snapInterval,
-      index * snapInterval,
-      (index + 1) * snapInterval,
-    ];
-    const scale = interpolate(scrollX.value, inputRange, [0.94, 1.04, 0.94], Extrapolate.CLAMP);
-    const translateY = interpolate(scrollX.value, inputRange, [10, 0, 10], Extrapolate.CLAMP);
-    return {
-      transform: [{ scale }, { translateY }],
-    };
-  });
-
-  return (
-    <Animated.View
-      style={[
-        {
-          width: cardWidth,
-          marginRight: isLast ? 0 : cardSpacing,
-        },
-        animatedStyle,
-      ]}
-    >
-      <TVTouchable
-        onPress={onPress}
-        style={{
-          backgroundColor: 'rgba(255,255,255,0.06)',
-          borderRadius: 16,
-          padding: 18,
-          borderWidth: 1,
-          borderColor: 'rgba(255,255,255,0.12)',
-          alignItems: 'center',
-        }}
-        showFocusBorder={false}
-      >
-        <View
-          style={{
-            width: 44,
-            height: 44,
-            borderRadius: 14,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: `${theme.colors.primary}22`,
-            marginBottom: 12,
-          }}
-        >
-          <MaterialIcons name={tip.icon as any} size={20} color={theme.colors.accent} />
-        </View>
-        <CustomText variant="subtitle" style={{ color: '#F8FAFC', textAlign: 'center' }}>
-          {tip.title}
-        </CustomText>
-        <CustomText
-          variant="caption"
-          style={{ color: '#CBD5F5', textAlign: 'center', marginTop: 6 }}
-        >
-          {tip.desc}
-        </CustomText>
-        <View style={{ marginTop: 12, flexDirection: 'row', alignItems: 'center' }}>
-          <CustomText variant="label" style={{ color: theme.colors.accent }}>
-            {tip.action}
-          </CustomText>
-          <MaterialIcons name="arrow-forward" size={16} color={theme.colors.accent} style={{ marginLeft: 6 }} />
-        </View>
-      </TVTouchable>
-    </Animated.View>
-  );
-};
-
-const Landing = () => {
+export default function LandingScreen() {
   const router = useRouter();
-  const theme = useAppTheme();
-  const [activeTip, setActiveTip] = useState(0);
-  const { width } = useWindowDimensions();
-  const cardWidth = Math.min(320, width - 72);
-  const cardSpacing = 16;
-  const sidePadding = Math.max(16, (width - cardWidth) / 2);
-  const snapInterval = cardWidth + cardSpacing;
-  const scrollRef = useRef<React.ComponentRef<typeof AnimatedScrollView>>(null);
-  const scrollX = useSharedValue(0);
+  const { width, height } = useWindowDimensions();
+  const isTV = Platform.isTV;
+  const isTablet = width >= 768 && !isTV;
+  const compact = height < 720 || width < 360;
 
-  const fadeIn = useSharedValue(0);
-  const logoBounce = useSharedValue(0);
-  const glowPulse = useSharedValue(1);
-  const titleFloat = useSharedValue(12);
-  const subtitleFloat = useSharedValue(16);
-  const ctaScale = useSharedValue(0.92);
-  const ringRotate = useSharedValue(0);
-  const orbDrift = useSharedValue(0);
+  const fade = useRef(new Animated.Value(0)).current;
+  const rise = useRef(new Animated.Value(18)).current;
+  const glow = useRef(new Animated.Value(0.85)).current;
+  const chipFloat = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    fadeIn.value = withTiming(1, { duration: 800 });
-    logoBounce.value = withSequence(
-      withSpring(-18, { damping: 10, stiffness: 140 }),
-      withSpring(0, { damping: 8, stiffness: 120 })
+    Animated.parallel([
+      Animated.timing(fade, {
+        toValue: 1,
+        duration: 520,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(rise, {
+        toValue: 0,
+        duration: 520,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    const glowLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(glow, { toValue: 1.06, duration: 1800, useNativeDriver: true }),
+        Animated.timing(glow, { toValue: 0.85, duration: 1800, useNativeDriver: true }),
+      ]),
     );
-    glowPulse.value = withRepeat(
-      withSequence(
-        withTiming(1.08, { duration: 1500 }),
-        withTiming(1, { duration: 1500 })
-      ),
-      -1,
-      false
+
+    const chipLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(chipFloat, { toValue: 1, duration: 2200, useNativeDriver: true }),
+        Animated.timing(chipFloat, { toValue: 0, duration: 2200, useNativeDriver: true }),
+      ]),
     );
-    titleFloat.value = withTiming(0, { duration: 900 });
-    subtitleFloat.value = withDelay(80, withTiming(0, { duration: 900 }));
-    ctaScale.value = withDelay(200, withSpring(1, { damping: 10, stiffness: 140 }));
-    ringRotate.value = withRepeat(withTiming(360, { duration: 12000 }), -1, false);
-    orbDrift.value = withRepeat(withSequence(withTiming(1, { duration: 2600 }), withTiming(0, { duration: 2600 })), -1, true);
-  }, [ctaScale, fadeIn, glowPulse, logoBounce, orbDrift, ringRotate, subtitleFloat, titleFloat]);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setActiveTip((prev) => {
-        const next = (prev + 1) % tips.length;
-        const scrollNode = scrollRef.current as unknown as ScrollView | null;
-        scrollNode?.scrollTo({ x: next * snapInterval, animated: true });
-        return next;
-      });
-    }, 4500);
+    glowLoop.start();
+    chipLoop.start();
 
-    return () => clearInterval(interval);
-  }, [snapInterval]);
+    return () => {
+      glowLoop.stop();
+      chipLoop.stop();
+    };
+  }, [chipFloat, fade, glow, rise]);
 
-  const heroStyle = useAnimatedStyle(() => ({
-    opacity: fadeIn.value,
-  }));
+  const chipTranslate = chipFloat.interpolate({ inputRange: [0, 1], outputRange: [0, -6] });
+  const orbTranslate = chipFloat.interpolate({ inputRange: [0, 1], outputRange: [0, -12] });
 
-  const logoStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: logoBounce.value }, { scale: glowPulse.value }],
-  }));
+  const logoSize = isTV ? 108 : isTablet ? 92 : compact ? 68 : 76;
+  const headlineSize = isTV ? 32 : isTablet ? 26 : compact ? 20 : 22;
 
-  const titleStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: titleFloat.value }],
-  }));
-
-  const subtitleStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: subtitleFloat.value }],
-  }));
-
-  const ctaStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: ctaScale.value }],
-  }));
-
-  const ringStyle = useAnimatedStyle(() => ({
-    transform: [{ rotateZ: `${ringRotate.value}deg` }, { scale: glowPulse.value }],
-  }));
-
-  const orbTopStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: interpolate(orbDrift.value, [0, 1], [0, -18]) }],
-  }));
-
-  const orbBottomStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: interpolate(orbDrift.value, [0, 1], [0, 14]) }],
-  }));
-
-  const onScroll = useAnimatedScrollHandler({
-    onScroll: (event: any) => {
-      scrollX.value = event.contentOffset.x;
-    },
-  });
+  const featureCards = useMemo(
+    () => [
+      {
+        id: 'live',
+        icon: 'live-tv' as const,
+        title: 'Live Hub',
+        body: 'Notify followers when a stream starts and show viewer count in the Live section.',
+        tint: 'rgba(239,68,68,0.15)',
+        border: 'rgba(252,165,165,0.28)',
+        iconColor: '#FCA5A5',
+      },
+      {
+        id: 'ad',
+        icon: 'campaign' as const,
+        title: 'Ads Slot',
+        body: 'Reserve premium sponsored placements at the top of Home and Videos feeds.',
+        tint: 'rgba(154,107,255,0.16)',
+        border: 'rgba(216,194,255,0.24)',
+        iconColor: '#E8D7FF',
+      },
+    ],
+    [],
+  );
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-      <StatusBar
-        barStyle={theme.scheme === 'dark' ? 'light-content' : 'dark-content'}
-        backgroundColor="transparent"
-        translucent
-      />
-
-      <Image
-        source={require('../assets/images/manBack.webp')}
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          resizeMode: 'cover',
-        }}
-      />
+    <View style={{ flex: 1, backgroundColor: '#05040D' }}>
+      <StatusBar translucent={false} barStyle="light-content" backgroundColor="#05040D" />
 
       <LinearGradient
-        colors={['rgba(3,6,12,0.75)', 'rgba(3,6,12,0.88)', 'rgba(3,6,12,0.98)']}
-        style={{ position: 'absolute', width: '100%', height: '100%' }}
-      />
-      <Animated.View
-        pointerEvents="none"
-        style={[
-          orbTopStyle,
-          {
-            position: 'absolute',
-            top: 86,
-            right: -62,
-            width: 220,
-            height: 220,
-            borderRadius: 220,
-            backgroundColor: 'rgba(192,132,252,0.15)',
-          },
-        ]}
-      />
-      <Animated.View
-        pointerEvents="none"
-        style={[
-          orbBottomStyle,
-          {
-            position: 'absolute',
-            bottom: 110,
-            left: -70,
-            width: 210,
-            height: 210,
-            borderRadius: 210,
-            backgroundColor: 'rgba(124,58,237,0.14)',
-          },
-        ]}
+        colors={['#120A26', '#080512', '#05040D']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
       />
 
       <Animated.View
-        style={[
-          heroStyle,
-          { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 },
-        ]}
-      >
-        <Animated.View
-          style={[
-            logoStyle,
-            {
-              width: 96,
-              height: 96,
-              borderRadius: 24,
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: 'rgba(255,255,255,0.08)',
-              borderWidth: 1,
-              borderColor: 'rgba(255,255,255,0.2)',
-              marginBottom: 18,
-            },
-          ]}
+        pointerEvents="none"
+        style={{
+          position: 'absolute',
+          top: -40,
+          left: -40,
+          width: 220,
+          height: 220,
+          borderRadius: 220,
+          backgroundColor: 'rgba(154,107,255,0.14)',
+          transform: [{ translateY: orbTranslate }],
+        }}
+      />
+      <Animated.View
+        pointerEvents="none"
+        style={{
+          position: 'absolute',
+          right: -90,
+          bottom: 70,
+          width: 260,
+          height: 260,
+          borderRadius: 260,
+          backgroundColor: 'rgba(56,189,248,0.08)',
+          transform: [{ translateY: orbTranslate }],
+        }}
+      />
+
+      <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top', 'bottom']}>
+        <ScrollView
+          style={{ flex: 1, backgroundColor: 'transparent' }}
+          contentContainerStyle={{ flexGrow: 1, paddingBottom: 18 }}
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+          alwaysBounceVertical={false}
+          overScrollMode="never"
         >
-          <Animated.View
-            pointerEvents="none"
-            style={[
-              ringStyle,
-              {
-                position: 'absolute',
-                width: 128,
-                height: 128,
-                borderRadius: 64,
-                borderWidth: 1,
-                borderColor: 'rgba(192,132,252,0.25)',
-              },
-            ]}
-          />
-          <Image
-            source={require('../assets/images/ClaudyGoLogo.webp')}
-            style={{ width: 64, height: 64, borderRadius: 16 }}
-          />
-        </Animated.View>
+          <Screen style={{ flex: 1 }} contentStyle={{ flexGrow: 1 }}>
+            <View style={{ flex: 1, paddingTop: compact ? 8 : 12 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 12 }}>
+                  <Image
+                    source={require('../assets/images/ClaudyGoLogo.webp')}
+                    style={{ width: 32, height: 32, borderRadius: 16 }}
+                  />
+                  <View style={{ marginLeft: 10, flex: 1 }}>
+                    <CustomText variant="caption" style={{ color: 'rgba(217,207,243,0.86)' }}>
+                      ClaudyGod Ministries
+                    </CustomText>
+                    <CustomText variant="label" style={{ color: '#F7F5FD' }} numberOfLines={1}>
+                      Streaming Platform
+                    </CustomText>
+                  </View>
+                </View>
 
-        <Animated.View style={titleStyle}>
-          <CustomText variant="display" style={{ color: '#F8FAFC', textAlign: 'center' }}>
-            ClaudyGod Music
-          </CustomText>
-        </Animated.View>
-        <Animated.View style={subtitleStyle}>
-          <CustomText variant="body" style={{ color: '#CBD5F5', marginTop: 6, textAlign: 'center' }}>
-            Premium worship streaming engineered for mobile, TV, and cast devices.
-          </CustomText>
-        </Animated.View>
+                <TVTouchable
+                  onPress={() => router.replace('/(tabs)/home')}
+                  style={{
+                    borderRadius: 999,
+                    borderWidth: 1,
+                    borderColor: 'rgba(234,223,255,0.26)',
+                    backgroundColor: 'rgba(255,255,255,0.04)',
+                    paddingHorizontal: 12,
+                    paddingVertical: 7,
+                  }}
+                  showFocusBorder={false}
+                >
+                  <CustomText variant="caption" style={{ color: '#EDE3FF' }}>
+                    Demo
+                  </CustomText>
+                </TVTouchable>
+              </View>
 
-        <Animated.View style={[ctaStyle, { marginTop: 18 }]}>
-          <AppButton
-            title="Get Started"
-            size="sm"
-            variant="primary"
-            onPress={() => router.replace('/(tabs)/home')}
-          />
-        </Animated.View>
+              <Animated.View style={{ marginTop: 10, transform: [{ translateY: chipTranslate }] }}>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  overScrollMode="never"
+                  bounces={false}
+                  contentContainerStyle={{ paddingRight: 10 }}
+                >
+                  {topChips.map((chip) => (
+                    <View
+                      key={chip}
+                      style={{
+                        marginRight: 8,
+                        borderRadius: 999,
+                        borderWidth: 1,
+                        borderColor: 'rgba(229,220,251,0.18)',
+                        backgroundColor: 'rgba(255,255,255,0.03)',
+                        paddingHorizontal: 12,
+                        paddingVertical: 6,
+                      }}
+                    >
+                      <CustomText variant="caption" style={{ color: '#DCD0F5' }}>
+                        {chip}
+                      </CustomText>
+                    </View>
+                  ))}
+                </ScrollView>
+              </Animated.View>
 
-        <View style={{ marginTop: 26, width: '100%' }}>
-          <CustomText variant="title" style={{ color: '#F8FAFC', textAlign: 'center' }}>
-            Quick tour
-          </CustomText>
-          <CustomText variant="caption" style={{ color: '#CBD5F5', textAlign: 'center', marginTop: 6 }}>
-            Swipe to explore key actions.
-          </CustomText>
-
-          <AnimatedScrollView
-            ref={scrollRef}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            snapToInterval={snapInterval}
-            decelerationRate="fast"
-            onScroll={onScroll}
-            scrollEventThrottle={16}
-            contentContainerStyle={{
-              paddingHorizontal: sidePadding,
-              paddingVertical: 16,
-            }}
-            onMomentumScrollEnd={(event: any) => {
-              const index = Math.round(event.nativeEvent.contentOffset.x / snapInterval);
-              setActiveTip(index);
-            }}
-          >
-            {tips.map((tip, index) => (
-              <TipCard
-                key={tip.title}
-                tip={tip}
-                index={index}
-                isLast={index === tips.length - 1}
-                cardWidth={cardWidth}
-                cardSpacing={cardSpacing}
-                snapInterval={snapInterval}
-                scrollX={scrollX}
-                onPress={() => router.push(tip.route)}
-                theme={theme}
-              />
-            ))}
-          </AnimatedScrollView>
-
-          <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 4 }}>
-            {tips.map((_, index) => (
-              <View
-                key={`dot-${index}`}
+              <Animated.View
                 style={{
-                  width: activeTip === index ? 18 : 6,
-                  height: 6,
-                  borderRadius: 999,
-                  marginHorizontal: 4,
-                  backgroundColor: activeTip === index ? theme.colors.accent : 'rgba(255,255,255,0.25)',
+                  opacity: fade,
+                  transform: [{ translateY: rise }],
+                  marginTop: 12,
+                  borderRadius: 24,
+                  borderWidth: 1,
+                  borderColor: 'rgba(255,255,255,0.1)',
+                  backgroundColor: 'rgba(10,8,17,0.9)',
+                  padding: isTV ? 26 : isTablet ? 22 : compact ? 16 : 18,
                 }}
-              />
-            ))}
-          </View>
-        </View>
-      </Animated.View>
+              >
+                <View style={{ alignItems: 'center' }}>
+                  <Animated.View
+                    style={{
+                      width: logoSize + 22,
+                      height: logoSize + 22,
+                      borderRadius: (logoSize + 22) / 2,
+                      borderWidth: 1,
+                      borderColor: 'rgba(255,255,255,0.16)',
+                      backgroundColor: 'rgba(255,255,255,0.05)',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transform: [{ scale: glow }],
+                    }}
+                  >
+                    <Image
+                      source={require('../assets/images/ClaudyGoLogo.webp')}
+                      style={{ width: logoSize, height: logoSize, borderRadius: logoSize / 2 }}
+                    />
+                  </Animated.View>
+
+                  <CustomText
+                    variant="hero"
+                    style={{
+                      marginTop: 14,
+                      color: '#F8F7FC',
+                      textAlign: 'center',
+                      fontSize: headlineSize,
+                      lineHeight: headlineSize + 6,
+                    }}
+                  >
+                    Worship, Music & Live — built for mobile, tablet and TV.
+                  </CustomText>
+                  <CustomText
+                    variant="body"
+                    style={{
+                      marginTop: 8,
+                      textAlign: 'center',
+                      color: 'rgba(208,200,230,0.9)',
+                      maxWidth: 600,
+                    }}
+                  >
+                    Structured like modern streaming apps: content rails, live notifications, ads slots, and user analytics ready for YouTube + Supabase integrations.
+                  </CustomText>
+                </View>
+
+                <View style={{ marginTop: 16, gap: 10 }}>
+                  {featureCards.map((card) => (
+                    <View
+                      key={card.id}
+                      style={{
+                        borderRadius: 16,
+                        borderWidth: 1,
+                        borderColor: card.border,
+                        backgroundColor: card.tint,
+                        padding: 12,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <View
+                        style={{
+                          width: 40,
+                          height: 40,
+                          borderRadius: 12,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          backgroundColor: 'rgba(255,255,255,0.04)',
+                          marginRight: 10,
+                        }}
+                      >
+                        <MaterialIcons name={card.icon} size={20} color={card.iconColor} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <CustomText variant="label" style={{ color: '#F6F2FF' }}>
+                          {card.title}
+                        </CustomText>
+                        <CustomText variant="caption" style={{ color: 'rgba(225,217,244,0.92)', marginTop: 4 }}>
+                          {card.body}
+                        </CustomText>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+
+                <View style={{ marginTop: 16 }}>
+                  <AppButton title="Create Account" size="lg" fullWidth onPress={() => router.push('/sign-up')} />
+                  <AppButton
+                    title="Sign In"
+                    variant="ghost"
+                    size="lg"
+                    fullWidth
+                    onPress={() => router.push('/sign-in')}
+                    style={{
+                      marginTop: 10,
+                      borderRadius: 16,
+                      borderWidth: 1,
+                      borderColor: 'rgba(233,221,255,0.24)',
+                      backgroundColor: 'rgba(255,255,255,0.03)',
+                    }}
+                    textColor="#EDE3FF"
+                    leftIcon={<MaterialIcons name="login" size={18} color="#EDE3FF" />}
+                  />
+                </View>
+              </Animated.View>
+
+              <View style={{ marginTop: 14, paddingHorizontal: 2 }}>
+                <TVTouchable onPress={() => router.replace('/(tabs)/home')} showFocusBorder={false}>
+                  <CustomText variant="caption" style={{ color: 'rgba(205,194,232,0.9)', textAlign: 'center' }}>
+                    Continue to demo home without signing in
+                  </CustomText>
+                </TVTouchable>
+              </View>
+
+              <View style={{ flex: 1 }} />
+
+              <View style={{ marginTop: 18, paddingBottom: 6 }}>
+                <CustomText variant="caption" style={{ color: 'rgba(170,160,197,0.88)', textAlign: 'center' }}>
+                  ClaudyGod • Mobile / Tablet / TV ready layout shell
+                </CustomText>
+              </View>
+            </View>
+          </Screen>
+        </ScrollView>
+      </SafeAreaView>
     </View>
   );
-};
-
-export default Landing;
+}
