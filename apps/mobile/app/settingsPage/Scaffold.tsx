@@ -1,6 +1,6 @@
 // app/settingsPage/Scaffold.tsx
 import React from 'react';
-import { View, ScrollView, StatusBar } from 'react-native';
+import { View, ScrollView, StatusBar, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../../components/CustomText';
@@ -43,46 +43,74 @@ export function SettingsScaffold({ title, subtitle, children, hero }: ScaffoldPr
           height: 260,
         }}
       />
-      {/* Header */}
       <View
         style={{
           paddingHorizontal: spacing.lg,
-          paddingTop: insets.top + 10,
-          paddingBottom: spacing.md,
+          paddingTop: insets.top + 8,
+          paddingBottom: spacing.sm,
           borderBottomWidth: 1,
-          borderBottomColor: theme.colors.border,
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: spacing.md,
-          backgroundColor: theme.colors.surface,
+          borderBottomColor: 'rgba(255,255,255,0.06)',
+          backgroundColor: '#06040D',
         }}
       >
-        <TVTouchable
-          onPress={() => router.back()}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        <View
           style={{
-            width: 44,
-            height: 44,
-            borderRadius: radius.md,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: theme.colors.surfaceAlt,
+            borderRadius: 18,
             borderWidth: 1,
-            borderColor: theme.colors.border,
+            borderColor: 'rgba(255,255,255,0.08)',
+            backgroundColor: 'rgba(10,8,17,0.88)',
+            paddingHorizontal: 12,
+            paddingVertical: 12,
           }}
-          showFocusBorder={false}
         >
-          <MaterialIcons name="arrow-back" size={22} color={theme.colors.text.primary} />
-        </TVTouchable>
-        <View style={{ flex: 1 }}>
-          <CustomText variant="heading" style={{ color: theme.colors.text.primary }}>
-            {title}
-          </CustomText>
-          {subtitle ? (
-            <CustomText variant="body" style={{ color: theme.colors.text.secondary, marginTop: 2 }}>
-              {subtitle}
-            </CustomText>
-          ) : null}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+            <TVTouchable
+              onPress={() => router.back()}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              style={{
+                width: 42,
+                height: 42,
+                borderRadius: radius.md,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: 'rgba(255,255,255,0.04)',
+                borderWidth: 1,
+                borderColor: 'rgba(255,255,255,0.12)',
+              }}
+              showFocusBorder={false}
+            >
+              <MaterialIcons name="arrow-back" size={20} color="#EFE7FF" />
+            </TVTouchable>
+
+            <View
+              style={{
+                width: 42,
+                height: 42,
+                borderRadius: 14,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: 'rgba(255,255,255,0.04)',
+                borderWidth: 1,
+                borderColor: 'rgba(255,255,255,0.12)',
+              }}
+            >
+              <Image source={require('../../assets/images/ClaudyGoLogo.webp')} style={{ width: 30, height: 30, borderRadius: 15 }} />
+            </View>
+
+            <View style={{ flex: 1 }}>
+              <CustomText variant="caption" style={{ color: 'rgba(194,185,220,0.9)' }}>
+                ClaudyGod Ministries
+              </CustomText>
+              <CustomText variant="heading" style={{ color: '#F8F7FC', marginTop: 2 }}>
+                {title}
+              </CustomText>
+              {subtitle ? (
+                <CustomText variant="caption" style={{ color: 'rgba(176,167,202,0.9)', marginTop: 3 }} numberOfLines={1}>
+                  {subtitle}
+                </CustomText>
+              ) : null}
+            </View>
+          </View>
         </View>
       </View>
 

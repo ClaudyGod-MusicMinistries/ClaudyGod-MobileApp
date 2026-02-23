@@ -76,11 +76,12 @@ export default function HomeScreen() {
     <TabScreenWrapper>
       <ScrollView
         style={{ flex: 1, backgroundColor: 'transparent' }}
-        contentContainerStyle={{ paddingTop: theme.spacing.md, paddingBottom: 148 }}
+        contentContainerStyle={{ paddingBottom: 148 }}
         showsVerticalScrollIndicator={false}
         bounces={false}
         alwaysBounceVertical={false}
         overScrollMode="never"
+        stickyHeaderIndices={[0]}
         refreshControl={
           <RefreshControl
             refreshing={loading}
@@ -91,15 +92,36 @@ export default function HomeScreen() {
           />
         }
       >
+        <View
+          style={{
+            backgroundColor: '#06040D',
+            borderBottomWidth: 1,
+            borderBottomColor: 'rgba(255,255,255,0.06)',
+          }}
+        >
+          <LinearGradient
+            pointerEvents="none"
+            colors={['rgba(154,107,255,0.06)', 'rgba(6,4,13,0)']}
+            start={{ x: 0.1, y: 0 }}
+            end={{ x: 0.9, y: 1 }}
+            style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}
+          />
+          <Screen>
+            <FadeIn>
+              <View style={{ paddingTop: theme.spacing.md, paddingBottom: 12 }}>
+                <HomeHeader
+                  activeFilter={activeFilter}
+                  onChangeFilter={setActiveFilter}
+                  onOpenVideos={() => router.push('/(tabs)/videos')}
+                  onOpenProfile={() => router.push('/profile')}
+                />
+              </View>
+            </FadeIn>
+          </Screen>
+        </View>
+
         <Screen>
-          <FadeIn>
-            <HomeHeader
-              activeFilter={activeFilter}
-              onChangeFilter={setActiveFilter}
-              onOpenVideos={() => router.push('/(tabs)/videos')}
-              onOpenProfile={() => router.push('/profile')}
-            />
-          </FadeIn>
+          <View style={{ paddingTop: 14 }}>
 
           <FadeIn delay={70}>
             <HeroDropCard
@@ -294,6 +316,7 @@ export default function HomeScreen() {
               </CustomText>
             </View>
           ) : null}
+          </View>
         </Screen>
       </ScrollView>
     </TabScreenWrapper>
@@ -313,18 +336,52 @@ function HomeHeader({
 }) {
   return (
     <View>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <View style={{ flex: 1, marginRight: 10 }}>
-          <CustomText variant="caption" style={{ color: 'rgba(194,185,220,0.9)' }}>
-            ClaudyGod Home
-          </CustomText>
-          <CustomText variant="display" style={{ color: '#F8F7FC', marginTop: 4, fontSize: 19, lineHeight: 24 }}>
-            Music, Videos, Live & Worship
-          </CustomText>
-        </View>
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          <IconCircle icon="ondemand-video" onPress={onOpenVideos} />
-          <IconCircle icon="person-outline" onPress={onOpenProfile} />
+      <View
+        style={{
+          borderRadius: 18,
+          borderWidth: 1,
+          borderColor: 'rgba(255,255,255,0.08)',
+          backgroundColor: 'rgba(10,8,17,0.88)',
+          paddingHorizontal: 12,
+          paddingVertical: 12,
+        }}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 10 }}>
+            <View
+              style={{
+                width: 42,
+                height: 42,
+                borderRadius: 14,
+                borderWidth: 1,
+                borderColor: 'rgba(255,255,255,0.12)',
+                backgroundColor: 'rgba(255,255,255,0.04)',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginRight: 10,
+              }}
+            >
+              <Image
+                source={require('../../assets/images/ClaudyGoLogo.webp')}
+                style={{ width: 30, height: 30, borderRadius: 15 }}
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <CustomText variant="caption" style={{ color: 'rgba(194,185,220,0.9)' }}>
+                ClaudyGod Ministries
+              </CustomText>
+              <CustomText variant="display" style={{ color: '#F8F7FC', marginTop: 2, fontSize: 17, lineHeight: 22 }}>
+                Streaming Home
+              </CustomText>
+              <CustomText variant="caption" style={{ color: 'rgba(176,167,202,0.9)', marginTop: 3 }} numberOfLines={1}>
+                Music • Videos • Live • Worship
+              </CustomText>
+            </View>
+          </View>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <IconCircle icon="ondemand-video" onPress={onOpenVideos} />
+            <IconCircle icon="person-outline" onPress={onOpenProfile} />
+          </View>
         </View>
       </View>
 
@@ -333,7 +390,7 @@ function HomeHeader({
         showsHorizontalScrollIndicator={false}
         bounces={false}
         overScrollMode="never"
-        contentContainerStyle={{ paddingTop: 12, paddingRight: 8 }}
+        contentContainerStyle={{ paddingTop: 12, paddingBottom: 2, paddingRight: 8 }}
       >
         {topRailChips.map((chip) => {
           const active = chip === activeFilter;

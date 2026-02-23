@@ -29,78 +29,98 @@ function ThemedLayout({ children }: { children: React.ReactNode }) {
 
 // Loading component that also respects theme
 function LoadingScreen() {
-  const pulse = useRef(new Animated.Value(0.94)).current;
-  const shimmer = useRef(new Animated.Value(0)).current;
-  const halo = useRef(new Animated.Value(0.9)).current;
+  const pulse = useRef(new Animated.Value(0.95)).current;
+  const halo = useRef(new Animated.Value(0.88)).current;
+  const dots = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const pulseLoop = Animated.loop(
       Animated.sequence([
-        Animated.timing(pulse, { toValue: 1.02, duration: 900, useNativeDriver: true }),
-        Animated.timing(pulse, { toValue: 0.94, duration: 900, useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 1.01, duration: 900, useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 0.95, duration: 900, useNativeDriver: true }),
       ]),
-    );
-    const shimmerLoop = Animated.loop(
-      Animated.timing(shimmer, { toValue: 1, duration: 1600, useNativeDriver: true }),
     );
     const haloLoop = Animated.loop(
       Animated.sequence([
-        Animated.timing(halo, { toValue: 1.08, duration: 1800, useNativeDriver: true }),
-        Animated.timing(halo, { toValue: 0.9, duration: 1800, useNativeDriver: true }),
+        Animated.timing(halo, { toValue: 1.06, duration: 1800, useNativeDriver: true }),
+        Animated.timing(halo, { toValue: 0.88, duration: 1800, useNativeDriver: true }),
       ]),
     );
+    const dotsLoop = Animated.loop(
+      Animated.timing(dots, { toValue: 3, duration: 1200, useNativeDriver: false }),
+    );
+
+    const dotsReset = dots.addListener(({ value }) => {
+      if (value >= 3) {
+        dots.setValue(0);
+      }
+    });
 
     pulseLoop.start();
-    shimmerLoop.start();
     haloLoop.start();
+    dotsLoop.start();
     return () => {
       pulseLoop.stop();
-      shimmerLoop.stop();
       haloLoop.stop();
+      dotsLoop.stop();
+      dots.removeListener(dotsReset);
     };
-  }, [halo, pulse, shimmer]);
+  }, [dots, halo, pulse]);
 
-  const shimmerTranslate = shimmer.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-120, 120],
+  const dot1 = dots.interpolate({
+    inputRange: [0, 0.7, 1, 3],
+    outputRange: [0.25, 0.25, 1, 1],
+  });
+  const dot2 = dots.interpolate({
+    inputRange: [0, 1.1, 1.8, 3],
+    outputRange: [0.25, 0.25, 1, 1],
+  });
+  const dot3 = dots.interpolate({
+    inputRange: [0, 2.0, 2.7, 3],
+    outputRange: [0.25, 0.25, 1, 1],
   });
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#06040D' }}>
-      <StatusBar translucent={false} backgroundColor="#06040D" barStyle="light-content" />
+    <View style={{ flex: 1, backgroundColor: '#05040D' }}>
+      <StatusBar translucent={false} backgroundColor="#05040D" barStyle="light-content" />
       <LinearGradient
-        colors={['#06040D', '#150A2D', '#090512']}
+        colors={['#05040D', '#10081E', '#06040D']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+        style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}
       />
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#06040D' }} edges={['top', 'bottom']}>
+      <SafeAreaView
+        style={{ flex: 1, backgroundColor: '#05040D' }}
+        edges={['top', 'bottom', 'left', 'right']}
+      >
         <View
           style={{
             flex: 1,
-            justifyContent: 'center',
             alignItems: 'center',
+            justifyContent: 'center',
             paddingHorizontal: 24,
+            backgroundColor: '#05040D',
           }}
         >
           <Animated.View
+            pointerEvents="none"
             style={{
               position: 'absolute',
-              width: 250,
-              height: 250,
-              borderRadius: 250,
-              backgroundColor: 'rgba(154,107,255,0.2)',
+              width: 230,
+              height: 230,
+              borderRadius: 230,
+              backgroundColor: 'rgba(154,107,255,0.16)',
               transform: [{ scale: halo }],
             }}
           />
           <Animated.View
             style={{
-              width: 112,
-              height: 112,
-              borderRadius: 30,
-              backgroundColor: 'rgba(255,255,255,0.08)',
+              width: 108,
+              height: 108,
+              borderRadius: 54,
+              backgroundColor: 'rgba(255,255,255,0.05)',
               borderWidth: 1,
-              borderColor: 'rgba(255,255,255,0.2)',
+              borderColor: 'rgba(255,255,255,0.14)',
               alignItems: 'center',
               justifyContent: 'center',
               transform: [{ scale: pulse }],
@@ -108,57 +128,40 @@ function LoadingScreen() {
           >
             <Image
               source={require('../assets/images/ClaudyGoLogo.webp')}
-              style={{ width: 62, height: 62, borderRadius: 18 }}
+              style={{ width: 62, height: 62, borderRadius: 31 }}
             />
           </Animated.View>
 
-          <View
-            style={{
-              width: 138,
-              height: 6,
-              borderRadius: 999,
-              marginTop: 18,
-              backgroundColor: 'rgba(255,255,255,0.12)',
-              overflow: 'hidden',
-            }}
-          >
-            <Animated.View
-              style={{
-                width: 72,
-                height: 6,
-                borderRadius: 999,
-                backgroundColor: '#9A6BFF',
-                transform: [{ translateX: shimmerTranslate }],
-              }}
-            />
-          </View>
-
           <Text
             style={{
-              marginTop: 12,
+              marginTop: 16,
               color: '#F8F7FC',
-              fontSize: 13,
-              fontFamily: 'SpaceGrotesk_600SemiBold',
-              letterSpacing: 0.2,
+              fontSize: 14,
+              fontWeight: '600',
+              letterSpacing: 0.4,
             }}
           >
-            Preparing ClaudyGod
+            ClaudyGod
           </Text>
-          <Text
-            style={{
-              marginTop: 4,
-              color: 'rgba(196,186,225,0.9)',
-              fontSize: 11,
-              fontFamily: 'Sora_400Regular',
-            }}
-          >
-            Loading music, videos and live channels...
-          </Text>
+
+          <View style={{ marginTop: 10, flexDirection: 'row', alignItems: 'center' }}>
+            <Animated.View style={[loaderDotStyle, { opacity: dot1 }]} />
+            <Animated.View style={[loaderDotStyle, { opacity: dot2 }]} />
+            <Animated.View style={[loaderDotStyle, { opacity: dot3 }]} />
+          </View>
         </View>
       </SafeAreaView>
     </View>
   );
 }
+
+const loaderDotStyle = {
+  width: 6,
+  height: 6,
+  borderRadius: 3,
+  marginHorizontal: 4,
+  backgroundColor: '#BFA0FF',
+} as const;
 
 function RootLayoutInner() {
   const { fontsLoaded } = useContext(FontContext);
