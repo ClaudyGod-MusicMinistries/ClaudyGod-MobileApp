@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import {
   Image,
+  Platform,
   RefreshControl,
   ScrollView,
   View,
@@ -25,8 +26,10 @@ export default function VideosScreen() {
   const theme = useAppTheme();
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const isTablet = width >= 768;
-  const columns = isTablet ? 3 : 2;
+  const isTV = Platform.isTV;
+  const isTablet = width >= 768 && !isTV;
+  const compact = width < 390;
+  const columns = isTV ? 3 : isTablet ? 2 : 1;
   const [filter, setFilter] = useState('All');
 
   const { feed, loading, refresh, error } = useContentFeed();
@@ -51,10 +54,11 @@ export default function VideosScreen() {
     <TabScreenWrapper>
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingTop: theme.spacing.md, paddingBottom: 148 }}
+        contentContainerStyle={{ paddingBottom: 148 }}
         showsVerticalScrollIndicator={false}
         bounces={false}
         overScrollMode="never"
+        stickyHeaderIndices={[0]}
         refreshControl={
           <RefreshControl
             refreshing={loading}
@@ -65,72 +69,40 @@ export default function VideosScreen() {
           />
         }
       >
-        <Screen>
-          <FadeIn>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <View style={{ flex: 1, marginRight: 12 }}>
-                <CustomText variant="caption" style={{ color: 'rgba(194,185,220,0.9)' }}>
-                  Video Hub
-                </CustomText>
-                <CustomText variant="display" style={{ color: '#F8F7FC', marginTop: 4, fontSize: 19, lineHeight: 24 }}>
-                  Videos, Live and Replays
-                </CustomText>
+        <View
+          style={{
+            backgroundColor: '#06040D',
+            borderBottomWidth: 1,
+            borderBottomColor: 'rgba(255,255,255,0.06)',
+          }}
+        >
+          <LinearGradient
+            pointerEvents="none"
+            colors={['rgba(154,107,255,0.06)', 'rgba(6,4,13,0)']}
+            start={{ x: 0.1, y: 0 }}
+            end={{ x: 0.9, y: 1 }}
+            style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}
+          />
+          <Screen>
+            <FadeIn>
+              <View style={{ paddingTop: theme.spacing.md, paddingBottom: 12 }}>
+                <VideosHeader
+                  filter={filter}
+                  onChangeFilter={setFilter}
+                  onOpenHome={() => router.push('/(tabs)/home')}
+                  onOpenProfile={() => router.push('/profile')}
+                />
               </View>
-              <TVTouchable
-                onPress={() => router.push('/(tabs)/home')}
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 20,
-                  borderWidth: 1,
-                  borderColor: 'rgba(255,255,255,0.14)',
-                  backgroundColor: 'rgba(255,255,255,0.04)',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-                showFocusBorder={false}
-              >
-                <MaterialIcons name="home" size={20} color="#EFE7FF" />
-              </TVTouchable>
-            </View>
+            </FadeIn>
+          </Screen>
+        </View>
 
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              bounces={false}
-              overScrollMode="never"
-              contentContainerStyle={{ paddingTop: 12, paddingRight: 8 }}
-            >
-              {videoFilters.map((label) => {
-                const active = label === filter;
-                return (
-                  <TVTouchable
-                    key={label}
-                    onPress={() => setFilter(label)}
-                    style={{
-                      marginRight: 8,
-                      borderRadius: 999,
-                      borderWidth: 1,
-                      borderColor: active ? 'rgba(216,194,255,0.3)' : 'rgba(255,255,255,0.1)',
-                      backgroundColor: active ? 'rgba(154,107,255,0.14)' : 'rgba(255,255,255,0.03)',
-                      paddingHorizontal: 12,
-                      paddingVertical: 8,
-                    }}
-                    showFocusBorder={false}
-                  >
-                    <CustomText variant="caption" style={{ color: active ? '#F1E7FF' : '#CEC4E7' }}>
-                      {label}
-                    </CustomText>
-                  </TVTouchable>
-                );
-              })}
-            </ScrollView>
-          </FadeIn>
+        <Screen>
+          <View style={{ paddingTop: 14 }}>
 
           <FadeIn delay={90}>
             <View
               style={{
-                marginTop: 12,
                 borderRadius: 22,
                 overflow: 'hidden',
                 borderWidth: 1,
@@ -138,7 +110,7 @@ export default function VideosScreen() {
                 backgroundColor: 'rgba(12,9,20,0.88)',
               }}
             >
-              <View style={{ height: 210 }}>
+              <View style={{ height: isTV ? 260 : isTablet ? 240 : compact ? 208 : 224 }}>
                 {featuredVideo?.imageUrl ? (
                   <Image source={{ uri: featuredVideo.imageUrl }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
                 ) : (
@@ -212,7 +184,7 @@ export default function VideosScreen() {
                 Video Feed
               </CustomText>
               <CustomText variant="caption" style={{ color: 'rgba(194,185,220,0.9)', marginTop: 3 }}>
-                Responsive grid for phone and tablet. Replays and YouTube uploads will populate here.
+                Larger cards on mobile for readability. Replays and YouTube uploads will populate here.
               </CustomText>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -6, marginTop: 10 }}>
                 {videos.length ? (
@@ -237,9 +209,128 @@ export default function VideosScreen() {
               </CustomText>
             </View>
           ) : null}
+          </View>
         </Screen>
       </ScrollView>
     </TabScreenWrapper>
+  );
+}
+
+function VideosHeader({
+  filter,
+  onChangeFilter,
+  onOpenHome,
+  onOpenProfile,
+}: {
+  filter: string;
+  onChangeFilter: (_next: string) => void;
+  onOpenHome: () => void;
+  onOpenProfile: () => void;
+}) {
+  return (
+    <View>
+      <View
+        style={{
+          borderRadius: 18,
+          borderWidth: 1,
+          borderColor: 'rgba(255,255,255,0.08)',
+          backgroundColor: 'rgba(10,8,17,0.88)',
+          paddingHorizontal: 12,
+          paddingVertical: 12,
+        }}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 10 }}>
+            <View
+              style={{
+                width: 42,
+                height: 42,
+                borderRadius: 14,
+                borderWidth: 1,
+                borderColor: 'rgba(255,255,255,0.12)',
+                backgroundColor: 'rgba(255,255,255,0.04)',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginRight: 10,
+              }}
+            >
+              <Image
+                source={require('../../assets/images/ClaudyGoLogo.webp')}
+                style={{ width: 30, height: 30, borderRadius: 15 }}
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <CustomText variant="caption" style={{ color: 'rgba(194,185,220,0.9)' }}>
+                ClaudyGod Ministries
+              </CustomText>
+              <CustomText variant="display" style={{ color: '#F8F7FC', marginTop: 2, fontSize: 17, lineHeight: 22 }}>
+                Video Hub
+              </CustomText>
+              <CustomText variant="caption" style={{ color: 'rgba(176,167,202,0.9)', marginTop: 3 }} numberOfLines={1}>
+                Live streams • Replays • Messages • Worship videos
+              </CustomText>
+            </View>
+          </View>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <HeaderIcon icon="home" onPress={onOpenHome} />
+            <HeaderIcon icon="person-outline" onPress={onOpenProfile} />
+          </View>
+        </View>
+      </View>
+
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        bounces={false}
+        overScrollMode="never"
+        contentContainerStyle={{ paddingTop: 12, paddingBottom: 2, paddingRight: 8 }}
+      >
+        {videoFilters.map((label) => {
+          const active = label === filter;
+          return (
+            <TVTouchable
+              key={label}
+              onPress={() => onChangeFilter(label)}
+              style={{
+                marginRight: 8,
+                borderRadius: 999,
+                borderWidth: 1,
+                borderColor: active ? 'rgba(216,194,255,0.34)' : 'rgba(255,255,255,0.1)',
+                backgroundColor: active ? 'rgba(154,107,255,0.16)' : 'rgba(255,255,255,0.03)',
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+              }}
+              showFocusBorder={false}
+            >
+              <CustomText variant="caption" style={{ color: active ? '#EFE3FF' : '#CEC4E7' }}>
+                {label}
+              </CustomText>
+            </TVTouchable>
+          );
+        })}
+      </ScrollView>
+    </View>
+  );
+}
+
+function HeaderIcon({ icon, onPress }: { icon: React.ComponentProps<typeof MaterialIcons>['name']; onPress: () => void }) {
+  return (
+    <TVTouchable
+      onPress={onPress}
+      style={{
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.14)',
+        backgroundColor: 'rgba(255,255,255,0.04)',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+      showFocusBorder={false}
+    >
+      <MaterialIcons name={icon} size={20} color="#EFE7FF" />
+    </TVTouchable>
   );
 }
 
