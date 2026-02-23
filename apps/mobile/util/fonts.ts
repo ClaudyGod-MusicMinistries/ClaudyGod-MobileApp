@@ -6,11 +6,6 @@ import {
   SpaceGrotesk_700Bold,
 } from '@expo-google-fonts/space-grotesk';
 import {
-  Syne_600SemiBold,
-  Syne_700Bold,
-  Syne_800ExtraBold,
-} from '@expo-google-fonts/syne';
-import {
   Sora_400Regular,
   Sora_500Medium,
   Sora_600SemiBold,
@@ -19,61 +14,61 @@ import * as Font from 'expo-font';
 
 export const fontConfig = {
   hero: {
-    fontFamily: 'ClashDisplay_800ExtraBold',
-    fontSize: 24,
-    lineHeight: 30,
-    fontWeight: '800' as const,
+    fontFamily: 'SpaceGrotesk_600SemiBold',
+    fontSize: 20,
+    lineHeight: 26,
+    fontWeight: '600' as const,
   },
   display: {
-    fontFamily: 'ClashDisplay_700Bold',
-    fontSize: 21,
-    lineHeight: 27,
-    fontWeight: '700' as const,
+    fontFamily: 'SpaceGrotesk_600SemiBold',
+    fontSize: 18,
+    lineHeight: 24,
+    fontWeight: '600' as const,
   },
   heading: {
-    fontFamily: 'ClashDisplay_700Bold',
-    fontSize: 18,
-    lineHeight: 23,
-    fontWeight: '700' as const,
+    fontFamily: 'SpaceGrotesk_600SemiBold',
+    fontSize: 15,
+    lineHeight: 21,
+    fontWeight: '600' as const,
   },
   title: {
-    fontFamily: 'ClashDisplay_600SemiBold',
-    fontSize: 16,
-    lineHeight: 21,
+    fontFamily: 'SpaceGrotesk_600SemiBold',
+    fontSize: 14,
+    lineHeight: 19,
     fontWeight: '600' as const,
   },
   subtitle: {
     fontFamily: 'SpaceGrotesk_500Medium',
-    fontSize: 14,
-    lineHeight: 19,
+    fontSize: 13,
+    lineHeight: 18,
     fontWeight: '500' as const,
   },
   body: {
-    fontFamily: 'SpaceGrotesk_400Regular',
+    fontFamily: 'Sora_400Regular',
     fontSize: 13,
-    lineHeight: 18,
+    lineHeight: 20,
     fontWeight: '400' as const,
   },
   label: {
-    fontFamily: 'SpaceGrotesk_600SemiBold',
+    fontFamily: 'SpaceGrotesk_500Medium',
     fontSize: 12,
     lineHeight: 16,
-    fontWeight: '600' as const,
+    fontWeight: '500' as const,
   },
   caption: {
-    fontFamily: 'Sora_500Medium',
-    fontSize: 10,
-    lineHeight: 14,
-    fontWeight: '500' as const,
+    fontFamily: 'Sora_400Regular',
+    fontSize: 11,
+    lineHeight: 15,
+    fontWeight: '400' as const,
   },
 };
 
 export const loadFonts = async () => {
   await Font.loadAsync({
-    // "Clash Display" channel uses a sharp geometric fallback while we wire real Clash files.
-    ClashDisplay_600SemiBold: Syne_600SemiBold,
-    ClashDisplay_700Bold: Syne_700Bold,
-    ClashDisplay_800ExtraBold: Syne_800ExtraBold,
+    // Keep Clash keys for compatibility, but map to readable production-safe families.
+    ClashDisplay_600SemiBold: SpaceGrotesk_600SemiBold,
+    ClashDisplay_700Bold: SpaceGrotesk_700Bold,
+    ClashDisplay_800ExtraBold: SpaceGrotesk_700Bold,
 
     SpaceGrotesk_400Regular,
     SpaceGrotesk_500Medium,
@@ -87,9 +82,9 @@ export const loadFonts = async () => {
 };
 
 export const fontWeights = {
-  light: 'SpaceGrotesk_400Regular',
-  regular: 'SpaceGrotesk_400Regular',
+  light: 'Sora_400Regular',
+  regular: 'Sora_400Regular',
   medium: 'SpaceGrotesk_500Medium',
-  semiBold: 'ClashDisplay_600SemiBold',
-  bold: 'ClashDisplay_700Bold',
+  semiBold: 'SpaceGrotesk_600SemiBold',
+  bold: 'SpaceGrotesk_700Bold',
 };

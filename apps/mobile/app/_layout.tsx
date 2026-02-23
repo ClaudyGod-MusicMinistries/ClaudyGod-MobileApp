@@ -1,7 +1,7 @@
 // app/_layout.tsx
 import { Stack } from 'expo-router';
 import '../global.css';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { useContext, useEffect, useRef } from 'react';
 import { View, StatusBar, Animated, Image, Text } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -13,14 +13,14 @@ import { FontProvider, FontContext } from '../context/FontContext';
 // Component to handle status bar and background color based on theme
 function ThemedLayout({ children }: { children: React.ReactNode }) {
   const colorScheme = useColorScheme();
-  const currentColors = colors[colorScheme];
+  const currentColors = colors[colorScheme] ?? colors.dark;
 
   return (
     <View style={{ flex: 1, backgroundColor: currentColors.background }}>
       <StatusBar 
-        translucent 
-        backgroundColor="transparent" 
-        barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} 
+        translucent={false}
+        backgroundColor={currentColors.background}
+        barStyle="light-content"
       />
       {children}
     </View>
@@ -29,10 +29,9 @@ function ThemedLayout({ children }: { children: React.ReactNode }) {
 
 // Loading component that also respects theme
 function LoadingScreen() {
-  const colorScheme = useColorScheme();
-  const currentColors = colors[colorScheme];
   const pulse = useRef(new Animated.Value(0.94)).current;
   const shimmer = useRef(new Animated.Value(0)).current;
+  const halo = useRef(new Animated.Value(0.9)).current;
 
   useEffect(() => {
     const pulseLoop = Animated.loop(
@@ -44,14 +43,22 @@ function LoadingScreen() {
     const shimmerLoop = Animated.loop(
       Animated.timing(shimmer, { toValue: 1, duration: 1600, useNativeDriver: true }),
     );
+    const haloLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(halo, { toValue: 1.08, duration: 1800, useNativeDriver: true }),
+        Animated.timing(halo, { toValue: 0.9, duration: 1800, useNativeDriver: true }),
+      ]),
+    );
 
     pulseLoop.start();
     shimmerLoop.start();
+    haloLoop.start();
     return () => {
       pulseLoop.stop();
       shimmerLoop.stop();
+      haloLoop.stop();
     };
-  }, [pulse, shimmer]);
+  }, [halo, pulse, shimmer]);
 
   const shimmerTranslate = shimmer.interpolate({
     inputRange: [0, 1],
@@ -59,83 +66,96 @@ function LoadingScreen() {
   });
 
   return (
-    <View
-      style={{
-        flex: 1,
-        backgroundColor: currentColors.background,
-        justifyContent: 'center',
-        alignItems: 'center',
-      }}
-    >
+    <View style={{ flex: 1, backgroundColor: '#06040D' }}>
+      <StatusBar translucent={false} backgroundColor="#06040D" barStyle="light-content" />
       <LinearGradient
-        colors={
-          colorScheme === 'dark'
-            ? ['rgba(76,29,149,0.24)', 'rgba(10,10,15,0)']
-            : ['rgba(124,58,237,0.14)', 'rgba(255,255,255,0)']
-        }
+        colors={['#06040D', '#150A2D', '#090512']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 340 }}
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
       />
-      <Animated.View
-        style={{
-          width: 96,
-          height: 96,
-          borderRadius: 30,
-          backgroundColor: colorScheme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(124,58,237,0.12)',
-          borderWidth: 1,
-          borderColor: colorScheme === 'dark' ? 'rgba(255,255,255,0.18)' : 'rgba(124,58,237,0.28)',
-          alignItems: 'center',
-          justifyContent: 'center',
-          transform: [{ scale: pulse }],
-        }}
-      >
-        <Image
-          source={require('../assets/images/ClaudyGoLogo.webp')}
-          style={{ width: 58, height: 58, borderRadius: 16 }}
-        />
-      </Animated.View>
-
-      <View
-        style={{
-          width: 120,
-          height: 6,
-          borderRadius: 999,
-          marginTop: 20,
-          backgroundColor: colorScheme === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(124,58,237,0.14)',
-          overflow: 'hidden',
-        }}
-      >
-        <Animated.View
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#06040D' }} edges={['top', 'bottom']}>
+        <View
           style={{
-            width: 64,
-            height: 6,
-            borderRadius: 999,
-            backgroundColor: currentColors.primary,
-            transform: [{ translateX: shimmerTranslate }],
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            paddingHorizontal: 24,
           }}
-        />
-      </View>
-      <Text
-        style={{
-          marginTop: 12,
-          color: currentColors.text.primary,
-          fontSize: 13,
-          fontWeight: '600',
-          letterSpacing: 0.2,
-        }}
-      >
-        Preparing ClaudyGod
-      </Text>
-      <Text
-        style={{
-          marginTop: 4,
-          color: currentColors.text.secondary,
-          fontSize: 11,
-        }}
-      >
-        Optimizing playback and interface...
-      </Text>
+        >
+          <Animated.View
+            style={{
+              position: 'absolute',
+              width: 250,
+              height: 250,
+              borderRadius: 250,
+              backgroundColor: 'rgba(154,107,255,0.2)',
+              transform: [{ scale: halo }],
+            }}
+          />
+          <Animated.View
+            style={{
+              width: 112,
+              height: 112,
+              borderRadius: 30,
+              backgroundColor: 'rgba(255,255,255,0.08)',
+              borderWidth: 1,
+              borderColor: 'rgba(255,255,255,0.2)',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transform: [{ scale: pulse }],
+            }}
+          >
+            <Image
+              source={require('../assets/images/ClaudyGoLogo.webp')}
+              style={{ width: 62, height: 62, borderRadius: 18 }}
+            />
+          </Animated.View>
+
+          <View
+            style={{
+              width: 138,
+              height: 6,
+              borderRadius: 999,
+              marginTop: 18,
+              backgroundColor: 'rgba(255,255,255,0.12)',
+              overflow: 'hidden',
+            }}
+          >
+            <Animated.View
+              style={{
+                width: 72,
+                height: 6,
+                borderRadius: 999,
+                backgroundColor: '#9A6BFF',
+                transform: [{ translateX: shimmerTranslate }],
+              }}
+            />
+          </View>
+
+          <Text
+            style={{
+              marginTop: 12,
+              color: '#F8F7FC',
+              fontSize: 13,
+              fontFamily: 'SpaceGrotesk_600SemiBold',
+              letterSpacing: 0.2,
+            }}
+          >
+            Preparing ClaudyGod
+          </Text>
+          <Text
+            style={{
+              marginTop: 4,
+              color: 'rgba(196,186,225,0.9)',
+              fontSize: 11,
+              fontFamily: 'Sora_400Regular',
+            }}
+          >
+            Loading music, videos and live channels...
+          </Text>
+        </View>
+      </SafeAreaView>
     </View>
   );
 }
@@ -153,10 +173,12 @@ function RootLayoutInner() {
         screenOptions={{
           headerShown: false,
           animation: 'fade',
+          contentStyle: { backgroundColor: '#06040D' },
         }}
       >
         <Stack.Screen name="index" options={{ gestureEnabled: false }} />
-        <Stack.Screen name="Welcome" />
+        <Stack.Screen name="sign-in" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="sign-up" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="profile" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
       </Stack>

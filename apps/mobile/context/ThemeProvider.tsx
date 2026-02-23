@@ -1,13 +1,12 @@
 // util/ThemeContext.tsx
-import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo } from 'react';
-import { useColorScheme as useRNColorScheme } from 'react-native';
+import React, { createContext, useContext, useState, ReactNode, useMemo } from 'react';
 import { ColorScheme } from '../constants/color';
 import { getTheme, AppTheme } from '../theme';
 
 interface ThemeContextType {
   colorScheme: ColorScheme;
   toggleColorScheme: () => void;
-  setColorScheme: (scheme: ColorScheme) => void;
+  setColorScheme: (_scheme: ColorScheme) => void;
   theme: AppTheme;
 }
 
@@ -18,15 +17,8 @@ interface ThemeProviderProps {
 }
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
-  const systemColorScheme = useRNColorScheme();
-  const [colorScheme, setColorScheme] = useState<ColorScheme>(systemColorScheme || 'dark');
-
-  // Update color scheme when system theme changes
-  useEffect(() => {
-    if (systemColorScheme) {
-      setColorScheme(systemColorScheme);
-    }
-  }, [systemColorScheme]);
+  // Force dark-first UI to prevent white flashes/loader backgrounds on devices in light mode.
+  const [colorScheme, setColorScheme] = useState<ColorScheme>('dark');
 
   const toggleColorScheme = () => {
     setColorScheme(prev => prev === 'light' ? 'dark' : 'light');
