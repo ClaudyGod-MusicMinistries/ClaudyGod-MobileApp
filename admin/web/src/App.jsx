@@ -89,11 +89,12 @@ export default defineComponent({
     const managedItems = ref([]);
 
     const publicFeedUrl = computed(() => `${API_URL}/v1/content?page=1&limit=20`);
+    const currentYear = new Date().getFullYear();
 
     const connectionMap = computed(() => [
-      { title: 'Admin (Vue JSX)', value: 'Creates and manages content records.' },
-      { title: 'API (Express/Postgres/Redis)', value: 'Stores metadata and dispatches content events.' },
-      { title: 'Mobile (React Native)', value: 'Reads published content from /v1/content.' },
+      { title: 'Admin Console', value: 'Create, review, and publish client content records.' },
+      { title: 'Content API', value: 'Validates, stores, and distributes content metadata.' },
+      { title: 'Mobile App', value: 'Loads the published feed and updates the user catalog.' },
     ]);
 
     const filteredItems = computed(() => {
@@ -320,7 +321,7 @@ export default defineComponent({
             <div>
               <p class="eyebrow">Claudy Content Admin</p>
               <h1>Enterprise Publishing Console</h1>
-              <p class="subtitle">Manage what appears in the React Native mobile app through a secure backend workflow.</p>
+              <p class="subtitle">Securely organize, publish, and control client content delivery through one backend-connected console.</p>
             </div>
 
             <div class="mode-toggle">
@@ -376,16 +377,16 @@ export default defineComponent({
 
           <header class="dashboard-header">
             <div>
-              <p class="eyebrow">Content Delivery Control</p>
-              <h1>Admin Publishing Hub</h1>
-              <p class="subtitle">Publish metadata to the backend API. The mobile app reads published items from the public feed endpoint.</p>
+              <p class="eyebrow">Content Operations</p>
+              <h1>Client Content Publishing</h1>
+              <p class="subtitle">Create, review, and publish content records that power the client mobile experience.</p>
             </div>
             <div class="header-actions">
               <button type="button" class="ghost-btn" onClick={() => void refreshDashboard()} disabled={contentLoading.value}>
                 {contentLoading.value ? 'Refreshing...' : 'Refresh'}
               </button>
               <button type="button" class="ghost-btn" onClick={() => void copyPublicFeed()}>
-                {copied.value === 'done' ? 'Feed URL Copied' : copied.value === 'failed' ? 'Copy Failed' : 'Copy Mobile Feed URL'}
+                {copied.value === 'done' ? 'Feed URL Copied' : copied.value === 'failed' ? 'Copy Failed' : 'Copy Feed Endpoint'}
               </button>
               <button type="button" class="danger-btn" onClick={logout}>Sign Out</button>
             </div>
@@ -405,7 +406,7 @@ export default defineComponent({
               <div class="section-head">
                 <div>
                   <h2>Create Content</h2>
-                  <p>Use CDN/storage URLs for media. Publishing triggers backend queue events.</p>
+                  <p>Use your CDN or storage link and publish content metadata to the delivery service.</p>
                 </div>
               </div>
 
@@ -442,9 +443,9 @@ export default defineComponent({
                 </label>
 
                 <div class="info-box">
-                  <strong>Mobile integration path</strong>
+                  <strong>Publishing workflow</strong>
                   <p>
-                    Admin creates/publishes content here -> API stores metadata + queues event -> React Native app reads published feed from{' '}
+                    Admin publishes content here -> API stores metadata and queues updates -> Client mobile app reads the published feed from{' '}
                     <code>{publicFeedUrl.value}</code>
                   </p>
                 </div>
@@ -456,10 +457,10 @@ export default defineComponent({
             <section class="panel glass-panel">
               <div class="section-head split">
                 <div>
-                  <h2>Managed Content</h2>
+                  <h2>Content Library</h2>
                   <p>Logged in as <strong>{currentUser.value ? currentUser.value.displayName : ''}</strong> ({currentUser.value ? currentUser.value.role : ''})</p>
                 </div>
-                <div class="feed-hint">Total in backend: {pagination.total}</div>
+                <div class="feed-hint">Backend total: {pagination.total}</div>
               </div>
 
               <div class="filter-grid">
@@ -517,9 +518,37 @@ export default defineComponent({
         </div>
       );
 
+      const shellContent = appLoading.value ? <div class="boot-state">Restoring session...</div> : currentUser.value ? dashboard : authScreen;
+
       return (
         <div class="app-root">
-          {appLoading.value ? <div class="boot-state">Restoring session...</div> : currentUser.value ? dashboard : authScreen}
+          <header class="site-header">
+            <div class="site-header-inner">
+              <div>
+                <p class="eyebrow">Claudy Content Platform</p>
+                <h2 class="site-title">Admin Operations Console</h2>
+              </div>
+              <div class="site-header-meta">
+                <span class="header-chip">Connected API</span>
+                <code>{API_URL}</code>
+              </div>
+            </div>
+          </header>
+
+          <div class="site-content">{shellContent}</div>
+
+          <footer class="site-footer">
+            <div class="site-footer-inner">
+              <div>
+                <strong>Claudy Admin</strong>
+                <p class="footer-text">Centralized content publishing and delivery management for client applications.</p>
+              </div>
+              <div class="footer-meta">
+                <span>Public feed: <code>/v1/content</code></span>
+                <span>{currentYear} Claudy Platform</span>
+              </div>
+            </div>
+          </footer>
         </div>
       );
     };
