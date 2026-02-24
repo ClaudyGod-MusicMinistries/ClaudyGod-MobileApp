@@ -7,7 +7,7 @@ import { useAppTheme } from '../../util/colorScheme';
 interface MediaRailProps<T> {
   title: string;
   data: T[];
-  renderItem: (item: T, index: number) => React.ReactNode;
+  renderItem: (_item: T, _index: number) => React.ReactNode;
   actionLabel?: string;
   onAction?: () => void;
 }

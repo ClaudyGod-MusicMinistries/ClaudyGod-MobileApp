@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 // services/pushNotificationService.ts - Alternative Type-Safe Version
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
@@ -117,7 +116,7 @@ export class PushNotificationService {
   }
 
   // Schedule local notification with proper typing
-  async scheduleLocalNotification(title: string, body: string, data?: Record<string, any>): Promise<string> {
+  async scheduleLocalNotification(title: string, body: string, data?: Record<string, unknown>): Promise<string> {
     try {
       const notificationContent: Notifications.NotificationContentInput = {
         title,
@@ -142,7 +141,7 @@ export class PushNotificationService {
     title: string, 
     body: string, 
     delayInSeconds: number, 
-    data?: Record<string, any>
+    data?: Record<string, unknown>
   ): Promise<string> {
     try {
       const notificationContent: Notifications.NotificationContentInput = {

@@ -8,12 +8,12 @@ import {
   Animated, 
   NativeScrollEvent, 
   NativeSyntheticEvent, 
-  ScrollView 
+  ScrollView,
+  useColorScheme,
 } from 'react-native';
 import { CustomText } from './CustomText';
 import { LinearGradient } from 'expo-linear-gradient';
 import { defaultSlides } from '../data/data';
-import { useColorScheme } from 'react-native';
 import { colors } from '../constants/color';
 
 // Remove fixed dimensions, use responsive ones
