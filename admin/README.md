@@ -1,13 +1,17 @@
 # Claudy Admin Portal
 
-A lightweight admin console + API for managing content and sending data to the mobile apps. Built as two services:
+Admin UI workspace (kept separate from mobile app code).
 
-- `api`: Express + TypeScript for content and notification endpoints
-- `web`: React + Vite + TypeScript admin UI that talks to the API
+Backend logic is now split into the root `services/` folder so you can keep admin UI and API as separate repos if needed:
+
+- `admin/` -> admin portal (web, compose, docs)
+- `services/api/` -> backend API + worker (Express + TypeScript)
+- `apps/mobile/` -> mobile app
 
 ## Quick start (Docker)
 
 ```bash
+cd admin
 docker-compose up --build
 ```
 
@@ -25,8 +29,8 @@ Services:
 ## Local (without Docker)
 
 ```bash
-cd api && npm install && npm run dev
-cd ../web && npm install && npm run dev -- --host
+cd ../services/api && npm install && npm run dev
+cd ../../admin/web && npm install && npm run dev -- --host
 ```
 
 ## Deploy
@@ -37,7 +41,6 @@ cd ../web && npm install && npm run dev -- --host
 ## Data flow
 
 - Admin UI posts JSON to `/v1/content` on the API
-- API stores in-memory (replace with DB later) and exposes GET `/v1/content`
-- Mobile app can consume these endpoints directly or via your existing backend gateway.
-
+- API stores data in Postgres and exposes `/v1/*` endpoints
+- Mobile app consumes these endpoints directly (or via your gateway)
 

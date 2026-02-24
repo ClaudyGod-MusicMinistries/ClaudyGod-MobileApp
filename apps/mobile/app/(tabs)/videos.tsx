@@ -184,7 +184,7 @@ export default function VideosScreen() {
                 Video Feed
               </CustomText>
               <CustomText variant="caption" style={{ color: 'rgba(194,185,220,0.9)', marginTop: 3 }}>
-                Larger cards on mobile for readability. Replays and YouTube uploads will populate here.
+                Larger cards for live streams and replays.
               </CustomText>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -6, marginTop: 10 }}>
                 {videos.length ? (
@@ -267,7 +267,7 @@ function VideosHeader({
                 Video Hub
               </CustomText>
               <CustomText variant="caption" style={{ color: 'rgba(176,167,202,0.9)', marginTop: 3 }} numberOfLines={1}>
-                Live streams • Replays • Messages • Worship videos
+                Live streams • Replays • Worship videos
               </CustomText>
             </View>
           </View>

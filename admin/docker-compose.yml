@@ -33,7 +33,7 @@ services:
     restart: unless-stopped
 
   api:
-    build: ./api
+    build: ../services/api
     ports:
       - "4000:4000"
     environment:
@@ -54,7 +54,7 @@ services:
     restart: unless-stopped
 
   worker:
-    build: ./api
+    build: ../services/api
     command: ["node", "dist/worker.js"]
     environment:
       - NODE_ENV=production

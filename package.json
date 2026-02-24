@@ -1,0 +1,15 @@
+{
+  "private": true,
+  "scripts": {
+    "lefthook": "node ./apps/mobile/node_modules/lefthook/bin/index.js",
+    "hooks:install": "yarn lefthook install",
+    "mobile:lint": "cd apps/mobile && yarn lint",
+    "mobile:typecheck": "cd apps/mobile && yarn typecheck",
+    "precommit:check": "bash ./scripts/precommit-mobile-staged.sh",
+    "prepush:check": "yarn mobile:typecheck && yarn mobile:lint"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/node": "^25.3.0"
+  }
+}
