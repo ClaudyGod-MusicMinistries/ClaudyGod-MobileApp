@@ -57,6 +57,9 @@ export default function HomeScreen() {
     wordSubtle: isDark ? 'rgba(176,167,202,0.9)' : 'rgba(108,99,134,0.92)',
     wordAccentBg: isDark ? 'rgba(154,107,255,0.14)' : 'rgba(109,40,217,0.08)',
     wordAccentBorder: isDark ? 'rgba(216,194,255,0.22)' : 'rgba(109,40,217,0.14)',
+    albumWrapBg: isDark ? 'rgba(12,9,20,0.72)' : theme.colors.surface,
+    albumWrapBorder: isDark ? 'rgba(255,255,255,0.08)' : theme.colors.border,
+    albumScrollTrack: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(20,16,33,0.06)',
   } as const;
   const { width } = useWindowDimensions();
   const isTV = Platform.isTV;
@@ -136,6 +139,7 @@ export default function HomeScreen() {
                   onChangeFilter={setActiveFilter}
                   onOpenVideos={() => router.push('/(tabs)/videos')}
                   onOpenProfile={() => router.push('/profile')}
+                  onOpenMenu={() => router.push('/(tabs)/Settings')}
                 />
               </View>
             </FadeIn>
@@ -306,15 +310,57 @@ export default function HomeScreen() {
 
           <FadeIn delay={240}>
             <SectionBlock title="Albums & Playlists" subtitle="Responsive grid for covers and themed collections">
-              <ResponsiveGrid columns={albumGridCols}>
-                {albumGrid.length ? (
-                  albumGrid.map((item) => (
-                    <GridTile key={item.id} item={item} onPress={() => onOpenItem(item, 'home_albums_grid')} />
-                  ))
-                ) : (
-                  <GridPlaceholder columns={albumGridCols} />
-                )}
-              </ResponsiveGrid>
+              <View
+                style={{
+                  borderRadius: 18,
+                  borderWidth: 1,
+                  borderColor: ui.albumWrapBorder,
+                  backgroundColor: ui.albumWrapBg,
+                  padding: 8,
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 4, paddingTop: 2, paddingBottom: 8 }}>
+                  <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
+                    Scroll inside this section
+                  </CustomText>
+                  <View
+                    style={{
+                      borderRadius: 999,
+                      borderWidth: 1,
+                      borderColor: ui.albumWrapBorder,
+                      backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : theme.colors.surfaceAlt,
+                      paddingHorizontal: 8,
+                      paddingVertical: 4,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <MaterialIcons name="more-horiz" size={16} color={theme.colors.text.secondary} />
+                    <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginLeft: 4 }}>
+                      Browse
+                    </CustomText>
+                  </View>
+                </View>
+                <ScrollView
+                  nestedScrollEnabled
+                  showsVerticalScrollIndicator
+                  bounces={false}
+                  overScrollMode="never"
+                  style={{ maxHeight: isTV ? 620 : isTablet ? 540 : 390 }}
+                  contentContainerStyle={{ paddingBottom: 2, paddingRight: 2 }}
+                  indicatorStyle={isDark ? 'white' : 'black'}
+                >
+                  <ResponsiveGrid columns={albumGridCols}>
+                    {albumGrid.length ? (
+                      albumGrid.map((item) => (
+                        <GridTile key={item.id} item={item} onPress={() => onOpenItem(item, 'home_albums_grid')} />
+                      ))
+                    ) : (
+                      <GridPlaceholder columns={albumGridCols} />
+                    )}
+                  </ResponsiveGrid>
+                </ScrollView>
+              </View>
             </SectionBlock>
           </FadeIn>
 
@@ -418,11 +464,13 @@ function HomeHeader({
   onChangeFilter,
   onOpenVideos,
   onOpenProfile,
+  onOpenMenu,
 }: {
   activeFilter: string;
   onChangeFilter: (_value: string) => void;
   onOpenVideos: () => void;
   onOpenProfile: () => void;
+  onOpenMenu: () => void;
 }) {
   const theme = useAppTheme();
   const isDark = theme.scheme === 'dark';
@@ -435,7 +483,7 @@ function HomeHeader({
     subtle: isDark ? 'rgba(176,167,202,0.9)' : 'rgba(108,99,134,0.9)',
     chipBg: isDark ? 'rgba(255,255,255,0.03)' : theme.colors.surface,
     chipBorder: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(20,16,33,0.08)',
-    chipActiveBg: isDark ? 'rgba(154,107,255,0.16)' : theme.colors.surfaceAlt,
+    chipActiveBg: isDark ? 'rgba(154,107,255,0.16)' : 'rgba(109,40,217,0.08)',
     chipActiveBorder: isDark ? 'rgba(216,194,255,0.34)' : 'rgba(109,40,217,0.16)',
     chipText: isDark ? '#CEC4E7' : '#5C5478',
     chipActiveText: isDark ? '#EFE3FF' : '#4C1D95',
@@ -484,13 +532,14 @@ function HomeHeader({
                 Streaming Home
               </CustomText>
               <CustomText variant="caption" style={{ color: ui.subtle, marginTop: 3 }} numberOfLines={1}>
-                Music • Videos • Live • Worship
+                Music • Videos • Live
               </CustomText>
             </View>
           </View>
           <View style={{ flexDirection: 'row', gap: 8 }}>
             <IconCircle icon="ondemand-video" onPress={onOpenVideos} />
             <IconCircle icon="person-outline" onPress={onOpenProfile} />
+            <IconCircle icon="more-horiz" onPress={onOpenMenu} />
           </View>
         </View>
       </View>

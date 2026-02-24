@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Image, ScrollView, Switch, View } from 'react-native';
+import { ScrollView, Switch, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -7,6 +7,7 @@ import { TabScreenWrapper } from './TextWrapper';
 import { useAppTheme, useColorSchemeToggle } from '../../util/colorScheme';
 import { CustomText } from '../../components/CustomText';
 import { Screen } from '../../components/layout/Screen';
+import { BrandedHeaderCard } from '../../components/layout/BrandedHeaderCard';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { FadeIn } from '../../components/ui/FadeIn';
 import { TVTouchable } from '../../components/ui/TVTouchable';
@@ -131,7 +132,7 @@ export default function Settings() {
                   onOpenHome={() => router.push('/(tabs)/home')}
                   onOpenProfile={() => router.push('/profile')}
                   quickLabels={quickLabels}
-                  ui={ui}
+                  onOpenMenu={() => router.push('/(tabs)/videos')}
                 />
               </View>
             </FadeIn>
@@ -230,7 +231,7 @@ export default function Settings() {
                             justifyContent: 'center',
                             backgroundColor: `${theme.colors.primary}16`,
                             borderWidth: 1,
-                            borderColor: 'rgba(255,255,255,0.06)',
+                            borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(20,16,33,0.06)',
                             marginRight: theme.spacing.md,
                           }}
                         >
@@ -275,139 +276,23 @@ function SettingsHeader({
   onOpenHome,
   onOpenProfile,
   quickLabels,
-  ui,
+  onOpenMenu,
 }: {
   onOpenHome: () => void;
   onOpenProfile: () => void;
   quickLabels: string[];
-  ui: {
-    headerCardBg: string;
-    headerCardBorder: string;
-    headerMuted: string;
-    headerSubtle: string;
-    iconButtonBg: string;
-    iconButtonBorder: string;
-    iconButtonText: string;
-    chipBg: string;
-    chipBorder: string;
-    chipText: string;
-  };
-}) {
-  const theme = useAppTheme();
-
-  return (
-    <View>
-      <View
-        style={{
-          borderRadius: 18,
-          borderWidth: 1,
-          borderColor: ui.headerCardBorder,
-          backgroundColor: ui.headerCardBg,
-          paddingHorizontal: 12,
-          paddingVertical: 12,
-        }}
-      >
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 10 }}>
-            <View
-              style={{
-                width: 42,
-                height: 42,
-                borderRadius: 14,
-                borderWidth: 1,
-                borderColor: ui.iconButtonBorder,
-                backgroundColor: ui.iconButtonBg,
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginRight: 10,
-              }}
-            >
-              <Image
-                source={require('../../assets/images/ClaudyGoLogo.webp')}
-                style={{ width: 30, height: 30, borderRadius: 15 }}
-              />
-            </View>
-            <View style={{ flex: 1 }}>
-              <CustomText variant="caption" style={{ color: ui.headerMuted }}>
-                ClaudyGod Ministries
-              </CustomText>
-              <CustomText
-                variant="display"
-                style={{ color: theme.colors.text.primary, marginTop: 2, fontSize: 17, lineHeight: 22 }}
-              >
-                Settings
-              </CustomText>
-              <CustomText variant="caption" style={{ color: ui.headerSubtle, marginTop: 3 }} numberOfLines={1}>
-                Account • Playback • Preferences • Support
-              </CustomText>
-            </View>
-          </View>
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            <HeaderIcon icon="home" onPress={onOpenHome} ui={ui} />
-            <HeaderIcon icon="person-outline" onPress={onOpenProfile} ui={ui} />
-          </View>
-        </View>
-      </View>
-
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        bounces={false}
-        overScrollMode="never"
-        contentContainerStyle={{ paddingTop: 12, paddingBottom: 2, paddingRight: 8 }}
-      >
-        {quickLabels.map((label) => (
-          <View
-            key={label}
-            style={{
-              marginRight: 8,
-              borderRadius: 999,
-              borderWidth: 1,
-              borderColor: ui.chipBorder,
-              backgroundColor: ui.chipBg,
-              paddingHorizontal: 12,
-              paddingVertical: 8,
-            }}
-          >
-            <CustomText variant="caption" style={{ color: ui.chipText }}>
-              {label}
-            </CustomText>
-          </View>
-        ))}
-      </ScrollView>
-    </View>
-  );
-}
-
-function HeaderIcon({
-  icon,
-  onPress,
-  ui,
-}: {
-  icon: React.ComponentProps<typeof MaterialIcons>['name'];
-  onPress: () => void;
-  ui: {
-    iconButtonBg: string;
-    iconButtonBorder: string;
-    iconButtonText: string;
-  };
+  onOpenMenu: () => void;
 }) {
   return (
-    <TVTouchable
-      onPress={onPress}
-      style={{
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        borderWidth: 1,
-        borderColor: ui.iconButtonBorder,
-        backgroundColor: ui.iconButtonBg,
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-      showFocusBorder={false}
-    >
-      <MaterialIcons name={icon} size={20} color={ui.iconButtonText} />
-    </TVTouchable>
+    <BrandedHeaderCard
+      title="Settings"
+      subtitle="Account • Playback • Preferences • Support"
+      actions={[
+        { icon: 'home', onPress: onOpenHome, accessibilityLabel: 'Open home' },
+        { icon: 'person-outline', onPress: onOpenProfile, accessibilityLabel: 'Open profile' },
+        { icon: 'more-horiz', onPress: onOpenMenu, accessibilityLabel: 'More options' },
+      ]}
+      chips={quickLabels.map((label) => ({ label }))}
+    />
   );
 }

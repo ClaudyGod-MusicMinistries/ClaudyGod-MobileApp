@@ -1,8 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Image, ScrollView, View, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { TabScreenWrapper } from './TextWrapper';
 import { Screen } from '../../components/layout/Screen';
+import { BrandedHeaderCard } from '../../components/layout/BrandedHeaderCard';
 import { FadeIn } from '../../components/ui/FadeIn';
 import { CustomText } from '../../components/CustomText';
 import { TVTouchable } from '../../components/ui/TVTouchable';
@@ -13,9 +15,30 @@ import { trackPlayEvent } from '../../services/supabaseAnalytics';
 
 export default function PlaySection() {
   const theme = useAppTheme();
+  const isDark = theme.scheme === 'dark';
+  const router = useRouter();
   const { width } = useWindowDimensions();
   const compact = width < 390;
   const { feed } = useContentFeed();
+  const ui = {
+    playerCardBg: isDark ? 'rgba(12,9,20,0.88)' : theme.colors.surface,
+    playerCardBorder: isDark ? 'rgba(255,255,255,0.08)' : theme.colors.border,
+    muted: isDark ? 'rgba(194,185,220,0.9)' : theme.colors.text.secondary,
+    subtle: isDark ? 'rgba(171,162,198,0.9)' : theme.colors.text.secondary,
+    progressTrack: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(20,16,33,0.12)',
+    playerBtnBorder: isDark ? 'rgba(255,255,255,0.22)' : 'rgba(20,16,33,0.08)',
+    lyricBtnBg: isDark ? 'rgba(255,255,255,0.04)' : theme.colors.surfaceAlt,
+    lyricBtnBorder: isDark ? 'rgba(255,255,255,0.12)' : theme.colors.border,
+    lyricBtnText: isDark ? '#EFE7FF' : theme.colors.text.primary,
+    panelBg: isDark ? 'rgba(12,9,20,0.86)' : theme.colors.surface,
+    panelBorder: isDark ? 'rgba(255,255,255,0.08)' : theme.colors.border,
+    lyricPanelBg: isDark ? 'rgba(255,255,255,0.03)' : theme.colors.surfaceAlt,
+    lyricPanelBorder: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(20,16,33,0.06)',
+    queueRowBorder: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(20,16,33,0.06)',
+    queueRowBg: isDark ? 'rgba(255,255,255,0.02)' : theme.colors.surface,
+    queueRowSelectedBorder: isDark ? 'rgba(154,107,255,0.18)' : 'rgba(109,40,217,0.16)',
+    queueRowSelectedBg: isDark ? 'rgba(154,107,255,0.09)' : 'rgba(109,40,217,0.06)',
+  } as const;
 
   const queue = useMemo(() => {
     const items = [...feed.music, ...feed.videos, ...feed.playlists].slice(0, 12);
@@ -65,36 +88,29 @@ export default function PlaySection() {
       >
         <Screen>
           <FadeIn>
+            <BrandedHeaderCard
+              title="Player"
+              subtitle="Now playing • Queue • Lyrics"
+              leadingAction={{ icon: 'arrow-back', onPress: () => router.back(), accessibilityLabel: 'Go back' }}
+              actions={[
+                { icon: 'home', onPress: () => router.push('/(tabs)/home'), accessibilityLabel: 'Open home' },
+                { icon: 'more-horiz', onPress: () => router.push('/(tabs)/Settings'), accessibilityLabel: 'More options' },
+              ]}
+            />
+          </FadeIn>
+
+          <FadeIn>
             <View
               style={{
+                marginTop: 12,
                 borderRadius: 26,
                 borderWidth: 1,
-                borderColor: 'rgba(255,255,255,0.08)',
-                backgroundColor: 'rgba(12,9,20,0.88)',
+                borderColor: ui.playerCardBorder,
+                backgroundColor: ui.playerCardBg,
                 padding: compact ? 14 : 16,
               }}
             >
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <TVTouchable
-                  onPress={() => undefined}
-                  style={iconButtonStyle}
-                  showFocusBorder={false}
-                >
-                  <MaterialIcons name="arrow-back" size={20} color="#F8F7FC" />
-                </TVTouchable>
-                <CustomText variant="caption" style={{ color: 'rgba(194,185,220,0.9)' }}>
-                  Now Playing
-                </CustomText>
-                <TVTouchable
-                  onPress={() => undefined}
-                  style={iconButtonStyle}
-                  showFocusBorder={false}
-                >
-                  <MaterialIcons name="more-horiz" size={20} color="#F8F7FC" />
-                </TVTouchable>
-              </View>
-
-              <View style={{ alignItems: 'center', marginTop: 14 }}>
+              <View style={{ alignItems: 'center' }}>
                 <Animated.View style={{ transform: [{ scale: pulse }] }}>
                   <Image
                     source={{ uri: active?.imageUrl ?? 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=900&q=80' }}
@@ -103,22 +119,22 @@ export default function PlaySection() {
                   />
                 </Animated.View>
 
-                <CustomText variant="heading" style={{ color: '#F8F7FC', marginTop: 14 }} numberOfLines={1}>
+                <CustomText variant="heading" style={{ color: theme.colors.text.primary, marginTop: 14 }} numberOfLines={1}>
                   {active?.title ?? 'No track loaded'}
                 </CustomText>
-                <CustomText variant="caption" style={{ color: 'rgba(194,185,220,0.9)', marginTop: 3 }} numberOfLines={1}>
+                <CustomText variant="caption" style={{ color: ui.muted, marginTop: 3 }} numberOfLines={1}>
                   {active?.subtitle ?? 'Connect content feed to queue tracks'}
                 </CustomText>
 
                 <View style={{ width: '100%', marginTop: 16 }}>
-                  <View style={{ height: 2, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.12)' }}>
+                  <View style={{ height: 2, borderRadius: 999, backgroundColor: ui.progressTrack }}>
                     <View style={{ width: `${Math.round(progress * 100)}%`, height: 2, borderRadius: 999, backgroundColor: theme.colors.primary }} />
                   </View>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 }}>
-                    <CustomText variant="caption" style={{ color: 'rgba(171,162,198,0.9)' }}>
+                    <CustomText variant="caption" style={{ color: ui.subtle }}>
                       1:24
                     </CustomText>
-                    <CustomText variant="caption" style={{ color: 'rgba(171,162,198,0.9)' }}>
+                    <CustomText variant="caption" style={{ color: ui.subtle }}>
                       {active?.duration || '--:--'}
                     </CustomText>
                   </View>
@@ -137,7 +153,7 @@ export default function PlaySection() {
                       justifyContent: 'center',
                       backgroundColor: theme.colors.primary,
                       borderWidth: 1,
-                      borderColor: 'rgba(255,255,255,0.22)',
+                      borderColor: ui.playerBtnBorder,
                     }}
                     showFocusBorder={false}
                   >
@@ -153,8 +169,8 @@ export default function PlaySection() {
                     marginTop: 14,
                     borderRadius: 999,
                     borderWidth: 1,
-                    borderColor: 'rgba(255,255,255,0.12)',
-                    backgroundColor: 'rgba(255,255,255,0.04)',
+                    borderColor: ui.lyricBtnBorder,
+                    backgroundColor: ui.lyricBtnBg,
                     paddingHorizontal: 12,
                     paddingVertical: 8,
                     flexDirection: 'row',
@@ -162,8 +178,8 @@ export default function PlaySection() {
                   }}
                   showFocusBorder={false}
                 >
-                  <MaterialIcons name={showLyrics ? 'lyrics' : 'subtitles'} size={16} color="#EFE7FF" />
-                  <CustomText variant="caption" style={{ color: '#EFE7FF', marginLeft: 6 }}>
+                  <MaterialIcons name={showLyrics ? 'lyrics' : 'subtitles'} size={16} color={isDark ? '#EFE7FF' : theme.colors.primary} />
+                  <CustomText variant="caption" style={{ color: ui.lyricBtnText, marginLeft: 6 }}>
                     {showLyrics ? 'Hide Lyrics' : 'Show Lyrics'}
                   </CustomText>
                 </TVTouchable>
@@ -177,22 +193,35 @@ export default function PlaySection() {
                 marginTop: 14,
                 borderRadius: 22,
                 borderWidth: 1,
-                borderColor: 'rgba(255,255,255,0.08)',
-                backgroundColor: 'rgba(12,9,20,0.86)',
+                borderColor: ui.panelBorder,
+                backgroundColor: ui.panelBg,
                 padding: 14,
               }}
             >
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                 <View>
-                  <CustomText variant="caption" style={{ color: 'rgba(194,185,220,0.9)' }}>
+                  <CustomText variant="caption" style={{ color: ui.muted }}>
                     {showLyrics ? 'LYRICS PANEL' : 'UP NEXT'}
                   </CustomText>
-                  <CustomText variant="heading" style={{ color: '#F8F7FC', marginTop: 3 }}>
+                  <CustomText variant="heading" style={{ color: theme.colors.text.primary, marginTop: 3 }}>
                     {showLyrics ? 'Worship Lyrics Preview' : 'Queue'}
                   </CustomText>
                 </View>
-                <TVTouchable onPress={() => setShowLyrics((v) => !v)} style={iconButtonStyle} showFocusBorder={false}>
-                  <MaterialIcons name={showLyrics ? 'queue-music' : 'article'} size={20} color="#F8F7FC" />
+                <TVTouchable
+                  onPress={() => setShowLyrics((v) => !v)}
+                  style={{
+                    width: 38,
+                    height: 38,
+                    borderRadius: 19,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : theme.colors.surfaceAlt,
+                    borderWidth: 1,
+                    borderColor: isDark ? 'rgba(255,255,255,0.1)' : theme.colors.border,
+                  }}
+                  showFocusBorder={false}
+                >
+                  <MaterialIcons name={showLyrics ? 'queue-music' : 'article'} size={20} color={theme.colors.text.primary} />
                 </TVTouchable>
               </View>
 
@@ -202,16 +231,16 @@ export default function PlaySection() {
                     marginTop: 12,
                     borderRadius: 16,
                     borderWidth: 1,
-                    borderColor: 'rgba(255,255,255,0.07)',
-                    backgroundColor: 'rgba(255,255,255,0.03)',
+                    borderColor: ui.lyricPanelBorder,
+                    backgroundColor: ui.lyricPanelBg,
                     padding: 12,
                     gap: 8,
                   }}
                 >
-                  <CustomText variant="body" style={{ color: '#F8F7FC' }}>
+                  <CustomText variant="body" style={{ color: theme.colors.text.primary }}>
                     Placeholder lyrics panel for the active track.
                   </CustomText>
-                  <CustomText variant="caption" style={{ color: 'rgba(194,185,220,0.9)' }}>
+                  <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
                     Connect lyrics provider or CMS field in your content pipeline to render synchronized lyrics here.
                   </CustomText>
                 </View>
@@ -227,8 +256,8 @@ export default function PlaySection() {
                           style={{
                             borderRadius: 14,
                             borderWidth: 1,
-                            borderColor: selected ? 'rgba(154,107,255,0.18)' : 'rgba(255,255,255,0.06)',
-                            backgroundColor: selected ? 'rgba(154,107,255,0.09)' : 'rgba(255,255,255,0.02)',
+                            borderColor: selected ? ui.queueRowSelectedBorder : ui.queueRowBorder,
+                            backgroundColor: selected ? ui.queueRowSelectedBg : ui.queueRowBg,
                             paddingHorizontal: 10,
                             paddingVertical: 8,
                             flexDirection: 'row',
@@ -236,27 +265,27 @@ export default function PlaySection() {
                           }}
                           showFocusBorder={false}
                         >
-                          <Image source={{ uri: item.imageUrl }} style={{ width: 42, height: 42, borderRadius: 12, marginRight: 10 }} resizeMode="cover" />
+                          <Image source={{ uri: item.imageUrl }} style={{ width: 42, height: 42, borderRadius: 12, marginRight: 10, backgroundColor: isDark ? '#140F20' : theme.colors.surfaceAlt }} resizeMode="cover" />
                           <View style={{ flex: 1 }}>
-                            <CustomText variant="label" style={{ color: '#F8F7FC' }} numberOfLines={1}>
+                            <CustomText variant="label" style={{ color: theme.colors.text.primary }} numberOfLines={1}>
                               {item.title}
                             </CustomText>
-                            <CustomText variant="caption" style={{ color: 'rgba(194,185,220,0.9)', marginTop: 2 }} numberOfLines={1}>
+                            <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 2 }} numberOfLines={1}>
                               {item.subtitle}
                             </CustomText>
                           </View>
-                          <CustomText variant="caption" style={{ color: selected ? '#E6DBFF' : 'rgba(171,162,198,0.9)' }}>
+                          <CustomText variant="caption" style={{ color: selected ? theme.colors.primary : theme.colors.text.secondary }}>
                             {item.duration || '--:--'}
                           </CustomText>
                         </TVTouchable>
                       );
                     })
                   ) : (
-                    <View style={{ borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)', backgroundColor: 'rgba(255,255,255,0.03)', padding: 12 }}>
-                      <CustomText variant="label" style={{ color: '#F8F7FC' }}>
+                    <View style={{ borderRadius: 14, borderWidth: 1, borderColor: ui.lyricPanelBorder, backgroundColor: ui.lyricPanelBg, padding: 12 }}>
+                      <CustomText variant="label" style={{ color: theme.colors.text.primary }}>
                         Queue empty
                       </CustomText>
-                      <CustomText variant="caption" style={{ color: 'rgba(194,185,220,0.9)', marginTop: 4 }}>
+                      <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 4 }}>
                         Publish audio or video content and it will appear here as a queue.
                       </CustomText>
                     </View>
@@ -272,6 +301,8 @@ export default function PlaySection() {
 }
 
 function Control({ icon, onPress }: { icon: React.ComponentProps<typeof MaterialIcons>['name']; onPress: () => void }) {
+  const theme = useAppTheme();
+  const isDark = theme.scheme === 'dark';
   return (
     <TVTouchable
       onPress={onPress}
@@ -281,24 +312,13 @@ function Control({ icon, onPress }: { icon: React.ComponentProps<typeof Material
         borderRadius: 21,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: 'rgba(255,255,255,0.04)',
+        backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : theme.colors.surfaceAlt,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.08)',
+        borderColor: isDark ? 'rgba(255,255,255,0.08)' : theme.colors.border,
       }}
       showFocusBorder={false}
     >
-      <MaterialIcons name={icon} size={19} color="#F8F7FC" />
+      <MaterialIcons name={icon} size={19} color={theme.colors.text.primary} />
     </TVTouchable>
   );
 }
-
-const iconButtonStyle = {
-  width: 38,
-  height: 38,
-  borderRadius: 19,
-  alignItems: 'center',
-  justifyContent: 'center',
-  backgroundColor: 'rgba(255,255,255,0.04)',
-  borderWidth: 1,
-  borderColor: 'rgba(255,255,255,0.1)',
-} as const;
