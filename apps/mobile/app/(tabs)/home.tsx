@@ -51,7 +51,6 @@ export default function HomeScreen() {
     stickyBg: isDark ? '#06040D' : theme.colors.background,
     stickyBorder: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(20,16,33,0.08)',
     stickyGlowStart: isDark ? 'rgba(154,107,255,0.06)' : 'rgba(109,40,217,0.08)',
-    infoIconBg: isDark ? 'rgba(154,107,255,0.16)' : 'rgba(109,40,217,0.12)',
     wordBg: isDark ? 'rgba(12,9,20,0.9)' : '#FFFFFF',
     wordBorder: isDark ? 'rgba(255,255,255,0.08)' : theme.colors.border,
     wordMuted: isDark ? 'rgba(194,185,220,0.9)' : 'rgba(96,87,124,0.9)',
@@ -60,7 +59,6 @@ export default function HomeScreen() {
     wordAccentBorder: isDark ? 'rgba(216,194,255,0.22)' : 'rgba(109,40,217,0.14)',
     albumWrapBg: isDark ? 'rgba(12,9,20,0.72)' : theme.colors.surface,
     albumWrapBorder: isDark ? 'rgba(255,255,255,0.08)' : theme.colors.border,
-    albumScrollTrack: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(20,16,33,0.06)',
   } as const;
   const { width } = useWindowDimensions();
   const isTV = Platform.isTV;
@@ -68,6 +66,7 @@ export default function HomeScreen() {
   const compact = width < 380;
   const railCardWidth = isTV ? 260 : isTablet ? 220 : compact ? 150 : 166;
   const albumGridCols = isTV ? 4 : isTablet ? 3 : 2;
+  const albumGridViewportHeight = isTV ? 620 : isTablet ? 500 : 430;
   const [activeFilter, setActiveFilter] = useState('For You');
 
   const { feed, loading, error, refresh } = useContentFeed();
@@ -276,7 +275,7 @@ export default function HomeScreen() {
                   <EmptyRailCard
                     width={Math.max(railCardWidth, 220)}
                     title="Ads slot ready"
-                    subtitle="Admin campaigns and sponsored cards will render here after backend sync."
+                    subtitle="Sponsored campaigns and partner promos will appear here."
                     icon="campaign"
                   />
                 )}
@@ -303,14 +302,14 @@ export default function HomeScreen() {
                     />
                   ))
                 ) : (
-                  <EmptyRailCard width={railCardWidth} title="No tracks yet" subtitle="Publish audio content in Admin to fill this rail." icon="music-note" />
+                  <EmptyRailCard width={railCardWidth} title="No tracks yet" subtitle="New audio releases will appear here." icon="music-note" />
                 )}
               </ScrollView>
             </SectionBlock>
           </FadeIn>
 
           <FadeIn delay={240}>
-            <SectionBlock title="Albums & Playlists" subtitle="Responsive grid for covers and themed collections">
+            <SectionBlock title="Albums & Playlists" subtitle="Compact 2x2 collection grid with internal scroll">
               <View
                 style={{
                   borderRadius: 18,
@@ -322,7 +321,7 @@ export default function HomeScreen() {
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 4, paddingTop: 2, paddingBottom: 8 }}>
                   <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
-                    Scroll inside this section
+                    2x2 scrollable collections
                   </CustomText>
                   <View
                     style={{
@@ -336,9 +335,9 @@ export default function HomeScreen() {
                       alignItems: 'center',
                     }}
                   >
-                    <MaterialIcons name="more-horiz" size={16} color={theme.colors.text.secondary} />
+                    <MaterialIcons name="more-vert" size={16} color={theme.colors.text.secondary} />
                     <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginLeft: 4 }}>
-                      Browse
+                      More
                     </CustomText>
                   </View>
                 </View>
@@ -347,7 +346,7 @@ export default function HomeScreen() {
                   showsVerticalScrollIndicator
                   bounces={false}
                   overScrollMode="never"
-                  style={{ maxHeight: isTV ? 620 : isTablet ? 540 : 390 }}
+                  style={{ height: albumGridViewportHeight }}
                   contentContainerStyle={{ paddingBottom: 2, paddingRight: 2 }}
                   indicatorStyle={isDark ? 'white' : 'black'}
                 >
@@ -399,7 +398,7 @@ export default function HomeScreen() {
                       <EmptyRailCard
                         width={railCardWidth}
                         title={section.title}
-                        subtitle="Section kept in place. Content will render from your YouTube sync / Admin publish pipeline."
+                        subtitle="New uploads and playlists will appear here."
                         icon={section.kind === 'audio' ? 'graphic-eq' : section.kind === 'message' ? 'menu-book' : 'play-circle-outline'}
                       />
                     )}
@@ -408,43 +407,6 @@ export default function HomeScreen() {
               </FadeIn>
             );
           })}
-
-          <FadeIn delay={620}>
-            <View
-              style={{
-                marginTop: theme.spacing.lg,
-                borderRadius: 16,
-                borderWidth: 1,
-                borderColor: theme.colors.border,
-                backgroundColor: theme.colors.surfaceAlt,
-                padding: 14,
-                flexDirection: 'row',
-                alignItems: 'center',
-              }}
-            >
-              <View
-                style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 14,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: ui.infoIconBg,
-                  marginRight: 12,
-                }}
-              >
-                <MaterialIcons name="equalizer" size={20} color={theme.colors.primary} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <CustomText variant="label" style={{ color: theme.colors.text.primary }}>
-                  Backend-ready architecture
-                </CustomText>
-                <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 3 }}>
-                  This home screen reads from `contentService` and `supabaseAnalytics` so you can replace demo fallbacks with real YouTube and Supabase data.
-                </CustomText>
-              </View>
-            </View>
-          </FadeIn>
 
           {error ? (
             <View style={{ marginTop: 12 }}>
@@ -479,7 +441,7 @@ function HomeHeader({
       actions={[
         { icon: 'ondemand-video', onPress: onOpenVideos, accessibilityLabel: 'Open videos' },
         { icon: 'person-outline', onPress: onOpenProfile, accessibilityLabel: 'Open profile' },
-        { icon: 'more-horiz', onPress: onOpenMenu, accessibilityLabel: 'More options' },
+        { icon: 'more-vert', onPress: onOpenMenu, accessibilityLabel: 'More options' },
       ]}
       chips={topRailChips.map((chip) => ({
         label: chip,
@@ -535,8 +497,8 @@ function HeroDropCard({
   const subtitle =
     item?.description ??
     (loading
-      ? 'Preparing your feed from content service.'
-      : 'Connect Admin + YouTube sync to populate the hero drop with latest video or worship stream.');
+      ? 'Preparing your feed...'
+      : 'Featured content will appear here as soon as new music, videos or live sessions are available.');
 
   return (
     <TVTouchable
@@ -912,9 +874,9 @@ function MiniAction({
 
 function ResponsiveGrid({ columns, children }: { columns: number; children: React.ReactNode }) {
   return (
-    <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -6, marginTop: 2 }}>
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -5, marginTop: 2 }}>
       {React.Children.map(children, (child) => (
-        <View style={{ width: `${100 / columns}%`, paddingHorizontal: 6, marginBottom: 14 }}>{child}</View>
+        <View style={{ width: `${100 / columns}%`, paddingHorizontal: 5, marginBottom: 10 }}>{child}</View>
       ))}
     </View>
   );
@@ -946,7 +908,7 @@ function GridTile({ item, onPress }: { item: FeedCardItem; onPress: () => void }
     <TVTouchable
       onPress={onPress}
       style={{
-        borderRadius: 18,
+        borderRadius: 16,
         overflow: 'hidden',
         borderWidth: 1,
         borderColor: ui.cardBorder,
@@ -954,10 +916,10 @@ function GridTile({ item, onPress }: { item: FeedCardItem; onPress: () => void }
       }}
       showFocusBorder={false}
     >
-      <View style={{ padding: 8 }}>
+      <View style={{ padding: 6 }}>
         <View
           style={{
-            borderRadius: 14,
+            borderRadius: 12,
             overflow: 'hidden',
             borderWidth: 1,
             borderColor: ui.imageBorder,
@@ -966,24 +928,24 @@ function GridTile({ item, onPress }: { item: FeedCardItem; onPress: () => void }
         >
           <Image
             source={{ uri: item.imageUrl }}
-            style={{ width: '100%', aspectRatio: 1.02, backgroundColor: ui.imageBg }}
+            style={{ width: '100%', aspectRatio: 1.16, backgroundColor: ui.imageBg }}
             resizeMode="cover"
           />
           <LinearGradient
             colors={ui.imageOverlay}
-            style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 64 }}
+            style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 56 }}
             pointerEvents="none"
           />
 
-          <View style={{ position: 'absolute', top: 10, left: 10, right: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <View style={{ position: 'absolute', top: 8, left: 8, right: 8, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <View
               style={{
                 borderRadius: 999,
                 borderWidth: 1,
                 borderColor: ui.badgeBorder,
                 backgroundColor: ui.badgeBg,
-                paddingHorizontal: 8,
-                paddingVertical: 4,
+                paddingHorizontal: 7,
+                paddingVertical: 3,
               }}
             >
               <CustomText variant="caption" style={{ color: ui.badgeText }}>
@@ -997,8 +959,8 @@ function GridTile({ item, onPress }: { item: FeedCardItem; onPress: () => void }
                   borderWidth: 1,
                   borderColor: ui.badgeBorder,
                   backgroundColor: ui.badgeBg,
-                  paddingHorizontal: 8,
-                  paddingVertical: 4,
+                  paddingHorizontal: 7,
+                  paddingVertical: 3,
                 }}
               >
                 <CustomText variant="caption" style={{ color: ui.subtleText }}>
@@ -1008,12 +970,12 @@ function GridTile({ item, onPress }: { item: FeedCardItem; onPress: () => void }
             ) : null}
           </View>
 
-          <View style={{ position: 'absolute', right: 10, bottom: 10 }}>
+          <View style={{ position: 'absolute', right: 8, bottom: 8 }}>
             <View
               style={{
-                width: 38,
-                height: 38,
-                borderRadius: 19,
+                width: 34,
+                height: 34,
+                borderRadius: 17,
                 borderWidth: 1,
                 borderColor: ui.playBtnBorder,
                 backgroundColor: ui.playBtnBg,
@@ -1021,21 +983,21 @@ function GridTile({ item, onPress }: { item: FeedCardItem; onPress: () => void }
                 justifyContent: 'center',
               }}
             >
-              <MaterialIcons name="play-arrow" size={20} color={ui.playBtnIcon} />
+              <MaterialIcons name="play-arrow" size={18} color={ui.playBtnIcon} />
             </View>
           </View>
         </View>
       </View>
 
-      <View style={{ paddingHorizontal: 12, paddingBottom: 12, paddingTop: 2 }}>
+      <View style={{ paddingHorizontal: 10, paddingBottom: 10, paddingTop: 0 }}>
         <CustomText variant="label" style={{ color: theme.colors.text.primary }} numberOfLines={1}>
           {item.title}
         </CustomText>
-        <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 3 }} numberOfLines={1}>
+        <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 2 }} numberOfLines={1}>
           {item.subtitle}
         </CustomText>
 
-        <View style={{ marginTop: 9, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <View style={{ marginTop: 7, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <View
             style={{
               flexDirection: 'row',
@@ -1044,22 +1006,22 @@ function GridTile({ item, onPress }: { item: FeedCardItem; onPress: () => void }
               borderWidth: 1,
               borderColor: ui.footerChipBorder,
               backgroundColor: ui.footerChipBg,
-              paddingHorizontal: 8,
-              paddingVertical: 5,
-              maxWidth: '78%',
+              paddingHorizontal: 7,
+              paddingVertical: 4,
+              maxWidth: '82%',
             }}
           >
             <MaterialIcons
               name={item.type === 'playlist' ? 'queue-music' : item.type === 'audio' ? 'graphic-eq' : 'library-music'}
-              size={14}
+              size={13}
               color={theme.colors.primary}
             />
             <CustomText variant="caption" style={{ color: ui.metaText, marginLeft: 5 }} numberOfLines={1}>
-              {item.type === 'playlist' ? 'Collection' : item.type === 'audio' ? 'Audio Drop' : 'Now Streaming'}
+              {item.type === 'playlist' ? 'Playlist' : item.type === 'audio' ? 'Audio' : 'Video'}
             </CustomText>
           </View>
 
-          <MaterialIcons name="chevron-right" size={18} color={ui.subtleText} />
+          <MaterialIcons name="chevron-right" size={16} color={ui.subtleText} />
         </View>
       </View>
     </TVTouchable>
@@ -1080,17 +1042,17 @@ function GridPlaceholder({ columns }: { columns: number }) {
             borderWidth: 1,
             borderColor: isDark ? 'rgba(255,255,255,0.06)' : theme.colors.border,
             backgroundColor: isDark ? 'rgba(12,9,20,0.78)' : theme.colors.surface,
-            padding: 8,
-            minHeight: 210,
+            padding: 6,
+            minHeight: 178,
           }}
         >
           <View
             style={{
-              borderRadius: 14,
+              borderRadius: 12,
               borderWidth: 1,
               borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(20,16,33,0.05)',
               backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : theme.colors.surfaceAlt,
-              aspectRatio: 1.02,
+              aspectRatio: 1.16,
               alignItems: 'center',
               justifyContent: 'center',
             }}
@@ -1267,7 +1229,7 @@ function deriveMinistryItems(feed: FeedBundle, kind: 'video' | 'audio' | 'messag
 function sectionSubtitle(kind: 'video' | 'audio' | 'message' | 'worship' | 'playlist') {
   switch (kind) {
     case 'audio':
-      return 'Audio rail (Supabase plays + download analytics ready)';
+      return 'Audio tracks, playlists and worship sessions';
     case 'message':
       return 'Messages, nuggets and announcements from channel uploads';
     case 'worship':
@@ -1276,7 +1238,7 @@ function sectionSubtitle(kind: 'video' | 'audio' | 'message' | 'worship' | 'play
       return 'Curated playlist architecture for long-form listening';
     case 'video':
     default:
-      return 'Video-first cards ready for YouTube channel sync';
+      return 'Video drops, replays and featured uploads';
   }
 }
 

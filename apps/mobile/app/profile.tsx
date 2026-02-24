@@ -109,7 +109,7 @@ export default function Profile() {
                 }}
               >
                 <CustomText variant="caption" style={{ color: isDark ? '#EDE3FF' : '#4C1D95' }}>
-                  Supabase profile + analytics ready
+                  Profile insights and activity
                 </CustomText>
               </View>
             </View>
@@ -220,7 +220,7 @@ export default function Profile() {
             leftIcon={<MaterialIcons name="logout" size={18} color={isDark ? '#FCA5A5' : '#B91C1C'} />}
           />
           <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 8 }}>
-            Profile updates are ready for Supabase tables and storage-backed avatars.
+            Save your details to keep your profile and preferences up to date.
           </CustomText>
         </View>
       </FadeIn>

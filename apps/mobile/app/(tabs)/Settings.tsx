@@ -127,7 +127,7 @@ export default function Settings() {
           />
           <Screen>
             <FadeIn>
-              <View style={{ paddingTop: theme.spacing.md, paddingBottom: 12 }}>
+              <View style={{ paddingTop: theme.spacing.lg, paddingBottom: 10 }}>
                 <SettingsHeader
                   onOpenHome={() => router.push('/(tabs)/home')}
                   quickLabels={quickLabels}
@@ -151,10 +151,10 @@ export default function Settings() {
                 }}
               >
                 <CustomText variant="caption" style={{ color: ui.headerMuted }}>
-                  Control Center
+                  Quick Settings
                 </CustomText>
                 <CustomText variant="caption" style={{ color: ui.headerSubtle, marginTop: 4 }}>
-                  Manage account, playback and notifications with one consistent setup.
+                  Manage account, playback and notifications in one place.
                 </CustomText>
 
                 <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
@@ -283,10 +283,9 @@ function SettingsHeader({
   return (
     <BrandedHeaderCard
       title="Settings"
-      subtitle="Account • Playback • Preferences • Support"
       actions={[
         { icon: 'home', onPress: onOpenHome, accessibilityLabel: 'Open home' },
-        { icon: 'more-horiz', onPress: onOpenMenu, accessibilityLabel: 'More options' },
+        { icon: 'more-vert', onPress: onOpenMenu, accessibilityLabel: 'More options' },
       ]}
       chips={quickLabels.map((label) => ({ label }))}
     />

@@ -94,7 +94,7 @@ export default function PlaySection() {
               leadingAction={{ icon: 'arrow-back', onPress: () => router.back(), accessibilityLabel: 'Go back' }}
               actions={[
                 { icon: 'home', onPress: () => router.push('/(tabs)/home'), accessibilityLabel: 'Open home' },
-                { icon: 'more-horiz', onPress: () => router.push('/(tabs)/Settings'), accessibilityLabel: 'More options' },
+                { icon: 'more-vert', onPress: () => router.push('/(tabs)/Settings'), accessibilityLabel: 'More options' },
               ]}
             />
           </FadeIn>
