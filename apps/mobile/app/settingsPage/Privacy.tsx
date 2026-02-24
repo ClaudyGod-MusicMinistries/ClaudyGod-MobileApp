@@ -7,33 +7,32 @@ import { useAppTheme } from '../../util/colorScheme';
 import { spacing } from '../../styles/designTokens';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { FadeIn } from '../../components/ui/FadeIn';
-import { AppButton } from '../../components/ui/AppButton';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 
 const dataPolicies = [
   {
     icon: 'person-outline',
-    title: 'Account profile',
-    description: 'Name and email for authentication, support, and account recovery.',
-    retention: 'Until account deletion',
+    title: 'Profile details',
+    description: 'Manage your name and email used for sign-in, support, and account recovery.',
+    retention: 'Editable',
   },
   {
     icon: 'history',
     title: 'Playback history',
-    description: 'Resume playback, most-played analytics, and personalized rails.',
-    retention: 'User-controlled',
+    description: 'Reset watch and listening history to refresh recommendations when needed.',
+    retention: 'Reset anytime',
   },
   {
     icon: 'download',
-    title: 'Offline metadata',
-    description: 'Local download indexes and sync state across signed-in devices.',
-    retention: 'While downloads exist',
+    title: 'Offline downloads',
+    description: 'Control downloaded media and remove saved items from this device.',
+    retention: 'Device only',
   },
   {
     icon: 'bug-report',
     title: 'Diagnostics',
-    description: 'Crash and performance telemetry to improve app stability.',
-    retention: 'Rolling window',
+    description: 'Optional app diagnostics help improve playback and reliability.',
+    retention: 'Optional',
   },
 ] as const;
 
@@ -48,21 +47,12 @@ export default function Privacy() {
   const theme = useAppTheme();
   const isDark = theme.scheme === 'dark';
   const { width } = useWindowDimensions();
-  const compact = width < 390;
 
   const ui = {
     heroBg: isDark ? 'rgba(12,9,20,0.9)' : theme.colors.surface,
     heroBorder: isDark ? 'rgba(255,255,255,0.08)' : theme.colors.border,
-    heroSoft: isDark ? 'rgba(255,255,255,0.03)' : theme.colors.surfaceAlt,
-    heroSoftBorder: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(20,16,33,0.06)',
     iconBadgeBg: isDark ? 'rgba(154,107,255,0.14)' : 'rgba(109,40,217,0.08)',
     iconBadgeBorder: isDark ? 'rgba(216,194,255,0.24)' : 'rgba(109,40,217,0.14)',
-    successBg: isDark ? 'rgba(34,197,94,0.12)' : 'rgba(22,163,74,0.08)',
-    successBorder: isDark ? 'rgba(134,239,172,0.2)' : 'rgba(22,163,74,0.14)',
-    successText: isDark ? '#BBF7D0' : '#166534',
-    warningBg: isDark ? 'rgba(251,191,36,0.12)' : 'rgba(245,158,11,0.08)',
-    warningBorder: isDark ? 'rgba(253,224,71,0.18)' : 'rgba(245,158,11,0.14)',
-    warningText: isDark ? '#FDE68A' : '#92400E',
     rowSoft: isDark ? 'rgba(255,255,255,0.02)' : theme.colors.surfaceAlt,
     rowSoftBorder: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(20,16,33,0.06)',
   } as const;
@@ -108,13 +98,40 @@ export default function Privacy() {
     emphasis: 'neutral' | 'primary' | 'danger';
   }[];
 
+  const quickActions = [
+    {
+      icon: 'password' as const,
+      label: 'Password',
+      onPress: () => handlePlaceholder('Password & Sign-in'),
+      tone: 'neutral' as const,
+    },
+    {
+      icon: 'download' as const,
+      label: 'Export',
+      onPress: () => handlePlaceholder('Export Data'),
+      tone: 'primary' as const,
+    },
+    {
+      icon: 'email' as const,
+      label: 'Contact',
+      onPress: () => void Linking.openURL('mailto:privacy@claudygodmusic.com'),
+      tone: 'neutral' as const,
+    },
+    {
+      icon: 'delete-outline' as const,
+      label: 'Delete',
+      onPress: () => handlePlaceholder('Delete account'),
+      tone: 'danger' as const,
+    },
+  ];
+
   return (
     <SettingsScaffold
       title="Privacy & Security"
       subtitle="Controls, policy clarity, and account protection"
       hero={
         <FadeIn>
-          <SurfaceCard style={{ padding: spacing.lg, marginBottom: spacing.lg }}>
+          <SurfaceCard style={{ padding: spacing.md, marginBottom: spacing.lg }}>
             <View
               style={{
                 borderRadius: 16,
@@ -127,9 +144,9 @@ export default function Privacy() {
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <View
                   style={{
-                    width: 46,
-                    height: 46,
-                    borderRadius: 14,
+                    width: 42,
+                    height: 42,
+                    borderRadius: 12,
                     alignItems: 'center',
                     justifyContent: 'center',
                     backgroundColor: ui.iconBadgeBg,
@@ -138,62 +155,24 @@ export default function Privacy() {
                     marginRight: 10,
                   }}
                 >
-                  <MaterialIcons name="shield" size={22} color={theme.colors.primary} />
+                  <MaterialIcons name="shield" size={20} color={theme.colors.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <CustomText variant="heading" style={{ color: theme.colors.text.primary }}>
-                    Trust Center
+                  <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
+                    Privacy Controls
                   </CustomText>
-                  <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 4 }}>
-                    Enterprise-style privacy controls with clear user actions and transparent processing.
+                  <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 3 }}>
+                    Manage sign-in, exports, support, and account actions.
                   </CustomText>
                 </View>
               </View>
 
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
-                <StatusPill
-                  icon="lock-outline"
-                  label="Encrypted"
-                  tone="success"
-                  ui={ui}
-                />
-                <StatusPill
-                  icon="verified-user"
-                  label="Account Controls"
-                  tone="success"
-                  ui={ui}
-                />
-                <StatusPill
-                  icon="policy"
-                  label="Data Requests"
-                  tone="warning"
-                  ui={ui}
-                />
-              </View>
-
-              <View style={{ marginTop: 14, gap: 8 }}>
-                <View style={{ flexDirection: compact ? 'column' : 'row', gap: 8 }}>
-                  <AppButton
-                    title="Export Data"
-                    variant="outline"
-                    fullWidth
-                    onPress={() => handlePlaceholder('Export Data')}
-                    leftIcon={<MaterialIcons name="download" size={16} color={theme.colors.primary} />}
-                  />
-                  <AppButton
-                    title="Privacy Email"
-                    variant="ghost"
-                    fullWidth
-                    onPress={() => void Linking.openURL('mailto:privacy@claudygodmusic.com')}
-                    style={{
-                      borderWidth: 1,
-                      borderColor: ui.heroSoftBorder,
-                      backgroundColor: ui.heroSoft,
-                    }}
-                    textColor={theme.colors.text.primary}
-                    leftIcon={<MaterialIcons name="email" size={16} color={theme.colors.primary} />}
-                  />
-                </View>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -4, marginTop: 10 }}>
+                {quickActions.map((item) => (
+                  <View key={item.label} style={{ width: width >= 768 ? '25%' : '50%', paddingHorizontal: 4, marginBottom: 8 }}>
+                    <QuickActionTile icon={item.icon} label={item.label} onPress={item.onPress} tone={item.tone} />
+                  </View>
+                ))}
               </View>
             </View>
           </SurfaceCard>
@@ -202,8 +181,8 @@ export default function Privacy() {
     >
       <FadeIn delay={80}>
         <SectionCard
-          title="Security Controls"
-          subtitle="Fast actions for access, export, recommendation reset, and deletion requests."
+          title="Security & Account"
+          subtitle="Manage sign-in access, exports, recommendations, and deletion requests."
         >
           <View style={{ gap: 8 }}>
             {securityActions.map((item) => (
@@ -222,8 +201,8 @@ export default function Privacy() {
 
       <FadeIn delay={130}>
         <SectionCard
-          title="Data We Process"
-          subtitle="What is collected, why it is used, and how long it is generally retained."
+          title="Privacy Preferences"
+          subtitle="Review and manage the areas of your account and activity you can control."
           style={{ marginTop: spacing.sm }}
         >
           <View style={{ gap: 8 }}>
@@ -243,8 +222,8 @@ export default function Privacy() {
 
       <FadeIn delay={180}>
         <SectionCard
-          title="Privacy Principles"
-          subtitle="Simple commitments we follow when handling user data."
+          title="Privacy Commitments"
+          subtitle="Simple commitments for security, privacy, and user choice."
           style={{ marginTop: spacing.sm }}
         >
           <View style={{ gap: 8 }}>
@@ -295,10 +274,10 @@ export default function Privacy() {
               </View>
               <View style={{ flex: 1 }}>
                 <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
-                  Privacy Support
+                  Contact Privacy Support
                 </CustomText>
                 <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 4 }}>
-                  Email `privacy@claudygodmusic.com` for exports, corrections, or account deletion requests.
+                  Email `privacy@claudygodmusic.com` for help with exports, corrections, or account requests.
                 </CustomText>
               </View>
               <MaterialIcons name="chevron-right" size={18} color={theme.colors.text.secondary} />
@@ -474,45 +453,72 @@ function DataPolicyRow({
   );
 }
 
-function StatusPill({
+function QuickActionTile({
   icon,
   label,
+  onPress,
   tone,
-  ui,
 }: {
   icon: React.ComponentProps<typeof MaterialIcons>['name'];
   label: string;
-  tone: 'success' | 'warning';
-  ui: {
-    successBg: string;
-    successBorder: string;
-    successText: string;
-    warningBg: string;
-    warningBorder: string;
-    warningText: string;
-  };
+  onPress: () => void;
+  tone: 'neutral' | 'primary' | 'danger';
 }) {
-  const palette = tone === 'success'
-    ? { bg: ui.successBg, border: ui.successBorder, text: ui.successText }
-    : { bg: ui.warningBg, border: ui.warningBorder, text: ui.warningText };
+  const theme = useAppTheme();
+  const isDark = theme.scheme === 'dark';
+  const palette =
+    tone === 'danger'
+      ? {
+          bg: isDark ? 'rgba(248,113,113,0.08)' : 'rgba(220,38,38,0.05)',
+          border: isDark ? 'rgba(248,113,113,0.18)' : 'rgba(220,38,38,0.1)',
+          icon: isDark ? '#FCA5A5' : '#B91C1C',
+          text: isDark ? '#FDE2E2' : '#991B1B',
+        }
+      : tone === 'primary'
+      ? {
+          bg: isDark ? 'rgba(154,107,255,0.12)' : 'rgba(109,40,217,0.06)',
+          border: isDark ? 'rgba(216,194,255,0.16)' : 'rgba(109,40,217,0.1)',
+          icon: isDark ? '#EDE3FF' : theme.colors.primary,
+          text: isDark ? '#F3ECFF' : '#4C1D95',
+        }
+      : {
+          bg: isDark ? 'rgba(255,255,255,0.02)' : theme.colors.surfaceAlt,
+          border: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(20,16,33,0.06)',
+          icon: theme.colors.primary,
+          text: theme.colors.text.primary,
+        };
 
   return (
-    <View
+    <TVTouchable
+      onPress={onPress}
+      showFocusBorder={false}
       style={{
-        borderRadius: 999,
+        minHeight: 72,
+        borderRadius: 12,
         borderWidth: 1,
         borderColor: palette.border,
         backgroundColor: palette.bg,
         paddingHorizontal: 10,
-        paddingVertical: 6,
-        flexDirection: 'row',
-        alignItems: 'center',
+        paddingVertical: 9,
       }}
     >
-      <MaterialIcons name={icon} size={14} color={palette.text} />
-      <CustomText variant="caption" style={{ color: palette.text, marginLeft: 6 }}>
+      <View
+        style={{
+          width: 30,
+          height: 30,
+          borderRadius: 9,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.7)',
+          borderWidth: 1,
+          borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(20,16,33,0.04)',
+        }}
+      >
+        <MaterialIcons name={icon} size={16} color={palette.icon} />
+      </View>
+      <CustomText variant="caption" style={{ color: palette.text, marginTop: 8 }}>
         {label}
       </CustomText>
-    </View>
+    </TVTouchable>
   );
 }
