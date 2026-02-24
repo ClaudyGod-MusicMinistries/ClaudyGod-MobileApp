@@ -34,7 +34,7 @@ export function BrandedHeaderCard({
   actions = [],
   leadingAction,
   chips,
-  showEyebrow = true,
+  showEyebrow = false,
 }: BrandedHeaderCardProps) {
   const theme = useAppTheme();
   const isDark = theme.scheme === 'dark';
@@ -65,9 +65,9 @@ export function BrandedHeaderCard({
       accessibilityLabel={action.accessibilityLabel}
       onPress={action.onPress}
       style={{
-        width: 36,
-        height: 36,
-        borderRadius: 18,
+        width: 34,
+        height: 34,
+        borderRadius: 17,
         borderWidth: 1,
         borderColor: ui.iconBorder,
         backgroundColor: ui.iconBg,
@@ -76,7 +76,7 @@ export function BrandedHeaderCard({
       }}
       showFocusBorder={false}
     >
-      <MaterialIcons name={action.icon} size={20} color={ui.iconColor} />
+      <MaterialIcons name={action.icon} size={18} color={ui.iconColor} />
     </TVTouchable>
   );
 
@@ -84,12 +84,12 @@ export function BrandedHeaderCard({
     <View>
       <View
         style={{
-          borderRadius: 16,
+          borderRadius: 14,
           borderWidth: 1,
           borderColor: ui.cardBorder,
           backgroundColor: ui.cardBg,
           paddingHorizontal: 10,
-          paddingVertical: 10,
+          paddingVertical: 11,
           shadowColor: ui.cardShadow,
           shadowOpacity: isDark ? 0 : 1,
           shadowRadius: 12,
@@ -97,14 +97,14 @@ export function BrandedHeaderCard({
         }}
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 8 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 8, minHeight: 38 }}>
             {leadingAction ? <View style={{ marginRight: 6 }}>{renderAction(leadingAction)}</View> : null}
 
             <View
               style={{
-                width: 36,
-                height: 36,
-                borderRadius: 12,
+                width: 34,
+                height: 34,
+                borderRadius: 11,
                 borderWidth: 1,
                 borderColor: ui.logoBorder,
                 backgroundColor: ui.logoBg,
@@ -113,7 +113,7 @@ export function BrandedHeaderCard({
                 marginRight: 8,
               }}
             >
-              <Image source={require('../../assets/images/ClaudyGoLogo.webp')} style={{ width: 24, height: 24, borderRadius: 12 }} />
+              <Image source={require('../../assets/images/ClaudyGoLogo.webp')} style={{ width: 20, height: 20, borderRadius: 10 }} />
             </View>
 
             <View style={{ flex: 1 }}>
@@ -127,21 +127,22 @@ export function BrandedHeaderCard({
                 style={{
                   color: theme.colors.text.primary,
                   marginTop: showEyebrow ? 1 : 0,
-                  fontSize: 16,
-                  lineHeight: 20,
+                  fontSize: 15,
+                  lineHeight: 19,
                 }}
+                numberOfLines={1}
               >
                 {title}
               </CustomText>
               {subtitle ? (
-                <CustomText variant="caption" style={{ color: ui.subtle, marginTop: 2 }} numberOfLines={1}>
+                <CustomText variant="caption" style={{ color: ui.subtle, marginTop: 2, fontSize: 11 }} numberOfLines={1}>
                   {subtitle}
                 </CustomText>
               ) : null}
             </View>
           </View>
 
-          {actions.length ? <View style={{ flexDirection: 'row', gap: 6 }}>{actions.map(renderAction)}</View> : null}
+          {actions.length ? <View style={{ flexDirection: 'row', gap: 5, marginLeft: 2 }}>{actions.map(renderAction)}</View> : null}
         </View>
       </View>
 
@@ -151,7 +152,7 @@ export function BrandedHeaderCard({
           showsHorizontalScrollIndicator={false}
           bounces={false}
           overScrollMode="never"
-          contentContainerStyle={{ paddingTop: 8, paddingBottom: 1, paddingRight: 8 }}
+          contentContainerStyle={{ paddingTop: 10, paddingBottom: 2, paddingRight: 8 }}
         >
           {chips.map((chip) => {
             const active = Boolean(chip.active);
@@ -172,8 +173,8 @@ export function BrandedHeaderCard({
                     borderWidth: 1,
                     borderColor: active ? ui.chipActiveBorder : ui.chipBorder,
                     backgroundColor: active ? ui.chipActiveBg : ui.chipBg,
-                    paddingHorizontal: 11,
-                    paddingVertical: 7,
+                    paddingHorizontal: 10,
+                    paddingVertical: 6,
                   }}
                   showFocusBorder={false}
                 >
@@ -191,8 +192,8 @@ export function BrandedHeaderCard({
                   borderWidth: 1,
                   borderColor: active ? ui.chipActiveBorder : ui.chipBorder,
                   backgroundColor: active ? ui.chipActiveBg : ui.chipBg,
-                  paddingHorizontal: 11,
-                  paddingVertical: 7,
+                  paddingHorizontal: 10,
+                  paddingVertical: 6,
                 }}
               >
                 {chipContent}

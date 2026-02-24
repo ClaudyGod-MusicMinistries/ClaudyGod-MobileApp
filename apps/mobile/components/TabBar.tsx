@@ -20,7 +20,7 @@ const TAB_CONFIG: Record<string, TabConfig> = {
   videos: { icon: 'ondemand-video', label: 'Videos' },
   PlaySection: { icon: 'music-note', label: 'Player', isCenter: true },
   Favourites: { icon: 'favorite-border', label: 'Library' },
-  Settings: { icon: 'person-outline', label: 'Account' },
+  Settings: { icon: 'person-outline', label: 'Me' },
 };
 
 const TabBar = ({ state, navigation }: BottomTabBarProps) => {
@@ -34,11 +34,11 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
   const isTablet = width >= 768 && !isTV;
 
   const sizes = {
-    barHeight: isTV ? 98 : compact ? 82 : 88,
-    buttonSize: isTV ? 56 : compact ? 46 : 48,
+    barHeight: isTV ? 92 : compact ? 76 : 82,
+    buttonSize: isTV ? 52 : compact ? 42 : 44,
     iconSize: isTV ? 25 : 21,
-    centerSize: isTV ? 68 : compact ? 56 : 60,
-    paddingX: isTV ? 20 : isTablet ? 16 : 10,
+    centerSize: isTV ? 62 : compact ? 50 : 54,
+    paddingX: isTV ? 18 : isTablet ? 14 : 8,
     labelSize: compact ? 9 : 10,
   };
 
@@ -49,18 +49,18 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
   const currentRouteKey = state.routes[state.index]?.key;
 
   const maxWidth = isTV ? 1240 : isTablet ? 900 : width;
-  const bottomInset = isTV ? 18 : Math.max(insets.bottom, 8);
+  const bottomInset = isTV ? 16 : Math.max(insets.bottom, 6);
   const barHeightWithInset = sizes.barHeight + bottomInset;
   const ui = {
-    shellBg: isDark ? '#0E0D15' : palette.background,
-    barBg: isDark ? '#0E0D15' : palette.surface,
-    barBorder: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(20,16,33,0.08)',
-    topLine: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(20,16,33,0.08)',
-    glow: isDark ? 'rgba(154,107,255,0.08)' : 'rgba(109,40,217,0.06)',
-    activeTabBg: isDark ? 'rgba(154,107,255,0.14)' : 'rgba(109,40,217,0.09)',
-    activeTabBorder: isDark ? 'rgba(216,194,255,0.16)' : 'rgba(109,40,217,0.14)',
-    centerBorder: isDark ? 'rgba(255,255,255,0.22)' : 'rgba(20,16,33,0.08)',
-    halo: isDark ? 'rgba(154,107,255,0.12)' : 'rgba(109,40,217,0.1)',
+    shellBg: isDark ? '#09080F' : palette.background,
+    barBg: isDark ? '#0B0A12' : palette.surface,
+    barBorder: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(20,16,33,0.08)',
+    topLine: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(20,16,33,0.05)',
+    glow: isDark ? 'rgba(154,107,255,0.04)' : 'rgba(109,40,217,0.03)',
+    activeTabBg: isDark ? 'rgba(154,107,255,0.1)' : 'rgba(109,40,217,0.06)',
+    activeTabBorder: isDark ? 'rgba(216,194,255,0.12)' : 'rgba(109,40,217,0.1)',
+    centerBorder: isDark ? 'rgba(255,255,255,0.14)' : 'rgba(20,16,33,0.08)',
+    halo: isDark ? 'rgba(154,107,255,0.07)' : 'rgba(109,40,217,0.06)',
     activeLabel: isDark ? '#F2E8FF' : palette.text.primary,
   } as const;
 
@@ -108,6 +108,11 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
             borderTopLeftRadius: isTablet || isTV ? 20 : 0,
             borderTopRightRadius: isTablet || isTV ? 20 : 0,
             overflow: 'hidden',
+            shadowColor: isDark ? '#000000' : '#171228',
+            shadowOpacity: isDark ? 0.22 : 0.08,
+            shadowRadius: 10,
+            shadowOffset: { width: 0, height: -3 },
+            elevation: isDark ? 6 : 3,
           }}
         >
           <LinearGradient
@@ -147,12 +152,12 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
                 primary={palette.primary}
                 activeLabel={ui.activeLabel}
                 activeTabBg={ui.activeTabBg}
-                activeTabBorder={ui.activeTabBorder}
-                centerBorder={ui.centerBorder}
-                haloColor={ui.halo}
-                onPress={() => navigation.navigate(route.name as never)}
-                preferredFocus={visibleIndex === 0}
-              />
+              activeTabBorder={ui.activeTabBorder}
+              centerBorder={ui.centerBorder}
+              haloColor={ui.halo}
+              onPress={() => navigation.navigate(route.name as never)}
+              preferredFocus={visibleIndex === 0}
+            />
             );
           })}
         </View>
@@ -211,15 +216,15 @@ function TabBarButton({
 
   const scale = anim.interpolate({
     inputRange: [0, 1],
-    outputRange: [1, isCenter ? 1.03 : 1.02],
+    outputRange: [1, isCenter ? 1.02 : 1.015],
   });
   const translateY = anim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, isCenter ? -2 : -1],
+    outputRange: [0, isCenter ? -1 : -0.5],
   });
   const labelOpacity = anim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.72, 1],
+    outputRange: [0.76, 1],
   });
   const haloOpacity = anim.interpolate({
     inputRange: [0, 1],
@@ -236,9 +241,9 @@ function TabBarButton({
             pointerEvents="none"
             style={{
               position: 'absolute',
-              top: -2,
-              width: baseSize + 10,
-              height: baseSize + 20,
+              top: 2,
+              width: baseSize + 8,
+              height: baseSize + 14,
               borderRadius: 18,
               backgroundColor: haloColor,
               opacity: haloOpacity,
@@ -253,7 +258,7 @@ function TabBarButton({
           onPress={onPress}
           style={{
             minWidth: isCenter ? baseSize : baseSize + 12,
-            height: isCenter ? baseSize : baseSize + 22,
+            height: isCenter ? baseSize : baseSize + 16,
             borderRadius: isCenter ? baseSize / 2 : 18,
             alignItems: 'center',
             justifyContent: 'center',
@@ -264,20 +269,20 @@ function TabBarButton({
               : 'transparent',
             borderWidth: isCenter ? 1 : focused ? 1 : 0,
             borderColor: isCenter ? centerBorder : activeTabBorder,
-            paddingHorizontal: isCenter ? 0 : 8,
-            marginTop: isCenter ? -10 : 0,
+            paddingHorizontal: isCenter ? 0 : 7,
+            marginTop: isCenter ? -4 : 0,
           }}
           focusStyle={{ transform: [{ scale: isTV ? 1.08 : 1.03 }] }}
           showFocusBorder={false}
         >
           <MaterialIcons
             name={config.icon}
-            size={isCenter ? iconSize + 3 : iconSize}
+            size={isCenter ? iconSize + 2 : iconSize}
             color={isCenter || focused ? '#FFFFFF' : textSecondary}
           />
 
           {!isCenter ? (
-            <Animated.View style={{ opacity: labelOpacity, marginTop: 3 }}>
+            <Animated.View style={{ opacity: labelOpacity, marginTop: 2 }}>
               <CustomText
                 variant="caption"
                 style={{
