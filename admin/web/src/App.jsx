@@ -642,7 +642,14 @@ export default defineComponent({
             </div>
           </header>
 
-          <main class="page-shell">{shellContent}</main>
+          <main
+            class={[
+              'page-shell',
+              appLoading.value ? 'page-shell-boot' : currentUser.value ? 'page-shell-dashboard' : 'page-shell-auth',
+            ]}
+          >
+            {shellContent}
+          </main>
 
           <footer class="global-footer">
             <div class="global-footer-inner">

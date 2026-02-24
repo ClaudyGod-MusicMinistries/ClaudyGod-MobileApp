@@ -270,11 +270,26 @@ code {
   padding: clamp(1.35rem, 3vh, 2.1rem) 0 1.9rem;
   flex: 1;
   display: flex;
-  align-items: flex-start;
+  align-items: stretch;
+  justify-content: flex-start;
 }
 
 .page-shell > * {
   width: 100%;
+}
+
+.page-shell-auth {
+  justify-content: center;
+  padding-top: clamp(2.15rem, 7vh, 5rem);
+  padding-bottom: clamp(2.1rem, 5vh, 3.2rem);
+}
+
+.page-shell-dashboard {
+  justify-content: flex-start;
+}
+
+.page-shell-boot {
+  justify-content: center;
 }
 
 .global-footer {
@@ -381,12 +396,13 @@ code {
 
 .auth-layout {
   width: min(1180px, 100%);
-  margin: clamp(0.25rem, 1.5vh, 0.9rem) auto 0;
+  margin: 0 auto;
   min-height: min(820px, calc(100vh - 225px));
   display: grid;
   grid-template-columns: minmax(300px, 1.15fr) minmax(320px, 0.85fr);
   gap: 1rem;
   align-items: center;
+  position: relative;
 }
 
 .auth-hero,
@@ -407,9 +423,22 @@ code {
   pointer-events: none;
 }
 
+.auth-hero::after {
+  content: '';
+  position: absolute;
+  inset: auto -20% -28% auto;
+  width: 58%;
+  height: 52%;
+  background: radial-gradient(circle, rgba(75, 224, 191, 0.14), transparent 72%);
+  filter: blur(6px);
+  animation: authGlowSweep 9s ease-in-out infinite;
+  pointer-events: none;
+}
+
 .brand-stack {
   display: grid;
   gap: 1rem;
+  animation: authPanelFloat 8.5s ease-in-out infinite alternate;
 }
 
 .brand-stack h1 {
@@ -462,6 +491,19 @@ code {
   display: grid;
   gap: 0.95rem;
   align-content: start;
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-form-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(120deg, transparent 14%, rgba(255, 255, 255, 0.035) 35%, transparent 58%);
+  transform: translateX(-130%);
+  animation: authCardSheen 7s ease-in-out infinite;
+  pointer-events: none;
 }
 
 .form-header-row {
@@ -1018,6 +1060,38 @@ button {
   font-weight: 700;
 }
 
+@keyframes authPanelFloat {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(6px);
+  }
+}
+
+@keyframes authGlowSweep {
+  0%,
+  100% {
+    transform: translate3d(-10px, 4px, 0) scale(0.98);
+    opacity: 0.55;
+  }
+  50% {
+    transform: translate3d(12px, -8px, 0) scale(1.05);
+    opacity: 0.9;
+  }
+}
+
+@keyframes authCardSheen {
+  0%,
+  60%,
+  100% {
+    transform: translateX(-130%);
+  }
+  78% {
+    transform: translateX(130%);
+  }
+}
+
 @media (max-width: 1120px) {
   .auth-layout,
   .main-grid {
@@ -1027,6 +1101,11 @@ button {
   .auth-layout {
     min-height: auto;
     margin-top: 0;
+  }
+
+  .page-shell-auth {
+    justify-content: flex-start;
+    padding-top: 1rem;
   }
 
   .hero-content {
@@ -1052,6 +1131,11 @@ button {
   .global-footer-inner,
   .page-shell {
     width: min(1320px, calc(100% - 1rem));
+  }
+
+  .page-shell-auth {
+    padding-top: 0.85rem;
+    padding-bottom: 1.25rem;
   }
 
   .global-footer-inner,
