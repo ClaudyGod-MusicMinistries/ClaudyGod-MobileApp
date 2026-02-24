@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Image, ScrollView, View, useWindowDimensions } from 'react-native';
+import { Animated, Image, Linking, ScrollView, View, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { ResizeMode, Video } from 'expo-av';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { TabScreenWrapper } from './TextWrapper';
 import { Screen } from '../../components/layout/Screen';
 import { BrandedHeaderCard } from '../../components/layout/BrandedHeaderCard';
@@ -9,6 +10,7 @@ import { FadeIn } from '../../components/ui/FadeIn';
 import { CustomText } from '../../components/CustomText';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { useAppTheme } from '../../util/colorScheme';
+import { isDirectPlayableVideoUrl, routeParamToString } from '../../util/playerRoute';
 import { useContentFeed } from '../../hooks/useContentFeed';
 import type { FeedCardItem } from '../../services/contentService';
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
@@ -17,6 +19,15 @@ export default function PlaySection() {
   const theme = useAppTheme();
   const isDark = theme.scheme === 'dark';
   const router = useRouter();
+  const params = useLocalSearchParams<{
+    itemId?: string | string[];
+    itemType?: string | string[];
+    title?: string | string[];
+    subtitle?: string | string[];
+    imageUrl?: string | string[];
+    duration?: string | string[];
+    mediaUrl?: string | string[];
+  }>();
   const { width } = useWindowDimensions();
   const compact = width < 390;
   const { feed } = useContentFeed();
@@ -45,6 +56,26 @@ export default function PlaySection() {
     return items;
   }, [feed.music, feed.playlists, feed.videos]);
 
+  const routeSelectedItem = useMemo<FeedCardItem | null>(() => {
+    const itemId = routeParamToString(params.itemId);
+    if (!itemId) return null;
+
+    const typeValue = routeParamToString(params.itemType);
+    const validTypes: FeedCardItem['type'][] = ['audio', 'video', 'playlist', 'announcement', 'live', 'ad'];
+    const itemType = validTypes.includes(typeValue as FeedCardItem['type']) ? (typeValue as FeedCardItem['type']) : 'audio';
+
+    return {
+      id: itemId,
+      type: itemType,
+      title: routeParamToString(params.title) || 'Selected media',
+      subtitle: routeParamToString(params.subtitle) || 'ClaudyGod Channel',
+      description: routeParamToString(params.subtitle) || 'Selected from your feed',
+      imageUrl: routeParamToString(params.imageUrl) || 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=900&q=80',
+      duration: routeParamToString(params.duration) || '--:--',
+      mediaUrl: routeParamToString(params.mediaUrl),
+    };
+  }, [params.duration, params.imageUrl, params.itemId, params.itemType, params.mediaUrl, params.subtitle, params.title]);
+
   const [activeId, setActiveId] = useState<string | null>(queue[0]?.id ?? null);
   const [showLyrics, setShowLyrics] = useState(false);
   const [isPlaying, setIsPlaying] = useState(true);
@@ -69,11 +100,23 @@ export default function PlaySection() {
     }
   }, [activeId, queue]);
 
-  const active = queue.find((item) => item.id === activeId) ?? null;
+  useEffect(() => {
+    const routeItemId = routeParamToString(params.itemId);
+    if (routeItemId) {
+      setActiveId(routeItemId);
+    }
+  }, [params.itemId]);
+
+  const active = queue.find((item) => item.id === activeId) ?? routeSelectedItem ?? null;
   const progress = 0.42;
+  const activeMediaUrl = active?.mediaUrl;
+  const isVideoContent = active?.type === 'video' || active?.type === 'live';
+  const canPlayInlineVideo = isVideoContent && isDirectPlayableVideoUrl(activeMediaUrl);
+  const requiresHostedPlayer = isVideoContent && Boolean(activeMediaUrl) && !canPlayInlineVideo;
 
   const chooseTrack = async (item: FeedCardItem) => {
     setActiveId(item.id);
+    setShowLyrics(false);
     await trackPlayEvent({ contentId: item.id, contentType: item.type, title: item.title, source: 'player_queue' });
   };
 
@@ -111,13 +154,34 @@ export default function PlaySection() {
               }}
             >
               <View style={{ alignItems: 'center' }}>
-                <Animated.View style={{ transform: [{ scale: pulse }] }}>
-                  <Image
-                    source={{ uri: active?.imageUrl ?? 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=900&q=80' }}
-                    style={{ width: compact ? 216 : 248, height: compact ? 216 : 248, borderRadius: 28 }}
-                    resizeMode="cover"
-                  />
-                </Animated.View>
+                {canPlayInlineVideo && activeMediaUrl ? (
+                  <View
+                    style={{
+                      width: compact ? 216 : 248,
+                      height: compact ? 216 : 248,
+                      borderRadius: 28,
+                      overflow: 'hidden',
+                      backgroundColor: '#000',
+                    }}
+                  >
+                    <Video
+                      source={{ uri: activeMediaUrl }}
+                      style={{ width: '100%', height: '100%' }}
+                      useNativeControls
+                      shouldPlay={isPlaying}
+                      resizeMode={ResizeMode.COVER}
+                      isLooping={false}
+                    />
+                  </View>
+                ) : (
+                  <Animated.View style={{ transform: [{ scale: pulse }] }}>
+                    <Image
+                      source={{ uri: active?.imageUrl ?? 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=900&q=80' }}
+                      style={{ width: compact ? 216 : 248, height: compact ? 216 : 248, borderRadius: 28 }}
+                      resizeMode="cover"
+                    />
+                  </Animated.View>
+                )}
 
                 <CustomText variant="heading" style={{ color: theme.colors.text.primary, marginTop: 14 }} numberOfLines={1}>
                   {active?.title ?? 'No track loaded'}
@@ -125,6 +189,65 @@ export default function PlaySection() {
                 <CustomText variant="caption" style={{ color: ui.muted, marginTop: 3 }} numberOfLines={1}>
                   {active?.subtitle ?? 'Connect content feed to queue tracks'}
                 </CustomText>
+
+                {canPlayInlineVideo ? (
+                  <View
+                    style={{
+                      marginTop: 8,
+                      borderRadius: 999,
+                      borderWidth: 1,
+                      borderColor: isDark ? 'rgba(216,194,255,0.18)' : 'rgba(109,40,217,0.12)',
+                      backgroundColor: isDark ? 'rgba(154,107,255,0.08)' : 'rgba(109,40,217,0.05)',
+                      paddingHorizontal: 10,
+                      paddingVertical: 6,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <MaterialIcons name="smart-display" size={15} color={theme.colors.primary} />
+                    <CustomText variant="caption" style={{ color: theme.colors.text.primary, marginLeft: 6 }}>
+                      In-app video playback
+                    </CustomText>
+                  </View>
+                ) : null}
+
+                {requiresHostedPlayer && activeMediaUrl ? (
+                  <View
+                    style={{
+                      width: '100%',
+                      marginTop: 10,
+                      borderRadius: 14,
+                      borderWidth: 1,
+                      borderColor: isDark ? 'rgba(255,255,255,0.08)' : theme.colors.border,
+                      backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : theme.colors.surfaceAlt,
+                      padding: 10,
+                    }}
+                  >
+                    <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
+                      This video source uses a hosted page link. Add a direct stream URL (MP4/HLS) for in-app playback.
+                    </CustomText>
+                    <TVTouchable
+                      onPress={() => void Linking.openURL(activeMediaUrl)}
+                      showFocusBorder={false}
+                      style={{
+                        marginTop: 8,
+                        borderRadius: 10,
+                        borderWidth: 1,
+                        borderColor: isDark ? 'rgba(255,255,255,0.1)' : theme.colors.border,
+                        backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : theme.colors.surface,
+                        minHeight: 38,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexDirection: 'row',
+                      }}
+                    >
+                      <MaterialIcons name="open-in-new" size={16} color={theme.colors.primary} />
+                      <CustomText variant="caption" style={{ color: theme.colors.text.primary, marginLeft: 6 }}>
+                        Open Source Link
+                      </CustomText>
+                    </TVTouchable>
+                  </View>
+                ) : null}
 
                 <View style={{ width: '100%', marginTop: 16 }}>
                   <View style={{ height: 2, borderRadius: 999, backgroundColor: ui.progressTrack }}>

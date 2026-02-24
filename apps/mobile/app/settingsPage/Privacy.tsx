@@ -1,6 +1,7 @@
-import React from 'react';
-import { Alert, Linking, View, useWindowDimensions } from 'react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import { Alert, Linking, Modal, TextInput, View, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { SettingsScaffold } from './Scaffold';
 import { CustomText } from '../../components/CustomText';
 import { useAppTheme } from '../../util/colorScheme';
@@ -44,6 +45,7 @@ const privacyPrinciples = [
 ] as const;
 
 export default function Privacy() {
+  const router = useRouter();
   const theme = useAppTheme();
   const isDark = theme.scheme === 'dark';
   const { width } = useWindowDimensions();
@@ -57,37 +59,224 @@ export default function Privacy() {
     rowSoftBorder: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(20,16,33,0.06)',
   } as const;
 
-  const handlePlaceholder = (label: string) => {
-    Alert.alert(label, 'This action will be available soon.');
-  };
+  type ActionModalKey =
+    | 'password'
+    | 'export'
+    | 'reset'
+    | 'delete'
+    | 'profile'
+    | 'history'
+    | 'downloads'
+    | 'diagnostics'
+    | null;
+
+  const [activeModal, setActiveModal] = useState<ActionModalKey>(null);
+  const [deleteFullName, setDeleteFullName] = useState('');
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+
+  const openActionModal = useCallback((key: Exclude<ActionModalKey, null>) => setActiveModal(key), []);
+  const closeActionModal = useCallback(() => {
+    setActiveModal(null);
+    setDeleteFullName('');
+    setDeleteConfirmText('');
+  }, []);
+
+  const deletePhrase = 'I CONFIRM';
+  const canSubmitDelete =
+    deleteFullName.trim().length >= 3 &&
+    deleteConfirmText.trim().toUpperCase() === deletePhrase;
+
+  const submitDeleteRequest = useCallback(() => {
+    if (!canSubmitDelete) return;
+    closeActionModal();
+    Alert.alert(
+      'Delete request prepared',
+      'Your confirmation has been captured. Connect your backend workflow to submit the deletion request.',
+    );
+  }, [canSubmitDelete, closeActionModal]);
+
+  const activeModalConfig = useMemo<ActionModalConfig | null>(() => {
+    switch (activeModal) {
+      case 'password':
+        return {
+          key: 'password',
+          title: 'Password & Sign-in',
+          description:
+            'Use this section to update your password, review active sessions, and recover access if you forget your password.',
+          bullets: [
+            'Use “Forgot Password” on the sign-in screen if you cannot access your account.',
+            'Update your password regularly to protect your account.',
+            'Session management can be connected here when backend auth is ready.',
+          ],
+          primaryActionLabel: 'Open Sign-in',
+          onPrimaryAction: () => {
+            closeActionModal();
+            router.push('/sign-in');
+          },
+          secondaryActionLabel: 'Close',
+          onSecondaryAction: closeActionModal,
+        };
+      case 'export':
+        return {
+          key: 'export',
+          title: 'Export My Data',
+          description:
+            'This request will generate a downloadable copy of your account profile, library, and activity records when the backend workflow is connected.',
+          bullets: [
+            'Exports are usually sent to your account email.',
+            'Large accounts may take longer to prepare.',
+            'You can review privacy support before submitting an export.',
+          ],
+          primaryActionLabel: 'Contact Support',
+          onPrimaryAction: () => {
+            closeActionModal();
+            void Linking.openURL('mailto:privacy@claudygodmusic.com');
+          },
+          secondaryActionLabel: 'Close',
+          onSecondaryAction: closeActionModal,
+        };
+      case 'reset':
+        return {
+          key: 'reset',
+          title: 'Reset Recommendations',
+          description:
+            'Resetting recommendations clears personalization signals and rebuilds suggestions from new activity.',
+          bullets: [
+            'Your profile and saved content remain unchanged.',
+            'Video and audio suggestions may look generic until new activity is recorded.',
+            'This will be enabled when recommendation services are connected.',
+          ],
+          primaryActionLabel: 'Understood',
+          onPrimaryAction: closeActionModal,
+          secondaryActionLabel: 'Close',
+          onSecondaryAction: closeActionModal,
+        };
+      case 'delete':
+        return {
+          key: 'delete',
+          title: 'Delete Account',
+          description:
+            'This action is permanent. To confirm authorization, enter your full name and type “I CONFIRM” exactly.',
+          danger: true,
+          primaryActionLabel: 'Submit Request',
+          onPrimaryAction: submitDeleteRequest,
+          secondaryActionLabel: 'Cancel',
+          onSecondaryAction: closeActionModal,
+          customContent: (
+            <View style={{ marginTop: 12 }}>
+              <DeleteConfirmationFields
+                fullName={deleteFullName}
+                onChangeFullName={setDeleteFullName}
+                confirmText={deleteConfirmText}
+                onChangeConfirmText={setDeleteConfirmText}
+                confirmPhrase={deletePhrase}
+              />
+            </View>
+          ),
+          disablePrimaryAction: !canSubmitDelete,
+        };
+      case 'profile':
+        return {
+          key: 'profile',
+          title: 'Profile Details',
+          description:
+            'Update your name, email, phone number, and other account profile details from your Profile screen.',
+          bullets: [
+            'Profile updates help keep account recovery and notifications accurate.',
+            'Changes can be saved locally now and connected to backend sync later.',
+          ],
+          primaryActionLabel: 'Open Profile',
+          onPrimaryAction: () => {
+            closeActionModal();
+            router.push('/profile');
+          },
+          secondaryActionLabel: 'Close',
+          onSecondaryAction: closeActionModal,
+        };
+      case 'history':
+        return {
+          key: 'history',
+          title: 'Playback History',
+          description:
+            'Playback history is used for resume playback and personalized recommendations. You can reset it when connected.',
+          bullets: [
+            'Resetting history removes personalization signals, not your saved playlists.',
+            'Resume positions may be cleared for previously watched content.',
+          ],
+          primaryActionLabel: 'Close',
+          onPrimaryAction: closeActionModal,
+        };
+      case 'downloads':
+        return {
+          key: 'downloads',
+          title: 'Offline Downloads',
+          description:
+            'Manage downloaded videos and audio files from your Library. Storage controls can be connected here.',
+          bullets: [
+            'Remove offline media to free up space on this device.',
+            'Downloads are device-specific unless cloud sync is enabled.',
+          ],
+          primaryActionLabel: 'Open Library',
+          onPrimaryAction: () => {
+            closeActionModal();
+            router.push('/(tabs)/Favourites');
+          },
+          secondaryActionLabel: 'Close',
+          onSecondaryAction: closeActionModal,
+        };
+      case 'diagnostics':
+        return {
+          key: 'diagnostics',
+          title: 'Diagnostics',
+          description:
+            'Diagnostics help improve app stability by reporting crash and performance information when enabled.',
+          bullets: [
+            'Diagnostics do not affect your saved media.',
+            'You can choose whether to participate when backend settings are connected.',
+          ],
+          primaryActionLabel: 'Close',
+          onPrimaryAction: closeActionModal,
+        };
+      default:
+        return null;
+    }
+  }, [
+    activeModal,
+    canSubmitDelete,
+    closeActionModal,
+    deleteConfirmText,
+    deleteFullName,
+    router,
+    submitDeleteRequest,
+  ]);
 
   const securityActions = [
     {
       icon: 'password',
       title: 'Password & Sign-in',
       subtitle: 'Update password, sessions, and recovery options',
-      onPress: () => handlePlaceholder('Password & Sign-in'),
+      onPress: () => openActionModal('password'),
       emphasis: 'neutral' as const,
     },
     {
       icon: 'download',
       title: 'Export my data',
       subtitle: 'Request account, library, and playback export',
-      onPress: () => handlePlaceholder('Export my data'),
+      onPress: () => openActionModal('export'),
       emphasis: 'primary' as const,
     },
     {
       icon: 'history-toggle-off',
       title: 'Reset recommendations',
       subtitle: 'Clear personalization history and rebuild suggestions',
-      onPress: () => handlePlaceholder('Reset recommendations'),
+      onPress: () => openActionModal('reset'),
       emphasis: 'neutral' as const,
     },
     {
       icon: 'delete-outline',
       title: 'Delete account',
       subtitle: 'Permanent deletion request with data purge workflow',
-      onPress: () => handlePlaceholder('Delete account'),
+      onPress: () => openActionModal('delete'),
       emphasis: 'danger' as const,
     },
   ] as {
@@ -102,13 +291,13 @@ export default function Privacy() {
     {
       icon: 'password' as const,
       label: 'Password',
-      onPress: () => handlePlaceholder('Password & Sign-in'),
+      onPress: () => openActionModal('password'),
       tone: 'neutral' as const,
     },
     {
       icon: 'download' as const,
       label: 'Export',
-      onPress: () => handlePlaceholder('Export Data'),
+      onPress: () => openActionModal('export'),
       tone: 'primary' as const,
     },
     {
@@ -120,7 +309,7 @@ export default function Privacy() {
     {
       icon: 'delete-outline' as const,
       label: 'Delete',
-      onPress: () => handlePlaceholder('Delete account'),
+      onPress: () => openActionModal('delete'),
       tone: 'danger' as const,
     },
   ];
@@ -214,6 +403,12 @@ export default function Privacy() {
                 description={item.description}
                 retention={item.retention}
                 ui={ui}
+                onPress={() => {
+                  if (item.title === 'Profile details') return openActionModal('profile');
+                  if (item.title === 'Playback history') return openActionModal('history');
+                  if (item.title === 'Offline downloads') return openActionModal('downloads');
+                  return openActionModal('diagnostics');
+                }}
               />
             ))}
           </View>
@@ -285,6 +480,12 @@ export default function Privacy() {
           </SurfaceCard>
         </TVTouchable>
       </FadeIn>
+
+      <PrivacyActionModal
+        visible={Boolean(activeModalConfig)}
+        config={activeModalConfig}
+        onClose={closeActionModal}
+      />
     </SettingsScaffold>
   );
 }
@@ -384,6 +585,7 @@ function DataPolicyRow({
   description,
   retention,
   ui,
+  onPress,
 }: {
   icon: React.ComponentProps<typeof MaterialIcons>['name'];
   title: string;
@@ -395,11 +597,15 @@ function DataPolicyRow({
     iconBadgeBg: string;
     iconBadgeBorder: string;
   };
+  onPress?: () => void;
 }) {
   const theme = useAppTheme();
 
   return (
-    <View
+    <TVTouchable
+      onPress={onPress}
+      disabled={!onPress}
+      showFocusBorder={false}
       style={{
         borderRadius: 14,
         borderWidth: 1,
@@ -447,9 +653,17 @@ function DataPolicyRow({
           <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 4 }}>
             {description}
           </CustomText>
+          {onPress ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6 }}>
+              <CustomText variant="caption" style={{ color: theme.colors.primary }}>
+                Manage
+              </CustomText>
+              <MaterialIcons name="chevron-right" size={16} color={theme.colors.primary} style={{ marginLeft: 2 }} />
+            </View>
+          ) : null}
         </View>
       </View>
-    </View>
+    </TVTouchable>
   );
 }
 
@@ -520,5 +734,242 @@ function QuickActionTile({
         {label}
       </CustomText>
     </TVTouchable>
+  );
+}
+
+type ActionModalConfig = {
+  key: string;
+  title: string;
+  description: string;
+  bullets?: string[];
+  customContent?: React.ReactNode;
+  primaryActionLabel: string;
+  onPrimaryAction: () => void;
+  secondaryActionLabel?: string;
+  onSecondaryAction?: () => void;
+  disablePrimaryAction?: boolean;
+  danger?: boolean;
+};
+
+function PrivacyActionModal({
+  visible,
+  config,
+  onClose,
+}: {
+  visible: boolean;
+  config: ActionModalConfig | null;
+  onClose: () => void;
+}) {
+  const theme = useAppTheme();
+  const isDark = theme.scheme === 'dark';
+
+  if (!config) {
+    return null;
+  }
+
+  const ui = {
+    backdrop: 'rgba(5,4,10,0.72)',
+    cardBg: isDark ? 'rgba(14,11,23,0.98)' : '#FFFFFF',
+    cardBorder: isDark ? 'rgba(255,255,255,0.08)' : theme.colors.border,
+    muted: isDark ? 'rgba(190,181,216,0.92)' : theme.colors.text.secondary,
+    softBg: isDark ? 'rgba(255,255,255,0.03)' : theme.colors.surfaceAlt,
+    softBorder: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(20,16,33,0.06)',
+    primaryBg: config.danger ? (isDark ? 'rgba(220,38,38,0.92)' : '#DC2626') : theme.colors.primary,
+    primaryText: '#FFFFFF',
+    secondaryBg: isDark ? 'rgba(255,255,255,0.04)' : theme.colors.surface,
+    secondaryBorder: isDark ? 'rgba(255,255,255,0.1)' : theme.colors.border,
+    secondaryText: theme.colors.text.primary,
+  } as const;
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: ui.backdrop,
+          justifyContent: 'center',
+          paddingHorizontal: 18,
+          paddingVertical: 24,
+        }}
+      >
+        <View
+          style={{
+            borderRadius: 20,
+            borderWidth: 1,
+            borderColor: ui.cardBorder,
+            backgroundColor: ui.cardBg,
+            padding: 14,
+          }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+            <View style={{ flex: 1, paddingRight: 12 }}>
+              <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
+                {config.title}
+              </CustomText>
+              <CustomText variant="caption" style={{ color: ui.muted, marginTop: 5 }}>
+                {config.description}
+              </CustomText>
+            </View>
+            <TVTouchable
+              onPress={onClose}
+              showFocusBorder={false}
+              style={{
+                width: 34,
+                height: 34,
+                borderRadius: 17,
+                borderWidth: 1,
+                borderColor: ui.secondaryBorder,
+                backgroundColor: ui.secondaryBg,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <MaterialIcons name="close" size={18} color={theme.colors.text.primary} />
+            </TVTouchable>
+          </View>
+
+          {config.bullets?.length ? (
+            <View style={{ marginTop: 12, gap: 7 }}>
+              {config.bullets.map((bullet) => (
+                <View
+                  key={bullet}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'flex-start',
+                    borderRadius: 12,
+                    borderWidth: 1,
+                    borderColor: ui.softBorder,
+                    backgroundColor: ui.softBg,
+                    paddingHorizontal: 10,
+                    paddingVertical: 9,
+                  }}
+                >
+                  <MaterialIcons name="check-circle" size={15} color={theme.colors.primary} style={{ marginTop: 1 }} />
+                  <CustomText variant="caption" style={{ color: ui.muted, marginLeft: 8, flex: 1 }}>
+                    {bullet}
+                  </CustomText>
+                </View>
+              ))}
+            </View>
+          ) : null}
+
+          {config.customContent}
+
+          <View style={{ flexDirection: 'row', gap: 8, marginTop: 14 }}>
+            {config.secondaryActionLabel && config.onSecondaryAction ? (
+              <TVTouchable
+                onPress={config.onSecondaryAction}
+                showFocusBorder={false}
+                style={{
+                  flex: 1,
+                  minHeight: 44,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: ui.secondaryBorder,
+                  backgroundColor: ui.secondaryBg,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <CustomText variant="label" style={{ color: ui.secondaryText }}>
+                  {config.secondaryActionLabel}
+                </CustomText>
+              </TVTouchable>
+            ) : null}
+
+            <TVTouchable
+              onPress={config.onPrimaryAction}
+              disabled={config.disablePrimaryAction}
+              hasTVPreferredFocus
+              showFocusBorder={false}
+              style={{
+                flex: 1,
+                minHeight: 44,
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: config.disablePrimaryAction ? ui.secondaryBorder : ui.primaryBg,
+                backgroundColor: config.disablePrimaryAction ? ui.secondaryBg : ui.primaryBg,
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: config.disablePrimaryAction ? 0.6 : 1,
+              }}
+            >
+              <CustomText variant="label" style={{ color: config.disablePrimaryAction ? ui.secondaryText : ui.primaryText }}>
+                {config.primaryActionLabel}
+              </CustomText>
+            </TVTouchable>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+function DeleteConfirmationFields({
+  fullName,
+  onChangeFullName,
+  confirmText,
+  onChangeConfirmText,
+  confirmPhrase,
+}: {
+  fullName: string;
+  onChangeFullName: (_value: string) => void;
+  confirmText: string;
+  onChangeConfirmText: (_value: string) => void;
+  confirmPhrase: string;
+}) {
+  const theme = useAppTheme();
+  const isDark = theme.scheme === 'dark';
+  const border = isDark ? 'rgba(255,255,255,0.1)' : theme.colors.border;
+  const bg = isDark ? 'rgba(255,255,255,0.03)' : theme.colors.surfaceAlt;
+
+  return (
+    <View style={{ gap: 10 }}>
+      <View>
+        <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginBottom: 5 }}>
+          Full name
+        </CustomText>
+        <TextInput
+          value={fullName}
+          onChangeText={onChangeFullName}
+          placeholder="Enter your full name"
+          placeholderTextColor={isDark ? 'rgba(190,181,216,0.7)' : 'rgba(108,99,134,0.8)'}
+          style={{
+            minHeight: 42,
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: border,
+            backgroundColor: bg,
+            paddingHorizontal: 12,
+            color: theme.colors.text.primary,
+          }}
+        />
+      </View>
+
+      <View>
+        <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginBottom: 5 }}>
+          Confirmation phrase
+        </CustomText>
+        <TextInput
+          value={confirmText}
+          onChangeText={onChangeConfirmText}
+          autoCapitalize="characters"
+          placeholder={confirmPhrase}
+          placeholderTextColor={isDark ? 'rgba(190,181,216,0.7)' : 'rgba(108,99,134,0.8)'}
+          style={{
+            minHeight: 42,
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: border,
+            backgroundColor: bg,
+            paddingHorizontal: 12,
+            color: theme.colors.text.primary,
+          }}
+        />
+        <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 5 }}>
+          Type “{confirmPhrase}” exactly to authorize this request.
+        </CustomText>
+      </View>
+    </View>
   );
 }

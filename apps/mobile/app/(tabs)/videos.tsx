@@ -17,6 +17,7 @@ import { CustomText } from '../../components/CustomText';
 import { FadeIn } from '../../components/ui/FadeIn';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { useAppTheme } from '../../util/colorScheme';
+import { buildPlayerRoute } from '../../util/playerRoute';
 import { useContentFeed } from '../../hooks/useContentFeed';
 import type { FeedCardItem } from '../../services/contentService';
 import { subscribeToLiveAlerts, trackPlayEvent } from '../../services/supabaseAnalytics';
@@ -67,7 +68,7 @@ export default function VideosScreen() {
 
   const openVideo = async (item: FeedCardItem, source = 'videos_grid') => {
     await trackPlayEvent({ contentId: item.id, contentType: item.type, title: item.title, source });
-    router.push('/(tabs)/PlaySection');
+    router.push(buildPlayerRoute(item));
   };
 
   return (

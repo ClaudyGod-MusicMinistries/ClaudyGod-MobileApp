@@ -18,6 +18,7 @@ import { CustomText } from '../../components/CustomText';
 import { FadeIn } from '../../components/ui/FadeIn';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { useAppTheme } from '../../util/colorScheme';
+import { buildPlayerRoute } from '../../util/playerRoute';
 import { useContentFeed } from '../../hooks/useContentFeed';
 import type { FeedCardItem, FeedBundle } from '../../services/contentService';
 import { subscribeToLiveAlerts, trackPlayEvent } from '../../services/supabaseAnalytics';
@@ -85,11 +86,7 @@ export default function HomeScreen() {
       title: item.title,
       source,
     });
-    if (item.type === 'video') {
-      router.push('/(tabs)/videos');
-      return;
-    }
-    router.push('/(tabs)/PlaySection');
+    router.push(buildPlayerRoute(item));
   };
 
   const onSubscribeLive = async (item: FeedCardItem) => {
