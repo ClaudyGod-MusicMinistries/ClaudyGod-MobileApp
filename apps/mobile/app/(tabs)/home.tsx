@@ -65,8 +65,8 @@ export default function HomeScreen() {
   const isTablet = width >= 768 && !isTV;
   const compact = width < 380;
   const railCardWidth = isTV ? 260 : isTablet ? 220 : compact ? 150 : 166;
-  const albumGridCols = isTV ? 4 : isTablet ? 3 : 2;
-  const albumGridViewportHeight = isTV ? 620 : isTablet ? 500 : 430;
+  const albumGridCols = isTV ? 4 : 2;
+  const albumGridViewportHeight = isTV ? 560 : isTablet ? 440 : 320;
   const [activeFilter, setActiveFilter] = useState('For You');
 
   const { feed, loading, error, refresh } = useContentFeed();
@@ -309,7 +309,7 @@ export default function HomeScreen() {
           </FadeIn>
 
           <FadeIn delay={240}>
-            <SectionBlock title="Albums & Playlists" subtitle="Compact 2x2 collection grid with internal scroll">
+            <SectionBlock title="Albums & Playlists" subtitle="Curated collections and playlists">
               <View
                 style={{
                   borderRadius: 18,
@@ -321,7 +321,7 @@ export default function HomeScreen() {
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 4, paddingTop: 2, paddingBottom: 8 }}>
                   <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
-                    2x2 scrollable collections
+                    Collections
                   </CustomText>
                   <View
                     style={{
@@ -886,29 +886,26 @@ function GridTile({ item, onPress }: { item: FeedCardItem; onPress: () => void }
   const theme = useAppTheme();
   const isDark = theme.scheme === 'dark';
   const ui = {
-    cardBg: isDark ? 'rgba(12,9,20,0.9)' : theme.colors.surface,
+    cardBg: isDark ? 'rgba(12,9,20,0.88)' : theme.colors.surface,
     cardBorder: isDark ? 'rgba(255,255,255,0.08)' : theme.colors.border,
     imageBg: isDark ? '#140F20' : theme.colors.surfaceAlt,
     imageBorder: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(20,16,33,0.06)',
     imageOverlay: isDark
-      ? (['rgba(0,0,0,0)', 'rgba(6,4,13,0.82)'] as const)
-      : (['rgba(255,255,255,0)', 'rgba(255,255,255,0.84)'] as const),
-    badgeBg: isDark ? 'rgba(12,9,20,0.72)' : 'rgba(255,255,255,0.88)',
-    badgeBorder: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(20,16,33,0.07)',
-    badgeText: isDark ? '#EDE3FF' : '#4C1D95',
-    metaText: isDark ? 'rgba(194,185,220,0.9)' : theme.colors.text.secondary,
-    subtleText: isDark ? 'rgba(176,167,202,0.88)' : 'rgba(108,99,134,0.9)',
-    playBtnBg: isDark ? 'rgba(154,107,255,0.26)' : 'rgba(109,40,217,0.12)',
-    playBtnBorder: isDark ? 'rgba(216,194,255,0.22)' : 'rgba(109,40,217,0.16)',
-    playBtnIcon: isDark ? '#F4ECFF' : theme.colors.primary,
-    footerChipBg: isDark ? 'rgba(255,255,255,0.03)' : theme.colors.surfaceAlt,
-    footerChipBorder: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(20,16,33,0.06)',
+      ? (['rgba(0,0,0,0)', 'rgba(6,4,13,0.2)'] as const)
+      : (['rgba(255,255,255,0)', 'rgba(255,255,255,0.15)'] as const),
+    typePillBg: isDark ? 'rgba(255,255,255,0.03)' : theme.colors.surfaceAlt,
+    typePillBorder: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(20,16,33,0.06)',
+    typeText: isDark ? 'rgba(222,214,244,0.92)' : 'rgba(92,84,120,0.95)',
+    metaText: isDark ? 'rgba(194,185,220,0.88)' : theme.colors.text.secondary,
+    playDotBg: isDark ? 'rgba(154,107,255,0.18)' : 'rgba(109,40,217,0.08)',
+    playDotBorder: isDark ? 'rgba(216,194,255,0.18)' : 'rgba(109,40,217,0.12)',
+    playDotIcon: isDark ? '#F4ECFF' : theme.colors.primary,
   } as const;
   return (
     <TVTouchable
       onPress={onPress}
       style={{
-        borderRadius: 16,
+        borderRadius: 14,
         overflow: 'hidden',
         borderWidth: 1,
         borderColor: ui.cardBorder,
@@ -919,7 +916,7 @@ function GridTile({ item, onPress }: { item: FeedCardItem; onPress: () => void }
       <View style={{ padding: 6 }}>
         <View
           style={{
-            borderRadius: 12,
+            borderRadius: 10,
             overflow: 'hidden',
             borderWidth: 1,
             borderColor: ui.imageBorder,
@@ -928,101 +925,63 @@ function GridTile({ item, onPress }: { item: FeedCardItem; onPress: () => void }
         >
           <Image
             source={{ uri: item.imageUrl }}
-            style={{ width: '100%', aspectRatio: 1.16, backgroundColor: ui.imageBg }}
+            style={{ width: '100%', aspectRatio: 1, backgroundColor: ui.imageBg }}
             resizeMode="cover"
           />
           <LinearGradient
             colors={ui.imageOverlay}
-            style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 56 }}
+            style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 40 }}
             pointerEvents="none"
           />
-
-          <View style={{ position: 'absolute', top: 8, left: 8, right: 8, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <View
-              style={{
-                borderRadius: 999,
-                borderWidth: 1,
-                borderColor: ui.badgeBorder,
-                backgroundColor: ui.badgeBg,
-                paddingHorizontal: 7,
-                paddingVertical: 3,
-              }}
-            >
-              <CustomText variant="caption" style={{ color: ui.badgeText }}>
-                {typeLabel(item.type).toUpperCase()}
-              </CustomText>
-            </View>
-            {item.duration ? (
-              <View
-                style={{
-                  borderRadius: 999,
-                  borderWidth: 1,
-                  borderColor: ui.badgeBorder,
-                  backgroundColor: ui.badgeBg,
-                  paddingHorizontal: 7,
-                  paddingVertical: 3,
-                }}
-              >
-                <CustomText variant="caption" style={{ color: ui.subtleText }}>
-                  {item.duration}
-                </CustomText>
-              </View>
-            ) : null}
-          </View>
-
-          <View style={{ position: 'absolute', right: 8, bottom: 8 }}>
-            <View
-              style={{
-                width: 34,
-                height: 34,
-                borderRadius: 17,
-                borderWidth: 1,
-                borderColor: ui.playBtnBorder,
-                backgroundColor: ui.playBtnBg,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <MaterialIcons name="play-arrow" size={18} color={ui.playBtnIcon} />
-            </View>
-          </View>
         </View>
       </View>
 
-      <View style={{ paddingHorizontal: 10, paddingBottom: 10, paddingTop: 0 }}>
-        <CustomText variant="label" style={{ color: theme.colors.text.primary }} numberOfLines={1}>
-          {item.title}
-        </CustomText>
-        <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 2 }} numberOfLines={1}>
-          {item.subtitle}
-        </CustomText>
-
-        <View style={{ marginTop: 7, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <View style={{ paddingHorizontal: 9, paddingBottom: 9, paddingTop: 0 }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: 5,
+          }}
+        >
           <View
             style={{
-              flexDirection: 'row',
-              alignItems: 'center',
               borderRadius: 999,
               borderWidth: 1,
-              borderColor: ui.footerChipBorder,
-              backgroundColor: ui.footerChipBg,
+              borderColor: ui.typePillBorder,
+              backgroundColor: ui.typePillBg,
               paddingHorizontal: 7,
-              paddingVertical: 4,
-              maxWidth: '82%',
+              paddingVertical: 3,
+              maxWidth: '72%',
             }}
           >
-            <MaterialIcons
-              name={item.type === 'playlist' ? 'queue-music' : item.type === 'audio' ? 'graphic-eq' : 'library-music'}
-              size={13}
-              color={theme.colors.primary}
-            />
-            <CustomText variant="caption" style={{ color: ui.metaText, marginLeft: 5 }} numberOfLines={1}>
-              {item.type === 'playlist' ? 'Playlist' : item.type === 'audio' ? 'Audio' : 'Video'}
+            <CustomText variant="caption" style={{ color: ui.typeText }} numberOfLines={1}>
+              {typeLabel(item.type)}
             </CustomText>
           </View>
-
-          <MaterialIcons name="chevron-right" size={16} color={ui.subtleText} />
+          <View
+            style={{
+              width: 28,
+              height: 28,
+              borderRadius: 14,
+              borderWidth: 1,
+              borderColor: ui.playDotBorder,
+              backgroundColor: ui.playDotBg,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <MaterialIcons name="play-arrow" size={16} color={ui.playDotIcon} />
+          </View>
         </View>
+
+        <CustomText variant="label" style={{ color: theme.colors.text.primary }} numberOfLines={2}>
+          {item.title}
+        </CustomText>
+        <CustomText variant="caption" style={{ color: ui.metaText, marginTop: 3 }} numberOfLines={1}>
+          {item.subtitle || (item.duration ? `${item.duration} • Featured collection` : 'Featured collection')}
+        </CustomText>
       </View>
     </TVTouchable>
   );
