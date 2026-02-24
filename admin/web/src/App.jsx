@@ -4,6 +4,7 @@ import './App.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 const ACCESS_TOKEN_KEY = 'claudy_admin_access_token';
+const BRAND_LOGO_URL = '/brand/claudy-logo.webp';
 const CONTENT_TYPES = ['audio', 'video', 'playlist', 'announcement'];
 const VISIBILITY_OPTIONS = ['draft', 'published'];
 
@@ -29,28 +30,33 @@ function toErrorMessage(error, fallback) {
     const data = error.response && error.response.data ? error.response.data : {};
     return data.message || data.error || error.message || fallback;
   }
-  if (error && error.message) {
-    return error.message;
-  }
+  if (error && error.message) return error.message;
   return fallback;
 }
 
 function formatDateTime(value) {
+  if (!value) return '--';
   return new Date(value).toLocaleString();
 }
 
-function truncate(value, size = 160) {
+function truncate(value, size = 180) {
   if (!value) return '';
   if (value.length <= size) return value;
   return `${value.slice(0, size - 1)}...`;
 }
 
+function greetingByTime() {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 17) return 'Good afternoon';
+  return 'Good evening';
+}
+
 export default defineComponent({
-  name: 'AdminContentHub',
+  name: 'ClaudyContentStudio',
   setup() {
     const accessToken = ref(localStorage.getItem(ACCESS_TOKEN_KEY) || '');
     const currentUser = ref(null);
-    const authMode = ref('login');
     const authLoading = ref(false);
     const appLoading = ref(false);
     const contentLoading = ref(false);
@@ -58,12 +64,10 @@ export default defineComponent({
     const togglingId = ref(null);
     const notice = ref('');
     const noticeKind = ref('success');
-    const copied = ref('idle');
 
     const authForm = reactive({
       email: '',
       password: '',
-      displayName: '',
     });
 
     const createForm = reactive({
@@ -87,15 +91,23 @@ export default defineComponent({
     });
 
     const managedItems = ref([]);
-
-    const publicFeedUrl = computed(() => `${API_URL}/v1/content?page=1&limit=20`);
     const currentYear = new Date().getFullYear();
 
-    const connectionMap = computed(() => [
-      { title: 'Admin Console', value: 'Create, review, and publish client content records.' },
-      { title: 'Content API', value: 'Validates, stores, and distributes content metadata.' },
-      { title: 'Mobile App', value: 'Loads the published feed and updates the user catalog.' },
-    ]);
+    const greeting = computed(() => greetingByTime());
+    const displayName = computed(() => (currentUser.value && currentUser.value.displayName ? currentUser.value.displayName : 'Client'));
+
+    const stats = computed(() => {
+      const total = managedItems.value.length;
+      const published = managedItems.value.filter((item) => item.visibility === 'published').length;
+      const drafts = managedItems.value.filter((item) => item.visibility === 'draft').length;
+      const videoItems = managedItems.value.filter((item) => item.type === 'video').length;
+      return [
+        { label: 'All Content', value: total, accent: 'mint' },
+        { label: 'Published', value: published, accent: 'blue' },
+        { label: 'Drafts', value: drafts, accent: 'amber' },
+        { label: 'Video Items', value: videoItems, accent: 'rose' },
+      ];
+    });
 
     const filteredItems = computed(() => {
       const query = (filterState.search || '').trim().toLowerCase();
@@ -103,19 +115,11 @@ export default defineComponent({
         if (filterState.type !== 'all' && item.type !== filterState.type) return false;
         if (filterState.visibility !== 'all' && item.visibility !== filterState.visibility) return false;
         if (!query) return true;
-        const haystack = [item.title, item.description, item.author?.displayName, item.url || '']
+        const haystack = [item.title, item.description, item.author && item.author.displayName ? item.author.displayName : '', item.url || '']
           .join(' ')
           .toLowerCase();
         return haystack.includes(query);
       });
-    });
-
-    const stats = computed(() => {
-      const total = managedItems.value.length;
-      const published = managedItems.value.filter((item) => item.visibility === 'published').length;
-      const drafts = total - published;
-      const videos = managedItems.value.filter((item) => item.type === 'video').length;
-      return { total, published, drafts, videos };
     });
 
     function setNotice(message, kind = 'success') {
@@ -167,7 +171,7 @@ export default defineComponent({
       } catch (error) {
         persistToken(null);
         currentUser.value = null;
-        setNotice(toErrorMessage(error, 'Session expired. Please sign in again.'), 'error');
+        setNotice(toErrorMessage(error, 'Your session expired. Please sign in again.'), 'error');
       } finally {
         appLoading.value = false;
       }
@@ -178,25 +182,12 @@ export default defineComponent({
       clearNotice();
 
       if (!authForm.email.trim() || !authForm.password.trim()) {
-        setNotice('Email and password are required.', 'error');
-        return;
-      }
-
-      if (authMode.value === 'register' && authForm.displayName.trim().length < 2) {
-        setNotice('Display name must be at least 2 characters.', 'error');
+        setNotice('Please enter your email and password.', 'error');
         return;
       }
 
       authLoading.value = true;
       try {
-        if (authMode.value === 'register') {
-          await http.post('/v1/auth/register', {
-            email: authForm.email.trim(),
-            password: authForm.password,
-            displayName: authForm.displayName.trim(),
-          });
-        }
-
         const loginResponse = await http.post('/v1/auth/login', {
           email: authForm.email.trim(),
           password: authForm.password,
@@ -206,9 +197,9 @@ export default defineComponent({
         currentUser.value = loginResponse.data.user;
         authForm.password = '';
         await fetchManagedContent();
-        setNotice(`Welcome ${loginResponse.data.user.displayName}.`, 'success');
+        setNotice(`Welcome back, ${loginResponse.data.user.displayName}.`, 'success');
       } catch (error) {
-        setNotice(toErrorMessage(error, 'Authentication failed.'), 'error');
+        setNotice(toErrorMessage(error, 'Sign in failed. Please check your details and try again.'), 'error');
       } finally {
         authLoading.value = false;
       }
@@ -218,7 +209,7 @@ export default defineComponent({
       persistToken(null);
       currentUser.value = null;
       managedItems.value = [];
-      setNotice('Signed out.', 'success');
+      setNotice('You have signed out.', 'success');
     }
 
     async function createContent(event) {
@@ -226,21 +217,21 @@ export default defineComponent({
       clearNotice();
 
       if (!currentUser.value) {
-        setNotice('Login required.', 'error');
+        setNotice('Please sign in to continue.', 'error');
         return;
       }
       if (createForm.title.trim().length < 2) {
-        setNotice('Title must be at least 2 characters.', 'error');
+        setNotice('Please enter a content title.', 'error');
         return;
       }
       if (createForm.description.trim().length < 2) {
-        setNotice('Description must be at least 2 characters.', 'error');
+        setNotice('Please add a short description.', 'error');
         return;
       }
 
       const needsUrl = createForm.type === 'audio' || createForm.type === 'video';
       if (needsUrl && !createForm.url.trim()) {
-        setNotice('Audio and video content requires a media URL (CDN/storage link).', 'error');
+        setNotice('Please add the media link for audio or video content.', 'error');
         return;
       }
 
@@ -258,9 +249,9 @@ export default defineComponent({
         createForm.description = '';
         createForm.url = '';
         await fetchManagedContent();
-        setNotice('Content created and synced with backend queue.', 'success');
+        setNotice(createForm.visibility === 'published' ? 'Content published successfully.' : 'Draft saved successfully.', 'success');
       } catch (error) {
-        setNotice(toErrorMessage(error, 'Failed to create content item.'), 'error');
+        setNotice(toErrorMessage(error, 'Unable to save this content right now.'), 'error');
       } finally {
         savingContent.value = false;
       }
@@ -277,9 +268,9 @@ export default defineComponent({
           visibility: nextVisibility,
         });
         managedItems.value = managedItems.value.map((entry) => (entry.id === item.id ? response.data : entry));
-        setNotice(`Content moved to ${nextVisibility}.`, 'success');
+        setNotice(nextVisibility === 'published' ? 'Content is now published.' : 'Content moved to drafts.', 'success');
       } catch (error) {
-        setNotice(toErrorMessage(error, 'Failed to update visibility.'), 'error');
+        setNotice(toErrorMessage(error, 'Unable to update this item right now.'), 'error');
       } finally {
         togglingId.value = null;
       }
@@ -292,21 +283,7 @@ export default defineComponent({
         await Promise.all([fetchCurrentUser(), fetchManagedContent()]);
         setNotice('Dashboard refreshed.', 'success');
       } catch (error) {
-        setNotice(toErrorMessage(error, 'Refresh failed.'), 'error');
-      }
-    }
-
-    async function copyPublicFeed() {
-      try {
-        if (!navigator.clipboard) throw new Error('Clipboard unavailable');
-        await navigator.clipboard.writeText(publicFeedUrl.value);
-        copied.value = 'done';
-      } catch {
-        copied.value = 'failed';
-      } finally {
-        window.setTimeout(() => {
-          copied.value = 'idle';
-        }, 1500);
+        setNotice(toErrorMessage(error, 'Refresh failed. Please try again.'), 'error');
       }
     }
 
@@ -315,122 +292,187 @@ export default defineComponent({
     });
 
     return () => {
-      const authScreen = (
-        <div class="auth-shell">
-          <div class="auth-card glass-panel">
-            <div>
-              <p class="eyebrow">Claudy Content Admin</p>
-              <h1>Enterprise Publishing Console</h1>
-              <p class="subtitle">Securely organize, publish, and control client content delivery through one backend-connected console.</p>
+      const loginScreen = (
+        <section class="auth-layout reveal-up">
+          <div class="auth-hero glass-panel">
+            <div class="brand-stack">
+              <div class="logo-wrap logo-wrap-large">
+                <div class="logo-glow" />
+                <img src={BRAND_LOGO_URL} alt="ClaudyGod" class="brand-logo" />
+              </div>
+              <div>
+                <p class="eyebrow">ClaudyGod Ministries</p>
+                <h1>Content Studio</h1>
+                <p class="subtitle">
+                  A clean publishing workspace for your team to upload, organize, and publish new content.
+                </p>
+              </div>
             </div>
 
-            <div class="mode-toggle">
-              <button type="button" class={['segmented-btn', authMode.value === 'login' && 'is-active']} onClick={() => { authMode.value = 'login'; clearNotice(); }}>
-                Login
-              </button>
-              <button type="button" class={['segmented-btn', authMode.value === 'register' && 'is-active']} onClick={() => { authMode.value = 'register'; clearNotice(); }}>
-                Register
-              </button>
+            <div class="feature-tiles">
+              <article class="feature-tile" style={{ animationDelay: '40ms' }}>
+                <span class="feature-dot" />
+                <div>
+                  <h3>Upload and Publish</h3>
+                  <p>Create new content entries and control what goes live.</p>
+                </div>
+              </article>
+              <article class="feature-tile" style={{ animationDelay: '120ms' }}>
+                <span class="feature-dot" />
+                <div>
+                  <h3>Draft and Review</h3>
+                  <p>Save work as drafts before publishing to your audience.</p>
+                </div>
+              </article>
+              <article class="feature-tile" style={{ animationDelay: '200ms' }}>
+                <span class="feature-dot" />
+                <div>
+                  <h3>Content Library</h3>
+                  <p>Search and manage all uploaded music, videos, and announcements.</p>
+                </div>
+              </article>
+            </div>
+          </div>
+
+          <div class="auth-form-card glass-panel reveal-up" style={{ animationDelay: '120ms' }}>
+            <div class="form-header-row">
+              <div class="logo-wrap">
+                <img src={BRAND_LOGO_URL} alt="ClaudyGod" class="brand-logo" />
+              </div>
+              <div>
+                <h2>Sign In</h2>
+                <p class="subtle-text">Enter your account details to access the publishing dashboard.</p>
+              </div>
             </div>
 
             {notice.value ? <div class={['notice', noticeKind.value === 'error' ? 'notice-error' : 'notice-success']}>{notice.value}</div> : null}
 
             <form class="stack-form" onSubmit={(event) => void handleAuthSubmit(event)}>
-              {authMode.value === 'register' ? (
-                <label>
-                  Display Name
-                  <input value={authForm.displayName} onInput={(event) => { authForm.displayName = readValue(event); }} placeholder="Client Name or Admin Name" />
-                </label>
-              ) : null}
-
               <label>
-                Email
-                <input type="email" value={authForm.email} onInput={(event) => { authForm.email = readValue(event); }} placeholder="admin@yourdomain.com" />
+                Email address
+                <input
+                  type="email"
+                  value={authForm.email}
+                  onInput={(event) => { authForm.email = readValue(event); }}
+                  placeholder="name@company.com"
+                  autoComplete="email"
+                />
               </label>
 
               <label>
                 Password
-                <input type="password" value={authForm.password} onInput={(event) => { authForm.password = readValue(event); }} placeholder="Password" />
+                <input
+                  type="password"
+                  value={authForm.password}
+                  onInput={(event) => { authForm.password = readValue(event); }}
+                  placeholder="Enter your password"
+                  autoComplete="current-password"
+                />
               </label>
 
-              <button type="submit" class="primary-btn" disabled={authLoading.value}>
-                {authLoading.value ? 'Processing...' : authMode.value === 'login' ? 'Sign In' : 'Create Account & Sign In'}
+              <button type="submit" class="primary-btn primary-btn-large" disabled={authLoading.value}>
+                {authLoading.value ? 'Signing in...' : 'Sign In'}
               </button>
             </form>
 
-            <div class="connection-grid">
-              {connectionMap.value.map((entry) => (
-                <div class="mini-card" key={entry.title}>
-                  <h3>{entry.title}</h3>
-                  <p>{entry.value}</p>
-                </div>
-              ))}
-            </div>
+            <p class="footnote-text">Need access? Contact the platform administrator for account setup.</p>
           </div>
-        </div>
+        </section>
       );
 
-      const dashboard = (
-        <div class="dashboard-shell">
-          <div class="bg-orb orb-left" />
-          <div class="bg-orb orb-right" />
-
-          <header class="dashboard-header">
-            <div>
-              <p class="eyebrow">Content Operations</p>
-              <h1>Client Content Publishing</h1>
-              <p class="subtitle">Create, review, and publish content records that power the client mobile experience.</p>
-            </div>
-            <div class="header-actions">
-              <button type="button" class="ghost-btn" onClick={() => void refreshDashboard()} disabled={contentLoading.value}>
-                {contentLoading.value ? 'Refreshing...' : 'Refresh'}
-              </button>
-              <button type="button" class="ghost-btn" onClick={() => void copyPublicFeed()}>
-                {copied.value === 'done' ? 'Feed URL Copied' : copied.value === 'failed' ? 'Copy Failed' : 'Copy Feed Endpoint'}
-              </button>
-              <button type="button" class="danger-btn" onClick={logout}>Sign Out</button>
-            </div>
-          </header>
-
-          <section class="stats-grid">
-            <div class="stat-card glass-panel"><span>Total Records</span><strong>{stats.value.total}</strong></div>
-            <div class="stat-card glass-panel"><span>Published</span><strong>{stats.value.published}</strong></div>
-            <div class="stat-card glass-panel"><span>Drafts</span><strong>{stats.value.drafts}</strong></div>
-            <div class="stat-card glass-panel"><span>Videos</span><strong>{stats.value.videos}</strong></div>
-          </section>
-
-          {notice.value ? <section class={['notice', noticeKind.value === 'error' ? 'notice-error' : 'notice-success']}>{notice.value}</section> : null}
-
-          <main class="main-grid">
-            <section class="panel glass-panel">
-              <div class="section-head">
+      const dashboardScreen = (
+        <section class="dashboard-stage">
+          <section class="hero-banner glass-panel reveal-up">
+            <div class="hero-content">
+              <div class="hero-brand">
+                <div class="logo-wrap logo-wrap-large hero-logo">
+                  <div class="logo-glow" />
+                  <img src={BRAND_LOGO_URL} alt="ClaudyGod" class="brand-logo" />
+                </div>
                 <div>
-                  <h2>Create Content</h2>
-                  <p>Use your CDN or storage link and publish content metadata to the delivery service.</p>
+                  <p class="eyebrow">Publishing Workspace</p>
+                  <h1>{greeting.value}, {displayName.value}</h1>
+                  <p class="subtitle">
+                    Manage your content library, save drafts, and publish new releases from one clean dashboard.
+                  </p>
                 </div>
               </div>
 
-              <form class="stack-form" onSubmit={(event) => void createContent(event)}>
-                <label>
-                  Title
-                  <input value={createForm.title} onInput={(event) => { createForm.title = readValue(event); }} placeholder="Friday Night Worship Session" />
-                </label>
+              <div class="hero-actions">
+                <button type="button" class="ghost-btn" onClick={() => void refreshDashboard()} disabled={contentLoading.value}>
+                  {contentLoading.value ? 'Refreshing...' : 'Refresh'}
+                </button>
+                <button type="button" class="danger-btn" onClick={logout}>Sign Out</button>
+              </div>
+            </div>
 
-                <label>
-                  Description
-                  <textarea value={createForm.description} onInput={(event) => { createForm.description = readValue(event); }} rows={5} placeholder="Add summary or ministry notes for mobile users." />
-                </label>
+            <div class="hero-chips">
+              <span class="hero-chip">Beautiful client-facing portal</span>
+              <span class="hero-chip">Fast publishing workflow</span>
+              <span class="hero-chip">Draft + publish controls</span>
+            </div>
+            <div class="hero-shine" />
+          </section>
+
+          <section class="stats-grid">
+            {stats.value.map((card, index) => (
+              <article class={['stat-card', 'glass-panel', `accent-${card.accent}`, 'reveal-up']} style={{ animationDelay: `${60 + index * 70}ms` }} key={card.label}>
+                <span>{card.label}</span>
+                <strong>{card.value}</strong>
+              </article>
+            ))}
+          </section>
+
+          {notice.value ? (
+            <section class={['notice', noticeKind.value === 'error' ? 'notice-error' : 'notice-success', 'reveal-up']} style={{ animationDelay: '180ms' }}>
+              {notice.value}
+            </section>
+          ) : null}
+
+          <main class="main-grid">
+            <section class="panel glass-panel reveal-up" style={{ animationDelay: '140ms' }}>
+              <div class="section-head">
+                <div>
+                  <h2>New Content</h2>
+                  <p>Add music, video, playlists, or announcements for your audience.</p>
+                </div>
+                <span class="section-badge">Publish Center</span>
+              </div>
+
+              <form class="stack-form" onSubmit={(event) => void createContent(event)}>
+                <div class="field-cluster">
+                  <label>
+                    Title
+                    <input
+                      value={createForm.title}
+                      onInput={(event) => { createForm.title = readValue(event); }}
+                      placeholder="Example: Friday Worship Session"
+                    />
+                  </label>
+                </div>
+
+                <div class="field-cluster">
+                  <label>
+                    Description
+                    <textarea
+                      value={createForm.description}
+                      onInput={(event) => { createForm.description = readValue(event); }}
+                      rows={5}
+                      placeholder="Add a short summary so users understand what this content is about."
+                    />
+                  </label>
+                </div>
 
                 <div class="grid-2">
                   <label>
-                    Content Type
+                    Content type
                     <select value={createForm.type} onChange={(event) => { createForm.type = readValue(event); }}>
                       {CONTENT_TYPES.map((type) => <option value={type} key={type}>{type}</option>)}
                     </select>
                   </label>
 
                   <label>
-                    Visibility
+                    Status
                     <select value={createForm.visibility} onChange={(event) => { createForm.visibility = readValue(event); }}>
                       {VISIBILITY_OPTIONS.map((visibility) => <option value={visibility} key={visibility}>{visibility}</option>)}
                     </select>
@@ -438,72 +480,96 @@ export default defineComponent({
                 </div>
 
                 <label>
-                  Media URL (CDN / Cloud Storage)
-                  <input value={createForm.url} onInput={(event) => { createForm.url = readValue(event); }} placeholder="https://cdn.yourdomain.com/media/worship-night.mp4" />
+                  Media link
+                  <input
+                    value={createForm.url}
+                    onInput={(event) => { createForm.url = readValue(event); }}
+                    placeholder="Paste the audio/video link from your storage or CDN"
+                  />
                 </label>
 
-                <div class="info-box">
-                  <strong>Publishing workflow</strong>
+                <div class="helper-card">
+                  <strong>Tip</strong>
                   <p>
-                    Admin publishes content here -> API stores metadata and queues updates -> Client mobile app reads the published feed from{' '}
-                    <code>{publicFeedUrl.value}</code>
+                    Use <em>Draft</em> while reviewing new content, then switch to <em>Published</em> when it is ready for users.
                   </p>
                 </div>
 
-                <button type="submit" class="primary-btn" disabled={savingContent.value}>{savingContent.value ? 'Saving...' : 'Create & Sync'}</button>
+                <button type="submit" class="primary-btn primary-btn-large" disabled={savingContent.value}>
+                  {savingContent.value ? 'Saving...' : createForm.visibility === 'published' ? 'Publish Content' : 'Save Draft'}
+                </button>
               </form>
             </section>
 
-            <section class="panel glass-panel">
+            <section class="panel glass-panel reveal-up" style={{ animationDelay: '220ms' }}>
               <div class="section-head split">
                 <div>
                   <h2>Content Library</h2>
-                  <p>Logged in as <strong>{currentUser.value ? currentUser.value.displayName : ''}</strong> ({currentUser.value ? currentUser.value.role : ''})</p>
+                  <p>Browse, search, and update your uploaded content.</p>
                 </div>
-                <div class="feed-hint">Backend total: {pagination.total}</div>
+                <div class="library-total">{pagination.total} total items</div>
               </div>
 
               <div class="filter-grid">
-                <input value={filterState.search} onInput={(event) => { filterState.search = readValue(event); }} placeholder="Search title, description, author, or URL" />
+                <input
+                  value={filterState.search}
+                  onInput={(event) => { filterState.search = readValue(event); }}
+                  placeholder="Search by title, description, creator, or link"
+                />
                 <select value={filterState.type} onChange={(event) => { filterState.type = readValue(event); }}>
                   <option value="all">All types</option>
                   {CONTENT_TYPES.map((type) => <option value={type} key={type}>{type}</option>)}
                 </select>
                 <select value={filterState.visibility} onChange={(event) => { filterState.visibility = readValue(event); }}>
-                  <option value="all">All visibility</option>
+                  <option value="all">All status</option>
                   {VISIBILITY_OPTIONS.map((visibility) => <option value={visibility} key={visibility}>{visibility}</option>)}
                 </select>
               </div>
 
               <div class="list-wrap">
-                {contentLoading.value ? <div class="empty-state">Loading content...</div> : null}
-                {!contentLoading.value && filteredItems.value.length === 0 ? <div class="empty-state">No content matches the current filters.</div> : null}
+                {contentLoading.value ? <div class="empty-state">Loading your content library...</div> : null}
+                {!contentLoading.value && filteredItems.value.length === 0 ? (
+                  <div class="empty-state">
+                    No content found. Try adjusting your search or create a new item.
+                  </div>
+                ) : null}
 
                 {!contentLoading.value ? filteredItems.value.map((item, index) => (
-                  <article class="content-card" key={item.id} style={{ animationDelay: `${index * 50}ms` }}>
+                  <article class="content-card" key={item.id} style={{ animationDelay: `${index * 60}ms` }}>
                     <div class="card-top">
                       <div class="pill-row">
                         <span class={['pill', `pill-${item.type}`]}>{item.type}</span>
-                        <span class={['pill', item.visibility === 'published' ? 'pill-ok' : 'pill-warn']}>{item.visibility}</span>
+                        <span class={['pill', item.visibility === 'published' ? 'pill-live' : 'pill-draft']}>{item.visibility}</span>
                       </div>
-                      <button type="button" class="ghost-btn compact" onClick={() => void toggleVisibility(item)} disabled={togglingId.value === item.id}>
+                      <button
+                        type="button"
+                        class="ghost-btn compact"
+                        onClick={() => void toggleVisibility(item)}
+                        disabled={togglingId.value === item.id}
+                      >
                         {togglingId.value === item.id ? 'Updating...' : item.visibility === 'published' ? 'Move to Draft' : 'Publish'}
                       </button>
                     </div>
 
-                    <h3>{item.title}</h3>
-                    <p>{truncate(item.description, 190)}</p>
+                    <div class="card-body">
+                      <h3>{item.title}</h3>
+                      <p>{truncate(item.description, 190)}</p>
+                    </div>
 
-                    {item.url ? (
-                      <a href={item.url} target="_blank" rel="noreferrer noopener" class="media-link">{truncate(item.url, 90)}</a>
-                    ) : (
-                      <div class="muted-chip">No media URL attached</div>
-                    )}
+                    <div class="card-link-row">
+                      {item.url ? (
+                        <a href={item.url} target="_blank" rel="noreferrer noopener" class="media-link">
+                          Open media link
+                        </a>
+                      ) : (
+                        <span class="muted-chip">No media link added</span>
+                      )}
+                    </div>
 
                     <div class="meta-grid">
                       <div>
-                        <span class="meta-label">Author</span>
-                        <strong>{item.author ? item.author.displayName : 'Unknown'}</strong>
+                        <span class="meta-label">Created by</span>
+                        <strong>{item.author && item.author.displayName ? item.author.displayName : 'Unknown'}</strong>
                       </div>
                       <div>
                         <span class="meta-label">Updated</span>
@@ -515,38 +581,76 @@ export default defineComponent({
               </div>
             </section>
           </main>
-        </div>
+
+          <section class="support-strip glass-panel reveal-up" style={{ animationDelay: '280ms' }}>
+            <div>
+              <h3>Need help?</h3>
+              <p>For account access, branding updates, or storage setup changes, contact your platform administrator.</p>
+            </div>
+            <div class="support-mark">
+              <div class="logo-wrap">
+                <img src={BRAND_LOGO_URL} alt="ClaudyGod" class="brand-logo" />
+              </div>
+              <span>ClaudyGod Content Studio</span>
+            </div>
+          </section>
+        </section>
       );
 
-      const shellContent = appLoading.value ? <div class="boot-state">Restoring session...</div> : currentUser.value ? dashboard : authScreen;
+      const shellContent = appLoading.value
+        ? (
+          <div class="boot-state">
+            <div class="boot-card glass-panel reveal-up">
+              <div class="logo-wrap logo-wrap-large">
+                <div class="logo-glow" />
+                <img src={BRAND_LOGO_URL} alt="ClaudyGod" class="brand-logo" />
+              </div>
+              <p>Preparing your workspace...</p>
+            </div>
+          </div>
+        )
+        : (currentUser.value ? dashboardScreen : loginScreen);
 
       return (
         <div class="app-root">
-          <header class="site-header">
-            <div class="site-header-inner">
-              <div>
-                <p class="eyebrow">Claudy Content Platform</p>
-                <h2 class="site-title">Admin Operations Console</h2>
+          <div class="bg-orb orb-a" />
+          <div class="bg-orb orb-b" />
+          <div class="bg-orb orb-c" />
+
+          <header class="global-header">
+            <div class="global-header-inner">
+              <div class="brand-inline">
+                <div class="logo-wrap">
+                  <img src={BRAND_LOGO_URL} alt="ClaudyGod" class="brand-logo" />
+                </div>
+                <div>
+                  <p class="eyebrow">ClaudyGod Ministries</p>
+                  <div class="brand-title-line">Content Studio Admin</div>
+                </div>
               </div>
-              <div class="site-header-meta">
-                <span class="header-chip">Connected API</span>
-                <code>{API_URL}</code>
-              </div>
+
+              {currentUser.value ? (
+                <div class="user-pill">
+                  <span class="user-pill-dot" />
+                  <span>{displayName.value}</span>
+                </div>
+              ) : (
+                <div class="user-pill muted">
+                  <span>Client Portal</span>
+                </div>
+              )}
             </div>
           </header>
 
-          <div class="site-content">{shellContent}</div>
+          <main class="page-shell">{shellContent}</main>
 
-          <footer class="site-footer">
-            <div class="site-footer-inner">
+          <footer class="global-footer">
+            <div class="global-footer-inner">
               <div>
-                <strong>Claudy Admin</strong>
-                <p class="footer-text">Centralized content publishing and delivery management for client applications.</p>
+                <strong>ClaudyGod Content Studio</strong>
+                <p>Client content publishing portal</p>
               </div>
-              <div class="footer-meta">
-                <span>Public feed: <code>/v1/content</code></span>
-                <span>{currentYear} Claudy Platform</span>
-              </div>
+              <div class="footer-right">{currentYear} Claudy Platform</div>
             </div>
           </footer>
         </div>
