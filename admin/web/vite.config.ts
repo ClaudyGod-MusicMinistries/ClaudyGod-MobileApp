@@ -1,8 +1,9 @@
 import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
+import vue from '@vitejs/plugin-vue';
+import vueJsx from '@vitejs/plugin-vue-jsx';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [vue(), vueJsx()],
   server: {
     port: parseInt(process.env.WEB_PORT || '5173', 10),
     host: true,
