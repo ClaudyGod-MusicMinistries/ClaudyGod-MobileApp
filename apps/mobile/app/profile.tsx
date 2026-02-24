@@ -26,6 +26,7 @@ const initialMetrics: ProfileMetrics = {
 
 export default function Profile() {
   const theme = useAppTheme();
+  const isDark = theme.scheme === 'dark';
   const [metrics, setMetrics] = useState<ProfileMetrics>(initialMetrics);
   const [loadingMetrics, setLoadingMetrics] = useState(true);
 
@@ -68,8 +69,8 @@ export default function Profile() {
             style={{
               borderRadius: 22,
               borderWidth: 1,
-              borderColor: 'rgba(255,255,255,0.08)',
-              backgroundColor: 'rgba(12,9,20,0.88)',
+              borderColor: isDark ? 'rgba(255,255,255,0.08)' : theme.colors.border,
+              backgroundColor: isDark ? 'rgba(12,9,20,0.88)' : theme.colors.surface,
               padding: spacing.lg,
               marginBottom: spacing.lg,
             }}
@@ -83,8 +84,8 @@ export default function Profile() {
                   alignItems: 'center',
                   justifyContent: 'center',
                   borderWidth: 1,
-                  borderColor: 'rgba(255,255,255,0.12)',
-                  backgroundColor: 'rgba(255,255,255,0.04)',
+                  borderColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(20,16,33,0.08)',
+                  backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : theme.colors.surfaceAlt,
                 }}
               >
                 <Image source={require('../assets/images/ClaudyGoLogo.webp')} style={{ width: 76, height: 76, borderRadius: 38 }} />
@@ -101,13 +102,13 @@ export default function Profile() {
                   marginTop: 10,
                   borderRadius: 999,
                   borderWidth: 1,
-                  borderColor: 'rgba(216,194,255,0.28)',
-                  backgroundColor: 'rgba(154,107,255,0.12)',
+                  borderColor: isDark ? 'rgba(216,194,255,0.28)' : 'rgba(109,40,217,0.16)',
+                  backgroundColor: isDark ? 'rgba(154,107,255,0.12)' : 'rgba(109,40,217,0.08)',
                   paddingHorizontal: 12,
                   paddingVertical: 7,
                 }}
               >
-                <CustomText variant="caption" style={{ color: '#EDE3FF' }}>
+                <CustomText variant="caption" style={{ color: isDark ? '#EDE3FF' : '#4C1D95' }}>
                   Supabase profile + analytics ready
                 </CustomText>
               </View>
@@ -121,8 +122,8 @@ export default function Profile() {
                     flex: 1,
                     borderRadius: 14,
                     borderWidth: 1,
-                    borderColor: 'rgba(255,255,255,0.08)',
-                    backgroundColor: 'rgba(255,255,255,0.03)',
+                    borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(20,16,33,0.06)',
+                    backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : theme.colors.surfaceAlt,
                     padding: 10,
                   }}
                 >
@@ -165,8 +166,8 @@ export default function Profile() {
                 style={{
                   borderRadius: 14,
                   borderWidth: 1,
-                  borderColor: 'rgba(255,255,255,0.07)',
-                  backgroundColor: 'rgba(255,255,255,0.03)',
+                  borderColor: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(20,16,33,0.06)',
+                  backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : theme.colors.surfaceAlt,
                   padding: 10,
                   flexDirection: 'row',
                   alignItems: 'center',
@@ -180,7 +181,7 @@ export default function Profile() {
                     borderRadius: 10,
                     alignItems: 'center',
                     justifyContent: 'center',
-                    backgroundColor: 'rgba(154,107,255,0.14)',
+                    backgroundColor: isDark ? 'rgba(154,107,255,0.14)' : 'rgba(109,40,217,0.08)',
                     marginRight: 10,
                   }}
                 >
@@ -212,11 +213,11 @@ export default function Profile() {
               marginTop: 10,
               borderRadius: 16,
               borderWidth: 1,
-              borderColor: 'rgba(248,113,113,0.2)',
-              backgroundColor: 'rgba(248,113,113,0.08)',
+              borderColor: isDark ? 'rgba(248,113,113,0.2)' : 'rgba(220,38,38,0.14)',
+              backgroundColor: isDark ? 'rgba(248,113,113,0.08)' : 'rgba(220,38,38,0.05)',
             }}
-            textColor="#FCA5A5"
-            leftIcon={<MaterialIcons name="logout" size={18} color="#FCA5A5" />}
+            textColor={isDark ? '#FCA5A5' : '#B91C1C'}
+            leftIcon={<MaterialIcons name="logout" size={18} color={isDark ? '#FCA5A5' : '#B91C1C'} />}
           />
           <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 8 }}>
             Profile updates are ready for Supabase tables and storage-backed avatars.
@@ -236,21 +237,23 @@ function SectionCard({
   hint?: string;
   children: React.ReactNode;
 }) {
+  const theme = useAppTheme();
+  const isDark = theme.scheme === 'dark';
   return (
     <View
       style={{
         borderRadius: 18,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.08)',
-        backgroundColor: 'rgba(12,9,20,0.86)',
+        borderColor: isDark ? 'rgba(255,255,255,0.08)' : theme.colors.border,
+        backgroundColor: isDark ? 'rgba(12,9,20,0.86)' : theme.colors.surface,
         padding: spacing.md,
       }}
     >
-      <CustomText variant="subtitle" style={{ color: '#F8F7FC' }}>
+      <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
         {title}
       </CustomText>
       {hint ? (
-        <CustomText variant="caption" style={{ color: 'rgba(194,185,220,0.9)', marginTop: 3, marginBottom: 10 }}>
+        <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 3, marginBottom: 10 }}>
           {hint}
         </CustomText>
       ) : null}
@@ -271,6 +274,7 @@ function ProfileField({
   keyboardType?: 'default' | 'email-address' | 'phone-pad';
 }) {
   const theme = useAppTheme();
+  const isDark = theme.scheme === 'dark';
 
   return (
     <View>
@@ -282,12 +286,12 @@ function ProfileField({
         onChangeText={onChangeText}
         keyboardType={keyboardType}
         placeholder={`Enter ${label.toLowerCase()}`}
-        placeholderTextColor="rgba(194,185,220,0.75)"
+        placeholderTextColor={isDark ? 'rgba(194,185,220,0.75)' : 'rgba(108,99,134,0.75)'}
         style={{
-          backgroundColor: 'rgba(255,255,255,0.03)',
+          backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : theme.colors.surface,
           borderRadius: radius.md,
           borderWidth: 1,
-          borderColor: 'rgba(255,255,255,0.08)',
+          borderColor: isDark ? 'rgba(255,255,255,0.08)' : theme.colors.border,
           paddingHorizontal: spacing.md,
           paddingVertical: 12,
           color: theme.colors.text.primary,

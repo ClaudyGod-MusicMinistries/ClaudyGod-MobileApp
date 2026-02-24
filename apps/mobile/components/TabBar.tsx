@@ -26,6 +26,7 @@ const TAB_CONFIG: Record<string, TabConfig> = {
 const TabBar = ({ state, navigation }: BottomTabBarProps) => {
   const colorScheme = useColorScheme();
   const palette = colors[colorScheme] ?? colors.dark;
+  const isDark = colorScheme === 'dark';
   const isTV = Platform.isTV;
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -50,6 +51,18 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
   const maxWidth = isTV ? 1240 : isTablet ? 900 : width;
   const bottomInset = isTV ? 18 : Math.max(insets.bottom, 8);
   const barHeightWithInset = sizes.barHeight + bottomInset;
+  const ui = {
+    shellBg: isDark ? '#0E0D15' : palette.background,
+    barBg: isDark ? '#0E0D15' : palette.surface,
+    barBorder: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(20,16,33,0.08)',
+    topLine: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(20,16,33,0.08)',
+    glow: isDark ? 'rgba(154,107,255,0.08)' : 'rgba(109,40,217,0.06)',
+    activeTabBg: isDark ? 'rgba(154,107,255,0.14)' : 'rgba(109,40,217,0.09)',
+    activeTabBorder: isDark ? 'rgba(216,194,255,0.16)' : 'rgba(109,40,217,0.14)',
+    centerBorder: isDark ? 'rgba(255,255,255,0.22)' : 'rgba(20,16,33,0.08)',
+    halo: isDark ? 'rgba(154,107,255,0.12)' : 'rgba(109,40,217,0.1)',
+    activeLabel: isDark ? '#F2E8FF' : palette.text.primary,
+  } as const;
 
   const appear = useRef(new Animated.Value(0)).current;
   useEffect(() => {
@@ -75,7 +88,7 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
         right: 0,
         bottom: 0,
         alignItems: 'center',
-        backgroundColor: isTablet || isTV ? 'transparent' : '#0E0D15',
+        backgroundColor: isTablet || isTV ? 'transparent' : ui.shellBg,
         opacity: appear,
         transform: [{ translateY: barTranslateY }],
       }}
@@ -85,8 +98,8 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
           style={{
             height: barHeightWithInset,
             borderTopWidth: 1,
-            borderTopColor: 'rgba(255,255,255,0.06)',
-            backgroundColor: '#0E0D15',
+            borderTopColor: ui.barBorder,
+            backgroundColor: ui.barBg,
             paddingHorizontal: sizes.paddingX,
             paddingBottom: bottomInset,
             flexDirection: 'row',
@@ -99,7 +112,7 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
         >
           <LinearGradient
             pointerEvents="none"
-            colors={['rgba(154,107,255,0.08)', 'rgba(14,13,21,0)']}
+            colors={[ui.glow, 'rgba(0,0,0,0)']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}
@@ -112,7 +125,7 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
               left: 18,
               right: 18,
               height: 1,
-              backgroundColor: 'rgba(255,255,255,0.08)',
+              backgroundColor: ui.topLine,
             }}
           />
 
@@ -132,6 +145,11 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
                 iconSize={sizes.iconSize}
                 textSecondary={palette.text.secondary}
                 primary={palette.primary}
+                activeLabel={ui.activeLabel}
+                activeTabBg={ui.activeTabBg}
+                activeTabBorder={ui.activeTabBorder}
+                centerBorder={ui.centerBorder}
+                haloColor={ui.halo}
                 onPress={() => navigation.navigate(route.name as never)}
                 preferredFocus={visibleIndex === 0}
               />
@@ -153,6 +171,11 @@ function TabBarButton({
   iconSize,
   textSecondary,
   primary,
+  activeLabel,
+  activeTabBg,
+  activeTabBorder,
+  centerBorder,
+  haloColor,
   onPress,
   preferredFocus,
 }: {
@@ -165,6 +188,11 @@ function TabBarButton({
   iconSize: number;
   textSecondary: string;
   primary: string;
+  activeLabel: string;
+  activeTabBg: string;
+  activeTabBorder: string;
+  centerBorder: string;
+  haloColor: string;
   onPress: () => void;
   preferredFocus: boolean;
 }) {
@@ -212,7 +240,7 @@ function TabBarButton({
               width: baseSize + 10,
               height: baseSize + 20,
               borderRadius: 18,
-              backgroundColor: 'rgba(154,107,255,0.12)',
+              backgroundColor: haloColor,
               opacity: haloOpacity,
             }}
           />
@@ -232,10 +260,10 @@ function TabBarButton({
             backgroundColor: isCenter
               ? primary
               : focused
-              ? 'rgba(154,107,255,0.14)'
+              ? activeTabBg
               : 'transparent',
             borderWidth: isCenter ? 1 : focused ? 1 : 0,
-            borderColor: isCenter ? 'rgba(255,255,255,0.22)' : 'rgba(216,194,255,0.16)',
+            borderColor: isCenter ? centerBorder : activeTabBorder,
             paddingHorizontal: isCenter ? 0 : 8,
             marginTop: isCenter ? -10 : 0,
           }}
@@ -253,7 +281,7 @@ function TabBarButton({
               <CustomText
                 variant="caption"
                 style={{
-                  color: focused ? '#F2E8FF' : textSecondary,
+                  color: focused ? activeLabel : textSecondary,
                   fontSize: labelSize,
                   lineHeight: labelSize + 3,
                   letterSpacing: 0.1,

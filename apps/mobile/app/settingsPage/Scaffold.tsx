@@ -1,14 +1,12 @@
 // app/settingsPage/Scaffold.tsx
 import React from 'react';
-import { View, ScrollView, StatusBar, Image } from 'react-native';
+import { View, ScrollView, StatusBar } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { MaterialIcons } from '@expo/vector-icons';
-import { CustomText } from '../../components/CustomText';
 import { useRouter } from 'expo-router';
 import { useAppTheme } from '../../util/colorScheme';
-import { spacing, radius } from '../../styles/designTokens';
+import { spacing } from '../../styles/designTokens';
 import { Screen } from '../../components/layout/Screen';
-import { TVTouchable } from '../../components/ui/TVTouchable';
+import { BrandedHeaderCard } from '../../components/layout/BrandedHeaderCard';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface ScaffoldProps {
@@ -22,6 +20,12 @@ export function SettingsScaffold({ title, subtitle, children, hero }: ScaffoldPr
   const theme = useAppTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const isDark = theme.scheme === 'dark';
+
+  const ui = {
+    stickyBg: isDark ? '#06040D' : theme.colors.background,
+    stickyBorder: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(20,16,33,0.08)',
+  } as const;
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
@@ -49,69 +53,16 @@ export function SettingsScaffold({ title, subtitle, children, hero }: ScaffoldPr
           paddingTop: insets.top + 8,
           paddingBottom: spacing.sm,
           borderBottomWidth: 1,
-          borderBottomColor: 'rgba(255,255,255,0.06)',
-          backgroundColor: '#06040D',
+          borderBottomColor: ui.stickyBorder,
+          backgroundColor: ui.stickyBg,
         }}
       >
-        <View
-          style={{
-            borderRadius: 18,
-            borderWidth: 1,
-            borderColor: 'rgba(255,255,255,0.08)',
-            backgroundColor: 'rgba(10,8,17,0.88)',
-            paddingHorizontal: 12,
-            paddingVertical: 12,
-          }}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-            <TVTouchable
-              onPress={() => router.back()}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              style={{
-                width: 42,
-                height: 42,
-                borderRadius: radius.md,
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: 'rgba(255,255,255,0.04)',
-                borderWidth: 1,
-                borderColor: 'rgba(255,255,255,0.12)',
-              }}
-              showFocusBorder={false}
-            >
-              <MaterialIcons name="arrow-back" size={20} color="#EFE7FF" />
-            </TVTouchable>
-
-            <View
-              style={{
-                width: 42,
-                height: 42,
-                borderRadius: 14,
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: 'rgba(255,255,255,0.04)',
-                borderWidth: 1,
-                borderColor: 'rgba(255,255,255,0.12)',
-              }}
-            >
-              <Image source={require('../../assets/images/ClaudyGoLogo.webp')} style={{ width: 30, height: 30, borderRadius: 15 }} />
-            </View>
-
-            <View style={{ flex: 1 }}>
-              <CustomText variant="caption" style={{ color: 'rgba(194,185,220,0.9)' }}>
-                ClaudyGod Ministries
-              </CustomText>
-              <CustomText variant="heading" style={{ color: '#F8F7FC', marginTop: 2 }}>
-                {title}
-              </CustomText>
-              {subtitle ? (
-                <CustomText variant="caption" style={{ color: 'rgba(176,167,202,0.9)', marginTop: 3 }} numberOfLines={1}>
-                  {subtitle}
-                </CustomText>
-              ) : null}
-            </View>
-          </View>
-        </View>
+        <BrandedHeaderCard
+          title={title}
+          subtitle={subtitle}
+          leadingAction={{ icon: 'arrow-back', onPress: () => router.back(), accessibilityLabel: 'Go back' }}
+          actions={[{ icon: 'more-horiz', onPress: () => router.push('/(tabs)/Settings'), accessibilityLabel: 'Open settings' }]}
+        />
       </View>
 
       <ScrollView

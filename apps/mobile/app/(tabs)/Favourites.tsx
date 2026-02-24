@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { TabScreenWrapper } from './TextWrapper';
 import { Screen } from '../../components/layout/Screen';
+import { BrandedHeaderCard } from '../../components/layout/BrandedHeaderCard';
 import { FadeIn } from '../../components/ui/FadeIn';
 import { CustomText } from '../../components/CustomText';
 import { TVTouchable } from '../../components/ui/TVTouchable';
@@ -19,6 +20,7 @@ type LibraryTab = (typeof tabs)[number];
 export default function LibraryScreen() {
   const router = useRouter();
   const theme = useAppTheme();
+  const isDark = theme.scheme === 'dark';
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
   const [activeTab, setActiveTab] = useState<LibraryTab>('Liked Songs');
@@ -43,6 +45,20 @@ export default function LibraryScreen() {
     { label: 'Playlists', value: `${feed.playlists.length}` },
     { label: 'Recent', value: `${feed.recent.length}` },
   ];
+
+  const ui = {
+    stickyBg: isDark ? '#06040D' : theme.colors.background,
+    stickyBorder: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(20,16,33,0.08)',
+    stickyGlow: isDark ? 'rgba(154,107,255,0.06)' : 'rgba(109,40,217,0.08)',
+    overviewBg: isDark ? 'rgba(12,9,20,0.88)' : theme.colors.surface,
+    overviewBorder: isDark ? 'rgba(255,255,255,0.08)' : theme.colors.border,
+    overviewMuted: isDark ? 'rgba(194,185,220,0.9)' : theme.colors.text.secondary,
+    overviewSubtle: isDark ? 'rgba(176,167,202,0.9)' : theme.colors.text.secondary,
+    statBg: isDark ? 'rgba(255,255,255,0.03)' : theme.colors.surfaceAlt,
+    statBorder: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(20,16,33,0.06)',
+    footerPanelBg: isDark ? 'rgba(12,9,20,0.76)' : theme.colors.surface,
+    footerPanelBorder: isDark ? 'rgba(255,255,255,0.07)' : theme.colors.border,
+  } as const;
 
   const onOpen = async (item: FeedCardItem) => {
     await trackPlayEvent({ contentId: item.id, contentType: item.type, title: item.title, source: 'library' });
@@ -70,14 +86,14 @@ export default function LibraryScreen() {
       >
         <View
           style={{
-            backgroundColor: '#06040D',
+            backgroundColor: ui.stickyBg,
             borderBottomWidth: 1,
-            borderBottomColor: 'rgba(255,255,255,0.06)',
+            borderBottomColor: ui.stickyBorder,
           }}
         >
           <LinearGradient
             pointerEvents="none"
-            colors={['rgba(154,107,255,0.06)', 'rgba(6,4,13,0)']}
+            colors={[ui.stickyGlow, 'rgba(0,0,0,0)']}
             start={{ x: 0.1, y: 0 }}
             end={{ x: 0.9, y: 1 }}
             style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}
@@ -90,6 +106,8 @@ export default function LibraryScreen() {
                   onChangeTab={setActiveTab}
                   onRefresh={refresh}
                   onOpenProfile={() => router.push('/profile')}
+                  onOpenHome={() => router.push('/(tabs)/home')}
+                  onOpenMenu={() => router.push('/(tabs)/Settings')}
                 />
               </View>
             </FadeIn>
@@ -103,15 +121,15 @@ export default function LibraryScreen() {
                 style={{
                   borderRadius: 22,
                   borderWidth: 1,
-                  borderColor: 'rgba(255,255,255,0.08)',
-                  backgroundColor: 'rgba(12,9,20,0.88)',
+                  borderColor: ui.overviewBorder,
+                  backgroundColor: ui.overviewBg,
                   padding: 16,
                 }}
               >
-                <CustomText variant="caption" style={{ color: 'rgba(194,185,220,0.9)' }}>
+                <CustomText variant="caption" style={{ color: ui.overviewMuted }}>
                   Library Overview
                 </CustomText>
-                <CustomText variant="caption" style={{ color: 'rgba(176,167,202,0.9)', marginTop: 4 }}>
+                <CustomText variant="caption" style={{ color: ui.overviewSubtle, marginTop: 4 }}>
                   Spotify/Audiomack-style library shell connected to content feed and play analytics.
                 </CustomText>
 
@@ -123,15 +141,15 @@ export default function LibraryScreen() {
                         flex: 1,
                         borderRadius: 14,
                         borderWidth: 1,
-                        borderColor: 'rgba(255,255,255,0.08)',
-                        backgroundColor: 'rgba(255,255,255,0.03)',
+                        borderColor: ui.statBorder,
+                        backgroundColor: ui.statBg,
                         padding: 10,
                       }}
                     >
-                      <CustomText variant="subtitle" style={{ color: '#F8F7FC' }}>
+                      <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
                         {stat.value}
                       </CustomText>
-                      <CustomText variant="caption" style={{ color: 'rgba(194,185,220,0.9)', marginTop: 2 }}>
+                      <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 2 }}>
                         {stat.label}
                       </CustomText>
                     </View>
@@ -163,15 +181,15 @@ export default function LibraryScreen() {
                   marginTop: 18,
                   borderRadius: 16,
                   borderWidth: 1,
-                  borderColor: 'rgba(255,255,255,0.07)',
-                  backgroundColor: 'rgba(12,9,20,0.76)',
+                  borderColor: ui.footerPanelBorder,
+                  backgroundColor: ui.footerPanelBg,
                   padding: 12,
                 }}
               >
-                <CustomText variant="label" style={{ color: '#F8F7FC' }}>
+                <CustomText variant="label" style={{ color: theme.colors.text.primary }}>
                   Downloads and offline mode
                 </CustomText>
-                <CustomText variant="caption" style={{ color: 'rgba(194,185,220,0.9)', marginTop: 4 }}>
+                <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 4 }}>
                   UI structure is ready. Connect your download storage layer and Supabase user tables to persist offline items per account.
                 </CustomText>
               </View>
@@ -188,116 +206,32 @@ function LibraryHeader({
   onChangeTab,
   onRefresh,
   onOpenProfile,
+  onOpenHome,
+  onOpenMenu,
 }: {
   activeTab: LibraryTab;
   onChangeTab: (_tab: LibraryTab) => void;
   onRefresh: () => void;
   onOpenProfile: () => void;
+  onOpenHome: () => void;
+  onOpenMenu: () => void;
 }) {
   return (
-    <View>
-      <View
-        style={{
-          borderRadius: 18,
-          borderWidth: 1,
-          borderColor: 'rgba(255,255,255,0.08)',
-          backgroundColor: 'rgba(10,8,17,0.88)',
-          paddingHorizontal: 12,
-          paddingVertical: 12,
-        }}
-      >
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 10 }}>
-            <View
-              style={{
-                width: 42,
-                height: 42,
-                borderRadius: 14,
-                borderWidth: 1,
-                borderColor: 'rgba(255,255,255,0.12)',
-                backgroundColor: 'rgba(255,255,255,0.04)',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginRight: 10,
-              }}
-            >
-              <Image
-                source={require('../../assets/images/ClaudyGoLogo.webp')}
-                style={{ width: 30, height: 30, borderRadius: 15 }}
-              />
-            </View>
-            <View style={{ flex: 1 }}>
-              <CustomText variant="caption" style={{ color: 'rgba(194,185,220,0.9)' }}>
-                ClaudyGod Ministries
-              </CustomText>
-              <CustomText variant="display" style={{ color: '#F8F7FC', marginTop: 2, fontSize: 17, lineHeight: 22 }}>
-                Library
-              </CustomText>
-              <CustomText variant="caption" style={{ color: 'rgba(176,167,202,0.9)', marginTop: 3 }} numberOfLines={1}>
-                Liked songs • Downloads • Playlists • History
-              </CustomText>
-            </View>
-          </View>
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            <HeaderIcon icon="refresh" onPress={onRefresh} />
-            <HeaderIcon icon="person-outline" onPress={onOpenProfile} />
-          </View>
-        </View>
-      </View>
-
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        bounces={false}
-        overScrollMode="never"
-        contentContainerStyle={{ paddingTop: 12, paddingBottom: 2, paddingRight: 8 }}
-      >
-        {tabs.map((tab) => {
-          const active = tab === activeTab;
-          return (
-            <TVTouchable
-              key={tab}
-              onPress={() => onChangeTab(tab)}
-              style={{
-                marginRight: 8,
-                borderRadius: 999,
-                borderWidth: 1,
-                borderColor: active ? 'rgba(216,194,255,0.34)' : 'rgba(255,255,255,0.1)',
-                backgroundColor: active ? 'rgba(154,107,255,0.16)' : 'rgba(255,255,255,0.03)',
-                paddingHorizontal: 12,
-                paddingVertical: 8,
-              }}
-              showFocusBorder={false}
-            >
-              <CustomText variant="caption" style={{ color: active ? '#EFE3FF' : '#CEC4E7' }}>
-                {tab}
-              </CustomText>
-            </TVTouchable>
-          );
-        })}
-      </ScrollView>
-    </View>
-  );
-}
-
-function HeaderIcon({ icon, onPress }: { icon: React.ComponentProps<typeof MaterialIcons>['name']; onPress: () => void }) {
-  return (
-    <TVTouchable
-      onPress={onPress}
-      style={{
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.14)',
-        backgroundColor: 'rgba(255,255,255,0.04)',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-      showFocusBorder={false}
-    >
-      <MaterialIcons name={icon} size={20} color="#EFE7FF" />
-    </TVTouchable>
+    <BrandedHeaderCard
+      title="Library"
+      subtitle="Liked songs • Downloads • Playlists • History"
+      actions={[
+        { icon: 'home', onPress: onOpenHome, accessibilityLabel: 'Open home' },
+        { icon: 'refresh', onPress: onRefresh, accessibilityLabel: 'Refresh library' },
+        { icon: 'person-outline', onPress: onOpenProfile, accessibilityLabel: 'Open profile' },
+        { icon: 'more-horiz', onPress: onOpenMenu, accessibilityLabel: 'More options' },
+      ]}
+      chips={tabs.map((tab) => ({
+        label: tab,
+        active: tab === activeTab,
+        onPress: () => onChangeTab(tab),
+      }))}
+    />
   );
 }
 
@@ -310,6 +244,8 @@ function LibraryRow({
   onPress: () => void;
   compact: boolean;
 }) {
+  const theme = useAppTheme();
+  const isDark = theme.scheme === 'dark';
   return (
     <TVTouchable
       onPress={onPress}
@@ -317,8 +253,8 @@ function LibraryRow({
         minHeight: compact ? 68 : 72,
         borderRadius: 16,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.07)',
-        backgroundColor: 'rgba(12,9,20,0.84)',
+        borderColor: isDark ? 'rgba(255,255,255,0.07)' : theme.colors.border,
+        backgroundColor: isDark ? 'rgba(12,9,20,0.84)' : theme.colors.surface,
         paddingHorizontal: 10,
         paddingVertical: 8,
         flexDirection: 'row',
@@ -326,40 +262,42 @@ function LibraryRow({
       }}
       showFocusBorder={false}
     >
-      <Image source={{ uri: item.imageUrl }} style={{ width: 48, height: 48, borderRadius: 12, marginRight: 10 }} resizeMode="cover" />
+      <Image source={{ uri: item.imageUrl }} style={{ width: 48, height: 48, borderRadius: 12, marginRight: 10, backgroundColor: isDark ? '#140F20' : theme.colors.surfaceAlt }} resizeMode="cover" />
       <View style={{ flex: 1 }}>
-        <CustomText variant="label" style={{ color: '#F8F7FC' }} numberOfLines={1}>
+        <CustomText variant="label" style={{ color: theme.colors.text.primary }} numberOfLines={1}>
           {item.title}
         </CustomText>
-        <CustomText variant="caption" style={{ color: 'rgba(194,185,220,0.9)', marginTop: 2 }} numberOfLines={1}>
+        <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 2 }} numberOfLines={1}>
           {item.subtitle}
         </CustomText>
       </View>
       <View style={{ alignItems: 'flex-end' }}>
-        <CustomText variant="caption" style={{ color: 'rgba(171,162,198,0.9)' }}>
+        <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
           {item.duration || '--:--'}
         </CustomText>
-        <MaterialIcons name="more-vert" size={18} color="rgba(171,162,198,0.9)" />
+        <MaterialIcons name="more-vert" size={18} color={theme.colors.text.secondary} />
       </View>
     </TVTouchable>
   );
 }
 
 function EmptyLibraryState({ tab, loading }: { tab: LibraryTab; loading: boolean }) {
+  const theme = useAppTheme();
+  const isDark = theme.scheme === 'dark';
   return (
     <View
       style={{
         borderRadius: 16,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.07)',
-        backgroundColor: 'rgba(12,9,20,0.76)',
+        borderColor: isDark ? 'rgba(255,255,255,0.07)' : theme.colors.border,
+        backgroundColor: isDark ? 'rgba(12,9,20,0.76)' : theme.colors.surface,
         padding: 12,
       }}
     >
-      <CustomText variant="label" style={{ color: '#F8F7FC' }}>
+      <CustomText variant="label" style={{ color: theme.colors.text.primary }}>
         {loading ? 'Loading library...' : `${tab} is empty`}
       </CustomText>
-      <CustomText variant="caption" style={{ color: 'rgba(194,185,220,0.9)', marginTop: 4 }}>
+      <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 4 }}>
         {loading
           ? 'Fetching content from the feed service.'
           : 'This section will fill automatically when users start playing or saving content.'}

@@ -24,6 +24,25 @@ const videoFilters = ['All', 'Live', 'Music Videos', 'Messages', 'Worship', 'Sho
 
 export default function VideosScreen() {
   const theme = useAppTheme();
+  const isDark = theme.scheme === 'dark';
+  const ui = {
+    stickyBg: isDark ? '#06040D' : theme.colors.background,
+    stickyBorder: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(20,16,33,0.08)',
+    stickyGlow: isDark ? 'rgba(154,107,255,0.06)' : 'rgba(109,40,217,0.08)',
+    heroBorder: isDark ? 'rgba(255,255,255,0.09)' : theme.colors.border,
+    heroBg: isDark ? 'rgba(12,9,20,0.88)' : theme.colors.surface,
+    heroFallback: isDark
+      ? (['#21113E', '#100B1E', '#0A0712'] as const)
+      : (['#EEE6FF', '#DDD1FF', '#CDBBFF'] as const),
+    heroOverlay: isDark
+      ? (['rgba(0,0,0,0)', 'rgba(6,4,13,0.9)'] as const)
+      : (['rgba(255,255,255,0)', 'rgba(255,255,255,0.92)'] as const),
+    liveLabel: isDark ? '#FCA5A5' : '#B91C1C',
+    heroMuted: isDark ? 'rgba(224,214,247,0.9)' : theme.colors.text.secondary,
+    bannerBorder: isDark ? 'rgba(216,194,255,0.12)' : 'rgba(109,40,217,0.12)',
+    bannerBg: isDark ? 'rgba(154,107,255,0.06)' : 'rgba(109,40,217,0.04)',
+    bannerIconBg: isDark ? 'rgba(154,107,255,0.16)' : 'rgba(109,40,217,0.1)',
+  } as const;
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isTV = Platform.isTV;
@@ -71,14 +90,14 @@ export default function VideosScreen() {
       >
         <View
           style={{
-            backgroundColor: '#06040D',
+            backgroundColor: ui.stickyBg,
             borderBottomWidth: 1,
-            borderBottomColor: 'rgba(255,255,255,0.06)',
+            borderBottomColor: ui.stickyBorder,
           }}
         >
           <LinearGradient
             pointerEvents="none"
-            colors={['rgba(154,107,255,0.06)', 'rgba(6,4,13,0)']}
+            colors={[ui.stickyGlow, 'rgba(0,0,0,0)']}
             start={{ x: 0.1, y: 0 }}
             end={{ x: 0.9, y: 1 }}
             style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}
@@ -91,6 +110,7 @@ export default function VideosScreen() {
                   onChangeFilter={setFilter}
                   onOpenHome={() => router.push('/(tabs)/home')}
                   onOpenProfile={() => router.push('/profile')}
+                  onOpenMenu={() => router.push('/(tabs)/Settings')}
                 />
               </View>
             </FadeIn>
@@ -106,34 +126,34 @@ export default function VideosScreen() {
                 borderRadius: 22,
                 overflow: 'hidden',
                 borderWidth: 1,
-                borderColor: 'rgba(255,255,255,0.09)',
-                backgroundColor: 'rgba(12,9,20,0.88)',
+                borderColor: ui.heroBorder,
+                backgroundColor: ui.heroBg,
               }}
             >
               <View style={{ height: isTV ? 260 : isTablet ? 240 : compact ? 208 : 224 }}>
                 {featuredVideo?.imageUrl ? (
                   <Image source={{ uri: featuredVideo.imageUrl }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
                 ) : (
-                  <LinearGradient colors={['#21113E', '#100B1E', '#0A0712']} style={{ width: '100%', height: '100%' }} />
+                  <LinearGradient colors={ui.heroFallback} style={{ width: '100%', height: '100%' }} />
                 )}
-                <LinearGradient colors={['rgba(0,0,0,0)', 'rgba(6,4,13,0.9)']} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
+                <LinearGradient colors={ui.heroOverlay} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
               </View>
               <View style={{ padding: 14 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: '#EF4444', marginRight: 6 }} />
-                    <CustomText variant="caption" style={{ color: '#FCA5A5' }}>
+                    <CustomText variant="caption" style={{ color: ui.liveLabel }}>
                       LIVE / FEATURED
                     </CustomText>
                   </View>
-                  <CustomText variant="caption" style={{ color: 'rgba(224,214,247,0.9)' }}>
+                  <CustomText variant="caption" style={{ color: ui.heroMuted }}>
                     {feed.live.length} live room{feed.live.length === 1 ? '' : 's'}
                   </CustomText>
                 </View>
-                <CustomText variant="heading" style={{ color: '#F8F7FC', marginTop: 6 }} numberOfLines={2}>
+                <CustomText variant="heading" style={{ color: theme.colors.text.primary, marginTop: 6 }} numberOfLines={2}>
                   {featuredVideo?.title ?? 'Featured video slot'}
                 </CustomText>
-                <CustomText variant="caption" style={{ color: 'rgba(194,185,220,0.9)', marginTop: 4 }} numberOfLines={2}>
+                <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 4 }} numberOfLines={2}>
                   {featuredVideo?.description ?? 'Latest videos and live replays will display here after content sync.'}
                 </CustomText>
                 <View style={{ marginTop: 10, flexDirection: 'row', gap: 8 }}>
@@ -157,21 +177,21 @@ export default function VideosScreen() {
                 marginTop: 16,
                 borderRadius: 16,
                 borderWidth: 1,
-                borderColor: 'rgba(216,194,255,0.12)',
-                backgroundColor: 'rgba(154,107,255,0.06)',
+                borderColor: ui.bannerBorder,
+                backgroundColor: ui.bannerBg,
                 padding: 12,
                 flexDirection: 'row',
                 alignItems: 'center',
               }}
             >
-              <View style={{ width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(154,107,255,0.16)', marginRight: 10 }}>
-                <MaterialIcons name="campaign" size={20} color="#E8D7FF" />
+              <View style={{ width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: ui.bannerIconBg, marginRight: 10 }}>
+                <MaterialIcons name="campaign" size={20} color={theme.colors.primary} />
               </View>
               <View style={{ flex: 1 }}>
-                <CustomText variant="label" style={{ color: '#F8F7FC' }}>
+                <CustomText variant="label" style={{ color: theme.colors.text.primary }}>
                   Ad placement section
                 </CustomText>
-                <CustomText variant="caption" style={{ color: 'rgba(194,185,220,0.9)', marginTop: 3 }}>
+                <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 3 }}>
                   Sponsored video campaigns can render between rows without breaking the content layout.
                 </CustomText>
               </View>
@@ -180,11 +200,11 @@ export default function VideosScreen() {
 
           <FadeIn delay={180}>
             <View style={{ marginTop: 18 }}>
-              <CustomText variant="heading" style={{ color: '#F8F7FC' }}>
+              <CustomText variant="heading" style={{ color: theme.colors.text.primary }}>
                 Video Feed
               </CustomText>
-              <CustomText variant="caption" style={{ color: 'rgba(194,185,220,0.9)', marginTop: 3 }}>
-                Larger cards for live streams and replays.
+              <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 3 }}>
+                Larger cards for live streams, replays and channel drops.
               </CustomText>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -6, marginTop: 10 }}>
                 {videos.length ? (
@@ -221,20 +241,38 @@ function VideosHeader({
   onChangeFilter,
   onOpenHome,
   onOpenProfile,
+  onOpenMenu,
 }: {
   filter: string;
   onChangeFilter: (_next: string) => void;
   onOpenHome: () => void;
   onOpenProfile: () => void;
+  onOpenMenu: () => void;
 }) {
+  const theme = useAppTheme();
+  const isDark = theme.scheme === 'dark';
+  const ui = {
+    cardBg: isDark ? 'rgba(10,8,17,0.9)' : theme.colors.surface,
+    cardBorder: isDark ? 'rgba(255,255,255,0.08)' : theme.colors.border,
+    logoBg: isDark ? 'rgba(255,255,255,0.04)' : theme.colors.surfaceAlt,
+    logoBorder: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(20,16,33,0.08)',
+    muted: isDark ? 'rgba(194,185,220,0.9)' : 'rgba(96,87,124,0.92)',
+    subtle: isDark ? 'rgba(176,167,202,0.9)' : 'rgba(108,99,134,0.9)',
+    chipBg: isDark ? 'rgba(255,255,255,0.03)' : theme.colors.surface,
+    chipBorder: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(20,16,33,0.08)',
+    chipActiveBg: isDark ? 'rgba(154,107,255,0.16)' : 'rgba(109,40,217,0.08)',
+    chipActiveBorder: isDark ? 'rgba(216,194,255,0.34)' : 'rgba(109,40,217,0.16)',
+    chipText: isDark ? '#CEC4E7' : '#5C5478',
+    chipActiveText: isDark ? '#EFE3FF' : '#4C1D95',
+  } as const;
   return (
     <View>
       <View
         style={{
           borderRadius: 18,
           borderWidth: 1,
-          borderColor: 'rgba(255,255,255,0.08)',
-          backgroundColor: 'rgba(10,8,17,0.88)',
+          borderColor: ui.cardBorder,
+          backgroundColor: ui.cardBg,
           paddingHorizontal: 12,
           paddingVertical: 12,
         }}
@@ -247,8 +285,8 @@ function VideosHeader({
                 height: 42,
                 borderRadius: 14,
                 borderWidth: 1,
-                borderColor: 'rgba(255,255,255,0.12)',
-                backgroundColor: 'rgba(255,255,255,0.04)',
+                borderColor: ui.logoBorder,
+                backgroundColor: ui.logoBg,
                 alignItems: 'center',
                 justifyContent: 'center',
                 marginRight: 10,
@@ -260,20 +298,21 @@ function VideosHeader({
               />
             </View>
             <View style={{ flex: 1 }}>
-              <CustomText variant="caption" style={{ color: 'rgba(194,185,220,0.9)' }}>
+              <CustomText variant="caption" style={{ color: ui.muted }}>
                 ClaudyGod Ministries
               </CustomText>
-              <CustomText variant="display" style={{ color: '#F8F7FC', marginTop: 2, fontSize: 17, lineHeight: 22 }}>
+              <CustomText variant="display" style={{ color: theme.colors.text.primary, marginTop: 2, fontSize: 17, lineHeight: 22 }}>
                 Video Hub
               </CustomText>
-              <CustomText variant="caption" style={{ color: 'rgba(176,167,202,0.9)', marginTop: 3 }} numberOfLines={1}>
-                Live streams • Replays • Worship videos
+              <CustomText variant="caption" style={{ color: ui.subtle, marginTop: 3 }} numberOfLines={1}>
+                Live • Replays • Worship
               </CustomText>
             </View>
           </View>
           <View style={{ flexDirection: 'row', gap: 8 }}>
             <HeaderIcon icon="home" onPress={onOpenHome} />
             <HeaderIcon icon="person-outline" onPress={onOpenProfile} />
+            <HeaderIcon icon="more-horiz" onPress={onOpenMenu} />
           </View>
         </View>
       </View>
@@ -295,14 +334,14 @@ function VideosHeader({
                 marginRight: 8,
                 borderRadius: 999,
                 borderWidth: 1,
-                borderColor: active ? 'rgba(216,194,255,0.34)' : 'rgba(255,255,255,0.1)',
-                backgroundColor: active ? 'rgba(154,107,255,0.16)' : 'rgba(255,255,255,0.03)',
+                borderColor: active ? ui.chipActiveBorder : ui.chipBorder,
+                backgroundColor: active ? ui.chipActiveBg : ui.chipBg,
                 paddingHorizontal: 12,
                 paddingVertical: 8,
               }}
               showFocusBorder={false}
             >
-              <CustomText variant="caption" style={{ color: active ? '#EFE3FF' : '#CEC4E7' }}>
+              <CustomText variant="caption" style={{ color: active ? ui.chipActiveText : ui.chipText }}>
                 {label}
               </CustomText>
             </TVTouchable>
@@ -314,6 +353,8 @@ function VideosHeader({
 }
 
 function HeaderIcon({ icon, onPress }: { icon: React.ComponentProps<typeof MaterialIcons>['name']; onPress: () => void }) {
+  const theme = useAppTheme();
+  const isDark = theme.scheme === 'dark';
   return (
     <TVTouchable
       onPress={onPress}
@@ -322,19 +363,36 @@ function HeaderIcon({ icon, onPress }: { icon: React.ComponentProps<typeof Mater
         height: 40,
         borderRadius: 20,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.14)',
-        backgroundColor: 'rgba(255,255,255,0.04)',
+        borderColor: isDark ? 'rgba(255,255,255,0.14)' : 'rgba(20,16,33,0.08)',
+        backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(109,40,217,0.05)',
         alignItems: 'center',
         justifyContent: 'center',
       }}
       showFocusBorder={false}
     >
-      <MaterialIcons name={icon} size={20} color="#EFE7FF" />
+      <MaterialIcons name={icon} size={20} color={isDark ? '#EFE7FF' : '#3F2A76'} />
     </TVTouchable>
   );
 }
 
 function VideoTile({ item, onPress }: { item: FeedCardItem; onPress: () => void }) {
+  const theme = useAppTheme();
+  const isDark = theme.scheme === 'dark';
+  const ui = {
+    cardBorder: isDark ? 'rgba(255,255,255,0.08)' : theme.colors.border,
+    cardBg: isDark ? 'rgba(12,9,20,0.86)' : theme.colors.surface,
+    overlay: isDark
+      ? (['rgba(0,0,0,0)', 'rgba(6,4,13,0.86)'] as const)
+      : (['rgba(255,255,255,0)', 'rgba(255,255,255,0.86)'] as const),
+    livePillBg: isDark ? 'rgba(127,29,29,0.78)' : 'rgba(220,38,38,0.9)',
+    livePillText: isDark ? '#FEE2E2' : '#FFFFFF',
+    durationBg: isDark ? 'rgba(10,8,17,0.76)' : 'rgba(255,255,255,0.9)',
+    durationBorder: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(20,16,33,0.08)',
+    durationText: isDark ? '#F8F7FC' : theme.colors.text.primary,
+    title: theme.colors.text.primary,
+    subtitle: theme.colors.text.secondary,
+    liveCount: isDark ? '#FCA5A5' : '#B91C1C',
+  } as const;
   return (
     <TVTouchable
       onPress={onPress}
@@ -342,37 +400,37 @@ function VideoTile({ item, onPress }: { item: FeedCardItem; onPress: () => void 
         borderRadius: 18,
         overflow: 'hidden',
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.08)',
-        backgroundColor: 'rgba(12,9,20,0.86)',
+        borderColor: ui.cardBorder,
+        backgroundColor: ui.cardBg,
       }}
       showFocusBorder={false}
     >
       <View style={{ aspectRatio: 16 / 10 }}>
         <Image source={{ uri: item.imageUrl }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-        <LinearGradient colors={['rgba(0,0,0,0)', 'rgba(6,4,13,0.86)']} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
+        <LinearGradient colors={ui.overlay} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
         {item.isLive ? (
-          <View style={{ position: 'absolute', top: 8, left: 8, borderRadius: 999, backgroundColor: 'rgba(127,29,29,0.78)', paddingHorizontal: 8, paddingVertical: 4, flexDirection: 'row', alignItems: 'center' }}>
+          <View style={{ position: 'absolute', top: 8, left: 8, borderRadius: 999, backgroundColor: ui.livePillBg, paddingHorizontal: 8, paddingVertical: 4, flexDirection: 'row', alignItems: 'center' }}>
             <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#EF4444', marginRight: 5 }} />
-            <CustomText variant="caption" style={{ color: '#FEE2E2' }}>
+            <CustomText variant="caption" style={{ color: ui.livePillText }}>
               LIVE
             </CustomText>
           </View>
         ) : null}
-        <View style={{ position: 'absolute', bottom: 8, right: 8, borderRadius: 999, backgroundColor: 'rgba(10,8,17,0.76)', paddingHorizontal: 8, paddingVertical: 4 }}>
-          <CustomText variant="caption" style={{ color: '#F8F7FC' }}>
+        <View style={{ position: 'absolute', bottom: 8, right: 8, borderRadius: 999, backgroundColor: ui.durationBg, borderWidth: 1, borderColor: ui.durationBorder, paddingHorizontal: 8, paddingVertical: 4 }}>
+          <CustomText variant="caption" style={{ color: ui.durationText }}>
             {item.duration || '--:--'}
           </CustomText>
         </View>
       </View>
       <View style={{ padding: 10 }}>
-        <CustomText variant="label" style={{ color: '#F8F7FC' }} numberOfLines={2}>
+        <CustomText variant="label" style={{ color: ui.title }} numberOfLines={2}>
           {item.title}
         </CustomText>
-        <CustomText variant="caption" style={{ color: 'rgba(194,185,220,0.9)', marginTop: 3 }} numberOfLines={1}>
+        <CustomText variant="caption" style={{ color: ui.subtitle, marginTop: 3 }} numberOfLines={1}>
           {item.subtitle}
         </CustomText>
         {item.liveViewerCount ? (
-          <CustomText variant="caption" style={{ color: '#FCA5A5', marginTop: 4 }}>
+          <CustomText variant="caption" style={{ color: ui.liveCount, marginTop: 4 }}>
             {item.liveViewerCount} watching
           </CustomText>
         ) : null}
@@ -390,6 +448,14 @@ function InlinePillButton({
   label: string;
   onPress: () => void;
 }) {
+  const theme = useAppTheme();
+  const isDark = theme.scheme === 'dark';
+  const ui = {
+    border: isDark ? 'rgba(255,255,255,0.14)' : 'rgba(20,16,33,0.08)',
+    bg: isDark ? 'rgba(255,255,255,0.05)' : theme.colors.surface,
+    icon: isDark ? '#EFE7FF' : theme.colors.primary,
+    text: isDark ? '#EFE7FF' : theme.colors.text.primary,
+  } as const;
   return (
     <TVTouchable
       onPress={onPress}
@@ -398,15 +464,15 @@ function InlinePillButton({
         alignItems: 'center',
         borderRadius: 999,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.14)',
-        backgroundColor: 'rgba(255,255,255,0.05)',
+        borderColor: ui.border,
+        backgroundColor: ui.bg,
         paddingHorizontal: 12,
         paddingVertical: 8,
       }}
       showFocusBorder={false}
     >
-      <MaterialIcons name={icon} size={16} color="#EFE7FF" />
-      <CustomText variant="caption" style={{ color: '#EFE7FF', marginLeft: 5 }}>
+      <MaterialIcons name={icon} size={16} color={ui.icon} />
+      <CustomText variant="caption" style={{ color: ui.text, marginLeft: 5 }}>
         {label}
       </CustomText>
     </TVTouchable>
@@ -414,20 +480,22 @@ function InlinePillButton({
 }
 
 function EmptyVideosState() {
+  const theme = useAppTheme();
+  const isDark = theme.scheme === 'dark';
   return (
     <View
       style={{
         borderRadius: 18,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.07)',
-        backgroundColor: 'rgba(12,9,20,0.76)',
+        borderColor: isDark ? 'rgba(255,255,255,0.07)' : theme.colors.border,
+        backgroundColor: isDark ? 'rgba(12,9,20,0.76)' : theme.colors.surface,
         padding: 14,
       }}
     >
-      <CustomText variant="label" style={{ color: '#F8F7FC' }}>
+      <CustomText variant="label" style={{ color: theme.colors.text.primary }}>
         No video content synced yet
       </CustomText>
-      <CustomText variant="caption" style={{ color: 'rgba(194,185,220,0.9)', marginTop: 4 }}>
+      <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 4 }}>
         Once your YouTube sync or admin publishing flow runs, videos and live replays will render here automatically.
       </CustomText>
     </View>
