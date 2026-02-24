@@ -24,6 +24,7 @@ interface BrandedHeaderCardProps {
   actions?: HeaderAction[];
   leadingAction?: HeaderAction;
   chips?: HeaderChip[];
+  showEyebrow?: boolean;
 }
 
 export function BrandedHeaderCard({
@@ -33,6 +34,7 @@ export function BrandedHeaderCard({
   actions = [],
   leadingAction,
   chips,
+  showEyebrow = true,
 }: BrandedHeaderCardProps) {
   const theme = useAppTheme();
   const isDark = theme.scheme === 'dark';
@@ -53,6 +55,7 @@ export function BrandedHeaderCard({
     chipActiveBorder: isDark ? 'rgba(216,194,255,0.34)' : 'rgba(109,40,217,0.16)',
     chipText: isDark ? '#CEC4E7' : '#5C5478',
     chipActiveText: isDark ? '#EFE3FF' : '#4C1D95',
+    cardShadow: isDark ? 'rgba(0,0,0,0.24)' : 'rgba(20,16,33,0.06)',
   } as const;
 
   const renderAction = (action: HeaderAction) => (
@@ -62,9 +65,9 @@ export function BrandedHeaderCard({
       accessibilityLabel={action.accessibilityLabel}
       onPress={action.onPress}
       style={{
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+        width: 36,
+        height: 36,
+        borderRadius: 18,
         borderWidth: 1,
         borderColor: ui.iconBorder,
         backgroundColor: ui.iconBg,
@@ -81,50 +84,64 @@ export function BrandedHeaderCard({
     <View>
       <View
         style={{
-          borderRadius: 18,
+          borderRadius: 16,
           borderWidth: 1,
           borderColor: ui.cardBorder,
           backgroundColor: ui.cardBg,
-          paddingHorizontal: 12,
-          paddingVertical: 12,
+          paddingHorizontal: 10,
+          paddingVertical: 10,
+          shadowColor: ui.cardShadow,
+          shadowOpacity: isDark ? 0 : 1,
+          shadowRadius: 12,
+          shadowOffset: { width: 0, height: 4 },
         }}
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 10 }}>
-            {leadingAction ? <View style={{ marginRight: 8 }}>{renderAction(leadingAction)}</View> : null}
+          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 8 }}>
+            {leadingAction ? <View style={{ marginRight: 6 }}>{renderAction(leadingAction)}</View> : null}
 
             <View
               style={{
-                width: 42,
-                height: 42,
-                borderRadius: 14,
+                width: 36,
+                height: 36,
+                borderRadius: 12,
                 borderWidth: 1,
                 borderColor: ui.logoBorder,
                 backgroundColor: ui.logoBg,
                 alignItems: 'center',
                 justifyContent: 'center',
-                marginRight: 10,
+                marginRight: 8,
               }}
             >
-              <Image source={require('../../assets/images/ClaudyGoLogo.webp')} style={{ width: 30, height: 30, borderRadius: 15 }} />
+              <Image source={require('../../assets/images/ClaudyGoLogo.webp')} style={{ width: 24, height: 24, borderRadius: 12 }} />
             </View>
 
             <View style={{ flex: 1 }}>
-              <CustomText variant="caption" style={{ color: ui.muted }}>
-                {eyebrow}
-              </CustomText>
-              <CustomText variant="display" style={{ color: theme.colors.text.primary, marginTop: 2, fontSize: 17, lineHeight: 22 }}>
+              {showEyebrow ? (
+                <CustomText variant="caption" style={{ color: ui.muted }}>
+                  {eyebrow}
+                </CustomText>
+              ) : null}
+              <CustomText
+                variant="display"
+                style={{
+                  color: theme.colors.text.primary,
+                  marginTop: showEyebrow ? 1 : 0,
+                  fontSize: 16,
+                  lineHeight: 20,
+                }}
+              >
                 {title}
               </CustomText>
               {subtitle ? (
-                <CustomText variant="caption" style={{ color: ui.subtle, marginTop: 3 }} numberOfLines={1}>
+                <CustomText variant="caption" style={{ color: ui.subtle, marginTop: 2 }} numberOfLines={1}>
                   {subtitle}
                 </CustomText>
               ) : null}
             </View>
           </View>
 
-          {actions.length ? <View style={{ flexDirection: 'row', gap: 8 }}>{actions.map(renderAction)}</View> : null}
+          {actions.length ? <View style={{ flexDirection: 'row', gap: 6 }}>{actions.map(renderAction)}</View> : null}
         </View>
       </View>
 
@@ -134,7 +151,7 @@ export function BrandedHeaderCard({
           showsHorizontalScrollIndicator={false}
           bounces={false}
           overScrollMode="never"
-          contentContainerStyle={{ paddingTop: 12, paddingBottom: 2, paddingRight: 8 }}
+          contentContainerStyle={{ paddingTop: 8, paddingBottom: 1, paddingRight: 8 }}
         >
           {chips.map((chip) => {
             const active = Boolean(chip.active);
@@ -155,8 +172,8 @@ export function BrandedHeaderCard({
                     borderWidth: 1,
                     borderColor: active ? ui.chipActiveBorder : ui.chipBorder,
                     backgroundColor: active ? ui.chipActiveBg : ui.chipBg,
-                    paddingHorizontal: 12,
-                    paddingVertical: 8,
+                    paddingHorizontal: 11,
+                    paddingVertical: 7,
                   }}
                   showFocusBorder={false}
                 >
@@ -174,8 +191,8 @@ export function BrandedHeaderCard({
                   borderWidth: 1,
                   borderColor: active ? ui.chipActiveBorder : ui.chipBorder,
                   backgroundColor: active ? ui.chipActiveBg : ui.chipBg,
-                  paddingHorizontal: 12,
-                  paddingVertical: 8,
+                  paddingHorizontal: 11,
+                  paddingVertical: 7,
                 }}
               >
                 {chipContent}
@@ -187,4 +204,3 @@ export function BrandedHeaderCard({
     </View>
   );
 }
-

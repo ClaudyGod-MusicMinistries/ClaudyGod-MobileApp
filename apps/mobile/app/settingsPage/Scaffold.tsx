@@ -60,8 +60,9 @@ export function SettingsScaffold({ title, subtitle, children, hero }: ScaffoldPr
         <BrandedHeaderCard
           title={title}
           subtitle={subtitle}
+          showEyebrow={false}
           leadingAction={{ icon: 'arrow-back', onPress: () => router.back(), accessibilityLabel: 'Go back' }}
-          actions={[{ icon: 'more-horiz', onPress: () => router.push('/(tabs)/Settings'), accessibilityLabel: 'Open settings' }]}
+          actions={[]}
         />
       </View>
 

@@ -130,7 +130,6 @@ export default function Settings() {
               <View style={{ paddingTop: theme.spacing.md, paddingBottom: 12 }}>
                 <SettingsHeader
                   onOpenHome={() => router.push('/(tabs)/home')}
-                  onOpenProfile={() => router.push('/profile')}
                   quickLabels={quickLabels}
                   onOpenMenu={() => router.push('/(tabs)/videos')}
                 />
@@ -274,12 +273,10 @@ export default function Settings() {
 
 function SettingsHeader({
   onOpenHome,
-  onOpenProfile,
   quickLabels,
   onOpenMenu,
 }: {
   onOpenHome: () => void;
-  onOpenProfile: () => void;
   quickLabels: string[];
   onOpenMenu: () => void;
 }) {
@@ -289,7 +286,6 @@ function SettingsHeader({
       subtitle="Account • Playback • Preferences • Support"
       actions={[
         { icon: 'home', onPress: onOpenHome, accessibilityLabel: 'Open home' },
-        { icon: 'person-outline', onPress: onOpenProfile, accessibilityLabel: 'Open profile' },
         { icon: 'more-horiz', onPress: onOpenMenu, accessibilityLabel: 'More options' },
       ]}
       chips={quickLabels.map((label) => ({ label }))}

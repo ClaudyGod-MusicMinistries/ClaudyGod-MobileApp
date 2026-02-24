@@ -106,7 +106,6 @@ export default function LibraryScreen() {
                   onChangeTab={setActiveTab}
                   onRefresh={refresh}
                   onOpenProfile={() => router.push('/profile')}
-                  onOpenHome={() => router.push('/(tabs)/home')}
                   onOpenMenu={() => router.push('/(tabs)/Settings')}
                 />
               </View>
@@ -206,14 +205,12 @@ function LibraryHeader({
   onChangeTab,
   onRefresh,
   onOpenProfile,
-  onOpenHome,
   onOpenMenu,
 }: {
   activeTab: LibraryTab;
   onChangeTab: (_tab: LibraryTab) => void;
   onRefresh: () => void;
   onOpenProfile: () => void;
-  onOpenHome: () => void;
   onOpenMenu: () => void;
 }) {
   return (
@@ -221,7 +218,6 @@ function LibraryHeader({
       title="Library"
       subtitle="Liked songs • Downloads • Playlists • History"
       actions={[
-        { icon: 'home', onPress: onOpenHome, accessibilityLabel: 'Open home' },
         { icon: 'refresh', onPress: onRefresh, accessibilityLabel: 'Refresh library' },
         { icon: 'person-outline', onPress: onOpenProfile, accessibilityLabel: 'Open profile' },
         { icon: 'more-horiz', onPress: onOpenMenu, accessibilityLabel: 'More options' },
