@@ -16,7 +16,7 @@ interface Playlist {
 
 interface PlaylistGridProps {
   playlists: Playlist[];
-  onPlaylistPress: (playlist: Playlist) => void;
+  onPlaylistPress: (_playlist: Playlist) => void;
 }
 
 export const PlaylistGrid: React.FC<PlaylistGridProps> = ({ playlists, onPlaylistPress }) => {
@@ -52,10 +52,10 @@ export interface Song {
 
 interface SongListProps {
   songs: Song[];
-  onSongPress: (song: Song) => void;
+  onSongPress: (_song: Song) => void;
   currentSongId?: string;
   showActions?: boolean;
-  onRemove?: (song: Song) => void;
+  onRemove?: (_song: Song) => void;
 }
 
 export const SongList: React.FC<SongListProps> = ({

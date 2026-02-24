@@ -1,6 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { ReactNode } from 'react';
-import { TouchableOpacity, TouchableOpacityProps } from 'react-native';
+import { TouchableOpacity, TouchableOpacityProps, type StyleProp, type TextStyle } from 'react-native';
 import { CustomText } from './CustomText';
 import { radius, spacing, tv as tvTokens } from '../styles/designTokens';
 import { colors } from '../constants/color';
@@ -11,7 +10,7 @@ interface CustomButtonProps extends TouchableOpacityProps {
   size?: 'sm' | 'md' | 'lg';
   children: ReactNode; // Changed from string to ReactNode
   className?: string;
-  textStyle?: any;
+  textStyle?: StyleProp<TextStyle>;
   textClassName?: string;
 }
 

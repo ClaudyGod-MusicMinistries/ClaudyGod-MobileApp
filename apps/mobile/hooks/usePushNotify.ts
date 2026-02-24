@@ -1,5 +1,5 @@
 // hooks/usePushNotifications.ts
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { AppState } from 'react-native';
 import { pushNotificationService } from '../services/pushNotificationService';
 
@@ -7,7 +7,7 @@ export interface UsePushNotificationsReturn {
   isEnabled: boolean;
   hasPermission: boolean;
   isLoading: boolean;
-  toggleNotifications: (enabled: boolean) => Promise<void>;
+  toggleNotifications: (_enabled: boolean) => Promise<void>;
   checkPermission: () => Promise<void>;
   scheduleTestNotification: () => Promise<void>;
 }
@@ -17,25 +17,26 @@ export const usePushNotifications = (): UsePushNotificationsReturn => {
   const [hasPermission, setHasPermission] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Check initial state
-  useEffect(() => {
-    initializeNotifications();
+  const checkPermission = useCallback(async () => {
+    try {
+      const permissionStatus = await pushNotificationService.getPermissionStatus();
+      const permissionGranted = permissionStatus === 'granted';
+
+      setHasPermission(permissionGranted);
+      setIsEnabled(permissionGranted);
+    } catch (error) {
+      console.error('Error checking permission:', error);
+    }
   }, []);
 
-  // Listen for app state changes to refresh permission status
-  useEffect(() => {
-    const subscription = AppState.addEventListener('change', handleAppStateChange);
-    return () => subscription.remove();
-  }, []);
-
-  const initializeNotifications = async () => {
+  const initializeNotifications = useCallback(async () => {
     try {
       setIsLoading(true);
-      
+
       // Check current permission status
       const permissionStatus = await pushNotificationService.getPermissionStatus();
       const permissionGranted = permissionStatus === 'granted';
-      
+
       setHasPermission(permissionGranted);
       setIsEnabled(permissionGranted);
 
@@ -48,25 +49,24 @@ export const usePushNotifications = (): UsePushNotificationsReturn => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const handleAppStateChange = async (nextAppState: string) => {
+  const handleAppStateChange = useCallback(async (nextAppState: string) => {
     if (nextAppState === 'active') {
       await checkPermission();
     }
-  };
+  }, [checkPermission]);
 
-  const checkPermission = async () => {
-    try {
-      const permissionStatus = await pushNotificationService.getPermissionStatus();
-      const permissionGranted = permissionStatus === 'granted';
-      
-      setHasPermission(permissionGranted);
-      setIsEnabled(permissionGranted);
-    } catch (error) {
-      console.error('Error checking permission:', error);
-    }
-  };
+  // Check initial state
+  useEffect(() => {
+    initializeNotifications();
+  }, [initializeNotifications]);
+
+  // Listen for app state changes to refresh permission status
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    return () => subscription.remove();
+  }, [handleAppStateChange]);
 
   const toggleNotifications = async (enabled: boolean) => {
     try {
