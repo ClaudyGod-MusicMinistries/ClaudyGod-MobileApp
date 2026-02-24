@@ -12,6 +12,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { TabScreenWrapper } from './TextWrapper';
 import { Screen } from '../../components/layout/Screen';
+import { BrandedHeaderCard } from '../../components/layout/BrandedHeaderCard';
 import { CustomText } from '../../components/CustomText';
 import { FadeIn } from '../../components/ui/FadeIn';
 import { TVTouchable } from '../../components/ui/TVTouchable';
@@ -20,7 +21,7 @@ import { useContentFeed } from '../../hooks/useContentFeed';
 import type { FeedCardItem } from '../../services/contentService';
 import { subscribeToLiveAlerts, trackPlayEvent } from '../../services/supabaseAnalytics';
 
-const videoFilters = ['All', 'Live', 'Music Videos', 'Messages', 'Worship', 'Shorts'];
+const videoFilters = ['All', 'Live', 'Music', 'Word', 'Worship'];
 
 export default function VideosScreen() {
   const theme = useAppTheme();
@@ -56,8 +57,8 @@ export default function VideosScreen() {
   const videos = useMemo(() => {
     const base = [...feed.live, ...feed.videos];
     if (filter === 'Live') return feed.live;
-    if (filter === 'Music Videos') return base.filter((item) => /music|worship/i.test(`${item.title} ${item.subtitle}`));
-    if (filter === 'Messages') return base.filter((item) => /message|truth|word|sermon/i.test(`${item.title} ${item.description}`));
+    if (filter === 'Music') return base.filter((item) => /music|worship/i.test(`${item.title} ${item.subtitle}`));
+    if (filter === 'Word') return base.filter((item) => /message|truth|word|sermon/i.test(`${item.title} ${item.description}`));
     if (filter === 'Worship') return base.filter((item) => /worship|praise/i.test(`${item.title} ${item.description}`));
     return base;
   }, [feed.live, feed.videos, filter]);
@@ -104,7 +105,7 @@ export default function VideosScreen() {
           />
           <Screen>
             <FadeIn>
-              <View style={{ paddingTop: theme.spacing.md, paddingBottom: 12 }}>
+              <View style={{ paddingTop: theme.spacing.lg, paddingBottom: 10 }}>
                 <VideosHeader
                   filter={filter}
                   onChangeFilter={setFilter}
@@ -249,129 +250,21 @@ function VideosHeader({
   onOpenProfile: () => void;
   onOpenMenu: () => void;
 }) {
-  const theme = useAppTheme();
-  const isDark = theme.scheme === 'dark';
-  const ui = {
-    cardBg: isDark ? 'rgba(10,8,17,0.9)' : theme.colors.surface,
-    cardBorder: isDark ? 'rgba(255,255,255,0.08)' : theme.colors.border,
-    logoBg: isDark ? 'rgba(255,255,255,0.04)' : theme.colors.surfaceAlt,
-    logoBorder: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(20,16,33,0.08)',
-    muted: isDark ? 'rgba(194,185,220,0.9)' : 'rgba(96,87,124,0.92)',
-    subtle: isDark ? 'rgba(176,167,202,0.9)' : 'rgba(108,99,134,0.9)',
-    chipBg: isDark ? 'rgba(255,255,255,0.03)' : theme.colors.surface,
-    chipBorder: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(20,16,33,0.08)',
-    chipActiveBg: isDark ? 'rgba(154,107,255,0.16)' : 'rgba(109,40,217,0.08)',
-    chipActiveBorder: isDark ? 'rgba(216,194,255,0.34)' : 'rgba(109,40,217,0.16)',
-    chipText: isDark ? '#CEC4E7' : '#5C5478',
-    chipActiveText: isDark ? '#EFE3FF' : '#4C1D95',
-  } as const;
   return (
-    <View>
-      <View
-        style={{
-          borderRadius: 18,
-          borderWidth: 1,
-          borderColor: ui.cardBorder,
-          backgroundColor: ui.cardBg,
-          paddingHorizontal: 12,
-          paddingVertical: 12,
-        }}
-      >
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 10 }}>
-            <View
-              style={{
-                width: 42,
-                height: 42,
-                borderRadius: 14,
-                borderWidth: 1,
-                borderColor: ui.logoBorder,
-                backgroundColor: ui.logoBg,
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginRight: 10,
-              }}
-            >
-              <Image
-                source={require('../../assets/images/ClaudyGoLogo.webp')}
-                style={{ width: 30, height: 30, borderRadius: 15 }}
-              />
-            </View>
-            <View style={{ flex: 1 }}>
-              <CustomText variant="caption" style={{ color: ui.muted }}>
-                ClaudyGod Ministries
-              </CustomText>
-              <CustomText variant="display" style={{ color: theme.colors.text.primary, marginTop: 2, fontSize: 17, lineHeight: 22 }}>
-                Video Hub
-              </CustomText>
-              <CustomText variant="caption" style={{ color: ui.subtle, marginTop: 3 }} numberOfLines={1}>
-                Live • Replays • Worship
-              </CustomText>
-            </View>
-          </View>
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            <HeaderIcon icon="home" onPress={onOpenHome} />
-            <HeaderIcon icon="person-outline" onPress={onOpenProfile} />
-            <HeaderIcon icon="more-horiz" onPress={onOpenMenu} />
-          </View>
-        </View>
-      </View>
-
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        bounces={false}
-        overScrollMode="never"
-        contentContainerStyle={{ paddingTop: 12, paddingBottom: 2, paddingRight: 8 }}
-      >
-        {videoFilters.map((label) => {
-          const active = label === filter;
-          return (
-            <TVTouchable
-              key={label}
-              onPress={() => onChangeFilter(label)}
-              style={{
-                marginRight: 8,
-                borderRadius: 999,
-                borderWidth: 1,
-                borderColor: active ? ui.chipActiveBorder : ui.chipBorder,
-                backgroundColor: active ? ui.chipActiveBg : ui.chipBg,
-                paddingHorizontal: 12,
-                paddingVertical: 8,
-              }}
-              showFocusBorder={false}
-            >
-              <CustomText variant="caption" style={{ color: active ? ui.chipActiveText : ui.chipText }}>
-                {label}
-              </CustomText>
-            </TVTouchable>
-          );
-        })}
-      </ScrollView>
-    </View>
-  );
-}
-
-function HeaderIcon({ icon, onPress }: { icon: React.ComponentProps<typeof MaterialIcons>['name']; onPress: () => void }) {
-  const theme = useAppTheme();
-  const isDark = theme.scheme === 'dark';
-  return (
-    <TVTouchable
-      onPress={onPress}
-      style={{
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        borderWidth: 1,
-        borderColor: isDark ? 'rgba(255,255,255,0.14)' : 'rgba(20,16,33,0.08)',
-        backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(109,40,217,0.05)',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-      showFocusBorder={false}
-    >
-      <MaterialIcons name={icon} size={20} color={isDark ? '#EFE7FF' : '#3F2A76'} />
-    </TVTouchable>
+    <BrandedHeaderCard
+      title="Videos"
+      actions={[
+        { icon: 'home', onPress: onOpenHome, accessibilityLabel: 'Open home' },
+        { icon: 'person-outline', onPress: onOpenProfile, accessibilityLabel: 'Open profile' },
+        { icon: 'more-horiz', onPress: onOpenMenu, accessibilityLabel: 'More options' },
+      ]}
+      chips={videoFilters.map((label) => ({
+        label,
+        active: label === filter,
+        onPress: () => onChangeFilter(label),
+      }))}
+      showEyebrow={false}
+    />
   );
 }
 
