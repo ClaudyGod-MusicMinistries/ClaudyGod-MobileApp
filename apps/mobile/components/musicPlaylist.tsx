@@ -134,7 +134,7 @@ export const SongList: React.FC<SongListProps> = ({
                   style={{ marginTop: 4 }}
                   showFocusBorder={false}
                 >
-                  <MaterialIcons name="more-horiz" size={16} color={theme.colors.text.secondary} />
+                  <MaterialIcons name="more-vert" size={16} color={theme.colors.text.secondary} />
                 </TVTouchable>
               ) : null}
             </View>

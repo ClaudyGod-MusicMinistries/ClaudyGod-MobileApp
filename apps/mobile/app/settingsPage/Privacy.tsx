@@ -68,7 +68,7 @@ export default function Privacy() {
   } as const;
 
   const handlePlaceholder = (label: string) => {
-    Alert.alert(label, 'This action is ready for backend wiring (Supabase/Auth/Admin workflow).');
+    Alert.alert(label, 'This action will be available soon.');
   };
 
   const securityActions = [

@@ -256,7 +256,7 @@ function VideosHeader({
       actions={[
         { icon: 'home', onPress: onOpenHome, accessibilityLabel: 'Open home' },
         { icon: 'person-outline', onPress: onOpenProfile, accessibilityLabel: 'Open profile' },
-        { icon: 'more-horiz', onPress: onOpenMenu, accessibilityLabel: 'More options' },
+        { icon: 'more-vert', onPress: onOpenMenu, accessibilityLabel: 'More options' },
       ]}
       chips={videoFilters.map((label) => ({
         label,

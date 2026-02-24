@@ -224,7 +224,7 @@ export default function SignInScreen() {
 
               <View style={{ marginTop: 12 }}>
                 <CustomText variant="caption" style={{ color: 'rgba(167,158,192,0.86)', textAlign: 'center' }}>
-                  Secure sign-in • Supabase Auth ready
+                  Secure sign-in for your account
                 </CustomText>
               </View>
             </View>

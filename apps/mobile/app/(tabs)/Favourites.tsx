@@ -189,7 +189,7 @@ export default function LibraryScreen() {
                   Downloads and offline mode
                 </CustomText>
                 <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 4 }}>
-                  UI structure is ready. Connect your download storage layer and Supabase user tables to persist offline items per account.
+                  Downloaded and offline items will appear here for quick access.
                 </CustomText>
               </View>
             </FadeIn>
@@ -220,7 +220,7 @@ function LibraryHeader({
       actions={[
         { icon: 'refresh', onPress: onRefresh, accessibilityLabel: 'Refresh library' },
         { icon: 'person-outline', onPress: onOpenProfile, accessibilityLabel: 'Open profile' },
-        { icon: 'more-horiz', onPress: onOpenMenu, accessibilityLabel: 'More options' },
+        { icon: 'more-vert', onPress: onOpenMenu, accessibilityLabel: 'More options' },
       ]}
       chips={tabs.map((tab) => ({
         label: tab,

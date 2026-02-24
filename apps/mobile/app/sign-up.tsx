@@ -165,7 +165,7 @@ export default function SignUpScreen() {
                     style={{ borderRadius: 16 }}
                   />
                   <CustomText variant="caption" style={{ color: 'rgba(184,175,209,0.86)', marginTop: 8 }}>
-                    Auth flow is UI-ready. Connect Supabase Auth credentials to enable real signup.
+                    Create your account to save playlists, favorites, and preferences.
                   </CustomText>
                 </View>
 
