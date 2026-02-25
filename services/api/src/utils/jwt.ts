@@ -1,4 +1,5 @@
 import jwt, { type Secret, type SignOptions } from 'jsonwebtoken';
+import { z } from 'zod';
 import { env } from '../config/env';
 import type { UserRole } from '../modules/auth/auth.types';
 
@@ -8,6 +9,15 @@ export interface JwtClaims {
   role: UserRole;
   displayName: string;
 }
+
+const decodedJwtClaimsSchema = z
+  .object({
+    sub: z.union([z.string(), z.number()]).transform((value) => String(value)).pipe(z.string().min(1)),
+    email: z.string().email(),
+    role: z.enum(['CLIENT', 'ADMIN']),
+    displayName: z.string().trim().min(1).max(120),
+  })
+  .strict();
 
 export const signAccessToken = (claims: JwtClaims): string =>
   jwt.sign(claims, env.JWT_ACCESS_SECRET as Secret, {
@@ -20,13 +30,10 @@ export const verifyAccessToken = (token: string): JwtClaims => {
   if (typeof decoded === 'string') {
     throw new Error('Invalid access token');
   }
+  const parsed = decodedJwtClaimsSchema.safeParse(decoded);
+  if (!parsed.success) {
+    throw new Error('Invalid access token claims');
+  }
 
-  const role: UserRole = decoded.role === 'ADMIN' ? 'ADMIN' : 'CLIENT';
-
-  return {
-    sub: String(decoded.sub),
-    email: String(decoded.email),
-    role,
-    displayName: String(decoded.displayName ?? ''),
-  };
+  return parsed.data;
 };
