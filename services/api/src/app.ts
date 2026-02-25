@@ -8,11 +8,11 @@ import { notFoundHandler } from './middleware/notFoundHandler';
 import { authRouter } from './modules/auth/auth.routes';
 import { contentRouter } from './modules/content/content.routes';
 import { healthRouter } from './modules/health/health.routes';
+import { mobileRouter } from './modules/mobile/mobile.routes';
+import { uploadsRouter } from './modules/uploads/uploads.routes';
 
 const parseCorsOrigin = (): boolean | string[] => {
-  const origins = env.CORS_ORIGIN.split(',')
-    .map((origin) => origin.trim())
-    .filter(Boolean);
+  const origins = env.CORS_ORIGINS;
 
   if (origins.length === 0 || origins.includes('*')) {
     return true;
@@ -32,12 +32,14 @@ export const createApp = () => {
       credentials: true,
     }),
   );
-  app.use(express.json({ limit: '1mb' }));
+  app.use(express.json({ limit: '3mb' }));
   app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
   app.use('/', healthRouter);
   app.use('/v1/auth', authRouter);
   app.use('/v1/content', contentRouter);
+  app.use('/v1/uploads', uploadsRouter);
+  app.use('/v1/mobile', mobileRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);
