@@ -1,0 +1,15 @@
+FROM node:20-alpine
+
+WORKDIR /app
+ENV NODE_ENV=development \
+    EXPO_DEVTOOLS_LISTEN_ADDRESS=0.0.0.0 \
+    CHOKIDAR_USEPOLLING=1 \
+    WATCHPACK_POLLING=true
+
+COPY package.json yarn.lock ./
+RUN yarn install --frozen-lockfile || yarn install
+
+COPY . .
+
+EXPOSE 8081 19000 19001 19002 19006
+CMD ["yarn", "start:online", "--", "--host", "lan", "--port", "8081"]
