@@ -17,7 +17,7 @@ interface ThemeProviderProps {
 }
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
-  // Force dark-first UI to prevent white flashes/loader backgrounds on devices in light mode.
+  // Keep a stable dark-first look so screens never flash to light backgrounds on devices in light mode.
   const [colorScheme, setColorScheme] = useState<ColorScheme>('dark');
 
   const toggleColorScheme = () => {

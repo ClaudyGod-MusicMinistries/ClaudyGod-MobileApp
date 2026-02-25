@@ -1,32 +1,16 @@
-import React, { useEffect, useMemo, useRef } from 'react';
-import { Animated, Platform, View, useWindowDimensions } from 'react-native';
+import React from 'react';
+import { Platform, View, useWindowDimensions } from 'react-native';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useColorScheme } from '../util/colorScheme';
 import { colors } from '../constants/color';
 import { TVTouchable } from './ui/TVTouchable';
 import { CustomText } from './CustomText';
 
-type TabConfig = {
-  icon: React.ComponentProps<typeof MaterialIcons>['name'];
-  label: string;
-  isCenter?: boolean;
-};
-
-const TAB_CONFIG: Record<string, TabConfig> = {
-  home: { icon: 'home', label: 'Home' },
-  videos: { icon: 'ondemand-video', label: 'Videos' },
-  PlaySection: { icon: 'music-note', label: 'Player', isCenter: true },
-  Favourites: { icon: 'favorite-border', label: 'Library' },
-  Settings: { icon: 'person-outline', label: 'Me' },
-};
-
 const TabBar = ({ state, navigation }: BottomTabBarProps) => {
   const colorScheme = useColorScheme();
   const palette = colors[colorScheme] ?? colors.dark;
-  const isDark = colorScheme === 'dark';
   const isTV = Platform.isTV;
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -34,272 +18,128 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
   const isTablet = width >= 768 && !isTV;
 
   const sizes = {
-    barHeight: isTV ? 92 : compact ? 76 : 82,
-    buttonSize: isTV ? 52 : compact ? 42 : 44,
+    barHeight: isTV ? 94 : compact ? 74 : 78,
     iconSize: isTV ? 25 : 21,
-    centerSize: isTV ? 62 : compact ? 50 : 54,
-    paddingX: isTV ? 18 : isTablet ? 14 : 8,
-    labelSize: compact ? 9 : 10,
+    centerSize: isTV ? 68 : 56,
+    paddingX: isTV ? 16 : isTablet ? 12 : 10,
   };
 
-  const visibleRoutes = useMemo(
-    () => state.routes.filter((route) => Boolean(TAB_CONFIG[route.name])),
-    [state.routes],
-  );
-  const currentRouteKey = state.routes[state.index]?.key;
+  const barMaxWidth = isTV ? 1240 : isTablet ? 880 : width;
+  const barBottomInset = isTV ? 18 : Math.max(insets.bottom, 8);
 
-  const maxWidth = isTV ? 1240 : isTablet ? 900 : width;
-  const bottomInset = isTV ? 16 : Math.max(insets.bottom, 6);
-  const barHeightWithInset = sizes.barHeight + bottomInset;
-  const ui = {
-    shellBg: isDark ? '#09080F' : palette.background,
-    barBg: isDark ? '#0B0A12' : palette.surface,
-    barBorder: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(20,16,33,0.08)',
-    topLine: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(20,16,33,0.05)',
-    glow: isDark ? 'rgba(154,107,255,0.04)' : 'rgba(109,40,217,0.03)',
-    activeTabBg: isDark ? 'rgba(154,107,255,0.1)' : 'rgba(109,40,217,0.06)',
-    activeTabBorder: isDark ? 'rgba(216,194,255,0.12)' : 'rgba(109,40,217,0.1)',
-    centerBorder: isDark ? 'rgba(255,255,255,0.14)' : 'rgba(20,16,33,0.08)',
-    halo: isDark ? 'rgba(154,107,255,0.07)' : 'rgba(109,40,217,0.06)',
-    activeLabel: isDark ? '#F2E8FF' : palette.text.primary,
-  } as const;
-
-  const appear = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    Animated.spring(appear, {
-      toValue: 1,
-      useNativeDriver: true,
-      damping: 16,
-      stiffness: 180,
-      mass: 0.8,
-    }).start();
-  }, [appear]);
-
-  const barTranslateY = appear.interpolate({
-    inputRange: [0, 1],
-    outputRange: [16, 0],
-  });
+  const tabConfig = {
+    home: { icon: 'home-filled' as const, label: 'Home' },
+    videos: { icon: 'ondemand-video' as const, label: 'Videos' },
+    PlaySection: { icon: 'play-arrow' as const, label: 'Player', isCenter: true },
+    library: { icon: 'library-music' as const, label: 'Library' },
+    search: { icon: 'search' as const, label: 'Search' },
+  };
 
   return (
-    <Animated.View
+    <View
       style={{
         position: 'absolute',
         left: 0,
         right: 0,
         bottom: 0,
+        paddingBottom: barBottomInset,
         alignItems: 'center',
-        backgroundColor: isTablet || isTV ? 'transparent' : ui.shellBg,
-        opacity: appear,
-        transform: [{ translateY: barTranslateY }],
       }}
     >
-      <View style={{ width: '100%', maxWidth }}>
-        <View
-          style={{
-            height: barHeightWithInset,
-            borderTopWidth: 1,
-            borderTopColor: ui.barBorder,
-            backgroundColor: ui.barBg,
-            paddingHorizontal: sizes.paddingX,
-            paddingBottom: bottomInset,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            borderTopLeftRadius: isTablet || isTV ? 20 : 0,
-            borderTopRightRadius: isTablet || isTV ? 20 : 0,
-            overflow: 'hidden',
-            shadowColor: isDark ? '#000000' : '#171228',
-            shadowOpacity: isDark ? 0.22 : 0.08,
-            shadowRadius: 10,
-            shadowOffset: { width: 0, height: -3 },
-            elevation: isDark ? 6 : 3,
-          }}
-        >
-          <LinearGradient
-            pointerEvents="none"
-            colors={[ui.glow, 'rgba(0,0,0,0)']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}
-          />
-          <View
-            pointerEvents="none"
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 18,
-              right: 18,
-              height: 1,
-              backgroundColor: ui.topLine,
-            }}
-          />
+      <View
+        style={{
+          width: '100%',
+          maxWidth: barMaxWidth,
+          height: sizes.barHeight,
+          borderTopWidth: 1,
+          borderTopColor: '#252332',
+          backgroundColor: '#0E0D17',
+          paddingHorizontal: sizes.paddingX,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          borderTopLeftRadius: isTablet || isTV ? 18 : 0,
+          borderTopRightRadius: isTablet || isTV ? 18 : 0,
+        }}
+      >
+        {state.routes.map((route, index) => {
+          const config = (tabConfig as any)[route.name];
+          if (!config) return null;
 
-          {visibleRoutes.map((route, visibleIndex) => {
-            const config = TAB_CONFIG[route.name];
-            const focused = route.key === currentRouteKey;
+          const focused = state.index === index;
+          const isCenter = Boolean(config.isCenter);
 
+          if (isCenter) {
             return (
-              <TabBarButton
+              <TVTouchable
                 key={route.key}
-                config={config}
-                focused={focused}
-                isTV={isTV}
-                labelSize={sizes.labelSize}
-                buttonSize={sizes.buttonSize}
-                centerSize={sizes.centerSize}
-                iconSize={sizes.iconSize}
-                textSecondary={palette.text.secondary}
-                primary={palette.primary}
-                activeLabel={ui.activeLabel}
-                activeTabBg={ui.activeTabBg}
-              activeTabBorder={ui.activeTabBorder}
-              centerBorder={ui.centerBorder}
-              haloColor={ui.halo}
-              onPress={() => navigation.navigate(route.name as never)}
-              preferredFocus={visibleIndex === 0}
-            />
+                accessibilityRole="button"
+                accessibilityLabel={config.label}
+                onPress={() => navigation.navigate(route.name as never)}
+                style={{
+                  width: sizes.centerSize,
+                  height: sizes.centerSize,
+                  borderRadius: sizes.centerSize / 2,
+                  marginTop: -14,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: palette.primary,
+                  borderWidth: 1,
+                  borderColor: 'rgba(255,255,255,0.44)',
+                  shadowColor: palette.primary,
+                  shadowOpacity: 0.44,
+                  shadowRadius: 20,
+                  shadowOffset: { width: 0, height: 10 },
+                  elevation: 10,
+                }}
+                focusStyle={{ transform: [{ scale: isTV ? 1.1 : 1.04 }] }}
+                showFocusBorder={false}
+              >
+                <MaterialIcons name={config.icon} size={sizes.iconSize + 4} color="#FFFFFF" />
+              </TVTouchable>
             );
-          })}
-        </View>
-      </View>
-    </Animated.View>
-  );
-};
+          }
 
-function TabBarButton({
-  config,
-  focused,
-  isTV,
-  labelSize,
-  buttonSize,
-  centerSize,
-  iconSize,
-  textSecondary,
-  primary,
-  activeLabel,
-  activeTabBg,
-  activeTabBorder,
-  centerBorder,
-  haloColor,
-  onPress,
-  preferredFocus,
-}: {
-  config: TabConfig;
-  focused: boolean;
-  isTV: boolean;
-  labelSize: number;
-  buttonSize: number;
-  centerSize: number;
-  iconSize: number;
-  textSecondary: string;
-  primary: string;
-  activeLabel: string;
-  activeTabBg: string;
-  activeTabBorder: string;
-  centerBorder: string;
-  haloColor: string;
-  onPress: () => void;
-  preferredFocus: boolean;
-}) {
-  const isCenter = Boolean(config.isCenter);
-  const anim = useRef(new Animated.Value(focused ? 1 : 0)).current;
-
-  useEffect(() => {
-    Animated.spring(anim, {
-      toValue: focused ? 1 : 0,
-      useNativeDriver: true,
-      damping: 15,
-      stiffness: 180,
-      mass: 0.8,
-    }).start();
-  }, [anim, focused]);
-
-  const scale = anim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [1, isCenter ? 1.02 : 1.015],
-  });
-  const translateY = anim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, isCenter ? -1 : -0.5],
-  });
-  const labelOpacity = anim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.76, 1],
-  });
-  const haloOpacity = anim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 1],
-  });
-
-  const baseSize = isCenter ? centerSize : buttonSize;
-
-  return (
-    <Animated.View style={{ transform: [{ scale }, { translateY }], alignItems: 'center', justifyContent: 'center' }}>
-      <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-        {!isCenter ? (
-          <Animated.View
-            pointerEvents="none"
-            style={{
-              position: 'absolute',
-              top: 2,
-              width: baseSize + 8,
-              height: baseSize + 14,
-              borderRadius: 18,
-              backgroundColor: haloColor,
-              opacity: haloOpacity,
-            }}
-          />
-        ) : null}
-
-        <TVTouchable
-          accessibilityRole="button"
-          accessibilityLabel={config.label}
-          hasTVPreferredFocus={preferredFocus}
-          onPress={onPress}
-          style={{
-            minWidth: isCenter ? baseSize : baseSize + 12,
-            height: isCenter ? baseSize : baseSize + 16,
-            borderRadius: isCenter ? baseSize / 2 : 18,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: isCenter
-              ? primary
-              : focused
-              ? activeTabBg
-              : 'transparent',
-            borderWidth: isCenter ? 1 : focused ? 1 : 0,
-            borderColor: isCenter ? centerBorder : activeTabBorder,
-            paddingHorizontal: isCenter ? 0 : 7,
-            marginTop: isCenter ? -4 : 0,
-          }}
-          focusStyle={{ transform: [{ scale: isTV ? 1.08 : 1.03 }] }}
-          showFocusBorder={false}
-        >
-          <MaterialIcons
-            name={config.icon}
-            size={isCenter ? iconSize + 2 : iconSize}
-            color={isCenter || focused ? '#FFFFFF' : textSecondary}
-          />
-
-          {!isCenter ? (
-            <Animated.View style={{ opacity: labelOpacity, marginTop: 2 }}>
+          return (
+            <TVTouchable
+              key={route.key}
+              accessibilityRole="button"
+              accessibilityLabel={config.label}
+              hasTVPreferredFocus={index === 0}
+              onPress={() => navigation.navigate(route.name as never)}
+              style={{
+                flex: 1,
+                minHeight: 52,
+                marginHorizontal: 2,
+                borderRadius: 14,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: focused ? 'rgba(154,107,255,0.2)' : 'transparent',
+              }}
+              focusStyle={{ transform: [{ scale: isTV ? 1.08 : 1.02 }] }}
+              showFocusBorder={false}
+            >
+              <MaterialIcons
+                name={config.icon}
+                size={sizes.iconSize}
+                color={focused ? palette.primary : palette.text.secondary}
+              />
               <CustomText
                 variant="caption"
                 style={{
-                  color: focused ? activeLabel : textSecondary,
-                  fontSize: labelSize,
-                  lineHeight: labelSize + 3,
-                  letterSpacing: 0.1,
+                  marginTop: 4,
+                  color: focused ? palette.primary : palette.text.secondary,
+                  fontSize: 11,
                 }}
               >
                 {config.label}
               </CustomText>
-            </Animated.View>
-          ) : null}
-        </TVTouchable>
+            </TVTouchable>
+          );
+        })}
       </View>
-    </Animated.View>
+    </View>
   );
-}
+};
 
 export default TabBar;
