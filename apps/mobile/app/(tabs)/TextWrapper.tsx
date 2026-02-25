@@ -18,7 +18,7 @@ export const TabScreenWrapper: React.FC<TabScreenWrapperProps> = ({ children }) 
     <View style={{ flex: 1, backgroundColor: currentColors.background }}>
       <StatusBar translucent={false} barStyle="light-content" backgroundColor={currentColors.background} />
       <LinearGradient
-        colors={['rgba(154,107,255,0.08)', 'rgba(6,4,13,0)']}
+        colors={['rgba(164,132,255,0.08)', 'rgba(6,4,13,0)']}
         start={{ x: 0.2, y: 0 }}
         end={{ x: 0.8, y: 0.95 }}
         pointerEvents="none"
@@ -39,10 +39,10 @@ export const TabScreenWrapper: React.FC<TabScreenWrapperProps> = ({ children }) 
           width: 260,
           height: 260,
           borderRadius: 260,
-          backgroundColor: 'rgba(17,18,23,0.08)',
+          backgroundColor: 'rgba(171,136,255,0.07)',
         }}
       />
-      <SafeAreaView style={{ flex: 1, backgroundColor: currentColors.background }} edges={['top', 'left', 'right']}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top']}>
         <View style={{ flex: 1 }}>{children}</View>
       </SafeAreaView>
     </View>

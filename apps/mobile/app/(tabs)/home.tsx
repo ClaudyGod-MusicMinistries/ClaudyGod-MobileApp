@@ -66,8 +66,7 @@ export default function HomeScreen() {
   const isTablet = width >= 768 && !isTV;
   const compact = width < 380;
   const railCardWidth = isTV ? 260 : isTablet ? 220 : compact ? 150 : 166;
-  const albumGridCols = isTV ? 4 : 2;
-  const albumGridViewportHeight = isTV ? 560 : isTablet ? 440 : 320;
+  const albumDashboardViewportHeight = isTV ? 600 : isTablet ? 460 : 356;
   const [activeFilter, setActiveFilter] = useState('For You');
 
   const { feed, loading, error, refresh } = useContentFeed();
@@ -307,57 +306,11 @@ export default function HomeScreen() {
 
           <FadeIn delay={240}>
             <SectionBlock title="Albums & Playlists" subtitle="Curated collections and playlists">
-              <View
-                style={{
-                  borderRadius: 18,
-                  borderWidth: 1,
-                  borderColor: ui.albumWrapBorder,
-                  backgroundColor: ui.albumWrapBg,
-                  padding: 8,
-                }}
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 4, paddingTop: 2, paddingBottom: 8 }}>
-                  <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
-                    Collections
-                  </CustomText>
-                  <View
-                    style={{
-                      borderRadius: 999,
-                      borderWidth: 1,
-                      borderColor: ui.albumWrapBorder,
-                      backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : theme.colors.surfaceAlt,
-                      paddingHorizontal: 8,
-                      paddingVertical: 4,
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                    }}
-                  >
-                    <MaterialIcons name="more-vert" size={16} color={theme.colors.text.secondary} />
-                    <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginLeft: 4 }}>
-                      More
-                    </CustomText>
-                  </View>
-                </View>
-                <ScrollView
-                  nestedScrollEnabled
-                  showsVerticalScrollIndicator
-                  bounces={false}
-                  overScrollMode="never"
-                  style={{ height: albumGridViewportHeight }}
-                  contentContainerStyle={{ paddingBottom: 2, paddingRight: 2 }}
-                  indicatorStyle={isDark ? 'white' : 'black'}
-                >
-                  <ResponsiveGrid columns={albumGridCols}>
-                    {albumGrid.length ? (
-                      albumGrid.map((item) => (
-                        <GridTile key={item.id} item={item} onPress={() => onOpenItem(item, 'home_albums_grid')} />
-                      ))
-                    ) : (
-                      <GridPlaceholder columns={albumGridCols} />
-                    )}
-                  </ResponsiveGrid>
-                </ScrollView>
-              </View>
+              <CollectionsDashboard
+                items={albumGrid}
+                viewportHeight={albumDashboardViewportHeight}
+                onOpenItem={(item) => onOpenItem(item, 'home_albums_dashboard')}
+              />
             </SectionBlock>
           </FadeIn>
 
@@ -869,174 +822,447 @@ function MiniAction({
   );
 }
 
-function ResponsiveGrid({ columns, children }: { columns: number; children: React.ReactNode }) {
-  return (
-    <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -5, marginTop: 2 }}>
-      {React.Children.map(children, (child) => (
-        <View style={{ width: `${100 / columns}%`, paddingHorizontal: 5, marginBottom: 10 }}>{child}</View>
-      ))}
-    </View>
-  );
-}
-
-function GridTile({ item, onPress }: { item: FeedCardItem; onPress: () => void }) {
+function CollectionsDashboard({
+  items,
+  viewportHeight,
+  onOpenItem,
+}: {
+  items: FeedCardItem[];
+  viewportHeight: number;
+  onOpenItem: (_item: FeedCardItem) => void;
+}) {
   const theme = useAppTheme();
   const isDark = theme.scheme === 'dark';
-  const ui = {
-    cardBg: isDark ? 'rgba(12,9,20,0.88)' : theme.colors.surface,
-    cardBorder: isDark ? 'rgba(255,255,255,0.08)' : theme.colors.border,
-    imageBg: isDark ? '#140F20' : theme.colors.surfaceAlt,
-    imageBorder: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(20,16,33,0.06)',
-    imageOverlay: isDark
-      ? (['rgba(0,0,0,0)', 'rgba(6,4,13,0.2)'] as const)
-      : (['rgba(255,255,255,0)', 'rgba(255,255,255,0.15)'] as const),
-    typePillBg: isDark ? 'rgba(255,255,255,0.03)' : theme.colors.surfaceAlt,
-    typePillBorder: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(20,16,33,0.06)',
-    typeText: isDark ? 'rgba(222,214,244,0.92)' : 'rgba(92,84,120,0.95)',
-    metaText: isDark ? 'rgba(194,185,220,0.88)' : theme.colors.text.secondary,
-    playDotBg: isDark ? 'rgba(154,107,255,0.18)' : 'rgba(109,40,217,0.08)',
-    playDotBorder: isDark ? 'rgba(216,194,255,0.18)' : 'rgba(109,40,217,0.12)',
-    playDotIcon: isDark ? '#F4ECFF' : theme.colors.primary,
-  } as const;
-  return (
-    <TVTouchable
-      onPress={onPress}
-      style={{
-        borderRadius: 14,
-        overflow: 'hidden',
-        borderWidth: 1,
-        borderColor: ui.cardBorder,
-        backgroundColor: ui.cardBg,
-      }}
-      showFocusBorder={false}
-    >
-      <View style={{ padding: 6 }}>
-        <View
-          style={{
-            borderRadius: 10,
-            overflow: 'hidden',
-            borderWidth: 1,
-            borderColor: ui.imageBorder,
-            backgroundColor: ui.imageBg,
-          }}
-        >
-          <Image
-            source={{ uri: item.imageUrl }}
-            style={{ width: '100%', aspectRatio: 1, backgroundColor: ui.imageBg }}
-            resizeMode="cover"
-          />
-          <LinearGradient
-            colors={ui.imageOverlay}
-            style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 40 }}
-            pointerEvents="none"
-          />
-        </View>
-      </View>
+  const primary = items[0];
+  const listItems = primary ? items.slice(1) : [];
 
-      <View style={{ paddingHorizontal: 9, paddingBottom: 9, paddingTop: 0 }}>
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: 5,
-          }}
-        >
-          <View
-            style={{
-              borderRadius: 999,
-              borderWidth: 1,
-              borderColor: ui.typePillBorder,
-              backgroundColor: ui.typePillBg,
-              paddingHorizontal: 7,
-              paddingVertical: 3,
-              maxWidth: '72%',
-            }}
-          >
-            <CustomText variant="caption" style={{ color: ui.typeText }} numberOfLines={1}>
-              {typeLabel(item.type)}
-            </CustomText>
-          </View>
+  return (
+    <View
+      style={{
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: isDark ? 'rgba(255,255,255,0.08)' : theme.colors.border,
+        backgroundColor: isDark ? 'rgba(12,9,20,0.72)' : theme.colors.surface,
+        padding: 10,
+      }}
+    >
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingHorizontal: 4,
+          paddingTop: 2,
+          paddingBottom: 10,
+        }}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <View
             style={{
               width: 28,
               height: 28,
-              borderRadius: 14,
+              borderRadius: 10,
               borderWidth: 1,
-              borderColor: ui.playDotBorder,
-              backgroundColor: ui.playDotBg,
+              borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(20,16,33,0.07)',
+              backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : theme.colors.surfaceAlt,
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <MaterialIcons name="play-arrow" size={16} color={ui.playDotIcon} />
+            <MaterialIcons name="library-music" size={15} color={theme.colors.primary} />
+          </View>
+          <View>
+            <CustomText variant="caption" style={{ color: theme.colors.text.primary }}>
+              Collections
+            </CustomText>
+            <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
+              {items.length} items
+            </CustomText>
           </View>
         </View>
+        <TVTouchable
+          onPress={() => undefined}
+          style={{
+            width: 34,
+            height: 34,
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(20,16,33,0.07)',
+            backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : theme.colors.surfaceAlt,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          showFocusBorder={false}
+        >
+          <MaterialIcons name="more-vert" size={18} color={theme.colors.text.secondary} />
+        </TVTouchable>
+      </View>
 
-        <CustomText variant="label" style={{ color: theme.colors.text.primary }} numberOfLines={2}>
-          {item.title}
-        </CustomText>
-        <CustomText variant="caption" style={{ color: ui.metaText, marginTop: 3 }} numberOfLines={1}>
-          {item.subtitle || (item.duration ? `${item.duration} • Featured collection` : 'Featured collection')}
-        </CustomText>
+      <ScrollView
+        nestedScrollEnabled
+        showsVerticalScrollIndicator
+        bounces={false}
+        overScrollMode="never"
+        style={{ height: viewportHeight }}
+        contentContainerStyle={{ paddingBottom: 2 }}
+        indicatorStyle={isDark ? 'white' : 'black'}
+      >
+        {primary ? (
+          <>
+            <CollectionSpotlightCard item={primary} onPress={() => onOpenItem(primary)} />
+            <View style={{ marginTop: 10, gap: 8 }}>
+              {listItems.map((item, index) => (
+                <CollectionDashboardRow
+                  key={item.id}
+                  item={item}
+                  index={index + 2}
+                  onPress={() => onOpenItem(item)}
+                />
+              ))}
+            </View>
+          </>
+        ) : (
+          <CollectionsDashboardPlaceholder />
+        )}
+      </ScrollView>
+    </View>
+  );
+}
+
+function CollectionSpotlightCard({ item, onPress }: { item: FeedCardItem; onPress: () => void }) {
+  const theme = useAppTheme();
+  const isDark = theme.scheme === 'dark';
+  const ui = {
+    bg: isDark ? 'rgba(10,8,17,0.92)' : '#FFFFFF',
+    border: isDark ? 'rgba(255,255,255,0.08)' : theme.colors.border,
+    imageBorder: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(20,16,33,0.08)',
+    metaBg: isDark ? 'rgba(255,255,255,0.03)' : theme.colors.surfaceAlt,
+    metaBorder: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(20,16,33,0.07)',
+    muted: isDark ? 'rgba(194,185,220,0.88)' : theme.colors.text.secondary,
+    subtle: isDark ? 'rgba(176,167,202,0.92)' : 'rgba(107,99,132,0.95)',
+    playBg: isDark ? 'rgba(154,107,255,0.14)' : 'rgba(109,40,217,0.08)',
+    playBorder: isDark ? 'rgba(216,194,255,0.2)' : 'rgba(109,40,217,0.14)',
+  } as const;
+
+  return (
+    <TVTouchable
+      onPress={onPress}
+      style={{
+        borderRadius: 18,
+        borderWidth: 1,
+        borderColor: ui.border,
+        backgroundColor: ui.bg,
+        padding: 10,
+      }}
+      showFocusBorder={false}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'stretch', gap: 10 }}>
+        <View
+          style={{
+            width: 110,
+            borderRadius: 14,
+            overflow: 'hidden',
+            borderWidth: 1,
+            borderColor: ui.imageBorder,
+            backgroundColor: isDark ? '#141021' : theme.colors.surfaceAlt,
+          }}
+        >
+          <Image source={{ uri: item.imageUrl }} style={{ width: '100%', aspectRatio: 1 }} resizeMode="cover" />
+          <LinearGradient
+            colors={isDark ? ['rgba(0,0,0,0)', 'rgba(3,2,8,0.55)'] : ['rgba(255,255,255,0)', 'rgba(255,255,255,0.3)']}
+            style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 40 }}
+            pointerEvents="none"
+          />
+        </View>
+
+        <View style={{ flex: 1, justifyContent: 'space-between', minHeight: 110 }}>
+          <View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+              <View
+                style={{
+                  borderRadius: 999,
+                  borderWidth: 1,
+                  borderColor: ui.metaBorder,
+                  backgroundColor: ui.metaBg,
+                  paddingHorizontal: 8,
+                  paddingVertical: 4,
+                  maxWidth: '75%',
+                }}
+              >
+                <CustomText variant="caption" style={{ color: ui.muted }} numberOfLines={1}>
+                  {typeLabel(item.type)}
+                </CustomText>
+              </View>
+              <CustomText variant="caption" style={{ color: ui.subtle }}>
+                {item.duration || '--:--'}
+              </CustomText>
+            </View>
+
+            <CustomText variant="subtitle" style={{ color: theme.colors.text.primary, marginTop: 8 }} numberOfLines={2}>
+              {item.title}
+            </CustomText>
+            <CustomText variant="caption" style={{ color: ui.subtle, marginTop: 4 }} numberOfLines={2}>
+              {item.subtitle || 'Featured collection'}
+            </CustomText>
+          </View>
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
+            <CustomText variant="caption" style={{ color: ui.muted }} numberOfLines={1}>
+              {item.description || 'Curated collection'}
+            </CustomText>
+            <View
+              style={{
+                marginLeft: 8,
+                width: 34,
+                height: 34,
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: ui.playBorder,
+                backgroundColor: ui.playBg,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <MaterialIcons name="play-arrow" size={20} color={theme.colors.primary} />
+            </View>
+          </View>
+        </View>
       </View>
     </TVTouchable>
   );
 }
 
-function GridPlaceholder({ columns }: { columns: number }) {
+function CollectionDashboardRow({
+  item,
+  index,
+  onPress,
+}: {
+  item: FeedCardItem;
+  index: number;
+  onPress: () => void;
+}) {
   const theme = useAppTheme();
   const isDark = theme.scheme === 'dark';
-  const blocks = Array.from({ length: Math.max(columns, 4) }, (_, idx) => idx);
+  const ui = {
+    bg: isDark ? 'rgba(14,11,24,0.9)' : '#FFFFFF',
+    border: isDark ? 'rgba(255,255,255,0.07)' : theme.colors.border,
+    imageBg: isDark ? '#171228' : theme.colors.surfaceAlt,
+    imageBorder: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(20,16,33,0.06)',
+    badgeBg: isDark ? 'rgba(255,255,255,0.03)' : theme.colors.surfaceAlt,
+    badgeBorder: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(20,16,33,0.07)',
+    badgeText: isDark ? 'rgba(214,206,239,0.9)' : 'rgba(91,83,118,0.95)',
+    muted: isDark ? 'rgba(194,185,220,0.88)' : theme.colors.text.secondary,
+    indexText: isDark ? 'rgba(164,156,191,0.9)' : 'rgba(120,111,146,0.95)',
+    actionBg: isDark ? 'rgba(255,255,255,0.03)' : theme.colors.surfaceAlt,
+    actionBorder: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(20,16,33,0.07)',
+  } as const;
+
   return (
-    <>
-      {blocks.map((idx) => (
-        <View
-          key={idx}
-          style={{
-            borderRadius: 18,
-            borderWidth: 1,
-            borderColor: isDark ? 'rgba(255,255,255,0.06)' : theme.colors.border,
-            backgroundColor: isDark ? 'rgba(12,9,20,0.78)' : theme.colors.surface,
-            padding: 6,
-            minHeight: 178,
-          }}
-        >
+    <TVTouchable
+      onPress={onPress}
+      style={{
+        minHeight: 78,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: ui.border,
+        backgroundColor: ui.bg,
+        paddingHorizontal: 10,
+        paddingVertical: 8,
+        flexDirection: 'row',
+        alignItems: 'center',
+      }}
+      showFocusBorder={false}
+    >
+      <CustomText
+        variant="caption"
+        style={{ color: ui.indexText, width: 26, textAlign: 'center', marginRight: 4 }}
+      >
+        {String(index).padStart(2, '0')}
+      </CustomText>
+
+      <View
+        style={{
+          width: 56,
+          height: 56,
+          borderRadius: 12,
+          overflow: 'hidden',
+          borderWidth: 1,
+          borderColor: ui.imageBorder,
+          backgroundColor: ui.imageBg,
+          marginRight: 10,
+        }}
+      >
+        <Image source={{ uri: item.imageUrl }} style={{ width: 56, height: 56 }} resizeMode="cover" />
+      </View>
+
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           <View
             style={{
-              borderRadius: 12,
+              borderRadius: 999,
               borderWidth: 1,
-              borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(20,16,33,0.05)',
-              backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : theme.colors.surfaceAlt,
-              aspectRatio: 1.16,
-              alignItems: 'center',
-              justifyContent: 'center',
+              borderColor: ui.badgeBorder,
+              backgroundColor: ui.badgeBg,
+              paddingHorizontal: 6,
+              paddingVertical: 3,
             }}
           >
-            <MaterialIcons name="collections-bookmark" size={18} color={theme.colors.text.secondary} />
+            <CustomText variant="caption" style={{ color: ui.badgeText }}>
+              {typeLabel(item.type)}
+            </CustomText>
           </View>
-          <View style={{ paddingHorizontal: 4, paddingTop: 10 }}>
+          <CustomText variant="caption" style={{ color: ui.muted }} numberOfLines={1}>
+            {item.duration || '--:--'}
+          </CustomText>
+        </View>
+
+        <CustomText variant="label" style={{ color: theme.colors.text.primary, marginTop: 5 }} numberOfLines={1}>
+          {item.title}
+        </CustomText>
+        <CustomText variant="caption" style={{ color: ui.muted, marginTop: 2 }} numberOfLines={1}>
+          {item.subtitle || 'Collection'}
+        </CustomText>
+      </View>
+
+      <View
+        style={{
+          width: 34,
+          height: 34,
+          borderRadius: 12,
+          borderWidth: 1,
+          borderColor: ui.actionBorder,
+          backgroundColor: ui.actionBg,
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginLeft: 8,
+        }}
+      >
+        <MaterialIcons name="chevron-right" size={18} color={theme.colors.text.secondary} />
+      </View>
+    </TVTouchable>
+  );
+}
+
+function CollectionsDashboardPlaceholder() {
+  const theme = useAppTheme();
+  const isDark = theme.scheme === 'dark';
+  const blocks = Array.from({ length: 4 }, (_, idx) => idx);
+
+  return (
+    <View style={{ gap: 8 }}>
+      <View
+        style={{
+          borderRadius: 18,
+          borderWidth: 1,
+          borderColor: isDark ? 'rgba(255,255,255,0.06)' : theme.colors.border,
+          backgroundColor: isDark ? 'rgba(12,9,20,0.82)' : theme.colors.surface,
+          padding: 10,
+        }}
+      >
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          <View
+            style={{
+              width: 110,
+              aspectRatio: 1,
+              borderRadius: 14,
+              backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : theme.colors.surfaceAlt,
+            }}
+          />
+          <View style={{ flex: 1, justifyContent: 'center' }}>
             <View
               style={{
                 height: 10,
                 borderRadius: 999,
-                backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(20,16,33,0.06)',
-                width: '78%',
+                width: '48%',
+                backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(20,16,33,0.07)',
+              }}
+            />
+            <View
+              style={{
+                height: 12,
+                borderRadius: 999,
+                width: '86%',
+                marginTop: 12,
+                backgroundColor: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(20,16,33,0.08)',
+              }}
+            />
+            <View
+              style={{
+                height: 10,
+                borderRadius: 999,
+                width: '62%',
+                marginTop: 10,
+                backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(20,16,33,0.06)',
+              }}
+            />
+          </View>
+        </View>
+      </View>
+
+      {blocks.map((idx) => (
+        <View
+          key={idx}
+          style={{
+            minHeight: 74,
+            borderRadius: 16,
+            borderWidth: 1,
+            borderColor: isDark ? 'rgba(255,255,255,0.06)' : theme.colors.border,
+            backgroundColor: isDark ? 'rgba(12,9,20,0.8)' : theme.colors.surface,
+            paddingHorizontal: 10,
+            paddingVertical: 8,
+            flexDirection: 'row',
+            alignItems: 'center',
+          }}
+        >
+          <View
+            style={{
+              width: 20,
+              height: 8,
+              borderRadius: 999,
+              backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(20,16,33,0.06)',
+              marginRight: 10,
+            }}
+          />
+          <View
+            style={{
+              width: 56,
+              height: 56,
+              borderRadius: 12,
+              backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : theme.colors.surfaceAlt,
+              marginRight: 10,
+            }}
+          />
+          <View style={{ flex: 1 }}>
+            <View
+              style={{
+                height: 9,
+                borderRadius: 999,
+                width: '40%',
+                backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(20,16,33,0.06)',
+              }}
+            />
+            <View
+              style={{
+                height: 10,
+                borderRadius: 999,
+                width: '72%',
+                marginTop: 8,
+                backgroundColor: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(20,16,33,0.08)',
               }}
             />
             <View
               style={{
                 height: 8,
                 borderRadius: 999,
-                backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(20,16,33,0.05)',
-                width: '54%',
-                marginTop: 8,
+                width: '44%',
+                marginTop: 7,
+                backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(20,16,33,0.06)',
               }}
             />
           </View>
         </View>
       ))}
-    </>
+    </View>
   );
 }
 

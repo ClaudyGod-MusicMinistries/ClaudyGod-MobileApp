@@ -20,9 +20,8 @@ export default function TabsLayout() {
         <Tabs.Screen name="home" />
         <Tabs.Screen name="videos" />
         <Tabs.Screen name="PlaySection" />
-        <Tabs.Screen name="Favourites" />
-        <Tabs.Screen name="Settings" />
-        <Tabs.Screen name="search" options={{ href: null }} />
+        <Tabs.Screen name="library" />
+        <Tabs.Screen name="search" />
       </Tabs>
     </View>
   );
