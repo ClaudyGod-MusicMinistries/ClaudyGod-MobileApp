@@ -18,6 +18,8 @@ export const listContentQuerySchema = z.object({
   type: contentFilterTypeSchema.optional(),
   status: visibilitySchema.optional(),
   visibility: visibilitySchema.optional(),
+  search: z.string().trim().min(1).max(120).optional(),
+  updatedAfter: z.string().datetime().optional(),
 });
 
 export const contentIdParamsSchema = z.object({
