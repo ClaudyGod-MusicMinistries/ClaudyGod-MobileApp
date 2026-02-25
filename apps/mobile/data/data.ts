@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-require-imports */
-  
 export const featuredPlaylists = [
   {
     id: '1',

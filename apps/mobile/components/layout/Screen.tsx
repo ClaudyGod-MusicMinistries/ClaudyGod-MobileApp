@@ -1,27 +1,31 @@
 // components/layout/Screen.tsx
 import React from 'react';
-import { View } from 'react-native';
-import responsive from '../../util/responsive';
+import { Platform, StyleProp, View, ViewStyle, useWindowDimensions } from 'react-native';
 import { layout } from '../../styles/designTokens';
 
 interface ScreenProps {
   children: React.ReactNode;
+  style?: StyleProp<ViewStyle>;
+  contentStyle?: StyleProp<ViewStyle>;
 }
 
-export function Screen({ children }: ScreenProps) {
-  const paddingX = responsive.breakpoint({
-    small: 14,
-    medium: 18,
-    large: 22,
-    xlarge: 28,
-  });
+export function Screen({ children, style, contentStyle }: ScreenProps) {
+  const { width } = useWindowDimensions();
+  const isTV = Platform.isTV;
+  const isTablet = width >= 768 && !isTV;
+  const paddingX = isTV ? 42 : isTablet ? 24 : width < 360 ? 14 : 18;
+  const maxContentWidth = isTV ? 1240 : isTablet ? 940 : Math.min(560, width - paddingX * 2);
 
   return (
-    <View style={{ paddingHorizontal: paddingX }}>
-      <View style={{ width: '100%', maxWidth: layout.maxContentWidth, alignSelf: 'center' }}>
+    <View style={[{ width: '100%', paddingHorizontal: paddingX }, style]}>
+      <View
+        style={[
+          { width: '100%', maxWidth: Math.min(maxContentWidth, layout.maxContentWidth), alignSelf: 'center' },
+          contentStyle,
+        ]}
+      >
         {children}
       </View>
     </View>
   );
 }
-
