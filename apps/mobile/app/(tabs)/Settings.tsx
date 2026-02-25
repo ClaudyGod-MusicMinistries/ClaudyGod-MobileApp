@@ -27,6 +27,13 @@ export default function Settings() {
   const toggleColorScheme = useColorSchemeToggle();
   const router = useRouter();
   const isDark = theme.scheme === 'dark';
+  const switchUi = {
+    trackOn: isDark ? 'rgba(154,107,255,0.34)' : 'rgba(109,40,217,0.26)',
+    trackOff: isDark ? 'rgba(255,255,255,0.12)' : theme.colors.border,
+    thumbOn: theme.colors.primary,
+    thumbOff: isDark ? '#D7CFF0' : '#FFFFFF',
+    iosBackground: isDark ? 'rgba(255,255,255,0.08)' : theme.colors.border,
+  } as const;
 
   const ui = {
     stickyBg: isDark ? '#06040D' : '#F4F1FA',
@@ -252,8 +259,9 @@ export default function Settings() {
                           <Switch
                             value={Boolean(item.value)}
                             onValueChange={item.onToggle}
-                            trackColor={{ true: 'rgba(154,107,255,0.28)', false: theme.colors.border }}
-                            thumbColor={item.value ? theme.colors.primary : '#C2BCD8'}
+                            trackColor={{ true: switchUi.trackOn, false: switchUi.trackOff }}
+                            thumbColor={item.value ? switchUi.thumbOn : switchUi.thumbOff}
+                            ios_backgroundColor={switchUi.iosBackground}
                           />
                         ) : (
                           <MaterialIcons name="chevron-right" size={20} color={theme.colors.text.secondary} />
