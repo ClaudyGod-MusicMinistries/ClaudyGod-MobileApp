@@ -20,3 +20,8 @@ done
 
 echo "Linting staged mobile files (${#files[@]})..."
 yarn --cwd apps/mobile eslint --cache --fix --max-warnings=0 "${files[@]}"
+
+# Re-stage any formatter/eslint fixes so the commit contains the validated code.
+for file in "${files[@]}"; do
+  git add -- "apps/mobile/$file"
+done
