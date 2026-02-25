@@ -37,6 +37,8 @@ export interface ContentListQuery {
   type?: ContentFilterType;
   status?: ContentVisibility;
   visibility?: ContentVisibility;
+  search?: string;
+  updatedAfter?: string;
 }
 
 export interface ContentListResponse {

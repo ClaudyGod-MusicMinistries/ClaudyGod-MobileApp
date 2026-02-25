@@ -148,16 +148,22 @@ function normalizeListQuery(query: ContentListQuery): {
   limit: number;
   type?: ContentType;
   visibility?: ContentVisibility;
+  search?: string;
+  updatedAfter?: string;
   unsupportedTypeRequested: boolean;
 } {
   const visibility = query.visibility ?? query.status;
   const requestedType = query.type;
+  const search = query.search?.trim() ? query.search.trim() : undefined;
+  const updatedAfter = query.updatedAfter;
 
   if (!requestedType) {
     return {
       page: query.page,
       limit: query.limit,
       visibility,
+      search,
+      updatedAfter,
       unsupportedTypeRequested: false,
     };
   }
@@ -167,6 +173,8 @@ function normalizeListQuery(query: ContentListQuery): {
       page: query.page,
       limit: query.limit,
       visibility,
+      search,
+      updatedAfter,
       unsupportedTypeRequested: true,
     };
   }
@@ -176,6 +184,8 @@ function normalizeListQuery(query: ContentListQuery): {
     limit: query.limit,
     type: requestedType as ContentType,
     visibility,
+    search,
+    updatedAfter,
     unsupportedTypeRequested: false,
   };
 }
@@ -199,6 +209,16 @@ export const listPublicContent = async (query: ContentListQuery): Promise<Conten
   if (normalized.type) {
     values.push(normalized.type);
     conditions.push(`c.content_type = $${values.length}`);
+  }
+
+  if (normalized.search) {
+    values.push(`%${normalized.search}%`);
+    conditions.push(`(c.title ILIKE $${values.length} OR c.description ILIKE $${values.length})`);
+  }
+
+  if (normalized.updatedAfter) {
+    values.push(normalized.updatedAfter);
+    conditions.push(`c.updated_at >= $${values.length}::timestamptz`);
   }
 
   values.push(normalized.limit, offset);
@@ -274,6 +294,16 @@ export const listManagedContent = async (
   if (normalized.visibility) {
     values.push(normalized.visibility);
     conditions.push(`c.visibility = $${values.length}`);
+  }
+
+  if (normalized.search) {
+    values.push(`%${normalized.search}%`);
+    conditions.push(`(c.title ILIKE $${values.length} OR c.description ILIKE $${values.length})`);
+  }
+
+  if (normalized.updatedAfter) {
+    values.push(normalized.updatedAfter);
+    conditions.push(`c.updated_at >= $${values.length}::timestamptz`);
   }
 
   const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
