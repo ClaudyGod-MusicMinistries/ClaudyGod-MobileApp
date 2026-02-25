@@ -21,7 +21,16 @@ export const contentRouter = Router();
 contentRouter.get(
   '/',
   asyncHandler(async (req, res) => {
-    const query = validateSchema(listContentQuerySchema, req.query);
+    const parsed = validateSchema(listContentQuerySchema, req.query);
+    const query = {
+      page: parsed.page ?? 1,
+      limit: parsed.limit ?? 20,
+      type: parsed.type,
+      status: parsed.status,
+      visibility: parsed.visibility,
+      search: parsed.search,
+      updatedAfter: parsed.updatedAfter,
+    };
     const data = await listPublicContent(query);
     res.status(200).json(data);
   }),
@@ -35,7 +44,16 @@ contentRouter.get(
       throw new HttpError(401, 'Unauthorized');
     }
 
-    const query = validateSchema(listContentQuerySchema, req.query);
+    const parsed = validateSchema(listContentQuerySchema, req.query);
+    const query = {
+      page: parsed.page ?? 1,
+      limit: parsed.limit ?? 20,
+      type: parsed.type,
+      status: parsed.status,
+      visibility: parsed.visibility,
+      search: parsed.search,
+      updatedAfter: parsed.updatedAfter,
+    };
     const data = await listManagedContent(req.user, query);
     res.status(200).json(data);
   }),
@@ -49,7 +67,11 @@ contentRouter.post(
       throw new HttpError(401, 'Unauthorized');
     }
 
-    const payload = validateSchema(createContentSchema, req.body);
+    const parsed = validateSchema(createContentSchema, req.body);
+    const payload = {
+      ...parsed,
+      visibility: parsed.visibility ?? 'draft',
+    };
     const item = await createContent(req.user, payload);
     res.status(201).json(item);
   }),
@@ -64,10 +86,10 @@ contentRouter.patch(
     }
 
     const params = validateSchema(contentIdParamsSchema, req.params);
-    const payload = validateSchema(updateVisibilitySchema, req.body);
+    const parsed = validateSchema(updateVisibilitySchema, req.body);
     const item = await updateContentVisibility({
       contentId: params.id,
-      visibility: payload.visibility,
+      visibility: parsed.visibility,
       requester: req.user,
     });
     res.status(200).json(item);

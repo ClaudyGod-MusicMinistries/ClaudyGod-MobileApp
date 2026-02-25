@@ -1,5 +1,5 @@
 import React from 'react';
-import { Image, ScrollView, View } from 'react-native';
+import { Image, ScrollView, View, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../CustomText';
 import { TVTouchable } from '../ui/TVTouchable';
@@ -25,6 +25,7 @@ interface BrandedHeaderCardProps {
   leadingAction?: HeaderAction;
   chips?: HeaderChip[];
   showEyebrow?: boolean;
+  autoHideSubtitleOnPhone?: boolean;
 }
 
 export function BrandedHeaderCard({
@@ -35,9 +36,21 @@ export function BrandedHeaderCard({
   leadingAction,
   chips,
   showEyebrow = false,
+  autoHideSubtitleOnPhone = true,
 }: BrandedHeaderCardProps) {
   const theme = useAppTheme();
+  const { width } = useWindowDimensions();
   const isDark = theme.scheme === 'dark';
+  const isTV = width >= 1200;
+  const isTablet = width >= 768 && !isTV;
+  const isCompact = width < 390;
+  const hideSubtitle = Boolean(subtitle) && autoHideSubtitleOnPhone && isCompact;
+  const actionSize = isTV ? 40 : isTablet ? 36 : 34;
+  const logoWrapSize = isTV ? 38 : isTablet ? 36 : 34;
+  const logoSize = isTV ? 22 : 20;
+  const headerRadius = isTV ? 16 : 14;
+  const chipPaddingX = isCompact ? 9 : 10;
+  const chipPaddingY = isCompact ? 5 : 6;
 
   const ui = {
     cardBg: isDark ? 'rgba(10,8,17,0.9)' : theme.colors.surface,
@@ -65,9 +78,9 @@ export function BrandedHeaderCard({
       accessibilityLabel={action.accessibilityLabel}
       onPress={action.onPress}
       style={{
-        width: 34,
-        height: 34,
-        borderRadius: 17,
+        width: actionSize,
+        height: actionSize,
+        borderRadius: Math.round(actionSize / 2),
         borderWidth: 1,
         borderColor: ui.iconBorder,
         backgroundColor: ui.iconBg,
@@ -84,12 +97,12 @@ export function BrandedHeaderCard({
     <View>
       <View
         style={{
-          borderRadius: 14,
+          borderRadius: headerRadius,
           borderWidth: 1,
           borderColor: ui.cardBorder,
           backgroundColor: ui.cardBg,
-          paddingHorizontal: 10,
-          paddingVertical: 11,
+          paddingHorizontal: isCompact ? 9 : 10,
+          paddingVertical: isCompact ? 10 : 11,
           shadowColor: ui.cardShadow,
           shadowOpacity: isDark ? 0 : 1,
           shadowRadius: 12,
@@ -97,14 +110,14 @@ export function BrandedHeaderCard({
         }}
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 8, minHeight: 38 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 8, minHeight: isCompact ? 34 : 38 }}>
             {leadingAction ? <View style={{ marginRight: 6 }}>{renderAction(leadingAction)}</View> : null}
 
             <View
               style={{
-                width: 34,
-                height: 34,
-                borderRadius: 11,
+                width: logoWrapSize,
+                height: logoWrapSize,
+                borderRadius: Math.round(logoWrapSize * 0.32),
                 borderWidth: 1,
                 borderColor: ui.logoBorder,
                 backgroundColor: ui.logoBg,
@@ -113,7 +126,10 @@ export function BrandedHeaderCard({
                 marginRight: 8,
               }}
             >
-              <Image source={require('../../assets/images/ClaudyGoLogo.webp')} style={{ width: 20, height: 20, borderRadius: 10 }} />
+              <Image
+                source={require('../../assets/images/ClaudyGoLogo.webp')}
+                style={{ width: logoSize, height: logoSize, borderRadius: Math.round(logoSize / 2) }}
+              />
             </View>
 
             <View style={{ flex: 1 }}>
@@ -127,15 +143,19 @@ export function BrandedHeaderCard({
                 style={{
                   color: theme.colors.text.primary,
                   marginTop: showEyebrow ? 1 : 0,
-                  fontSize: 15,
-                  lineHeight: 19,
+                  fontSize: isTV ? 17 : isTablet ? 16 : isCompact ? 14 : 15,
+                  lineHeight: isTV ? 21 : isTablet ? 20 : isCompact ? 18 : 19,
                 }}
                 numberOfLines={1}
               >
                 {title}
               </CustomText>
-              {subtitle ? (
-                <CustomText variant="caption" style={{ color: ui.subtle, marginTop: 2, fontSize: 11 }} numberOfLines={1}>
+              {subtitle && !hideSubtitle ? (
+                <CustomText
+                  variant="caption"
+                  style={{ color: ui.subtle, marginTop: 2, fontSize: isCompact ? 10 : 11 }}
+                  numberOfLines={1}
+                >
                   {subtitle}
                 </CustomText>
               ) : null}
@@ -173,8 +193,8 @@ export function BrandedHeaderCard({
                     borderWidth: 1,
                     borderColor: active ? ui.chipActiveBorder : ui.chipBorder,
                     backgroundColor: active ? ui.chipActiveBg : ui.chipBg,
-                    paddingHorizontal: 10,
-                    paddingVertical: 6,
+                    paddingHorizontal: chipPaddingX,
+                    paddingVertical: chipPaddingY,
                   }}
                   showFocusBorder={false}
                 >
@@ -192,8 +212,8 @@ export function BrandedHeaderCard({
                   borderWidth: 1,
                   borderColor: active ? ui.chipActiveBorder : ui.chipBorder,
                   backgroundColor: active ? ui.chipActiveBg : ui.chipBg,
-                  paddingHorizontal: 10,
-                  paddingVertical: 6,
+                  paddingHorizontal: chipPaddingX,
+                  paddingVertical: chipPaddingY,
                 }}
               >
                 {chipContent}

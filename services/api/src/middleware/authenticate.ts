@@ -20,7 +20,7 @@ export const authenticate: RequestHandler = (req, _res, next) => {
   try {
     req.user = verifyAccessToken(token);
     next();
-  } catch (error) {
-    next(new HttpError(401, 'Invalid or expired token', error));
+  } catch {
+    next(new HttpError(401, 'Invalid or expired token'));
   }
 };

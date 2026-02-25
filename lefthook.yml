@@ -3,11 +3,11 @@ no_tty: true
 pre-commit:
   interactive: false
   jobs:
-    - name: mobile lint
+    - name: repo staged checks
       run: yarn precommit:check
 
 pre-push:
   interactive: false
   jobs:
-    - name: mobile typecheck + lint
+    - name: full repo review (docker + backend + admin + mobile)
       run: yarn prepush:check
