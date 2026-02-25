@@ -12,6 +12,8 @@ export const registerSchema = z.object({
   email: z.string().email(),
   password: passwordSchema,
   displayName: z.string().min(2).max(80),
+  role: z.enum(['CLIENT', 'ADMIN']).optional(),
+  adminSignupCode: z.string().trim().max(128).optional(),
 });
 
 export const loginSchema = z.object({

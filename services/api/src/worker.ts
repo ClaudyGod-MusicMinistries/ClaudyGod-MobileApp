@@ -1,13 +1,11 @@
 import { env } from './config/env';
-import { runMigrations } from './db/migrate';
 import { closePool, pool } from './db/pool';
 import { closeRedis, redis } from './infra/redis';
+import { waitForInfrastructure } from './lib/waitForInfrastructure';
 import { startContentWorker } from './queues/contentWorker';
 
 const bootWorker = async (): Promise<void> => {
-  await runMigrations();
-  await pool.query('SELECT 1');
-  await redis.ping();
+  await waitForInfrastructure('worker');
 
   const worker = startContentWorker();
   console.log(`Content worker started (env=${env.NODE_ENV})`);

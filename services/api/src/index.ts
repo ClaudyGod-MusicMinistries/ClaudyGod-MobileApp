@@ -1,14 +1,12 @@
 import { createApp } from './app';
 import { env } from './config/env';
-import { runMigrations } from './db/migrate';
 import { closePool, pool } from './db/pool';
 import { closeRedis, redis } from './infra/redis';
+import { waitForInfrastructure } from './lib/waitForInfrastructure';
 import { contentQueue } from './queues/contentQueue';
 
 const boot = async (): Promise<void> => {
-  await runMigrations();
-  await pool.query('SELECT 1');
-  await redis.ping();
+  await waitForInfrastructure('api');
 
   const app = createApp();
   const server = app.listen(env.API_PORT, env.API_HOST, () => {

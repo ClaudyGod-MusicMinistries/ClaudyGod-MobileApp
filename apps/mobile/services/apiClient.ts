@@ -10,7 +10,18 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
   });
 
   if (!response.ok) {
-    const message = await response.text();
+    let message = '';
+    try {
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        const payload = (await response.json()) as { message?: string; error?: string };
+        message = payload.message || payload.error || '';
+      } else {
+        message = await response.text();
+      }
+    } catch {
+      message = '';
+    }
     throw new Error(message || `API request failed with ${response.status}`);
   }
 

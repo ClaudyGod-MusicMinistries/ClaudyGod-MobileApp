@@ -9,7 +9,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-claudy}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-claudy_password}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_HOST_PORT:-5433}:5432"
     volumes:
       - local_postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -24,7 +24,7 @@ services:
     container_name: claudygod-local-redis
     command: ["redis-server", "--appendonly", "yes"]
     ports:
-      - "6379:6379"
+      - "${REDIS_HOST_PORT:-6380}:6379"
     volumes:
       - local_redis_data:/data
     healthcheck:
@@ -66,6 +66,7 @@ services:
       YOUTUBE_API_KEY: ${YOUTUBE_API_KEY:-}
       YOUTUBE_CHANNEL_ID: ${YOUTUBE_CHANNEL_ID:-}
       YOUTUBE_MAX_RESULTS: ${YOUTUBE_MAX_RESULTS:-12}
+      ADMIN_SIGNUP_CODE: ${ADMIN_SIGNUP_CODE:-}
       CHOKIDAR_USEPOLLING: "1"
     ports:
       - "4000:4000"
@@ -116,6 +117,7 @@ services:
       YOUTUBE_API_KEY: ${YOUTUBE_API_KEY:-}
       YOUTUBE_CHANNEL_ID: ${YOUTUBE_CHANNEL_ID:-}
       YOUTUBE_MAX_RESULTS: ${YOUTUBE_MAX_RESULTS:-12}
+      ADMIN_SIGNUP_CODE: ${ADMIN_SIGNUP_CODE:-}
       CHOKIDAR_USEPOLLING: "1"
     volumes:
       - ./services/api:/usr/src/app

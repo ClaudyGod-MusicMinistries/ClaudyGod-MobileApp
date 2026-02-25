@@ -1,4 +1,5 @@
 import { pool } from '../../db/pool';
+import { env } from '../../config/env';
 import { HttpError } from '../../lib/httpError';
 import { hashPassword, verifyPassword } from '../../utils/password';
 import { signAccessToken } from '../../utils/jwt';
@@ -34,6 +35,7 @@ const toSafeUser = (row: PublicUserRow): SafeUser => ({
 export const registerUser = async (input: RegisterInput): Promise<AuthResponse> => {
   const email = input.email.trim().toLowerCase();
   const displayName = input.displayName.trim();
+  const requestedRole: UserRole = input.role === 'ADMIN' ? 'ADMIN' : 'CLIENT';
 
   const existing = await pool.query<{ id: string }>('SELECT id FROM app_users WHERE email = $1 LIMIT 1', [
     email,
@@ -45,11 +47,21 @@ export const registerUser = async (input: RegisterInput): Promise<AuthResponse> 
 
   const passwordHash = await hashPassword(input.password);
 
+  if (requestedRole === 'ADMIN') {
+    const providedCode = input.adminSignupCode?.trim();
+    if (!env.ADMIN_SIGNUP_CODE) {
+      throw new HttpError(403, 'Admin signup is disabled');
+    }
+    if (!providedCode || providedCode !== env.ADMIN_SIGNUP_CODE) {
+      throw new HttpError(403, 'Invalid admin signup code');
+    }
+  }
+
   const result = await pool.query<PublicUserRow>(
     `INSERT INTO app_users (email, password_hash, display_name, role)
-     VALUES ($1, $2, $3, 'CLIENT')
+     VALUES ($1, $2, $3, $4)
      RETURNING id, email, display_name, role, created_at`,
-    [email, passwordHash, displayName],
+    [email, passwordHash, displayName, requestedRole],
   );
 
   const user = toSafeUser(result.rows[0]);

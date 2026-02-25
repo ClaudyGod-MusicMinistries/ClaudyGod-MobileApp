@@ -16,6 +16,7 @@ import { AppButton } from '../components/ui/AppButton';
 import { Screen } from '../components/layout/Screen';
 import { TVTouchable } from '../components/ui/TVTouchable';
 import { FadeIn } from '../components/ui/FadeIn';
+import { registerMobileUser } from '../services/authService';
 
 export default function SignUpScreen() {
   const router = useRouter();
@@ -30,11 +31,40 @@ export default function SignUpScreen() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [hidePassword, setHidePassword] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const canSubmit = useMemo(
     () => Boolean(name.trim() && email.trim() && password.trim() && confirmPassword.trim()),
     [confirmPassword, email, name, password],
   );
+
+  const handleSignUp = async () => {
+    setErrorMessage('');
+
+    if (!canSubmit) {
+      setErrorMessage('Fill in all fields to continue.');
+      return;
+    }
+    if (password !== confirmPassword) {
+      setErrorMessage('Passwords do not match.');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await registerMobileUser({
+        displayName: name.trim(),
+        email: email.trim().toLowerCase(),
+        password,
+      });
+      router.replace('/(tabs)/home');
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Unable to create account');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: '#07050F' }}>
@@ -145,12 +175,31 @@ export default function SignUpScreen() {
                     />
                   </View>
 
+                  {errorMessage ? (
+                    <View
+                      style={{
+                        marginTop: 12,
+                        borderRadius: 12,
+                        borderWidth: 1,
+                        borderColor: 'rgba(255,120,120,0.25)',
+                        backgroundColor: 'rgba(255,80,80,0.08)',
+                        paddingHorizontal: 12,
+                        paddingVertical: 10,
+                      }}
+                    >
+                      <CustomText variant="caption" style={{ color: '#FFD6D6' }}>
+                        {errorMessage}
+                      </CustomText>
+                    </View>
+                  ) : null}
+
                   <AppButton
                     title="Create Account"
                     size="lg"
                     fullWidth
-                    onPress={() => router.replace('/(tabs)/home')}
-                    disabled={!canSubmit}
+                    loading={submitting}
+                    onPress={() => void handleSignUp()}
+                    disabled={!canSubmit || submitting}
                     style={{ marginTop: 16, borderRadius: 16 }}
                   />
 
