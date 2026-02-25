@@ -7,6 +7,7 @@ const ACCESS_TOKEN_KEY = 'claudy_admin_access_token';
 const BRAND_LOGO_URL = '/brand/claudy-logo.webp';
 const CONTENT_TYPES = ['audio', 'video', 'playlist', 'announcement'];
 const VISIBILITY_OPTIONS = ['draft', 'published'];
+const YOUTUBE_SYNC_DEFAULT_LIMIT = 8;
 
 const http = axios.create({
   baseURL: API_URL,
@@ -62,6 +63,8 @@ export default defineComponent({
     const contentLoading = ref(false);
     const savingContent = ref(false);
     const togglingId = ref(null);
+    const youtubePreviewLoading = ref(false);
+    const youtubeSyncLoading = ref(false);
     const notice = ref('');
     const noticeKind = ref('success');
 
@@ -90,7 +93,14 @@ export default defineComponent({
       total: 0,
     });
 
+    const youtubeSyncState = reactive({
+      channelId: '',
+      maxResults: YOUTUBE_SYNC_DEFAULT_LIMIT,
+      visibility: 'draft',
+    });
+
     const managedItems = ref([]);
+    const youtubePreviewItems = ref([]);
     const currentYear = new Date().getFullYear();
 
     const greeting = computed(() => greetingByTime());
@@ -209,6 +219,7 @@ export default defineComponent({
       persistToken(null);
       currentUser.value = null;
       managedItems.value = [];
+      youtubePreviewItems.value = [];
       setNotice('You have signed out.', 'success');
     }
 
@@ -284,6 +295,51 @@ export default defineComponent({
         setNotice('Dashboard refreshed.', 'success');
       } catch (error) {
         setNotice(toErrorMessage(error, 'Refresh failed. Please try again.'), 'error');
+      }
+    }
+
+    async function fetchYouTubePreview() {
+      if (!currentUser.value) return;
+
+      youtubePreviewLoading.value = true;
+      clearNotice();
+      try {
+        const response = await http.get('/v1/youtube/videos', {
+          params: {
+            channelId: youtubeSyncState.channelId.trim() || undefined,
+            maxResults: Number(youtubeSyncState.maxResults) || YOUTUBE_SYNC_DEFAULT_LIMIT,
+          },
+        });
+
+        youtubePreviewItems.value = response.data.items || [];
+        setNotice(`Fetched ${youtubePreviewItems.value.length} YouTube video${youtubePreviewItems.value.length === 1 ? '' : 's'} for preview.`, 'success');
+      } catch (error) {
+        setNotice(toErrorMessage(error, 'Unable to fetch YouTube videos. Check your backend YouTube configuration.'), 'error');
+      } finally {
+        youtubePreviewLoading.value = false;
+      }
+    }
+
+    async function syncYouTubeVideos() {
+      if (!currentUser.value) return;
+
+      youtubeSyncLoading.value = true;
+      clearNotice();
+      try {
+        const response = await http.post('/v1/youtube/sync', {
+          channelId: youtubeSyncState.channelId.trim() || undefined,
+          maxResults: Number(youtubeSyncState.maxResults) || YOUTUBE_SYNC_DEFAULT_LIMIT,
+          visibility: youtubeSyncState.visibility,
+        });
+
+        const summary = response.data && response.data.summary ? response.data.summary : { created: 0, updated: 0, skipped: 0 };
+        youtubePreviewItems.value = response.data.items || youtubePreviewItems.value;
+        await fetchManagedContent();
+        setNotice(`YouTube sync complete. Created ${summary.created}, updated ${summary.updated}, skipped ${summary.skipped}.`, 'success');
+      } catch (error) {
+        setNotice(toErrorMessage(error, 'YouTube sync failed. Please verify API key, channel ID, and backend settings.'), 'error');
+      } finally {
+        youtubeSyncLoading.value = false;
       }
     }
 
@@ -402,6 +458,9 @@ export default defineComponent({
                 <button type="button" class="ghost-btn" onClick={() => void refreshDashboard()} disabled={contentLoading.value}>
                   {contentLoading.value ? 'Refreshing...' : 'Refresh'}
                 </button>
+                <button type="button" class="ghost-btn" onClick={() => void fetchYouTubePreview()} disabled={youtubePreviewLoading.value}>
+                  {youtubePreviewLoading.value ? 'Loading YouTube...' : 'Preview YouTube'}
+                </button>
                 <button type="button" class="danger-btn" onClick={logout}>Sign Out</button>
               </div>
             </div>
@@ -494,6 +553,80 @@ export default defineComponent({
                     Use <em>Draft</em> while reviewing new content, then switch to <em>Published</em> when it is ready for users.
                   </p>
                 </div>
+
+                <section class="youtube-sync-block">
+                  <div class="section-head compact">
+                    <div>
+                      <h3>YouTube Sync</h3>
+                      <p>Fetch channel videos from the backend and import them into your content library.</p>
+                    </div>
+                    <span class="section-badge">Backend</span>
+                  </div>
+
+                  <label>
+                    YouTube Channel ID (optional override)
+                    <input
+                      value={youtubeSyncState.channelId}
+                      onInput={(event) => { youtubeSyncState.channelId = readValue(event); }}
+                      placeholder="Use backend default if left empty"
+                    />
+                  </label>
+
+                  <div class="grid-2">
+                    <label>
+                      Max results
+                      <input
+                        type="number"
+                        min="1"
+                        max="50"
+                        value={String(youtubeSyncState.maxResults)}
+                        onInput={(event) => { youtubeSyncState.maxResults = Number(readValue(event)) || YOUTUBE_SYNC_DEFAULT_LIMIT; }}
+                      />
+                    </label>
+
+                    <label>
+                      Import as
+                      <select value={youtubeSyncState.visibility} onChange={(event) => { youtubeSyncState.visibility = readValue(event); }}>
+                        {VISIBILITY_OPTIONS.map((visibility) => <option value={visibility} key={`yt-${visibility}`}>{visibility}</option>)}
+                      </select>
+                    </label>
+                  </div>
+
+                  <div class="button-row">
+                    <button type="button" class="ghost-btn compact" onClick={() => void fetchYouTubePreview()} disabled={youtubePreviewLoading.value || youtubeSyncLoading.value}>
+                      {youtubePreviewLoading.value ? 'Fetching...' : 'Fetch Preview'}
+                    </button>
+                    <button type="button" class="primary-btn" onClick={() => void syncYouTubeVideos()} disabled={youtubeSyncLoading.value || youtubePreviewLoading.value}>
+                      {youtubeSyncLoading.value ? 'Syncing YouTube...' : 'Sync to Library'}
+                    </button>
+                  </div>
+
+                  <div class="youtube-preview-list">
+                    {youtubePreviewItems.value.length === 0 ? (
+                      <div class="empty-state">
+                        No YouTube preview loaded yet. Use <strong>Fetch Preview</strong> after setting `YOUTUBE_API_KEY` and `YOUTUBE_CHANNEL_ID` in the backend `.env`.
+                      </div>
+                    ) : youtubePreviewItems.value.map((video) => (
+                      <article class="content-card" key={video.youtubeVideoId}>
+                        <div class="card-top">
+                          <div class="pill-row">
+                            <span class="pill pill-video">video</span>
+                            {video.isLive ? <span class="pill pill-live">live</span> : null}
+                          </div>
+                          <span class="muted-chip">{video.duration || '--:--'}</span>
+                        </div>
+                        <div class="card-body">
+                          <h3>{video.title}</h3>
+                          <p>{truncate(video.description || '', 140)}</p>
+                        </div>
+                        <div class="card-link-row">
+                          <a href={video.url} target="_blank" rel="noreferrer noopener" class="media-link">Open YouTube</a>
+                          <span class="muted-chip">{formatDateTime(video.publishedAt)}</span>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                </section>
 
                 <button type="submit" class="primary-btn primary-btn-large" disabled={savingContent.value}>
                   {savingContent.value ? 'Saving...' : createForm.visibility === 'published' ? 'Publish Content' : 'Save Draft'}

@@ -46,6 +46,20 @@ services:
       - JWT_ACCESS_TTL=1d
       - BCRYPT_ROUNDS=12
       - CORS_ORIGIN=http://localhost:5173
+      - MOBILE_API_KEY=${MOBILE_API_KEY:-change-mobile-api-key}
+      - SUPABASE_URL=${SUPABASE_URL:-}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:-}
+      - SUPABASE_STORAGE_BUCKET=${SUPABASE_STORAGE_BUCKET:-mobile-uploads}
+      - MAIL_FROM=${MAIL_FROM:-Claudy Platform <noreply@claudygod.example>}
+      - ADMIN_ALERT_EMAILS=${ADMIN_ALERT_EMAILS:-}
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_SECURE=${SMTP_SECURE:-false}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASS=${SMTP_PASS:-}
+      - YOUTUBE_API_KEY=${YOUTUBE_API_KEY:-}
+      - YOUTUBE_CHANNEL_ID=${YOUTUBE_CHANNEL_ID:-}
+      - YOUTUBE_MAX_RESULTS=${YOUTUBE_MAX_RESULTS:-12}
     depends_on:
       postgres:
         condition: service_healthy
@@ -66,6 +80,20 @@ services:
       - JWT_ACCESS_TTL=1d
       - BCRYPT_ROUNDS=12
       - CORS_ORIGIN=http://localhost:5173
+      - MOBILE_API_KEY=${MOBILE_API_KEY:-change-mobile-api-key}
+      - SUPABASE_URL=${SUPABASE_URL:-}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:-}
+      - SUPABASE_STORAGE_BUCKET=${SUPABASE_STORAGE_BUCKET:-mobile-uploads}
+      - MAIL_FROM=${MAIL_FROM:-Claudy Platform <noreply@claudygod.example>}
+      - ADMIN_ALERT_EMAILS=${ADMIN_ALERT_EMAILS:-}
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_SECURE=${SMTP_SECURE:-false}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASS=${SMTP_PASS:-}
+      - YOUTUBE_API_KEY=${YOUTUBE_API_KEY:-}
+      - YOUTUBE_CHANNEL_ID=${YOUTUBE_CHANNEL_ID:-}
+      - YOUTUBE_MAX_RESULTS=${YOUTUBE_MAX_RESULTS:-12}
     depends_on:
       postgres:
         condition: service_healthy

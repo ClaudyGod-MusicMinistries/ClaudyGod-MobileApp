@@ -1,6 +1,7 @@
 import { Router } from 'express';
-import { validateSchema } from '../../lib/validation';
 import { asyncHandler } from '../../lib/asyncHandler';
+import { HttpError } from '../../lib/httpError';
+import { validateSchema } from '../../lib/validation';
 import { authenticate } from '../../middleware/authenticate';
 import { signedUploadRequestSchema } from './uploads.schema';
 import { requestSignedUploadUrl } from './uploads.service';
@@ -12,10 +13,18 @@ uploadsRouter.post(
   authenticate,
   asyncHandler(async (req, res) => {
     if (!req.user) {
-      throw new Error('Unauthorized');
+      throw new HttpError(401, 'Unauthorized');
+    }
+    if (req.user.role !== 'ADMIN') {
+      throw new HttpError(403, 'Admin role required');
     }
 
-    const payload = validateSchema(signedUploadRequestSchema, req.body);
+    const parsed = validateSchema(signedUploadRequestSchema, req.body);
+    const payload = {
+      ...parsed,
+      folder: parsed.folder ?? 'mobile-content',
+    };
+
     const result = await requestSignedUploadUrl({
       ...payload,
       channel: 'admin',

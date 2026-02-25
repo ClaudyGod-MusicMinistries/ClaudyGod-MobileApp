@@ -2,6 +2,7 @@ import type { UserRole } from '../auth/auth.types';
 
 export type ContentType = 'audio' | 'video' | 'playlist' | 'announcement';
 export type ContentVisibility = 'draft' | 'published';
+export type ContentFilterType = ContentType | 'live' | 'ad';
 
 export interface ContentAuthor {
   id: string;
@@ -33,6 +34,9 @@ export interface CreateContentInput {
 export interface ContentListQuery {
   page: number;
   limit: number;
+  type?: ContentFilterType;
+  status?: ContentVisibility;
+  visibility?: ContentVisibility;
 }
 
 export interface ContentListResponse {
