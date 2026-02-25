@@ -10,6 +10,7 @@ import { contentRouter } from './modules/content/content.routes';
 import { healthRouter } from './modules/health/health.routes';
 import { mobileRouter } from './modules/mobile/mobile.routes';
 import { uploadsRouter } from './modules/uploads/uploads.routes';
+import { youtubeRouter } from './modules/youtube/youtube.routes';
 
 const parseCorsOrigin = (): boolean | string[] => {
   const origins = env.CORS_ORIGINS;
@@ -40,6 +41,7 @@ export const createApp = () => {
   app.use('/v1/content', contentRouter);
   app.use('/v1/uploads', uploadsRouter);
   app.use('/v1/mobile', mobileRouter);
+  app.use('/v1/youtube', youtubeRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

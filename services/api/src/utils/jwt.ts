@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken';
+import jwt, { type Secret, type SignOptions } from 'jsonwebtoken';
 import { env } from '../config/env';
 import type { UserRole } from '../modules/auth/auth.types';
 
@@ -10,12 +10,12 @@ export interface JwtClaims {
 }
 
 export const signAccessToken = (claims: JwtClaims): string =>
-  jwt.sign(claims, env.JWT_ACCESS_SECRET, {
-    expiresIn: env.JWT_ACCESS_TTL,
+  jwt.sign(claims, env.JWT_ACCESS_SECRET as Secret, {
+    expiresIn: env.JWT_ACCESS_TTL as SignOptions['expiresIn'],
   });
 
 export const verifyAccessToken = (token: string): JwtClaims => {
-  const decoded = jwt.verify(token, env.JWT_ACCESS_SECRET);
+  const decoded = jwt.verify(token, env.JWT_ACCESS_SECRET as Secret);
 
   if (typeof decoded === 'string') {
     throw new Error('Invalid access token');
