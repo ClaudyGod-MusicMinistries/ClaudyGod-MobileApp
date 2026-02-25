@@ -7,6 +7,7 @@ const ACCESS_TOKEN_KEY = 'claudy_admin_access_token';
 const BRAND_LOGO_URL = '/brand/claudy-logo.webp';
 const CONTENT_TYPES = ['audio', 'video', 'playlist', 'announcement'];
 const VISIBILITY_OPTIONS = ['draft', 'published'];
+const YOUTUBE_SYNC_DEFAULT_LIMIT = 8;
 
 const http = axios.create({
   baseURL: API_URL,
@@ -23,6 +24,10 @@ function applyToken(token) {
 
 function readValue(event) {
   return event && event.target ? event.target.value : '';
+}
+
+function readChecked(event) {
+  return Boolean(event && event.target ? event.target.checked : false);
 }
 
 function toErrorMessage(error, fallback) {
@@ -58,16 +63,23 @@ export default defineComponent({
     const accessToken = ref(localStorage.getItem(ACCESS_TOKEN_KEY) || '');
     const currentUser = ref(null);
     const authLoading = ref(false);
+    const authMode = ref('login');
     const appLoading = ref(false);
     const contentLoading = ref(false);
     const savingContent = ref(false);
     const togglingId = ref(null);
+    const youtubePreviewLoading = ref(false);
+    const youtubeSyncLoading = ref(false);
     const notice = ref('');
     const noticeKind = ref('success');
 
     const authForm = reactive({
       email: '',
       password: '',
+      displayName: '',
+      confirmPassword: '',
+      registerAsAdmin: false,
+      adminSignupCode: '',
     });
 
     const createForm = reactive({
@@ -90,11 +102,19 @@ export default defineComponent({
       total: 0,
     });
 
+    const youtubeSyncState = reactive({
+      channelId: '',
+      maxResults: YOUTUBE_SYNC_DEFAULT_LIMIT,
+      visibility: 'draft',
+    });
+
     const managedItems = ref([]);
+    const youtubePreviewItems = ref([]);
     const currentYear = new Date().getFullYear();
 
     const greeting = computed(() => greetingByTime());
     const displayName = computed(() => (currentUser.value && currentUser.value.displayName ? currentUser.value.displayName : 'Client'));
+    const isRegisterMode = computed(() => authMode.value === 'register');
 
     const stats = computed(() => {
       const total = managedItems.value.length;
@@ -182,26 +202,73 @@ export default defineComponent({
       clearNotice();
 
       if (!authForm.email.trim() || !authForm.password.trim()) {
-        setNotice('Please enter your email and password.', 'error');
+        setNotice(isRegisterMode.value ? 'Please complete the required account fields.' : 'Please enter your email and password.', 'error');
         return;
+      }
+
+      if (isRegisterMode.value) {
+        if (!authForm.displayName.trim()) {
+          setNotice('Please enter your display name.', 'error');
+          return;
+        }
+        if (authForm.password !== authForm.confirmPassword) {
+          setNotice('Passwords do not match.', 'error');
+          return;
+        }
       }
 
       authLoading.value = true;
       try {
-        const loginResponse = await http.post('/v1/auth/login', {
-          email: authForm.email.trim(),
-          password: authForm.password,
-        });
+        const endpoint = isRegisterMode.value ? '/v1/auth/register' : '/v1/auth/login';
+        const payload = isRegisterMode.value
+          ? {
+              email: authForm.email.trim(),
+              password: authForm.password,
+              displayName: authForm.displayName.trim(),
+              role: authForm.registerAsAdmin ? 'ADMIN' : 'CLIENT',
+              adminSignupCode: authForm.adminSignupCode.trim() || undefined,
+            }
+          : {
+              email: authForm.email.trim(),
+              password: authForm.password,
+            };
 
-        persistToken(loginResponse.data.accessToken);
-        currentUser.value = loginResponse.data.user;
+        const authResponse = await http.post(endpoint, payload);
+
+        persistToken(authResponse.data.accessToken);
+        currentUser.value = authResponse.data.user;
         authForm.password = '';
+        authForm.confirmPassword = '';
         await fetchManagedContent();
-        setNotice(`Welcome back, ${loginResponse.data.user.displayName}.`, 'success');
+        setNotice(
+          isRegisterMode.value
+            ? `Account created. Welcome, ${authResponse.data.user.displayName}.`
+            : `Welcome back, ${authResponse.data.user.displayName}.`,
+          'success',
+        );
       } catch (error) {
-        setNotice(toErrorMessage(error, 'Sign in failed. Please check your details and try again.'), 'error');
+        setNotice(
+          toErrorMessage(
+            error,
+            isRegisterMode.value
+              ? 'Account creation failed. Please check your details and try again.'
+              : 'Sign in failed. Please check your details and try again.',
+          ),
+          'error',
+        );
       } finally {
         authLoading.value = false;
+      }
+    }
+
+    function switchAuthMode(mode) {
+      authMode.value = mode;
+      clearNotice();
+      authForm.password = '';
+      authForm.confirmPassword = '';
+      if (mode === 'login') {
+        authForm.registerAsAdmin = false;
+        authForm.adminSignupCode = '';
       }
     }
 
@@ -209,6 +276,7 @@ export default defineComponent({
       persistToken(null);
       currentUser.value = null;
       managedItems.value = [];
+      youtubePreviewItems.value = [];
       setNotice('You have signed out.', 'success');
     }
 
@@ -287,6 +355,51 @@ export default defineComponent({
       }
     }
 
+    async function fetchYouTubePreview() {
+      if (!currentUser.value) return;
+
+      youtubePreviewLoading.value = true;
+      clearNotice();
+      try {
+        const response = await http.get('/v1/youtube/videos', {
+          params: {
+            channelId: youtubeSyncState.channelId.trim() || undefined,
+            maxResults: Number(youtubeSyncState.maxResults) || YOUTUBE_SYNC_DEFAULT_LIMIT,
+          },
+        });
+
+        youtubePreviewItems.value = response.data.items || [];
+        setNotice(`Fetched ${youtubePreviewItems.value.length} YouTube video${youtubePreviewItems.value.length === 1 ? '' : 's'} for preview.`, 'success');
+      } catch (error) {
+        setNotice(toErrorMessage(error, 'Unable to fetch YouTube videos. Check your backend YouTube configuration.'), 'error');
+      } finally {
+        youtubePreviewLoading.value = false;
+      }
+    }
+
+    async function syncYouTubeVideos() {
+      if (!currentUser.value) return;
+
+      youtubeSyncLoading.value = true;
+      clearNotice();
+      try {
+        const response = await http.post('/v1/youtube/sync', {
+          channelId: youtubeSyncState.channelId.trim() || undefined,
+          maxResults: Number(youtubeSyncState.maxResults) || YOUTUBE_SYNC_DEFAULT_LIMIT,
+          visibility: youtubeSyncState.visibility,
+        });
+
+        const summary = response.data && response.data.summary ? response.data.summary : { created: 0, updated: 0, skipped: 0 };
+        youtubePreviewItems.value = response.data.items || youtubePreviewItems.value;
+        await fetchManagedContent();
+        setNotice(`YouTube sync complete. Created ${summary.created}, updated ${summary.updated}, skipped ${summary.skipped}.`, 'success');
+      } catch (error) {
+        setNotice(toErrorMessage(error, 'YouTube sync failed. Please verify API key, channel ID, and backend settings.'), 'error');
+      } finally {
+        youtubeSyncLoading.value = false;
+      }
+    }
+
     onMounted(() => {
       void bootstrapSession();
     });
@@ -340,14 +453,49 @@ export default defineComponent({
                 <img src={BRAND_LOGO_URL} alt="ClaudyGod" class="brand-logo" />
               </div>
               <div>
-                <h2>Sign In</h2>
-                <p class="subtle-text">Enter your account details to access the publishing dashboard.</p>
+                <h2>{isRegisterMode.value ? 'Create Account' : 'Sign In'}</h2>
+                <p class="subtle-text">
+                  {isRegisterMode.value
+                    ? 'Create a client account for the publishing dashboard. Admin accounts require a signup code.'
+                    : 'Enter your account details to access the publishing dashboard.'}
+                </p>
               </div>
+            </div>
+
+            <div class="auth-mode-toggle" role="tablist" aria-label="Authentication mode">
+              <button
+                type="button"
+                class={['auth-mode-btn', !isRegisterMode.value ? 'is-active' : '']}
+                onClick={() => switchAuthMode('login')}
+                disabled={authLoading.value}
+              >
+                Sign In
+              </button>
+              <button
+                type="button"
+                class={['auth-mode-btn', isRegisterMode.value ? 'is-active' : '']}
+                onClick={() => switchAuthMode('register')}
+                disabled={authLoading.value}
+              >
+                Create Account
+              </button>
             </div>
 
             {notice.value ? <div class={['notice', noticeKind.value === 'error' ? 'notice-error' : 'notice-success']}>{notice.value}</div> : null}
 
             <form class="stack-form" onSubmit={(event) => void handleAuthSubmit(event)}>
+              {isRegisterMode.value ? (
+                <label>
+                  Display name
+                  <input
+                    value={authForm.displayName}
+                    onInput={(event) => { authForm.displayName = readValue(event); }}
+                    placeholder="ClaudyGod Team Member"
+                    autoComplete="name"
+                  />
+                </label>
+              ) : null}
+
               <label>
                 Email address
                 <input
@@ -365,17 +513,69 @@ export default defineComponent({
                   type="password"
                   value={authForm.password}
                   onInput={(event) => { authForm.password = readValue(event); }}
-                  placeholder="Enter your password"
-                  autoComplete="current-password"
+                  placeholder={isRegisterMode.value ? 'Create a strong password' : 'Enter your password'}
+                  autoComplete={isRegisterMode.value ? 'new-password' : 'current-password'}
                 />
               </label>
 
+              {isRegisterMode.value ? (
+                <label>
+                  Confirm password
+                  <input
+                    type="password"
+                    value={authForm.confirmPassword}
+                    onInput={(event) => { authForm.confirmPassword = readValue(event); }}
+                    placeholder="Confirm your password"
+                    autoComplete="new-password"
+                  />
+                </label>
+              ) : null}
+
+              {isRegisterMode.value ? (
+                <div class="register-options">
+                  <label class="checkbox-row">
+                    <input
+                      type="checkbox"
+                      class="inline-checkbox"
+                      checked={authForm.registerAsAdmin}
+                      onChange={(event) => {
+                        authForm.registerAsAdmin = readChecked(event);
+                        if (!authForm.registerAsAdmin) authForm.adminSignupCode = '';
+                      }}
+                    />
+                    <span>
+                      Register as admin
+                      <small>Requires the backend `ADMIN_SIGNUP_CODE`.</small>
+                    </span>
+                  </label>
+
+                  {authForm.registerAsAdmin ? (
+                    <label>
+                      Admin signup code
+                      <input
+                        type="password"
+                        value={authForm.adminSignupCode}
+                        onInput={(event) => { authForm.adminSignupCode = readValue(event); }}
+                        placeholder="Enter your admin signup code"
+                        autoComplete="one-time-code"
+                      />
+                    </label>
+                  ) : null}
+                </div>
+              ) : null}
+
               <button type="submit" class="primary-btn primary-btn-large" disabled={authLoading.value}>
-                {authLoading.value ? 'Signing in...' : 'Sign In'}
+                {authLoading.value
+                  ? (isRegisterMode.value ? 'Creating account...' : 'Signing in...')
+                  : (isRegisterMode.value ? 'Create Account' : 'Sign In')}
               </button>
             </form>
 
-            <p class="footnote-text">Need access? Contact the platform administrator for account setup.</p>
+            <p class="footnote-text">
+              {isRegisterMode.value
+                ? 'Create a client account directly here. To create an admin account, enable `ADMIN_SIGNUP_CODE` in the backend and enter the code above.'
+                : 'Need access? You can sign up here for a client account or contact the platform administrator for admin access.'}
+            </p>
           </div>
         </section>
       );
@@ -401,6 +601,9 @@ export default defineComponent({
               <div class="hero-actions">
                 <button type="button" class="ghost-btn" onClick={() => void refreshDashboard()} disabled={contentLoading.value}>
                   {contentLoading.value ? 'Refreshing...' : 'Refresh'}
+                </button>
+                <button type="button" class="ghost-btn" onClick={() => void fetchYouTubePreview()} disabled={youtubePreviewLoading.value}>
+                  {youtubePreviewLoading.value ? 'Loading YouTube...' : 'Preview YouTube'}
                 </button>
                 <button type="button" class="danger-btn" onClick={logout}>Sign Out</button>
               </div>
@@ -494,6 +697,80 @@ export default defineComponent({
                     Use <em>Draft</em> while reviewing new content, then switch to <em>Published</em> when it is ready for users.
                   </p>
                 </div>
+
+                <section class="youtube-sync-block">
+                  <div class="section-head compact">
+                    <div>
+                      <h3>YouTube Sync</h3>
+                      <p>Fetch channel videos from the backend and import them into your content library.</p>
+                    </div>
+                    <span class="section-badge">Backend</span>
+                  </div>
+
+                  <label>
+                    YouTube Channel ID (optional override)
+                    <input
+                      value={youtubeSyncState.channelId}
+                      onInput={(event) => { youtubeSyncState.channelId = readValue(event); }}
+                      placeholder="Use backend default if left empty"
+                    />
+                  </label>
+
+                  <div class="grid-2">
+                    <label>
+                      Max results
+                      <input
+                        type="number"
+                        min="1"
+                        max="50"
+                        value={String(youtubeSyncState.maxResults)}
+                        onInput={(event) => { youtubeSyncState.maxResults = Number(readValue(event)) || YOUTUBE_SYNC_DEFAULT_LIMIT; }}
+                      />
+                    </label>
+
+                    <label>
+                      Import as
+                      <select value={youtubeSyncState.visibility} onChange={(event) => { youtubeSyncState.visibility = readValue(event); }}>
+                        {VISIBILITY_OPTIONS.map((visibility) => <option value={visibility} key={`yt-${visibility}`}>{visibility}</option>)}
+                      </select>
+                    </label>
+                  </div>
+
+                  <div class="button-row">
+                    <button type="button" class="ghost-btn compact" onClick={() => void fetchYouTubePreview()} disabled={youtubePreviewLoading.value || youtubeSyncLoading.value}>
+                      {youtubePreviewLoading.value ? 'Fetching...' : 'Fetch Preview'}
+                    </button>
+                    <button type="button" class="primary-btn" onClick={() => void syncYouTubeVideos()} disabled={youtubeSyncLoading.value || youtubePreviewLoading.value}>
+                      {youtubeSyncLoading.value ? 'Syncing YouTube...' : 'Sync to Library'}
+                    </button>
+                  </div>
+
+                  <div class="youtube-preview-list">
+                    {youtubePreviewItems.value.length === 0 ? (
+                      <div class="empty-state">
+                        No YouTube preview loaded yet. Use <strong>Fetch Preview</strong> after setting `YOUTUBE_API_KEY` and `YOUTUBE_CHANNEL_ID` in the backend `.env`.
+                      </div>
+                    ) : youtubePreviewItems.value.map((video) => (
+                      <article class="content-card" key={video.youtubeVideoId}>
+                        <div class="card-top">
+                          <div class="pill-row">
+                            <span class="pill pill-video">video</span>
+                            {video.isLive ? <span class="pill pill-live">live</span> : null}
+                          </div>
+                          <span class="muted-chip">{video.duration || '--:--'}</span>
+                        </div>
+                        <div class="card-body">
+                          <h3>{video.title}</h3>
+                          <p>{truncate(video.description || '', 140)}</p>
+                        </div>
+                        <div class="card-link-row">
+                          <a href={video.url} target="_blank" rel="noreferrer noopener" class="media-link">Open YouTube</a>
+                          <span class="muted-chip">{formatDateTime(video.publishedAt)}</span>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                </section>
 
                 <button type="submit" class="primary-btn primary-btn-large" disabled={savingContent.value}>
                   {savingContent.value ? 'Saving...' : createForm.visibility === 'published' ? 'Publish Content' : 'Save Draft'}

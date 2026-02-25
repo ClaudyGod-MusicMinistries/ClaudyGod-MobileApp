@@ -2,8 +2,14 @@ import { apiFetch } from './apiClient';
 
 export type ContentType = 'audio' | 'video' | 'playlist' | 'announcement' | 'live' | 'ad';
 
+type ContentStatus = 'draft' | 'published';
+
 interface ContentApiResponse {
   items: ApiContentItem[];
+}
+
+interface MobileYouTubeResponse {
+  items: YouTubeVideoItem[];
 }
 
 export interface ApiContentItem {
@@ -11,10 +17,12 @@ export interface ApiContentItem {
   title: string;
   description?: string;
   type: ContentType;
-  status?: 'draft' | 'published';
+  status?: ContentStatus;
+  visibility?: ContentStatus;
   sourceKind?: 'upload' | 'external';
   mediaUrl?: string;
   externalUrl?: string;
+  url?: string;
   thumbnailUrl?: string;
   tags?: string[];
   createdAt?: string;
@@ -23,6 +31,24 @@ export interface ApiContentItem {
   duration?: string;
   liveViewerCount?: number;
   isLive?: boolean;
+  author?: {
+    id?: string;
+    displayName?: string;
+    email?: string;
+  };
+}
+
+interface YouTubeVideoItem {
+  youtubeVideoId: string;
+  title: string;
+  description?: string;
+  channelTitle?: string;
+  publishedAt?: string;
+  thumbnailUrl?: string;
+  url: string;
+  duration?: string;
+  isLive?: boolean;
+  liveViewerCount?: number;
 }
 
 export interface FeedCardItem {
@@ -36,6 +62,7 @@ export interface FeedCardItem {
   type: ContentType;
   liveViewerCount?: number;
   isLive?: boolean;
+  createdAt?: string;
 }
 
 export interface FeedBundle {
@@ -71,6 +98,9 @@ function safeSubtitle(item: ApiContentItem): string {
   if (item.channelName && item.channelName.trim().length > 0) {
     return item.channelName;
   }
+  if (item.author?.displayName) {
+    return item.author.displayName;
+  }
   if (Array.isArray(item.tags) && item.tags.length > 0) {
     return item.tags.slice(0, 2).join(' • ');
   }
@@ -94,11 +124,49 @@ function normalize(item: ApiContentItem): FeedCardItem {
     description: safeDescription(item),
     duration: item.duration || '--:--',
     imageUrl: item.thumbnailUrl || FALLBACK_IMAGE,
-    mediaUrl: item.mediaUrl || item.externalUrl,
+    mediaUrl: item.mediaUrl || item.externalUrl || item.url,
     type: item.type,
     isLive: item.isLive || item.type === 'live',
     liveViewerCount: item.liveViewerCount,
+    createdAt: item.createdAt || item.updatedAt,
   };
+}
+
+function normalizeYouTubeVideo(item: YouTubeVideoItem): FeedCardItem {
+  return {
+    id: `yt:${item.youtubeVideoId}`,
+    title: item.title,
+    subtitle: item.channelTitle || 'ClaudyGod YouTube',
+    description: item.description || 'Latest video from YouTube channel feed.',
+    duration: item.duration || (item.isLive ? 'LIVE' : '--:--'),
+    imageUrl: item.thumbnailUrl || FALLBACK_IMAGE,
+    mediaUrl: item.url,
+    type: item.isLive ? 'live' : 'video',
+    isLive: Boolean(item.isLive),
+    liveViewerCount: item.liveViewerCount,
+    createdAt: item.publishedAt,
+  };
+}
+
+function classifyYouTubeItem(item: FeedCardItem): 'music' | 'video' | 'announcement' | 'live' {
+  if (item.isLive || item.type === 'live') {
+    return 'live';
+  }
+
+  const text = `${item.title} ${item.description} ${item.subtitle}`.toLowerCase();
+  const isMusicLike =
+    /(worship|praise|song|music|choir|hymn|album|track|audio|anthem|ministration)/.test(text);
+  if (isMusicLike) {
+    return 'music';
+  }
+
+  const isAnnouncementLike =
+    /(announcement|update|event|service time|conference|schedule|notice|program)/.test(text);
+  if (isAnnouncementLike) {
+    return 'announcement';
+  }
+
+  return 'video';
 }
 
 function buildQuery(type?: ContentType): string {
@@ -106,7 +174,7 @@ function buildQuery(type?: ContentType): string {
   if (type) {
     params.set('type', type);
   }
-  return `/v1/content?${params.toString()}`;
+  return `/v1/mobile/content?${params.toString()}`;
 }
 
 async function fetchByType(type: ContentType): Promise<FeedCardItem[]> {
@@ -124,6 +192,50 @@ async function fetchAllPublished(): Promise<FeedCardItem[]> {
     return response.items.map(normalize);
   } catch {
     return [];
+  }
+}
+
+async function fetchYouTubeFeed(): Promise<{
+  videos: FeedCardItem[];
+  music: FeedCardItem[];
+  live: FeedCardItem[];
+  announcements: FeedCardItem[];
+  recent: FeedCardItem[];
+}> {
+  try {
+    const response = await apiFetch<MobileYouTubeResponse>('/v1/mobile/youtube/videos?maxResults=20');
+    const normalized = response.items.map(normalizeYouTubeVideo);
+    const music: FeedCardItem[] = [];
+    const videos: FeedCardItem[] = [];
+    const live: FeedCardItem[] = [];
+    const announcements: FeedCardItem[] = [];
+
+    for (const item of normalized) {
+      const bucket = classifyYouTubeItem(item);
+      if (bucket === 'live') {
+        live.push(item);
+      } else if (bucket === 'music') {
+        music.push({ ...item, type: 'audio' });
+      } else if (bucket === 'announcement') {
+        announcements.push({ ...item, type: 'announcement' });
+      } else {
+        videos.push(item);
+      }
+    }
+
+    return {
+      videos,
+      music,
+      live,
+      announcements,
+      recent: normalized,
+    };
+  } catch (error) {
+    console.warn(
+      '[contentService] YouTube feed fetch failed:',
+      error instanceof Error ? error.message : String(error),
+    );
+    return { videos: [], music: [], live: [], announcements: [], recent: [] };
   }
 }
 
@@ -152,7 +264,7 @@ function dedupe(items: FeedCardItem[]): FeedCardItem[] {
 }
 
 export async function fetchFeedBundle(): Promise<FeedBundle> {
-  const [all, music, videos, playlists, live, ads, announcements, mostPlayed] = await Promise.all([
+  const [all, music, videos, playlists, live, ads, announcements, mostPlayed, youtubeFeed] = await Promise.all([
     fetchAllPublished(),
     fetchByType('audio'),
     fetchByType('video'),
@@ -161,31 +273,48 @@ export async function fetchFeedBundle(): Promise<FeedBundle> {
     fetchByType('ad'),
     fetchByType('announcement'),
     fetchMostPlayed(),
+    fetchYouTubeFeed(),
   ]);
 
-  const recent = [...all].sort((a, b) => {
+  const mergedMusic = dedupe([...youtubeFeed.music, ...music]);
+  const mergedVideos = dedupe([...youtubeFeed.videos, ...videos]);
+  const mergedLive = dedupe([...youtubeFeed.live, ...live]);
+  const mergedAnnouncements = dedupe([...youtubeFeed.announcements, ...announcements]);
+  const mergedAll = dedupe([
+    ...youtubeFeed.recent,
+    ...youtubeFeed.videos,
+    ...youtubeFeed.music,
+    ...youtubeFeed.live,
+    ...youtubeFeed.announcements,
+    ...all,
+  ]);
+
+  const recent = [...mergedAll].sort((a, b) => {
+    const aTs = a.createdAt ? Date.parse(a.createdAt) : 0;
+    const bTs = b.createdAt ? Date.parse(b.createdAt) : 0;
+    if (aTs !== bTs) return bTs - aTs;
     return a.id < b.id ? 1 : -1;
   });
 
   const pool = dedupe([
-    ...live,
-    ...videos,
-    ...music,
+    ...mergedLive,
+    ...mergedVideos,
+    ...mergedMusic,
     ...playlists,
-    ...announcements,
+    ...mergedAnnouncements,
     ...ads,
-    ...all,
+    ...mergedAll,
   ]);
 
   return {
     ...DEFAULT_BUNDLE,
     featured: pool[0] ?? null,
-    music: dedupe(music).slice(0, 14),
-    videos: dedupe(videos).slice(0, 14),
+    music: mergedMusic.slice(0, 14),
+    videos: mergedVideos.slice(0, 14),
     playlists: dedupe(playlists).slice(0, 12),
-    live: dedupe(live).slice(0, 10),
+    live: mergedLive.slice(0, 10),
     ads: dedupe(ads).slice(0, 8),
-    announcements: dedupe(announcements).slice(0, 8),
+    announcements: mergedAnnouncements.slice(0, 8),
     mostPlayed: dedupe(mostPlayed).slice(0, 12),
     recent: dedupe(recent).slice(0, 12),
     topCategories: DEFAULT_BUNDLE.topCategories,

@@ -1,0 +1,135 @@
+name: claudygod-api-dev
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: claudygod-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-claudy_admin}
+      POSTGRES_USER: ${POSTGRES_USER:-claudy}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-claudy_password}
+    ports:
+      - "${POSTGRES_HOST_PORT:-5433}:5432"
+    volumes:
+      - claudygod_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-claudy} -d ${POSTGRES_DB:-claudy_admin}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: claudygod-redis
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "${REDIS_HOST_PORT:-6380}:6379"
+    volumes:
+      - claudygod_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: claudygod-api
+    working_dir: /usr/src/app
+    command: ["npm", "run", "dev"]
+    environment:
+      NODE_ENV: development
+      API_PORT: 4000
+      API_HOST: 0.0.0.0
+      DATABASE_URL: postgres://${POSTGRES_USER:-claudy}:${POSTGRES_PASSWORD:-claudy_password}@postgres:5432/${POSTGRES_DB:-claudy_admin}
+      DATABASE_SSL: "false"
+      REDIS_URL: redis://redis:6379
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-replace-this-jwt-secret-before-production-please-123456789}
+      JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-1d}
+      BCRYPT_ROUNDS: ${BCRYPT_ROUNDS:-12}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173,http://localhost:19006}
+      MOBILE_API_KEY: ${MOBILE_API_KEY:-dev-mobile-api-key}
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
+      SUPABASE_STORAGE_BUCKET: ${SUPABASE_STORAGE_BUCKET:-mobile-uploads}
+      MAIL_FROM: ${MAIL_FROM:-Claudy Platform <noreply@claudygod.example>}
+      ADMIN_ALERT_EMAILS: ${ADMIN_ALERT_EMAILS:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      YOUTUBE_API_KEY: ${YOUTUBE_API_KEY:-}
+      YOUTUBE_CHANNEL_ID: ${YOUTUBE_CHANNEL_ID:-}
+      YOUTUBE_MAX_RESULTS: ${YOUTUBE_MAX_RESULTS:-12}
+      ADMIN_SIGNUP_CODE: ${ADMIN_SIGNUP_CODE:-}
+      CHOKIDAR_USEPOLLING: "1"
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./:/usr/src/app
+      - claudygod_api_node_modules:/usr/src/app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:4000/health >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: claudygod-worker
+    working_dir: /usr/src/app
+    command: ["npm", "run", "dev:worker"]
+    environment:
+      NODE_ENV: development
+      API_PORT: 4000
+      API_HOST: 0.0.0.0
+      DATABASE_URL: postgres://${POSTGRES_USER:-claudy}:${POSTGRES_PASSWORD:-claudy_password}@postgres:5432/${POSTGRES_DB:-claudy_admin}
+      DATABASE_SSL: "false"
+      REDIS_URL: redis://redis:6379
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-replace-this-jwt-secret-before-production-please-123456789}
+      JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-1d}
+      BCRYPT_ROUNDS: ${BCRYPT_ROUNDS:-12}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173,http://localhost:19006}
+      MOBILE_API_KEY: ${MOBILE_API_KEY:-dev-mobile-api-key}
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
+      SUPABASE_STORAGE_BUCKET: ${SUPABASE_STORAGE_BUCKET:-mobile-uploads}
+      MAIL_FROM: ${MAIL_FROM:-Claudy Platform <noreply@claudygod.example>}
+      ADMIN_ALERT_EMAILS: ${ADMIN_ALERT_EMAILS:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      YOUTUBE_API_KEY: ${YOUTUBE_API_KEY:-}
+      YOUTUBE_CHANNEL_ID: ${YOUTUBE_CHANNEL_ID:-}
+      YOUTUBE_MAX_RESULTS: ${YOUTUBE_MAX_RESULTS:-12}
+      ADMIN_SIGNUP_CODE: ${ADMIN_SIGNUP_CODE:-}
+      CHOKIDAR_USEPOLLING: "1"
+    volumes:
+      - ./:/usr/src/app
+      - claudygod_api_node_modules:/usr/src/app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  claudygod_postgres_data:
+  claudygod_redis_data:
+  claudygod_api_node_modules:

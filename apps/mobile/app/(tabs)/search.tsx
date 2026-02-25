@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { View, ScrollView, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { TabScreenWrapper } from './TextWrapper';
 import { useAppTheme } from '../../util/colorScheme';
 import { SearchBar } from '../../components/ui/SearchBar';
@@ -10,6 +11,7 @@ import { PosterCard } from '../../components/ui/PosterCard';
 import { CustomText } from '../../components/CustomText';
 import { FadeIn } from '../../components/ui/FadeIn';
 import { Screen } from '../../components/layout/Screen';
+import { BrandedHeaderCard } from '../../components/layout/BrandedHeaderCard';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { AppButton } from '../../components/ui/AppButton';
 import { TVTouchable } from '../../components/ui/TVTouchable';
@@ -19,7 +21,9 @@ const baseCategories = ['All', 'audio', 'video', 'playlist', 'live', 'ad'];
 
 export default function Search() {
   const theme = useAppTheme();
+  const router = useRouter();
   const { width } = useWindowDimensions();
+  const isDark = theme.scheme === 'dark';
   const isCompact = width < 360;
   const isTablet = width >= 768;
   const shortcutWidth = isCompact ? '100%' : isTablet ? '31.8%' : '48%';
@@ -69,18 +73,44 @@ export default function Search() {
       <ScrollView
         style={{ flex: 1, backgroundColor: 'transparent' }}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 140, paddingTop: theme.spacing.md }}
+        contentContainerStyle={{ paddingBottom: 140 }}
+        stickyHeaderIndices={[0]}
         bounces={false}
         alwaysBounceVertical={false}
         overScrollMode="never"
       >
+        <View
+          style={{
+            backgroundColor: isDark ? '#06040D' : theme.colors.background,
+            borderBottomWidth: 1,
+            borderBottomColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(20,16,33,0.08)',
+          }}
+        >
+          <Screen>
+            <FadeIn>
+              <View style={{ paddingTop: theme.spacing.lg, paddingBottom: 10 }}>
+                <BrandedHeaderCard
+                  title="Search"
+                  subtitle="Find music, videos and playlists"
+                  actions={[
+                    { icon: 'history', onPress: () => undefined, accessibilityLabel: 'Recent searches' },
+                    { icon: 'tune', onPress: () => undefined, accessibilityLabel: 'Search filters' },
+                    { icon: 'person-outline', onPress: () => router.push('/profile'), accessibilityLabel: 'Profile' },
+                  ]}
+                />
+              </View>
+            </FadeIn>
+          </Screen>
+        </View>
+
         <Screen>
+          <View style={{ paddingTop: 14 }}>
           <FadeIn>
             <SurfaceCard tone="subtle" style={{ padding: theme.spacing.lg }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <View style={{ flex: 1 }}>
                   <CustomText variant="heading" style={{ color: theme.colors.text.primary }}>
-                    Search Workspace
+                    Discover
                   </CustomText>
                   <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 4 }}>
                     Search live, music, videos, and sponsored content.
@@ -197,6 +227,7 @@ export default function Search() {
               </SurfaceCard>
             </FadeIn>
           ) : null}
+          </View>
         </Screen>
       </ScrollView>
     </TabScreenWrapper>

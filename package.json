@@ -3,10 +3,19 @@
   "scripts": {
     "lefthook": "node ./apps/mobile/node_modules/lefthook/bin/index.js",
     "hooks:install": "yarn lefthook install",
-    "mobile:lint": "cd apps/mobile && yarn lint",
-    "mobile:typecheck": "cd apps/mobile && yarn typecheck",
-    "precommit:check": "bash ./scripts/precommit-mobile-staged.sh",
-    "prepush:check": "yarn mobile:typecheck && yarn mobile:lint"
+    "api:build": "npm --prefix ./services/api run build",
+    "admin:build": "npm --prefix ./admin/web run build",
+    "mobile:lint": "yarn --cwd ./apps/mobile lint",
+    "mobile:typecheck": "yarn --cwd ./apps/mobile typecheck",
+    "docker:config": "bash ./scripts/docker-validate.sh",
+    "docker:local:up": "docker compose --env-file .env.docker -f docker-compose.local.yml up --build",
+    "docker:local:up:mobile-web": "docker compose --env-file .env.docker -f docker-compose.local.yml --profile mobile-web up --build",
+    "docker:local:up:mobile-native": "docker compose --env-file .env.docker -f docker-compose.local.yml --profile mobile-native up --build",
+    "docker:local:down": "docker compose -f docker-compose.local.yml down",
+    "docker:local:logs": "docker compose -f docker-compose.local.yml logs -f",
+    "review:all": "bash ./scripts/review-all.sh",
+    "precommit:check": "bash ./scripts/precommit-all-staged.sh",
+    "prepush:check": "bash ./scripts/prepush-all-checks.sh"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
