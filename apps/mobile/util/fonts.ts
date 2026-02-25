@@ -70,6 +70,36 @@ export const fontConfig = {
   },
 };
 
+export type FontVariantKey = keyof typeof fontConfig;
+
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+
+export function getResponsiveFontStyle(variant: FontVariantKey, width: number, isTV = false) {
+  const base = fontConfig[variant];
+
+  // Keep text compact on small phones, slightly relaxed on tablets/TV for readability.
+  const widthScale = isTV
+    ? 1.16
+    : width >= 1024
+      ? 1.12
+      : width >= 768
+        ? 1.08
+        : width <= 360
+          ? 0.94
+          : width <= 390
+            ? 0.97
+            : 1;
+
+  const fontSize = clamp(Math.round(base.fontSize * widthScale), 10, 28);
+  const lineHeight = clamp(Math.round(base.lineHeight * widthScale), fontSize + 2, 36);
+
+  return {
+    ...base,
+    fontSize,
+    lineHeight,
+  };
+}
+
 export const loadFonts = async () => {
   await Font.loadAsync({
     // Keep Clash keys for compatibility, but map to a more premium heading family.
