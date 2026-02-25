@@ -44,11 +44,16 @@ interface YouTubeVideosResponse {
   error?: { message?: string };
 }
 
-function ensureYouTubeConfigured(channelIdOverride?: string): void {
+interface YouTubeChannelsResponse {
+  items?: Array<{ id?: string }>;
+  error?: { message?: string };
+}
+
+function ensureYouTubeConfigured(channelIdentifierOverride?: string): void {
   if (!env.YOUTUBE_API_KEY) {
     throw new HttpError(503, 'YOUTUBE_API_KEY is not configured');
   }
-  if (!(channelIdOverride && channelIdOverride.trim()) && !env.YOUTUBE_CHANNEL_ID) {
+  if (!(channelIdentifierOverride && channelIdentifierOverride.trim()) && !env.YOUTUBE_CHANNEL_ID) {
     throw new HttpError(503, 'YOUTUBE_CHANNEL_ID is not configured');
   }
 }
@@ -94,6 +99,66 @@ async function fetchJson<T>(url: string): Promise<T> {
   return json;
 }
 
+function extractChannelIdOrHandle(input: string): { channelId?: string; handle?: string } {
+  const value = input.trim();
+  if (!value) {
+    return {};
+  }
+
+  if (/^UC[a-zA-Z0-9_-]{20,}$/.test(value)) {
+    return { channelId: value };
+  }
+
+  if (value.startsWith('@')) {
+    return { handle: value.slice(1) };
+  }
+
+  try {
+    const url = new URL(value);
+    const pathname = url.pathname.replace(/\/+$/, '');
+    const channelMatch = pathname.match(/\/channel\/(UC[a-zA-Z0-9_-]{20,})$/);
+    if (channelMatch?.[1]) {
+      return { channelId: channelMatch[1] };
+    }
+    const handleMatch = pathname.match(/\/@([^/]+)$/);
+    if (handleMatch?.[1]) {
+      return { handle: handleMatch[1] };
+    }
+  } catch {
+    // Not a URL; continue below.
+  }
+
+  return { channelId: value };
+}
+
+async function resolveChannelId(channelIdentifier: string): Promise<string> {
+  const extracted = extractChannelIdOrHandle(channelIdentifier);
+  if (extracted.channelId) {
+    return extracted.channelId;
+  }
+
+  if (!extracted.handle) {
+    throw new HttpError(400, 'Invalid YouTube channel identifier');
+  }
+
+  const channelsParams = new URLSearchParams({
+    key: env.YOUTUBE_API_KEY,
+    part: 'id',
+    forHandle: extracted.handle,
+  });
+
+  const channels = await fetchJson<YouTubeChannelsResponse>(
+    `https://www.googleapis.com/youtube/v3/channels?${channelsParams.toString()}`,
+  );
+
+  const id = channels.items?.[0]?.id;
+  if (!id) {
+    throw new HttpError(404, `Unable to resolve YouTube channel handle @${extracted.handle}`);
+  }
+
+  return id;
+}
+
 export async function fetchYouTubeVideos(input?: {
   channelId?: string;
   maxResults?: number;
@@ -104,7 +169,8 @@ export async function fetchYouTubeVideos(input?: {
 }> {
   ensureYouTubeConfigured(input?.channelId);
 
-  const channelId = input?.channelId?.trim() || env.YOUTUBE_CHANNEL_ID;
+  const channelIdentifier = input?.channelId?.trim() || env.YOUTUBE_CHANNEL_ID;
+  const channelId = await resolveChannelId(channelIdentifier);
   const maxResults = Math.min(Math.max(input?.maxResults ?? env.YOUTUBE_MAX_RESULTS, 1), 50);
 
   const searchParams = new URLSearchParams({

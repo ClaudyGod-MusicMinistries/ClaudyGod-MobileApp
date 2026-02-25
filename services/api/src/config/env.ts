@@ -44,6 +44,7 @@ const envSchema = z.object({
   YOUTUBE_API_KEY: z.string().optional().default(''),
   YOUTUBE_CHANNEL_ID: z.string().optional().default(''),
   YOUTUBE_MAX_RESULTS: z.coerce.number().int().min(1).max(50).default(12),
+  ADMIN_SIGNUP_CODE: z.string().optional().default(''),
 
   SEED_ADMIN_EMAIL: z.string().email().default('admin@claudygod.example'),
   SEED_ADMIN_PASSWORD: z.string().min(8).default('ChangeMe123!'),
@@ -72,6 +73,7 @@ export const env = {
   SUPABASE_ENABLED: Boolean(raw.SUPABASE_URL && raw.SUPABASE_SERVICE_ROLE_KEY),
   SMTP_ENABLED: Boolean(raw.SMTP_HOST),
   YOUTUBE_ENABLED: Boolean(raw.YOUTUBE_API_KEY && raw.YOUTUBE_CHANNEL_ID),
+  ADMIN_SIGNUP_ENABLED: Boolean(raw.ADMIN_SIGNUP_CODE),
 };
 
 export type Env = typeof env;

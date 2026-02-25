@@ -62,6 +62,7 @@ export interface FeedCardItem {
   type: ContentType;
   liveViewerCount?: number;
   isLive?: boolean;
+  createdAt?: string;
 }
 
 export interface FeedBundle {
@@ -127,6 +128,7 @@ function normalize(item: ApiContentItem): FeedCardItem {
     type: item.type,
     isLive: item.isLive || item.type === 'live',
     liveViewerCount: item.liveViewerCount,
+    createdAt: item.createdAt || item.updatedAt,
   };
 }
 
@@ -142,7 +144,29 @@ function normalizeYouTubeVideo(item: YouTubeVideoItem): FeedCardItem {
     type: item.isLive ? 'live' : 'video',
     isLive: Boolean(item.isLive),
     liveViewerCount: item.liveViewerCount,
+    createdAt: item.publishedAt,
   };
+}
+
+function classifyYouTubeItem(item: FeedCardItem): 'music' | 'video' | 'announcement' | 'live' {
+  if (item.isLive || item.type === 'live') {
+    return 'live';
+  }
+
+  const text = `${item.title} ${item.description} ${item.subtitle}`.toLowerCase();
+  const isMusicLike =
+    /(worship|praise|song|music|choir|hymn|album|track|audio|anthem|ministration)/.test(text);
+  if (isMusicLike) {
+    return 'music';
+  }
+
+  const isAnnouncementLike =
+    /(announcement|update|event|service time|conference|schedule|notice|program)/.test(text);
+  if (isAnnouncementLike) {
+    return 'announcement';
+  }
+
+  return 'video';
 }
 
 function buildQuery(type?: ContentType): string {
@@ -171,16 +195,47 @@ async function fetchAllPublished(): Promise<FeedCardItem[]> {
   }
 }
 
-async function fetchYouTubeFeed(): Promise<{ videos: FeedCardItem[]; live: FeedCardItem[] }> {
+async function fetchYouTubeFeed(): Promise<{
+  videos: FeedCardItem[];
+  music: FeedCardItem[];
+  live: FeedCardItem[];
+  announcements: FeedCardItem[];
+  recent: FeedCardItem[];
+}> {
   try {
     const response = await apiFetch<MobileYouTubeResponse>('/v1/mobile/youtube/videos?maxResults=20');
     const normalized = response.items.map(normalizeYouTubeVideo);
+    const music: FeedCardItem[] = [];
+    const videos: FeedCardItem[] = [];
+    const live: FeedCardItem[] = [];
+    const announcements: FeedCardItem[] = [];
+
+    for (const item of normalized) {
+      const bucket = classifyYouTubeItem(item);
+      if (bucket === 'live') {
+        live.push(item);
+      } else if (bucket === 'music') {
+        music.push({ ...item, type: 'audio' });
+      } else if (bucket === 'announcement') {
+        announcements.push({ ...item, type: 'announcement' });
+      } else {
+        videos.push(item);
+      }
+    }
+
     return {
-      videos: normalized.filter((item) => !item.isLive),
-      live: normalized.filter((item) => item.isLive),
+      videos,
+      music,
+      live,
+      announcements,
+      recent: normalized,
     };
-  } catch {
-    return { videos: [], live: [] };
+  } catch (error) {
+    console.warn(
+      '[contentService] YouTube feed fetch failed:',
+      error instanceof Error ? error.message : String(error),
+    );
+    return { videos: [], music: [], live: [], announcements: [], recent: [] };
   }
 }
 
@@ -221,20 +276,32 @@ export async function fetchFeedBundle(): Promise<FeedBundle> {
     fetchYouTubeFeed(),
   ]);
 
+  const mergedMusic = dedupe([...youtubeFeed.music, ...music]);
   const mergedVideos = dedupe([...youtubeFeed.videos, ...videos]);
   const mergedLive = dedupe([...youtubeFeed.live, ...live]);
-  const mergedAll = dedupe([...youtubeFeed.videos, ...youtubeFeed.live, ...all]);
+  const mergedAnnouncements = dedupe([...youtubeFeed.announcements, ...announcements]);
+  const mergedAll = dedupe([
+    ...youtubeFeed.recent,
+    ...youtubeFeed.videos,
+    ...youtubeFeed.music,
+    ...youtubeFeed.live,
+    ...youtubeFeed.announcements,
+    ...all,
+  ]);
 
   const recent = [...mergedAll].sort((a, b) => {
+    const aTs = a.createdAt ? Date.parse(a.createdAt) : 0;
+    const bTs = b.createdAt ? Date.parse(b.createdAt) : 0;
+    if (aTs !== bTs) return bTs - aTs;
     return a.id < b.id ? 1 : -1;
   });
 
   const pool = dedupe([
     ...mergedLive,
     ...mergedVideos,
-    ...music,
+    ...mergedMusic,
     ...playlists,
-    ...announcements,
+    ...mergedAnnouncements,
     ...ads,
     ...mergedAll,
   ]);
@@ -242,12 +309,12 @@ export async function fetchFeedBundle(): Promise<FeedBundle> {
   return {
     ...DEFAULT_BUNDLE,
     featured: pool[0] ?? null,
-    music: dedupe(music).slice(0, 14),
+    music: mergedMusic.slice(0, 14),
     videos: mergedVideos.slice(0, 14),
     playlists: dedupe(playlists).slice(0, 12),
     live: mergedLive.slice(0, 10),
     ads: dedupe(ads).slice(0, 8),
-    announcements: dedupe(announcements).slice(0, 8),
+    announcements: mergedAnnouncements.slice(0, 8),
     mostPlayed: dedupe(mostPlayed).slice(0, 12),
     recent: dedupe(recent).slice(0, 12),
     topCategories: DEFAULT_BUNDLE.topCategories,
