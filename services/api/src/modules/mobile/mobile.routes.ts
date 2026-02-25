@@ -21,6 +21,8 @@ mobileRouter.get(
       type: parsed.type,
       status: parsed.status,
       visibility: parsed.visibility,
+      search: parsed.search,
+      updatedAfter: parsed.updatedAfter,
     };
     const data = await listPublicContent(query);
     res.status(200).json(data);
