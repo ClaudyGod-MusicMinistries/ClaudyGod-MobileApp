@@ -1,7 +1,7 @@
 // components/CustomText.tsx
-import React, { useContext } from 'react';
-import { Text, TextProps } from 'react-native';
-import { fontConfig } from '../util/fonts';
+import React, { useContext, useMemo } from 'react';
+import { Platform, Text, TextProps, useWindowDimensions } from 'react-native';
+import { getResponsiveFontStyle } from '../util/fonts';
 import { FontContext } from '../context/FontContext';
 
 interface CustomTextProps extends TextProps {
@@ -16,8 +16,12 @@ export const CustomText: React.FC<CustomTextProps> = ({
   style,
   ...props
 }) => {
-  const { fontsLoaded } = useContext(FontContext); 
-  const variantStyle = fontConfig[variant];
+  const { fontsLoaded } = useContext(FontContext);
+  const { width } = useWindowDimensions();
+  const variantStyle = useMemo(
+    () => getResponsiveFontStyle(variant, width, Platform.isTV),
+    [variant, width],
+  );
 
   const finalStyle = fontsLoaded
     ? variantStyle
@@ -27,6 +31,8 @@ export const CustomText: React.FC<CustomTextProps> = ({
     <Text
       className={className}  // ✅ let Tailwind apply only what you set
       style={[finalStyle, style]} // ✅ variant → your override wins
+      allowFontScaling={props.allowFontScaling ?? true}
+      maxFontSizeMultiplier={props.maxFontSizeMultiplier ?? 1.18}
       {...props}
     >
       {children}
