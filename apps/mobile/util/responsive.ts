@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { 
   Dimensions, 
   Platform, 
@@ -18,6 +17,13 @@ const ScreenSize = {
   MEDIUM: 'medium',
   LARGE: 'large',
   XLARGE: 'xlarge'
+} as const;
+
+type ResponsiveBreakpointMap<T> = {
+  small?: T;
+  medium?: T;
+  large?: T;
+  xlarge?: T;
 };
 
 class Responsive {
@@ -149,7 +155,7 @@ class Responsive {
   }
 
   // Breakpoint system
-  breakpoint = (sizes: any): any => {
+  breakpoint = <T>(sizes: ResponsiveBreakpointMap<T>): T | undefined => {
     const screenSize = this.screenSize;
     
     switch(screenSize) {

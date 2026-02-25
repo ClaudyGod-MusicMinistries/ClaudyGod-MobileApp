@@ -1,268 +1,1224 @@
 import React, { useMemo, useState } from 'react';
-import { Image, ScrollView, View, useWindowDimensions } from 'react-native';
+import {
+  Alert,
+  Image,
+  Platform,
+  RefreshControl,
+  ScrollView,
+  View,
+  useWindowDimensions,
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { TabScreenWrapper } from './TextWrapper';
-import { useAppTheme } from '../../util/colorScheme';
 import { Screen } from '../../components/layout/Screen';
-import { FadeIn } from '../../components/ui/FadeIn';
+import { BrandedHeaderCard } from '../../components/layout/BrandedHeaderCard';
 import { CustomText } from '../../components/CustomText';
+import { FadeIn } from '../../components/ui/FadeIn';
 import { TVTouchable } from '../../components/ui/TVTouchable';
+import { useAppTheme } from '../../util/colorScheme';
+import { buildPlayerRoute } from '../../util/playerRoute';
+import { useContentFeed } from '../../hooks/useContentFeed';
+import type { FeedCardItem, FeedBundle } from '../../services/contentService';
+import { subscribeToLiveAlerts, trackPlayEvent } from '../../services/supabaseAnalytics';
 
-const topAlbums = [
-  {
-    id: 'a1',
-    title: 'Die Lit',
-    artist: 'Playboi Carti',
-    imageUrl: 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=900&q=80',
-  },
-  {
-    id: 'a2',
-    title: 'Joanne',
-    artist: 'Lady Gaga',
-    imageUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?auto=format&fit=crop&w=900&q=80',
-  },
-  {
-    id: 'a3',
-    title: 'Blue Neighbourhood',
-    artist: 'Troye Sivan',
-    imageUrl: 'https://images.unsplash.com/photo-1461783436728-0a9217714694?auto=format&fit=crop&w=900&q=80',
-  },
-  {
-    id: 'a4',
-    title: 'DAMN',
-    artist: 'Kendrick Lamar',
-    imageUrl: 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?auto=format&fit=crop&w=900&q=80',
-  },
+const ministrySections: { title: string; kind: 'video' | 'audio' | 'message' | 'worship' | 'playlist' }[] = [
+  { title: 'ClaudyGod Music', kind: 'video' },
+  { title: 'ClaudyGod Nuggets of Truth', kind: 'message' },
+  { title: 'ClaudyGod Worship Hour', kind: 'worship' },
+  { title: 'ClaudyGod Teens Youth Channel', kind: 'video' },
+  { title: 'ClaudyGod Messages', kind: 'message' },
+  { title: 'ClaudyGod Music (Audio)', kind: 'audio' },
+  { title: 'ClaudyGod Worship Hour (Audio)', kind: 'audio' },
 ];
 
-const songs = [
-  {
-    id: 's1',
-    title: 'Praise The Lord',
-    artist: 'ASAP Rocky',
-    duration: '3:25',
-    imageUrl: 'https://images.unsplash.com/photo-1509869175650-a1d97972541a?auto=format&fit=crop&w=500&q=80',
-  },
-  {
-    id: 's2',
-    title: 'Circles',
-    artist: 'Mac Miller',
-    duration: '3:12',
-    imageUrl: 'https://images.unsplash.com/photo-1460723237483-7a6dc9d0b212?auto=format&fit=crop&w=500&q=80',
-  },
-  {
-    id: 's3',
-    title: 'Humble.',
-    artist: 'Kendrick Lamar',
-    duration: '3:22',
-    imageUrl: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=500&q=80',
-  },
-  {
-    id: 's4',
-    title: 'The Dawn',
-    artist: 'Oscar H.',
-    duration: '3:02',
-    imageUrl: 'https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?auto=format&fit=crop&w=500&q=80',
-  },
-];
+const topRailChips = ['For You', 'Music', 'Videos', 'Live', 'Word'];
+
+const WORD_FOR_TODAY = {
+  title: 'Word for Today',
+  passage: 'Psalm 119:105',
+  verse:
+    'Your word is a lamp to my feet and a light to my path.',
+  reflection:
+    'Start the day with direction and peace. Share this verse with your community and return tomorrow for a new passage.',
+};
 
 export default function HomeScreen() {
-  const theme = useAppTheme();
   const router = useRouter();
-  const { width } = useWindowDimensions();
-  const compact = width < 390;
-  const [activeSongId, setActiveSongId] = useState(songs[2].id);
-
-  const activeSong = useMemo(
-    () => songs.find((song) => song.id === activeSongId) ?? songs[0],
-    [activeSongId],
-  );
-
+  const theme = useAppTheme();
+  const isDark = theme.scheme === 'dark';
   const ui = {
-    panel: theme.scheme === 'dark' ? '#161621' : '#EFEFF2',
-    card: theme.scheme === 'dark' ? '#1E1E2C' : '#FFFFFF',
-    text: theme.scheme === 'dark' ? '#F4F4F7' : '#15161A',
-    subText: theme.scheme === 'dark' ? '#A6A6B2' : '#8A8B92',
-    black: '#111217',
+    stickyBg: isDark ? '#06040D' : theme.colors.background,
+    stickyBorder: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(20,16,33,0.08)',
+    stickyGlowStart: isDark ? 'rgba(154,107,255,0.06)' : 'rgba(109,40,217,0.08)',
+    wordBg: isDark ? 'rgba(12,9,20,0.9)' : '#FFFFFF',
+    wordBorder: isDark ? 'rgba(255,255,255,0.08)' : theme.colors.border,
+    wordMuted: isDark ? 'rgba(194,185,220,0.9)' : 'rgba(96,87,124,0.9)',
+    wordSubtle: isDark ? 'rgba(176,167,202,0.9)' : 'rgba(108,99,134,0.92)',
+    wordAccentBg: isDark ? 'rgba(154,107,255,0.14)' : 'rgba(109,40,217,0.08)',
+    wordAccentBorder: isDark ? 'rgba(216,194,255,0.22)' : 'rgba(109,40,217,0.14)',
+    albumWrapBg: isDark ? 'rgba(12,9,20,0.72)' : theme.colors.surface,
+    albumWrapBorder: isDark ? 'rgba(255,255,255,0.08)' : theme.colors.border,
+  } as const;
+  const { width } = useWindowDimensions();
+  const isTV = Platform.isTV;
+  const isTablet = width >= 768 && !isTV;
+  const compact = width < 380;
+  const railCardWidth = isTV ? 260 : isTablet ? 220 : compact ? 150 : 166;
+  const albumGridCols = isTV ? 4 : 2;
+  const albumGridViewportHeight = isTV ? 560 : isTablet ? 440 : 320;
+  const [activeFilter, setActiveFilter] = useState('For You');
+
+  const { feed, loading, error, refresh } = useContentFeed();
+
+  const featured = useMemo(() => feed.featured ?? firstAvailable(feed), [feed]);
+  const liveItems = useMemo(() => feed.live.slice(0, isTablet || isTV ? 6 : 4), [feed.live, isTablet, isTV]);
+  const adsItems = useMemo(() => feed.ads.slice(0, 4), [feed.ads]);
+  const popularTracks = useMemo(() => (feed.music.length ? feed.music : []).slice(0, 10), [feed.music]);
+  const albumGrid = useMemo(() => (feed.playlists.length ? feed.playlists : feed.videos).slice(0, 8), [feed.playlists, feed.videos]);
+  const recentItems = useMemo(() => feed.recent.slice(0, 8), [feed.recent]);
+
+  const onOpenItem = async (item: FeedCardItem, source: string) => {
+    await trackPlayEvent({
+      contentId: item.id,
+      contentType: item.type,
+      title: item.title,
+      source,
+    });
+    router.push(buildPlayerRoute(item));
+  };
+
+  const onSubscribeLive = async (item: FeedCardItem) => {
+    await subscribeToLiveAlerts(item.id);
+    Alert.alert('Live alerts enabled', `You will be notified when ${item.title} goes live.`);
   };
 
   return (
     <TabScreenWrapper>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: theme.spacing.md, paddingBottom: 170 }}>
-        <Screen>
-          <FadeIn>
-            <View
-              style={{
-                borderRadius: 26,
-                backgroundColor: ui.panel,
-                padding: compact ? 14 : 16,
-                borderWidth: 1,
-                borderColor: theme.scheme === 'dark' ? '#28283A' : '#E3E3E8',
-              }}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <CustomText variant="heading" style={{ color: ui.text }}>
-                  Top Albums
-                </CustomText>
-                <TVTouchable
-                  onPress={() => router.push('/(tabs)/search')}
-                  style={{
-                    width: 34,
-                    height: 34,
-                    borderRadius: 17,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: ui.card,
-                  }}
-                  showFocusBorder={false}
-                >
-                  <MaterialIcons name="chevron-right" size={22} color={ui.text} />
-                </TVTouchable>
+      <ScrollView
+        style={{ flex: 1, backgroundColor: 'transparent' }}
+        contentContainerStyle={{ paddingBottom: 148 }}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+        alwaysBounceVertical={false}
+        overScrollMode="never"
+        stickyHeaderIndices={[0]}
+        refreshControl={
+          <RefreshControl
+            refreshing={loading}
+            onRefresh={refresh}
+            tintColor={theme.colors.primary}
+            colors={[theme.colors.primary]}
+            progressBackgroundColor={theme.colors.surface}
+          />
+        }
+      >
+        <View
+          style={{
+            backgroundColor: ui.stickyBg,
+            borderBottomWidth: 1,
+            borderBottomColor: ui.stickyBorder,
+          }}
+        >
+          <LinearGradient
+            pointerEvents="none"
+            colors={[ui.stickyGlowStart, 'rgba(0,0,0,0)']}
+            start={{ x: 0.1, y: 0 }}
+            end={{ x: 0.9, y: 1 }}
+            style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}
+          />
+          <Screen>
+            <FadeIn>
+              <View style={{ paddingTop: theme.spacing.lg, paddingBottom: 10 }}>
+                <HomeHeader
+                  activeFilter={activeFilter}
+                  onChangeFilter={setActiveFilter}
+                  onOpenVideos={() => router.push('/(tabs)/videos')}
+                  onOpenProfile={() => router.push('/profile')}
+                  onOpenMenu={() => router.push('/(tabs)/Settings')}
+                />
               </View>
+            </FadeIn>
+          </Screen>
+        </View>
 
+        <Screen>
+          <View style={{ paddingTop: 14 }}>
+
+          <FadeIn delay={70}>
+            <HeroDropCard
+              item={featured}
+              loading={loading}
+              onPressPrimary={() => (featured ? onOpenItem(featured, 'home_hero') : router.push('/(tabs)/videos'))}
+              onPressSecondary={() => router.push('/(tabs)/videos')}
+              isTablet={isTablet || isTV}
+            />
+          </FadeIn>
+
+          <FadeIn delay={95}>
+            <SectionBlock title={WORD_FOR_TODAY.title} subtitle="A daily scripture passage for prayer, direction and encouragement">
+              <View
+                style={{
+                  borderRadius: 20,
+                  borderWidth: 1,
+                  borderColor: ui.wordBorder,
+                  backgroundColor: ui.wordBg,
+                  padding: 14,
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <View
+                      style={{
+                        width: 38,
+                        height: 38,
+                        borderRadius: 12,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: ui.wordAccentBg,
+                        borderWidth: 1,
+                        borderColor: ui.wordAccentBorder,
+                        marginRight: 10,
+                      }}
+                    >
+                      <MaterialIcons name="menu-book" size={18} color={theme.colors.primary} />
+                    </View>
+                    <View>
+                      <CustomText variant="label" style={{ color: theme.colors.text.primary }}>
+                        {WORD_FOR_TODAY.passage}
+                      </CustomText>
+                      <CustomText variant="caption" style={{ color: ui.wordMuted, marginTop: 2 }}>
+                        Daily Bible passage
+                      </CustomText>
+                    </View>
+                  </View>
+                  <TVTouchable
+                    onPress={() => undefined}
+                    style={{
+                      borderRadius: 999,
+                      borderWidth: 1,
+                      borderColor: ui.wordAccentBorder,
+                      backgroundColor: ui.wordAccentBg,
+                      paddingHorizontal: 10,
+                      paddingVertical: 7,
+                    }}
+                    showFocusBorder={false}
+                  >
+                    <CustomText variant="caption" style={{ color: theme.colors.primary }}>
+                      Share
+                    </CustomText>
+                  </TVTouchable>
+                </View>
+
+                <CustomText
+                  variant="subtitle"
+                  style={{ color: theme.colors.text.primary, marginTop: 12, lineHeight: 20 }}
+                >
+                  {WORD_FOR_TODAY.verse}
+                </CustomText>
+                <CustomText variant="caption" style={{ color: ui.wordSubtle, marginTop: 8 }}>
+                  {WORD_FOR_TODAY.reflection}
+                </CustomText>
+              </View>
+            </SectionBlock>
+          </FadeIn>
+
+          <FadeIn delay={120}>
+            <SectionBlock title="Live Now" subtitle="YouTube-style live hub with viewers count and notify action">
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ marginTop: 14, paddingRight: 8 }}
+                bounces={false}
+                overScrollMode="never"
+                contentContainerStyle={{ paddingRight: 8 }}
               >
-                {topAlbums.map((album, index) => (
-                  <TVTouchable
-                    key={album.id}
-                    onPress={() => {
-                      setActiveSongId('s3');
-                      router.push('/(tabs)/PlaySection');
-                    }}
-                    hasTVPreferredFocus={index === 0}
-                    style={{ width: compact ? 122 : 132, marginRight: 12 }}
-                    showFocusBorder={false}
-                  >
-                    <Image
-                      source={{ uri: album.imageUrl }}
-                      style={{
-                        width: '100%',
-                        height: compact ? 136 : 146,
-                        borderRadius: 16,
-                      }}
-                      resizeMode="cover"
+                {liveItems.length ? (
+                  liveItems.map((item) => (
+                    <LiveCard
+                      key={item.id}
+                      item={item}
+                      width={railCardWidth}
+                      onOpen={() => onOpenItem(item, 'home_live')}
+                      onNotify={() => onSubscribeLive(item)}
                     />
-                    <CustomText variant="subtitle" style={{ color: ui.text, marginTop: 8 }} numberOfLines={1}>
-                      {album.title}
-                    </CustomText>
-                    <CustomText variant="caption" style={{ color: ui.subText, marginTop: 1 }} numberOfLines={1}>
-                      {album.artist}
-                    </CustomText>
-                  </TVTouchable>
-                ))}
+                  ))
+                ) : (
+                  <EmptyRailCard
+                    width={Math.max(railCardWidth, 220)}
+                    title="No live stream active"
+                    subtitle="Live sessions will appear here with viewer count and notify controls."
+                    icon="live-tv"
+                  />
+                )}
               </ScrollView>
-            </View>
+            </SectionBlock>
           </FadeIn>
 
-          <FadeIn delay={90}>
-            <View
-              style={{
-                borderRadius: 26,
-                backgroundColor: ui.card,
-                marginTop: 14,
-                padding: compact ? 14 : 16,
-                borderWidth: 1,
-                borderColor: theme.scheme === 'dark' ? '#28283A' : '#E6E6EC',
-              }}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                <CustomText variant="heading" style={{ color: ui.text }}>
-                  Popular
-                </CustomText>
-                <TVTouchable
-                  onPress={() => router.push('/(tabs)/Favourites')}
-                  style={{
-                    width: 34,
-                    height: 34,
-                    borderRadius: 17,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: theme.scheme === 'dark' ? '#242437' : '#F1F1F5',
-                  }}
-                  showFocusBorder={false}
-                >
-                  <MaterialIcons name="chevron-right" size={22} color={ui.text} />
-                </TVTouchable>
-              </View>
+          <FadeIn delay={160}>
+            <SectionBlock title="Sponsored / Ads" subtitle="Reserved placement for campaigns, revivals and partner promos">
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                bounces={false}
+                overScrollMode="never"
+                contentContainerStyle={{ paddingRight: 8 }}
+              >
+                {adsItems.length ? (
+                  adsItems.map((item) => (
+                    <AdCard key={item.id} item={item} width={railCardWidth} onOpen={() => onOpenItem(item, 'home_ad')} />
+                  ))
+                ) : (
+                  <EmptyRailCard
+                    width={Math.max(railCardWidth, 220)}
+                    title="Ads slot ready"
+                    subtitle="Sponsored campaigns and partner promos will appear here."
+                    icon="campaign"
+                  />
+                )}
+              </ScrollView>
+            </SectionBlock>
+          </FadeIn>
 
-              {songs.map((song) => {
-                const active = song.id === activeSongId;
-                return (
-                  <TVTouchable
-                    key={song.id}
-                    onPress={() => setActiveSongId(song.id)}
+          <FadeIn delay={200}>
+            <SectionBlock title="Popular Tracks" subtitle="Audio-first rail for worship music and playlists">
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                bounces={false}
+                overScrollMode="never"
+                contentContainerStyle={{ paddingRight: 8 }}
+              >
+                {popularTracks.length ? (
+                  popularTracks.map((item) => (
+                    <PosterTile
+                      key={item.id}
+                      item={item}
+                      width={railCardWidth}
+                      onPress={() => onOpenItem(item, 'home_popular_tracks')}
+                    />
+                  ))
+                ) : (
+                  <EmptyRailCard width={railCardWidth} title="No tracks yet" subtitle="New audio releases will appear here." icon="music-note" />
+                )}
+              </ScrollView>
+            </SectionBlock>
+          </FadeIn>
+
+          <FadeIn delay={240}>
+            <SectionBlock title="Albums & Playlists" subtitle="Curated collections and playlists">
+              <View
+                style={{
+                  borderRadius: 18,
+                  borderWidth: 1,
+                  borderColor: ui.albumWrapBorder,
+                  backgroundColor: ui.albumWrapBg,
+                  padding: 8,
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 4, paddingTop: 2, paddingBottom: 8 }}>
+                  <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
+                    Collections
+                  </CustomText>
+                  <View
                     style={{
+                      borderRadius: 999,
+                      borderWidth: 1,
+                      borderColor: ui.albumWrapBorder,
+                      backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : theme.colors.surfaceAlt,
+                      paddingHorizontal: 8,
+                      paddingVertical: 4,
                       flexDirection: 'row',
                       alignItems: 'center',
-                      borderRadius: 16,
-                      paddingHorizontal: 8,
-                      paddingVertical: 8,
-                      marginBottom: 4,
-                      backgroundColor: active
-                        ? theme.scheme === 'dark'
-                          ? '#24243A'
-                          : '#F4F4F7'
-                        : 'transparent',
                     }}
-                    showFocusBorder={false}
                   >
-                    <Image source={{ uri: song.imageUrl }} style={{ width: 44, height: 44, borderRadius: 12, marginRight: 10 }} />
-                    <View style={{ flex: 1 }}>
-                      <CustomText variant="subtitle" style={{ color: ui.text }} numberOfLines={1}>
-                        {song.title}
-                      </CustomText>
-                      <CustomText variant="caption" style={{ color: ui.subText, marginTop: 2 }} numberOfLines={1}>
-                        {song.artist}
-                      </CustomText>
-                    </View>
-                    <CustomText variant="caption" style={{ color: ui.subText }}>
-                      {song.duration}
+                    <MaterialIcons name="more-vert" size={16} color={theme.colors.text.secondary} />
+                    <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginLeft: 4 }}>
+                      More
                     </CustomText>
-                  </TVTouchable>
-                );
-              })}
-            </View>
+                  </View>
+                </View>
+                <ScrollView
+                  nestedScrollEnabled
+                  showsVerticalScrollIndicator
+                  bounces={false}
+                  overScrollMode="never"
+                  style={{ height: albumGridViewportHeight }}
+                  contentContainerStyle={{ paddingBottom: 2, paddingRight: 2 }}
+                  indicatorStyle={isDark ? 'white' : 'black'}
+                >
+                  <ResponsiveGrid columns={albumGridCols}>
+                    {albumGrid.length ? (
+                      albumGrid.map((item) => (
+                        <GridTile key={item.id} item={item} onPress={() => onOpenItem(item, 'home_albums_grid')} />
+                      ))
+                    ) : (
+                      <GridPlaceholder columns={albumGridCols} />
+                    )}
+                  </ResponsiveGrid>
+                </ScrollView>
+              </View>
+            </SectionBlock>
           </FadeIn>
+
+          <FadeIn delay={280}>
+            <SectionBlock title="Recently Played" subtitle="Last plays and quick resume list">
+              <View style={{ gap: 8 }}>
+                {recentItems.length ? (
+                  recentItems.map((item) => (
+                    <RecentRow key={item.id} item={item} onPress={() => onOpenItem(item, 'home_recent')} />
+                  ))
+                ) : (
+                  <EmptyListRow />
+                )}
+              </View>
+            </SectionBlock>
+          </FadeIn>
+
+          {ministrySections.map((section, index) => {
+            const items = deriveMinistryItems(feed, section.kind).slice(index % 2 === 0 ? 0 : 1, (index % 2 === 0 ? 0 : 1) + 8);
+            return (
+              <FadeIn key={section.title} delay={320 + index * 35}>
+                <SectionBlock title={section.title} subtitle={sectionSubtitle(section.kind)}>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    bounces={false}
+                    overScrollMode="never"
+                    contentContainerStyle={{ paddingRight: 8 }}
+                  >
+                    {items.length ? (
+                      items.map((item) => (
+                        <PosterTile key={`${section.title}-${item.id}`} item={item} width={railCardWidth} onPress={() => onOpenItem(item, 'home_ministry_section')} />
+                      ))
+                    ) : (
+                      <EmptyRailCard
+                        width={railCardWidth}
+                        title={section.title}
+                        subtitle="New uploads and playlists will appear here."
+                        icon={section.kind === 'audio' ? 'graphic-eq' : section.kind === 'message' ? 'menu-book' : 'play-circle-outline'}
+                      />
+                    )}
+                  </ScrollView>
+                </SectionBlock>
+              </FadeIn>
+            );
+          })}
+
+          {error ? (
+            <View style={{ marginTop: 12 }}>
+              <CustomText variant="caption" style={{ color: theme.colors.danger }}>
+                Feed error: {error}
+              </CustomText>
+            </View>
+          ) : null}
+          </View>
         </Screen>
       </ScrollView>
-
-      <View
-        style={{
-          position: 'absolute',
-          left: 16,
-          right: 16,
-          bottom: 86,
-        }}
-      >
-        <TVTouchable
-          onPress={() => router.push('/(tabs)/PlaySection')}
-          style={{
-            borderRadius: 18,
-            padding: 10,
-            backgroundColor: ui.black,
-            borderWidth: 1,
-            borderColor: '#1F2127',
-            flexDirection: 'row',
-            alignItems: 'center',
-          }}
-          showFocusBorder={false}
-        >
-          <Image source={{ uri: activeSong.imageUrl }} style={{ width: 42, height: 42, borderRadius: 12, marginRight: 10 }} />
-          <View style={{ flex: 1 }}>
-            <CustomText variant="subtitle" style={{ color: '#FFFFFF' }} numberOfLines={1}>
-              {activeSong.title}
-            </CustomText>
-            <CustomText variant="caption" style={{ color: '#C9CBD3', marginTop: 2 }} numberOfLines={1}>
-              {activeSong.artist}
-            </CustomText>
-          </View>
-          <MaterialIcons name="pause" size={26} color="#FFFFFF" />
-        </TVTouchable>
-      </View>
     </TabScreenWrapper>
   );
+}
+
+function HomeHeader({
+  activeFilter,
+  onChangeFilter,
+  onOpenVideos,
+  onOpenProfile,
+  onOpenMenu,
+}: {
+  activeFilter: string;
+  onChangeFilter: (_value: string) => void;
+  onOpenVideos: () => void;
+  onOpenProfile: () => void;
+  onOpenMenu: () => void;
+}) {
+  return (
+    <BrandedHeaderCard
+      title="Home"
+      actions={[
+        { icon: 'ondemand-video', onPress: onOpenVideos, accessibilityLabel: 'Open videos' },
+        { icon: 'person-outline', onPress: onOpenProfile, accessibilityLabel: 'Open profile' },
+        { icon: 'more-vert', onPress: onOpenMenu, accessibilityLabel: 'More options' },
+      ]}
+      chips={topRailChips.map((chip) => ({
+        label: chip,
+        active: chip === activeFilter,
+        onPress: () => onChangeFilter(chip),
+      }))}
+      showEyebrow={false}
+    />
+  );
+}
+
+function HeroDropCard({
+  item,
+  loading,
+  onPressPrimary,
+  onPressSecondary,
+  isTablet,
+}: {
+  item: FeedCardItem | null;
+  loading: boolean;
+  onPressPrimary: () => void;
+  onPressSecondary: () => void;
+  isTablet: boolean;
+}) {
+  const theme = useAppTheme();
+  const isDark = theme.scheme === 'dark';
+  const ui = {
+    cardBorder: isDark ? 'rgba(255,255,255,0.1)' : theme.colors.border,
+    cardBg: isDark ? 'rgba(12,9,20,0.88)' : theme.colors.surface,
+    fallbackGradient: isDark
+      ? (['#21113E', '#100B1E', '#0A0712'] as const)
+      : (['#EDE5FF', '#DCCEFF', '#CBB8FF'] as const),
+    imageOverlay: isDark
+      ? (['rgba(6,4,13,0.15)', 'rgba(6,4,13,0.84)', '#06040D'] as const)
+      : (['rgba(255,255,255,0.08)', 'rgba(244,241,250,0.46)', 'rgba(244,241,250,0.96)'] as const),
+    badgeBg: item?.isLive ? (isDark ? 'rgba(239,68,68,0.18)' : 'rgba(220,38,38,0.09)') : isDark ? 'rgba(154,107,255,0.18)' : 'rgba(109,40,217,0.08)',
+    badgeBorder: item?.isLive ? (isDark ? 'rgba(248,113,113,0.32)' : 'rgba(220,38,38,0.16)') : isDark ? 'rgba(216,194,255,0.28)' : 'rgba(109,40,217,0.14)',
+    badgeText: item?.isLive ? (isDark ? '#FECACA' : '#991B1B') : isDark ? '#EDE3FF' : '#4C1D95',
+    iconBtnBg: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.72)',
+    iconBtnBorder: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(20,16,33,0.08)',
+    iconBtnIcon: isDark ? '#F5EEFF' : '#3F2A76',
+    title: isDark ? '#F8F7FC' : theme.colors.text.primary,
+    subtitle: isDark ? 'rgba(217,210,236,0.92)' : theme.colors.text.secondary,
+    primaryBtnBg: isDark ? 'rgba(255,255,255,0.12)' : theme.colors.primary,
+    primaryBtnBorder: isDark ? 'rgba(255,255,255,0.16)' : theme.colors.primary,
+    primaryBtnText: isDark ? '#FFFFFF' : theme.colors.text.inverse,
+    primaryBtnIconBg: isDark ? 'rgba(154,107,255,0.34)' : 'rgba(255,255,255,0.22)',
+    secondaryBtnBg: isDark ? 'rgba(255,255,255,0.04)' : theme.colors.surface,
+    secondaryBtnBorder: isDark ? 'rgba(255,255,255,0.12)' : theme.colors.border,
+    secondaryBtnText: isDark ? '#E6DBFF' : theme.colors.text.primary,
+  } as const;
+  const title = item?.title ?? (loading ? 'Loading featured content...' : 'Featured channel will appear here');
+  const subtitle =
+    item?.description ??
+    (loading
+      ? 'Preparing your feed...'
+      : 'Featured content will appear here as soon as new music, videos or live sessions are available.');
+
+  return (
+    <TVTouchable
+      onPress={onPressPrimary}
+      style={{
+        marginTop: 0,
+        borderRadius: 24,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: ui.cardBorder,
+        backgroundColor: ui.cardBg,
+      }}
+      showFocusBorder={false}
+    >
+      <View style={{ height: 280 }}>
+        {item?.imageUrl ? (
+          <Image source={{ uri: item.imageUrl }} style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }} resizeMode="cover" />
+        ) : (
+          <LinearGradient
+            colors={ui.fallbackGradient}
+            style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}
+          />
+        )}
+
+        <LinearGradient
+          colors={ui.imageOverlay}
+          style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}
+        />
+
+        <View style={{ flex: 1, justifyContent: 'space-between', padding: 16 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <View
+              style={{
+                alignSelf: 'flex-start',
+                borderRadius: 999,
+                backgroundColor: ui.badgeBg,
+                borderWidth: 1,
+                borderColor: ui.badgeBorder,
+                paddingHorizontal: 10,
+                paddingVertical: 6,
+              }}
+            >
+              <CustomText variant="caption" style={{ color: ui.badgeText }}>
+                {item?.isLive ? 'LIVE FEATURED' : 'HERO DROP'}
+              </CustomText>
+            </View>
+            <TVTouchable
+              onPress={onPressSecondary}
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: 19,
+                backgroundColor: ui.iconBtnBg,
+                borderWidth: 1,
+                borderColor: ui.iconBtnBorder,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              showFocusBorder={false}
+            >
+              <MaterialIcons name="queue-play-next" size={20} color={ui.iconBtnIcon} />
+            </TVTouchable>
+          </View>
+
+          <View>
+            <CustomText variant="display" style={{ color: ui.title, fontSize: isTablet ? 22 : 19, lineHeight: isTablet ? 28 : 24 }} numberOfLines={2}>
+              {title}
+            </CustomText>
+            <CustomText variant="body" style={{ color: ui.subtitle, marginTop: 8 }} numberOfLines={3}>
+              {subtitle}
+            </CustomText>
+
+            <View style={{ marginTop: 12, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <TVTouchable
+                onPress={onPressPrimary}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingHorizontal: 12,
+                  paddingVertical: 10,
+                  borderRadius: 999,
+                  backgroundColor: ui.primaryBtnBg,
+                  borderWidth: 1,
+                  borderColor: ui.primaryBtnBorder,
+                }}
+                showFocusBorder={false}
+              >
+                <View
+                  style={{
+                    width: 26,
+                    height: 26,
+                    borderRadius: 13,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: ui.primaryBtnIconBg,
+                    marginRight: 8,
+                  }}
+                >
+                  <MaterialIcons name="play-arrow" size={18} color={ui.primaryBtnText} />
+                </View>
+                <CustomText variant="label" style={{ color: ui.primaryBtnText }}>
+                  Play
+                </CustomText>
+              </TVTouchable>
+              <TVTouchable
+                onPress={onPressSecondary}
+                style={{
+                  paddingHorizontal: 12,
+                  paddingVertical: 10,
+                  borderRadius: 999,
+                  backgroundColor: ui.secondaryBtnBg,
+                  borderWidth: 1,
+                  borderColor: ui.secondaryBtnBorder,
+                }}
+                showFocusBorder={false}
+              >
+                <CustomText variant="label" style={{ color: ui.secondaryBtnText }}>
+                  View Videos
+                </CustomText>
+              </TVTouchable>
+            </View>
+          </View>
+        </View>
+      </View>
+    </TVTouchable>
+  );
+}
+
+function SectionBlock({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
+  const theme = useAppTheme();
+  const isDark = theme.scheme === 'dark';
+
+  return (
+    <View style={{ marginTop: 18 }}>
+      <View style={{ paddingHorizontal: 2, marginBottom: 10 }}>
+        <CustomText variant="heading" style={{ color: theme.colors.text.primary }}>
+          {title}
+        </CustomText>
+        <CustomText
+          variant="caption"
+          style={{ color: isDark ? 'rgba(190,182,213,0.88)' : 'rgba(108,99,134,0.9)', marginTop: 3 }}
+        >
+          {subtitle}
+        </CustomText>
+      </View>
+      {children}
+    </View>
+  );
+}
+
+function PosterTile({ item, width, onPress }: { item: FeedCardItem; width: number; onPress: () => void }) {
+  const theme = useAppTheme();
+  const isDark = theme.scheme === 'dark';
+  const ui = {
+    cardBorder: isDark ? 'rgba(255,255,255,0.08)' : theme.colors.border,
+    cardBg: isDark ? 'rgba(16,11,26,0.9)' : theme.colors.surface,
+    fade: isDark
+      ? (['rgba(10,8,17,0)', 'rgba(10,8,17,0.78)'] as const)
+      : (['rgba(255,255,255,0)', 'rgba(255,255,255,0.78)'] as const),
+    title: theme.colors.text.primary,
+    subtitle: theme.colors.text.secondary,
+    meta: isDark ? 'rgba(178,169,202,0.88)' : 'rgba(108,99,134,0.9)',
+    liveMeta: isDark ? '#FCA5A5' : '#B91C1C',
+  } as const;
+  return (
+    <TVTouchable
+      onPress={onPress}
+      style={{ width, marginRight: 12 }}
+      showFocusBorder={false}
+    >
+      <View
+        style={{
+          borderRadius: 20,
+          overflow: 'hidden',
+          borderWidth: 1,
+          borderColor: ui.cardBorder,
+          backgroundColor: ui.cardBg,
+        }}
+      >
+        <Image source={{ uri: item.imageUrl }} style={{ width: '100%', height: 118 }} resizeMode="cover" />
+        <LinearGradient
+          colors={ui.fade}
+          style={{ position: 'absolute', left: 0, right: 0, bottom: 48, height: 50 }}
+          pointerEvents="none"
+        />
+        <View style={{ padding: 10 }}>
+          <CustomText variant="label" style={{ color: ui.title }} numberOfLines={1}>
+            {item.title}
+          </CustomText>
+          <CustomText variant="caption" style={{ color: ui.subtitle, marginTop: 3 }} numberOfLines={1}>
+            {item.subtitle}
+          </CustomText>
+          <View style={{ marginTop: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <CustomText variant="caption" style={{ color: ui.meta }}>
+              {item.duration || '--:--'}
+            </CustomText>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              {item.isLive ? <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#EF4444', marginRight: 4 }} /> : null}
+              <CustomText variant="caption" style={{ color: item.isLive ? ui.liveMeta : ui.meta }}>
+                {item.isLive ? 'Live' : typeLabel(item.type)}
+              </CustomText>
+            </View>
+          </View>
+        </View>
+      </View>
+    </TVTouchable>
+  );
+}
+
+function LiveCard({
+  item,
+  width,
+  onOpen,
+  onNotify,
+}: {
+  item: FeedCardItem;
+  width: number;
+  onOpen: () => void;
+  onNotify: () => void;
+}) {
+  const theme = useAppTheme();
+  const isDark = theme.scheme === 'dark';
+  const ui = {
+    cardBorder: isDark ? 'rgba(248,113,113,0.18)' : 'rgba(220,38,38,0.14)',
+    cardBg: isDark ? 'rgba(127,29,29,0.08)' : 'rgba(254,242,242,0.9)',
+    overlay: isDark
+      ? (['rgba(0,0,0,0)', 'rgba(6,4,13,0.92)'] as const)
+      : (['rgba(255,255,255,0)', 'rgba(255,255,255,0.92)'] as const),
+    livePillBg: isDark ? 'rgba(127,29,29,0.74)' : 'rgba(220,38,38,0.88)',
+    livePillText: isDark ? '#FEE2E2' : '#FFFFFF',
+    viewersPillBg: isDark ? 'rgba(10,8,17,0.7)' : 'rgba(255,255,255,0.84)',
+    viewersText: isDark ? '#FDE68A' : '#92400E',
+    title: isDark ? '#FFF1F2' : '#3F0D14',
+    subtitle: isDark ? 'rgba(254,226,226,0.82)' : '#7F1D1D',
+  } as const;
+  return (
+    <View
+      style={{
+        width: Math.max(width, 220),
+        marginRight: 12,
+        borderRadius: 18,
+        borderWidth: 1,
+        borderColor: ui.cardBorder,
+        backgroundColor: ui.cardBg,
+        overflow: 'hidden',
+      }}
+    >
+      <TVTouchable onPress={onOpen} showFocusBorder={false}>
+        <View style={{ height: 122 }}>
+          <Image source={{ uri: item.imageUrl }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+          <LinearGradient colors={ui.overlay} style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }} />
+          <View style={{ position: 'absolute', top: 10, left: 10, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999, backgroundColor: ui.livePillBg }}>
+            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#EF4444', marginRight: 5 }} />
+            <CustomText variant="caption" style={{ color: ui.livePillText }}>
+              LIVE
+            </CustomText>
+          </View>
+          <View style={{ position: 'absolute', right: 10, top: 10, borderRadius: 999, backgroundColor: ui.viewersPillBg, paddingHorizontal: 8, paddingVertical: 4 }}>
+            <CustomText variant="caption" style={{ color: ui.viewersText }}>
+              {formatViewers(item.liveViewerCount)}
+            </CustomText>
+          </View>
+        </View>
+      </TVTouchable>
+
+      <View style={{ padding: 10 }}>
+        <CustomText variant="label" style={{ color: ui.title }} numberOfLines={1}>
+          {item.title}
+        </CustomText>
+        <CustomText variant="caption" style={{ color: ui.subtitle, marginTop: 3 }} numberOfLines={2}>
+          {item.description}
+        </CustomText>
+        <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
+          <MiniAction icon="play-arrow" label="Watch" onPress={onOpen} />
+          <MiniAction icon="notifications-active" label="Notify" onPress={onNotify} />
+        </View>
+      </View>
+    </View>
+  );
+}
+
+function AdCard({ item, width, onOpen }: { item: FeedCardItem; width: number; onOpen: () => void }) {
+  const theme = useAppTheme();
+  const isDark = theme.scheme === 'dark';
+  const ui = {
+    cardBorder: isDark ? 'rgba(216,194,255,0.18)' : 'rgba(109,40,217,0.14)',
+    cardBg: isDark ? 'rgba(154,107,255,0.07)' : 'rgba(237,233,254,0.72)',
+    overlay: isDark
+      ? (['rgba(0,0,0,0)', 'rgba(6,4,13,0.88)'] as const)
+      : (['rgba(255,255,255,0)', 'rgba(255,255,255,0.9)'] as const),
+    pillBg: isDark ? 'rgba(88,28,135,0.7)' : 'rgba(109,40,217,0.88)',
+    pillText: isDark ? '#EDE9FE' : '#FFFFFF',
+    title: isDark ? '#F5EEFF' : theme.colors.text.primary,
+    subtitle: isDark ? 'rgba(221,210,245,0.9)' : theme.colors.text.secondary,
+  } as const;
+  return (
+    <TVTouchable
+      onPress={onOpen}
+      style={{
+        width: Math.max(width, 220),
+        marginRight: 12,
+        borderRadius: 18,
+        borderWidth: 1,
+        borderColor: ui.cardBorder,
+        backgroundColor: ui.cardBg,
+        overflow: 'hidden',
+      }}
+      showFocusBorder={false}
+    >
+      <View style={{ height: 112 }}>
+        <Image source={{ uri: item.imageUrl }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+        <LinearGradient colors={ui.overlay} style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }} />
+        <View style={{ position: 'absolute', top: 10, left: 10, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 4, backgroundColor: ui.pillBg }}>
+          <CustomText variant="caption" style={{ color: ui.pillText }}>
+            SPONSORED
+          </CustomText>
+        </View>
+      </View>
+      <View style={{ padding: 10 }}>
+        <CustomText variant="label" style={{ color: ui.title }} numberOfLines={1}>
+          {item.title}
+        </CustomText>
+        <CustomText variant="caption" style={{ color: ui.subtitle, marginTop: 3 }} numberOfLines={2}>
+          {item.description}
+        </CustomText>
+      </View>
+    </TVTouchable>
+  );
+}
+
+function MiniAction({
+  icon,
+  label,
+  onPress,
+}: {
+  icon: React.ComponentProps<typeof MaterialIcons>['name'];
+  label: string;
+  onPress: () => void;
+}) {
+  const theme = useAppTheme();
+  const isDark = theme.scheme === 'dark';
+  const ui = {
+    border: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(220,38,38,0.14)',
+    bg: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(220,38,38,0.05)',
+    icon: isDark ? '#F8E8E8' : '#B91C1C',
+    text: isDark ? '#FCE7F3' : '#991B1B',
+  } as const;
+  return (
+    <TVTouchable
+      onPress={onPress}
+      style={{
+        flex: 1,
+        minHeight: 34,
+        borderRadius: 999,
+        borderWidth: 1,
+        borderColor: ui.border,
+        backgroundColor: ui.bg,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 4,
+        paddingHorizontal: 8,
+      }}
+      showFocusBorder={false}
+    >
+      <MaterialIcons name={icon} size={15} color={ui.icon} />
+      <CustomText variant="caption" style={{ color: ui.text }}>
+        {label}
+      </CustomText>
+    </TVTouchable>
+  );
+}
+
+function ResponsiveGrid({ columns, children }: { columns: number; children: React.ReactNode }) {
+  return (
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -5, marginTop: 2 }}>
+      {React.Children.map(children, (child) => (
+        <View style={{ width: `${100 / columns}%`, paddingHorizontal: 5, marginBottom: 10 }}>{child}</View>
+      ))}
+    </View>
+  );
+}
+
+function GridTile({ item, onPress }: { item: FeedCardItem; onPress: () => void }) {
+  const theme = useAppTheme();
+  const isDark = theme.scheme === 'dark';
+  const ui = {
+    cardBg: isDark ? 'rgba(12,9,20,0.88)' : theme.colors.surface,
+    cardBorder: isDark ? 'rgba(255,255,255,0.08)' : theme.colors.border,
+    imageBg: isDark ? '#140F20' : theme.colors.surfaceAlt,
+    imageBorder: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(20,16,33,0.06)',
+    imageOverlay: isDark
+      ? (['rgba(0,0,0,0)', 'rgba(6,4,13,0.2)'] as const)
+      : (['rgba(255,255,255,0)', 'rgba(255,255,255,0.15)'] as const),
+    typePillBg: isDark ? 'rgba(255,255,255,0.03)' : theme.colors.surfaceAlt,
+    typePillBorder: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(20,16,33,0.06)',
+    typeText: isDark ? 'rgba(222,214,244,0.92)' : 'rgba(92,84,120,0.95)',
+    metaText: isDark ? 'rgba(194,185,220,0.88)' : theme.colors.text.secondary,
+    playDotBg: isDark ? 'rgba(154,107,255,0.18)' : 'rgba(109,40,217,0.08)',
+    playDotBorder: isDark ? 'rgba(216,194,255,0.18)' : 'rgba(109,40,217,0.12)',
+    playDotIcon: isDark ? '#F4ECFF' : theme.colors.primary,
+  } as const;
+  return (
+    <TVTouchable
+      onPress={onPress}
+      style={{
+        borderRadius: 14,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: ui.cardBorder,
+        backgroundColor: ui.cardBg,
+      }}
+      showFocusBorder={false}
+    >
+      <View style={{ padding: 6 }}>
+        <View
+          style={{
+            borderRadius: 10,
+            overflow: 'hidden',
+            borderWidth: 1,
+            borderColor: ui.imageBorder,
+            backgroundColor: ui.imageBg,
+          }}
+        >
+          <Image
+            source={{ uri: item.imageUrl }}
+            style={{ width: '100%', aspectRatio: 1, backgroundColor: ui.imageBg }}
+            resizeMode="cover"
+          />
+          <LinearGradient
+            colors={ui.imageOverlay}
+            style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 40 }}
+            pointerEvents="none"
+          />
+        </View>
+      </View>
+
+      <View style={{ paddingHorizontal: 9, paddingBottom: 9, paddingTop: 0 }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: 5,
+          }}
+        >
+          <View
+            style={{
+              borderRadius: 999,
+              borderWidth: 1,
+              borderColor: ui.typePillBorder,
+              backgroundColor: ui.typePillBg,
+              paddingHorizontal: 7,
+              paddingVertical: 3,
+              maxWidth: '72%',
+            }}
+          >
+            <CustomText variant="caption" style={{ color: ui.typeText }} numberOfLines={1}>
+              {typeLabel(item.type)}
+            </CustomText>
+          </View>
+          <View
+            style={{
+              width: 28,
+              height: 28,
+              borderRadius: 14,
+              borderWidth: 1,
+              borderColor: ui.playDotBorder,
+              backgroundColor: ui.playDotBg,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <MaterialIcons name="play-arrow" size={16} color={ui.playDotIcon} />
+          </View>
+        </View>
+
+        <CustomText variant="label" style={{ color: theme.colors.text.primary }} numberOfLines={2}>
+          {item.title}
+        </CustomText>
+        <CustomText variant="caption" style={{ color: ui.metaText, marginTop: 3 }} numberOfLines={1}>
+          {item.subtitle || (item.duration ? `${item.duration} • Featured collection` : 'Featured collection')}
+        </CustomText>
+      </View>
+    </TVTouchable>
+  );
+}
+
+function GridPlaceholder({ columns }: { columns: number }) {
+  const theme = useAppTheme();
+  const isDark = theme.scheme === 'dark';
+  const blocks = Array.from({ length: Math.max(columns, 4) }, (_, idx) => idx);
+  return (
+    <>
+      {blocks.map((idx) => (
+        <View
+          key={idx}
+          style={{
+            borderRadius: 18,
+            borderWidth: 1,
+            borderColor: isDark ? 'rgba(255,255,255,0.06)' : theme.colors.border,
+            backgroundColor: isDark ? 'rgba(12,9,20,0.78)' : theme.colors.surface,
+            padding: 6,
+            minHeight: 178,
+          }}
+        >
+          <View
+            style={{
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(20,16,33,0.05)',
+              backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : theme.colors.surfaceAlt,
+              aspectRatio: 1.16,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <MaterialIcons name="collections-bookmark" size={18} color={theme.colors.text.secondary} />
+          </View>
+          <View style={{ paddingHorizontal: 4, paddingTop: 10 }}>
+            <View
+              style={{
+                height: 10,
+                borderRadius: 999,
+                backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(20,16,33,0.06)',
+                width: '78%',
+              }}
+            />
+            <View
+              style={{
+                height: 8,
+                borderRadius: 999,
+                backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(20,16,33,0.05)',
+                width: '54%',
+                marginTop: 8,
+              }}
+            />
+          </View>
+        </View>
+      ))}
+    </>
+  );
+}
+
+function RecentRow({ item, onPress }: { item: FeedCardItem; onPress: () => void }) {
+  const theme = useAppTheme();
+  const isDark = theme.scheme === 'dark';
+  return (
+    <TVTouchable
+      onPress={onPress}
+      style={{
+        minHeight: 64,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: isDark ? 'rgba(255,255,255,0.08)' : theme.colors.border,
+        backgroundColor: isDark ? 'rgba(12,9,20,0.86)' : theme.colors.surface,
+        paddingHorizontal: 10,
+        paddingVertical: 8,
+        flexDirection: 'row',
+        alignItems: 'center',
+      }}
+      showFocusBorder={false}
+    >
+      <Image source={{ uri: item.imageUrl }} style={{ width: 48, height: 48, borderRadius: 12, marginRight: 10, backgroundColor: isDark ? '#140F20' : theme.colors.surfaceAlt }} resizeMode="cover" />
+      <View style={{ flex: 1 }}>
+        <CustomText variant="label" style={{ color: theme.colors.text.primary }} numberOfLines={1}>
+          {item.title}
+        </CustomText>
+        <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 2 }} numberOfLines={1}>
+          {item.subtitle}
+        </CustomText>
+      </View>
+      <View style={{ alignItems: 'flex-end' }}>
+        <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
+          {item.duration || '--:--'}
+        </CustomText>
+        <MaterialIcons name="chevron-right" size={18} color={theme.colors.text.secondary} />
+      </View>
+    </TVTouchable>
+  );
+}
+
+function EmptyRailCard({
+  width,
+  title,
+  subtitle,
+  icon,
+}: {
+  width: number;
+  title: string;
+  subtitle: string;
+  icon: React.ComponentProps<typeof MaterialIcons>['name'];
+}) {
+  const theme = useAppTheme();
+  const isDark = theme.scheme === 'dark';
+  return (
+    <View
+      style={{
+        width,
+        marginRight: 12,
+        borderRadius: 18,
+        borderWidth: 1,
+        borderColor: isDark ? 'rgba(255,255,255,0.07)' : theme.colors.border,
+        backgroundColor: isDark ? 'rgba(12,9,20,0.76)' : theme.colors.surface,
+        padding: 12,
+        minHeight: 150,
+        justifyContent: 'center',
+      }}
+    >
+      <View
+        style={{
+          width: 40,
+          height: 40,
+          borderRadius: 12,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: isDark ? 'rgba(154,107,255,0.16)' : 'rgba(109,40,217,0.08)',
+          marginBottom: 10,
+        }}
+      >
+        <MaterialIcons name={icon} size={20} color={theme.colors.primary} />
+      </View>
+      <CustomText variant="label" style={{ color: theme.colors.text.primary }}>
+        {title}
+      </CustomText>
+      <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 4 }}>
+        {subtitle}
+      </CustomText>
+    </View>
+  );
+}
+
+function EmptyListRow() {
+  const theme = useAppTheme();
+  const isDark = theme.scheme === 'dark';
+  return (
+    <View
+      style={{
+        minHeight: 72,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: isDark ? 'rgba(255,255,255,0.07)' : theme.colors.border,
+        backgroundColor: isDark ? 'rgba(12,9,20,0.76)' : theme.colors.surface,
+        padding: 12,
+        justifyContent: 'center',
+      }}
+    >
+      <CustomText variant="label" style={{ color: theme.colors.text.primary }}>
+        No recent plays yet
+      </CustomText>
+      <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 4 }}>
+        Playback history will populate here after users start streaming content.
+      </CustomText>
+    </View>
+  );
+}
+
+function firstAvailable(feed: FeedBundle): FeedCardItem | null {
+  return (
+    feed.live[0] ??
+    feed.videos[0] ??
+    feed.music[0] ??
+    feed.playlists[0] ??
+    feed.announcements[0] ??
+    feed.ads[0] ??
+    feed.recent[0] ??
+    null
+  );
+}
+
+function deriveMinistryItems(feed: FeedBundle, kind: 'video' | 'audio' | 'message' | 'worship' | 'playlist') {
+  switch (kind) {
+    case 'audio':
+      return feed.music;
+    case 'message':
+      return feed.announcements.length ? feed.announcements : [...feed.videos, ...feed.playlists];
+    case 'worship':
+      return feed.playlists.length ? feed.playlists : [...feed.videos, ...feed.music];
+    case 'playlist':
+      return feed.playlists;
+    case 'video':
+    default:
+      return feed.videos.length ? feed.videos : [...feed.music, ...feed.playlists];
+  }
+}
+
+function sectionSubtitle(kind: 'video' | 'audio' | 'message' | 'worship' | 'playlist') {
+  switch (kind) {
+    case 'audio':
+      return 'Audio tracks, playlists and worship sessions';
+    case 'message':
+      return 'Messages, nuggets and announcements from channel uploads';
+    case 'worship':
+      return 'Worship videos, playlists and live worship sessions';
+    case 'playlist':
+      return 'Curated playlist architecture for long-form listening';
+    case 'video':
+    default:
+      return 'Video drops, replays and featured uploads';
+  }
+}
+
+function formatViewers(value?: number) {
+  if (!value || value < 1) return '0 watching';
+  if (value >= 1000) return `${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}k watching`;
+  return `${value} watching`;
+}
+
+function typeLabel(type: FeedCardItem['type']) {
+  switch (type) {
+    case 'audio':
+      return 'Audio';
+    case 'video':
+      return 'Video';
+    case 'playlist':
+      return 'Playlist';
+    case 'announcement':
+      return 'Message';
+    case 'live':
+      return 'Live';
+    case 'ad':
+      return 'Ad';
+    default:
+      return 'Media';
+  }
 }

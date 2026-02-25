@@ -19,12 +19,12 @@ export interface Playlist {
 
 export interface SongListProps {
   songs: Song[];
-  onSongPress: (song: Song) => void;
+  onSongPress: (_song: Song) => void;
   showActions?: boolean;
-  onRemove?: (song: Song) => void;
+  onRemove?: (_song: Song) => void;
 }
 
 export interface PlaylistGridProps {
   playlists: Playlist[];
-  onPlaylistPress: (playlist: Playlist) => void;
+  onPlaylistPress: (_playlist: Playlist) => void;
 }

@@ -8,7 +8,7 @@ import { TVTouchable } from './TVTouchable';
 interface SearchBarProps {
   placeholder?: string;
   value: string;
-  onChangeText: (text: string) => void;
+  onChangeText: (_text: string) => void;
   onSubmit?: () => void;
 }
 

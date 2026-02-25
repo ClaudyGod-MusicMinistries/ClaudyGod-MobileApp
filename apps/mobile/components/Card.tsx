@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-
 // components/cards/NowPlayingCard.tsx
 import React from 'react';
 import { View, TouchableOpacity, Image } from 'react-native';
@@ -24,7 +22,7 @@ interface NowPlayingCardProps {
 export const NowPlayingCard: React.FC<NowPlayingCardProps> = ({
   song,
   isPlaying = false,
-  onPress,
+  onPress: _onPress,
   onPlayPause
 }) => {
   return (

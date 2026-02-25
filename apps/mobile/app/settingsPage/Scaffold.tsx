@@ -2,13 +2,12 @@
 import React from 'react';
 import { View, ScrollView, StatusBar } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { MaterialIcons } from '@expo/vector-icons';
-import { CustomText } from '../../components/CustomText';
 import { useRouter } from 'expo-router';
 import { useAppTheme } from '../../util/colorScheme';
-import { spacing, radius } from '../../styles/designTokens';
+import { spacing } from '../../styles/designTokens';
 import { Screen } from '../../components/layout/Screen';
-import { TVTouchable } from '../../components/ui/TVTouchable';
+import { BrandedHeaderCard } from '../../components/layout/BrandedHeaderCard';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface ScaffoldProps {
   title: string;
@@ -20,6 +19,13 @@ interface ScaffoldProps {
 export function SettingsScaffold({ title, subtitle, children, hero }: ScaffoldProps) {
   const theme = useAppTheme();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const isDark = theme.scheme === 'dark';
+
+  const ui = {
+    stickyBg: isDark ? '#06040D' : theme.colors.background,
+    stickyBorder: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(20,16,33,0.08)',
+  } as const;
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
@@ -41,52 +47,31 @@ export function SettingsScaffold({ title, subtitle, children, hero }: ScaffoldPr
           height: 260,
         }}
       />
-      {/* Header */}
       <View
         style={{
           paddingHorizontal: spacing.lg,
-          paddingTop: spacing.lg + 24,
-          paddingBottom: spacing.md,
+          paddingTop: insets.top + 8,
+          paddingBottom: spacing.sm,
           borderBottomWidth: 1,
-          borderBottomColor: theme.colors.border,
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: spacing.md,
-          backgroundColor: theme.colors.surface,
+          borderBottomColor: ui.stickyBorder,
+          backgroundColor: ui.stickyBg,
         }}
       >
-        <TVTouchable
-          onPress={() => router.back()}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          style={{
-            width: 44,
-            height: 44,
-            borderRadius: radius.md,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: theme.colors.surfaceAlt,
-            borderWidth: 1,
-            borderColor: theme.colors.border,
-          }}
-          showFocusBorder={false}
-        >
-          <MaterialIcons name="arrow-back" size={22} color={theme.colors.text.primary} />
-        </TVTouchable>
-        <View style={{ flex: 1 }}>
-          <CustomText variant="heading" style={{ color: theme.colors.text.primary }}>
-            {title}
-          </CustomText>
-          {subtitle ? (
-            <CustomText variant="body" style={{ color: theme.colors.text.secondary, marginTop: 2 }}>
-              {subtitle}
-            </CustomText>
-          ) : null}
-        </View>
+        <BrandedHeaderCard
+          title={title}
+          subtitle={subtitle}
+          showEyebrow={false}
+          leadingAction={{ icon: 'arrow-back', onPress: () => router.back(), accessibilityLabel: 'Go back' }}
+          actions={[]}
+        />
       </View>
 
       <ScrollView
+        style={{ flex: 1, backgroundColor: theme.colors.background }}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 120, paddingTop: spacing.md }}
+        contentContainerStyle={{ paddingBottom: 120, paddingTop: spacing.md, flexGrow: 1 }}
+        bounces={false}
+        overScrollMode="never"
       >
         <Screen>
           {hero}
