@@ -29,6 +29,14 @@ const migrations = [
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`,
+  `ALTER TABLE content_items ADD COLUMN IF NOT EXISTS thumbnail_url TEXT`,
+  `ALTER TABLE content_items ADD COLUMN IF NOT EXISTS source_kind TEXT NOT NULL DEFAULT 'upload' CHECK (source_kind IN ('upload', 'youtube', 'external'))`,
+  `ALTER TABLE content_items ADD COLUMN IF NOT EXISTS external_source_id TEXT`,
+  `ALTER TABLE content_items ADD COLUMN IF NOT EXISTS channel_name TEXT`,
+  `ALTER TABLE content_items ADD COLUMN IF NOT EXISTS duration_label TEXT`,
+  `ALTER TABLE content_items ADD COLUMN IF NOT EXISTS app_sections TEXT[] NOT NULL DEFAULT '{}'`,
+  `ALTER TABLE content_items ADD COLUMN IF NOT EXISTS tags TEXT[] NOT NULL DEFAULT '{}'`,
+  `ALTER TABLE content_items ADD COLUMN IF NOT EXISTS metadata JSONB NOT NULL DEFAULT '{}'::jsonb`,
   `CREATE TABLE IF NOT EXISTS content_jobs (
     id BIGSERIAL PRIMARY KEY,
     content_id UUID NOT NULL REFERENCES content_items(id) ON DELETE CASCADE,
@@ -181,10 +189,29 @@ const migrations = [
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`,
+  `CREATE TABLE IF NOT EXISTS word_of_day_entries (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title TEXT NOT NULL DEFAULT 'Word for Today',
+    passage TEXT NOT NULL,
+    verse_text TEXT NOT NULL,
+    reflection_text TEXT NOT NULL,
+    message_date DATE NOT NULL,
+    status TEXT NOT NULL DEFAULT 'published' CHECK (status IN ('draft', 'published', 'archived')),
+    notify_email BOOLEAN NOT NULL DEFAULT FALSE,
+    published_at TIMESTAMPTZ,
+    notified_at TIMESTAMPTZ,
+    created_by UUID REFERENCES app_users(id) ON DELETE SET NULL,
+    updated_by UUID REFERENCES app_users(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (message_date)
+  )`,
   `CREATE INDEX IF NOT EXISTS idx_content_items_visibility_created_at
     ON content_items (visibility, created_at DESC)`,
   `CREATE INDEX IF NOT EXISTS idx_content_items_author_created_at
     ON content_items (author_id, created_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_content_items_app_sections_gin
+    ON content_items USING GIN (app_sections)`,
   `CREATE INDEX IF NOT EXISTS idx_content_jobs_status_created_at
     ON content_jobs (status, created_at DESC)`,
   `CREATE INDEX IF NOT EXISTS idx_email_jobs_status_created_at
@@ -209,6 +236,10 @@ const migrations = [
     ON app_ratings (created_at DESC)`,
   `CREATE INDEX IF NOT EXISTS idx_donation_intents_status_created_at
     ON donation_intents (status, created_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_word_of_day_message_date
+    ON word_of_day_entries (message_date DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_word_of_day_status_message_date
+    ON word_of_day_entries (status, message_date DESC)`,
   `CREATE OR REPLACE FUNCTION set_updated_at()
     RETURNS trigger AS $$
     BEGIN
@@ -305,6 +336,13 @@ const migrations = [
       IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'set_app_config_store_updated_at') THEN
         CREATE TRIGGER set_app_config_store_updated_at
         BEFORE UPDATE ON app_config_store
+        FOR EACH ROW
+        EXECUTE FUNCTION set_updated_at();
+      END IF;
+
+      IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'set_word_of_day_entries_updated_at') THEN
+        CREATE TRIGGER set_word_of_day_entries_updated_at
+        BEFORE UPDATE ON word_of_day_entries
         FOR EACH ROW
         EXECUTE FUNCTION set_updated_at();
       END IF;

@@ -19,12 +19,14 @@ export interface ApiContentItem {
   type: ContentType;
   status?: ContentStatus;
   visibility?: ContentStatus;
-  sourceKind?: 'upload' | 'external';
+  sourceKind?: 'upload' | 'external' | 'youtube';
   mediaUrl?: string;
   externalUrl?: string;
   url?: string;
   thumbnailUrl?: string;
   tags?: string[];
+  appSections?: string[];
+  metadata?: Record<string, unknown>;
   createdAt?: string;
   updatedAt?: string;
   channelName?: string;
@@ -63,6 +65,7 @@ export interface FeedCardItem {
   liveViewerCount?: number;
   isLive?: boolean;
   createdAt?: string;
+  appSections?: string[];
 }
 
 export interface FeedBundle {
@@ -129,6 +132,7 @@ function normalize(item: ApiContentItem): FeedCardItem {
     isLive: item.isLive || item.type === 'live',
     liveViewerCount: item.liveViewerCount,
     createdAt: item.createdAt || item.updatedAt,
+    appSections: Array.isArray(item.appSections) ? item.appSections : [],
   };
 }
 
@@ -145,6 +149,7 @@ function normalizeYouTubeVideo(item: YouTubeVideoItem): FeedCardItem {
     isLive: Boolean(item.isLive),
     liveViewerCount: item.liveViewerCount,
     createdAt: item.publishedAt,
+    appSections: [],
   };
 }
 
@@ -253,10 +258,11 @@ function dedupe(items: FeedCardItem[]): FeedCardItem[] {
   const result: FeedCardItem[] = [];
 
   for (const item of items) {
-    if (seen.has(item.id)) {
+    const key = (item.mediaUrl && item.mediaUrl.trim()) ? `media:${item.mediaUrl.trim()}` : `id:${item.id}`;
+    if (seen.has(key)) {
       continue;
     }
-    seen.add(item.id);
+    seen.add(key);
     result.push(item);
   }
 
@@ -276,17 +282,17 @@ export async function fetchFeedBundle(): Promise<FeedBundle> {
     fetchYouTubeFeed(),
   ]);
 
-  const mergedMusic = dedupe([...youtubeFeed.music, ...music]);
-  const mergedVideos = dedupe([...youtubeFeed.videos, ...videos]);
-  const mergedLive = dedupe([...youtubeFeed.live, ...live]);
-  const mergedAnnouncements = dedupe([...youtubeFeed.announcements, ...announcements]);
+  const mergedMusic = dedupe([...music, ...youtubeFeed.music]);
+  const mergedVideos = dedupe([...videos, ...youtubeFeed.videos]);
+  const mergedLive = dedupe([...live, ...youtubeFeed.live]);
+  const mergedAnnouncements = dedupe([...announcements, ...youtubeFeed.announcements]);
   const mergedAll = dedupe([
+    ...all,
     ...youtubeFeed.recent,
     ...youtubeFeed.videos,
     ...youtubeFeed.music,
     ...youtubeFeed.live,
     ...youtubeFeed.announcements,
-    ...all,
   ]);
 
   const recent = [...mergedAll].sort((a, b) => {

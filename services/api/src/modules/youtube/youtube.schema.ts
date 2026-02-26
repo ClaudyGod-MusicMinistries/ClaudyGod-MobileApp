@@ -29,6 +29,30 @@ const optionalChannelIdentifierSchema = z.preprocess(
   youtubeChannelIdentifierSchema.optional(),
 ) as unknown as z.ZodType<string | undefined>;
 
+const optionalSectionsSchema = z.preprocess(
+  (value) => {
+    if (value == null || value === '') return undefined;
+    if (Array.isArray(value)) return value;
+    if (typeof value === 'string') {
+      return value
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean);
+    }
+    return value;
+  },
+  z
+    .array(
+      z
+        .string()
+        .trim()
+        .min(2)
+        .max(80),
+    )
+    .max(12)
+    .optional(),
+) as unknown as z.ZodType<string[] | undefined>;
+
 export const youtubeListQuerySchema = z
   .object({
     channelId: optionalChannelIdentifierSchema,
@@ -41,5 +65,6 @@ export const youtubeSyncSchema = z
     channelId: optionalChannelIdentifierSchema,
     maxResults: z.coerce.number().int().min(1).max(50).optional(),
     visibility: visibilitySchema.default('draft'),
+    appSections: optionalSectionsSchema,
   })
   .strict();
