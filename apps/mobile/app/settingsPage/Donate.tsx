@@ -10,6 +10,8 @@ import { FadeIn } from '../../components/ui/FadeIn';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { AppButton } from '../../components/ui/AppButton';
 import { TVTouchable } from '../../components/ui/TVTouchable';
+import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
+import { createDonationIntent } from '../../services/userFlowService';
 
 type DonateMethod = {
   id: string;
@@ -26,6 +28,12 @@ type SupportPlan = {
   period: 'once' | 'monthly';
   note: string;
   featured?: boolean;
+  icon: React.ComponentProps<typeof MaterialIcons>['name'];
+};
+
+type ImpactBreakdownItem = {
+  label: string;
+  value: number;
   icon: React.ComponentProps<typeof MaterialIcons>['name'];
 };
 
@@ -81,7 +89,7 @@ const supportPlans: SupportPlan[] = [
   },
 ];
 
-const impactBreakdown = [
+const impactBreakdown: ImpactBreakdownItem[] = [
   { label: 'Streaming & CDN', value: 42, icon: 'wifi-tethering' as const },
   { label: 'Production & Editing', value: 33, icon: 'movie-edit' as const },
   { label: 'Outreach & Events', value: 25, icon: 'groups' as const },
@@ -91,16 +99,32 @@ export default function Donate() {
   const theme = useAppTheme();
   const isDark = theme.scheme === 'dark';
   const { width } = useWindowDimensions();
+  const { config } = useMobileAppConfig();
   const isCompact = width < 380;
   const isTablet = width >= 768;
 
+  const configuredQuickAmounts = config?.donate.quickAmounts ?? quickAmounts;
+  const configuredMethods: DonateMethod[] = (config?.donate.methods ?? supportMethods).map((method) => ({
+    ...method,
+    icon: method.icon as DonateMethod['icon'],
+  }));
+  const configuredPlans: SupportPlan[] = (config?.donate.plans ?? supportPlans).map((plan) => ({
+    ...plan,
+    icon: plan.icon as SupportPlan['icon'],
+  }));
+  const configuredImpactBreakdown: ImpactBreakdownItem[] = (config?.donate.impactBreakdown ?? impactBreakdown).map((item) => ({
+    ...item,
+    icon: item.icon as ImpactBreakdownItem['icon'],
+  }));
+  const configuredCurrency = config?.donate.currency ?? 'USD';
+
   const [selectedAmount, setSelectedAmount] = useState<string>('$25');
   const [donationMode, setDonationMode] = useState<'once' | 'monthly'>('once');
-  const [selectedMethod, setSelectedMethod] = useState<string>(supportMethods[0].id);
+  const [selectedMethod, setSelectedMethod] = useState<string>((config?.donate.methods?.[0]?.id ?? supportMethods[0].id));
 
   const selectedPlan = useMemo(
-    () => supportPlans.find((plan) => plan.period === donationMode && (donationMode === 'monthly' ? plan.featured : true)),
-    [donationMode],
+    () => configuredPlans.find((plan) => plan.period === donationMode && (donationMode === 'monthly' ? plan.featured : true)),
+    [configuredPlans, donationMode],
   );
 
   const ui = {
@@ -120,11 +144,24 @@ export default function Donate() {
   };
 
   const onDonateNow = () => {
-    const method = supportMethods.find((item) => item.id === selectedMethod);
-    Alert.alert(
-      'Donation flow ready',
-      `${donationMode === 'monthly' ? 'Monthly' : 'One-time'} ${selectedAmount} via ${method?.label ?? 'selected method'} will be connected to your payment provider.`,
-    );
+    const method = configuredMethods.find((item) => item.id === selectedMethod);
+    void createDonationIntent({
+      amount: selectedAmount,
+      mode: donationMode,
+      methodId: selectedMethod,
+      currency: configuredCurrency,
+      planId: selectedPlan?.id,
+      metadata: { screen: 'donate' },
+    })
+      .then(() => {
+        Alert.alert(
+          'Donation intent created',
+          `${donationMode === 'monthly' ? 'Monthly' : 'One-time'} ${selectedAmount} via ${method?.label ?? 'selected method'} is ready for payment provider processing.`,
+        );
+      })
+      .catch((error) => {
+        Alert.alert('Donation setup failed', error instanceof Error ? error.message : 'Please try again.');
+      });
   };
 
   return (
@@ -274,7 +311,7 @@ export default function Donate() {
           </View>
 
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
-            {quickAmounts.map((amount) => {
+            {configuredQuickAmounts.map((amount) => {
               const active = selectedAmount === amount;
               return (
                 <TVTouchable
@@ -302,7 +339,7 @@ export default function Donate() {
           </View>
 
           <View style={{ gap: 8, marginTop: 14 }}>
-            {supportMethods.map((method) => {
+            {configuredMethods.map((method) => {
               const active = selectedMethod === method.id;
               return (
                 <TVTouchable
@@ -387,7 +424,7 @@ export default function Donate() {
           </CustomText>
 
           <View style={{ gap: 10, marginTop: 10 }}>
-            {supportPlans.map((plan) => (
+            {configuredPlans.map((plan) => (
               <SupportPlanCard
                 key={plan.id}
                 plan={plan}
@@ -412,7 +449,7 @@ export default function Donate() {
           </CustomText>
 
           <View style={{ gap: 12, marginTop: 12 }}>
-            {impactBreakdown.map((item) => (
+            {configuredImpactBreakdown.map((item) => (
               <ImpactRow key={item.label} label={item.label} value={item.value} icon={item.icon} />
             ))}
           </View>

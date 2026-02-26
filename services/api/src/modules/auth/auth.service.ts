@@ -32,6 +32,26 @@ const toSafeUser = (row: PublicUserRow): SafeUser => ({
   createdAt: toIsoDate(row.created_at),
 });
 
+const ensureUserScaffold = async (user: SafeUser): Promise<void> => {
+  await Promise.all([
+    pool.query(
+      `INSERT INTO user_profiles (user_id, display_name, email)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (user_id) DO UPDATE
+       SET display_name = EXCLUDED.display_name,
+           email = EXCLUDED.email,
+           updated_at = NOW()`,
+      [user.id, user.displayName, user.email],
+    ),
+    pool.query(
+      `INSERT INTO user_preferences (user_id)
+       VALUES ($1)
+       ON CONFLICT (user_id) DO NOTHING`,
+      [user.id],
+    ),
+  ]);
+};
+
 export const registerUser = async (input: RegisterInput): Promise<AuthResponse> => {
   const email = input.email.trim().toLowerCase();
   const displayName = input.displayName.trim();
@@ -65,6 +85,7 @@ export const registerUser = async (input: RegisterInput): Promise<AuthResponse> 
   );
 
   const user = toSafeUser(result.rows[0]);
+  await ensureUserScaffold(user);
   const accessToken = signAccessToken({
     sub: user.id,
     email: user.email,
@@ -101,6 +122,10 @@ export const loginUser = async (input: LoginInput): Promise<AuthResponse> => {
   }
 
   const safeUser = toSafeUser(userRow);
+  await Promise.all([
+    ensureUserScaffold(safeUser),
+    pool.query(`UPDATE app_users SET last_login_at = NOW() WHERE id = $1`, [safeUser.id]),
+  ]);
   const accessToken = signAccessToken({
     sub: safeUser.id,
     email: safeUser.email,

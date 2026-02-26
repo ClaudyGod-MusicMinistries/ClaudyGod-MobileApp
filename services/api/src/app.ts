@@ -5,9 +5,12 @@ import morgan from 'morgan';
 import { env } from './config/env';
 import { errorHandler } from './middleware/errorHandler';
 import { notFoundHandler } from './middleware/notFoundHandler';
+import { analyticsRouter } from './modules/analytics/analytics.routes';
+import { adminAppConfigRouter, mobileAppConfigRouter } from './modules/appConfig/appConfig.routes';
 import { authRouter } from './modules/auth/auth.routes';
 import { contentRouter } from './modules/content/content.routes';
 import { healthRouter } from './modules/health/health.routes';
+import { meRouter } from './modules/me/me.routes';
 import { mobileRouter } from './modules/mobile/mobile.routes';
 import { uploadsRouter } from './modules/uploads/uploads.routes';
 import { youtubeRouter } from './modules/youtube/youtube.routes';
@@ -38,9 +41,13 @@ export const createApp = () => {
 
   app.use('/', healthRouter);
   app.use('/v1/auth', authRouter);
+  app.use('/v1/me', meRouter);
   app.use('/v1/content', contentRouter);
+  app.use('/v1/analytics', analyticsRouter);
   app.use('/v1/uploads', uploadsRouter);
   app.use('/v1/mobile', mobileRouter);
+  app.use('/v1/mobile/app', mobileAppConfigRouter);
+  app.use('/v1/admin/app-config', adminAppConfigRouter);
   app.use('/v1/youtube', youtubeRouter);
 
   app.use(notFoundHandler);
