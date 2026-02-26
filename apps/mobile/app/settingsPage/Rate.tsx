@@ -10,11 +10,14 @@ import { AppButton } from '../../components/ui/AppButton';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { FadeIn } from '../../components/ui/FadeIn';
 import { TVTouchable } from '../../components/ui/TVTouchable';
+import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
+import { createAppRating } from '../../services/userFlowService';
 
 export default function Rate() {
   const theme = useAppTheme();
   const router = useRouter();
   const [rating, setRating] = useState(0);
+  const { config } = useMobileAppConfig();
 
   const scoreLabel = useMemo(() => {
     if (rating >= 5) return 'Excellent';
@@ -25,8 +28,38 @@ export default function Rate() {
     return 'No rating selected';
   }, [rating]);
 
-  const goStore = () => Linking.openURL('https://apps.apple.com/app/idYOUR_APP_ID');
-  const openFeedback = () => router.push('/settingsPage/help');
+  const iosStoreUrl = config?.rate.iosStoreUrl ?? 'https://apps.apple.com/app/idYOUR_APP_ID';
+  const androidStoreUrl =
+    config?.rate.androidStoreUrl ?? 'https://play.google.com/store/apps/details?id=com.claudygod.mobile';
+  const feedbackRoute = config?.rate.feedbackRoute ?? '/settingsPage/help';
+
+  const goStore = async () => {
+    if (rating <= 0) return;
+    try {
+      await createAppRating({ rating, channel: 'mobile' });
+    } catch (error) {
+      console.warn('rating submit failed:', error);
+    }
+    if (rating <= 3) {
+      router.push(feedbackRoute as any);
+      return;
+    }
+    const storeUrl = iosStoreUrl || androidStoreUrl;
+    if (storeUrl) {
+      void Linking.openURL(storeUrl);
+    }
+  };
+
+  const openFeedback = async () => {
+    if (rating > 0) {
+      try {
+        await createAppRating({ rating, channel: 'mobile' });
+      } catch (error) {
+        console.warn('rating submit failed:', error);
+      }
+    }
+    router.push(feedbackRoute as any);
+  };
 
   return (
     <SettingsScaffold

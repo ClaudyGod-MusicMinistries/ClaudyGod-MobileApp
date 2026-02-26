@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Image, ScrollView, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -8,15 +8,71 @@ import { Screen } from '../../components/layout/Screen';
 import { FadeIn } from '../../components/ui/FadeIn';
 import { CustomText } from '../../components/CustomText';
 import { TVTouchable } from '../../components/ui/TVTouchable';
-import { favouritePlaylists, favouriteSongs, recentlyAdded } from '../../data/data';
+import { fetchMeLibrary } from '../../services/userFlowService';
 
 export default function Favourites() {
   const theme = useAppTheme();
   const router = useRouter();
+  const [libraryData, setLibraryData] = useState<{
+    liked: { id: string; title: string; subtitle: string; duration?: string; imageUrl?: string }[];
+    downloaded: { id: string; title: string; subtitle: string; duration?: string; imageUrl?: string }[];
+    playlists: { name: string; items: { id: string; title: string; imageUrl?: string }[] }[];
+  }>({
+    liked: [],
+    downloaded: [],
+    playlists: [],
+  });
 
-  const liked = useMemo(() => favouriteSongs.slice(0, 5), []);
-  const downloaded = useMemo(() => recentlyAdded.slice(0, 4), []);
-  const playlists = useMemo(() => favouritePlaylists.slice(0, 6), []);
+  useEffect(() => {
+    let active = true;
+    void fetchMeLibrary()
+      .then((data) => {
+        if (!active) return;
+        setLibraryData({
+          liked: data.liked.map((item) => ({
+            id: item.id,
+            title: item.title,
+            subtitle: item.subtitle || 'ClaudyGod',
+            duration: item.duration,
+            imageUrl: item.imageUrl,
+          })),
+          downloaded: data.downloaded.map((item) => ({
+            id: item.id,
+            title: item.title,
+            subtitle: item.subtitle || 'ClaudyGod',
+            duration: item.duration,
+            imageUrl: item.imageUrl,
+          })),
+          playlists: data.playlists.map((playlist, index) => ({
+            name: playlist.name,
+            items: playlist.items.map((item) => ({
+              id: `${playlist.name}:${item.id}:${index}`,
+              title: item.title,
+              imageUrl: item.imageUrl,
+            })),
+          })),
+        });
+      })
+      .catch((error) => {
+        console.warn('favourites library fallback:', error);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const liked = useMemo(() => libraryData.liked.slice(0, 5), [libraryData.liked]);
+  const downloaded = useMemo(() => libraryData.downloaded.slice(0, 4), [libraryData.downloaded]);
+  const playlists = useMemo(
+    () =>
+      libraryData.playlists.slice(0, 6).map((playlist) => ({
+        id: playlist.name,
+        title: playlist.name,
+        songCount: playlist.items.length,
+        imageUrl: playlist.items[0]?.imageUrl || 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=800&q=80',
+      })),
+    [libraryData.playlists],
+  );
 
   return (
     <TabScreenWrapper>
@@ -57,9 +113,9 @@ export default function Favourites() {
                 <LibraryRow
                   key={song.id}
                   title={song.title}
-                  subtitle={song.artist}
-                  trailing={song.duration}
-                  imageUrl={song.imageUrl}
+                  subtitle={song.subtitle}
+                  trailing={song.duration || '--:--'}
+                  imageUrl={song.imageUrl || 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=800&q=80'}
                   onPress={() => router.push('/(tabs)/PlaySection')}
                 />
               ))}
@@ -73,9 +129,9 @@ export default function Favourites() {
                 <LibraryRow
                   key={song.id}
                   title={song.title}
-                  subtitle={song.artist}
-                  trailing={song.duration}
-                  imageUrl={song.imageUrl}
+                  subtitle={song.subtitle}
+                  trailing={song.duration || '--:--'}
+                  imageUrl={song.imageUrl || 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=800&q=80'}
                   onPress={() => router.push('/(tabs)/PlaySection')}
                 />
               ))}

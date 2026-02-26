@@ -128,10 +128,10 @@ dist
 # yarn v3
 .pnp.*
 .yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/sdks
+.yarn/patches
+.yarn/plugins
+.yarn/releases
+.yarn/sdks
 !.yarn/versions
 
 # Vite logs files

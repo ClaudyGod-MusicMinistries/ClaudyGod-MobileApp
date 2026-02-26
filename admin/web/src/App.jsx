@@ -70,6 +70,8 @@ export default defineComponent({
     const togglingId = ref(null);
     const youtubePreviewLoading = ref(false);
     const youtubeSyncLoading = ref(false);
+    const appConfigLoading = ref(false);
+    const appConfigSaving = ref(false);
     const notice = ref('');
     const noticeKind = ref('success');
 
@@ -110,11 +112,14 @@ export default defineComponent({
 
     const managedItems = ref([]);
     const youtubePreviewItems = ref([]);
+    const mobileAppConfigEditor = ref('');
+    const mobileAppConfigMeta = ref(null);
     const currentYear = new Date().getFullYear();
 
     const greeting = computed(() => greetingByTime());
     const displayName = computed(() => (currentUser.value && currentUser.value.displayName ? currentUser.value.displayName : 'Client'));
     const isRegisterMode = computed(() => authMode.value === 'register');
+    const isAdmin = computed(() => Boolean(currentUser.value && currentUser.value.role === 'ADMIN'));
 
     const stats = computed(() => {
       const total = managedItems.value.length;
@@ -181,13 +186,59 @@ export default defineComponent({
       }
     }
 
+    async function fetchMobileAppConfig() {
+      if (!isAdmin.value) return;
+      appConfigLoading.value = true;
+      try {
+        const response = await http.get('/v1/admin/app-config');
+        mobileAppConfigEditor.value = JSON.stringify(response.data.config || {}, null, 2);
+        mobileAppConfigMeta.value = response.data.meta || null;
+      } catch (error) {
+        setNotice(toErrorMessage(error, 'Unable to load mobile app config.'), 'error');
+      } finally {
+        appConfigLoading.value = false;
+      }
+    }
+
+    async function saveMobileAppConfig() {
+      if (!isAdmin.value) {
+        setNotice('Only admin accounts can update mobile app configuration.', 'error');
+        return;
+      }
+
+      let parsedConfig;
+      try {
+        parsedConfig = JSON.parse(mobileAppConfigEditor.value || '{}');
+      } catch (error) {
+        setNotice(`Invalid JSON: ${error && error.message ? error.message : 'Parse failed'}`, 'error');
+        return;
+      }
+
+      appConfigSaving.value = true;
+      clearNotice();
+      try {
+        const response = await http.put('/v1/admin/app-config', { config: parsedConfig });
+        mobileAppConfigEditor.value = JSON.stringify(response.data.config || {}, null, 2);
+        mobileAppConfigMeta.value = response.data.meta || null;
+        setNotice('Mobile app config saved successfully.', 'success');
+      } catch (error) {
+        setNotice(toErrorMessage(error, 'Unable to save mobile app config.'), 'error');
+      } finally {
+        appConfigSaving.value = false;
+      }
+    }
+
     async function bootstrapSession() {
       if (!accessToken.value) return;
       appLoading.value = true;
       clearNotice();
       try {
         applyToken(accessToken.value);
-        await Promise.all([fetchCurrentUser(), fetchManagedContent()]);
+        await fetchCurrentUser();
+        await Promise.all([
+          fetchManagedContent(),
+          isAdmin.value ? fetchMobileAppConfig() : Promise.resolve(),
+        ]);
       } catch (error) {
         persistToken(null);
         currentUser.value = null;
@@ -239,7 +290,10 @@ export default defineComponent({
         currentUser.value = authResponse.data.user;
         authForm.password = '';
         authForm.confirmPassword = '';
-        await fetchManagedContent();
+        await Promise.all([
+          fetchManagedContent(),
+          authResponse.data.user && authResponse.data.user.role === 'ADMIN' ? fetchMobileAppConfig() : Promise.resolve(),
+        ]);
         setNotice(
           isRegisterMode.value
             ? `Account created. Welcome, ${authResponse.data.user.displayName}.`
@@ -277,6 +331,8 @@ export default defineComponent({
       currentUser.value = null;
       managedItems.value = [];
       youtubePreviewItems.value = [];
+      mobileAppConfigEditor.value = '';
+      mobileAppConfigMeta.value = null;
       setNotice('You have signed out.', 'success');
     }
 
@@ -348,7 +404,11 @@ export default defineComponent({
       if (!currentUser.value) return;
       clearNotice();
       try {
-        await Promise.all([fetchCurrentUser(), fetchManagedContent()]);
+        await fetchCurrentUser();
+        await Promise.all([
+          fetchManagedContent(),
+          isAdmin.value ? fetchMobileAppConfig() : Promise.resolve(),
+        ]);
         setNotice('Dashboard refreshed.', 'success');
       } catch (error) {
         setNotice(toErrorMessage(error, 'Refresh failed. Please try again.'), 'error');
@@ -857,6 +917,67 @@ export default defineComponent({
                 )) : null}
               </div>
             </section>
+
+            {isAdmin.value ? (
+              <section class="panel glass-panel reveal-up" style={{ animationDelay: '260ms' }}>
+                <div class="section-head split">
+                  <div>
+                    <h2>Mobile App Config</h2>
+                    <p>Edit backend-managed content for mobile Help, About, Privacy, Donate, and Rate screens.</p>
+                  </div>
+                  <div class="button-row">
+                    <button
+                      type="button"
+                      class="ghost-btn compact"
+                      onClick={() => void fetchMobileAppConfig()}
+                      disabled={appConfigLoading.value || appConfigSaving.value}
+                    >
+                      {appConfigLoading.value ? 'Loading...' : 'Reload'}
+                    </button>
+                    <button
+                      type="button"
+                      class="primary-btn"
+                      onClick={() => void saveMobileAppConfig()}
+                      disabled={appConfigLoading.value || appConfigSaving.value || !mobileAppConfigEditor.value.trim()}
+                    >
+                      {appConfigSaving.value ? 'Saving config...' : 'Save Config'}
+                    </button>
+                  </div>
+                </div>
+
+                <div class="helper-card">
+                  <strong>Backend validation enabled</strong>
+                  <p>
+                    This JSON is validated by the API before save. Invalid fields, URLs, or missing sections will be rejected with field-level errors.
+                  </p>
+                </div>
+
+                {mobileAppConfigMeta.value ? (
+                  <div class="meta-grid" style={{ marginTop: '0.85rem', marginBottom: '0.85rem' }}>
+                    <div>
+                      <span class="meta-label">Config Key</span>
+                      <strong>{mobileAppConfigMeta.value.key}</strong>
+                    </div>
+                    <div>
+                      <span class="meta-label">Updated</span>
+                      <strong>{formatDateTime(mobileAppConfigMeta.value.updatedAt)}</strong>
+                    </div>
+                  </div>
+                ) : null}
+
+                <label>
+                  Mobile app experience config (JSON)
+                  <textarea
+                    rows={18}
+                    value={mobileAppConfigEditor.value}
+                    onInput={(event) => { mobileAppConfigEditor.value = readValue(event); }}
+                    placeholder='{"version":1,"privacy":{...},"help":{...}}'
+                    spellcheck={false}
+                    style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace' }}
+                  />
+                </label>
+              </section>
+            ) : null}
           </main>
 
           <section class="support-strip glass-panel reveal-up" style={{ animationDelay: '280ms' }}>

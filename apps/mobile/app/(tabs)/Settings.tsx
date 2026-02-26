@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ScrollView, Switch, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -11,6 +11,7 @@ import { BrandedHeaderCard } from '../../components/layout/BrandedHeaderCard';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { FadeIn } from '../../components/ui/FadeIn';
 import { TVTouchable } from '../../components/ui/TVTouchable';
+import { fetchMePreferences, updateMePreferences } from '../../services/userFlowService';
 
 type SettingItem = {
   icon: string;
@@ -58,6 +59,58 @@ export default function Settings() {
   const [notifications, setNotifications] = useState(true);
   const [autoPlay, setAutoPlay] = useState(true);
   const [highQuality, setHighQuality] = useState(false);
+  const [preferencesLoaded, setPreferencesLoaded] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadPreferences = async () => {
+      try {
+        const response = await fetchMePreferences();
+        if (!active) return;
+        setNotifications(response.preferences.notificationsEnabled);
+        setAutoPlay(response.preferences.autoplayEnabled);
+        setHighQuality(response.preferences.highQualityEnabled);
+      } catch (error) {
+        console.warn('settings preferences fallback:', error);
+      } finally {
+        if (active) setPreferencesLoaded(true);
+      }
+    };
+
+    void loadPreferences();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const persistPreferencePatch = useCallback((patch: Partial<Parameters<typeof updateMePreferences>[0]>) => {
+    if (!preferencesLoaded) return;
+    void updateMePreferences(patch).catch((error) => {
+      console.warn('settings preference sync failed:', error);
+    });
+  }, [preferencesLoaded]);
+
+  const onToggleNotifications = useCallback((value: boolean) => {
+    setNotifications(value);
+    persistPreferencePatch({ notificationsEnabled: value });
+  }, [persistPreferencePatch]);
+
+  const onToggleAutoplay = useCallback((value: boolean) => {
+    setAutoPlay(value);
+    persistPreferencePatch({ autoplayEnabled: value });
+  }, [persistPreferencePatch]);
+
+  const onToggleHighQuality = useCallback((value: boolean) => {
+    setHighQuality(value);
+    persistPreferencePatch({ highQualityEnabled: value });
+  }, [persistPreferencePatch]);
+
+  const onToggleTheme = useCallback(() => {
+    const nextTheme = theme.scheme === 'dark' ? 'light' : 'dark';
+    toggleColorScheme();
+    persistPreferencePatch({ themePreference: nextTheme });
+  }, [persistPreferencePatch, theme.scheme, toggleColorScheme]);
 
   const sections = useMemo(
     () => [
@@ -74,22 +127,22 @@ export default function Settings() {
         title: 'Playback',
         description: 'Auto-play and streaming quality',
         items: [
-          { icon: 'play-arrow', label: 'Auto-play', hint: 'Continue to related media', type: 'switch', value: autoPlay, onToggle: setAutoPlay },
-          { icon: 'hd', label: 'High quality', hint: 'Use more data for better sound', type: 'switch', value: highQuality, onToggle: setHighQuality },
+          { icon: 'play-arrow', label: 'Auto-play', hint: 'Continue to related media', type: 'switch', value: autoPlay, onToggle: onToggleAutoplay },
+          { icon: 'hd', label: 'High quality', hint: 'Use more data for better sound', type: 'switch', value: highQuality, onToggle: onToggleHighQuality },
         ] as SettingItem[],
       },
       {
         title: 'Preferences',
         description: 'Notifications and interface behavior',
         items: [
-          { icon: 'notifications', label: 'Notifications', hint: 'Reminders for lives and releases', type: 'switch', value: notifications, onToggle: setNotifications },
+          { icon: 'notifications', label: 'Notifications', hint: 'Reminders for lives and releases', type: 'switch', value: notifications, onToggle: onToggleNotifications },
           {
             icon: 'dark-mode',
             label: 'Dark mode',
             hint: 'Keep premium dark interface enabled',
             type: 'switch',
             value: theme.scheme === 'dark',
-            onToggle: () => toggleColorScheme(),
+            onToggle: () => onToggleTheme(),
           },
         ] as SettingItem[],
       },
@@ -103,7 +156,7 @@ export default function Settings() {
         ] as SettingItem[],
       },
     ],
-    [autoPlay, highQuality, notifications, router, theme.scheme, toggleColorScheme],
+    [autoPlay, highQuality, notifications, onToggleAutoplay, onToggleHighQuality, onToggleNotifications, onToggleTheme, router, theme.scheme],
   );
 
   const quickLabels = ['Account', 'Playback', 'Preferences', 'Support'];
