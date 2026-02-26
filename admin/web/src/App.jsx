@@ -57,6 +57,31 @@ function greetingByTime() {
   return 'Good evening';
 }
 
+function parseCsvList(value) {
+  return String(value || '')
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function formatBytes(bytes) {
+  const value = Number(bytes || 0);
+  if (!Number.isFinite(value) || value <= 0) return '0 B';
+  if (value < 1024) return `${value} B`;
+  if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
+  if (value < 1024 * 1024 * 1024) return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(value / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+}
+
+function acceptFromPolicy(policy) {
+  if (!policy || !Array.isArray(policy.allowedExtensions) || policy.allowedExtensions.length === 0) return undefined;
+  return policy.allowedExtensions.join(',');
+}
+
+function todayDateInputValue() {
+  return new Date().toISOString().slice(0, 10);
+}
+
 export default defineComponent({
   name: 'ClaudyContentStudio',
   setup() {
@@ -72,6 +97,12 @@ export default defineComponent({
     const youtubeSyncLoading = ref(false);
     const appConfigLoading = ref(false);
     const appConfigSaving = ref(false);
+    const wordOfDayLoading = ref(false);
+    const wordOfDaySaving = ref(false);
+    const deletingContentId = ref(null);
+    const uploadingAsset = ref(false);
+    const uploadPoliciesLoading = ref(false);
+    const uploadPolicies = ref([]);
     const notice = ref('');
     const noticeKind = ref('success');
 
@@ -89,6 +120,8 @@ export default defineComponent({
       description: '',
       type: 'audio',
       url: '',
+      thumbnailUrl: '',
+      appSectionsCsv: '',
       visibility: 'published',
     });
 
@@ -108,12 +141,24 @@ export default defineComponent({
       channelId: '',
       maxResults: YOUTUBE_SYNC_DEFAULT_LIMIT,
       visibility: 'draft',
+      appSectionsCsv: '',
     });
 
     const managedItems = ref([]);
     const youtubePreviewItems = ref([]);
     const mobileAppConfigEditor = ref('');
     const mobileAppConfigMeta = ref(null);
+    const wordOfDayHistory = ref([]);
+    const wordOfDayCurrent = ref(null);
+    const wordOfDayForm = reactive({
+      title: 'Word for Today',
+      passage: '',
+      verse: '',
+      reflection: '',
+      messageDate: todayDateInputValue(),
+      status: 'published',
+      notifySubscribers: true,
+    });
     const currentYear = new Date().getFullYear();
 
     const greeting = computed(() => greetingByTime());
@@ -146,6 +191,16 @@ export default defineComponent({
         return haystack.includes(query);
       });
     });
+
+    function getUploadPolicy(kind) {
+      return (uploadPolicies.value || []).find((item) => item && item.kind === kind) || null;
+    }
+
+    function resolveMediaAssetKind() {
+      if (createForm.type === 'audio') return 'audio';
+      if (createForm.type === 'video') return 'video';
+      return null;
+    }
 
     function setNotice(message, kind = 'success') {
       notice.value = message;
@@ -183,6 +238,19 @@ export default defineComponent({
         pagination.total = response.data.total || 0;
       } finally {
         contentLoading.value = false;
+      }
+    }
+
+    async function fetchUploadPolicies() {
+      if (!isAdmin.value) return;
+      uploadPoliciesLoading.value = true;
+      try {
+        const response = await http.get('/v1/uploads/policies');
+        uploadPolicies.value = Array.isArray(response.data && response.data.assets) ? response.data.assets : [];
+      } catch (error) {
+        setNotice(toErrorMessage(error, 'Unable to load upload policies.'), 'error');
+      } finally {
+        uploadPoliciesLoading.value = false;
       }
     }
 
@@ -228,6 +296,108 @@ export default defineComponent({
       }
     }
 
+    async function fetchWordOfDayDashboard() {
+      if (!isAdmin.value) return;
+      wordOfDayLoading.value = true;
+      try {
+        const response = await http.get('/v1/admin/word-of-day', { params: { limit: 12 } });
+        wordOfDayHistory.value = response.data.items || [];
+        wordOfDayCurrent.value = response.data.current || null;
+
+        const current = response.data.current;
+        if (current) {
+          wordOfDayForm.title = current.title || 'Word for Today';
+          wordOfDayForm.passage = current.passage || '';
+          wordOfDayForm.verse = current.verse || '';
+          wordOfDayForm.reflection = current.reflection || '';
+          wordOfDayForm.messageDate = current.messageDate || todayDateInputValue();
+          wordOfDayForm.status = current.status || 'published';
+        }
+      } catch (error) {
+        setNotice(toErrorMessage(error, 'Unable to load Word for Today dashboard.'), 'error');
+      } finally {
+        wordOfDayLoading.value = false;
+      }
+    }
+
+    async function saveWordOfDay() {
+      if (!isAdmin.value) {
+        setNotice('Only admin accounts can publish Word for Today.', 'error');
+        return;
+      }
+      if (!wordOfDayForm.passage.trim() || !wordOfDayForm.verse.trim() || !wordOfDayForm.reflection.trim()) {
+        setNotice('Please complete passage, verse, and reflection before publishing Word for Today.', 'error');
+        return;
+      }
+
+      wordOfDaySaving.value = true;
+      clearNotice();
+      try {
+        const response = await http.put('/v1/admin/word-of-day/current', {
+          title: wordOfDayForm.title.trim() || 'Word for Today',
+          passage: wordOfDayForm.passage.trim(),
+          verse: wordOfDayForm.verse.trim(),
+          reflection: wordOfDayForm.reflection.trim(),
+          messageDate: wordOfDayForm.messageDate || undefined,
+          status: wordOfDayForm.status,
+          notifySubscribers: Boolean(wordOfDayForm.notifySubscribers),
+        });
+
+        const notifications = response.data && response.data.notifications ? response.data.notifications : { recipientCount: 0, jobsQueued: 0 };
+        await fetchWordOfDayDashboard();
+        setNotice(
+          notifications.jobsQueued > 0
+            ? `Word for Today saved and email notifications queued for ${notifications.recipientCount} user(s).`
+            : 'Word for Today saved successfully.',
+          'success',
+        );
+      } catch (error) {
+        setNotice(toErrorMessage(error, 'Unable to save Word for Today.'), 'error');
+      } finally {
+        wordOfDaySaving.value = false;
+      }
+    }
+
+    async function updateContentItem(itemId, patch) {
+      const response = await http.patch(`/v1/content/${itemId}`, patch);
+      managedItems.value = managedItems.value.map((entry) => (entry.id === itemId ? response.data : entry));
+      return response.data;
+    }
+
+    async function assignContentSections(item) {
+      const current = Array.isArray(item.appSections) ? item.appSections.join(', ') : '';
+      const nextValue = window.prompt(
+        'Assign app sections (comma-separated). Example: ClaudyGod Music, ClaudyGod Nuggets of Truth',
+        current,
+      );
+      if (nextValue === null) return;
+
+      clearNotice();
+      try {
+        await updateContentItem(item.id, { appSections: parseCsvList(nextValue) });
+        setNotice('Content sections updated for mobile app placement.', 'success');
+      } catch (error) {
+        setNotice(toErrorMessage(error, 'Unable to update content sections.'), 'error');
+      }
+    }
+
+    async function deleteContentItem(item) {
+      if (!window.confirm(`Delete "${item.title}"? This cannot be undone.`)) return;
+
+      deletingContentId.value = item.id;
+      clearNotice();
+      try {
+        await http.delete(`/v1/content/${item.id}`);
+        managedItems.value = managedItems.value.filter((entry) => entry.id !== item.id);
+        pagination.total = Math.max(0, Number(pagination.total || 0) - 1);
+        setNotice('Content deleted successfully.', 'success');
+      } catch (error) {
+        setNotice(toErrorMessage(error, 'Unable to delete this content item.'), 'error');
+      } finally {
+        deletingContentId.value = null;
+      }
+    }
+
     async function bootstrapSession() {
       if (!accessToken.value) return;
       appLoading.value = true;
@@ -237,7 +407,9 @@ export default defineComponent({
         await fetchCurrentUser();
         await Promise.all([
           fetchManagedContent(),
+          isAdmin.value ? fetchUploadPolicies() : Promise.resolve(),
           isAdmin.value ? fetchMobileAppConfig() : Promise.resolve(),
+          isAdmin.value ? fetchWordOfDayDashboard() : Promise.resolve(),
         ]);
       } catch (error) {
         persistToken(null);
@@ -292,7 +464,9 @@ export default defineComponent({
         authForm.confirmPassword = '';
         await Promise.all([
           fetchManagedContent(),
+          authResponse.data.user && authResponse.data.user.role === 'ADMIN' ? fetchUploadPolicies() : Promise.resolve(),
           authResponse.data.user && authResponse.data.user.role === 'ADMIN' ? fetchMobileAppConfig() : Promise.resolve(),
+          authResponse.data.user && authResponse.data.user.role === 'ADMIN' ? fetchWordOfDayDashboard() : Promise.resolve(),
         ]);
         setNotice(
           isRegisterMode.value
@@ -331,8 +505,11 @@ export default defineComponent({
       currentUser.value = null;
       managedItems.value = [];
       youtubePreviewItems.value = [];
+      uploadPolicies.value = [];
       mobileAppConfigEditor.value = '';
       mobileAppConfigMeta.value = null;
+      wordOfDayHistory.value = [];
+      wordOfDayCurrent.value = null;
       setNotice('You have signed out.', 'success');
     }
 
@@ -358,6 +535,10 @@ export default defineComponent({
         setNotice('Please add the media link for audio or video content.', 'error');
         return;
       }
+      if (needsUrl && !createForm.thumbnailUrl.trim()) {
+        setNotice('Please upload or add a thumbnail image (max 5MB) for audio/video content.', 'error');
+        return;
+      }
 
       savingContent.value = true;
       try {
@@ -366,18 +547,104 @@ export default defineComponent({
           description: createForm.description.trim(),
           type: createForm.type,
           url: createForm.url.trim() || undefined,
+          thumbnailUrl: createForm.thumbnailUrl.trim() || undefined,
+          sourceKind: 'upload',
+          appSections: parseCsvList(createForm.appSectionsCsv),
           visibility: createForm.visibility,
         });
 
         createForm.title = '';
         createForm.description = '';
         createForm.url = '';
+        createForm.thumbnailUrl = '';
+        createForm.appSectionsCsv = '';
         await fetchManagedContent();
         setNotice(createForm.visibility === 'published' ? 'Content published successfully.' : 'Draft saved successfully.', 'success');
       } catch (error) {
         setNotice(toErrorMessage(error, 'Unable to save this content right now.'), 'error');
       } finally {
         savingContent.value = false;
+      }
+    }
+
+    async function handleAssetUpload(event, target = 'media') {
+      const input = event && event.target ? event.target : null;
+      const file = input && input.files && input.files[0] ? input.files[0] : null;
+      if (!file) return;
+      if (!currentUser.value) {
+        setNotice('Please sign in to upload files.', 'error');
+        if (input) input.value = '';
+        return;
+      }
+
+      const assetKind = target === 'thumbnail' ? 'thumbnail' : resolveMediaAssetKind();
+      if (!assetKind) {
+        setNotice('Set content type to audio or video before uploading a media file.', 'error');
+        if (input) input.value = '';
+        return;
+      }
+
+      let policy = getUploadPolicy(assetKind);
+      if (!policy) {
+        await fetchUploadPolicies();
+        policy = getUploadPolicy(assetKind);
+      }
+
+      if (policy) {
+        const normalizedMime = String(file.type || '').toLowerCase();
+        if (normalizedMime && Array.isArray(policy.allowedMimeTypes) && !policy.allowedMimeTypes.includes(normalizedMime)) {
+          setNotice(`${policy.label} format not allowed. Accepted: ${policy.allowedExtensions.join(', ')}`, 'error');
+          if (input) input.value = '';
+          return;
+        }
+        if (Number(file.size || 0) > Number(policy.maxBytes || 0)) {
+          setNotice(`${policy.label} exceeds the maximum size (${formatBytes(policy.maxBytes)}).`, 'error');
+          if (input) input.value = '';
+          return;
+        }
+      }
+
+      uploadingAsset.value = true;
+      clearNotice();
+      try {
+        const signed = await http.post('/v1/uploads/signed-url', {
+          fileName: file.name,
+          mimeType: file.type || 'application/octet-stream',
+          fileSizeBytes: file.size,
+          assetKind,
+          folder: policy && policy.recommendedFolder ? policy.recommendedFolder : undefined,
+          clientReference: 'admin-dashboard',
+        });
+
+        const upload = signed.data && signed.data.upload ? signed.data.upload : null;
+        if (!upload || !upload.signedUrl) {
+          throw new Error('Invalid signed upload response');
+        }
+
+        const putResponse = await fetch(upload.signedUrl, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': file.type || 'application/octet-stream',
+          },
+          body: file,
+        });
+
+        if (!putResponse.ok) {
+          throw new Error(`Upload failed (${putResponse.status})`);
+        }
+
+        if (assetKind === 'thumbnail') {
+          createForm.thumbnailUrl = upload.publicUrl || createForm.thumbnailUrl;
+        } else {
+          createForm.url = upload.publicUrl || createForm.url;
+        }
+
+        setNotice(`Uploaded ${file.name}. ${assetKind === 'thumbnail' ? 'Thumbnail URL' : 'Media link'} was added to the form.`, 'success');
+      } catch (error) {
+        setNotice(toErrorMessage(error, 'File upload failed. Check storage configuration and try again.'), 'error');
+      } finally {
+        uploadingAsset.value = false;
+        if (input) input.value = '';
       }
     }
 
@@ -407,7 +674,9 @@ export default defineComponent({
         await fetchCurrentUser();
         await Promise.all([
           fetchManagedContent(),
+          isAdmin.value ? fetchUploadPolicies() : Promise.resolve(),
           isAdmin.value ? fetchMobileAppConfig() : Promise.resolve(),
+          isAdmin.value ? fetchWordOfDayDashboard() : Promise.resolve(),
         ]);
         setNotice('Dashboard refreshed.', 'success');
       } catch (error) {
@@ -447,6 +716,7 @@ export default defineComponent({
           channelId: youtubeSyncState.channelId.trim() || undefined,
           maxResults: Number(youtubeSyncState.maxResults) || YOUTUBE_SYNC_DEFAULT_LIMIT,
           visibility: youtubeSyncState.visibility,
+          appSections: parseCsvList(youtubeSyncState.appSectionsCsv),
         });
 
         const summary = response.data && response.data.summary ? response.data.summary : { created: 0, updated: 0, skipped: 0 };
@@ -751,10 +1021,69 @@ export default defineComponent({
                   />
                 </label>
 
+                <div class="grid-2">
+                  <label>
+                    Upload media ({createForm.type === 'video' ? 'video' : createForm.type === 'audio' ? 'audio' : 'select audio/video first'})
+                    <input
+                      type="file"
+                      accept={acceptFromPolicy(getUploadPolicy(resolveMediaAssetKind())) || 'audio/*,video/*'}
+                      onChange={(event) => void handleAssetUpload(event, 'media')}
+                      disabled={uploadingAsset.value || (createForm.type !== 'audio' && createForm.type !== 'video')}
+                    />
+                    <small class="subtle-text">
+                      {(() => {
+                        const kind = resolveMediaAssetKind();
+                        const policy = kind ? getUploadPolicy(kind) : null;
+                        if (!kind) return 'Select content type Audio or Video to upload a media file.';
+                        if (!policy) return uploadPoliciesLoading.value ? 'Loading upload rules...' : 'Upload rules will load from backend.';
+                        return `Allowed: ${policy.allowedExtensions.join(', ')} • Max ${formatBytes(policy.maxBytes)}`;
+                      })()}
+                    </small>
+                  </label>
+
+                  <label>
+                    Upload thumbnail (required for audio/video)
+                    <input
+                      type="file"
+                      accept={acceptFromPolicy(getUploadPolicy('thumbnail')) || 'image/jpeg,image/png,image/webp'}
+                      onChange={(event) => void handleAssetUpload(event, 'thumbnail')}
+                      disabled={uploadingAsset.value}
+                    />
+                    <small class="subtle-text">
+                      {(() => {
+                        const policy = getUploadPolicy('thumbnail');
+                        if (!policy) return uploadPoliciesLoading.value ? 'Loading thumbnail rules...' : 'Thumbnail rules will load from backend.';
+                        return `Allowed: ${policy.allowedExtensions.join(', ')} • Max ${formatBytes(policy.maxBytes)}`;
+                      })()}
+                    </small>
+                  </label>
+                </div>
+                {uploadingAsset.value ? <div class="muted-chip">Uploading to storage...</div> : null}
+
+                <div class="grid-2">
+                  <label>
+                    Thumbnail URL (optional)
+                    <input
+                      value={createForm.thumbnailUrl}
+                      onInput={(event) => { createForm.thumbnailUrl = readValue(event); }}
+                      placeholder="Paste image URL for posters/cards"
+                    />
+                  </label>
+
+                  <label>
+                    App sections (comma-separated)
+                    <input
+                      value={createForm.appSectionsCsv}
+                      onInput={(event) => { createForm.appSectionsCsv = readValue(event); }}
+                      placeholder="ClaudyGod Music, ClaudyGod Nuggets of Truth"
+                    />
+                  </label>
+                </div>
+
                 <div class="helper-card">
                   <strong>Tip</strong>
                   <p>
-                    Use <em>Draft</em> while reviewing new content, then switch to <em>Published</em> when it is ready for users.
+                    Use <em>Draft</em> while reviewing new content, then switch to <em>Published</em> when it is ready for users. App sections control where cards appear on the mobile home page.
                   </p>
                 </div>
 
@@ -795,6 +1124,15 @@ export default defineComponent({
                       </select>
                     </label>
                   </div>
+
+                  <label>
+                    Assign imported videos to app sections (comma-separated)
+                    <input
+                      value={youtubeSyncState.appSectionsCsv}
+                      onInput={(event) => { youtubeSyncState.appSectionsCsv = readValue(event); }}
+                      placeholder="ClaudyGod Music, ClaudyGod Messages"
+                    />
+                  </label>
 
                   <div class="button-row">
                     <button type="button" class="ghost-btn compact" onClick={() => void fetchYouTubePreview()} disabled={youtubePreviewLoading.value || youtubeSyncLoading.value}>
@@ -877,15 +1215,33 @@ export default defineComponent({
                       <div class="pill-row">
                         <span class={['pill', `pill-${item.type}`]}>{item.type}</span>
                         <span class={['pill', item.visibility === 'published' ? 'pill-live' : 'pill-draft']}>{item.visibility}</span>
+                        {item.sourceKind ? <span class="pill">{item.sourceKind}</span> : null}
                       </div>
-                      <button
-                        type="button"
-                        class="ghost-btn compact"
-                        onClick={() => void toggleVisibility(item)}
-                        disabled={togglingId.value === item.id}
-                      >
-                        {togglingId.value === item.id ? 'Updating...' : item.visibility === 'published' ? 'Move to Draft' : 'Publish'}
-                      </button>
+                      <div class="button-row">
+                        <button
+                          type="button"
+                          class="ghost-btn compact"
+                          onClick={() => void toggleVisibility(item)}
+                          disabled={togglingId.value === item.id}
+                        >
+                          {togglingId.value === item.id ? 'Updating...' : item.visibility === 'published' ? 'Move to Draft' : 'Publish'}
+                        </button>
+                        <button
+                          type="button"
+                          class="ghost-btn compact"
+                          onClick={() => void assignContentSections(item)}
+                        >
+                          Assign Sections
+                        </button>
+                        <button
+                          type="button"
+                          class="danger-btn"
+                          onClick={() => void deleteContentItem(item)}
+                          disabled={deletingContentId.value === item.id}
+                        >
+                          {deletingContentId.value === item.id ? 'Deleting...' : 'Delete'}
+                        </button>
+                      </div>
                     </div>
 
                     <div class="card-body">
@@ -901,6 +1257,9 @@ export default defineComponent({
                       ) : (
                         <span class="muted-chip">No media link added</span>
                       )}
+                      {Array.isArray(item.appSections) && item.appSections.length ? (
+                        <span class="muted-chip">Sections: {item.appSections.join(', ')}</span>
+                      ) : null}
                     </div>
 
                     <div class="meta-grid">
@@ -919,64 +1278,211 @@ export default defineComponent({
             </section>
 
             {isAdmin.value ? (
-              <section class="panel glass-panel reveal-up" style={{ animationDelay: '260ms' }}>
-                <div class="section-head split">
-                  <div>
-                    <h2>Mobile App Config</h2>
-                    <p>Edit backend-managed content for mobile Help, About, Privacy, Donate, and Rate screens.</p>
-                  </div>
-                  <div class="button-row">
-                    <button
-                      type="button"
-                      class="ghost-btn compact"
-                      onClick={() => void fetchMobileAppConfig()}
-                      disabled={appConfigLoading.value || appConfigSaving.value}
-                    >
-                      {appConfigLoading.value ? 'Loading...' : 'Reload'}
-                    </button>
-                    <button
-                      type="button"
-                      class="primary-btn"
-                      onClick={() => void saveMobileAppConfig()}
-                      disabled={appConfigLoading.value || appConfigSaving.value || !mobileAppConfigEditor.value.trim()}
-                    >
-                      {appConfigSaving.value ? 'Saving config...' : 'Save Config'}
-                    </button>
-                  </div>
-                </div>
-
-                <div class="helper-card">
-                  <strong>Backend validation enabled</strong>
-                  <p>
-                    This JSON is validated by the API before save. Invalid fields, URLs, or missing sections will be rejected with field-level errors.
-                  </p>
-                </div>
-
-                {mobileAppConfigMeta.value ? (
-                  <div class="meta-grid" style={{ marginTop: '0.85rem', marginBottom: '0.85rem' }}>
+              <>
+                <section class="panel glass-panel reveal-up" style={{ animationDelay: '260ms' }}>
+                  <div class="section-head split">
                     <div>
-                      <span class="meta-label">Config Key</span>
-                      <strong>{mobileAppConfigMeta.value.key}</strong>
+                      <h2>Mobile App Config</h2>
+                      <p>Edit backend-managed content for mobile Help, About, Privacy, Donate, and Rate screens.</p>
                     </div>
-                    <div>
-                      <span class="meta-label">Updated</span>
-                      <strong>{formatDateTime(mobileAppConfigMeta.value.updatedAt)}</strong>
+                    <div class="button-row">
+                      <button
+                        type="button"
+                        class="ghost-btn compact"
+                        onClick={() => void fetchMobileAppConfig()}
+                        disabled={appConfigLoading.value || appConfigSaving.value}
+                      >
+                        {appConfigLoading.value ? 'Loading...' : 'Reload'}
+                      </button>
+                      <button
+                        type="button"
+                        class="primary-btn"
+                        onClick={() => void saveMobileAppConfig()}
+                        disabled={appConfigLoading.value || appConfigSaving.value || !mobileAppConfigEditor.value.trim()}
+                      >
+                        {appConfigSaving.value ? 'Saving config...' : 'Save Config'}
+                      </button>
                     </div>
                   </div>
-                ) : null}
 
-                <label>
-                  Mobile app experience config (JSON)
-                  <textarea
-                    rows={18}
-                    value={mobileAppConfigEditor.value}
-                    onInput={(event) => { mobileAppConfigEditor.value = readValue(event); }}
-                    placeholder='{"version":1,"privacy":{...},"help":{...}}'
-                    spellcheck={false}
-                    style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace' }}
-                  />
-                </label>
-              </section>
+                  <div class="helper-card">
+                    <strong>Backend validation enabled</strong>
+                    <p>
+                      This JSON is validated by the API before save. Invalid fields, URLs, or missing sections will be rejected with field-level errors.
+                    </p>
+                  </div>
+
+                  {mobileAppConfigMeta.value ? (
+                    <div class="meta-grid" style={{ marginTop: '0.85rem', marginBottom: '0.85rem' }}>
+                      <div>
+                        <span class="meta-label">Config Key</span>
+                        <strong>{mobileAppConfigMeta.value.key}</strong>
+                      </div>
+                      <div>
+                        <span class="meta-label">Updated</span>
+                        <strong>{formatDateTime(mobileAppConfigMeta.value.updatedAt)}</strong>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  <label>
+                    Mobile app experience config (JSON)
+                    <textarea
+                      rows={18}
+                      value={mobileAppConfigEditor.value}
+                      onInput={(event) => { mobileAppConfigEditor.value = readValue(event); }}
+                      placeholder='{"version":1,"privacy":{...},"help":{...}}'
+                      spellcheck={false}
+                      style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace' }}
+                    />
+                  </label>
+                </section>
+
+                <section class="panel glass-panel reveal-up" style={{ animationDelay: '300ms' }}>
+                  <div class="section-head split">
+                    <div>
+                      <h2>Word for Today</h2>
+                      <p>Publish daily Bible messages to the mobile home screen and notify users by email.</p>
+                    </div>
+                    <div class="button-row">
+                      <button
+                        type="button"
+                        class="ghost-btn compact"
+                        onClick={() => void fetchWordOfDayDashboard()}
+                        disabled={wordOfDayLoading.value || wordOfDaySaving.value}
+                      >
+                        {wordOfDayLoading.value ? 'Loading...' : 'Reload'}
+                      </button>
+                      <button
+                        type="button"
+                        class="primary-btn"
+                        onClick={() => void saveWordOfDay()}
+                        disabled={wordOfDayLoading.value || wordOfDaySaving.value}
+                      >
+                        {wordOfDaySaving.value ? 'Publishing...' : 'Save / Publish Word'}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="grid-2">
+                    <label>
+                      Title
+                      <input
+                        value={wordOfDayForm.title}
+                        onInput={(event) => { wordOfDayForm.title = readValue(event); }}
+                        placeholder="Word for Today"
+                      />
+                    </label>
+                    <label>
+                      Message date
+                      <input
+                        type="date"
+                        value={wordOfDayForm.messageDate}
+                        onInput={(event) => { wordOfDayForm.messageDate = readValue(event); }}
+                      />
+                    </label>
+                  </div>
+
+                  <div class="grid-2">
+                    <label>
+                      Passage
+                      <input
+                        value={wordOfDayForm.passage}
+                        onInput={(event) => { wordOfDayForm.passage = readValue(event); }}
+                        placeholder="Psalm 119:105"
+                      />
+                    </label>
+                    <label>
+                      Status
+                      <select value={wordOfDayForm.status} onChange={(event) => { wordOfDayForm.status = readValue(event); }}>
+                        <option value="draft">draft</option>
+                        <option value="published">published</option>
+                        <option value="archived">archived</option>
+                      </select>
+                    </label>
+                  </div>
+
+                  <label>
+                    Verse
+                    <textarea
+                      rows={4}
+                      value={wordOfDayForm.verse}
+                      onInput={(event) => { wordOfDayForm.verse = readValue(event); }}
+                      placeholder="Your word is a lamp to my feet and a light to my path."
+                    />
+                  </label>
+
+                  <label>
+                    Reflection / Message
+                    <textarea
+                      rows={5}
+                      value={wordOfDayForm.reflection}
+                      onInput={(event) => { wordOfDayForm.reflection = readValue(event); }}
+                      placeholder="Short daily reflection for users."
+                    />
+                  </label>
+
+                  <label class="checkbox-row" style={{ marginTop: '0.5rem' }}>
+                    <input
+                      type="checkbox"
+                      class="inline-checkbox"
+                      checked={wordOfDayForm.notifySubscribers}
+                      onChange={(event) => { wordOfDayForm.notifySubscribers = readChecked(event); }}
+                    />
+                    <span>
+                      Email all active client users
+                      <small>Queues email notifications for users with notifications enabled.</small>
+                    </span>
+                  </label>
+
+                  {wordOfDayCurrent.value ? (
+                    <div class="helper-card" style={{ marginTop: '0.9rem' }}>
+                      <strong>Current published word</strong>
+                      <p>
+                        {wordOfDayCurrent.value.messageDate} • {wordOfDayCurrent.value.passage}
+                        {wordOfDayCurrent.value.notifiedAt ? ` • Emails queued ${formatDateTime(wordOfDayCurrent.value.notifiedAt)}` : ''}
+                      </p>
+                    </div>
+                  ) : null}
+
+                  <div class="list-wrap" style={{ marginTop: '0.8rem' }}>
+                    {wordOfDayHistory.value.length === 0 ? (
+                      <div class="empty-state">No Word for Today entries yet.</div>
+                    ) : wordOfDayHistory.value.map((entry) => (
+                      <article class="content-card" key={entry.id}>
+                        <div class="card-top">
+                          <div class="pill-row">
+                            <span class="pill">word</span>
+                            <span class={['pill', entry.status === 'published' ? 'pill-live' : 'pill-draft']}>{entry.status}</span>
+                          </div>
+                          <span class="muted-chip">{entry.messageDate}</span>
+                        </div>
+                        <div class="card-body">
+                          <h3>{entry.passage}</h3>
+                          <p>{truncate(entry.verse, 160)}</p>
+                        </div>
+                        <div class="card-link-row">
+                          <span class="muted-chip">{entry.notifiedAt ? `Emails queued: ${formatDateTime(entry.notifiedAt)}` : 'No email queue yet'}</span>
+                          <button
+                            type="button"
+                            class="ghost-btn compact"
+                            onClick={() => {
+                              wordOfDayForm.title = entry.title || 'Word for Today';
+                              wordOfDayForm.passage = entry.passage || '';
+                              wordOfDayForm.verse = entry.verse || '';
+                              wordOfDayForm.reflection = entry.reflection || '';
+                              wordOfDayForm.messageDate = entry.messageDate || todayDateInputValue();
+                              wordOfDayForm.status = entry.status || 'published';
+                            }}
+                          >
+                            Load
+                          </button>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                </section>
+              </>
             ) : null}
           </main>
 

@@ -30,8 +30,7 @@ const folderSchema = z
   .max(80)
   .regex(/^[a-zA-Z0-9/_-]+$/, 'folder can only contain letters, numbers, slash, underscore, and dash')
   .refine((value) => !value.startsWith('/') && !value.endsWith('/'), 'folder must not start or end with "/"')
-  .refine((value) => !value.includes('..'), 'folder must not contain ".."')
-  .default('mobile-content');
+  .refine((value) => !value.includes('..'), 'folder must not contain ".."');
 
 const clientReferenceSchema = z
   .string()
@@ -41,11 +40,96 @@ const clientReferenceSchema = z
   .regex(/^[a-zA-Z0-9._:@-]+$/, 'clientReference contains unsupported characters')
   .optional();
 
+const fileSizeBytesSchema = z.coerce
+  .number()
+  .int()
+  .min(1, 'fileSizeBytes must be greater than 0')
+  .max(1024 * 1024 * 1024, 'fileSizeBytes is too large')
+  .optional();
+
+export const uploadAssetKindSchema = z.enum(['thumbnail', 'audio', 'video']);
+
+type UploadAssetKind = z.infer<typeof uploadAssetKindSchema>;
+
+interface UploadAssetPolicy {
+  kind: UploadAssetKind;
+  label: string;
+  maxBytes: number;
+  allowedMimeTypes: readonly string[];
+  allowedExtensions: readonly string[];
+  recommendedFolder: string;
+}
+
+export const uploadPolicies: Record<UploadAssetKind, UploadAssetPolicy> = {
+  thumbnail: {
+    kind: 'thumbnail',
+    label: 'Thumbnail Image',
+    maxBytes: 5 * 1024 * 1024,
+    allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
+    allowedExtensions: ['.jpg', '.jpeg', '.png', '.webp'],
+    recommendedFolder: 'admin-thumbnails',
+  },
+  audio: {
+    kind: 'audio',
+    label: 'Audio File',
+    maxBytes: 150 * 1024 * 1024,
+    allowedMimeTypes: [
+      'audio/mpeg',
+      'audio/mp3',
+      'audio/mp4',
+      'audio/x-m4a',
+      'audio/aac',
+      'audio/wav',
+      'audio/x-wav',
+      'audio/flac',
+      'audio/x-flac',
+      'audio/ogg',
+      'audio/webm',
+    ],
+    allowedExtensions: ['.mp3', '.m4a', '.aac', '.wav', '.flac', '.ogg', '.webm'],
+    recommendedFolder: 'admin-audio',
+  },
+  video: {
+    kind: 'video',
+    label: 'Video File',
+    maxBytes: 500 * 1024 * 1024,
+    allowedMimeTypes: ['video/mp4', 'video/quicktime', 'video/webm', 'video/x-matroska'],
+    allowedExtensions: ['.mp4', '.mov', '.webm', '.mkv'],
+    recommendedFolder: 'admin-video',
+  },
+};
+
+export const uploadPoliciesResponse = {
+  version: '2026-02-26',
+  assets: Object.values(uploadPolicies).map((policy) => ({
+    kind: policy.kind,
+    label: policy.label,
+    maxBytes: policy.maxBytes,
+    maxMegabytes: Number((policy.maxBytes / (1024 * 1024)).toFixed(2)),
+    allowedMimeTypes: [...policy.allowedMimeTypes],
+    allowedExtensions: [...policy.allowedExtensions],
+    recommendedFolder: policy.recommendedFolder,
+  })),
+} as const;
+
 export const signedUploadRequestSchema = z
   .object({
     fileName: safeFileNameSchema,
     mimeType: mimeTypeSchema,
-    folder: folderSchema,
+    fileSizeBytes: fileSizeBytesSchema,
+    assetKind: uploadAssetKindSchema.optional(),
+    folder: folderSchema.optional(),
     clientReference: clientReferenceSchema,
+  })
+  .strict();
+
+export const adminSignedUploadRequestSchema = signedUploadRequestSchema
+  .extend({
+    fileSizeBytes: z.coerce
+      .number()
+      .int()
+      .min(1, 'fileSizeBytes must be greater than 0')
+      .max(1024 * 1024 * 1024, 'fileSizeBytes is too large'),
+    assetKind: uploadAssetKindSchema,
   })
   .strict();

@@ -4,12 +4,17 @@ import { HttpError } from '../../lib/httpError';
 import { validateSchema } from '../../lib/validation';
 import { authenticate } from '../../middleware/authenticate';
 import {
+  assignContentSectionsSchema,
   contentIdParamsSchema,
   createContentSchema,
   listContentQuerySchema,
+  updateContentSchema,
   updateVisibilitySchema,
 } from './content.schema';
 import {
+  deleteContent,
+  updateContent,
+  updateContentSections,
   createContent,
   listManagedContent,
   listPublicContent,
@@ -78,6 +83,44 @@ contentRouter.post(
 );
 
 contentRouter.patch(
+  '/:id',
+  authenticate,
+  asyncHandler(async (req, res) => {
+    if (!req.user) {
+      throw new HttpError(401, 'Unauthorized');
+    }
+
+    const params = validateSchema(contentIdParamsSchema, req.params);
+    const payload = validateSchema(updateContentSchema, req.body);
+    const item = await updateContent({
+      contentId: params.id,
+      input: payload,
+      requester: req.user,
+    });
+    res.status(200).json(item);
+  }),
+);
+
+contentRouter.patch(
+  '/:id/sections',
+  authenticate,
+  asyncHandler(async (req, res) => {
+    if (!req.user) {
+      throw new HttpError(401, 'Unauthorized');
+    }
+
+    const params = validateSchema(contentIdParamsSchema, req.params);
+    const payload = validateSchema(assignContentSectionsSchema, req.body);
+    const item = await updateContentSections({
+      contentId: params.id,
+      appSections: payload.appSections,
+      requester: req.user,
+    });
+    res.status(200).json(item);
+  }),
+);
+
+contentRouter.patch(
   '/:id/visibility',
   authenticate,
   asyncHandler(async (req, res) => {
@@ -93,5 +136,22 @@ contentRouter.patch(
       requester: req.user,
     });
     res.status(200).json(item);
+  }),
+);
+
+contentRouter.delete(
+  '/:id',
+  authenticate,
+  asyncHandler(async (req, res) => {
+    if (!req.user) {
+      throw new HttpError(401, 'Unauthorized');
+    }
+
+    const params = validateSchema(contentIdParamsSchema, req.params);
+    const result = await deleteContent({
+      contentId: params.id,
+      requester: req.user,
+    });
+    res.status(200).json(result);
   }),
 );
