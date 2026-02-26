@@ -100,6 +100,9 @@ export default defineComponent({
     const wordOfDayLoading = ref(false);
     const wordOfDaySaving = ref(false);
     const deletingContentId = ref(null);
+    const editingContentId = ref(null);
+    const editContentOpen = ref(false);
+    const editContentSaving = ref(false);
     const uploadingAsset = ref(false);
     const uploadPoliciesLoading = ref(false);
     const uploadPolicies = ref([]);
@@ -158,6 +161,18 @@ export default defineComponent({
       messageDate: todayDateInputValue(),
       status: 'published',
       notifySubscribers: true,
+    });
+    const editForm = reactive({
+      title: '',
+      description: '',
+      type: 'audio',
+      url: '',
+      thumbnailUrl: '',
+      visibility: 'draft',
+      channelName: '',
+      duration: '',
+      tagsCsv: '',
+      appSectionsCsv: '',
     });
     const currentYear = new Date().getFullYear();
 
@@ -364,6 +379,101 @@ export default defineComponent({
       return response.data;
     }
 
+    function openEditContentModal(item) {
+      editingContentId.value = item.id;
+      editForm.title = item.title || '';
+      editForm.description = item.description || '';
+      editForm.type = item.type || 'audio';
+      editForm.url = item.url || '';
+      editForm.thumbnailUrl = item.thumbnailUrl || '';
+      editForm.visibility = item.visibility || 'draft';
+      editForm.channelName = item.channelName || '';
+      editForm.duration = item.duration || '';
+      editForm.tagsCsv = Array.isArray(item.tags) ? item.tags.join(', ') : '';
+      editForm.appSectionsCsv = Array.isArray(item.appSections) ? item.appSections.join(', ') : '';
+      editContentOpen.value = true;
+    }
+
+    function closeEditContentModal() {
+      editContentOpen.value = false;
+      editContentSaving.value = false;
+      editingContentId.value = null;
+    }
+
+    async function saveEditedContent(event) {
+      event.preventDefault();
+      if (!editingContentId.value) {
+        setNotice('Select a content item to edit first.', 'error');
+        return;
+      }
+
+      const title = editForm.title.trim();
+      const description = editForm.description.trim();
+      const url = editForm.url.trim();
+      const thumbnailUrl = editForm.thumbnailUrl.trim();
+      const channelName = editForm.channelName.trim();
+      const duration = editForm.duration.trim();
+      const tags = Array.from(new Set(parseCsvList(editForm.tagsCsv)));
+      const appSections = Array.from(new Set(parseCsvList(editForm.appSectionsCsv)));
+      const needsUrl = editForm.type === 'audio' || editForm.type === 'video';
+
+      if (title.length < 2) {
+        setNotice('Title must be at least 2 characters.', 'error');
+        return;
+      }
+      if (description.length < 2) {
+        setNotice('Description must be at least 2 characters.', 'error');
+        return;
+      }
+      if (needsUrl && !url) {
+        setNotice(`A media URL is required for ${editForm.type} content.`, 'error');
+        return;
+      }
+      if (needsUrl && !thumbnailUrl) {
+        setNotice('A thumbnail URL is required for audio/video content.', 'error');
+        return;
+      }
+      if (url && !/^https?:\/\//i.test(url)) {
+        setNotice('Media URL must start with http:// or https://', 'error');
+        return;
+      }
+      if (thumbnailUrl && !/^https?:\/\//i.test(thumbnailUrl)) {
+        setNotice('Thumbnail URL must start with http:// or https://', 'error');
+        return;
+      }
+      if (tags.length > 20) {
+        setNotice('You can assign up to 20 tags per content item.', 'error');
+        return;
+      }
+      if (appSections.length > 12) {
+        setNotice('You can assign up to 12 app sections per content item.', 'error');
+        return;
+      }
+
+      editContentSaving.value = true;
+      clearNotice();
+      try {
+        await updateContentItem(editingContentId.value, {
+          title,
+          description,
+          type: editForm.type,
+          url: url || undefined,
+          thumbnailUrl: thumbnailUrl || undefined,
+          visibility: editForm.visibility,
+          channelName: channelName || undefined,
+          duration: duration || undefined,
+          tags,
+          appSections,
+        });
+        closeEditContentModal();
+        setNotice('Content updated successfully.', 'success');
+      } catch (error) {
+        setNotice(toErrorMessage(error, 'Unable to update this content item right now.'), 'error');
+      } finally {
+        editContentSaving.value = false;
+      }
+    }
+
     async function assignContentSections(item) {
       const current = Array.isArray(item.appSections) ? item.appSections.join(', ') : '';
       const nextValue = window.prompt(
@@ -506,6 +616,8 @@ export default defineComponent({
       managedItems.value = [];
       youtubePreviewItems.value = [];
       uploadPolicies.value = [];
+      editContentOpen.value = false;
+      editingContentId.value = null;
       mobileAppConfigEditor.value = '';
       mobileAppConfigMeta.value = null;
       wordOfDayHistory.value = [];
@@ -1229,6 +1341,14 @@ export default defineComponent({
                         <button
                           type="button"
                           class="ghost-btn compact"
+                          onClick={() => openEditContentModal(item)}
+                          disabled={deletingContentId.value === item.id}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          class="ghost-btn compact"
                           onClick={() => void assignContentSections(item)}
                         >
                           Assign Sections
@@ -1485,6 +1605,152 @@ export default defineComponent({
               </>
             ) : null}
           </main>
+
+          {editContentOpen.value ? (
+            <div
+              class="modal-backdrop"
+              onClick={(event) => {
+                if (event.target === event.currentTarget && !editContentSaving.value) {
+                  closeEditContentModal();
+                }
+              }}
+            >
+              <section class="modal-card glass-panel" role="dialog" aria-modal="true" aria-labelledby="edit-content-title">
+                <div class="section-head split">
+                  <div>
+                    <h2 id="edit-content-title">Edit Content</h2>
+                    <p>Update title, description, media links, tags, and mobile app placement for this item.</p>
+                  </div>
+                  <div class="button-row">
+                    <button
+                      type="button"
+                      class="ghost-btn compact"
+                      onClick={closeEditContentModal}
+                      disabled={editContentSaving.value}
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+
+                <form class="stack-form" onSubmit={(event) => void saveEditedContent(event)}>
+                  <div class="field-cluster">
+                    <label>
+                      Title
+                      <input
+                        value={editForm.title}
+                        onInput={(event) => { editForm.title = readValue(event); }}
+                        placeholder="Content title"
+                      />
+                    </label>
+                  </div>
+
+                  <label>
+                    Description
+                    <textarea
+                      rows={5}
+                      value={editForm.description}
+                      onInput={(event) => { editForm.description = readValue(event); }}
+                      placeholder="Short description shown to users."
+                    />
+                  </label>
+
+                  <div class="grid-2">
+                    <label>
+                      Content type
+                      <select value={editForm.type} onChange={(event) => { editForm.type = readValue(event); }}>
+                        {CONTENT_TYPES.map((type) => <option value={type} key={`edit-${type}`}>{type}</option>)}
+                      </select>
+                    </label>
+                    <label>
+                      Status
+                      <select value={editForm.visibility} onChange={(event) => { editForm.visibility = readValue(event); }}>
+                        {VISIBILITY_OPTIONS.map((visibility) => <option value={visibility} key={`edit-v-${visibility}`}>{visibility}</option>)}
+                      </select>
+                    </label>
+                  </div>
+
+                  <div class="grid-2">
+                    <label>
+                      Media URL
+                      <input
+                        value={editForm.url}
+                        onInput={(event) => { editForm.url = readValue(event); }}
+                        placeholder="https://..."
+                      />
+                    </label>
+                    <label>
+                      Thumbnail URL
+                      <input
+                        value={editForm.thumbnailUrl}
+                        onInput={(event) => { editForm.thumbnailUrl = readValue(event); }}
+                        placeholder="https://... (required for audio/video)"
+                      />
+                    </label>
+                  </div>
+
+                  <div class="grid-2">
+                    <label>
+                      Channel / Artist Name (optional)
+                      <input
+                        value={editForm.channelName}
+                        onInput={(event) => { editForm.channelName = readValue(event); }}
+                        placeholder="ClaudyGod Ministries"
+                      />
+                    </label>
+                    <label>
+                      Duration label (optional)
+                      <input
+                        value={editForm.duration}
+                        onInput={(event) => { editForm.duration = readValue(event); }}
+                        placeholder="12:34"
+                      />
+                    </label>
+                  </div>
+
+                  <div class="grid-2">
+                    <label>
+                      Tags (comma-separated)
+                      <input
+                        value={editForm.tagsCsv}
+                        onInput={(event) => { editForm.tagsCsv = readValue(event); }}
+                        placeholder="worship, sermon, youth"
+                      />
+                    </label>
+                    <label>
+                      App sections (comma-separated)
+                      <input
+                        value={editForm.appSectionsCsv}
+                        onInput={(event) => { editForm.appSectionsCsv = readValue(event); }}
+                        placeholder="ClaudyGod Music, ClaudyGod Nuggets of Truth"
+                      />
+                    </label>
+                  </div>
+
+                  <div class="helper-card">
+                    <strong>Validation rules</strong>
+                    <p>
+                      Audio and video items require both a media URL and a thumbnail URL. URLs must start with `http://` or `https://`. Tags and sections are deduplicated before save.
+                    </p>
+                  </div>
+
+                  <div class="button-row modal-actions">
+                    <button
+                      type="button"
+                      class="ghost-btn compact"
+                      onClick={closeEditContentModal}
+                      disabled={editContentSaving.value}
+                    >
+                      Cancel
+                    </button>
+                    <button type="submit" class="primary-btn" disabled={editContentSaving.value}>
+                      {editContentSaving.value ? 'Saving changes...' : 'Save Changes'}
+                    </button>
+                  </div>
+                </form>
+              </section>
+            </div>
+          ) : null}
 
           <section class="support-strip glass-panel reveal-up" style={{ animationDelay: '280ms' }}>
             <div>

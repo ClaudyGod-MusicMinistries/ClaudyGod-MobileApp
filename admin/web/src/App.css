@@ -1299,8 +1299,33 @@ button {
     align-items: stretch;
   }
 
-  .library-total,
-  .section-badge {
-    white-space: normal;
-  }
+.library-total,
+.section-badge {
+  white-space: normal;
+}
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(5, 10, 20, 0.72);
+  backdrop-filter: blur(6px);
+}
+
+.modal-card {
+  width: min(920px, 100%);
+  max-height: min(88vh, 920px);
+  overflow: auto;
+  border-radius: 1.15rem;
+  padding: 1rem;
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.38);
+}
+
+.modal-actions {
+  justify-content: flex-end;
+  margin-top: 0.35rem;
 }
