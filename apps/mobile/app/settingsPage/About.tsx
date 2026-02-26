@@ -9,6 +9,7 @@ import { spacing } from '../../styles/designTokens';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { FadeIn } from '../../components/ui/FadeIn';
 import { TVTouchable } from '../../components/ui/TVTouchable';
+import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 
 const featureChips = [
   { icon: 'library-music', label: 'Massive catalog' },
@@ -35,9 +36,20 @@ const social = [
 export default function About() {
   const theme = useAppTheme();
   const { width } = useWindowDimensions();
+  const { config } = useMobileAppConfig();
   const isCompact = width < 360;
   const statWidth = isCompact ? '100%' : '31%';
   const chipWidth = isCompact ? '100%' : '48%';
+  const aboutConfig = config?.about;
+  const heroStats = aboutConfig?.heroStats ?? [
+    { label: 'Monthly listeners', value: '3.2M' },
+    { label: 'Countries', value: '48' },
+    { label: 'Avg uptime', value: '99.96%' },
+  ];
+  const featureChipItems = aboutConfig?.featureChips ?? featureChips;
+  const teamMembers = aboutConfig?.team ?? team;
+  const socialLinks = aboutConfig?.social ?? social;
+  const versionLabel = aboutConfig?.versionLabel ?? 'Version 1.0.0';
 
   return (
     <SettingsScaffold
@@ -78,11 +90,7 @@ export default function About() {
             </CustomText>
 
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: spacing.md, justifyContent: 'space-between' }}>
-              {[
-                { label: 'Monthly listeners', value: '3.2M' },
-                { label: 'Countries', value: '48' },
-                { label: 'Avg uptime', value: '99.96%' },
-              ].map((item) => (
+              {heroStats.map((item) => (
                 <View
                   key={item.label}
                   style={{
@@ -110,7 +118,7 @@ export default function About() {
     >
       <FadeIn delay={80}>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: spacing.lg }}>
-          {featureChips.map((chip) => (
+          {featureChipItems.map((chip) => (
             <SurfaceCard
               key={chip.label}
               tone="subtle"
@@ -159,7 +167,7 @@ export default function About() {
           Team
         </CustomText>
         <View style={{ marginBottom: spacing.lg }}>
-          {team.map((member) => (
+          {teamMembers.map((member) => (
             <SurfaceCard key={member.name} style={{ padding: spacing.md, marginBottom: spacing.sm }}>
               <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
                 {member.name}
@@ -180,7 +188,7 @@ export default function About() {
           Connect
         </CustomText>
         <View>
-          {social.map((item) => (
+          {socialLinks.map((item) => (
             <TVTouchable
               key={item.label}
               onPress={() => Linking.openURL(item.url)}
@@ -216,7 +224,7 @@ export default function About() {
       <FadeIn delay={320}>
         <SurfaceCard tone="subtle" style={{ padding: spacing.md, marginBottom: spacing.xl }}>
           <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
-            Version 1.0.0
+            {versionLabel}
           </CustomText>
           <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 4 }}>
             Platforms: Android, iOS, Apple TV, Google TV, and Web.

@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Linking, Modal, TextInput, View, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -9,6 +9,13 @@ import { spacing } from '../../styles/designTokens';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { FadeIn } from '../../components/ui/FadeIn';
 import { TVTouchable } from '../../components/ui/TVTouchable';
+import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
+import {
+  fetchMePrivacyOverview,
+  requestPrivacyDataExport,
+  requestPrivacyDeleteAccount,
+  resetRecommendationHistory,
+} from '../../services/userFlowService';
 
 const dataPolicies = [
   {
@@ -49,6 +56,14 @@ export default function Privacy() {
   const theme = useAppTheme();
   const isDark = theme.scheme === 'dark';
   const { width } = useWindowDimensions();
+  const { config } = useMobileAppConfig();
+  const [privacyLoading, setPrivacyLoading] = useState(true);
+  const [privacySummary, setPrivacySummary] = useState<{
+    totalRequests: number;
+    latestRequests: { id: string; type: 'export' | 'delete'; status: string; createdAt: string }[];
+    totalPlayEvents: number;
+    totalLiveSubscriptions: number;
+  } | null>(null);
 
   const ui = {
     heroBg: isDark ? 'rgba(12,9,20,0.9)' : theme.colors.surface,
@@ -73,6 +88,25 @@ export default function Privacy() {
   const [activeModal, setActiveModal] = useState<ActionModalKey>(null);
   const [deleteFullName, setDeleteFullName] = useState('');
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const privacyContactEmail = config?.privacy.contactEmail ?? 'privacy@claudygodmusic.com';
+  const deletePhrase = config?.privacy.deleteConfirmPhrase ?? 'I CONFIRM';
+  const activePrivacyPrinciples = config?.privacy.principles ?? [...privacyPrinciples];
+
+  const refreshPrivacySummary = useCallback(async () => {
+    setPrivacyLoading(true);
+    try {
+      const response = await fetchMePrivacyOverview();
+      setPrivacySummary(response.privacy);
+    } catch (error) {
+      console.warn('privacy overview fallback:', error);
+    } finally {
+      setPrivacyLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshPrivacySummary();
+  }, [refreshPrivacySummary]);
 
   const openActionModal = useCallback((key: Exclude<ActionModalKey, null>) => setActiveModal(key), []);
   const closeActionModal = useCallback(() => {
@@ -81,19 +115,28 @@ export default function Privacy() {
     setDeleteConfirmText('');
   }, []);
 
-  const deletePhrase = 'I CONFIRM';
   const canSubmitDelete =
     deleteFullName.trim().length >= 3 &&
-    deleteConfirmText.trim().toUpperCase() === deletePhrase;
+    deleteConfirmText.trim().toUpperCase() === deletePhrase.trim().toUpperCase();
 
   const submitDeleteRequest = useCallback(() => {
     if (!canSubmitDelete) return;
-    closeActionModal();
-    Alert.alert(
-      'Delete request prepared',
-      'Your confirmation has been captured. Connect your backend workflow to submit the deletion request.',
-    );
-  }, [canSubmitDelete, closeActionModal]);
+    void requestPrivacyDeleteAccount({
+      fullName: deleteFullName.trim(),
+      confirmText: deleteConfirmText.trim(),
+    })
+      .then((response) => {
+        closeActionModal();
+        void refreshPrivacySummary();
+        Alert.alert(
+          'Delete request submitted',
+          `Request ${response.request.id.slice(0, 8)} submitted. Our team will review your deletion request.`,
+        );
+      })
+      .catch((error) => {
+        Alert.alert('Delete request failed', error instanceof Error ? error.message : 'Please try again.');
+      });
+  }, [canSubmitDelete, closeActionModal, deleteConfirmText, deleteFullName, refreshPrivacySummary]);
 
   const activeModalConfig = useMemo<ActionModalConfig | null>(() => {
     switch (activeModal) {
@@ -121,16 +164,26 @@ export default function Privacy() {
           key: 'export',
           title: 'Export My Data',
           description:
-            'This request will generate a downloadable copy of your account profile, library, and activity records when the backend workflow is connected.',
+            'Submit a data export request for your profile, library, and activity records. The request is sent to the backend for processing.',
           bullets: [
             'Exports are usually sent to your account email.',
             'Large accounts may take longer to prepare.',
-            'You can review privacy support before submitting an export.',
+            'You can review request status from this privacy screen.',
           ],
-          primaryActionLabel: 'Contact Support',
+          primaryActionLabel: 'Submit Export Request',
           onPrimaryAction: () => {
-            closeActionModal();
-            void Linking.openURL('mailto:privacy@claudygodmusic.com');
+            void requestPrivacyDataExport()
+              .then((response) => {
+                closeActionModal();
+                void refreshPrivacySummary();
+                Alert.alert(
+                  'Export request submitted',
+                  `Request ${response.request.id.slice(0, 8)} has been sent to the privacy team.`,
+                );
+              })
+              .catch((error) => {
+                Alert.alert('Export request failed', error instanceof Error ? error.message : 'Please try again.');
+              });
           },
           secondaryActionLabel: 'Close',
           onSecondaryAction: closeActionModal,
@@ -144,10 +197,20 @@ export default function Privacy() {
           bullets: [
             'Your profile and saved content remain unchanged.',
             'Video and audio suggestions may look generic until new activity is recorded.',
-            'This will be enabled when recommendation services are connected.',
+            'Playback history events stored for personalization are removed immediately.',
           ],
-          primaryActionLabel: 'Understood',
-          onPrimaryAction: closeActionModal,
+          primaryActionLabel: 'Reset Now',
+          onPrimaryAction: () => {
+            void resetRecommendationHistory()
+              .then((response) => {
+                closeActionModal();
+                void refreshPrivacySummary();
+                Alert.alert('Recommendations reset', `Cleared ${response.clearedPlayEvents} recorded playback event(s).`);
+              })
+              .catch((error) => {
+                Alert.alert('Reset failed', error instanceof Error ? error.message : 'Please try again.');
+              });
+          },
           secondaryActionLabel: 'Close',
           onSecondaryAction: closeActionModal,
         };
@@ -156,7 +219,7 @@ export default function Privacy() {
           key: 'delete',
           title: 'Delete Account',
           description:
-            'This action is permanent. To confirm authorization, enter your full name and type “I CONFIRM” exactly.',
+            `This action is permanent. To confirm authorization, enter your full name and type “${deletePhrase}” exactly.`,
           danger: true,
           primaryActionLabel: 'Submit Request',
           onPrimaryAction: submitDeleteRequest,
@@ -246,6 +309,8 @@ export default function Privacy() {
     closeActionModal,
     deleteConfirmText,
     deleteFullName,
+    deletePhrase,
+    refreshPrivacySummary,
     router,
     submitDeleteRequest,
   ]);
@@ -303,7 +368,7 @@ export default function Privacy() {
     {
       icon: 'email' as const,
       label: 'Contact',
-      onPress: () => void Linking.openURL('mailto:privacy@claudygodmusic.com'),
+      onPress: () => void Linking.openURL(`mailto:${privacyContactEmail}`),
       tone: 'neutral' as const,
     },
     {
@@ -351,7 +416,7 @@ export default function Privacy() {
                     Privacy Controls
                   </CustomText>
                   <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 3 }}>
-                    Manage sign-in, exports, support, and account actions.
+                    Manage sign-in, exports, request history, and account actions.
                   </CustomText>
                 </View>
               </View>
@@ -390,6 +455,63 @@ export default function Privacy() {
 
       <FadeIn delay={130}>
         <SectionCard
+          title="Request Status & Activity"
+          subtitle="Backend-synced privacy request history and personalization activity counts."
+          style={{ marginTop: spacing.sm }}
+        >
+          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
+            <StatusTile
+              label="Requests"
+              value={privacyLoading ? '...' : String(privacySummary?.totalRequests ?? 0)}
+            />
+            <StatusTile
+              label="Play Events"
+              value={privacyLoading ? '...' : String(privacySummary?.totalPlayEvents ?? 0)}
+            />
+            <StatusTile
+              label="Live Alerts"
+              value={privacyLoading ? '...' : String(privacySummary?.totalLiveSubscriptions ?? 0)}
+            />
+          </View>
+
+          {privacySummary?.latestRequests?.length ? (
+            <View style={{ gap: 8 }}>
+              {privacySummary.latestRequests.slice(0, 3).map((request) => (
+                <View
+                  key={request.id}
+                  style={{
+                    borderRadius: 12,
+                    borderWidth: 1,
+                    borderColor: ui.rowSoftBorder,
+                    backgroundColor: ui.rowSoft,
+                    paddingHorizontal: 10,
+                    paddingVertical: 9,
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <CustomText variant="label" style={{ color: theme.colors.text.primary }}>
+                      {request.type === 'export' ? 'Data export request' : 'Delete account request'}
+                    </CustomText>
+                    <CustomText variant="caption" style={{ color: theme.colors.primary }}>
+                      {request.status}
+                    </CustomText>
+                  </View>
+                  <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 3 }}>
+                    {new Date(request.createdAt).toLocaleString()}
+                  </CustomText>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
+              No privacy requests submitted yet.
+            </CustomText>
+          )}
+        </SectionCard>
+      </FadeIn>
+
+      <FadeIn delay={155}>
+        <SectionCard
           title="Privacy Preferences"
           subtitle="Review and manage the areas of your account and activity you can control."
           style={{ marginTop: spacing.sm }}
@@ -415,14 +537,14 @@ export default function Privacy() {
         </SectionCard>
       </FadeIn>
 
-      <FadeIn delay={180}>
+      <FadeIn delay={205}>
         <SectionCard
           title="Privacy Commitments"
           subtitle="Simple commitments for security, privacy, and user choice."
           style={{ marginTop: spacing.sm }}
         >
           <View style={{ gap: 8 }}>
-            {privacyPrinciples.map((item) => (
+            {activePrivacyPrinciples.map((item) => (
               <View
                 key={item}
                 style={{
@@ -446,9 +568,9 @@ export default function Privacy() {
         </SectionCard>
       </FadeIn>
 
-      <FadeIn delay={230}>
+      <FadeIn delay={255}>
         <TVTouchable
-          onPress={() => void Linking.openURL('mailto:privacy@claudygodmusic.com')}
+          onPress={() => void Linking.openURL(`mailto:${privacyContactEmail}`)}
           showFocusBorder={false}
           style={{ marginTop: spacing.sm, marginBottom: spacing.xl }}
         >
@@ -472,7 +594,7 @@ export default function Privacy() {
                   Contact Privacy Support
                 </CustomText>
                 <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 4 }}>
-                  Email `privacy@claudygodmusic.com` for help with exports, corrections, or account requests.
+                  Email {privacyContactEmail} for help with exports, corrections, or account requests.
                 </CustomText>
               </View>
               <MaterialIcons name="chevron-right" size={18} color={theme.colors.text.secondary} />
@@ -487,6 +609,38 @@ export default function Privacy() {
         onClose={closeActionModal}
       />
     </SettingsScaffold>
+  );
+}
+
+function StatusTile({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  const theme = useAppTheme();
+  const isDark = theme.scheme === 'dark';
+
+  return (
+    <View
+      style={{
+        flex: 1,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(20,16,33,0.06)',
+        backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : theme.colors.surfaceAlt,
+        paddingHorizontal: 10,
+        paddingVertical: 9,
+      }}
+    >
+      <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
+        {label}
+      </CustomText>
+      <CustomText variant="label" style={{ color: theme.colors.text.primary, marginTop: 4 }}>
+        {value}
+      </CustomText>
+    </View>
   );
 }
 

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Image, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { SettingsScaffold } from './settingsPage/Scaffold';
 import { CustomText } from '../components/CustomText';
 import { useAppTheme } from '../util/colorScheme';
@@ -10,6 +11,7 @@ import { FadeIn } from '../components/ui/FadeIn';
 import { TVTouchable } from '../components/ui/TVTouchable';
 import { AppButton } from '../components/ui/AppButton';
 import { fetchUserProfileMetrics } from '../services/supabaseAnalytics';
+import { clearMobileSession } from '../services/authService';
 
 const groups = [
   {
@@ -39,6 +41,7 @@ const groups = [
 
 export default function Profile() {
   const theme = useAppTheme();
+  const router = useRouter();
   const [metrics, setMetrics] = useState({
     email: '',
     displayName: 'ClaudyGod User',
@@ -168,7 +171,11 @@ export default function Profile() {
           size="lg"
           leftIcon={<MaterialIcons name="logout" size={18} color="#D79CAF" />}
           textColor="#D79CAF"
-          onPress={() => console.log('logout')}
+          onPress={() => {
+            void clearMobileSession().finally(() => {
+              router.replace('/sign-in');
+            });
+          }}
           style={{
             marginTop: spacing.lg,
             borderWidth: 1,
