@@ -36,6 +36,7 @@ youtubeRouter.post(
       visibility: payload.visibility ?? 'draft',
       channelId: payload.channelId,
       maxResults: payload.maxResults,
+      appSections: payload.appSections,
     });
 
     res.status(200).json(result);

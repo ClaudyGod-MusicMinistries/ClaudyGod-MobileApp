@@ -49,6 +49,9 @@ interface YouTubeChannelsResponse {
   error?: { message?: string };
 }
 
+const normalizeTextList = (items?: string[]): string[] =>
+  [...new Set((items ?? []).map((item) => item.trim()).filter(Boolean))];
+
 function ensureYouTubeConfigured(channelIdentifierOverride?: string): void {
   if (!env.YOUTUBE_API_KEY) {
     throw new HttpError(503, 'YOUTUBE_API_KEY is not configured');
@@ -246,6 +249,7 @@ export async function syncYouTubeVideosToContent(params: {
   visibility: ContentVisibility;
   channelId?: string;
   maxResults?: number;
+  appSections?: string[];
 }): Promise<{
   summary: { created: number; updated: number; skipped: number };
   channelId: string;
@@ -259,6 +263,7 @@ export async function syncYouTubeVideosToContent(params: {
   let created = 0;
   let updated = 0;
   let skipped = 0;
+  const appSections = Array.isArray(params.appSections) ? normalizeTextList(params.appSections) : undefined;
 
   for (const video of payload.items) {
     const existing = await pool.query<{ id: string }>(
@@ -278,18 +283,48 @@ export async function syncYouTubeVideosToContent(params: {
          SET title = $2,
              description = $3,
              visibility = $4,
+             thumbnail_url = $5,
+             source_kind = 'youtube',
+             external_source_id = $6,
+             channel_name = $7,
+             duration_label = $8,
+             app_sections = COALESCE($9::text[], app_sections),
              updated_at = NOW()
          WHERE id = $1`,
-        [existing.rows[0]!.id, title.slice(0, 180), description, params.visibility],
+        [
+          existing.rows[0]!.id,
+          title.slice(0, 180),
+          description,
+          params.visibility,
+          video.thumbnailUrl,
+          video.youtubeVideoId,
+          video.channelTitle,
+          video.duration,
+          appSections ?? null,
+        ],
       );
       updated += 1;
       continue;
     }
 
     await pool.query(
-      `INSERT INTO content_items (author_id, title, description, content_type, media_url, visibility)
-       VALUES ($1, $2, $3, 'video', $4, $5)`,
-      [params.actorUserId, title.slice(0, 180), description || 'Imported from YouTube channel feed.', video.url, params.visibility],
+      `INSERT INTO content_items (
+         author_id, title, description, content_type, media_url, thumbnail_url, visibility,
+         source_kind, external_source_id, channel_name, duration_label, app_sections
+       )
+       VALUES ($1, $2, $3, 'video', $4, $5, $6, 'youtube', $7, $8, $9, $10::text[])`,
+      [
+        params.actorUserId,
+        title.slice(0, 180),
+        description || 'Imported from YouTube channel feed.',
+        video.url,
+        video.thumbnailUrl,
+        params.visibility,
+        video.youtubeVideoId,
+        video.channelTitle,
+        video.duration,
+        appSections ?? [],
+      ],
     );
     created += 1;
   }

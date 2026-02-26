@@ -14,6 +14,7 @@ import { meRouter } from './modules/me/me.routes';
 import { mobileRouter } from './modules/mobile/mobile.routes';
 import { uploadsRouter } from './modules/uploads/uploads.routes';
 import { youtubeRouter } from './modules/youtube/youtube.routes';
+import { adminWordOfDayRouter, mobileWordOfDayRouter } from './modules/wordOfDay/wordOfDay.routes';
 
 const parseCorsOrigin = (): boolean | string[] => {
   const origins = env.CORS_ORIGINS;
@@ -47,7 +48,9 @@ export const createApp = () => {
   app.use('/v1/uploads', uploadsRouter);
   app.use('/v1/mobile', mobileRouter);
   app.use('/v1/mobile/app', mobileAppConfigRouter);
+  app.use('/v1/mobile/word-of-day', mobileWordOfDayRouter);
   app.use('/v1/admin/app-config', adminAppConfigRouter);
+  app.use('/v1/admin/word-of-day', adminWordOfDayRouter);
   app.use('/v1/youtube', youtubeRouter);
 
   app.use(notFoundHandler);

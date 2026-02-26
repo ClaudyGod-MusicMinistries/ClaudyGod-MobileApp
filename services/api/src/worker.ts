@@ -3,16 +3,18 @@ import { closePool, pool } from './db/pool';
 import { closeRedis, redis } from './infra/redis';
 import { waitForInfrastructure } from './lib/waitForInfrastructure';
 import { startContentWorker } from './queues/contentWorker';
+import { startEmailWorker } from './queues/emailWorker';
 
 const bootWorker = async (): Promise<void> => {
   await waitForInfrastructure('worker');
 
-  const worker = startContentWorker();
-  console.log(`Content worker started (env=${env.NODE_ENV})`);
+  const contentWorker = startContentWorker();
+  const emailWorker = startEmailWorker();
+  console.log(`Workers started (content + email, env=${env.NODE_ENV})`);
 
   const shutdown = async (signal: string): Promise<void> => {
     console.log(`${signal} received, shutting down worker...`);
-    await worker.close();
+    await Promise.allSettled([contentWorker.close(), emailWorker.close()]);
     await Promise.allSettled([closeRedis(), closePool()]);
     process.exit(0);
   };
