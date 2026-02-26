@@ -9,6 +9,7 @@ import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { FadeIn } from '../../components/ui/FadeIn';
 import { AppButton } from '../../components/ui/AppButton';
 import { TVTouchable } from '../../components/ui/TVTouchable';
+import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 
 const contact = [
   { icon: 'chat-bubble', title: 'Live chat', desc: 'Average response under 2 minutes', action: () => console.log('chat') },
@@ -26,6 +27,18 @@ const faqs = [
 export default function Help() {
   const theme = useAppTheme();
   const [expanded, setExpanded] = useState<string | null>(null);
+  const { config } = useMobileAppConfig();
+
+  const supportCenterUrl = config?.help.supportCenterUrl ?? 'https://claudygodmusic.com/support';
+  const contactOptions = config?.help.contact
+    ? config.help.contact.map((item) => ({
+        icon: item.icon,
+        title: item.title,
+        desc: item.desc,
+        action: () => Linking.openURL(item.actionUrl),
+      }))
+    : contact;
+  const faqItems = (config?.help.faqs ?? faqs).map((item) => ({ q: item.q, a: item.a }));
 
   return (
     <SettingsScaffold
@@ -45,7 +58,7 @@ export default function Help() {
                 title="Open Support Center"
                 size="sm"
                 variant="primary"
-                onPress={() => console.log('Open support center')}
+                onPress={() => Linking.openURL(supportCenterUrl)}
               />
             </View>
           </SurfaceCard>
@@ -57,7 +70,7 @@ export default function Help() {
           Contact options
         </CustomText>
         <View style={{ marginBottom: spacing.lg }}>
-          {contact.map((item) => (
+          {contactOptions.map((item) => (
             <TVTouchable key={item.title} onPress={item.action} style={{ marginBottom: spacing.sm }} showFocusBorder={false}>
               <SurfaceCard style={{ padding: spacing.md, flexDirection: 'row', alignItems: 'center' }}>
                 <View
@@ -93,7 +106,7 @@ export default function Help() {
           Quick answers
         </CustomText>
         <View style={{ marginBottom: spacing.xl }}>
-          {faqs.map((faq) => {
+          {faqItems.map((faq) => {
             const open = expanded === faq.q;
             return (
               <TVTouchable

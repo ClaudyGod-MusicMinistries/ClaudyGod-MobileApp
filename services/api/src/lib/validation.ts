@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { HttpError } from './httpError';
 
-export const validateSchema = <T>(schema: z.ZodType<T>, value: unknown): T => {
+export const validateSchema = <S extends z.ZodTypeAny>(schema: S, value: unknown): z.output<S> => {
   const result = schema.safeParse(value);
 
   if (!result.success) {
