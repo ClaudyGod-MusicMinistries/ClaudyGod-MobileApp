@@ -20,6 +20,7 @@ import { TVTouchable } from '../../components/ui/TVTouchable';
 import { useAppTheme } from '../../util/colorScheme';
 import { buildPlayerRoute } from '../../util/playerRoute';
 import { useContentFeed } from '../../hooks/useContentFeed';
+import { useWordOfDay } from '../../hooks/useWordOfDay';
 import type { FeedCardItem, FeedBundle } from '../../services/contentService';
 import { subscribeToLiveAlerts, trackPlayEvent } from '../../services/supabaseAnalytics';
 
@@ -35,7 +36,7 @@ const ministrySections: { title: string; kind: 'video' | 'audio' | 'message' | '
 
 const topRailChips = ['For You', 'Music', 'Videos', 'Live', 'Word'];
 
-const WORD_FOR_TODAY = {
+const WORD_FOR_TODAY_FALLBACK = {
   title: 'Word for Today',
   passage: 'Psalm 119:105',
   verse:
@@ -70,6 +71,15 @@ export default function HomeScreen() {
   const [activeFilter, setActiveFilter] = useState('For You');
 
   const { feed, loading, error, refresh } = useContentFeed();
+  const { word } = useWordOfDay();
+  const wordForToday = word
+    ? {
+        title: word.title || 'Word for Today',
+        passage: word.passage,
+        verse: word.verse,
+        reflection: word.reflection,
+      }
+    : WORD_FOR_TODAY_FALLBACK;
 
   const featured = useMemo(() => feed.featured ?? firstAvailable(feed), [feed]);
   const liveItems = useMemo(() => feed.live.slice(0, isTablet || isTV ? 6 : 4), [feed.live, isTablet, isTV]);
@@ -156,7 +166,7 @@ export default function HomeScreen() {
           </FadeIn>
 
           <FadeIn delay={95}>
-            <SectionBlock title={WORD_FOR_TODAY.title} subtitle="A daily scripture passage for prayer, direction and encouragement">
+            <SectionBlock title={wordForToday.title} subtitle="A daily scripture passage for prayer, direction and encouragement">
               <View
                 style={{
                   borderRadius: 20,
@@ -184,8 +194,8 @@ export default function HomeScreen() {
                       <MaterialIcons name="menu-book" size={18} color={theme.colors.primary} />
                     </View>
                     <View>
-                      <CustomText variant="label" style={{ color: theme.colors.text.primary }}>
-                        {WORD_FOR_TODAY.passage}
+                        <CustomText variant="label" style={{ color: theme.colors.text.primary }}>
+                        {wordForToday.passage}
                       </CustomText>
                       <CustomText variant="caption" style={{ color: ui.wordMuted, marginTop: 2 }}>
                         Daily Bible passage
@@ -214,10 +224,10 @@ export default function HomeScreen() {
                   variant="subtitle"
                   style={{ color: theme.colors.text.primary, marginTop: 12, lineHeight: 20 }}
                 >
-                  {WORD_FOR_TODAY.verse}
+                  {wordForToday.verse}
                 </CustomText>
                 <CustomText variant="caption" style={{ color: ui.wordSubtle, marginTop: 8 }}>
-                  {WORD_FOR_TODAY.reflection}
+                  {wordForToday.reflection}
                 </CustomText>
               </View>
             </SectionBlock>
@@ -329,7 +339,7 @@ export default function HomeScreen() {
           </FadeIn>
 
           {ministrySections.map((section, index) => {
-            const items = deriveMinistryItems(feed, section.kind).slice(index % 2 === 0 ? 0 : 1, (index % 2 === 0 ? 0 : 1) + 8);
+            const items = deriveMinistryItems(feed, section).slice(index % 2 === 0 ? 0 : 1, (index % 2 === 0 ? 0 : 1) + 8);
             return (
               <FadeIn key={section.title} delay={320 + index * 35}>
                 <SectionBlock title={section.title} subtitle={sectionSubtitle(section.kind)}>
@@ -1392,7 +1402,33 @@ function firstAvailable(feed: FeedBundle): FeedCardItem | null {
   );
 }
 
-function deriveMinistryItems(feed: FeedBundle, kind: 'video' | 'audio' | 'message' | 'worship' | 'playlist') {
+function deriveMinistryItems(
+  feed: FeedBundle,
+  section: { title: string; kind: 'video' | 'audio' | 'message' | 'worship' | 'playlist' },
+) {
+  const curatedPool = [
+    ...feed.videos,
+    ...feed.music,
+    ...feed.playlists,
+    ...feed.announcements,
+    ...feed.live,
+    ...feed.recent,
+  ];
+  const seen = new Set<string>();
+  const curated = curatedPool.filter((item) => {
+    const match = Array.isArray(item.appSections) && item.appSections.some((value) => value.trim().toLowerCase() === section.title.trim().toLowerCase());
+    if (!match) return false;
+    const key = item.mediaUrl || item.id;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  if (curated.length) {
+    return curated;
+  }
+
+  const { kind } = section;
   switch (kind) {
     case 'audio':
       return feed.music;

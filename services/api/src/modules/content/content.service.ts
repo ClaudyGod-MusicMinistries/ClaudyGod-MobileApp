@@ -9,9 +9,11 @@ import type {
   ContentItem,
   ContentListQuery,
   ContentListResponse,
+  ContentSourceKind,
   ContentVisibility,
   CreateContentInput,
   ContentType,
+  UpdateContentInput,
 } from './content.types';
 
 interface ContentRow {
@@ -21,6 +23,14 @@ interface ContentRow {
   description: string;
   content_type: ContentItem['type'];
   media_url: string | null;
+  thumbnail_url: string | null;
+  source_kind: ContentSourceKind;
+  external_source_id: string | null;
+  channel_name: string | null;
+  duration_label: string | null;
+  app_sections: string[] | null;
+  tags: string[] | null;
+  metadata: Record<string, unknown> | null;
   visibility: ContentVisibility;
   created_at: string | Date;
   updated_at: string | Date;
@@ -39,6 +49,14 @@ const toContentItem = (row: ContentRow): ContentItem => ({
   description: row.description,
   type: row.content_type,
   url: row.media_url ?? undefined,
+  thumbnailUrl: row.thumbnail_url ?? undefined,
+  sourceKind: row.source_kind ?? undefined,
+  externalSourceId: row.external_source_id ?? undefined,
+  channelName: row.channel_name ?? undefined,
+  duration: row.duration_label ?? undefined,
+  appSections: row.app_sections ?? [],
+  tags: row.tags ?? [],
+  metadata: row.metadata ?? {},
   visibility: row.visibility,
   createdAt: toIsoDate(row.created_at),
   updatedAt: toIsoDate(row.updated_at),
@@ -143,6 +161,41 @@ const buildListResponse = (rows: ContentRow[], total: number, query: ContentList
   items: rows.map(toContentItem),
 });
 
+const requireAdmin = (requester: JwtClaims): void => {
+  if (requester.role !== 'ADMIN') {
+    throw new HttpError(403, 'Admin role required');
+  }
+};
+
+const normalizeTextList = (items?: string[]): string[] =>
+  [...new Set((items ?? []).map((item) => item.trim()).filter(Boolean))];
+
+const selectContentByIdSql = `SELECT
+  c.id,
+  c.author_id,
+  c.title,
+  c.description,
+  c.content_type,
+  c.media_url,
+  c.thumbnail_url,
+  c.source_kind,
+  c.external_source_id,
+  c.channel_name,
+  c.duration_label,
+  c.app_sections,
+  c.tags,
+  c.metadata,
+  c.visibility,
+  c.created_at,
+  c.updated_at,
+  u.display_name AS author_display_name,
+  u.email AS author_email,
+  u.role AS author_role
+ FROM content_items c
+ INNER JOIN app_users u ON u.id = c.author_id
+ WHERE c.id = $1
+ LIMIT 1`;
+
 function normalizeListQuery(query: ContentListQuery): {
   page: number;
   limit: number;
@@ -236,6 +289,14 @@ export const listPublicContent = async (query: ContentListQuery): Promise<Conten
         c.description,
         c.content_type,
         c.media_url,
+        c.thumbnail_url,
+        c.source_kind,
+        c.external_source_id,
+        c.channel_name,
+        c.duration_label,
+        c.app_sections,
+        c.tags,
+        c.metadata,
         c.visibility,
         c.created_at,
         c.updated_at,
@@ -321,6 +382,14 @@ export const listManagedContent = async (
           c.description,
           c.content_type,
           c.media_url,
+          c.thumbnail_url,
+          c.source_kind,
+          c.external_source_id,
+          c.channel_name,
+          c.duration_label,
+          c.app_sections,
+          c.tags,
+          c.metadata,
           c.visibility,
           c.created_at,
           c.updated_at,
@@ -347,14 +416,15 @@ export const listManagedContent = async (
 };
 
 export const createContent = async (requester: JwtClaims, input: CreateContentInput): Promise<ContentItem> => {
-  if (requester.role !== 'ADMIN') {
-    throw new HttpError(403, 'Admin role required');
-  }
+  requireAdmin(requester);
 
   const result = await pool.query<ContentRow>(
     `WITH inserted AS (
-      INSERT INTO content_items (author_id, title, description, content_type, media_url, visibility)
-      VALUES ($1, $2, $3, $4, $5, $6)
+      INSERT INTO content_items (
+        author_id, title, description, content_type, media_url, thumbnail_url, source_kind,
+        external_source_id, channel_name, duration_label, app_sections, tags, metadata, visibility
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::text[], $12::text[], $13::jsonb, $14)
       RETURNING *
     )
     SELECT
@@ -364,6 +434,14 @@ export const createContent = async (requester: JwtClaims, input: CreateContentIn
       inserted.description,
       inserted.content_type,
       inserted.media_url,
+      inserted.thumbnail_url,
+      inserted.source_kind,
+      inserted.external_source_id,
+      inserted.channel_name,
+      inserted.duration_label,
+      inserted.app_sections,
+      inserted.tags,
+      inserted.metadata,
       inserted.visibility,
       inserted.created_at,
       inserted.updated_at,
@@ -372,7 +450,22 @@ export const createContent = async (requester: JwtClaims, input: CreateContentIn
       u.role AS author_role
     FROM inserted
     INNER JOIN app_users u ON u.id = inserted.author_id`,
-    [requester.sub, input.title, input.description, input.type, input.url ?? null, input.visibility],
+    [
+      requester.sub,
+      input.title,
+      input.description,
+      input.type,
+      input.url ?? null,
+      input.thumbnailUrl ?? null,
+      input.sourceKind ?? 'upload',
+      input.externalSourceId ?? null,
+      input.channelName ?? null,
+      input.duration ?? null,
+      normalizeTextList(input.appSections),
+      normalizeTextList(input.tags),
+      JSON.stringify(input.metadata ?? {}),
+      input.visibility,
+    ],
   );
 
   const item = toContentItem(result.rows[0]!);
@@ -396,6 +489,136 @@ export const createContent = async (requester: JwtClaims, input: CreateContentIn
 
   return item;
 };
+
+export const updateContent = async ({
+  contentId,
+  input,
+  requester,
+}: {
+  contentId: string;
+  input: UpdateContentInput;
+  requester: JwtClaims;
+}): Promise<ContentItem> => {
+  requireAdmin(requester);
+
+  const existingResult = await pool.query<ContentRow>(selectContentByIdSql, [contentId]);
+  if (existingResult.rowCount === 0) {
+    throw new HttpError(404, 'Content not found');
+  }
+
+  const existing = existingResult.rows[0]!;
+  const nextType = input.type ?? existing.content_type;
+  const nextUrl = Object.prototype.hasOwnProperty.call(input, 'url')
+    ? (input.url ?? null)
+    : existing.media_url;
+
+  if ((nextType === 'audio' || nextType === 'video') && !nextUrl) {
+    throw new HttpError(400, `A media URL is required for ${nextType} content`);
+  }
+
+  const updated = await pool.query<ContentRow>(
+    `WITH updated AS (
+      UPDATE content_items
+      SET
+        title = COALESCE($2, title),
+        description = COALESCE($3, description),
+        content_type = COALESCE($4, content_type),
+        media_url = COALESCE($5, media_url),
+        thumbnail_url = COALESCE($6, thumbnail_url),
+        source_kind = COALESCE($7, source_kind),
+        external_source_id = COALESCE($8, external_source_id),
+        channel_name = COALESCE($9, channel_name),
+        duration_label = COALESCE($10, duration_label),
+        app_sections = COALESCE($11::text[], app_sections),
+        tags = COALESCE($12::text[], tags),
+        metadata = COALESCE($13::jsonb, metadata),
+        visibility = COALESCE($14, visibility),
+        updated_at = NOW()
+      WHERE id = $1
+      RETURNING *
+    )
+    SELECT
+      updated.id,
+      updated.author_id,
+      updated.title,
+      updated.description,
+      updated.content_type,
+      updated.media_url,
+      updated.thumbnail_url,
+      updated.source_kind,
+      updated.external_source_id,
+      updated.channel_name,
+      updated.duration_label,
+      updated.app_sections,
+      updated.tags,
+      updated.metadata,
+      updated.visibility,
+      updated.created_at,
+      updated.updated_at,
+      u.display_name AS author_display_name,
+      u.email AS author_email,
+      u.role AS author_role
+    FROM updated
+    INNER JOIN app_users u ON u.id = updated.author_id`,
+    [
+      contentId,
+      input.title ?? null,
+      input.description ?? null,
+      input.type ?? null,
+      Object.prototype.hasOwnProperty.call(input, 'url') ? (input.url ?? null) : null,
+      Object.prototype.hasOwnProperty.call(input, 'thumbnailUrl') ? (input.thumbnailUrl ?? null) : null,
+      input.sourceKind ?? null,
+      Object.prototype.hasOwnProperty.call(input, 'externalSourceId') ? (input.externalSourceId ?? null) : null,
+      Object.prototype.hasOwnProperty.call(input, 'channelName') ? (input.channelName ?? null) : null,
+      Object.prototype.hasOwnProperty.call(input, 'duration') ? (input.duration ?? null) : null,
+      Object.prototype.hasOwnProperty.call(input, 'appSections') ? normalizeTextList(input.appSections) : null,
+      Object.prototype.hasOwnProperty.call(input, 'tags') ? normalizeTextList(input.tags) : null,
+      Object.prototype.hasOwnProperty.call(input, 'metadata') ? JSON.stringify(input.metadata ?? {}) : null,
+      input.visibility ?? null,
+    ],
+  );
+
+  if (updated.rowCount === 0) {
+    throw new HttpError(404, 'Content not found');
+  }
+
+  const item = toContentItem(updated.rows[0]!);
+
+  await enqueueContentEvent({
+    contentId: item.id,
+    authorId: requester.sub,
+    eventType: 'content.updated',
+    payload: {
+      contentId: item.id,
+      updatedBy: requester.sub,
+      visibility: item.visibility,
+      type: item.type,
+      appSections: item.appSections ?? [],
+    },
+  });
+
+  const becamePublished = existing.visibility !== 'published' && item.visibility === 'published';
+  if (becamePublished) {
+    await enqueuePublishEmail(item, requester);
+  }
+
+  return item;
+};
+
+export const updateContentSections = async ({
+  contentId,
+  appSections,
+  requester,
+}: {
+  contentId: string;
+  appSections: string[];
+  requester: JwtClaims;
+}): Promise<ContentItem> =>
+  updateContent({
+    contentId,
+    requester,
+    input: { appSections },
+  });
 
 export const updateContentVisibility = async ({
   contentId,
@@ -424,6 +647,14 @@ export const updateContentVisibility = async ({
       updated.description,
       updated.content_type,
       updated.media_url,
+      updated.thumbnail_url,
+      updated.source_kind,
+      updated.external_source_id,
+      updated.channel_name,
+      updated.duration_label,
+      updated.app_sections,
+      updated.tags,
+      updated.metadata,
       updated.visibility,
       updated.created_at,
       updated.updated_at,
@@ -458,4 +689,35 @@ export const updateContentVisibility = async ({
   }
 
   return item;
+};
+
+export const deleteContent = async ({
+  contentId,
+  requester,
+}: {
+  contentId: string;
+  requester: JwtClaims;
+}): Promise<{ deleted: true; id: string }> => {
+  requireAdmin(requester);
+
+  const existing = await pool.query<ContentRow>(selectContentByIdSql, [contentId]);
+  if (existing.rowCount === 0) {
+    throw new HttpError(404, 'Content not found');
+  }
+
+  await pool.query(`DELETE FROM content_items WHERE id = $1`, [contentId]);
+
+  await enqueueContentEvent({
+    contentId,
+    authorId: requester.sub,
+    eventType: 'content.deleted',
+    payload: {
+      contentId,
+      deletedBy: requester.sub,
+      title: existing.rows[0]!.title,
+      type: existing.rows[0]!.content_type,
+    },
+  });
+
+  return { deleted: true, id: contentId };
 };

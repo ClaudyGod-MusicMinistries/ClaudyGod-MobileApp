@@ -3,6 +3,7 @@ import type { UserRole } from '../auth/auth.types';
 export type ContentType = 'audio' | 'video' | 'playlist' | 'announcement';
 export type ContentVisibility = 'draft' | 'published';
 export type ContentFilterType = ContentType | 'live' | 'ad';
+export type ContentSourceKind = 'upload' | 'youtube' | 'external';
 
 export interface ContentAuthor {
   id: string;
@@ -17,6 +18,14 @@ export interface ContentItem {
   description: string;
   type: ContentType;
   url?: string;
+  thumbnailUrl?: string;
+  channelName?: string;
+  duration?: string;
+  sourceKind?: ContentSourceKind;
+  externalSourceId?: string;
+  appSections?: string[];
+  tags?: string[];
+  metadata?: Record<string, unknown>;
   visibility: ContentVisibility;
   createdAt: string;
   updatedAt: string;
@@ -28,7 +37,31 @@ export interface CreateContentInput {
   description: string;
   type: ContentType;
   url?: string;
+  thumbnailUrl?: string;
+  channelName?: string;
+  duration?: string;
+  sourceKind?: ContentSourceKind;
+  externalSourceId?: string;
+  appSections?: string[];
+  tags?: string[];
+  metadata?: Record<string, unknown>;
   visibility: ContentVisibility;
+}
+
+export interface UpdateContentInput {
+  title?: string;
+  description?: string;
+  type?: ContentType;
+  url?: string;
+  thumbnailUrl?: string;
+  channelName?: string;
+  duration?: string;
+  sourceKind?: ContentSourceKind;
+  externalSourceId?: string;
+  appSections?: string[];
+  tags?: string[];
+  metadata?: Record<string, unknown>;
+  visibility?: ContentVisibility;
 }
 
 export interface ContentListQuery {

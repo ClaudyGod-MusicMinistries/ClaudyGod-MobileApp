@@ -4,7 +4,7 @@ import { validateSchema } from '../../lib/validation';
 import { requireMobileApiKey } from '../../middleware/requireMobileApiKey';
 import { listContentQuerySchema } from '../content/content.schema';
 import { listPublicContent } from '../content/content.service';
-import { signedUploadRequestSchema } from '../uploads/uploads.schema';
+import { signedUploadRequestSchema, uploadPoliciesResponse } from '../uploads/uploads.schema';
 import { requestSignedUploadUrl } from '../uploads/uploads.service';
 import { youtubeListQuerySchema } from '../youtube/youtube.schema';
 import { fetchYouTubeVideos } from '../youtube/youtube.service';
@@ -53,5 +53,13 @@ mobileRouter.post(
     });
 
     res.status(201).json(result);
+  }),
+);
+
+mobileRouter.get(
+  '/uploads/policies',
+  requireMobileApiKey,
+  asyncHandler(async (_req, res) => {
+    res.status(200).json(uploadPoliciesResponse);
   }),
 );

@@ -3,7 +3,12 @@ import { redis } from '../infra/redis';
 
 export const CONTENT_QUEUE_NAME = 'content-events';
 
-export type ContentEventType = 'content.created' | 'content.published' | 'content.visibility_changed';
+export type ContentEventType =
+  | 'content.created'
+  | 'content.published'
+  | 'content.visibility_changed'
+  | 'content.updated'
+  | 'content.deleted';
 
 export interface ContentQueuePayload {
   jobRecordId: number;
