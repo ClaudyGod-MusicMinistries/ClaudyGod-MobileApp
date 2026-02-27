@@ -1,4 +1,4 @@
-import { pool } from './pool';
+import { closePool, pool } from './pool';
 
 const migrations = [
   `CREATE EXTENSION IF NOT EXISTS "pgcrypto"`,
@@ -388,3 +388,20 @@ export const runMigrations = async (): Promise<void> => {
     client.release();
   }
 };
+
+const run = async (): Promise<void> => {
+  try {
+    await runMigrations();
+    await closePool();
+    console.log('Database migrations completed successfully.');
+    process.exit(0);
+  } catch (error) {
+    await closePool();
+    console.error('Database migrations failed:', error);
+    process.exit(1);
+  }
+};
+
+if (require.main === module) {
+  void run();
+}
