@@ -941,6 +941,31 @@ button {
   gap: 0.75rem;
 }
 
+.dashboard-view-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.dashboard-view-tabs .ghost-btn.is-active {
+  border-color: rgba(154, 107, 255, 0.42);
+  background: rgba(154, 107, 255, 0.16);
+}
+
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.95rem;
+}
+
+.overview-grid > .panel:first-child {
+  grid-column: 1 / -1;
+}
+
+.overview-grid .list-wrap {
+  max-height: 30rem;
+}
+
 .stat-card {
   padding: 0.9rem;
   border-radius: 18px;
@@ -1403,6 +1428,10 @@ button {
 
   .stats-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .overview-grid {
+    grid-template-columns: 1fr;
   }
 
   .list-wrap {

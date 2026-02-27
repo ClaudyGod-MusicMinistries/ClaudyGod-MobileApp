@@ -53,6 +53,12 @@ function readChecked(event) {
 
 function toErrorMessage(error, fallback) {
   if (axios.isAxiosError(error)) {
+    if (error.response?.status === 401) {
+      return 'Your session has expired. Please sign in again.';
+    }
+    if (error.response?.status === 403) {
+      return 'You do not have permission for this action.';
+    }
     const data = error.response && error.response.data ? error.response.data : {};
     return data.message || data.error || error.message || fallback;
   }
@@ -125,6 +131,7 @@ export default defineComponent({
     const editContentOpen = ref(false);
     const editContentSaving = ref(false);
     const headerMenuOpen = ref(false);
+    const dashboardView = ref('overview');
     const viewportWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1366);
     const uploadingAsset = ref(false);
     const uploadPoliciesLoading = ref(false);
@@ -230,6 +237,8 @@ export default defineComponent({
       });
     });
 
+    const recentItems = computed(() => managedItems.value.slice(0, 4));
+
     function getUploadPolicy(kind) {
       return (uploadPolicies.value || []).find((item) => item && item.kind === kind) || null;
     }
@@ -277,6 +286,11 @@ export default defineComponent({
       headerMenuOpen.value = false;
     }
 
+    function setDashboardView(view) {
+      dashboardView.value = view;
+      closeHeaderMenu();
+    }
+
     function startGoogleLogin() {
       clearNotice();
       if (!GOOGLE_LOGIN_URL) {
@@ -308,7 +322,6 @@ export default defineComponent({
     }
 
     async function fetchUploadPolicies() {
-      if (!isAdmin.value) return;
       uploadPoliciesLoading.value = true;
       try {
         const response = await http.get('/v1/uploads/policies');
@@ -568,7 +581,7 @@ export default defineComponent({
         await fetchCurrentUser();
         await Promise.all([
           fetchManagedContent(),
-          isAdmin.value ? fetchUploadPolicies() : Promise.resolve(),
+          fetchUploadPolicies(),
           isAdmin.value ? fetchMobileAppConfig() : Promise.resolve(),
           isAdmin.value ? fetchWordOfDayDashboard() : Promise.resolve(),
         ]);
@@ -624,7 +637,7 @@ export default defineComponent({
         authForm.confirmPassword = '';
         await Promise.all([
           fetchManagedContent(),
-          authResponse.data.user && authResponse.data.user.role === 'ADMIN' ? fetchUploadPolicies() : Promise.resolve(),
+          fetchUploadPolicies(),
           authResponse.data.user && authResponse.data.user.role === 'ADMIN' ? fetchMobileAppConfig() : Promise.resolve(),
           authResponse.data.user && authResponse.data.user.role === 'ADMIN' ? fetchWordOfDayDashboard() : Promise.resolve(),
         ]);
@@ -834,7 +847,7 @@ export default defineComponent({
         await fetchCurrentUser();
         await Promise.all([
           fetchManagedContent(),
-          isAdmin.value ? fetchUploadPolicies() : Promise.resolve(),
+          fetchUploadPolicies(),
           isAdmin.value ? fetchMobileAppConfig() : Promise.resolve(),
           isAdmin.value ? fetchWordOfDayDashboard() : Promise.resolve(),
         ]);
@@ -1113,7 +1126,116 @@ export default defineComponent({
             </section>
           ) : null}
 
-          <main class="main-grid">
+          <section class="dashboard-view-tabs reveal-up" style={{ animationDelay: '200ms' }}>
+            <button
+              type="button"
+              class={['ghost-btn compact', dashboardView.value === 'overview' ? 'is-active' : '']}
+              onClick={() => setDashboardView('overview')}
+            >
+              Dashboard
+            </button>
+            <button
+              type="button"
+              class={['ghost-btn compact', dashboardView.value === 'editor' ? 'is-active' : '']}
+              onClick={() => setDashboardView('editor')}
+            >
+              Content Editor
+            </button>
+          </section>
+
+          {dashboardView.value === 'overview' ? (
+            <section class="overview-grid">
+              <article class="panel glass-panel reveal-up" style={{ animationDelay: '220ms' }}>
+                <div class="section-head split">
+                  <div>
+                    <h2>Dashboard Overview</h2>
+                    <p>Track content performance and jump into publishing in one click.</p>
+                  </div>
+                  <button type="button" class="primary-btn" onClick={() => setDashboardView('editor')}>
+                    Open Editor
+                  </button>
+                </div>
+                <div class="stats-grid">
+                  {stats.value.map((card, index) => (
+                    <article class={['stat-card', 'glass-panel', `accent-${card.accent}`]} key={`overview-${card.label}-${index}`}>
+                      <span>{card.label}</span>
+                      <strong>{card.value}</strong>
+                    </article>
+                  ))}
+                </div>
+              </article>
+
+              <article class="panel glass-panel reveal-up" style={{ animationDelay: '260ms' }}>
+                <div class="section-head split">
+                  <div>
+                    <h2>Latest Content</h2>
+                    <p>Your most recent uploads and updates.</p>
+                  </div>
+                  <button type="button" class="ghost-btn compact" onClick={() => setDashboardView('editor')}>
+                    Manage Library
+                  </button>
+                </div>
+                <div class="list-wrap">
+                  {recentItems.value.length === 0 ? (
+                    <div class="empty-state">No content yet. Click <strong>Open Editor</strong> to publish your first item.</div>
+                  ) : recentItems.value.map((item) => (
+                    <article class="content-card" key={`overview-item-${item.id}`}>
+                      <div class="card-top">
+                        <div class="pill-row">
+                          <span class={['pill', `pill-${item.type}`]}>{item.type}</span>
+                          <span class={['pill', item.visibility === 'published' ? 'pill-live' : 'pill-draft']}>{item.visibility}</span>
+                        </div>
+                        <span class="muted-chip">{formatDateTime(item.updatedAt)}</span>
+                      </div>
+                      <div class="card-body">
+                        <h3>{item.title}</h3>
+                        <p>{truncate(item.description, 120)}</p>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </article>
+
+              <article class="panel glass-panel reveal-up" style={{ animationDelay: '300ms' }}>
+                <div class="section-head split">
+                  <div>
+                    <h2>YouTube Feed</h2>
+                    <p>Preview latest channel videos and sync directly into your library.</p>
+                  </div>
+                  <div class="button-row">
+                    <button type="button" class="ghost-btn compact" onClick={() => void fetchYouTubePreview()} disabled={youtubePreviewLoading.value}>
+                      {youtubePreviewLoading.value ? 'Loading...' : 'Fetch Videos'}
+                    </button>
+                    <button type="button" class="ghost-btn compact" onClick={() => setDashboardView('editor')}>
+                      Open Sync
+                    </button>
+                  </div>
+                </div>
+                <div class="list-wrap">
+                  {youtubePreviewItems.value.length === 0 ? (
+                    <div class="empty-state">No videos loaded yet. Click <strong>Fetch Videos</strong>.</div>
+                  ) : youtubePreviewItems.value.slice(0, 4).map((video) => (
+                    <article class="content-card" key={`overview-yt-${video.youtubeVideoId}`}>
+                      <div class="card-top">
+                        <div class="pill-row">
+                          <span class="pill pill-video">video</span>
+                          {video.isLive ? <span class="pill pill-live">live</span> : null}
+                        </div>
+                        <span class="muted-chip">{video.duration || '--:--'}</span>
+                      </div>
+                      <div class="card-body">
+                        <h3>{video.title}</h3>
+                        <p>{truncate(video.description, 120)}</p>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </article>
+            </section>
+          ) : null}
+
+          {dashboardView.value === 'editor' ? (
+            <main class="main-grid">
             <section class="panel glass-panel reveal-up" style={{ animationDelay: '140ms' }}>
               <div class="section-head">
                 <div>
@@ -1186,7 +1308,7 @@ export default defineComponent({
                         const kind = resolveMediaAssetKind();
                         const policy = kind ? getUploadPolicy(kind) : null;
                         if (!kind) return 'Select content type Audio or Video to upload a media file.';
-                        if (!policy) return uploadPoliciesLoading.value ? 'Loading upload rules...' : 'Upload rules will load from backend.';
+                        if (!policy) return uploadPoliciesLoading.value ? 'Loading upload rules...' : 'Allowed formats and size limits are applied automatically.';
                         return `Allowed: ${policy.allowedExtensions.join(', ')} • Max ${formatBytes(policy.maxBytes)}`;
                       })()}
                     </small>
@@ -1203,7 +1325,7 @@ export default defineComponent({
                     <small class="subtle-text">
                       {(() => {
                         const policy = getUploadPolicy('thumbnail');
-                        if (!policy) return uploadPoliciesLoading.value ? 'Loading thumbnail rules...' : 'Thumbnail rules will load from backend.';
+                        if (!policy) return uploadPoliciesLoading.value ? 'Loading thumbnail rules...' : 'Allowed formats and size limits are applied automatically.';
                         return `Allowed: ${policy.allowedExtensions.join(', ')} • Max ${formatBytes(policy.maxBytes)}`;
                       })()}
                     </small>
@@ -1244,7 +1366,7 @@ export default defineComponent({
                       <h3>YouTube Sync</h3>
                       <p>Fetch channel videos from the backend and import them into your content library.</p>
                     </div>
-                    <span class="section-badge">Backend</span>
+                    <span class="section-badge">YouTube</span>
                   </div>
 
                   <label>
@@ -1297,7 +1419,7 @@ export default defineComponent({
                   <div class="youtube-preview-list">
                     {youtubePreviewItems.value.length === 0 ? (
                       <div class="empty-state">
-                        No YouTube preview loaded yet. Use <strong>Fetch Preview</strong> after setting `YOUTUBE_API_KEY` and `YOUTUBE_CHANNEL_ID` in the backend `.env`.
+                        No YouTube videos loaded yet. Click <strong>Fetch Preview</strong> to load the latest channel videos.
                       </div>
                     ) : youtubePreviewItems.value.map((video) => (
                       <article class="content-card" key={video.youtubeVideoId}>
@@ -1643,7 +1765,8 @@ export default defineComponent({
                 </section>
               </>
             ) : null}
-          </main>
+            </main>
+          ) : null}
 
           {editContentOpen.value ? (
             <div
