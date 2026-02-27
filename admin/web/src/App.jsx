@@ -1,8 +1,9 @@
 import axios from 'axios';
-import { computed, defineComponent, onMounted, reactive, ref } from 'vue';
+import { computed, defineComponent, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import './App.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+const GOOGLE_LOGIN_URL = import.meta.env.VITE_GOOGLE_LOGIN_URL || '';
 const ACCESS_TOKEN_KEY = 'claudy_admin_access_token';
 const BRAND_LOGO_URL = '/brand/claudy-logo.webp';
 const CONTENT_TYPES = ['audio', 'video', 'playlist', 'announcement'];
@@ -103,6 +104,8 @@ export default defineComponent({
     const editingContentId = ref(null);
     const editContentOpen = ref(false);
     const editContentSaving = ref(false);
+    const headerMenuOpen = ref(false);
+    const viewportWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1366);
     const uploadingAsset = ref(false);
     const uploadPoliciesLoading = ref(false);
     const uploadPolicies = ref([]);
@@ -180,6 +183,8 @@ export default defineComponent({
     const displayName = computed(() => (currentUser.value && currentUser.value.displayName ? currentUser.value.displayName : 'Client'));
     const isRegisterMode = computed(() => authMode.value === 'register');
     const isAdmin = computed(() => Boolean(currentUser.value && currentUser.value.role === 'ADMIN'));
+    const isCompactHeader = computed(() => viewportWidth.value <= 1024);
+    const googleLoginEnabled = computed(() => Boolean(GOOGLE_LOGIN_URL));
 
     const stats = computed(() => {
       const total = managedItems.value.length;
@@ -236,6 +241,34 @@ export default defineComponent({
       localStorage.removeItem(ACCESS_TOKEN_KEY);
       accessToken.value = '';
       applyToken(null);
+    }
+
+    function syncViewport() {
+      if (typeof window === 'undefined') return;
+      viewportWidth.value = window.innerWidth;
+      if (viewportWidth.value > 1024 && headerMenuOpen.value) {
+        headerMenuOpen.value = false;
+      }
+    }
+
+    function toggleHeaderMenu() {
+      headerMenuOpen.value = !headerMenuOpen.value;
+    }
+
+    function closeHeaderMenu() {
+      headerMenuOpen.value = false;
+    }
+
+    function startGoogleLogin() {
+      clearNotice();
+      if (!GOOGLE_LOGIN_URL) {
+        setNotice('Google sign-in is not configured. Add VITE_GOOGLE_LOGIN_URL in admin/web/.env.', 'error');
+        return;
+      }
+
+      if (typeof window !== 'undefined') {
+        window.location.assign(GOOGLE_LOGIN_URL);
+      }
     }
 
     async function fetchCurrentUser() {
@@ -601,6 +634,7 @@ export default defineComponent({
 
     function switchAuthMode(mode) {
       authMode.value = mode;
+      closeHeaderMenu();
       clearNotice();
       authForm.password = '';
       authForm.confirmPassword = '';
@@ -612,6 +646,7 @@ export default defineComponent({
 
     function logout() {
       persistToken(null);
+      closeHeaderMenu();
       currentUser.value = null;
       managedItems.value = [];
       youtubePreviewItems.value = [];
@@ -790,6 +825,7 @@ export default defineComponent({
           isAdmin.value ? fetchMobileAppConfig() : Promise.resolve(),
           isAdmin.value ? fetchWordOfDayDashboard() : Promise.resolve(),
         ]);
+        closeHeaderMenu();
         setNotice('Dashboard refreshed.', 'success');
       } catch (error) {
         setNotice(toErrorMessage(error, 'Refresh failed. Please try again.'), 'error');
@@ -843,7 +879,17 @@ export default defineComponent({
     }
 
     onMounted(() => {
+      syncViewport();
+      if (typeof window !== 'undefined') {
+        window.addEventListener('resize', syncViewport);
+      }
       void bootstrapSession();
+    });
+
+    onBeforeUnmount(() => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('resize', syncViewport);
+      }
     });
 
     return () => {
@@ -859,7 +905,7 @@ export default defineComponent({
                 <p class="eyebrow">ClaudyGod Ministries</p>
                 <h1>Content Studio</h1>
                 <p class="subtitle">
-                  A clean publishing workspace for your team to upload, organize, and publish new content.
+                  A clean publishing center for your team to upload, organize, and publish new content.
                 </p>
               </div>
             </div>
@@ -924,6 +970,22 @@ export default defineComponent({
             </div>
 
             {notice.value ? <div class={['notice', noticeKind.value === 'error' ? 'notice-error' : 'notice-success']}>{notice.value}</div> : null}
+
+            <div class="social-auth-block">
+              <button
+                type="button"
+                class="google-btn"
+                onClick={startGoogleLogin}
+                disabled={authLoading.value || !googleLoginEnabled.value}
+              >
+                Continue with Google
+              </button>
+              <p class="social-auth-hint">
+                {googleLoginEnabled.value
+                  ? 'Use your Google account for faster sign in.'
+                  : 'Set VITE_GOOGLE_LOGIN_URL to enable Google sign-in.'}
+              </p>
+            </div>
 
             <form class="stack-form" onSubmit={(event) => void handleAuthSubmit(event)}>
               {isRegisterMode.value ? (
@@ -1032,7 +1094,7 @@ export default defineComponent({
                   <img src={BRAND_LOGO_URL} alt="ClaudyGod" class="brand-logo" />
                 </div>
                 <div>
-                  <p class="eyebrow">Publishing Workspace</p>
+                  <p class="eyebrow">Publishing Center</p>
                   <h1>{greeting.value}, {displayName.value}</h1>
                   <p class="subtitle">
                     Manage your content library, save drafts, and publish new releases from one clean dashboard.
@@ -1775,7 +1837,13 @@ export default defineComponent({
                 <div class="logo-glow" />
                 <img src={BRAND_LOGO_URL} alt="ClaudyGod" class="brand-logo" />
               </div>
-              <p>Preparing your workspace...</p>
+              <div class="boot-loader" aria-hidden="true">
+                <span />
+                <span />
+                <span />
+              </div>
+              <p>Preparing your portal...</p>
+              <p>Loading your dashboard...</p>
             </div>
           </div>
         )
@@ -1799,17 +1867,64 @@ export default defineComponent({
                 </div>
               </div>
 
-              {currentUser.value ? (
-                <div class="user-pill">
-                  <span class="user-pill-dot" />
-                  <span>{displayName.value}</span>
-                </div>
-              ) : (
-                <div class="user-pill muted">
-                  <span>Client Portal</span>
-                </div>
-              )}
+              <div class="header-controls">
+                {isCompactHeader.value ? (
+                  <button
+                    type="button"
+                    class={['header-toggle-btn', headerMenuOpen.value ? 'is-open' : '']}
+                    onClick={toggleHeaderMenu}
+                    aria-expanded={headerMenuOpen.value ? 'true' : 'false'}
+                    aria-label={headerMenuOpen.value ? 'Close header menu' : 'Open header menu'}
+                  >
+                    {headerMenuOpen.value ? 'Close' : 'Menu'}
+                  </button>
+                ) : null}
+
+                {!isCompactHeader.value ? (
+                  currentUser.value ? (
+                    <div class="user-pill">
+                      <span class="user-pill-dot" />
+                      <span>{displayName.value}</span>
+                    </div>
+                  ) : (
+                    <div class="user-pill muted">
+                      <span>Client Portal</span>
+                    </div>
+                  )
+                ) : null}
+              </div>
             </div>
+
+            {isCompactHeader.value ? (
+              <div class={['header-drawer', headerMenuOpen.value ? 'is-open' : '']}>
+                <div class="header-drawer-inner">
+                  {currentUser.value ? (
+                    <div class="user-pill">
+                      <span class="user-pill-dot" />
+                      <span>{displayName.value}</span>
+                    </div>
+                  ) : (
+                    <div class="user-pill muted">
+                      <span>Client Portal</span>
+                    </div>
+                  )}
+
+                  {currentUser.value ? (
+                    <div class="header-drawer-actions">
+                      <button type="button" class="ghost-btn compact" onClick={() => void refreshDashboard()}>
+                        Refresh
+                      </button>
+                      <button type="button" class="ghost-btn compact" onClick={() => void fetchYouTubePreview()}>
+                        YouTube Preview
+                      </button>
+                      <button type="button" class="danger-btn compact" onClick={logout}>
+                        Sign Out
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
           </header>
 
           <main
@@ -1823,11 +1938,14 @@ export default defineComponent({
 
           <footer class="global-footer">
             <div class="global-footer-inner">
-              <div>
+              <div class="footer-brand">
                 <strong>ClaudyGod Content Studio</strong>
-                <p>Client content publishing portal</p>
+                <p>Content operations portal for ministry teams</p>
               </div>
-              <div class="footer-right">{currentYear} Claudy Platform</div>
+              <div class="footer-meta">
+                <span class="footer-chip">Admin Portal</span>
+                <div class="footer-right">{currentYear} Claudy Platform</div>
+              </div>
             </div>
           </footer>
         </div>
