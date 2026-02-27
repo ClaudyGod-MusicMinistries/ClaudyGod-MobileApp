@@ -51,7 +51,7 @@ services:
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-replace-this-jwt-secret-before-production-please-123456789}
       JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-1d}
       BCRYPT_ROUNDS: ${BCRYPT_ROUNDS:-12}
-      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173,http://localhost:19006}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173,http://localhost:19006,http://localhost:8081}
       MOBILE_API_KEY: ${MOBILE_API_KEY:-dev-mobile-api-key}
       SUPABASE_URL: ${SUPABASE_URL:-}
       SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
@@ -102,7 +102,7 @@ services:
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-replace-this-jwt-secret-before-production-please-123456789}
       JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-1d}
       BCRYPT_ROUNDS: ${BCRYPT_ROUNDS:-12}
-      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173,http://localhost:19006}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173,http://localhost:19006,http://localhost:8081}
       MOBILE_API_KEY: ${MOBILE_API_KEY:-dev-mobile-api-key}
       SUPABASE_URL: ${SUPABASE_URL:-}
       SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
