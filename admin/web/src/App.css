@@ -308,10 +308,47 @@ code {
   gap: 0.6rem;
 }
 
+.header-nav-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.52rem;
+  padding-inline: 0.74rem 0.86rem;
+}
+
+.header-toggle-icon {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.16rem;
+  width: 0.86rem;
+}
+
+.header-toggle-icon span {
+  display: block;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+  transform-origin: center;
+  transition: transform 0.18s ease, opacity 0.18s ease;
+}
+
+.header-nav-toggle.is-open .header-toggle-icon span:nth-child(1) {
+  transform: translateY(4px) rotate(40deg);
+}
+
+.header-nav-toggle.is-open .header-toggle-icon span:nth-child(2) {
+  opacity: 0;
+}
+
+.header-nav-toggle.is-open .header-toggle-icon span:nth-child(3) {
+  transform: translateY(-4px) rotate(-40deg);
+}
+
 .header-command-bar {
   display: inline-flex;
   align-items: center;
   gap: 0.52rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .header-inline-actions {
@@ -394,7 +431,7 @@ code {
 }
 
 .header-drawer.is-open {
-  max-height: 300px;
+  max-height: 560px;
   border-top-color: var(--line);
   background: linear-gradient(180deg, rgba(9, 13, 24, 0.95), rgba(8, 9, 18, 0.86));
 }
@@ -407,9 +444,30 @@ code {
   gap: 0.72rem;
 }
 
-.header-drawer-actions {
+.header-drawer-nav {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.drawer-nav-link {
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--ink);
+  font-size: var(--font-sm);
+  font-weight: 800;
+  padding: 0.6rem 0.72rem;
+}
+
+.drawer-nav-link.is-active {
+  border-color: rgba(154, 107, 255, 0.44);
+  background: rgba(154, 107, 255, 0.16);
+}
+
+.header-drawer-actions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.55rem;
 }
 
@@ -1120,6 +1178,85 @@ button {
   max-height: 30rem;
 }
 
+.mobile-preview-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(300px, 0.8fr);
+  gap: 0.95rem;
+  align-items: start;
+}
+
+.mobile-preview-controls {
+  display: grid;
+  gap: 0.72rem;
+}
+
+.mobile-preview-actions {
+  grid-template-columns: 1fr auto;
+}
+
+.mobile-preview-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.mobile-preview-frame-wrap {
+  margin-top: 0.75rem;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(0, 0, 0, 0.24);
+  min-height: 560px;
+  overflow: hidden;
+}
+
+.mobile-preview-frame {
+  display: block;
+  width: 100%;
+  min-height: 560px;
+  border: 0;
+  background: #05050a;
+}
+
+.endpoint-check-list {
+  margin-top: 0.78rem;
+  display: grid;
+  gap: 0.66rem;
+  max-height: 38rem;
+  overflow: auto;
+  padding-right: 0.15rem;
+}
+
+.endpoint-check-card {
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+  padding: 0.7rem;
+  display: grid;
+  gap: 0.42rem;
+}
+
+.endpoint-check-card.is-ok {
+  border-color: rgba(34, 197, 94, 0.24);
+}
+
+.endpoint-check-card.is-error {
+  border-color: rgba(248, 113, 113, 0.3);
+}
+
+.endpoint-check-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.endpoint-check-card p {
+  color: var(--ink-soft);
+  font-size: var(--font-sm);
+  line-height: 1.4;
+}
+
 .stat-card {
   padding: 0.9rem;
   border-radius: 18px;
@@ -1557,7 +1694,8 @@ button {
 
 @media (max-width: 1120px) {
   .auth-layout,
-  .main-grid {
+  .main-grid,
+  .mobile-preview-grid {
     grid-template-columns: 1fr;
   }
 
@@ -1593,6 +1731,10 @@ button {
   }
 
   .header-drawer-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .header-drawer-nav {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -1679,6 +1821,10 @@ button {
     grid-template-columns: 1fr;
   }
 
+  .header-drawer-nav {
+    grid-template-columns: 1fr;
+  }
+
   .brand-title-line {
     font-size: var(--font-lg);
   }
@@ -1703,6 +1849,15 @@ button {
   .type-density-control.is-compact .type-density-option {
     flex: 1;
     text-align: center;
+  }
+
+  .mobile-preview-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .mobile-preview-frame-wrap,
+  .mobile-preview-frame {
+    min-height: 460px;
   }
 
   .subtitle {
