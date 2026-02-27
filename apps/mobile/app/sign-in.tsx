@@ -71,6 +71,7 @@ export default function SignInScreen() {
 
   const handleSignIn = async () => {
     setErrorMessage('');
+    const normalizedEmail = email.trim().toLowerCase();
     if (!email.trim() || !password.trim()) {
       setErrorMessage('Enter your email and password.');
       return;
@@ -78,13 +79,30 @@ export default function SignInScreen() {
 
     setSubmitting(true);
     try {
-      await loginMobileUser({
-        email: email.trim().toLowerCase(),
+      const session = await loginMobileUser({
+        email: normalizedEmail,
         password,
       });
+
+      if (session.requiresEmailVerification) {
+        router.replace({
+          pathname: '/verify-email',
+          params: { email: normalizedEmail },
+        });
+        return;
+      }
+
       router.replace('/(tabs)/home');
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Sign in failed');
+      const message = error instanceof Error ? error.message : 'Sign in failed';
+      setErrorMessage(message);
+
+      if (/email is not verified/i.test(message)) {
+        router.push({
+          pathname: '/verify-email',
+          params: { email: normalizedEmail },
+        });
+      }
     } finally {
       setSubmitting(false);
     }
@@ -234,15 +252,32 @@ export default function SignInScreen() {
                       </TVTouchable>
                     </View>
 
-                    <TVTouchable
-                      onPress={() => console.log('forgot password')}
-                      style={{ alignSelf: 'flex-end' }}
-                      showFocusBorder={false}
-                    >
-                      <CustomText variant="label" style={{ color: '#CDB9FF' }}>
-                        Forgot password?
-                      </CustomText>
-                    </TVTouchable>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <TVTouchable
+                        onPress={() => {
+                          const normalizedEmail = email.trim().toLowerCase();
+                          if (normalizedEmail) {
+                            router.push({
+                              pathname: '/verify-email',
+                              params: { email: normalizedEmail },
+                            });
+                            return;
+                          }
+                          router.push('/verify-email');
+                        }}
+                        showFocusBorder={false}
+                      >
+                        <CustomText variant="label" style={{ color: '#CDB9FF' }}>
+                          Verify email
+                        </CustomText>
+                      </TVTouchable>
+
+                      <TVTouchable onPress={() => router.push('/forgot-password')} showFocusBorder={false}>
+                        <CustomText variant="label" style={{ color: '#CDB9FF' }}>
+                          Forgot password?
+                        </CustomText>
+                      </TVTouchable>
+                    </View>
                   </View>
 
                   {errorMessage ? (
