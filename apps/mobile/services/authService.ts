@@ -7,17 +7,36 @@ export interface MobileAuthUser {
   displayName: string;
   role: 'CLIENT' | 'ADMIN';
   createdAt: string;
+  emailVerifiedAt: string | null;
 }
 
 export interface MobileAuthResponse {
   accessToken: string;
   user: MobileAuthUser;
+  requiresEmailVerification?: boolean;
 }
 
 export interface RegisterMobileUserInput {
   email: string;
   password: string;
   displayName: string;
+}
+
+export interface ForgotPasswordInput {
+  email: string;
+}
+
+export interface ResetPasswordInput {
+  token: string;
+  newPassword: string;
+}
+
+export interface VerifyEmailInput {
+  token: string;
+}
+
+export interface AuthActionResponse {
+  message: string;
 }
 
 const ACCESS_TOKEN_STORAGE_KEY = 'claudygod_mobile_access_token';
@@ -31,7 +50,7 @@ export async function loginMobileUser(input: {
     method: 'POST',
     body: JSON.stringify(input),
   });
-  await persistMobileSession(response);
+  await persistSessionWhenVerified(response);
   return response;
 }
 
@@ -40,8 +59,62 @@ export async function registerMobileUser(input: RegisterMobileUserInput): Promis
     method: 'POST',
     body: JSON.stringify(input),
   });
+  await persistSessionWhenVerified(response);
+  return response;
+}
+
+export async function requestVerificationEmail(
+  input: ForgotPasswordInput,
+): Promise<AuthActionResponse> {
+  return apiFetch<AuthActionResponse>('/v1/auth/email/verify/request', {
+    method: 'POST',
+    body: JSON.stringify({
+      email: input.email.trim().toLowerCase(),
+    }),
+  });
+}
+
+export async function verifyMobileEmail(input: VerifyEmailInput): Promise<MobileAuthResponse> {
+  const response = await apiFetch<MobileAuthResponse>('/v1/auth/email/verify', {
+    method: 'POST',
+    body: JSON.stringify({
+      token: input.token.trim(),
+    }),
+  });
   await persistMobileSession(response);
   return response;
+}
+
+export async function requestMobilePasswordReset(
+  input: ForgotPasswordInput,
+): Promise<AuthActionResponse> {
+  return apiFetch<AuthActionResponse>('/v1/auth/password/forgot', {
+    method: 'POST',
+    body: JSON.stringify({
+      email: input.email.trim().toLowerCase(),
+    }),
+  });
+}
+
+export async function resetMobilePassword(
+  input: ResetPasswordInput,
+): Promise<AuthActionResponse> {
+  return apiFetch<AuthActionResponse>('/v1/auth/password/reset', {
+    method: 'POST',
+    body: JSON.stringify({
+      token: input.token.trim(),
+      newPassword: input.newPassword,
+    }),
+  });
+}
+
+async function persistSessionWhenVerified(session: MobileAuthResponse): Promise<void> {
+  if (session.requiresEmailVerification) {
+    await clearMobileSession();
+    return;
+  }
+
+  await persistMobileSession(session);
 }
 
 export async function persistMobileSession(session: MobileAuthResponse): Promise<void> {
