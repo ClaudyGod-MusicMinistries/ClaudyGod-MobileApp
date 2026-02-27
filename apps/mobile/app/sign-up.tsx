@@ -145,7 +145,7 @@ export default function SignUpScreen() {
                     Create Account
                   </CustomText>
                   <CustomText variant="body" style={{ color: 'rgba(203,196,226,0.86)', marginTop: 8 }}>
-                    Set up your workspace for ministry music, videos, and channel updates.
+                    Set up your account for ministry music, videos, and channel updates.
                   </CustomText>
 
                   <View style={{ marginTop: 16, gap: 10 }}>
