@@ -41,6 +41,10 @@ export interface VerifyEmailInput {
   token: string;
 }
 
+export interface ResendVerificationEmailInput {
+  email: string;
+}
+
 export interface AuthActionResponse {
   message: string;
 }
