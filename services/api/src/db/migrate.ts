@@ -18,6 +18,7 @@ const migrations = [
   `ALTER TABLE app_users ADD COLUMN IF NOT EXISTS timezone TEXT`,
   `ALTER TABLE app_users ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMPTZ`,
   `ALTER TABLE app_users ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE`,
+  `ALTER TABLE app_users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMPTZ`,
   `CREATE TABLE IF NOT EXISTS content_items (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     author_id UUID NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,
@@ -61,6 +62,18 @@ const migrations = [
     payload JSONB NOT NULL DEFAULT '{}'::jsonb,
     error TEXT,
     processed_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  `CREATE TABLE IF NOT EXISTS auth_action_tokens (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,
+    token_hash TEXT NOT NULL UNIQUE,
+    token_type TEXT NOT NULL CHECK (token_type IN ('email_verification', 'password_reset')),
+    expires_at TIMESTAMPTZ NOT NULL,
+    used_at TIMESTAMPTZ,
+    requested_ip TEXT,
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`,
@@ -216,6 +229,10 @@ const migrations = [
     ON content_jobs (status, created_at DESC)`,
   `CREATE INDEX IF NOT EXISTS idx_email_jobs_status_created_at
     ON email_jobs (status, created_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_auth_action_tokens_user_type_created_at
+    ON auth_action_tokens (user_id, token_type, created_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_auth_action_tokens_token_type_expires_at
+    ON auth_action_tokens (token_type, expires_at DESC)`,
   `CREATE INDEX IF NOT EXISTS idx_upload_sessions_channel_status_created_at
     ON upload_sessions (channel, status, created_at DESC)`,
   `CREATE INDEX IF NOT EXISTS idx_user_play_events_user_played_at
@@ -273,6 +290,13 @@ const migrations = [
       IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'set_email_jobs_updated_at') THEN
         CREATE TRIGGER set_email_jobs_updated_at
         BEFORE UPDATE ON email_jobs
+        FOR EACH ROW
+        EXECUTE FUNCTION set_updated_at();
+      END IF;
+
+      IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'set_auth_action_tokens_updated_at') THEN
+        CREATE TRIGGER set_auth_action_tokens_updated_at
+        BEFORE UPDATE ON auth_action_tokens
         FOR EACH ROW
         EXECUTE FUNCTION set_updated_at();
       END IF;

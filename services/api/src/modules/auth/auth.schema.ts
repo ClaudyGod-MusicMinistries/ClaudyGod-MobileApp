@@ -9,7 +9,7 @@ const displayNameSchema = z
   .max(80, 'Display name must contain at most 80 characters')
   .regex(/^[\p{L}\p{N} .,'_-]+$/u, 'Display name contains unsupported characters');
 
-const passwordSchema = z
+export const passwordSchema = z
   .string()
   .min(8, 'Password must contain at least 8 characters')
   .max(72, 'Password must contain at most 72 characters')
@@ -31,5 +31,30 @@ export const loginSchema = z
   .object({
     email: emailSchema,
     password: z.string().min(1).max(72),
+  })
+  .strict();
+
+export const forgotPasswordSchema = z
+  .object({
+    email: emailSchema,
+  })
+  .strict();
+
+export const resetPasswordSchema = z
+  .object({
+    token: z.string().trim().min(40).max(256),
+    newPassword: passwordSchema,
+  })
+  .strict();
+
+export const verifyEmailSchema = z
+  .object({
+    token: z.string().trim().min(40).max(256),
+  })
+  .strict();
+
+export const resendVerificationEmailSchema = z
+  .object({
+    email: emailSchema,
   })
   .strict();
