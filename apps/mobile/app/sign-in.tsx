@@ -54,11 +54,14 @@ function SocialGlassButton({
 
 export default function SignInScreen() {
   const router = useRouter();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
 
   const isTV = Platform.isTV;
+  const isWeb = Platform.OS === 'web';
   const isTablet = width >= 768 && !isTV;
   const compact = width < 370;
+  const compactViewport = height < 760;
+  const showSocialAuth = !compactViewport;
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -108,16 +111,21 @@ export default function SignInScreen() {
       <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top', 'bottom']}>
         <ScrollView
           style={{ flex: 1, backgroundColor: 'transparent' }}
-          contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
+          contentContainerStyle={{
+            flexGrow: 1,
+            justifyContent: 'center',
+            paddingBottom: isWeb ? 0 : 20,
+          }}
           showsVerticalScrollIndicator={false}
           bounces={false}
           alwaysBounceVertical={false}
           overScrollMode="never"
+          scrollEnabled={!isWeb || compactViewport}
           keyboardShouldPersistTaps="handled"
         >
           <Screen style={{ flex: 1 }} contentStyle={{ flex: 1, justifyContent: 'center' }}>
             <FadeIn>
-              <View style={{ paddingTop: 10 }}>
+              <View style={{ paddingTop: compactViewport ? 4 : 10 }}>
                 <TVTouchable
                   onPress={() => router.back()}
                   style={{
@@ -137,12 +145,12 @@ export default function SignInScreen() {
 
                 <View
                   style={{
-                    marginTop: 16,
+                    marginTop: compactViewport ? 12 : 16,
                     width: '100%',
                     maxWidth: isTV ? 760 : isTablet ? 560 : '100%',
                     alignSelf: 'center',
                     borderRadius: 24,
-                    padding: isTablet ? 24 : compact ? 16 : 20,
+                    padding: isTablet ? 24 : compactViewport ? 14 : compact ? 16 : 20,
                     backgroundColor: 'rgba(13,10,22,0.90)',
                     borderWidth: 1,
                     borderColor: 'rgba(235,226,255,0.14)',
@@ -264,26 +272,30 @@ export default function SignInScreen() {
                     style={{ marginTop: 16, borderRadius: 16 }}
                   />
 
-                  <View style={{ marginTop: 18, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                    <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.12)' }} />
-                    <CustomText variant="caption" style={{ color: 'rgba(187,178,211,0.86)' }}>
-                      Or continue with
-                    </CustomText>
-                    <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.12)' }} />
-                  </View>
+                  {showSocialAuth ? (
+                    <>
+                      <View style={{ marginTop: 18, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                        <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.12)' }} />
+                        <CustomText variant="caption" style={{ color: 'rgba(187,178,211,0.86)' }}>
+                          Or continue with
+                        </CustomText>
+                        <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.12)' }} />
+                      </View>
 
-                  <View style={{ marginTop: 12, flexDirection: 'row', gap: 10 }}>
-                    <SocialGlassButton
-                      icon="g-translate"
-                      label="Google"
-                      onPress={() => console.log('google sign in')}
-                    />
-                    <SocialGlassButton
-                      icon="apple"
-                      label="Apple"
-                      onPress={() => console.log('apple sign in')}
-                    />
-                  </View>
+                      <View style={{ marginTop: 12, flexDirection: 'row', gap: 10 }}>
+                        <SocialGlassButton
+                          icon="g-translate"
+                          label="Google"
+                          onPress={() => console.log('google sign in')}
+                        />
+                        <SocialGlassButton
+                          icon="apple"
+                          label="Apple"
+                          onPress={() => console.log('apple sign in')}
+                        />
+                      </View>
+                    </>
+                  ) : null}
 
                   <TVTouchable
                     onPress={() => router.push('/sign-up')}
