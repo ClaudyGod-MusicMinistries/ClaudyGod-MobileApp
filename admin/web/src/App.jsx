@@ -389,7 +389,17 @@ export default defineComponent({
           if (axios.isAxiosError(error) && error.response?.status === 401 && accessToken.value) {
             const requestUrl = String(error.config?.url || '');
             const isAuthEndpoint = requestUrl.includes('/v1/auth/login') || requestUrl.includes('/v1/auth/register');
-            if (!isAuthEndpoint) {
+            const failedHeaderValue =
+              error.config?.headers && typeof error.config.headers === 'object'
+                ? String(error.config.headers.Authorization || error.config.headers.authorization || '')
+                : '';
+            const activeHeaderValue = accessToken.value ? `Bearer ${accessToken.value}` : '';
+            const hadBearerHeader = failedHeaderValue.startsWith('Bearer ');
+            const staleRequest =
+              Boolean(activeHeaderValue) &&
+              (!hadBearerHeader || failedHeaderValue !== activeHeaderValue);
+
+            if (!isAuthEndpoint && !staleRequest) {
               persistToken(null);
               clearSessionData();
               setNotice('Your session has expired. Please sign in again.', 'error');
@@ -406,11 +416,12 @@ export default defineComponent({
       authResponseInterceptorId.value = null;
     }
 
-    async function fetchManagedContent() {
+    async function fetchManagedContent(tokenOverride) {
       contentLoading.value = true;
       try {
         const response = await http.get('/v1/content/manage', {
           params: { page: pagination.page, limit: pagination.limit },
+          headers: tokenOverride ? { Authorization: `Bearer ${tokenOverride}` } : undefined,
         });
         managedItems.value = response.data.items || [];
         pagination.total = response.data.total || 0;
@@ -419,10 +430,12 @@ export default defineComponent({
       }
     }
 
-    async function fetchUploadPolicies() {
+    async function fetchUploadPolicies(tokenOverride) {
       uploadPoliciesLoading.value = true;
       try {
-        const response = await http.get('/v1/uploads/policies');
+        const response = await http.get('/v1/uploads/policies', {
+          headers: tokenOverride ? { Authorization: `Bearer ${tokenOverride}` } : undefined,
+        });
         uploadPolicies.value = Array.isArray(response.data && response.data.assets) ? response.data.assets : [];
       } catch (error) {
         setNotice(toErrorMessage(error, 'Unable to load upload policies.'), 'error');
@@ -728,14 +741,18 @@ export default defineComponent({
             };
 
         const authResponse = await http.post(endpoint, payload);
+        const freshToken = String(authResponse.data?.accessToken || '');
+        if (!freshToken) {
+          throw new Error('Authentication succeeded but no session token was returned.');
+        }
 
-        persistToken(authResponse.data.accessToken);
+        persistToken(freshToken);
         currentUser.value = authResponse.data.user;
         authForm.password = '';
         authForm.confirmPassword = '';
         await Promise.all([
-          fetchManagedContent(),
-          fetchUploadPolicies(),
+          fetchManagedContent(freshToken),
+          fetchUploadPolicies(freshToken),
           authResponse.data.user && authResponse.data.user.role === 'ADMIN' ? fetchMobileAppConfig() : Promise.resolve(),
           authResponse.data.user && authResponse.data.user.role === 'ADMIN' ? fetchWordOfDayDashboard() : Promise.resolve(),
         ]);

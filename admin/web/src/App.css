@@ -36,9 +36,15 @@ body {
   color: var(--ink);
   font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
   background:
+    linear-gradient(160deg, rgba(5, 4, 13, 0.94), rgba(12, 9, 24, 0.9)),
     radial-gradient(1000px 520px at 8% -10%, rgba(154, 107, 255, 0.2), transparent 60%),
     radial-gradient(1000px 600px at 100% -5%, rgba(124, 58, 237, 0.22), transparent 62%),
-    linear-gradient(180deg, var(--bg-1) 0%, var(--bg-2) 45%, var(--bg-3) 100%);
+    linear-gradient(180deg, var(--bg-1) 0%, var(--bg-2) 45%, var(--bg-3) 100%),
+    url('/brand/claudy-logo.webp');
+  background-size: cover, auto, auto, auto, clamp(420px, 34vw, 620px);
+  background-position: center center, 8% -10%, 100% -5%, center center, right 8% bottom 8%;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
 }
 
 img {
@@ -498,6 +504,24 @@ code {
   gap: 1rem;
   align-items: center;
   position: relative;
+}
+
+.auth-layout::before {
+  content: '';
+  position: absolute;
+  inset: -0.3rem;
+  border-radius: calc(var(--radius-xl) + 4px);
+  background:
+    linear-gradient(165deg, rgba(10, 8, 19, 0.78), rgba(8, 8, 16, 0.58)),
+    url('/brand/claudy-logo.webp') center / cover no-repeat;
+  opacity: 0.26;
+  filter: saturate(0.95) contrast(0.92);
+  pointer-events: none;
+}
+
+.auth-layout > * {
+  position: relative;
+  z-index: 1;
 }
 
 .auth-hero,
