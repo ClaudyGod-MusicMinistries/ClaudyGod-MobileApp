@@ -6,6 +6,7 @@ export interface SafeUser {
   displayName: string;
   role: UserRole;
   createdAt: string;
+  emailVerifiedAt: string | null;
 }
 
 export interface RegisterInput {
@@ -24,4 +25,22 @@ export interface LoginInput {
 export interface AuthResponse {
   accessToken: string;
   user: SafeUser;
+  requiresEmailVerification?: boolean;
+}
+
+export interface ForgotPasswordInput {
+  email: string;
+}
+
+export interface ResetPasswordInput {
+  token: string;
+  newPassword: string;
+}
+
+export interface VerifyEmailInput {
+  token: string;
+}
+
+export interface AuthActionResponse {
+  message: string;
 }

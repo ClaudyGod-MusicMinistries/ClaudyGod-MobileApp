@@ -58,6 +58,11 @@ const envSchema = z
     YOUTUBE_CHANNEL_ID: z.string().optional().default(''),
     YOUTUBE_MAX_RESULTS: z.coerce.number().int().min(1).max(50).default(12),
     ADMIN_SIGNUP_CODE: z.string().optional().default(''),
+    AUTH_REQUIRE_EMAIL_VERIFICATION: toBoolean(true),
+    AUTH_VERIFY_EMAIL_URL: z.string().url().default('http://localhost:5173/verify-email'),
+    AUTH_RESET_PASSWORD_URL: z.string().url().default('http://localhost:5173/reset-password'),
+    AUTH_VERIFICATION_TOKEN_TTL_MINUTES: z.coerce.number().int().min(10).max(10080).default(1440),
+    AUTH_PASSWORD_RESET_TOKEN_TTL_MINUTES: z.coerce.number().int().min(5).max(1440).default(30),
 
     SEED_ADMIN_EMAIL: z.string().email().default('admin@claudygod.example'),
     SEED_ADMIN_PASSWORD: z.string().min(8).default('ChangeMe123!'),
