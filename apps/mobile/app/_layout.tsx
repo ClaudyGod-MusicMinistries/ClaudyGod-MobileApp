@@ -251,7 +251,7 @@ function LoadingScreen() {
               textAlign: 'center',
             }}
           >
-            Setting up your secure workspace...
+            Setting up your secure portal...
           </Text>
         </View>
 

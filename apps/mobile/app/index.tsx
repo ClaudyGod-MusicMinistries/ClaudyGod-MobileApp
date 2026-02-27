@@ -255,9 +255,12 @@ export default function Landing() {
                       color: 'rgba(214,205,236,0.92)',
                       textAlign: 'center',
                       maxWidth: 440,
+                      fontFamily: 'Sora_400Regular',
+                      fontSize: compact ? 13 : 14,
+                      lineHeight: compact ? 20 : 21,
                     }}
                   >
-                    Stream ministry music, watch channels, and follow daily message drops in one organized workspace.
+                    Stream ministry music, watch channels, and follow daily message drops in one place.
                   </CustomText>
                 </View>
 

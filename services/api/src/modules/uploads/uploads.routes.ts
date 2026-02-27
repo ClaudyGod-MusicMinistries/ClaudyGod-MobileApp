@@ -15,9 +15,6 @@ uploadsRouter.get(
     if (!req.user) {
       throw new HttpError(401, 'Unauthorized');
     }
-    if (req.user.role !== 'ADMIN') {
-      throw new HttpError(403, 'Admin role required');
-    }
 
     res.status(200).json(uploadPoliciesResponse);
   }),
@@ -29,9 +26,6 @@ uploadsRouter.post(
   asyncHandler(async (req, res) => {
     if (!req.user) {
       throw new HttpError(401, 'Unauthorized');
-    }
-    if (req.user.role !== 'ADMIN') {
-      throw new HttpError(403, 'Admin role required');
     }
 
     const parsed = validateSchema(adminSignedUploadRequestSchema, req.body);
