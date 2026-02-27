@@ -137,8 +137,6 @@ export default defineComponent({
       password: '',
       displayName: '',
       confirmPassword: '',
-      registerAsAdmin: false,
-      adminSignupCode: '',
     });
 
     const createForm = reactive({
@@ -282,7 +280,7 @@ export default defineComponent({
     function startGoogleLogin() {
       clearNotice();
       if (!GOOGLE_LOGIN_URL) {
-        setNotice('Google sign-in is not configured. Add VITE_GOOGLE_LOGIN_URL in admin/web/.env.', 'error');
+        setNotice('Google sign-in is currently unavailable.', 'error');
         return;
       }
 
@@ -611,8 +609,7 @@ export default defineComponent({
               email: authForm.email.trim(),
               password: authForm.password,
               displayName: authForm.displayName.trim(),
-              role: authForm.registerAsAdmin ? 'ADMIN' : 'CLIENT',
-              adminSignupCode: authForm.adminSignupCode.trim() || undefined,
+              role: 'CLIENT',
             }
           : {
               email: authForm.email.trim(),
@@ -658,10 +655,6 @@ export default defineComponent({
       clearNotice();
       authForm.password = '';
       authForm.confirmPassword = '';
-      if (mode === 'login') {
-        authForm.registerAsAdmin = false;
-        authForm.adminSignupCode = '';
-      }
     }
 
     function logout() {
@@ -964,8 +957,8 @@ export default defineComponent({
                 <h2>{isRegisterMode.value ? 'Create Account' : 'Sign In'}</h2>
                 <p class="subtle-text">
                   {isRegisterMode.value
-                    ? 'Create a client account for the publishing dashboard. Admin accounts require a signup code.'
-                    : 'Enter your account details to access the publishing dashboard.'}
+                    ? 'Create your account to manage and publish content.'
+                    : 'Enter your account details to continue.'}
                 </p>
               </div>
             </div>
@@ -991,21 +984,18 @@ export default defineComponent({
 
             {notice.value ? <div class={['notice', noticeKind.value === 'error' ? 'notice-error' : 'notice-success']}>{notice.value}</div> : null}
 
-            <div class="social-auth-block">
-              <button
-                type="button"
-                class="google-btn"
-                onClick={startGoogleLogin}
-                disabled={authLoading.value || !googleLoginEnabled.value}
-              >
-                Continue with Google
-              </button>
-              <p class="social-auth-hint">
-                {googleLoginEnabled.value
-                  ? 'Use your Google account for faster sign in.'
-                  : 'Set VITE_GOOGLE_LOGIN_URL to enable Google sign-in.'}
-              </p>
-            </div>
+            {googleLoginEnabled.value ? (
+              <div class="social-auth-block">
+                <button
+                  type="button"
+                  class="google-btn"
+                  onClick={startGoogleLogin}
+                  disabled={authLoading.value}
+                >
+                  Continue with Google
+                </button>
+              </div>
+            ) : null}
 
             <form class="stack-form" onSubmit={(event) => void handleAuthSubmit(event)}>
               {isRegisterMode.value ? (
@@ -1055,39 +1045,6 @@ export default defineComponent({
                 </label>
               ) : null}
 
-              {isRegisterMode.value ? (
-                <div class="register-options">
-                  <label class="checkbox-row">
-                    <input
-                      type="checkbox"
-                      class="inline-checkbox"
-                      checked={authForm.registerAsAdmin}
-                      onChange={(event) => {
-                        authForm.registerAsAdmin = readChecked(event);
-                        if (!authForm.registerAsAdmin) authForm.adminSignupCode = '';
-                      }}
-                    />
-                    <span>
-                      Register as admin
-                      <small>Requires the backend `ADMIN_SIGNUP_CODE`.</small>
-                    </span>
-                  </label>
-
-                  {authForm.registerAsAdmin ? (
-                    <label>
-                      Admin signup code
-                      <input
-                        type="password"
-                        value={authForm.adminSignupCode}
-                        onInput={(event) => { authForm.adminSignupCode = readValue(event); }}
-                        placeholder="Enter your admin signup code"
-                        autoComplete="one-time-code"
-                      />
-                    </label>
-                  ) : null}
-                </div>
-              ) : null}
-
               <button type="submit" class="primary-btn primary-btn-large" disabled={authLoading.value}>
                 {authLoading.value
                   ? (isRegisterMode.value ? 'Creating account...' : 'Signing in...')
@@ -1097,8 +1054,8 @@ export default defineComponent({
 
             <p class="footnote-text">
               {isRegisterMode.value
-                ? 'Create a client account directly here. To create an admin account, enable `ADMIN_SIGNUP_CODE` in the backend and enter the code above.'
-                : 'Need access? You can sign up here for a client account or contact the platform administrator for admin access.'}
+                ? 'Create your account to get started.'
+                : 'Need access? Create an account to continue.'}
             </p>
           </div>
         </section>
