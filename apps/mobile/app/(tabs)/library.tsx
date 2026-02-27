@@ -11,6 +11,7 @@ import { TVTouchable } from '../../components/ui/TVTouchable';
 import { useContentFeed } from '../../hooks/useContentFeed';
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
 import type { FeedCardItem } from '../../services/contentService';
+import { buildPlayerRoute } from '../../util/playerRoute';
 
 export default function LibraryScreen() {
   const theme = useAppTheme();
@@ -35,7 +36,7 @@ export default function LibraryScreen() {
       title: item.title,
       source,
     });
-    router.push('/(tabs)/PlaySection');
+    router.push(buildPlayerRoute(item));
   };
 
   return (
@@ -65,7 +66,7 @@ export default function LibraryScreen() {
                     Your Library
                   </CustomText>
                   <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 2 }}>
-                    Spotify-style structure: liked, downloaded, playlists.
+                    Saved tracks, downloads, and playlists.
                   </CustomText>
                 </View>
 

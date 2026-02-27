@@ -16,8 +16,9 @@ import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { AppButton } from '../../components/ui/AppButton';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { useContentFeed } from '../../hooks/useContentFeed';
+import { buildPlayerRoute } from '../../util/playerRoute';
 
-const baseCategories = ['All', 'audio', 'video', 'playlist', 'live', 'ad'];
+const baseCategories = ['All', 'audio', 'video', 'playlist', 'live', 'announcement'];
 
 export default function Search() {
   const theme = useAppTheme();
@@ -38,18 +39,17 @@ export default function Search() {
       ...feed.videos,
       ...feed.playlists,
       ...feed.live,
-      ...feed.ads,
       ...feed.announcements,
       ...feed.mostPlayed,
     ],
-    [feed.ads, feed.announcements, feed.live, feed.mostPlayed, feed.music, feed.playlists, feed.videos],
+    [feed.announcements, feed.live, feed.mostPlayed, feed.music, feed.playlists, feed.videos],
   );
 
   const quickShortcuts = useMemo(
     () => [
       { icon: 'graphic-eq', label: 'Trending worship', query: 'worship' },
       { icon: 'live-tv', label: 'Live channels', query: 'live' },
-      { icon: 'campaign', label: 'Sponsored ads', query: 'sponsored' },
+      { icon: 'menu-book', label: 'Daily messages', query: 'message' },
     ],
     [],
   );
@@ -113,7 +113,7 @@ export default function Search() {
                     Discover
                   </CustomText>
                   <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 4 }}>
-                    Search live, music, videos, and sponsored content.
+                    Search live streams, music, videos, playlists, and messages.
                   </CustomText>
                 </View>
                 <View
@@ -197,7 +197,7 @@ export default function Search() {
                   imageUrl={item.imageUrl}
                   title={item.title}
                   subtitle={item.subtitle}
-                  onPress={() => console.log('open', item.id)}
+                  onPress={() => router.push(buildPlayerRoute(item))}
                 />
               )}
             />
