@@ -12,8 +12,8 @@ youtubeRouter.get(
   '/videos',
   authenticate,
   asyncHandler(async (req, res) => {
-    if (!req.user || req.user.role !== 'ADMIN') {
-      throw new HttpError(403, 'Admin role required');
+    if (!req.user) {
+      throw new HttpError(401, 'Unauthorized');
     }
 
     const query = validateSchema(youtubeListQuerySchema, req.query);
@@ -26,8 +26,8 @@ youtubeRouter.post(
   '/sync',
   authenticate,
   asyncHandler(async (req, res) => {
-    if (!req.user || req.user.role !== 'ADMIN') {
-      throw new HttpError(403, 'Admin role required');
+    if (!req.user) {
+      throw new HttpError(401, 'Unauthorized');
     }
 
     const payload = validateSchema(youtubeSyncSchema, req.body);
