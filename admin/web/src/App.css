@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
 :root {
   --bg-1: #06040D;
@@ -34,7 +34,7 @@ body,
 body {
   margin: 0;
   color: var(--ink);
-  font-family: 'Manrope', system-ui, sans-serif;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
   background:
     radial-gradient(1000px 520px at 8% -10%, rgba(154, 107, 255, 0.2), transparent 60%),
     radial-gradient(1000px 600px at 100% -5%, rgba(124, 58, 237, 0.22), transparent 62%),
@@ -57,7 +57,7 @@ h1,
 h2,
 h3 {
   margin: 0;
-  font-family: 'Sora', 'Manrope', sans-serif;
+  font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
   letter-spacing: -0.02em;
 }
 
@@ -171,6 +171,7 @@ code {
 .brand-title-line {
   font-weight: 800;
   letter-spacing: -0.02em;
+  font-size: 0.94rem;
   color: var(--ink);
   white-space: nowrap;
 }
@@ -231,7 +232,7 @@ code {
   margin: 0;
   text-transform: uppercase;
   letter-spacing: 0.15em;
-  font-size: 0.72rem;
+  font-size: 0.66rem;
   font-weight: 800;
   color: #D8C5FF;
 }
@@ -246,7 +247,7 @@ code {
   background: rgba(154, 107, 255, 0.08);
   color: #F0E8FF;
   font-weight: 700;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
 }
 
 .user-pill.muted {
@@ -366,7 +367,7 @@ code {
 .footer-brand p {
   margin: 0;
   color: var(--ink-muted);
-  font-family: 'Sora', 'Manrope', sans-serif;
+  font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
   font-size: 0.76rem;
   letter-spacing: 0.03em;
   text-transform: uppercase;
@@ -392,14 +393,14 @@ code {
 }
 
 .global-footer-inner strong {
-  font-family: 'Sora', 'Manrope', sans-serif;
-  font-size: 0.92rem;
+  font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.86rem;
 }
 
 .global-footer-inner p,
 .footer-right {
   color: var(--ink-muted);
-  font-size: 0.83rem;
+  font-size: 0.78rem;
   margin-top: 0.25rem;
 }
 
@@ -448,8 +449,8 @@ code {
   color: var(--ink-soft);
   line-height: 1.5;
   margin-top: 0.6rem;
-  font-family: 'Sora', 'Manrope', sans-serif;
-  font-size: 0.92rem;
+  font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.84rem;
   max-width: 56ch;
 }
 
@@ -457,12 +458,12 @@ code {
   color: var(--ink-muted);
   line-height: 1.45;
   margin-top: 0.35rem;
-  font-size: 0.9rem;
+  font-size: 0.84rem;
 }
 
 .footnote-text {
   color: var(--ink-muted);
-  font-size: 0.84rem;
+  font-size: 0.78rem;
   line-height: 1.4;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
   padding-top: 0.8rem;
@@ -537,7 +538,7 @@ code {
 
 .brand-stack h1 {
   margin-top: 0.35rem;
-  font-size: clamp(1.6rem, 3.6vw, 2.6rem);
+  font-size: clamp(1.3rem, 3vw, 2rem);
 }
 
 .feature-tiles {
@@ -608,7 +609,7 @@ code {
 }
 
 .form-header-row h2 {
-  font-size: 1.2rem;
+  font-size: 1.05rem;
 }
 
 .auth-mode-toggle {
@@ -723,7 +724,7 @@ label {
   display: grid;
   gap: 0.4rem;
   color: #E6DEFA;
-  font-size: 0.9rem;
+  font-size: 0.84rem;
   font-weight: 700;
 }
 
@@ -904,7 +905,7 @@ button {
 
 .hero-banner h1 {
   margin-top: 0.35rem;
-  font-size: clamp(1.5rem, 3vw, 2.25rem);
+  font-size: clamp(1.22rem, 2.5vw, 1.78rem);
 }
 
 .hero-actions {
@@ -931,7 +932,7 @@ button {
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.03);
   color: #E5DAFA;
-  font-size: 0.82rem;
+  font-size: 0.74rem;
   font-weight: 700;
 }
 
@@ -990,14 +991,14 @@ button {
 
 .stat-card span {
   color: var(--ink-soft);
-  font-size: 0.82rem;
+  font-size: 0.74rem;
   font-weight: 600;
 }
 
 .stat-card strong {
   display: block;
   margin-top: 0.28rem;
-  font-size: 1.45rem;
+  font-size: 1.18rem;
 }
 
 .accent-mint::before { background: linear-gradient(90deg, var(--mint), #C4B5FD); }
@@ -1027,13 +1028,13 @@ button {
 }
 
 .section-head h2 {
-  font-size: 1.15rem;
+  font-size: 1rem;
 }
 
 .section-head p {
   margin-top: 0.34rem;
   color: var(--ink-soft);
-  font-size: 0.88rem;
+  font-size: 0.8rem;
   line-height: 1.4;
 }
 
@@ -1042,11 +1043,11 @@ button {
 }
 
 .section-head.compact h3 {
-  font-size: 0.98rem;
+  font-size: 0.9rem;
 }
 
 .section-head.compact p {
-  font-size: 0.84rem;
+  font-size: 0.78rem;
   margin-top: 0.22rem;
 }
 
@@ -1057,7 +1058,7 @@ button {
   border: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.03);
   color: var(--ink-soft);
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   font-weight: 700;
   white-space: nowrap;
 }
@@ -1196,13 +1197,13 @@ button {
 .pill-draft { background: rgba(248, 113, 113, 0.12); color: #FECACA; }
 
 .card-body h3 {
-  font-size: 1rem;
+  font-size: 0.9rem;
 }
 
 .card-body p {
   margin-top: 0.25rem;
   color: var(--ink-soft);
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   line-height: 1.45;
 }
 
@@ -1274,13 +1275,13 @@ button {
 }
 
 .support-strip h3 {
-  font-size: 1rem;
+  font-size: 0.9rem;
 }
 
 .support-strip p {
   margin-top: 0.3rem;
   color: var(--ink-soft);
-  font-size: 0.86rem;
+  font-size: 0.8rem;
   line-height: 1.4;
 }
 

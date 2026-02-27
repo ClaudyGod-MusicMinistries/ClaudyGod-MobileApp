@@ -5,6 +5,7 @@ import './App.css';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 const GOOGLE_LOGIN_URL = import.meta.env.VITE_GOOGLE_LOGIN_URL || '';
 const ACCESS_TOKEN_KEY = 'claudy_admin_access_token';
+const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000;
 const BRAND_LOGO_URL = '/brand/claudy-logo.webp';
 const CONTENT_TYPES = ['audio', 'video', 'playlist', 'announcement'];
 const VISIBILITY_OPTIONS = ['draft', 'published'];
@@ -132,6 +133,8 @@ export default defineComponent({
     const editContentSaving = ref(false);
     const headerMenuOpen = ref(false);
     const dashboardView = ref('overview');
+    const inactivityTimerId = ref(null);
+    const authResponseInterceptorId = ref(null);
     const viewportWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1366);
     const uploadingAsset = ref(false);
     const uploadPoliciesLoading = ref(false);
@@ -263,11 +266,13 @@ export default defineComponent({
         storeToken(token);
         accessToken.value = token;
         applyToken(token);
+        syncSessionTracking();
         return;
       }
       storeToken(null);
       accessToken.value = '';
       applyToken(null);
+      syncSessionTracking();
     }
 
     function syncViewport() {
@@ -306,6 +311,99 @@ export default defineComponent({
     async function fetchCurrentUser() {
       const response = await http.get('/v1/auth/me');
       currentUser.value = response.data.user;
+    }
+
+    function clearSessionData() {
+      currentUser.value = null;
+      managedItems.value = [];
+      youtubePreviewItems.value = [];
+      uploadPolicies.value = [];
+      editContentOpen.value = false;
+      editingContentId.value = null;
+      mobileAppConfigEditor.value = '';
+      mobileAppConfigMeta.value = null;
+      wordOfDayHistory.value = [];
+      wordOfDayCurrent.value = null;
+      dashboardView.value = 'overview';
+      closeHeaderMenu();
+    }
+
+    function clearInactivityTimer() {
+      if (typeof window === 'undefined') return;
+      if (inactivityTimerId.value != null) {
+        window.clearTimeout(inactivityTimerId.value);
+        inactivityTimerId.value = null;
+      }
+    }
+
+    function handleInactivityTimeout() {
+      if (!accessToken.value) return;
+      persistToken(null);
+      clearSessionData();
+      setNotice('You were signed out after 30 minutes of inactivity.', 'error');
+    }
+
+    function scheduleInactivityTimeout() {
+      if (typeof window === 'undefined' || !accessToken.value) return;
+      clearInactivityTimer();
+      inactivityTimerId.value = window.setTimeout(handleInactivityTimeout, INACTIVITY_TIMEOUT_MS);
+    }
+
+    function onUserActivity() {
+      if (!accessToken.value) return;
+      scheduleInactivityTimeout();
+    }
+
+    function bindActivityListeners() {
+      if (typeof window === 'undefined') return;
+      window.addEventListener('pointerdown', onUserActivity);
+      window.addEventListener('keydown', onUserActivity);
+      window.addEventListener('touchstart', onUserActivity);
+      window.addEventListener('scroll', onUserActivity);
+    }
+
+    function unbindActivityListeners() {
+      if (typeof window === 'undefined') return;
+      window.removeEventListener('pointerdown', onUserActivity);
+      window.removeEventListener('keydown', onUserActivity);
+      window.removeEventListener('touchstart', onUserActivity);
+      window.removeEventListener('scroll', onUserActivity);
+    }
+
+    function syncSessionTracking() {
+      if (!accessToken.value) {
+        clearInactivityTimer();
+        unbindActivityListeners();
+        return;
+      }
+      bindActivityListeners();
+      scheduleInactivityTimeout();
+    }
+
+    function setupAuthInterceptor() {
+      if (authResponseInterceptorId.value != null) return;
+
+      authResponseInterceptorId.value = http.interceptors.response.use(
+        (response) => response,
+        (error) => {
+          if (axios.isAxiosError(error) && error.response?.status === 401 && accessToken.value) {
+            const requestUrl = String(error.config?.url || '');
+            const isAuthEndpoint = requestUrl.includes('/v1/auth/login') || requestUrl.includes('/v1/auth/register');
+            if (!isAuthEndpoint) {
+              persistToken(null);
+              clearSessionData();
+              setNotice('Your session has expired. Please sign in again.', 'error');
+            }
+          }
+          return Promise.reject(error);
+        },
+      );
+    }
+
+    function teardownAuthInterceptor() {
+      if (authResponseInterceptorId.value == null) return;
+      http.interceptors.response.eject(authResponseInterceptorId.value);
+      authResponseInterceptorId.value = null;
     }
 
     async function fetchManagedContent() {
@@ -672,17 +770,7 @@ export default defineComponent({
 
     function logout() {
       persistToken(null);
-      closeHeaderMenu();
-      currentUser.value = null;
-      managedItems.value = [];
-      youtubePreviewItems.value = [];
-      uploadPolicies.value = [];
-      editContentOpen.value = false;
-      editingContentId.value = null;
-      mobileAppConfigEditor.value = '';
-      mobileAppConfigMeta.value = null;
-      wordOfDayHistory.value = [];
-      wordOfDayCurrent.value = null;
+      clearSessionData();
       setNotice('You have signed out.', 'success');
     }
 
@@ -906,6 +994,8 @@ export default defineComponent({
 
     onMounted(() => {
       syncViewport();
+      setupAuthInterceptor();
+      syncSessionTracking();
       if (typeof window !== 'undefined') {
         window.addEventListener('resize', syncViewport);
       }
@@ -913,6 +1003,9 @@ export default defineComponent({
     });
 
     onBeforeUnmount(() => {
+      clearInactivityTimer();
+      unbindActivityListeners();
+      teardownAuthInterceptor();
       if (typeof window !== 'undefined') {
         window.removeEventListener('resize', syncViewport);
       }
