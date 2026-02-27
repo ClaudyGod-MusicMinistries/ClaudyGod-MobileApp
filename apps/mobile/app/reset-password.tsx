@@ -10,17 +10,21 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { CustomText } from '../components/CustomText';
 import { AppButton } from '../components/ui/AppButton';
 import { Screen } from '../components/layout/Screen';
 import { TVTouchable } from '../components/ui/TVTouchable';
 import { FadeIn } from '../components/ui/FadeIn';
-import { registerMobileUser } from '../services/authService';
+import { resetMobilePassword } from '../services/authService';
 
-export default function SignUpScreen() {
+const getParam = (value: string | string[] | undefined): string =>
+  Array.isArray(value) ? value[0] ?? '' : value ?? '';
+
+export default function ResetPasswordScreen() {
   const router = useRouter();
   const { width, height } = useWindowDimensions();
+  const params = useLocalSearchParams<{ token?: string | string[]; email?: string | string[] }>();
 
   const isTV = Platform.isTV;
   const isWeb = Platform.OS === 'web';
@@ -28,51 +32,44 @@ export default function SignUpScreen() {
   const compact = width < 370;
   const compactViewport = height < 760;
 
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [token, setToken] = useState(() => getParam(params.token).trim());
+  const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [hidePassword, setHidePassword] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
   const canSubmit = useMemo(
-    () => Boolean(name.trim() && email.trim() && password.trim() && confirmPassword.trim()),
-    [confirmPassword, email, name, password],
+    () => Boolean(token.trim() && newPassword.trim() && confirmPassword.trim()),
+    [confirmPassword, newPassword, token],
   );
 
-  const handleSignUp = async () => {
+  const handleResetPassword = async () => {
     setErrorMessage('');
+    setSuccessMessage('');
 
-    if (!canSubmit) {
-      setErrorMessage('Fill in all fields to continue.');
+    if (!token.trim()) {
+      setErrorMessage('Enter the reset token from your email.');
       return;
     }
-    if (password !== confirmPassword) {
-      setErrorMessage('Passwords do not match.');
+
+    if (newPassword !== confirmPassword) {
+      setErrorMessage('New password and confirmation do not match.');
       return;
     }
 
     setSubmitting(true);
     try {
-      const normalizedEmail = email.trim().toLowerCase();
-      const session = await registerMobileUser({
-        displayName: name.trim(),
-        email: normalizedEmail,
-        password,
+      const response = await resetMobilePassword({
+        token: token.trim(),
+        newPassword,
       });
-
-      if (session.requiresEmailVerification) {
-        router.replace({
-          pathname: '/verify-email',
-          params: { email: normalizedEmail },
-        });
-        return;
-      }
-
-      router.replace('/(tabs)/home');
+      setSuccessMessage(response.message);
+      setNewPassword('');
+      setConfirmPassword('');
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Unable to create account');
+      setErrorMessage(error instanceof Error ? error.message : 'Unable to reset password');
     } finally {
       setSubmitting(false);
     }
@@ -83,7 +80,7 @@ export default function SignUpScreen() {
       <StatusBar translucent={false} backgroundColor="#07050F" barStyle="light-content" />
 
       <LinearGradient
-        colors={['rgba(154,107,255,0.32)', 'rgba(15,10,29,0)']}
+        colors={['rgba(154,107,255,0.30)', 'rgba(15,10,29,0)']}
         start={{ x: 0, y: 0 }}
         end={{ x: 0.9, y: 1 }}
         style={{
@@ -152,26 +149,23 @@ export default function SignUpScreen() {
                       lineHeight: isTablet ? 36 : 31,
                     }}
                   >
-                    Create Account
+                    Reset Password
                   </CustomText>
                   <CustomText variant="body" style={{ color: 'rgba(203,196,226,0.86)', marginTop: 8 }}>
-                    Set up your account for ministry music, videos, and channel updates.
+                    Paste your reset token and set a new password.
                   </CustomText>
 
                   <View style={{ marginTop: 16, gap: 10 }}>
-                    <AuthField value={name} onChangeText={setName} placeholder="Full name" />
                     <AuthField
-                      value={email}
-                      onChangeText={setEmail}
-                      placeholder="Email address"
-                      keyboardType="email-address"
+                      value={token}
+                      onChangeText={setToken}
+                      placeholder="Reset token"
                       autoCapitalize="none"
                     />
-
                     <AuthField
-                      value={password}
-                      onChangeText={setPassword}
-                      placeholder="Password"
+                      value={newPassword}
+                      onChangeText={setNewPassword}
+                      placeholder="New password"
                       secureTextEntry={hidePassword}
                       trailing={
                         <TVTouchable onPress={() => setHidePassword((prev) => !prev)} showFocusBorder={false}>
@@ -183,14 +177,17 @@ export default function SignUpScreen() {
                         </TVTouchable>
                       }
                     />
-
                     <AuthField
                       value={confirmPassword}
                       onChangeText={setConfirmPassword}
-                      placeholder="Confirm password"
+                      placeholder="Confirm new password"
                       secureTextEntry={hidePassword}
                     />
                   </View>
+
+                  <CustomText variant="caption" style={{ color: 'rgba(188,178,214,0.9)', marginTop: 10 }}>
+                    Password must include uppercase, lowercase, and number, with at least 8 characters.
+                  </CustomText>
 
                   {errorMessage ? (
                     <View
@@ -210,23 +207,61 @@ export default function SignUpScreen() {
                     </View>
                   ) : null}
 
+                  {successMessage ? (
+                    <View
+                      style={{
+                        marginTop: 12,
+                        borderRadius: 12,
+                        borderWidth: 1,
+                        borderColor: 'rgba(122,230,166,0.35)',
+                        backgroundColor: 'rgba(56,170,104,0.14)',
+                        paddingHorizontal: 12,
+                        paddingVertical: 10,
+                      }}
+                    >
+                      <CustomText variant="caption" style={{ color: '#D4FFE4' }}>
+                        {successMessage}
+                      </CustomText>
+                    </View>
+                  ) : null}
+
                   <AppButton
-                    title="Create Account"
+                    title="Update Password"
                     size="lg"
                     fullWidth
                     loading={submitting}
-                    onPress={() => void handleSignUp()}
+                    onPress={() => void handleResetPassword()}
                     disabled={!canSubmit || submitting}
                     style={{ marginTop: 16, borderRadius: 16 }}
                   />
 
                   <TVTouchable
-                    onPress={() => router.push('/sign-in')}
+                    onPress={() => {
+                      const normalizedEmail = getParam(params.email).trim().toLowerCase();
+                      if (normalizedEmail) {
+                        router.push({
+                          pathname: '/forgot-password',
+                          params: { email: normalizedEmail },
+                        });
+                        return;
+                      }
+                      router.push('/forgot-password');
+                    }}
                     style={{ alignSelf: 'center', marginTop: 12 }}
                     showFocusBorder={false}
                   >
                     <CustomText variant="label" style={{ color: '#CDB9FF' }}>
-                      Already have an account? Sign In
+                      Need a new reset token?
+                    </CustomText>
+                  </TVTouchable>
+
+                  <TVTouchable
+                    onPress={() => router.replace('/sign-in')}
+                    style={{ alignSelf: 'center', marginTop: 8 }}
+                    showFocusBorder={false}
+                  >
+                    <CustomText variant="label" style={{ color: '#CDB9FF' }}>
+                      Back to Sign In
                     </CustomText>
                   </TVTouchable>
                 </View>
@@ -243,7 +278,6 @@ function AuthField({
   value,
   onChangeText,
   placeholder,
-  keyboardType,
   autoCapitalize,
   secureTextEntry,
   trailing,
@@ -251,7 +285,6 @@ function AuthField({
   value: string;
   onChangeText: (_text: string) => void;
   placeholder: string;
-  keyboardType?: 'default' | 'email-address';
   autoCapitalize?: 'none' | 'sentences';
   secureTextEntry?: boolean;
   trailing?: React.ReactNode;
@@ -271,7 +304,6 @@ function AuthField({
       <TextInput
         value={value}
         onChangeText={onChangeText}
-        keyboardType={keyboardType}
         autoCapitalize={autoCapitalize}
         secureTextEntry={secureTextEntry}
         placeholder={placeholder}

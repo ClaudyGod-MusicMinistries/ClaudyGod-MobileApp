@@ -10,17 +10,21 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { CustomText } from '../components/CustomText';
 import { AppButton } from '../components/ui/AppButton';
 import { Screen } from '../components/layout/Screen';
 import { TVTouchable } from '../components/ui/TVTouchable';
 import { FadeIn } from '../components/ui/FadeIn';
-import { registerMobileUser } from '../services/authService';
+import { requestMobilePasswordReset } from '../services/authService';
 
-export default function SignUpScreen() {
+const getParam = (value: string | string[] | undefined): string =>
+  Array.isArray(value) ? value[0] ?? '' : value ?? '';
+
+export default function ForgotPasswordScreen() {
   const router = useRouter();
   const { width, height } = useWindowDimensions();
+  const params = useLocalSearchParams<{ email?: string | string[] }>();
 
   const isTV = Platform.isTV;
   const isWeb = Platform.OS === 'web';
@@ -28,51 +32,29 @@ export default function SignUpScreen() {
   const compact = width < 370;
   const compactViewport = height < 760;
 
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [hidePassword, setHidePassword] = useState(true);
+  const [email, setEmail] = useState(() => getParam(params.email).trim().toLowerCase());
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
-  const canSubmit = useMemo(
-    () => Boolean(name.trim() && email.trim() && password.trim() && confirmPassword.trim()),
-    [confirmPassword, email, name, password],
-  );
+  const canSubmit = useMemo(() => Boolean(email.trim()), [email]);
 
-  const handleSignUp = async () => {
+  const handleRequestReset = async () => {
     setErrorMessage('');
+    setSuccessMessage('');
 
-    if (!canSubmit) {
-      setErrorMessage('Fill in all fields to continue.');
-      return;
-    }
-    if (password !== confirmPassword) {
-      setErrorMessage('Passwords do not match.');
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) {
+      setErrorMessage('Enter your email address.');
       return;
     }
 
     setSubmitting(true);
     try {
-      const normalizedEmail = email.trim().toLowerCase();
-      const session = await registerMobileUser({
-        displayName: name.trim(),
-        email: normalizedEmail,
-        password,
-      });
-
-      if (session.requiresEmailVerification) {
-        router.replace({
-          pathname: '/verify-email',
-          params: { email: normalizedEmail },
-        });
-        return;
-      }
-
-      router.replace('/(tabs)/home');
+      const response = await requestMobilePasswordReset({ email: normalizedEmail });
+      setSuccessMessage(response.message);
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Unable to create account');
+      setErrorMessage(error instanceof Error ? error.message : 'Unable to send reset email');
     } finally {
       setSubmitting(false);
     }
@@ -83,7 +65,7 @@ export default function SignUpScreen() {
       <StatusBar translucent={false} backgroundColor="#07050F" barStyle="light-content" />
 
       <LinearGradient
-        colors={['rgba(154,107,255,0.32)', 'rgba(15,10,29,0)']}
+        colors={['rgba(154,107,255,0.30)', 'rgba(15,10,29,0)']}
         start={{ x: 0, y: 0 }}
         end={{ x: 0.9, y: 1 }}
         style={{
@@ -152,44 +134,37 @@ export default function SignUpScreen() {
                       lineHeight: isTablet ? 36 : 31,
                     }}
                   >
-                    Create Account
+                    Forgot Password
                   </CustomText>
                   <CustomText variant="body" style={{ color: 'rgba(203,196,226,0.86)', marginTop: 8 }}>
-                    Set up your account for ministry music, videos, and channel updates.
+                    Enter your account email and we will send secure reset instructions.
                   </CustomText>
 
-                  <View style={{ marginTop: 16, gap: 10 }}>
-                    <AuthField value={name} onChangeText={setName} placeholder="Full name" />
-                    <AuthField
-                      value={email}
-                      onChangeText={setEmail}
-                      placeholder="Email address"
-                      keyboardType="email-address"
-                      autoCapitalize="none"
-                    />
-
-                    <AuthField
-                      value={password}
-                      onChangeText={setPassword}
-                      placeholder="Password"
-                      secureTextEntry={hidePassword}
-                      trailing={
-                        <TVTouchable onPress={() => setHidePassword((prev) => !prev)} showFocusBorder={false}>
-                          <MaterialIcons
-                            name={hidePassword ? 'visibility' : 'visibility-off'}
-                            size={20}
-                            color="rgba(226,218,247,0.9)"
-                          />
-                        </TVTouchable>
-                      }
-                    />
-
-                    <AuthField
-                      value={confirmPassword}
-                      onChangeText={setConfirmPassword}
-                      placeholder="Confirm password"
-                      secureTextEntry={hidePassword}
-                    />
+                  <View style={{ marginTop: 16 }}>
+                    <View
+                      style={{
+                        borderRadius: 14,
+                        borderWidth: 1,
+                        borderColor: 'rgba(255,255,255,0.16)',
+                        backgroundColor: 'rgba(255,255,255,0.05)',
+                        paddingHorizontal: 14,
+                      }}
+                    >
+                      <TextInput
+                        value={email}
+                        onChangeText={setEmail}
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                        placeholder="Email address"
+                        placeholderTextColor="rgba(207,200,228,0.68)"
+                        style={{
+                          minHeight: 52,
+                          color: '#F8F7FC',
+                          fontSize: 14,
+                          fontFamily: 'SpaceGrotesk_500Medium',
+                        }}
+                      />
+                    </View>
                   </View>
 
                   {errorMessage ? (
@@ -210,23 +185,61 @@ export default function SignUpScreen() {
                     </View>
                   ) : null}
 
+                  {successMessage ? (
+                    <View
+                      style={{
+                        marginTop: 12,
+                        borderRadius: 12,
+                        borderWidth: 1,
+                        borderColor: 'rgba(122,230,166,0.35)',
+                        backgroundColor: 'rgba(56,170,104,0.14)',
+                        paddingHorizontal: 12,
+                        paddingVertical: 10,
+                      }}
+                    >
+                      <CustomText variant="caption" style={{ color: '#D4FFE4' }}>
+                        {successMessage}
+                      </CustomText>
+                    </View>
+                  ) : null}
+
                   <AppButton
-                    title="Create Account"
+                    title="Send Reset Email"
                     size="lg"
                     fullWidth
                     loading={submitting}
-                    onPress={() => void handleSignUp()}
+                    onPress={() => void handleRequestReset()}
                     disabled={!canSubmit || submitting}
                     style={{ marginTop: 16, borderRadius: 16 }}
                   />
 
                   <TVTouchable
-                    onPress={() => router.push('/sign-in')}
+                    onPress={() => {
+                      const normalizedEmail = email.trim().toLowerCase();
+                      if (normalizedEmail) {
+                        router.push({
+                          pathname: '/reset-password',
+                          params: { email: normalizedEmail },
+                        });
+                        return;
+                      }
+                      router.push('/reset-password');
+                    }}
                     style={{ alignSelf: 'center', marginTop: 12 }}
                     showFocusBorder={false}
                   >
                     <CustomText variant="label" style={{ color: '#CDB9FF' }}>
-                      Already have an account? Sign In
+                      Already have a reset token?
+                    </CustomText>
+                  </TVTouchable>
+
+                  <TVTouchable
+                    onPress={() => router.replace('/sign-in')}
+                    style={{ alignSelf: 'center', marginTop: 8 }}
+                    showFocusBorder={false}
+                  >
+                    <CustomText variant="label" style={{ color: '#CDB9FF' }}>
+                      Back to Sign In
                     </CustomText>
                   </TVTouchable>
                 </View>
@@ -235,56 +248,6 @@ export default function SignUpScreen() {
           </Screen>
         </ScrollView>
       </SafeAreaView>
-    </View>
-  );
-}
-
-function AuthField({
-  value,
-  onChangeText,
-  placeholder,
-  keyboardType,
-  autoCapitalize,
-  secureTextEntry,
-  trailing,
-}: {
-  value: string;
-  onChangeText: (_text: string) => void;
-  placeholder: string;
-  keyboardType?: 'default' | 'email-address';
-  autoCapitalize?: 'none' | 'sentences';
-  secureTextEntry?: boolean;
-  trailing?: React.ReactNode;
-}) {
-  return (
-    <View
-      style={{
-        borderRadius: 14,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.16)',
-        backgroundColor: 'rgba(255,255,255,0.05)',
-        paddingHorizontal: 14,
-        flexDirection: 'row',
-        alignItems: 'center',
-      }}
-    >
-      <TextInput
-        value={value}
-        onChangeText={onChangeText}
-        keyboardType={keyboardType}
-        autoCapitalize={autoCapitalize}
-        secureTextEntry={secureTextEntry}
-        placeholder={placeholder}
-        placeholderTextColor="rgba(207,200,228,0.68)"
-        style={{
-          flex: 1,
-          minHeight: 52,
-          color: '#F8F7FC',
-          fontSize: 14,
-          fontFamily: 'SpaceGrotesk_500Medium',
-        }}
-      />
-      {trailing ? <View style={{ marginLeft: 10 }}>{trailing}</View> : null}
     </View>
   );
 }
