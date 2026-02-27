@@ -240,7 +240,7 @@ function LoadingScreen() {
               fontFamily: 'SpaceGrotesk_600SemiBold',
             }}
           >
-            Preparing ClaudyGod
+            Loading ClaudyGod
           </Text>
           <Text
             style={{
@@ -251,7 +251,7 @@ function LoadingScreen() {
               textAlign: 'center',
             }}
           >
-            Loading your personalized audio, video, and live channels...
+            Setting up your secure workspace...
           </Text>
         </View>
 
