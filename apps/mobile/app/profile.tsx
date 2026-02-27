@@ -18,7 +18,7 @@ const groups = [
     title: 'Account',
     items: [
       { icon: 'person-outline', label: 'Personal Details' },
-      { icon: 'workspace-premium', label: 'Subscription Plan' },
+      { icon: 'card-membership', label: 'Subscription Plan' },
       { icon: 'credit-card', label: 'Billing Methods' },
     ],
   },

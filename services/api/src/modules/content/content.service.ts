@@ -161,12 +161,6 @@ const buildListResponse = (rows: ContentRow[], total: number, query: ContentList
   items: rows.map(toContentItem),
 });
 
-const requireAdmin = (requester: JwtClaims): void => {
-  if (requester.role !== 'ADMIN') {
-    throw new HttpError(403, 'Admin role required');
-  }
-};
-
 const normalizeTextList = (items?: string[]): string[] =>
   [...new Set((items ?? []).map((item) => item.trim()).filter(Boolean))];
 
@@ -416,8 +410,6 @@ export const listManagedContent = async (
 };
 
 export const createContent = async (requester: JwtClaims, input: CreateContentInput): Promise<ContentItem> => {
-  requireAdmin(requester);
-
   const result = await pool.query<ContentRow>(
     `WITH inserted AS (
       INSERT INTO content_items (
@@ -499,14 +491,15 @@ export const updateContent = async ({
   input: UpdateContentInput;
   requester: JwtClaims;
 }): Promise<ContentItem> => {
-  requireAdmin(requester);
-
   const existingResult = await pool.query<ContentRow>(selectContentByIdSql, [contentId]);
   if (existingResult.rowCount === 0) {
     throw new HttpError(404, 'Content not found');
   }
 
   const existing = existingResult.rows[0]!;
+  if (requester.role !== 'ADMIN' && existing.author_id !== requester.sub) {
+    throw new HttpError(403, 'You can only update your own content');
+  }
   const nextType = input.type ?? existing.content_type;
   const nextUrl = Object.prototype.hasOwnProperty.call(input, 'url')
     ? (input.url ?? null)
@@ -630,7 +623,16 @@ export const updateContentVisibility = async ({
   requester: JwtClaims;
 }): Promise<ContentItem> => {
   if (requester.role !== 'ADMIN') {
-    throw new HttpError(403, 'Admin role required');
+    const ownerResult = await pool.query<{ author_id: string }>(
+      `SELECT author_id FROM content_items WHERE id = $1 LIMIT 1`,
+      [contentId],
+    );
+    if (ownerResult.rowCount === 0) {
+      throw new HttpError(404, 'Content not found');
+    }
+    if (ownerResult.rows[0]!.author_id !== requester.sub) {
+      throw new HttpError(403, 'You can only update visibility for your own content');
+    }
   }
 
   const updated = await pool.query<ContentRow>(
@@ -698,11 +700,14 @@ export const deleteContent = async ({
   contentId: string;
   requester: JwtClaims;
 }): Promise<{ deleted: true; id: string }> => {
-  requireAdmin(requester);
-
   const existing = await pool.query<ContentRow>(selectContentByIdSql, [contentId]);
   if (existing.rowCount === 0) {
     throw new HttpError(404, 'Content not found');
+  }
+
+  const existingRow = existing.rows[0]!;
+  if (requester.role !== 'ADMIN' && existingRow.author_id !== requester.sub) {
+    throw new HttpError(403, 'You can only delete your own content');
   }
 
   await pool.query(`DELETE FROM content_items WHERE id = $1`, [contentId]);
@@ -714,8 +719,8 @@ export const deleteContent = async ({
     payload: {
       contentId,
       deletedBy: requester.sub,
-      title: existing.rows[0]!.title,
-      type: existing.rows[0]!.content_type,
+      title: existingRow.title,
+      type: existingRow.content_type,
     },
   });
 

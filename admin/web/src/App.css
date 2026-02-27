@@ -295,6 +295,7 @@ code {
 .header-drawer.is-open {
   max-height: 300px;
   border-top-color: var(--line);
+  background: linear-gradient(180deg, rgba(9, 13, 24, 0.95), rgba(8, 9, 18, 0.86));
 }
 
 .header-drawer-inner {
@@ -329,7 +330,7 @@ code {
 
 .page-shell-auth {
   justify-content: center;
-  padding-top: clamp(2.15rem, 7vh, 5rem);
+  padding-top: clamp(2.8rem, 9vh, 5.6rem);
   padding-bottom: clamp(2.1rem, 5vh, 3.2rem);
 }
 
@@ -411,10 +412,18 @@ code {
 }
 
 .reveal-up {
-  opacity: 0;
-  transform: translateY(12px) scale(0.992);
-  will-change: transform, opacity;
-  animation: revealUp 0.62s cubic-bezier(.2,.7,.2,1) forwards;
+  opacity: 1;
+  transform: none;
+  will-change: auto;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .reveal-up {
+    opacity: 0;
+    transform: translateY(12px) scale(0.992);
+    will-change: transform, opacity;
+    animation: revealUp 0.62s cubic-bezier(.2,.7,.2,1) forwards;
+  }
 }
 
 @keyframes revealUp {
@@ -439,6 +448,9 @@ code {
   color: var(--ink-soft);
   line-height: 1.5;
   margin-top: 0.6rem;
+  font-family: 'Sora', 'Manrope', sans-serif;
+  font-size: 0.92rem;
+  max-width: 56ch;
 }
 
 .subtle-text {
@@ -929,6 +941,31 @@ button {
   gap: 0.75rem;
 }
 
+.dashboard-view-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.dashboard-view-tabs .ghost-btn.is-active {
+  border-color: rgba(154, 107, 255, 0.42);
+  background: rgba(154, 107, 255, 0.16);
+}
+
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.95rem;
+}
+
+.overview-grid > .panel:first-child {
+  grid-column: 1 / -1;
+}
+
+.overview-grid .list-wrap {
+  max-height: 30rem;
+}
+
 .stat-card {
   padding: 0.9rem;
   border-radius: 18px;
@@ -1294,6 +1331,7 @@ button {
 .boot-card p {
   color: var(--ink-soft);
   font-weight: 700;
+  letter-spacing: 0.01em;
 }
 
 .boot-loader {
@@ -1392,6 +1430,10 @@ button {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .overview-grid {
+    grid-template-columns: 1fr;
+  }
+
   .list-wrap {
     max-height: none;
   }
@@ -1409,7 +1451,7 @@ button {
   }
 
   .page-shell-auth {
-    padding-top: 1.2rem;
+    padding-top: 1.55rem;
     padding-bottom: 1.25rem;
   }
 
@@ -1465,6 +1507,8 @@ button {
 
   .header-drawer-inner {
     width: min(1320px, calc(100% - 1rem));
+    padding-top: 0.8rem;
+    padding-bottom: 0.95rem;
   }
 
   .header-drawer-actions {
@@ -1478,6 +1522,11 @@ button {
   .footer-meta {
     width: 100%;
     justify-content: space-between;
+  }
+
+  .subtitle {
+    font-size: 0.86rem;
+    line-height: 1.42;
   }
 
   .library-total,
