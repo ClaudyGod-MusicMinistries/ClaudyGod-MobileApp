@@ -5,11 +5,24 @@ import './App.css';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 const GOOGLE_LOGIN_URL = import.meta.env.VITE_GOOGLE_LOGIN_URL || '';
 const ACCESS_TOKEN_KEY = 'claudy_admin_access_token';
+const TYPOGRAPHY_MODE_KEY = 'claudy_admin_typography_mode';
 const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000;
 const BRAND_LOGO_URL = '/brand/claudy-logo.webp';
 const CONTENT_TYPES = ['audio', 'video', 'playlist', 'announcement'];
 const VISIBILITY_OPTIONS = ['draft', 'published'];
 const YOUTUBE_SYNC_DEFAULT_LIMIT = 8;
+const TYPOGRAPHY_MODES = [
+  { value: 'compact', label: 'Compact' },
+  { value: 'cozy', label: 'Cozy' },
+  { value: 'comfortable', label: 'Comfortable' },
+];
+const API_HOST_LABEL = (() => {
+  try {
+    return new URL(API_URL).host;
+  } catch (error) {
+    return String(API_URL || '').replace(/^https?:\/\//i, '');
+  }
+})();
 
 const http = axios.create({
   baseURL: API_URL,
@@ -22,6 +35,18 @@ function readStoredToken() {
   } catch (error) {
     return '';
   }
+}
+
+function readStoredTypographyMode() {
+  try {
+    const stored = localStorage.getItem(TYPOGRAPHY_MODE_KEY) || '';
+    if (TYPOGRAPHY_MODES.some((mode) => mode.value === stored)) {
+      return stored;
+    }
+  } catch (error) {
+    // Keep default mode when storage is unavailable.
+  }
+  return 'cozy';
 }
 
 function storeToken(token) {
@@ -114,6 +139,7 @@ export default defineComponent({
   name: 'ClaudyContentStudio',
   setup() {
     const accessToken = ref(readStoredToken());
+    const typographyMode = ref(readStoredTypographyMode());
     const currentUser = ref(null);
     const authLoading = ref(false);
     const authMode = ref('login');
@@ -294,6 +320,16 @@ export default defineComponent({
     function setDashboardView(view) {
       dashboardView.value = view;
       closeHeaderMenu();
+    }
+
+    function setTypographyMode(mode) {
+      const next = TYPOGRAPHY_MODES.some((item) => item.value === mode) ? mode : 'cozy';
+      typographyMode.value = next;
+      try {
+        localStorage.setItem(TYPOGRAPHY_MODE_KEY, next);
+      } catch (error) {
+        // Ignore storage errors; runtime value still updates.
+      }
     }
 
     function startGoogleLogin() {
@@ -2059,8 +2095,27 @@ export default defineComponent({
         )
         : (currentUser.value ? dashboardScreen : loginScreen);
 
+      const typographyToggle = (compact = false) => (
+        <div class={['type-density-control', compact ? 'is-compact' : '']}>
+          <span class="type-density-label">Typography</span>
+          <div class="type-density-options" role="group" aria-label="Typography density">
+            {TYPOGRAPHY_MODES.map((option) => (
+              <button
+                key={`type-mode-${compact ? 'mobile' : 'desktop'}-${option.value}`}
+                type="button"
+                class={['type-density-option', typographyMode.value === option.value ? 'is-active' : '']}
+                onClick={() => setTypographyMode(option.value)}
+                aria-pressed={typographyMode.value === option.value ? 'true' : 'false'}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+
       return (
-        <div class="app-root">
+        <div class={['app-root', `typo-${typographyMode.value}`]}>
           <div class="bg-orb orb-a" />
           <div class="bg-orb orb-b" />
           <div class="bg-orb orb-c" />
@@ -2078,6 +2133,33 @@ export default defineComponent({
               </div>
 
               <div class="header-controls">
+                {!isCompactHeader.value ? (
+                  <div class="header-command-bar">
+                    {typographyToggle()}
+                    {currentUser.value ? (
+                      <>
+                        <div class="user-pill">
+                          <span class="user-pill-dot" />
+                          <span>{displayName.value}</span>
+                          <span class="user-pill-role">{isAdmin.value ? 'Admin' : 'Client'}</span>
+                        </div>
+                        <div class="header-inline-actions">
+                          <button type="button" class="ghost-btn compact" onClick={() => void refreshDashboard()}>
+                            Refresh
+                          </button>
+                          <button type="button" class="danger-btn compact" onClick={logout}>
+                            Sign Out
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <div class="user-pill muted">
+                        <span>Client Portal</span>
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+
                 {isCompactHeader.value ? (
                   <button
                     type="button"
@@ -2089,29 +2171,18 @@ export default defineComponent({
                     {headerMenuOpen.value ? 'Close' : 'Menu'}
                   </button>
                 ) : null}
-
-                {!isCompactHeader.value ? (
-                  currentUser.value ? (
-                    <div class="user-pill">
-                      <span class="user-pill-dot" />
-                      <span>{displayName.value}</span>
-                    </div>
-                  ) : (
-                    <div class="user-pill muted">
-                      <span>Client Portal</span>
-                    </div>
-                  )
-                ) : null}
               </div>
             </div>
 
             {isCompactHeader.value ? (
               <div class={['header-drawer', headerMenuOpen.value ? 'is-open' : '']}>
                 <div class="header-drawer-inner">
+                  {typographyToggle(true)}
                   {currentUser.value ? (
                     <div class="user-pill">
                       <span class="user-pill-dot" />
                       <span>{displayName.value}</span>
+                      <span class="user-pill-role">{isAdmin.value ? 'Admin' : 'Client'}</span>
                     </div>
                   ) : (
                     <div class="user-pill muted">
@@ -2148,13 +2219,27 @@ export default defineComponent({
 
           <footer class="global-footer">
             <div class="global-footer-inner">
-              <div class="footer-brand">
-                <strong>ClaudyGod Content Studio</strong>
-                <p>Content operations portal for ministry teams</p>
-              </div>
-              <div class="footer-meta">
-                <span class="footer-chip">Admin Portal</span>
-                <div class="footer-right">{currentYear} Claudy Platform</div>
+              <div class="footer-grid">
+                <section class="footer-block footer-brand">
+                  <strong>ClaudyGod Content Studio</strong>
+                  <p>Professional publishing and curation dashboard for ministry media teams.</p>
+                  <div class="footer-chip-row">
+                    <span class="footer-chip">Admin Portal</span>
+                    <span class="footer-chip subtle">Session Timeout: 30 min</span>
+                  </div>
+                </section>
+
+                <section class="footer-block">
+                  <h4>Publishing Workflow</h4>
+                  <p>Upload media, assign app sections, and publish content across client experiences in one place.</p>
+                </section>
+
+                <section class="footer-block footer-system">
+                  <h4>System</h4>
+                  <p>API endpoint: {API_HOST_LABEL}</p>
+                  <p>Typography mode: {typographyMode.value}</p>
+                  <div class="footer-right">{currentYear} Claudy Platform</div>
+                </section>
               </div>
             </div>
           </footer>
