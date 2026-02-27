@@ -15,6 +15,26 @@ const http = axios.create({
   timeout: 15000,
 });
 
+function readStoredToken() {
+  try {
+    return localStorage.getItem(ACCESS_TOKEN_KEY) || '';
+  } catch (error) {
+    return '';
+  }
+}
+
+function storeToken(token) {
+  try {
+    if (token) {
+      localStorage.setItem(ACCESS_TOKEN_KEY, token);
+      return;
+    }
+    localStorage.removeItem(ACCESS_TOKEN_KEY);
+  } catch (error) {
+    // Storage can be blocked in strict privacy modes; keep runtime functional.
+  }
+}
+
 function applyToken(token) {
   if (token) {
     http.defaults.headers.common.Authorization = `Bearer ${token}`;
@@ -86,7 +106,7 @@ function todayDateInputValue() {
 export default defineComponent({
   name: 'ClaudyContentStudio',
   setup() {
-    const accessToken = ref(localStorage.getItem(ACCESS_TOKEN_KEY) || '');
+    const accessToken = ref(readStoredToken());
     const currentUser = ref(null);
     const authLoading = ref(false);
     const authMode = ref('login');
@@ -233,12 +253,12 @@ export default defineComponent({
 
     function persistToken(token) {
       if (token) {
-        localStorage.setItem(ACCESS_TOKEN_KEY, token);
+        storeToken(token);
         accessToken.value = token;
         applyToken(token);
         return;
       }
-      localStorage.removeItem(ACCESS_TOKEN_KEY);
+      storeToken(null);
       accessToken.value = '';
       applyToken(null);
     }
