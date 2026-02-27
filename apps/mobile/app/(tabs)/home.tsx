@@ -28,10 +28,8 @@ const ministrySections: { title: string; kind: 'video' | 'audio' | 'message' | '
   { title: 'ClaudyGod Music', kind: 'video' },
   { title: 'ClaudyGod Nuggets of Truth', kind: 'message' },
   { title: 'ClaudyGod Worship Hour', kind: 'worship' },
-  { title: 'ClaudyGod Teens Youth Channel', kind: 'video' },
   { title: 'ClaudyGod Messages', kind: 'message' },
   { title: 'ClaudyGod Music (Audio)', kind: 'audio' },
-  { title: 'ClaudyGod Worship Hour (Audio)', kind: 'audio' },
 ];
 
 const topRailChips = ['For You', 'Music', 'Videos', 'Live', 'Word'];
@@ -83,10 +81,22 @@ export default function HomeScreen() {
 
   const featured = useMemo(() => feed.featured ?? firstAvailable(feed), [feed]);
   const liveItems = useMemo(() => feed.live.slice(0, isTablet || isTV ? 6 : 4), [feed.live, isTablet, isTV]);
-  const adsItems = useMemo(() => feed.ads.slice(0, 4), [feed.ads]);
   const popularTracks = useMemo(() => (feed.music.length ? feed.music : []).slice(0, 10), [feed.music]);
   const albumGrid = useMemo(() => (feed.playlists.length ? feed.playlists : feed.videos).slice(0, 8), [feed.playlists, feed.videos]);
   const recentItems = useMemo(() => feed.recent.slice(0, 8), [feed.recent]);
+  const ministryRails = useMemo(
+    () =>
+      ministrySections
+        .map((section, index) => {
+          const items = deriveMinistryItems(feed, section).slice(
+            index % 2 === 0 ? 0 : 1,
+            (index % 2 === 0 ? 0 : 1) + 8,
+          );
+          return { section, items };
+        })
+        .filter((entry) => entry.items.length > 0),
+    [feed],
+  );
 
   const onOpenItem = async (item: FeedCardItem, source: string) => {
     await trackPlayEvent({
@@ -234,7 +244,7 @@ export default function HomeScreen() {
           </FadeIn>
 
           <FadeIn delay={120}>
-            <SectionBlock title="Live Now" subtitle="YouTube-style live hub with viewers count and notify action">
+            <SectionBlock title="Live Now" subtitle="Live sessions with viewer count and notify action">
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -263,34 +273,8 @@ export default function HomeScreen() {
               </ScrollView>
             </SectionBlock>
           </FadeIn>
-
           <FadeIn delay={160}>
-            <SectionBlock title="Sponsored / Ads" subtitle="Reserved placement for campaigns, revivals and partner promos">
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                bounces={false}
-                overScrollMode="never"
-                contentContainerStyle={{ paddingRight: 8 }}
-              >
-                {adsItems.length ? (
-                  adsItems.map((item) => (
-                    <AdCard key={item.id} item={item} width={railCardWidth} onOpen={() => onOpenItem(item, 'home_ad')} />
-                  ))
-                ) : (
-                  <EmptyRailCard
-                    width={Math.max(railCardWidth, 220)}
-                    title="Ads slot ready"
-                    subtitle="Sponsored campaigns and partner promos will appear here."
-                    icon="campaign"
-                  />
-                )}
-              </ScrollView>
-            </SectionBlock>
-          </FadeIn>
-
-          <FadeIn delay={200}>
-            <SectionBlock title="Popular Tracks" subtitle="Audio-first rail for worship music and playlists">
+            <SectionBlock title="Popular Tracks" subtitle="Latest worship audio and music uploads">
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -314,7 +298,7 @@ export default function HomeScreen() {
             </SectionBlock>
           </FadeIn>
 
-          <FadeIn delay={240}>
+          <FadeIn delay={200}>
             <SectionBlock title="Albums & Playlists" subtitle="Curated collections and playlists">
               <CollectionsDashboard
                 items={albumGrid}
@@ -324,7 +308,7 @@ export default function HomeScreen() {
             </SectionBlock>
           </FadeIn>
 
-          <FadeIn delay={280}>
+          <FadeIn delay={240}>
             <SectionBlock title="Recently Played" subtitle="Last plays and quick resume list">
               <View style={{ gap: 8 }}>
                 {recentItems.length ? (
@@ -338,10 +322,9 @@ export default function HomeScreen() {
             </SectionBlock>
           </FadeIn>
 
-          {ministrySections.map((section, index) => {
-            const items = deriveMinistryItems(feed, section).slice(index % 2 === 0 ? 0 : 1, (index % 2 === 0 ? 0 : 1) + 8);
+          {ministryRails.map(({ section, items }, index) => {
             return (
-              <FadeIn key={section.title} delay={320 + index * 35}>
+              <FadeIn key={section.title} delay={280 + index * 35}>
                 <SectionBlock title={section.title} subtitle={sectionSubtitle(section.kind)}>
                   <ScrollView
                     horizontal
@@ -350,18 +333,14 @@ export default function HomeScreen() {
                     overScrollMode="never"
                     contentContainerStyle={{ paddingRight: 8 }}
                   >
-                    {items.length ? (
-                      items.map((item) => (
-                        <PosterTile key={`${section.title}-${item.id}`} item={item} width={railCardWidth} onPress={() => onOpenItem(item, 'home_ministry_section')} />
-                      ))
-                    ) : (
-                      <EmptyRailCard
+                    {items.map((item) => (
+                      <PosterTile
+                        key={`${section.title}-${item.id}`}
+                        item={item}
                         width={railCardWidth}
-                        title={section.title}
-                        subtitle="New uploads and playlists will appear here."
-                        icon={section.kind === 'audio' ? 'graphic-eq' : section.kind === 'message' ? 'menu-book' : 'play-circle-outline'}
+                        onPress={() => onOpenItem(item, 'home_ministry_section')}
                       />
-                    )}
+                    ))}
                   </ScrollView>
                 </SectionBlock>
               </FadeIn>
@@ -737,55 +716,6 @@ function LiveCard({
         </View>
       </View>
     </View>
-  );
-}
-
-function AdCard({ item, width, onOpen }: { item: FeedCardItem; width: number; onOpen: () => void }) {
-  const theme = useAppTheme();
-  const isDark = theme.scheme === 'dark';
-  const ui = {
-    cardBorder: isDark ? 'rgba(216,194,255,0.18)' : 'rgba(109,40,217,0.14)',
-    cardBg: isDark ? 'rgba(154,107,255,0.07)' : 'rgba(237,233,254,0.72)',
-    overlay: isDark
-      ? (['rgba(0,0,0,0)', 'rgba(6,4,13,0.88)'] as const)
-      : (['rgba(255,255,255,0)', 'rgba(255,255,255,0.9)'] as const),
-    pillBg: isDark ? 'rgba(88,28,135,0.7)' : 'rgba(109,40,217,0.88)',
-    pillText: isDark ? '#EDE9FE' : '#FFFFFF',
-    title: isDark ? '#F5EEFF' : theme.colors.text.primary,
-    subtitle: isDark ? 'rgba(221,210,245,0.9)' : theme.colors.text.secondary,
-  } as const;
-  return (
-    <TVTouchable
-      onPress={onOpen}
-      style={{
-        width: Math.max(width, 220),
-        marginRight: 12,
-        borderRadius: 18,
-        borderWidth: 1,
-        borderColor: ui.cardBorder,
-        backgroundColor: ui.cardBg,
-        overflow: 'hidden',
-      }}
-      showFocusBorder={false}
-    >
-      <View style={{ height: 112 }}>
-        <Image source={{ uri: item.imageUrl }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-        <LinearGradient colors={ui.overlay} style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }} />
-        <View style={{ position: 'absolute', top: 10, left: 10, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 4, backgroundColor: ui.pillBg }}>
-          <CustomText variant="caption" style={{ color: ui.pillText }}>
-            SPONSORED
-          </CustomText>
-        </View>
-      </View>
-      <View style={{ padding: 10 }}>
-        <CustomText variant="label" style={{ color: ui.title }} numberOfLines={1}>
-          {item.title}
-        </CustomText>
-        <CustomText variant="caption" style={{ color: ui.subtitle, marginTop: 3 }} numberOfLines={2}>
-          {item.description}
-        </CustomText>
-      </View>
-    </TVTouchable>
   );
 }
 
@@ -1396,7 +1326,6 @@ function firstAvailable(feed: FeedBundle): FeedCardItem | null {
     feed.music[0] ??
     feed.playlists[0] ??
     feed.announcements[0] ??
-    feed.ads[0] ??
     feed.recent[0] ??
     null
   );
@@ -1479,7 +1408,7 @@ function typeLabel(type: FeedCardItem['type']) {
     case 'live':
       return 'Live';
     case 'ad':
-      return 'Ad';
+      return 'Media';
     default:
       return 'Media';
   }

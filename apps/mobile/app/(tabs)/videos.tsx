@@ -12,6 +12,7 @@ import { TVTouchable } from '../../components/ui/TVTouchable';
 import { useContentFeed } from '../../hooks/useContentFeed';
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
 import type { FeedCardItem } from '../../services/contentService';
+import { buildPlayerRoute } from '../../util/playerRoute';
 
 export default function VideosScreen() {
   const theme = useAppTheme();
@@ -35,7 +36,7 @@ export default function VideosScreen() {
       title: item.title,
       source,
     });
-    router.push('/(tabs)/PlaySection');
+    router.push(buildPlayerRoute(item));
   };
 
   return (
@@ -67,7 +68,7 @@ export default function VideosScreen() {
                   Video Hub
                 </CustomText>
                 <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 2 }}>
-                  YouTube-style live + replay architecture.
+                  Live sessions and replay videos from your ministry feed.
                 </CustomText>
               </View>
 
