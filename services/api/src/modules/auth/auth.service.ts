@@ -11,6 +11,7 @@ import type {
   ForgotPasswordInput,
   LoginInput,
   RegisterInput,
+  ResendVerificationEmailInput,
   ResetPasswordInput,
   SafeUser,
   UserRole,
@@ -90,6 +91,12 @@ const createRawToken = (): string =>
 const buildActionUrl = (baseUrl: string, token: string): string => {
   const separator = baseUrl.includes('?') ? '&' : '?';
   return `${baseUrl}${separator}token=${encodeURIComponent(token)}`;
+};
+
+const buildPublicActionUrl = (path: string, token: string): string => {
+  const normalizedBase = env.AUTH_PUBLIC_BASE_URL.replace(/\/+$/, '');
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  return buildActionUrl(`${normalizedBase}${normalizedPath}`, token);
 };
 
 const enqueueEmailJob = async ({
@@ -189,7 +196,7 @@ const consumeAuthActionToken = async ({
 };
 
 const enqueueVerificationEmail = async (user: SafeUser, rawToken: string): Promise<void> => {
-  const verifyUrl = buildActionUrl(env.AUTH_VERIFY_EMAIL_URL, rawToken);
+  const verifyUrl = buildPublicActionUrl(env.AUTH_VERIFY_EMAIL_PATH, rawToken);
   const subject = 'Verify your email address';
   const textBody = [
     `Hi ${user.displayName},`,
@@ -222,7 +229,7 @@ const enqueueVerificationEmail = async (user: SafeUser, rawToken: string): Promi
 };
 
 const enqueuePasswordResetEmail = async (user: SafeUser, rawToken: string): Promise<void> => {
-  const resetUrl = buildActionUrl(env.AUTH_RESET_PASSWORD_URL, rawToken);
+  const resetUrl = buildPublicActionUrl(env.AUTH_RESET_PASSWORD_PATH, rawToken);
   const subject = 'Reset your password';
   const textBody = [
     `Hi ${user.displayName},`,
@@ -408,7 +415,7 @@ export const verifyEmail = async (input: VerifyEmailInput): Promise<AuthResponse
 };
 
 export const resendVerificationEmail = async (
-  input: ForgotPasswordInput,
+  input: ResendVerificationEmailInput,
   requestIp?: string,
 ): Promise<AuthActionResponse> => {
   const email = input.email.trim().toLowerCase();
@@ -428,7 +435,7 @@ export const resendVerificationEmail = async (
   const user = toSafeUser(result.rows[0]!);
 
   if (user.emailVerifiedAt) {
-    return { message: 'Email is already verified.' };
+    return { message: AUTH_GENERIC_EMAIL_MESSAGE };
   }
 
   const verificationToken = await issueAuthActionToken({
