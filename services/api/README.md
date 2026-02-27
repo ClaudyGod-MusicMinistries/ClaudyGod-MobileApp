@@ -3,7 +3,8 @@
 Node.js + TypeScript backend for the Claudy admin portal and mobile app content feed.
 
 ## Features
-- JWT auth for admin dashboard
+- JWT auth for admin dashboard and mobile users
+- Email verification + password recovery endpoints
 - Content management endpoints (`/v1/content`)
 - Redis + BullMQ workers (content + email)
 - Email notification queue
@@ -12,8 +13,13 @@ Node.js + TypeScript backend for the Claudy admin portal and mobile app content 
 - PostgreSQL migrations and admin seed script
 
 ## Key Endpoints
+- `POST /v1/auth/register`
 - `POST /v1/auth/login`
 - `GET /v1/auth/me`
+- `POST /v1/auth/email/verify`
+- `POST /v1/auth/email/verify/request`
+- `POST /v1/auth/password/forgot`
+- `POST /v1/auth/password/reset`
 - `GET /v1/content/manage`
 - `POST /v1/content`
 - `PATCH /v1/content/:id/visibility`
@@ -28,6 +34,12 @@ Set these in `.env` (do not commit secrets):
 - `YOUTUBE_API_KEY`
 - `YOUTUBE_CHANNEL_ID`
 - `YOUTUBE_MAX_RESULTS`
+- `AUTH_REQUIRE_EMAIL_VERIFICATION`
+- `AUTH_PUBLIC_BASE_URL`
+- `AUTH_VERIFY_EMAIL_PATH`
+- `AUTH_RESET_PASSWORD_PATH`
+- `AUTH_VERIFICATION_TOKEN_TTL_MINUTES`
+- `AUTH_PASSWORD_RESET_TOKEN_TTL_MINUTES`
 
 ## Quick start
 1. Copy `.env.example` to `.env`

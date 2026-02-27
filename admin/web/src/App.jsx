@@ -6,11 +6,13 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 const GOOGLE_LOGIN_URL = import.meta.env.VITE_GOOGLE_LOGIN_URL || '';
 const ACCESS_TOKEN_KEY = 'claudy_admin_access_token';
 const TYPOGRAPHY_MODE_KEY = 'claudy_admin_typography_mode';
+const MOBILE_PREVIEW_URL_KEY = 'claudy_admin_mobile_preview_url';
 const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000;
 const BRAND_LOGO_URL = '/brand/claudy-logo.webp';
 const CONTENT_TYPES = ['audio', 'video', 'playlist', 'announcement'];
 const VISIBILITY_OPTIONS = ['draft', 'published'];
 const YOUTUBE_SYNC_DEFAULT_LIMIT = 8;
+const DEFAULT_MOBILE_PREVIEW_URL = import.meta.env.VITE_MOBILE_PREVIEW_URL || 'http://localhost:8081';
 const TYPOGRAPHY_MODES = [
   { value: 'compact', label: 'Compact' },
   { value: 'cozy', label: 'Cozy' },
@@ -47,6 +49,25 @@ function readStoredTypographyMode() {
     // Keep default mode when storage is unavailable.
   }
   return 'cozy';
+}
+
+function normalizePreviewUrl(value) {
+  const next = String(value || '').trim();
+  if (!next) return DEFAULT_MOBILE_PREVIEW_URL;
+  if (/^https?:\/\//i.test(next)) return next;
+  return `http://${next}`;
+}
+
+function readStoredMobilePreviewUrl() {
+  try {
+    const stored = localStorage.getItem(MOBILE_PREVIEW_URL_KEY) || '';
+    if (stored.trim()) {
+      return normalizePreviewUrl(stored);
+    }
+  } catch (error) {
+    // Keep default URL when storage is unavailable.
+  }
+  return normalizePreviewUrl(DEFAULT_MOBILE_PREVIEW_URL);
 }
 
 function storeToken(token) {
@@ -165,6 +186,12 @@ export default defineComponent({
     const uploadingAsset = ref(false);
     const uploadPoliciesLoading = ref(false);
     const uploadPolicies = ref([]);
+    const endpointChecksLoading = ref(false);
+    const endpointChecks = ref([]);
+    const endpointChecksAt = ref('');
+    const mobilePreviewUrl = ref(readStoredMobilePreviewUrl());
+    const mobilePreviewDraft = ref(mobilePreviewUrl.value);
+    const mobilePreviewFrameKey = ref(0);
     const notice = ref('');
     const noticeKind = ref('success');
 
@@ -304,7 +331,7 @@ export default defineComponent({
     function syncViewport() {
       if (typeof window === 'undefined') return;
       viewportWidth.value = window.innerWidth;
-      if (viewportWidth.value > 1024 && headerMenuOpen.value) {
+      if (viewportWidth.value > 1120 && headerMenuOpen.value) {
         headerMenuOpen.value = false;
       }
     }
@@ -320,6 +347,120 @@ export default defineComponent({
     function setDashboardView(view) {
       dashboardView.value = view;
       closeHeaderMenu();
+    }
+
+    function applyMobilePreviewUrl() {
+      const next = normalizePreviewUrl(mobilePreviewDraft.value);
+      mobilePreviewDraft.value = next;
+      mobilePreviewUrl.value = next;
+      mobilePreviewFrameKey.value += 1;
+      try {
+        localStorage.setItem(MOBILE_PREVIEW_URL_KEY, next);
+      } catch (error) {
+        // Keep runtime value if storage is unavailable.
+      }
+    }
+
+    function reloadMobilePreview() {
+      mobilePreviewFrameKey.value += 1;
+    }
+
+    function mapProbeError(error, fallback) {
+      if (axios.isAxiosError(error)) {
+        return {
+          statusCode: error.response?.status ?? 0,
+          detail: toErrorMessage(error, fallback),
+        };
+      }
+      return {
+        statusCode: 0,
+        detail: error && error.message ? error.message : fallback,
+      };
+    }
+
+    async function runEndpointChecks() {
+      endpointChecksLoading.value = true;
+
+      const probes = [
+        {
+          label: 'API Health',
+          path: '/health',
+          request: () => http.get('/health'),
+        },
+        {
+          label: 'Public Content Feed',
+          path: '/v1/content?page=1&limit=6',
+          request: () => http.get('/v1/content', { params: { page: 1, limit: 6 } }),
+        },
+        {
+          label: 'Mobile Content Feed',
+          path: '/v1/mobile/content?page=1&limit=6',
+          request: () => http.get('/v1/mobile/content', { params: { page: 1, limit: 6 } }),
+        },
+        {
+          label: 'Mobile App Config',
+          path: '/v1/mobile/app/config',
+          request: () => http.get('/v1/mobile/app/config'),
+        },
+        {
+          label: 'Mobile YouTube Feed',
+          path: '/v1/mobile/youtube/videos?maxResults=3',
+          request: () => http.get('/v1/mobile/youtube/videos', { params: { maxResults: 3 } }),
+        },
+      ];
+
+      if (accessToken.value) {
+        probes.push({
+          label: 'Admin Content Management',
+          path: '/v1/content/manage?page=1&limit=1',
+          request: () => http.get('/v1/content/manage', { params: { page: 1, limit: 1 } }),
+        });
+        probes.push({
+          label: 'Admin YouTube Feed',
+          path: '/v1/youtube/videos?maxResults=3',
+          request: () => http.get('/v1/youtube/videos', { params: { maxResults: 3 } }),
+        });
+      }
+
+      try {
+        const checks = await Promise.all(
+          probes.map(async (probe) => {
+            try {
+              const response = await probe.request();
+              return {
+                label: probe.label,
+                path: probe.path,
+                status: 'ok',
+                statusCode: response.status,
+                detail: 'Connected',
+              };
+            } catch (error) {
+              const mapped = mapProbeError(error, `${probe.label} request failed`);
+              return {
+                label: probe.label,
+                path: probe.path,
+                status: 'error',
+                statusCode: mapped.statusCode,
+                detail: mapped.detail,
+              };
+            }
+          }),
+        );
+
+        endpointChecks.value = checks;
+        endpointChecksAt.value = new Date().toISOString();
+
+        const youtubeIssue = checks.find(
+          (check) =>
+            (check.label === 'Mobile YouTube Feed' || check.label === 'Admin YouTube Feed') &&
+            check.status === 'error',
+        );
+        if (youtubeIssue) {
+          setNotice(`YouTube feed check failed: ${youtubeIssue.detail}`, 'error');
+        }
+      } finally {
+        endpointChecksLoading.value = false;
+      }
     }
 
     function setTypographyMode(mode) {
@@ -360,6 +501,8 @@ export default defineComponent({
       mobileAppConfigMeta.value = null;
       wordOfDayHistory.value = [];
       wordOfDayCurrent.value = null;
+      endpointChecks.value = [];
+      endpointChecksAt.value = '';
       dashboardView.value = 'overview';
       closeHeaderMenu();
     }
@@ -731,6 +874,7 @@ export default defineComponent({
           fetchUploadPolicies(),
           isAdmin.value ? fetchMobileAppConfig() : Promise.resolve(),
           isAdmin.value ? fetchWordOfDayDashboard() : Promise.resolve(),
+          runEndpointChecks(),
         ]);
       } catch (error) {
         persistToken(null);
@@ -791,6 +935,7 @@ export default defineComponent({
           fetchUploadPolicies(freshToken),
           authResponse.data.user && authResponse.data.user.role === 'ADMIN' ? fetchMobileAppConfig() : Promise.resolve(),
           authResponse.data.user && authResponse.data.user.role === 'ADMIN' ? fetchWordOfDayDashboard() : Promise.resolve(),
+          runEndpointChecks(),
         ]);
         setNotice(
           isRegisterMode.value
@@ -991,6 +1136,7 @@ export default defineComponent({
           fetchUploadPolicies(),
           isAdmin.value ? fetchMobileAppConfig() : Promise.resolve(),
           isAdmin.value ? fetchWordOfDayDashboard() : Promise.resolve(),
+          runEndpointChecks(),
         ]);
         closeHeaderMenu();
         setNotice('Dashboard refreshed.', 'success');
@@ -1250,7 +1396,7 @@ export default defineComponent({
             </div>
 
             <div class="hero-chips">
-              <span class="hero-chip">Beautiful client-facing portal</span>
+              <span class="hero-chip">Professional publishing portal</span>
               <span class="hero-chip">Fast publishing workflow</span>
               <span class="hero-chip">Draft + publish controls</span>
             </div>
@@ -1286,6 +1432,13 @@ export default defineComponent({
               onClick={() => setDashboardView('editor')}
             >
               Content Editor
+            </button>
+            <button
+              type="button"
+              class={['ghost-btn compact', dashboardView.value === 'mobile-preview' ? 'is-active' : '']}
+              onClick={() => setDashboardView('mobile-preview')}
+            >
+              Mobile Preview
             </button>
           </section>
 
@@ -1373,6 +1526,107 @@ export default defineComponent({
                         <h3>{video.title}</h3>
                         <p>{truncate(video.description, 120)}</p>
                       </div>
+                    </article>
+                  ))}
+                </div>
+              </article>
+            </section>
+          ) : null}
+
+          {dashboardView.value === 'mobile-preview' ? (
+            <section class="mobile-preview-grid">
+              <article class="panel glass-panel reveal-up" style={{ animationDelay: '220ms' }}>
+                <div class="section-head split">
+                  <div>
+                    <h2>Mobile App Live Preview</h2>
+                    <p>Preview the mobile interface while updating content and backend-managed app config.</p>
+                  </div>
+                  <button
+                    type="button"
+                    class="ghost-btn compact"
+                    onClick={reloadMobilePreview}
+                  >
+                    Reload Preview
+                  </button>
+                </div>
+
+                <div class="mobile-preview-controls">
+                  <label>
+                    Mobile preview URL
+                    <input
+                      value={mobilePreviewDraft.value}
+                      onInput={(event) => { mobilePreviewDraft.value = readValue(event); }}
+                      placeholder="http://localhost:8081"
+                    />
+                  </label>
+                  <div class="button-row mobile-preview-actions">
+                    <button type="button" class="primary-btn" onClick={applyMobilePreviewUrl}>
+                      Apply URL
+                    </button>
+                    <a href={mobilePreviewUrl.value} target="_blank" rel="noreferrer noopener" class="ghost-btn compact mobile-preview-link">
+                      Open in New Tab
+                    </a>
+                  </div>
+                </div>
+
+                <div class="mobile-preview-frame-wrap">
+                  <iframe
+                    key={`mobile-preview-${mobilePreviewFrameKey.value}`}
+                    src={mobilePreviewUrl.value}
+                    title="Mobile app preview"
+                    class="mobile-preview-frame"
+                    loading="lazy"
+                  />
+                </div>
+
+                <div class="helper-card" style={{ marginTop: '0.9rem' }}>
+                  <strong>Live flow</strong>
+                  <p>
+                    Publish content, assign sections, or update mobile app config in this dashboard, then click <em>Reload Preview</em> to verify changes reflected in the app UI.
+                  </p>
+                </div>
+              </article>
+
+              <article class="panel glass-panel reveal-up" style={{ animationDelay: '260ms' }}>
+                <div class="section-head split">
+                  <div>
+                    <h2>Endpoint Diagnostics</h2>
+                    <p>Validate backend endpoints used by admin and mobile clients.</p>
+                  </div>
+                  <button
+                    type="button"
+                    class="ghost-btn compact"
+                    onClick={() => void runEndpointChecks()}
+                    disabled={endpointChecksLoading.value}
+                  >
+                    {endpointChecksLoading.value ? 'Checking...' : 'Run Checks'}
+                  </button>
+                </div>
+
+                {endpointChecksAt.value ? (
+                  <div class="muted-chip">Last check: {formatDateTime(endpointChecksAt.value)}</div>
+                ) : null}
+
+                <div class="helper-card" style={{ marginTop: '0.8rem' }}>
+                  <strong>YouTube requirement</strong>
+                  <p>
+                    Set <code>YOUTUBE_API_KEY</code> and <code>YOUTUBE_CHANNEL_ID</code> in <code>services/api/.env</code>, then restart the API to enable YouTube feed and sync.
+                  </p>
+                </div>
+
+                <div class="endpoint-check-list">
+                  {endpointChecks.value.length === 0 ? (
+                    <div class="empty-state">No checks run yet. Click <strong>Run Checks</strong>.</div>
+                  ) : endpointChecks.value.map((check) => (
+                    <article class={['endpoint-check-card', check.status === 'ok' ? 'is-ok' : 'is-error']} key={`${check.label}-${check.path}`}>
+                      <div class="endpoint-check-head">
+                        <strong>{check.label}</strong>
+                        <span class={['pill', check.status === 'ok' ? 'pill-live' : 'pill-draft']}>
+                          {check.statusCode || 'ERR'}
+                        </span>
+                      </div>
+                      <code>{check.path}</code>
+                      <p>{check.detail}</p>
                     </article>
                   ))}
                 </div>
@@ -2133,6 +2387,23 @@ export default defineComponent({
               </div>
 
               <div class="header-controls">
+                {currentUser.value ? (
+                  <button
+                    type="button"
+                    class={['header-toggle-btn', 'header-nav-toggle', headerMenuOpen.value ? 'is-open' : '']}
+                    onClick={toggleHeaderMenu}
+                    aria-expanded={headerMenuOpen.value ? 'true' : 'false'}
+                    aria-label={headerMenuOpen.value ? 'Close navigation drawer' : 'Open navigation drawer'}
+                  >
+                    <span class="header-toggle-icon" aria-hidden="true">
+                      <span />
+                      <span />
+                      <span />
+                    </span>
+                    <span>{headerMenuOpen.value ? 'Close Nav' : 'Navigation'}</span>
+                  </button>
+                ) : null}
+
                 {!isCompactHeader.value ? (
                   <div class="header-command-bar">
                     {typographyToggle()}
@@ -2152,57 +2423,60 @@ export default defineComponent({
                           </button>
                         </div>
                       </>
-                    ) : (
-                      <div class="user-pill muted">
-                        <span>Client Portal</span>
-                      </div>
-                    )}
+                    ) : null}
                   </div>
-                ) : null}
-
-                {isCompactHeader.value ? (
-                  <button
-                    type="button"
-                    class={['header-toggle-btn', headerMenuOpen.value ? 'is-open' : '']}
-                    onClick={toggleHeaderMenu}
-                    aria-expanded={headerMenuOpen.value ? 'true' : 'false'}
-                    aria-label={headerMenuOpen.value ? 'Close header menu' : 'Open header menu'}
-                  >
-                    {headerMenuOpen.value ? 'Close' : 'Menu'}
-                  </button>
                 ) : null}
               </div>
             </div>
 
-            {isCompactHeader.value ? (
+            {currentUser.value ? (
               <div class={['header-drawer', headerMenuOpen.value ? 'is-open' : '']}>
                 <div class="header-drawer-inner">
                   {typographyToggle(true)}
-                  {currentUser.value ? (
-                    <div class="user-pill">
-                      <span class="user-pill-dot" />
-                      <span>{displayName.value}</span>
-                      <span class="user-pill-role">{isAdmin.value ? 'Admin' : 'Client'}</span>
-                    </div>
-                  ) : (
-                    <div class="user-pill muted">
-                      <span>Client Portal</span>
-                    </div>
-                  )}
+                  <div class="header-drawer-nav">
+                    <button
+                      type="button"
+                      class={['drawer-nav-link', dashboardView.value === 'overview' ? 'is-active' : '']}
+                      onClick={() => setDashboardView('overview')}
+                    >
+                      Dashboard
+                    </button>
+                    <button
+                      type="button"
+                      class={['drawer-nav-link', dashboardView.value === 'editor' ? 'is-active' : '']}
+                      onClick={() => setDashboardView('editor')}
+                    >
+                      Content Editor
+                    </button>
+                    <button
+                      type="button"
+                      class={['drawer-nav-link', dashboardView.value === 'mobile-preview' ? 'is-active' : '']}
+                      onClick={() => setDashboardView('mobile-preview')}
+                    >
+                      Mobile Preview
+                    </button>
+                  </div>
 
-                  {currentUser.value ? (
-                    <div class="header-drawer-actions">
-                      <button type="button" class="ghost-btn compact" onClick={() => void refreshDashboard()}>
-                        Refresh
-                      </button>
-                      <button type="button" class="ghost-btn compact" onClick={() => void fetchYouTubePreview()}>
-                        YouTube Preview
-                      </button>
-                      <button type="button" class="danger-btn compact" onClick={logout}>
-                        Sign Out
-                      </button>
-                    </div>
-                  ) : null}
+                  <div class="user-pill">
+                    <span class="user-pill-dot" />
+                    <span>{displayName.value}</span>
+                    <span class="user-pill-role">{isAdmin.value ? 'Admin' : 'Client'}</span>
+                  </div>
+
+                  <div class="header-drawer-actions">
+                    <button type="button" class="ghost-btn compact" onClick={() => void refreshDashboard()}>
+                      Refresh
+                    </button>
+                    <button type="button" class="ghost-btn compact" onClick={() => void fetchYouTubePreview()}>
+                      YouTube Preview
+                    </button>
+                    <button type="button" class="ghost-btn compact" onClick={() => void runEndpointChecks()}>
+                      Run Checks
+                    </button>
+                    <button type="button" class="danger-btn compact" onClick={logout}>
+                      Sign Out
+                    </button>
+                  </div>
                 </div>
               </div>
             ) : null}

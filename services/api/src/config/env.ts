@@ -21,6 +21,17 @@ const toBoolean = (fallback: boolean) =>
     return value;
   }, z.boolean());
 
+const pathSegment = (fieldName: string, fallback: string) =>
+  z
+    .string()
+    .trim()
+    .min(2)
+    .max(120)
+    .default(fallback)
+    .refine((value) => value.startsWith('/'), {
+      message: `${fieldName} must start with /`,
+    });
+
 const envSchema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -33,6 +44,13 @@ const envSchema = z
     JWT_ACCESS_TTL: z.string().trim().min(1).default('1d'),
     BCRYPT_ROUNDS: z.coerce.number().int().min(10).max(15).default(12),
     CORS_ORIGIN: z.string().default('http://localhost:5173'),
+
+    AUTH_PUBLIC_BASE_URL: z.string().url().default('http://localhost:5173'),
+    AUTH_VERIFY_EMAIL_PATH: pathSegment('AUTH_VERIFY_EMAIL_PATH', '/verify-email'),
+    AUTH_RESET_PASSWORD_PATH: pathSegment('AUTH_RESET_PASSWORD_PATH', '/reset-password'),
+    AUTH_VERIFICATION_TOKEN_TTL_MINUTES: z.coerce.number().int().min(10).max(10080).default(1440),
+    AUTH_PASSWORD_RESET_TOKEN_TTL_MINUTES: z.coerce.number().int().min(5).max(1440).default(30),
+    AUTH_REQUIRE_EMAIL_VERIFICATION: toBoolean(false),
 
     SUPABASE_URL: z.string().optional().default(''),
     SUPABASE_SERVICE_ROLE_KEY: z.string().optional().default(''),
@@ -98,6 +116,15 @@ const envSchema = z
           code: z.ZodIssueCode.custom,
           path: ['MOBILE_API_KEY'],
           message: 'MOBILE_API_KEY must be a strong non-default secret in production',
+        });
+      }
+
+      if (value.AUTH_REQUIRE_EMAIL_VERIFICATION && !value.SMTP_HOST) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['SMTP_HOST'],
+          message:
+            'SMTP_HOST is required in production when AUTH_REQUIRE_EMAIL_VERIFICATION is enabled',
         });
       }
     }
