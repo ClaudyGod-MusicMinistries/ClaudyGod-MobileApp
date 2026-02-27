@@ -5,10 +5,24 @@ import './App.css';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 const GOOGLE_LOGIN_URL = import.meta.env.VITE_GOOGLE_LOGIN_URL || '';
 const ACCESS_TOKEN_KEY = 'claudy_admin_access_token';
+const TYPOGRAPHY_MODE_KEY = 'claudy_admin_typography_mode';
+const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000;
 const BRAND_LOGO_URL = '/brand/claudy-logo.webp';
 const CONTENT_TYPES = ['audio', 'video', 'playlist', 'announcement'];
 const VISIBILITY_OPTIONS = ['draft', 'published'];
 const YOUTUBE_SYNC_DEFAULT_LIMIT = 8;
+const TYPOGRAPHY_MODES = [
+  { value: 'compact', label: 'Compact' },
+  { value: 'cozy', label: 'Cozy' },
+  { value: 'comfortable', label: 'Comfortable' },
+];
+const API_HOST_LABEL = (() => {
+  try {
+    return new URL(API_URL).host;
+  } catch (error) {
+    return String(API_URL || '').replace(/^https?:\/\//i, '');
+  }
+})();
 
 const http = axios.create({
   baseURL: API_URL,
@@ -21,6 +35,18 @@ function readStoredToken() {
   } catch (error) {
     return '';
   }
+}
+
+function readStoredTypographyMode() {
+  try {
+    const stored = localStorage.getItem(TYPOGRAPHY_MODE_KEY) || '';
+    if (TYPOGRAPHY_MODES.some((mode) => mode.value === stored)) {
+      return stored;
+    }
+  } catch (error) {
+    // Keep default mode when storage is unavailable.
+  }
+  return 'cozy';
 }
 
 function storeToken(token) {
@@ -113,6 +139,7 @@ export default defineComponent({
   name: 'ClaudyContentStudio',
   setup() {
     const accessToken = ref(readStoredToken());
+    const typographyMode = ref(readStoredTypographyMode());
     const currentUser = ref(null);
     const authLoading = ref(false);
     const authMode = ref('login');
@@ -132,6 +159,8 @@ export default defineComponent({
     const editContentSaving = ref(false);
     const headerMenuOpen = ref(false);
     const dashboardView = ref('overview');
+    const inactivityTimerId = ref(null);
+    const authResponseInterceptorId = ref(null);
     const viewportWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1366);
     const uploadingAsset = ref(false);
     const uploadPoliciesLoading = ref(false);
@@ -263,11 +292,13 @@ export default defineComponent({
         storeToken(token);
         accessToken.value = token;
         applyToken(token);
+        syncSessionTracking();
         return;
       }
       storeToken(null);
       accessToken.value = '';
       applyToken(null);
+      syncSessionTracking();
     }
 
     function syncViewport() {
@@ -291,6 +322,16 @@ export default defineComponent({
       closeHeaderMenu();
     }
 
+    function setTypographyMode(mode) {
+      const next = TYPOGRAPHY_MODES.some((item) => item.value === mode) ? mode : 'cozy';
+      typographyMode.value = next;
+      try {
+        localStorage.setItem(TYPOGRAPHY_MODE_KEY, next);
+      } catch (error) {
+        // Ignore storage errors; runtime value still updates.
+      }
+    }
+
     function startGoogleLogin() {
       clearNotice();
       if (!GOOGLE_LOGIN_URL) {
@@ -308,11 +349,115 @@ export default defineComponent({
       currentUser.value = response.data.user;
     }
 
-    async function fetchManagedContent() {
+    function clearSessionData() {
+      currentUser.value = null;
+      managedItems.value = [];
+      youtubePreviewItems.value = [];
+      uploadPolicies.value = [];
+      editContentOpen.value = false;
+      editingContentId.value = null;
+      mobileAppConfigEditor.value = '';
+      mobileAppConfigMeta.value = null;
+      wordOfDayHistory.value = [];
+      wordOfDayCurrent.value = null;
+      dashboardView.value = 'overview';
+      closeHeaderMenu();
+    }
+
+    function clearInactivityTimer() {
+      if (typeof window === 'undefined') return;
+      if (inactivityTimerId.value != null) {
+        window.clearTimeout(inactivityTimerId.value);
+        inactivityTimerId.value = null;
+      }
+    }
+
+    function handleInactivityTimeout() {
+      if (!accessToken.value) return;
+      persistToken(null);
+      clearSessionData();
+      setNotice('You were signed out after 30 minutes of inactivity.', 'error');
+    }
+
+    function scheduleInactivityTimeout() {
+      if (typeof window === 'undefined' || !accessToken.value) return;
+      clearInactivityTimer();
+      inactivityTimerId.value = window.setTimeout(handleInactivityTimeout, INACTIVITY_TIMEOUT_MS);
+    }
+
+    function onUserActivity() {
+      if (!accessToken.value) return;
+      scheduleInactivityTimeout();
+    }
+
+    function bindActivityListeners() {
+      if (typeof window === 'undefined') return;
+      window.addEventListener('pointerdown', onUserActivity);
+      window.addEventListener('keydown', onUserActivity);
+      window.addEventListener('touchstart', onUserActivity);
+      window.addEventListener('scroll', onUserActivity);
+    }
+
+    function unbindActivityListeners() {
+      if (typeof window === 'undefined') return;
+      window.removeEventListener('pointerdown', onUserActivity);
+      window.removeEventListener('keydown', onUserActivity);
+      window.removeEventListener('touchstart', onUserActivity);
+      window.removeEventListener('scroll', onUserActivity);
+    }
+
+    function syncSessionTracking() {
+      if (!accessToken.value) {
+        clearInactivityTimer();
+        unbindActivityListeners();
+        return;
+      }
+      bindActivityListeners();
+      scheduleInactivityTimeout();
+    }
+
+    function setupAuthInterceptor() {
+      if (authResponseInterceptorId.value != null) return;
+
+      authResponseInterceptorId.value = http.interceptors.response.use(
+        (response) => response,
+        (error) => {
+          if (axios.isAxiosError(error) && error.response?.status === 401 && accessToken.value) {
+            const requestUrl = String(error.config?.url || '');
+            const isAuthEndpoint = requestUrl.includes('/v1/auth/login') || requestUrl.includes('/v1/auth/register');
+            const failedHeaderValue =
+              error.config?.headers && typeof error.config.headers === 'object'
+                ? String(error.config.headers.Authorization || error.config.headers.authorization || '')
+                : '';
+            const activeHeaderValue = accessToken.value ? `Bearer ${accessToken.value}` : '';
+            const hadBearerHeader = failedHeaderValue.startsWith('Bearer ');
+            const staleRequest =
+              Boolean(activeHeaderValue) &&
+              (!hadBearerHeader || failedHeaderValue !== activeHeaderValue);
+
+            if (!isAuthEndpoint && !staleRequest) {
+              persistToken(null);
+              clearSessionData();
+              setNotice('Your session has expired. Please sign in again.', 'error');
+            }
+          }
+          return Promise.reject(error);
+        },
+      );
+    }
+
+    function teardownAuthInterceptor() {
+      if (authResponseInterceptorId.value == null) return;
+      http.interceptors.response.eject(authResponseInterceptorId.value);
+      authResponseInterceptorId.value = null;
+    }
+
+    async function fetchManagedContent(tokenOverride) {
       contentLoading.value = true;
       try {
         const response = await http.get('/v1/content/manage', {
           params: { page: pagination.page, limit: pagination.limit },
+          headers: tokenOverride ? { Authorization: `Bearer ${tokenOverride}` } : undefined,
         });
         managedItems.value = response.data.items || [];
         pagination.total = response.data.total || 0;
@@ -321,10 +466,12 @@ export default defineComponent({
       }
     }
 
-    async function fetchUploadPolicies() {
+    async function fetchUploadPolicies(tokenOverride) {
       uploadPoliciesLoading.value = true;
       try {
-        const response = await http.get('/v1/uploads/policies');
+        const response = await http.get('/v1/uploads/policies', {
+          headers: tokenOverride ? { Authorization: `Bearer ${tokenOverride}` } : undefined,
+        });
         uploadPolicies.value = Array.isArray(response.data && response.data.assets) ? response.data.assets : [];
       } catch (error) {
         setNotice(toErrorMessage(error, 'Unable to load upload policies.'), 'error');
@@ -630,14 +777,18 @@ export default defineComponent({
             };
 
         const authResponse = await http.post(endpoint, payload);
+        const freshToken = String(authResponse.data?.accessToken || '');
+        if (!freshToken) {
+          throw new Error('Authentication succeeded but no session token was returned.');
+        }
 
-        persistToken(authResponse.data.accessToken);
+        persistToken(freshToken);
         currentUser.value = authResponse.data.user;
         authForm.password = '';
         authForm.confirmPassword = '';
         await Promise.all([
-          fetchManagedContent(),
-          fetchUploadPolicies(),
+          fetchManagedContent(freshToken),
+          fetchUploadPolicies(freshToken),
           authResponse.data.user && authResponse.data.user.role === 'ADMIN' ? fetchMobileAppConfig() : Promise.resolve(),
           authResponse.data.user && authResponse.data.user.role === 'ADMIN' ? fetchWordOfDayDashboard() : Promise.resolve(),
         ]);
@@ -672,17 +823,7 @@ export default defineComponent({
 
     function logout() {
       persistToken(null);
-      closeHeaderMenu();
-      currentUser.value = null;
-      managedItems.value = [];
-      youtubePreviewItems.value = [];
-      uploadPolicies.value = [];
-      editContentOpen.value = false;
-      editingContentId.value = null;
-      mobileAppConfigEditor.value = '';
-      mobileAppConfigMeta.value = null;
-      wordOfDayHistory.value = [];
-      wordOfDayCurrent.value = null;
+      clearSessionData();
       setNotice('You have signed out.', 'success');
     }
 
@@ -906,6 +1047,8 @@ export default defineComponent({
 
     onMounted(() => {
       syncViewport();
+      setupAuthInterceptor();
+      syncSessionTracking();
       if (typeof window !== 'undefined') {
         window.addEventListener('resize', syncViewport);
       }
@@ -913,6 +1056,9 @@ export default defineComponent({
     });
 
     onBeforeUnmount(() => {
+      clearInactivityTimer();
+      unbindActivityListeners();
+      teardownAuthInterceptor();
       if (typeof window !== 'undefined') {
         window.removeEventListener('resize', syncViewport);
       }
@@ -1949,8 +2095,27 @@ export default defineComponent({
         )
         : (currentUser.value ? dashboardScreen : loginScreen);
 
+      const typographyToggle = (compact = false) => (
+        <div class={['type-density-control', compact ? 'is-compact' : '']}>
+          <span class="type-density-label">Typography</span>
+          <div class="type-density-options" role="group" aria-label="Typography density">
+            {TYPOGRAPHY_MODES.map((option) => (
+              <button
+                key={`type-mode-${compact ? 'mobile' : 'desktop'}-${option.value}`}
+                type="button"
+                class={['type-density-option', typographyMode.value === option.value ? 'is-active' : '']}
+                onClick={() => setTypographyMode(option.value)}
+                aria-pressed={typographyMode.value === option.value ? 'true' : 'false'}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+
       return (
-        <div class="app-root">
+        <div class={['app-root', `typo-${typographyMode.value}`]}>
           <div class="bg-orb orb-a" />
           <div class="bg-orb orb-b" />
           <div class="bg-orb orb-c" />
@@ -1968,6 +2133,33 @@ export default defineComponent({
               </div>
 
               <div class="header-controls">
+                {!isCompactHeader.value ? (
+                  <div class="header-command-bar">
+                    {typographyToggle()}
+                    {currentUser.value ? (
+                      <>
+                        <div class="user-pill">
+                          <span class="user-pill-dot" />
+                          <span>{displayName.value}</span>
+                          <span class="user-pill-role">{isAdmin.value ? 'Admin' : 'Client'}</span>
+                        </div>
+                        <div class="header-inline-actions">
+                          <button type="button" class="ghost-btn compact" onClick={() => void refreshDashboard()}>
+                            Refresh
+                          </button>
+                          <button type="button" class="danger-btn compact" onClick={logout}>
+                            Sign Out
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <div class="user-pill muted">
+                        <span>Client Portal</span>
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+
                 {isCompactHeader.value ? (
                   <button
                     type="button"
@@ -1979,29 +2171,18 @@ export default defineComponent({
                     {headerMenuOpen.value ? 'Close' : 'Menu'}
                   </button>
                 ) : null}
-
-                {!isCompactHeader.value ? (
-                  currentUser.value ? (
-                    <div class="user-pill">
-                      <span class="user-pill-dot" />
-                      <span>{displayName.value}</span>
-                    </div>
-                  ) : (
-                    <div class="user-pill muted">
-                      <span>Client Portal</span>
-                    </div>
-                  )
-                ) : null}
               </div>
             </div>
 
             {isCompactHeader.value ? (
               <div class={['header-drawer', headerMenuOpen.value ? 'is-open' : '']}>
                 <div class="header-drawer-inner">
+                  {typographyToggle(true)}
                   {currentUser.value ? (
                     <div class="user-pill">
                       <span class="user-pill-dot" />
                       <span>{displayName.value}</span>
+                      <span class="user-pill-role">{isAdmin.value ? 'Admin' : 'Client'}</span>
                     </div>
                   ) : (
                     <div class="user-pill muted">
@@ -2038,13 +2219,27 @@ export default defineComponent({
 
           <footer class="global-footer">
             <div class="global-footer-inner">
-              <div class="footer-brand">
-                <strong>ClaudyGod Content Studio</strong>
-                <p>Content operations portal for ministry teams</p>
-              </div>
-              <div class="footer-meta">
-                <span class="footer-chip">Admin Portal</span>
-                <div class="footer-right">{currentYear} Claudy Platform</div>
+              <div class="footer-grid">
+                <section class="footer-block footer-brand">
+                  <strong>ClaudyGod Content Studio</strong>
+                  <p>Professional publishing and curation dashboard for ministry media teams.</p>
+                  <div class="footer-chip-row">
+                    <span class="footer-chip">Admin Portal</span>
+                    <span class="footer-chip subtle">Session Timeout: 30 min</span>
+                  </div>
+                </section>
+
+                <section class="footer-block">
+                  <h4>Publishing Workflow</h4>
+                  <p>Upload media, assign app sections, and publish content across client experiences in one place.</p>
+                </section>
+
+                <section class="footer-block footer-system">
+                  <h4>System</h4>
+                  <p>API endpoint: {API_HOST_LABEL}</p>
+                  <p>Typography mode: {typographyMode.value}</p>
+                  <div class="footer-right">{currentYear} Claudy Platform</div>
+                </section>
               </div>
             </div>
           </footer>
