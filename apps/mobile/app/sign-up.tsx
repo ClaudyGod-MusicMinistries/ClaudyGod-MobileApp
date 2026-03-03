@@ -115,7 +115,7 @@ export default function SignUpScreen() {
             <FadeIn>
               <View style={{ paddingTop: compactViewport ? 4 : 10 }}>
                 <TVTouchable
-                  onPress={() => router.back()}
+                  onPress={() => router.replace('/')}
                   style={{
                     width: 44,
                     height: 44,

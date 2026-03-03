@@ -149,7 +149,7 @@ export default function VerifyEmailScreen() {
             <FadeIn>
               <View style={{ paddingTop: compactViewport ? 4 : 10 }}>
                 <TVTouchable
-                  onPress={() => router.back()}
+                  onPress={() => router.replace('/sign-in')}
                   style={{
                     width: 44,
                     height: 44,

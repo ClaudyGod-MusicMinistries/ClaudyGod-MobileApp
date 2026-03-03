@@ -12,6 +12,7 @@ import { TVTouchable } from '../components/ui/TVTouchable';
 import { AppButton } from '../components/ui/AppButton';
 import { fetchUserProfileMetrics } from '../services/supabaseAnalytics';
 import { clearMobileSession } from '../services/authService';
+import { useRequireMobileSession } from '../hooks/useRequireMobileSession';
 
 const groups = [
   {
@@ -42,6 +43,7 @@ const groups = [
 export default function Profile() {
   const theme = useAppTheme();
   const router = useRouter();
+  const isAuthorized = useRequireMobileSession();
   const [metrics, setMetrics] = useState({
     email: '',
     displayName: 'ClaudyGod User',
@@ -50,8 +52,16 @@ export default function Profile() {
   });
 
   useEffect(() => {
+    if (!isAuthorized) {
+      return;
+    }
+
     fetchUserProfileMetrics().then(setMetrics);
-  }, []);
+  }, [isAuthorized]);
+
+  if (!isAuthorized) {
+    return <View style={{ flex: 1, backgroundColor: theme.colors.background }} />;
+  }
 
   return (
     <SettingsScaffold
