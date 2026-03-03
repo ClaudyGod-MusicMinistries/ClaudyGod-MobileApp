@@ -179,7 +179,7 @@ export default function Landing() {
               </View>
 
               <TVTouchable
-                onPress={() => router.replace('/(tabs)/home')}
+                onPress={() => router.push('/sign-in')}
                 style={{
                   borderRadius: 999,
                   borderWidth: 1,
@@ -191,7 +191,7 @@ export default function Landing() {
                 showFocusBorder={false}
               >
                 <CustomText variant="caption" style={{ color: '#EADFFF' }}>
-                  Skip
+                  Sign In
                 </CustomText>
                 </TVTouchable>
               </Animated.View>

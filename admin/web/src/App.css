@@ -1,20 +1,20 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap');
 
 :root {
-  --bg-1: #06040D;
-  --bg-2: #0F0B19;
-  --bg-3: #161126;
-  --ink: #F8F7FC;
-  --ink-soft: #B7B1CC;
-  --ink-muted: #9A93AF;
-  --line: rgba(216, 197, 255, 0.14);
-  --line-strong: rgba(216, 197, 255, 0.22);
-  --panel: rgba(15, 11, 25, 0.78);
-  --panel-2: rgba(22, 17, 38, 0.9);
-  --mint: #9A6BFF;
-  --blue: #7C3AED;
+  --bg-1: #07111B;
+  --bg-2: #0C1A27;
+  --bg-3: #0F2230;
+  --ink: #F4F8FB;
+  --ink-soft: #B8C7D1;
+  --ink-muted: #91A4B0;
+  --line: rgba(170, 200, 214, 0.14);
+  --line-strong: rgba(170, 200, 214, 0.22);
+  --panel: rgba(10, 20, 31, 0.8);
+  --panel-2: rgba(13, 28, 40, 0.9);
+  --mint: #5EA8C7;
+  --blue: #7AAED6;
   --amber: #FBBF24;
-  --rose: #F87171;
+  --rose: #E48A8A;
   --shadow: 0 24px 70px rgba(0, 0, 0, 0.32);
   --radius-xl: 22px;
   --radius-lg: 16px;
@@ -31,20 +31,37 @@ body,
   min-height: 100%;
 }
 
+#root {
+  position: relative;
+  z-index: 1;
+}
+
 body {
+  position: relative;
   margin: 0;
   color: var(--ink);
-  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-family: 'Manrope', system-ui, sans-serif;
   background:
-    linear-gradient(160deg, rgba(5, 4, 13, 0.94), rgba(12, 9, 24, 0.9)),
-    radial-gradient(1000px 520px at 8% -10%, rgba(154, 107, 255, 0.2), transparent 60%),
-    radial-gradient(1000px 600px at 100% -5%, rgba(124, 58, 237, 0.22), transparent 62%),
-    linear-gradient(180deg, var(--bg-1) 0%, var(--bg-2) 45%, var(--bg-3) 100%),
-    url('/brand/claudy-logo.webp');
-  background-size: cover, auto, auto, auto, clamp(420px, 34vw, 620px);
-  background-position: center center, 8% -10%, 100% -5%, center center, right 8% bottom 8%;
+    linear-gradient(170deg, rgba(5, 12, 20, 0.94), rgba(7, 18, 27, 0.96)),
+    radial-gradient(920px 560px at 6% -8%, rgba(94, 168, 199, 0.18), transparent 60%),
+    radial-gradient(860px 560px at 100% -4%, rgba(122, 174, 214, 0.16), transparent 62%),
+    radial-gradient(740px 460px at 50% 108%, rgba(63, 124, 133, 0.12), transparent 64%),
+    linear-gradient(180deg, var(--bg-1) 0%, var(--bg-2) 48%, var(--bg-3) 100%);
+  background-size: cover;
+  background-position: center center;
   background-repeat: no-repeat;
   background-attachment: fixed;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: url('/brand/claudy-logo.webp') center center / min(74vw, 920px) no-repeat;
+  opacity: 0.045;
+  filter: saturate(0.72) brightness(1.06);
+  pointer-events: none;
+  z-index: 0;
 }
 
 img {
@@ -63,8 +80,8 @@ h1,
 h2,
 h3 {
   margin: 0;
-  font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
-  letter-spacing: -0.02em;
+  font-family: 'Manrope', system-ui, sans-serif;
+  letter-spacing: -0.015em;
 }
 
 p {
@@ -73,8 +90,8 @@ p {
 
 em {
   font-style: normal;
-  color: #E9DDFF;
-  font-weight: 700;
+  color: #D9EEF7;
+  font-weight: 600;
 }
 
 code {
@@ -90,7 +107,7 @@ code {
 }
 
 .app-root {
-  --type-scale: 1;
+  --type-scale: 0.92;
   --font-2xs: calc(0.66rem * var(--type-scale));
   --font-xs: calc(0.74rem * var(--type-scale));
   --font-sm: calc(0.8rem * var(--type-scale));
@@ -103,18 +120,6 @@ code {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-}
-
-.app-root.typo-compact {
-  --type-scale: 0.9;
-}
-
-.app-root.typo-cozy {
-  --type-scale: 1;
-}
-
-.app-root.typo-comfortable {
-  --type-scale: 1.08;
 }
 
 .bg-orb {
@@ -167,8 +172,8 @@ code {
   top: 0;
   z-index: 20;
   padding-top: env(safe-area-inset-top, 0px);
-  border-bottom: 1px solid rgba(216, 197, 255, 0.16);
-  background: linear-gradient(180deg, rgba(5, 10, 20, 0.92), rgba(7, 11, 23, 0.72));
+  border-bottom: 1px solid rgba(170, 200, 214, 0.16);
+  background: linear-gradient(180deg, rgba(7, 16, 25, 0.94), rgba(9, 18, 28, 0.76));
   backdrop-filter: blur(16px);
   animation: fadeDown 0.5s ease both;
 }
@@ -195,8 +200,8 @@ code {
 }
 
 .brand-title-line {
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  font-weight: 700;
+  letter-spacing: -0.015em;
   font-size: var(--font-lg);
   color: var(--ink);
   white-space: nowrap;
@@ -236,7 +241,7 @@ code {
   position: absolute;
   inset: -8px;
   border-radius: inherit;
-  background: radial-gradient(circle at 50% 50%, rgba(154, 107, 255, 0.28), rgba(124, 58, 237, 0.18), transparent 70%);
+  background: radial-gradient(circle at 50% 50%, rgba(94, 168, 199, 0.24), rgba(122, 174, 214, 0.14), transparent 70%);
   filter: blur(12px);
   opacity: 0.75;
   z-index: 0;
@@ -259,8 +264,8 @@ code {
   text-transform: uppercase;
   letter-spacing: 0.15em;
   font-size: var(--font-2xs);
-  font-weight: 800;
-  color: #D8C5FF;
+  font-weight: 700;
+  color: #D4E6F0;
 }
 
 .user-pill {
@@ -269,10 +274,10 @@ code {
   gap: 0.45rem;
   border-radius: 999px;
   padding: 0.4rem 0.75rem;
-  border: 1px solid rgba(154, 107, 255, 0.22);
-  background: rgba(154, 107, 255, 0.08);
-  color: #F0E8FF;
-  font-weight: 700;
+  border: 1px solid rgba(94, 168, 199, 0.22);
+  background: rgba(94, 168, 199, 0.08);
+  color: #E8F5FB;
+  font-weight: 600;
   font-size: var(--font-sm);
 }
 
@@ -375,7 +380,7 @@ code {
 .type-density-label {
   color: var(--ink-muted);
   font-size: var(--font-2xs);
-  font-weight: 800;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
@@ -396,25 +401,25 @@ code {
   background: transparent;
   color: var(--ink-soft);
   font-size: var(--font-xs);
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1;
   padding: 0.34rem 0.58rem;
 }
 
 .type-density-option.is-active {
-  border-color: rgba(154, 107, 255, 0.32);
-  background: rgba(154, 107, 255, 0.18);
-  color: #F6EEFF;
+  border-color: rgba(94, 168, 199, 0.3);
+  background: rgba(94, 168, 199, 0.16);
+  color: #EAF6FC;
 }
 
 .header-toggle-btn {
   border-radius: 11px;
   padding: 0.58rem 0.82rem;
-  border: 1px solid rgba(154, 107, 255, 0.28);
-  background: rgba(154, 107, 255, 0.12);
-  color: #F3EDFF;
+  border: 1px solid rgba(94, 168, 199, 0.24);
+  background: rgba(94, 168, 199, 0.11);
+  color: #E9F5FB;
   font-size: var(--font-sm);
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1;
 }
 
@@ -456,13 +461,13 @@ code {
   background: rgba(255, 255, 255, 0.03);
   color: var(--ink);
   font-size: var(--font-sm);
-  font-weight: 800;
+  font-weight: 700;
   padding: 0.6rem 0.72rem;
 }
 
 .drawer-nav-link.is-active {
-  border-color: rgba(154, 107, 255, 0.44);
-  background: rgba(154, 107, 255, 0.16);
+  border-color: rgba(94, 168, 199, 0.34);
+  background: rgba(94, 168, 199, 0.14);
 }
 
 .header-drawer-actions {
@@ -505,34 +510,45 @@ code {
   position: relative;
   z-index: 1;
   border-top: 1px solid var(--line);
-  background: linear-gradient(180deg, rgba(6, 12, 22, 0.82), rgba(4, 9, 17, 0.9));
+  background: linear-gradient(180deg, rgba(7, 17, 26, 0.9), rgba(6, 14, 22, 0.95));
   backdrop-filter: blur(12px);
+  box-shadow: 0 -12px 30px rgba(0, 0, 0, 0.12);
 }
 
 .global-footer-inner {
-  padding: 1.02rem 0 1.12rem;
+  padding: 1.28rem 0 1.45rem;
 }
 
 .footer-grid {
   display: grid;
-  grid-template-columns: minmax(260px, 1.35fr) minmax(220px, 1fr) minmax(220px, 1fr);
-  gap: 0.9rem;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) minmax(0, 0.95fr);
+  gap: 1rem;
   align-items: start;
 }
 
 .footer-block {
   display: grid;
-  gap: 0.26rem;
+  gap: 0.4rem;
 }
 
 .footer-brand {
-  gap: 0.32rem;
+  gap: 0.36rem;
+}
+
+.footer-eyebrow {
+  margin: 0;
+  color: #C5DCE8;
+  font-size: var(--font-2xs);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 .footer-block h4 {
   margin: 0;
-  font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+  font-family: 'Manrope', system-ui, sans-serif;
   font-size: var(--font-sm);
+  font-weight: 700;
   letter-spacing: 0.01em;
 }
 
@@ -563,11 +579,11 @@ code {
 
 .footer-chip {
   border-radius: 999px;
-  border: 1px solid rgba(154, 107, 255, 0.26);
-  background: rgba(154, 107, 255, 0.09);
-  color: #EBDFFF;
+  border: 1px solid rgba(94, 168, 199, 0.24);
+  background: rgba(94, 168, 199, 0.1);
+  color: #E6F4FB;
   font-size: var(--font-xs);
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   padding: 0.25rem 0.56rem;
@@ -580,9 +596,22 @@ code {
   color: var(--ink-soft);
 }
 
+.footer-chip.success {
+  border-color: rgba(104, 189, 155, 0.26);
+  background: rgba(104, 189, 155, 0.12);
+  color: #E1F7EE;
+}
+
+.footer-chip.warning {
+  border-color: rgba(228, 138, 138, 0.24);
+  background: rgba(228, 138, 138, 0.11);
+  color: #FFE5E5;
+}
+
 .global-footer-inner strong {
-  font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+  font-family: 'Manrope', system-ui, sans-serif;
   font-size: var(--font-md);
+  font-weight: 700;
 }
 
 .global-footer-inner p,
@@ -642,7 +671,7 @@ code {
   color: var(--ink-soft);
   line-height: 1.5;
   margin-top: 0.6rem;
-  font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+  font-family: 'Manrope', system-ui, sans-serif;
   font-size: var(--font-md);
   max-width: 56ch;
 }
@@ -699,10 +728,10 @@ code {
   inset: -0.3rem;
   border-radius: calc(var(--radius-xl) + 4px);
   background:
-    linear-gradient(165deg, rgba(10, 8, 19, 0.78), rgba(8, 8, 16, 0.58)),
-    url('/brand/claudy-logo.webp') center / cover no-repeat;
-  opacity: 0.26;
-  filter: saturate(0.95) contrast(0.92);
+    linear-gradient(165deg, rgba(8, 18, 28, 0.72), rgba(8, 15, 24, 0.48)),
+    radial-gradient(560px 260px at 18% 18%, rgba(94, 168, 199, 0.12), transparent 66%);
+  opacity: 1;
+  filter: none;
   pointer-events: none;
 }
 
@@ -838,14 +867,14 @@ code {
   border-radius: 11px;
   background: transparent;
   color: var(--ink-soft);
-  font-weight: 800;
+  font-weight: 700;
   padding: 0.65rem 0.75rem;
 }
 
 .auth-mode-btn.is-active {
   color: var(--ink);
-  border-color: rgba(154, 107, 255, 0.24);
-  background: linear-gradient(180deg, rgba(154, 107, 255, 0.15), rgba(124, 58, 237, 0.08));
+  border-color: rgba(94, 168, 199, 0.24);
+  background: linear-gradient(180deg, rgba(94, 168, 199, 0.13), rgba(122, 174, 214, 0.08));
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
@@ -860,7 +889,7 @@ code {
   border: 1px solid rgba(255, 255, 255, 0.2);
   background: rgba(255, 255, 255, 0.04);
   color: #F6F3FF;
-  font-weight: 800;
+  font-weight: 700;
   font-size: calc(0.88rem * var(--type-scale));
   padding: 0.72rem 0.9rem;
   transition: transform 0.16s ease, border-color 0.16s ease, background-color 0.16s ease;
@@ -981,7 +1010,7 @@ button {
   position: relative;
   border-radius: 13px;
   padding: 0.74rem 0.95rem;
-  font-weight: 800;
+  font-weight: 700;
   transition: transform 0.16s ease, opacity 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
 }
 
@@ -1474,15 +1503,15 @@ button {
   padding: 0.2rem 0.55rem;
   font-size: var(--font-xs);
   line-height: 1;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
-.pill-audio { background: rgba(124, 58, 237, 0.16); color: #E9DDFF; }
+.pill-audio { background: rgba(94, 168, 199, 0.16); color: #DFF2FA; }
 .pill-video { background: rgba(251, 191, 36, 0.14); color: #FFE7A3; }
-.pill-playlist { background: rgba(196, 181, 253, 0.16); color: #F0E8FF; }
-.pill-announcement { background: rgba(154, 107, 255, 0.12); color: #E9DDFF; }
+.pill-playlist { background: rgba(122, 174, 214, 0.16); color: #E8F6FC; }
+.pill-announcement { background: rgba(74, 137, 170, 0.14); color: #DFF1F9; }
 .pill-live { background: rgba(34, 197, 94, 0.12); color: #BBF7D0; }
 .pill-draft { background: rgba(248, 113, 113, 0.12); color: #FECACA; }
 
@@ -1505,9 +1534,9 @@ button {
 }
 
 .media-link {
-  color: #D8C5FF;
+  color: #CFEAF6;
   text-decoration: none;
-  font-weight: 800;
+  font-weight: 700;
   font-size: var(--font-md);
 }
 
