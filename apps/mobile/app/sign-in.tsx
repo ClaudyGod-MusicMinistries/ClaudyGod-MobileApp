@@ -16,6 +16,7 @@ import { AppButton } from '../components/ui/AppButton';
 import { Screen } from '../components/layout/Screen';
 import { TVTouchable } from '../components/ui/TVTouchable';
 import { FadeIn } from '../components/ui/FadeIn';
+import { AuthBrandPanel } from '../components/auth/AuthBrandPanel';
 import { loginMobileUser, requestMobilePasswordReset } from '../services/authService';
 import { useAuth } from '../context/AuthContext';
 
@@ -153,18 +154,22 @@ export default function SignInScreen() {
                     borderColor: 'rgba(235,226,255,0.14)',
                   }}
                 >
+                  <AuthBrandPanel
+                    salutation="Welcome back"
+                    description="Sign in to continue your worship, messages, playlists, and personalized ministry experience."
+                  />
                   <CustomText
                     variant="display"
                     style={{
                       color: '#F8F7FC',
-                      fontSize: isTablet ? 30 : 26,
-                      lineHeight: isTablet ? 36 : 31,
+                      fontSize: isTablet ? 28 : 24,
+                      lineHeight: isTablet ? 34 : 30,
                     }}
                   >
                     Sign In
                   </CustomText>
                   <CustomText variant="body" style={{ color: 'rgba(203,196,226,0.86)', marginTop: 8 }}>
-                    Access your songs, videos, playlists, and personalized ministry flow.
+                    Access your secure account to keep your library and playback activity in sync.
                   </CustomText>
 
                   <View style={{ marginTop: 18, gap: 10 }}>

@@ -57,8 +57,51 @@ const getEnv = (keys: PublicEnvKey | PublicEnvKey[], fallback = ''): string => {
   return fallback;
 };
 
+const trimTrailingSlash = (value: string): string => value.replace(/\/+$/, '');
+
+const normalizeHostCandidate = (value?: string | null): string => {
+  const input = String(value || '').trim();
+  if (!input) return '';
+
+  const normalized = input
+    .replace(/^[a-z]+:\/\//i, '')
+    .replace(/\/.*$/, '')
+    .replace(/:\d+$/, '')
+    .trim();
+
+  if (!normalized || ['localhost', '127.0.0.1', '::1'].includes(normalized)) {
+    return '';
+  }
+
+  return normalized;
+};
+
+const deriveExpoDevHost = (): string => {
+  const candidates = [
+    Constants.expoConfig?.hostUri,
+    Constants.expoGoConfig?.debuggerHost,
+    Constants.platform?.hostUri,
+  ];
+
+  for (const candidate of candidates) {
+    const host = normalizeHostCandidate(candidate);
+    if (host) {
+      return host;
+    }
+  }
+
+  return '';
+};
+
+const explicitApiUrl = trimTrailingSlash(getEnv('EXPO_PUBLIC_API_URL', ''));
+const derivedExpoHost = deriveExpoDevHost();
+const derivedApiUrl = derivedExpoHost ? `http://${derivedExpoHost}:4000` : '';
+const resolvedApiUrl = explicitApiUrl || derivedApiUrl;
+
 export const ENV = {
-  apiUrl: getEnv('EXPO_PUBLIC_API_URL', ''),
+  apiUrl: resolvedApiUrl,
+  apiUrlSource: explicitApiUrl ? ('env' as const) : derivedApiUrl ? ('expo-host' as const) : ('unset' as const),
+  expoDevHost: derivedExpoHost,
   supabaseUrl: getEnv('EXPO_PUBLIC_SUPABASE_URL', ''),
   supabasePublishableKey: getEnv(
     ['EXPO_PUBLIC_SUPABASE_KEY', 'EXPO_PUBLIC_SUPABASE_ANON_KEY'],

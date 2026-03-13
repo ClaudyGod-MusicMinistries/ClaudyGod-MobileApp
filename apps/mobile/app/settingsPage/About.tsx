@@ -28,6 +28,7 @@ const team = [
 
 const social = [
   { icon: 'smart-display', label: 'YouTube', url: 'https://youtube.com/claudygodmusic' },
+  { icon: 'forum', label: 'WhatsApp', url: 'https://wa.me/18002528394' },
   { icon: 'photo-camera', label: 'Instagram', url: 'https://instagram.com/claudygodmusic' },
   { icon: 'facebook', label: 'Facebook', url: 'https://facebook.com/claudygodmusic' },
   { icon: 'alternate-email', label: 'Newsletter', url: 'mailto:hello@claudygodmusic.com' },

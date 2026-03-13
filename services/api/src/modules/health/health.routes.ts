@@ -1,13 +1,22 @@
 import { Router } from 'express';
+import { env } from '../../config/env';
 import { pool } from '../../db/pool';
 import { redis } from '../../infra/redis';
 
 export const healthRouter = Router();
 
+const capabilities = () => ({
+  youtube: env.YOUTUBE_ENABLED,
+  supabase: env.SUPABASE_ENABLED,
+  smtp: env.SMTP_ENABLED,
+  mobileApiKeyConfigured: Boolean(env.MOBILE_API_KEY && env.MOBILE_API_KEY !== 'dev-mobile-api-key'),
+});
+
 healthRouter.get('/', (_req, res) => {
   res.status(200).json({
     name: 'ClaudyGod Admin API',
     status: 'ok',
+    capabilities: capabilities(),
     docs: {
       health: '/health',
       auth: '/v1/auth',
@@ -41,6 +50,7 @@ healthRouter.get('/health', async (_req, res, next) => {
 
     res.status(status === 'ok' ? 200 : 503).json({
       status,
+      capabilities: capabilities(),
       services: {
         postgres,
         redis: redisState,

@@ -427,12 +427,17 @@ export default defineComponent({
           probes.map(async (probe) => {
             try {
               const response = await probe.request();
+              const youtubeDisabled =
+                probe.label === 'API Health' &&
+                response.data &&
+                response.data.capabilities &&
+                response.data.capabilities.youtube === false;
               return {
                 label: probe.label,
                 path: probe.path,
                 status: 'ok',
                 statusCode: response.status,
-                detail: 'Connected',
+                detail: youtubeDisabled ? 'Connected • YouTube is disabled in API environment' : 'Connected',
               };
             } catch (error) {
               const mapped = mapProbeError(error, `${probe.label} request failed`);
@@ -456,7 +461,12 @@ export default defineComponent({
             check.status === 'error',
         );
         if (youtubeIssue) {
-          setNotice(`YouTube feed check failed: ${youtubeIssue.detail}`, 'error');
+          const apiHealth = checks.find((check) => check.label === 'API Health');
+          const prefix =
+            apiHealth && apiHealth.detail.includes('YouTube is disabled')
+              ? 'YouTube is disabled in the API environment. Add YOUTUBE_API_KEY and YOUTUBE_CHANNEL_ID in services/api/.env.'
+              : 'YouTube feed check failed';
+          setNotice(`${prefix}: ${youtubeIssue.detail}`, 'error');
         }
       } finally {
         endpointChecksLoading.value = false;
