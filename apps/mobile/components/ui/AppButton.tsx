@@ -42,10 +42,10 @@ export function AppButton({
 
   const sizeStyle =
     size === 'sm'
-      ? { minHeight: 36, paddingHorizontal: theme.spacing.md, paddingVertical: 7 }
+      ? { minHeight: 40, paddingHorizontal: theme.spacing.md, paddingVertical: 8 }
       : size === 'lg'
-      ? { minHeight: 50, paddingHorizontal: theme.spacing.lg, paddingVertical: 12 }
-      : { minHeight: 42, paddingHorizontal: theme.spacing.lg, paddingVertical: 9 };
+      ? { minHeight: 54, paddingHorizontal: theme.spacing.xl, paddingVertical: 14 }
+      : { minHeight: 48, paddingHorizontal: theme.spacing.lg, paddingVertical: 11 };
 
   return (
     <TVTouchable
@@ -89,10 +89,9 @@ export function AppButton({
             </View>
           ) : null}
           <CustomText
-            variant={size === 'sm' ? 'label' : 'body'}
+            variant={size === 'sm' ? 'label' : 'subtitle'}
             style={{
               color: resolvedTextColor,
-              fontWeight: '600',
               textAlign: 'center',
               flexShrink: 1,
               ...(textStyle || {}),

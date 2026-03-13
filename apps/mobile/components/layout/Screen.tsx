@@ -14,7 +14,13 @@ export function Screen({ children, style, contentStyle }: ScreenProps) {
   const isTV = Platform.isTV;
   const isTablet = width >= 768 && !isTV;
 
-  const paddingX = isTV ? 48 : isTablet ? 30 : width >= 390 ? 18 : 14;
+  const paddingX = isTV
+    ? layout.desktopGutter
+    : isTablet
+      ? layout.tabletGutter
+      : width >= 390
+        ? layout.phoneGutter
+        : layout.compactPhoneGutter;
   const maxContentWidth = isTV ? 1280 : isTablet ? 960 : Math.min(540, width - paddingX * 2);
 
   return (

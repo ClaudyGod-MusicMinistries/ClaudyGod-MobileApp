@@ -24,7 +24,7 @@ export function SearchBar({ placeholder, value, onChangeText, onSubmit }: Search
         backgroundColor: theme.colors.surfaceAlt,
         borderRadius: theme.radius.lg,
         paddingHorizontal: theme.spacing.sm,
-        minHeight: 46,
+        minHeight: 52,
         borderWidth: 1,
         borderColor: focused ? theme.colors.primary : theme.colors.border,
       }}
@@ -55,6 +55,8 @@ export function SearchBar({ placeholder, value, onChangeText, onSubmit }: Search
           paddingHorizontal: theme.spacing.sm,
           color: theme.colors.text.primary,
           fontSize: theme.typography.body,
+          lineHeight: 24,
+          fontFamily: 'Sora_400Regular',
         }}
       />
       {value.length > 0 ? (

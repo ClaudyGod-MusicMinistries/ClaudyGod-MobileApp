@@ -19,11 +19,16 @@ export const FontProvider: React.FC<FontProviderProps> = ({ children }) => {
 
   useEffect(() => {
     async function loadAppFonts() {
-      await loadFonts();
-      setFontsLoaded(true);
+      try {
+        await loadFonts();
+      } catch (error) {
+        console.warn('font bootstrap failed, falling back to system fonts:', error);
+      } finally {
+        setFontsLoaded(true);
+      }
     }
 
-    loadAppFonts();
+    void loadAppFonts();
   }, []);
 
   return (

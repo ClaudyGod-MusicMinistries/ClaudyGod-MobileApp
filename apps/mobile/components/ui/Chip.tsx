@@ -12,22 +12,22 @@ interface ChipProps {
 
 export function Chip({ label, active, onPress }: ChipProps) {
   const theme = useAppTheme();
-  const background = active ? theme.colors.primary : theme.colors.surface;
-  const color = active ? theme.colors.text.inverse : theme.colors.text.secondary;
+  const background = active ? theme.colors.primary : theme.colors.surfaceAlt;
+  const color = active ? theme.colors.text.inverse : theme.colors.text.primary;
 
   return (
     <TVTouchable
       onPress={onPress}
       style={{
-        paddingHorizontal: 12,
-        paddingVertical: 7,
+        paddingHorizontal: 14,
+        paddingVertical: 9,
         borderRadius: theme.radius.pill,
         backgroundColor: background,
         borderWidth: 1,
         borderColor: active ? theme.colors.primary : theme.colors.border,
       }}
     >
-      <CustomText variant="label" style={{ color, letterSpacing: 0.2 }}>
+      <CustomText variant="label" style={{ color }}>
         {label}
       </CustomText>
     </TVTouchable>

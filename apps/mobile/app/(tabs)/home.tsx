@@ -114,7 +114,7 @@ export default function HomeScreen() {
     <TabScreenWrapper>
       <ScrollView
         style={{ flex: 1, backgroundColor: 'transparent' }}
-        contentContainerStyle={{ paddingBottom: 148 }}
+        contentContainerStyle={{ paddingBottom: theme.layout.tabBarContentPadding }}
         showsVerticalScrollIndicator={false}
         bounces={false}
         alwaysBounceVertical={false}
@@ -146,7 +146,12 @@ export default function HomeScreen() {
           />
           <Screen>
             <FadeIn>
-              <View style={{ paddingTop: theme.spacing.lg, paddingBottom: 10 }}>
+              <View
+                style={{
+                  paddingTop: theme.layout.headerVerticalPadding,
+                  paddingBottom: theme.spacing.sm,
+                }}
+              >
                 <HomeHeader
                   activeFilter={activeFilter}
                   onChangeFilter={setActiveFilter}
@@ -160,7 +165,7 @@ export default function HomeScreen() {
         </View>
 
         <Screen>
-          <View style={{ paddingTop: 14 }}>
+          <View style={{ paddingTop: theme.layout.sectionGap }}>
 
           <FadeIn delay={70}>
             <HeroDropCard
@@ -180,7 +185,7 @@ export default function HomeScreen() {
                   borderWidth: 1,
                   borderColor: ui.wordBorder,
                   backgroundColor: ui.wordBg,
-                  padding: 14,
+                  padding: theme.spacing.lg,
                 }}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -405,6 +410,7 @@ function HomeHeader({
   return (
     <BrandedHeaderCard
       title="Home"
+      subtitle="Music, live worship, messages and your daily word in one place."
       actions={[
         { icon: 'ondemand-video', onPress: onOpenVideos, accessibilityLabel: 'Open videos' },
         { icon: 'person-outline', onPress: onOpenProfile, accessibilityLabel: 'Open profile' },
@@ -599,14 +605,14 @@ function SectionBlock({ title, subtitle, children }: { title: string; subtitle: 
   const isDark = theme.scheme === 'dark';
 
   return (
-    <View style={{ marginTop: 18 }}>
-      <View style={{ paddingHorizontal: 2, marginBottom: 10 }}>
+    <View style={{ marginTop: theme.layout.sectionGapLarge }}>
+      <View style={{ paddingHorizontal: 2, marginBottom: theme.spacing.sm }}>
         <CustomText variant="heading" style={{ color: theme.colors.text.primary }}>
           {title}
         </CustomText>
         <CustomText
           variant="caption"
-          style={{ color: isDark ? 'rgba(190,182,213,0.88)' : 'rgba(108,99,134,0.9)', marginTop: 3 }}
+          style={{ color: isDark ? 'rgba(190,182,213,0.88)' : 'rgba(108,99,134,0.9)', marginTop: 5 }}
         >
           {subtitle}
         </CustomText>

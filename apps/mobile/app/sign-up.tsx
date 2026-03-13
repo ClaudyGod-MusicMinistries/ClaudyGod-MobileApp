@@ -305,8 +305,8 @@ function AuthField({
           flex: 1,
           minHeight: 52,
           color: '#F8F7FC',
-          fontSize: 14,
-          fontFamily: 'SpaceGrotesk_500Medium',
+          fontSize: 15,
+          fontFamily: 'Sora_400Regular',
         }}
       />
       {trailing ? <View style={{ marginLeft: 10 }}>{trailing}</View> : null}

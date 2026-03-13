@@ -21,10 +21,10 @@ export function SectionHeader({ title, actionLabel, onAction }: SectionHeaderPro
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 2,
+        marginBottom: theme.spacing.sm,
       }}
     >
-      <CustomText variant="title" style={{ color: theme.colors.text.primary }}>
+      <CustomText variant="heading" style={{ color: theme.colors.text.primary }}>
         {title}
       </CustomText>
       {actionLabel ? (
@@ -34,8 +34,8 @@ export function SectionHeader({ title, actionLabel, onAction }: SectionHeaderPro
             flexDirection: 'row',
             alignItems: 'center',
             gap: 6,
-            paddingHorizontal: 11,
-            paddingVertical: 7,
+            paddingHorizontal: 12,
+            paddingVertical: 8,
             borderRadius: theme.radius.pill,
             backgroundColor: `${theme.colors.primary}18`,
           }}

@@ -187,8 +187,8 @@ export default function SignInScreen() {
                         style={{
                           minHeight: 52,
                           color: '#F8F7FC',
-                          fontSize: 14,
-                          fontFamily: 'SpaceGrotesk_500Medium',
+                          fontSize: 15,
+                          fontFamily: 'Sora_400Regular',
                         }}
                       />
                     </View>
@@ -214,8 +214,8 @@ export default function SignInScreen() {
                           flex: 1,
                           minHeight: 52,
                           color: '#F8F7FC',
-                          fontSize: 14,
-                          fontFamily: 'SpaceGrotesk_500Medium',
+                          fontSize: 15,
+                          fontFamily: 'Sora_400Regular',
                         }}
                       />
                       <TVTouchable

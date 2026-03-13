@@ -5,8 +5,11 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorScheme } from '../util/colorScheme';
 import { colors } from '../constants/color';
+import { layout } from '../styles/designTokens';
 import { TVTouchable } from './ui/TVTouchable';
 import { CustomText } from './CustomText';
+
+export const BOTTOM_TAB_CONTENT_SPACER = layout.tabBarContentPadding;
 
 const TabBar = ({ state, navigation }: BottomTabBarProps) => {
   const colorScheme = useColorScheme();
@@ -18,14 +21,14 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
   const isTablet = width >= 768 && !isTV;
 
   const sizes = {
-    barHeight: isTV ? 94 : compact ? 74 : 78,
+    barHeight: isTV ? 92 : isTablet ? 86 : compact ? 76 : 80,
     iconSize: isTV ? 25 : 21,
-    centerSize: isTV ? 68 : 56,
-    paddingX: isTV ? 16 : isTablet ? 12 : 10,
+    centerSize: isTV ? 66 : 56,
+    paddingX: isTV ? 18 : isTablet ? 16 : 14,
   };
 
   const barMaxWidth = isTV ? 1240 : isTablet ? 880 : width;
-  const barBottomInset = isTV ? 18 : Math.max(insets.bottom, 8);
+  const barBottomInset = isTV ? 18 : Math.max(insets.bottom, 10);
 
   const tabConfig = {
     home: { icon: 'home-filled' as const, label: 'Home' },
@@ -43,6 +46,7 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
         right: 0,
         bottom: 0,
         paddingBottom: barBottomInset,
+        paddingHorizontal: isTablet || isTV ? 0 : 12,
         alignItems: 'center',
       }}
     >
@@ -51,15 +55,22 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
           width: '100%',
           maxWidth: barMaxWidth,
           height: sizes.barHeight,
-          borderTopWidth: 1,
-          borderTopColor: '#252332',
-          backgroundColor: '#0E0D17',
+          borderWidth: 1,
+          borderColor: palette.border,
+          backgroundColor: palette.surface,
           paddingHorizontal: sizes.paddingX,
+          paddingTop: 8,
+          paddingBottom: 8,
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
-          borderTopLeftRadius: isTablet || isTV ? 18 : 0,
-          borderTopRightRadius: isTablet || isTV ? 18 : 0,
+          borderTopLeftRadius: isTablet || isTV ? 24 : 22,
+          borderTopRightRadius: isTablet || isTV ? 24 : 22,
+          shadowColor: '#12092A',
+          shadowOpacity: 0.12,
+          shadowRadius: 14,
+          shadowOffset: { width: 0, height: -4 },
+          elevation: 8,
         }}
       >
         {state.routes.map((route, index) => {
@@ -80,7 +91,7 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
                   width: sizes.centerSize,
                   height: sizes.centerSize,
                   borderRadius: sizes.centerSize / 2,
-                  marginTop: -14,
+                  marginTop: -20,
                   alignItems: 'center',
                   justifyContent: 'center',
                   backgroundColor: palette.primary,
@@ -111,10 +122,10 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
                 flex: 1,
                 minHeight: 52,
                 marginHorizontal: 2,
-                borderRadius: 14,
+                borderRadius: 16,
                 alignItems: 'center',
                 justifyContent: 'center',
-                backgroundColor: focused ? 'rgba(154,107,255,0.2)' : 'transparent',
+                backgroundColor: focused ? `${palette.primary}16` : 'transparent',
               }}
               focusStyle={{ transform: [{ scale: isTV ? 1.08 : 1.02 }] }}
               showFocusBorder={false}
@@ -127,7 +138,7 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
               <CustomText
                 variant="caption"
                 style={{
-                  marginTop: 4,
+                  marginTop: 3,
                   color: focused ? palette.primary : palette.text.secondary,
                   fontSize: 11,
                 }}

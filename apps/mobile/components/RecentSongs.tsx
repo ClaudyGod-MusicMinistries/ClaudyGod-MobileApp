@@ -94,7 +94,6 @@ export function RecentSongsSection() {
             variant="title" 
             style={{ 
               color: theme.colors.text.primary,
-              fontWeight: '600',
             }}
           >
             Recent Songs
@@ -113,7 +112,6 @@ export function RecentSongsSection() {
               variant="label" 
               style={{ 
                 color: theme.colors.primary,
-                fontWeight: '600',
                 marginRight: 6,
               }}
             >
