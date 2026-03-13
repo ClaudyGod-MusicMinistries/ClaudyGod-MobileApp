@@ -53,7 +53,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
       <View className="px-1">
         <CustomText
           variant="body"
-          style={{ color: palette.text.primary, fontWeight: '600' }}
+          style={{ color: palette.text.primary }}
           numberOfLines={1}
         >
           {title}

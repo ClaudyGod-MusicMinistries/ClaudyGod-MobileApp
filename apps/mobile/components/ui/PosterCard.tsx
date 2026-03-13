@@ -26,15 +26,15 @@ export function PosterCard({
 }: PosterCardProps) {
   const theme = useAppTheme();
   const sizes = {
-    sm: { w: 126, h: 156 },
-    md: { w: 160, h: 200 },
-    lg: { w: 202, h: 244 },
+    sm: { w: 132, h: 168 },
+    md: { w: 168, h: 214 },
+    lg: { w: 210, h: 262 },
   }[size];
 
   return (
     <TVTouchable
       onPress={onPress}
-      style={{ width: sizes.w, marginRight: theme.spacing.md }}
+      style={{ width: sizes.w, marginRight: theme.spacing.lg }}
       activeOpacity={0.9}
     >
       <View
@@ -73,14 +73,18 @@ export function PosterCard({
         ) : null}
       </View>
       <CustomText
-        variant="label"
-        style={{ color: theme.colors.text.primary, marginTop: 8, fontSize: 12.5, lineHeight: 16 }}
+        variant="subtitle"
+        style={{ color: theme.colors.text.primary, marginTop: 10 }}
         numberOfLines={1}
       >
         {title}
       </CustomText>
       {subtitle ? (
-        <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 1 }} numberOfLines={1}>
+        <CustomText
+          variant="caption"
+          style={{ color: theme.colors.text.secondary, marginTop: 3 }}
+          numberOfLines={1}
+        >
           {subtitle}
         </CustomText>
       ) : null}

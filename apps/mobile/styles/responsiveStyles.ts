@@ -18,25 +18,27 @@ const responsiveStyles = StyleSheet.create({
   h1: {
     fontSize: responsive.scaleFont(32),
     lineHeight: responsive.scaleHeight(40),
-    fontWeight: 'bold',
+    fontFamily: 'Sora_600SemiBold',
   },
   h2: {
-    fontSize: responsive.scaleFont(24),
-    lineHeight: responsive.scaleHeight(32),
-    fontWeight: 'bold',
+    fontSize: responsive.scaleFont(26),
+    lineHeight: responsive.scaleHeight(34),
+    fontFamily: 'Sora_600SemiBold',
   },
   h3: {
     fontSize: responsive.scaleFont(20),
     lineHeight: responsive.scaleHeight(28),
-    fontWeight: '600',
+    fontFamily: 'SpaceGrotesk_500Medium',
   },
   body: {
     fontSize: responsive.scaleFont(16),
     lineHeight: responsive.scaleHeight(24),
+    fontFamily: 'Sora_400Regular',
   },
   caption: {
     fontSize: responsive.scaleFont(14),
     lineHeight: responsive.scaleHeight(20),
+    fontFamily: 'Sora_400Regular',
   },
 
   // Spacing utilities

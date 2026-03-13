@@ -231,7 +231,7 @@ export default function SettingsScreen() {
       <ScrollView
         style={{ flex: 1, backgroundColor: 'transparent' }}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 140 }}
+        contentContainerStyle={{ paddingBottom: theme.layout.tabBarContentPadding }}
         bounces={false}
         overScrollMode="never"
         stickyHeaderIndices={[0]}
@@ -252,7 +252,12 @@ export default function SettingsScreen() {
           />
           <Screen>
             <FadeIn>
-              <View style={{ paddingTop: theme.spacing.lg, paddingBottom: 10 }}>
+              <View
+                style={{
+                  paddingTop: theme.layout.headerVerticalPadding,
+                  paddingBottom: theme.spacing.sm,
+                }}
+              >
                 <SettingsHeader
                   onOpenHome={() => router.push('/(tabs)/home')}
                   quickLabels={quickLabels}
@@ -264,7 +269,7 @@ export default function SettingsScreen() {
         </View>
 
         <Screen>
-          <View style={{ paddingTop: 14 }}>
+          <View style={{ paddingTop: theme.layout.sectionGap }}>
             <FadeIn delay={70}>
               <View
                 style={{
@@ -434,6 +439,7 @@ function SettingsHeader({
   return (
     <BrandedHeaderCard
       title="Settings"
+      subtitle="Account, playback, notifications and support."
       actions={[
         { icon: 'home', onPress: onOpenHome, accessibilityLabel: 'Open home' },
         { icon: 'more-vert', onPress: onOpenMenu, accessibilityLabel: 'More options' },

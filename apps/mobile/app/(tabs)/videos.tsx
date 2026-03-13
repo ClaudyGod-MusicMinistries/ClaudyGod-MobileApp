@@ -6,9 +6,11 @@ import { useRouter } from 'expo-router';
 import { TabScreenWrapper } from './TextWrapper';
 import { useAppTheme } from '../../util/colorScheme';
 import { Screen } from '../../components/layout/Screen';
+import { BrandedHeaderCard } from '../../components/layout/BrandedHeaderCard';
 import { FadeIn } from '../../components/ui/FadeIn';
 import { CustomText } from '../../components/CustomText';
 import { TVTouchable } from '../../components/ui/TVTouchable';
+import { SectionHeader as AppSectionHeader } from '../../components/ui/SectionHeader';
 import { useContentFeed } from '../../hooks/useContentFeed';
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
 import type { FeedCardItem } from '../../services/contentService';
@@ -20,8 +22,9 @@ export default function VideosScreen() {
   const { width } = useWindowDimensions();
   const isTV = Platform.isTV;
   const isTablet = width >= 768 && !isTV;
+  const isDark = theme.scheme === 'dark';
   const featureHeight = isTV ? 300 : isTablet ? 260 : 220;
-  const quickCardWidth = isTV ? 320 : isTablet ? 250 : 196;
+  const quickCardWidth = isTV ? 320 : isTablet ? 250 : 210;
 
   const { feed } = useContentFeed();
 
@@ -44,59 +47,59 @@ export default function VideosScreen() {
       <ScrollView
         style={{ flex: 1, backgroundColor: 'transparent' }}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: theme.spacing.md, paddingBottom: 150 }}
+        contentContainerStyle={{ paddingBottom: theme.layout.tabBarContentPadding }}
         bounces={false}
         alwaysBounceVertical={false}
         overScrollMode="never"
+        stickyHeaderIndices={[0]}
       >
-        <Screen>
-          <FadeIn>
-            <View
-              style={{
-                borderRadius: 20,
-                borderWidth: 1,
-                borderColor: theme.colors.border,
-                backgroundColor: theme.colors.surface,
-                padding: 12,
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}
-            >
-              <View>
-                <CustomText variant="heading" style={{ color: theme.colors.text.primary }}>
-                  Video Hub
-                </CustomText>
-                <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 2 }}>
-                  YouTube-style live + replay architecture.
-                </CustomText>
-              </View>
-
-              <TVTouchable
-                onPress={() => router.push('/(tabs)/search')}
+        <View
+          style={{
+            backgroundColor: isDark ? '#06040D' : theme.colors.background,
+            borderBottomWidth: 1,
+            borderBottomColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(20,16,33,0.08)',
+          }}
+        >
+          <LinearGradient
+            pointerEvents="none"
+            colors={[isDark ? 'rgba(154,107,255,0.06)' : 'rgba(109,40,217,0.08)', 'rgba(0,0,0,0)']}
+            start={{ x: 0.1, y: 0 }}
+            end={{ x: 0.9, y: 1 }}
+            style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}
+          />
+          <Screen>
+            <FadeIn>
+              <View
                 style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: 19,
-                  borderWidth: 1,
-                  borderColor: theme.colors.border,
-                  backgroundColor: theme.colors.surfaceAlt,
-                  alignItems: 'center',
-                  justifyContent: 'center',
+                  paddingTop: theme.layout.headerVerticalPadding,
+                  paddingBottom: theme.spacing.sm,
                 }}
-                showFocusBorder={false}
               >
-                <MaterialIcons name="search" size={20} color={theme.colors.text.primary} />
-              </TVTouchable>
-            </View>
-          </FadeIn>
+                <BrandedHeaderCard
+                  title="Videos"
+                  subtitle="Featured streams, quick replays and live sessions."
+                  actions={[
+                    { icon: 'search', onPress: () => router.push('/(tabs)/search'), accessibilityLabel: 'Search' },
+                    { icon: 'person-outline', onPress: () => router.push('/profile'), accessibilityLabel: 'Profile' },
+                  ]}
+                  chips={[
+                    { label: 'Featured' },
+                    { label: 'Quick Videos' },
+                    { label: 'Live Queue' },
+                  ]}
+                />
+              </View>
+            </FadeIn>
+          </Screen>
+        </View>
 
+        <Screen>
+          <View style={{ paddingTop: theme.layout.sectionGap }}>
           {featured ? (
             <FadeIn delay={70}>
               <TVTouchable
                 onPress={() => openPlayer(featured, 'videos_featured')}
                 style={{
-                  marginTop: 14,
                   borderRadius: 22,
                   overflow: 'hidden',
                   borderWidth: 1,
@@ -151,8 +154,8 @@ export default function VideosScreen() {
           ) : null}
 
           <FadeIn delay={110}>
-            <View style={{ marginTop: 16 }}>
-              <SectionHeader title="Quick Videos" actionLabel={`${quickVideos.length} items`} />
+            <View style={{ marginTop: theme.layout.sectionGapLarge }}>
+              <AppSectionHeader title="Quick Videos" actionLabel={`${quickVideos.length} items`} />
               {quickVideos.length > 0 ? (
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} overScrollMode="never">
                   {quickVideos.map((item) => (
@@ -161,8 +164,8 @@ export default function VideosScreen() {
                       onPress={() => openPlayer(item, 'videos_quick')}
                       style={{
                         width: quickCardWidth,
-                        marginRight: 10,
-                        borderRadius: 16,
+                        marginRight: theme.spacing.md,
+                        borderRadius: theme.radius.lg,
                         overflow: 'hidden',
                         borderWidth: 1,
                         borderColor: theme.colors.border,
@@ -170,12 +173,12 @@ export default function VideosScreen() {
                       }}
                       showFocusBorder={false}
                     >
-                      <Image source={{ uri: item.imageUrl }} style={{ width: '100%', height: 116 }} />
-                      <View style={{ padding: 10 }}>
-                        <CustomText variant="body" style={{ color: theme.colors.text.primary }} numberOfLines={1}>
+                      <Image source={{ uri: item.imageUrl }} style={{ width: '100%', height: 124 }} />
+                      <View style={{ padding: theme.spacing.md }}>
+                        <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }} numberOfLines={1}>
                           {item.title}
                         </CustomText>
-                        <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 2 }}>
+                        <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 3 }}>
                           {item.subtitle}
                         </CustomText>
                       </View>
@@ -189,21 +192,21 @@ export default function VideosScreen() {
           </FadeIn>
 
           <FadeIn delay={140}>
-            <View style={{ marginTop: 18 }}>
-              <SectionHeader title="Live Queue" actionLabel={`${liveQueue.length} live`} />
+            <View style={{ marginTop: theme.layout.sectionGapLarge }}>
+              <AppSectionHeader title="Live Queue" actionLabel={`${liveQueue.length} live`} />
               {liveQueue.length > 0 ? (
-                <View style={{ gap: 9 }}>
+                <View style={{ gap: theme.spacing.sm }}>
                   {liveQueue.map((item) => (
                     <TVTouchable
                       key={item.id}
                       onPress={() => openPlayer(item, 'videos_live_queue')}
                       style={{
-                        minHeight: 70,
-                        borderRadius: 16,
+                        minHeight: 76,
+                        borderRadius: 18,
                         borderWidth: 1,
                         borderColor: 'rgba(248,113,113,0.45)',
                         backgroundColor: theme.colors.surface,
-                        padding: 8,
+                        padding: 10,
                         flexDirection: 'row',
                         alignItems: 'center',
                       }}
@@ -227,31 +230,10 @@ export default function VideosScreen() {
               )}
             </View>
           </FadeIn>
+          </View>
         </Screen>
       </ScrollView>
     </TabScreenWrapper>
-  );
-}
-
-function SectionHeader({ title, actionLabel }: { title: string; actionLabel: string }) {
-  const theme = useAppTheme();
-
-  return (
-    <View
-      style={{
-        marginBottom: 10,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-      }}
-    >
-      <CustomText variant="heading" style={{ color: theme.colors.text.primary }}>
-        {title}
-      </CustomText>
-      <CustomText variant="label" style={{ color: theme.colors.primary }}>
-        {actionLabel}
-      </CustomText>
-    </View>
   );
 }
 
@@ -261,11 +243,11 @@ function EmptyHint({ text }: { text: string }) {
   return (
     <View
       style={{
-        borderRadius: 14,
+        borderRadius: 16,
         borderWidth: 1,
         borderColor: theme.colors.border,
-        paddingVertical: 12,
-        paddingHorizontal: 12,
+        paddingVertical: 16,
+        paddingHorizontal: 16,
         backgroundColor: theme.colors.surface,
       }}
     >

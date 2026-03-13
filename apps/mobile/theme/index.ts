@@ -1,6 +1,6 @@
 // theme/index.ts
 import { colors, ColorScheme } from '../constants/color';
-import { spacing, radius, shadows, typography, tv } from '../styles/designTokens';
+import { spacing, radius, shadows, typography, tv, layout } from '../styles/designTokens';
 
 export type AppTheme = {
   scheme: ColorScheme;
@@ -10,6 +10,7 @@ export type AppTheme = {
   shadows: typeof shadows;
   typography: typeof typography;
   tv: typeof tv;
+  layout: typeof layout;
 };
 
 export const getTheme = (scheme: ColorScheme): AppTheme => ({
@@ -20,5 +21,5 @@ export const getTheme = (scheme: ColorScheme): AppTheme => ({
   shadows,
   typography,
   tv,
+  layout,
 });
-

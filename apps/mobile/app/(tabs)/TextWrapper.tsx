@@ -13,12 +13,21 @@ interface TabScreenWrapperProps {
 export const TabScreenWrapper: React.FC<TabScreenWrapperProps> = ({ children }) => {
   const colorScheme = useColorScheme();
   const currentColors = colors[colorScheme] ?? colors.dark;
+  const isDark = colorScheme === 'dark';
 
   return (
     <View style={{ flex: 1, backgroundColor: currentColors.background }}>
-      <StatusBar translucent={false} barStyle="light-content" backgroundColor={currentColors.background} />
+      <StatusBar
+        translucent={false}
+        barStyle={isDark ? 'light-content' : 'dark-content'}
+        backgroundColor={currentColors.background}
+      />
       <LinearGradient
-        colors={['rgba(164,132,255,0.08)', 'rgba(6,4,13,0)']}
+        colors={
+          isDark
+            ? ['rgba(164,132,255,0.08)', 'rgba(6,4,13,0)']
+            : ['rgba(109,40,217,0.09)', 'rgba(244,241,250,0)']
+        }
         start={{ x: 0.2, y: 0 }}
         end={{ x: 0.8, y: 0.95 }}
         pointerEvents="none"
@@ -39,7 +48,7 @@ export const TabScreenWrapper: React.FC<TabScreenWrapperProps> = ({ children }) 
           width: 260,
           height: 260,
           borderRadius: 260,
-          backgroundColor: 'rgba(171,136,255,0.07)',
+          backgroundColor: isDark ? 'rgba(171,136,255,0.07)' : 'rgba(109,40,217,0.05)',
         }}
       />
       <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top']}>

@@ -1,13 +1,17 @@
 import React from 'react';
 import { Image, Platform, ScrollView, View, useWindowDimensions } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { TabScreenWrapper } from './TextWrapper';
 import { useAppTheme } from '../../util/colorScheme';
 import { Screen } from '../../components/layout/Screen';
+import { BrandedHeaderCard } from '../../components/layout/BrandedHeaderCard';
 import { FadeIn } from '../../components/ui/FadeIn';
 import { CustomText } from '../../components/CustomText';
 import { TVTouchable } from '../../components/ui/TVTouchable';
+import { SurfaceCard } from '../../components/ui/SurfaceCard';
+import { SectionHeader as AppSectionHeader } from '../../components/ui/SectionHeader';
 import { useContentFeed } from '../../hooks/useContentFeed';
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
 import type { FeedCardItem } from '../../services/contentService';
@@ -19,7 +23,7 @@ export default function LibraryScreen() {
   const { width } = useWindowDimensions();
   const isTV = Platform.isTV;
   const isTablet = width >= 768 && !isTV;
-  const isCompact = width < 360;
+  const isDark = theme.scheme === 'dark';
 
   const { feed } = useContentFeed();
 
@@ -27,7 +31,7 @@ export default function LibraryScreen() {
   const downloaded = feed.music;
   const playlists = feed.playlists;
 
-  const playlistWidth = isTV ? '23.5%' : isTablet ? '31.8%' : '48.5%';
+  const playlistWidth = isTV ? '23.5%' : isTablet ? '31.8%' : '100%';
 
   const openPlayer = async (item: FeedCardItem, source: string) => {
     await trackPlayEvent({
@@ -44,22 +48,56 @@ export default function LibraryScreen() {
       <ScrollView
         style={{ flex: 1, backgroundColor: 'transparent' }}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: theme.spacing.md, paddingBottom: 150 }}
+        contentContainerStyle={{ paddingBottom: theme.layout.tabBarContentPadding }}
         bounces={false}
         alwaysBounceVertical={false}
         overScrollMode="never"
+        stickyHeaderIndices={[0]}
       >
+        <View
+          style={{
+            backgroundColor: isDark ? '#06040D' : theme.colors.background,
+            borderBottomWidth: 1,
+            borderBottomColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(20,16,33,0.08)',
+          }}
+        >
+          <LinearGradient
+            pointerEvents="none"
+            colors={[isDark ? 'rgba(154,107,255,0.06)' : 'rgba(109,40,217,0.08)', 'rgba(0,0,0,0)']}
+            start={{ x: 0.1, y: 0 }}
+            end={{ x: 0.9, y: 1 }}
+            style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}
+          />
+          <Screen>
+            <FadeIn>
+              <View
+                style={{
+                  paddingTop: theme.layout.headerVerticalPadding,
+                  paddingBottom: theme.spacing.sm,
+                }}
+              >
+                <BrandedHeaderCard
+                  title="Library"
+                  subtitle="Saved songs, downloads and playlists organized for playback."
+                  actions={[
+                    { icon: 'search', onPress: () => router.push('/(tabs)/search'), accessibilityLabel: 'Search' },
+                    { icon: 'person-outline', onPress: () => router.push('/profile'), accessibilityLabel: 'Profile' },
+                  ]}
+                  chips={[
+                    { label: 'Liked' },
+                    { label: 'Downloads' },
+                    { label: 'Playlists' },
+                  ]}
+                />
+              </View>
+            </FadeIn>
+          </Screen>
+        </View>
+
         <Screen>
+          <View style={{ paddingTop: theme.layout.sectionGap }}>
           <FadeIn>
-            <View
-              style={{
-                borderRadius: 20,
-                borderWidth: 1,
-                borderColor: theme.colors.border,
-                backgroundColor: theme.colors.surface,
-                padding: 12,
-              }}
-            >
+            <SurfaceCard tone="subtle" style={{ padding: theme.spacing.xl }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                 <View>
                   <CustomText variant="heading" style={{ color: theme.colors.text.primary }}>
@@ -88,27 +126,28 @@ export default function LibraryScreen() {
                 </TVTouchable>
               </View>
 
-              <View style={{ marginTop: 12, flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                <StatCard label="Liked" value={liked.length} style={{ flexBasis: isCompact ? '48%' : '31.8%' }} />
+              <View style={{ marginTop: theme.spacing.md, flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm }}>
+                <StatCard label="Liked" value={liked.length} style={{ flexBasis: isTablet ? '31.8%' : '48.4%' }} />
                 <StatCard
                   label="Downloaded"
                   value={downloaded.length}
-                  style={{ flexBasis: isCompact ? '48%' : '31.8%' }}
+                  style={{ flexBasis: isTablet ? '31.8%' : '48.4%' }}
                 />
                 <StatCard
                   label="Playlists"
                   value={playlists.length}
-                  style={{ flexBasis: isCompact ? '48%' : '31.8%' }}
+                  style={{ flexBasis: isTablet ? '31.8%' : '48.4%' }}
                 />
               </View>
-            </View>
+            </SurfaceCard>
           </FadeIn>
 
           <FadeIn delay={90}>
-            <SectionHeader
+            <View style={{ marginTop: theme.layout.sectionGapLarge }}>
+            <AppSectionHeader
               title="Liked Songs"
               actionLabel="Play all"
-              onPress={() => {
+              onAction={() => {
                 const firstLiked = liked[0];
                 if (firstLiked) {
                   void openPlayer(firstLiked, 'library_liked_play_all');
@@ -116,7 +155,7 @@ export default function LibraryScreen() {
               }}
             />
             {liked.length > 0 ? (
-              <View style={{ gap: 8 }}>
+              <View style={{ gap: theme.spacing.sm }}>
                 {liked.slice(0, 8).map((song) => (
                   <ListRow
                     key={song.id}
@@ -131,12 +170,14 @@ export default function LibraryScreen() {
             ) : (
               <EmptyHint text="No liked songs yet." />
             )}
+            </View>
           </FadeIn>
 
           <FadeIn delay={120}>
-            <SectionHeader title="Downloaded" actionLabel="Manage" onPress={() => router.push('/(tabs)/library')} />
+            <View style={{ marginTop: theme.layout.sectionGapLarge }}>
+            <AppSectionHeader title="Downloaded" actionLabel="Manage" onAction={() => router.push('/(tabs)/library')} />
             {downloaded.length > 0 ? (
-              <View style={{ gap: 8 }}>
+              <View style={{ gap: theme.spacing.sm }}>
                 {downloaded.slice(0, 8).map((song) => (
                   <ListRow
                     key={song.id}
@@ -151,19 +192,21 @@ export default function LibraryScreen() {
             ) : (
               <EmptyHint text="No downloaded songs yet." />
             )}
+            </View>
           </FadeIn>
 
           <FadeIn delay={150}>
-            <SectionHeader title="Playlists" actionLabel="Create" onPress={() => router.push('/(tabs)/search')} />
+            <View style={{ marginTop: theme.layout.sectionGapLarge }}>
+            <AppSectionHeader title="Playlists" actionLabel="Create" onAction={() => router.push('/(tabs)/search')} />
             {playlists.length > 0 ? (
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 10 }}>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: theme.spacing.md }}>
                 {playlists.map((playlist) => (
                   <TVTouchable
                     key={playlist.id}
                     onPress={() => openPlayer(playlist, 'library_playlist')}
                     style={{
                       width: playlistWidth,
-                      borderRadius: 16,
+                      borderRadius: theme.radius.lg,
                       overflow: 'hidden',
                       backgroundColor: theme.colors.surface,
                       borderWidth: 1,
@@ -171,8 +214,8 @@ export default function LibraryScreen() {
                     }}
                     showFocusBorder={false}
                   >
-                    <Image source={{ uri: playlist.imageUrl }} style={{ width: '100%', height: 106 }} />
-                    <View style={{ padding: 10 }}>
+                    <Image source={{ uri: playlist.imageUrl }} style={{ width: '100%', height: 150 }} />
+                    <View style={{ padding: theme.spacing.md }}>
                       <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }} numberOfLines={1}>
                         {playlist.title}
                       </CustomText>
@@ -186,43 +229,12 @@ export default function LibraryScreen() {
             ) : (
               <EmptyHint text="No playlists yet." />
             )}
+            </View>
           </FadeIn>
+          </View>
         </Screen>
       </ScrollView>
     </TabScreenWrapper>
-  );
-}
-
-function SectionHeader({
-  title,
-  actionLabel,
-  onPress,
-}: {
-  title: string;
-  actionLabel: string;
-  onPress: () => void;
-}) {
-  const theme = useAppTheme();
-
-  return (
-    <View
-      style={{
-        marginTop: 18,
-        marginBottom: 10,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-      }}
-    >
-      <CustomText variant="heading" style={{ color: theme.colors.text.primary }}>
-        {title}
-      </CustomText>
-      <TVTouchable onPress={onPress} showFocusBorder={false}>
-        <CustomText variant="label" style={{ color: theme.colors.primary }}>
-          {actionLabel}
-        </CustomText>
-      </TVTouchable>
-    </View>
   );
 }
 
@@ -233,12 +245,12 @@ function StatCard({ label, value, style }: { label: string; value: number; style
     <View
       style={{
         flexGrow: 1,
-        borderRadius: 12,
+        borderRadius: 16,
         borderWidth: 1,
         borderColor: theme.colors.border,
         backgroundColor: theme.colors.surfaceAlt,
-        paddingHorizontal: 8,
-        paddingVertical: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 12,
         ...(style || {}),
       }}
     >
@@ -271,24 +283,24 @@ function ListRow({
     <TVTouchable
       onPress={onPress}
       style={{
-        minHeight: 68,
-        borderRadius: 16,
+        minHeight: 76,
+        borderRadius: 18,
         borderWidth: 1,
         borderColor: theme.colors.border,
         backgroundColor: theme.colors.surface,
-        paddingHorizontal: 8,
-        paddingVertical: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
         flexDirection: 'row',
         alignItems: 'center',
       }}
       showFocusBorder={false}
     >
-      <Image source={{ uri: imageUrl }} style={{ width: 50, height: 50, borderRadius: 12 }} />
-      <View style={{ flex: 1, marginLeft: 10 }}>
-        <CustomText variant="body" style={{ color: theme.colors.text.primary }} numberOfLines={1}>
+      <Image source={{ uri: imageUrl }} style={{ width: 56, height: 56, borderRadius: 14 }} />
+      <View style={{ flex: 1, marginLeft: 12 }}>
+        <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }} numberOfLines={1}>
           {title}
         </CustomText>
-        <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 2 }}>
+        <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 3 }}>
           {subtitle}
         </CustomText>
       </View>
@@ -305,11 +317,11 @@ function EmptyHint({ text }: { text: string }) {
   return (
     <View
       style={{
-        borderRadius: 14,
+        borderRadius: 16,
         borderWidth: 1,
         borderColor: theme.colors.border,
-        paddingVertical: 12,
-        paddingHorizontal: 12,
+        paddingVertical: 16,
+        paddingHorizontal: 16,
         backgroundColor: theme.colors.surface,
       }}
     >
