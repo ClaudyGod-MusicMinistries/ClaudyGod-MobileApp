@@ -14,6 +14,7 @@ import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 const contact = [
   { icon: 'chat-bubble', title: 'Support center', desc: 'Open the central help portal', action: () => Linking.openURL('https://claudygodmusic.com/support') },
   { icon: 'email', title: 'Email support', desc: 'support@claudygodmusic.com', action: () => Linking.openURL('mailto:support@claudygodmusic.com') },
+  { icon: 'forum', title: 'WhatsApp support', desc: 'Message the ministry support desk', action: () => Linking.openURL('https://wa.me/18002528394') },
   { icon: 'phone', title: 'Call support', desc: '+1 (800) 252-8394', action: () => Linking.openURL('tel:+18002528394') },
 ];
 

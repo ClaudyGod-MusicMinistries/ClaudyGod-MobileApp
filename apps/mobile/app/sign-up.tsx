@@ -16,6 +16,7 @@ import { AppButton } from '../components/ui/AppButton';
 import { Screen } from '../components/layout/Screen';
 import { TVTouchable } from '../components/ui/TVTouchable';
 import { FadeIn } from '../components/ui/FadeIn';
+import { AuthBrandPanel } from '../components/auth/AuthBrandPanel';
 import { registerMobileUser } from '../services/authService';
 import { useAuth } from '../context/AuthContext';
 
@@ -151,12 +152,16 @@ export default function SignUpScreen() {
                     borderColor: 'rgba(235,226,255,0.14)',
                   }}
                 >
+                  <AuthBrandPanel
+                    salutation="Create your account"
+                    description="Join the platform to receive updates, save your library, and follow ClaudyGod across mobile and TV experiences."
+                  />
                   <CustomText
                     variant="display"
                     style={{
                       color: '#F8F7FC',
-                      fontSize: isTablet ? 30 : 26,
-                      lineHeight: isTablet ? 36 : 31,
+                      fontSize: isTablet ? 28 : 24,
+                      lineHeight: isTablet ? 34 : 30,
                     }}
                   >
                     Create Account

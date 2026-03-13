@@ -30,6 +30,13 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
         actionUrl: 'mailto:support@claudygodmusic.com',
       },
       {
+        id: 'whatsapp',
+        icon: 'forum',
+        title: 'WhatsApp support',
+        desc: 'Message the ministry support desk',
+        actionUrl: 'https://wa.me/18002528394',
+      },
+      {
         id: 'phone',
         icon: 'phone',
         title: 'Call support',
@@ -81,6 +88,7 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
     ],
     social: [
       { icon: 'smart-display', label: 'YouTube', url: 'https://youtube.com/@ClaudyGODMinistries' },
+      { icon: 'forum', label: 'WhatsApp', url: 'https://wa.me/18002528394' },
       { icon: 'photo-camera', label: 'Instagram', url: 'https://instagram.com/claudygodmusic' },
       { icon: 'facebook', label: 'Facebook', url: 'https://facebook.com/claudygodmusic' },
       { icon: 'alternate-email', label: 'Newsletter', url: 'mailto:hello@claudygodmusic.com' },
