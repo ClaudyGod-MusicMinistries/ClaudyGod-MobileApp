@@ -126,17 +126,25 @@ export default function LibraryScreen() {
                 </TVTouchable>
               </View>
 
-              <View style={{ marginTop: theme.spacing.md, flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm }}>
-                <StatCard label="Liked" value={liked.length} style={{ flexBasis: isTablet ? '31.8%' : '48.4%' }} />
+              <View
+                style={{
+                  marginTop: theme.spacing.md,
+                  flexDirection: 'row',
+                  flexWrap: 'wrap',
+                  justifyContent: 'space-between',
+                  rowGap: theme.spacing.sm,
+                }}
+              >
+                <StatCard label="Liked" value={liked.length} style={{ flexBasis: isTablet ? '31%' : '48%' }} />
                 <StatCard
                   label="Downloaded"
                   value={downloaded.length}
-                  style={{ flexBasis: isTablet ? '31.8%' : '48.4%' }}
+                  style={{ flexBasis: isTablet ? '31%' : '48%' }}
                 />
                 <StatCard
                   label="Playlists"
                   value={playlists.length}
-                  style={{ flexBasis: isTablet ? '31.8%' : '48.4%' }}
+                  style={{ flexBasis: isTablet ? '31%' : '48%' }}
                 />
               </View>
             </SurfaceCard>
