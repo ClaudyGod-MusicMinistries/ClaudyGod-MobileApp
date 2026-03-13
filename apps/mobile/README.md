@@ -48,25 +48,32 @@ Bible Integration - Scripture references with songs
 | **Deployment**           | EAS (Expo Application Services) |
 
 ---
-🚀 Quick Start
+## 🚀 Quick Start
+
 Prerequisites
-Node.js (v18 or higher)
 
-npm or yarn
+- Node.js 18 or higher
+- npm or yarn
+- Expo Go or an Expo development build
 
-Expo CLI (npm install -g expo-cli)
+Setup
 
-Expo Go app on your mobile device
+1. Copy `.env.example` to `.env`.
+2. Set:
+   - `EXPO_PUBLIC_SUPABASE_URL`
+   - `EXPO_PUBLIC_SUPABASE_KEY`
+3. Optional: set `EXPO_PUBLIC_API_URL` only if you also want to use the legacy backend services for content/admin flows.
+4. Install dependencies: `npm install`
+5. Start Expo: `npm run start:online`
 
-Git
+Docker
 
-Expo Go app on your mobile device
-
-Git
+- Web preview: `docker compose --env-file ../../.env.docker -f docker-compose.dev.yml --profile web up --build`
+- Native Expo dev server: `docker compose --env-file ../../.env.docker -f docker-compose.dev.yml --profile native up --build`
 
 ## 🚀 Deployment (EAS)
 
-1. Copy `.env.example` to `.env` and fill in your backend + Supabase keys.
+1. Copy `.env.example` to `.env` and fill in your Supabase keys.
 2. Set the same values in EAS secrets or `eas.json`.
 3. Update `app.json` with your real bundle identifiers:
    - `ios.bundleIdentifier`

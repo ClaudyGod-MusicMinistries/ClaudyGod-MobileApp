@@ -104,7 +104,7 @@ export function RecentSongsSection() {
         <CustomButton
           variant="text"
           size="sm"
-          onPress={() => console.log('View all songs')}
+          onPress={() => undefined}
           className="rounded-lg px-3 py-2"
           style={{ backgroundColor: theme.colors.surfaceAlt, borderWidth: 1, borderColor: theme.colors.border }}
         >
@@ -132,7 +132,7 @@ export function RecentSongsSection() {
       <View style={{ minHeight: 200 }}>
         <SongList 
           songs={recentSongs}
-          onSongPress={(song) => console.log('Song pressed:', song)}
+          onSongPress={() => undefined}
           currentSongId="1"
         />
       </View>

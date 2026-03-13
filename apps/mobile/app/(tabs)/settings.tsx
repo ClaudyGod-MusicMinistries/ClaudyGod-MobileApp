@@ -23,7 +23,7 @@ type SettingItem = {
   onToggle?: (_value: boolean) => void;
 };
 
-export default function Settings() {
+export default function SettingsScreen() {
   const theme = useAppTheme();
   const toggleColorScheme = useColorSchemeToggle();
   const router = useRouter();
@@ -40,20 +40,12 @@ export default function Settings() {
     stickyBg: isDark ? '#06040D' : '#F4F1FA',
     stickyBorder: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(20,16,33,0.08)',
     stickyGlow: isDark ? 'rgba(154,107,255,0.06)' : 'rgba(109,40,217,0.08)',
-    headerCardBg: isDark ? 'rgba(10,8,17,0.88)' : 'rgba(255,255,255,0.95)',
-    headerCardBorder: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(20,16,33,0.08)',
     headerMuted: isDark ? 'rgba(194,185,220,0.9)' : 'rgba(94,86,120,0.92)',
     headerSubtle: isDark ? 'rgba(176,167,202,0.9)' : 'rgba(108,99,134,0.9)',
-    iconButtonBg: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(109,40,217,0.05)',
-    iconButtonBorder: isDark ? 'rgba(255,255,255,0.14)' : 'rgba(20,16,33,0.08)',
-    iconButtonText: isDark ? '#EFE7FF' : '#3F2A76',
     overviewBg: isDark ? 'rgba(12,9,20,0.88)' : '#FFFFFF',
     overviewBorder: isDark ? 'rgba(255,255,255,0.08)' : theme.colors.border,
     softPanel: isDark ? 'rgba(255,255,255,0.03)' : '#F8F5FD',
     softBorder: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(20,16,33,0.06)',
-    chipBg: isDark ? 'rgba(255,255,255,0.03)' : '#FFFFFF',
-    chipBorder: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(20,16,33,0.08)',
-    chipText: isDark ? '#CEC4E7' : '#5C5478',
   } as const;
 
   const [notifications, setNotifications] = useState(true);
@@ -84,27 +76,39 @@ export default function Settings() {
     };
   }, []);
 
-  const persistPreferencePatch = useCallback((patch: Partial<Parameters<typeof updateMePreferences>[0]>) => {
-    if (!preferencesLoaded) return;
-    void updateMePreferences(patch).catch((error) => {
-      console.warn('settings preference sync failed:', error);
-    });
-  }, [preferencesLoaded]);
+  const persistPreferencePatch = useCallback(
+    (patch: Partial<Parameters<typeof updateMePreferences>[0]>) => {
+      if (!preferencesLoaded) return;
+      void updateMePreferences(patch).catch((error) => {
+        console.warn('settings preference sync failed:', error);
+      });
+    },
+    [preferencesLoaded],
+  );
 
-  const onToggleNotifications = useCallback((value: boolean) => {
-    setNotifications(value);
-    persistPreferencePatch({ notificationsEnabled: value });
-  }, [persistPreferencePatch]);
+  const onToggleNotifications = useCallback(
+    (value: boolean) => {
+      setNotifications(value);
+      persistPreferencePatch({ notificationsEnabled: value });
+    },
+    [persistPreferencePatch],
+  );
 
-  const onToggleAutoplay = useCallback((value: boolean) => {
-    setAutoPlay(value);
-    persistPreferencePatch({ autoplayEnabled: value });
-  }, [persistPreferencePatch]);
+  const onToggleAutoplay = useCallback(
+    (value: boolean) => {
+      setAutoPlay(value);
+      persistPreferencePatch({ autoplayEnabled: value });
+    },
+    [persistPreferencePatch],
+  );
 
-  const onToggleHighQuality = useCallback((value: boolean) => {
-    setHighQuality(value);
-    persistPreferencePatch({ highQualityEnabled: value });
-  }, [persistPreferencePatch]);
+  const onToggleHighQuality = useCallback(
+    (value: boolean) => {
+      setHighQuality(value);
+      persistPreferencePatch({ highQualityEnabled: value });
+    },
+    [persistPreferencePatch],
+  );
 
   const onToggleTheme = useCallback(() => {
     const nextTheme = theme.scheme === 'dark' ? 'light' : 'dark';
@@ -118,24 +122,60 @@ export default function Settings() {
         title: 'Account',
         description: 'Profile, privacy and subscriptions',
         items: [
-          { icon: 'person', label: 'Profile', hint: 'Name, email and personal details', action: () => router.push('/profile') },
-          { icon: 'security', label: 'Privacy & Security', hint: 'Data controls and permissions', action: () => router.push('/settingsPage/Privacy') },
-          { icon: 'volunteer-activism', label: 'Donate', hint: 'Contribution plans and checkout', action: () => router.push('/settingsPage/Donate') },
+          {
+            icon: 'person',
+            label: 'Profile',
+            hint: 'Name, email and personal details',
+            action: () => router.push('/profile'),
+          },
+          {
+            icon: 'security',
+            label: 'Privacy & Security',
+            hint: 'Data controls and permissions',
+            action: () => router.push('/settingsPage/Privacy'),
+          },
+          {
+            icon: 'volunteer-activism',
+            label: 'Donate',
+            hint: 'Contribution plans and checkout',
+            action: () => router.push('/settingsPage/Donate'),
+          },
         ] as SettingItem[],
       },
       {
         title: 'Playback',
         description: 'Auto-play and streaming quality',
         items: [
-          { icon: 'play-arrow', label: 'Auto-play', hint: 'Continue to related media', type: 'switch', value: autoPlay, onToggle: onToggleAutoplay },
-          { icon: 'hd', label: 'High quality', hint: 'Use more data for better sound', type: 'switch', value: highQuality, onToggle: onToggleHighQuality },
+          {
+            icon: 'play-arrow',
+            label: 'Auto-play',
+            hint: 'Continue to related media',
+            type: 'switch',
+            value: autoPlay,
+            onToggle: onToggleAutoplay,
+          },
+          {
+            icon: 'hd',
+            label: 'High quality',
+            hint: 'Use more data for better sound',
+            type: 'switch',
+            value: highQuality,
+            onToggle: onToggleHighQuality,
+          },
         ] as SettingItem[],
       },
       {
         title: 'Preferences',
         description: 'Notifications and interface behavior',
         items: [
-          { icon: 'notifications', label: 'Notifications', hint: 'Reminders for lives and releases', type: 'switch', value: notifications, onToggle: onToggleNotifications },
+          {
+            icon: 'notifications',
+            label: 'Notifications',
+            hint: 'Reminders for lives and releases',
+            type: 'switch',
+            value: notifications,
+            onToggle: onToggleNotifications,
+          },
           {
             icon: 'dark-mode',
             label: 'Dark mode',
@@ -150,13 +190,38 @@ export default function Settings() {
         title: 'Support',
         description: 'Help, about and feedback',
         items: [
-          { icon: 'help', label: 'Help & Support', hint: 'FAQs and contact channels', action: () => router.push('/settingsPage/help') },
-          { icon: 'info', label: 'About', hint: 'Product mission and team', action: () => router.push('/settingsPage/About') },
-          { icon: 'rate-review', label: 'Rate App', hint: 'Share product feedback', action: () => router.push('/settingsPage/Rate') },
+          {
+            icon: 'help',
+            label: 'Help & Support',
+            hint: 'FAQs and contact channels',
+            action: () => router.push('/settingsPage/help'),
+          },
+          {
+            icon: 'info',
+            label: 'About',
+            hint: 'Product mission and team',
+            action: () => router.push('/settingsPage/About'),
+          },
+          {
+            icon: 'rate-review',
+            label: 'Rate App',
+            hint: 'Share product feedback',
+            action: () => router.push('/settingsPage/Rate'),
+          },
         ] as SettingItem[],
       },
     ],
-    [autoPlay, highQuality, notifications, onToggleAutoplay, onToggleHighQuality, onToggleNotifications, onToggleTheme, router, theme.scheme],
+    [
+      autoPlay,
+      highQuality,
+      notifications,
+      onToggleAutoplay,
+      onToggleHighQuality,
+      onToggleNotifications,
+      onToggleTheme,
+      router,
+      theme.scheme,
+    ],
   );
 
   const quickLabels = ['Account', 'Playback', 'Preferences', 'Support'];
@@ -231,7 +296,10 @@ export default function Settings() {
                     <CustomText variant="caption" style={{ color: ui.headerSubtle }}>
                       Theme
                     </CustomText>
-                    <CustomText variant="label" style={{ color: theme.colors.text.primary, marginTop: 4 }}>
+                    <CustomText
+                      variant="label"
+                      style={{ color: theme.colors.text.primary, marginTop: 4 }}
+                    >
                       {isDark ? 'Dark Mode' : 'Light Mode'}
                     </CustomText>
                   </View>
@@ -248,7 +316,10 @@ export default function Settings() {
                     <CustomText variant="caption" style={{ color: ui.headerSubtle }}>
                       Notifications
                     </CustomText>
-                    <CustomText variant="label" style={{ color: theme.colors.text.primary, marginTop: 4 }}>
+                    <CustomText
+                      variant="label"
+                      style={{ color: theme.colors.text.primary, marginTop: 4 }}
+                    >
                       {notifications ? 'Enabled' : 'Off'}
                     </CustomText>
                   </View>
@@ -262,7 +333,10 @@ export default function Settings() {
                   <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
                     {section.title}
                   </CustomText>
-                  <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 2 }}>
+                  <CustomText
+                    variant="caption"
+                    style={{ color: theme.colors.text.secondary, marginTop: 2 }}
+                  >
                     {section.description}
                   </CustomText>
                   <SurfaceCard style={{ marginTop: theme.spacing.sm, paddingVertical: 2 }}>
@@ -290,19 +364,31 @@ export default function Settings() {
                             justifyContent: 'center',
                             backgroundColor: `${theme.colors.primary}16`,
                             borderWidth: 1,
-                            borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(20,16,33,0.06)',
+                            borderColor: isDark
+                              ? 'rgba(255,255,255,0.06)'
+                              : 'rgba(20,16,33,0.06)',
                             marginRight: theme.spacing.md,
                           }}
                         >
-                          <MaterialIcons name={item.icon as any} size={18} color={theme.colors.primary} />
+                          <MaterialIcons
+                            name={item.icon as any}
+                            size={18}
+                            color={theme.colors.primary}
+                          />
                         </View>
 
                         <View style={{ flex: 1, paddingRight: theme.spacing.sm }}>
-                          <CustomText variant="label" style={{ color: theme.colors.text.primary }}>
+                          <CustomText
+                            variant="label"
+                            style={{ color: theme.colors.text.primary }}
+                          >
                             {item.label}
                           </CustomText>
                           {item.hint ? (
-                            <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 3 }}>
+                            <CustomText
+                              variant="caption"
+                              style={{ color: theme.colors.text.secondary, marginTop: 3 }}
+                            >
                               {item.hint}
                             </CustomText>
                           ) : null}
@@ -317,7 +403,11 @@ export default function Settings() {
                             ios_backgroundColor={switchUi.iosBackground}
                           />
                         ) : (
-                          <MaterialIcons name="chevron-right" size={20} color={theme.colors.text.secondary} />
+                          <MaterialIcons
+                            name="chevron-right"
+                            size={20}
+                            color={theme.colors.text.secondary}
+                          />
                         )}
                       </TVTouchable>
                     ))}

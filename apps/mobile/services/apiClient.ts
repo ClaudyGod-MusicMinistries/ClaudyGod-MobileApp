@@ -1,7 +1,13 @@
 import { ENV } from './config';
 
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${ENV.apiUrl}${path}`, {
+  if (!ENV.apiUrl) {
+    throw new Error(
+      'Mobile API is not configured. Set EXPO_PUBLIC_API_URL only if you want to use the optional backend services.',
+    );
+  }
+
+  const response = await fetch(`${ENV.apiUrl.replace(/\/+$/, '')}${path}`, {
     ...init,
     headers: {
       'Content-Type': 'application/json',

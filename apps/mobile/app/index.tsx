@@ -16,9 +16,11 @@ import { AppButton } from '../components/ui/AppButton';
 import { CustomText } from '../components/CustomText';
 import { TVTouchable } from '../components/ui/TVTouchable';
 import { Screen } from '../components/layout/Screen';
+import { useAuth } from '../context/AuthContext';
 
 export default function Landing() {
   const router = useRouter();
+  const { initializing, isAuthenticated } = useAuth();
   const { width, height } = useWindowDimensions();
 
   const isTV = Platform.isTV;
@@ -35,6 +37,12 @@ export default function Landing() {
   const ctaOpacity = useRef(new Animated.Value(0)).current;
   const logoFloat = useRef(new Animated.Value(0)).current;
   const orbDrift = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (!initializing && isAuthenticated) {
+      router.replace('/(tabs)/home');
+    }
+  }, [initializing, isAuthenticated, router]);
 
   useEffect(() => {
     Animated.parallel([

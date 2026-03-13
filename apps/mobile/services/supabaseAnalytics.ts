@@ -3,6 +3,7 @@ import {
   subscribeToLiveAlertsBackend,
   trackMePlayEvent,
 } from './userFlowService';
+import { getStoredMobileSession } from './authService';
 
 export interface PlayEventInput {
   contentId: string;
@@ -36,9 +37,10 @@ export async function fetchUserProfileMetrics() {
   try {
     return await fetchMeMetrics();
   } catch {
+    const { user } = await getStoredMobileSession();
     return {
-      email: '',
-      displayName: 'ClaudyGod User',
+      email: user?.email ?? '',
+      displayName: user?.displayName ?? 'ClaudyGod User',
       totalPlays: 0,
       liveSubscriptions: 0,
     };

@@ -17,24 +17,24 @@ const groups = [
   {
     title: 'Account',
     items: [
-      { icon: 'person-outline', label: 'Personal Details' },
-      { icon: 'card-membership', label: 'Subscription Plan' },
-      { icon: 'credit-card', label: 'Billing Methods' },
+      { icon: 'library-music', label: 'Your Library', href: '/(tabs)/library' },
+      { icon: 'settings-suggest', label: 'Playback Preferences', href: '/(tabs)/settings' },
+      { icon: 'security', label: 'Privacy & Security', href: '/settingsPage/Privacy' },
     ],
   },
   {
-    title: 'Platform',
+    title: 'Discover',
     items: [
-      { icon: 'notifications-none', label: 'Live Notifications' },
-      { icon: 'bar-chart', label: 'Most Played Analytics' },
-      { icon: 'devices', label: 'Connected Devices' },
+      { icon: 'ondemand-video', label: 'Video Hub', href: '/(tabs)/videos' },
+      { icon: 'search', label: 'Search & Discovery', href: '/(tabs)/search' },
+      { icon: 'volunteer-activism', label: 'Support the Ministry', href: '/settingsPage/Donate' },
     ],
   },
   {
     title: 'Support',
     items: [
-      { icon: 'help-outline', label: 'Help Center' },
-      { icon: 'security', label: 'Privacy & Security' },
+      { icon: 'help-outline', label: 'Help Center', href: '/settingsPage/help' },
+      { icon: 'info-outline', label: 'About ClaudyGod', href: '/settingsPage/About' },
     ],
   },
 ];
@@ -110,7 +110,12 @@ export default function Profile() {
       }
     >
       <FadeIn delay={90}>
-        <AppButton title="Edit Profile" fullWidth size="lg" />
+        <AppButton
+          title="Open Settings"
+          fullWidth
+          size="lg"
+          onPress={() => router.push('/(tabs)/settings')}
+        />
       </FadeIn>
 
       {groups.map((group, groupIndex) => (
@@ -124,7 +129,7 @@ export default function Profile() {
               {group.items.map((item) => (
                 <TVTouchable
                   key={item.label}
-                  onPress={() => console.log(item.label)}
+                  onPress={() => router.push(item.href as never)}
                   style={{
                     minHeight: 54,
                     borderRadius: 14,

@@ -282,7 +282,7 @@ export default function Privacy() {
           primaryActionLabel: 'Open Library',
           onPrimaryAction: () => {
             closeActionModal();
-            router.push('/(tabs)/Favourites');
+            router.push('/(tabs)/library');
           },
           secondaryActionLabel: 'Close',
           onSecondaryAction: closeActionModal,

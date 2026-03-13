@@ -55,7 +55,7 @@ export class PushNotificationService {
       }
 
       if (!isGranted) {
-        console.log('Failed to get push token for push notification!');
+        console.warn('Push notification permission not granted.');
         return false;
       }
 
@@ -77,18 +77,17 @@ export class PushNotificationService {
   private async getPushToken(): Promise<string | null> {
     try {
       if (!Device.isDevice) {
-        console.log('Must use physical device for push notifications');
+        console.warn('Push notifications require a physical device.');
         return null;
       }
 
       const projectId = ENV.easProjectId;
       if (!projectId) {
-        console.log('EXPO_PUBLIC_EAS_PROJECT_ID not found');
+        console.warn('EXPO_PUBLIC_EAS_PROJECT_ID not found.');
         return null;
       }
 
       const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
-      console.log('Push token:', token);
       return token;
     } catch (error) {
       console.error('Error getting push token:', error);

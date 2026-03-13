@@ -12,7 +12,7 @@ import { TVTouchable } from '../../components/ui/TVTouchable';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 
 const contact = [
-  { icon: 'chat-bubble', title: 'Live chat', desc: 'Average response under 2 minutes', action: () => console.log('chat') },
+  { icon: 'chat-bubble', title: 'Support center', desc: 'Open the central help portal', action: () => Linking.openURL('https://claudygodmusic.com/support') },
   { icon: 'email', title: 'Email support', desc: 'support@claudygodmusic.com', action: () => Linking.openURL('mailto:support@claudygodmusic.com') },
   { icon: 'phone', title: 'Call support', desc: '+1 (800) 252-8394', action: () => Linking.openURL('tel:+18002528394') },
 ];

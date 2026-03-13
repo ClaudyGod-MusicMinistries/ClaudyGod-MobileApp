@@ -11,6 +11,7 @@ import { TVTouchable } from '../../components/ui/TVTouchable';
 import { useContentFeed } from '../../hooks/useContentFeed';
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
 import type { FeedCardItem } from '../../services/contentService';
+import { buildPlayerRoute } from '../../util/playerRoute';
 
 export default function LibraryScreen() {
   const theme = useAppTheme();
@@ -35,7 +36,7 @@ export default function LibraryScreen() {
       title: item.title,
       source,
     });
-    router.push('/(tabs)/PlaySection');
+    router.push(buildPlayerRoute(item));
   };
 
   return (
@@ -104,7 +105,16 @@ export default function LibraryScreen() {
           </FadeIn>
 
           <FadeIn delay={90}>
-            <SectionHeader title="Liked Songs" actionLabel="Play all" onPress={() => router.push('/(tabs)/PlaySection')} />
+            <SectionHeader
+              title="Liked Songs"
+              actionLabel="Play all"
+              onPress={() => {
+                const firstLiked = liked[0];
+                if (firstLiked) {
+                  void openPlayer(firstLiked, 'library_liked_play_all');
+                }
+              }}
+            />
             {liked.length > 0 ? (
               <View style={{ gap: 8 }}>
                 {liked.slice(0, 8).map((song) => (

@@ -5,6 +5,7 @@ import {
   Platform,
   RefreshControl,
   ScrollView,
+  Share,
   View,
   useWindowDimensions,
 } from 'react-native';
@@ -103,6 +104,12 @@ export default function HomeScreen() {
     Alert.alert('Live alerts enabled', `You will be notified when ${item.title} goes live.`);
   };
 
+  const onShareWord = async () => {
+    await Share.share({
+      message: `${wordForToday.passage}\n\n${wordForToday.verse}\n\n${wordForToday.reflection}`,
+    });
+  };
+
   return (
     <TabScreenWrapper>
       <ScrollView
@@ -145,7 +152,7 @@ export default function HomeScreen() {
                   onChangeFilter={setActiveFilter}
                   onOpenVideos={() => router.push('/(tabs)/videos')}
                   onOpenProfile={() => router.push('/profile')}
-                  onOpenMenu={() => router.push('/(tabs)/Settings')}
+                  onOpenMenu={() => router.push('/(tabs)/settings')}
                 />
               </View>
             </FadeIn>
@@ -203,7 +210,7 @@ export default function HomeScreen() {
                     </View>
                   </View>
                   <TVTouchable
-                    onPress={() => undefined}
+                    onPress={() => void onShareWord()}
                     style={{
                       borderRadius: 999,
                       borderWidth: 1,
