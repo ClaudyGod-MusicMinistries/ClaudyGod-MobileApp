@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Platform,
   ScrollView,
@@ -16,44 +16,12 @@ import { AppButton } from '../components/ui/AppButton';
 import { Screen } from '../components/layout/Screen';
 import { TVTouchable } from '../components/ui/TVTouchable';
 import { FadeIn } from '../components/ui/FadeIn';
-import { loginMobileUser } from '../services/authService';
-
-function SocialGlassButton({
-  icon,
-  label,
-  onPress,
-}: {
-  icon: React.ComponentProps<typeof MaterialIcons>['name'];
-  label: string;
-  onPress: () => void;
-}) {
-  return (
-    <TVTouchable
-      onPress={onPress}
-      style={{
-        flex: 1,
-        minHeight: 48,
-        borderRadius: 14,
-        borderWidth: 1,
-        borderColor: 'rgba(231,221,255,0.3)',
-        backgroundColor: 'rgba(255,255,255,0.08)',
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 8,
-      }}
-      showFocusBorder={false}
-    >
-      <MaterialIcons name={icon} size={18} color="#EFE7FF" />
-      <CustomText variant="body" style={{ color: '#EFE7FF' }}>
-        {label}
-      </CustomText>
-    </TVTouchable>
-  );
-}
+import { loginMobileUser, requestMobilePasswordReset } from '../services/authService';
+import { useAuth } from '../context/AuthContext';
 
 export default function SignInScreen() {
   const router = useRouter();
+  const { initializing, isAuthenticated } = useAuth();
   const { width, height } = useWindowDimensions();
 
   const isTV = Platform.isTV;
@@ -61,16 +29,23 @@ export default function SignInScreen() {
   const isTablet = width >= 768 && !isTV;
   const compact = width < 370;
   const compactViewport = height < 760;
-  const showSocialAuth = !compactViewport;
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [hidePassword, setHidePassword] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [noticeMessage, setNoticeMessage] = useState('');
+
+  useEffect(() => {
+    if (!initializing && isAuthenticated) {
+      router.replace('/(tabs)/home');
+    }
+  }, [initializing, isAuthenticated, router]);
 
   const handleSignIn = async () => {
     setErrorMessage('');
+    setNoticeMessage('');
     if (!email.trim() || !password.trim()) {
       setErrorMessage('Enter your email and password.');
       return;
@@ -85,6 +60,28 @@ export default function SignInScreen() {
       router.replace('/(tabs)/home');
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Sign in failed');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    setErrorMessage('');
+    setNoticeMessage('');
+
+    if (!email.trim()) {
+      setErrorMessage('Enter your email address first, then request a password reset.');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const response = await requestMobilePasswordReset({
+        email: email.trim().toLowerCase(),
+      });
+      setNoticeMessage(response.message);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Unable to send password reset email');
     } finally {
       setSubmitting(false);
     }
@@ -235,7 +232,7 @@ export default function SignInScreen() {
                     </View>
 
                     <TVTouchable
-                      onPress={() => console.log('forgot password')}
+                      onPress={() => void handleForgotPassword()}
                       style={{ alignSelf: 'flex-end' }}
                       showFocusBorder={false}
                     >
@@ -263,6 +260,24 @@ export default function SignInScreen() {
                     </View>
                   ) : null}
 
+                  {noticeMessage ? (
+                    <View
+                      style={{
+                        marginTop: 12,
+                        borderRadius: 12,
+                        borderWidth: 1,
+                        borderColor: 'rgba(123,240,182,0.26)',
+                        backgroundColor: 'rgba(49,160,112,0.12)',
+                        paddingHorizontal: 12,
+                        paddingVertical: 10,
+                      }}
+                    >
+                      <CustomText variant="caption" style={{ color: '#D9FFE9' }}>
+                        {noticeMessage}
+                      </CustomText>
+                    </View>
+                  ) : null}
+
                   <AppButton
                     title="Sign In"
                     size="lg"
@@ -271,31 +286,6 @@ export default function SignInScreen() {
                     onPress={() => void handleSignIn()}
                     style={{ marginTop: 16, borderRadius: 16 }}
                   />
-
-                  {showSocialAuth ? (
-                    <>
-                      <View style={{ marginTop: 18, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                        <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.12)' }} />
-                        <CustomText variant="caption" style={{ color: 'rgba(187,178,211,0.86)' }}>
-                          Or continue with
-                        </CustomText>
-                        <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.12)' }} />
-                      </View>
-
-                      <View style={{ marginTop: 12, flexDirection: 'row', gap: 10 }}>
-                        <SocialGlassButton
-                          icon="g-translate"
-                          label="Google"
-                          onPress={() => console.log('google sign in')}
-                        />
-                        <SocialGlassButton
-                          icon="apple"
-                          label="Apple"
-                          onPress={() => console.log('apple sign in')}
-                        />
-                      </View>
-                    </>
-                  ) : null}
 
                   <TVTouchable
                     onPress={() => router.push('/sign-up')}

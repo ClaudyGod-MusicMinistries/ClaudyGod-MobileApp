@@ -1,4 +1,4 @@
-import { Stack } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import '../global.css';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { useContext, useEffect, useRef, useState, type ReactNode } from 'react';
@@ -8,6 +8,7 @@ import { ThemeProvider } from '../context/ThemeProvider';
 import { useColorScheme } from '../util/colorScheme';
 import { colors } from '../constants/color';
 import { FontProvider, FontContext } from '../context/FontContext';
+import { AuthProvider, useAuth } from '../context/AuthContext';
 
 function ThemedLayout({ children }: { children: ReactNode }) {
   const colorScheme = useColorScheme();
@@ -284,12 +285,35 @@ function LoadingScreen() {
 
 function RootLayoutInner() {
   const { fontsLoaded } = useContext(FontContext);
+  const { initializing, isAuthenticated } = useAuth();
+  const router = useRouter();
+  const segments = useSegments();
   const [bootDelayDone, setBootDelayDone] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => setBootDelayDone(true), 1100);
     return () => clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    if (!fontsLoaded || !bootDelayDone || initializing) {
+      return;
+    }
+
+    const firstSegment = segments[0];
+    const isAuthRoute = firstSegment === 'sign-in' || firstSegment === 'sign-up';
+    const isProtectedRoute =
+      firstSegment === '(tabs)' || firstSegment === 'profile' || firstSegment === 'settingsPage';
+
+    if (!isAuthenticated && isProtectedRoute) {
+      router.replace('/sign-in');
+      return;
+    }
+
+    if (isAuthenticated && isAuthRoute) {
+      router.replace('/(tabs)/home');
+    }
+  }, [bootDelayDone, fontsLoaded, initializing, isAuthenticated, router, segments]);
 
   if (!fontsLoaded || !bootDelayDone) {
     return <LoadingScreen />;
@@ -318,7 +342,9 @@ export default function RootLayout() {
     <ThemeProvider>
       <FontProvider>
         <SafeAreaProvider>
-          <RootLayoutInner />
+          <AuthProvider>
+            <RootLayoutInner />
+          </AuthProvider>
         </SafeAreaProvider>
       </FontProvider>
     </ThemeProvider>

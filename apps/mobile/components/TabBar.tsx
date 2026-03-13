@@ -30,7 +30,7 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
   const tabConfig = {
     home: { icon: 'home-filled' as const, label: 'Home' },
     videos: { icon: 'ondemand-video' as const, label: 'Videos' },
-    PlaySection: { icon: 'play-arrow' as const, label: 'Player', isCenter: true },
+    player: { icon: 'play-arrow' as const, label: 'Player', isCenter: true },
     library: { icon: 'library-music' as const, label: 'Library' },
     search: { icon: 'search' as const, label: 'Search' },
   };

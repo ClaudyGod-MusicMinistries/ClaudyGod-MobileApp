@@ -9,8 +9,9 @@ services:
     container_name: claudygod-mobile-web
     environment:
       EXPO_DEVTOOLS_LISTEN_ADDRESS: 0.0.0.0
-      EXPO_PUBLIC_API_URL: ${EXPO_PUBLIC_API_URL:-http://localhost:4000}
-      EXPO_PUBLIC_MOBILE_API_KEY: ${EXPO_PUBLIC_MOBILE_API_KEY:-dev-mobile-api-key}
+      EXPO_PUBLIC_API_URL: ${EXPO_PUBLIC_API_URL:-}
+      EXPO_PUBLIC_SUPABASE_URL: ${EXPO_PUBLIC_SUPABASE_URL:-}
+      EXPO_PUBLIC_SUPABASE_KEY: ${EXPO_PUBLIC_SUPABASE_KEY:-}
       CHOKIDAR_USEPOLLING: "1"
     ports:
       - "19006:19006"
@@ -28,8 +29,9 @@ services:
     command: ["yarn", "start:online", "--", "--host", "lan", "--port", "8081"]
     environment:
       EXPO_DEVTOOLS_LISTEN_ADDRESS: 0.0.0.0
-      EXPO_PUBLIC_API_URL: ${EXPO_PUBLIC_API_URL:-http://localhost:4000}
-      EXPO_PUBLIC_MOBILE_API_KEY: ${EXPO_PUBLIC_MOBILE_API_KEY:-dev-mobile-api-key}
+      EXPO_PUBLIC_API_URL: ${EXPO_PUBLIC_API_URL:-}
+      EXPO_PUBLIC_SUPABASE_URL: ${EXPO_PUBLIC_SUPABASE_URL:-}
+      EXPO_PUBLIC_SUPABASE_KEY: ${EXPO_PUBLIC_SUPABASE_KEY:-}
       EXPO_PACKAGER_HOSTNAME: ${EXPO_PACKAGER_HOSTNAME:-}
       CHOKIDAR_USEPOLLING: "1"
     ports:

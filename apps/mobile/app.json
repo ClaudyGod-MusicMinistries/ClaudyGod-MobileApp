@@ -31,8 +31,9 @@
       "favicon": "./assets/favicon.png"
     },
     "extra": {
-      "EXPO_PUBLIC_API_URL": "https://api.example.com",
-      "EXPO_PUBLIC_SUPABASE_URL": "https://your-project.supabase.co",
+      "EXPO_PUBLIC_API_URL": "",
+      "EXPO_PUBLIC_SUPABASE_URL": "",
+      "EXPO_PUBLIC_SUPABASE_KEY": "",
       "EXPO_PUBLIC_SUPABASE_ANON_KEY": "",
       "EXPO_PUBLIC_EAS_PROJECT_ID": "",
       "eas": {

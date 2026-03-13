@@ -1,7 +1,7 @@
 import type { FeedCardItem } from '../services/contentService';
 
 type PlayerRouteObject = {
-  pathname: '/(tabs)/PlaySection';
+  pathname: '/(tabs)/player';
   params: Record<string, string>;
 };
 
@@ -20,7 +20,7 @@ export function buildPlayerRoute(item: FeedCardItem): PlayerRouteObject {
   }
 
   return {
-    pathname: '/(tabs)/PlaySection',
+    pathname: '/(tabs)/player',
     params,
   };
 }

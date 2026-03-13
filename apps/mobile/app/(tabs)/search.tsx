@@ -16,6 +16,8 @@ import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { AppButton } from '../../components/ui/AppButton';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { useContentFeed } from '../../hooks/useContentFeed';
+import { trackPlayEvent } from '../../services/supabaseAnalytics';
+import { buildPlayerRoute } from '../../util/playerRoute';
 
 const baseCategories = ['All', 'audio', 'video', 'playlist', 'live', 'ad'];
 
@@ -67,6 +69,16 @@ export default function Search() {
       return matchesText && matchesCategory;
     });
   }, [activeCategory, allItems, query]);
+
+  const openResult = async (item: (typeof filtered)[number]) => {
+    await trackPlayEvent({
+      contentId: item.id,
+      contentType: item.type,
+      title: item.title,
+      source: 'search_results',
+    });
+    router.push(buildPlayerRoute(item));
+  };
 
   return (
     <TabScreenWrapper>
@@ -197,7 +209,7 @@ export default function Search() {
                   imageUrl={item.imageUrl}
                   title={item.title}
                   subtitle={item.subtitle}
-                  onPress={() => console.log('open', item.id)}
+                  onPress={() => void openResult(item)}
                 />
               )}
             />

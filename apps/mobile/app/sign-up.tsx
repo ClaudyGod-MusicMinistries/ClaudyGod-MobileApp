@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Platform,
   ScrollView,
@@ -17,9 +17,11 @@ import { Screen } from '../components/layout/Screen';
 import { TVTouchable } from '../components/ui/TVTouchable';
 import { FadeIn } from '../components/ui/FadeIn';
 import { registerMobileUser } from '../services/authService';
+import { useAuth } from '../context/AuthContext';
 
 export default function SignUpScreen() {
   const router = useRouter();
+  const { initializing, isAuthenticated } = useAuth();
   const { width, height } = useWindowDimensions();
 
   const isTV = Platform.isTV;
@@ -35,6 +37,13 @@ export default function SignUpScreen() {
   const [hidePassword, setHidePassword] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [noticeMessage, setNoticeMessage] = useState('');
+
+  useEffect(() => {
+    if (!initializing && isAuthenticated) {
+      router.replace('/(tabs)/home');
+    }
+  }, [initializing, isAuthenticated, router]);
 
   const canSubmit = useMemo(
     () => Boolean(name.trim() && email.trim() && password.trim() && confirmPassword.trim()),
@@ -43,6 +52,7 @@ export default function SignUpScreen() {
 
   const handleSignUp = async () => {
     setErrorMessage('');
+    setNoticeMessage('');
 
     if (!canSubmit) {
       setErrorMessage('Fill in all fields to continue.');
@@ -55,11 +65,18 @@ export default function SignUpScreen() {
 
     setSubmitting(true);
     try {
-      await registerMobileUser({
+      const response = await registerMobileUser({
         displayName: name.trim(),
         email: email.trim().toLowerCase(),
         password,
       });
+
+      if (response.requiresEmailVerification) {
+        setNoticeMessage('Account created. Check your email to verify your account before signing in.');
+        router.replace('/sign-in');
+        return;
+      }
+
       router.replace('/(tabs)/home');
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Unable to create account');
@@ -196,6 +213,24 @@ export default function SignUpScreen() {
                     >
                       <CustomText variant="caption" style={{ color: '#FFD6D6' }}>
                         {errorMessage}
+                      </CustomText>
+                    </View>
+                  ) : null}
+
+                  {noticeMessage ? (
+                    <View
+                      style={{
+                        marginTop: 12,
+                        borderRadius: 12,
+                        borderWidth: 1,
+                        borderColor: 'rgba(123,240,182,0.26)',
+                        backgroundColor: 'rgba(49,160,112,0.12)',
+                        paddingHorizontal: 12,
+                        paddingVertical: 10,
+                      }}
+                    >
+                      <CustomText variant="caption" style={{ color: '#D9FFE9' }}>
+                        {noticeMessage}
                       </CustomText>
                     </View>
                   ) : null}

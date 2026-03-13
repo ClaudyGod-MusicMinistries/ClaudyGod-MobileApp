@@ -1,8 +1,14 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Image, Platform, ScrollView, View, useWindowDimensions } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { TabScreenWrapper } from './TextWrapper';
 import { useAppTheme } from '../../util/colorScheme';
 import { Screen } from '../../components/layout/Screen';
@@ -11,45 +17,135 @@ import { CustomText } from '../../components/CustomText';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { useContentFeed } from '../../hooks/useContentFeed';
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
+import type { FeedCardItem } from '../../services/contentService';
+import { routeParamToString } from '../../util/playerRoute';
 
 export default function PlaySection() {
   const theme = useAppTheme();
   const router = useRouter();
+  const params = useLocalSearchParams<{
+    itemId?: string | string[];
+    itemType?: string | string[];
+    title?: string | string[];
+    subtitle?: string | string[];
+    imageUrl?: string | string[];
+    duration?: string | string[];
+    mediaUrl?: string | string[];
+  }>();
   const { width } = useWindowDimensions();
   const isTV = Platform.isTV;
   const isTablet = width >= 768 && !isTV;
 
   const { feed } = useContentFeed();
+  const routeItem = useMemo<FeedCardItem | null>(() => {
+    const itemId = routeParamToString(params.itemId);
+    if (!itemId) {
+      return null;
+    }
+
+    const itemType = routeParamToString(params.itemType);
+    const normalizedType: FeedCardItem['type'] =
+      itemType === 'video' ||
+      itemType === 'playlist' ||
+      itemType === 'announcement' ||
+      itemType === 'live' ||
+      itemType === 'ad'
+        ? itemType
+        : 'audio';
+
+    return {
+      id: itemId,
+      type: normalizedType,
+      title: routeParamToString(params.title) ?? 'Untitled',
+      subtitle: routeParamToString(params.subtitle) ?? 'ClaudyGod',
+      description: '',
+      duration: routeParamToString(params.duration) ?? '--:--',
+      imageUrl:
+        routeParamToString(params.imageUrl) ??
+        'https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=1200&q=80',
+      mediaUrl: routeParamToString(params.mediaUrl),
+    };
+  }, [
+    params.duration,
+    params.imageUrl,
+    params.itemId,
+    params.itemType,
+    params.mediaUrl,
+    params.subtitle,
+    params.title,
+  ]);
+
   const queue = useMemo(() => {
     const combined = [...feed.mostPlayed, ...feed.music, ...feed.videos, ...feed.live];
     const seen = new Set<string>();
-    return combined.filter((item) => {
+    const deduped = combined.filter((item) => {
       if (seen.has(item.id)) {
         return false;
       }
       seen.add(item.id);
       return true;
     });
-  }, [feed.live, feed.mostPlayed, feed.music, feed.videos]);
+
+    if (routeItem && !seen.has(routeItem.id)) {
+      return [routeItem, ...deduped];
+    }
+
+    return deduped;
+  }, [feed.live, feed.mostPlayed, feed.music, feed.videos, routeItem]);
 
   const firstTrack = queue[0] ?? null;
-  const [activeId, setActiveId] = useState(firstTrack?.id ?? '');
+  const [activeId, setActiveId] = useState(routeItem?.id ?? firstTrack?.id ?? '');
   const [isPlaying, setIsPlaying] = useState(true);
   const [showLyrics, setShowLyrics] = useState(false);
+  const [shuffleEnabled, setShuffleEnabled] = useState(false);
+  const [repeatEnabled, setRepeatEnabled] = useState(false);
 
-  const active = queue.find((item) => item.id === activeId) ?? firstTrack;
+  useEffect(() => {
+    if (routeItem?.id) {
+      setActiveId(routeItem.id);
+      setIsPlaying(true);
+      return;
+    }
+
+    if (!activeId && firstTrack?.id) {
+      setActiveId(firstTrack.id);
+    }
+  }, [activeId, firstTrack?.id, routeItem?.id]);
+
+  const active = queue.find((item) => item.id === activeId) ?? routeItem ?? firstTrack;
+  const activeIndex = active ? queue.findIndex((item) => item.id === active.id) : -1;
 
   const pulse = useSharedValue(1);
   const playPulseStyle = useAnimatedStyle(() => ({
     transform: [{ scale: isPlaying ? pulse.value : 1 }],
   }));
 
-  if (isPlaying) {
-    pulse.value = withRepeat(withSequence(withTiming(1.07, { duration: 760 }), withTiming(1, { duration: 760 })), -1, false);
-  }
+  useEffect(() => {
+    if (isPlaying) {
+      pulse.value = withRepeat(
+        withSequence(withTiming(1.07, { duration: 760 }), withTiming(1, { duration: 760 })),
+        -1,
+        false,
+      );
+      return;
+    }
+
+    pulse.value = withTiming(1, { duration: 180 });
+  }, [isPlaying, pulse]);
 
   const artworkSize = isTV ? 360 : isTablet ? 320 : Math.min(272, width - 92);
   const titleSize = isTV ? 30 : isTablet ? 27 : 22;
+
+  const playTrack = async (track: FeedCardItem, source: string) => {
+    setActiveId(track.id);
+    setIsPlaying(true);
+    await trackPlayEvent({
+      contentId: track.id,
+      contentType: track.type,
+      title: track.title,
+      source,
+    });
+  };
 
   const onPlayPress = async () => {
     if (!active) {
@@ -60,30 +156,58 @@ export default function PlaySection() {
     setIsPlaying(next);
 
     if (next) {
-      await trackPlayEvent({
-        contentId: active.id,
-        contentType: active.type,
-        title: active.title,
-        source: 'player_screen',
-      });
+      await playTrack(active, 'player_screen');
     }
   };
 
   const onSelectTrack = async (id: string) => {
-    setActiveId(id);
-    setIsPlaying(true);
-
     const track = queue.find((item) => item.id === id);
     if (!track) {
       return;
     }
 
-    await trackPlayEvent({
-      contentId: track.id,
-      contentType: track.type,
-      title: track.title,
-      source: 'player_queue',
-    });
+    await playTrack(track, 'player_queue');
+  };
+
+  const onSkipPrevious = async () => {
+    if (!queue.length || activeIndex < 0) {
+      return;
+    }
+
+    const previousIndex = activeIndex > 0 ? activeIndex - 1 : repeatEnabled ? queue.length - 1 : -1;
+    if (previousIndex < 0) {
+      return;
+    }
+
+    await playTrack(queue[previousIndex]!, 'player_previous');
+  };
+
+  const onSkipNext = async () => {
+    if (!queue.length || activeIndex < 0) {
+      return;
+    }
+
+    const nextIndex = activeIndex < queue.length - 1 ? activeIndex + 1 : repeatEnabled ? 0 : -1;
+    if (nextIndex < 0) {
+      return;
+    }
+
+    await playTrack(queue[nextIndex]!, 'player_next');
+  };
+
+  const onShufflePress = async () => {
+    const nextState = !shuffleEnabled;
+    setShuffleEnabled(nextState);
+
+    if (!nextState || queue.length < 2) {
+      return;
+    }
+
+    const nextCandidates = queue.filter((item) => item.id !== active?.id);
+    const randomTrack = nextCandidates[Math.floor(Math.random() * nextCandidates.length)];
+    if (randomTrack) {
+      await playTrack(randomTrack, 'player_shuffle');
+    }
   };
 
   return (
@@ -109,7 +233,13 @@ export default function PlaySection() {
                     padding: 16,
                   }}
                 >
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    }}
+                  >
                     <TVTouchable
                       onPress={() => router.push('/(tabs)/home')}
                       style={{
@@ -124,7 +254,11 @@ export default function PlaySection() {
                       }}
                       showFocusBorder={false}
                     >
-                      <MaterialIcons name="arrow-back" size={20} color={theme.colors.text.primary} />
+                      <MaterialIcons
+                        name="arrow-back"
+                        size={20}
+                        color={theme.colors.text.primary}
+                      />
                     </TVTouchable>
 
                     <CustomText variant="label" style={{ color: theme.colors.text.secondary }}>
@@ -145,12 +279,20 @@ export default function PlaySection() {
                       }}
                       showFocusBorder={false}
                     >
-                      <MaterialIcons name={showLyrics ? 'lyrics' : 'subtitles'} size={19} color={theme.colors.primary} />
+                      <MaterialIcons
+                        name={showLyrics ? 'lyrics' : 'subtitles'}
+                        size={19}
+                        color={theme.colors.primary}
+                      />
                     </TVTouchable>
                   </View>
 
                   <View style={{ alignItems: 'center', marginTop: 14 }}>
-                    <Image source={{ uri: active.imageUrl }} style={{ width: artworkSize, height: artworkSize, borderRadius: 36 }} resizeMode="cover" />
+                    <Image
+                      source={{ uri: active.imageUrl }}
+                      style={{ width: artworkSize, height: artworkSize, borderRadius: 36 }}
+                      resizeMode="cover"
+                    />
                   </View>
 
                   <View style={{ marginTop: 16 }}>
@@ -168,7 +310,11 @@ export default function PlaySection() {
                     </CustomText>
                     <CustomText
                       variant="subtitle"
-                      style={{ color: theme.colors.text.secondary, textAlign: 'center', marginTop: 4 }}
+                      style={{
+                        color: theme.colors.text.secondary,
+                        textAlign: 'center',
+                        marginTop: 4,
+                      }}
                     >
                       {active.subtitle}
                     </CustomText>
@@ -191,7 +337,13 @@ export default function PlaySection() {
                           }}
                         />
                       </View>
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 }}>
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          justifyContent: 'space-between',
+                          marginTop: 8,
+                        }}
+                      >
                         <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
                           1:28
                         </CustomText>
@@ -209,12 +361,20 @@ export default function PlaySection() {
                         justifyContent: 'space-between',
                       }}
                     >
-                      <ControlIcon icon="shuffle" onPress={() => undefined} color={theme.colors.text.secondary} />
-                      <ControlIcon icon="skip-previous" onPress={() => undefined} color={theme.colors.text.primary} />
+                      <ControlIcon
+                        icon="shuffle"
+                        onPress={() => void onShufflePress()}
+                        color={shuffleEnabled ? theme.colors.primary : theme.colors.text.secondary}
+                      />
+                      <ControlIcon
+                        icon="skip-previous"
+                        onPress={() => void onSkipPrevious()}
+                        color={theme.colors.text.primary}
+                      />
 
                       <Animated.View style={playPulseStyle}>
                         <TVTouchable
-                          onPress={onPlayPress}
+                          onPress={() => void onPlayPress()}
                           style={{
                             width: 70,
                             height: 70,
@@ -238,8 +398,16 @@ export default function PlaySection() {
                         </TVTouchable>
                       </Animated.View>
 
-                      <ControlIcon icon="skip-next" onPress={() => undefined} color={theme.colors.text.primary} />
-                      <ControlIcon icon="repeat" onPress={() => undefined} color={theme.colors.text.secondary} />
+                      <ControlIcon
+                        icon="skip-next"
+                        onPress={() => void onSkipNext()}
+                        color={theme.colors.text.primary}
+                      />
+                      <ControlIcon
+                        icon="repeat"
+                        onPress={() => setRepeatEnabled((prev) => !prev)}
+                        color={repeatEnabled ? theme.colors.primary : theme.colors.text.secondary}
+                      />
                     </View>
 
                     {showLyrics ? (
@@ -253,7 +421,10 @@ export default function PlaySection() {
                           padding: 12,
                         }}
                       >
-                        <CustomText variant="body" style={{ color: theme.colors.text.secondary, lineHeight: 22 }}>
+                        <CustomText
+                          variant="body"
+                          style={{ color: theme.colors.text.secondary, lineHeight: 22 }}
+                        >
                           Holy, holy, You are worthy of all praise.{"\n"}
                           Let our hearts keep singing, let our spirits rise.{"\n"}
                           Jesus reigns forever, light within the night.
@@ -275,7 +446,10 @@ export default function PlaySection() {
                     padding: 12,
                   }}
                 >
-                  <CustomText variant="subtitle" style={{ color: theme.colors.text.primary, marginBottom: 8 }}>
+                  <CustomText
+                    variant="subtitle"
+                    style={{ color: theme.colors.text.primary, marginBottom: 8 }}
+                  >
                     Up Next
                   </CustomText>
 
@@ -285,25 +459,39 @@ export default function PlaySection() {
                       return (
                         <TVTouchable
                           key={track.id}
-                          onPress={() => onSelectTrack(track.id)}
+                          onPress={() => void onSelectTrack(track.id)}
                           style={{
                             borderRadius: 14,
                             paddingHorizontal: 10,
                             paddingVertical: 10,
-                            backgroundColor: selected ? 'rgba(154,107,255,0.12)' : theme.colors.surfaceAlt,
+                            backgroundColor: selected
+                              ? 'rgba(154,107,255,0.12)'
+                              : theme.colors.surfaceAlt,
                             borderWidth: 1,
-                            borderColor: selected ? 'rgba(154,107,255,0.36)' : theme.colors.border,
+                            borderColor: selected
+                              ? 'rgba(154,107,255,0.36)'
+                              : theme.colors.border,
                             flexDirection: 'row',
                             alignItems: 'center',
                           }}
                           showFocusBorder={false}
                         >
-                          <Image source={{ uri: track.imageUrl }} style={{ width: 42, height: 42, borderRadius: 12, marginRight: 10 }} />
+                          <Image
+                            source={{ uri: track.imageUrl }}
+                            style={{ width: 42, height: 42, borderRadius: 12, marginRight: 10 }}
+                          />
                           <View style={{ flex: 1 }}>
-                            <CustomText variant="body" style={{ color: theme.colors.text.primary }} numberOfLines={1}>
+                            <CustomText
+                              variant="body"
+                              style={{ color: theme.colors.text.primary }}
+                              numberOfLines={1}
+                            >
                               {track.title}
                             </CustomText>
-                            <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 2 }}>
+                            <CustomText
+                              variant="caption"
+                              style={{ color: theme.colors.text.secondary, marginTop: 2 }}
+                            >
                               {track.subtitle}
                             </CustomText>
                           </View>
@@ -331,8 +519,11 @@ export default function PlaySection() {
                 <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
                   No queued media yet
                 </CustomText>
-                <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 6 }}>
-                  Publish audio/video content in admin, then it will populate this player queue.
+                <CustomText
+                  variant="caption"
+                  style={{ color: theme.colors.text.secondary, marginTop: 6 }}
+                >
+                  Publish audio or video content, then it will appear here with a professional queue.
                 </CustomText>
               </View>
             </FadeIn>
