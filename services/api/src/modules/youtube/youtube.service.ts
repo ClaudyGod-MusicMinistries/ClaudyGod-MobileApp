@@ -14,6 +14,8 @@ export interface YouTubeVideoItem {
   duration: string;
   isLive: boolean;
   liveViewerCount?: number;
+  suggestedAppSections: string[];
+  suggestedTags: string[];
 }
 
 interface YouTubeSearchResponse {
@@ -52,6 +54,21 @@ interface YouTubeChannelsResponse {
 const normalizeTextList = (items?: string[]): string[] =>
   [...new Set((items ?? []).map((item) => item.trim()).filter(Boolean))];
 
+const sectionRules = [
+  { section: 'ClaudyGod Music', pattern: /(worship|praise|song|music|choir|hymn|album|track|ministration)/i },
+  { section: 'ClaudyGod Nuggets of Truth', pattern: /(nugget|truth|daily word|devotion|scripture|verse|reflection)/i },
+  { section: 'ClaudyGod Messages', pattern: /(message|sermon|teaching|conference|service|prayer|word)/i },
+] as const;
+
+const tagRules = [
+  { tag: 'worship', pattern: /(worship|praise|hymn)/i },
+  { tag: 'music', pattern: /(song|music|album|track|choir)/i },
+  { tag: 'message', pattern: /(message|sermon|teaching|word)/i },
+  { tag: 'devotional', pattern: /(devotion|reflection|daily word|scripture|verse|truth)/i },
+  { tag: 'live', pattern: /\blive\b/i },
+  { tag: 'prayer', pattern: /prayer/i },
+] as const;
+
 function ensureYouTubeConfigured(channelIdentifierOverride?: string): void {
   if (!env.YOUTUBE_API_KEY) {
     throw new HttpError(503, 'YOUTUBE_API_KEY is not configured');
@@ -88,6 +105,74 @@ function formatIsoDuration(duration: string | undefined): string {
   }
 
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
+function buildVideoSignals(video: {
+  title: string;
+  description: string;
+  channelTitle: string;
+  isLive: boolean;
+}): string {
+  return `${video.title} ${video.description} ${video.channelTitle} ${video.isLive ? 'live' : ''}`.toLowerCase();
+}
+
+function deriveSuggestedAppSections(video: {
+  title: string;
+  description: string;
+  channelTitle: string;
+  isLive: boolean;
+}): string[] {
+  const signals = buildVideoSignals(video);
+  const sections = sectionRules
+    .filter((rule) => rule.pattern.test(signals))
+    .map((rule) => rule.section);
+
+  if (video.isLive && !sections.includes('ClaudyGod Music')) {
+    sections.push('ClaudyGod Music');
+  }
+
+  if (sections.length === 0) {
+    sections.push('ClaudyGod Messages');
+  }
+
+  return normalizeTextList(sections);
+}
+
+function deriveSuggestedTags(video: {
+  title: string;
+  description: string;
+  channelTitle: string;
+  isLive: boolean;
+}): string[] {
+  const signals = buildVideoSignals(video);
+  const tags: string[] = tagRules
+    .filter((rule) => rule.pattern.test(signals))
+    .map((rule) => rule.tag);
+
+  const channelToken = video.channelTitle.trim().toLowerCase();
+  if (channelToken.includes('claudygod')) {
+    tags.push('claudygod');
+  }
+
+  return normalizeTextList(tags);
+}
+
+async function recordAutomationRun(input: {
+  actorUserId: string;
+  runType: string;
+  status: 'completed' | 'failed';
+  summary: Record<string, unknown>;
+  notes?: string;
+}): Promise<void> {
+  try {
+    await pool.query(
+      `INSERT INTO automation_runs (run_type, scope, actor_user_id, status, summary, notes)
+       VALUES ($1, 'admin', $2, $3, $4::jsonb, $5)`,
+      [input.runType, input.actorUserId, input.status, JSON.stringify(input.summary), input.notes ?? null],
+    );
+  } catch (error) {
+    console.warn('automation run logging skipped:', error);
+  }
 }
 
 async function fetchJson<T>(url: string): Promise<T> {
@@ -234,6 +319,18 @@ export async function fetchYouTubeVideos(input?: {
       liveViewerCount: details?.liveStreamingDetails?.concurrentViewers
         ? Number(details.liveStreamingDetails.concurrentViewers)
         : undefined,
+      suggestedAppSections: deriveSuggestedAppSections({
+        title: snippet.title || 'Untitled YouTube Video',
+        description: snippet.description || '',
+        channelTitle: snippet.channelTitle || 'YouTube Channel',
+        isLive,
+      }),
+      suggestedTags: deriveSuggestedTags({
+        title: snippet.title || 'Untitled YouTube Video',
+        description: snippet.description || '',
+        channelTitle: snippet.channelTitle || 'YouTube Channel',
+        isLive,
+      }),
     };
   });
 
@@ -250,6 +347,7 @@ export async function syncYouTubeVideosToContent(params: {
   channelId?: string;
   maxResults?: number;
   appSections?: string[];
+  tags?: string[];
 }): Promise<{
   summary: { created: number; updated: number; skipped: number };
   channelId: string;
@@ -264,6 +362,7 @@ export async function syncYouTubeVideosToContent(params: {
   let updated = 0;
   let skipped = 0;
   const appSections = Array.isArray(params.appSections) ? normalizeTextList(params.appSections) : undefined;
+  const sharedTags = Array.isArray(params.tags) ? normalizeTextList(params.tags) : [];
 
   for (const video of payload.items) {
     const existing = await pool.query<{ id: string }>(
@@ -276,6 +375,8 @@ export async function syncYouTubeVideosToContent(params: {
       .filter(Boolean)
       .join('\n\n')
       .slice(0, 5000);
+    const resolvedSections = normalizeTextList([...(appSections ?? []), ...video.suggestedAppSections]);
+    const resolvedTags = normalizeTextList([...sharedTags, ...video.suggestedTags]);
 
     if (existing.rowCount && existing.rowCount > 0) {
       await pool.query(
@@ -289,6 +390,7 @@ export async function syncYouTubeVideosToContent(params: {
              channel_name = $7,
              duration_label = $8,
              app_sections = COALESCE($9::text[], app_sections),
+             tags = COALESCE($10::text[], tags),
              updated_at = NOW()
          WHERE id = $1`,
         [
@@ -300,7 +402,8 @@ export async function syncYouTubeVideosToContent(params: {
           video.youtubeVideoId,
           video.channelTitle,
           video.duration,
-          appSections ?? null,
+          resolvedSections.length > 0 ? resolvedSections : null,
+          resolvedTags.length > 0 ? resolvedTags : null,
         ],
       );
       updated += 1;
@@ -310,9 +413,9 @@ export async function syncYouTubeVideosToContent(params: {
     await pool.query(
       `INSERT INTO content_items (
          author_id, title, description, content_type, media_url, thumbnail_url, visibility,
-         source_kind, external_source_id, channel_name, duration_label, app_sections
+         source_kind, external_source_id, channel_name, duration_label, app_sections, tags
        )
-       VALUES ($1, $2, $3, 'video', $4, $5, $6, 'youtube', $7, $8, $9, $10::text[])`,
+       VALUES ($1, $2, $3, 'video', $4, $5, $6, 'youtube', $7, $8, $9, $10::text[], $11::text[])`,
       [
         params.actorUserId,
         title.slice(0, 180),
@@ -323,7 +426,8 @@ export async function syncYouTubeVideosToContent(params: {
         video.youtubeVideoId,
         video.channelTitle,
         video.duration,
-        appSections ?? [],
+        resolvedSections,
+        resolvedTags,
       ],
     );
     created += 1;
@@ -333,9 +437,156 @@ export async function syncYouTubeVideosToContent(params: {
     skipped = 1;
   }
 
+  await recordAutomationRun({
+    actorUserId: params.actorUserId,
+    runType: 'youtube_sync',
+    status: 'completed',
+    summary: {
+      channelId: payload.channelId,
+      created,
+      updated,
+      skipped,
+      fetched: payload.items.length,
+    },
+    notes: 'Bulk YouTube sync completed from admin dashboard.',
+  });
+
   return {
     summary: { created, updated, skipped },
     channelId: payload.channelId,
     items: payload.items,
+  };
+}
+
+export async function importYouTubeSelectionsToContent(params: {
+  actorUserId: string;
+  selections: Array<{
+    youtubeVideoId: string;
+    title: string;
+    description: string;
+    channelTitle: string;
+    publishedAt: string;
+    thumbnailUrl: string;
+    url: string;
+    duration: string;
+    isLive: boolean;
+    liveViewerCount?: number;
+    visibility: ContentVisibility;
+    appSections?: string[];
+    tags?: string[];
+  }>;
+}): Promise<{
+  summary: { created: number; updated: number; skipped: number };
+  items: YouTubeVideoItem[];
+}> {
+  let created = 0;
+  let updated = 0;
+  let skipped = 0;
+
+  for (const selection of params.selections) {
+    const existing = await pool.query<{ id: string }>(
+      `SELECT id FROM content_items
+       WHERE external_source_id = $1 OR media_url = $2
+       LIMIT 1`,
+      [selection.youtubeVideoId, selection.url],
+    );
+
+    const resolvedSections = normalizeTextList(selection.appSections);
+    const resolvedTags = normalizeTextList(selection.tags);
+    const description = [selection.description, `YouTube Channel: ${selection.channelTitle}`]
+      .filter(Boolean)
+      .join('\n\n')
+      .slice(0, 5000);
+
+    if (existing.rowCount && existing.rowCount > 0) {
+      await pool.query(
+        `UPDATE content_items
+         SET title = $2,
+             description = $3,
+             visibility = $4,
+             media_url = $5,
+             thumbnail_url = $6,
+             source_kind = 'youtube',
+             external_source_id = $7,
+             channel_name = $8,
+             duration_label = $9,
+             app_sections = $10::text[],
+             tags = $11::text[],
+             updated_at = NOW()
+         WHERE id = $1`,
+        [
+          existing.rows[0]!.id,
+          selection.title.trim().slice(0, 180),
+          description,
+          selection.visibility,
+          selection.url,
+          selection.thumbnailUrl,
+          selection.youtubeVideoId,
+          selection.channelTitle,
+          selection.duration,
+          resolvedSections,
+          resolvedTags,
+        ],
+      );
+      updated += 1;
+      continue;
+    }
+
+    await pool.query(
+      `INSERT INTO content_items (
+         author_id, title, description, content_type, media_url, thumbnail_url, visibility,
+         source_kind, external_source_id, channel_name, duration_label, app_sections, tags
+       )
+       VALUES ($1, $2, $3, 'video', $4, $5, $6, 'youtube', $7, $8, $9, $10::text[], $11::text[])`,
+      [
+        params.actorUserId,
+        selection.title.trim().slice(0, 180),
+        description || 'Imported from YouTube channel feed.',
+        selection.url,
+        selection.thumbnailUrl,
+        selection.visibility,
+        selection.youtubeVideoId,
+        selection.channelTitle,
+        selection.duration,
+        resolvedSections,
+        resolvedTags,
+      ],
+    );
+    created += 1;
+  }
+
+  if (params.selections.length === 0) {
+    skipped = 1;
+  }
+
+  await recordAutomationRun({
+    actorUserId: params.actorUserId,
+    runType: 'youtube_curated_import',
+    status: 'completed',
+    summary: {
+      created,
+      updated,
+      skipped,
+      selected: params.selections.length,
+    },
+    notes: 'Curated YouTube import completed from admin dashboard.',
+  });
+
+  return {
+    summary: { created, updated, skipped },
+    items: params.selections.map((selection) => ({
+      youtubeVideoId: selection.youtubeVideoId,
+      title: selection.title,
+      description: selection.description,
+      channelTitle: selection.channelTitle,
+      publishedAt: selection.publishedAt,
+      thumbnailUrl: selection.thumbnailUrl,
+      url: selection.url,
+      duration: selection.duration,
+      isLive: selection.isLive,
+      liveViewerCount: selection.liveViewerCount,
+      suggestedAppSections: deriveSuggestedAppSections(selection),
+      suggestedTags: deriveSuggestedTags(selection),
+    })),
   };
 }

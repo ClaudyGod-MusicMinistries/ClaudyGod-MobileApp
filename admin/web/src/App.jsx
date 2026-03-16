@@ -224,6 +224,7 @@ export default defineComponent({
     const togglingId = ref(null);
     const youtubePreviewLoading = ref(false);
     const youtubeSyncLoading = ref(false);
+    const youtubeImporting = ref(false);
     const appConfigLoading = ref(false);
     const appConfigSaving = ref(false);
     const wordOfDayLoading = ref(false);
@@ -294,6 +295,7 @@ export default defineComponent({
 
     const managedItems = ref([]);
     const youtubePreviewItems = ref([]);
+    const youtubeDraftItems = ref([]);
     const mobileAppConfigEditor = ref('');
     const mobileAppConfigMeta = ref(null);
     const wordOfDayHistory = ref([]);
@@ -316,6 +318,8 @@ export default defineComponent({
       feedback: [],
       supportInbox: [],
       signupTrend: [],
+      smartInsights: [],
+      recentAutomation: [],
       generatedAt: '',
     });
     const wordOfDayForm = reactive({
@@ -342,9 +346,11 @@ export default defineComponent({
     const currentYear = new Date().getFullYear();
 
     const greeting = computed(() => greetingByTime());
-    const displayName = computed(() => (currentUser.value && currentUser.value.displayName ? currentUser.value.displayName : 'Client'));
+    const displayName = computed(() => (currentUser.value && currentUser.value.displayName ? currentUser.value.displayName : 'Publishing User'));
+    const accountEmail = computed(() => (currentUser.value && currentUser.value.email ? currentUser.value.email : ''));
     const isRegisterMode = computed(() => authMode.value === 'register');
     const isAdmin = computed(() => Boolean(currentUser.value && currentUser.value.role === 'ADMIN'));
+    const portalRoleLabel = computed(() => (isAdmin.value ? 'Admin' : 'Publisher'));
     const isCompactHeader = computed(() => viewportWidth.value <= 1024);
     const googleLoginEnabled = computed(() => Boolean(GOOGLE_LOGIN_URL));
     const apiHealthCheck = computed(() =>
@@ -416,6 +422,9 @@ export default defineComponent({
     });
 
     const recentItems = computed(() => managedItems.value.slice(0, 4));
+    const selectedYouTubeDraftCount = computed(() =>
+      youtubeDraftItems.value.filter((item) => item.selected).length,
+    );
 
     function getUploadPolicy(kind) {
       return (uploadPolicies.value || []).find((item) => item && item.kind === kind) || null;
@@ -632,6 +641,7 @@ export default defineComponent({
       currentUser.value = null;
       managedItems.value = [];
       youtubePreviewItems.value = [];
+      youtubeDraftItems.value = [];
       uploadPolicies.value = [];
       editContentOpen.value = false;
       editingContentId.value = null;
@@ -657,6 +667,8 @@ export default defineComponent({
         feedback: [],
         supportInbox: [],
         signupTrend: [],
+        smartInsights: [],
+        recentAutomation: [],
         generatedAt: '',
       };
       endpointChecks.value = [];
@@ -1346,6 +1358,97 @@ export default defineComponent({
       }
     }
 
+    function buildYouTubeDrafts(items) {
+      const sharedSections = parseCsvList(youtubeSyncState.appSectionsCsv);
+      const existingById = new Map(
+        youtubeDraftItems.value.map((item) => [item.youtubeVideoId, item]),
+      );
+
+      youtubeDraftItems.value = items.map((video) => {
+        const existing = existingById.get(video.youtubeVideoId);
+        const suggestedSections = Array.isArray(video.suggestedAppSections) ? video.suggestedAppSections : [];
+        const suggestedTags = Array.isArray(video.suggestedTags) ? video.suggestedTags : [];
+        const mergedSections = Array.from(new Set([...(existing?.appSections || []), ...sharedSections, ...suggestedSections]));
+
+        return {
+          ...video,
+          selected: existing ? existing.selected : true,
+          visibility: existing?.visibility || youtubeSyncState.visibility || 'draft',
+          appSections: existing?.appSections || mergedSections,
+          appSectionsCsv: existing?.appSectionsCsv || mergedSections.join(', '),
+          tags: existing?.tags || suggestedTags,
+          tagsCsv: existing?.tagsCsv || suggestedTags.join(', '),
+        };
+      });
+    }
+
+    function updateYouTubeDraftItem(videoId, patch) {
+      youtubeDraftItems.value = youtubeDraftItems.value.map((item) => {
+        if (item.youtubeVideoId !== videoId) return item;
+        return { ...item, ...patch };
+      });
+    }
+
+    function applySmartYouTubeAssignments() {
+      youtubeDraftItems.value = youtubeDraftItems.value.map((item) => {
+        const mergedSections = Array.from(
+          new Set([...(Array.isArray(item.suggestedAppSections) ? item.suggestedAppSections : []), ...parseCsvList(youtubeSyncState.appSectionsCsv)]),
+        );
+        const nextTags = Array.isArray(item.suggestedTags) ? item.suggestedTags : [];
+        return {
+          ...item,
+          appSections: mergedSections,
+          appSectionsCsv: mergedSections.join(', '),
+          tags: nextTags,
+          tagsCsv: nextTags.join(', '),
+        };
+      });
+      setNotice('Smart assignments applied to fetched YouTube videos.', 'success');
+    }
+
+    async function importSelectedYouTubeVideos() {
+      if (!currentUser.value) return;
+
+      const selectedItems = youtubeDraftItems.value.filter((item) => item.selected);
+      if (selectedItems.length === 0) {
+        setNotice('Select at least one fetched YouTube video to import.', 'error');
+        return;
+      }
+
+      youtubeImporting.value = true;
+      clearNotice();
+      try {
+        const response = await http.post('/v1/youtube/import', {
+          selections: selectedItems.map((item) => ({
+            youtubeVideoId: item.youtubeVideoId,
+            title: item.title,
+            description: item.description || '',
+            channelTitle: item.channelTitle,
+            publishedAt: item.publishedAt,
+            thumbnailUrl: item.thumbnailUrl,
+            url: item.url,
+            duration: item.duration || '--:--',
+            isLive: Boolean(item.isLive),
+            liveViewerCount: item.liveViewerCount,
+            visibility: item.visibility || youtubeSyncState.visibility,
+            appSections: parseCsvList(item.appSectionsCsv),
+            tags: parseCsvList(item.tagsCsv),
+          })),
+        });
+
+        const summary = response.data && response.data.summary ? response.data.summary : { created: 0, updated: 0, skipped: 0 };
+        await Promise.all([
+          fetchManagedContent(),
+          isAdmin.value ? fetchAdminOperationsDashboard() : Promise.resolve(),
+        ]);
+        setNotice(`Curated YouTube import complete. Created ${summary.created}, updated ${summary.updated}, skipped ${summary.skipped}.`, 'success');
+      } catch (error) {
+        setNotice(toErrorMessage(error, 'Unable to import the selected YouTube videos.'), 'error');
+      } finally {
+        youtubeImporting.value = false;
+      }
+    }
+
     async function fetchYouTubePreview() {
       if (!currentUser.value) return;
 
@@ -1360,6 +1463,7 @@ export default defineComponent({
         });
 
         youtubePreviewItems.value = response.data.items || [];
+        buildYouTubeDrafts(youtubePreviewItems.value);
         setNotice(`Fetched ${youtubePreviewItems.value.length} YouTube video${youtubePreviewItems.value.length === 1 ? '' : 's'} for preview.`, 'success');
       } catch (error) {
         setNotice(toErrorMessage(error, 'Unable to fetch YouTube videos. Check your backend YouTube configuration.'), 'error');
@@ -1379,11 +1483,16 @@ export default defineComponent({
           maxResults: Number(youtubeSyncState.maxResults) || YOUTUBE_SYNC_DEFAULT_LIMIT,
           visibility: youtubeSyncState.visibility,
           appSections: parseCsvList(youtubeSyncState.appSectionsCsv),
+          tags: [],
         });
 
         const summary = response.data && response.data.summary ? response.data.summary : { created: 0, updated: 0, skipped: 0 };
         youtubePreviewItems.value = response.data.items || youtubePreviewItems.value;
-        await fetchManagedContent();
+        buildYouTubeDrafts(youtubePreviewItems.value);
+        await Promise.all([
+          fetchManagedContent(),
+          isAdmin.value ? fetchAdminOperationsDashboard() : Promise.resolve(),
+        ]);
         setNotice(`YouTube sync complete. Created ${summary.created}, updated ${summary.updated}, skipped ${summary.skipped}.`, 'success');
       } catch (error) {
         setNotice(toErrorMessage(error, 'YouTube sync failed. Please verify API key, channel ID, and backend settings.'), 'error');
@@ -1494,13 +1603,14 @@ export default defineComponent({
             <form class="stack-form" onSubmit={(event) => void handleAuthSubmit(event)}>
               {isRegisterMode.value ? (
                 <label>
-                  Display name
+                  Public display name
                   <input
                     value={authForm.displayName}
                     onInput={(event) => { authForm.displayName = readValue(event); }}
                     placeholder="ClaudyGod Team Member"
                     autoComplete="name"
                   />
+                  <small class="subtle-text">This is the name shown on uploads, feedback activity, and content credits. There is no separate username.</small>
                 </label>
               ) : null}
 
@@ -1657,6 +1767,7 @@ export default defineComponent({
                 </div>
               </article>
 
+              {isAdmin.value ? (
               <article class="panel glass-panel reveal-up" style={{ animationDelay: '240ms' }}>
                 <div class="section-head split">
                   <div>
@@ -1752,7 +1863,9 @@ export default defineComponent({
                   ))}
                 </div>
               </article>
+              ) : null}
 
+              {isAdmin.value ? (
               <article class="panel glass-panel reveal-up" style={{ animationDelay: '260ms' }}>
                 <div class="section-head split">
                   <div>
@@ -1861,6 +1974,81 @@ export default defineComponent({
                   ))}
                 </div>
               </article>
+              ) : null}
+
+              {isAdmin.value ? (
+              <article class="panel glass-panel reveal-up" style={{ animationDelay: '280ms' }}>
+                <div class="section-head split">
+                  <div>
+                    <h2>Smart Ops</h2>
+                    <p>Automated recommendations and recent backend automation runs.</p>
+                  </div>
+                  <span class="section-badge">
+                    {(adminOps.value.recentAutomation || []).length} recent run{((adminOps.value.recentAutomation || []).length) === 1 ? '' : 's'}
+                  </span>
+                </div>
+
+                <div class="list-wrap">
+                  {(adminOps.value.smartInsights || []).length === 0 ? (
+                    <div class="empty-state">No automation insights are available yet.</div>
+                  ) : adminOps.value.smartInsights.map((insight) => (
+                    <article class="content-card" key={`insight-${insight.id}`}>
+                      <div class="card-top">
+                        <div class="pill-row">
+                          <span class={['pill', insight.tone === 'success' ? 'pill-live' : insight.tone === 'warning' ? 'pill-draft' : 'pill-video']}>
+                            {humanizeToken(insight.tone)}
+                          </span>
+                          <span class="muted-chip">Automation Insight</span>
+                        </div>
+                      </div>
+                      <div class="card-body">
+                        <h3>{insight.title}</h3>
+                        <p>{insight.detail}</p>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+
+                <div class="section-head compact" style={{ marginTop: '1rem' }}>
+                  <div>
+                    <h3>Recent automation</h3>
+                    <p>Import, sync, and scheduled operational events tracked by the backend.</p>
+                  </div>
+                </div>
+
+                <div class="list-wrap">
+                  {(adminOps.value.recentAutomation || []).length === 0 ? (
+                    <div class="empty-state">No automation runs have been recorded yet.</div>
+                  ) : adminOps.value.recentAutomation.map((run) => (
+                    <article class="content-card" key={`automation-run-${run.id}`}>
+                      <div class="card-top">
+                        <div class="pill-row">
+                          <span class={['pill', run.status === 'completed' ? 'pill-live' : run.status === 'failed' ? 'pill-draft' : 'pill-video']}>
+                            {humanizeToken(run.status)}
+                          </span>
+                          <span class="muted-chip">{run.label}</span>
+                        </div>
+                        <span class="muted-chip">{formatDateTime(run.createdAt)}</span>
+                      </div>
+                      <div class="card-body">
+                        <h3>{run.label}</h3>
+                        <p>{run.notes || 'Automation run recorded without operator notes.'}</p>
+                      </div>
+                      <div class="meta-grid">
+                        <div>
+                          <span class="meta-label">Actor</span>
+                          <strong>{run.actor && run.actor.displayName ? run.actor.displayName : 'System'}</strong>
+                        </div>
+                        <div>
+                          <span class="meta-label">Scope</span>
+                          <strong>{humanizeToken(run.scope)}</strong>
+                        </div>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </article>
+              ) : null}
 
               <article class="panel glass-panel reveal-up" style={{ animationDelay: '260ms' }}>
                 <div class="section-head split">
@@ -2237,7 +2425,7 @@ export default defineComponent({
                   </div>
 
                   <label>
-                    Assign imported videos to app sections (comma-separated)
+                    Default app sections for fetched videos (comma-separated)
                     <input
                       value={youtubeSyncState.appSectionsCsv}
                       onInput={(event) => { youtubeSyncState.appSectionsCsv = readValue(event); }}
@@ -2249,33 +2437,106 @@ export default defineComponent({
                     <button type="button" class="ghost-btn compact" onClick={() => void fetchYouTubePreview()} disabled={youtubePreviewLoading.value || youtubeSyncLoading.value}>
                       {youtubePreviewLoading.value ? 'Fetching...' : 'Fetch Preview'}
                     </button>
-                    <button type="button" class="primary-btn" onClick={() => void syncYouTubeVideos()} disabled={youtubeSyncLoading.value || youtubePreviewLoading.value}>
-                      {youtubeSyncLoading.value ? 'Syncing YouTube...' : 'Sync to Library'}
+                    <button type="button" class="ghost-btn compact" onClick={applySmartYouTubeAssignments} disabled={youtubeDraftItems.value.length === 0 || youtubeImporting.value}>
+                      Apply Smart Suggestions
                     </button>
                   </div>
 
+                  <div class="button-row">
+                    <button type="button" class="primary-btn" onClick={() => void importSelectedYouTubeVideos()} disabled={youtubeImporting.value || youtubePreviewLoading.value || youtubeDraftItems.value.length === 0}>
+                      {youtubeImporting.value ? 'Importing Selected...' : `Import Selected (${selectedYouTubeDraftCount.value})`}
+                    </button>
+                    <button type="button" class="ghost-btn compact" onClick={() => void syncYouTubeVideos()} disabled={youtubeSyncLoading.value || youtubePreviewLoading.value}>
+                      {youtubeSyncLoading.value ? 'Syncing YouTube...' : 'Quick Sync All'}
+                    </button>
+                  </div>
+
+                  <div class="helper-card">
+                    <strong>Curated import flow</strong>
+                    <p>
+                      Fetch videos, review each one, adjust sections and tags, then import only the selected items. Quick Sync All is available when you want a one-click batch import.
+                    </p>
+                  </div>
+
                   <div class="youtube-preview-list">
-                    {youtubePreviewItems.value.length === 0 ? (
+                    {youtubeDraftItems.value.length === 0 ? (
                       <div class="empty-state">
                         No YouTube videos loaded yet. Click <strong>Fetch Preview</strong> to load the latest channel videos.
                       </div>
-                    ) : youtubePreviewItems.value.map((video) => (
+                    ) : youtubeDraftItems.value.map((video) => (
                       <article class="content-card" key={video.youtubeVideoId}>
                         <div class="card-top">
                           <div class="pill-row">
                             <span class="pill pill-video">video</span>
                             {video.isLive ? <span class="pill pill-live">live</span> : null}
+                            <span class={['pill', video.selected ? 'pill-live' : 'pill-draft']}>{video.selected ? 'selected' : 'skipped'}</span>
                           </div>
                           <span class="muted-chip">{video.duration || '--:--'}</span>
+                        </div>
+                        <label class="checkbox-row">
+                          <input
+                            type="checkbox"
+                            class="inline-checkbox"
+                            checked={Boolean(video.selected)}
+                            onChange={(event) => updateYouTubeDraftItem(video.youtubeVideoId, { selected: readChecked(event) })}
+                          />
+                          <span>
+                            Include this video
+                            <small>Selected videos will be imported into the content library.</small>
+                          </span>
+                        </label>
+                        <div class="card-link-row">
+                          <img src={video.thumbnailUrl} alt={video.title} style={{ width: '120px', height: '72px', borderRadius: '12px', objectFit: 'cover' }} />
+                          <div style={{ display: 'grid', gap: '0.35rem', flex: 1 }}>
+                            <a href={video.url} target="_blank" rel="noreferrer noopener" class="media-link">Open YouTube</a>
+                            <span class="muted-chip">{formatDateTime(video.publishedAt)}</span>
+                          </div>
                         </div>
                         <div class="card-body">
                           <h3>{video.title}</h3>
                           <p>{truncate(video.description || '', 140)}</p>
                         </div>
-                        <div class="card-link-row">
-                          <a href={video.url} target="_blank" rel="noreferrer noopener" class="media-link">Open YouTube</a>
-                          <span class="muted-chip">{formatDateTime(video.publishedAt)}</span>
+                        <div class="pill-row">
+                          {(video.suggestedAppSections || []).map((section) => (
+                            <span class="muted-chip" key={`${video.youtubeVideoId}-section-${section}`}>Suggested: {section}</span>
+                          ))}
+                          {(video.suggestedTags || []).map((tag) => (
+                            <span class="muted-chip" key={`${video.youtubeVideoId}-tag-${tag}`}>#{tag}</span>
+                          ))}
                         </div>
+                        <div class="grid-2">
+                          <label>
+                            App sections
+                            <input
+                              value={video.appSectionsCsv}
+                              onInput={(event) => updateYouTubeDraftItem(video.youtubeVideoId, {
+                                appSectionsCsv: readValue(event),
+                                appSections: parseCsvList(readValue(event)),
+                              })}
+                              placeholder="ClaudyGod Music, ClaudyGod Messages"
+                            />
+                          </label>
+                          <label>
+                            Tags
+                            <input
+                              value={video.tagsCsv}
+                              onInput={(event) => updateYouTubeDraftItem(video.youtubeVideoId, {
+                                tagsCsv: readValue(event),
+                                tags: parseCsvList(readValue(event)),
+                              })}
+                              placeholder="worship, live, message"
+                            />
+                          </label>
+                        </div>
+                        <label>
+                          Import visibility
+                          <select
+                            value={video.visibility}
+                            onChange={(event) => updateYouTubeDraftItem(video.youtubeVideoId, { visibility: readValue(event) })}
+                          >
+                            {VISIBILITY_OPTIONS.map((visibility) => <option value={visibility} key={`yt-visibility-${video.youtubeVideoId}-${visibility}`}>{visibility}</option>)}
+                          </select>
+                        </label>
                       </article>
                     ))}
                   </div>
@@ -2818,8 +3079,9 @@ export default defineComponent({
                         <div class="user-pill">
                           <span class="user-pill-dot" />
                           <span>{displayName.value}</span>
-                          <span class="user-pill-role">{isAdmin.value ? 'Admin' : 'Client'}</span>
+                          <span class="user-pill-role">{portalRoleLabel.value}</span>
                         </div>
+                        {accountEmail.value ? <span class="muted-chip">{accountEmail.value}</span> : null}
                         <div class="header-inline-actions">
                           <button type="button" class="ghost-btn compact" onClick={() => void refreshDashboard()}>
                             Refresh
@@ -2865,8 +3127,9 @@ export default defineComponent({
                   <div class="user-pill">
                     <span class="user-pill-dot" />
                     <span>{displayName.value}</span>
-                    <span class="user-pill-role">{isAdmin.value ? 'Admin' : 'Client'}</span>
+                    <span class="user-pill-role">{portalRoleLabel.value}</span>
                   </div>
+                  {accountEmail.value ? <span class="muted-chip">{accountEmail.value}</span> : null}
 
                   <div class="header-drawer-actions">
                     <button type="button" class="ghost-btn compact" onClick={() => void refreshDashboard()}>
