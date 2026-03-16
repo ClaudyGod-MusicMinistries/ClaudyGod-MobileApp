@@ -1,3 +1,4 @@
+import type { Pool, PoolClient } from 'pg';
 import type { JwtClaims } from '../../utils/jwt';
 import { pool } from '../../db/pool';
 import { HttpError } from '../../lib/httpError';
@@ -31,12 +32,24 @@ interface ContentRow {
   app_sections: string[] | null;
   tags: string[] | null;
   metadata: Record<string, unknown> | null;
+  media_upload_session_id: string | null;
+  thumbnail_upload_session_id: string | null;
   visibility: ContentVisibility;
   created_at: string | Date;
   updated_at: string | Date;
   author_display_name: string;
   author_email: string;
   author_role: UserRole;
+}
+
+interface UploadSessionLinkRow {
+  id: string;
+  channel: 'admin' | 'mobile';
+  requested_by: string | null;
+  mime_type: string;
+  storage_bucket: string;
+  storage_path: string;
+  status: string;
 }
 
 const SUPPORTED_DB_TYPES = new Set<ContentType>(['audio', 'video', 'playlist', 'announcement']);
@@ -164,6 +177,95 @@ const buildListResponse = (rows: ContentRow[], total: number, query: ContentList
 const normalizeTextList = (items?: string[]): string[] =>
   [...new Set((items ?? []).map((item) => item.trim()).filter(Boolean))];
 
+const buildStoragePublicUrl = (bucket: string, objectPath: string): string =>
+  `${env.SUPABASE_URL.replace(/\/+$/, '')}/storage/v1/object/public/${bucket}/${objectPath}`;
+
+const normalizeComparableUrl = (value?: string | null): string => String(value || '').trim();
+
+const loadValidatedUploadSession = async ({
+  client,
+  sessionId,
+  requester,
+  expectedMimePrefix,
+  providedUrl,
+}: {
+  client: PoolClient;
+  sessionId?: string;
+  requester: JwtClaims;
+  expectedMimePrefix?: 'audio' | 'video' | 'image';
+  providedUrl?: string;
+}): Promise<{ sessionId: string; publicUrl: string } | null> => {
+  if (!sessionId) {
+    return null;
+  }
+
+  const result = await client.query<UploadSessionLinkRow>(
+    `SELECT id, channel, requested_by, mime_type, storage_bucket, storage_path, status
+     FROM upload_sessions
+     WHERE id = $1
+     LIMIT 1`,
+    [sessionId],
+  );
+
+  if (result.rowCount === 0) {
+    throw new HttpError(400, 'Referenced upload session was not found');
+  }
+
+  const session = result.rows[0]!;
+  if (session.channel !== 'admin') {
+    throw new HttpError(400, 'Referenced upload session is not valid for admin content');
+  }
+  if (requester.role !== 'ADMIN' && session.requested_by !== requester.sub) {
+    throw new HttpError(403, 'You can only attach files uploaded from your own session');
+  }
+  if (session.status === 'failed') {
+    throw new HttpError(400, 'Referenced upload session failed and cannot be attached');
+  }
+  if (expectedMimePrefix && !session.mime_type.toLowerCase().startsWith(`${expectedMimePrefix}/`)) {
+    throw new HttpError(400, `Referenced upload session is not a valid ${expectedMimePrefix} asset`);
+  }
+
+  const publicUrl = buildStoragePublicUrl(session.storage_bucket, session.storage_path);
+  const normalizedProvidedUrl = normalizeComparableUrl(providedUrl);
+  if (normalizedProvidedUrl && normalizedProvidedUrl !== publicUrl) {
+    throw new HttpError(400, 'Provided media URL does not match the uploaded asset session');
+  }
+
+  return {
+    sessionId: session.id,
+    publicUrl,
+  };
+};
+
+const markUploadSessionAttached = async ({
+  client,
+  sessionId,
+}: {
+  client: PoolClient;
+  sessionId?: string | null;
+}): Promise<void> => {
+  if (!sessionId) {
+    return;
+  }
+
+  await client.query(
+    `UPDATE upload_sessions
+     SET status = 'uploaded',
+         completed_at = COALESCE(completed_at, NOW()),
+         updated_at = NOW()
+     WHERE id = $1`,
+    [sessionId],
+  );
+};
+
+const loadContentRowById = async (
+  db: Pool | PoolClient,
+  contentId: string,
+): Promise<ContentRow | null> => {
+  const result = await db.query<ContentRow>(selectContentByIdSql, [contentId]);
+  return result.rows[0] ?? null;
+};
+
 const selectContentByIdSql = `SELECT
   c.id,
   c.author_id,
@@ -179,6 +281,8 @@ const selectContentByIdSql = `SELECT
   c.app_sections,
   c.tags,
   c.metadata,
+  c.media_upload_session_id,
+  c.thumbnail_upload_session_id,
   c.visibility,
   c.created_at,
   c.updated_at,
@@ -410,57 +514,89 @@ export const listManagedContent = async (
 };
 
 export const createContent = async (requester: JwtClaims, input: CreateContentInput): Promise<ContentItem> => {
-  const result = await pool.query<ContentRow>(
-    `WITH inserted AS (
-      INSERT INTO content_items (
-        author_id, title, description, content_type, media_url, thumbnail_url, source_kind,
-        external_source_id, channel_name, duration_label, app_sections, tags, metadata, visibility
-      )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::text[], $12::text[], $13::jsonb, $14)
-      RETURNING *
-    )
-    SELECT
-      inserted.id,
-      inserted.author_id,
-      inserted.title,
-      inserted.description,
-      inserted.content_type,
-      inserted.media_url,
-      inserted.thumbnail_url,
-      inserted.source_kind,
-      inserted.external_source_id,
-      inserted.channel_name,
-      inserted.duration_label,
-      inserted.app_sections,
-      inserted.tags,
-      inserted.metadata,
-      inserted.visibility,
-      inserted.created_at,
-      inserted.updated_at,
-      u.display_name AS author_display_name,
-      u.email AS author_email,
-      u.role AS author_role
-    FROM inserted
-    INNER JOIN app_users u ON u.id = inserted.author_id`,
-    [
-      requester.sub,
-      input.title,
-      input.description,
-      input.type,
-      input.url ?? null,
-      input.thumbnailUrl ?? null,
-      input.sourceKind ?? 'upload',
-      input.externalSourceId ?? null,
-      input.channelName ?? null,
-      input.duration ?? null,
-      normalizeTextList(input.appSections),
-      normalizeTextList(input.tags),
-      JSON.stringify(input.metadata ?? {}),
-      input.visibility,
-    ],
-  );
+  const client = await pool.connect();
+  let item: ContentItem;
+  let mediaUploadSessionId: string | null = null;
+  let thumbnailUploadSessionId: string | null = null;
 
-  const item = toContentItem(result.rows[0]!);
+  try {
+    await client.query('BEGIN');
+
+    const mediaUpload = await loadValidatedUploadSession({
+      client,
+      sessionId: input.mediaUploadSessionId,
+      requester,
+      expectedMimePrefix: input.type === 'audio' ? 'audio' : input.type === 'video' ? 'video' : undefined,
+      providedUrl: input.url,
+    });
+    const thumbnailUpload = await loadValidatedUploadSession({
+      client,
+      sessionId: input.thumbnailUploadSessionId,
+      requester,
+      expectedMimePrefix: 'image',
+      providedUrl: input.thumbnailUrl,
+    });
+
+    const resolvedUrl = mediaUpload?.publicUrl ?? input.url ?? null;
+    const resolvedThumbnailUrl = thumbnailUpload?.publicUrl ?? input.thumbnailUrl ?? null;
+    const resolvedSourceKind =
+      input.sourceKind ?? (mediaUpload || thumbnailUpload ? 'upload' : resolvedUrl ? 'external' : 'upload');
+
+    if ((input.type === 'audio' || input.type === 'video') && !resolvedUrl) {
+      throw new HttpError(400, `A media URL is required for ${input.type} content`);
+    }
+
+    const insertResult = await client.query<{ id: string }>(
+      `INSERT INTO content_items (
+         author_id, title, description, content_type, media_url, thumbnail_url, source_kind,
+         external_source_id, channel_name, duration_label, app_sections, tags, metadata, visibility,
+         media_upload_session_id, thumbnail_upload_session_id
+       )
+       VALUES (
+         $1, $2, $3, $4, $5, $6, $7,
+         $8, $9, $10, $11::text[], $12::text[], $13::jsonb, $14, $15, $16
+       )
+       RETURNING id`,
+      [
+        requester.sub,
+        input.title,
+        input.description,
+        input.type,
+        resolvedUrl,
+        resolvedThumbnailUrl,
+        resolvedSourceKind,
+        input.externalSourceId ?? null,
+        input.channelName ?? null,
+        input.duration ?? null,
+        normalizeTextList(input.appSections),
+        normalizeTextList(input.tags),
+        JSON.stringify(input.metadata ?? {}),
+        input.visibility,
+        mediaUpload?.sessionId ?? null,
+        thumbnailUpload?.sessionId ?? null,
+      ],
+    );
+
+    mediaUploadSessionId = mediaUpload?.sessionId ?? null;
+    thumbnailUploadSessionId = thumbnailUpload?.sessionId ?? null;
+
+    await markUploadSessionAttached({ client, sessionId: mediaUploadSessionId });
+    await markUploadSessionAttached({ client, sessionId: thumbnailUploadSessionId });
+
+    const createdRow = await loadContentRowById(client, insertResult.rows[0]!.id);
+    if (!createdRow) {
+      throw new HttpError(500, 'Content was created but could not be loaded');
+    }
+
+    item = toContentItem(createdRow);
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+
   const eventType: ContentEventType = input.visibility === 'published' ? 'content.published' : 'content.created';
 
   await enqueueContentEvent({
@@ -491,91 +627,111 @@ export const updateContent = async ({
   input: UpdateContentInput;
   requester: JwtClaims;
 }): Promise<ContentItem> => {
-  const existingResult = await pool.query<ContentRow>(selectContentByIdSql, [contentId]);
-  if (existingResult.rowCount === 0) {
+  const existing = await loadContentRowById(pool, contentId);
+  if (!existing) {
     throw new HttpError(404, 'Content not found');
   }
 
-  const existing = existingResult.rows[0]!;
   if (requester.role !== 'ADMIN' && existing.author_id !== requester.sub) {
     throw new HttpError(403, 'You can only update your own content');
   }
-  const nextType = input.type ?? existing.content_type;
-  const nextUrl = Object.prototype.hasOwnProperty.call(input, 'url')
-    ? (input.url ?? null)
-    : existing.media_url;
+  const client = await pool.connect();
+  let item: ContentItem;
 
-  if ((nextType === 'audio' || nextType === 'video') && !nextUrl) {
-    throw new HttpError(400, `A media URL is required for ${nextType} content`);
+  try {
+    await client.query('BEGIN');
+
+    const nextType = input.type ?? existing.content_type;
+    const mediaUpload = await loadValidatedUploadSession({
+      client,
+      sessionId: input.mediaUploadSessionId,
+      requester,
+      expectedMimePrefix: nextType === 'audio' ? 'audio' : nextType === 'video' ? 'video' : undefined,
+      providedUrl: input.url,
+    });
+    const thumbnailUpload = await loadValidatedUploadSession({
+      client,
+      sessionId: input.thumbnailUploadSessionId,
+      requester,
+      expectedMimePrefix: 'image',
+      providedUrl: input.thumbnailUrl,
+    });
+
+    const nextUrl = mediaUpload
+      ? mediaUpload.publicUrl
+      : Object.prototype.hasOwnProperty.call(input, 'url')
+      ? (input.url ?? null)
+      : existing.media_url;
+    const nextThumbnailUrl = thumbnailUpload
+      ? thumbnailUpload.publicUrl
+      : Object.prototype.hasOwnProperty.call(input, 'thumbnailUrl')
+      ? (input.thumbnailUrl ?? null)
+      : existing.thumbnail_url;
+
+    if ((nextType === 'audio' || nextType === 'video') && !nextUrl) {
+      throw new HttpError(400, `A media URL is required for ${nextType} content`);
+    }
+
+    const nextSourceKind =
+      input.sourceKind ??
+      (mediaUpload || thumbnailUpload ? 'upload' : existing.source_kind ?? (nextUrl ? 'external' : 'upload'));
+
+    await client.query(
+      `UPDATE content_items
+       SET
+         title = COALESCE($2, title),
+         description = COALESCE($3, description),
+         content_type = COALESCE($4, content_type),
+         media_url = COALESCE($5, media_url),
+         thumbnail_url = COALESCE($6, thumbnail_url),
+         source_kind = COALESCE($7, source_kind),
+         external_source_id = COALESCE($8, external_source_id),
+         channel_name = COALESCE($9, channel_name),
+         duration_label = COALESCE($10, duration_label),
+         app_sections = COALESCE($11::text[], app_sections),
+         tags = COALESCE($12::text[], tags),
+         metadata = COALESCE($13::jsonb, metadata),
+         visibility = COALESCE($14, visibility),
+         media_upload_session_id = COALESCE($15, media_upload_session_id),
+         thumbnail_upload_session_id = COALESCE($16, thumbnail_upload_session_id),
+         updated_at = NOW()
+       WHERE id = $1`,
+      [
+        contentId,
+        input.title ?? null,
+        input.description ?? null,
+        input.type ?? null,
+        nextUrl,
+        nextThumbnailUrl,
+        nextSourceKind,
+        Object.prototype.hasOwnProperty.call(input, 'externalSourceId') ? (input.externalSourceId ?? null) : null,
+        Object.prototype.hasOwnProperty.call(input, 'channelName') ? (input.channelName ?? null) : null,
+        Object.prototype.hasOwnProperty.call(input, 'duration') ? (input.duration ?? null) : null,
+        Object.prototype.hasOwnProperty.call(input, 'appSections') ? normalizeTextList(input.appSections) : null,
+        Object.prototype.hasOwnProperty.call(input, 'tags') ? normalizeTextList(input.tags) : null,
+        Object.prototype.hasOwnProperty.call(input, 'metadata') ? JSON.stringify(input.metadata ?? {}) : null,
+        input.visibility ?? null,
+        mediaUpload?.sessionId ?? null,
+        thumbnailUpload?.sessionId ?? null,
+      ],
+    );
+
+    await markUploadSessionAttached({ client, sessionId: mediaUpload?.sessionId ?? null });
+    await markUploadSessionAttached({ client, sessionId: thumbnailUpload?.sessionId ?? null });
+
+    const updatedRow = await loadContentRowById(client, contentId);
+    if (!updatedRow) {
+      throw new HttpError(404, 'Content not found');
+    }
+
+    item = toContentItem(updatedRow);
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
   }
-
-  const updated = await pool.query<ContentRow>(
-    `WITH updated AS (
-      UPDATE content_items
-      SET
-        title = COALESCE($2, title),
-        description = COALESCE($3, description),
-        content_type = COALESCE($4, content_type),
-        media_url = COALESCE($5, media_url),
-        thumbnail_url = COALESCE($6, thumbnail_url),
-        source_kind = COALESCE($7, source_kind),
-        external_source_id = COALESCE($8, external_source_id),
-        channel_name = COALESCE($9, channel_name),
-        duration_label = COALESCE($10, duration_label),
-        app_sections = COALESCE($11::text[], app_sections),
-        tags = COALESCE($12::text[], tags),
-        metadata = COALESCE($13::jsonb, metadata),
-        visibility = COALESCE($14, visibility),
-        updated_at = NOW()
-      WHERE id = $1
-      RETURNING *
-    )
-    SELECT
-      updated.id,
-      updated.author_id,
-      updated.title,
-      updated.description,
-      updated.content_type,
-      updated.media_url,
-      updated.thumbnail_url,
-      updated.source_kind,
-      updated.external_source_id,
-      updated.channel_name,
-      updated.duration_label,
-      updated.app_sections,
-      updated.tags,
-      updated.metadata,
-      updated.visibility,
-      updated.created_at,
-      updated.updated_at,
-      u.display_name AS author_display_name,
-      u.email AS author_email,
-      u.role AS author_role
-    FROM updated
-    INNER JOIN app_users u ON u.id = updated.author_id`,
-    [
-      contentId,
-      input.title ?? null,
-      input.description ?? null,
-      input.type ?? null,
-      Object.prototype.hasOwnProperty.call(input, 'url') ? (input.url ?? null) : null,
-      Object.prototype.hasOwnProperty.call(input, 'thumbnailUrl') ? (input.thumbnailUrl ?? null) : null,
-      input.sourceKind ?? null,
-      Object.prototype.hasOwnProperty.call(input, 'externalSourceId') ? (input.externalSourceId ?? null) : null,
-      Object.prototype.hasOwnProperty.call(input, 'channelName') ? (input.channelName ?? null) : null,
-      Object.prototype.hasOwnProperty.call(input, 'duration') ? (input.duration ?? null) : null,
-      Object.prototype.hasOwnProperty.call(input, 'appSections') ? normalizeTextList(input.appSections) : null,
-      Object.prototype.hasOwnProperty.call(input, 'tags') ? normalizeTextList(input.tags) : null,
-      Object.prototype.hasOwnProperty.call(input, 'metadata') ? JSON.stringify(input.metadata ?? {}) : null,
-      input.visibility ?? null,
-    ],
-  );
-
-  if (updated.rowCount === 0) {
-    throw new HttpError(404, 'Content not found');
-  }
-
-  const item = toContentItem(updated.rows[0]!);
 
   await enqueueContentEvent({
     contentId: item.id,

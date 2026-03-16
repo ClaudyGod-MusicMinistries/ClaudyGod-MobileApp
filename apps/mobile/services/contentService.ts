@@ -12,6 +12,37 @@ interface MobileYouTubeResponse {
   items: YouTubeVideoItem[];
 }
 
+interface MobileFeedApiResponse {
+  generatedAt: string;
+  featured: MobileFeedApiItem | null;
+  rails: {
+    id: string;
+    title: string;
+    algorithm: string;
+    items: MobileFeedApiItem[];
+  }[];
+  topCategories: string[];
+}
+
+interface MobileFeedApiItem {
+  id: string;
+  title: string;
+  description?: string;
+  subtitle?: string;
+  type: ContentType;
+  imageUrl?: string;
+  mediaUrl?: string;
+  duration?: string;
+  channelName?: string;
+  sourceKind?: 'upload' | 'external' | 'youtube';
+  appSections?: string[];
+  tags?: string[];
+  createdAt?: string;
+  updatedAt?: string;
+  isLive?: boolean;
+  liveViewerCount?: number;
+}
+
 export interface ApiContentItem {
   id: string;
   title: string;
@@ -130,6 +161,23 @@ function normalize(item: ApiContentItem): FeedCardItem {
     mediaUrl: item.mediaUrl || item.externalUrl || item.url,
     type: item.type,
     isLive: item.isLive || item.type === 'live',
+    liveViewerCount: item.liveViewerCount,
+    createdAt: item.createdAt || item.updatedAt,
+    appSections: Array.isArray(item.appSections) ? item.appSections : [],
+  };
+}
+
+function normalizeFeedItem(item: MobileFeedApiItem): FeedCardItem {
+  return {
+    id: item.id,
+    title: item.title,
+    subtitle: item.subtitle || item.channelName || 'ClaudyGod Channel',
+    description: item.description || 'Published content from your channel feed.',
+    duration: item.duration || '--:--',
+    imageUrl: item.imageUrl || FALLBACK_IMAGE,
+    mediaUrl: item.mediaUrl,
+    type: item.type,
+    isLive: Boolean(item.isLive || item.type === 'live'),
     liveViewerCount: item.liveViewerCount,
     createdAt: item.createdAt || item.updatedAt,
     appSections: Array.isArray(item.appSections) ? item.appSections : [],
@@ -273,7 +321,48 @@ function removeAdItems(items: FeedCardItem[]): FeedCardItem[] {
   return items.filter((item) => item.type !== 'ad');
 }
 
+function bundleFromApiFeed(response: MobileFeedApiResponse): FeedBundle {
+  const railMap = new Map(
+    (response.rails || []).map((rail) => [rail.id, rail.items.map(normalizeFeedItem)]),
+  );
+
+  const featured = response.featured ? normalizeFeedItem(response.featured) : null;
+  const music = dedupe(removeAdItems(railMap.get('worship-music') || []));
+  const videos = dedupe(removeAdItems(railMap.get('video-spotlight') || []));
+  const live = dedupe(removeAdItems(railMap.get('live-now') || []));
+  const playlists = dedupe(removeAdItems(railMap.get('playlists') || []));
+  const announcements = dedupe(removeAdItems(railMap.get('ministry-updates') || []));
+  const mostPlayed = dedupe(removeAdItems(railMap.get('trending-now') || []));
+  const recent = dedupe(removeAdItems(railMap.get('latest-releases') || []));
+
+  return {
+    ...DEFAULT_BUNDLE,
+    featured,
+    music: music.slice(0, 14),
+    videos: videos.slice(0, 14),
+    playlists: playlists.slice(0, 12),
+    live: live.slice(0, 10),
+    announcements: announcements.slice(0, 8),
+    mostPlayed: mostPlayed.slice(0, 12),
+    recent: recent.slice(0, 12),
+    topCategories:
+      Array.isArray(response.topCategories) && response.topCategories.length > 0
+        ? response.topCategories
+        : DEFAULT_BUNDLE.topCategories,
+  };
+}
+
 export async function fetchFeedBundle(): Promise<FeedBundle> {
+  try {
+    const feed = await apiFetch<MobileFeedApiResponse>('/v1/mobile/feed');
+    return bundleFromApiFeed(feed);
+  } catch (error) {
+    console.warn(
+      '[contentService] API feed fallback activated:',
+      error instanceof Error ? error.message : String(error),
+    );
+  }
+
   const [all, music, videos, playlists, live, announcements, mostPlayed, youtubeFeed] = await Promise.all([
     fetchAllPublished(),
     fetchByType('audio'),
