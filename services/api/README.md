@@ -5,6 +5,7 @@ Node.js + TypeScript backend for the Claudy admin portal and mobile app content 
 ## Features
 - JWT auth for admin dashboard and mobile users
 - Email verification + password recovery endpoints
+- Branded transactional email templates for verification, onboarding, password reset, and profile security alerts
 - Content management endpoints (`/v1/content`)
 - Redis + BullMQ workers (content + email)
 - Email notification queue
@@ -30,7 +31,7 @@ Node.js + TypeScript backend for the Claudy admin portal and mobile app content 
 - `POST /v1/mobile/uploads/signed-url` (requires `x-mobile-api-key`)
 
 ## Environment
-Set these in `.env` (do not commit secrets):
+Set these in the repo root `.env.development` for local work or `.env.production` for deployment (do not commit secrets):
 - `YOUTUBE_API_KEY`
 - `YOUTUBE_CHANNEL_ID`
 - `YOUTUBE_MAX_RESULTS`
@@ -38,16 +39,20 @@ Set these in `.env` (do not commit secrets):
 - `AUTH_PUBLIC_BASE_URL`
 - `AUTH_VERIFY_EMAIL_PATH`
 - `AUTH_RESET_PASSWORD_PATH`
+- `AUTH_SIGN_IN_PATH`
+- `AUTH_ACCOUNT_REVIEW_PATH`
 - `AUTH_VERIFICATION_TOKEN_TTL_MINUTES`
 - `AUTH_PASSWORD_RESET_TOKEN_TTL_MINUTES`
-- `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`
+- `EMAIL_BRAND_NAME`, `EMAIL_SUPPORT_EMAIL`, `MAIL_FROM`, `MAIL_REPLY_TO`
+- `SMTP_PROVIDER`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`
 
 SMTP notes:
-- Use your local or hosted Postfix relay by pointing `SMTP_HOST` to that relay and matching the port/security settings.
-- When you move to Brevo later, swap in Brevo's SMTP host and credentials without changing application code.
+- Brevo SMTP is the default transactional email target in the root env files. Use `SMTP_PROVIDER=brevo`, `SMTP_HOST=smtp-relay.brevo.com`, and your Brevo SMTP credentials.
+- If you place Postfix in front of Brevo later, switch `SMTP_PROVIDER=postfix` and point `SMTP_HOST` at your relay without changing the email template code.
+- After updating the mail schema, rerun `npm run migrate` so `email_jobs` includes provider, template, and delivery tracking columns.
 
 ## Quick start
-1. Copy `.env.example` to `.env`
+1. Create the repo root `.env.development`
 2. If you want your backend tables inside Supabase, replace `DATABASE_URL` with your Supabase Postgres connection string and set `DATABASE_SSL=true`
 3. `npm install`
 4. `npm run migrate`

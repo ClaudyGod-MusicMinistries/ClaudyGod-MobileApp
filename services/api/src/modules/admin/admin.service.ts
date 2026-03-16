@@ -239,7 +239,7 @@ export const getAdminDashboard = async () => {
           id: 'youtube-config',
           tone: 'warning',
           title: 'YouTube sync is not configured',
-          detail: 'Add YOUTUBE_API_KEY and YOUTUBE_CHANNEL_ID in services/api/.env to fetch and import channel videos.',
+          detail: 'Add YOUTUBE_API_KEY and YOUTUBE_CHANNEL_ID in the root .env.development or .env.production file to fetch and import channel videos.',
         }
       : null,
     !env.SMTP_ENABLED
@@ -247,7 +247,7 @@ export const getAdminDashboard = async () => {
           id: 'smtp-config',
           tone: 'info',
           title: 'Email automation is not configured',
-          detail: 'Set SMTP_HOST and related credentials to enable verification, alerts, and scheduled outreach.',
+          detail: 'Set Brevo SMTP credentials and related mail settings to enable verification, onboarding, security alerts, and scheduled outreach.',
         }
       : null,
     Number(ratings.total_feedback) > 0 && ratings.average_rating && Number(ratings.average_rating) < 4

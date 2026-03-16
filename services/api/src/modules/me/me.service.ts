@@ -1,5 +1,6 @@
 import type { JwtClaims } from '../../utils/jwt';
 import { pool } from '../../db/pool';
+import { queueProfileUpdatedEmail } from '../../infra/transactionalEmails';
 import { HttpError } from '../../lib/httpError';
 import { getMobileAppConfig } from '../appConfig/appConfig.service';
 
@@ -59,6 +60,19 @@ interface SavedItemRow {
 }
 
 const toIso = (value: string | Date): string => new Date(value).toISOString();
+
+const profileFieldLabels: Record<
+  'display_name' | 'avatar_url' | 'phone' | 'country' | 'locale' | 'timezone' | 'bio',
+  string
+> = {
+  display_name: 'Display name',
+  avatar_url: 'Profile image',
+  phone: 'Phone number',
+  country: 'Country',
+  locale: 'Language or locale',
+  timezone: 'Timezone',
+  bio: 'Bio',
+};
 
 const ensureMeScaffold = async (user: JwtClaims): Promise<void> => {
   await Promise.all([
@@ -181,6 +195,7 @@ export const updateMeProfile = async (
   user: Awaited<ReturnType<typeof getMeProfile>>['user'];
 }> => {
   await ensureMeScaffold(user);
+  const previousProfile = await readProfile(user.sub);
 
   const client = await pool.connect();
   try {
@@ -244,7 +259,42 @@ export const updateMeProfile = async (
     client.release();
   }
 
-  return getMeProfile(user);
+  const nextProfile = await readProfile(user.sub);
+  const changedFields = (
+    Object.entries(profileFieldLabels) as Array<
+      [keyof typeof profileFieldLabels, string]
+    >
+  )
+    .filter(([key]) => (previousProfile[key] ?? null) !== (nextProfile[key] ?? null))
+    .map(([, label]) => label);
+
+  if (changedFields.length > 0) {
+    await queueProfileUpdatedEmail({
+      user: {
+        id: user.sub,
+        email: nextProfile.email,
+        displayName: nextProfile.display_name,
+      },
+      changedFields,
+    });
+  }
+
+  return {
+    user: {
+      id: nextProfile.user_id,
+      email: nextProfile.email,
+      displayName: nextProfile.display_name,
+      role: nextProfile.role,
+      avatarUrl: nextProfile.avatar_url ?? undefined,
+      phone: nextProfile.phone ?? undefined,
+      country: nextProfile.country ?? undefined,
+      locale: nextProfile.locale ?? undefined,
+      timezone: nextProfile.timezone ?? undefined,
+      bio: nextProfile.bio ?? undefined,
+      createdAt: toIso(nextProfile.created_at),
+      updatedAt: toIso(nextProfile.updated_at),
+    },
+  };
 };
 
 export const getMePreferences = async (user: JwtClaims): Promise<{

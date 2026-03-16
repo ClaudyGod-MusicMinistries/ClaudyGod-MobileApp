@@ -611,7 +611,7 @@ export default defineComponent({
           const apiHealth = checks.find((check) => check.label === 'API Health');
           const prefix =
             apiHealth && apiHealth.detail.includes('YouTube is disabled')
-              ? 'YouTube is disabled in the API environment. Add YOUTUBE_API_KEY and YOUTUBE_CHANNEL_ID in services/api/.env.'
+              ? 'YouTube is disabled in the API environment. Add YOUTUBE_API_KEY and YOUTUBE_CHANNEL_ID in the root .env.development or .env.production file.'
               : 'YouTube feed check failed';
           setNotice(`${prefix}: ${youtubeIssue.detail}`, 'error');
         }
@@ -2196,7 +2196,7 @@ export default defineComponent({
                 <div class="helper-card" style={{ marginTop: '0.8rem' }}>
                   <strong>YouTube requirement</strong>
                   <p>
-                    Set <code>YOUTUBE_API_KEY</code> and <code>YOUTUBE_CHANNEL_ID</code> in <code>services/api/.env</code>, then restart the API to enable YouTube feed and sync.
+                    Set <code>YOUTUBE_API_KEY</code> and <code>YOUTUBE_CHANNEL_ID</code> in the root <code>.env.development</code> or <code>.env.production</code> file, then restart the API to enable YouTube feed and sync.
                   </p>
                 </div>
 

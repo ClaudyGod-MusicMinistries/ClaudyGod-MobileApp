@@ -17,7 +17,7 @@ if (!isSupabaseConfigured) {
 export function assertSupabaseConfigured(): void {
   if (!isSupabaseConfigured) {
     throw new Error(
-      'Supabase is not configured. Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_KEY in apps/mobile/.env.',
+      'Supabase is not configured. Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_KEY in the root .env.development or .env.production file.',
     );
   }
 }
