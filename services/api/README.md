@@ -40,6 +40,11 @@ Set these in `.env` (do not commit secrets):
 - `AUTH_RESET_PASSWORD_PATH`
 - `AUTH_VERIFICATION_TOKEN_TTL_MINUTES`
 - `AUTH_PASSWORD_RESET_TOKEN_TTL_MINUTES`
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`
+
+SMTP notes:
+- Use your local or hosted Postfix relay by pointing `SMTP_HOST` to that relay and matching the port/security settings.
+- When you move to Brevo later, swap in Brevo's SMTP host and credentials without changing application code.
 
 ## Quick start
 1. Copy `.env.example` to `.env`

@@ -20,6 +20,7 @@ healthRouter.get('/', (_req, res) => {
     docs: {
       health: '/health',
       auth: '/v1/auth',
+      admin: '/v1/admin/dashboard',
       content: '/v1/content',
       mobile: '/v1/mobile',
       uploads: '/v1/uploads',
