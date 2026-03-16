@@ -281,6 +281,8 @@ export default function SignInScreen() {
                     size="lg"
                     fullWidth
                     loading={submitting}
+                    loadingLabel="Signing in"
+                    loadingVariant="brand"
                     onPress={() => void handleSignIn()}
                     style={{ marginTop: 16, borderRadius: 16 }}
                   />

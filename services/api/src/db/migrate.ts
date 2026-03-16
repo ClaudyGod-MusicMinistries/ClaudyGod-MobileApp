@@ -19,6 +19,10 @@ const migrations = [
   `ALTER TABLE app_users ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMPTZ`,
   `ALTER TABLE app_users ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE`,
   `ALTER TABLE app_users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMPTZ`,
+  `ALTER TABLE app_users ALTER COLUMN password_hash DROP NOT NULL`,
+  `ALTER TABLE app_users ADD COLUMN IF NOT EXISTS auth_provider TEXT NOT NULL DEFAULT 'local'
+    CHECK (auth_provider IN ('local', 'supabase'))`,
+  `ALTER TABLE app_users ADD COLUMN IF NOT EXISTS supabase_user_id UUID`,
   `CREATE TABLE IF NOT EXISTS content_items (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     author_id UUID NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,
@@ -115,6 +119,15 @@ const migrations = [
     theme_preference TEXT NOT NULL DEFAULT 'dark' CHECK (theme_preference IN ('system', 'light', 'dark')),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  `CREATE TABLE IF NOT EXISTS user_push_tokens (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,
+    expo_push_token TEXT NOT NULL,
+    device_type TEXT NOT NULL DEFAULT 'unknown',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (user_id, expo_push_token)
   )`,
   `CREATE TABLE IF NOT EXISTS user_play_events (
     id BIGSERIAL PRIMARY KEY,
@@ -223,6 +236,9 @@ const migrations = [
     ON content_items (visibility, created_at DESC)`,
   `CREATE INDEX IF NOT EXISTS idx_content_items_author_created_at
     ON content_items (author_id, created_at DESC)`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS idx_app_users_supabase_user_id
+    ON app_users (supabase_user_id)
+    WHERE supabase_user_id IS NOT NULL`,
   `CREATE INDEX IF NOT EXISTS idx_content_items_app_sections_gin
     ON content_items USING GIN (app_sections)`,
   `CREATE INDEX IF NOT EXISTS idx_content_jobs_status_created_at
@@ -243,6 +259,8 @@ const migrations = [
     ON live_subscriptions (user_id, created_at DESC)`,
   `CREATE INDEX IF NOT EXISTS idx_user_saved_items_user_bucket_created_at
     ON user_saved_items (user_id, bucket, created_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_user_push_tokens_user_updated_at
+    ON user_push_tokens (user_id, updated_at DESC)`,
   `CREATE UNIQUE INDEX IF NOT EXISTS idx_user_saved_items_unique_bucket
     ON user_saved_items (user_id, bucket, content_id, COALESCE(playlist_name, ''))`,
   `CREATE INDEX IF NOT EXISTS idx_privacy_requests_user_created_at
@@ -318,6 +336,13 @@ const migrations = [
       IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'set_user_preferences_updated_at') THEN
         CREATE TRIGGER set_user_preferences_updated_at
         BEFORE UPDATE ON user_preferences
+        FOR EACH ROW
+        EXECUTE FUNCTION set_updated_at();
+      END IF;
+
+      IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'set_user_push_tokens_updated_at') THEN
+        CREATE TRIGGER set_user_push_tokens_updated_at
+        BEFORE UPDATE ON user_push_tokens
         FOR EACH ROW
         EXECUTE FUNCTION set_updated_at();
       END IF;

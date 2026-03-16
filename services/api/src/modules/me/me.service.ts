@@ -381,6 +381,39 @@ export const upsertMeLiveSubscription = async (
   };
 };
 
+export const saveMePushToken = async (
+  user: JwtClaims,
+  input: { expoPushToken: string; deviceType?: string },
+): Promise<{ saved: true }> => {
+  await ensureMeScaffold(user);
+
+  await pool.query(
+    `INSERT INTO user_push_tokens (user_id, expo_push_token, device_type)
+     VALUES ($1, $2, $3)
+     ON CONFLICT (user_id, expo_push_token)
+     DO UPDATE SET
+       device_type = COALESCE(EXCLUDED.device_type, user_push_tokens.device_type),
+       updated_at = NOW()`,
+    [user.sub, input.expoPushToken, input.deviceType ?? 'unknown'],
+  );
+
+  return { saved: true };
+};
+
+export const removeMePushToken = async (
+  user: JwtClaims,
+  input: { expoPushToken: string },
+): Promise<{ removed: boolean }> => {
+  const result = await pool.query(
+    `DELETE FROM user_push_tokens
+     WHERE user_id = $1
+       AND expo_push_token = $2`,
+    [user.sub, input.expoPushToken],
+  );
+
+  return { removed: (result.rowCount ?? 0) > 0 };
+};
+
 export const getMeLibrary = async (user: JwtClaims): Promise<{
   liked: Array<Record<string, unknown>>;
   downloaded: Array<Record<string, unknown>>;

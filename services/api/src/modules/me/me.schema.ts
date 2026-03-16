@@ -70,6 +70,13 @@ export const liveSubscriptionSchema = z
   })
   .strict();
 
+export const pushTokenSchema = z
+  .object({
+    expoPushToken: z.string().trim().min(8).max(255),
+    deviceType: optionalTrimmedString(32),
+  })
+  .strict();
+
 export const saveLibraryItemSchema = z
   .object({
     bucket: z.enum(['liked', 'downloaded', 'playlist']),
