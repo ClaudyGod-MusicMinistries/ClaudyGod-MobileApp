@@ -42,8 +42,6 @@ const migrations = [
   `ALTER TABLE content_items ADD COLUMN IF NOT EXISTS app_sections TEXT[] NOT NULL DEFAULT '{}'`,
   `ALTER TABLE content_items ADD COLUMN IF NOT EXISTS tags TEXT[] NOT NULL DEFAULT '{}'`,
   `ALTER TABLE content_items ADD COLUMN IF NOT EXISTS metadata JSONB NOT NULL DEFAULT '{}'::jsonb`,
-  `ALTER TABLE content_items ADD COLUMN IF NOT EXISTS media_upload_session_id UUID REFERENCES upload_sessions(id) ON DELETE SET NULL`,
-  `ALTER TABLE content_items ADD COLUMN IF NOT EXISTS thumbnail_upload_session_id UUID REFERENCES upload_sessions(id) ON DELETE SET NULL`,
   `CREATE TABLE IF NOT EXISTS content_jobs (
     id BIGSERIAL PRIMARY KEY,
     content_id UUID NOT NULL REFERENCES content_items(id) ON DELETE CASCADE,
@@ -95,6 +93,19 @@ const migrations = [
     status TEXT NOT NULL DEFAULT 'issued' CHECK (status IN ('issued', 'uploaded', 'expired', 'failed')),
     expires_at TIMESTAMPTZ NOT NULL,
     completed_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  `ALTER TABLE content_items ADD COLUMN IF NOT EXISTS media_upload_session_id UUID REFERENCES upload_sessions(id) ON DELETE SET NULL`,
+  `ALTER TABLE content_items ADD COLUMN IF NOT EXISTS thumbnail_upload_session_id UUID REFERENCES upload_sessions(id) ON DELETE SET NULL`,
+  `CREATE TABLE IF NOT EXISTS automation_runs (
+    id BIGSERIAL PRIMARY KEY,
+    run_type TEXT NOT NULL,
+    scope TEXT NOT NULL DEFAULT 'admin',
+    actor_user_id UUID REFERENCES app_users(id) ON DELETE SET NULL,
+    status TEXT NOT NULL DEFAULT 'completed' CHECK (status IN ('pending', 'processing', 'completed', 'failed')),
+    summary JSONB NOT NULL DEFAULT '{}'::jsonb,
+    notes TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`,
@@ -247,6 +258,10 @@ const migrations = [
     ON content_items (media_upload_session_id)`,
   `CREATE INDEX IF NOT EXISTS idx_content_items_thumbnail_upload_session_id
     ON content_items (thumbnail_upload_session_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_automation_runs_type_created_at
+    ON automation_runs (run_type, created_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_automation_runs_status_created_at
+    ON automation_runs (status, created_at DESC)`,
   `CREATE INDEX IF NOT EXISTS idx_content_jobs_status_created_at
     ON content_jobs (status, created_at DESC)`,
   `CREATE INDEX IF NOT EXISTS idx_email_jobs_status_created_at
@@ -328,6 +343,13 @@ const migrations = [
       IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'set_upload_sessions_updated_at') THEN
         CREATE TRIGGER set_upload_sessions_updated_at
         BEFORE UPDATE ON upload_sessions
+        FOR EACH ROW
+        EXECUTE FUNCTION set_updated_at();
+      END IF;
+
+      IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'set_automation_runs_updated_at') THEN
+        CREATE TRIGGER set_automation_runs_updated_at
+        BEFORE UPDATE ON automation_runs
         FOR EACH ROW
         EXECUTE FUNCTION set_updated_at();
       END IF;
