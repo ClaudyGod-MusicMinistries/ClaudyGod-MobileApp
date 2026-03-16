@@ -1,6 +1,7 @@
 import * as Linking from 'expo-linking';
 import type { User } from '@supabase/supabase-js';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { apiFetch } from './apiClient';
 
 export interface MobileAuthUser {
   id: string;
@@ -81,6 +82,22 @@ const ensureSupabaseConfig = (): void => {
   }
 };
 
+const syncBackendSession = async (accessToken?: string): Promise<void> => {
+  if (!accessToken) {
+    return;
+  }
+
+  try {
+    await apiFetch('/v1/me/profile', {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+  } catch (error) {
+    console.warn('backend session sync skipped:', error);
+  }
+};
+
 const requireAuthResponse = (
   user: User | null,
   accessToken: string | undefined,
@@ -112,6 +129,7 @@ export async function loginMobileUser(input: {
     throw new Error(error.message);
   }
 
+  await syncBackendSession(data.session?.access_token);
   return requireAuthResponse(data.user, data.session?.access_token);
 }
 
@@ -135,6 +153,7 @@ export async function registerMobileUser(input: RegisterMobileUserInput): Promis
     throw new Error(error.message);
   }
 
+  await syncBackendSession(data.session?.access_token);
   return requireAuthResponse(data.user, data.session?.access_token, !data.session);
 }
 
@@ -172,6 +191,7 @@ export async function verifyMobileEmail(input: VerifyEmailInput): Promise<Mobile
     throw new Error(error.message);
   }
 
+  await syncBackendSession(data.session?.access_token);
   return requireAuthResponse(data.user, data.session?.access_token);
 }
 

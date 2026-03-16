@@ -228,6 +228,8 @@ export default function SignUpScreen() {
                     size="lg"
                     fullWidth
                     loading={submitting}
+                    loadingLabel="Creating account"
+                    loadingVariant="brand"
                     onPress={() => void handleSignUp()}
                     disabled={!canSubmit || submitting}
                     style={{ marginTop: 16, borderRadius: 16 }}

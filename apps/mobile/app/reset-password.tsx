@@ -12,6 +12,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { CustomText } from '../components/CustomText';
+import { AuthBrandPanel } from '../components/auth/AuthBrandPanel';
 import { AppButton } from '../components/ui/AppButton';
 import { Screen } from '../components/layout/Screen';
 import { TVTouchable } from '../components/ui/TVTouchable';
@@ -141,6 +142,10 @@ export default function ResetPasswordScreen() {
                     borderColor: 'rgba(235,226,255,0.14)',
                   }}
                 >
+                  <AuthBrandPanel
+                    salutation="Set a new password"
+                    description="Keep your account secure with a fresh password so your ClaudyGod profile and device access stay protected."
+                  />
                   <CustomText
                     variant="display"
                     style={{
@@ -230,6 +235,8 @@ export default function ResetPasswordScreen() {
                     size="lg"
                     fullWidth
                     loading={submitting}
+                    loadingLabel="Updating password"
+                    loadingVariant="brand"
                     onPress={() => void handleResetPassword()}
                     disabled={!canSubmit || submitting}
                     style={{ marginTop: 16, borderRadius: 16 }}

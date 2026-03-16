@@ -2,8 +2,8 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
-import { supabase } from '../lib/supabase';
 import { ENV } from './config';
+import { removeDevicePushToken, saveDevicePushToken } from './userFlowService';
 
 // Type-safe notification handler
 const notificationHandler: Notifications.NotificationHandler = {
@@ -97,18 +97,10 @@ export class PushNotificationService {
 
   private async storePushToken(token: string): Promise<void> {
     try {
-      const { data: user } = await supabase.auth.getUser();
-      
-      if (user?.user?.id) {
-        await supabase
-          .from('user_push_tokens')
-          .upsert({
-            user_id: user.user.id,
-            expo_push_token: token,
-            device_type: Platform.OS,
-            updated_at: new Date().toISOString(),
-          });
-      }
+      await saveDevicePushToken({
+        expoPushToken: token,
+        deviceType: Platform.OS,
+      });
     } catch (error) {
       console.error('Error storing push token:', error);
     }
@@ -181,14 +173,15 @@ export class PushNotificationService {
 
   async removePushToken(): Promise<void> {
     try {
-      const { data: user } = await supabase.auth.getUser();
-      
-      if (user?.user?.id) {
-        await supabase
-          .from('user_push_tokens')
-          .delete()
-          .eq('user_id', user.user.id);
+      const token = await this.getPushToken();
+      if (!token) {
+        return;
       }
+
+      await removeDevicePushToken({
+        expoPushToken: token,
+        deviceType: Platform.OS,
+      });
     } catch (error) {
       console.error('Error removing push token:', error);
     }

@@ -43,8 +43,9 @@ Set these in `.env` (do not commit secrets):
 
 ## Quick start
 1. Copy `.env.example` to `.env`
-2. `npm install`
-3. `npm run migrate`
-4. `npm run seed:admin`
-5. `npm run dev`
-6. `npm run dev:worker`
+2. If you want your backend tables inside Supabase, replace `DATABASE_URL` with your Supabase Postgres connection string and set `DATABASE_SSL=true`
+3. `npm install`
+4. `npm run migrate`
+5. `npm run seed:admin`
+6. `npm run dev`
+7. `npm run dev:worker`

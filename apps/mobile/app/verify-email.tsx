@@ -12,6 +12,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { CustomText } from '../components/CustomText';
+import { AuthBrandPanel } from '../components/auth/AuthBrandPanel';
 import { AppButton } from '../components/ui/AppButton';
 import { Screen } from '../components/layout/Screen';
 import { TVTouchable } from '../components/ui/TVTouchable';
@@ -178,6 +179,10 @@ export default function VerifyEmailScreen() {
                     borderColor: 'rgba(235,226,255,0.14)',
                   }}
                 >
+                  <AuthBrandPanel
+                    salutation="Confirm your email"
+                    description="Activate your account to unlock your saved worship experience, notifications, and personalized ministry features."
+                  />
                   <CustomText
                     variant="display"
                     style={{
@@ -249,6 +254,8 @@ export default function VerifyEmailScreen() {
                     size="lg"
                     fullWidth
                     loading={verifying}
+                    loadingLabel="Verifying account"
+                    loadingVariant="brand"
                     onPress={() => void handleVerify()}
                     disabled={!canVerify || verifying}
                     style={{ marginTop: 16, borderRadius: 16 }}
@@ -260,6 +267,8 @@ export default function VerifyEmailScreen() {
                     size="lg"
                     fullWidth
                     loading={resending}
+                    loadingLabel="Resending email"
+                    loadingVariant="brand"
                     onPress={() => void handleResend()}
                     disabled={!canResend || resending}
                     style={{

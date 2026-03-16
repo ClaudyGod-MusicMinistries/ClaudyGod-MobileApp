@@ -12,6 +12,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { CustomText } from '../components/CustomText';
+import { AuthBrandPanel } from '../components/auth/AuthBrandPanel';
 import { AppButton } from '../components/ui/AppButton';
 import { Screen } from '../components/layout/Screen';
 import { TVTouchable } from '../components/ui/TVTouchable';
@@ -126,6 +127,10 @@ export default function ForgotPasswordScreen() {
                     borderColor: 'rgba(235,226,255,0.14)',
                   }}
                 >
+                  <AuthBrandPanel
+                    salutation="Recover your account"
+                    description="Use your ministry account email to receive secure password reset instructions and get back into your library."
+                  />
                   <CustomText
                     variant="display"
                     style={{
@@ -208,6 +213,8 @@ export default function ForgotPasswordScreen() {
                     size="lg"
                     fullWidth
                     loading={submitting}
+                    loadingLabel="Sending reset email"
+                    loadingVariant="brand"
                     onPress={() => void handleRequestReset()}
                     disabled={!canSubmit || submitting}
                     style={{ marginTop: 16, borderRadius: 16 }}

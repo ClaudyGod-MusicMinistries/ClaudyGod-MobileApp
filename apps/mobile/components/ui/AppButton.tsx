@@ -1,6 +1,7 @@
 // components/ui/AppButton.tsx
 import React, { ReactNode } from 'react';
 import { ActivityIndicator, TextStyle, TouchableOpacityProps, View } from 'react-native';
+import { BrandLoader } from '../branding/BrandLoader';
 import { CustomText } from '../CustomText';
 import { useAppTheme } from '../../util/colorScheme';
 import { TVTouchable } from './TVTouchable';
@@ -13,6 +14,8 @@ interface AppButtonProps extends TouchableOpacityProps {
   rightIcon?: ReactNode;
   fullWidth?: boolean;
   loading?: boolean;
+  loadingLabel?: string;
+  loadingVariant?: 'spinner' | 'brand';
   textColor?: string;
   textStyle?: TextStyle;
 }
@@ -25,6 +28,8 @@ export function AppButton({
   rightIcon,
   fullWidth,
   loading,
+  loadingLabel,
+  loadingVariant = 'spinner',
   textColor,
   textStyle,
   style,
@@ -77,10 +82,14 @@ export function AppButton({
       ]}
     >
       {loading ? (
-        <ActivityIndicator
-          size="small"
-          color={resolvedTextColor}
-        />
+        loadingVariant === 'brand' ? (
+          <BrandLoader label={loadingLabel ?? title} size="sm" textColor={resolvedTextColor} />
+        ) : (
+          <ActivityIndicator
+            size="small"
+            color={resolvedTextColor}
+          />
+        )
       ) : (
         <View style={{ flexDirection: 'row', alignItems: 'center', maxWidth: '100%', gap: 8 }}>
           {leftIcon ? (
