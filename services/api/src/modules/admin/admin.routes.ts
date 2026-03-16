@@ -1,0 +1,50 @@
+import { Router, type Request } from 'express';
+import { asyncHandler } from '../../lib/asyncHandler';
+import { HttpError } from '../../lib/httpError';
+import { validateSchema } from '../../lib/validation';
+import { authenticate } from '../../middleware/authenticate';
+import {
+  supportRequestIdParamsSchema,
+  updateSupportRequestStatusSchema,
+} from './admin.schema';
+import {
+  getAdminDashboard,
+  updateAdminSupportRequestStatus,
+} from './admin.service';
+
+export const adminRouter = Router();
+
+adminRouter.use(authenticate);
+
+function requireAdmin(req: Request) {
+  if (!req.user) {
+    throw new HttpError(401, 'Unauthorized');
+  }
+  if (req.user.role !== 'ADMIN') {
+    throw new HttpError(403, 'Admin access required');
+  }
+  return req.user;
+}
+
+adminRouter.get(
+  '/dashboard',
+  asyncHandler(async (req, res) => {
+    requireAdmin(req);
+    const result = await getAdminDashboard();
+    res.status(200).json(result);
+  }),
+);
+
+adminRouter.patch(
+  '/support-requests/:id/status',
+  asyncHandler(async (req, res) => {
+    requireAdmin(req);
+    const params = validateSchema(supportRequestIdParamsSchema, req.params);
+    const payload = validateSchema(updateSupportRequestStatusSchema, req.body);
+    const result = await updateAdminSupportRequestStatus({
+      requestId: params.id,
+      status: payload.status,
+    });
+    res.status(200).json(result);
+  }),
+);

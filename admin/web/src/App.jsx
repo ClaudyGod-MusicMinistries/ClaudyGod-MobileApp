@@ -2,7 +2,20 @@ import axios from 'axios';
 import { computed, defineComponent, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import './App.css';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+function resolveApiUrl() {
+  const explicit = String(import.meta.env.VITE_API_URL || '').trim();
+  if (explicit) return explicit.replace(/\/+$/, '');
+
+  if (typeof window !== 'undefined') {
+    const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
+    const hostname = window.location.hostname || 'localhost';
+    return `${protocol}//${hostname}:4000`;
+  }
+
+  return 'http://localhost:4000';
+}
+
+const API_URL = resolveApiUrl();
 const GOOGLE_LOGIN_URL = import.meta.env.VITE_GOOGLE_LOGIN_URL || '';
 const ACCESS_TOKEN_KEY = 'claudy_admin_access_token';
 const MOBILE_PREVIEW_URL_KEY = 'claudy_admin_mobile_preview_url';
@@ -120,6 +133,9 @@ function toErrorMessage(error, fallback) {
     if (error.response?.status === 403) {
       return 'You do not have permission for this action.';
     }
+    if (!error.response) {
+      return `Unable to reach the API at ${API_HOST_LABEL}. Confirm the backend is running and that VITE_API_URL or local network routing is correct.`;
+    }
     const data = error.response && error.response.data ? error.response.data : {};
     return data.message || data.error || error.message || fallback;
   }
@@ -136,6 +152,12 @@ function truncate(value, size = 180) {
   if (!value) return '';
   if (value.length <= size) return value;
   return `${value.slice(0, size - 1)}...`;
+}
+
+function humanizeToken(value) {
+  return String(value || '')
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 function greetingByTime() {
@@ -206,10 +228,12 @@ export default defineComponent({
     const appConfigSaving = ref(false);
     const wordOfDayLoading = ref(false);
     const wordOfDaySaving = ref(false);
+    const adminOpsLoading = ref(false);
     const deletingContentId = ref(null);
     const editingContentId = ref(null);
     const editContentOpen = ref(false);
     const editContentSaving = ref(false);
+    const supportStatusUpdatingId = ref(null);
     const headerMenuOpen = ref(false);
     const dashboardView = ref('overview');
     const inactivityTimerId = ref(null);
@@ -274,6 +298,26 @@ export default defineComponent({
     const mobileAppConfigMeta = ref(null);
     const wordOfDayHistory = ref([]);
     const wordOfDayCurrent = ref(null);
+    const adminOps = ref({
+      summary: {
+        totalUsers: 0,
+        newUsersLast7Days: 0,
+        verifiedUsers: 0,
+        adminUsers: 0,
+        clientUsers: 0,
+        publishedContent: 0,
+        draftContent: 0,
+        openSupportRequests: 0,
+        activePrivacyRequests: 0,
+        totalFeedback: 0,
+        averageRating: null,
+      },
+      recentUsers: [],
+      feedback: [],
+      supportInbox: [],
+      signupTrend: [],
+      generatedAt: '',
+    });
     const wordOfDayForm = reactive({
       title: 'Word for Today',
       passage: '',
@@ -329,11 +373,32 @@ export default defineComponent({
       const published = managedItems.value.filter((item) => item.visibility === 'published').length;
       const drafts = managedItems.value.filter((item) => item.visibility === 'draft').length;
       const videoItems = managedItems.value.filter((item) => item.type === 'video').length;
+      const summary = adminOps.value.summary || {};
+
+      if (isAdmin.value) {
+        return [
+          { label: 'Published Content', value: summary.publishedContent || published, accent: 'mint' },
+          { label: 'Draft Content', value: summary.draftContent || drafts, accent: 'blue' },
+          { label: 'Registered Users', value: summary.totalUsers || 0, accent: 'amber' },
+          { label: 'Open Complaints', value: summary.openSupportRequests || 0, accent: 'rose' },
+        ];
+      }
+
       return [
         { label: 'All Content', value: total, accent: 'mint' },
         { label: 'Published', value: published, accent: 'blue' },
         { label: 'Drafts', value: drafts, accent: 'amber' },
         { label: 'Video Items', value: videoItems, accent: 'rose' },
+      ];
+    });
+
+    const audienceStats = computed(() => {
+      const summary = adminOps.value.summary || {};
+      return [
+        { label: 'Registered Users', value: summary.totalUsers || 0, accent: 'mint' },
+        { label: 'New This Week', value: summary.newUsersLast7Days || 0, accent: 'blue' },
+        { label: 'Open Complaints', value: summary.openSupportRequests || 0, accent: 'amber' },
+        { label: 'Avg. Rating', value: summary.averageRating != null ? summary.averageRating : '--', accent: 'rose' },
       ];
     });
 
@@ -468,9 +533,17 @@ export default defineComponent({
 
       if (accessToken.value) {
         probes.push({
-          label: 'Admin Content Management',
+          label: 'Creator Content Management',
           path: '/v1/content/manage?page=1&limit=1',
           request: () => http.get('/v1/content/manage', { params: { page: 1, limit: 1 } }),
+        });
+      }
+
+      if (isAdmin.value) {
+        probes.push({
+          label: 'Admin Operations Dashboard',
+          path: '/v1/admin/dashboard',
+          request: () => http.get('/v1/admin/dashboard'),
         });
         probes.push({
           label: 'Admin YouTube Feed',
@@ -494,6 +567,8 @@ export default defineComponent({
                 path: probe.path,
                 status: 'ok',
                 statusCode: response.status,
+                capabilities: probe.label === 'API Health' ? response.data?.capabilities || null : null,
+                services: probe.label === 'API Health' ? response.data?.services || null : null,
                 detail: probe.label === 'API Health'
                   ? describeHealthCheckDetail(response.data)
                   : 'Connected',
@@ -505,6 +580,8 @@ export default defineComponent({
                 path: probe.path,
                 status: 'error',
                 statusCode: mapped.statusCode,
+                capabilities: probe.label === 'API Health' ? error.response?.data?.capabilities || null : null,
+                services: probe.label === 'API Health' ? error.response?.data?.services || null : null,
                 detail: probe.label === 'API Health' && axios.isAxiosError(error)
                   ? describeHealthCheckDetail(error.response?.data)
                   : mapped.detail,
@@ -562,6 +639,26 @@ export default defineComponent({
       mobileAppConfigMeta.value = null;
       wordOfDayHistory.value = [];
       wordOfDayCurrent.value = null;
+      adminOps.value = {
+        summary: {
+          totalUsers: 0,
+          newUsersLast7Days: 0,
+          verifiedUsers: 0,
+          adminUsers: 0,
+          clientUsers: 0,
+          publishedContent: 0,
+          draftContent: 0,
+          openSupportRequests: 0,
+          activePrivacyRequests: 0,
+          totalFeedback: 0,
+          averageRating: null,
+        },
+        recentUsers: [],
+        feedback: [],
+        supportInbox: [],
+        signupTrend: [],
+        generatedAt: '',
+      };
       endpointChecks.value = [];
       endpointChecksAt.value = '';
       dashboardView.value = 'overview';
@@ -750,6 +847,33 @@ export default defineComponent({
       }
     }
 
+    async function fetchAdminOperationsDashboard() {
+      if (!isAdmin.value) return;
+      adminOpsLoading.value = true;
+      try {
+        const response = await http.get('/v1/admin/dashboard');
+        adminOps.value = response.data || adminOps.value;
+      } catch (error) {
+        setNotice(toErrorMessage(error, 'Unable to load audience and feedback dashboard.'), 'error');
+      } finally {
+        adminOpsLoading.value = false;
+      }
+    }
+
+    async function updateSupportRequestStatus(requestId, status) {
+      supportStatusUpdatingId.value = requestId;
+      clearNotice();
+      try {
+        await http.patch(`/v1/admin/support-requests/${requestId}/status`, { status });
+        await fetchAdminOperationsDashboard();
+        setNotice(`Complaint status moved to ${status.replace('_', ' ')}.`, 'success');
+      } catch (error) {
+        setNotice(toErrorMessage(error, 'Unable to update complaint status.'), 'error');
+      } finally {
+        supportStatusUpdatingId.value = null;
+      }
+    }
+
     async function saveWordOfDay() {
       if (!isAdmin.value) {
         setNotice('Only admin accounts can publish Word for Today.', 'error');
@@ -933,6 +1057,7 @@ export default defineComponent({
         await Promise.all([
           fetchManagedContent(),
           fetchUploadPolicies(),
+          isAdmin.value ? fetchAdminOperationsDashboard() : Promise.resolve(),
           isAdmin.value ? fetchMobileAppConfig() : Promise.resolve(),
           isAdmin.value ? fetchWordOfDayDashboard() : Promise.resolve(),
           runEndpointChecks(),
@@ -994,6 +1119,7 @@ export default defineComponent({
         await Promise.all([
           fetchManagedContent(freshToken),
           fetchUploadPolicies(freshToken),
+          authResponse.data.user && authResponse.data.user.role === 'ADMIN' ? fetchAdminOperationsDashboard() : Promise.resolve(),
           authResponse.data.user && authResponse.data.user.role === 'ADMIN' ? fetchMobileAppConfig() : Promise.resolve(),
           authResponse.data.user && authResponse.data.user.role === 'ADMIN' ? fetchWordOfDayDashboard() : Promise.resolve(),
           runEndpointChecks(),
@@ -1208,6 +1334,7 @@ export default defineComponent({
         await Promise.all([
           fetchManagedContent(),
           fetchUploadPolicies(),
+          isAdmin.value ? fetchAdminOperationsDashboard() : Promise.resolve(),
           isAdmin.value ? fetchMobileAppConfig() : Promise.resolve(),
           isAdmin.value ? fetchWordOfDayDashboard() : Promise.resolve(),
           runEndpointChecks(),
@@ -1525,6 +1652,211 @@ export default defineComponent({
                         <h3>{step.title}</h3>
                         <p>{step.detail}</p>
                       </div>
+                    </article>
+                  ))}
+                </div>
+              </article>
+
+              <article class="panel glass-panel reveal-up" style={{ animationDelay: '240ms' }}>
+                <div class="section-head split">
+                  <div>
+                    <h2>Audience &amp; Health</h2>
+                    <p>Track registered users, onboarding momentum, and deployment readiness from one place.</p>
+                  </div>
+                  <button
+                    type="button"
+                    class="ghost-btn compact"
+                    onClick={() => void fetchAdminOperationsDashboard()}
+                    disabled={adminOpsLoading.value}
+                  >
+                    {adminOpsLoading.value ? 'Refreshing...' : 'Refresh'}
+                  </button>
+                </div>
+
+                <section class="stats-grid">
+                  {audienceStats.value.map((card, index) => (
+                    <article
+                      class={['stat-card', 'glass-panel', `accent-${card.accent}`]}
+                      style={{ animationDelay: `${index * 60}ms` }}
+                      key={`audience-stat-${card.label}`}
+                    >
+                      <span>{card.label}</span>
+                      <strong>{card.value}</strong>
+                    </article>
+                  ))}
+                </section>
+
+                <div class="grid-2" style={{ marginTop: '0.8rem' }}>
+                  <div class="helper-card">
+                    <strong>Signup momentum</strong>
+                    <p>
+                      {(adminOps.value.signupTrend || []).reduce((sum, point) => sum + Number(point.signups || 0), 0)} new
+                      account{(adminOps.value.signupTrend || []).reduce((sum, point) => sum + Number(point.signups || 0), 0) === 1 ? '' : 's'} in the
+                      last 14 days.
+                    </p>
+                  </div>
+                  <div class="helper-card">
+                    <strong>Infrastructure readiness</strong>
+                    <p>
+                      {apiHealthCheck.value
+                        ? apiHealthCheck.value.detail
+                        : 'Run endpoint diagnostics to verify API, Redis, PostgreSQL, YouTube, and SMTP readiness.'}
+                    </p>
+                  </div>
+                </div>
+
+                {apiHealthCheck.value && apiHealthCheck.value.capabilities ? (
+                  <div class="pill-row" style={{ marginTop: '0.8rem' }}>
+                    <span class={['pill', apiHealthCheck.value.capabilities.youtube ? 'pill-live' : 'pill-draft']}>
+                      YouTube {apiHealthCheck.value.capabilities.youtube ? 'ready' : 'disabled'}
+                    </span>
+                    <span class={['pill', apiHealthCheck.value.capabilities.smtp ? 'pill-live' : 'pill-draft']}>
+                      Email {apiHealthCheck.value.capabilities.smtp ? 'ready' : 'not configured'}
+                    </span>
+                    <span class={['pill', apiHealthCheck.value.capabilities.supabase ? 'pill-live' : 'pill-draft']}>
+                      Supabase {apiHealthCheck.value.capabilities.supabase ? 'connected' : 'not linked'}
+                    </span>
+                  </div>
+                ) : null}
+
+                <div class="section-head compact" style={{ marginTop: '1rem' }}>
+                  <div>
+                    <h3>Recent registrations</h3>
+                    <p>Latest accounts entering the platform.</p>
+                  </div>
+                  {adminOps.value.generatedAt ? (
+                    <span class="section-badge">Synced {formatDateTime(adminOps.value.generatedAt)}</span>
+                  ) : null}
+                </div>
+
+                <div class="list-wrap">
+                  {adminOps.value.recentUsers.length === 0 ? (
+                    <div class="empty-state">No registered users have been recorded yet.</div>
+                  ) : adminOps.value.recentUsers.map((user) => (
+                    <article class="content-card" key={`recent-user-${user.id}`}>
+                      <div class="card-top">
+                        <div class="pill-row">
+                          <span class={['pill', user.role === 'ADMIN' ? 'pill-live' : 'pill-audio']}>{user.role.toLowerCase()}</span>
+                          <span class="muted-chip">{humanizeToken(user.authProvider)}</span>
+                          <span class={['pill', user.emailVerifiedAt ? 'pill-live' : 'pill-draft']}>
+                            {user.emailVerifiedAt ? 'verified' : 'pending'}
+                          </span>
+                        </div>
+                        <span class="muted-chip">{formatDateTime(user.createdAt)}</span>
+                      </div>
+                      <div class="card-body">
+                        <h3>{user.displayName || 'Unnamed user'}</h3>
+                        <p>{user.email}</p>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </article>
+
+              <article class="panel glass-panel reveal-up" style={{ animationDelay: '260ms' }}>
+                <div class="section-head split">
+                  <div>
+                    <h2>Feedback &amp; Complaints</h2>
+                    <p>Monitor ratings, user notes, and support tickets from the mobile app.</p>
+                  </div>
+                  <span class="section-badge">
+                    {(adminOps.value.summary && adminOps.value.summary.totalFeedback) || 0} feedback item{((adminOps.value.summary && adminOps.value.summary.totalFeedback) || 0) === 1 ? '' : 's'}
+                  </span>
+                </div>
+
+                <div class="grid-2" style={{ marginBottom: '0.9rem' }}>
+                  <div class="helper-card">
+                    <strong>Support workload</strong>
+                    <p>
+                      {(adminOps.value.summary && adminOps.value.summary.openSupportRequests) || 0} complaint ticket(s) are currently
+                      open or in progress.
+                    </p>
+                  </div>
+                  <div class="helper-card">
+                    <strong>Privacy queue</strong>
+                    <p>
+                      {(adminOps.value.summary && adminOps.value.summary.activePrivacyRequests) || 0} privacy request(s) are awaiting
+                      completion.
+                    </p>
+                  </div>
+                </div>
+
+                <div class="section-head compact">
+                  <div>
+                    <h3>Latest ratings</h3>
+                    <p>Signals captured from the mobile experience.</p>
+                  </div>
+                </div>
+
+                <div class="list-wrap">
+                  {adminOps.value.feedback.length === 0 ? (
+                    <div class="empty-state">No feedback has been submitted from mobile users yet.</div>
+                  ) : adminOps.value.feedback.map((entry) => (
+                    <article class="content-card" key={`feedback-${entry.id}`}>
+                      <div class="card-top">
+                        <div class="pill-row">
+                          <span class="pill pill-video">{entry.rating}/5</span>
+                          <span class="muted-chip">{humanizeToken(entry.channel)}</span>
+                        </div>
+                        <span class="muted-chip">{formatDateTime(entry.createdAt)}</span>
+                      </div>
+                      <div class="card-body">
+                        <h3>{entry.user && entry.user.displayName ? entry.user.displayName : 'Anonymous rating'}</h3>
+                        <p>{entry.comment ? truncate(entry.comment, 140) : 'Rating submitted without a written note.'}</p>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+
+                <div class="section-head compact" style={{ marginTop: '1rem' }}>
+                  <div>
+                    <h3>Support inbox</h3>
+                    <p>Complaints and issue reports from the mobile support form.</p>
+                  </div>
+                </div>
+
+                <div class="list-wrap">
+                  {adminOps.value.supportInbox.length === 0 ? (
+                    <div class="empty-state">No complaints or support tickets have been submitted yet.</div>
+                  ) : adminOps.value.supportInbox.map((ticket) => (
+                    <article class="content-card" key={`support-ticket-${ticket.id}`}>
+                      <div class="card-top">
+                        <div class="pill-row">
+                          <span class={['pill', ticket.status === 'resolved' || ticket.status === 'closed' ? 'pill-live' : 'pill-draft']}>
+                            {humanizeToken(ticket.status)}
+                          </span>
+                          <span class="muted-chip">{humanizeToken(ticket.priority)}</span>
+                          <span class="muted-chip">{humanizeToken(ticket.category)}</span>
+                        </div>
+                        <span class="muted-chip">{formatDateTime(ticket.createdAt)}</span>
+                      </div>
+                      <div class="card-body">
+                        <h3>{ticket.subject}</h3>
+                        <p>{truncate(ticket.message, 180)}</p>
+                      </div>
+                      <div class="meta-grid">
+                        <div>
+                          <span class="meta-label">Reporter</span>
+                          <strong>{ticket.user && ticket.user.displayName ? ticket.user.displayName : 'Unknown user'}</strong>
+                        </div>
+                        <div>
+                          <span class="meta-label">Email</span>
+                          <strong>{ticket.user && ticket.user.email ? ticket.user.email : 'No email attached'}</strong>
+                        </div>
+                      </div>
+                      <label style={{ marginTop: '0.2rem' }}>
+                        Ticket status
+                        <select
+                          value={ticket.status}
+                          disabled={supportStatusUpdatingId.value === ticket.id}
+                          onChange={(event) => void updateSupportRequestStatus(ticket.id, readValue(event))}
+                        >
+                          <option value="open">Open</option>
+                          <option value="in_progress">In Progress</option>
+                          <option value="resolved">Resolved</option>
+                          <option value="closed">Closed</option>
+                        </select>
+                      </label>
                     </article>
                   ))}
                 </div>
