@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Platform,
   ScrollView,
@@ -10,20 +10,21 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { CustomText } from '../components/CustomText';
 import { AppButton } from '../components/ui/AppButton';
 import { Screen } from '../components/layout/Screen';
 import { TVTouchable } from '../components/ui/TVTouchable';
 import { FadeIn } from '../components/ui/FadeIn';
-import { AuthBrandPanel } from '../components/auth/AuthBrandPanel';
-import { loginMobileUser } from '../services/authService';
-import { useAuth } from '../context/AuthContext';
+import { requestMobilePasswordReset } from '../services/authService';
 
-export default function SignInScreen() {
+const getParam = (value: string | string[] | undefined): string =>
+  Array.isArray(value) ? value[0] ?? '' : value ?? '';
+
+export default function ForgotPasswordScreen() {
   const router = useRouter();
-  const { initializing, isAuthenticated } = useAuth();
   const { width, height } = useWindowDimensions();
+  const params = useLocalSearchParams<{ email?: string | string[] }>();
 
   const isTV = Platform.isTV;
   const isWeb = Platform.OS === 'web';
@@ -31,52 +32,29 @@ export default function SignInScreen() {
   const compact = width < 370;
   const compactViewport = height < 760;
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [hidePassword, setHidePassword] = useState(true);
+  const [email, setEmail] = useState(() => getParam(params.email).trim().toLowerCase());
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
-  useEffect(() => {
-    if (!initializing && isAuthenticated) {
-      router.replace('/(tabs)/home');
-    }
-  }, [initializing, isAuthenticated, router]);
+  const canSubmit = useMemo(() => Boolean(email.trim()), [email]);
 
-  const handleSignIn = async () => {
+  const handleRequestReset = async () => {
     setErrorMessage('');
+    setSuccessMessage('');
+
     const normalizedEmail = email.trim().toLowerCase();
-    if (!email.trim() || !password.trim()) {
-      setErrorMessage('Enter your email and password.');
+    if (!normalizedEmail) {
+      setErrorMessage('Enter your email address.');
       return;
     }
 
     setSubmitting(true);
     try {
-      const session = await loginMobileUser({
-        email: normalizedEmail,
-        password,
-      });
-
-      if (session.requiresEmailVerification) {
-        router.replace({
-          pathname: '/verify-email',
-          params: { email: normalizedEmail },
-        });
-        return;
-      }
-
-      router.replace('/(tabs)/home');
+      const response = await requestMobilePasswordReset({ email: normalizedEmail });
+      setSuccessMessage(response.message);
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Sign in failed';
-      setErrorMessage(message);
-
-      if (/email is not verified/i.test(message)) {
-        router.push({
-          pathname: '/verify-email',
-          params: { email: normalizedEmail },
-        });
-      }
+      setErrorMessage(error instanceof Error ? error.message : 'Unable to send reset email');
     } finally {
       setSubmitting(false);
     }
@@ -87,16 +65,16 @@ export default function SignInScreen() {
       <StatusBar translucent={false} backgroundColor="#07050F" barStyle="light-content" />
 
       <LinearGradient
-        colors={['rgba(154,107,255,0.42)', 'rgba(15,10,29,0)']}
+        colors={['rgba(154,107,255,0.30)', 'rgba(15,10,29,0)']}
         start={{ x: 0, y: 0 }}
         end={{ x: 0.9, y: 1 }}
         style={{
           position: 'absolute',
           left: -44,
-          top: -30,
-          width: isTablet ? 430 : 320,
-          height: isTablet ? 430 : 320,
-          borderRadius: 430,
+          top: -34,
+          width: isTablet ? 420 : 320,
+          height: isTablet ? 420 : 320,
+          borderRadius: 420,
         }}
       />
 
@@ -119,7 +97,7 @@ export default function SignInScreen() {
             <FadeIn>
               <View style={{ paddingTop: compactViewport ? 4 : 10 }}>
                 <TVTouchable
-                  onPress={() => router.replace('/')}
+                  onPress={() => router.replace('/sign-in')}
                   style={{
                     width: 44,
                     height: 44,
@@ -148,25 +126,21 @@ export default function SignInScreen() {
                     borderColor: 'rgba(235,226,255,0.14)',
                   }}
                 >
-                  <AuthBrandPanel
-                    salutation="Welcome back"
-                    description="Sign in to continue your worship, messages, playlists, and personalized ministry experience."
-                  />
                   <CustomText
                     variant="display"
                     style={{
                       color: '#F8F7FC',
-                      fontSize: isTablet ? 28 : 24,
-                      lineHeight: isTablet ? 34 : 30,
+                      fontSize: isTablet ? 30 : 26,
+                      lineHeight: isTablet ? 36 : 31,
                     }}
                   >
-                    Sign In
+                    Forgot Password
                   </CustomText>
                   <CustomText variant="body" style={{ color: 'rgba(203,196,226,0.86)', marginTop: 8 }}>
-                    Access your secure account to keep your library and playback activity in sync.
+                    Enter your account email and we will send secure reset instructions.
                   </CustomText>
 
-                  <View style={{ marginTop: 18, gap: 10 }}>
+                  <View style={{ marginTop: 16 }}>
                     <View
                       style={{
                         borderRadius: 14,
@@ -182,79 +156,14 @@ export default function SignInScreen() {
                         keyboardType="email-address"
                         autoCapitalize="none"
                         placeholder="Email address"
-                        placeholderTextColor="rgba(207,200,228,0.65)"
+                        placeholderTextColor="rgba(207,200,228,0.68)"
                         style={{
                           minHeight: 52,
                           color: '#F8F7FC',
-                          fontSize: 15,
-                          fontFamily: 'Sora_400Regular',
+                          fontSize: 14,
+                          fontFamily: 'SpaceGrotesk_500Medium',
                         }}
                       />
-                    </View>
-
-                    <View
-                      style={{
-                        borderRadius: 14,
-                        borderWidth: 1,
-                        borderColor: 'rgba(255,255,255,0.16)',
-                        backgroundColor: 'rgba(255,255,255,0.05)',
-                        paddingHorizontal: 14,
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                      }}
-                    >
-                      <TextInput
-                        value={password}
-                        onChangeText={setPassword}
-                        secureTextEntry={hidePassword}
-                        placeholder="Password"
-                        placeholderTextColor="rgba(207,200,228,0.65)"
-                        style={{
-                          flex: 1,
-                          minHeight: 52,
-                          color: '#F8F7FC',
-                          fontSize: 15,
-                          fontFamily: 'Sora_400Regular',
-                        }}
-                      />
-                      <TVTouchable
-                        onPress={() => setHidePassword((prev) => !prev)}
-                        style={{ marginLeft: 10 }}
-                        showFocusBorder={false}
-                      >
-                        <MaterialIcons
-                          name={hidePassword ? 'visibility' : 'visibility-off'}
-                          size={20}
-                          color="rgba(226,218,247,0.9)"
-                        />
-                      </TVTouchable>
-                    </View>
-
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <TVTouchable
-                        onPress={() => {
-                          const normalizedEmail = email.trim().toLowerCase();
-                          if (normalizedEmail) {
-                            router.push({
-                              pathname: '/verify-email',
-                              params: { email: normalizedEmail },
-                            });
-                            return;
-                          }
-                          router.push('/verify-email');
-                        }}
-                        showFocusBorder={false}
-                      >
-                        <CustomText variant="label" style={{ color: '#CDB9FF' }}>
-                          Verify email
-                        </CustomText>
-                      </TVTouchable>
-
-                      <TVTouchable onPress={() => router.push('/forgot-password')} showFocusBorder={false}>
-                        <CustomText variant="label" style={{ color: '#CDB9FF' }}>
-                          Forgot password?
-                        </CustomText>
-                      </TVTouchable>
                     </View>
                   </View>
 
@@ -276,22 +185,61 @@ export default function SignInScreen() {
                     </View>
                   ) : null}
 
+                  {successMessage ? (
+                    <View
+                      style={{
+                        marginTop: 12,
+                        borderRadius: 12,
+                        borderWidth: 1,
+                        borderColor: 'rgba(122,230,166,0.35)',
+                        backgroundColor: 'rgba(56,170,104,0.14)',
+                        paddingHorizontal: 12,
+                        paddingVertical: 10,
+                      }}
+                    >
+                      <CustomText variant="caption" style={{ color: '#D4FFE4' }}>
+                        {successMessage}
+                      </CustomText>
+                    </View>
+                  ) : null}
+
                   <AppButton
-                    title="Sign In"
+                    title="Send Reset Email"
                     size="lg"
                     fullWidth
                     loading={submitting}
-                    onPress={() => void handleSignIn()}
+                    onPress={() => void handleRequestReset()}
+                    disabled={!canSubmit || submitting}
                     style={{ marginTop: 16, borderRadius: 16 }}
                   />
 
                   <TVTouchable
-                    onPress={() => router.push('/sign-up')}
-                    style={{ alignSelf: 'center', marginTop: 14 }}
+                    onPress={() => {
+                      const normalizedEmail = email.trim().toLowerCase();
+                      if (normalizedEmail) {
+                        router.push({
+                          pathname: '/reset-password',
+                          params: { email: normalizedEmail },
+                        });
+                        return;
+                      }
+                      router.push('/reset-password');
+                    }}
+                    style={{ alignSelf: 'center', marginTop: 12 }}
                     showFocusBorder={false}
                   >
                     <CustomText variant="label" style={{ color: '#CDB9FF' }}>
-                      New here? Create Account
+                      Already have a reset token?
+                    </CustomText>
+                  </TVTouchable>
+
+                  <TVTouchable
+                    onPress={() => router.replace('/sign-in')}
+                    style={{ alignSelf: 'center', marginTop: 8 }}
+                    showFocusBorder={false}
+                  >
+                    <CustomText variant="label" style={{ color: '#CDB9FF' }}>
+                      Back to Sign In
                     </CustomText>
                   </TVTouchable>
                 </View>

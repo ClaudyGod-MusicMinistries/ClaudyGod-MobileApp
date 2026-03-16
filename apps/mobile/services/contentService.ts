@@ -94,7 +94,7 @@ const DEFAULT_BUNDLE: FeedBundle = {
   announcements: [],
   mostPlayed: [],
   recent: [],
-  topCategories: ['All', 'Music', 'Videos', 'Live', 'Playlists', 'Ads'],
+  topCategories: ['All', 'Music', 'Videos', 'Live', 'Playlists'],
 };
 
 function safeSubtitle(item: ApiContentItem): string {
@@ -107,7 +107,7 @@ function safeSubtitle(item: ApiContentItem): string {
   if (Array.isArray(item.tags) && item.tags.length > 0) {
     return item.tags.slice(0, 2).join(' • ');
   }
-  return item.type === 'ad' ? 'Sponsored' : 'ClaudyGod Channel';
+  return 'ClaudyGod Channel';
 }
 
 function safeDescription(item: ApiContentItem): string {
@@ -269,31 +269,34 @@ function dedupe(items: FeedCardItem[]): FeedCardItem[] {
   return result;
 }
 
+function removeAdItems(items: FeedCardItem[]): FeedCardItem[] {
+  return items.filter((item) => item.type !== 'ad');
+}
+
 export async function fetchFeedBundle(): Promise<FeedBundle> {
-  const [all, music, videos, playlists, live, ads, announcements, mostPlayed, youtubeFeed] = await Promise.all([
+  const [all, music, videos, playlists, live, announcements, mostPlayed, youtubeFeed] = await Promise.all([
     fetchAllPublished(),
     fetchByType('audio'),
     fetchByType('video'),
     fetchByType('playlist'),
     fetchByType('live'),
-    fetchByType('ad'),
     fetchByType('announcement'),
     fetchMostPlayed(),
     fetchYouTubeFeed(),
   ]);
 
-  const mergedMusic = dedupe([...music, ...youtubeFeed.music]);
-  const mergedVideos = dedupe([...videos, ...youtubeFeed.videos]);
-  const mergedLive = dedupe([...live, ...youtubeFeed.live]);
-  const mergedAnnouncements = dedupe([...announcements, ...youtubeFeed.announcements]);
-  const mergedAll = dedupe([
+  const mergedMusic = dedupe(removeAdItems([...music, ...youtubeFeed.music]));
+  const mergedVideos = dedupe(removeAdItems([...videos, ...youtubeFeed.videos]));
+  const mergedLive = dedupe(removeAdItems([...live, ...youtubeFeed.live]));
+  const mergedAnnouncements = dedupe(removeAdItems([...announcements, ...youtubeFeed.announcements]));
+  const mergedAll = dedupe(removeAdItems([
     ...all,
     ...youtubeFeed.recent,
     ...youtubeFeed.videos,
     ...youtubeFeed.music,
     ...youtubeFeed.live,
     ...youtubeFeed.announcements,
-  ]);
+  ]));
 
   const recent = [...mergedAll].sort((a, b) => {
     const aTs = a.createdAt ? Date.parse(a.createdAt) : 0;
@@ -308,7 +311,6 @@ export async function fetchFeedBundle(): Promise<FeedBundle> {
     ...mergedMusic,
     ...playlists,
     ...mergedAnnouncements,
-    ...ads,
     ...mergedAll,
   ]);
 
@@ -319,7 +321,7 @@ export async function fetchFeedBundle(): Promise<FeedBundle> {
     videos: mergedVideos.slice(0, 14),
     playlists: dedupe(playlists).slice(0, 12),
     live: mergedLive.slice(0, 10),
-    ads: dedupe(ads).slice(0, 8),
+    ads: [],
     announcements: mergedAnnouncements.slice(0, 8),
     mostPlayed: dedupe(mostPlayed).slice(0, 12),
     recent: dedupe(recent).slice(0, 12),

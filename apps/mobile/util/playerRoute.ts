@@ -59,3 +59,32 @@ export function isDirectPlayableVideoUrl(url?: string): boolean {
     normalized.startsWith('http://')
   );
 }
+
+export function isDirectPlayableAudioUrl(url?: string): boolean {
+  if (!url) return false;
+  const normalized = url.trim().toLowerCase();
+  if (!normalized) return false;
+
+  if (
+    normalized.includes('youtube.com') ||
+    normalized.includes('youtu.be') ||
+    normalized.includes('vimeo.com') ||
+    normalized.includes('facebook.com') ||
+    normalized.includes('instagram.com') ||
+    normalized.includes('tiktok.com')
+  ) {
+    return false;
+  }
+
+  return (
+    normalized.includes('.mp3') ||
+    normalized.includes('.m4a') ||
+    normalized.includes('.aac') ||
+    normalized.includes('.wav') ||
+    normalized.includes('.ogg') ||
+    normalized.includes('.flac') ||
+    normalized.includes('gtv-videos-bucket') ||
+    normalized.startsWith('https://') ||
+    normalized.startsWith('http://')
+  );
+}
