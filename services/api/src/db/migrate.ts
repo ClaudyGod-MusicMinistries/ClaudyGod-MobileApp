@@ -57,6 +57,8 @@ const migrations = [
   `CREATE TABLE IF NOT EXISTS email_jobs (
     id BIGSERIAL PRIMARY KEY,
     queue_job_id TEXT,
+    provider TEXT NOT NULL DEFAULT 'generic',
+    template_key TEXT,
     job_type TEXT NOT NULL,
     recipients TEXT[] NOT NULL DEFAULT '{}',
     subject TEXT NOT NULL,
@@ -65,10 +67,16 @@ const migrations = [
     status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'failed')),
     payload JSONB NOT NULL DEFAULT '{}'::jsonb,
     error TEXT,
+    sent_message_id TEXT,
+    last_attempt_at TIMESTAMPTZ,
     processed_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`,
+  `ALTER TABLE email_jobs ADD COLUMN IF NOT EXISTS provider TEXT NOT NULL DEFAULT 'generic'`,
+  `ALTER TABLE email_jobs ADD COLUMN IF NOT EXISTS template_key TEXT`,
+  `ALTER TABLE email_jobs ADD COLUMN IF NOT EXISTS sent_message_id TEXT`,
+  `ALTER TABLE email_jobs ADD COLUMN IF NOT EXISTS last_attempt_at TIMESTAMPTZ`,
   `CREATE TABLE IF NOT EXISTS auth_action_tokens (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,
