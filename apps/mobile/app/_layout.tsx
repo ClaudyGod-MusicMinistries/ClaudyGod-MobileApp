@@ -328,8 +328,11 @@ function RootLayoutInner() {
         }}
       >
         <Stack.Screen name="index" options={{ gestureEnabled: false, animation: 'fade' }} />
-        <Stack.Screen name="sign-in" options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="sign-up" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="sign-in" options={{ gestureEnabled: false, animation: 'slide_from_right' }} />
+        <Stack.Screen name="sign-up" options={{ gestureEnabled: false, animation: 'slide_from_right' }} />
+        <Stack.Screen name="forgot-password" options={{ gestureEnabled: false, animation: 'slide_from_right' }} />
+        <Stack.Screen name="reset-password" options={{ gestureEnabled: false, animation: 'slide_from_right' }} />
+        <Stack.Screen name="verify-email" options={{ gestureEnabled: false, animation: 'slide_from_right' }} />
         <Stack.Screen name="profile" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
       </Stack>

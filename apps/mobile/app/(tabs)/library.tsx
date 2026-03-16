@@ -104,7 +104,7 @@ export default function LibraryScreen() {
                     Your Library
                   </CustomText>
                   <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 2 }}>
-                    Spotify-style structure: liked, downloaded, playlists.
+                    Saved tracks, downloads, and playlists.
                   </CustomText>
                 </View>
 

@@ -5,7 +5,6 @@ import './App.css';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 const GOOGLE_LOGIN_URL = import.meta.env.VITE_GOOGLE_LOGIN_URL || '';
 const ACCESS_TOKEN_KEY = 'claudy_admin_access_token';
-const TYPOGRAPHY_MODE_KEY = 'claudy_admin_typography_mode';
 const MOBILE_PREVIEW_URL_KEY = 'claudy_admin_mobile_preview_url';
 const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000;
 const BRAND_LOGO_URL = '/brand/claudy-logo.webp';
@@ -13,10 +12,37 @@ const CONTENT_TYPES = ['audio', 'video', 'playlist', 'announcement'];
 const VISIBILITY_OPTIONS = ['draft', 'published'];
 const YOUTUBE_SYNC_DEFAULT_LIMIT = 8;
 const DEFAULT_MOBILE_PREVIEW_URL = import.meta.env.VITE_MOBILE_PREVIEW_URL || 'http://localhost:8081';
-const TYPOGRAPHY_MODES = [
-  { value: 'compact', label: 'Compact' },
-  { value: 'cozy', label: 'Cozy' },
-  { value: 'comfortable', label: 'Comfortable' },
+const LANDING_FEATURES = [
+  {
+    title: 'Upload Pipeline',
+    description: 'Upload audio, video, and artwork with storage rules validated by the backend.',
+  },
+  {
+    title: 'Role-based Access',
+    description: 'Client and admin actions are isolated with protected API endpoints.',
+  },
+  {
+    title: 'Mobile-ready Content',
+    description: 'Assign every item to app sections so users see updates immediately.',
+  },
+  {
+    title: 'Editorial Control',
+    description: 'Keep drafts private until quality checks are complete and ready to publish.',
+  },
+];
+const WORKFLOW_STEPS = [
+  {
+    title: 'Create',
+    detail: 'Add media details, upload files, and set app sections.',
+  },
+  {
+    title: 'Review',
+    detail: 'Keep entries in draft until your team validates quality and metadata.',
+  },
+  {
+    title: 'Publish',
+    detail: 'Release to the mobile experience and monitor endpoint health.',
+  },
 ];
 const API_HOST_LABEL = (() => {
   try {
@@ -37,18 +63,6 @@ function readStoredToken() {
   } catch (error) {
     return '';
   }
-}
-
-function readStoredTypographyMode() {
-  try {
-    const stored = localStorage.getItem(TYPOGRAPHY_MODE_KEY) || '';
-    if (TYPOGRAPHY_MODES.some((mode) => mode.value === stored)) {
-      return stored;
-    }
-  } catch (error) {
-    // Keep default mode when storage is unavailable.
-  }
-  return 'cozy';
 }
 
 function normalizePreviewUrl(value) {
@@ -147,6 +161,25 @@ function formatBytes(bytes) {
   return `${(value / (1024 * 1024 * 1024)).toFixed(2)} GB`;
 }
 
+function describeHealthCheckDetail(payload) {
+  const services = payload && payload.services ? payload.services : null;
+  const capabilities = payload && payload.capabilities ? payload.capabilities : null;
+  if (!services) return 'Core API responding';
+
+  const details = [];
+  if (services.postgres) {
+    details.push(`PostgreSQL: ${services.postgres}`);
+  }
+  if (services.redis) {
+    details.push(`Redis: ${services.redis}`);
+  }
+  if (capabilities && capabilities.youtube === false) {
+    details.push('YouTube is disabled in API environment');
+  }
+
+  return details.length > 0 ? details.join(' • ') : 'Core API responding';
+}
+
 function acceptFromPolicy(policy) {
   if (!policy || !Array.isArray(policy.allowedExtensions) || policy.allowedExtensions.length === 0) return undefined;
   return policy.allowedExtensions.join(',');
@@ -160,7 +193,6 @@ export default defineComponent({
   name: 'ClaudyContentStudio',
   setup() {
     const accessToken = ref(readStoredToken());
-    const typographyMode = ref(readStoredTypographyMode());
     const currentUser = ref(null);
     const authLoading = ref(false);
     const authMode = ref('login');
@@ -266,6 +298,26 @@ export default defineComponent({
     const isAdmin = computed(() => Boolean(currentUser.value && currentUser.value.role === 'ADMIN'));
     const isCompactHeader = computed(() => viewportWidth.value <= 1024);
     const googleLoginEnabled = computed(() => Boolean(GOOGLE_LOGIN_URL));
+    const apiHealthCheck = computed(() =>
+      (endpointChecks.value || []).find((check) => check && check.label === 'API Health') || null,
+    );
+    const hasEndpointErrors = computed(() =>
+      (endpointChecks.value || []).some((check) => check && check.status === 'error'),
+    );
+    const diagnosticsLabel = computed(() => {
+      if (!endpointChecks.value.length) return 'Diagnostics pending';
+      return hasEndpointErrors.value ? 'Diagnostics need attention' : 'Diagnostics healthy';
+    });
+    const diagnosticsTone = computed(() => {
+      if (!endpointChecks.value.length) return 'subtle';
+      return hasEndpointErrors.value ? 'warning' : 'success';
+    });
+    const infraSummary = computed(() => {
+      if (apiHealthCheck.value && apiHealthCheck.value.status === 'ok') {
+        return apiHealthCheck.value.detail;
+      }
+      return 'Content persists in PostgreSQL and runtime jobs are coordinated through Redis.';
+    });
 
     const stats = computed(() => {
       const total = managedItems.value.length;
@@ -437,7 +489,9 @@ export default defineComponent({
                 path: probe.path,
                 status: 'ok',
                 statusCode: response.status,
-                detail: youtubeDisabled ? 'Connected • YouTube is disabled in API environment' : 'Connected',
+                detail: probe.label === 'API Health'
+                  ? describeHealthCheckDetail(response.data)
+                  : 'Connected',
               };
             } catch (error) {
               const mapped = mapProbeError(error, `${probe.label} request failed`);
@@ -446,7 +500,9 @@ export default defineComponent({
                 path: probe.path,
                 status: 'error',
                 statusCode: mapped.statusCode,
-                detail: mapped.detail,
+                detail: probe.label === 'API Health' && axios.isAxiosError(error)
+                  ? describeHealthCheckDetail(error.response?.data)
+                  : mapped.detail,
               };
             }
           }),
@@ -470,16 +526,6 @@ export default defineComponent({
         }
       } finally {
         endpointChecksLoading.value = false;
-      }
-    }
-
-    function setTypographyMode(mode) {
-      const next = TYPOGRAPHY_MODES.some((item) => item.value === mode) ? mode : 'cozy';
-      typographyMode.value = next;
-      try {
-        localStorage.setItem(TYPOGRAPHY_MODE_KEY, next);
-      } catch (error) {
-        // Ignore storage errors; runtime value still updates.
       }
     }
 
@@ -1233,33 +1279,21 @@ export default defineComponent({
                 <p class="eyebrow">ClaudyGod Ministries</p>
                 <h1>Content Studio</h1>
                 <p class="subtitle">
-                  A clean publishing center for your team to upload, organize, and publish new content.
+                  Professional publishing tools for managing ministry media across mobile and web experiences.
                 </p>
               </div>
             </div>
 
             <div class="feature-tiles">
-              <article class="feature-tile" style={{ animationDelay: '40ms' }}>
-                <span class="feature-dot" />
-                <div>
-                  <h3>Upload and Publish</h3>
-                  <p>Create new content entries and control what goes live.</p>
-                </div>
-              </article>
-              <article class="feature-tile" style={{ animationDelay: '120ms' }}>
-                <span class="feature-dot" />
-                <div>
-                  <h3>Draft and Review</h3>
-                  <p>Save work as drafts before publishing to your audience.</p>
-                </div>
-              </article>
-              <article class="feature-tile" style={{ animationDelay: '200ms' }}>
-                <span class="feature-dot" />
-                <div>
-                  <h3>Content Library</h3>
-                  <p>Search and manage all uploaded music, videos, and announcements.</p>
-                </div>
-              </article>
+              {LANDING_FEATURES.map((feature, index) => (
+                <article class="feature-tile" style={{ animationDelay: `${40 + index * 70}ms` }} key={`landing-feature-${feature.title}`}>
+                  <span class="feature-dot" />
+                  <div>
+                    <h3>{feature.title}</h3>
+                    <p>{feature.description}</p>
+                  </div>
+                </article>
+              ))}
             </div>
           </div>
 
@@ -1389,7 +1423,7 @@ export default defineComponent({
                   <p class="eyebrow">Publishing Center</p>
                   <h1>{greeting.value}, {displayName.value}</h1>
                   <p class="subtitle">
-                    Manage your content library, save drafts, and publish new releases from one clean dashboard.
+                    Manage your media catalog, publish with confidence, and keep the mobile app in sync.
                   </p>
                 </div>
               </div>
@@ -1406,9 +1440,9 @@ export default defineComponent({
             </div>
 
             <div class="hero-chips">
-              <span class="hero-chip">Professional publishing portal</span>
-              <span class="hero-chip">Fast publishing workflow</span>
-              <span class="hero-chip">Draft + publish controls</span>
+              <span class="hero-chip">Validated uploads</span>
+              <span class="hero-chip">Role-protected actions</span>
+              <span class="hero-chip">Live mobile sync</span>
             </div>
             <div class="hero-shine" />
           </section>
@@ -1457,18 +1491,22 @@ export default defineComponent({
               <article class="panel glass-panel reveal-up" style={{ animationDelay: '220ms' }}>
                 <div class="section-head split">
                   <div>
-                    <h2>Dashboard Overview</h2>
-                    <p>Track content performance and jump into publishing in one click.</p>
+                    <h2>Publishing Workflow</h2>
+                    <p>Follow a consistent path from upload to release for reliable production updates.</p>
                   </div>
                   <button type="button" class="primary-btn" onClick={() => setDashboardView('editor')}>
                     Open Editor
                   </button>
                 </div>
-                <div class="stats-grid">
-                  {stats.value.map((card, index) => (
-                    <article class={['stat-card', 'glass-panel', `accent-${card.accent}`]} key={`overview-${card.label}-${index}`}>
-                      <span>{card.label}</span>
-                      <strong>{card.value}</strong>
+
+                <div class="workflow-grid">
+                  {WORKFLOW_STEPS.map((step, index) => (
+                    <article class="workflow-step" key={`workflow-step-${step.title}`}>
+                      <div class="workflow-step-number">{index + 1}</div>
+                      <div>
+                        <h3>{step.title}</h3>
+                        <p>{step.detail}</p>
+                      </div>
                     </article>
                   ))}
                 </div>
@@ -2324,18 +2362,6 @@ export default defineComponent({
             </div>
           ) : null}
 
-          <section class="support-strip glass-panel reveal-up" style={{ animationDelay: '280ms' }}>
-            <div>
-              <h3>Need help?</h3>
-              <p>For account access, branding updates, or storage setup changes, contact your platform administrator.</p>
-            </div>
-            <div class="support-mark">
-              <div class="logo-wrap">
-                <img src={BRAND_LOGO_URL} alt="ClaudyGod" class="brand-logo" />
-              </div>
-              <span>ClaudyGod Content Studio</span>
-            </div>
-          </section>
         </section>
       );
 
@@ -2359,27 +2385,8 @@ export default defineComponent({
         )
         : (currentUser.value ? dashboardScreen : loginScreen);
 
-      const typographyToggle = (compact = false) => (
-        <div class={['type-density-control', compact ? 'is-compact' : '']}>
-          <span class="type-density-label">Typography</span>
-          <div class="type-density-options" role="group" aria-label="Typography density">
-            {TYPOGRAPHY_MODES.map((option) => (
-              <button
-                key={`type-mode-${compact ? 'mobile' : 'desktop'}-${option.value}`}
-                type="button"
-                class={['type-density-option', typographyMode.value === option.value ? 'is-active' : '']}
-                onClick={() => setTypographyMode(option.value)}
-                aria-pressed={typographyMode.value === option.value ? 'true' : 'false'}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      );
-
       return (
-        <div class={['app-root', `typo-${typographyMode.value}`]}>
+        <div class="app-root">
           <div class="bg-orb orb-a" />
           <div class="bg-orb orb-b" />
           <div class="bg-orb orb-c" />
@@ -2416,7 +2423,6 @@ export default defineComponent({
 
                 {!isCompactHeader.value ? (
                   <div class="header-command-bar">
-                    {typographyToggle()}
                     {currentUser.value ? (
                       <>
                         <div class="user-pill">
@@ -2442,7 +2448,6 @@ export default defineComponent({
             {currentUser.value ? (
               <div class={['header-drawer', headerMenuOpen.value ? 'is-open' : '']}>
                 <div class="header-drawer-inner">
-                  {typographyToggle(true)}
                   <div class="header-drawer-nav">
                     <button
                       type="button"
@@ -2505,24 +2510,40 @@ export default defineComponent({
             <div class="global-footer-inner">
               <div class="footer-grid">
                 <section class="footer-block footer-brand">
-                  <strong>ClaudyGod Content Studio</strong>
-                  <p>Professional publishing and curation dashboard for ministry media teams.</p>
-                  <div class="footer-chip-row">
-                    <span class="footer-chip">Admin Portal</span>
-                    <span class="footer-chip subtle">Session Timeout: 30 min</span>
-                  </div>
+                  <p class="footer-eyebrow">ClaudyGod Ministries</p>
+                  <strong>Content Studio Admin</strong>
+                  <p>Enterprise publishing workspace for structured content operations, approvals, and release readiness.</p>
                 </section>
 
                 <section class="footer-block">
-                  <h4>Publishing Workflow</h4>
-                  <p>Upload media, assign app sections, and publish content across client experiences in one place.</p>
+                  <h4>Platform Flow</h4>
+                  <p>Content submissions move through the API into PostgreSQL, while queues and cache coordination run through Redis.</p>
+                  <div class="footer-chip-row">
+                    <span class="footer-chip">API: {API_HOST_LABEL}</span>
+                    <span
+                      class={[
+                        'footer-chip',
+                        diagnosticsTone.value === 'warning'
+                          ? 'warning'
+                          : diagnosticsTone.value === 'success'
+                            ? 'success'
+                            : 'subtle',
+                      ]}
+                    >
+                      {diagnosticsLabel.value}
+                    </span>
+                  </div>
                 </section>
 
                 <section class="footer-block footer-system">
-                  <h4>System</h4>
-                  <p>API endpoint: {API_HOST_LABEL}</p>
-                  <p>Typography mode: {typographyMode.value}</p>
-                  <div class="footer-right">{currentYear} Claudy Platform</div>
+                  <h4>Infrastructure</h4>
+                  <p>{infraSummary.value}</p>
+                  <p>
+                    {endpointChecksAt.value
+                      ? `Last diagnostic: ${formatDateTime(endpointChecksAt.value)}`
+                      : 'Diagnostics run after sign-in and can be rerun from the Mobile Preview workspace.'}
+                  </p>
+                  <div class="footer-right">© {currentYear} Claudy Platform</div>
                 </section>
               </div>
             </div>
