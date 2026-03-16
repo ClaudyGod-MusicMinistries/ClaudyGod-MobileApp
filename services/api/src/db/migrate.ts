@@ -42,6 +42,8 @@ const migrations = [
   `ALTER TABLE content_items ADD COLUMN IF NOT EXISTS app_sections TEXT[] NOT NULL DEFAULT '{}'`,
   `ALTER TABLE content_items ADD COLUMN IF NOT EXISTS tags TEXT[] NOT NULL DEFAULT '{}'`,
   `ALTER TABLE content_items ADD COLUMN IF NOT EXISTS metadata JSONB NOT NULL DEFAULT '{}'::jsonb`,
+  `ALTER TABLE content_items ADD COLUMN IF NOT EXISTS media_upload_session_id UUID REFERENCES upload_sessions(id) ON DELETE SET NULL`,
+  `ALTER TABLE content_items ADD COLUMN IF NOT EXISTS thumbnail_upload_session_id UUID REFERENCES upload_sessions(id) ON DELETE SET NULL`,
   `CREATE TABLE IF NOT EXISTS content_jobs (
     id BIGSERIAL PRIMARY KEY,
     content_id UUID NOT NULL REFERENCES content_items(id) ON DELETE CASCADE,
@@ -241,6 +243,10 @@ const migrations = [
     WHERE supabase_user_id IS NOT NULL`,
   `CREATE INDEX IF NOT EXISTS idx_content_items_app_sections_gin
     ON content_items USING GIN (app_sections)`,
+  `CREATE INDEX IF NOT EXISTS idx_content_items_media_upload_session_id
+    ON content_items (media_upload_session_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_content_items_thumbnail_upload_session_id
+    ON content_items (thumbnail_upload_session_id)`,
   `CREATE INDEX IF NOT EXISTS idx_content_jobs_status_created_at
     ON content_jobs (status, created_at DESC)`,
   `CREATE INDEX IF NOT EXISTS idx_email_jobs_status_created_at

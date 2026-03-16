@@ -240,6 +240,11 @@ export default defineComponent({
       type: 'audio',
       url: '',
       thumbnailUrl: '',
+      mediaUploadSessionId: '',
+      thumbnailUploadSessionId: '',
+      channelName: '',
+      duration: '',
+      tagsCsv: '',
       appSectionsCsv: '',
       visibility: 'published',
     });
@@ -1063,7 +1068,12 @@ export default defineComponent({
           type: createForm.type,
           url: createForm.url.trim() || undefined,
           thumbnailUrl: createForm.thumbnailUrl.trim() || undefined,
-          sourceKind: 'upload',
+          mediaUploadSessionId: createForm.mediaUploadSessionId || undefined,
+          thumbnailUploadSessionId: createForm.thumbnailUploadSessionId || undefined,
+          sourceKind: createForm.mediaUploadSessionId ? 'upload' : needsUrl ? 'external' : undefined,
+          channelName: createForm.channelName.trim() || undefined,
+          duration: createForm.duration.trim() || undefined,
+          tags: parseCsvList(createForm.tagsCsv),
           appSections: parseCsvList(createForm.appSectionsCsv),
           visibility: createForm.visibility,
         });
@@ -1072,6 +1082,11 @@ export default defineComponent({
         createForm.description = '';
         createForm.url = '';
         createForm.thumbnailUrl = '';
+        createForm.mediaUploadSessionId = '';
+        createForm.thumbnailUploadSessionId = '';
+        createForm.channelName = '';
+        createForm.duration = '';
+        createForm.tagsCsv = '';
         createForm.appSectionsCsv = '';
         await fetchManagedContent();
         setNotice(createForm.visibility === 'published' ? 'Content published successfully.' : 'Draft saved successfully.', 'success');
@@ -1132,6 +1147,7 @@ export default defineComponent({
         });
 
         const upload = signed.data && signed.data.upload ? signed.data.upload : null;
+        const session = signed.data && signed.data.session ? signed.data.session : null;
         if (!upload || !upload.signedUrl) {
           throw new Error('Invalid signed upload response');
         }
@@ -1150,11 +1166,13 @@ export default defineComponent({
 
         if (assetKind === 'thumbnail') {
           createForm.thumbnailUrl = upload.publicUrl || createForm.thumbnailUrl;
+          createForm.thumbnailUploadSessionId = session && session.id ? session.id : createForm.thumbnailUploadSessionId;
         } else {
           createForm.url = upload.publicUrl || createForm.url;
+          createForm.mediaUploadSessionId = session && session.id ? session.id : createForm.mediaUploadSessionId;
         }
 
-        setNotice(`Uploaded ${file.name}. ${assetKind === 'thumbnail' ? 'Thumbnail URL' : 'Media link'} was added to the form.`, 'success');
+        setNotice(`Uploaded ${file.name}. ${assetKind === 'thumbnail' ? 'Thumbnail' : 'Media asset'} is now linked to the content draft.`, 'success');
       } catch (error) {
         setNotice(toErrorMessage(error, 'File upload failed. Check storage configuration and try again.'), 'error');
       } finally {
@@ -1792,6 +1810,37 @@ export default defineComponent({
                   </label>
 
                   <label>
+                    Channel / Artist
+                    <input
+                      value={createForm.channelName}
+                      onInput={(event) => { createForm.channelName = readValue(event); }}
+                      placeholder="ClaudyGod Music Ministries"
+                    />
+                  </label>
+                </div>
+
+                <div class="grid-2">
+                  <label>
+                    Duration label
+                    <input
+                      value={createForm.duration}
+                      onInput={(event) => { createForm.duration = readValue(event); }}
+                      placeholder="45:12"
+                    />
+                  </label>
+
+                  <label>
+                    Tags (comma-separated)
+                    <input
+                      value={createForm.tagsCsv}
+                      onInput={(event) => { createForm.tagsCsv = readValue(event); }}
+                      placeholder="worship, live session, choir"
+                    />
+                  </label>
+                </div>
+
+                <div class="grid-2">
+                  <label>
                     App sections (comma-separated)
                     <input
                       value={createForm.appSectionsCsv}
@@ -1799,6 +1848,15 @@ export default defineComponent({
                       placeholder="ClaudyGod Music, ClaudyGod Nuggets of Truth"
                     />
                   </label>
+
+                  <div class="helper-card">
+                    <strong>Asset status</strong>
+                    <p>
+                      {createForm.mediaUploadSessionId || createForm.thumbnailUploadSessionId
+                        ? 'Uploaded files are linked to this content draft and will be tracked in the backend database.'
+                        : 'Upload media or a thumbnail to create a traceable storage-to-content record.'}
+                    </p>
+                  </div>
                 </div>
 
                 <div class="helper-card">
