@@ -15,6 +15,11 @@ const optionalHttpUrlSchema = z.preprocess(
   httpUrlSchema.optional(),
 ) as unknown as z.ZodType<string | undefined>;
 
+const optionalUuidSchema = z.preprocess(
+  (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
+  z.string().uuid().optional(),
+) as unknown as z.ZodType<string | undefined>;
+
 const optionalTrimmedSearchSchema = z.preprocess(
   (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
   z.string().trim().min(1).max(120).optional(),
@@ -74,6 +79,8 @@ export const createContentSchema = z
     type: contentTypeSchema,
     url: optionalHttpUrlSchema,
     thumbnailUrl: optionalHttpUrlSchema,
+    mediaUploadSessionId: optionalUuidSchema,
+    thumbnailUploadSessionId: optionalUuidSchema,
     channelName: z.preprocess((value) => (typeof value === 'string' && value.trim() === '' ? undefined : value), z.string().trim().max(180).optional()) as unknown as z.ZodType<string | undefined>,
     duration: z.preprocess((value) => (typeof value === 'string' && value.trim() === '' ? undefined : value), z.string().trim().max(32).optional()) as unknown as z.ZodType<string | undefined>,
     sourceKind: sourceKindSchema.default('upload'),
@@ -94,6 +101,14 @@ export const createContentSchema = z
       });
     }
 
+    if (requiresUrl && value.sourceKind === 'upload' && !value.mediaUploadSessionId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['mediaUploadSessionId'],
+        message: 'An upload session is required for uploaded audio or video content',
+      });
+    }
+
     if (requiresUrl && value.sourceKind === 'upload' && !value.thumbnailUrl) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -110,6 +125,8 @@ export const updateContentSchema = z
     type: contentTypeSchema.optional(),
     url: optionalHttpUrlSchema,
     thumbnailUrl: optionalHttpUrlSchema,
+    mediaUploadSessionId: optionalUuidSchema,
+    thumbnailUploadSessionId: optionalUuidSchema,
     channelName: z.preprocess((value) => (typeof value === 'string' && value.trim() === '' ? undefined : value), z.string().trim().max(180).optional()) as unknown as z.ZodType<string | undefined>,
     duration: z.preprocess((value) => (typeof value === 'string' && value.trim() === '' ? undefined : value), z.string().trim().max(32).optional()) as unknown as z.ZodType<string | undefined>,
     sourceKind: sourceKindSchema.optional(),

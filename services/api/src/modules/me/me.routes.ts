@@ -10,6 +10,7 @@ import {
   createRatingSchema,
   createSupportRequestSchema,
   liveSubscriptionSchema,
+  pushTokenSchema,
   removeLibraryItemSchema,
   saveLibraryItemSchema,
   trackPlayEventSchema,
@@ -28,9 +29,11 @@ import {
   getMePreferences,
   getMePrivacyOverview,
   getMeProfile,
+  removeMePushToken,
   recordMePlayEvent,
   removeMeLibraryItem,
   resetMeRecommendationSignals,
+  saveMePushToken,
   saveMeLibraryItem,
   updateMePreferences,
   updateMeProfile,
@@ -173,6 +176,24 @@ meRouter.post(
     const payload = validateSchema(liveSubscriptionSchema, req.body);
     const result = await upsertMeLiveSubscription(requireUser(req), payload);
     res.status(201).json(result);
+  }),
+);
+
+meRouter.post(
+  '/devices/push-token',
+  asyncHandler(async (req, res) => {
+    const payload = validateSchema(pushTokenSchema, req.body);
+    const result = await saveMePushToken(requireUser(req), payload);
+    res.status(201).json(result);
+  }),
+);
+
+meRouter.delete(
+  '/devices/push-token',
+  asyncHandler(async (req, res) => {
+    const payload = validateSchema(pushTokenSchema, req.body);
+    const result = await removeMePushToken(requireUser(req), payload);
+    res.status(200).json(result);
   }),
 );
 

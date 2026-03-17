@@ -8,7 +8,6 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { CustomText } from '../components/CustomText';
@@ -22,12 +21,9 @@ import { useAuth } from '../context/AuthContext';
 export default function SignUpScreen() {
   const router = useRouter();
   const { initializing, isAuthenticated } = useAuth();
-  const { width, height } = useWindowDimensions();
+  const { height } = useWindowDimensions();
 
-  const isTV = Platform.isTV;
   const isWeb = Platform.OS === 'web';
-  const isTablet = width >= 768 && !isTV;
-  const compact = width < 370;
   const compactViewport = height < 760;
 
   const [name, setName] = useState('');
@@ -37,7 +33,6 @@ export default function SignUpScreen() {
   const [hidePassword, setHidePassword] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [noticeMessage, setNoticeMessage] = useState('');
 
   useEffect(() => {
     if (!initializing && isAuthenticated) {
@@ -52,7 +47,6 @@ export default function SignUpScreen() {
 
   const handleSignUp = async () => {
     setErrorMessage('');
-    setNoticeMessage('');
 
     if (!canSubmit) {
       setErrorMessage('Fill in all fields to continue.');
@@ -65,15 +59,18 @@ export default function SignUpScreen() {
 
     setSubmitting(true);
     try {
-      const response = await registerMobileUser({
+      const normalizedEmail = email.trim().toLowerCase();
+      const session = await registerMobileUser({
         displayName: name.trim(),
-        email: email.trim().toLowerCase(),
+        email: normalizedEmail,
         password,
       });
 
-      if (response.requiresEmailVerification) {
-        setNoticeMessage('Account created. Check your email to verify your account before signing in.');
-        router.replace('/sign-in');
+      if (session.requiresEmailVerification) {
+        router.replace({
+          pathname: '/verify-email',
+          params: { email: normalizedEmail },
+        });
         return;
       }
 
@@ -86,30 +83,17 @@ export default function SignUpScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#07050F' }}>
-      <StatusBar translucent={false} backgroundColor="#07050F" barStyle="light-content" />
+    <View style={{ flex: 1, backgroundColor: '#121212' }}>
+      <StatusBar translucent={false} backgroundColor="#121212" barStyle="light-content" />
 
-      <LinearGradient
-        colors={['rgba(154,107,255,0.32)', 'rgba(15,10,29,0)']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0.9, y: 1 }}
-        style={{
-          position: 'absolute',
-          left: -44,
-          top: -34,
-          width: isTablet ? 420 : 320,
-          height: isTablet ? 420 : 320,
-          borderRadius: 420,
-        }}
-      />
-
-      <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top', 'bottom']}>
+      <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
         <ScrollView
-          style={{ flex: 1, backgroundColor: 'transparent' }}
+          style={{ flex: 1 }}
           contentContainerStyle={{
             flexGrow: 1,
             justifyContent: 'center',
-            paddingBottom: isWeb ? 0 : 20,
+            paddingHorizontal: 24,
+            paddingBottom: 40,
           }}
           showsVerticalScrollIndicator={false}
           bounces={false}
@@ -120,196 +104,342 @@ export default function SignUpScreen() {
         >
           <Screen style={{ flex: 1 }} contentStyle={{ flex: 1, justifyContent: 'center' }}>
             <FadeIn>
-              <View style={{ paddingTop: compactViewport ? 4 : 10 }}>
+              {/* Header with back button */}
+              <View style={{ marginBottom: 40 }}>
                 <TVTouchable
-                  onPress={() => router.back()}
+                  onPress={() => router.replace('/')}
                   style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: 22,
-                    borderWidth: 1,
-                    borderColor: 'rgba(255,255,255,0.18)',
-                    backgroundColor: 'rgba(255,255,255,0.06)',
+                    width: 40,
+                    height: 40,
+                    borderRadius: 20,
+                    backgroundColor: 'rgba(255,255,255,0.1)',
                     alignItems: 'center',
                     justifyContent: 'center',
+                    marginBottom: 24,
                   }}
                   showFocusBorder={false}
                 >
-                  <MaterialIcons name="arrow-back" size={22} color="#F8F7FC" />
+                  <MaterialIcons name="arrow-back" size={24} color="#FFFFFF" />
                 </TVTouchable>
 
-                <View
-                  style={{
-                    marginTop: compactViewport ? 12 : 16,
-                    width: '100%',
-                    maxWidth: isTV ? 760 : isTablet ? 560 : '100%',
-                    alignSelf: 'center',
-                    borderRadius: 24,
-                    padding: isTablet ? 24 : compactViewport ? 14 : compact ? 16 : 20,
-                    backgroundColor: 'rgba(13,10,22,0.90)',
-                    borderWidth: 1,
-                    borderColor: 'rgba(235,226,255,0.14)',
-                  }}
-                >
-                  <CustomText
-                    variant="display"
+                {/* Logo and branding */}
+                <View style={{ alignItems: 'center', marginBottom: 48 }}>
+                  <View
                     style={{
-                      color: '#F8F7FC',
-                      fontSize: isTablet ? 30 : 26,
-                      lineHeight: isTablet ? 36 : 31,
+                      width: 80,
+                      height: 80,
+                      borderRadius: 20,
+                      backgroundColor: 'rgba(255,255,255,0.1)',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginBottom: 16,
                     }}
                   >
-                    Create Account
+                    <MaterialIcons name="music-note" size={40} color="#1DB954" />
+                  </View>
+                  <CustomText
+                    style={{
+                      fontSize: 28,
+                      fontWeight: 'bold',
+                      color: '#FFFFFF',
+                      textAlign: 'center',
+                      marginBottom: 8,
+                    }}
+                  >
+                    ClaudyGod
                   </CustomText>
-                  <CustomText variant="body" style={{ color: 'rgba(203,196,226,0.86)', marginTop: 8 }}>
-                    Set up your account for ministry music, videos, and channel updates.
+                  <CustomText
+                    style={{
+                      fontSize: 16,
+                      color: 'rgba(255,255,255,0.7)',
+                      textAlign: 'center',
+                    }}
+                  >
+                    Music & Worship
                   </CustomText>
+                </View>
 
-                  <View style={{ marginTop: 16, gap: 10 }}>
-                    <AuthField value={name} onChangeText={setName} placeholder="Full name" />
-                    <AuthField
-                      value={email}
-                      onChangeText={setEmail}
-                      placeholder="Email address"
-                      keyboardType="email-address"
-                      autoCapitalize="none"
-                    />
+                {/* Welcome text */}
+                <View style={{ marginBottom: 32 }}>
+                  <CustomText
+                    style={{
+                      fontSize: 24,
+                      fontWeight: '600',
+                      color: '#FFFFFF',
+                      textAlign: 'center',
+                      marginBottom: 8,
+                    }}
+                  >
+                    Create your account
+                  </CustomText>
+                  <CustomText
+                    style={{
+                      fontSize: 16,
+                      color: 'rgba(255,255,255,0.7)',
+                      textAlign: 'center',
+                      lineHeight: 24,
+                    }}
+                  >
+                    Join the worship community and start your journey
+                  </CustomText>
+                </View>
+              </View>
 
-                    <AuthField
-                      value={password}
-                      onChangeText={setPassword}
-                      placeholder="Password"
-                      secureTextEntry={hidePassword}
-                      trailing={
-                        <TVTouchable onPress={() => setHidePassword((prev) => !prev)} showFocusBorder={false}>
-                          <MaterialIcons
-                            name={hidePassword ? 'visibility' : 'visibility-off'}
-                            size={20}
-                            color="rgba(226,218,247,0.9)"
-                          />
-                        </TVTouchable>
-                      }
-                    />
-
-                    <AuthField
-                      value={confirmPassword}
-                      onChangeText={setConfirmPassword}
-                      placeholder="Confirm password"
-                      secureTextEntry={hidePassword}
+              {/* Form */}
+              <View style={{ gap: 16 }}>
+                {/* Name field */}
+                <View>
+                  <CustomText
+                    style={{
+                      fontSize: 16,
+                      fontWeight: '500',
+                      color: '#FFFFFF',
+                      marginBottom: 8,
+                    }}
+                  >
+                    Full Name
+                  </CustomText>
+                  <View
+                    style={{
+                      borderRadius: 8,
+                      borderWidth: 1,
+                      borderColor: 'rgba(255,255,255,0.3)',
+                      backgroundColor: 'rgba(255,255,255,0.1)',
+                      paddingHorizontal: 16,
+                      paddingVertical: 12,
+                    }}
+                  >
+                    <TextInput
+                      value={name}
+                      onChangeText={setName}
+                      placeholder="Enter your full name"
+                      placeholderTextColor="rgba(255,255,255,0.5)"
+                      style={{
+                        color: '#FFFFFF',
+                        fontSize: 16,
+                      }}
                     />
                   </View>
+                </View>
 
-                  {errorMessage ? (
-                    <View
-                      style={{
-                        marginTop: 12,
-                        borderRadius: 12,
-                        borderWidth: 1,
-                        borderColor: 'rgba(255,120,120,0.25)',
-                        backgroundColor: 'rgba(255,80,80,0.08)',
-                        paddingHorizontal: 12,
-                        paddingVertical: 10,
-                      }}
-                    >
-                      <CustomText variant="caption" style={{ color: '#FFD6D6' }}>
-                        {errorMessage}
-                      </CustomText>
-                    </View>
-                  ) : null}
-
-                  {noticeMessage ? (
-                    <View
-                      style={{
-                        marginTop: 12,
-                        borderRadius: 12,
-                        borderWidth: 1,
-                        borderColor: 'rgba(123,240,182,0.26)',
-                        backgroundColor: 'rgba(49,160,112,0.12)',
-                        paddingHorizontal: 12,
-                        paddingVertical: 10,
-                      }}
-                    >
-                      <CustomText variant="caption" style={{ color: '#D9FFE9' }}>
-                        {noticeMessage}
-                      </CustomText>
-                    </View>
-                  ) : null}
-
-                  <AppButton
-                    title="Create Account"
-                    size="lg"
-                    fullWidth
-                    loading={submitting}
-                    onPress={() => void handleSignUp()}
-                    disabled={!canSubmit || submitting}
-                    style={{ marginTop: 16, borderRadius: 16 }}
-                  />
-
-                  <TVTouchable
-                    onPress={() => router.push('/sign-in')}
-                    style={{ alignSelf: 'center', marginTop: 12 }}
-                    showFocusBorder={false}
+                {/* Email field */}
+                <View>
+                  <CustomText
+                    style={{
+                      fontSize: 16,
+                      fontWeight: '500',
+                      color: '#FFFFFF',
+                      marginBottom: 8,
+                    }}
                   >
-                    <CustomText variant="label" style={{ color: '#CDB9FF' }}>
-                      Already have an account? Sign In
+                    Email
+                  </CustomText>
+                  <View
+                    style={{
+                      borderRadius: 8,
+                      borderWidth: 1,
+                      borderColor: 'rgba(255,255,255,0.3)',
+                      backgroundColor: 'rgba(255,255,255,0.1)',
+                      paddingHorizontal: 16,
+                      paddingVertical: 12,
+                    }}
+                  >
+                    <TextInput
+                      value={email}
+                      onChangeText={setEmail}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      placeholder="Enter your email"
+                      placeholderTextColor="rgba(255,255,255,0.5)"
+                      style={{
+                        color: '#FFFFFF',
+                        fontSize: 16,
+                      }}
+                    />
+                  </View>
+                </View>
+
+                {/* Password field */}
+                <View>
+                  <CustomText
+                    style={{
+                      fontSize: 16,
+                      fontWeight: '500',
+                      color: '#FFFFFF',
+                      marginBottom: 8,
+                    }}
+                  >
+                    Password
+                  </CustomText>
+                  <View
+                    style={{
+                      borderRadius: 8,
+                      borderWidth: 1,
+                      borderColor: 'rgba(255,255,255,0.3)',
+                      backgroundColor: 'rgba(255,255,255,0.1)',
+                      paddingHorizontal: 16,
+                      paddingVertical: 12,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <TextInput
+                      value={password}
+                      onChangeText={setPassword}
+                      secureTextEntry={hidePassword}
+                      placeholder="Create a password"
+                      placeholderTextColor="rgba(255,255,255,0.5)"
+                      style={{
+                        flex: 1,
+                        color: '#FFFFFF',
+                        fontSize: 16,
+                      }}
+                    />
+                    <TVTouchable
+                      onPress={() => setHidePassword((prev) => !prev)}
+                      style={{ padding: 4 }}
+                      showFocusBorder={false}
+                    >
+                      <MaterialIcons
+                        name={hidePassword ? 'visibility' : 'visibility-off'}
+                        size={20}
+                        color="rgba(255,255,255,0.7)"
+                      />
+                    </TVTouchable>
+                  </View>
+                </View>
+
+                {/* Confirm password field */}
+                <View>
+                  <CustomText
+                    style={{
+                      fontSize: 16,
+                      fontWeight: '500',
+                      color: '#FFFFFF',
+                      marginBottom: 8,
+                    }}
+                  >
+                    Confirm Password
+                  </CustomText>
+                  <View
+                    style={{
+                      borderRadius: 8,
+                      borderWidth: 1,
+                      borderColor: 'rgba(255,255,255,0.3)',
+                      backgroundColor: 'rgba(255,255,255,0.1)',
+                      paddingHorizontal: 16,
+                      paddingVertical: 12,
+                    }}
+                  >
+                    <TextInput
+                      value={confirmPassword}
+                      onChangeText={setConfirmPassword}
+                      secureTextEntry={hidePassword}
+                      placeholder="Confirm your password"
+                      placeholderTextColor="rgba(255,255,255,0.5)"
+                      style={{
+                        color: '#FFFFFF',
+                        fontSize: 16,
+                      }}
+                    />
+                  </View>
+                </View>
+
+                {/* Error message */}
+                {errorMessage ? (
+                  <View
+                    style={{
+                      borderRadius: 8,
+                      backgroundColor: 'rgba(255,59,48,0.1)',
+                      borderWidth: 1,
+                      borderColor: 'rgba(255,59,48,0.3)',
+                      padding: 12,
+                    }}
+                  >
+                    <CustomText
+                      style={{
+                        color: '#FF3B30',
+                        fontSize: 14,
+                        textAlign: 'center',
+                      }}
+                    >
+                      {errorMessage}
                     </CustomText>
-                  </TVTouchable>
+                  </View>
+                ) : null}
+
+                {/* Sign up button */}
+                <AppButton
+                  title="Create Account"
+                  size="lg"
+                  fullWidth
+                  loading={submitting}
+                  loadingLabel="Creating account..."
+                  onPress={() => void handleSignUp()}
+                  disabled={!canSubmit || submitting}
+                  style={{
+                    backgroundColor: '#1DB954',
+                    borderRadius: 25,
+                    marginTop: 8,
+                  }}
+                />
+
+                {/* Terms and conditions */}
+                <View style={{ alignItems: 'center', marginTop: 16 }}>
+                  <CustomText
+                    style={{
+                      fontSize: 14,
+                      color: 'rgba(255,255,255,0.6)',
+                      textAlign: 'center',
+                      lineHeight: 20,
+                    }}
+                  >
+                    By creating an account, you agree to our{' '}
+                    <CustomText
+                      style={{
+                        color: '#1DB954',
+                        textDecorationLine: 'underline',
+                      }}
+                    >
+                      Terms of Service
+                    </CustomText>{' '}
+                    and{' '}
+                    <CustomText
+                      style={{
+                        color: '#1DB954',
+                        textDecorationLine: 'underline',
+                      }}
+                    >
+                      Privacy Policy
+                    </CustomText>
+                  </CustomText>
+                </View>
+
+                {/* Sign in link */}
+                <View style={{ alignItems: 'center', marginTop: 24 }}>
+                  <CustomText
+                    style={{
+                      fontSize: 16,
+                      color: 'rgba(255,255,255,0.7)',
+                    }}
+                  >
+                    Already have an account?{' '}
+                    <CustomText
+                      style={{
+                        color: '#1DB954',
+                        fontWeight: '600',
+                      }}
+                      onPress={() => router.push('/sign-in')}
+                    >
+                      Sign in
+                    </CustomText>
+                  </CustomText>
                 </View>
               </View>
             </FadeIn>
           </Screen>
         </ScrollView>
       </SafeAreaView>
-    </View>
-  );
-}
-
-function AuthField({
-  value,
-  onChangeText,
-  placeholder,
-  keyboardType,
-  autoCapitalize,
-  secureTextEntry,
-  trailing,
-}: {
-  value: string;
-  onChangeText: (_text: string) => void;
-  placeholder: string;
-  keyboardType?: 'default' | 'email-address';
-  autoCapitalize?: 'none' | 'sentences';
-  secureTextEntry?: boolean;
-  trailing?: React.ReactNode;
-}) {
-  return (
-    <View
-      style={{
-        borderRadius: 14,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.16)',
-        backgroundColor: 'rgba(255,255,255,0.05)',
-        paddingHorizontal: 14,
-        flexDirection: 'row',
-        alignItems: 'center',
-      }}
-    >
-      <TextInput
-        value={value}
-        onChangeText={onChangeText}
-        keyboardType={keyboardType}
-        autoCapitalize={autoCapitalize}
-        secureTextEntry={secureTextEntry}
-        placeholder={placeholder}
-        placeholderTextColor="rgba(207,200,228,0.68)"
-        style={{
-          flex: 1,
-          minHeight: 52,
-          color: '#F8F7FC',
-          fontSize: 15,
-          fontFamily: 'Sora_400Regular',
-        }}
-      />
-      {trailing ? <View style={{ marginLeft: 10 }}>{trailing}</View> : null}
     </View>
   );
 }

@@ -1,7 +1,26 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import dotenv from 'dotenv';
 import { z } from 'zod';
 
-dotenv.config();
+const runtimeEnv =
+  process.env.CLAUDYGOD_ENV === 'production' || process.env.NODE_ENV === 'production'
+    ? 'production'
+    : 'development';
+const repoRoot = path.resolve(__dirname, '../../../../');
+const envFileName = `.env.${runtimeEnv}`;
+const envCandidates = [
+  path.resolve(process.cwd(), envFileName),
+  path.resolve(process.cwd(), '../..', envFileName),
+  path.resolve(repoRoot, envFileName),
+];
+
+for (const candidate of envCandidates) {
+  if (fs.existsSync(candidate)) {
+    dotenv.config({ path: candidate });
+    break;
+  }
+}
 
 const looksLikeJwtToken = (value: string): boolean => {
   const parts = value.split('.');
@@ -32,6 +51,16 @@ const pathSegment = (fieldName: string, fallback: string) =>
       message: `${fieldName} must start with /`,
     });
 
+const optionalUrl = () =>
+  z
+    .string()
+    .trim()
+    .optional()
+    .default('')
+    .refine((value) => value === '' || /^https?:\/\//i.test(value), {
+      message: 'Must be a valid http:// or https:// URL',
+    });
+
 const envSchema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -48,6 +77,8 @@ const envSchema = z
     AUTH_PUBLIC_BASE_URL: z.string().url().default('http://localhost:5173'),
     AUTH_VERIFY_EMAIL_PATH: pathSegment('AUTH_VERIFY_EMAIL_PATH', '/verify-email'),
     AUTH_RESET_PASSWORD_PATH: pathSegment('AUTH_RESET_PASSWORD_PATH', '/reset-password'),
+    AUTH_SIGN_IN_PATH: pathSegment('AUTH_SIGN_IN_PATH', '/sign-in'),
+    AUTH_ACCOUNT_REVIEW_PATH: pathSegment('AUTH_ACCOUNT_REVIEW_PATH', '/settings/account'),
     AUTH_VERIFICATION_TOKEN_TTL_MINUTES: z.coerce.number().int().min(10).max(10080).default(1440),
     AUTH_PASSWORD_RESET_TOKEN_TTL_MINUTES: z.coerce.number().int().min(5).max(1440).default(30),
     AUTH_REQUIRE_EMAIL_VERIFICATION: toBoolean(false),
@@ -59,12 +90,24 @@ const envSchema = z
     MOBILE_API_KEY: z.string().min(8).default('dev-mobile-api-key'),
 
     MAIL_FROM: z.string().default('Claudy Platform <noreply@claudygod.example>'),
+    MAIL_REPLY_TO: z.string().optional().default(''),
+    EMAIL_BRAND_NAME: z.string().trim().min(2).max(80).default('ClaudyGod'),
+    EMAIL_SUPPORT_EMAIL: z.string().optional().default(''),
+    EMAIL_SUPPORT_URL: optionalUrl(),
     ADMIN_ALERT_EMAILS: z.string().default(''),
+    SMTP_PROVIDER: z.enum(['generic', 'postfix', 'brevo']).default('generic'),
     SMTP_HOST: z.string().optional().default(''),
     SMTP_PORT: z.coerce.number().int().min(1).max(65535).default(587),
     SMTP_SECURE: toBoolean(false),
     SMTP_USER: z.string().optional().default(''),
     SMTP_PASS: z.string().optional().default(''),
+    SMTP_POOL: toBoolean(true),
+    SMTP_MAX_CONNECTIONS: z.coerce.number().int().min(1).max(20).default(5),
+    SMTP_MAX_MESSAGES: z.coerce.number().int().min(1).max(1000).default(100),
+    SMTP_CONNECTION_TIMEOUT_MS: z.coerce.number().int().min(1000).max(120000).default(30000),
+    SMTP_GREETING_TIMEOUT_MS: z.coerce.number().int().min(1000).max(120000).default(30000),
+    SMTP_REQUIRE_TLS: toBoolean(false),
+    SMTP_TLS_REJECT_UNAUTHORIZED: toBoolean(true),
 
     YOUTUBE_API_KEY: z
       .string()
@@ -127,6 +170,14 @@ const envSchema = z
             'SMTP_HOST is required in production when AUTH_REQUIRE_EMAIL_VERIFICATION is enabled',
         });
       }
+
+      if (value.SMTP_PROVIDER === 'brevo' && (!value.SMTP_USER || !value.SMTP_PASS)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['SMTP_USER'],
+          message: 'Brevo SMTP requires SMTP_USER and SMTP_PASS in production',
+        });
+      }
     }
   });
 
@@ -144,13 +195,25 @@ const splitCsv = (value: string): string[] =>
     .filter(Boolean);
 
 const raw = parsedEnv.data;
+const smtpHostConfigured = Boolean(raw.SMTP_HOST || raw.SMTP_PROVIDER === 'brevo');
+const smtpAuthConfigured = Boolean(raw.SMTP_USER && raw.SMTP_PASS);
+const smtpEnabled =
+  raw.SMTP_PROVIDER === 'brevo'
+    ? smtpHostConfigured && smtpAuthConfigured
+    : Boolean(raw.SMTP_HOST);
 
 export const env = {
   ...raw,
   CORS_ORIGINS: splitCsv(raw.CORS_ORIGIN),
   ADMIN_ALERT_EMAILS_LIST: splitCsv(raw.ADMIN_ALERT_EMAILS),
   SUPABASE_ENABLED: Boolean(raw.SUPABASE_URL && raw.SUPABASE_SERVICE_ROLE_KEY),
-  SMTP_ENABLED: Boolean(raw.SMTP_HOST),
+  SMTP_ENABLED: smtpEnabled,
+  SMTP_PROVIDER_LABEL:
+    raw.SMTP_PROVIDER === 'brevo'
+      ? 'Brevo SMTP'
+      : raw.SMTP_PROVIDER === 'postfix'
+        ? 'Postfix Relay'
+        : 'Generic SMTP',
   YOUTUBE_ENABLED: Boolean(raw.YOUTUBE_API_KEY && raw.YOUTUBE_CHANNEL_ID),
   ADMIN_SIGNUP_ENABLED: Boolean(raw.ADMIN_SIGNUP_CODE),
 };

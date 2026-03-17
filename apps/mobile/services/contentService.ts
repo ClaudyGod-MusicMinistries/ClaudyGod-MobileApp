@@ -12,6 +12,37 @@ interface MobileYouTubeResponse {
   items: YouTubeVideoItem[];
 }
 
+interface MobileFeedApiResponse {
+  generatedAt: string;
+  featured: MobileFeedApiItem | null;
+  rails: {
+    id: string;
+    title: string;
+    algorithm: string;
+    items: MobileFeedApiItem[];
+  }[];
+  topCategories: string[];
+}
+
+interface MobileFeedApiItem {
+  id: string;
+  title: string;
+  description?: string;
+  subtitle?: string;
+  type: ContentType;
+  imageUrl?: string;
+  mediaUrl?: string;
+  duration?: string;
+  channelName?: string;
+  sourceKind?: 'upload' | 'external' | 'youtube';
+  appSections?: string[];
+  tags?: string[];
+  createdAt?: string;
+  updatedAt?: string;
+  isLive?: boolean;
+  liveViewerCount?: number;
+}
+
 export interface ApiContentItem {
   id: string;
   title: string;
@@ -94,7 +125,7 @@ const DEFAULT_BUNDLE: FeedBundle = {
   announcements: [],
   mostPlayed: [],
   recent: [],
-  topCategories: ['All', 'Music', 'Videos', 'Live', 'Playlists', 'Ads'],
+  topCategories: ['All', 'Music', 'Videos', 'Live', 'Playlists'],
 };
 
 function safeSubtitle(item: ApiContentItem): string {
@@ -107,7 +138,7 @@ function safeSubtitle(item: ApiContentItem): string {
   if (Array.isArray(item.tags) && item.tags.length > 0) {
     return item.tags.slice(0, 2).join(' • ');
   }
-  return item.type === 'ad' ? 'Sponsored' : 'ClaudyGod Channel';
+  return 'ClaudyGod Channel';
 }
 
 function safeDescription(item: ApiContentItem): string {
@@ -130,6 +161,23 @@ function normalize(item: ApiContentItem): FeedCardItem {
     mediaUrl: item.mediaUrl || item.externalUrl || item.url,
     type: item.type,
     isLive: item.isLive || item.type === 'live',
+    liveViewerCount: item.liveViewerCount,
+    createdAt: item.createdAt || item.updatedAt,
+    appSections: Array.isArray(item.appSections) ? item.appSections : [],
+  };
+}
+
+function normalizeFeedItem(item: MobileFeedApiItem): FeedCardItem {
+  return {
+    id: item.id,
+    title: item.title,
+    subtitle: item.subtitle || item.channelName || 'ClaudyGod Channel',
+    description: item.description || 'Published content from your channel feed.',
+    duration: item.duration || '--:--',
+    imageUrl: item.imageUrl || FALLBACK_IMAGE,
+    mediaUrl: item.mediaUrl,
+    type: item.type,
+    isLive: Boolean(item.isLive || item.type === 'live'),
     liveViewerCount: item.liveViewerCount,
     createdAt: item.createdAt || item.updatedAt,
     appSections: Array.isArray(item.appSections) ? item.appSections : [],
@@ -269,31 +317,75 @@ function dedupe(items: FeedCardItem[]): FeedCardItem[] {
   return result;
 }
 
+function removeAdItems(items: FeedCardItem[]): FeedCardItem[] {
+  return items.filter((item) => item.type !== 'ad');
+}
+
+function bundleFromApiFeed(response: MobileFeedApiResponse): FeedBundle {
+  const railMap = new Map(
+    (response.rails || []).map((rail) => [rail.id, rail.items.map(normalizeFeedItem)]),
+  );
+
+  const featured = response.featured ? normalizeFeedItem(response.featured) : null;
+  const music = dedupe(removeAdItems(railMap.get('worship-music') || []));
+  const videos = dedupe(removeAdItems(railMap.get('video-spotlight') || []));
+  const live = dedupe(removeAdItems(railMap.get('live-now') || []));
+  const playlists = dedupe(removeAdItems(railMap.get('playlists') || []));
+  const announcements = dedupe(removeAdItems(railMap.get('ministry-updates') || []));
+  const mostPlayed = dedupe(removeAdItems(railMap.get('trending-now') || []));
+  const recent = dedupe(removeAdItems(railMap.get('latest-releases') || []));
+
+  return {
+    ...DEFAULT_BUNDLE,
+    featured,
+    music: music.slice(0, 14),
+    videos: videos.slice(0, 14),
+    playlists: playlists.slice(0, 12),
+    live: live.slice(0, 10),
+    announcements: announcements.slice(0, 8),
+    mostPlayed: mostPlayed.slice(0, 12),
+    recent: recent.slice(0, 12),
+    topCategories:
+      Array.isArray(response.topCategories) && response.topCategories.length > 0
+        ? response.topCategories
+        : DEFAULT_BUNDLE.topCategories,
+  };
+}
+
 export async function fetchFeedBundle(): Promise<FeedBundle> {
-  const [all, music, videos, playlists, live, ads, announcements, mostPlayed, youtubeFeed] = await Promise.all([
+  try {
+    const feed = await apiFetch<MobileFeedApiResponse>('/v1/mobile/feed');
+    return bundleFromApiFeed(feed);
+  } catch (error) {
+    console.warn(
+      '[contentService] API feed fallback activated:',
+      error instanceof Error ? error.message : String(error),
+    );
+  }
+
+  const [all, music, videos, playlists, live, announcements, mostPlayed, youtubeFeed] = await Promise.all([
     fetchAllPublished(),
     fetchByType('audio'),
     fetchByType('video'),
     fetchByType('playlist'),
     fetchByType('live'),
-    fetchByType('ad'),
     fetchByType('announcement'),
     fetchMostPlayed(),
     fetchYouTubeFeed(),
   ]);
 
-  const mergedMusic = dedupe([...music, ...youtubeFeed.music]);
-  const mergedVideos = dedupe([...videos, ...youtubeFeed.videos]);
-  const mergedLive = dedupe([...live, ...youtubeFeed.live]);
-  const mergedAnnouncements = dedupe([...announcements, ...youtubeFeed.announcements]);
-  const mergedAll = dedupe([
+  const mergedMusic = dedupe(removeAdItems([...music, ...youtubeFeed.music]));
+  const mergedVideos = dedupe(removeAdItems([...videos, ...youtubeFeed.videos]));
+  const mergedLive = dedupe(removeAdItems([...live, ...youtubeFeed.live]));
+  const mergedAnnouncements = dedupe(removeAdItems([...announcements, ...youtubeFeed.announcements]));
+  const mergedAll = dedupe(removeAdItems([
     ...all,
     ...youtubeFeed.recent,
     ...youtubeFeed.videos,
     ...youtubeFeed.music,
     ...youtubeFeed.live,
     ...youtubeFeed.announcements,
-  ]);
+  ]));
 
   const recent = [...mergedAll].sort((a, b) => {
     const aTs = a.createdAt ? Date.parse(a.createdAt) : 0;
@@ -308,7 +400,6 @@ export async function fetchFeedBundle(): Promise<FeedBundle> {
     ...mergedMusic,
     ...playlists,
     ...mergedAnnouncements,
-    ...ads,
     ...mergedAll,
   ]);
 
@@ -319,7 +410,7 @@ export async function fetchFeedBundle(): Promise<FeedBundle> {
     videos: mergedVideos.slice(0, 14),
     playlists: dedupe(playlists).slice(0, 12),
     live: mergedLive.slice(0, 10),
-    ads: dedupe(ads).slice(0, 8),
+    ads: [],
     announcements: mergedAnnouncements.slice(0, 8),
     mostPlayed: dedupe(mostPlayed).slice(0, 12),
     recent: dedupe(recent).slice(0, 12),

@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import type SMTPTransport from 'nodemailer/lib/smtp-transport';
 import { env } from '../config/env';
 
 export interface EmailMessageInput {
@@ -8,26 +9,77 @@ export interface EmailMessageInput {
   html?: string;
 }
 
-const transport = env.SMTP_ENABLED
-  ? nodemailer.createTransport({
-      host: env.SMTP_HOST,
-      port: env.SMTP_PORT,
-      secure: env.SMTP_SECURE,
-      auth: env.SMTP_USER && env.SMTP_PASS
-        ? {
-            user: env.SMTP_USER,
-            pass: env.SMTP_PASS,
-          }
-        : undefined,
-    })
+export interface EmailSendResult {
+  messageId?: string;
+}
+
+type PooledSmtpOptions = SMTPTransport.Options & {
+  pool?: boolean;
+  maxConnections?: number;
+  maxMessages?: number;
+};
+
+const resolveSmtpHost = (): string => {
+  if (env.SMTP_HOST) {
+    return env.SMTP_HOST;
+  }
+
+  if (env.SMTP_PROVIDER === 'brevo') {
+    return 'smtp-relay.brevo.com';
+  }
+
+  return '';
+};
+
+const smtpHost = resolveSmtpHost();
+
+const smtpOptions: PooledSmtpOptions = {
+  host: smtpHost,
+  port: env.SMTP_PORT,
+  secure: env.SMTP_SECURE,
+  pool: env.SMTP_POOL,
+  maxConnections: env.SMTP_MAX_CONNECTIONS,
+  maxMessages: env.SMTP_MAX_MESSAGES,
+  connectionTimeout: env.SMTP_CONNECTION_TIMEOUT_MS,
+  greetingTimeout: env.SMTP_GREETING_TIMEOUT_MS,
+  requireTLS: env.SMTP_REQUIRE_TLS,
+  auth:
+    env.SMTP_USER && env.SMTP_PASS
+      ? {
+          user: env.SMTP_USER,
+          pass: env.SMTP_PASS,
+        }
+      : undefined,
+  tls: {
+    rejectUnauthorized: env.SMTP_TLS_REJECT_UNAUTHORIZED,
+  },
+};
+
+const transport = env.SMTP_ENABLED && smtpHost
+  ? nodemailer.createTransport(smtpOptions)
   : nodemailer.createTransport({ jsonTransport: true });
 
-export const sendEmail = async (message: EmailMessageInput): Promise<void> => {
-  await transport.sendMail({
+export const emailTransportInfo = {
+  enabled: env.SMTP_ENABLED && Boolean(smtpHost),
+  provider: env.SMTP_PROVIDER,
+  providerLabel: env.SMTP_PROVIDER_LABEL,
+  host: smtpHost,
+  port: env.SMTP_PORT,
+  secure: env.SMTP_SECURE,
+  pooled: env.SMTP_POOL,
+};
+
+export const sendEmail = async (message: EmailMessageInput): Promise<EmailSendResult> => {
+  const info = await transport.sendMail({
     from: env.MAIL_FROM,
+    replyTo: env.MAIL_REPLY_TO || undefined,
     to: message.to,
     subject: message.subject,
     text: message.text,
     html: message.html,
   });
+
+  return {
+    messageId: info.messageId,
+  };
 };

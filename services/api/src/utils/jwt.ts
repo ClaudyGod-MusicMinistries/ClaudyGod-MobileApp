@@ -17,7 +17,7 @@ const decodedJwtClaimsSchema = z
     role: z.enum(['CLIENT', 'ADMIN']),
     displayName: z.string().trim().min(1).max(120),
   })
-  .strict();
+  .passthrough();
 
 export const signAccessToken = (claims: JwtClaims): string =>
   jwt.sign(claims, env.JWT_ACCESS_SECRET as Secret, {

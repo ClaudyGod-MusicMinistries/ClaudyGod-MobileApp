@@ -3,11 +3,11 @@ import { ENV } from './config';
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   if (!ENV.apiUrl) {
     throw new Error(
-      'Mobile API is not configured. Set EXPO_PUBLIC_API_URL only if you want to use the optional backend services.',
+      'Mobile API is not configured. Set EXPO_PUBLIC_API_URL or run Expo and the API on the same LAN so the app can derive http://<expo-host>:4000.',
     );
   }
 
-  const response = await fetch(`${ENV.apiUrl.replace(/\/+$/, '')}${path}`, {
+  const response = await fetch(`${ENV.apiUrl}${path}`, {
     ...init,
     headers: {
       'Content-Type': 'application/json',

@@ -2,10 +2,22 @@ import axios from 'axios';
 import { computed, defineComponent, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import './App.css';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+function resolveApiUrl() {
+  const explicit = String(import.meta.env.VITE_API_URL || '').trim();
+  if (explicit) return explicit.replace(/\/+$/, '');
+
+  if (typeof window !== 'undefined') {
+    const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
+    const hostname = window.location.hostname || 'localhost';
+    return `${protocol}//${hostname}:4000`;
+  }
+
+  return 'http://localhost:4000';
+}
+
+const API_URL = resolveApiUrl();
 const GOOGLE_LOGIN_URL = import.meta.env.VITE_GOOGLE_LOGIN_URL || '';
 const ACCESS_TOKEN_KEY = 'claudy_admin_access_token';
-const TYPOGRAPHY_MODE_KEY = 'claudy_admin_typography_mode';
 const MOBILE_PREVIEW_URL_KEY = 'claudy_admin_mobile_preview_url';
 const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000;
 const BRAND_LOGO_URL = '/brand/claudy-logo.webp';
@@ -13,10 +25,37 @@ const CONTENT_TYPES = ['audio', 'video', 'playlist', 'announcement'];
 const VISIBILITY_OPTIONS = ['draft', 'published'];
 const YOUTUBE_SYNC_DEFAULT_LIMIT = 8;
 const DEFAULT_MOBILE_PREVIEW_URL = import.meta.env.VITE_MOBILE_PREVIEW_URL || 'http://localhost:8081';
-const TYPOGRAPHY_MODES = [
-  { value: 'compact', label: 'Compact' },
-  { value: 'cozy', label: 'Cozy' },
-  { value: 'comfortable', label: 'Comfortable' },
+const LANDING_FEATURES = [
+  {
+    title: 'Upload Pipeline',
+    description: 'Upload audio, video, and artwork with storage rules validated by the backend.',
+  },
+  {
+    title: 'Role-based Access',
+    description: 'Client and admin actions are isolated with protected API endpoints.',
+  },
+  {
+    title: 'Mobile-ready Content',
+    description: 'Assign every item to app sections so users see updates immediately.',
+  },
+  {
+    title: 'Editorial Control',
+    description: 'Keep drafts private until quality checks are complete and ready to publish.',
+  },
+];
+const WORKFLOW_STEPS = [
+  {
+    title: 'Create',
+    detail: 'Add media details, upload files, and set app sections.',
+  },
+  {
+    title: 'Review',
+    detail: 'Keep entries in draft until your team validates quality and metadata.',
+  },
+  {
+    title: 'Publish',
+    detail: 'Release to the mobile experience and monitor endpoint health.',
+  },
 ];
 const API_HOST_LABEL = (() => {
   try {
@@ -37,18 +76,6 @@ function readStoredToken() {
   } catch (error) {
     return '';
   }
-}
-
-function readStoredTypographyMode() {
-  try {
-    const stored = localStorage.getItem(TYPOGRAPHY_MODE_KEY) || '';
-    if (TYPOGRAPHY_MODES.some((mode) => mode.value === stored)) {
-      return stored;
-    }
-  } catch (error) {
-    // Keep default mode when storage is unavailable.
-  }
-  return 'cozy';
 }
 
 function normalizePreviewUrl(value) {
@@ -106,6 +133,9 @@ function toErrorMessage(error, fallback) {
     if (error.response?.status === 403) {
       return 'You do not have permission for this action.';
     }
+    if (!error.response) {
+      return `Unable to reach the API at ${API_HOST_LABEL}. Confirm the backend is running and that VITE_API_URL or local network routing is correct.`;
+    }
     const data = error.response && error.response.data ? error.response.data : {};
     return data.message || data.error || error.message || fallback;
   }
@@ -122,6 +152,12 @@ function truncate(value, size = 180) {
   if (!value) return '';
   if (value.length <= size) return value;
   return `${value.slice(0, size - 1)}...`;
+}
+
+function humanizeToken(value) {
+  return String(value || '')
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 function greetingByTime() {
@@ -147,6 +183,25 @@ function formatBytes(bytes) {
   return `${(value / (1024 * 1024 * 1024)).toFixed(2)} GB`;
 }
 
+function describeHealthCheckDetail(payload) {
+  const services = payload && payload.services ? payload.services : null;
+  const capabilities = payload && payload.capabilities ? payload.capabilities : null;
+  if (!services) return 'Core API responding';
+
+  const details = [];
+  if (services.postgres) {
+    details.push(`PostgreSQL: ${services.postgres}`);
+  }
+  if (services.redis) {
+    details.push(`Redis: ${services.redis}`);
+  }
+  if (capabilities && capabilities.youtube === false) {
+    details.push('YouTube is disabled in API environment');
+  }
+
+  return details.length > 0 ? details.join(' • ') : 'Core API responding';
+}
+
 function acceptFromPolicy(policy) {
   if (!policy || !Array.isArray(policy.allowedExtensions) || policy.allowedExtensions.length === 0) return undefined;
   return policy.allowedExtensions.join(',');
@@ -160,7 +215,6 @@ export default defineComponent({
   name: 'ClaudyContentStudio',
   setup() {
     const accessToken = ref(readStoredToken());
-    const typographyMode = ref(readStoredTypographyMode());
     const currentUser = ref(null);
     const authLoading = ref(false);
     const authMode = ref('login');
@@ -170,14 +224,17 @@ export default defineComponent({
     const togglingId = ref(null);
     const youtubePreviewLoading = ref(false);
     const youtubeSyncLoading = ref(false);
+    const youtubeImporting = ref(false);
     const appConfigLoading = ref(false);
     const appConfigSaving = ref(false);
     const wordOfDayLoading = ref(false);
     const wordOfDaySaving = ref(false);
+    const adminOpsLoading = ref(false);
     const deletingContentId = ref(null);
     const editingContentId = ref(null);
     const editContentOpen = ref(false);
     const editContentSaving = ref(false);
+    const supportStatusUpdatingId = ref(null);
     const headerMenuOpen = ref(false);
     const dashboardView = ref('overview');
     const inactivityTimerId = ref(null);
@@ -208,6 +265,11 @@ export default defineComponent({
       type: 'audio',
       url: '',
       thumbnailUrl: '',
+      mediaUploadSessionId: '',
+      thumbnailUploadSessionId: '',
+      channelName: '',
+      duration: '',
+      tagsCsv: '',
       appSectionsCsv: '',
       visibility: 'published',
     });
@@ -233,10 +295,33 @@ export default defineComponent({
 
     const managedItems = ref([]);
     const youtubePreviewItems = ref([]);
+    const youtubeDraftItems = ref([]);
     const mobileAppConfigEditor = ref('');
     const mobileAppConfigMeta = ref(null);
     const wordOfDayHistory = ref([]);
     const wordOfDayCurrent = ref(null);
+    const adminOps = ref({
+      summary: {
+        totalUsers: 0,
+        newUsersLast7Days: 0,
+        verifiedUsers: 0,
+        adminUsers: 0,
+        clientUsers: 0,
+        publishedContent: 0,
+        draftContent: 0,
+        openSupportRequests: 0,
+        activePrivacyRequests: 0,
+        totalFeedback: 0,
+        averageRating: null,
+      },
+      recentUsers: [],
+      feedback: [],
+      supportInbox: [],
+      signupTrend: [],
+      smartInsights: [],
+      recentAutomation: [],
+      generatedAt: '',
+    });
     const wordOfDayForm = reactive({
       title: 'Word for Today',
       passage: '',
@@ -261,22 +346,65 @@ export default defineComponent({
     const currentYear = new Date().getFullYear();
 
     const greeting = computed(() => greetingByTime());
-    const displayName = computed(() => (currentUser.value && currentUser.value.displayName ? currentUser.value.displayName : 'Client'));
+    const displayName = computed(() => (currentUser.value && currentUser.value.displayName ? currentUser.value.displayName : 'Publishing User'));
+    const accountEmail = computed(() => (currentUser.value && currentUser.value.email ? currentUser.value.email : ''));
     const isRegisterMode = computed(() => authMode.value === 'register');
     const isAdmin = computed(() => Boolean(currentUser.value && currentUser.value.role === 'ADMIN'));
+    const portalRoleLabel = computed(() => (isAdmin.value ? 'Admin' : 'Publisher'));
     const isCompactHeader = computed(() => viewportWidth.value <= 1024);
     const googleLoginEnabled = computed(() => Boolean(GOOGLE_LOGIN_URL));
+    const apiHealthCheck = computed(() =>
+      (endpointChecks.value || []).find((check) => check && check.label === 'API Health') || null,
+    );
+    const hasEndpointErrors = computed(() =>
+      (endpointChecks.value || []).some((check) => check && check.status === 'error'),
+    );
+    const diagnosticsLabel = computed(() => {
+      if (!endpointChecks.value.length) return 'Diagnostics pending';
+      return hasEndpointErrors.value ? 'Diagnostics need attention' : 'Diagnostics healthy';
+    });
+    const diagnosticsTone = computed(() => {
+      if (!endpointChecks.value.length) return 'subtle';
+      return hasEndpointErrors.value ? 'warning' : 'success';
+    });
+    const infraSummary = computed(() => {
+      if (apiHealthCheck.value && apiHealthCheck.value.status === 'ok') {
+        return apiHealthCheck.value.detail;
+      }
+      return 'Content persists in PostgreSQL and runtime jobs are coordinated through Redis.';
+    });
 
     const stats = computed(() => {
       const total = managedItems.value.length;
       const published = managedItems.value.filter((item) => item.visibility === 'published').length;
       const drafts = managedItems.value.filter((item) => item.visibility === 'draft').length;
       const videoItems = managedItems.value.filter((item) => item.type === 'video').length;
+      const summary = adminOps.value.summary || {};
+
+      if (isAdmin.value) {
+        return [
+          { label: 'Published Content', value: summary.publishedContent || published, accent: 'mint' },
+          { label: 'Draft Content', value: summary.draftContent || drafts, accent: 'blue' },
+          { label: 'Registered Users', value: summary.totalUsers || 0, accent: 'amber' },
+          { label: 'Open Complaints', value: summary.openSupportRequests || 0, accent: 'rose' },
+        ];
+      }
+
       return [
         { label: 'All Content', value: total, accent: 'mint' },
         { label: 'Published', value: published, accent: 'blue' },
         { label: 'Drafts', value: drafts, accent: 'amber' },
         { label: 'Video Items', value: videoItems, accent: 'rose' },
+      ];
+    });
+
+    const audienceStats = computed(() => {
+      const summary = adminOps.value.summary || {};
+      return [
+        { label: 'Registered Users', value: summary.totalUsers || 0, accent: 'mint' },
+        { label: 'New This Week', value: summary.newUsersLast7Days || 0, accent: 'blue' },
+        { label: 'Open Complaints', value: summary.openSupportRequests || 0, accent: 'amber' },
+        { label: 'Avg. Rating', value: summary.averageRating != null ? summary.averageRating : '--', accent: 'rose' },
       ];
     });
 
@@ -294,6 +422,9 @@ export default defineComponent({
     });
 
     const recentItems = computed(() => managedItems.value.slice(0, 4));
+    const selectedYouTubeDraftCount = computed(() =>
+      youtubeDraftItems.value.filter((item) => item.selected).length,
+    );
 
     function getUploadPolicy(kind) {
       return (uploadPolicies.value || []).find((item) => item && item.kind === kind) || null;
@@ -411,9 +542,17 @@ export default defineComponent({
 
       if (accessToken.value) {
         probes.push({
-          label: 'Admin Content Management',
+          label: 'Creator Content Management',
           path: '/v1/content/manage?page=1&limit=1',
           request: () => http.get('/v1/content/manage', { params: { page: 1, limit: 1 } }),
+        });
+      }
+
+      if (isAdmin.value) {
+        probes.push({
+          label: 'Admin Operations Dashboard',
+          path: '/v1/admin/dashboard',
+          request: () => http.get('/v1/admin/dashboard'),
         });
         probes.push({
           label: 'Admin YouTube Feed',
@@ -427,12 +566,21 @@ export default defineComponent({
           probes.map(async (probe) => {
             try {
               const response = await probe.request();
+              const youtubeDisabled =
+                probe.label === 'API Health' &&
+                response.data &&
+                response.data.capabilities &&
+                response.data.capabilities.youtube === false;
               return {
                 label: probe.label,
                 path: probe.path,
                 status: 'ok',
                 statusCode: response.status,
-                detail: 'Connected',
+                capabilities: probe.label === 'API Health' ? response.data?.capabilities || null : null,
+                services: probe.label === 'API Health' ? response.data?.services || null : null,
+                detail: probe.label === 'API Health'
+                  ? describeHealthCheckDetail(response.data)
+                  : 'Connected',
               };
             } catch (error) {
               const mapped = mapProbeError(error, `${probe.label} request failed`);
@@ -441,7 +589,11 @@ export default defineComponent({
                 path: probe.path,
                 status: 'error',
                 statusCode: mapped.statusCode,
-                detail: mapped.detail,
+                capabilities: probe.label === 'API Health' ? error.response?.data?.capabilities || null : null,
+                services: probe.label === 'API Health' ? error.response?.data?.services || null : null,
+                detail: probe.label === 'API Health' && axios.isAxiosError(error)
+                  ? describeHealthCheckDetail(error.response?.data)
+                  : mapped.detail,
               };
             }
           }),
@@ -456,20 +608,15 @@ export default defineComponent({
             check.status === 'error',
         );
         if (youtubeIssue) {
-          setNotice(`YouTube feed check failed: ${youtubeIssue.detail}`, 'error');
+          const apiHealth = checks.find((check) => check.label === 'API Health');
+          const prefix =
+            apiHealth && apiHealth.detail.includes('YouTube is disabled')
+              ? 'YouTube is disabled in the API environment. Add YOUTUBE_API_KEY and YOUTUBE_CHANNEL_ID in the root .env.development or .env.production file.'
+              : 'YouTube feed check failed';
+          setNotice(`${prefix}: ${youtubeIssue.detail}`, 'error');
         }
       } finally {
         endpointChecksLoading.value = false;
-      }
-    }
-
-    function setTypographyMode(mode) {
-      const next = TYPOGRAPHY_MODES.some((item) => item.value === mode) ? mode : 'cozy';
-      typographyMode.value = next;
-      try {
-        localStorage.setItem(TYPOGRAPHY_MODE_KEY, next);
-      } catch (error) {
-        // Ignore storage errors; runtime value still updates.
       }
     }
 
@@ -494,6 +641,7 @@ export default defineComponent({
       currentUser.value = null;
       managedItems.value = [];
       youtubePreviewItems.value = [];
+      youtubeDraftItems.value = [];
       uploadPolicies.value = [];
       editContentOpen.value = false;
       editingContentId.value = null;
@@ -501,6 +649,28 @@ export default defineComponent({
       mobileAppConfigMeta.value = null;
       wordOfDayHistory.value = [];
       wordOfDayCurrent.value = null;
+      adminOps.value = {
+        summary: {
+          totalUsers: 0,
+          newUsersLast7Days: 0,
+          verifiedUsers: 0,
+          adminUsers: 0,
+          clientUsers: 0,
+          publishedContent: 0,
+          draftContent: 0,
+          openSupportRequests: 0,
+          activePrivacyRequests: 0,
+          totalFeedback: 0,
+          averageRating: null,
+        },
+        recentUsers: [],
+        feedback: [],
+        supportInbox: [],
+        signupTrend: [],
+        smartInsights: [],
+        recentAutomation: [],
+        generatedAt: '',
+      };
       endpointChecks.value = [];
       endpointChecksAt.value = '';
       dashboardView.value = 'overview';
@@ -689,6 +859,33 @@ export default defineComponent({
       }
     }
 
+    async function fetchAdminOperationsDashboard() {
+      if (!isAdmin.value) return;
+      adminOpsLoading.value = true;
+      try {
+        const response = await http.get('/v1/admin/dashboard');
+        adminOps.value = response.data || adminOps.value;
+      } catch (error) {
+        setNotice(toErrorMessage(error, 'Unable to load audience and feedback dashboard.'), 'error');
+      } finally {
+        adminOpsLoading.value = false;
+      }
+    }
+
+    async function updateSupportRequestStatus(requestId, status) {
+      supportStatusUpdatingId.value = requestId;
+      clearNotice();
+      try {
+        await http.patch(`/v1/admin/support-requests/${requestId}/status`, { status });
+        await fetchAdminOperationsDashboard();
+        setNotice(`Complaint status moved to ${status.replace('_', ' ')}.`, 'success');
+      } catch (error) {
+        setNotice(toErrorMessage(error, 'Unable to update complaint status.'), 'error');
+      } finally {
+        supportStatusUpdatingId.value = null;
+      }
+    }
+
     async function saveWordOfDay() {
       if (!isAdmin.value) {
         setNotice('Only admin accounts can publish Word for Today.', 'error');
@@ -872,6 +1069,7 @@ export default defineComponent({
         await Promise.all([
           fetchManagedContent(),
           fetchUploadPolicies(),
+          isAdmin.value ? fetchAdminOperationsDashboard() : Promise.resolve(),
           isAdmin.value ? fetchMobileAppConfig() : Promise.resolve(),
           isAdmin.value ? fetchWordOfDayDashboard() : Promise.resolve(),
           runEndpointChecks(),
@@ -933,6 +1131,7 @@ export default defineComponent({
         await Promise.all([
           fetchManagedContent(freshToken),
           fetchUploadPolicies(freshToken),
+          authResponse.data.user && authResponse.data.user.role === 'ADMIN' ? fetchAdminOperationsDashboard() : Promise.resolve(),
           authResponse.data.user && authResponse.data.user.role === 'ADMIN' ? fetchMobileAppConfig() : Promise.resolve(),
           authResponse.data.user && authResponse.data.user.role === 'ADMIN' ? fetchWordOfDayDashboard() : Promise.resolve(),
           runEndpointChecks(),
@@ -1007,7 +1206,12 @@ export default defineComponent({
           type: createForm.type,
           url: createForm.url.trim() || undefined,
           thumbnailUrl: createForm.thumbnailUrl.trim() || undefined,
-          sourceKind: 'upload',
+          mediaUploadSessionId: createForm.mediaUploadSessionId || undefined,
+          thumbnailUploadSessionId: createForm.thumbnailUploadSessionId || undefined,
+          sourceKind: createForm.mediaUploadSessionId ? 'upload' : needsUrl ? 'external' : undefined,
+          channelName: createForm.channelName.trim() || undefined,
+          duration: createForm.duration.trim() || undefined,
+          tags: parseCsvList(createForm.tagsCsv),
           appSections: parseCsvList(createForm.appSectionsCsv),
           visibility: createForm.visibility,
         });
@@ -1016,6 +1220,11 @@ export default defineComponent({
         createForm.description = '';
         createForm.url = '';
         createForm.thumbnailUrl = '';
+        createForm.mediaUploadSessionId = '';
+        createForm.thumbnailUploadSessionId = '';
+        createForm.channelName = '';
+        createForm.duration = '';
+        createForm.tagsCsv = '';
         createForm.appSectionsCsv = '';
         await fetchManagedContent();
         setNotice(createForm.visibility === 'published' ? 'Content published successfully.' : 'Draft saved successfully.', 'success');
@@ -1076,6 +1285,7 @@ export default defineComponent({
         });
 
         const upload = signed.data && signed.data.upload ? signed.data.upload : null;
+        const session = signed.data && signed.data.session ? signed.data.session : null;
         if (!upload || !upload.signedUrl) {
           throw new Error('Invalid signed upload response');
         }
@@ -1094,11 +1304,13 @@ export default defineComponent({
 
         if (assetKind === 'thumbnail') {
           createForm.thumbnailUrl = upload.publicUrl || createForm.thumbnailUrl;
+          createForm.thumbnailUploadSessionId = session && session.id ? session.id : createForm.thumbnailUploadSessionId;
         } else {
           createForm.url = upload.publicUrl || createForm.url;
+          createForm.mediaUploadSessionId = session && session.id ? session.id : createForm.mediaUploadSessionId;
         }
 
-        setNotice(`Uploaded ${file.name}. ${assetKind === 'thumbnail' ? 'Thumbnail URL' : 'Media link'} was added to the form.`, 'success');
+        setNotice(`Uploaded ${file.name}. ${assetKind === 'thumbnail' ? 'Thumbnail' : 'Media asset'} is now linked to the content draft.`, 'success');
       } catch (error) {
         setNotice(toErrorMessage(error, 'File upload failed. Check storage configuration and try again.'), 'error');
       } finally {
@@ -1134,6 +1346,7 @@ export default defineComponent({
         await Promise.all([
           fetchManagedContent(),
           fetchUploadPolicies(),
+          isAdmin.value ? fetchAdminOperationsDashboard() : Promise.resolve(),
           isAdmin.value ? fetchMobileAppConfig() : Promise.resolve(),
           isAdmin.value ? fetchWordOfDayDashboard() : Promise.resolve(),
           runEndpointChecks(),
@@ -1142,6 +1355,97 @@ export default defineComponent({
         setNotice('Dashboard refreshed.', 'success');
       } catch (error) {
         setNotice(toErrorMessage(error, 'Refresh failed. Please try again.'), 'error');
+      }
+    }
+
+    function buildYouTubeDrafts(items) {
+      const sharedSections = parseCsvList(youtubeSyncState.appSectionsCsv);
+      const existingById = new Map(
+        youtubeDraftItems.value.map((item) => [item.youtubeVideoId, item]),
+      );
+
+      youtubeDraftItems.value = items.map((video) => {
+        const existing = existingById.get(video.youtubeVideoId);
+        const suggestedSections = Array.isArray(video.suggestedAppSections) ? video.suggestedAppSections : [];
+        const suggestedTags = Array.isArray(video.suggestedTags) ? video.suggestedTags : [];
+        const mergedSections = Array.from(new Set([...(existing?.appSections || []), ...sharedSections, ...suggestedSections]));
+
+        return {
+          ...video,
+          selected: existing ? existing.selected : true,
+          visibility: existing?.visibility || youtubeSyncState.visibility || 'draft',
+          appSections: existing?.appSections || mergedSections,
+          appSectionsCsv: existing?.appSectionsCsv || mergedSections.join(', '),
+          tags: existing?.tags || suggestedTags,
+          tagsCsv: existing?.tagsCsv || suggestedTags.join(', '),
+        };
+      });
+    }
+
+    function updateYouTubeDraftItem(videoId, patch) {
+      youtubeDraftItems.value = youtubeDraftItems.value.map((item) => {
+        if (item.youtubeVideoId !== videoId) return item;
+        return { ...item, ...patch };
+      });
+    }
+
+    function applySmartYouTubeAssignments() {
+      youtubeDraftItems.value = youtubeDraftItems.value.map((item) => {
+        const mergedSections = Array.from(
+          new Set([...(Array.isArray(item.suggestedAppSections) ? item.suggestedAppSections : []), ...parseCsvList(youtubeSyncState.appSectionsCsv)]),
+        );
+        const nextTags = Array.isArray(item.suggestedTags) ? item.suggestedTags : [];
+        return {
+          ...item,
+          appSections: mergedSections,
+          appSectionsCsv: mergedSections.join(', '),
+          tags: nextTags,
+          tagsCsv: nextTags.join(', '),
+        };
+      });
+      setNotice('Smart assignments applied to fetched YouTube videos.', 'success');
+    }
+
+    async function importSelectedYouTubeVideos() {
+      if (!currentUser.value) return;
+
+      const selectedItems = youtubeDraftItems.value.filter((item) => item.selected);
+      if (selectedItems.length === 0) {
+        setNotice('Select at least one fetched YouTube video to import.', 'error');
+        return;
+      }
+
+      youtubeImporting.value = true;
+      clearNotice();
+      try {
+        const response = await http.post('/v1/youtube/import', {
+          selections: selectedItems.map((item) => ({
+            youtubeVideoId: item.youtubeVideoId,
+            title: item.title,
+            description: item.description || '',
+            channelTitle: item.channelTitle,
+            publishedAt: item.publishedAt,
+            thumbnailUrl: item.thumbnailUrl,
+            url: item.url,
+            duration: item.duration || '--:--',
+            isLive: Boolean(item.isLive),
+            liveViewerCount: item.liveViewerCount,
+            visibility: item.visibility || youtubeSyncState.visibility,
+            appSections: parseCsvList(item.appSectionsCsv),
+            tags: parseCsvList(item.tagsCsv),
+          })),
+        });
+
+        const summary = response.data && response.data.summary ? response.data.summary : { created: 0, updated: 0, skipped: 0 };
+        await Promise.all([
+          fetchManagedContent(),
+          isAdmin.value ? fetchAdminOperationsDashboard() : Promise.resolve(),
+        ]);
+        setNotice(`Curated YouTube import complete. Created ${summary.created}, updated ${summary.updated}, skipped ${summary.skipped}.`, 'success');
+      } catch (error) {
+        setNotice(toErrorMessage(error, 'Unable to import the selected YouTube videos.'), 'error');
+      } finally {
+        youtubeImporting.value = false;
       }
     }
 
@@ -1159,6 +1463,7 @@ export default defineComponent({
         });
 
         youtubePreviewItems.value = response.data.items || [];
+        buildYouTubeDrafts(youtubePreviewItems.value);
         setNotice(`Fetched ${youtubePreviewItems.value.length} YouTube video${youtubePreviewItems.value.length === 1 ? '' : 's'} for preview.`, 'success');
       } catch (error) {
         setNotice(toErrorMessage(error, 'Unable to fetch YouTube videos. Check your backend YouTube configuration.'), 'error');
@@ -1178,11 +1483,16 @@ export default defineComponent({
           maxResults: Number(youtubeSyncState.maxResults) || YOUTUBE_SYNC_DEFAULT_LIMIT,
           visibility: youtubeSyncState.visibility,
           appSections: parseCsvList(youtubeSyncState.appSectionsCsv),
+          tags: [],
         });
 
         const summary = response.data && response.data.summary ? response.data.summary : { created: 0, updated: 0, skipped: 0 };
         youtubePreviewItems.value = response.data.items || youtubePreviewItems.value;
-        await fetchManagedContent();
+        buildYouTubeDrafts(youtubePreviewItems.value);
+        await Promise.all([
+          fetchManagedContent(),
+          isAdmin.value ? fetchAdminOperationsDashboard() : Promise.resolve(),
+        ]);
         setNotice(`YouTube sync complete. Created ${summary.created}, updated ${summary.updated}, skipped ${summary.skipped}.`, 'success');
       } catch (error) {
         setNotice(toErrorMessage(error, 'YouTube sync failed. Please verify API key, channel ID, and backend settings.'), 'error');
@@ -1223,33 +1533,21 @@ export default defineComponent({
                 <p class="eyebrow">ClaudyGod Ministries</p>
                 <h1>Content Studio</h1>
                 <p class="subtitle">
-                  A clean publishing center for your team to upload, organize, and publish new content.
+                  Professional publishing tools for managing ministry media across mobile and web experiences.
                 </p>
               </div>
             </div>
 
             <div class="feature-tiles">
-              <article class="feature-tile" style={{ animationDelay: '40ms' }}>
-                <span class="feature-dot" />
-                <div>
-                  <h3>Upload and Publish</h3>
-                  <p>Create new content entries and control what goes live.</p>
-                </div>
-              </article>
-              <article class="feature-tile" style={{ animationDelay: '120ms' }}>
-                <span class="feature-dot" />
-                <div>
-                  <h3>Draft and Review</h3>
-                  <p>Save work as drafts before publishing to your audience.</p>
-                </div>
-              </article>
-              <article class="feature-tile" style={{ animationDelay: '200ms' }}>
-                <span class="feature-dot" />
-                <div>
-                  <h3>Content Library</h3>
-                  <p>Search and manage all uploaded music, videos, and announcements.</p>
-                </div>
-              </article>
+              {LANDING_FEATURES.map((feature, index) => (
+                <article class="feature-tile" style={{ animationDelay: `${40 + index * 70}ms` }} key={`landing-feature-${feature.title}`}>
+                  <span class="feature-dot" />
+                  <div>
+                    <h3>{feature.title}</h3>
+                    <p>{feature.description}</p>
+                  </div>
+                </article>
+              ))}
             </div>
           </div>
 
@@ -1305,13 +1603,14 @@ export default defineComponent({
             <form class="stack-form" onSubmit={(event) => void handleAuthSubmit(event)}>
               {isRegisterMode.value ? (
                 <label>
-                  Display name
+                  Public display name
                   <input
                     value={authForm.displayName}
                     onInput={(event) => { authForm.displayName = readValue(event); }}
                     placeholder="ClaudyGod Team Member"
                     autoComplete="name"
                   />
+                  <small class="subtle-text">This is the name shown on uploads, feedback activity, and content credits. There is no separate username.</small>
                 </label>
               ) : null}
 
@@ -1379,7 +1678,7 @@ export default defineComponent({
                   <p class="eyebrow">Publishing Center</p>
                   <h1>{greeting.value}, {displayName.value}</h1>
                   <p class="subtitle">
-                    Manage your content library, save drafts, and publish new releases from one clean dashboard.
+                    Manage your media catalog, publish with confidence, and keep the mobile app in sync.
                   </p>
                 </div>
               </div>
@@ -1396,9 +1695,9 @@ export default defineComponent({
             </div>
 
             <div class="hero-chips">
-              <span class="hero-chip">Professional publishing portal</span>
-              <span class="hero-chip">Fast publishing workflow</span>
-              <span class="hero-chip">Draft + publish controls</span>
+              <span class="hero-chip">Validated uploads</span>
+              <span class="hero-chip">Role-protected actions</span>
+              <span class="hero-chip">Live mobile sync</span>
             </div>
             <div class="hero-shine" />
           </section>
@@ -1447,22 +1746,309 @@ export default defineComponent({
               <article class="panel glass-panel reveal-up" style={{ animationDelay: '220ms' }}>
                 <div class="section-head split">
                   <div>
-                    <h2>Dashboard Overview</h2>
-                    <p>Track content performance and jump into publishing in one click.</p>
+                    <h2>Publishing Workflow</h2>
+                    <p>Follow a consistent path from upload to release for reliable production updates.</p>
                   </div>
                   <button type="button" class="primary-btn" onClick={() => setDashboardView('editor')}>
                     Open Editor
                   </button>
                 </div>
-                <div class="stats-grid">
-                  {stats.value.map((card, index) => (
-                    <article class={['stat-card', 'glass-panel', `accent-${card.accent}`]} key={`overview-${card.label}-${index}`}>
-                      <span>{card.label}</span>
-                      <strong>{card.value}</strong>
+
+                <div class="workflow-grid">
+                  {WORKFLOW_STEPS.map((step, index) => (
+                    <article class="workflow-step" key={`workflow-step-${step.title}`}>
+                      <div class="workflow-step-number">{index + 1}</div>
+                      <div>
+                        <h3>{step.title}</h3>
+                        <p>{step.detail}</p>
+                      </div>
                     </article>
                   ))}
                 </div>
               </article>
+
+              {isAdmin.value ? (
+              <article class="panel glass-panel reveal-up" style={{ animationDelay: '240ms' }}>
+                <div class="section-head split">
+                  <div>
+                    <h2>Audience &amp; Health</h2>
+                    <p>Track registered users, onboarding momentum, and deployment readiness from one place.</p>
+                  </div>
+                  <button
+                    type="button"
+                    class="ghost-btn compact"
+                    onClick={() => void fetchAdminOperationsDashboard()}
+                    disabled={adminOpsLoading.value}
+                  >
+                    {adminOpsLoading.value ? 'Refreshing...' : 'Refresh'}
+                  </button>
+                </div>
+
+                <section class="stats-grid">
+                  {audienceStats.value.map((card, index) => (
+                    <article
+                      class={['stat-card', 'glass-panel', `accent-${card.accent}`]}
+                      style={{ animationDelay: `${index * 60}ms` }}
+                      key={`audience-stat-${card.label}`}
+                    >
+                      <span>{card.label}</span>
+                      <strong>{card.value}</strong>
+                    </article>
+                  ))}
+                </section>
+
+                <div class="grid-2" style={{ marginTop: '0.8rem' }}>
+                  <div class="helper-card">
+                    <strong>Signup momentum</strong>
+                    <p>
+                      {(adminOps.value.signupTrend || []).reduce((sum, point) => sum + Number(point.signups || 0), 0)} new
+                      account{(adminOps.value.signupTrend || []).reduce((sum, point) => sum + Number(point.signups || 0), 0) === 1 ? '' : 's'} in the
+                      last 14 days.
+                    </p>
+                  </div>
+                  <div class="helper-card">
+                    <strong>Infrastructure readiness</strong>
+                    <p>
+                      {apiHealthCheck.value
+                        ? apiHealthCheck.value.detail
+                        : 'Run endpoint diagnostics to verify API, Redis, PostgreSQL, YouTube, and SMTP readiness.'}
+                    </p>
+                  </div>
+                </div>
+
+                {apiHealthCheck.value && apiHealthCheck.value.capabilities ? (
+                  <div class="pill-row" style={{ marginTop: '0.8rem' }}>
+                    <span class={['pill', apiHealthCheck.value.capabilities.youtube ? 'pill-live' : 'pill-draft']}>
+                      YouTube {apiHealthCheck.value.capabilities.youtube ? 'ready' : 'disabled'}
+                    </span>
+                    <span class={['pill', apiHealthCheck.value.capabilities.smtp ? 'pill-live' : 'pill-draft']}>
+                      Email {apiHealthCheck.value.capabilities.smtp ? 'ready' : 'not configured'}
+                    </span>
+                    <span class={['pill', apiHealthCheck.value.capabilities.supabase ? 'pill-live' : 'pill-draft']}>
+                      Supabase {apiHealthCheck.value.capabilities.supabase ? 'connected' : 'not linked'}
+                    </span>
+                  </div>
+                ) : null}
+
+                <div class="section-head compact" style={{ marginTop: '1rem' }}>
+                  <div>
+                    <h3>Recent registrations</h3>
+                    <p>Latest accounts entering the platform.</p>
+                  </div>
+                  {adminOps.value.generatedAt ? (
+                    <span class="section-badge">Synced {formatDateTime(adminOps.value.generatedAt)}</span>
+                  ) : null}
+                </div>
+
+                <div class="list-wrap">
+                  {adminOps.value.recentUsers.length === 0 ? (
+                    <div class="empty-state">No registered users have been recorded yet.</div>
+                  ) : adminOps.value.recentUsers.map((user) => (
+                    <article class="content-card" key={`recent-user-${user.id}`}>
+                      <div class="card-top">
+                        <div class="pill-row">
+                          <span class={['pill', user.role === 'ADMIN' ? 'pill-live' : 'pill-audio']}>{user.role.toLowerCase()}</span>
+                          <span class="muted-chip">{humanizeToken(user.authProvider)}</span>
+                          <span class={['pill', user.emailVerifiedAt ? 'pill-live' : 'pill-draft']}>
+                            {user.emailVerifiedAt ? 'verified' : 'pending'}
+                          </span>
+                        </div>
+                        <span class="muted-chip">{formatDateTime(user.createdAt)}</span>
+                      </div>
+                      <div class="card-body">
+                        <h3>{user.displayName || 'Unnamed user'}</h3>
+                        <p>{user.email}</p>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </article>
+              ) : null}
+
+              {isAdmin.value ? (
+              <article class="panel glass-panel reveal-up" style={{ animationDelay: '260ms' }}>
+                <div class="section-head split">
+                  <div>
+                    <h2>Feedback &amp; Complaints</h2>
+                    <p>Monitor ratings, user notes, and support tickets from the mobile app.</p>
+                  </div>
+                  <span class="section-badge">
+                    {(adminOps.value.summary && adminOps.value.summary.totalFeedback) || 0} feedback item{((adminOps.value.summary && adminOps.value.summary.totalFeedback) || 0) === 1 ? '' : 's'}
+                  </span>
+                </div>
+
+                <div class="grid-2" style={{ marginBottom: '0.9rem' }}>
+                  <div class="helper-card">
+                    <strong>Support workload</strong>
+                    <p>
+                      {(adminOps.value.summary && adminOps.value.summary.openSupportRequests) || 0} complaint ticket(s) are currently
+                      open or in progress.
+                    </p>
+                  </div>
+                  <div class="helper-card">
+                    <strong>Privacy queue</strong>
+                    <p>
+                      {(adminOps.value.summary && adminOps.value.summary.activePrivacyRequests) || 0} privacy request(s) are awaiting
+                      completion.
+                    </p>
+                  </div>
+                </div>
+
+                <div class="section-head compact">
+                  <div>
+                    <h3>Latest ratings</h3>
+                    <p>Signals captured from the mobile experience.</p>
+                  </div>
+                </div>
+
+                <div class="list-wrap">
+                  {adminOps.value.feedback.length === 0 ? (
+                    <div class="empty-state">No feedback has been submitted from mobile users yet.</div>
+                  ) : adminOps.value.feedback.map((entry) => (
+                    <article class="content-card" key={`feedback-${entry.id}`}>
+                      <div class="card-top">
+                        <div class="pill-row">
+                          <span class="pill pill-video">{entry.rating}/5</span>
+                          <span class="muted-chip">{humanizeToken(entry.channel)}</span>
+                        </div>
+                        <span class="muted-chip">{formatDateTime(entry.createdAt)}</span>
+                      </div>
+                      <div class="card-body">
+                        <h3>{entry.user && entry.user.displayName ? entry.user.displayName : 'Anonymous rating'}</h3>
+                        <p>{entry.comment ? truncate(entry.comment, 140) : 'Rating submitted without a written note.'}</p>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+
+                <div class="section-head compact" style={{ marginTop: '1rem' }}>
+                  <div>
+                    <h3>Support inbox</h3>
+                    <p>Complaints and issue reports from the mobile support form.</p>
+                  </div>
+                </div>
+
+                <div class="list-wrap">
+                  {adminOps.value.supportInbox.length === 0 ? (
+                    <div class="empty-state">No complaints or support tickets have been submitted yet.</div>
+                  ) : adminOps.value.supportInbox.map((ticket) => (
+                    <article class="content-card" key={`support-ticket-${ticket.id}`}>
+                      <div class="card-top">
+                        <div class="pill-row">
+                          <span class={['pill', ticket.status === 'resolved' || ticket.status === 'closed' ? 'pill-live' : 'pill-draft']}>
+                            {humanizeToken(ticket.status)}
+                          </span>
+                          <span class="muted-chip">{humanizeToken(ticket.priority)}</span>
+                          <span class="muted-chip">{humanizeToken(ticket.category)}</span>
+                        </div>
+                        <span class="muted-chip">{formatDateTime(ticket.createdAt)}</span>
+                      </div>
+                      <div class="card-body">
+                        <h3>{ticket.subject}</h3>
+                        <p>{truncate(ticket.message, 180)}</p>
+                      </div>
+                      <div class="meta-grid">
+                        <div>
+                          <span class="meta-label">Reporter</span>
+                          <strong>{ticket.user && ticket.user.displayName ? ticket.user.displayName : 'Unknown user'}</strong>
+                        </div>
+                        <div>
+                          <span class="meta-label">Email</span>
+                          <strong>{ticket.user && ticket.user.email ? ticket.user.email : 'No email attached'}</strong>
+                        </div>
+                      </div>
+                      <label style={{ marginTop: '0.2rem' }}>
+                        Ticket status
+                        <select
+                          value={ticket.status}
+                          disabled={supportStatusUpdatingId.value === ticket.id}
+                          onChange={(event) => void updateSupportRequestStatus(ticket.id, readValue(event))}
+                        >
+                          <option value="open">Open</option>
+                          <option value="in_progress">In Progress</option>
+                          <option value="resolved">Resolved</option>
+                          <option value="closed">Closed</option>
+                        </select>
+                      </label>
+                    </article>
+                  ))}
+                </div>
+              </article>
+              ) : null}
+
+              {isAdmin.value ? (
+              <article class="panel glass-panel reveal-up" style={{ animationDelay: '280ms' }}>
+                <div class="section-head split">
+                  <div>
+                    <h2>Smart Ops</h2>
+                    <p>Automated recommendations and recent backend automation runs.</p>
+                  </div>
+                  <span class="section-badge">
+                    {(adminOps.value.recentAutomation || []).length} recent run{((adminOps.value.recentAutomation || []).length) === 1 ? '' : 's'}
+                  </span>
+                </div>
+
+                <div class="list-wrap">
+                  {(adminOps.value.smartInsights || []).length === 0 ? (
+                    <div class="empty-state">No automation insights are available yet.</div>
+                  ) : adminOps.value.smartInsights.map((insight) => (
+                    <article class="content-card" key={`insight-${insight.id}`}>
+                      <div class="card-top">
+                        <div class="pill-row">
+                          <span class={['pill', insight.tone === 'success' ? 'pill-live' : insight.tone === 'warning' ? 'pill-draft' : 'pill-video']}>
+                            {humanizeToken(insight.tone)}
+                          </span>
+                          <span class="muted-chip">Automation Insight</span>
+                        </div>
+                      </div>
+                      <div class="card-body">
+                        <h3>{insight.title}</h3>
+                        <p>{insight.detail}</p>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+
+                <div class="section-head compact" style={{ marginTop: '1rem' }}>
+                  <div>
+                    <h3>Recent automation</h3>
+                    <p>Import, sync, and scheduled operational events tracked by the backend.</p>
+                  </div>
+                </div>
+
+                <div class="list-wrap">
+                  {(adminOps.value.recentAutomation || []).length === 0 ? (
+                    <div class="empty-state">No automation runs have been recorded yet.</div>
+                  ) : adminOps.value.recentAutomation.map((run) => (
+                    <article class="content-card" key={`automation-run-${run.id}`}>
+                      <div class="card-top">
+                        <div class="pill-row">
+                          <span class={['pill', run.status === 'completed' ? 'pill-live' : run.status === 'failed' ? 'pill-draft' : 'pill-video']}>
+                            {humanizeToken(run.status)}
+                          </span>
+                          <span class="muted-chip">{run.label}</span>
+                        </div>
+                        <span class="muted-chip">{formatDateTime(run.createdAt)}</span>
+                      </div>
+                      <div class="card-body">
+                        <h3>{run.label}</h3>
+                        <p>{run.notes || 'Automation run recorded without operator notes.'}</p>
+                      </div>
+                      <div class="meta-grid">
+                        <div>
+                          <span class="meta-label">Actor</span>
+                          <strong>{run.actor && run.actor.displayName ? run.actor.displayName : 'System'}</strong>
+                        </div>
+                        <div>
+                          <span class="meta-label">Scope</span>
+                          <strong>{humanizeToken(run.scope)}</strong>
+                        </div>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </article>
+              ) : null}
 
               <article class="panel glass-panel reveal-up" style={{ animationDelay: '260ms' }}>
                 <div class="section-head split">
@@ -1610,7 +2196,7 @@ export default defineComponent({
                 <div class="helper-card" style={{ marginTop: '0.8rem' }}>
                   <strong>YouTube requirement</strong>
                   <p>
-                    Set <code>YOUTUBE_API_KEY</code> and <code>YOUTUBE_CHANNEL_ID</code> in <code>services/api/.env</code>, then restart the API to enable YouTube feed and sync.
+                    Set <code>YOUTUBE_API_KEY</code> and <code>YOUTUBE_CHANNEL_ID</code> in the root <code>.env.development</code> or <code>.env.production</code> file, then restart the API to enable YouTube feed and sync.
                   </p>
                 </div>
 
@@ -1744,6 +2330,37 @@ export default defineComponent({
                   </label>
 
                   <label>
+                    Channel / Artist
+                    <input
+                      value={createForm.channelName}
+                      onInput={(event) => { createForm.channelName = readValue(event); }}
+                      placeholder="ClaudyGod Music Ministries"
+                    />
+                  </label>
+                </div>
+
+                <div class="grid-2">
+                  <label>
+                    Duration label
+                    <input
+                      value={createForm.duration}
+                      onInput={(event) => { createForm.duration = readValue(event); }}
+                      placeholder="45:12"
+                    />
+                  </label>
+
+                  <label>
+                    Tags (comma-separated)
+                    <input
+                      value={createForm.tagsCsv}
+                      onInput={(event) => { createForm.tagsCsv = readValue(event); }}
+                      placeholder="worship, live session, choir"
+                    />
+                  </label>
+                </div>
+
+                <div class="grid-2">
+                  <label>
                     App sections (comma-separated)
                     <input
                       value={createForm.appSectionsCsv}
@@ -1751,6 +2368,15 @@ export default defineComponent({
                       placeholder="ClaudyGod Music, ClaudyGod Nuggets of Truth"
                     />
                   </label>
+
+                  <div class="helper-card">
+                    <strong>Asset status</strong>
+                    <p>
+                      {createForm.mediaUploadSessionId || createForm.thumbnailUploadSessionId
+                        ? 'Uploaded files are linked to this content draft and will be tracked in the backend database.'
+                        : 'Upload media or a thumbnail to create a traceable storage-to-content record.'}
+                    </p>
+                  </div>
                 </div>
 
                 <div class="helper-card">
@@ -1799,7 +2425,7 @@ export default defineComponent({
                   </div>
 
                   <label>
-                    Assign imported videos to app sections (comma-separated)
+                    Default app sections for fetched videos (comma-separated)
                     <input
                       value={youtubeSyncState.appSectionsCsv}
                       onInput={(event) => { youtubeSyncState.appSectionsCsv = readValue(event); }}
@@ -1811,33 +2437,106 @@ export default defineComponent({
                     <button type="button" class="ghost-btn compact" onClick={() => void fetchYouTubePreview()} disabled={youtubePreviewLoading.value || youtubeSyncLoading.value}>
                       {youtubePreviewLoading.value ? 'Fetching...' : 'Fetch Preview'}
                     </button>
-                    <button type="button" class="primary-btn" onClick={() => void syncYouTubeVideos()} disabled={youtubeSyncLoading.value || youtubePreviewLoading.value}>
-                      {youtubeSyncLoading.value ? 'Syncing YouTube...' : 'Sync to Library'}
+                    <button type="button" class="ghost-btn compact" onClick={applySmartYouTubeAssignments} disabled={youtubeDraftItems.value.length === 0 || youtubeImporting.value}>
+                      Apply Smart Suggestions
                     </button>
                   </div>
 
+                  <div class="button-row">
+                    <button type="button" class="primary-btn" onClick={() => void importSelectedYouTubeVideos()} disabled={youtubeImporting.value || youtubePreviewLoading.value || youtubeDraftItems.value.length === 0}>
+                      {youtubeImporting.value ? 'Importing Selected...' : `Import Selected (${selectedYouTubeDraftCount.value})`}
+                    </button>
+                    <button type="button" class="ghost-btn compact" onClick={() => void syncYouTubeVideos()} disabled={youtubeSyncLoading.value || youtubePreviewLoading.value}>
+                      {youtubeSyncLoading.value ? 'Syncing YouTube...' : 'Quick Sync All'}
+                    </button>
+                  </div>
+
+                  <div class="helper-card">
+                    <strong>Curated import flow</strong>
+                    <p>
+                      Fetch videos, review each one, adjust sections and tags, then import only the selected items. Quick Sync All is available when you want a one-click batch import.
+                    </p>
+                  </div>
+
                   <div class="youtube-preview-list">
-                    {youtubePreviewItems.value.length === 0 ? (
+                    {youtubeDraftItems.value.length === 0 ? (
                       <div class="empty-state">
                         No YouTube videos loaded yet. Click <strong>Fetch Preview</strong> to load the latest channel videos.
                       </div>
-                    ) : youtubePreviewItems.value.map((video) => (
+                    ) : youtubeDraftItems.value.map((video) => (
                       <article class="content-card" key={video.youtubeVideoId}>
                         <div class="card-top">
                           <div class="pill-row">
                             <span class="pill pill-video">video</span>
                             {video.isLive ? <span class="pill pill-live">live</span> : null}
+                            <span class={['pill', video.selected ? 'pill-live' : 'pill-draft']}>{video.selected ? 'selected' : 'skipped'}</span>
                           </div>
                           <span class="muted-chip">{video.duration || '--:--'}</span>
+                        </div>
+                        <label class="checkbox-row">
+                          <input
+                            type="checkbox"
+                            class="inline-checkbox"
+                            checked={Boolean(video.selected)}
+                            onChange={(event) => updateYouTubeDraftItem(video.youtubeVideoId, { selected: readChecked(event) })}
+                          />
+                          <span>
+                            Include this video
+                            <small>Selected videos will be imported into the content library.</small>
+                          </span>
+                        </label>
+                        <div class="card-link-row">
+                          <img src={video.thumbnailUrl} alt={video.title} style={{ width: '120px', height: '72px', borderRadius: '12px', objectFit: 'cover' }} />
+                          <div style={{ display: 'grid', gap: '0.35rem', flex: 1 }}>
+                            <a href={video.url} target="_blank" rel="noreferrer noopener" class="media-link">Open YouTube</a>
+                            <span class="muted-chip">{formatDateTime(video.publishedAt)}</span>
+                          </div>
                         </div>
                         <div class="card-body">
                           <h3>{video.title}</h3>
                           <p>{truncate(video.description || '', 140)}</p>
                         </div>
-                        <div class="card-link-row">
-                          <a href={video.url} target="_blank" rel="noreferrer noopener" class="media-link">Open YouTube</a>
-                          <span class="muted-chip">{formatDateTime(video.publishedAt)}</span>
+                        <div class="pill-row">
+                          {(video.suggestedAppSections || []).map((section) => (
+                            <span class="muted-chip" key={`${video.youtubeVideoId}-section-${section}`}>Suggested: {section}</span>
+                          ))}
+                          {(video.suggestedTags || []).map((tag) => (
+                            <span class="muted-chip" key={`${video.youtubeVideoId}-tag-${tag}`}>#{tag}</span>
+                          ))}
                         </div>
+                        <div class="grid-2">
+                          <label>
+                            App sections
+                            <input
+                              value={video.appSectionsCsv}
+                              onInput={(event) => updateYouTubeDraftItem(video.youtubeVideoId, {
+                                appSectionsCsv: readValue(event),
+                                appSections: parseCsvList(readValue(event)),
+                              })}
+                              placeholder="ClaudyGod Music, ClaudyGod Messages"
+                            />
+                          </label>
+                          <label>
+                            Tags
+                            <input
+                              value={video.tagsCsv}
+                              onInput={(event) => updateYouTubeDraftItem(video.youtubeVideoId, {
+                                tagsCsv: readValue(event),
+                                tags: parseCsvList(readValue(event)),
+                              })}
+                              placeholder="worship, live, message"
+                            />
+                          </label>
+                        </div>
+                        <label>
+                          Import visibility
+                          <select
+                            value={video.visibility}
+                            onChange={(event) => updateYouTubeDraftItem(video.youtubeVideoId, { visibility: readValue(event) })}
+                          >
+                            {VISIBILITY_OPTIONS.map((visibility) => <option value={visibility} key={`yt-visibility-${video.youtubeVideoId}-${visibility}`}>{visibility}</option>)}
+                          </select>
+                        </label>
                       </article>
                     ))}
                   </div>
@@ -2314,18 +3013,6 @@ export default defineComponent({
             </div>
           ) : null}
 
-          <section class="support-strip glass-panel reveal-up" style={{ animationDelay: '280ms' }}>
-            <div>
-              <h3>Need help?</h3>
-              <p>For account access, branding updates, or storage setup changes, contact your platform administrator.</p>
-            </div>
-            <div class="support-mark">
-              <div class="logo-wrap">
-                <img src={BRAND_LOGO_URL} alt="ClaudyGod" class="brand-logo" />
-              </div>
-              <span>ClaudyGod Content Studio</span>
-            </div>
-          </section>
         </section>
       );
 
@@ -2349,27 +3036,8 @@ export default defineComponent({
         )
         : (currentUser.value ? dashboardScreen : loginScreen);
 
-      const typographyToggle = (compact = false) => (
-        <div class={['type-density-control', compact ? 'is-compact' : '']}>
-          <span class="type-density-label">Typography</span>
-          <div class="type-density-options" role="group" aria-label="Typography density">
-            {TYPOGRAPHY_MODES.map((option) => (
-              <button
-                key={`type-mode-${compact ? 'mobile' : 'desktop'}-${option.value}`}
-                type="button"
-                class={['type-density-option', typographyMode.value === option.value ? 'is-active' : '']}
-                onClick={() => setTypographyMode(option.value)}
-                aria-pressed={typographyMode.value === option.value ? 'true' : 'false'}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      );
-
       return (
-        <div class={['app-root', `typo-${typographyMode.value}`]}>
+        <div class="app-root">
           <div class="bg-orb orb-a" />
           <div class="bg-orb orb-b" />
           <div class="bg-orb orb-c" />
@@ -2406,14 +3074,14 @@ export default defineComponent({
 
                 {!isCompactHeader.value ? (
                   <div class="header-command-bar">
-                    {typographyToggle()}
                     {currentUser.value ? (
                       <>
                         <div class="user-pill">
                           <span class="user-pill-dot" />
                           <span>{displayName.value}</span>
-                          <span class="user-pill-role">{isAdmin.value ? 'Admin' : 'Client'}</span>
+                          <span class="user-pill-role">{portalRoleLabel.value}</span>
                         </div>
+                        {accountEmail.value ? <span class="muted-chip">{accountEmail.value}</span> : null}
                         <div class="header-inline-actions">
                           <button type="button" class="ghost-btn compact" onClick={() => void refreshDashboard()}>
                             Refresh
@@ -2432,7 +3100,6 @@ export default defineComponent({
             {currentUser.value ? (
               <div class={['header-drawer', headerMenuOpen.value ? 'is-open' : '']}>
                 <div class="header-drawer-inner">
-                  {typographyToggle(true)}
                   <div class="header-drawer-nav">
                     <button
                       type="button"
@@ -2460,8 +3127,9 @@ export default defineComponent({
                   <div class="user-pill">
                     <span class="user-pill-dot" />
                     <span>{displayName.value}</span>
-                    <span class="user-pill-role">{isAdmin.value ? 'Admin' : 'Client'}</span>
+                    <span class="user-pill-role">{portalRoleLabel.value}</span>
                   </div>
+                  {accountEmail.value ? <span class="muted-chip">{accountEmail.value}</span> : null}
 
                   <div class="header-drawer-actions">
                     <button type="button" class="ghost-btn compact" onClick={() => void refreshDashboard()}>
@@ -2495,24 +3163,40 @@ export default defineComponent({
             <div class="global-footer-inner">
               <div class="footer-grid">
                 <section class="footer-block footer-brand">
-                  <strong>ClaudyGod Content Studio</strong>
-                  <p>Professional publishing and curation dashboard for ministry media teams.</p>
-                  <div class="footer-chip-row">
-                    <span class="footer-chip">Admin Portal</span>
-                    <span class="footer-chip subtle">Session Timeout: 30 min</span>
-                  </div>
+                  <p class="footer-eyebrow">ClaudyGod Ministries</p>
+                  <strong>Content Studio Admin</strong>
+                  <p>Enterprise publishing workspace for structured content operations, approvals, and release readiness.</p>
                 </section>
 
                 <section class="footer-block">
-                  <h4>Publishing Workflow</h4>
-                  <p>Upload media, assign app sections, and publish content across client experiences in one place.</p>
+                  <h4>Platform Flow</h4>
+                  <p>Content submissions move through the API into PostgreSQL, while queues and cache coordination run through Redis.</p>
+                  <div class="footer-chip-row">
+                    <span class="footer-chip">API: {API_HOST_LABEL}</span>
+                    <span
+                      class={[
+                        'footer-chip',
+                        diagnosticsTone.value === 'warning'
+                          ? 'warning'
+                          : diagnosticsTone.value === 'success'
+                            ? 'success'
+                            : 'subtle',
+                      ]}
+                    >
+                      {diagnosticsLabel.value}
+                    </span>
+                  </div>
                 </section>
 
                 <section class="footer-block footer-system">
-                  <h4>System</h4>
-                  <p>API endpoint: {API_HOST_LABEL}</p>
-                  <p>Typography mode: {typographyMode.value}</p>
-                  <div class="footer-right">{currentYear} Claudy Platform</div>
+                  <h4>Infrastructure</h4>
+                  <p>{infraSummary.value}</p>
+                  <p>
+                    {endpointChecksAt.value
+                      ? `Last diagnostic: ${formatDateTime(endpointChecksAt.value)}`
+                      : 'Diagnostics run after sign-in and can be rerun from the Mobile Preview workspace.'}
+                  </p>
+                  <div class="footer-right">© {currentYear} Claudy Platform</div>
                 </section>
               </div>
             </div>
