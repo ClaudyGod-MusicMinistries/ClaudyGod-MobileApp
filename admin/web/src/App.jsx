@@ -257,6 +257,8 @@ export default defineComponent({
       password: '',
       displayName: '',
       confirmPassword: '',
+      accountRole: 'CLIENT',
+      adminSignupCode: '',
     });
 
     const createForm = reactive({
@@ -350,6 +352,7 @@ export default defineComponent({
     const accountEmail = computed(() => (currentUser.value && currentUser.value.email ? currentUser.value.email : ''));
     const isRegisterMode = computed(() => authMode.value === 'register');
     const isAdmin = computed(() => Boolean(currentUser.value && currentUser.value.role === 'ADMIN'));
+    const adminAccessRequested = computed(() => isRegisterMode.value && authForm.accountRole === 'ADMIN');
     const portalRoleLabel = computed(() => (isAdmin.value ? 'Admin' : 'Publisher'));
     const isCompactHeader = computed(() => viewportWidth.value <= 1024);
     const googleLoginEnabled = computed(() => Boolean(GOOGLE_LOGIN_URL));
@@ -1101,6 +1104,10 @@ export default defineComponent({
           setNotice('Passwords do not match.', 'error');
           return;
         }
+        if (authForm.accountRole === 'ADMIN' && !authForm.adminSignupCode.trim()) {
+          setNotice('Enter the admin access code to create an admin account.', 'error');
+          return;
+        }
       }
 
       authLoading.value = true;
@@ -1111,7 +1118,8 @@ export default defineComponent({
               email: authForm.email.trim(),
               password: authForm.password,
               displayName: authForm.displayName.trim(),
-              role: 'CLIENT',
+              role: authForm.accountRole === 'ADMIN' ? 'ADMIN' : 'CLIENT',
+              adminSignupCode: authForm.accountRole === 'ADMIN' ? authForm.adminSignupCode.trim() : undefined,
             }
           : {
               email: authForm.email.trim(),
@@ -1163,6 +1171,8 @@ export default defineComponent({
       clearNotice();
       authForm.password = '';
       authForm.confirmPassword = '';
+      authForm.accountRole = 'CLIENT';
+      authForm.adminSignupCode = '';
     }
 
     function logout() {
@@ -1603,6 +1613,20 @@ export default defineComponent({
             <form class="stack-form" onSubmit={(event) => void handleAuthSubmit(event)}>
               {isRegisterMode.value ? (
                 <label>
+                  Access level
+                  <select
+                    value={authForm.accountRole}
+                    onChange={(event) => { authForm.accountRole = readValue(event) === 'ADMIN' ? 'ADMIN' : 'CLIENT'; }}
+                  >
+                    <option value="CLIENT">Publisher</option>
+                    <option value="ADMIN">Admin</option>
+                  </select>
+                  <small class="subtle-text">Use Publisher for normal content operations. Admin requires an access code.</small>
+                </label>
+              ) : null}
+
+              {isRegisterMode.value ? (
+                <label>
                   Public display name
                   <input
                     value={authForm.displayName}
@@ -1611,6 +1635,20 @@ export default defineComponent({
                     autoComplete="name"
                   />
                   <small class="subtle-text">This is the name shown on uploads, feedback activity, and content credits. There is no separate username.</small>
+                </label>
+              ) : null}
+
+              {adminAccessRequested.value ? (
+                <label>
+                  Admin access code
+                  <input
+                    type="password"
+                    value={authForm.adminSignupCode}
+                    onInput={(event) => { authForm.adminSignupCode = readValue(event); }}
+                    placeholder="Enter admin access code"
+                    autoComplete="one-time-code"
+                  />
+                  <small class="subtle-text">Local development can use the value configured in the API environment as <code>ADMIN_SIGNUP_CODE</code>.</small>
                 </label>
               ) : null}
 
