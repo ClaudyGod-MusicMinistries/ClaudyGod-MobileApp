@@ -29,7 +29,7 @@ export const startEmailWorker = (): Worker<EmailQueuePayload> => {
 
       await pool.query(
         `UPDATE email_jobs
-         SET status = 'processing'
+         SET status = 'processing', last_attempt_at = NOW()
          WHERE id = $1`,
         [emailJobId],
       );
@@ -55,7 +55,7 @@ export const startEmailWorker = (): Worker<EmailQueuePayload> => {
               .map((item) => item.trim())
               .filter(Boolean);
 
-        await sendEmail({
+        const delivery = await sendEmail({
           to: recipients,
           subject: row.subject,
           text: row.text_body,
@@ -64,9 +64,9 @@ export const startEmailWorker = (): Worker<EmailQueuePayload> => {
 
         await pool.query(
           `UPDATE email_jobs
-           SET status = 'completed', processed_at = NOW()
+           SET status = 'completed', sent_message_id = $2, processed_at = NOW()
            WHERE id = $1`,
-          [emailJobId],
+          [emailJobId, delivery.messageId ?? null],
         );
 
         return { success: true };

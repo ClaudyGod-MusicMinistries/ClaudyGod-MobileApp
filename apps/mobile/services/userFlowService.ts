@@ -230,6 +230,26 @@ export async function subscribeToLiveAlertsBackend(channelId: string, label?: st
   });
 }
 
+export async function saveDevicePushToken(input: {
+  expoPushToken: string;
+  deviceType?: string;
+}): Promise<void> {
+  await apiFetchAuthed('/v1/me/devices/push-token', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export async function removeDevicePushToken(input: {
+  expoPushToken: string;
+  deviceType?: string;
+}): Promise<void> {
+  await apiFetchAuthed('/v1/me/devices/push-token', {
+    method: 'DELETE',
+    body: JSON.stringify(input),
+  });
+}
+
 export async function fetchMePrivacyOverview() {
   return apiFetchAuthed<{
     privacy: {

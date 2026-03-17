@@ -58,7 +58,7 @@ Prerequisites
 
 Setup
 
-1. Copy `.env.example` to `.env`.
+1. Create the repo root `.env.development`.
 2. Set:
    - `EXPO_PUBLIC_SUPABASE_URL`
    - `EXPO_PUBLIC_SUPABASE_KEY`
@@ -68,14 +68,14 @@ Setup
 
 Docker
 
-- Web preview: `docker compose --env-file ../../.env.docker -f docker-compose.dev.yml --profile web up --build`
-- Native Expo dev server: `docker compose --env-file ../../.env.docker -f docker-compose.dev.yml --profile native up --build`
+- Web preview: `docker compose --env-file ../../.env.development -f docker-compose.dev.yml --profile web up --build`
+- Native Expo dev server: `docker compose --env-file ../../.env.development -f docker-compose.dev.yml --profile native up --build`
 
 ## 🚀 Deployment (EAS)
 
-1. Copy `.env.example` to `.env` and fill in your Supabase keys.
-2. Set the same values in EAS secrets or `eas.json`.
-3. Update `app.json` with your real bundle identifiers:
+1. Create the repo root `.env.production` and fill in your production values.
+2. Set the same values in EAS secrets or your EAS environment.
+3. Update `app.config.js` with your real bundle identifiers:
    - `ios.bundleIdentifier`
    - `android.package`
    - `extra.eas.projectId`

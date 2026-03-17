@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, Linking } from 'react-native';
+import { View, Linking, TextInput } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { SettingsScaffold } from './Scaffold';
@@ -17,6 +17,7 @@ export default function Rate() {
   const theme = useAppTheme();
   const router = useRouter();
   const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState('');
   const { config } = useMobileAppConfig();
 
   const scoreLabel = useMemo(() => {
@@ -36,7 +37,7 @@ export default function Rate() {
   const goStore = async () => {
     if (rating <= 0) return;
     try {
-      await createAppRating({ rating, channel: 'mobile' });
+      await createAppRating({ rating, channel: 'mobile', comment: comment.trim() || undefined });
     } catch (error) {
       console.warn('rating submit failed:', error);
     }
@@ -53,7 +54,7 @@ export default function Rate() {
   const openFeedback = async () => {
     if (rating > 0) {
       try {
-        await createAppRating({ rating, channel: 'mobile' });
+        await createAppRating({ rating, channel: 'mobile', comment: comment.trim() || undefined });
       } catch (error) {
         console.warn('rating submit failed:', error);
       }
@@ -106,6 +107,33 @@ export default function Rate() {
       </FadeIn>
 
       <FadeIn delay={140}>
+        <SurfaceCard tone="subtle" style={{ padding: spacing.md, marginBottom: spacing.md }}>
+          <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
+            Optional note
+          </CustomText>
+          <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 4 }}>
+            Add a short comment so the admin team can understand what is working well or what needs attention.
+          </CustomText>
+          <TextInput
+            value={comment}
+            onChangeText={setComment}
+            placeholder="What stood out in your experience?"
+            placeholderTextColor={theme.colors.text.secondary}
+            multiline
+            textAlignVertical="top"
+            style={{
+              minHeight: 110,
+              marginTop: spacing.md,
+              borderWidth: 1,
+              borderColor: theme.colors.border,
+              borderRadius: 16,
+              paddingHorizontal: spacing.md,
+              paddingVertical: spacing.md,
+              backgroundColor: theme.colors.surface,
+              color: theme.colors.text.primary,
+            }}
+          />
+        </SurfaceCard>
         <View style={{ marginBottom: spacing.md }}>
           <AppButton
             title="Publish to App Store / Play Store"

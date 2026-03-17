@@ -8,8 +8,17 @@ import { signedUploadRequestSchema, uploadPoliciesResponse } from '../uploads/up
 import { requestSignedUploadUrl } from '../uploads/uploads.service';
 import { youtubeListQuerySchema } from '../youtube/youtube.schema';
 import { fetchYouTubeVideos } from '../youtube/youtube.service';
+import { buildMobileFeed } from './mobile.service';
 
 export const mobileRouter = Router();
+
+mobileRouter.get(
+  '/feed',
+  asyncHandler(async (_req, res) => {
+    const data = await buildMobileFeed();
+    res.status(200).json(data);
+  }),
+);
 
 mobileRouter.get(
   '/content',

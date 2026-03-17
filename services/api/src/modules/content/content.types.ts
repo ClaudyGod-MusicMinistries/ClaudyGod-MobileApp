@@ -38,6 +38,8 @@ export interface CreateContentInput {
   type: ContentType;
   url?: string;
   thumbnailUrl?: string;
+  mediaUploadSessionId?: string;
+  thumbnailUploadSessionId?: string;
   channelName?: string;
   duration?: string;
   sourceKind?: ContentSourceKind;
@@ -54,6 +56,8 @@ export interface UpdateContentInput {
   type?: ContentType;
   url?: string;
   thumbnailUrl?: string;
+  mediaUploadSessionId?: string;
+  thumbnailUploadSessionId?: string;
   channelName?: string;
   duration?: string;
   sourceKind?: ContentSourceKind;

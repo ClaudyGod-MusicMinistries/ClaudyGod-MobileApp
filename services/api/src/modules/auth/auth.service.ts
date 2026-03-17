@@ -1,8 +1,12 @@
 import crypto from 'crypto';
 import { pool } from '../../db/pool';
 import { env } from '../../config/env';
+import {
+  queuePasswordResetEmail,
+  queueVerificationEmail,
+  queueWelcomeEmail,
+} from '../../infra/transactionalEmails';
 import { HttpError } from '../../lib/httpError';
-import { emailQueue } from '../../queues/emailQueue';
 import { hashPassword, verifyPassword } from '../../utils/password';
 import { signAccessToken } from '../../utils/jwt';
 import type {
@@ -88,50 +92,6 @@ const tokenHash = (token: string): string =>
 const createRawToken = (): string =>
   crypto.randomBytes(ACTION_TOKEN_BYTES).toString('hex');
 
-const buildActionUrl = (baseUrl: string, token: string): string => {
-  const separator = baseUrl.includes('?') ? '&' : '?';
-  return `${baseUrl}${separator}token=${encodeURIComponent(token)}`;
-};
-
-const buildPublicActionUrl = (path: string, token: string): string => {
-  const normalizedBase = env.AUTH_PUBLIC_BASE_URL.replace(/\/+$/, '');
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-  return buildActionUrl(`${normalizedBase}${normalizedPath}`, token);
-};
-
-const enqueueEmailJob = async ({
-  recipients,
-  subject,
-  textBody,
-  htmlBody,
-  jobType,
-  payload,
-}: {
-  recipients: string[];
-  subject: string;
-  textBody: string;
-  htmlBody: string;
-  jobType: string;
-  payload: Record<string, unknown>;
-}): Promise<void> => {
-  const emailInsert = await pool.query<{ id: number }>(
-    `INSERT INTO email_jobs (job_type, recipients, subject, text_body, html_body, status, payload)
-     VALUES ($1, $2::text[], $3, $4, $5, 'pending', $6::jsonb)
-     RETURNING id`,
-    [jobType, recipients, subject, textBody, htmlBody, JSON.stringify(payload)],
-  );
-
-  const emailJobId = emailInsert.rows[0]!.id;
-  const queueJob = await emailQueue.add(`email.${jobType}`, { emailJobId });
-
-  await pool.query(
-    `UPDATE email_jobs
-     SET queue_job_id = $2, updated_at = NOW()
-     WHERE id = $1`,
-    [emailJobId, String(queueJob.id)],
-  );
-};
-
 const issueAuthActionToken = async ({
   userId,
   tokenType,
@@ -195,72 +155,6 @@ const consumeAuthActionToken = async ({
   return result.rows[0]!;
 };
 
-const enqueueVerificationEmail = async (user: SafeUser, rawToken: string): Promise<void> => {
-  const verifyUrl = buildPublicActionUrl(env.AUTH_VERIFY_EMAIL_PATH, rawToken);
-  const subject = 'Verify your email address';
-  const textBody = [
-    `Hi ${user.displayName},`,
-    '',
-    'Welcome to Claudy Platform.',
-    'Please verify your email address to activate your account:',
-    verifyUrl,
-    '',
-    `This link expires in ${env.AUTH_VERIFICATION_TOKEN_TTL_MINUTES} minutes.`,
-    'If you did not create this account, you can ignore this email.',
-  ].join('\n');
-  const htmlBody = `<p>Hi ${user.displayName},</p>
-<p>Welcome to Claudy Platform.</p>
-<p>Please verify your email address to activate your account:</p>
-<p><a href="${verifyUrl}">${verifyUrl}</a></p>
-<p>This link expires in ${env.AUTH_VERIFICATION_TOKEN_TTL_MINUTES} minutes.</p>
-<p>If you did not create this account, you can ignore this email.</p>`;
-
-  await enqueueEmailJob({
-    recipients: [user.email],
-    subject,
-    textBody,
-    htmlBody,
-    jobType: 'auth_verify_email',
-    payload: {
-      userId: user.id,
-      type: 'email_verification',
-    },
-  });
-};
-
-const enqueuePasswordResetEmail = async (user: SafeUser, rawToken: string): Promise<void> => {
-  const resetUrl = buildPublicActionUrl(env.AUTH_RESET_PASSWORD_PATH, rawToken);
-  const subject = 'Reset your password';
-  const textBody = [
-    `Hi ${user.displayName},`,
-    '',
-    'We received a request to reset your password.',
-    'Use this secure link to set a new password:',
-    resetUrl,
-    '',
-    `This link expires in ${env.AUTH_PASSWORD_RESET_TOKEN_TTL_MINUTES} minutes.`,
-    'If you did not request this, you can safely ignore this email.',
-  ].join('\n');
-  const htmlBody = `<p>Hi ${user.displayName},</p>
-<p>We received a request to reset your password.</p>
-<p>Use this secure link to set a new password:</p>
-<p><a href="${resetUrl}">${resetUrl}</a></p>
-<p>This link expires in ${env.AUTH_PASSWORD_RESET_TOKEN_TTL_MINUTES} minutes.</p>
-<p>If you did not request this, you can safely ignore this email.</p>`;
-
-  await enqueueEmailJob({
-    recipients: [user.email],
-    subject,
-    textBody,
-    htmlBody,
-    jobType: 'auth_password_reset',
-    payload: {
-      userId: user.id,
-      type: 'password_reset',
-    },
-  });
-};
-
 export const registerUser = async (input: RegisterInput): Promise<AuthResponse> => {
   const email = input.email.trim().toLowerCase();
   const displayName = input.displayName.trim();
@@ -304,7 +198,9 @@ export const registerUser = async (input: RegisterInput): Promise<AuthResponse> 
       tokenType: 'email_verification',
       ttlMinutes: env.AUTH_VERIFICATION_TOKEN_TTL_MINUTES,
     });
-    await enqueueVerificationEmail(user, verificationToken.rawToken);
+    await queueVerificationEmail(user, verificationToken.rawToken);
+  } else {
+    await queueWelcomeEmail(user);
   }
 
   const accessToken = signAccessToken({
@@ -399,6 +295,7 @@ export const verifyEmail = async (input: VerifyEmailInput): Promise<AuthResponse
 
   const user = toSafeUser(userUpdate.rows[0]!);
   await ensureUserScaffold(user);
+  await queueWelcomeEmail(user);
 
   const accessToken = signAccessToken({
     sub: user.id,
@@ -444,7 +341,7 @@ export const resendVerificationEmail = async (
     ttlMinutes: env.AUTH_VERIFICATION_TOKEN_TTL_MINUTES,
     requestIp,
   });
-  await enqueueVerificationEmail(user, verificationToken.rawToken);
+  await queueVerificationEmail(user, verificationToken.rawToken);
 
   return { message: AUTH_GENERIC_EMAIL_MESSAGE };
 };
@@ -474,7 +371,7 @@ export const requestPasswordReset = async (
     ttlMinutes: env.AUTH_PASSWORD_RESET_TOKEN_TTL_MINUTES,
     requestIp,
   });
-  await enqueuePasswordResetEmail(user, resetToken.rawToken);
+  await queuePasswordResetEmail(user, resetToken.rawToken);
 
   return { message: AUTH_GENERIC_EMAIL_MESSAGE };
 };
