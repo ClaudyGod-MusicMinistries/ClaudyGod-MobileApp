@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { View } from 'react-native';
-import { Audio, AVPlaybackStatus } from 'expo-av';
+import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../CustomText';
 import { useAppTheme } from '../../util/colorScheme';
@@ -23,73 +23,62 @@ interface AudioPlayerProps {
 
 export function AudioPlayer({ track, autoPlay = true, onClose, compact }: AudioPlayerProps) {
   const theme = useAppTheme();
-  const soundRef = useRef<Audio.Sound | null>(null);
-  const [status, setStatus] = useState<AVPlaybackStatus | null>(null);
+  const player = useAudioPlayer(track.uri, { updateInterval: 400 });
+  const status = useAudioPlayerStatus(player);
 
   useEffect(() => {
-    let isMounted = true;
+    void setAudioModeAsync({
+      allowsRecording: false,
+      playsInSilentMode: true,
+      shouldPlayInBackground: false,
+      interruptionMode: 'duckOthers',
+    });
+  }, []);
 
-    const loadTrack = async () => {
-      if (soundRef.current) {
-        await soundRef.current.unloadAsync();
-        soundRef.current = null;
-      }
-
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: false,
-        staysActiveInBackground: false,
-        playsInSilentModeIOS: true,
-        shouldDuckAndroid: true,
-      });
-
-      const { sound } = await Audio.Sound.createAsync(
-        { uri: track.uri },
-        { shouldPlay: autoPlay, progressUpdateIntervalMillis: 400 },
-      );
-      soundRef.current = sound;
-
-      sound.setOnPlaybackStatusUpdate((nextStatus) => {
-        if (!isMounted) return;
-        setStatus(nextStatus);
-      });
-    };
-
-    loadTrack();
-
-    return () => {
-      isMounted = false;
-      if (soundRef.current) {
-        soundRef.current.unloadAsync();
-        soundRef.current = null;
-      }
-    };
-  }, [autoPlay, track.uri]);
-
-  const togglePlay = async () => {
-    const sound = soundRef.current;
-    if (!sound) return;
-    const current = await sound.getStatusAsync();
-    if (!current.isLoaded) return;
-    if (current.isPlaying) {
-      await sound.pauseAsync();
-    } else {
-      await sound.playAsync();
+  useEffect(() => {
+    if (!status.isLoaded) {
+      return;
     }
+
+    if (autoPlay) {
+      player.play();
+      return;
+    }
+
+    player.pause();
+    void player.seekTo(0);
+  }, [autoPlay, player, status.isLoaded, track.uri]);
+
+  useEffect(() => {
+    return () => {
+      player.pause();
+    };
+  }, [player]);
+
+  const togglePlay = () => {
+    if (!status.isLoaded) return;
+
+    if (status.playing) {
+      player.pause();
+      return;
+    }
+
+    player.play();
   };
 
   const { progress, positionLabel, durationLabel, isPlaying } = useMemo(() => {
-    if (!status || !status.isLoaded) {
+    if (!status.isLoaded) {
       return { progress: 0, positionLabel: '0:00', durationLabel: track.duration ?? '--:--', isPlaying: false };
     }
-    const position = status.positionMillis ?? 0;
-    const duration = status.durationMillis ?? 0;
+    const position = Math.max(0, Math.round(status.currentTime * 1000));
+    const duration = Math.max(0, Math.round(status.duration * 1000));
     const safeDuration = duration > 0 ? duration : 1;
     const progressValue = Math.min(1, position / safeDuration);
     return {
       progress: progressValue,
       positionLabel: formatMillis(position),
       durationLabel: duration ? formatMillis(duration) : track.duration ?? '--:--',
-      isPlaying: status.isPlaying,
+      isPlaying: status.playing,
     };
   }, [status, track.duration]);
 

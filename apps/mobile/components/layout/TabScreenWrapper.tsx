@@ -1,6 +1,5 @@
-// components/layout/TabScreenWrapper.tsx
 import React from 'react';
-import { View, StatusBar } from 'react-native';
+import { StatusBar, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorScheme } from '../../util/colorScheme';
@@ -10,7 +9,7 @@ interface TabScreenWrapperProps {
   children: React.ReactNode;
 }
 
-export const TabScreenWrapper: React.FC<TabScreenWrapperProps> = ({ children }) => {
+export function TabScreenWrapper({ children }: TabScreenWrapperProps) {
   const colorScheme = useColorScheme();
   const currentColors = colors[colorScheme] ?? colors.dark;
   const isDark = colorScheme === 'dark';
@@ -30,17 +29,16 @@ export const TabScreenWrapper: React.FC<TabScreenWrapperProps> = ({ children }) 
         }
         start={{ x: 0.2, y: 0 }}
         end={{ x: 0.8, y: 0.95 }}
-        pointerEvents="none"
         style={{
           position: 'absolute',
           top: 0,
           left: 0,
           right: 0,
           height: 280,
+          pointerEvents: 'none',
         }}
       />
       <View
-        pointerEvents="none"
         style={{
           position: 'absolute',
           top: 110,
@@ -49,6 +47,7 @@ export const TabScreenWrapper: React.FC<TabScreenWrapperProps> = ({ children }) 
           height: 260,
           borderRadius: 260,
           backgroundColor: isDark ? 'rgba(171,136,255,0.07)' : 'rgba(109,40,217,0.05)',
+          pointerEvents: 'none',
         }}
       />
       <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top']}>
@@ -56,4 +55,4 @@ export const TabScreenWrapper: React.FC<TabScreenWrapperProps> = ({ children }) 
       </SafeAreaView>
     </View>
   );
-};
+}

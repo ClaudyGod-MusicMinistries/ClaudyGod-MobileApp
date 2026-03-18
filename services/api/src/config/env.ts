@@ -123,6 +123,7 @@ const envSchema = z
     SEED_ADMIN_EMAIL: z.string().email().default('admin@claudygod.example'),
     SEED_ADMIN_PASSWORD: z.string().min(8).default('ChangeMe123!'),
     SEED_ADMIN_DISPLAY_NAME: z.string().trim().min(2).max(80).default('Claudy Admin'),
+    SEED_ADMIN_ON_BOOT: toBoolean(runtimeEnv === 'development'),
   })
   .superRefine((value, ctx) => {
     if (looksLikeJwtToken(value.JWT_ACCESS_SECRET)) {
@@ -143,6 +144,38 @@ const envSchema = z
     }
 
     if (value.NODE_ENV === 'production') {
+      if (value.DATABASE_URL.includes('replace-with-supabase-db-password')) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['DATABASE_URL'],
+          message: 'DATABASE_URL must use the real Supabase Postgres password in production',
+        });
+      }
+
+      if (!value.SUPABASE_URL) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['SUPABASE_URL'],
+          message: 'SUPABASE_URL is required in production',
+        });
+      }
+
+      if (!value.SUPABASE_SERVICE_ROLE_KEY) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['SUPABASE_SERVICE_ROLE_KEY'],
+          message: 'SUPABASE_SERVICE_ROLE_KEY is required in production',
+        });
+      }
+
+      if (!value.AUTH_PUBLIC_BASE_URL.startsWith('https://')) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['AUTH_PUBLIC_BASE_URL'],
+          message: 'AUTH_PUBLIC_BASE_URL must use https:// in production',
+        });
+      }
+
       if (
         value.JWT_ACCESS_SECRET.includes('replace-this') ||
         value.JWT_ACCESS_SECRET.toLowerCase().includes('changeme')
@@ -176,6 +209,14 @@ const envSchema = z
           code: z.ZodIssueCode.custom,
           path: ['SMTP_USER'],
           message: 'Brevo SMTP requires SMTP_USER and SMTP_PASS in production',
+        });
+      }
+
+      if (value.SMTP_PROVIDER === 'postfix' && !value.SMTP_HOST) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['SMTP_HOST'],
+          message: 'Postfix relay requires SMTP_HOST in production',
         });
       }
     }

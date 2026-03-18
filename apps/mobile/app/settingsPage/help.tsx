@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Alert, Linking, TextInput, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { SettingsScaffold } from './Scaffold';
+import { SettingsScaffold } from '../../components/layout/SettingsScaffold';
 import { CustomText } from '../../components/CustomText';
 import { useAppTheme } from '../../util/colorScheme';
 import { spacing } from '../../styles/designTokens';

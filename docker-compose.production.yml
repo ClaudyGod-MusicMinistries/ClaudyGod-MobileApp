@@ -1,0 +1,195 @@
+name: claudygod-production
+
+x-backend-env: &backend-env
+  NODE_ENV: production
+  CLAUDYGOD_ENV: production
+  API_PORT: 4000
+  API_HOST: 0.0.0.0
+  DATABASE_URL: ${DATABASE_URL}
+  DATABASE_SSL: ${DATABASE_SSL:-true}
+  REDIS_URL: redis://redis:6379
+  JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+  JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-1d}
+  BCRYPT_ROUNDS: ${BCRYPT_ROUNDS:-12}
+  CORS_ORIGIN: ${CORS_ORIGIN}
+  MOBILE_API_KEY: ${MOBILE_API_KEY}
+  AUTH_PUBLIC_BASE_URL: ${AUTH_PUBLIC_BASE_URL}
+  AUTH_VERIFY_EMAIL_PATH: ${AUTH_VERIFY_EMAIL_PATH:-/verify-email}
+  AUTH_RESET_PASSWORD_PATH: ${AUTH_RESET_PASSWORD_PATH:-/reset-password}
+  AUTH_SIGN_IN_PATH: ${AUTH_SIGN_IN_PATH:-/sign-in}
+  AUTH_ACCOUNT_REVIEW_PATH: ${AUTH_ACCOUNT_REVIEW_PATH:-/settings/account}
+  AUTH_VERIFICATION_TOKEN_TTL_MINUTES: ${AUTH_VERIFICATION_TOKEN_TTL_MINUTES:-1440}
+  AUTH_PASSWORD_RESET_TOKEN_TTL_MINUTES: ${AUTH_PASSWORD_RESET_TOKEN_TTL_MINUTES:-30}
+  AUTH_REQUIRE_EMAIL_VERIFICATION: ${AUTH_REQUIRE_EMAIL_VERIFICATION:-true}
+  SUPABASE_URL: ${SUPABASE_URL}
+  SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+  SUPABASE_STORAGE_BUCKET: ${SUPABASE_STORAGE_BUCKET:-mobile-uploads}
+  MAIL_FROM: ${MAIL_FROM}
+  MAIL_REPLY_TO: ${MAIL_REPLY_TO}
+  EMAIL_BRAND_NAME: ${EMAIL_BRAND_NAME:-ClaudyGod}
+  EMAIL_SUPPORT_EMAIL: ${EMAIL_SUPPORT_EMAIL:-}
+  EMAIL_SUPPORT_URL: ${EMAIL_SUPPORT_URL:-}
+  ADMIN_ALERT_EMAILS: ${ADMIN_ALERT_EMAILS:-}
+  SMTP_PROVIDER: ${SMTP_PROVIDER:-postfix}
+  SMTP_HOST: ${SMTP_HOST:-postfix-relay}
+  SMTP_PORT: ${SMTP_PORT:-25}
+  SMTP_SECURE: ${SMTP_SECURE:-false}
+  SMTP_USER: ${SMTP_USER:-}
+  SMTP_PASS: ${SMTP_PASS:-}
+  SMTP_POOL: ${SMTP_POOL:-true}
+  SMTP_MAX_CONNECTIONS: ${SMTP_MAX_CONNECTIONS:-5}
+  SMTP_MAX_MESSAGES: ${SMTP_MAX_MESSAGES:-200}
+  SMTP_CONNECTION_TIMEOUT_MS: ${SMTP_CONNECTION_TIMEOUT_MS:-30000}
+  SMTP_GREETING_TIMEOUT_MS: ${SMTP_GREETING_TIMEOUT_MS:-30000}
+  SMTP_REQUIRE_TLS: ${SMTP_REQUIRE_TLS:-false}
+  SMTP_TLS_REJECT_UNAUTHORIZED: ${SMTP_TLS_REJECT_UNAUTHORIZED:-true}
+  YOUTUBE_API_KEY: ${YOUTUBE_API_KEY:-}
+  YOUTUBE_CHANNEL_ID: ${YOUTUBE_CHANNEL_ID:-}
+  YOUTUBE_MAX_RESULTS: ${YOUTUBE_MAX_RESULTS:-12}
+  ADMIN_SIGNUP_CODE: ${ADMIN_SIGNUP_CODE:-}
+  SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL}
+  SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD}
+  SEED_ADMIN_DISPLAY_NAME: ${SEED_ADMIN_DISPLAY_NAME:-Claudy Admin}
+  SEED_ADMIN_ON_BOOT: ${SEED_ADMIN_ON_BOOT:-false}
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - api
+      - admin-web
+      - mobile-web
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      ACME_EMAIL: ${ACME_EMAIL}
+      API_DOMAIN: ${API_DOMAIN}
+      ADMIN_DOMAIN: ${ADMIN_DOMAIN}
+      APP_DOMAIN: ${APP_DOMAIN}
+    volumes:
+      - ./ops/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - edge
+      - internal
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--save", "60", "1000"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - internal
+
+  postfix-relay:
+    build:
+      context: ./ops/postfix
+    restart: unless-stopped
+    environment:
+      POSTFIX_MYHOSTNAME: ${POSTFIX_MYHOSTNAME}
+      POSTFIX_RELAY_HOST: ${POSTFIX_RELAY_HOST}
+      POSTFIX_RELAY_PORT: ${POSTFIX_RELAY_PORT:-587}
+      POSTFIX_SMTP_USERNAME: ${POSTFIX_SMTP_USERNAME}
+      POSTFIX_SMTP_PASSWORD: ${POSTFIX_SMTP_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "postfix status >/dev/null 2>&1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal
+
+  api:
+    build:
+      context: ./services/api
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      <<: *backend-env
+    depends_on:
+      redis:
+        condition: service_healthy
+      postfix-relay:
+        condition: service_started
+    expose:
+      - "4000"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"fetch('http://127.0.0.1:' + (process.env.API_PORT || 4000) + '/health').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))\"",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 25s
+    networks:
+      - internal
+
+  worker:
+    build:
+      context: ./services/api
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command: ["node", "dist/worker.js"]
+    environment:
+      <<: *backend-env
+    depends_on:
+      redis:
+        condition: service_healthy
+      postfix-relay:
+        condition: service_started
+      api:
+        condition: service_healthy
+    networks:
+      - internal
+
+  admin-web:
+    build:
+      context: ./admin/web
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL}
+        VITE_GOOGLE_LOGIN_URL: ${VITE_GOOGLE_LOGIN_URL:-}
+        VITE_MOBILE_PREVIEW_URL: ${VITE_MOBILE_PREVIEW_URL:-}
+    restart: unless-stopped
+    expose:
+      - "80"
+    networks:
+      - internal
+
+  mobile-web:
+    build:
+      context: ./apps/mobile
+      dockerfile: Dockerfile.prod
+      args:
+        CLAUDYGOD_ENV: production
+        EXPO_PUBLIC_API_URL: ${EXPO_PUBLIC_API_URL}
+        EXPO_PUBLIC_SUPABASE_URL: ${EXPO_PUBLIC_SUPABASE_URL}
+        EXPO_PUBLIC_SUPABASE_KEY: ${EXPO_PUBLIC_SUPABASE_KEY}
+        EXPO_PUBLIC_SUPABASE_ANON_KEY: ${EXPO_PUBLIC_SUPABASE_ANON_KEY:-}
+        EXPO_PUBLIC_EAS_PROJECT_ID: ${EXPO_PUBLIC_EAS_PROJECT_ID:-}
+    restart: unless-stopped
+    expose:
+      - "80"
+    networks:
+      - internal
+
+volumes:
+  caddy_data:
+  caddy_config:
+  redis_data:
+
+networks:
+  edge:
+  internal:
+    internal: true

@@ -8,6 +8,9 @@ export const healthRouter = Router();
 const capabilities = () => ({
   youtube: env.YOUTUBE_ENABLED,
   supabase: env.SUPABASE_ENABLED,
+  databaseTarget: /supabase\./i.test(env.DATABASE_URL)
+    ? 'supabase-postgres'
+    : 'external-postgres',
   smtp: env.SMTP_ENABLED,
   smtpProvider: env.SMTP_PROVIDER_LABEL,
   mobileApiKeyConfigured: Boolean(env.MOBILE_API_KEY && env.MOBILE_API_KEY !== 'dev-mobile-api-key'),

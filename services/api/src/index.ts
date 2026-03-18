@@ -1,12 +1,18 @@
 import { createApp } from './app';
 import { env } from './config/env';
 import { closePool, pool } from './db/pool';
+import { seedAdmin } from './db/seedAdmin';
 import { closeRedis, redis } from './infra/redis';
 import { waitForInfrastructure } from './lib/waitForInfrastructure';
 import { contentQueue } from './queues/contentQueue';
 
 const boot = async (): Promise<void> => {
   await waitForInfrastructure('api');
+
+  if (env.SEED_ADMIN_ON_BOOT) {
+    await seedAdmin();
+    console.log(`Admin seed ensured for ${env.SEED_ADMIN_EMAIL}`);
+  }
 
   const app = createApp();
   const server = app.listen(env.API_PORT, env.API_HOST, () => {

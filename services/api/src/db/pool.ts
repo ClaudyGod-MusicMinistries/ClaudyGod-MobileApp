@@ -6,6 +6,7 @@ const useSsl = env.DATABASE_SSL || /supabase\./i.test(env.DATABASE_URL);
 export const pool = new Pool({
   connectionString: env.DATABASE_URL,
   max: 20,
+  connectionTimeoutMillis: 5000,
   idleTimeoutMillis: 30000,
   ssl: useSsl ? { rejectUnauthorized: false } : undefined,
 });

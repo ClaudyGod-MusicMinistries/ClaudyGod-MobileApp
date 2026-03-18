@@ -25,24 +25,6 @@ const CONTENT_TYPES = ['audio', 'video', 'playlist', 'announcement'];
 const VISIBILITY_OPTIONS = ['draft', 'published'];
 const YOUTUBE_SYNC_DEFAULT_LIMIT = 8;
 const DEFAULT_MOBILE_PREVIEW_URL = import.meta.env.VITE_MOBILE_PREVIEW_URL || 'http://localhost:8081';
-const LANDING_FEATURES = [
-  {
-    title: 'Upload Pipeline',
-    description: 'Upload audio, video, and artwork with storage rules validated by the backend.',
-  },
-  {
-    title: 'Role-based Access',
-    description: 'Client and admin actions are isolated with protected API endpoints.',
-  },
-  {
-    title: 'Mobile-ready Content',
-    description: 'Assign every item to app sections so users see updates immediately.',
-  },
-  {
-    title: 'Editorial Control',
-    description: 'Keep drafts private until quality checks are complete and ready to publish.',
-  },
-];
 const WORKFLOW_STEPS = [
   {
     title: 'Create',
@@ -127,6 +109,12 @@ function readChecked(event) {
 
 function toErrorMessage(error, fallback) {
   if (axios.isAxiosError(error)) {
+    const errorCode = String(error.code || '').toUpperCase();
+    const errorMessage = String(error.message || '').toLowerCase();
+
+    if (errorCode === 'ECONNABORTED' || errorMessage.includes('timeout')) {
+      return `The API at ${API_HOST_LABEL} did not respond in time. Confirm the backend is running and that PostgreSQL is reachable from the API.`;
+    }
     if (error.response?.status === 401) {
       return 'Your session has expired. Please sign in again.';
     }
@@ -246,6 +234,8 @@ export default defineComponent({
     const endpointChecksLoading = ref(false);
     const endpointChecks = ref([]);
     const endpointChecksAt = ref('');
+    const publicHealthLoading = ref(false);
+    const publicHealth = ref(null);
     const mobilePreviewUrl = ref(readStoredMobilePreviewUrl());
     const mobilePreviewDraft = ref(mobilePreviewUrl.value);
     const mobilePreviewFrameKey = ref(0);
@@ -255,7 +245,7 @@ export default defineComponent({
     const authForm = reactive({
       email: '',
       password: '',
-      displayName: '',
+      username: '',
       confirmPassword: '',
     });
 
@@ -353,26 +343,28 @@ export default defineComponent({
     const portalRoleLabel = computed(() => (isAdmin.value ? 'Admin' : 'Publisher'));
     const isCompactHeader = computed(() => viewportWidth.value <= 1024);
     const googleLoginEnabled = computed(() => Boolean(GOOGLE_LOGIN_URL));
+    const publicHealthTone = computed(() => {
+      if (!publicHealth.value) return 'subtle';
+      if (publicHealth.value.status === 'ok') return 'success';
+      return 'warning';
+    });
+    const publicHealthSummary = computed(() => {
+      if (publicHealthLoading.value) return 'Checking backend';
+      if (!publicHealth.value) return 'Awaiting backend check';
+      if (publicHealth.value.status === 'ok') return 'Backend ready';
+      if (publicHealth.value.services?.postgres === 'down') return 'Database unavailable';
+      if (publicHealth.value.status === 'offline') return 'API unavailable';
+      return 'Backend needs attention';
+    });
+    const databaseTargetLabel = computed(() => {
+      const target = publicHealth.value?.capabilities?.databaseTarget;
+      if (target === 'supabase-postgres') return 'Supabase PostgreSQL';
+      if (target === 'external-postgres') return 'External PostgreSQL';
+      return 'Database target pending';
+    });
     const apiHealthCheck = computed(() =>
       (endpointChecks.value || []).find((check) => check && check.label === 'API Health') || null,
     );
-    const hasEndpointErrors = computed(() =>
-      (endpointChecks.value || []).some((check) => check && check.status === 'error'),
-    );
-    const diagnosticsLabel = computed(() => {
-      if (!endpointChecks.value.length) return 'Diagnostics pending';
-      return hasEndpointErrors.value ? 'Diagnostics need attention' : 'Diagnostics healthy';
-    });
-    const diagnosticsTone = computed(() => {
-      if (!endpointChecks.value.length) return 'subtle';
-      return hasEndpointErrors.value ? 'warning' : 'success';
-    });
-    const infraSummary = computed(() => {
-      if (apiHealthCheck.value && apiHealthCheck.value.status === 'ok') {
-        return apiHealthCheck.value.detail;
-      }
-      return 'Content persists in PostgreSQL and runtime jobs are coordinated through Redis.';
-    });
 
     const stats = computed(() => {
       const total = managedItems.value.length;
@@ -1059,6 +1051,63 @@ export default defineComponent({
       }
     }
 
+    async function fetchPublicHealth() {
+      publicHealthLoading.value = true;
+
+      try {
+        const response = await http.get('/health', {
+          timeout: 4000,
+        });
+        publicHealth.value = response.data || null;
+        return publicHealth.value;
+      } catch (error) {
+        if (
+          axios.isAxiosError(error) &&
+          error.response?.data &&
+          typeof error.response.data === 'object'
+        ) {
+          publicHealth.value = error.response.data;
+          return publicHealth.value;
+        }
+
+        publicHealth.value = {
+          status: 'offline',
+          error: toErrorMessage(error, 'Unable to reach backend health endpoint.'),
+          checkedAt: new Date().toISOString(),
+        };
+        return publicHealth.value;
+      } finally {
+        publicHealthLoading.value = false;
+      }
+    }
+
+    async function ensureAuthInfrastructureReady() {
+      const health = await fetchPublicHealth();
+
+      if (!health || health.status === 'offline') {
+        setNotice(
+          `The API at ${API_HOST_LABEL} is not reachable. Start the backend and confirm the admin is pointing at the correct host.`,
+          'error',
+        );
+        return false;
+      }
+
+      if (health.services?.postgres === 'down') {
+        const databaseTarget =
+          health.capabilities?.databaseTarget === 'supabase-postgres'
+            ? 'Supabase PostgreSQL'
+            : 'the configured PostgreSQL database';
+
+        setNotice(
+          `The backend is online, but ${databaseTarget} is unavailable. Update DATABASE_URL, start the database, and restart the API before creating accounts.`,
+          'error',
+        );
+        return false;
+      }
+
+      return true;
+    }
+
     async function bootstrapSession() {
       if (!accessToken.value) return;
       appLoading.value = true;
@@ -1093,14 +1142,18 @@ export default defineComponent({
       }
 
       if (isRegisterMode.value) {
-        if (!authForm.displayName.trim()) {
-          setNotice('Please enter your display name.', 'error');
+        if (!authForm.username.trim()) {
+          setNotice('Please enter your username.', 'error');
           return;
         }
         if (authForm.password !== authForm.confirmPassword) {
           setNotice('Passwords do not match.', 'error');
           return;
         }
+      }
+
+      if (!(await ensureAuthInfrastructureReady())) {
+        return;
       }
 
       authLoading.value = true;
@@ -1110,8 +1163,7 @@ export default defineComponent({
           ? {
               email: authForm.email.trim(),
               password: authForm.password,
-              displayName: authForm.displayName.trim(),
-              role: 'CLIENT',
+              username: authForm.username.trim(),
             }
           : {
               email: authForm.email.trim(),
@@ -1505,6 +1557,7 @@ export default defineComponent({
       syncViewport();
       setupAuthInterceptor();
       syncSessionTracking();
+      void fetchPublicHealth();
       if (typeof window !== 'undefined') {
         window.addEventListener('resize', syncViewport);
       }
@@ -1533,21 +1586,33 @@ export default defineComponent({
                 <p class="eyebrow">ClaudyGod Ministries</p>
                 <h1>Content Studio</h1>
                 <p class="subtitle">
-                  Professional publishing tools for managing ministry media across mobile and web experiences.
+                  Secure publisher access for uploading, reviewing, and releasing ministry content.
                 </p>
               </div>
             </div>
 
-            <div class="feature-tiles">
-              {LANDING_FEATURES.map((feature, index) => (
-                <article class="feature-tile" style={{ animationDelay: `${40 + index * 70}ms` }} key={`landing-feature-${feature.title}`}>
-                  <span class="feature-dot" />
-                  <div>
-                    <h3>{feature.title}</h3>
-                    <p>{feature.description}</p>
-                  </div>
-                </article>
-              ))}
+            <div class="auth-status-grid">
+              <article class="auth-status-card">
+                <span class="auth-status-label">API Host</span>
+                <strong>{API_HOST_LABEL}</strong>
+                <p>{publicHealthSummary.value}</p>
+              </article>
+              <article class="auth-status-card">
+                <span class="auth-status-label">Database</span>
+                <strong>{databaseTargetLabel.value}</strong>
+                <p>
+                  {publicHealth.value?.services?.postgres === 'up'
+                    ? 'Connection ready'
+                    : publicHealth.value?.services?.postgres === 'down'
+                      ? 'Connection unavailable'
+                      : 'Waiting for backend check'}
+                </p>
+              </article>
+              <article class="auth-status-card">
+                <span class="auth-status-label">Account Flow</span>
+                <strong>Username only</strong>
+                <p>No duplicate identity fields in the current register form.</p>
+              </article>
             </div>
           </div>
 
@@ -1587,6 +1652,11 @@ export default defineComponent({
 
             {notice.value ? <div class={['notice', noticeKind.value === 'error' ? 'notice-error' : 'notice-success']}>{notice.value}</div> : null}
 
+            <div class={['auth-runtime-pill', publicHealthTone.value]}>
+              <span class="auth-runtime-dot" />
+              <span>{publicHealthSummary.value}</span>
+            </div>
+
             {googleLoginEnabled.value ? (
               <div class="social-auth-block">
                 <button
@@ -1602,21 +1672,45 @@ export default defineComponent({
 
             <form class="stack-form" onSubmit={(event) => void handleAuthSubmit(event)}>
               {isRegisterMode.value ? (
-                <label>
-                  Public display name
+                <label class="auth-field">
+                  <span class="field-label-row">
+                    <span>Username</span>
+                    <span
+                      class="field-tooltip"
+                      data-tooltip="Your public publishing identity for uploads, content credits, and dashboard activity."
+                      tabIndex={0}
+                      role="note"
+                      aria-label="Username help"
+                    >
+                      i
+                    </span>
+                  </span>
                   <input
-                    value={authForm.displayName}
-                    onInput={(event) => { authForm.displayName = readValue(event); }}
-                    placeholder="ClaudyGod Team Member"
-                    autoComplete="name"
+                    class="auth-input"
+                    value={authForm.username}
+                    onInput={(event) => { authForm.username = readValue(event); }}
+                    placeholder="claudy_member"
+                    autoComplete="nickname"
                   />
-                  <small class="subtle-text">This is the name shown on uploads, feedback activity, and content credits. There is no separate username.</small>
+                  <small class="field-note">This is the only public identity field in the admin account flow.</small>
                 </label>
               ) : null}
 
-              <label>
-                Email address
+              <label class="auth-field">
+                <span class="field-label-row">
+                  <span>Email address</span>
+                  <span
+                    class="field-tooltip"
+                    data-tooltip="This email is used for sign-in, verification, password recovery, and account security notices."
+                    tabIndex={0}
+                    role="note"
+                    aria-label="Email help"
+                  >
+                    i
+                  </span>
+                </span>
                 <input
+                  class="auth-input"
                   type="email"
                   value={authForm.email}
                   onInput={(event) => { authForm.email = readValue(event); }}
@@ -1625,9 +1719,21 @@ export default defineComponent({
                 />
               </label>
 
-              <label>
-                Password
+              <label class="auth-field">
+                <span class="field-label-row">
+                  <span>Password</span>
+                  <span
+                    class="field-tooltip"
+                    data-tooltip="Use at least 8 characters with uppercase, lowercase, and a number."
+                    tabIndex={0}
+                    role="note"
+                    aria-label="Password help"
+                  >
+                    i
+                  </span>
+                </span>
                 <input
+                  class="auth-input"
                   type="password"
                   value={authForm.password}
                   onInput={(event) => { authForm.password = readValue(event); }}
@@ -1637,9 +1743,21 @@ export default defineComponent({
               </label>
 
               {isRegisterMode.value ? (
-                <label>
-                  Confirm password
+                <label class="auth-field">
+                  <span class="field-label-row">
+                    <span>Confirm password</span>
+                    <span
+                      class="field-tooltip"
+                      data-tooltip="Repeat the password exactly to complete account creation."
+                      tabIndex={0}
+                      role="note"
+                      aria-label="Confirm password help"
+                    >
+                      i
+                    </span>
+                  </span>
                   <input
+                    class="auth-input"
                     type="password"
                     value={authForm.confirmPassword}
                     onInput={(event) => { authForm.confirmPassword = readValue(event); }}
@@ -1658,8 +1776,8 @@ export default defineComponent({
 
             <p class="footnote-text">
               {isRegisterMode.value
-                ? 'Create your account to get started.'
-                : 'Need access? Create an account to continue.'}
+                ? 'Use one username, one email address, and one password to create your publisher account.'
+                : 'Sign in with your existing publisher account.'}
             </p>
           </div>
         </section>
@@ -3160,45 +3278,9 @@ export default defineComponent({
           </main>
 
           <footer class="global-footer">
-            <div class="global-footer-inner">
-              <div class="footer-grid">
-                <section class="footer-block footer-brand">
-                  <p class="footer-eyebrow">ClaudyGod Ministries</p>
-                  <strong>Content Studio Admin</strong>
-                  <p>Enterprise publishing workspace for structured content operations, approvals, and release readiness.</p>
-                </section>
-
-                <section class="footer-block">
-                  <h4>Platform Flow</h4>
-                  <p>Content submissions move through the API into PostgreSQL, while queues and cache coordination run through Redis.</p>
-                  <div class="footer-chip-row">
-                    <span class="footer-chip">API: {API_HOST_LABEL}</span>
-                    <span
-                      class={[
-                        'footer-chip',
-                        diagnosticsTone.value === 'warning'
-                          ? 'warning'
-                          : diagnosticsTone.value === 'success'
-                            ? 'success'
-                            : 'subtle',
-                      ]}
-                    >
-                      {diagnosticsLabel.value}
-                    </span>
-                  </div>
-                </section>
-
-                <section class="footer-block footer-system">
-                  <h4>Infrastructure</h4>
-                  <p>{infraSummary.value}</p>
-                  <p>
-                    {endpointChecksAt.value
-                      ? `Last diagnostic: ${formatDateTime(endpointChecksAt.value)}`
-                      : 'Diagnostics run after sign-in and can be rerun from the Mobile Preview workspace.'}
-                  </p>
-                  <div class="footer-right">© {currentYear} Claudy Platform</div>
-                </section>
-              </div>
+            <div class="global-footer-inner global-footer-minimal">
+              <span>© {currentYear} ClaudyGod Ministries</span>
+              <span>{API_HOST_LABEL}</span>
             </div>
           </footer>
         </div>
