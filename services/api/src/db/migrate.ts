@@ -434,9 +434,12 @@ const migrations = [
     END $$`,
 ];
 
+const MIGRATION_LOCK_ID = 7_246_130_001;
+
 export const runMigrations = async (): Promise<void> => {
   const client = await pool.connect();
   try {
+    await client.query('SELECT pg_advisory_lock($1)', [MIGRATION_LOCK_ID]);
     await client.query('BEGIN');
     for (const statement of migrations) {
       await client.query(statement);
@@ -446,6 +449,7 @@ export const runMigrations = async (): Promise<void> => {
     await client.query('ROLLBACK');
     throw error;
   } finally {
+    await client.query('SELECT pg_advisory_unlock($1)', [MIGRATION_LOCK_ID]).catch(() => undefined);
     client.release();
   }
 };

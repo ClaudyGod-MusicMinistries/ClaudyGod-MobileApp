@@ -37,7 +37,8 @@ All three applications read from the repo root:
 - Set `DATABASE_URL` to your Supabase Postgres connection string and set `DATABASE_SSL=true`
 - The Supabase project URL and publishable key do not include your Postgres password; you still need the real database password from Supabase project settings
 - The API also needs `SUPABASE_SERVICE_ROLE_KEY` to verify Supabase bearer tokens, issue signed upload flows, and auto-provision backend user rows from mobile sessions
-- After updating those values, run `npm --prefix ./services/api run migrate`
+- The API now auto-runs migrations on boot against the configured `DATABASE_URL`
+- After updating those values for the first time, you can still run `npm --prefix ./services/api run migrate` manually if you want an explicit migration pass before startup
 
 ## Transactional email
 
@@ -53,3 +54,4 @@ All three applications read from the repo root:
 - EAS builds should read the same production values from EAS environment variables rather than hardcoding them in `eas.json`
 - After this email upgrade, rerun `npm --prefix ./services/api run migrate` so the `email_jobs` table gets the delivery-tracking columns
 - For shared end-user testing and deployment, keep `DATABASE_URL` pointed at the same Supabase Postgres instance you want your end users to use
+- `SEED_ADMIN_ON_BOOT=true` in development will ensure the configured admin account exists whenever the API boots

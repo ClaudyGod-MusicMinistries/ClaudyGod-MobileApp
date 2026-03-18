@@ -56,10 +56,13 @@ SMTP notes:
 2. Set `DATABASE_URL` to your Supabase Postgres connection string, set `DATABASE_SSL=true`, and add `SUPABASE_SERVICE_ROLE_KEY`
 3. Replace the placeholder password in `DATABASE_URL` with your real Supabase database password from the Supabase dashboard
 4. `npm install`
-5. `npm run migrate`
-6. `npm run seed:admin`
-7. `npm run dev`
-8. `npm run dev:worker`
+5. `npm run dev`
+6. `npm run dev:worker`
+
+Startup note:
+- The API auto-runs migrations on boot.
+- In development, `SEED_ADMIN_ON_BOOT=true` ensures the configured admin account exists automatically.
+- You can still run `npm run migrate` and `npm run seed:admin` manually if you want explicit one-off control.
 
 Supabase note:
 - `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_KEY` are not enough for backend table creation
