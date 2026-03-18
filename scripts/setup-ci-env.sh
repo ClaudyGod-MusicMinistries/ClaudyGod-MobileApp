@@ -22,7 +22,7 @@ WEB_PORT=5173
 REDIS_HOST_PORT=6380
 DATABASE_URL=${CI_DATABASE_URL}
 DATABASE_SSL=true
-REDIS_URL=redis://localhost:6379
+REDIS_URL=redis://redis:6379
 
 # Security and auth
 JWT_ACCESS_SECRET=ci-development-jwt-secret-with-at-least-thirty-two-characters
@@ -30,7 +30,7 @@ JWT_ACCESS_TTL=1d
 BCRYPT_ROUNDS=12
 MOBILE_API_KEY=ci-mobile-api-key-with-sufficient-length
 ADMIN_SIGNUP_CODE=ci-admin-signup-code-123456
-AUTH_PUBLIC_BASE_URL=http://localhost:5173
+AUTH_PUBLIC_BASE_URL=https://admin.dev.example.com
 AUTH_VERIFY_EMAIL_PATH=/verify-email
 AUTH_RESET_PASSWORD_PATH=/reset-password
 AUTH_SIGN_IN_PATH=/sign-in
@@ -38,12 +38,12 @@ AUTH_ACCOUNT_REVIEW_PATH=/settings/account
 AUTH_VERIFICATION_TOKEN_TTL_MINUTES=1440
 AUTH_PASSWORD_RESET_TOKEN_TTL_MINUTES=30
 AUTH_REQUIRE_EMAIL_VERIFICATION=false
-CORS_ORIGIN=http://localhost:5173,http://localhost:19006,http://localhost:8081
+CORS_ORIGIN=https://admin.dev.example.com,https://app.dev.example.com
 
 # Admin web
-VITE_API_URL=http://localhost:4000
+VITE_API_URL=https://api.dev.example.com
 VITE_GOOGLE_LOGIN_URL=
-VITE_MOBILE_PREVIEW_URL=http://localhost:8081
+VITE_MOBILE_PREVIEW_URL=https://app.dev.example.com
 
 # Mobile app
 EXPO_PACKAGER_HOSTNAME=
