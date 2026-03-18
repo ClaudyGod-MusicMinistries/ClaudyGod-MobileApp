@@ -17,7 +17,7 @@ validate_compose() {
   fi
 
   echo "Validating $(realpath --relative-to="$ROOT_DIR" "$file" 2>/dev/null || echo "$file")"
-  docker compose -f "$file" "$@" config >/dev/null
+  docker compose --env-file "$ROOT_DIR/.env.development" -f "$file" "$@" config >/dev/null
   return 0
 }
 
