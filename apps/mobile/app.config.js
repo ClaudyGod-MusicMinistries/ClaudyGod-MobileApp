@@ -192,6 +192,6 @@ module.exports = {
           }
         : {}),
     },
-    plugins: ['expo-font', 'expo-router', 'expo-web-browser', 'expo-notifications'],
+    plugins: ['expo-font', 'expo-router', 'expo-web-browser', 'expo-notifications', 'expo-updates'],
   },
 };
