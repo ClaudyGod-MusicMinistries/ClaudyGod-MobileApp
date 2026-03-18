@@ -3,18 +3,19 @@
 This repo now has a dedicated production stack:
 
 - `docker-compose.production.yml`
-- `ops/caddy/Caddyfile`
+- `ops/traefik/traefik.yml`
+- `ops/traefik/dynamic.yml`
 - `ops/postfix/`
 
 ## What runs in production
 
-- `caddy` terminates TLS and reverse-proxies public traffic
+- `traefik` terminates TLS and reverse-proxies public traffic
 - `api` serves the backend on the internal network only
 - `worker` processes content and email queues
 - `redis` backs BullMQ queues and runtime jobs
 - `postfix-relay` forwards transactional mail to Brevo
-- `admin-web` serves the admin SPA
-- `mobile-web` serves the Expo web export for browser testing and shared previews
+- `admin-web` serves the admin SPA behind nginx
+- `mobile-web` serves the Expo web export behind nginx
 
 Native iOS and Android releases should still be shipped through EAS and the app stores. Docker does not replace native mobile release builds.
 
@@ -64,7 +65,7 @@ Point these DNS records to your production host:
 - `API_DOMAIN`
 - `APP_DOMAIN`
 
-Caddy issues TLS certificates automatically using `ACME_EMAIL`.
+Traefik issues TLS certificates automatically using `ACME_EMAIL`.
 
 ## Email delivery path
 
