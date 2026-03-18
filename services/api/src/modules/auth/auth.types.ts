@@ -12,7 +12,7 @@ export interface SafeUser {
 export interface RegisterInput {
   email: string;
   password: string;
-  displayName: string;
+  username: string;
   role?: UserRole;
   adminSignupCode?: string;
 }

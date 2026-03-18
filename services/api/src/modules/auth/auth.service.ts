@@ -157,7 +157,7 @@ const consumeAuthActionToken = async ({
 
 export const registerUser = async (input: RegisterInput): Promise<AuthResponse> => {
   const email = input.email.trim().toLowerCase();
-  const displayName = input.displayName.trim();
+  const displayName = input.username.trim();
   const requestedRole: UserRole = input.role === 'ADMIN' ? 'ADMIN' : 'CLIENT';
 
   const existing = await pool.query<{ id: string }>('SELECT id FROM app_users WHERE email = $1 LIMIT 1', [
