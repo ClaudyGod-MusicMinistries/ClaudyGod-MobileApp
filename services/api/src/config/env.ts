@@ -72,9 +72,9 @@ const envSchema = z
     JWT_ACCESS_SECRET: z.string().min(32, 'JWT_ACCESS_SECRET must contain at least 32 characters'),
     JWT_ACCESS_TTL: z.string().trim().min(1).default('1d'),
     BCRYPT_ROUNDS: z.coerce.number().int().min(10).max(15).default(12),
-    CORS_ORIGIN: z.string().default('http://localhost:5173'),
+    CORS_ORIGIN: z.string().default('https://admin.example.com,https://app.example.com'),
 
-    AUTH_PUBLIC_BASE_URL: z.string().url().default('http://localhost:5173'),
+    AUTH_PUBLIC_BASE_URL: z.string().url().default('https://admin.example.com'),
     AUTH_VERIFY_EMAIL_PATH: pathSegment('AUTH_VERIFY_EMAIL_PATH', '/verify-email'),
     AUTH_RESET_PASSWORD_PATH: pathSegment('AUTH_RESET_PASSWORD_PATH', '/reset-password'),
     AUTH_SIGN_IN_PATH: pathSegment('AUTH_SIGN_IN_PATH', '/sign-in'),
@@ -126,6 +126,44 @@ const envSchema = z
     SEED_ADMIN_ON_BOOT: toBoolean(runtimeEnv === 'development'),
   })
   .superRefine((value, ctx) => {
+    const isPrivateOrLocalHostname = (hostname: string): boolean => {
+      const normalized = hostname.trim().toLowerCase();
+      if (!normalized) {
+        return true;
+      }
+
+      if (
+        normalized === 'localhost' ||
+        normalized === '127.0.0.1' ||
+        normalized === '::1' ||
+        normalized === '0.0.0.0' ||
+        normalized === 'host.docker.internal' ||
+        normalized === '10.0.2.2'
+      ) {
+        return true;
+      }
+
+      if (normalized.endsWith('.local')) {
+        return true;
+      }
+
+      if (/^192\.168\.\d{1,3}\.\d{1,3}$/.test(normalized)) {
+        return true;
+      }
+
+      if (/^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(normalized)) {
+        return true;
+      }
+
+      const private172 = normalized.match(/^172\.(\d{1,3})\.\d{1,3}\.\d{1,3}$/);
+      if (private172) {
+        const secondOctet = Number(private172[1]);
+        return secondOctet >= 16 && secondOctet <= 31;
+      }
+
+      return false;
+    };
+
     if (looksLikeJwtToken(value.JWT_ACCESS_SECRET)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -144,6 +182,11 @@ const envSchema = z
     }
 
     if (value.NODE_ENV === 'production') {
+      const publicOrigins = value.CORS_ORIGIN
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean);
+
       if (value.DATABASE_URL.includes('replace-with-supabase-db-password')) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -173,6 +216,39 @@ const envSchema = z
           code: z.ZodIssueCode.custom,
           path: ['AUTH_PUBLIC_BASE_URL'],
           message: 'AUTH_PUBLIC_BASE_URL must use https:// in production',
+        });
+      }
+
+      try {
+        const authPublicBaseUrl = new URL(value.AUTH_PUBLIC_BASE_URL);
+        if (isPrivateOrLocalHostname(authPublicBaseUrl.hostname)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['AUTH_PUBLIC_BASE_URL'],
+            message: 'AUTH_PUBLIC_BASE_URL cannot use localhost or a private host in production',
+          });
+        }
+      } catch {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['AUTH_PUBLIC_BASE_URL'],
+          message: 'AUTH_PUBLIC_BASE_URL must be a valid public URL in production',
+        });
+      }
+
+      if (
+        publicOrigins.some((origin) => {
+          try {
+            return isPrivateOrLocalHostname(new URL(origin).hostname);
+          } catch {
+            return true;
+          }
+        })
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['CORS_ORIGIN'],
+          message: 'CORS_ORIGIN cannot include localhost or private hosts in production',
         });
       }
 
