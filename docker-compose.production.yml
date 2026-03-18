@@ -53,6 +53,26 @@ x-backend-env: &backend-env
   SEED_ADMIN_ON_BOOT: ${SEED_ADMIN_ON_BOOT:-false}
 
 services:
+  traefik:
+    image: traefik:v3.1
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./ops/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - traefik_letsencrypt:/letsencrypt
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    networks:
+      - edge
+
   redis:
     image: redis:7-alpine
     restart: unless-stopped
@@ -208,6 +228,7 @@ services:
         EXPO_PUBLIC_SUPABASE_URL: ${EXPO_PUBLIC_SUPABASE_URL}
         EXPO_PUBLIC_SUPABASE_KEY: ${EXPO_PUBLIC_SUPABASE_KEY}
         EXPO_PUBLIC_SUPABASE_ANON_KEY: ${EXPO_PUBLIC_SUPABASE_ANON_KEY:-}
+        EAS_PROJECT_ID: ${EAS_PROJECT_ID:-}
         EXPO_PUBLIC_EAS_PROJECT_ID: ${EXPO_PUBLIC_EAS_PROJECT_ID:-}
     restart: unless-stopped
     security_opt:
@@ -242,6 +263,7 @@ services:
 
 volumes:
   redis_data:
+  traefik_letsencrypt:
 
 networks:
   edge:

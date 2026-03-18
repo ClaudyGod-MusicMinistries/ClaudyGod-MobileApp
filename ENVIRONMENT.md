@@ -52,9 +52,9 @@ All three applications read from the repo root:
 ## Deployment notes
 
 - Local Docker uses `.env.development`
-- Production Docker now uses `docker-compose.production.yml` behind your existing Traefik instance, with Postfix as the internal SMTP relay, Redis for queues, and Supabase Postgres as the database target
-- The production compose expects an external Docker network named by `TRAEFIK_PUBLIC_NETWORK` so your server-level Traefik can discover the app services
+- Production Docker now uses `docker-compose.production.yml` with an included Traefik edge proxy, Postfix as the internal SMTP relay, Redis for queues, and Supabase Postgres as the database target
 - Production should use `.env.production` values through your host, container platform, or CI secrets
+- Production boot now fails fast if `AUTH_PUBLIC_BASE_URL`, `CORS_ORIGIN`, `DATABASE_URL`, or `SUPABASE_URL` still use placeholder or private/local values
 - EAS builds should read the same production values from EAS environment variables rather than hardcoding them in `eas.json`
 - After this email upgrade, rerun `npm --prefix ./services/api run migrate` so the `email_jobs` table gets the delivery-tracking columns
 - For shared end-user testing and deployment, keep `DATABASE_URL` pointed at the same Supabase Postgres instance you want your end users to use

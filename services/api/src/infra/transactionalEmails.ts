@@ -30,8 +30,13 @@ const buildActionUrl = (baseUrl: string, token: string): string => {
 };
 
 const buildPublicActionUrl = (path: string, token?: string): string => {
-  const normalizedBase = env.AUTH_PUBLIC_BASE_URL.replace(/\/+$/, '');
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  const normalizedBase = env.AUTH_PUBLIC_BASE_URL.trim().replace(/\/+$/, '');
+
+  if (!normalizedBase) {
+    return token ? buildActionUrl(normalizedPath, token) : normalizedPath;
+  }
+
   const absoluteUrl = `${normalizedBase}${normalizedPath}`;
 
   return token ? buildActionUrl(absoluteUrl, token) : absoluteUrl;

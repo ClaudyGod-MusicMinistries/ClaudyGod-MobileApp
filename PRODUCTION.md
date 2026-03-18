@@ -8,7 +8,7 @@ This repo now has a dedicated production stack:
 
 ## What runs in production
 
-- your server-level `traefik` instance terminates TLS and reverse-proxies public traffic
+- `traefik` terminates TLS and reverse-proxies public traffic on ports `80/443`
 - `api` serves the backend on the internal network only
 - `worker` processes content and email queues
 - `redis` backs BullMQ queues and runtime jobs
@@ -28,11 +28,17 @@ Fill the repo root `.env.production` with real values before starting:
 - `MOBILE_API_KEY`
 - `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD`
 - `ADMIN_DOMAIN`, `API_DOMAIN`, `APP_DOMAIN`
-- `TRAEFIK_PUBLIC_NETWORK`
 - `TRAEFIK_CERT_RESOLVER`
 - `POSTFIX_MYHOSTNAME`
 - `POSTFIX_RELAY_HOST`, `POSTFIX_RELAY_PORT`
 - `POSTFIX_SMTP_USERNAME`, `POSTFIX_SMTP_PASSWORD`
+
+The API now rejects production boot if these still point to placeholders, localhost/private hosts, or CI example values:
+
+- `AUTH_PUBLIC_BASE_URL`
+- `CORS_ORIGIN`
+- `DATABASE_URL`
+- `SUPABASE_URL`
 
 ## Start the stack
 
@@ -66,14 +72,7 @@ Point these DNS records to your production host:
 - `API_DOMAIN`
 - `APP_DOMAIN`
 
-Your server-level Traefik should already be attached to the same Docker network named by `TRAEFIK_PUBLIC_NETWORK`.
-Create it once if needed:
-
-```bash
-docker network create traefik-public
-```
-
-The app compose joins that external network and exposes the routes through service labels.
+The production compose starts Traefik itself and exposes the routes through service labels. Make sure your firewall allows `80/tcp` and `443/tcp`.
 
 ## Email delivery path
 
