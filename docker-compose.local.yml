@@ -16,6 +16,23 @@ services:
       retries: 10
     restart: unless-stopped
 
+  postfix-relay:
+    build:
+      context: ./ops/postfix
+    container_name: claudygod-local-postfix-relay
+    environment:
+      POSTFIX_MYHOSTNAME: ${POSTFIX_MYHOSTNAME}
+      POSTFIX_RELAY_HOST: ${POSTFIX_RELAY_HOST}
+      POSTFIX_RELAY_PORT: ${POSTFIX_RELAY_PORT:-587}
+      POSTFIX_SMTP_USERNAME: ${POSTFIX_SMTP_USERNAME}
+      POSTFIX_SMTP_PASSWORD: ${POSTFIX_SMTP_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "postfix status >/dev/null 2>&1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
   api:
     build:
       context: ./services/api
@@ -46,9 +63,9 @@ services:
       EMAIL_SUPPORT_EMAIL: ${EMAIL_SUPPORT_EMAIL:-}
       EMAIL_SUPPORT_URL: ${EMAIL_SUPPORT_URL:-}
       ADMIN_ALERT_EMAILS: ${ADMIN_ALERT_EMAILS:-}
-      SMTP_PROVIDER: ${SMTP_PROVIDER:-generic}
-      SMTP_HOST: ${SMTP_HOST:-}
-      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_PROVIDER: ${SMTP_PROVIDER:-postfix}
+      SMTP_HOST: ${SMTP_HOST:-postfix-relay}
+      SMTP_PORT: ${SMTP_PORT:-25}
       SMTP_SECURE: ${SMTP_SECURE:-false}
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASS: ${SMTP_PASS:-}
@@ -72,6 +89,8 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+      postfix-relay:
+        condition: service_started
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:4000/health >/dev/null || exit 1"]
       interval: 15s
@@ -109,9 +128,9 @@ services:
       EMAIL_SUPPORT_EMAIL: ${EMAIL_SUPPORT_EMAIL:-}
       EMAIL_SUPPORT_URL: ${EMAIL_SUPPORT_URL:-}
       ADMIN_ALERT_EMAILS: ${ADMIN_ALERT_EMAILS:-}
-      SMTP_PROVIDER: ${SMTP_PROVIDER:-generic}
-      SMTP_HOST: ${SMTP_HOST:-}
-      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_PROVIDER: ${SMTP_PROVIDER:-postfix}
+      SMTP_HOST: ${SMTP_HOST:-postfix-relay}
+      SMTP_PORT: ${SMTP_PORT:-25}
       SMTP_SECURE: ${SMTP_SECURE:-false}
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASS: ${SMTP_PASS:-}
@@ -133,6 +152,8 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+      postfix-relay:
+        condition: service_started
     restart: unless-stopped
 
   admin-web:
