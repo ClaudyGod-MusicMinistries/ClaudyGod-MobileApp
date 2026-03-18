@@ -2,17 +2,69 @@ import axios from 'axios';
 import { computed, defineComponent, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import './App.css';
 
+function isPrivateOrLocalHostname(hostname) {
+  const value = String(hostname || '').trim().toLowerCase();
+  if (!value) return true;
+
+  if (
+    value === 'localhost' ||
+    value === '127.0.0.1' ||
+    value === '::1' ||
+    value === '0.0.0.0' ||
+    value === 'host.docker.internal' ||
+    value === '10.0.2.2'
+  ) {
+    return true;
+  }
+
+  if (value.endsWith('.local')) {
+    return true;
+  }
+
+  if (/^192\.168\.\d{1,3}\.\d{1,3}$/.test(value)) {
+    return true;
+  }
+
+  if (/^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(value)) {
+    return true;
+  }
+
+  const private172 = value.match(/^172\.(\d{1,3})\.\d{1,3}\.\d{1,3}$/);
+  if (private172) {
+    const secondOctet = Number(private172[1]);
+    return secondOctet >= 16 && secondOctet <= 31;
+  }
+
+  return false;
+}
+
+function deriveSiblingOrigin(targetSubdomain) {
+  if (typeof window === 'undefined') {
+    return '';
+  }
+
+  try {
+    const current = new URL(window.location.href);
+    if (isPrivateOrLocalHostname(current.hostname)) {
+      return '';
+    }
+
+    const parts = current.hostname.split('.');
+    if (parts.length < 3) {
+      return '';
+    }
+
+    return `${current.protocol}//${targetSubdomain}.${parts.slice(1).join('.')}`;
+  } catch (error) {
+    return '';
+  }
+}
+
 function resolveApiUrl() {
   const explicit = String(import.meta.env.VITE_API_URL || '').trim();
   if (explicit) return explicit.replace(/\/+$/, '');
 
-  if (typeof window !== 'undefined') {
-    const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
-    const hostname = window.location.hostname || 'localhost';
-    return `${protocol}//${hostname}:4000`;
-  }
-
-  return 'http://localhost:4000';
+  return deriveSiblingOrigin('api');
 }
 
 const API_URL = resolveApiUrl();
@@ -24,7 +76,8 @@ const BRAND_LOGO_URL = '/brand/claudy-logo.webp';
 const CONTENT_TYPES = ['audio', 'video', 'playlist', 'announcement'];
 const VISIBILITY_OPTIONS = ['draft', 'published'];
 const YOUTUBE_SYNC_DEFAULT_LIMIT = 8;
-const DEFAULT_MOBILE_PREVIEW_URL = import.meta.env.VITE_MOBILE_PREVIEW_URL || 'http://localhost:8081';
+const DEFAULT_MOBILE_PREVIEW_URL =
+  import.meta.env.VITE_MOBILE_PREVIEW_URL || deriveSiblingOrigin('app') || '';
 const WORKFLOW_STEPS = [
   {
     title: 'Create',
@@ -40,6 +93,9 @@ const WORKFLOW_STEPS = [
   },
 ];
 const API_HOST_LABEL = (() => {
+  if (!API_URL) {
+    return 'configured API endpoint';
+  }
   try {
     return new URL(API_URL).host;
   } catch (error) {
@@ -64,7 +120,7 @@ function normalizePreviewUrl(value) {
   const next = String(value || '').trim();
   if (!next) return DEFAULT_MOBILE_PREVIEW_URL;
   if (/^https?:\/\//i.test(next)) return next;
-  return `http://${next}`;
+  return `https://${next}`;
 }
 
 function readStoredMobilePreviewUrl() {
@@ -122,7 +178,7 @@ function toErrorMessage(error, fallback) {
       return 'You do not have permission for this action.';
     }
     if (!error.response) {
-      return `Unable to reach the API at ${API_HOST_LABEL}. Confirm the backend is running and that VITE_API_URL or local network routing is correct.`;
+      return `Unable to reach the API at ${API_HOST_LABEL}. Confirm the API domain, reverse proxy, and CORS configuration.`;
     }
     const data = error.response && error.response.data ? error.response.data : {};
     return data.message || data.error || error.message || fallback;
@@ -2260,7 +2316,7 @@ export default defineComponent({
                     <input
                       value={mobilePreviewDraft.value}
                       onInput={(event) => { mobilePreviewDraft.value = readValue(event); }}
-                      placeholder="http://localhost:8081"
+                      placeholder="https://app.your-domain.com"
                     />
                   </label>
                   <div class="button-row mobile-preview-actions">
