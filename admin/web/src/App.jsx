@@ -255,7 +255,7 @@ export default defineComponent({
     const authForm = reactive({
       email: '',
       password: '',
-      displayName: '',
+      username: '',
       confirmPassword: '',
     });
 
@@ -1093,8 +1093,8 @@ export default defineComponent({
       }
 
       if (isRegisterMode.value) {
-        if (!authForm.displayName.trim()) {
-          setNotice('Please enter your publisher name.', 'error');
+        if (!authForm.username.trim()) {
+          setNotice('Please enter your username.', 'error');
           return;
         }
         if (authForm.password !== authForm.confirmPassword) {
@@ -1110,7 +1110,7 @@ export default defineComponent({
           ? {
               email: authForm.email.trim(),
               password: authForm.password,
-              displayName: authForm.displayName.trim(),
+              username: authForm.username.trim(),
             }
           : {
               email: authForm.email.trim(),
@@ -1601,21 +1601,45 @@ export default defineComponent({
 
             <form class="stack-form" onSubmit={(event) => void handleAuthSubmit(event)}>
               {isRegisterMode.value ? (
-                <label>
-                  Publisher name
+                <label class="auth-field">
+                  <span class="field-label-row">
+                    <span>Username</span>
+                    <span
+                      class="field-tooltip"
+                      data-tooltip="Your public publishing identity for uploads, content credits, and dashboard activity."
+                      tabIndex={0}
+                      role="note"
+                      aria-label="Username help"
+                    >
+                      i
+                    </span>
+                  </span>
                   <input
-                    value={authForm.displayName}
-                    onInput={(event) => { authForm.displayName = readValue(event); }}
-                    placeholder="ClaudyGod Media Team"
-                    autoComplete="name"
+                    class="auth-input"
+                    value={authForm.username}
+                    onInput={(event) => { authForm.username = readValue(event); }}
+                    placeholder="claudy_member"
+                    autoComplete="nickname"
                   />
-                  <small class="subtle-text">This is the name shown on uploads, content credits, and dashboard activity. There is no separate username.</small>
+                  <small class="field-note">This is the only public identity field in the admin account flow.</small>
                 </label>
               ) : null}
 
-              <label>
-                Email address
+              <label class="auth-field">
+                <span class="field-label-row">
+                  <span>Email address</span>
+                  <span
+                    class="field-tooltip"
+                    data-tooltip="This email is used for sign-in, verification, password recovery, and account security notices."
+                    tabIndex={0}
+                    role="note"
+                    aria-label="Email help"
+                  >
+                    i
+                  </span>
+                </span>
                 <input
+                  class="auth-input"
                   type="email"
                   value={authForm.email}
                   onInput={(event) => { authForm.email = readValue(event); }}
@@ -1624,9 +1648,21 @@ export default defineComponent({
                 />
               </label>
 
-              <label>
-                Password
+              <label class="auth-field">
+                <span class="field-label-row">
+                  <span>Password</span>
+                  <span
+                    class="field-tooltip"
+                    data-tooltip="Use at least 8 characters with uppercase, lowercase, and a number."
+                    tabIndex={0}
+                    role="note"
+                    aria-label="Password help"
+                  >
+                    i
+                  </span>
+                </span>
                 <input
+                  class="auth-input"
                   type="password"
                   value={authForm.password}
                   onInput={(event) => { authForm.password = readValue(event); }}
@@ -1636,9 +1672,21 @@ export default defineComponent({
               </label>
 
               {isRegisterMode.value ? (
-                <label>
-                  Confirm password
+                <label class="auth-field">
+                  <span class="field-label-row">
+                    <span>Confirm password</span>
+                    <span
+                      class="field-tooltip"
+                      data-tooltip="Repeat the password exactly to complete account creation."
+                      tabIndex={0}
+                      role="note"
+                      aria-label="Confirm password help"
+                    >
+                      i
+                    </span>
+                  </span>
                   <input
+                    class="auth-input"
                     type="password"
                     value={authForm.confirmPassword}
                     onInput={(event) => { authForm.confirmPassword = readValue(event); }}

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View } from 'react-native';
-import { Video, ResizeMode } from 'expo-av';
+import { VideoView, useVideoPlayer } from 'expo-video';
 import { CustomText } from '../CustomText';
 import { useAppTheme } from '../../util/colorScheme';
 
@@ -12,6 +12,11 @@ interface VideoPlayerProps {
 
 export function VideoPlayer({ title, sourceUri, height = 210 }: VideoPlayerProps) {
   const theme = useAppTheme();
+  const player = useVideoPlayer(sourceUri, (instance) => {
+    instance.loop = false;
+    instance.muted = false;
+    instance.staysActiveInBackground = false;
+  });
 
   return (
     <View
@@ -23,12 +28,12 @@ export function VideoPlayer({ title, sourceUri, height = 210 }: VideoPlayerProps
         overflow: 'hidden',
       }}
     >
-      <Video
-        source={{ uri: sourceUri }}
+      <VideoView
+        player={player}
         style={{ width: '100%', height }}
-        useNativeControls
-        resizeMode={ResizeMode.COVER}
-        shouldPlay={false}
+        nativeControls
+        contentFit="cover"
+        fullscreenOptions={{ enable: true }}
       />
       {title ? (
         <View style={{ padding: theme.spacing.md }}>
