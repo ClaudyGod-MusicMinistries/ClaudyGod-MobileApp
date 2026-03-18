@@ -12,7 +12,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { TabScreenWrapper } from './TextWrapper';
+import { TabScreenWrapper } from '../../components/layout/TabScreenWrapper';
 import { Screen } from '../../components/layout/Screen';
 import { BrandedHeaderCard } from '../../components/layout/BrandedHeaderCard';
 import { CustomText } from '../../components/CustomText';
@@ -148,11 +148,10 @@ export default function HomeScreen() {
           }}
         >
           <LinearGradient
-            pointerEvents="none"
             colors={[ui.stickyGlowStart, 'rgba(0,0,0,0)']}
             start={{ x: 0.1, y: 0 }}
             end={{ x: 0.9, y: 1 }}
-            style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}
+            style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, pointerEvents: 'none' }}
           />
           <Screen>
             <FadeIn>
@@ -633,8 +632,7 @@ function PosterTile({ item, width, onPress }: { item: FeedCardItem; width: numbe
         <Image source={{ uri: item.imageUrl }} style={{ width: '100%', height: 118 }} resizeMode="cover" />
         <LinearGradient
           colors={ui.fade}
-          style={{ position: 'absolute', left: 0, right: 0, bottom: 48, height: 50 }}
-          pointerEvents="none"
+          style={{ position: 'absolute', left: 0, right: 0, bottom: 48, height: 50, pointerEvents: 'none' }}
         />
         <View style={{ padding: 10 }}>
           <CustomText variant="label" style={{ color: ui.title }} numberOfLines={1}>
@@ -923,8 +921,7 @@ function CollectionSpotlightCard({ item, onPress }: { item: FeedCardItem; onPres
           <Image source={{ uri: item.imageUrl }} style={{ width: '100%', aspectRatio: 1 }} resizeMode="cover" />
           <LinearGradient
             colors={isDark ? ['rgba(0,0,0,0)', 'rgba(3,2,8,0.55)'] : ['rgba(255,255,255,0)', 'rgba(255,255,255,0.3)']}
-            style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 40 }}
-            pointerEvents="none"
+            style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 40, pointerEvents: 'none' }}
           />
         </View>
 

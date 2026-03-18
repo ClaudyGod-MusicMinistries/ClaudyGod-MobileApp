@@ -3,7 +3,7 @@ import { ScrollView, Switch, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { TabScreenWrapper } from './TextWrapper';
+import { TabScreenWrapper } from '../../components/layout/TabScreenWrapper';
 import { useAppTheme, useColorSchemeToggle } from '../../util/colorScheme';
 import { CustomText } from '../../components/CustomText';
 import { Screen } from '../../components/layout/Screen';
@@ -244,11 +244,10 @@ export default function SettingsScreen() {
           }}
         >
           <LinearGradient
-            pointerEvents="none"
             colors={[ui.stickyGlow, 'rgba(0,0,0,0)']}
             start={{ x: 0.1, y: 0 }}
             end={{ x: 0.9, y: 1 }}
-            style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}
+            style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, pointerEvents: 'none' }}
           />
           <Screen>
             <FadeIn>

@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { View, ScrollView, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { TabScreenWrapper } from './TextWrapper';
+import { TabScreenWrapper } from '../../components/layout/TabScreenWrapper';
 import { useAppTheme } from '../../util/colorScheme';
 import { SearchBar } from '../../components/ui/SearchBar';
 import { Chip } from '../../components/ui/Chip';
