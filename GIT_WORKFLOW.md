@@ -56,4 +56,13 @@ If you want `main` to always stay deployment-ready, also require:
 ## Notes
 
 - The workflow creates temporary CI env files with safe placeholders, so GitHub Actions does not need your real `.env.development` or `.env.production` files just to validate the codebase.
+- If you want CI to use non-placeholder values, add these GitHub repository secrets:
+  - `CI_DATABASE_URL`
+  - `CI_SUPABASE_URL`
+  - `CI_SUPABASE_PUBLISHABLE_KEY`
+  - `CI_SUPABASE_SERVICE_ROLE_KEY`
+  - `CI_YOUTUBE_API_KEY`
+  - `CI_YOUTUBE_CHANNEL_ID`
+  - `CI_POSTFIX_SMTP_USERNAME`
+  - `CI_POSTFIX_SMTP_PASSWORD`
 - Real deployment secrets should still live in GitHub Secrets, your server env files, or your deployment platform.
