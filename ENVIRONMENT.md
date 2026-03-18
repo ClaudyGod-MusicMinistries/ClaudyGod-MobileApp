@@ -43,6 +43,7 @@ All three applications read from the repo root:
 ## Transactional email
 
 - The API now uses a queued transactional email flow for welcome, verification, password reset, and profile security notices
+- Local Docker and production Docker now both route mail through the internal `postfix-relay` container
 - Production should use the internal Postfix relay: set `SMTP_PROVIDER=postfix`, `SMTP_HOST=postfix-relay`, and keep the real Brevo relay credentials in `POSTFIX_SMTP_USERNAME` and `POSTFIX_SMTP_PASSWORD`
 - Postfix then relays outbound mail to Brevo on `smtp-relay.brevo.com:587` without changing the application email code
 - `EMAIL_BRAND_NAME`, `MAIL_FROM`, `MAIL_REPLY_TO`, and `EMAIL_SUPPORT_EMAIL` control the branded email experience
