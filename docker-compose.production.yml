@@ -53,28 +53,22 @@ x-backend-env: &backend-env
   SEED_ADMIN_ON_BOOT: ${SEED_ADMIN_ON_BOOT:-false}
 
 services:
-  caddy:
-    image: caddy:2-alpine
+  traefik:
+    image: traefik:v3.1
     restart: unless-stopped
-    depends_on:
-      - api
-      - admin-web
-      - mobile-web
+    command:
+      - --configFile=/etc/traefik/traefik.yml
+      - --certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}
     ports:
       - "80:80"
       - "443:443"
-    environment:
-      ACME_EMAIL: ${ACME_EMAIL}
-      API_DOMAIN: ${API_DOMAIN}
-      ADMIN_DOMAIN: ${ADMIN_DOMAIN}
-      APP_DOMAIN: ${APP_DOMAIN}
     volumes:
-      - ./ops/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
+      - ./ops/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./ops/traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik_letsencrypt:/letsencrypt
     networks:
       - edge
-      - internal
 
   redis:
     image: redis:7-alpine
@@ -133,7 +127,17 @@ services:
       retries: 5
       start_period: 25s
     networks:
+      - edge
       - internal
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.http.routers.api.rule=Host(`${API_DOMAIN}`)
+      - traefik.http.routers.api.entrypoints=websecure
+      - traefik.http.routers.api.tls=true
+      - traefik.http.routers.api.tls.certresolver=letsencrypt
+      - traefik.http.routers.api.middlewares=security-chain@file
+      - traefik.http.services.api.loadbalancer.server.port=4000
 
   worker:
     build:
@@ -165,7 +169,16 @@ services:
     expose:
       - "80"
     networks:
-      - internal
+      - edge
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.http.routers.admin.rule=Host(`${ADMIN_DOMAIN}`)
+      - traefik.http.routers.admin.entrypoints=websecure
+      - traefik.http.routers.admin.tls=true
+      - traefik.http.routers.admin.tls.certresolver=letsencrypt
+      - traefik.http.routers.admin.middlewares=security-chain@file
+      - traefik.http.services.admin.loadbalancer.server.port=80
 
   mobile-web:
     build:
@@ -182,14 +195,23 @@ services:
     expose:
       - "80"
     networks:
-      - internal
+      - edge
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.http.routers.mobile.rule=Host(`${APP_DOMAIN}`)
+      - traefik.http.routers.mobile.entrypoints=websecure
+      - traefik.http.routers.mobile.tls=true
+      - traefik.http.routers.mobile.tls.certresolver=letsencrypt
+      - traefik.http.routers.mobile.middlewares=security-chain@file
+      - traefik.http.services.mobile.loadbalancer.server.port=80
 
 volumes:
-  caddy_data:
-  caddy_config:
+  traefik_letsencrypt:
   redis_data:
 
 networks:
   edge:
+    name: traefik-public
   internal:
     internal: true
