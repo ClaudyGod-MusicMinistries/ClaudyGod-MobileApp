@@ -16,10 +16,9 @@ type PublicEnvKey =
   | 'EXPO_PUBLIC_SUPABASE_ANON_KEY'
   | 'EXPO_PUBLIC_EAS_PROJECT_ID';
 
-const extra =
-  (Constants.expoConfig?.extra as ExtraConfig | undefined) ??
-  (Constants.manifest?.extra as ExtraConfig | undefined) ??
-  {};
+const manifestExtra = (Constants.manifest as { extra?: ExtraConfig } | null | undefined)?.extra;
+
+const extra = (Constants.expoConfig?.extra as ExtraConfig | undefined) ?? manifestExtra ?? {};
 
 const runtimeMode =
   (process.env.CLAUDYGOD_ENV ?? extra.CLAUDYGOD_ENV ?? process.env.NODE_ENV) === 'production'
@@ -117,6 +116,10 @@ export const ENV = {
   supabaseUrl: getEnv('EXPO_PUBLIC_SUPABASE_URL', ''),
   supabasePublishableKey: getEnv(
     ['EXPO_PUBLIC_SUPABASE_KEY', 'EXPO_PUBLIC_SUPABASE_ANON_KEY'],
+    '',
+  ),
+  supabaseAnonKey: getEnv(
+    ['EXPO_PUBLIC_SUPABASE_ANON_KEY', 'EXPO_PUBLIC_SUPABASE_KEY'],
     '',
   ),
   easProjectId: getEnv('EXPO_PUBLIC_EAS_PROJECT_ID', extra.eas?.projectId ?? ''),

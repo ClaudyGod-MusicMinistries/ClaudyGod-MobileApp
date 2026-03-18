@@ -83,7 +83,9 @@ export class PushNotificationService {
 
       const projectId = ENV.easProjectId;
       if (!projectId) {
-        console.warn('EXPO_PUBLIC_EAS_PROJECT_ID not found.');
+        console.warn(
+          'EAS projectId is not configured. Set EXPO_PUBLIC_EAS_PROJECT_ID or EAS_PROJECT_ID for push notifications and EAS updates.',
+        );
         return null;
       }
 
