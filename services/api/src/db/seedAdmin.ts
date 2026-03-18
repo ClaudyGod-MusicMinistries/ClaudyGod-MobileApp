@@ -3,7 +3,7 @@ import { runMigrations } from './migrate';
 import { closePool, pool } from './pool';
 import { hashPassword } from '../utils/password';
 
-const seedAdmin = async (): Promise<void> => {
+export const seedAdmin = async (): Promise<void> => {
   await runMigrations();
 
   const email = env.SEED_ADMIN_EMAIL.trim().toLowerCase();
@@ -25,6 +25,24 @@ const seedAdmin = async (): Promise<void> => {
   );
 
   const row = result.rows[0]!;
+  await Promise.all([
+    pool.query(
+      `INSERT INTO user_profiles (user_id, display_name, email)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (user_id)
+       DO UPDATE SET
+         display_name = EXCLUDED.display_name,
+         email = EXCLUDED.email,
+         updated_at = NOW()`,
+      [row.id, row.display_name, row.email],
+    ),
+    pool.query(
+      `INSERT INTO user_preferences (user_id)
+       VALUES ($1)
+       ON CONFLICT (user_id) DO NOTHING`,
+      [row.id],
+    ),
+  ]);
   console.log(`Admin user seeded: ${row.email} (${row.role}) [${row.id}]`);
 };
 

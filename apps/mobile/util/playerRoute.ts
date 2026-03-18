@@ -37,7 +37,7 @@ export function isDirectPlayableVideoUrl(url?: string): boolean {
   const normalized = url.trim().toLowerCase();
   if (!normalized) return false;
 
-  // Hosted pages (YouTube, Vimeo, etc.) are not directly playable in expo-av without an embed/player integration.
+  // Hosted pages (YouTube, Vimeo, etc.) need an embed/player integration rather than direct native file playback.
   if (
     normalized.includes('youtube.com') ||
     normalized.includes('youtu.be') ||

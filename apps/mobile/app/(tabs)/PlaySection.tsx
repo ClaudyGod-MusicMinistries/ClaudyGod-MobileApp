@@ -9,7 +9,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { TabScreenWrapper } from './TextWrapper';
+import { TabScreenWrapper } from '../../components/layout/TabScreenWrapper';
 import { useAppTheme } from '../../util/colorScheme';
 import { Screen } from '../../components/layout/Screen';
 import { FadeIn } from '../../components/ui/FadeIn';

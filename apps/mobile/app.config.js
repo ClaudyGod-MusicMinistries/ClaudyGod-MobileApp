@@ -138,6 +138,7 @@ module.exports = {
       favicon: './assets/favicon.png',
     },
     extra: {
+      CLAUDYGOD_ENV: process.env.CLAUDYGOD_ENV || envMode,
       EXPO_PUBLIC_API_URL: getEnv('EXPO_PUBLIC_API_URL', ''),
       EXPO_PUBLIC_SUPABASE_URL: getEnv('EXPO_PUBLIC_SUPABASE_URL', ''),
       EXPO_PUBLIC_SUPABASE_KEY: getEnv('EXPO_PUBLIC_SUPABASE_KEY', ''),

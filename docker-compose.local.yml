@@ -1,24 +1,6 @@
 name: claudygod-local
 
 services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: claudygod-local-postgres
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-claudy_admin}
-      POSTGRES_USER: ${POSTGRES_USER:-claudy}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-claudy_password}
-    ports:
-      - "${POSTGRES_HOST_PORT:-5433}:5432"
-    volumes:
-      - local_postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-claudy} -d ${POSTGRES_DB:-claudy_admin}"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-    restart: unless-stopped
-
   redis:
     image: redis:7-alpine
     container_name: claudygod-local-redis
@@ -45,8 +27,8 @@ services:
       NODE_ENV: development
       API_PORT: 4000
       API_HOST: 0.0.0.0
-      DATABASE_URL: ${DATABASE_URL:-postgres://${POSTGRES_USER:-claudy}:${POSTGRES_PASSWORD:-claudy_password}@postgres:5432/${POSTGRES_DB:-claudy_admin}}
-      DATABASE_SSL: ${DATABASE_SSL:-false}
+      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_SSL: ${DATABASE_SSL:-true}
       REDIS_URL: redis://redis:6379
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-replace-this-jwt-secret-before-production-please-123456789}
       JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-1d}
@@ -88,8 +70,6 @@ services:
       - ./services/api:/usr/src/app
       - local_api_node_modules:/usr/src/app/node_modules
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
     healthcheck:
@@ -110,8 +90,8 @@ services:
       NODE_ENV: development
       API_PORT: 4000
       API_HOST: 0.0.0.0
-      DATABASE_URL: ${DATABASE_URL:-postgres://${POSTGRES_USER:-claudy}:${POSTGRES_PASSWORD:-claudy_password}@postgres:5432/${POSTGRES_DB:-claudy_admin}}
-      DATABASE_SSL: ${DATABASE_SSL:-false}
+      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_SSL: ${DATABASE_SSL:-true}
       REDIS_URL: redis://redis:6379
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-replace-this-jwt-secret-before-production-please-123456789}
       JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-1d}
@@ -151,8 +131,6 @@ services:
       - ./services/api:/usr/src/app
       - local_api_node_modules:/usr/src/app/node_modules
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
     restart: unless-stopped
@@ -224,7 +202,6 @@ services:
     restart: unless-stopped
 
 volumes:
-  local_postgres_data:
   local_redis_data:
   local_api_node_modules:
   local_admin_web_node_modules:

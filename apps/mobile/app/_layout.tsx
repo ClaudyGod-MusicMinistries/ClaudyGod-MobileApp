@@ -2,7 +2,7 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import '../global.css';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { useContext, useEffect, useRef, useState, type ReactNode } from 'react';
-import { View, StatusBar, Animated, Image, Text, useWindowDimensions } from 'react-native';
+import { View, StatusBar, Animated, Image, Platform, Text, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ThemeProvider } from '../context/ThemeProvider';
 import { useColorScheme } from '../util/colorScheme';
@@ -31,6 +31,17 @@ function LoadingScreen() {
   const compact = width < 380;
   const ringSize = compact ? 126 : 144;
   const logoSize = compact ? 58 : 66;
+  const useNativeAnimations = Platform.OS !== 'web';
+  const ringShadowStyle =
+    Platform.OS === 'web'
+      ? { boxShadow: '0px 12px 24px rgba(154,107,255,0.46)' }
+      : {
+          shadowColor: '#9A6BFF',
+          shadowOpacity: 0.46,
+          shadowRadius: 24,
+          shadowOffset: { width: 0, height: 12 },
+          elevation: 12,
+        };
 
   const pulse = useRef(new Animated.Value(0.94)).current;
   const spin = useRef(new Animated.Value(0)).current;
@@ -41,30 +52,30 @@ function LoadingScreen() {
   useEffect(() => {
     const pulseLoop = Animated.loop(
       Animated.sequence([
-        Animated.timing(pulse, { toValue: 1.05, duration: 800, useNativeDriver: true }),
-        Animated.timing(pulse, { toValue: 0.94, duration: 800, useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 1.05, duration: 800, useNativeDriver: useNativeAnimations }),
+        Animated.timing(pulse, { toValue: 0.94, duration: 800, useNativeDriver: useNativeAnimations }),
       ]),
     );
 
     const spinLoop = Animated.loop(
-      Animated.timing(spin, { toValue: 1, duration: 9000, useNativeDriver: true }),
+      Animated.timing(spin, { toValue: 1, duration: 9000, useNativeDriver: useNativeAnimations }),
     );
 
     const shimmerLoop = Animated.loop(
-      Animated.timing(shimmer, { toValue: 1, duration: 1700, useNativeDriver: true }),
+      Animated.timing(shimmer, { toValue: 1, duration: 1700, useNativeDriver: useNativeAnimations }),
     );
 
     const breathLoop = Animated.loop(
       Animated.sequence([
-        Animated.timing(breath, { toValue: 1, duration: 2400, useNativeDriver: true }),
-        Animated.timing(breath, { toValue: 0, duration: 2400, useNativeDriver: true }),
+        Animated.timing(breath, { toValue: 1, duration: 2400, useNativeDriver: useNativeAnimations }),
+        Animated.timing(breath, { toValue: 0, duration: 2400, useNativeDriver: useNativeAnimations }),
       ]),
     );
 
     const barsLoop = Animated.loop(
       Animated.sequence([
-        Animated.timing(barAnim, { toValue: 1, duration: 900, useNativeDriver: true }),
-        Animated.timing(barAnim, { toValue: 0, duration: 900, useNativeDriver: true }),
+        Animated.timing(barAnim, { toValue: 1, duration: 900, useNativeDriver: useNativeAnimations }),
+        Animated.timing(barAnim, { toValue: 0, duration: 900, useNativeDriver: useNativeAnimations }),
       ]),
     );
 
@@ -81,7 +92,7 @@ function LoadingScreen() {
       breathLoop.stop();
       barsLoop.stop();
     };
-  }, [barAnim, breath, pulse, shimmer, spin]);
+  }, [barAnim, breath, pulse, shimmer, spin, useNativeAnimations]);
 
   const rotation = spin.interpolate({
     inputRange: [0, 1],
@@ -166,11 +177,7 @@ function LoadingScreen() {
                 backgroundColor: 'rgba(255,255,255,0.08)',
                 alignItems: 'center',
                 justifyContent: 'center',
-                shadowColor: '#9A6BFF',
-                shadowOpacity: 0.46,
-                shadowRadius: 24,
-                shadowOffset: { width: 0, height: 12 },
-                elevation: 12,
+                ...ringShadowStyle,
                 transform: [{ scale: pulse }],
               }}
             >

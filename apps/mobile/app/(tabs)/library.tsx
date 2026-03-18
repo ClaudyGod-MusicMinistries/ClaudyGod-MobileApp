@@ -3,7 +3,7 @@ import { Image, Platform, ScrollView, View, useWindowDimensions } from 'react-na
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { TabScreenWrapper } from './TextWrapper';
+import { TabScreenWrapper } from '../../components/layout/TabScreenWrapper';
 import { useAppTheme } from '../../util/colorScheme';
 import { Screen } from '../../components/layout/Screen';
 import { BrandedHeaderCard } from '../../components/layout/BrandedHeaderCard';
@@ -62,11 +62,10 @@ export default function LibraryScreen() {
           }}
         >
           <LinearGradient
-            pointerEvents="none"
             colors={[isDark ? 'rgba(154,107,255,0.06)' : 'rgba(109,40,217,0.08)', 'rgba(0,0,0,0)']}
             start={{ x: 0.1, y: 0 }}
             end={{ x: 0.9, y: 1 }}
-            style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}
+            style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, pointerEvents: 'none' }}
           />
           <Screen>
             <FadeIn>

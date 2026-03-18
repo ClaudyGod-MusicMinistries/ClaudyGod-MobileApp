@@ -157,7 +157,7 @@ const consumeAuthActionToken = async ({
 
 export const registerUser = async (input: RegisterInput): Promise<AuthResponse> => {
   const email = input.email.trim().toLowerCase();
-  const displayName = input.displayName.trim();
+  const displayName = input.username.trim();
   const requestedRole: UserRole = input.role === 'ADMIN' ? 'ADMIN' : 'CLIENT';
 
   const existing = await pool.query<{ id: string }>('SELECT id FROM app_users WHERE email = $1 LIMIT 1', [
@@ -180,7 +180,10 @@ export const registerUser = async (input: RegisterInput): Promise<AuthResponse> 
     }
   }
 
-  const emailVerifiedAt = requestedRole === 'ADMIN' ? new Date().toISOString() : null;
+  const emailVerifiedAt =
+    requestedRole === 'ADMIN' || !env.AUTH_REQUIRE_EMAIL_VERIFICATION
+      ? new Date().toISOString()
+      : null;
 
   const result = await pool.query<PublicUserRow>(
     `INSERT INTO app_users (email, password_hash, display_name, role, email_verified_at)
@@ -192,7 +195,7 @@ export const registerUser = async (input: RegisterInput): Promise<AuthResponse> 
   const user = toSafeUser(result.rows[0]!);
   await ensureUserScaffold(user);
 
-  if (user.role === 'CLIENT' && !user.emailVerifiedAt) {
+  if (env.AUTH_REQUIRE_EMAIL_VERIFICATION && user.role === 'CLIENT' && !user.emailVerifiedAt) {
     const verificationToken = await issueAuthActionToken({
       userId: user.id,
       tokenType: 'email_verification',
@@ -213,7 +216,8 @@ export const registerUser = async (input: RegisterInput): Promise<AuthResponse> 
   return {
     accessToken,
     user,
-    requiresEmailVerification: user.role === 'CLIENT' && !user.emailVerifiedAt,
+    requiresEmailVerification:
+      env.AUTH_REQUIRE_EMAIL_VERIFICATION && user.role === 'CLIENT' && !user.emailVerifiedAt,
   };
 };
 

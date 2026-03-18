@@ -2,12 +2,12 @@ import { z } from 'zod';
 
 const emailSchema = z.string().trim().toLowerCase().email();
 
-const displayNameSchema = z
+const usernameSchema = z
   .string()
   .trim()
-  .min(2, 'Display name must contain at least 2 characters')
-  .max(80, 'Display name must contain at most 80 characters')
-  .regex(/^[\p{L}\p{N} .,'_-]+$/u, 'Display name contains unsupported characters');
+  .min(2, 'Username must contain at least 2 characters')
+  .max(80, 'Username must contain at most 80 characters')
+  .regex(/^[\p{L}\p{N} .,'_-]+$/u, 'Username contains unsupported characters');
 
 export const passwordSchema = z
   .string()
@@ -21,7 +21,7 @@ export const registerSchema = z
   .object({
     email: emailSchema,
     password: passwordSchema,
-    displayName: displayNameSchema,
+    username: usernameSchema,
     role: z.enum(['CLIENT', 'ADMIN']).optional(),
     adminSignupCode: z.string().trim().min(8).max(128).optional(),
   })
