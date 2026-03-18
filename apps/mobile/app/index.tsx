@@ -26,6 +26,17 @@ export default function Landing() {
   const isTV = Platform.isTV;
   const isTablet = width >= 768 && !isTV;
   const compact = height < 730;
+  const useNativeAnimations = Platform.OS !== 'web';
+  const heroBadgeShadow =
+    Platform.OS === 'web'
+      ? { boxShadow: '0px 10px 18px rgba(154,107,255,0.36)' }
+      : {
+          shadowColor: '#9A6BFF',
+          shadowOpacity: 0.36,
+          shadowRadius: 18,
+          shadowOffset: { width: 0, height: 10 },
+          elevation: 11,
+        };
 
   const logoSize = isTV ? 134 : isTablet ? 116 : compact ? 92 : 102;
   const badgeSize = isTV ? 178 : isTablet ? 160 : compact ? 132 : 144;
@@ -50,28 +61,28 @@ export default function Landing() {
         toValue: 1,
         duration: 380,
         easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
+        useNativeDriver: useNativeAnimations,
       }),
       Animated.timing(heroOpacity, {
         toValue: 1,
         duration: 520,
         delay: 90,
         easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
+        useNativeDriver: useNativeAnimations,
       }),
       Animated.timing(heroY, {
         toValue: 0,
         duration: 520,
         delay: 90,
         easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
+        useNativeDriver: useNativeAnimations,
       }),
       Animated.timing(ctaOpacity, {
         toValue: 1,
         duration: 520,
         delay: 180,
         easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
+        useNativeDriver: useNativeAnimations,
       }),
     ]).start();
 
@@ -81,13 +92,13 @@ export default function Landing() {
           toValue: -8,
           duration: 1800,
           easing: Easing.inOut(Easing.quad),
-          useNativeDriver: true,
+          useNativeDriver: useNativeAnimations,
         }),
         Animated.timing(logoFloat, {
           toValue: 0,
           duration: 1800,
           easing: Easing.inOut(Easing.quad),
-          useNativeDriver: true,
+          useNativeDriver: useNativeAnimations,
         }),
       ]),
     );
@@ -98,13 +109,13 @@ export default function Landing() {
           toValue: 1,
           duration: 5000,
           easing: Easing.inOut(Easing.quad),
-          useNativeDriver: true,
+          useNativeDriver: useNativeAnimations,
         }),
         Animated.timing(orbDrift, {
           toValue: 0,
           duration: 5000,
           easing: Easing.inOut(Easing.quad),
-          useNativeDriver: true,
+          useNativeDriver: useNativeAnimations,
         }),
       ]),
     );
@@ -116,7 +127,7 @@ export default function Landing() {
       logoLoop.stop();
       orbLoop.stop();
     };
-  }, [ctaOpacity, headerOpacity, heroOpacity, heroY, logoFloat, orbDrift]);
+  }, [ctaOpacity, headerOpacity, heroOpacity, heroY, logoFloat, orbDrift, useNativeAnimations]);
 
   const orbTranslate = orbDrift.interpolate({
     inputRange: [0, 1],
@@ -228,11 +239,7 @@ export default function Landing() {
                       borderWidth: 1,
                       borderColor: 'rgba(255,255,255,0.22)',
                       backgroundColor: 'rgba(255,255,255,0.06)',
-                      shadowColor: '#9A6BFF',
-                      shadowOpacity: 0.36,
-                      shadowRadius: 18,
-                      shadowOffset: { width: 0, height: 10 },
-                      elevation: 11,
+                      ...heroBadgeShadow,
                       transform: [{ translateY: logoFloat }],
                     }}
                   >

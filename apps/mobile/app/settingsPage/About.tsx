@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Linking, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
-import { SettingsScaffold } from './Scaffold';
+import { SettingsScaffold } from '../../components/layout/SettingsScaffold';
 import { CustomText } from '../../components/CustomText';
 import { useAppTheme } from '../../util/colorScheme';
 import { spacing } from '../../styles/designTokens';

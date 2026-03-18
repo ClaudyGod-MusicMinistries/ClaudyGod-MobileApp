@@ -1,6 +1,6 @@
 // components/ui/FadeIn.tsx
 import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, ViewProps } from 'react-native';
+import { Animated, Easing, Platform, ViewProps } from 'react-native';
 
 interface FadeInProps extends ViewProps {
   children: React.ReactNode;
@@ -19,6 +19,7 @@ export function FadeIn({
 }: FadeInProps) {
   const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(from)).current;
+  const useNativeAnimations = Platform.OS !== 'web';
 
   useEffect(() => {
     Animated.parallel([
@@ -27,17 +28,17 @@ export function FadeIn({
         duration,
         delay,
         easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
+        useNativeDriver: useNativeAnimations,
       }),
       Animated.timing(translateY, {
         toValue: 0,
         duration,
         delay,
         easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
+        useNativeDriver: useNativeAnimations,
       }),
     ]).start();
-  }, [delay, duration, opacity, translateY]);
+  }, [delay, duration, opacity, translateY, useNativeAnimations]);
 
   return (
     <Animated.View
