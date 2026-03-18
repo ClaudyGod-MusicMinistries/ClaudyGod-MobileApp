@@ -43,13 +43,15 @@ All three applications read from the repo root:
 ## Transactional email
 
 - The API now uses a queued transactional email flow for welcome, verification, password reset, and profile security notices
-- Brevo SMTP is the intended provider path: set `SMTP_PROVIDER=brevo`, `SMTP_HOST=smtp-relay.brevo.com`, `SMTP_USER`, and `SMTP_PASS`
+- Production should use the internal Postfix relay: set `SMTP_PROVIDER=postfix`, `SMTP_HOST=postfix-relay`, and keep the real Brevo relay credentials in `POSTFIX_SMTP_USERNAME` and `POSTFIX_SMTP_PASSWORD`
+- Postfix then relays outbound mail to Brevo on `smtp-relay.brevo.com:587` without changing the application email code
 - `EMAIL_BRAND_NAME`, `MAIL_FROM`, `MAIL_REPLY_TO`, and `EMAIL_SUPPORT_EMAIL` control the branded email experience
-- If you add a Postfix relay later, switch `SMTP_PROVIDER=postfix` and point `SMTP_HOST` at the relay host
+- Direct Brevo SMTP is still acceptable for development or emergency fallback, but production should route through Postfix so the application tier stays provider-agnostic
 
 ## Deployment notes
 
 - Local Docker uses `.env.development`
+- Production Docker now uses `docker-compose.production.yml` with Caddy as the public reverse proxy, Postfix as the internal SMTP relay, Redis for queues, and Supabase Postgres as the database target
 - Production should use `.env.production` values through your host, container platform, or CI secrets
 - EAS builds should read the same production values from EAS environment variables rather than hardcoding them in `eas.json`
 - After this email upgrade, rerun `npm --prefix ./services/api run migrate` so the `email_jobs` table gets the delivery-tracking columns

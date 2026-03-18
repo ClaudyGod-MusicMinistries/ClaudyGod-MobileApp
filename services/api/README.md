@@ -47,8 +47,9 @@ Set these in the repo root `.env.development` for local work or `.env.production
 - `SMTP_PROVIDER`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`
 
 SMTP notes:
-- Brevo SMTP is the default transactional email target in the root env files. Use `SMTP_PROVIDER=brevo`, `SMTP_HOST=smtp-relay.brevo.com`, and your Brevo SMTP credentials.
-- If you place Postfix in front of Brevo later, switch `SMTP_PROVIDER=postfix` and point `SMTP_HOST` at your relay without changing the email template code.
+- Production should use `SMTP_PROVIDER=postfix` and `SMTP_HOST=postfix-relay`, with the relay container forwarding mail to Brevo.
+- Keep the real Brevo credentials in the Postfix env values: `POSTFIX_RELAY_HOST`, `POSTFIX_RELAY_PORT`, `POSTFIX_SMTP_USERNAME`, and `POSTFIX_SMTP_PASSWORD`.
+- Direct Brevo SMTP from the API remains available for non-production fallback, but the production path should stay provider-agnostic behind Postfix.
 - After updating the mail schema, rerun `npm run migrate` so `email_jobs` includes provider, template, and delivery tracking columns.
 
 ## Quick start
@@ -63,6 +64,9 @@ Startup note:
 - The API auto-runs migrations on boot.
 - In development, `SEED_ADMIN_ON_BOOT=true` ensures the configured admin account exists automatically.
 - You can still run `npm run migrate` and `npm run seed:admin` manually if you want explicit one-off control.
+
+Production note:
+- The repo now includes `docker-compose.production.yml` with Caddy at the edge, Redis for queues, the API and worker behind the proxy, the admin web app as a static Caddy-served build, and a Postfix relay container for transactional email delivery through Brevo.
 
 Supabase note:
 - `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_KEY` are not enough for backend table creation

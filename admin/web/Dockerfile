@@ -1,16 +1,27 @@
-FROM node:20-alpine AS base
+FROM node:20-alpine AS build
+
 WORKDIR /app
-COPY package.json package-lock.json* pnpm-lock.yaml* yarn.lock* ./
-RUN npm install || true
+
+COPY package.json package-lock.json* ./
+RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
+
 COPY . .
+
+ARG VITE_API_URL
+ARG VITE_GOOGLE_LOGIN_URL=
+ARG VITE_MOBILE_PREVIEW_URL=
+
+ENV VITE_API_URL=${VITE_API_URL}
+ENV VITE_GOOGLE_LOGIN_URL=${VITE_GOOGLE_LOGIN_URL}
+ENV VITE_MOBILE_PREVIEW_URL=${VITE_MOBILE_PREVIEW_URL}
+
 RUN npm run build
 
-FROM node:20-alpine
-WORKDIR /app
-COPY --from=base /app/dist ./dist
-COPY package.json package-lock.json* pnpm-lock.yaml* yarn.lock* ./
-RUN npm install --omit=dev || true
-ENV VITE_API_URL=http://localhost:4000
-ENV WEB_PORT=4173
-EXPOSE 4173
-CMD ["npm", "run", "preview", "--", "--host", "--port", "4173"]
+FROM caddy:2-alpine
+
+WORKDIR /srv
+
+COPY Caddyfile /etc/caddy/Caddyfile
+COPY --from=build /app/dist /srv
+
+EXPOSE 80

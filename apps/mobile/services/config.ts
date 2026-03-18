@@ -1,6 +1,7 @@
 import Constants from 'expo-constants';
 
 type ExtraConfig = {
+  CLAUDYGOD_ENV?: string;
   EXPO_PUBLIC_API_URL?: string;
   EXPO_PUBLIC_SUPABASE_URL?: string;
   EXPO_PUBLIC_SUPABASE_KEY?: string;
@@ -19,6 +20,11 @@ const extra =
   (Constants.expoConfig?.extra as ExtraConfig | undefined) ??
   (Constants.manifest?.extra as ExtraConfig | undefined) ??
   {};
+
+const runtimeMode =
+  (process.env.CLAUDYGOD_ENV ?? extra.CLAUDYGOD_ENV ?? process.env.NODE_ENV) === 'production'
+    ? 'production'
+    : 'development';
 
 const getProcessEnv = (key: PublicEnvKey): string | undefined => {
   switch (key) {
@@ -94,13 +100,19 @@ const deriveExpoDevHost = (): string => {
 };
 
 const explicitApiUrl = trimTrailingSlash(getEnv('EXPO_PUBLIC_API_URL', ''));
-const derivedExpoHost = deriveExpoDevHost();
+const derivedExpoHost = runtimeMode === 'development' ? deriveExpoDevHost() : '';
 const derivedApiUrl = derivedExpoHost ? `http://${derivedExpoHost}:4000` : '';
 const resolvedApiUrl = explicitApiUrl || derivedApiUrl;
 
 export const ENV = {
+  runtimeMode,
+  isProduction: runtimeMode === 'production',
   apiUrl: resolvedApiUrl,
-  apiUrlSource: explicitApiUrl ? ('env' as const) : derivedApiUrl ? ('expo-host' as const) : ('unset' as const),
+  apiUrlSource: explicitApiUrl
+    ? ('env' as const)
+    : derivedApiUrl
+      ? ('expo-host' as const)
+      : ('unset' as const),
   expoDevHost: derivedExpoHost,
   supabaseUrl: getEnv('EXPO_PUBLIC_SUPABASE_URL', ''),
   supabasePublishableKey: getEnv(
