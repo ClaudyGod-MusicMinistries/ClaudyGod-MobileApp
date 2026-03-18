@@ -75,13 +75,23 @@ Docker
 
 1. Create the repo root `.env.production` and fill in your production values.
 2. Set the same values in EAS secrets or your EAS environment.
-3. Update `app.config.js` with your real bundle identifiers:
+3. Required mobile env values:
+   - `EXPO_PUBLIC_API_URL`
+   - `EXPO_PUBLIC_SUPABASE_URL`
+   - `EXPO_PUBLIC_SUPABASE_KEY`
+   - `EXPO_PUBLIC_EAS_PROJECT_ID` or `EAS_PROJECT_ID`
+4. Optional mobile env values:
+   - `EXPO_PUBLIC_SUPABASE_ANON_KEY`
+     If omitted, the app falls back to `EXPO_PUBLIC_SUPABASE_KEY`.
+   - `EXPO_ACCOUNT_OWNER`
+     Set this if the project belongs to a specific Expo account/organization.
+5. Keep bundle identifiers and package names in `app.config.js` aligned with your real store apps:
    - `ios.bundleIdentifier`
    - `android.package`
-   - `extra.eas.projectId`
-4. Build:
+6. Build:
    - `eas build --profile preview --platform all`
    - `eas build --profile production --platform all`
+7. For push notifications and EAS Updates, make sure the project is linked to a real EAS project so `extra.eas.projectId` resolves from env at build time.
 
 ## 📄 License
 
