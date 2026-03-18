@@ -52,7 +52,7 @@ All three applications read from the repo root:
 ## Deployment notes
 
 - Local Docker uses `.env.development`
-- Production Docker now uses `docker-compose.production.yml` with Caddy as the public reverse proxy, Postfix as the internal SMTP relay, Redis for queues, and Supabase Postgres as the database target
+- Production Docker now uses `docker-compose.production.yml` with Traefik as the public reverse proxy, Postfix as the internal SMTP relay, Redis for queues, and Supabase Postgres as the database target
 - Production should use `.env.production` values through your host, container platform, or CI secrets
 - EAS builds should read the same production values from EAS environment variables rather than hardcoding them in `eas.json`
 - After this email upgrade, rerun `npm --prefix ./services/api run migrate` so the `email_jobs` table gets the delivery-tracking columns
