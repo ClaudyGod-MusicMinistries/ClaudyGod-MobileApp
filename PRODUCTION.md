@@ -4,12 +4,11 @@ This repo now has a dedicated production stack:
 
 - `docker-compose.production.yml`
 - `ops/traefik/traefik.yml`
-- `ops/traefik/dynamic.yml`
 - `ops/postfix/`
 
 ## What runs in production
 
-- `traefik` terminates TLS and reverse-proxies public traffic
+- your server-level `traefik` instance terminates TLS and reverse-proxies public traffic
 - `api` serves the backend on the internal network only
 - `worker` processes content and email queues
 - `redis` backs BullMQ queues and runtime jobs
@@ -28,7 +27,9 @@ Fill the repo root `.env.production` with real values before starting:
 - `JWT_ACCESS_SECRET`
 - `MOBILE_API_KEY`
 - `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD`
-- `ACME_EMAIL`, `ADMIN_DOMAIN`, `API_DOMAIN`, `APP_DOMAIN`
+- `ADMIN_DOMAIN`, `API_DOMAIN`, `APP_DOMAIN`
+- `TRAEFIK_PUBLIC_NETWORK`
+- `TRAEFIK_CERT_RESOLVER`
 - `POSTFIX_MYHOSTNAME`
 - `POSTFIX_RELAY_HOST`, `POSTFIX_RELAY_PORT`
 - `POSTFIX_SMTP_USERNAME`, `POSTFIX_SMTP_PASSWORD`
@@ -65,7 +66,14 @@ Point these DNS records to your production host:
 - `API_DOMAIN`
 - `APP_DOMAIN`
 
-Traefik issues TLS certificates automatically using `ACME_EMAIL`.
+Your server-level Traefik should already be attached to the same Docker network named by `TRAEFIK_PUBLIC_NETWORK`.
+Create it once if needed:
+
+```bash
+docker network create traefik-public
+```
+
+The app compose joins that external network and exposes the routes through service labels.
 
 ## Email delivery path
 
