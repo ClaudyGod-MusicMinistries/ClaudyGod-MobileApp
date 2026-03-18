@@ -3,7 +3,16 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-cat > "$ROOT_DIR/.env.development" <<'EOF'
+CI_DATABASE_URL="${CI_DATABASE_URL:-postgresql://postgres:ci-password@db.your-project.supabase.co:5432/postgres}"
+CI_SUPABASE_URL="${CI_SUPABASE_URL:-https://your-project.supabase.co}"
+CI_SUPABASE_PUBLISHABLE_KEY="${CI_SUPABASE_PUBLISHABLE_KEY:-sb_publishable__ci_placeholder_key}"
+CI_SUPABASE_SERVICE_ROLE_KEY="${CI_SUPABASE_SERVICE_ROLE_KEY:-ci-supabase-service-role-key}"
+CI_YOUTUBE_API_KEY="${CI_YOUTUBE_API_KEY:-AIzaSyCIPlaceholderKeyValue1234567890ABCD}"
+CI_YOUTUBE_CHANNEL_ID="${CI_YOUTUBE_CHANNEL_ID:-https://www.youtube.com/@YourChannel}"
+CI_POSTFIX_SMTP_USERNAME="${CI_POSTFIX_SMTP_USERNAME:-ci-brevo-username}"
+CI_POSTFIX_SMTP_PASSWORD="${CI_POSTFIX_SMTP_PASSWORD:-ci-brevo-password}"
+
+cat > "$ROOT_DIR/.env.development" <<EOF
 # Runtime
 API_HOST=0.0.0.0
 API_PORT=4000
@@ -11,7 +20,7 @@ WEB_PORT=5173
 
 # Supabase PostgreSQL
 REDIS_HOST_PORT=6380
-DATABASE_URL=postgresql://postgres:ci-password@db.gejadzonjvxurxiaxdfj.supabase.co:5432/postgres
+DATABASE_URL=${CI_DATABASE_URL}
 DATABASE_SSL=true
 REDIS_URL=redis://localhost:6379
 
@@ -39,14 +48,14 @@ VITE_MOBILE_PREVIEW_URL=http://localhost:8081
 # Mobile app
 EXPO_PACKAGER_HOSTNAME=
 EXPO_PUBLIC_API_URL=
-EXPO_PUBLIC_SUPABASE_URL=https://gejadzonjvxurxiaxdfj.supabase.co
-EXPO_PUBLIC_SUPABASE_KEY=sb_publishable__ci_placeholder_key
-EXPO_PUBLIC_SUPABASE_ANON_KEY=sb_publishable__ci_placeholder_key
+EXPO_PUBLIC_SUPABASE_URL=${CI_SUPABASE_URL}
+EXPO_PUBLIC_SUPABASE_KEY=${CI_SUPABASE_PUBLISHABLE_KEY}
+EXPO_PUBLIC_SUPABASE_ANON_KEY=${CI_SUPABASE_PUBLISHABLE_KEY}
 EXPO_PUBLIC_EAS_PROJECT_ID=00000000-0000-0000-0000-000000000000
 
 # Supabase backend
-SUPABASE_URL=https://gejadzonjvxurxiaxdfj.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=ci-supabase-service-role-key
+SUPABASE_URL=${CI_SUPABASE_URL}
+SUPABASE_SERVICE_ROLE_KEY=${CI_SUPABASE_SERVICE_ROLE_KEY}
 SUPABASE_STORAGE_BUCKET=mobile-uploads
 
 # Email
@@ -72,12 +81,12 @@ SMTP_TLS_REJECT_UNAUTHORIZED=true
 POSTFIX_MYHOSTNAME=mail.dev.example.com
 POSTFIX_RELAY_HOST=smtp-relay.brevo.com
 POSTFIX_RELAY_PORT=587
-POSTFIX_SMTP_USERNAME=ci-brevo-username
-POSTFIX_SMTP_PASSWORD=ci-brevo-password
+POSTFIX_SMTP_USERNAME=${CI_POSTFIX_SMTP_USERNAME}
+POSTFIX_SMTP_PASSWORD=${CI_POSTFIX_SMTP_PASSWORD}
 
 # YouTube
-YOUTUBE_API_KEY=AIzaSyCYnrXdBOt4KnSk_hkUHCVFheoL_5-E_3Q
-YOUTUBE_CHANNEL_ID=https://www.youtube.com/@ClaudyGODMinistries
+YOUTUBE_API_KEY=${CI_YOUTUBE_API_KEY}
+YOUTUBE_CHANNEL_ID=${CI_YOUTUBE_CHANNEL_ID}
 YOUTUBE_MAX_RESULTS=12
 
 # Seed admin
@@ -87,7 +96,7 @@ SEED_ADMIN_DISPLAY_NAME=Claudy Admin
 SEED_ADMIN_ON_BOOT=true
 EOF
 
-cat > "$ROOT_DIR/.env.production" <<'EOF'
+cat > "$ROOT_DIR/.env.production" <<EOF
 # Runtime
 API_HOST=0.0.0.0
 API_PORT=4000
@@ -101,7 +110,7 @@ TRAEFIK_CERT_RESOLVER=letsencrypt
 
 # Supabase PostgreSQL
 REDIS_HOST_PORT=6380
-DATABASE_URL=postgresql://postgres:ci-password@db.gejadzonjvxurxiaxdfj.supabase.co:5432/postgres
+DATABASE_URL=${CI_DATABASE_URL}
 DATABASE_SSL=true
 REDIS_URL=redis://redis:6379
 
@@ -129,14 +138,14 @@ VITE_MOBILE_PREVIEW_URL=https://app.example.com
 # Mobile app
 EXPO_PACKAGER_HOSTNAME=
 EXPO_PUBLIC_API_URL=https://api.example.com
-EXPO_PUBLIC_SUPABASE_URL=https://gejadzonjvxurxiaxdfj.supabase.co
-EXPO_PUBLIC_SUPABASE_KEY=sb_publishable__ci_placeholder_key
-EXPO_PUBLIC_SUPABASE_ANON_KEY=sb_publishable__ci_placeholder_key
+EXPO_PUBLIC_SUPABASE_URL=${CI_SUPABASE_URL}
+EXPO_PUBLIC_SUPABASE_KEY=${CI_SUPABASE_PUBLISHABLE_KEY}
+EXPO_PUBLIC_SUPABASE_ANON_KEY=${CI_SUPABASE_PUBLISHABLE_KEY}
 EXPO_PUBLIC_EAS_PROJECT_ID=00000000-0000-0000-0000-000000000000
 
 # Supabase backend
-SUPABASE_URL=https://gejadzonjvxurxiaxdfj.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=ci-supabase-service-role-key
+SUPABASE_URL=${CI_SUPABASE_URL}
+SUPABASE_SERVICE_ROLE_KEY=${CI_SUPABASE_SERVICE_ROLE_KEY}
 SUPABASE_STORAGE_BUCKET=mobile-uploads
 
 # Email
@@ -162,12 +171,12 @@ SMTP_TLS_REJECT_UNAUTHORIZED=true
 POSTFIX_MYHOSTNAME=mail.example.com
 POSTFIX_RELAY_HOST=smtp-relay.brevo.com
 POSTFIX_RELAY_PORT=587
-POSTFIX_SMTP_USERNAME=ci-brevo-username
-POSTFIX_SMTP_PASSWORD=ci-brevo-password
+POSTFIX_SMTP_USERNAME=${CI_POSTFIX_SMTP_USERNAME}
+POSTFIX_SMTP_PASSWORD=${CI_POSTFIX_SMTP_PASSWORD}
 
 # YouTube
-YOUTUBE_API_KEY=AIzaSyCYnrXdBOt4KnSk_hkUHCVFheoL_5-E_3Q
-YOUTUBE_CHANNEL_ID=https://www.youtube.com/@ClaudyGODMinistries
+YOUTUBE_API_KEY=${CI_YOUTUBE_API_KEY}
+YOUTUBE_CHANNEL_ID=${CI_YOUTUBE_CHANNEL_ID}
 YOUTUBE_MAX_RESULTS=12
 
 # Seed admin
