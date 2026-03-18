@@ -34,6 +34,13 @@ Fill the repo root `.env.production` with real values before starting:
 - `POSTFIX_RELAY_HOST`, `POSTFIX_RELAY_PORT`
 - `POSTFIX_SMTP_USERNAME`, `POSTFIX_SMTP_PASSWORD`
 
+The API now rejects production boot if these still point to placeholders, localhost/private hosts, or CI example values:
+
+- `AUTH_PUBLIC_BASE_URL`
+- `CORS_ORIGIN`
+- `DATABASE_URL`
+- `SUPABASE_URL`
+
 ## Start the stack
 
 ```bash
