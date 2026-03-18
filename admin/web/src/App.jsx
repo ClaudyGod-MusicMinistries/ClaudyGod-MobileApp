@@ -359,8 +359,7 @@ export default defineComponent({
     const databaseTargetLabel = computed(() => {
       const target = publicHealth.value?.capabilities?.databaseTarget;
       if (target === 'supabase-postgres') return 'Supabase PostgreSQL';
-      if (target === 'local-postgres') return 'Local PostgreSQL';
-      if (target === 'managed-postgres') return 'Managed PostgreSQL';
+      if (target === 'external-postgres') return 'External PostgreSQL';
       return 'Database target pending';
     });
     const apiHealthCheck = computed(() =>
@@ -1097,9 +1096,7 @@ export default defineComponent({
         const databaseTarget =
           health.capabilities?.databaseTarget === 'supabase-postgres'
             ? 'Supabase PostgreSQL'
-            : health.capabilities?.databaseTarget === 'local-postgres'
-              ? 'local PostgreSQL'
-              : 'the configured PostgreSQL database';
+            : 'the configured PostgreSQL database';
 
         setNotice(
           `The backend is online, but ${databaseTarget} is unavailable. Update DATABASE_URL, start the database, and restart the API before creating accounts.`,

@@ -53,14 +53,16 @@ SMTP notes:
 
 ## Quick start
 1. Create the repo root `.env.development`
-2. If you want your backend tables inside Supabase, replace `DATABASE_URL` with your Supabase Postgres connection string, set `DATABASE_SSL=true`, and add `SUPABASE_SERVICE_ROLE_KEY`
-3. `npm install`
-4. `npm run migrate`
-5. `npm run seed:admin`
-6. `npm run dev`
-7. `npm run dev:worker`
+2. Set `DATABASE_URL` to your Supabase Postgres connection string, set `DATABASE_SSL=true`, and add `SUPABASE_SERVICE_ROLE_KEY`
+3. Replace the placeholder password in `DATABASE_URL` with your real Supabase database password from the Supabase dashboard
+4. `npm install`
+5. `npm run migrate`
+6. `npm run seed:admin`
+7. `npm run dev`
+8. `npm run dev:worker`
 
 Supabase note:
 - `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_KEY` are not enough for backend table creation
+- The backend now assumes Supabase Postgres is the intended database target, but it still needs the real Postgres password in `DATABASE_URL`
 - The backend schema is created only in the Postgres instance referenced by `DATABASE_URL`
 - Mobile users are mirrored into `app_users`, `user_profiles`, and `user_preferences` after the API can verify their Supabase session with `SUPABASE_SERVICE_ROLE_KEY`
