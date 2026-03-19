@@ -17,6 +17,8 @@ import { CustomText } from '../components/CustomText';
 import { TVTouchable } from '../components/ui/TVTouchable';
 import { Screen } from '../components/layout/Screen';
 import { useAuth } from '../context/AuthContext';
+import { APP_ROUTES } from '../util/appRoutes';
+import { BRAND_LOGO_ASSET } from '../util/brandAssets';
 
 export default function Landing() {
   const router = useRouter();
@@ -51,7 +53,7 @@ export default function Landing() {
 
   useEffect(() => {
     if (!initializing && isAuthenticated) {
-      router.replace('/(tabs)/home');
+      router.replace(APP_ROUTES.tabs.home);
     }
   }, [initializing, isAuthenticated, router]);
 
@@ -184,7 +186,7 @@ export default function Landing() {
             >
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <Image
-                  source={require('../assets/images/ClaudyGoLogo.webp')}
+                  source={BRAND_LOGO_ASSET}
                   style={{ width: 34, height: 34, borderRadius: 17 }}
                 />
                 <View style={{ marginLeft: 10 }}>
@@ -198,7 +200,7 @@ export default function Landing() {
               </View>
 
               <TVTouchable
-                onPress={() => router.push('/sign-in')}
+                onPress={() => router.push(APP_ROUTES.auth.signIn)}
                 style={{
                   borderRadius: 999,
                   borderWidth: 1,
@@ -244,7 +246,7 @@ export default function Landing() {
                     }}
                   >
                     <Image
-                      source={require('../assets/images/ClaudyGoLogo.webp')}
+                      source={BRAND_LOGO_ASSET}
                       style={{ width: logoSize, height: logoSize, borderRadius: logoSize / 2 }}
                     />
                   </Animated.View>
@@ -320,7 +322,7 @@ export default function Landing() {
                     title="Create Account"
                     size="lg"
                     fullWidth
-                    onPress={() => router.push('/sign-up')}
+                    onPress={() => router.push(APP_ROUTES.auth.signUp)}
                     rightIcon={<MaterialIcons name="person-add" size={18} color="#08060F" />}
                     style={{ borderRadius: 16 }}
                   />
@@ -330,7 +332,7 @@ export default function Landing() {
                     variant="ghost"
                     size="lg"
                     fullWidth
-                    onPress={() => router.push('/sign-in')}
+                    onPress={() => router.push(APP_ROUTES.auth.signIn)}
                     leftIcon={<MaterialIcons name="login" size={18} color="#E8DDFF" />}
                     textColor="#E8DDFF"
                     style={{

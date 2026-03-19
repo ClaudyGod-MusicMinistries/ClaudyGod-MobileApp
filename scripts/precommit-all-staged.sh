@@ -4,6 +4,14 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
+# Git hook runners sometimes export npm lifecycle config keys that cause noisy
+# warnings in nested toolchains. They are not used by these direct checks.
+unset npm_config_version_commit_hooks || true
+unset npm_config_version_tag_prefix || true
+unset npm_config_version_git_message || true
+unset npm_config_version_git_tag || true
+unset npm_config_argv || true
+
 mapfile -t staged < <(git diff --cached --name-only --diff-filter=ACMR)
 
 if [ "${#staged[@]}" -eq 0 ]; then

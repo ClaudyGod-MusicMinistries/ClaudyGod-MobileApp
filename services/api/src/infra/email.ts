@@ -13,6 +13,12 @@ export interface EmailSendResult {
   messageId?: string;
 }
 
+export interface EmailTransportVerification {
+  enabled: boolean;
+  reachable: boolean;
+  reason?: string;
+}
+
 type PooledSmtpOptions = SMTPTransport.Options & {
   pool?: boolean;
   maxConnections?: number;
@@ -67,6 +73,30 @@ export const emailTransportInfo = {
   port: env.SMTP_PORT,
   secure: env.SMTP_SECURE,
   pooled: env.SMTP_POOL,
+};
+
+export const verifyEmailTransport = async (): Promise<EmailTransportVerification> => {
+  if (!emailTransportInfo.enabled) {
+    return {
+      enabled: false,
+      reachable: false,
+      reason: 'SMTP delivery is disabled in the current environment',
+    };
+  }
+
+  try {
+    await transport.verify();
+    return {
+      enabled: true,
+      reachable: true,
+    };
+  } catch (error) {
+    return {
+      enabled: true,
+      reachable: false,
+      reason: error instanceof Error ? error.message : 'Unknown SMTP verification error',
+    };
+  }
 };
 
 export const sendEmail = async (message: EmailMessageInput): Promise<EmailSendResult> => {

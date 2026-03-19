@@ -1,4 +1,5 @@
 import { apiFetch } from './apiClient';
+import { DEFAULT_CONTENT_IMAGE_URI } from '../util/brandAssets';
 
 export type ContentType = 'audio' | 'video' | 'playlist' | 'announcement' | 'live' | 'ad';
 
@@ -114,8 +115,7 @@ export interface FeedBundle {
   topCategories: string[];
 }
 
-const FALLBACK_IMAGE =
-  'https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=1200&q=80';
+const FALLBACK_IMAGE = DEFAULT_CONTENT_IMAGE_URI;
 
 const DEFAULT_BUNDLE: FeedBundle = {
   featured: null,

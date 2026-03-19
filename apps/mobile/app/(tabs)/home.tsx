@@ -25,6 +25,7 @@ import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import { useWordOfDay } from '../../hooks/useWordOfDay';
 import type { FeedCardItem, FeedBundle } from '../../services/contentService';
 import { subscribeToLiveAlerts, trackPlayEvent } from '../../services/supabaseAnalytics';
+import { APP_ROUTES } from '../../util/appRoutes';
 import { deriveLayoutSectionItems, getHomeLayoutSections } from '../../util/mobileLayout';
 
 const topRailChips = ['For You', 'Music', 'Videos', 'Live', 'Word'];
@@ -157,9 +158,9 @@ export default function HomeScreen() {
                 <HomeHeader
                   activeFilter={activeFilter}
                   onChangeFilter={setActiveFilter}
-                  onOpenVideos={() => router.push('/(tabs)/videos')}
-                  onOpenProfile={() => router.push('/profile')}
-                  onOpenMenu={() => router.push('/(tabs)/settings')}
+                  onOpenVideos={() => router.push(APP_ROUTES.tabs.videos)}
+                  onOpenProfile={() => router.push(APP_ROUTES.profile)}
+                  onOpenMenu={() => router.push(APP_ROUTES.tabs.settings)}
                 />
               </View>
             </FadeIn>
@@ -173,8 +174,8 @@ export default function HomeScreen() {
             <HeroDropCard
               item={featured}
               loading={loading}
-              onPressPrimary={() => (featured ? onOpenItem(featured, 'home_hero') : router.push('/(tabs)/videos'))}
-              onPressSecondary={() => router.push('/(tabs)/videos')}
+              onPressPrimary={() => (featured ? onOpenItem(featured, 'home_hero') : router.push(APP_ROUTES.tabs.videos))}
+              onPressSecondary={() => router.push(APP_ROUTES.tabs.videos)}
               isTablet={isTablet || isTV}
             />
           </FadeIn>

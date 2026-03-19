@@ -11,6 +11,7 @@ import { FontProvider, FontContext } from '../context/FontContext';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import { ToastProvider } from '../context/ToastContext';
 import { ToastViewport } from '../components/ui/ToastViewport';
+import { APP_ROUTES } from '../util/appRoutes';
 
 function ThemedLayout({ children }: { children: ReactNode }) {
   const colorScheme = useColorScheme();
@@ -315,12 +316,12 @@ function RootLayoutInner() {
       firstSegment === '(tabs)' || firstSegment === 'profile' || firstSegment === 'settingsPage';
 
     if (!isAuthenticated && isProtectedRoute) {
-      router.replace('/sign-in');
+      router.replace(APP_ROUTES.auth.signIn);
       return;
     }
 
     if (isAuthenticated && isAuthRoute) {
-      router.replace('/(tabs)/home');
+      router.replace(APP_ROUTES.tabs.home);
     }
   }, [bootDelayDone, fontsLoaded, initializing, isAuthenticated, router, segments]);
 

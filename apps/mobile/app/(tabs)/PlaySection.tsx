@@ -12,6 +12,8 @@ import { AudioPlayer } from '../../components/media/AudioPlayer';
 import { useContentFeed } from '../../hooks/useContentFeed';
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
 import type { FeedCardItem } from '../../services/contentService';
+import { APP_ROUTES } from '../../util/appRoutes';
+import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
 import {
   buildPlayerRoute,
   isDirectPlayableAudioUrl,
@@ -62,9 +64,7 @@ function parseRouteItem(params: {
     subtitle: routeParamToString(params.subtitle) ?? 'ClaudyGod',
     description: '',
     duration: routeParamToString(params.duration) ?? '--:--',
-    imageUrl:
-      routeParamToString(params.imageUrl) ??
-      'https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=1200&q=80',
+    imageUrl: routeParamToString(params.imageUrl) ?? DEFAULT_CONTENT_IMAGE_URI,
     mediaUrl: routeParamToString(params.mediaUrl),
   };
 }
@@ -165,7 +165,7 @@ export default function PlaySection() {
                 }}
               >
                 <TVTouchable
-                  onPress={() => router.push('/(tabs)/home')}
+                  onPress={() => router.push(APP_ROUTES.tabs.home)}
                   style={{
                     width: 42,
                     height: 42,
@@ -191,7 +191,7 @@ export default function PlaySection() {
                 </View>
 
                 <TVTouchable
-                  onPress={() => router.push('/(tabs)/videos')}
+                  onPress={() => router.push(APP_ROUTES.tabs.videos)}
                   style={{
                     paddingHorizontal: 12,
                     paddingVertical: 10,

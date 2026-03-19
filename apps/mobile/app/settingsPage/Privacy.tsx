@@ -10,6 +10,7 @@ import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { FadeIn } from '../../components/ui/FadeIn';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
+import { APP_ROUTES } from '../../util/appRoutes';
 import {
   fetchMePrivacyOverview,
   requestPrivacyDataExport,
@@ -154,7 +155,7 @@ export default function Privacy() {
           primaryActionLabel: 'Open Sign-in',
           onPrimaryAction: () => {
             closeActionModal();
-            router.push('/sign-in');
+            router.push(APP_ROUTES.auth.signIn);
           },
           secondaryActionLabel: 'Close',
           onSecondaryAction: closeActionModal,
@@ -251,7 +252,7 @@ export default function Privacy() {
           primaryActionLabel: 'Open Profile',
           onPrimaryAction: () => {
             closeActionModal();
-            router.push('/profile');
+            router.push(APP_ROUTES.profile);
           },
           secondaryActionLabel: 'Close',
           onSecondaryAction: closeActionModal,
@@ -282,7 +283,7 @@ export default function Privacy() {
           primaryActionLabel: 'Open Library',
           onPrimaryAction: () => {
             closeActionModal();
-            router.push('/(tabs)/library');
+            router.push(APP_ROUTES.tabs.library);
           },
           secondaryActionLabel: 'Close',
           onSecondaryAction: closeActionModal,

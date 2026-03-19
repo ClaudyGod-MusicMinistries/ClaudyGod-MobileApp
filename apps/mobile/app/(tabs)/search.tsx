@@ -17,6 +17,7 @@ import { AppButton } from '../../components/ui/AppButton';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { useContentFeed } from '../../hooks/useContentFeed';
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
+import { APP_ROUTES } from '../../util/appRoutes';
 import { buildPlayerRoute } from '../../util/playerRoute';
 
 const baseCategories = ['All', 'audio', 'video', 'playlist', 'live', 'announcement'];
@@ -110,7 +111,7 @@ export default function Search() {
                   actions={[
                     { icon: 'history', onPress: () => undefined, accessibilityLabel: 'Recent searches' },
                     { icon: 'tune', onPress: () => undefined, accessibilityLabel: 'Search filters' },
-                    { icon: 'person-outline', onPress: () => router.push('/profile'), accessibilityLabel: 'Profile' },
+                    { icon: 'person-outline', onPress: () => router.push(APP_ROUTES.profile), accessibilityLabel: 'Profile' },
                   ]}
                 />
               </View>

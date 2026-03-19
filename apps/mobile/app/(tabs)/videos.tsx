@@ -15,6 +15,8 @@ import { useContentFeed } from '../../hooks/useContentFeed';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
 import type { FeedCardItem } from '../../services/contentService';
+import { APP_ROUTES } from '../../util/appRoutes';
+import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
 import { deriveLayoutSectionItems, getVideoLayoutSections } from '../../util/mobileLayout';
 import {
   isDirectPlayableVideoUrl,
@@ -66,9 +68,7 @@ function parseRouteItem(params: {
     subtitle: routeParamToString(params.subtitle) ?? 'ClaudyGod',
     description: '',
     duration: routeParamToString(params.duration) ?? '--:--',
-    imageUrl:
-      routeParamToString(params.imageUrl) ??
-      'https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=1200&q=80',
+    imageUrl: routeParamToString(params.imageUrl) ?? DEFAULT_CONTENT_IMAGE_URI,
     mediaUrl: routeParamToString(params.mediaUrl),
   };
 }
@@ -193,8 +193,8 @@ export default function VideosScreen() {
                   title="Video Hub"
                   subtitle="Watch featured ministry videos, live sessions, and curated screen sections."
                   actions={[
-                    { icon: 'search', onPress: () => router.push('/(tabs)/search'), accessibilityLabel: 'Search' },
-                    { icon: 'music-note', onPress: () => router.push('/(tabs)/player'), accessibilityLabel: 'Music player' },
+                    { icon: 'search', onPress: () => router.push(APP_ROUTES.tabs.search), accessibilityLabel: 'Search' },
+                    { icon: 'music-note', onPress: () => router.push(APP_ROUTES.tabs.player), accessibilityLabel: 'Music player' },
                   ]}
                   chips={[
                     { label: 'Featured Player' },
@@ -238,7 +238,7 @@ export default function VideosScreen() {
                         </CustomText>
                       </View>
                       <TVTouchable
-                        onPress={() => router.push('/(tabs)/player')}
+                        onPress={() => router.push(APP_ROUTES.tabs.player)}
                         style={{
                           borderRadius: 999,
                           paddingHorizontal: 12,

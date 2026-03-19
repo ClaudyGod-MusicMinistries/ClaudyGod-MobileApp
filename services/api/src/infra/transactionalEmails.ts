@@ -77,14 +77,28 @@ export const queueEmailJob = async (input: EmailJobInput): Promise<void> => {
   );
 
   const emailJobId = emailInsert.rows[0]!.id;
-  const queueJob = await emailQueue.add(`email.${input.jobType}`, { emailJobId });
 
-  await pool.query(
-    `UPDATE email_jobs
-     SET queue_job_id = $2, updated_at = NOW()
-     WHERE id = $1`,
-    [emailJobId, String(queueJob.id)],
-  );
+  try {
+    const queueJob = await emailQueue.add(`email.${input.jobType}`, { emailJobId });
+
+    await pool.query(
+      `UPDATE email_jobs
+       SET queue_job_id = $2, updated_at = NOW()
+       WHERE id = $1`,
+      [emailJobId, String(queueJob.id)],
+    );
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : 'Unknown email queue error';
+
+    await pool.query(
+      `UPDATE email_jobs
+       SET status = 'failed', error = $2, processed_at = NOW(), updated_at = NOW()
+       WHERE id = $1`,
+      [emailJobId, `Queue enqueue failed: ${reason}`],
+    );
+
+    throw error;
+  }
 };
 
 export const queueVerificationEmail = async (
