@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { CustomText } from '../components/CustomText';
+import { AuthOtpInput } from '../components/auth/AuthOtpInput';
 import { AuthScreenFrame } from '../components/auth/AuthScreenFrame';
 import { AuthTextField } from '../components/auth/AuthTextField';
 import { AppButton } from '../components/ui/AppButton';
@@ -26,18 +27,21 @@ export default function VerifyEmailScreen() {
     () => getParam(params.token).trim() || getParam(params.token_hash).trim(),
     [params.token, params.token_hash],
   );
+  const legacyToken = queryToken.length > 6 ? queryToken : '';
+  const initialCode = queryToken.length <= 6 ? queryToken : '';
 
   const [email, setEmail] = useState(() => getParam(params.email).trim().toLowerCase());
-  const [token, setToken] = useState(queryToken);
+  const [token, setToken] = useState(initialCode);
   const [verifying, setVerifying] = useState(false);
   const [resending, setResending] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState(() => getParam(params.notice).trim());
 
   const autoVerifyTriggered = useRef(false);
 
-  const canVerify = useMemo(() => Boolean(token.trim()), [token]);
-  const canResend = useMemo(() => Boolean(email.trim()), [email]);
+  const canVerify = useMemo(() => token.trim().length === 6, [token]);
+  const canResend = useMemo(() => Boolean(email.trim()) && resendCooldown === 0, [email, resendCooldown]);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -53,13 +57,25 @@ export default function VerifyEmailScreen() {
     return () => clearTimeout(timer);
   }, [isAuthenticated, router]);
 
+  useEffect(() => {
+    if (resendCooldown <= 0) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setResendCooldown((current) => Math.max(0, current - 1));
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [resendCooldown]);
+
   const handleVerify = async (tokenValue?: string) => {
     setErrorMessage('');
     setSuccessMessage('');
 
     const resolvedToken = (tokenValue ?? token).trim();
     if (!resolvedToken) {
-      setErrorMessage('Open the verification link from your email or paste the verification token.');
+      setErrorMessage('Enter the 6-digit verification code from your email.');
       return;
     }
 
@@ -89,6 +105,7 @@ export default function VerifyEmailScreen() {
     try {
       const response = await requestVerificationEmail({ email: normalizedEmail });
       setSuccessMessage(response.message);
+      setResendCooldown(45);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Unable to resend verification email');
     } finally {
@@ -97,19 +114,18 @@ export default function VerifyEmailScreen() {
   };
 
   useEffect(() => {
-    if (!queryToken || autoVerifyTriggered.current) {
+    if (!legacyToken || autoVerifyTriggered.current) {
       return;
     }
 
     autoVerifyTriggered.current = true;
-    setToken(queryToken);
     setErrorMessage('');
     setSuccessMessage('');
     setVerifying(true);
 
     void (async () => {
       try {
-        await verifyMobileEmail({ token: queryToken, email: email.trim().toLowerCase() });
+        await verifyMobileEmail({ token: legacyToken, email: email.trim().toLowerCase() });
         setSuccessMessage('Email verified successfully. Redirecting...');
         router.replace('/(tabs)/home');
       } catch (error) {
@@ -118,7 +134,7 @@ export default function VerifyEmailScreen() {
         setVerifying(false);
       }
     })();
-  }, [email, queryToken, router]);
+  }, [email, legacyToken, router]);
 
   return (
     <AuthScreenFrame
@@ -126,7 +142,7 @@ export default function VerifyEmailScreen() {
       salutation="Confirm your account"
       description="Enter the 6-digit verification code sent to your registered email to finish creating your account and unlock your personalized ministry experience."
       title="Verify your email"
-      subtitle="We only create your account after the email code is confirmed. If you opened an older verification link, it can still be pasted below."
+      subtitle="We only create your account after the email code is confirmed. If you open an older verification link on this device, it will still complete automatically."
     >
       <View style={{ gap: 12 }}>
         <AuthTextField
@@ -139,15 +155,28 @@ export default function VerifyEmailScreen() {
           textContentType="emailAddress"
           placeholder="name@example.com"
         />
-        <AuthTextField
+        {legacyToken ? (
+          <View
+            style={{
+              borderRadius: 16,
+              borderWidth: 1,
+              borderColor: 'rgba(156,125,255,0.26)',
+              backgroundColor: 'rgba(115,86,189,0.12)',
+              paddingHorizontal: 13,
+              paddingVertical: 11,
+            }}
+          >
+            <CustomText variant="caption" style={{ color: '#E7DEFF' }}>
+              Older verification link detected. We already attempted to complete it for you. If it
+              was expired, enter the latest 6-digit code from your email below.
+            </CustomText>
+          </View>
+        ) : null}
+        <AuthOtpInput
           label="Verification code"
           value={token}
-          onChangeText={(value) => setToken(value.trim())}
-          keyboardType="number-pad"
-          autoCapitalize="none"
-          textContentType="oneTimeCode"
-          placeholder="Enter the 6-digit code"
-          returnKeyType="done"
+          onChangeText={setToken}
+          placeholder="Paste or type the 6-digit code"
           onSubmitEditing={() => void handleVerify()}
         />
       </View>
@@ -211,6 +240,15 @@ export default function VerifyEmailScreen() {
         disabled={!canResend || resending}
         style={{ marginTop: 10 }}
       />
+
+      {resendCooldown > 0 ? (
+        <CustomText
+          variant="caption"
+          style={{ color: 'rgba(202,196,220,0.72)', marginTop: 9, textAlign: 'center' }}
+        >
+          You can request another code in {resendCooldown}s.
+        </CustomText>
+      ) : null}
 
       <TVTouchable
         onPress={() => router.replace('/sign-in')}

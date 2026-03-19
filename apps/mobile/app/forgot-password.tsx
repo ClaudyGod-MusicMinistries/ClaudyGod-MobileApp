@@ -47,9 +47,9 @@ export default function ForgotPasswordScreen() {
     <AuthScreenFrame
       backPath="/sign-in"
       salutation="Recover your account"
-      description="Receive a secure password reset link so you can return to your library without losing your saved ministry experience."
+      description="Receive a 6-digit recovery code at your registered email so you can securely choose a new password without losing your saved ministry experience."
       title="Reset your password"
-      subtitle="Enter your account email and we will send you a secure recovery link."
+      subtitle="Enter your account email and we will send a short-lived recovery code."
     >
       <View style={{ gap: 12 }}>
         <AuthTextField
@@ -67,7 +67,7 @@ export default function ForgotPasswordScreen() {
       </View>
 
       <CustomText variant="caption" style={{ color: 'rgba(188,178,214,0.9)', marginTop: 10 }}>
-        We send a recovery link, not a plain-text password. Open the link on the same device when possible.
+        The recovery code expires quickly and is sent only to the email used on your account.
       </CustomText>
 
       {errorMessage ? (
@@ -107,7 +107,7 @@ export default function ForgotPasswordScreen() {
       ) : null}
 
       <AppButton
-        title="Send Recovery Link"
+        title="Send Recovery Code"
         size="lg"
         fullWidth
         loading={submitting}
@@ -134,7 +134,7 @@ export default function ForgotPasswordScreen() {
         showFocusBorder={false}
       >
         <CustomText variant="label" style={{ color: '#CDB9FF' }}>
-          Already opened the reset email?
+          Already have the recovery code?
         </CustomText>
       </TVTouchable>
 

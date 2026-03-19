@@ -37,6 +37,7 @@ export interface ForgotPasswordInput {
 
 export interface ResetPasswordInput {
   token: string;
+  email?: string;
   newPassword: string;
 }
 
@@ -235,13 +236,14 @@ export async function resetMobilePassword(
 ): Promise<AuthActionResponse> {
   const resolvedToken = input.token.trim();
   if (!resolvedToken) {
-    throw new Error('Open the reset link from your email or paste the reset token.');
+    throw new Error('Enter the 6-digit reset code from your email or use the secure recovery link.');
   }
 
   return apiFetch<AuthActionResponse>('/v1/auth/password/reset', {
     method: 'POST',
     body: JSON.stringify({
       token: resolvedToken,
+      email: input.email?.trim().toLowerCase() || undefined,
       newPassword: input.newPassword,
     }),
   });

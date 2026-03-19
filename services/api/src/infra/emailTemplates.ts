@@ -206,20 +206,37 @@ export const buildWelcomeEmailTemplate = (input: {
 
 export const buildPasswordResetTemplate = (input: {
   displayName: string;
-  resetUrl: string;
+  resetUrl?: string;
+  resetCode?: string;
   expiresInMinutes: number;
 }): RenderedEmailTemplate => {
   const subject = `Reset your ${brandName} password`;
+  const textResetLine = input.resetCode
+    ? `Enter this 6-digit recovery code: ${input.resetCode}`
+    : input.resetUrl
+      ? `Reset password: ${input.resetUrl}`
+      : '';
   const text = toTextBlock([
     `Hi ${input.displayName},`,
     '',
     'We received a request to reset your password.',
-    `Reset password: ${input.resetUrl}`,
+    textResetLine,
     '',
-    `This secure link expires in ${input.expiresInMinutes} minutes.`,
+    `This password recovery step expires in ${input.expiresInMinutes} minutes.`,
     'If you did not request this, you can ignore this email and your password will remain unchanged.',
     supportFooter,
   ]);
+  const codeAside = input.resetCode
+    ? `<div style="font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: #64748b; margin-bottom: 10px;">Recovery code</div>
+       <div style="font-size: 32px; line-height: 1; letter-spacing: 0.28em; font-weight: 700; color: #0f172a;">${escapeHtml(
+         input.resetCode,
+       )}</div>`
+    : '';
+  const linkAside = input.resetUrl
+    ? `<div style="${input.resetCode ? 'margin-top: 18px;' : ''}"><strong>Reset link</strong><br /><span style="word-break: break-word;">${escapeHtml(
+        input.resetUrl,
+      )}</span></div>`
+    : '';
   const html = renderShell({
     preview: `Reset your ${brandName} password.`,
     eyebrow: 'Password Reset',
@@ -228,12 +245,17 @@ export const buildPasswordResetTemplate = (input: {
     bodyHtml: `<p style="margin: 0 0 16px 0;">We received a password reset request for your ${escapeHtml(
       brandName,
     )} account.</p>
-    <p style="margin: 0;">This secure link expires in ${escapeHtml(String(input.expiresInMinutes))} minutes. If you did not request a password reset, you can ignore this email.</p>`,
-    ctaLabel: 'Reset password',
+    <p style="margin: 0;">${
+      input.resetCode
+        ? 'Enter the 6-digit recovery code below in the app to choose a new password.'
+        : 'Use the secure link below to choose a new password.'
+    }</p>
+    <p style="margin: 16px 0 0 0;">This recovery step expires in ${escapeHtml(String(
+      input.expiresInMinutes,
+    ))} minutes. If you did not request a password reset, you can ignore this email.</p>`,
+    ctaLabel: input.resetUrl ? (input.resetCode ? 'Open recovery page' : 'Reset password') : undefined,
     ctaUrl: input.resetUrl,
-    asideHtml: `<strong>Reset link</strong><br /><span style="word-break: break-word;">${escapeHtml(
-      input.resetUrl,
-    )}</span>`,
+    asideHtml: `${codeAside}${linkAside}` || undefined,
   });
   return { subject, text, html };
 };
