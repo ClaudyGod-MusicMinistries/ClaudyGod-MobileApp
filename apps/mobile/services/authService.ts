@@ -14,6 +14,15 @@ export interface MobileAuthResponse {
   accessToken: string;
   user: MobileAuthUser;
   requiresEmailVerification?: boolean;
+  message?: string;
+}
+
+export interface RegisterMobileResponse {
+  accessToken?: string;
+  user?: MobileAuthUser;
+  requiresEmailVerification: boolean;
+  pendingEmail?: string;
+  message: string;
 }
 
 export interface RegisterMobileUserInput {
@@ -33,6 +42,7 @@ export interface ResetPasswordInput {
 
 export interface VerifyEmailInput {
   token: string;
+  email?: string;
 }
 
 export interface AuthActionResponse {
@@ -111,6 +121,7 @@ const createSessionSnapshot = (
   accessToken: payload.accessToken,
   user: payload.user,
   requiresEmailVerification,
+  message: payload.message,
 });
 
 export const subscribeToMobileAuthStateChange = (
@@ -139,7 +150,7 @@ export async function loginMobileUser(input: {
 }
 
 export async function registerMobileUser(input: RegisterMobileUserInput): Promise<MobileAuthResponse> {
-  const response = await apiFetch<MobileAuthResponse>('/v1/auth/register', {
+  const response = await apiFetch<RegisterMobileResponse>('/v1/auth/register', {
     method: 'POST',
     body: JSON.stringify({
       email: input.email.trim().toLowerCase(),
@@ -149,11 +160,34 @@ export async function registerMobileUser(input: RegisterMobileUserInput): Promis
     }),
   });
 
-  if (!response.requiresEmailVerification) {
-    await persistMobileSession(response);
+  if (response.requiresEmailVerification) {
+    return {
+      accessToken: '',
+      user: {
+        id: '',
+        email: response.pendingEmail ?? input.email.trim().toLowerCase(),
+        displayName: input.displayName.trim(),
+        role: 'CLIENT',
+        createdAt: new Date().toISOString(),
+        emailVerifiedAt: null,
+      },
+      requiresEmailVerification: true,
+      message: response.message,
+    };
   }
 
-  return createSessionSnapshot(response, Boolean(response.requiresEmailVerification));
+  if (!response.accessToken || !response.user) {
+    throw new Error('Registration completed without a usable session response');
+  }
+
+  const authResponse: MobileAuthResponse = {
+    accessToken: response.accessToken,
+    user: response.user,
+    requiresEmailVerification: false,
+  };
+
+  await persistMobileSession(authResponse);
+  return createSessionSnapshot(authResponse, false);
 }
 
 export async function requestVerificationEmail(
@@ -177,6 +211,7 @@ export async function verifyMobileEmail(input: VerifyEmailInput): Promise<Mobile
     method: 'POST',
     body: JSON.stringify({
       token: resolvedToken,
+      email: input.email?.trim().toLowerCase() || undefined,
     }),
   });
 

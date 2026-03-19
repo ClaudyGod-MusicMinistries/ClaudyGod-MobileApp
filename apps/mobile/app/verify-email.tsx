@@ -17,6 +17,7 @@ export default function VerifyEmailScreen() {
   const { isAuthenticated } = useAuth();
   const params = useLocalSearchParams<{
     email?: string | string[];
+    notice?: string | string[];
     token?: string | string[];
     token_hash?: string | string[];
   }>();
@@ -31,7 +32,7 @@ export default function VerifyEmailScreen() {
   const [verifying, setVerifying] = useState(false);
   const [resending, setResending] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState(() => getParam(params.notice).trim());
 
   const autoVerifyTriggered = useRef(false);
 
@@ -64,7 +65,7 @@ export default function VerifyEmailScreen() {
 
     setVerifying(true);
     try {
-      await verifyMobileEmail({ token: resolvedToken });
+      await verifyMobileEmail({ token: resolvedToken, email: email.trim().toLowerCase() });
       setSuccessMessage('Email verified successfully. Redirecting...');
       router.replace('/(tabs)/home');
     } catch (error) {
@@ -108,7 +109,7 @@ export default function VerifyEmailScreen() {
 
     void (async () => {
       try {
-        await verifyMobileEmail({ token: queryToken });
+        await verifyMobileEmail({ token: queryToken, email: email.trim().toLowerCase() });
         setSuccessMessage('Email verified successfully. Redirecting...');
         router.replace('/(tabs)/home');
       } catch (error) {
@@ -117,15 +118,15 @@ export default function VerifyEmailScreen() {
         setVerifying(false);
       }
     })();
-  }, [queryToken, router]);
+  }, [email, queryToken, router]);
 
   return (
     <AuthScreenFrame
       backPath="/sign-in"
       salutation="Confirm your account"
-      description="Open the secure verification link from your email to activate your account and unlock your personalized ministry experience."
+      description="Enter the 6-digit verification code sent to your registered email to finish creating your account and unlock your personalized ministry experience."
       title="Verify your email"
-      subtitle="This flow uses the ClaudyGod API email pipeline. If your mail app exposed the token in the URL, you can paste it below."
+      subtitle="We only create your account after the email code is confirmed. If you opened an older verification link, it can still be pasted below."
     >
       <View style={{ gap: 12 }}>
         <AuthTextField
@@ -139,11 +140,13 @@ export default function VerifyEmailScreen() {
           placeholder="name@example.com"
         />
         <AuthTextField
-          label="Verification token"
+          label="Verification code"
           value={token}
-          onChangeText={setToken}
+          onChangeText={(value) => setToken(value.trim())}
+          keyboardType="number-pad"
           autoCapitalize="none"
-          placeholder="Paste verification token if needed"
+          textContentType="oneTimeCode"
+          placeholder="Enter the 6-digit code"
           returnKeyType="done"
           onSubmitEditing={() => void handleVerify()}
         />
@@ -186,7 +189,7 @@ export default function VerifyEmailScreen() {
       ) : null}
 
       <AppButton
-        title="Verify Email"
+        title="Verify Code"
         size="lg"
         fullWidth
         loading={verifying}

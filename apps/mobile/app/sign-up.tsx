@@ -57,7 +57,10 @@ export default function SignUpScreen() {
       if (session.requiresEmailVerification) {
         router.replace({
           pathname: '/verify-email',
-          params: { email: normalizedEmail },
+          params: {
+            email: normalizedEmail,
+            notice: session.message ?? 'A verification code has been sent to your email.',
+          },
         });
         return;
       }
@@ -76,7 +79,7 @@ export default function SignUpScreen() {
       salutation="Create your ministry account"
       description="Register once and keep your worship library, saved content, and ministry profile connected across devices."
       title="Create Account"
-      subtitle="Use your name and a secure email address to get started."
+      subtitle="Use your name and a secure email address to get started. We will send a 6-digit verification code before your account is activated."
     >
       <View style={{ gap: 12 }}>
         <AuthTextField
