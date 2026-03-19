@@ -90,6 +90,11 @@ Docker
    - `eas build --profile preview --platform all`
    - `eas build --profile production --platform all`
 7. For push notifications and EAS Updates, make sure the project is linked to a real EAS project so `extra.eas.projectId` resolves from env at build time.
+8. In Supabase `Auth -> URL Configuration`, set:
+   - `Site URL` to your live web app origin, for example `https://app.example.com`
+   - additional redirect URLs to include your web app routes, for example `https://app.example.com/**`
+   - native deep links if you ship native auth email flows, for example `claudygod://**`
+9. The mobile app uses Supabase email-link auth flows in production. Verification and password recovery emails should open the correct app route instead of asking users to copy a code manually.
 
 ## 📄 License
 
