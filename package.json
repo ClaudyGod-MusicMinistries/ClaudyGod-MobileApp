@@ -3,11 +3,11 @@
   "scripts": {
     "lefthook": "node ./apps/mobile/node_modules/lefthook/bin/index.js",
     "hooks:install": "yarn lefthook install",
-    "api:build": "npm --prefix ./services/api run build",
+    "api:build": "bash -lc 'cd ./services/api && ./node_modules/.bin/tsc'",
     "api:migrate": "npm --prefix ./services/api run migrate",
     "api:seed:admin": "npm --prefix ./services/api run seed:admin",
     "api:setup:local": "npm --prefix ./services/api run migrate && npm --prefix ./services/api run seed:admin",
-    "admin:build": "npm --prefix ./admin/web run build",
+    "admin:build": "bash -lc 'cd ./admin/web && ./node_modules/.bin/vite build'",
     "mobile:lint": "yarn --cwd ./apps/mobile lint",
     "mobile:typecheck": "yarn --cwd ./apps/mobile typecheck",
     "docker:config": "bash ./scripts/docker-validate.sh",
