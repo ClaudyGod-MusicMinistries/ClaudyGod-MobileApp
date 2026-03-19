@@ -1,8 +1,8 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-COPY package.json package-lock.json* yarn.lock* ./
-RUN if [ -f package-lock.json ]; then npm ci; else yarn install --frozen-lockfile || yarn install; fi
+COPY package.json yarn.lock ./
+RUN yarn install --frozen-lockfile || yarn install
 
 COPY . .
 
@@ -10,18 +10,14 @@ ARG CLAUDYGOD_ENV=production
 ARG EXPO_PUBLIC_API_URL
 ARG EXPO_PUBLIC_SUPABASE_URL
 ARG EXPO_PUBLIC_SUPABASE_KEY
-ARG EXPO_PUBLIC_SUPABASE_ANON_KEY=
 ARG EAS_PROJECT_ID=
-ARG EXPO_PUBLIC_EAS_PROJECT_ID=
 
 ENV NODE_ENV=production
 ENV CLAUDYGOD_ENV=${CLAUDYGOD_ENV}
 ENV EXPO_PUBLIC_API_URL=${EXPO_PUBLIC_API_URL}
 ENV EXPO_PUBLIC_SUPABASE_URL=${EXPO_PUBLIC_SUPABASE_URL}
 ENV EXPO_PUBLIC_SUPABASE_KEY=${EXPO_PUBLIC_SUPABASE_KEY}
-ENV EXPO_PUBLIC_SUPABASE_ANON_KEY=${EXPO_PUBLIC_SUPABASE_ANON_KEY}
 ENV EAS_PROJECT_ID=${EAS_PROJECT_ID}
-ENV EXPO_PUBLIC_EAS_PROJECT_ID=${EXPO_PUBLIC_EAS_PROJECT_ID}
 
 RUN npx expo export --platform web --output-dir dist
 
