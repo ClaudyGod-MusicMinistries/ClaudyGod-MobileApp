@@ -89,6 +89,19 @@ const migrations = [
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`,
+  `CREATE TABLE IF NOT EXISTS pending_signups (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    display_name TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'CLIENT' CHECK (role IN ('CLIENT', 'ADMIN')),
+    otp_hash TEXT NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL,
+    requested_ip TEXT,
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
   `CREATE TABLE IF NOT EXISTS upload_sessions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     channel TEXT NOT NULL CHECK (channel IN ('admin', 'mobile')),
@@ -278,6 +291,10 @@ const migrations = [
     ON auth_action_tokens (user_id, token_type, created_at DESC)`,
   `CREATE INDEX IF NOT EXISTS idx_auth_action_tokens_token_type_expires_at
     ON auth_action_tokens (token_type, expires_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_pending_signups_email_created_at
+    ON pending_signups (email, created_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_pending_signups_expires_at
+    ON pending_signups (expires_at DESC)`,
   `CREATE INDEX IF NOT EXISTS idx_upload_sessions_channel_status_created_at
     ON upload_sessions (channel, status, created_at DESC)`,
   `CREATE INDEX IF NOT EXISTS idx_user_play_events_user_played_at
@@ -344,6 +361,13 @@ const migrations = [
       IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'set_auth_action_tokens_updated_at') THEN
         CREATE TRIGGER set_auth_action_tokens_updated_at
         BEFORE UPDATE ON auth_action_tokens
+        FOR EACH ROW
+        EXECUTE FUNCTION set_updated_at();
+      END IF;
+
+      IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'set_pending_signups_updated_at') THEN
+        CREATE TRIGGER set_pending_signups_updated_at
+        BEFORE UPDATE ON pending_signups
         FOR EACH ROW
         EXECUTE FUNCTION set_updated_at();
       END IF;

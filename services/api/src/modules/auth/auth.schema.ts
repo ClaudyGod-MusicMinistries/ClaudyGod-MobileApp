@@ -49,7 +49,8 @@ export const resetPasswordSchema = z
 
 export const verifyEmailSchema = z
   .object({
-    token: z.string().trim().min(40).max(256),
+    token: z.string().trim().min(6).max(256),
+    email: emailSchema.optional(),
   })
   .strict();
 

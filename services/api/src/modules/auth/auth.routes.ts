@@ -27,7 +27,7 @@ authRouter.post(
   '/register',
   asyncHandler(async (req, res) => {
     const payload = validateSchema(registerSchema, req.body);
-    const result = await registerUser(payload);
+    const result = await registerUser(payload, req.ip);
     res.status(201).json(result);
   }),
 );
