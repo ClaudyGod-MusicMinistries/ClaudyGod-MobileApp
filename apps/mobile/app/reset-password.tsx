@@ -7,7 +7,6 @@ import { AuthScreenFrame } from '../components/auth/AuthScreenFrame';
 import { AuthTextField } from '../components/auth/AuthTextField';
 import { AppButton } from '../components/ui/AppButton';
 import { TVTouchable } from '../components/ui/TVTouchable';
-import { useAuth } from '../context/AuthContext';
 import { resetMobilePassword } from '../services/authService';
 
 const getParam = (value: string | string[] | undefined): string =>
@@ -15,16 +14,18 @@ const getParam = (value: string | string[] | undefined): string =>
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
   const params = useLocalSearchParams<{
     token?: string | string[];
     token_hash?: string | string[];
     email?: string | string[];
   }>();
 
-  const initialToken = () => getParam(params.token).trim() || getParam(params.token_hash).trim();
+  const queryToken = useMemo(
+    () => getParam(params.token).trim() || getParam(params.token_hash).trim(),
+    [params.token, params.token_hash],
+  );
 
-  const [token, setToken] = useState(initialToken);
+  const [token, setToken] = useState(queryToken);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [hidePassword, setHidePassword] = useState(true);
@@ -33,8 +34,8 @@ export default function ResetPasswordScreen() {
   const [successMessage, setSuccessMessage] = useState('');
 
   const canSubmit = useMemo(
-    () => Boolean((token.trim() || isAuthenticated) && newPassword.trim() && confirmPassword.trim()),
-    [confirmPassword, isAuthenticated, newPassword, token],
+    () => Boolean(token.trim() && newPassword.trim() && confirmPassword.trim()),
+    [confirmPassword, newPassword, token],
   );
 
   const visibilityToggle = (
@@ -51,8 +52,8 @@ export default function ResetPasswordScreen() {
     setErrorMessage('');
     setSuccessMessage('');
 
-    if (!token.trim() && !isAuthenticated) {
-      setErrorMessage('Open the reset link from your email or paste the reset token hash.');
+    if (!token.trim()) {
+      setErrorMessage('Open the reset link from your email or paste the reset token.');
       return;
     }
 
@@ -83,15 +84,15 @@ export default function ResetPasswordScreen() {
       salutation="Set a new password"
       description="Use the secure recovery link from your email, then choose a new password to protect your ClaudyGod account."
       title="Create a fresh password"
-      subtitle="Open the email link first. If the mail client exposed the token hash, you can paste it below and continue."
+      subtitle="Open the email link first. If the mail client exposed the token in the URL, you can paste it below and continue."
     >
       <View style={{ gap: 12 }}>
         <AuthTextField
-          label="Reset token hash"
+          label="Reset token"
           value={token}
           onChangeText={setToken}
           autoCapitalize="none"
-          placeholder="Paste token hash if needed"
+          placeholder="Paste reset token if needed"
         />
         <AuthTextField
           label="New password"

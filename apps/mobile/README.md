@@ -37,7 +37,7 @@ Bible Integration - Scripture references with songs
 | **Language**             | TypeScript |
 | **State Management**     | Zustand |
 | **Database**             | Supabase (PostgreSQL) |
-| **Authentication**       | Supabase Auth |
+| **Authentication**       | Claudy API JWT + email verification/reset |
 | **File Storage**         | Supabase Storage |
 | **Audio Streaming**      | Expo AV + react-native-track-player |
 | **Video Streaming**      | Expo AV Player |
@@ -60,9 +60,11 @@ Setup
 
 1. Create the repo root `.env.development`.
 2. Set:
+   - `EXPO_PUBLIC_API_URL`
+3. Optional:
    - `EXPO_PUBLIC_SUPABASE_URL`
    - `EXPO_PUBLIC_SUPABASE_KEY`
-3. Optional: set `EXPO_PUBLIC_API_URL` only if you also want to use the legacy backend services for content/admin flows.
+   These are no longer required for the public app auth flow.
 4. Install dependencies: `npm install`
 5. Start Expo: `npm run start:online`
 
@@ -90,11 +92,8 @@ Docker
    - `eas build --profile preview --platform all`
    - `eas build --profile production --platform all`
 7. For push notifications and EAS Updates, make sure the project is linked to a real EAS project so `extra.eas.projectId` resolves from env at build time.
-8. In Supabase `Auth -> URL Configuration`, set:
-   - `Site URL` to your live web app origin, for example `https://app.example.com`
-   - additional redirect URLs to include your web app routes, for example `https://app.example.com/**`
-   - native deep links if you ship native auth email flows, for example `claudygod://**`
-9. The mobile app uses Supabase email-link auth flows in production. Verification and password recovery emails should open the correct app route instead of asking users to copy a code manually.
+8. Set `AUTH_PUBLIC_BASE_URL` in the backend env to your live public app origin, for example `https://app.example.com`.
+9. The mobile app now uses the backend auth endpoints for sign-up, sign-in, verification, and password recovery. Transactional emails are queued by the API and delivered through the worker/Postfix/Brevo pipeline.
 
 ## 📄 License
 
@@ -148,7 +147,7 @@ This complete README and codebase include:
 - 📱 **Ready-to-use components** (`MusicCard`, `AudioPlayer`, etc.)  
 - 🎨 **Professional styling** with Tailwind CSS and NativeWind  
 - 🎧 **Music player functionality** with persistent state management  
-- 🔐 **Authentication setup** using Supabase  
+- 🔐 **Authentication setup** using backend JWT and transactional email flows
 - 🗂️ **Database schema** for ministry content  
 - 🚀 **Deployment-ready** configuration for Expo EAS  
 - 🙏 **Ministry-focused features** (Prayer wall, Scriptures, Events)

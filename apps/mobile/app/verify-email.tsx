@@ -35,7 +35,7 @@ export default function VerifyEmailScreen() {
 
   const autoVerifyTriggered = useRef(false);
 
-  const canVerify = useMemo(() => Boolean(token.trim() || isAuthenticated), [isAuthenticated, token]);
+  const canVerify = useMemo(() => Boolean(token.trim()), [token]);
   const canResend = useMemo(() => Boolean(email.trim()), [email]);
 
   useEffect(() => {
@@ -57,8 +57,8 @@ export default function VerifyEmailScreen() {
     setSuccessMessage('');
 
     const resolvedToken = (tokenValue ?? token).trim();
-    if (!resolvedToken && !isAuthenticated) {
-      setErrorMessage('Open the verification link from your email or paste the verification token hash.');
+    if (!resolvedToken) {
+      setErrorMessage('Open the verification link from your email or paste the verification token.');
       return;
     }
 
@@ -125,7 +125,7 @@ export default function VerifyEmailScreen() {
       salutation="Confirm your account"
       description="Open the secure verification link from your email to activate your account and unlock your personalized ministry experience."
       title="Verify your email"
-      subtitle="This flow uses a secure email link. If your mail app exposed the token hash, you can paste it below."
+      subtitle="This flow uses the ClaudyGod API email pipeline. If your mail app exposed the token in the URL, you can paste it below."
     >
       <View style={{ gap: 12 }}>
         <AuthTextField
@@ -139,11 +139,11 @@ export default function VerifyEmailScreen() {
           placeholder="name@example.com"
         />
         <AuthTextField
-          label="Verification token hash"
+          label="Verification token"
           value={token}
           onChangeText={setToken}
           autoCapitalize="none"
-          placeholder="Paste token hash if needed"
+          placeholder="Paste verification token if needed"
           returnKeyType="done"
           onSubmitEditing={() => void handleVerify()}
         />
