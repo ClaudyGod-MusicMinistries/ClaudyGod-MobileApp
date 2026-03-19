@@ -66,10 +66,10 @@ Startup note:
 - You can still run `npm run migrate` and `npm run seed:admin` manually if you want explicit one-off control.
 
 Production note:
-- The repo now includes `docker-compose.production.yml` with Caddy at the edge, Redis for queues, the API and worker behind the proxy, the admin web app as a static Caddy-served build, and a Postfix relay container for transactional email delivery through Brevo.
+- The repo now includes `docker-compose.production.yml` with Traefik at the edge, Redis for queues, the API and worker behind the proxy, the admin and mobile web apps as static nginx-served builds, and a Postfix relay container for transactional email delivery through Brevo.
 
 Supabase note:
 - `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_KEY` are not enough for backend table creation
 - The backend now assumes Supabase Postgres is the intended database target, but it still needs the real Postgres password in `DATABASE_URL`
 - The backend schema is created only in the Postgres instance referenced by `DATABASE_URL`
-- Mobile users are mirrored into `app_users`, `user_profiles`, and `user_preferences` after the API can verify their Supabase session with `SUPABASE_SERVICE_ROLE_KEY`
+- The public app auth flow now uses the backend auth endpoints and transactional email pipeline by default

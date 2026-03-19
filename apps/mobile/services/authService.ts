@@ -1,6 +1,4 @@
-import * as Linking from 'expo-linking';
-import type { User } from '@supabase/supabase-js';
-import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiFetch } from './apiClient';
 
 export interface MobileAuthUser {
@@ -41,102 +39,86 @@ export interface AuthActionResponse {
   message: string;
 }
 
-const normalizePath = (value: string): string => (value.startsWith('/') ? value : `/${value}`);
+interface StoredMobileSession {
+  accessToken: string;
+  user: MobileAuthUser;
+}
 
-const getWebOrigin = (): string => {
-  const location = (globalThis as { location?: { origin?: string } }).location;
+interface MobileSessionSnapshot {
+  accessToken: string | null;
+  user: MobileAuthUser | null;
+}
 
-  if (!location) {
-    return '';
+const MOBILE_AUTH_STORAGE_KEY = 'claudygod.mobile-auth-session.v1';
+const authStateListeners = new Set<(_snapshot: MobileSessionSnapshot) => void>();
+
+const isMobileAuthUser = (value: unknown): value is MobileAuthUser => {
+  if (!value || typeof value !== 'object') {
+    return false;
   }
 
-  const origin = String(location.origin || '').trim().replace(/\/+$/, '');
-  if (!origin || /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?$/i.test(origin)) {
-    return '';
-  }
-
-  return origin;
+  const candidate = value as Record<string, unknown>;
+  return (
+    typeof candidate.id === 'string' &&
+    typeof candidate.email === 'string' &&
+    typeof candidate.displayName === 'string' &&
+    (candidate.role === 'CLIENT' || candidate.role === 'ADMIN') &&
+    typeof candidate.createdAt === 'string' &&
+    (typeof candidate.emailVerifiedAt === 'string' || candidate.emailVerifiedAt === null)
+  );
 };
 
-const buildAuthRedirectUrl = (path: string): string => {
-  const normalizedPath = normalizePath(path);
-  const webOrigin = getWebOrigin();
-
-  if (webOrigin) {
-    return `${webOrigin}${normalizedPath}`;
-  }
-
-  return Linking.createURL(normalizedPath);
-};
-
-const normalizeRole = (value: unknown): 'CLIENT' | 'ADMIN' =>
-  value === 'ADMIN' ? 'ADMIN' : 'CLIENT';
-
-const inferDisplayName = (user: User): string => {
-  const metadata = user.user_metadata ?? {};
-  const candidate =
-    metadata.display_name ??
-    metadata.displayName ??
-    metadata.full_name ??
-    metadata.fullName;
-
-  if (typeof candidate === 'string' && candidate.trim().length > 0) {
-    return candidate.trim();
-  }
-
-  if (user.email && user.email.includes('@')) {
-    return user.email.split('@')[0]!;
-  }
-
-  return 'ClaudyGod User';
-};
-
-const toMobileAuthUser = (user: User): MobileAuthUser => ({
-  id: user.id,
-  email: user.email ?? '',
-  displayName: inferDisplayName(user),
-  role: normalizeRole(user.user_metadata?.role),
-  createdAt: user.created_at ?? new Date().toISOString(),
-  emailVerifiedAt: user.email_confirmed_at ?? null,
-});
-
-const ensureSupabaseConfig = (): void => {
-  if (!isSupabaseConfigured) {
-    throw new Error(
-      'Supabase is not configured. Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_KEY in the root .env.development or .env.production file.',
-    );
-  }
-};
-
-const syncBackendSession = async (accessToken?: string): Promise<void> => {
-  if (!accessToken) {
-    return;
+const parseStoredMobileSession = (raw: string | null): MobileSessionSnapshot => {
+  if (!raw) {
+    return { accessToken: null, user: null };
   }
 
   try {
-    await apiFetch('/v1/me/profile', {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
-  } catch (error) {
-    console.warn('backend session sync skipped:', error);
+    const parsed = JSON.parse(raw) as Partial<StoredMobileSession>;
+    if (typeof parsed.accessToken !== 'string' || !isMobileAuthUser(parsed.user)) {
+      return { accessToken: null, user: null };
+    }
+
+    return {
+      accessToken: parsed.accessToken,
+      user: parsed.user,
+    };
+  } catch {
+    return { accessToken: null, user: null };
   }
 };
 
-const requireAuthResponse = (
-  user: User | null,
-  accessToken: string | undefined,
-  requiresEmailVerification = false,
-): MobileAuthResponse => {
-  if (!user) {
-    throw new Error('Authentication did not return a user');
-  }
+const notifyAuthStateListeners = (snapshot: MobileSessionSnapshot): void => {
+  authStateListeners.forEach((listener) => {
+    listener(snapshot);
+  });
+};
 
-  return {
-    accessToken: accessToken ?? '',
-    user: toMobileAuthUser(user),
-    requiresEmailVerification,
+const persistMobileSession = async (response: Pick<MobileAuthResponse, 'accessToken' | 'user'>) => {
+  const nextSession: StoredMobileSession = {
+    accessToken: response.accessToken,
+    user: response.user,
+  };
+
+  await AsyncStorage.setItem(MOBILE_AUTH_STORAGE_KEY, JSON.stringify(nextSession));
+  notifyAuthStateListeners(nextSession);
+};
+
+const createSessionSnapshot = (
+  payload: MobileAuthResponse,
+  requiresEmailVerification = false,
+): MobileAuthResponse => ({
+  accessToken: payload.accessToken,
+  user: payload.user,
+  requiresEmailVerification,
+});
+
+export const subscribeToMobileAuthStateChange = (
+  listener: (_snapshot: MobileSessionSnapshot) => void,
+): (() => void) => {
+  authStateListeners.add(listener);
+  return () => {
+    authStateListeners.delete(listener);
   };
 };
 
@@ -144,196 +126,104 @@ export async function loginMobileUser(input: {
   email: string;
   password: string;
 }): Promise<MobileAuthResponse> {
-  ensureSupabaseConfig();
-
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email: input.email.trim().toLowerCase(),
-    password: input.password,
+  const response = await apiFetch<MobileAuthResponse>('/v1/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({
+      email: input.email.trim().toLowerCase(),
+      password: input.password,
+    }),
   });
 
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  await syncBackendSession(data.session?.access_token);
-  return requireAuthResponse(data.user, data.session?.access_token);
+  await persistMobileSession(response);
+  return createSessionSnapshot(response);
 }
 
 export async function registerMobileUser(input: RegisterMobileUserInput): Promise<MobileAuthResponse> {
-  ensureSupabaseConfig();
-
-  const { data, error } = await supabase.auth.signUp({
-    email: input.email.trim().toLowerCase(),
-    password: input.password,
-    options: {
-      emailRedirectTo: buildAuthRedirectUrl('/verify-email'),
-      data: {
-        display_name: input.displayName.trim(),
-        full_name: input.displayName.trim(),
-        role: 'CLIENT',
-      },
-    },
+  const response = await apiFetch<MobileAuthResponse>('/v1/auth/register', {
+    method: 'POST',
+    body: JSON.stringify({
+      email: input.email.trim().toLowerCase(),
+      password: input.password,
+      username: input.displayName.trim(),
+      role: 'CLIENT',
+    }),
   });
 
-  if (error) {
-    throw new Error(error.message);
+  if (!response.requiresEmailVerification) {
+    await persistMobileSession(response);
   }
 
-  await syncBackendSession(data.session?.access_token);
-  return requireAuthResponse(data.user, data.session?.access_token, !data.session);
+  return createSessionSnapshot(response, Boolean(response.requiresEmailVerification));
 }
 
 export async function requestVerificationEmail(
   input: ForgotPasswordInput,
 ): Promise<AuthActionResponse> {
-  ensureSupabaseConfig();
-
-  const { error } = await supabase.auth.resend({
-    type: 'signup',
-    email: input.email.trim().toLowerCase(),
-    options: {
-      emailRedirectTo: buildAuthRedirectUrl('/verify-email'),
-    },
+  return apiFetch<AuthActionResponse>('/v1/auth/email/verify/request', {
+    method: 'POST',
+    body: JSON.stringify({
+      email: input.email.trim().toLowerCase(),
+    }),
   });
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return {
-    message: 'Verification email sent.',
-  };
 }
 
 export async function verifyMobileEmail(input: VerifyEmailInput): Promise<MobileAuthResponse> {
-  ensureSupabaseConfig();
-
-  const tokenHash = input.token.trim();
-  let data;
-  let error;
-
-  if (tokenHash) {
-    ({ data, error } = await supabase.auth.verifyOtp({
-      token_hash: tokenHash,
-      type: 'signup',
-    }));
-  } else {
-    const {
-      data: { session },
-      error: sessionError,
-    } = await supabase.auth.getSession();
-
-    if (sessionError) {
-      throw new Error(sessionError.message);
-    }
-
-    if (!session?.user?.email_confirmed_at) {
-      throw new Error('Open the verification link from your email to finish confirming your account.');
-    }
-
-    data = {
-      session,
-      user: session.user,
-    };
-    error = null;
+  const resolvedToken = input.token.trim();
+  if (!resolvedToken) {
+    throw new Error('Open the verification link from your email or paste the verification token.');
   }
 
-  if (error) {
-    throw new Error(error.message);
-  }
+  const response = await apiFetch<MobileAuthResponse>('/v1/auth/email/verify', {
+    method: 'POST',
+    body: JSON.stringify({
+      token: resolvedToken,
+    }),
+  });
 
-  await syncBackendSession(data.session?.access_token);
-  return requireAuthResponse(data.user, data.session?.access_token);
+  await persistMobileSession(response);
+  return createSessionSnapshot(response);
 }
 
 export async function requestMobilePasswordReset(
   input: ForgotPasswordInput,
 ): Promise<AuthActionResponse> {
-  ensureSupabaseConfig();
-
-  const { error } = await supabase.auth.resetPasswordForEmail(
-    input.email.trim().toLowerCase(),
-    {
-      redirectTo: buildAuthRedirectUrl('/reset-password'),
-    },
-  );
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return {
-    message: 'Password reset email sent.',
-  };
+  return apiFetch<AuthActionResponse>('/v1/auth/password/forgot', {
+    method: 'POST',
+    body: JSON.stringify({
+      email: input.email.trim().toLowerCase(),
+    }),
+  });
 }
 
 export async function resetMobilePassword(
   input: ResetPasswordInput,
 ): Promise<AuthActionResponse> {
-  ensureSupabaseConfig();
-
-  const tokenHash = input.token.trim();
-
-  if (tokenHash) {
-    const { error: verifyError } = await supabase.auth.verifyOtp({
-      token_hash: tokenHash,
-      type: 'recovery',
-    });
-
-    if (verifyError) {
-      throw new Error(verifyError.message);
-    }
-  } else {
-    const {
-      data: { session },
-      error: sessionError,
-    } = await supabase.auth.getSession();
-
-    if (sessionError) {
-      throw new Error(sessionError.message);
-    }
-
-    if (!session) {
-      throw new Error('Open the reset link from your email to continue, or paste the reset token hash.');
-    }
+  const resolvedToken = input.token.trim();
+  if (!resolvedToken) {
+    throw new Error('Open the reset link from your email or paste the reset token.');
   }
 
-  const { error: updateError } = await supabase.auth.updateUser({
-    password: input.newPassword,
+  return apiFetch<AuthActionResponse>('/v1/auth/password/reset', {
+    method: 'POST',
+    body: JSON.stringify({
+      token: resolvedToken,
+      newPassword: input.newPassword,
+    }),
   });
-
-  if (updateError) {
-    throw new Error(updateError.message);
-  }
-
-  return {
-    message: 'Password updated successfully.',
-  };
 }
 
 export async function clearMobileSession(): Promise<void> {
-  ensureSupabaseConfig();
-
-  const { error } = await supabase.auth.signOut();
-  if (error) {
-    throw new Error(error.message);
-  }
+  await AsyncStorage.removeItem(MOBILE_AUTH_STORAGE_KEY);
+  notifyAuthStateListeners({ accessToken: null, user: null });
 }
 
-export async function getStoredMobileSession(): Promise<{
-  accessToken: string | null;
-  user: MobileAuthUser | null;
-}> {
-  if (!isSupabaseConfigured) {
-    return { accessToken: null, user: null };
+export async function getStoredMobileSession(): Promise<MobileSessionSnapshot> {
+  const storedSession = await AsyncStorage.getItem(MOBILE_AUTH_STORAGE_KEY);
+  const parsed = parseStoredMobileSession(storedSession);
+
+  if (storedSession && !parsed.accessToken) {
+    await AsyncStorage.removeItem(MOBILE_AUTH_STORAGE_KEY);
   }
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  return {
-    accessToken: session?.access_token ?? null,
-    user: session?.user ? toMobileAuthUser(session.user) : null,
-  };
+  return parsed;
 }
