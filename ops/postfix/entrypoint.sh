@@ -28,5 +28,10 @@ postconf -e "smtp_sasl_security_options = noanonymous"
 postconf -e "smtp_tls_security_level = encrypt"
 postconf -e "smtp_tls_CAfile = /etc/ssl/certs/ca-certificates.crt"
 postconf -e "smtp_tls_note_starttls_offer = yes"
+postconf -e "smtp_tls_loglevel = 1"
+
+if postconf -d maillog_file >/dev/null 2>&1; then
+  postconf -e "maillog_file = /dev/stdout"
+fi
 
 exec "$@"

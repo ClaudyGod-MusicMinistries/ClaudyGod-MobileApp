@@ -13,3 +13,9 @@ export const updateSupportRequestStatusSchema = z
     status: supportRequestStatusSchema,
   })
   .strict();
+
+export const sendAdminTestEmailSchema = z
+  .object({
+    recipient: z.string().trim().toLowerCase().email(),
+  })
+  .strict();

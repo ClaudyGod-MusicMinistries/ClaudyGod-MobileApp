@@ -15,6 +15,7 @@ import { SectionHeader as AppSectionHeader } from '../../components/ui/SectionHe
 import { useContentFeed } from '../../hooks/useContentFeed';
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
 import type { FeedCardItem } from '../../services/contentService';
+import { APP_ROUTES } from '../../util/appRoutes';
 import { buildPlayerRoute } from '../../util/playerRoute';
 
 export default function LibraryScreen() {
@@ -79,8 +80,8 @@ export default function LibraryScreen() {
                   title="Library"
                   subtitle="Saved songs, downloads and playlists organized for playback."
                   actions={[
-                    { icon: 'search', onPress: () => router.push('/(tabs)/search'), accessibilityLabel: 'Search' },
-                    { icon: 'person-outline', onPress: () => router.push('/profile'), accessibilityLabel: 'Profile' },
+                    { icon: 'search', onPress: () => router.push(APP_ROUTES.tabs.search), accessibilityLabel: 'Search' },
+                    { icon: 'person-outline', onPress: () => router.push(APP_ROUTES.profile), accessibilityLabel: 'Profile' },
                   ]}
                   chips={[
                     { label: 'Liked' },
@@ -108,7 +109,7 @@ export default function LibraryScreen() {
                 </View>
 
                 <TVTouchable
-                  onPress={() => router.push('/(tabs)/search')}
+                  onPress={() => router.push(APP_ROUTES.tabs.search)}
                   style={{
                     width: 38,
                     height: 38,
@@ -182,7 +183,7 @@ export default function LibraryScreen() {
 
           <FadeIn delay={120}>
             <View style={{ marginTop: theme.layout.sectionGapLarge }}>
-            <AppSectionHeader title="Downloaded" actionLabel="Manage" onAction={() => router.push('/(tabs)/library')} />
+            <AppSectionHeader title="Downloaded" actionLabel="Manage" onAction={() => router.push(APP_ROUTES.tabs.library)} />
             {downloaded.length > 0 ? (
               <View style={{ gap: theme.spacing.sm }}>
                 {downloaded.slice(0, 8).map((song) => (
@@ -204,7 +205,7 @@ export default function LibraryScreen() {
 
           <FadeIn delay={150}>
             <View style={{ marginTop: theme.layout.sectionGapLarge }}>
-            <AppSectionHeader title="Playlists" actionLabel="Create" onAction={() => router.push('/(tabs)/search')} />
+            <AppSectionHeader title="Playlists" actionLabel="Create" onAction={() => router.push(APP_ROUTES.tabs.search)} />
             {playlists.length > 0 ? (
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: theme.spacing.md }}>
                 {playlists.map((playlist) => (

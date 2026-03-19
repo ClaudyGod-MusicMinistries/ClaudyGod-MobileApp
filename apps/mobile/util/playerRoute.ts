@@ -1,7 +1,8 @@
 import type { FeedCardItem } from '../services/contentService';
+import { APP_ROUTES, type PlayerRoutePath } from './appRoutes';
 
 type PlayerRouteObject = {
-  pathname: '/(tabs)/player' | '/(tabs)/videos';
+  pathname: PlayerRoutePath;
   params: Record<string, string>;
 };
 
@@ -20,7 +21,7 @@ export function buildPlayerRoute(item: FeedCardItem): PlayerRouteObject {
   }
 
   return {
-    pathname: shouldOpenVideoScreen(item) ? '/(tabs)/videos' : '/(tabs)/player',
+    pathname: shouldOpenVideoScreen(item) ? APP_ROUTES.tabs.videos : APP_ROUTES.tabs.player,
     params,
   };
 }
