@@ -143,14 +143,21 @@ export const queueWelcomeEmail = async (user: AppEmailUser): Promise<void> => {
   });
 };
 
-export const queuePasswordResetEmail = async (user: AppEmailUser, rawToken: string): Promise<void> => {
+export const queuePasswordResetEmail = async (
+  user: AppEmailUser,
+  input: {
+    rawToken?: string;
+    resetCode?: string;
+  },
+): Promise<void> => {
   const resetUrl = buildPublicActionUrl(env.AUTH_RESET_PASSWORD_PATH, {
     email: user.email,
-    token: rawToken,
+    token: input.rawToken,
   });
   const template = buildPasswordResetTemplate({
     displayName: user.displayName,
     resetUrl,
+    resetCode: input.resetCode,
     expiresInMinutes: env.AUTH_PASSWORD_RESET_TOKEN_TTL_MINUTES,
   });
 

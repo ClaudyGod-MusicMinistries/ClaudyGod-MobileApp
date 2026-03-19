@@ -63,6 +63,12 @@ interface PendingSignupRow {
   role: UserRole;
 }
 
+interface PendingPasswordResetRow {
+  id: string;
+  user_id: string;
+  email: string;
+}
+
 const ACTION_TOKEN_BYTES = 32;
 const EMAIL_VERIFICATION_CODE_LENGTH = 6;
 const AUTH_GENERIC_EMAIL_MESSAGE =
@@ -266,6 +272,37 @@ const issuePendingSignupCode = async ({
   };
 };
 
+const issuePendingPasswordResetCode = async ({
+  userId,
+  email,
+  requestIp,
+}: {
+  userId: string;
+  email: string;
+  requestIp?: string;
+}): Promise<{ resetCode: string; expiresAt: string }> => {
+  const resetCode = createVerificationCode();
+  const hashedCode = tokenHash(resetCode);
+  const expiresAtDate = new Date(Date.now() + env.AUTH_PASSWORD_RESET_TOKEN_TTL_MINUTES * 60_000);
+
+  await pool.query(
+    `INSERT INTO pending_password_resets (user_id, email, otp_hash, expires_at, requested_ip)
+     VALUES ($1, $2, $3, $4, $5)
+     ON CONFLICT (user_id) DO UPDATE
+     SET email = EXCLUDED.email,
+         otp_hash = EXCLUDED.otp_hash,
+         expires_at = EXCLUDED.expires_at,
+         requested_ip = EXCLUDED.requested_ip,
+         updated_at = NOW()`,
+    [userId, email, hashedCode, expiresAtDate.toISOString(), requestIp ?? null],
+  );
+
+  return {
+    resetCode,
+    expiresAt: expiresAtDate.toISOString(),
+  };
+};
+
 const completePendingSignup = async ({
   email,
   verificationCode,
@@ -339,6 +376,61 @@ const completePendingSignup = async ({
 
     await client.query('COMMIT');
     return safeUser;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
+const completePendingPasswordReset = async ({
+  email,
+  resetCode,
+  newPassword,
+}: {
+  email: string;
+  resetCode: string;
+  newPassword: string;
+}): Promise<void> => {
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    const pendingResult = await client.query<PendingPasswordResetRow>(
+      `DELETE FROM pending_password_resets
+       WHERE email = $1
+         AND otp_hash = $2
+         AND expires_at > NOW()
+       RETURNING id, user_id, email`,
+      [email, tokenHash(resetCode)],
+    );
+
+    if (pendingResult.rowCount === 0) {
+      throw new HttpError(400, 'Invalid or expired reset code');
+    }
+
+    const pendingReset = pendingResult.rows[0]!;
+    const nextPasswordHash = await hashPassword(newPassword);
+
+    await client.query(
+      `UPDATE app_users
+       SET password_hash = $2, updated_at = NOW()
+       WHERE id = $1`,
+      [pendingReset.user_id, nextPasswordHash],
+    );
+
+    await client.query(
+      `UPDATE auth_action_tokens
+       SET used_at = COALESCE(used_at, NOW()), updated_at = NOW()
+       WHERE user_id = $1
+         AND token_type = 'password_reset'
+         AND used_at IS NULL`,
+      [pendingReset.user_id],
+    );
+
+    await client.query('COMMIT');
   } catch (error) {
     await client.query('ROLLBACK');
     throw error;
@@ -667,10 +759,9 @@ export const requestPasswordReset = async (
   }
 
   const user = toSafeUser(result.rows[0]!);
-  const resetToken = await issueAuthActionToken({
+  const pendingReset = await issuePendingPasswordResetCode({
     userId: user.id,
-    tokenType: 'password_reset',
-    ttlMinutes: env.AUTH_PASSWORD_RESET_TOKEN_TTL_MINUTES,
+    email: user.email,
     requestIp,
   });
   await queuePasswordResetEmail(
@@ -679,15 +770,32 @@ export const requestPasswordReset = async (
       email: user.email,
       displayName: user.displayName,
     },
-    resetToken.rawToken,
+    { resetCode: pendingReset.resetCode },
   );
 
   return { message: AUTH_GENERIC_EMAIL_MESSAGE };
 };
 
 export const resetPassword = async (input: ResetPasswordInput): Promise<AuthActionResponse> => {
+  const submittedToken = input.token.trim();
+
+  if (isOtpCode(submittedToken)) {
+    const email = input.email?.trim().toLowerCase();
+    if (!email) {
+      throw new HttpError(400, 'Email is required when resetting with a code');
+    }
+
+    await completePendingPasswordReset({
+      email,
+      resetCode: submittedToken,
+      newPassword: input.newPassword,
+    });
+
+    return { message: 'Password updated successfully.' };
+  }
+
   const tokenUse = await consumeAuthActionToken({
-    rawToken: input.token.trim(),
+    rawToken: submittedToken,
     tokenType: 'password_reset',
   });
 
