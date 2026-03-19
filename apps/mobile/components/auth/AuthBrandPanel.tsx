@@ -9,18 +9,18 @@ interface AuthBrandPanelProps {
 }
 
 export function AuthBrandPanel({ salutation, description }: AuthBrandPanelProps) {
-  const highlights = ['Secure access', 'Cross-device sync', 'Recovery ready'];
+  const highlights = ['Secure access', 'Responsive layout', 'Recovery ready'];
 
   return (
     <View
       style={{
         borderRadius: 24,
         borderWidth: 1,
-        borderColor: 'rgba(235,226,255,0.12)',
-        backgroundColor: 'rgba(255,255,255,0.035)',
-        paddingHorizontal: 18,
-        paddingVertical: 18,
-        marginBottom: 16,
+        borderColor: 'rgba(235,226,255,0.10)',
+        backgroundColor: 'rgba(255,255,255,0.028)',
+        paddingHorizontal: 16,
+        paddingVertical: 16,
+        marginBottom: 14,
       }}
     >
       <View
@@ -39,12 +39,12 @@ export function AuthBrandPanel({ salutation, description }: AuthBrandPanelProps)
             style={{
               width: 58,
               height: 58,
-              borderRadius: 20,
+              borderRadius: 18,
               borderWidth: 1,
               borderColor: 'rgba(255,255,255,0.14)',
               alignItems: 'center',
               justifyContent: 'center',
-              marginRight: 14,
+              marginRight: 12,
             }}
           >
             <Image
@@ -59,12 +59,17 @@ export function AuthBrandPanel({ salutation, description }: AuthBrandPanelProps)
               style={{
                 color: 'rgba(216,205,246,0.78)',
                 textTransform: 'uppercase',
-                letterSpacing: 0.8,
+                letterSpacing: 0.68,
+                fontSize: 10,
+                lineHeight: 12,
               }}
             >
               ClaudyGod Ministries
             </CustomText>
-            <CustomText variant="label" style={{ color: '#F9F7FF', marginTop: 4 }}>
+            <CustomText
+              variant="label"
+              style={{ color: '#F9F7FF', marginTop: 4, fontSize: 12.2, lineHeight: 16 }}
+            >
               Worship archive, account access, and ministry updates
             </CustomText>
           </View>
@@ -76,11 +81,11 @@ export function AuthBrandPanel({ salutation, description }: AuthBrandPanelProps)
             borderWidth: 1,
             borderColor: 'rgba(160,255,210,0.20)',
             backgroundColor: 'rgba(74,181,121,0.12)',
-            paddingHorizontal: 10,
-            paddingVertical: 6,
+            paddingHorizontal: 9,
+            paddingVertical: 5,
           }}
         >
-          <CustomText variant="caption" style={{ color: '#D5FFE8' }}>
+          <CustomText variant="caption" style={{ color: '#D5FFE8', fontSize: 10.2, lineHeight: 12 }}>
             Protected
           </CustomText>
         </View>
@@ -88,31 +93,34 @@ export function AuthBrandPanel({ salutation, description }: AuthBrandPanelProps)
 
       <CustomText
         variant="heading"
-        style={{ color: '#F8F7FC', marginTop: 18, fontSize: 18, lineHeight: 24 }}
+        style={{ color: '#F8F7FC', marginTop: 16, fontSize: 16, lineHeight: 21 }}
       >
         {salutation}
       </CustomText>
       <CustomText
         variant="body"
-        style={{ color: 'rgba(203,196,226,0.84)', marginTop: 8, fontSize: 14, lineHeight: 21 }}
+        style={{ color: 'rgba(203,196,226,0.84)', marginTop: 7, fontSize: 12.8, lineHeight: 18 }}
       >
         {description}
       </CustomText>
 
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginTop: 13 }}>
         {highlights.map((item) => (
           <View
             key={item}
             style={{
               borderRadius: 999,
               borderWidth: 1,
-              borderColor: 'rgba(255,255,255,0.10)',
-              backgroundColor: 'rgba(255,255,255,0.045)',
-              paddingHorizontal: 10,
-              paddingVertical: 6,
+              borderColor: 'rgba(255,255,255,0.08)',
+              backgroundColor: 'rgba(255,255,255,0.035)',
+              paddingHorizontal: 9,
+              paddingVertical: 5,
             }}
           >
-            <CustomText variant="caption" style={{ color: 'rgba(232,225,249,0.88)' }}>
+            <CustomText
+              variant="caption"
+              style={{ color: 'rgba(232,225,249,0.88)', fontSize: 10.2, lineHeight: 12 }}
+            >
               {item}
             </CustomText>
           </View>

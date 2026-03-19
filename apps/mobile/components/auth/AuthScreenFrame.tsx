@@ -36,6 +36,7 @@ export function AuthScreenFrame({
   const isDesktop = width >= 1040 && !isTV;
   const compact = width < 370;
   const compactViewport = height < 760;
+  const narrow = width < 430;
   const shellWidth = isDesktop ? 1080 : isTablet ? 760 : '100%';
 
   return (
@@ -90,12 +91,12 @@ export function AuthScreenFrame({
                 <TVTouchable
                   onPress={() => router.replace(backPath)}
                   style={{
-                    width: 42,
-                    height: 42,
-                    borderRadius: 16,
+                    width: 40,
+                    height: 40,
+                    borderRadius: 14,
                     borderWidth: 1,
-                    borderColor: 'rgba(255,255,255,0.14)',
-                    backgroundColor: 'rgba(255,255,255,0.055)',
+                    borderColor: 'rgba(255,255,255,0.12)',
+                    backgroundColor: 'rgba(255,255,255,0.04)',
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
@@ -127,14 +128,14 @@ export function AuthScreenFrame({
 
                   <View
                     style={{
-                      flex: 1,
-                      borderRadius: 24,
-                      padding: isDesktop ? 26 : isTablet ? 24 : compactViewport ? 14 : compact ? 16 : 20,
-                      backgroundColor: 'rgba(13,10,22,0.90)',
-                      borderWidth: 1,
-                      borderColor: 'rgba(235,226,255,0.14)',
-                    }}
-                  >
+                    flex: 1,
+                    borderRadius: 24,
+                    padding: isDesktop ? 24 : isTablet ? 22 : compactViewport ? 13 : compact ? 15 : 18,
+                    backgroundColor: 'rgba(13,10,22,0.90)',
+                    borderWidth: 1,
+                    borderColor: 'rgba(235,226,255,0.12)',
+                  }}
+                >
                     {!isDesktop ? <AuthBrandPanel salutation={salutation} description={description} /> : null}
 
                     <View
@@ -142,11 +143,11 @@ export function AuthScreenFrame({
                         borderRadius: 999,
                         alignSelf: 'flex-start',
                         borderWidth: 1,
-                        borderColor: 'rgba(255,255,255,0.10)',
-                        backgroundColor: 'rgba(255,255,255,0.045)',
-                        paddingHorizontal: 10,
+                        borderColor: 'rgba(255,255,255,0.08)',
+                        backgroundColor: 'rgba(255,255,255,0.03)',
+                        paddingHorizontal: 9,
                         paddingVertical: 5,
-                        marginBottom: 12,
+                        marginBottom: 11,
                       }}
                     >
                       <CustomText
@@ -154,7 +155,9 @@ export function AuthScreenFrame({
                         style={{
                           color: 'rgba(226,219,246,0.84)',
                           textTransform: 'uppercase',
-                          letterSpacing: 0.8,
+                          letterSpacing: 0.68,
+                          fontSize: 10,
+                          lineHeight: 12,
                         }}
                       >
                         Secure account access
@@ -165,8 +168,8 @@ export function AuthScreenFrame({
                       variant="display"
                       style={{
                         color: '#F8F7FC',
-                        fontSize: isDesktop ? 24 : isTablet ? 24 : 22,
-                        lineHeight: isDesktop ? 30 : isTablet ? 30 : 28,
+                        fontSize: isDesktop ? 22 : isTablet ? 21 : narrow ? 18 : 19,
+                        lineHeight: isDesktop ? 28 : isTablet ? 27 : narrow ? 24 : 25,
                       }}
                     >
                       {title}
@@ -175,35 +178,38 @@ export function AuthScreenFrame({
                       variant="body"
                       style={{
                         color: 'rgba(203,196,226,0.84)',
-                        marginTop: 8,
-                        fontSize: 14,
-                        lineHeight: 21,
+                        marginTop: 7,
+                        fontSize: narrow ? 12.4 : 13.1,
+                        lineHeight: narrow ? 18 : 19,
                       }}
                     >
                       {subtitle}
                     </CustomText>
 
-                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
-                      {['Smooth web auth', 'Email link recovery', 'Synced across devices'].map((item) => (
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginTop: 13 }}>
+                      {['Responsive layout', 'Email verification', 'Synced across devices'].map((item) => (
                         <View
                           key={item}
                           style={{
                             borderRadius: 999,
                             borderWidth: 1,
-                            borderColor: 'rgba(255,255,255,0.10)',
-                            backgroundColor: 'rgba(255,255,255,0.035)',
-                            paddingHorizontal: 10,
-                            paddingVertical: 6,
+                            borderColor: 'rgba(255,255,255,0.08)',
+                            backgroundColor: 'rgba(255,255,255,0.028)',
+                            paddingHorizontal: 9,
+                            paddingVertical: 5,
                           }}
                         >
-                          <CustomText variant="caption" style={{ color: 'rgba(232,225,249,0.84)' }}>
+                          <CustomText
+                            variant="caption"
+                            style={{ color: 'rgba(232,225,249,0.82)', fontSize: 10.4, lineHeight: 12 }}
+                          >
                             {item}
                           </CustomText>
                         </View>
                       ))}
                     </View>
 
-                    <View style={{ marginTop: 18 }}>{children}</View>
+                    <View style={{ marginTop: 16 }}>{children}</View>
                   </View>
                 </View>
               </View>

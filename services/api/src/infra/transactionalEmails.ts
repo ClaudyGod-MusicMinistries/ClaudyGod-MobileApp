@@ -24,22 +24,37 @@ interface AppEmailUser {
   displayName: string;
 }
 
-const buildActionUrl = (baseUrl: string, token: string): string => {
+const appendQueryParams = (
+  baseUrl: string,
+  params: Record<string, string | undefined>,
+): string => {
+  const query = Object.entries(params).filter(([, value]) => typeof value === 'string' && value.length > 0);
+  if (query.length === 0) {
+    return baseUrl;
+  }
+
   const separator = baseUrl.includes('?') ? '&' : '?';
-  return `${baseUrl}${separator}token=${encodeURIComponent(token)}`;
+  const search = query
+    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value!)}`)
+    .join('&');
+
+  return `${baseUrl}${separator}${search}`;
 };
 
-const buildPublicActionUrl = (path: string, token?: string): string => {
+const buildPublicActionUrl = (
+  path: string,
+  params: Record<string, string | undefined> = {},
+): string => {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
   const normalizedBase = env.AUTH_PUBLIC_BASE_URL.trim().replace(/\/+$/, '');
 
   if (!normalizedBase) {
-    return token ? buildActionUrl(normalizedPath, token) : normalizedPath;
+    return appendQueryParams(normalizedPath, params);
   }
 
   const absoluteUrl = `${normalizedBase}${normalizedPath}`;
 
-  return token ? buildActionUrl(absoluteUrl, token) : absoluteUrl;
+  return appendQueryParams(absoluteUrl, params);
 };
 
 export const queueEmailJob = async (input: EmailJobInput): Promise<void> => {
@@ -72,11 +87,21 @@ export const queueEmailJob = async (input: EmailJobInput): Promise<void> => {
   );
 };
 
-export const queueVerificationEmail = async (user: AppEmailUser, rawToken: string): Promise<void> => {
-  const verifyUrl = buildPublicActionUrl(env.AUTH_VERIFY_EMAIL_PATH, rawToken);
+export const queueVerificationEmail = async (
+  user: AppEmailUser,
+  input: {
+    rawToken?: string;
+    verificationCode?: string;
+  },
+): Promise<void> => {
+  const verifyUrl = buildPublicActionUrl(env.AUTH_VERIFY_EMAIL_PATH, {
+    email: user.email,
+    token: input.rawToken,
+  });
   const template = buildVerifyEmailTemplate({
     displayName: user.displayName,
     verifyUrl,
+    verificationCode: input.verificationCode,
     expiresInMinutes: env.AUTH_VERIFICATION_TOKEN_TTL_MINUTES,
   });
 
@@ -90,6 +115,7 @@ export const queueVerificationEmail = async (user: AppEmailUser, rawToken: strin
     payload: {
       userId: user.id,
       actionUrl: verifyUrl,
+      email: user.email,
       type: 'email_verification',
     },
   });
@@ -117,11 +143,21 @@ export const queueWelcomeEmail = async (user: AppEmailUser): Promise<void> => {
   });
 };
 
-export const queuePasswordResetEmail = async (user: AppEmailUser, rawToken: string): Promise<void> => {
-  const resetUrl = buildPublicActionUrl(env.AUTH_RESET_PASSWORD_PATH, rawToken);
+export const queuePasswordResetEmail = async (
+  user: AppEmailUser,
+  input: {
+    rawToken?: string;
+    resetCode?: string;
+  },
+): Promise<void> => {
+  const resetUrl = buildPublicActionUrl(env.AUTH_RESET_PASSWORD_PATH, {
+    email: user.email,
+    token: input.rawToken,
+  });
   const template = buildPasswordResetTemplate({
     displayName: user.displayName,
     resetUrl,
+    resetCode: input.resetCode,
     expiresInMinutes: env.AUTH_PASSWORD_RESET_TOKEN_TTL_MINUTES,
   });
 

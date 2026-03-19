@@ -5,12 +5,12 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import type { Session, User } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
+import type { MobileAuthUser } from '../services/authService';
+import { getStoredMobileSession, subscribeToMobileAuthStateChange } from '../services/authService';
 
 type AuthContextValue = {
-  session: Session | null;
-  user: User | null;
+  accessToken: string | null;
+  user: MobileAuthUser | null;
   initializing: boolean;
   isAuthenticated: boolean;
 };
@@ -18,22 +18,21 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null);
-  const [user, setUser] = useState<User | null>(null);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [user, setUser] = useState<MobileAuthUser | null>(null);
   const [initializing, setInitializing] = useState(true);
 
   useEffect(() => {
     let active = true;
 
-    void supabase.auth
-      .getSession()
-      .then(({ data }) => {
+    void getStoredMobileSession()
+      .then((storedSession) => {
         if (!active) {
           return;
         }
 
-        setSession(data.session);
-        setUser(data.session?.user ?? null);
+        setAccessToken(storedSession.accessToken);
+        setUser(storedSession.user);
       })
       .finally(() => {
         if (active) {
@@ -41,27 +40,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       });
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession);
-      setUser(nextSession?.user ?? null);
+    const unsubscribe = subscribeToMobileAuthStateChange((nextSession) => {
+      setAccessToken(nextSession.accessToken);
+      setUser(nextSession.user);
       setInitializing(false);
     });
 
     return () => {
       active = false;
-      subscription.unsubscribe();
+      unsubscribe();
     };
   }, []);
 
   return (
     <AuthContext.Provider
       value={{
-        session,
+        accessToken,
         user,
         initializing,
-        isAuthenticated: Boolean(session?.user),
+        isAuthenticated: Boolean(accessToken && user),
       }}
     >
       {children}

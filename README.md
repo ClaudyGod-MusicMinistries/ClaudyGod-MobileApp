@@ -37,7 +37,7 @@ Bible Integration - Scripture references with songs
 | **Language**             | TypeScript |
 | **State Management**     | Zustand |
 | **Database**             | Supabase (PostgreSQL) |
-| **Authentication**       | Supabase Auth |
+| **Authentication**       | Claudy API JWT + email verification/reset |
 | **File Storage**         | Supabase Storage |
 | **Audio Streaming**      | Expo AV + react-native-track-player |
 | **Video Streaming**      | Expo AV Player |
@@ -116,7 +116,7 @@ This complete README and codebase include:
 - 📱 **Ready-to-use components** (`MusicCard`, `AudioPlayer`, etc.)  
 - 🎨 **Professional styling** with Tailwind CSS and NativeWind  
 - 🎧 **Music player functionality** with persistent state management  
-- 🔐 **Authentication setup** using Supabase  
+- 🔐 **Authentication setup** using backend JWT and transactional email flows
 - 🗂️ **Database schema** for ministry content  
 - 🚀 **Deployment-ready** configuration for Expo EAS  
 - 🙏 **Ministry-focused features** (Prayer wall, Scriptures, Events)

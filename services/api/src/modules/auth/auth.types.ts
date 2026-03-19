@@ -28,17 +28,27 @@ export interface AuthResponse {
   requiresEmailVerification?: boolean;
 }
 
+export interface RegisterResponse {
+  accessToken?: string;
+  user?: SafeUser;
+  requiresEmailVerification: boolean;
+  pendingEmail?: string;
+  message: string;
+}
+
 export interface ForgotPasswordInput {
   email: string;
 }
 
 export interface ResetPasswordInput {
   token: string;
+  email?: string;
   newPassword: string;
 }
 
 export interface VerifyEmailInput {
   token: string;
+  email?: string;
 }
 
 export interface ResendVerificationEmailInput {

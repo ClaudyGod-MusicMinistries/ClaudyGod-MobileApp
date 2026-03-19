@@ -323,7 +323,7 @@ const envSchema = z
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
             path: ['AUTH_PUBLIC_BASE_URL'],
-            message: 'AUTH_PUBLIC_BASE_URL must use your real public admin domain in production',
+            message: 'AUTH_PUBLIC_BASE_URL must use your real public app domain in production',
           });
         }
       } catch {
