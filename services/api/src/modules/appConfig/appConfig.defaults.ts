@@ -157,4 +157,73 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
     androidStoreUrl: 'https://play.google.com/store/apps/details?id=com.claudygod.mobile',
     feedbackRoute: '/settingsPage/help',
   },
+  layout: {
+    homeSections: [
+      {
+        id: 'claudygod-music',
+        title: 'ClaudyGod Music',
+        subtitle: 'Featured worship videos and music drops on the mobile dashboard.',
+        contentTypes: ['video', 'live'],
+        maxItems: 8,
+      },
+      {
+        id: 'claudygod-nuggets-of-truth',
+        title: 'ClaudyGod Nuggets of Truth',
+        subtitle: 'Daily truth, devotional snippets, and scripture-led moments.',
+        contentTypes: ['announcement', 'video'],
+        maxItems: 8,
+      },
+      {
+        id: 'claudygod-worship-hour',
+        title: 'ClaudyGod Worship Hour',
+        subtitle: 'Worship sets, replays, and atmosphere-building collections.',
+        contentTypes: ['video', 'playlist', 'live'],
+        maxItems: 8,
+      },
+      {
+        id: 'claudygod-messages',
+        title: 'ClaudyGod Messages',
+        subtitle: 'Teaching, message replays, and ministry updates.',
+        contentTypes: ['announcement', 'video'],
+        maxItems: 8,
+      },
+      {
+        id: 'claudygod-music-audio',
+        title: 'ClaudyGod Music (Audio)',
+        subtitle: 'Pure audio releases that should lead straight into the music player.',
+        contentTypes: ['audio', 'playlist'],
+        maxItems: 10,
+      },
+    ],
+    videoSections: [
+      {
+        id: 'video-spotlight',
+        title: 'Video Spotlight',
+        subtitle: 'Hero video placement for the latest visual release.',
+        contentTypes: ['video', 'live'],
+        maxItems: 6,
+      },
+      {
+        id: 'worship-screen',
+        title: 'Worship Screen',
+        subtitle: 'Worship-focused videos and replays for the video tab.',
+        contentTypes: ['video', 'playlist', 'live'],
+        maxItems: 8,
+      },
+      {
+        id: 'message-replays',
+        title: 'Message Replays',
+        subtitle: 'Teaching and message content curated for easy viewing.',
+        contentTypes: ['video', 'announcement'],
+        maxItems: 8,
+      },
+      {
+        id: 'live-now',
+        title: 'Live Now',
+        subtitle: 'Current or recent live sessions available from the video screen.',
+        contentTypes: ['live', 'video'],
+        maxItems: 8,
+      },
+    ],
+  },
 };

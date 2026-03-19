@@ -17,6 +17,8 @@ import { CustomText } from '../components/CustomText';
 import { TVTouchable } from '../components/ui/TVTouchable';
 import { Screen } from '../components/layout/Screen';
 import { useAuth } from '../context/AuthContext';
+import { APP_ROUTES } from '../util/appRoutes';
+import { BRAND_LOGO_ASSET } from '../util/brandAssets';
 
 export default function Landing() {
   const router = useRouter();
@@ -51,7 +53,7 @@ export default function Landing() {
 
   useEffect(() => {
     if (!initializing && isAuthenticated) {
-      router.replace('/(tabs)/home');
+      router.replace(APP_ROUTES.tabs.home);
     }
   }, [initializing, isAuthenticated, router]);
 
@@ -184,7 +186,7 @@ export default function Landing() {
             >
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <Image
-                  source={require('../assets/images/ClaudyGoLogo.webp')}
+                  source={BRAND_LOGO_ASSET}
                   style={{ width: 34, height: 34, borderRadius: 17 }}
                 />
                 <View style={{ marginLeft: 10 }}>
@@ -198,7 +200,7 @@ export default function Landing() {
               </View>
 
               <TVTouchable
-                onPress={() => router.push('/sign-in')}
+                onPress={() => router.push(APP_ROUTES.auth.signIn)}
                 style={{
                   borderRadius: 999,
                   borderWidth: 1,
@@ -244,7 +246,7 @@ export default function Landing() {
                     }}
                   >
                     <Image
-                      source={require('../assets/images/ClaudyGoLogo.webp')}
+                      source={BRAND_LOGO_ASSET}
                       style={{ width: logoSize, height: logoSize, borderRadius: logoSize / 2 }}
                     />
                   </Animated.View>
@@ -282,81 +284,35 @@ export default function Landing() {
                     style={{
                       width: '100%',
                       marginTop: compact ? 16 : 18,
-                      flexDirection: isTablet ? 'row' : 'column',
-                      gap: 12,
-                      alignItems: 'stretch',
+                      minHeight: isTablet ? 210 : 188,
+                      borderRadius: 24,
+                      overflow: 'hidden',
+                      borderWidth: 1,
+                      borderColor: 'rgba(255,255,255,0.14)',
+                      backgroundColor: 'rgba(255,255,255,0.04)',
                     }}
                   >
-                    <View
-                      style={{
-                        flex: 1.3,
-                        minHeight: isTablet ? 150 : 170,
-                        borderRadius: 22,
-                        overflow: 'hidden',
-                        borderWidth: 1,
-                        borderColor: 'rgba(255,255,255,0.14)',
-                        backgroundColor: 'rgba(255,255,255,0.04)',
-                      }}
-                    >
-                      <Image
-                        source={require('../assets/images/FB_IMG_1743103252303.jpg')}
-                        style={{ width: '100%', height: '100%' }}
-                        resizeMode="cover"
-                      />
-                      <LinearGradient
-                        colors={['rgba(9,6,18,0.04)', 'rgba(8,6,15,0.82)']}
-                        start={{ x: 0.2, y: 0 }}
-                        end={{ x: 0.7, y: 1 }}
-                        style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}
-                      />
-                      <View style={{ position: 'absolute', left: 14, right: 14, bottom: 14 }}>
-                        <CustomText variant="caption" style={{ color: 'rgba(236,228,255,0.84)' }}>
-                          ClaudyGod experience
-                        </CustomText>
-                        <CustomText
-                          variant="label"
-                          style={{ color: '#FCF8FF', marginTop: 4, fontSize: compact ? 11.8 : 12.6, lineHeight: 16 }}
-                        >
-                          Worship visuals, daily encouragement, and a calmer digital ministry space.
-                        </CustomText>
-                      </View>
-                    </View>
-
-                    <View style={{ flex: 0.9, gap: 12 }}>
-                      <View
-                        style={{
-                          flex: 1,
-                          minHeight: 78,
-                          borderRadius: 20,
-                          overflow: 'hidden',
-                          borderWidth: 1,
-                          borderColor: 'rgba(255,255,255,0.12)',
-                          backgroundColor: 'rgba(255,255,255,0.04)',
-                        }}
+                    <Image
+                      source={require('../assets/images/FB_IMG_1743103252303.jpg')}
+                      style={{ width: '100%', height: '100%' }}
+                      resizeMode="cover"
+                    />
+                    <LinearGradient
+                      colors={['rgba(9,6,18,0.04)', 'rgba(8,6,15,0.84)']}
+                      start={{ x: 0.2, y: 0 }}
+                      end={{ x: 0.7, y: 1 }}
+                      style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}
+                    />
+                    <View style={{ position: 'absolute', left: 16, right: 16, bottom: 16 }}>
+                      <CustomText variant="caption" style={{ color: 'rgba(236,228,255,0.84)' }}>
+                        ClaudyGod experience
+                      </CustomText>
+                      <CustomText
+                        variant="label"
+                        style={{ color: '#FCF8FF', marginTop: 4, fontSize: compact ? 11.8 : 12.6, lineHeight: 16 }}
                       >
-                        <Image
-                          source={require('../assets/images/landing4.jpg')}
-                          style={{ width: '100%', height: '100%' }}
-                          resizeMode="cover"
-                        />
-                      </View>
-                      <View
-                        style={{
-                          flex: 1,
-                          minHeight: 78,
-                          borderRadius: 20,
-                          overflow: 'hidden',
-                          borderWidth: 1,
-                          borderColor: 'rgba(255,255,255,0.12)',
-                          backgroundColor: 'rgba(255,255,255,0.04)',
-                        }}
-                      >
-                        <Image
-                          source={require('../assets/images/CoverArt.webp')}
-                          style={{ width: '100%', height: '100%' }}
-                          resizeMode="cover"
-                        />
-                      </View>
+                        Worship visuals, daily encouragement, and a calmer digital ministry space.
+                      </CustomText>
                     </View>
                   </View>
                 </View>
@@ -366,7 +322,7 @@ export default function Landing() {
                     title="Create Account"
                     size="lg"
                     fullWidth
-                    onPress={() => router.push('/sign-up')}
+                    onPress={() => router.push(APP_ROUTES.auth.signUp)}
                     rightIcon={<MaterialIcons name="person-add" size={18} color="#08060F" />}
                     style={{ borderRadius: 16 }}
                   />
@@ -376,7 +332,7 @@ export default function Landing() {
                     variant="ghost"
                     size="lg"
                     fullWidth
-                    onPress={() => router.push('/sign-in')}
+                    onPress={() => router.push(APP_ROUTES.auth.signIn)}
                     leftIcon={<MaterialIcons name="login" size={18} color="#E8DDFF" />}
                     textColor="#E8DDFF"
                     style={{

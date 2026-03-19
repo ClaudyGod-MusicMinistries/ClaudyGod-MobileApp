@@ -21,17 +21,12 @@ import { TVTouchable } from '../../components/ui/TVTouchable';
 import { useAppTheme } from '../../util/colorScheme';
 import { buildPlayerRoute } from '../../util/playerRoute';
 import { useContentFeed } from '../../hooks/useContentFeed';
+import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import { useWordOfDay } from '../../hooks/useWordOfDay';
 import type { FeedCardItem, FeedBundle } from '../../services/contentService';
 import { subscribeToLiveAlerts, trackPlayEvent } from '../../services/supabaseAnalytics';
-
-const ministrySections: { title: string; kind: 'video' | 'audio' | 'message' | 'worship' | 'playlist' }[] = [
-  { title: 'ClaudyGod Music', kind: 'video' },
-  { title: 'ClaudyGod Nuggets of Truth', kind: 'message' },
-  { title: 'ClaudyGod Worship Hour', kind: 'worship' },
-  { title: 'ClaudyGod Messages', kind: 'message' },
-  { title: 'ClaudyGod Music (Audio)', kind: 'audio' },
-];
+import { APP_ROUTES } from '../../util/appRoutes';
+import { deriveLayoutSectionItems, getHomeLayoutSections } from '../../util/mobileLayout';
 
 const topRailChips = ['For You', 'Music', 'Videos', 'Live', 'Word'];
 
@@ -70,6 +65,7 @@ export default function HomeScreen() {
   const [activeFilter, setActiveFilter] = useState('For You');
 
   const { feed, loading, error, refresh } = useContentFeed();
+  const { config: mobileConfig } = useMobileAppConfig();
   const { word } = useWordOfDay();
   const wordForToday = word
     ? {
@@ -85,18 +81,16 @@ export default function HomeScreen() {
   const popularTracks = useMemo(() => (feed.music.length ? feed.music : []).slice(0, 10), [feed.music]);
   const albumGrid = useMemo(() => (feed.playlists.length ? feed.playlists : feed.videos).slice(0, 8), [feed.playlists, feed.videos]);
   const recentItems = useMemo(() => feed.recent.slice(0, 8), [feed.recent]);
+  const homeSections = useMemo(() => getHomeLayoutSections(mobileConfig), [mobileConfig]);
   const ministryRails = useMemo(
     () =>
-      ministrySections
-        .map((section, index) => {
-          const items = deriveMinistryItems(feed, section).slice(
-            index % 2 === 0 ? 0 : 1,
-            (index % 2 === 0 ? 0 : 1) + 8,
-          );
-          return { section, items };
-        })
+      homeSections
+        .map((section) => ({
+          section,
+          items: deriveLayoutSectionItems(feed, section),
+        }))
         .filter((entry) => entry.items.length > 0),
-    [feed],
+    [feed, homeSections],
   );
 
   const onOpenItem = async (item: FeedCardItem, source: string) => {
@@ -164,9 +158,9 @@ export default function HomeScreen() {
                 <HomeHeader
                   activeFilter={activeFilter}
                   onChangeFilter={setActiveFilter}
-                  onOpenVideos={() => router.push('/(tabs)/videos')}
-                  onOpenProfile={() => router.push('/profile')}
-                  onOpenMenu={() => router.push('/(tabs)/settings')}
+                  onOpenVideos={() => router.push(APP_ROUTES.tabs.videos)}
+                  onOpenProfile={() => router.push(APP_ROUTES.profile)}
+                  onOpenMenu={() => router.push(APP_ROUTES.tabs.settings)}
                 />
               </View>
             </FadeIn>
@@ -180,8 +174,8 @@ export default function HomeScreen() {
             <HeroDropCard
               item={featured}
               loading={loading}
-              onPressPrimary={() => (featured ? onOpenItem(featured, 'home_hero') : router.push('/(tabs)/videos'))}
-              onPressSecondary={() => router.push('/(tabs)/videos')}
+              onPressPrimary={() => (featured ? onOpenItem(featured, 'home_hero') : router.push(APP_ROUTES.tabs.videos))}
+              onPressSecondary={() => router.push(APP_ROUTES.tabs.videos)}
               isTablet={isTablet || isTV}
             />
           </FadeIn>
@@ -336,7 +330,7 @@ export default function HomeScreen() {
           {ministryRails.map(({ section, items }, index) => {
             return (
               <FadeIn key={section.title} delay={280 + index * 35}>
-                <SectionBlock title={section.title} subtitle={sectionSubtitle(section.kind)}>
+                <SectionBlock title={section.title} subtitle={section.subtitle}>
                   <ScrollView
                     horizontal
                     showsHorizontalScrollIndicator={false}
@@ -1339,64 +1333,6 @@ function firstAvailable(feed: FeedBundle): FeedCardItem | null {
     feed.recent[0] ??
     null
   );
-}
-
-function deriveMinistryItems(
-  feed: FeedBundle,
-  section: { title: string; kind: 'video' | 'audio' | 'message' | 'worship' | 'playlist' },
-) {
-  const curatedPool = [
-    ...feed.videos,
-    ...feed.music,
-    ...feed.playlists,
-    ...feed.announcements,
-    ...feed.live,
-    ...feed.recent,
-  ];
-  const seen = new Set<string>();
-  const curated = curatedPool.filter((item) => {
-    const match = Array.isArray(item.appSections) && item.appSections.some((value) => value.trim().toLowerCase() === section.title.trim().toLowerCase());
-    if (!match) return false;
-    const key = item.mediaUrl || item.id;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-
-  if (curated.length) {
-    return curated;
-  }
-
-  const { kind } = section;
-  switch (kind) {
-    case 'audio':
-      return feed.music;
-    case 'message':
-      return feed.announcements.length ? feed.announcements : [...feed.videos, ...feed.playlists];
-    case 'worship':
-      return feed.playlists.length ? feed.playlists : [...feed.videos, ...feed.music];
-    case 'playlist':
-      return feed.playlists;
-    case 'video':
-    default:
-      return feed.videos.length ? feed.videos : [...feed.music, ...feed.playlists];
-  }
-}
-
-function sectionSubtitle(kind: 'video' | 'audio' | 'message' | 'worship' | 'playlist') {
-  switch (kind) {
-    case 'audio':
-      return 'Audio tracks, playlists and worship sessions';
-    case 'message':
-      return 'Messages, nuggets and announcements from channel uploads';
-    case 'worship':
-      return 'Worship videos, playlists and live worship sessions';
-    case 'playlist':
-      return 'Curated playlist architecture for long-form listening';
-    case 'video':
-    default:
-      return 'Video drops, replays and featured uploads';
-  }
 }
 
 function formatViewers(value?: number) {

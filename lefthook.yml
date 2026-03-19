@@ -4,10 +4,10 @@ pre-commit:
   interactive: false
   jobs:
     - name: repo staged checks
-      run: yarn precommit:check
+      run: bash ./scripts/precommit-all-staged.sh
 
 pre-push:
   interactive: false
   jobs:
     - name: full repo review (docker + backend + admin + mobile)
-      run: yarn prepush:check
+      run: bash ./scripts/prepush-all-checks.sh

@@ -1662,6 +1662,78 @@ button {
   line-height: 1.4;
 }
 
+.section-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 0.25rem;
+}
+
+.section-selector-pill {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--ink);
+  border-radius: 14px;
+  padding: 0.7rem 0.82rem;
+  display: grid;
+  gap: 0.22rem;
+  text-align: left;
+  transition: transform 150ms ease, border-color 150ms ease, background 150ms ease;
+}
+
+.section-selector-pill:hover {
+  transform: translateY(-1px);
+  border-color: rgba(154, 107, 255, 0.32);
+}
+
+.section-selector-pill span {
+  font-size: var(--font-md);
+  font-weight: 600;
+}
+
+.section-selector-pill small {
+  color: var(--ink-soft);
+  font-size: var(--font-sm);
+}
+
+.section-selector-pill.is-active {
+  border-color: rgba(154, 107, 255, 0.42);
+  background: rgba(154, 107, 255, 0.14);
+}
+
+.section-catalog {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.7rem;
+  margin-top: 0.9rem;
+}
+
+.section-catalog-card {
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 0.85rem;
+  display: grid;
+  gap: 0.32rem;
+}
+
+.section-catalog-card strong {
+  font-size: var(--font-md);
+}
+
+.section-catalog-card span,
+.section-catalog-card small {
+  color: var(--ink-soft);
+  font-size: var(--font-sm);
+}
+
+.section-catalog-card p {
+  color: var(--ink-soft);
+  font-size: var(--font-md);
+  line-height: 1.4;
+  margin: 0.1rem 0 0;
+}
+
 .youtube-sync-block {
   border-radius: 16px;
   border: 1px solid rgba(97, 168, 255, 0.14);

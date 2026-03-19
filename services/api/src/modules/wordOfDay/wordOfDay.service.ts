@@ -1,6 +1,6 @@
 import type { JwtClaims } from '../../utils/jwt';
 import { pool } from '../../db/pool';
-import { emailQueue } from '../../queues/emailQueue';
+import { queueEmailJob } from '../../infra/transactionalEmails';
 
 type WordStatus = 'draft' | 'published' | 'archived';
 
@@ -86,42 +86,30 @@ async function enqueueWordOfDayEmailNotifications(word: ReturnType<typeof mapWor
 
   let jobsQueued = 0;
   for (const recipientChunk of chunk(recipients, 200)) {
-    const emailInsert = await pool.query<{ id: number }>(
-      `INSERT INTO email_jobs (job_type, recipients, subject, text_body, html_body, status, payload)
-       VALUES ($1, $2::text[], $3, $4, $5, 'pending', $6::jsonb)
-       RETURNING id`,
-      [
-        'word_of_day_published',
-        recipientChunk,
-        `${word.title}: ${word.passage}`,
-        [
-          `${word.title}`,
-          '',
-          `${word.passage}`,
-          word.verse,
-          '',
-          word.reflection,
-        ].join('\n'),
-        `<p><strong>${escapeHtml(word.title)}</strong></p><p><strong>${escapeHtml(word.passage)}</strong></p><blockquote>${escapeHtml(
-          word.verse,
-        )}</blockquote><p>${escapeHtml(word.reflection).replace(/\n/g, '<br/>')}</p>`,
-        JSON.stringify({
-          wordOfDayId: word.id,
-          messageDate: word.messageDate,
-          recipientCount: recipientChunk.length,
-        }),
-      ],
-    );
-
-    const emailJobId = emailInsert.rows[0]!.id;
-    const queueJob = await emailQueue.add('email.word_of_day_published', { emailJobId });
-
-    await pool.query(
-      `UPDATE email_jobs
-       SET queue_job_id = $2, updated_at = NOW()
-       WHERE id = $1`,
-      [emailJobId, String(queueJob.id)],
-    );
+    await queueEmailJob({
+      recipients: recipientChunk,
+      subject: `${word.title}: ${word.passage}`,
+      textBody: [
+        `${word.title}`,
+        '',
+        `${word.passage}`,
+        word.verse,
+        '',
+        word.reflection,
+      ].join('\n'),
+      htmlBody: `<p><strong>${escapeHtml(word.title)}</strong></p><p><strong>${escapeHtml(
+        word.passage,
+      )}</strong></p><blockquote>${escapeHtml(word.verse)}</blockquote><p>${escapeHtml(
+        word.reflection,
+      ).replace(/\n/g, '<br/>')}</p>`,
+      jobType: 'word_of_day_published',
+      templateKey: 'word-of-day.published',
+      payload: {
+        wordOfDayId: word.id,
+        messageDate: word.messageDate,
+        recipientCount: recipientChunk.length,
+      },
+    });
 
     jobsQueued += 1;
   }

@@ -19,6 +19,7 @@ import {
 } from '../lib/authValidation';
 import { resetMobilePassword } from '../services/authService';
 import { useToast } from '../context/ToastContext';
+import { APP_ROUTES } from '../util/appRoutes';
 
 const getParam = (value: string | string[] | undefined): string =>
   Array.isArray(value) ? value[0] ?? '' : value ?? '';
@@ -143,7 +144,7 @@ export default function ResetPasswordScreen() {
 
   return (
     <AuthScreenFrame
-      backPath="/sign-in"
+      backPath={APP_ROUTES.auth.signIn}
       salutation="Set a new password"
       description="Use the 6-digit recovery code from your email, then choose a new password to protect your ClaudyGod account."
       title="Create a fresh password"
@@ -241,12 +242,12 @@ export default function ResetPasswordScreen() {
           const normalizedEmail = getParam(params.email).trim().toLowerCase();
           if (normalizedEmail) {
             router.push({
-              pathname: '/forgot-password',
+              pathname: APP_ROUTES.auth.forgotPassword,
               params: { email: normalizedEmail },
             });
             return;
           }
-          router.push('/forgot-password');
+          router.push(APP_ROUTES.auth.forgotPassword);
         }}
         style={{ alignSelf: 'center', marginTop: 12 }}
         showFocusBorder={false}
@@ -257,7 +258,7 @@ export default function ResetPasswordScreen() {
       </TVTouchable>
 
       <TVTouchable
-        onPress={() => router.replace('/sign-in')}
+        onPress={() => router.replace(APP_ROUTES.auth.signIn)}
         style={{ alignSelf: 'center', marginTop: 8 }}
         showFocusBorder={false}
       >

@@ -12,6 +12,7 @@ import { getEmailValidationMessage, isLikelyValidEmail, normalizeEmail } from '.
 import { loginMobileUser } from '../services/authService';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { APP_ROUTES } from '../util/appRoutes';
 
 export default function SignInScreen() {
   const router = useRouter();
@@ -29,7 +30,7 @@ export default function SignInScreen() {
 
   useEffect(() => {
     if (!initializing && isAuthenticated) {
-      router.replace('/(tabs)/home');
+      router.replace(APP_ROUTES.tabs.home);
     }
   }, [initializing, isAuthenticated, router]);
 
@@ -57,13 +58,13 @@ export default function SignInScreen() {
 
       if (session.requiresEmailVerification) {
         router.replace({
-          pathname: '/verify-email',
+          pathname: APP_ROUTES.auth.verifyEmail,
           params: { email: normalizedEmail },
         });
         return;
       }
 
-      router.replace('/(tabs)/home');
+      router.replace(APP_ROUTES.tabs.home);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Sign in failed';
       setErrorMessage(message);
@@ -71,7 +72,7 @@ export default function SignInScreen() {
 
       if (/email is not verified/i.test(message)) {
         router.push({
-          pathname: '/verify-email',
+          pathname: APP_ROUTES.auth.verifyEmail,
           params: { email: normalizedEmail },
         });
       }
@@ -82,7 +83,7 @@ export default function SignInScreen() {
 
   return (
     <AuthScreenFrame
-      backPath="/"
+      backPath={APP_ROUTES.landing}
       salutation="Welcome back"
       description="Continue your worship journey with your saved music, messages, and ministry updates in one place."
       title="Sign In"
@@ -124,7 +125,7 @@ export default function SignInScreen() {
       </View>
 
       <TVTouchable
-        onPress={() => router.push('/forgot-password')}
+        onPress={() => router.push(APP_ROUTES.auth.forgotPassword)}
         style={{ alignSelf: 'flex-end', marginTop: 12 }}
         showFocusBorder={false}
       >
@@ -155,7 +156,7 @@ export default function SignInScreen() {
           Don&apos;t have an account yet?
         </CustomText>
         <TVTouchable
-          onPress={() => router.push('/sign-up')}
+          onPress={() => router.push(APP_ROUTES.auth.signUp)}
           style={{ marginTop: 6 }}
           showFocusBorder={false}
         >

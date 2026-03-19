@@ -10,6 +10,7 @@ import { TVTouchable } from '../components/ui/TVTouchable';
 import { getEmailValidationMessage, isLikelyValidEmail, normalizeEmail } from '../lib/authValidation';
 import { requestMobilePasswordReset } from '../services/authService';
 import { useToast } from '../context/ToastContext';
+import { APP_ROUTES } from '../util/appRoutes';
 
 const getParam = (value: string | string[] | undefined): string =>
   Array.isArray(value) ? value[0] ?? '' : value ?? '';
@@ -66,7 +67,7 @@ export default function ForgotPasswordScreen() {
 
   return (
     <AuthScreenFrame
-      backPath="/sign-in"
+      backPath={APP_ROUTES.auth.signIn}
       salutation="Recover your account"
       description="Receive a 6-digit recovery code at your registered email so you can securely choose a new password without losing your saved ministry experience."
       title="Reset your password"
@@ -114,12 +115,12 @@ export default function ForgotPasswordScreen() {
           const normalizedEmail = email.trim().toLowerCase();
           if (normalizedEmail) {
             router.push({
-              pathname: '/reset-password',
+              pathname: APP_ROUTES.auth.resetPassword,
               params: { email: normalizedEmail },
             });
             return;
           }
-          router.push('/reset-password');
+          router.push(APP_ROUTES.auth.resetPassword);
         }}
         style={{ alignSelf: 'center', marginTop: 12 }}
         showFocusBorder={false}
@@ -130,7 +131,7 @@ export default function ForgotPasswordScreen() {
       </TVTouchable>
 
       <TVTouchable
-        onPress={() => router.replace('/sign-in')}
+        onPress={() => router.replace(APP_ROUTES.auth.signIn)}
         style={{ alignSelf: 'center', marginTop: 8 }}
         showFocusBorder={false}
       >
