@@ -128,6 +128,30 @@ const migrations = [
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`,
+  `CREATE TABLE IF NOT EXISTS content_submission_requests (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    requester_id UUID NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    description TEXT NOT NULL,
+    content_type TEXT NOT NULL CHECK (content_type IN ('audio', 'video', 'playlist', 'announcement')),
+    media_url TEXT,
+    thumbnail_url TEXT,
+    source_kind TEXT NOT NULL DEFAULT 'upload' CHECK (source_kind IN ('upload', 'youtube', 'external')),
+    external_source_id TEXT,
+    channel_name TEXT,
+    duration_label TEXT,
+    app_sections TEXT[] NOT NULL DEFAULT '{}',
+    tags TEXT[] NOT NULL DEFAULT '{}',
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    request_notes TEXT,
+    requested_visibility TEXT NOT NULL DEFAULT 'draft' CHECK (requested_visibility IN ('draft', 'published')),
+    request_status TEXT NOT NULL DEFAULT 'submitted' CHECK (request_status IN ('submitted', 'in_review', 'changes_requested', 'approved', 'fulfilled', 'rejected')),
+    media_upload_session_id UUID REFERENCES upload_sessions(id) ON DELETE SET NULL,
+    thumbnail_upload_session_id UUID REFERENCES upload_sessions(id) ON DELETE SET NULL,
+    created_content_id UUID REFERENCES content_items(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
   `ALTER TABLE content_items ADD COLUMN IF NOT EXISTS media_upload_session_id UUID REFERENCES upload_sessions(id) ON DELETE SET NULL`,
   `ALTER TABLE content_items ADD COLUMN IF NOT EXISTS thumbnail_upload_session_id UUID REFERENCES upload_sessions(id) ON DELETE SET NULL`,
   `CREATE TABLE IF NOT EXISTS automation_runs (
@@ -312,6 +336,10 @@ const migrations = [
     ON pending_password_resets (expires_at DESC)`,
   `CREATE INDEX IF NOT EXISTS idx_upload_sessions_channel_status_created_at
     ON upload_sessions (channel, status, created_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_content_submission_requests_status_created_at
+    ON content_submission_requests (request_status, created_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_content_submission_requests_requester_created_at
+    ON content_submission_requests (requester_id, created_at DESC)`,
   `CREATE INDEX IF NOT EXISTS idx_user_play_events_user_played_at
     ON user_play_events (user_id, played_at DESC)`,
   `CREATE INDEX IF NOT EXISTS idx_user_play_events_content_played_at
@@ -397,6 +425,13 @@ const migrations = [
       IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'set_upload_sessions_updated_at') THEN
         CREATE TRIGGER set_upload_sessions_updated_at
         BEFORE UPDATE ON upload_sessions
+        FOR EACH ROW
+        EXECUTE FUNCTION set_updated_at();
+      END IF;
+
+      IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'set_content_submission_requests_updated_at') THEN
+        CREATE TRIGGER set_content_submission_requests_updated_at
+        BEFORE UPDATE ON content_submission_requests
         FOR EACH ROW
         EXECUTE FUNCTION set_updated_at();
       END IF;

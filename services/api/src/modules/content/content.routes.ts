@@ -6,18 +6,25 @@ import { authenticate } from '../../middleware/authenticate';
 import {
   assignContentSectionsSchema,
   contentIdParamsSchema,
+  contentRequestIdParamsSchema,
   createContentSchema,
+  createContentRequestSchema,
   listContentQuerySchema,
+  updateContentRequestStatusSchema,
   updateContentSchema,
   updateVisibilitySchema,
 } from './content.schema';
 import {
+  createContentRequest,
   deleteContent,
+  createDraftFromContentRequest,
   updateContent,
   updateContentSections,
   createContent,
+  listContentRequests,
   listManagedContent,
   listPublicContent,
+  updateContentRequestStatus,
   updateContentVisibility,
 } from './content.service';
 
@@ -61,6 +68,69 @@ contentRouter.get(
     };
     const data = await listManagedContent(req.user, query);
     res.status(200).json(data);
+  }),
+);
+
+contentRouter.get(
+  '/requests',
+  authenticate,
+  asyncHandler(async (req, res) => {
+    if (!req.user) {
+      throw new HttpError(401, 'Unauthorized');
+    }
+
+    const data = await listContentRequests(req.user);
+    res.status(200).json({ items: data });
+  }),
+);
+
+contentRouter.post(
+  '/requests',
+  authenticate,
+  asyncHandler(async (req, res) => {
+    if (!req.user) {
+      throw new HttpError(401, 'Unauthorized');
+    }
+
+    const payload = validateSchema(createContentRequestSchema, req.body);
+    const item = await createContentRequest(req.user, payload);
+    res.status(201).json(item);
+  }),
+);
+
+contentRouter.patch(
+  '/requests/:id/status',
+  authenticate,
+  asyncHandler(async (req, res) => {
+    if (!req.user) {
+      throw new HttpError(401, 'Unauthorized');
+    }
+
+    const params = validateSchema(contentRequestIdParamsSchema, req.params);
+    const payload = validateSchema(updateContentRequestStatusSchema, req.body);
+    const item = await updateContentRequestStatus({
+      requestId: params.id,
+      status: payload.status,
+      requester: req.user,
+    });
+    res.status(200).json(item);
+  }),
+);
+
+contentRouter.post(
+  '/requests/:id/create-draft',
+  authenticate,
+  asyncHandler(async (req, res) => {
+    if (!req.user) {
+      throw new HttpError(401, 'Unauthorized');
+    }
+
+    const params = validateSchema(contentRequestIdParamsSchema, req.params);
+    const result = await createDraftFromContentRequest({
+      requestId: params.id,
+      requester: req.user,
+    });
+    res.status(201).json(result);
   }),
 );
 
