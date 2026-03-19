@@ -40,6 +40,9 @@ build/Release
 # Dependency directories
 node_modules/
 jspm_packages/
+.expo/
+**/.expo/
+*.Zone.Identifier
 
 # Snowpack dependency directory (https://snowpack.dev/)
 web_modules/
@@ -69,6 +72,8 @@ web_modules/
 .env
 .env.*
 !.env.example
+!.env.development.example
+!.env.production.example
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache
