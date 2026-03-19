@@ -9,6 +9,8 @@ import { useColorScheme } from '../util/colorScheme';
 import { colors } from '../constants/color';
 import { FontProvider, FontContext } from '../context/FontContext';
 import { AuthProvider, useAuth } from '../context/AuthContext';
+import { ToastProvider } from '../context/ToastContext';
+import { ToastViewport } from '../components/ui/ToastViewport';
 
 function ThemedLayout({ children }: { children: ReactNode }) {
   const colorScheme = useColorScheme();
@@ -328,6 +330,7 @@ function RootLayoutInner() {
 
   return (
     <ThemedLayout>
+      <ToastViewport />
       <Stack
         screenOptions={{
           headerShown: false,
@@ -352,9 +355,11 @@ export default function RootLayout() {
     <ThemeProvider>
       <FontProvider>
         <SafeAreaProvider>
-          <AuthProvider>
-            <RootLayoutInner />
-          </AuthProvider>
+          <ToastProvider>
+            <AuthProvider>
+              <RootLayoutInner />
+            </AuthProvider>
+          </ToastProvider>
         </SafeAreaProvider>
       </FontProvider>
     </ThemeProvider>

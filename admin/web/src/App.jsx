@@ -1839,6 +1839,31 @@ export default defineComponent({
         </section>
       );
 
+      const workspaceActions = [
+        {
+          title: 'Publish new content',
+          detail: 'Open the content workspace to upload audio, video, playlists, and announcements.',
+          actionLabel: 'Open content workspace',
+          onClick: () => setDashboardView('editor'),
+          emphasis: 'primary',
+        },
+        {
+          title: 'Preview the app',
+          detail: 'See the live mobile experience after content or config changes before you leave the studio.',
+          actionLabel: 'Open app preview',
+          onClick: () => setDashboardView('mobile-preview'),
+          emphasis: 'secondary',
+        },
+        {
+          title: 'Refresh studio data',
+          detail: 'Pull fresh audience, publishing, and health information without leaving the overview.',
+          actionLabel: contentLoading.value ? 'Refreshing...' : 'Refresh now',
+          onClick: () => void refreshDashboard(),
+          disabled: contentLoading.value,
+          emphasis: 'secondary',
+        },
+      ];
+
       const dashboardScreen = (
         <section class="dashboard-stage">
           <section class="hero-banner glass-panel reveal-up">
@@ -1852,26 +1877,26 @@ export default defineComponent({
                   <p class="eyebrow">Publishing Center</p>
                   <h1>{greeting.value}, {displayName.value}</h1>
                   <p class="subtitle">
-                    Manage your media catalog, publish with confidence, and keep the mobile app in sync.
+                    Start from Overview, move into Manage Content when you are ready to publish, and use Preview App to confirm the mobile experience before sharing it with your audience.
                   </p>
                 </div>
               </div>
 
               <div class="hero-actions">
                 <button type="button" class="ghost-btn" onClick={() => void refreshDashboard()} disabled={contentLoading.value}>
-                  {contentLoading.value ? 'Refreshing...' : 'Refresh'}
+                  {contentLoading.value ? 'Refreshing...' : 'Refresh data'}
                 </button>
                 <button type="button" class="ghost-btn" onClick={() => void fetchYouTubePreview()} disabled={youtubePreviewLoading.value}>
-                  {youtubePreviewLoading.value ? 'Loading YouTube...' : 'Preview YouTube'}
+                  {youtubePreviewLoading.value ? 'Loading YouTube...' : 'Check YouTube feed'}
                 </button>
                 <button type="button" class="danger-btn" onClick={logout}>Sign Out</button>
               </div>
             </div>
 
             <div class="hero-chips">
-              <span class="hero-chip">Validated uploads</span>
-              <span class="hero-chip">Role-protected actions</span>
-              <span class="hero-chip">Live mobile sync</span>
+              <span class="hero-chip">Simple publishing workflow</span>
+              <span class="hero-chip">Live mobile preview</span>
+              <span class="hero-chip">Clear audience health</span>
             </div>
             <div class="hero-shine" />
           </section>
@@ -1897,22 +1922,46 @@ export default defineComponent({
               class={['ghost-btn compact', dashboardView.value === 'overview' ? 'is-active' : '']}
               onClick={() => setDashboardView('overview')}
             >
-              Dashboard
+              Overview
             </button>
             <button
               type="button"
               class={['ghost-btn compact', dashboardView.value === 'editor' ? 'is-active' : '']}
               onClick={() => setDashboardView('editor')}
             >
-              Content Editor
+              Manage Content
             </button>
             <button
               type="button"
               class={['ghost-btn compact', dashboardView.value === 'mobile-preview' ? 'is-active' : '']}
               onClick={() => setDashboardView('mobile-preview')}
             >
-              Mobile Preview
+              Preview App
             </button>
+          </section>
+
+          <section class="quick-actions-grid reveal-up" style={{ animationDelay: '210ms' }}>
+            {workspaceActions.map((action, index) => (
+              <article
+                key={`workspace-action-${action.title}`}
+                class={['task-card', 'glass-panel', action.emphasis === 'primary' ? 'task-card-primary' : null]}
+                style={{ animationDelay: `${220 + index * 40}ms` }}
+              >
+                <div>
+                  <p class="eyebrow">Quick action</p>
+                  <h3>{action.title}</h3>
+                  <p>{action.detail}</p>
+                </div>
+                <button
+                  type="button"
+                  class={action.emphasis === 'primary' ? 'primary-btn' : 'ghost-btn compact'}
+                  onClick={action.onClick}
+                  disabled={action.disabled}
+                >
+                  {action.actionLabel}
+                </button>
+              </article>
+            ))}
           </section>
 
           {dashboardView.value === 'overview' ? (
@@ -1920,12 +1969,27 @@ export default defineComponent({
               <article class="panel glass-panel reveal-up" style={{ animationDelay: '220ms' }}>
                 <div class="section-head split">
                   <div>
-                    <h2>Publishing Workflow</h2>
-                    <p>Follow a consistent path from upload to release for reliable production updates.</p>
+                    <h2>Start here</h2>
+                    <p>Use this simple sequence whenever you are publishing something new to the app.</p>
                   </div>
                   <button type="button" class="primary-btn" onClick={() => setDashboardView('editor')}>
-                    Open Editor
+                    Go to content workspace
                   </button>
+                </div>
+
+                <div class="simple-intro-panel">
+                  <div class="simple-intro-item">
+                    <strong>1. Add or sync content</strong>
+                    <p>Upload directly or pull the latest YouTube items into the catalog.</p>
+                  </div>
+                  <div class="simple-intro-item">
+                    <strong>2. Review before publishing</strong>
+                    <p>Check the metadata, app section placement, and media quality before going live.</p>
+                  </div>
+                  <div class="simple-intro-item">
+                    <strong>3. Preview the result</strong>
+                    <p>Open Preview App to confirm the end-user experience before you finish.</p>
+                  </div>
                 </div>
 
                 <div class="workflow-grid">
@@ -3280,21 +3344,21 @@ export default defineComponent({
                       class={['drawer-nav-link', dashboardView.value === 'overview' ? 'is-active' : '']}
                       onClick={() => setDashboardView('overview')}
                     >
-                      Dashboard
+                      Overview
                     </button>
                     <button
                       type="button"
                       class={['drawer-nav-link', dashboardView.value === 'editor' ? 'is-active' : '']}
                       onClick={() => setDashboardView('editor')}
                     >
-                      Content Editor
+                      Manage Content
                     </button>
                     <button
                       type="button"
                       class={['drawer-nav-link', dashboardView.value === 'mobile-preview' ? 'is-active' : '']}
                       onClick={() => setDashboardView('mobile-preview')}
                     >
-                      Mobile Preview
+                      Preview App
                     </button>
                   </div>
 
