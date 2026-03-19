@@ -117,6 +117,21 @@ const isPlaceholderHostname = (hostname: string): boolean => {
 const isPlaceholderSupabaseHost = (value: string): boolean =>
   /your-project\.supabase\.co/i.test(value) || /your-project/i.test(value);
 
+const parseDatabaseUrl = (
+  value: string,
+): { hostname: string; username: string; searchParams: URLSearchParams } | null => {
+  try {
+    const parsed = new URL(value);
+    return {
+      hostname: parsed.hostname,
+      username: decodeURIComponent(parsed.username),
+      searchParams: parsed.searchParams,
+    };
+  } catch {
+    return null;
+  }
+};
+
 const envSchema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -200,6 +215,7 @@ const envSchema = z
     }
 
     if (value.NODE_ENV === 'production') {
+      const parsedDatabaseUrl = parseDatabaseUrl(value.DATABASE_URL);
       const publicOrigins = value.CORS_ORIGIN
         .split(',')
         .map((item) => item.trim())
@@ -219,6 +235,38 @@ const envSchema = z
           path: ['DATABASE_URL'],
           message: 'DATABASE_URL must point to your real Supabase Postgres host in production',
         });
+      }
+
+      if (!parsedDatabaseUrl) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['DATABASE_URL'],
+          message: 'DATABASE_URL must be a valid Postgres connection string in production',
+        });
+      } else {
+        if (
+          parsedDatabaseUrl.hostname.includes('.pooler.supabase.com') &&
+          parsedDatabaseUrl.username === 'postgres'
+        ) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['DATABASE_URL'],
+            message:
+              'Supabase pooler connections must use the project-scoped username from the Connect dialog, for example postgres.<project-ref>, not plain postgres',
+          });
+        }
+
+        if (
+          parsedDatabaseUrl.hostname.includes('.pooler.supabase.com') &&
+          !parsedDatabaseUrl.searchParams.has('prefer_simple_protocol')
+        ) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['DATABASE_URL'],
+            message:
+              'Supabase pooler connections should include prefer_simple_protocol=true to avoid prepared statement issues',
+          });
+        }
       }
 
       if (!value.SUPABASE_URL) {
