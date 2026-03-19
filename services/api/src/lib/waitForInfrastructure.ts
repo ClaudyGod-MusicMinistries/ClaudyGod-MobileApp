@@ -4,6 +4,23 @@ import { redis } from '../infra/redis';
 
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
+const isFatalDatabaseConfigurationError = (error: unknown): boolean => {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  const code = (error as Error & { code?: string }).code;
+  const message = error.message.toLowerCase();
+
+  return (
+    code === '28P01' ||
+    code === 'SELF_SIGNED_CERT_IN_CHAIN' ||
+    (code === 'XX000' && message.includes('authentication')) ||
+    message.includes('password authentication failed') ||
+    message.includes('self-signed certificate in certificate chain')
+  );
+};
+
 export const waitForInfrastructure = async (
   label: string,
   opts?: { maxAttempts?: number; delayMs?: number },
@@ -28,6 +45,11 @@ export const waitForInfrastructure = async (
           error instanceof Error ? error.message : 'unknown error'
         }`,
       );
+
+      if (isFatalDatabaseConfigurationError(error)) {
+        throw error;
+      }
+
       if (attempt < maxAttempts) {
         await sleep(delayMs);
       }
