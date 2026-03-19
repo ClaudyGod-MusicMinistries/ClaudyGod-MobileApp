@@ -9,10 +9,13 @@ import type { UserRole } from '../auth/auth.types';
 import type {
   ContentItem,
   ContentListQuery,
+  ContentRequestStatus,
   ContentListResponse,
   ContentSourceKind,
+  ContentSubmissionRequest,
   ContentVisibility,
   CreateContentInput,
+  CreateContentRequestInput,
   ContentType,
   UpdateContentInput,
 } from './content.types';
@@ -52,6 +55,35 @@ interface UploadSessionLinkRow {
   status: string;
 }
 
+interface ContentSubmissionRequestRow {
+  id: string;
+  requester_id: string;
+  title: string;
+  description: string;
+  content_type: ContentType;
+  media_url: string | null;
+  thumbnail_url: string | null;
+  source_kind: ContentSourceKind;
+  external_source_id: string | null;
+  channel_name: string | null;
+  duration_label: string | null;
+  app_sections: string[] | null;
+  tags: string[] | null;
+  metadata: Record<string, unknown> | null;
+  request_notes: string | null;
+  requested_visibility: ContentVisibility;
+  request_status: ContentRequestStatus;
+  media_upload_session_id: string | null;
+  thumbnail_upload_session_id: string | null;
+  created_content_id: string | null;
+  created_at: string | Date;
+  updated_at: string | Date;
+  requester_display_name: string;
+  requester_email: string;
+  requester_role: UserRole;
+  created_content_title: string | null;
+}
+
 const SUPPORTED_DB_TYPES = new Set<ContentType>(['audio', 'video', 'playlist', 'announcement']);
 
 const toIsoDate = (value: string | Date): string => new Date(value).toISOString();
@@ -78,6 +110,35 @@ const toContentItem = (row: ContentRow): ContentItem => ({
     displayName: row.author_display_name,
     email: row.author_email,
     role: row.author_role,
+  },
+});
+
+const toContentSubmissionRequest = (row: ContentSubmissionRequestRow): ContentSubmissionRequest => ({
+  id: row.id,
+  title: row.title,
+  description: row.description,
+  type: row.content_type,
+  url: row.media_url ?? undefined,
+  thumbnailUrl: row.thumbnail_url ?? undefined,
+  sourceKind: row.source_kind ?? undefined,
+  externalSourceId: row.external_source_id ?? undefined,
+  channelName: row.channel_name ?? undefined,
+  duration: row.duration_label ?? undefined,
+  appSections: row.app_sections ?? [],
+  tags: row.tags ?? [],
+  metadata: row.metadata ?? {},
+  requestNotes: row.request_notes ?? undefined,
+  requestedVisibility: row.requested_visibility,
+  status: row.request_status,
+  createdContentId: row.created_content_id ?? undefined,
+  createdContentTitle: row.created_content_title ?? undefined,
+  createdAt: toIsoDate(row.created_at),
+  updatedAt: toIsoDate(row.updated_at),
+  requester: {
+    id: row.requester_id,
+    displayName: row.requester_display_name,
+    email: row.requester_email,
+    role: row.requester_role,
   },
 });
 
@@ -266,6 +327,14 @@ const loadContentRowById = async (
   return result.rows[0] ?? null;
 };
 
+const loadContentRequestRowById = async (
+  db: Pool | PoolClient,
+  requestId: string,
+): Promise<ContentSubmissionRequestRow | null> => {
+  const result = await db.query<ContentSubmissionRequestRow>(selectContentRequestByIdSql, [requestId]);
+  return result.rows[0] ?? null;
+};
+
 const selectContentByIdSql = `SELECT
   c.id,
   c.author_id,
@@ -292,6 +361,39 @@ const selectContentByIdSql = `SELECT
  FROM content_items c
  INNER JOIN app_users u ON u.id = c.author_id
  WHERE c.id = $1
+ LIMIT 1`;
+
+const selectContentRequestByIdSql = `SELECT
+  r.id,
+  r.requester_id,
+  r.title,
+  r.description,
+  r.content_type,
+  r.media_url,
+  r.thumbnail_url,
+  r.source_kind,
+  r.external_source_id,
+  r.channel_name,
+  r.duration_label,
+  r.app_sections,
+  r.tags,
+  r.metadata,
+  r.request_notes,
+  r.requested_visibility,
+  r.request_status,
+  r.media_upload_session_id,
+  r.thumbnail_upload_session_id,
+  r.created_content_id,
+  r.created_at,
+  r.updated_at,
+  u.display_name AS requester_display_name,
+  u.email AS requester_email,
+  u.role AS requester_role,
+  c.title AS created_content_title
+ FROM content_submission_requests r
+ INNER JOIN app_users u ON u.id = r.requester_id
+ LEFT JOIN content_items c ON c.id = r.created_content_id
+ WHERE r.id = $1
  LIMIT 1`;
 
 function normalizeListQuery(query: ContentListQuery): {
@@ -511,6 +613,316 @@ export const listManagedContent = async (
   ]);
 
   return buildListResponse(dataResult.rows, Number(countResult.rows[0]!.count), query);
+};
+
+export const listContentRequests = async (requester: JwtClaims): Promise<ContentSubmissionRequest[]> => {
+  const values: unknown[] = [];
+  const conditions: string[] = [];
+
+  if (requester.role !== 'ADMIN') {
+    values.push(requester.sub);
+    conditions.push(`r.requester_id = $${values.length}`);
+  }
+
+  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+  const result = await pool.query<ContentSubmissionRequestRow>(
+    `SELECT
+       r.id,
+       r.requester_id,
+       r.title,
+       r.description,
+       r.content_type,
+       r.media_url,
+       r.thumbnail_url,
+       r.source_kind,
+       r.external_source_id,
+       r.channel_name,
+       r.duration_label,
+       r.app_sections,
+       r.tags,
+       r.metadata,
+       r.request_notes,
+       r.requested_visibility,
+       r.request_status,
+       r.media_upload_session_id,
+       r.thumbnail_upload_session_id,
+       r.created_content_id,
+       r.created_at,
+       r.updated_at,
+       u.display_name AS requester_display_name,
+       u.email AS requester_email,
+       u.role AS requester_role,
+       c.title AS created_content_title
+     FROM content_submission_requests r
+     INNER JOIN app_users u ON u.id = r.requester_id
+     LEFT JOIN content_items c ON c.id = r.created_content_id
+     ${whereClause}
+     ORDER BY
+       CASE r.request_status
+         WHEN 'submitted' THEN 0
+         WHEN 'in_review' THEN 1
+         WHEN 'changes_requested' THEN 2
+         WHEN 'approved' THEN 3
+         WHEN 'fulfilled' THEN 4
+         ELSE 5
+       END,
+       r.created_at DESC
+     LIMIT 60`,
+    values,
+  );
+
+  return result.rows.map(toContentSubmissionRequest);
+};
+
+export const createContentRequest = async (
+  requester: JwtClaims,
+  input: CreateContentRequestInput,
+): Promise<ContentSubmissionRequest> => {
+  const client = await pool.connect();
+  let request: ContentSubmissionRequest;
+
+  try {
+    await client.query('BEGIN');
+
+    const mediaUpload = await loadValidatedUploadSession({
+      client,
+      sessionId: input.mediaUploadSessionId,
+      requester,
+      expectedMimePrefix: input.type === 'audio' ? 'audio' : input.type === 'video' ? 'video' : undefined,
+      providedUrl: input.url,
+    });
+    const thumbnailUpload = await loadValidatedUploadSession({
+      client,
+      sessionId: input.thumbnailUploadSessionId,
+      requester,
+      expectedMimePrefix: 'image',
+      providedUrl: input.thumbnailUrl,
+    });
+
+    const resolvedUrl = mediaUpload?.publicUrl ?? input.url ?? null;
+    const resolvedThumbnailUrl = thumbnailUpload?.publicUrl ?? input.thumbnailUrl ?? null;
+    const resolvedSourceKind =
+      input.sourceKind ?? (mediaUpload || thumbnailUpload ? 'upload' : resolvedUrl ? 'external' : 'upload');
+
+    if ((input.type === 'audio' || input.type === 'video') && !resolvedUrl) {
+      throw new HttpError(400, `A media URL is required for ${input.type} requests`);
+    }
+    if ((input.type === 'audio' || input.type === 'video') && !resolvedThumbnailUrl) {
+      throw new HttpError(400, 'A thumbnail is required for audio and video requests');
+    }
+
+    const insertResult = await client.query<{ id: string }>(
+      `INSERT INTO content_submission_requests (
+         requester_id,
+         title,
+         description,
+         content_type,
+         media_url,
+         thumbnail_url,
+         source_kind,
+         external_source_id,
+         channel_name,
+         duration_label,
+         app_sections,
+         tags,
+         metadata,
+         request_notes,
+         requested_visibility,
+         media_upload_session_id,
+         thumbnail_upload_session_id
+       )
+       VALUES (
+         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::text[], $12::text[], $13::jsonb, $14, $15, $16, $17
+       )
+       RETURNING id`,
+      [
+        requester.sub,
+        input.title,
+        input.description,
+        input.type,
+        resolvedUrl,
+        resolvedThumbnailUrl,
+        resolvedSourceKind,
+        input.externalSourceId ?? null,
+        input.channelName ?? null,
+        input.duration ?? null,
+        normalizeTextList(input.appSections),
+        normalizeTextList(input.tags),
+        JSON.stringify(input.metadata ?? {}),
+        input.requestNotes ?? null,
+        input.requestedVisibility,
+        mediaUpload?.sessionId ?? null,
+        thumbnailUpload?.sessionId ?? null,
+      ],
+    );
+
+    await markUploadSessionAttached({ client, sessionId: mediaUpload?.sessionId ?? null });
+    await markUploadSessionAttached({ client, sessionId: thumbnailUpload?.sessionId ?? null });
+
+    const createdRow = await loadContentRequestRowById(client, insertResult.rows[0]!.id);
+    if (!createdRow) {
+      throw new HttpError(500, 'Content request was created but could not be loaded');
+    }
+
+    request = toContentSubmissionRequest(createdRow);
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+
+  return request;
+};
+
+export const updateContentRequestStatus = async ({
+  requestId,
+  status,
+  requester,
+}: {
+  requestId: string;
+  status: ContentRequestStatus;
+  requester: JwtClaims;
+}): Promise<ContentSubmissionRequest> => {
+  if (requester.role !== 'ADMIN') {
+    throw new HttpError(403, 'Admin access required to update content requests');
+  }
+
+  const existing = await loadContentRequestRowById(pool, requestId);
+  if (!existing) {
+    throw new HttpError(404, 'Content request not found');
+  }
+  if (existing.created_content_id && status !== 'fulfilled') {
+    throw new HttpError(400, 'This request already created a content draft and must remain fulfilled');
+  }
+
+  await pool.query(
+    `UPDATE content_submission_requests
+     SET request_status = $2,
+         updated_at = NOW()
+     WHERE id = $1`,
+    [requestId, status],
+  );
+
+  const updated = await loadContentRequestRowById(pool, requestId);
+  if (!updated) {
+    throw new HttpError(404, 'Content request not found');
+  }
+
+  return toContentSubmissionRequest(updated);
+};
+
+export const createDraftFromContentRequest = async ({
+  requestId,
+  requester,
+}: {
+  requestId: string;
+  requester: JwtClaims;
+}): Promise<{ request: ContentSubmissionRequest; content: ContentItem }> => {
+  if (requester.role !== 'ADMIN') {
+    throw new HttpError(403, 'Admin access required to create content drafts from requests');
+  }
+
+  const client = await pool.connect();
+  let item: ContentItem;
+  let request: ContentSubmissionRequest;
+
+  try {
+    await client.query('BEGIN');
+
+    const existing = await loadContentRequestRowById(client, requestId);
+    if (!existing) {
+      throw new HttpError(404, 'Content request not found');
+    }
+    if (existing.created_content_id) {
+      throw new HttpError(400, 'A draft has already been created from this request');
+    }
+    if (existing.request_status === 'rejected') {
+      throw new HttpError(400, 'Rejected requests cannot create a draft');
+    }
+
+    const insertResult = await client.query<{ id: string }>(
+      `INSERT INTO content_items (
+         author_id,
+         title,
+         description,
+         content_type,
+         media_url,
+         thumbnail_url,
+         source_kind,
+         external_source_id,
+         channel_name,
+         duration_label,
+         app_sections,
+         tags,
+         metadata,
+         visibility,
+         media_upload_session_id,
+         thumbnail_upload_session_id
+       )
+       VALUES (
+         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::text[], $12::text[], $13::jsonb, 'draft', $14, $15
+       )
+       RETURNING id`,
+      [
+        existing.requester_id,
+        existing.title,
+        existing.description,
+        existing.content_type,
+        existing.media_url,
+        existing.thumbnail_url,
+        existing.source_kind,
+        existing.external_source_id,
+        existing.channel_name,
+        existing.duration_label,
+        existing.app_sections ?? [],
+        existing.tags ?? [],
+        JSON.stringify(existing.metadata ?? {}),
+        existing.media_upload_session_id,
+        existing.thumbnail_upload_session_id,
+      ],
+    );
+
+    await client.query(
+      `UPDATE content_submission_requests
+       SET request_status = 'fulfilled',
+           created_content_id = $2,
+           updated_at = NOW()
+       WHERE id = $1`,
+      [requestId, insertResult.rows[0]!.id],
+    );
+
+    const createdContentRow = await loadContentRowById(client, insertResult.rows[0]!.id);
+    const updatedRequestRow = await loadContentRequestRowById(client, requestId);
+    if (!createdContentRow || !updatedRequestRow) {
+      throw new HttpError(500, 'The draft was created but the final records could not be loaded');
+    }
+
+    item = toContentItem(createdContentRow);
+    request = toContentSubmissionRequest(updatedRequestRow);
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+
+  await enqueueContentEvent({
+    contentId: item.id,
+    authorId: requester.sub,
+    eventType: 'content.created',
+    payload: {
+      contentId: item.id,
+      requestId,
+      createdBy: requester.sub,
+      type: item.type,
+      visibility: item.visibility,
+    },
+  });
+
+  return { request, content: item };
 };
 
 export const createContent = async (requester: JwtClaims, input: CreateContentInput): Promise<ContentItem> => {
