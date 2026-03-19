@@ -3,11 +3,11 @@ import { View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { CustomText } from '../components/CustomText';
+import { AuthOtpInput } from '../components/auth/AuthOtpInput';
 import { AuthScreenFrame } from '../components/auth/AuthScreenFrame';
 import { AuthTextField } from '../components/auth/AuthTextField';
 import { AppButton } from '../components/ui/AppButton';
 import { TVTouchable } from '../components/ui/TVTouchable';
-import { useAuth } from '../context/AuthContext';
 import { resetMobilePassword } from '../services/authService';
 
 const getParam = (value: string | string[] | undefined): string =>
@@ -15,26 +15,31 @@ const getParam = (value: string | string[] | undefined): string =>
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
   const params = useLocalSearchParams<{
     token?: string | string[];
     token_hash?: string | string[];
     email?: string | string[];
+    notice?: string | string[];
   }>();
 
-  const initialToken = () => getParam(params.token).trim() || getParam(params.token_hash).trim();
+  const queryToken = useMemo(
+    () => getParam(params.token).trim() || getParam(params.token_hash).trim(),
+    [params.token, params.token_hash],
+  );
+  const usesLegacyToken = queryToken.length > 6;
 
-  const [token, setToken] = useState(initialToken);
+  const [email, setEmail] = useState(() => getParam(params.email).trim().toLowerCase());
+  const [token, setToken] = useState(queryToken);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [hidePassword, setHidePassword] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState(() => getParam(params.notice).trim());
 
   const canSubmit = useMemo(
-    () => Boolean((token.trim() || isAuthenticated) && newPassword.trim() && confirmPassword.trim()),
-    [confirmPassword, isAuthenticated, newPassword, token],
+    () => Boolean((usesLegacyToken || email.trim()) && token.trim() && newPassword.trim() && confirmPassword.trim()),
+    [confirmPassword, email, newPassword, token, usesLegacyToken],
   );
 
   const visibilityToggle = (
@@ -51,8 +56,16 @@ export default function ResetPasswordScreen() {
     setErrorMessage('');
     setSuccessMessage('');
 
-    if (!token.trim() && !isAuthenticated) {
-      setErrorMessage('Open the reset link from your email or paste the reset token hash.');
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedToken = token.trim();
+
+    if (!normalizedEmail && normalizedToken.length <= 6) {
+      setErrorMessage('Enter the email address used to request the recovery code.');
+      return;
+    }
+
+    if (!normalizedToken) {
+      setErrorMessage('Enter the 6-digit recovery code from your email or use the secure recovery link.');
       return;
     }
 
@@ -64,7 +77,8 @@ export default function ResetPasswordScreen() {
     setSubmitting(true);
     try {
       const response = await resetMobilePassword({
-        token: token.trim(),
+        token: normalizedToken,
+        email: normalizedEmail || undefined,
         newPassword,
       });
       setSuccessMessage(response.message);
@@ -81,18 +95,46 @@ export default function ResetPasswordScreen() {
     <AuthScreenFrame
       backPath="/sign-in"
       salutation="Set a new password"
-      description="Use the secure recovery link from your email, then choose a new password to protect your ClaudyGod account."
+      description="Use the 6-digit recovery code from your email, then choose a new password to protect your ClaudyGod account."
       title="Create a fresh password"
-      subtitle="Open the email link first. If the mail client exposed the token hash, you can paste it below and continue."
+      subtitle="Enter your account email, the recovery code, and a new password. Older recovery links still work when opened on this device."
     >
       <View style={{ gap: 12 }}>
         <AuthTextField
-          label="Reset token hash"
-          value={token}
-          onChangeText={setToken}
+          label="Account email"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
           autoCapitalize="none"
-          placeholder="Paste token hash if needed"
+          autoComplete="email"
+          textContentType="emailAddress"
+          placeholder="name@example.com"
         />
+        {usesLegacyToken ? (
+          <View
+            style={{
+              borderRadius: 16,
+              borderWidth: 1,
+              borderColor: 'rgba(156,125,255,0.26)',
+              backgroundColor: 'rgba(115,86,189,0.12)',
+              paddingHorizontal: 13,
+              paddingVertical: 11,
+            }}
+          >
+            <CustomText variant="caption" style={{ color: '#E7DEFF' }}>
+              Secure recovery link detected. Your reset token has already been captured, so you can
+              choose a new password below.
+            </CustomText>
+          </View>
+        ) : (
+          <AuthOtpInput
+            label="Recovery code"
+            value={token}
+            onChangeText={setToken}
+            placeholder="Enter the 6-digit code from your email"
+            onSubmitEditing={() => void handleResetPassword()}
+          />
+        )}
         <AuthTextField
           label="New password"
           value={newPassword}
@@ -119,7 +161,7 @@ export default function ResetPasswordScreen() {
       </View>
 
       <CustomText variant="caption" style={{ color: 'rgba(188,178,214,0.9)', marginTop: 10 }}>
-        Use at least 8 characters with uppercase, lowercase, and a number for a stronger password.
+        Use at least 8 characters with uppercase, lowercase, and a number. Recovery codes expire quickly for security.
       </CustomText>
 
       {errorMessage ? (

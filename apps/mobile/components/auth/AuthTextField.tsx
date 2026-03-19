@@ -1,6 +1,6 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import type { KeyboardTypeOptions, TextInputProps } from 'react-native';
-import { Platform, Pressable, TextInput, View } from 'react-native';
+import { Animated, Easing, Platform, Pressable, TextInput, View, useWindowDimensions } from 'react-native';
 import { CustomText } from '../CustomText';
 
 interface AuthTextFieldProps {
@@ -16,6 +16,10 @@ interface AuthTextFieldProps {
   trailing?: React.ReactNode;
   returnKeyType?: TextInputProps['returnKeyType'];
   onSubmitEditing?: TextInputProps['onSubmitEditing'];
+  inputMode?: TextInputProps['inputMode'];
+  maxLength?: number;
+  autoCorrect?: boolean;
+  editable?: boolean;
 }
 
 export function AuthTextField({
@@ -31,12 +35,54 @@ export function AuthTextField({
   trailing,
   returnKeyType,
   onSubmitEditing,
+  inputMode,
+  maxLength,
+  autoCorrect,
+  editable = true,
 }: AuthTextFieldProps) {
   const inputRef = useRef<TextInput | null>(null);
   const [isFocused, setIsFocused] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const { width } = useWindowDimensions();
+
   const isWeb = Platform.OS === 'web';
   const isActive = isFocused || isHovered;
+  const compact = width < 390;
+  const spacious = width >= 1024;
+
+  const accentOpacity = useRef(new Animated.Value(value ? 1 : 0.18)).current;
+  const accentScale = useRef(new Animated.Value(value ? 1 : 0.42)).current;
+  const translateY = useRef(new Animated.Value(0)).current;
+  const useNativeAnimations = Platform.OS !== 'web';
+
+  useEffect(() => {
+    const highlighted = isActive || value.trim().length > 0;
+
+    Animated.parallel([
+      Animated.timing(accentOpacity, {
+        toValue: highlighted ? 1 : 0.18,
+        duration: 180,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: useNativeAnimations,
+      }),
+      Animated.spring(accentScale, {
+        toValue: highlighted ? 1 : 0.42,
+        tension: 110,
+        friction: 14,
+        useNativeDriver: useNativeAnimations,
+      }),
+      Animated.timing(translateY, {
+        toValue: isActive ? -2 : 0,
+        duration: 180,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: useNativeAnimations,
+      }),
+    ]).start();
+  }, [accentOpacity, accentScale, isActive, translateY, useNativeAnimations, value]);
+
+  const minHeight = compact ? 48 : spacious ? 54 : 50;
+  const inputFontSize = compact ? 12.8 : spacious ? 14.2 : 13.4;
+  const inputLineHeight = compact ? 18 : spacious ? 20 : 19;
 
   return (
     <View>
@@ -44,68 +90,92 @@ export function AuthTextField({
         <CustomText
           variant="caption"
           style={{
-            color: isFocused ? '#F0E8FF' : 'rgba(233,226,248,0.78)',
-            marginBottom: 8,
+            color: 'rgba(226,219,242,0.76)',
+            marginBottom: 7,
             textTransform: 'uppercase',
-            letterSpacing: 0.7,
+            letterSpacing: 0.58,
+            fontSize: compact ? 10 : 10.6,
+            lineHeight: compact ? 12 : 13,
           }}
         >
           {label}
         </CustomText>
       ) : null}
 
-      <Pressable
-        onPress={() => inputRef.current?.focus()}
-        onHoverIn={() => setIsHovered(true)}
-        onHoverOut={() => setIsHovered(false)}
+      <Animated.View
         style={{
-          borderRadius: 18,
-          borderWidth: 1,
-          borderColor: isActive ? 'rgba(168,125,255,0.62)' : 'rgba(255,255,255,0.14)',
-          backgroundColor: isActive ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.045)',
-          paddingHorizontal: 15,
-          flexDirection: 'row',
-          alignItems: 'center',
-          shadowColor: isActive ? '#8F67F7' : '#12092A',
-          shadowOpacity: isActive ? 0.16 : 0.06,
-          shadowRadius: isActive ? 18 : 10,
-          shadowOffset: { width: 0, height: isActive ? 8 : 4 },
-          elevation: isActive ? 6 : 2,
-          ...(isWeb
-            ? ({
-                cursor: 'text',
-                transitionDuration: '160ms',
-              } as object)
-            : null),
+          transform: [{ translateY }],
         }}
       >
-        <TextInput
-          ref={inputRef}
-          value={value}
-          onChangeText={onChangeText}
-          keyboardType={keyboardType}
-          autoCapitalize={autoCapitalize}
-          autoComplete={autoComplete}
-          textContentType={textContentType}
-          secureTextEntry={secureTextEntry}
-          returnKeyType={returnKeyType}
-          onSubmitEditing={onSubmitEditing}
-          placeholder={placeholder}
-          placeholderTextColor="rgba(207,200,228,0.68)"
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
+        <Pressable
+          onPress={() => inputRef.current?.focus()}
+          onHoverIn={() => setIsHovered(true)}
+          onHoverOut={() => setIsHovered(false)}
           style={{
-            flex: 1,
-            minHeight: 56,
-            color: '#F8F7FC',
-            fontSize: 14,
-            lineHeight: 20,
-            fontFamily: 'Sora_400Regular',
+            borderRadius: 18,
+            borderWidth: 1,
+            borderColor: 'rgba(255,255,255,0.10)',
+            backgroundColor: 'rgba(255,255,255,0.028)',
+            paddingHorizontal: compact ? 13 : 14,
+            paddingVertical: 0,
+            overflow: 'hidden',
+            flexDirection: 'row',
+            alignItems: 'center',
+            ...(isWeb
+              ? ({
+                  cursor: editable ? 'text' : 'default',
+                } as object)
+              : null),
           }}
-        />
+        >
+          <TextInput
+            ref={inputRef}
+            value={value}
+            editable={editable}
+            onChangeText={onChangeText}
+            keyboardType={keyboardType}
+            autoCapitalize={autoCapitalize}
+            autoComplete={autoComplete}
+            textContentType={textContentType}
+            secureTextEntry={secureTextEntry}
+            returnKeyType={returnKeyType}
+            onSubmitEditing={onSubmitEditing}
+            inputMode={inputMode}
+            maxLength={maxLength}
+            autoCorrect={autoCorrect ?? false}
+            placeholder={placeholder}
+            placeholderTextColor="rgba(202,196,220,0.50)"
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
+            style={{
+              flex: 1,
+              minHeight,
+              color: '#F8F7FC',
+              fontSize: inputFontSize,
+              lineHeight: inputLineHeight,
+              fontFamily: 'Sora_400Regular',
+              paddingVertical: compact ? 13 : 14,
+            }}
+          />
 
-        {trailing ? <View style={{ marginLeft: 10 }}>{trailing}</View> : null}
-      </Pressable>
+          {trailing ? <View style={{ marginLeft: 10 }}>{trailing}</View> : null}
+
+          <Animated.View
+            pointerEvents="none"
+            style={{
+              position: 'absolute',
+              left: 14,
+              right: 14,
+              bottom: 0,
+              height: 2,
+              borderRadius: 999,
+              backgroundColor: '#9C7DFF',
+              opacity: accentOpacity,
+              transform: [{ scaleX: accentScale }],
+            }}
+          />
+        </Pressable>
+      </Animated.View>
     </View>
   );
 }
