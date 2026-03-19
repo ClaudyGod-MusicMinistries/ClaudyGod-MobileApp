@@ -79,10 +79,8 @@ Docker
    - `EXPO_PUBLIC_API_URL`
    - `EXPO_PUBLIC_SUPABASE_URL`
    - `EXPO_PUBLIC_SUPABASE_KEY`
-   - `EXPO_PUBLIC_EAS_PROJECT_ID` or `EAS_PROJECT_ID`
+   - `EAS_PROJECT_ID`
 4. Optional mobile env values:
-   - `EXPO_PUBLIC_SUPABASE_ANON_KEY`
-     If omitted, the app falls back to `EXPO_PUBLIC_SUPABASE_KEY`.
    - `EXPO_ACCOUNT_OWNER`
      Set this if the project belongs to a specific Expo account/organization.
 5. Keep bundle identifiers and package names in `app.config.js` aligned with your real store apps:
