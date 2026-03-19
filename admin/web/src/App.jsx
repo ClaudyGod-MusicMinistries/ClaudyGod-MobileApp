@@ -75,21 +75,22 @@ const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000;
 const BRAND_LOGO_URL = '/brand/claudy-logo.webp';
 const CONTENT_TYPES = ['audio', 'video', 'playlist', 'announcement'];
 const VISIBILITY_OPTIONS = ['draft', 'published'];
+const CONTENT_REQUEST_STATUS_OPTIONS = ['submitted', 'in_review', 'changes_requested', 'approved', 'fulfilled', 'rejected'];
 const YOUTUBE_SYNC_DEFAULT_LIMIT = 8;
 const DEFAULT_MOBILE_PREVIEW_URL =
   import.meta.env.VITE_MOBILE_PREVIEW_URL || deriveSiblingOrigin('app') || '';
 const WORKFLOW_STEPS = [
   {
-    title: 'Create',
-    detail: 'Add media details, upload files, and set app sections.',
+    title: 'Submit',
+    detail: 'Send one clean ticket with files, links, and placement details.',
   },
   {
     title: 'Review',
-    detail: 'Keep entries in draft until your team validates quality and metadata.',
+    detail: 'Track approvals, requested changes, and queue progress in one place.',
   },
   {
-    title: 'Publish',
-    detail: 'Release to the mobile experience and monitor endpoint health.',
+    title: 'Release',
+    detail: 'Convert approved tickets into draft content, then publish when ready.',
   },
 ];
 const API_HOST_LABEL = (() => {
@@ -264,6 +265,7 @@ export default defineComponent({
     const authMode = ref('login');
     const appLoading = ref(false);
     const contentLoading = ref(false);
+    const contentRequestLoading = ref(false);
     const savingContent = ref(false);
     const togglingId = ref(null);
     const youtubePreviewLoading = ref(false);
@@ -279,6 +281,8 @@ export default defineComponent({
     const editContentOpen = ref(false);
     const editContentSaving = ref(false);
     const supportStatusUpdatingId = ref(null);
+    const contentRequestStatusUpdatingId = ref(null);
+    const creatingDraftFromRequestId = ref(null);
     const headerMenuOpen = ref(false);
     const dashboardView = ref('overview');
     const inactivityTimerId = ref(null);
@@ -340,6 +344,7 @@ export default defineComponent({
     });
 
     const managedItems = ref([]);
+    const contentRequests = ref([]);
     const youtubePreviewItems = ref([]);
     const youtubeDraftItems = ref([]);
     const mobileAppConfigEditor = ref('');
@@ -433,14 +438,14 @@ export default defineComponent({
         return [
           { label: 'Published Content', value: summary.publishedContent || published, accent: 'mint' },
           { label: 'Draft Content', value: summary.draftContent || drafts, accent: 'blue' },
-          { label: 'Registered Users', value: summary.totalUsers || 0, accent: 'amber' },
-          { label: 'Open Complaints', value: summary.openSupportRequests || 0, accent: 'rose' },
+          { label: 'Open Requests', value: requestSummary.value.active, accent: 'amber' },
+          { label: 'Registered Users', value: summary.totalUsers || 0, accent: 'rose' },
         ];
       }
 
       return [
         { label: 'All Content', value: total, accent: 'mint' },
-        { label: 'Published', value: published, accent: 'blue' },
+        { label: 'Open Requests', value: requestSummary.value.active, accent: 'blue' },
         { label: 'Drafts', value: drafts, accent: 'amber' },
         { label: 'Video Items', value: videoItems, accent: 'rose' },
       ];
@@ -455,6 +460,36 @@ export default defineComponent({
         { label: 'Avg. Rating', value: summary.averageRating != null ? summary.averageRating : '--', accent: 'rose' },
       ];
     });
+
+    const requestSummary = computed(() => {
+      const requests = contentRequests.value || [];
+      return {
+        total: requests.length,
+        active: requests.filter((item) => ['submitted', 'in_review', 'changes_requested', 'approved'].includes(item.status)).length,
+        fulfilled: requests.filter((item) => item.status === 'fulfilled').length,
+        needsAttention: requests.filter((item) => item.status === 'changes_requested').length,
+      };
+    });
+
+    const requestStatusBoard = computed(() => [
+      {
+        label: 'Open Requests',
+        value: requestSummary.value.active,
+        accent: 'mint',
+      },
+      {
+        label: 'Needs Changes',
+        value: requestSummary.value.needsAttention,
+        accent: 'amber',
+      },
+      {
+        label: 'Converted To Draft',
+        value: requestSummary.value.fulfilled,
+        accent: 'blue',
+      },
+    ]);
+
+    const requestQueuePreview = computed(() => (contentRequests.value || []).slice(0, 5));
 
     const filteredItems = computed(() => {
       const query = (filterState.search || '').trim().toLowerCase();
@@ -688,6 +723,7 @@ export default defineComponent({
     function clearSessionData() {
       currentUser.value = null;
       managedItems.value = [];
+      contentRequests.value = [];
       youtubePreviewItems.value = [];
       youtubeDraftItems.value = [];
       uploadPolicies.value = [];
@@ -824,6 +860,20 @@ export default defineComponent({
         pagination.total = response.data.total || 0;
       } finally {
         contentLoading.value = false;
+      }
+    }
+
+    async function fetchContentRequests(tokenOverride) {
+      contentRequestLoading.value = true;
+      try {
+        const response = await http.get('/v1/content/requests', {
+          headers: tokenOverride ? { Authorization: `Bearer ${tokenOverride}` } : undefined,
+        });
+        contentRequests.value = Array.isArray(response.data && response.data.items) ? response.data.items : [];
+      } catch (error) {
+        setNotice(toErrorMessage(error, 'Unable to load submission requests.'), 'error');
+      } finally {
+        contentRequestLoading.value = false;
       }
     }
 
@@ -1173,6 +1223,7 @@ export default defineComponent({
         await fetchCurrentUser();
         await Promise.all([
           fetchManagedContent(),
+          fetchContentRequests(),
           fetchUploadPolicies(),
           isAdmin.value ? fetchAdminOperationsDashboard() : Promise.resolve(),
           isAdmin.value ? fetchMobileAppConfig() : Promise.resolve(),
@@ -1238,6 +1289,7 @@ export default defineComponent({
         authForm.confirmPassword = '';
         await Promise.all([
           fetchManagedContent(freshToken),
+          fetchContentRequests(freshToken),
           fetchUploadPolicies(freshToken),
           authResponse.data.user && authResponse.data.user.role === 'ADMIN' ? fetchAdminOperationsDashboard() : Promise.resolve(),
           authResponse.data.user && authResponse.data.user.role === 'ADMIN' ? fetchMobileAppConfig() : Promise.resolve(),
@@ -1288,27 +1340,27 @@ export default defineComponent({
         return;
       }
       if (createForm.title.trim().length < 2) {
-        setNotice('Please enter a content title.', 'error');
+        setNotice('Please enter a request title.', 'error');
         return;
       }
       if (createForm.description.trim().length < 2) {
-        setNotice('Please add a short description.', 'error');
+        setNotice('Please add a short brief for the review team.', 'error');
         return;
       }
 
       const needsUrl = createForm.type === 'audio' || createForm.type === 'video';
       if (needsUrl && !createForm.url.trim()) {
-        setNotice('Please add the media link for audio or video content.', 'error');
+        setNotice('Please add the media link for audio or video requests.', 'error');
         return;
       }
       if (needsUrl && !createForm.thumbnailUrl.trim()) {
-        setNotice('Please upload or add a thumbnail image (max 5MB) for audio/video content.', 'error');
+        setNotice('Please upload or add a thumbnail image (max 5MB) for audio and video requests.', 'error');
         return;
       }
 
       savingContent.value = true;
       try {
-        await http.post('/v1/content', {
+        await http.post('/v1/content/requests', {
           title: createForm.title.trim(),
           description: createForm.description.trim(),
           type: createForm.type,
@@ -1321,7 +1373,7 @@ export default defineComponent({
           duration: createForm.duration.trim() || undefined,
           tags: parseCsvList(createForm.tagsCsv),
           appSections: parseCsvList(createForm.appSectionsCsv),
-          visibility: createForm.visibility,
+          requestedVisibility: createForm.visibility,
         });
 
         createForm.title = '';
@@ -1334,10 +1386,11 @@ export default defineComponent({
         createForm.duration = '';
         createForm.tagsCsv = '';
         createForm.appSectionsCsv = '';
-        await fetchManagedContent();
-        setNotice(createForm.visibility === 'published' ? 'Content published successfully.' : 'Draft saved successfully.', 'success');
+        createForm.visibility = 'published';
+        await Promise.all([fetchContentRequests(), fetchManagedContent()]);
+        setNotice('Submission ticket created. The request is now in the review queue.', 'success');
       } catch (error) {
-        setNotice(toErrorMessage(error, 'Unable to save this content right now.'), 'error');
+        setNotice(toErrorMessage(error, 'Unable to submit this request right now.'), 'error');
       } finally {
         savingContent.value = false;
       }
@@ -1418,12 +1471,40 @@ export default defineComponent({
           createForm.mediaUploadSessionId = session && session.id ? session.id : createForm.mediaUploadSessionId;
         }
 
-        setNotice(`Uploaded ${file.name}. ${assetKind === 'thumbnail' ? 'Thumbnail' : 'Media asset'} is now linked to the content draft.`, 'success');
+        setNotice(`Uploaded ${file.name}. ${assetKind === 'thumbnail' ? 'Thumbnail' : 'Media asset'} is now linked to this submission ticket.`, 'success');
       } catch (error) {
         setNotice(toErrorMessage(error, 'File upload failed. Check storage configuration and try again.'), 'error');
       } finally {
         uploadingAsset.value = false;
         if (input) input.value = '';
+      }
+    }
+
+    async function updateSubmissionRequestStatus(requestId, status) {
+      contentRequestStatusUpdatingId.value = requestId;
+      clearNotice();
+      try {
+        await http.patch(`/v1/content/requests/${requestId}/status`, { status });
+        await fetchContentRequests();
+        setNotice(`Request moved to ${humanizeToken(status)}.`, 'success');
+      } catch (error) {
+        setNotice(toErrorMessage(error, 'Unable to update this request right now.'), 'error');
+      } finally {
+        contentRequestStatusUpdatingId.value = null;
+      }
+    }
+
+    async function createDraftFromRequest(request) {
+      creatingDraftFromRequestId.value = request.id;
+      clearNotice();
+      try {
+        await http.post(`/v1/content/requests/${request.id}/create-draft`);
+        await Promise.all([fetchContentRequests(), fetchManagedContent()]);
+        setNotice(`Draft created from "${request.title}". Review it in the content library before publishing.`, 'success');
+      } catch (error) {
+        setNotice(toErrorMessage(error, 'Unable to create a draft from this request.'), 'error');
+      } finally {
+        creatingDraftFromRequestId.value = null;
       }
     }
 
@@ -1453,6 +1534,7 @@ export default defineComponent({
         await fetchCurrentUser();
         await Promise.all([
           fetchManagedContent(),
+          fetchContentRequests(),
           fetchUploadPolicies(),
           isAdmin.value ? fetchAdminOperationsDashboard() : Promise.resolve(),
           isAdmin.value ? fetchMobileAppConfig() : Promise.resolve(),
@@ -1841,9 +1923,9 @@ export default defineComponent({
 
       const workspaceActions = [
         {
-          title: 'Publish new content',
-          detail: 'Open the content workspace to upload audio, video, playlists, and announcements.',
-          actionLabel: 'Open content workspace',
+          title: 'Submit new content',
+          detail: 'Open the request desk to upload files, add links, and send one clean ticket for review.',
+          actionLabel: 'Open request desk',
           onClick: () => setDashboardView('editor'),
           emphasis: 'primary',
         },
@@ -1877,7 +1959,7 @@ export default defineComponent({
                   <p class="eyebrow">Publishing Center</p>
                   <h1>{greeting.value}, {displayName.value}</h1>
                   <p class="subtitle">
-                    Start from Overview, move into Manage Content when you are ready to publish, and use Preview App to confirm the mobile experience before sharing it with your audience.
+                    Start with the request desk, review every upload in one queue, and only create drafts when the team is ready to move forward.
                   </p>
                 </div>
               </div>
@@ -1894,9 +1976,9 @@ export default defineComponent({
             </div>
 
             <div class="hero-chips">
-              <span class="hero-chip">Simple publishing workflow</span>
+              <span class="hero-chip">Request-led workflow</span>
+              <span class="hero-chip">Cleaner review queue</span>
               <span class="hero-chip">Live mobile preview</span>
-              <span class="hero-chip">Clear audience health</span>
             </div>
             <div class="hero-shine" />
           </section>
@@ -1929,7 +2011,7 @@ export default defineComponent({
               class={['ghost-btn compact', dashboardView.value === 'editor' ? 'is-active' : '']}
               onClick={() => setDashboardView('editor')}
             >
-              Manage Content
+              Requests & Library
             </button>
             <button
               type="button"
@@ -1970,25 +2052,25 @@ export default defineComponent({
                 <div class="section-head split">
                   <div>
                     <h2>Start here</h2>
-                    <p>Use this simple sequence whenever you are publishing something new to the app.</p>
+                    <p>Use this request-first flow so uploads stay organized and easy for your team to review.</p>
                   </div>
                   <button type="button" class="primary-btn" onClick={() => setDashboardView('editor')}>
-                    Go to content workspace
+                    Open request desk
                   </button>
                 </div>
 
                 <div class="simple-intro-panel">
                   <div class="simple-intro-item">
-                    <strong>1. Add or sync content</strong>
-                    <p>Upload directly or pull the latest YouTube items into the catalog.</p>
+                    <strong>1. Submit one clean request</strong>
+                    <p>Upload media, attach a thumbnail, and describe where it should appear in the app.</p>
                   </div>
                   <div class="simple-intro-item">
-                    <strong>2. Review before publishing</strong>
-                    <p>Check the metadata, app section placement, and media quality before going live.</p>
+                    <strong>2. Review the queue</strong>
+                    <p>Move tickets through review, request changes when needed, and keep all status changes visible.</p>
                   </div>
                   <div class="simple-intro-item">
-                    <strong>3. Preview the result</strong>
-                    <p>Open Preview App to confirm the end-user experience before you finish.</p>
+                    <strong>3. Create draft then publish</strong>
+                    <p>Convert approved tickets into draft content, confirm the app view, then publish with confidence.</p>
                   </div>
                 </div>
 
@@ -2003,31 +2085,36 @@ export default defineComponent({
                     </article>
                   ))}
                 </div>
+
+                <div class="hero-chip-group" style={{ marginTop: '0.9rem' }}>
+                  <span class="hero-chip">Request-led publishing</span>
+                  <span class="hero-chip">Clear review status</span>
+                  <span class="hero-chip">Draft before release</span>
+                  {apiHealthCheck.value ? <span class="hero-chip">API: {apiHealthCheck.value.status === 'ok' ? 'ready' : 'needs attention'}</span> : null}
+                </div>
               </article>
 
-              {isAdmin.value ? (
               <article class="panel glass-panel reveal-up" style={{ animationDelay: '240ms' }}>
                 <div class="section-head split">
                   <div>
-                    <h2>Audience &amp; Health</h2>
-                    <p>Track registered users, onboarding momentum, and deployment readiness from one place.</p>
+                    <h2>Submission Pipeline</h2>
+                    <p>See every upload request in one place and turn approved tickets into draft content.</p>
                   </div>
                   <button
                     type="button"
-                    class="ghost-btn compact"
-                    onClick={() => void fetchAdminOperationsDashboard()}
-                    disabled={adminOpsLoading.value}
+                    class="primary-btn"
+                    onClick={() => setDashboardView('editor')}
                   >
-                    {adminOpsLoading.value ? 'Refreshing...' : 'Refresh'}
+                    Open queue
                   </button>
                 </div>
 
-                <section class="stats-grid">
-                  {audienceStats.value.map((card, index) => (
+                <section class="ticket-summary-grid">
+                  {requestStatusBoard.value.map((card, index) => (
                     <article
                       class={['stat-card', 'glass-panel', `accent-${card.accent}`]}
                       style={{ animationDelay: `${index * 60}ms` }}
-                      key={`audience-stat-${card.label}`}
+                      key={`request-stat-${card.label}`}
                     >
                       <span>{card.label}</span>
                       <strong>{card.value}</strong>
@@ -2035,13 +2122,116 @@ export default defineComponent({
                   ))}
                 </section>
 
-                <div class="grid-2" style={{ marginTop: '0.8rem' }}>
+                <div class="list-wrap">
+                  {contentRequestLoading.value ? (
+                    <div class="empty-state">Loading submission tickets...</div>
+                  ) : null}
+                  {!contentRequestLoading.value && requestQueuePreview.value.length === 0 ? (
+                    <div class="empty-state">No submission tickets yet. Open the request desk to send the first upload request.</div>
+                  ) : null}
+                  {!contentRequestLoading.value && requestQueuePreview.value.map((request) => (
+                    <article class={['content-card', 'request-card']} key={`request-preview-${request.id}`}>
+                      <div class="card-top">
+                        <div class="pill-row">
+                          <span class={['pill', `pill-${request.type}`]}>{request.type}</span>
+                          <span class={['pill', request.status === 'fulfilled' ? 'pill-live' : request.status === 'changes_requested' || request.status === 'rejected' ? 'pill-draft' : 'pill-playlist']}>
+                            {humanizeToken(request.status)}
+                          </span>
+                          <span class="muted-chip">Target: {request.requestedVisibility}</span>
+                        </div>
+                        <span class="muted-chip">{formatDateTime(request.createdAt)}</span>
+                      </div>
+                      <div class="card-body">
+                        <h3>{request.title}</h3>
+                        <p>{truncate(request.description, 160)}</p>
+                      </div>
+
+                      <div class="meta-grid">
+                        <div>
+                          <span class="meta-label">Requested by</span>
+                          <strong>{request.requester && request.requester.displayName ? request.requester.displayName : 'Unknown requester'}</strong>
+                        </div>
+                        <div>
+                          <span class="meta-label">Created draft</span>
+                          <strong>{request.createdContentTitle || 'Not yet converted'}</strong>
+                        </div>
+                      </div>
+
+                      {isAdmin.value ? (
+                        <div class="request-card-actions">
+                          <label>
+                            Review status
+                            <select
+                              value={request.status}
+                              disabled={contentRequestStatusUpdatingId.value === request.id}
+                              onChange={(event) => void updateSubmissionRequestStatus(request.id, readValue(event))}
+                            >
+                              {CONTENT_REQUEST_STATUS_OPTIONS.map((status) => (
+                                <option value={status} key={`request-status-${request.id}-${status}`}>{humanizeToken(status)}</option>
+                              ))}
+                            </select>
+                          </label>
+                          <button
+                            type="button"
+                            class="primary-btn"
+                            disabled={Boolean(request.createdContentId) || creatingDraftFromRequestId.value === request.id || request.status === 'rejected'}
+                            onClick={() => void createDraftFromRequest(request)}
+                          >
+                            {request.createdContentId
+                              ? 'Draft created'
+                              : creatingDraftFromRequestId.value === request.id
+                              ? 'Creating draft...'
+                              : 'Create draft'}
+                          </button>
+                        </div>
+                      ) : null}
+                    </article>
+                  ))}
+                </div>
+              </article>
+
+              <article class="panel glass-panel reveal-up" style={{ animationDelay: '260ms' }}>
+                <div class="section-head split">
+                  <div>
+                    <h2>{isAdmin.value ? 'Audience & Health' : 'Workspace Health'}</h2>
+                    <p>{isAdmin.value ? 'Keep the team focused on users, support load, and launch readiness.' : 'Check the state of your library and publishing stack at a glance.'}</p>
+                  </div>
+                  {isAdmin.value ? (
+                    <button
+                      type="button"
+                      class="ghost-btn compact"
+                      onClick={() => void fetchAdminOperationsDashboard()}
+                      disabled={adminOpsLoading.value}
+                    >
+                      {adminOpsLoading.value ? 'Refreshing...' : 'Refresh'}
+                    </button>
+                  ) : (
+                    <span class="section-badge">Monitoring</span>
+                  )}
+                </div>
+
+                {isAdmin.value ? (
+                  <section class="stats-grid compact-stats-grid">
+                    {audienceStats.value.map((card, index) => (
+                      <article
+                        class={['stat-card', 'glass-panel', `accent-${card.accent}`]}
+                        style={{ animationDelay: `${index * 60}ms` }}
+                        key={`audience-stat-${card.label}`}
+                      >
+                        <span>{card.label}</span>
+                        <strong>{card.value}</strong>
+                      </article>
+                    ))}
+                  </section>
+                ) : null}
+
+                <div class="grid-2" style={{ marginTop: '0.8rem', marginBottom: '0.9rem' }}>
                   <div class="helper-card">
-                    <strong>Signup momentum</strong>
+                    <strong>{isAdmin.value ? 'Signup momentum' : 'Library snapshot'}</strong>
                     <p>
-                      {(adminOps.value.signupTrend || []).reduce((sum, point) => sum + Number(point.signups || 0), 0)} new
-                      account{(adminOps.value.signupTrend || []).reduce((sum, point) => sum + Number(point.signups || 0), 0) === 1 ? '' : 's'} in the
-                      last 14 days.
+                      {isAdmin.value
+                        ? `${(adminOps.value.signupTrend || []).reduce((sum, point) => sum + Number(point.signups || 0), 0)} new account${(adminOps.value.signupTrend || []).reduce((sum, point) => sum + Number(point.signups || 0), 0) === 1 ? '' : 's'} in the last 14 days.`
+                        : `${managedItems.value.length} content item${managedItems.value.length === 1 ? '' : 's'} currently managed from this workspace.`}
                     </p>
                   </div>
                   <div class="helper-card">
@@ -2055,7 +2245,7 @@ export default defineComponent({
                 </div>
 
                 {apiHealthCheck.value && apiHealthCheck.value.capabilities ? (
-                  <div class="pill-row" style={{ marginTop: '0.8rem' }}>
+                  <div class="pill-row" style={{ marginTop: '0.4rem' }}>
                     <span class={['pill', apiHealthCheck.value.capabilities.youtube ? 'pill-live' : 'pill-draft']}>
                       YouTube {apiHealthCheck.value.capabilities.youtube ? 'ready' : 'disabled'}
                     </span>
@@ -2068,239 +2258,63 @@ export default defineComponent({
                   </div>
                 ) : null}
 
-                <div class="section-head compact" style={{ marginTop: '1rem' }}>
-                  <div>
-                    <h3>Recent registrations</h3>
-                    <p>Latest accounts entering the platform.</p>
-                  </div>
-                  {adminOps.value.generatedAt ? (
-                    <span class="section-badge">Synced {formatDateTime(adminOps.value.generatedAt)}</span>
-                  ) : null}
-                </div>
-
-                <div class="list-wrap">
-                  {adminOps.value.recentUsers.length === 0 ? (
-                    <div class="empty-state">No registered users have been recorded yet.</div>
-                  ) : adminOps.value.recentUsers.map((user) => (
-                    <article class="content-card" key={`recent-user-${user.id}`}>
-                      <div class="card-top">
-                        <div class="pill-row">
-                          <span class={['pill', user.role === 'ADMIN' ? 'pill-live' : 'pill-audio']}>{user.role.toLowerCase()}</span>
-                          <span class="muted-chip">{humanizeToken(user.authProvider)}</span>
-                          <span class={['pill', user.emailVerifiedAt ? 'pill-live' : 'pill-draft']}>
-                            {user.emailVerifiedAt ? 'verified' : 'pending'}
-                          </span>
-                        </div>
-                        <span class="muted-chip">{formatDateTime(user.createdAt)}</span>
+                {isAdmin.value ? (
+                  <details class="dashboard-disclosure" style={{ marginTop: '0.9rem' }}>
+                    <summary>Open support and feedback details</summary>
+                    <div class="dashboard-disclosure-body">
+                      <div class="list-wrap disclosure-list">
+                        {adminOps.value.supportInbox.length === 0 ? (
+                          <div class="empty-state">No complaints or support tickets have been submitted yet.</div>
+                        ) : adminOps.value.supportInbox.slice(0, 4).map((ticket) => (
+                          <article class="content-card" key={`support-ticket-${ticket.id}`}>
+                            <div class="card-top">
+                              <div class="pill-row">
+                                <span class={['pill', ticket.status === 'resolved' || ticket.status === 'closed' ? 'pill-live' : 'pill-draft']}>
+                                  {humanizeToken(ticket.status)}
+                                </span>
+                                <span class="muted-chip">{humanizeToken(ticket.priority)}</span>
+                              </div>
+                              <span class="muted-chip">{formatDateTime(ticket.createdAt)}</span>
+                            </div>
+                            <div class="card-body">
+                              <h3>{ticket.subject}</h3>
+                              <p>{truncate(ticket.message, 140)}</p>
+                            </div>
+                            <label>
+                              Ticket status
+                              <select
+                                value={ticket.status}
+                                disabled={supportStatusUpdatingId.value === ticket.id}
+                                onChange={(event) => void updateSupportRequestStatus(ticket.id, readValue(event))}
+                              >
+                                <option value="open">Open</option>
+                                <option value="in_progress">In Progress</option>
+                                <option value="resolved">Resolved</option>
+                                <option value="closed">Closed</option>
+                              </select>
+                            </label>
+                          </article>
+                        ))}
                       </div>
-                      <div class="card-body">
-                        <h3>{user.displayName || 'Unnamed user'}</h3>
-                        <p>{user.email}</p>
-                      </div>
-                    </article>
-                  ))}
-                </div>
+                    </div>
+                  </details>
+                ) : null}
               </article>
-              ) : null}
 
-              {isAdmin.value ? (
-              <article class="panel glass-panel reveal-up" style={{ animationDelay: '260ms' }}>
-                <div class="section-head split">
-                  <div>
-                    <h2>Feedback &amp; Complaints</h2>
-                    <p>Monitor ratings, user notes, and support tickets from the mobile app.</p>
-                  </div>
-                  <span class="section-badge">
-                    {(adminOps.value.summary && adminOps.value.summary.totalFeedback) || 0} feedback item{((adminOps.value.summary && adminOps.value.summary.totalFeedback) || 0) === 1 ? '' : 's'}
-                  </span>
-                </div>
-
-                <div class="grid-2" style={{ marginBottom: '0.9rem' }}>
-                  <div class="helper-card">
-                    <strong>Support workload</strong>
-                    <p>
-                      {(adminOps.value.summary && adminOps.value.summary.openSupportRequests) || 0} complaint ticket(s) are currently
-                      open or in progress.
-                    </p>
-                  </div>
-                  <div class="helper-card">
-                    <strong>Privacy queue</strong>
-                    <p>
-                      {(adminOps.value.summary && adminOps.value.summary.activePrivacyRequests) || 0} privacy request(s) are awaiting
-                      completion.
-                    </p>
-                  </div>
-                </div>
-
-                <div class="section-head compact">
-                  <div>
-                    <h3>Latest ratings</h3>
-                    <p>Signals captured from the mobile experience.</p>
-                  </div>
-                </div>
-
-                <div class="list-wrap">
-                  {adminOps.value.feedback.length === 0 ? (
-                    <div class="empty-state">No feedback has been submitted from mobile users yet.</div>
-                  ) : adminOps.value.feedback.map((entry) => (
-                    <article class="content-card" key={`feedback-${entry.id}`}>
-                      <div class="card-top">
-                        <div class="pill-row">
-                          <span class="pill pill-video">{entry.rating}/5</span>
-                          <span class="muted-chip">{humanizeToken(entry.channel)}</span>
-                        </div>
-                        <span class="muted-chip">{formatDateTime(entry.createdAt)}</span>
-                      </div>
-                      <div class="card-body">
-                        <h3>{entry.user && entry.user.displayName ? entry.user.displayName : 'Anonymous rating'}</h3>
-                        <p>{entry.comment ? truncate(entry.comment, 140) : 'Rating submitted without a written note.'}</p>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-
-                <div class="section-head compact" style={{ marginTop: '1rem' }}>
-                  <div>
-                    <h3>Support inbox</h3>
-                    <p>Complaints and issue reports from the mobile support form.</p>
-                  </div>
-                </div>
-
-                <div class="list-wrap">
-                  {adminOps.value.supportInbox.length === 0 ? (
-                    <div class="empty-state">No complaints or support tickets have been submitted yet.</div>
-                  ) : adminOps.value.supportInbox.map((ticket) => (
-                    <article class="content-card" key={`support-ticket-${ticket.id}`}>
-                      <div class="card-top">
-                        <div class="pill-row">
-                          <span class={['pill', ticket.status === 'resolved' || ticket.status === 'closed' ? 'pill-live' : 'pill-draft']}>
-                            {humanizeToken(ticket.status)}
-                          </span>
-                          <span class="muted-chip">{humanizeToken(ticket.priority)}</span>
-                          <span class="muted-chip">{humanizeToken(ticket.category)}</span>
-                        </div>
-                        <span class="muted-chip">{formatDateTime(ticket.createdAt)}</span>
-                      </div>
-                      <div class="card-body">
-                        <h3>{ticket.subject}</h3>
-                        <p>{truncate(ticket.message, 180)}</p>
-                      </div>
-                      <div class="meta-grid">
-                        <div>
-                          <span class="meta-label">Reporter</span>
-                          <strong>{ticket.user && ticket.user.displayName ? ticket.user.displayName : 'Unknown user'}</strong>
-                        </div>
-                        <div>
-                          <span class="meta-label">Email</span>
-                          <strong>{ticket.user && ticket.user.email ? ticket.user.email : 'No email attached'}</strong>
-                        </div>
-                      </div>
-                      <label style={{ marginTop: '0.2rem' }}>
-                        Ticket status
-                        <select
-                          value={ticket.status}
-                          disabled={supportStatusUpdatingId.value === ticket.id}
-                          onChange={(event) => void updateSupportRequestStatus(ticket.id, readValue(event))}
-                        >
-                          <option value="open">Open</option>
-                          <option value="in_progress">In Progress</option>
-                          <option value="resolved">Resolved</option>
-                          <option value="closed">Closed</option>
-                        </select>
-                      </label>
-                    </article>
-                  ))}
-                </div>
-              </article>
-              ) : null}
-
-              {isAdmin.value ? (
               <article class="panel glass-panel reveal-up" style={{ animationDelay: '280ms' }}>
                 <div class="section-head split">
                   <div>
-                    <h2>Smart Ops</h2>
-                    <p>Automated recommendations and recent backend automation runs.</p>
-                  </div>
-                  <span class="section-badge">
-                    {(adminOps.value.recentAutomation || []).length} recent run{((adminOps.value.recentAutomation || []).length) === 1 ? '' : 's'}
-                  </span>
-                </div>
-
-                <div class="list-wrap">
-                  {(adminOps.value.smartInsights || []).length === 0 ? (
-                    <div class="empty-state">No automation insights are available yet.</div>
-                  ) : adminOps.value.smartInsights.map((insight) => (
-                    <article class="content-card" key={`insight-${insight.id}`}>
-                      <div class="card-top">
-                        <div class="pill-row">
-                          <span class={['pill', insight.tone === 'success' ? 'pill-live' : insight.tone === 'warning' ? 'pill-draft' : 'pill-video']}>
-                            {humanizeToken(insight.tone)}
-                          </span>
-                          <span class="muted-chip">Automation Insight</span>
-                        </div>
-                      </div>
-                      <div class="card-body">
-                        <h3>{insight.title}</h3>
-                        <p>{insight.detail}</p>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-
-                <div class="section-head compact" style={{ marginTop: '1rem' }}>
-                  <div>
-                    <h3>Recent automation</h3>
-                    <p>Import, sync, and scheduled operational events tracked by the backend.</p>
-                  </div>
-                </div>
-
-                <div class="list-wrap">
-                  {(adminOps.value.recentAutomation || []).length === 0 ? (
-                    <div class="empty-state">No automation runs have been recorded yet.</div>
-                  ) : adminOps.value.recentAutomation.map((run) => (
-                    <article class="content-card" key={`automation-run-${run.id}`}>
-                      <div class="card-top">
-                        <div class="pill-row">
-                          <span class={['pill', run.status === 'completed' ? 'pill-live' : run.status === 'failed' ? 'pill-draft' : 'pill-video']}>
-                            {humanizeToken(run.status)}
-                          </span>
-                          <span class="muted-chip">{run.label}</span>
-                        </div>
-                        <span class="muted-chip">{formatDateTime(run.createdAt)}</span>
-                      </div>
-                      <div class="card-body">
-                        <h3>{run.label}</h3>
-                        <p>{run.notes || 'Automation run recorded without operator notes.'}</p>
-                      </div>
-                      <div class="meta-grid">
-                        <div>
-                          <span class="meta-label">Actor</span>
-                          <strong>{run.actor && run.actor.displayName ? run.actor.displayName : 'System'}</strong>
-                        </div>
-                        <div>
-                          <span class="meta-label">Scope</span>
-                          <strong>{humanizeToken(run.scope)}</strong>
-                        </div>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              </article>
-              ) : null}
-
-              <article class="panel glass-panel reveal-up" style={{ animationDelay: '260ms' }}>
-                <div class="section-head split">
-                  <div>
                     <h2>Latest Content</h2>
-                    <p>Your most recent uploads and updates.</p>
+                    <p>Your most recent drafts and published updates.</p>
                   </div>
                   <button type="button" class="ghost-btn compact" onClick={() => setDashboardView('editor')}>
-                    Manage Library
+                    Open library
                   </button>
                 </div>
+
                 <div class="list-wrap">
                   {recentItems.value.length === 0 ? (
-                    <div class="empty-state">No content yet. Click <strong>Open Editor</strong> to publish your first item.</div>
+                    <div class="empty-state">No content yet. Open the request desk to submit the first upload.</div>
                   ) : recentItems.value.map((item) => (
                     <article class="content-card" key={`overview-item-${item.id}`}>
                       <div class="card-top">
@@ -2319,41 +2333,42 @@ export default defineComponent({
                 </div>
               </article>
 
+              {isAdmin.value ? (
               <article class="panel glass-panel reveal-up" style={{ animationDelay: '300ms' }}>
                 <div class="section-head split">
                   <div>
-                    <h2>YouTube Feed</h2>
-                    <p>Preview latest channel videos and sync directly into your library.</p>
+                    <h2>Operations Desk</h2>
+                    <p>Keep advanced monitoring available without crowding the landing page.</p>
                   </div>
-                  <div class="button-row">
-                    <button type="button" class="ghost-btn compact" onClick={() => void fetchYouTubePreview()} disabled={youtubePreviewLoading.value}>
-                      {youtubePreviewLoading.value ? 'Loading...' : 'Fetch Videos'}
-                    </button>
-                    <button type="button" class="ghost-btn compact" onClick={() => setDashboardView('editor')}>
-                      Open Sync
-                    </button>
+                  <span class="section-badge">Advanced</span>
+                </div>
+                <details class="dashboard-disclosure" open>
+                  <summary>Automation and editorial signals</summary>
+                  <div class="dashboard-disclosure-body">
+                    <div class="list-wrap disclosure-list">
+                      {(adminOps.value.smartInsights || []).length === 0 ? (
+                        <div class="empty-state">No automation insights are available yet.</div>
+                      ) : adminOps.value.smartInsights.map((insight) => (
+                        <article class="content-card" key={`insight-${insight.id}`}>
+                          <div class="card-top">
+                            <div class="pill-row">
+                              <span class={['pill', insight.tone === 'success' ? 'pill-live' : insight.tone === 'warning' ? 'pill-draft' : 'pill-video']}>
+                                {humanizeToken(insight.tone)}
+                              </span>
+                              <span class="muted-chip">Automation insight</span>
+                            </div>
+                          </div>
+                          <div class="card-body">
+                            <h3>{insight.title}</h3>
+                            <p>{insight.detail}</p>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
                   </div>
-                </div>
-                <div class="list-wrap">
-                  {youtubePreviewItems.value.length === 0 ? (
-                    <div class="empty-state">No videos loaded yet. Click <strong>Fetch Videos</strong>.</div>
-                  ) : youtubePreviewItems.value.slice(0, 4).map((video) => (
-                    <article class="content-card" key={`overview-yt-${video.youtubeVideoId}`}>
-                      <div class="card-top">
-                        <div class="pill-row">
-                          <span class="pill pill-video">video</span>
-                          {video.isLive ? <span class="pill pill-live">live</span> : null}
-                        </div>
-                        <span class="muted-chip">{video.duration || '--:--'}</span>
-                      </div>
-                      <div class="card-body">
-                        <h3>{video.title}</h3>
-                        <p>{truncate(video.description, 120)}</p>
-                      </div>
-                    </article>
-                  ))}
-                </div>
+                </details>
               </article>
+              ) : null}
             </section>
           ) : null}
 
@@ -2463,10 +2478,10 @@ export default defineComponent({
             <section class="panel glass-panel reveal-up" style={{ animationDelay: '140ms' }}>
               <div class="section-head">
                 <div>
-                  <h2>New Content</h2>
-                  <p>Add music, video, playlists, or announcements for your audience.</p>
+                  <h2>Submission Request</h2>
+                  <p>Send one clean ticket to the backend review queue instead of publishing directly from this screen.</p>
                 </div>
-                <span class="section-badge">Publish Center</span>
+                <span class="section-badge">Request Desk</span>
               </div>
 
               <form class="stack-form" onSubmit={(event) => void createContent(event)}>
@@ -2488,7 +2503,7 @@ export default defineComponent({
                       value={createForm.description}
                       onInput={(event) => { createForm.description = readValue(event); }}
                       rows={5}
-                      placeholder="Add a short summary so users understand what this content is about."
+                      placeholder="Describe what was recorded, the audience it is for, and any editorial notes the review team should know."
                     />
                   </label>
                 </div>
@@ -2502,7 +2517,7 @@ export default defineComponent({
                   </label>
 
                   <label>
-                    Status
+                    Requested release
                     <select value={createForm.visibility} onChange={(event) => { createForm.visibility = readValue(event); }}>
                       {VISIBILITY_OPTIONS.map((visibility) => <option value={visibility} key={visibility}>{visibility}</option>)}
                     </select>
@@ -2514,7 +2529,7 @@ export default defineComponent({
                   <input
                     value={createForm.url}
                     onInput={(event) => { createForm.url = readValue(event); }}
-                    placeholder="Paste the audio/video link from your storage or CDN"
+                    placeholder="Paste the audio or video link from storage, CDN, or external hosting"
                   />
                 </label>
 
@@ -2558,235 +2573,188 @@ export default defineComponent({
                 {uploadingAsset.value ? <div class="muted-chip">Uploading to storage...</div> : null}
 
                 <div class="grid-2">
-                  <label>
-                    Thumbnail URL (optional)
-                    <input
-                      value={createForm.thumbnailUrl}
-                      onInput={(event) => { createForm.thumbnailUrl = readValue(event); }}
-                      placeholder="Paste image URL for posters/cards"
-                    />
-                  </label>
-
-                  <label>
-                    Channel / Artist
-                    <input
-                      value={createForm.channelName}
-                      onInput={(event) => { createForm.channelName = readValue(event); }}
-                      placeholder="ClaudyGod Music Ministries"
-                    />
-                  </label>
-                </div>
-
-                <div class="grid-2">
-                  <label>
-                    Duration label
-                    <input
-                      value={createForm.duration}
-                      onInput={(event) => { createForm.duration = readValue(event); }}
-                      placeholder="45:12"
-                    />
-                  </label>
-
-                  <label>
-                    Tags (comma-separated)
-                    <input
-                      value={createForm.tagsCsv}
-                      onInput={(event) => { createForm.tagsCsv = readValue(event); }}
-                      placeholder="worship, live session, choir"
-                    />
-                  </label>
-                </div>
-
-                <div class="grid-2">
-                  <label>
-                    App sections (comma-separated)
-                    <input
-                      value={createForm.appSectionsCsv}
-                      onInput={(event) => { createForm.appSectionsCsv = readValue(event); }}
-                      placeholder="ClaudyGod Music, ClaudyGod Nuggets of Truth"
-                    />
-                  </label>
-
                   <div class="helper-card">
                     <strong>Asset status</strong>
                     <p>
                       {createForm.mediaUploadSessionId || createForm.thumbnailUploadSessionId
-                        ? 'Uploaded files are linked to this content draft and will be tracked in the backend database.'
-                        : 'Upload media or a thumbnail to create a traceable storage-to-content record.'}
+                        ? 'Uploaded files are linked to this request and will be traceable in backend review.'
+                        : 'Upload media and a thumbnail to keep the request complete and easy to review.'}
                     </p>
-                  </div>
-                </div>
-
-                <div class="helper-card">
-                  <strong>Tip</strong>
-                  <p>
-                    Use <em>Draft</em> while reviewing new content, then switch to <em>Published</em> when it is ready for users. App sections control where cards appear on the mobile home page.
-                  </p>
-                </div>
-
-                <section class="youtube-sync-block">
-                  <div class="section-head compact">
-                    <div>
-                      <h3>YouTube Sync</h3>
-                      <p>Fetch channel videos from the backend and import them into your content library.</p>
-                    </div>
-                    <span class="section-badge">YouTube</span>
-                  </div>
-
-                  <label>
-                    YouTube Channel ID (optional override)
-                    <input
-                      value={youtubeSyncState.channelId}
-                      onInput={(event) => { youtubeSyncState.channelId = readValue(event); }}
-                      placeholder="Use backend default if left empty"
-                    />
-                  </label>
-
-                  <div class="grid-2">
-                    <label>
-                      Max results
-                      <input
-                        type="number"
-                        min="1"
-                        max="50"
-                        value={String(youtubeSyncState.maxResults)}
-                        onInput={(event) => { youtubeSyncState.maxResults = Number(readValue(event)) || YOUTUBE_SYNC_DEFAULT_LIMIT; }}
-                      />
-                    </label>
-
-                    <label>
-                      Import as
-                      <select value={youtubeSyncState.visibility} onChange={(event) => { youtubeSyncState.visibility = readValue(event); }}>
-                        {VISIBILITY_OPTIONS.map((visibility) => <option value={visibility} key={`yt-${visibility}`}>{visibility}</option>)}
-                      </select>
-                    </label>
-                  </div>
-
-                  <label>
-                    Default app sections for fetched videos (comma-separated)
-                    <input
-                      value={youtubeSyncState.appSectionsCsv}
-                      onInput={(event) => { youtubeSyncState.appSectionsCsv = readValue(event); }}
-                      placeholder="ClaudyGod Music, ClaudyGod Messages"
-                    />
-                  </label>
-
-                  <div class="button-row">
-                    <button type="button" class="ghost-btn compact" onClick={() => void fetchYouTubePreview()} disabled={youtubePreviewLoading.value || youtubeSyncLoading.value}>
-                      {youtubePreviewLoading.value ? 'Fetching...' : 'Fetch Preview'}
-                    </button>
-                    <button type="button" class="ghost-btn compact" onClick={applySmartYouTubeAssignments} disabled={youtubeDraftItems.value.length === 0 || youtubeImporting.value}>
-                      Apply Smart Suggestions
-                    </button>
-                  </div>
-
-                  <div class="button-row">
-                    <button type="button" class="primary-btn" onClick={() => void importSelectedYouTubeVideos()} disabled={youtubeImporting.value || youtubePreviewLoading.value || youtubeDraftItems.value.length === 0}>
-                      {youtubeImporting.value ? 'Importing Selected...' : `Import Selected (${selectedYouTubeDraftCount.value})`}
-                    </button>
-                    <button type="button" class="ghost-btn compact" onClick={() => void syncYouTubeVideos()} disabled={youtubeSyncLoading.value || youtubePreviewLoading.value}>
-                      {youtubeSyncLoading.value ? 'Syncing YouTube...' : 'Quick Sync All'}
-                    </button>
                   </div>
 
                   <div class="helper-card">
-                    <strong>Curated import flow</strong>
+                    <strong>Release target</strong>
                     <p>
-                      Fetch videos, review each one, adjust sections and tags, then import only the selected items. Quick Sync All is available when you want a one-click batch import.
+                      Choose <em>draft</em> when the team still needs editorial review. Choose <em>published</em> only when the item should go live quickly after approval.
                     </p>
                   </div>
+                </div>
 
-                  <div class="youtube-preview-list">
-                    {youtubeDraftItems.value.length === 0 ? (
-                      <div class="empty-state">
-                        No YouTube videos loaded yet. Click <strong>Fetch Preview</strong> to load the latest channel videos.
-                      </div>
-                    ) : youtubeDraftItems.value.map((video) => (
-                      <article class="content-card" key={video.youtubeVideoId}>
-                        <div class="card-top">
-                          <div class="pill-row">
-                            <span class="pill pill-video">video</span>
-                            {video.isLive ? <span class="pill pill-live">live</span> : null}
-                            <span class={['pill', video.selected ? 'pill-live' : 'pill-draft']}>{video.selected ? 'selected' : 'skipped'}</span>
-                          </div>
-                          <span class="muted-chip">{video.duration || '--:--'}</span>
-                        </div>
-                        <label class="checkbox-row">
-                          <input
-                            type="checkbox"
-                            class="inline-checkbox"
-                            checked={Boolean(video.selected)}
-                            onChange={(event) => updateYouTubeDraftItem(video.youtubeVideoId, { selected: readChecked(event) })}
-                          />
-                          <span>
-                            Include this video
-                            <small>Selected videos will be imported into the content library.</small>
-                          </span>
-                        </label>
-                        <div class="card-link-row">
-                          <img src={video.thumbnailUrl} alt={video.title} style={{ width: '120px', height: '72px', borderRadius: '12px', objectFit: 'cover' }} />
-                          <div style={{ display: 'grid', gap: '0.35rem', flex: 1 }}>
-                            <a href={video.url} target="_blank" rel="noreferrer noopener" class="media-link">Open YouTube</a>
-                            <span class="muted-chip">{formatDateTime(video.publishedAt)}</span>
-                          </div>
-                        </div>
-                        <div class="card-body">
-                          <h3>{video.title}</h3>
-                          <p>{truncate(video.description || '', 140)}</p>
-                        </div>
-                        <div class="pill-row">
-                          {(video.suggestedAppSections || []).map((section) => (
-                            <span class="muted-chip" key={`${video.youtubeVideoId}-section-${section}`}>Suggested: {section}</span>
-                          ))}
-                          {(video.suggestedTags || []).map((tag) => (
-                            <span class="muted-chip" key={`${video.youtubeVideoId}-tag-${tag}`}>#{tag}</span>
-                          ))}
-                        </div>
-                        <div class="grid-2">
-                          <label>
-                            App sections
-                            <input
-                              value={video.appSectionsCsv}
-                              onInput={(event) => updateYouTubeDraftItem(video.youtubeVideoId, {
-                                appSectionsCsv: readValue(event),
-                                appSections: parseCsvList(readValue(event)),
-                              })}
-                              placeholder="ClaudyGod Music, ClaudyGod Messages"
-                            />
-                          </label>
-                          <label>
-                            Tags
-                            <input
-                              value={video.tagsCsv}
-                              onInput={(event) => updateYouTubeDraftItem(video.youtubeVideoId, {
-                                tagsCsv: readValue(event),
-                                tags: parseCsvList(readValue(event)),
-                              })}
-                              placeholder="worship, live, message"
-                            />
-                          </label>
-                        </div>
-                        <label>
-                          Import visibility
-                          <select
-                            value={video.visibility}
-                            onChange={(event) => updateYouTubeDraftItem(video.youtubeVideoId, { visibility: readValue(event) })}
-                          >
-                            {VISIBILITY_OPTIONS.map((visibility) => <option value={visibility} key={`yt-visibility-${video.youtubeVideoId}-${visibility}`}>{visibility}</option>)}
-                          </select>
-                        </label>
-                      </article>
-                    ))}
+                <details class="dashboard-disclosure">
+                  <summary>Add optional metadata and placement</summary>
+                  <div class="dashboard-disclosure-body stack-form">
+                    <div class="grid-2">
+                      <label>
+                        Thumbnail URL (optional override)
+                        <input
+                          value={createForm.thumbnailUrl}
+                          onInput={(event) => { createForm.thumbnailUrl = readValue(event); }}
+                          placeholder="Paste image URL for posters/cards"
+                        />
+                      </label>
+
+                      <label>
+                        Channel / Artist
+                        <input
+                          value={createForm.channelName}
+                          onInput={(event) => { createForm.channelName = readValue(event); }}
+                          placeholder="ClaudyGod Music Ministries"
+                        />
+                      </label>
+                    </div>
+
+                    <div class="grid-2">
+                      <label>
+                        Duration label
+                        <input
+                          value={createForm.duration}
+                          onInput={(event) => { createForm.duration = readValue(event); }}
+                          placeholder="45:12"
+                        />
+                      </label>
+
+                      <label>
+                        Tags (comma-separated)
+                        <input
+                          value={createForm.tagsCsv}
+                          onInput={(event) => { createForm.tagsCsv = readValue(event); }}
+                          placeholder="worship, live session, choir"
+                        />
+                      </label>
+                    </div>
+
+                    <label>
+                      App sections (comma-separated)
+                      <input
+                        value={createForm.appSectionsCsv}
+                        onInput={(event) => { createForm.appSectionsCsv = readValue(event); }}
+                        placeholder="ClaudyGod Music, ClaudyGod Nuggets of Truth"
+                      />
+                    </label>
                   </div>
-                </section>
+                </details>
+
+                <div class="helper-card">
+                  <strong>What happens next</strong>
+                  <p>
+                    After you submit, the ticket appears in the review queue. Admins can change status, request edits, and create a draft in the library when it is approved.
+                  </p>
+                </div>
 
                 <button type="submit" class="primary-btn primary-btn-large" disabled={savingContent.value}>
-                  {savingContent.value ? 'Saving...' : createForm.visibility === 'published' ? 'Publish Content' : 'Save Draft'}
+                  {savingContent.value ? 'Submitting ticket...' : 'Send request to review queue'}
                 </button>
               </form>
             </section>
 
-            <section class="panel glass-panel reveal-up" style={{ animationDelay: '220ms' }}>
+            <section class="panel glass-panel reveal-up" style={{ animationDelay: '200ms' }}>
+              <div class="section-head split">
+                <div>
+                  <h2>Review Queue</h2>
+                  <p>Track every submission ticket and create draft content only when the request is ready.</p>
+                </div>
+                <span class="section-badge">{requestSummary.value.active} open</span>
+              </div>
+
+              <section class="ticket-summary-grid">
+                {requestStatusBoard.value.map((card, index) => (
+                  <article
+                    class={['stat-card', 'glass-panel', `accent-${card.accent}`]}
+                    style={{ animationDelay: `${index * 60}ms` }}
+                    key={`editor-request-stat-${card.label}`}
+                  >
+                    <span>{card.label}</span>
+                    <strong>{card.value}</strong>
+                  </article>
+                ))}
+              </section>
+
+              <div class="list-wrap" style={{ marginTop: '0.9rem' }}>
+                {contentRequestLoading.value ? <div class="empty-state">Loading submission requests...</div> : null}
+                {!contentRequestLoading.value && contentRequests.value.length === 0 ? (
+                  <div class="empty-state">No requests yet. Submit a ticket from the left panel to start the workflow.</div>
+                ) : null}
+
+                {!contentRequestLoading.value ? contentRequests.value.map((request) => (
+                  <article class={['content-card', 'request-card']} key={`editor-request-${request.id}`}>
+                    <div class="card-top">
+                      <div class="pill-row">
+                        <span class={['pill', `pill-${request.type}`]}>{request.type}</span>
+                        <span class={['pill', request.status === 'fulfilled' ? 'pill-live' : request.status === 'changes_requested' || request.status === 'rejected' ? 'pill-draft' : 'pill-playlist']}>
+                          {humanizeToken(request.status)}
+                        </span>
+                        <span class="muted-chip">Target: {request.requestedVisibility}</span>
+                      </div>
+                      <span class="muted-chip">{formatDateTime(request.createdAt)}</span>
+                    </div>
+
+                    <div class="card-body">
+                      <h3>{request.title}</h3>
+                      <p>{truncate(request.description, 160)}</p>
+                    </div>
+
+                    <div class="meta-grid">
+                      <div>
+                        <span class="meta-label">Requested by</span>
+                        <strong>{request.requester && request.requester.displayName ? request.requester.displayName : 'Unknown requester'}</strong>
+                      </div>
+                      <div>
+                        <span class="meta-label">Draft status</span>
+                        <strong>{request.createdContentTitle || 'Not created yet'}</strong>
+                      </div>
+                    </div>
+
+                    {request.requestNotes ? (
+                      <div class="helper-card request-note-card">
+                        <strong>Review notes</strong>
+                        <p>{truncate(request.requestNotes, 180)}</p>
+                      </div>
+                    ) : null}
+
+                    {isAdmin.value ? (
+                      <div class="request-card-actions">
+                        <label>
+                          Review status
+                          <select
+                            value={request.status}
+                            disabled={contentRequestStatusUpdatingId.value === request.id}
+                            onChange={(event) => void updateSubmissionRequestStatus(request.id, readValue(event))}
+                          >
+                            {CONTENT_REQUEST_STATUS_OPTIONS.map((status) => (
+                              <option value={status} key={`queue-request-status-${request.id}-${status}`}>{humanizeToken(status)}</option>
+                            ))}
+                          </select>
+                        </label>
+                        <button
+                          type="button"
+                          class="primary-btn"
+                          disabled={Boolean(request.createdContentId) || creatingDraftFromRequestId.value === request.id || request.status === 'rejected'}
+                          onClick={() => void createDraftFromRequest(request)}
+                        >
+                          {request.createdContentId
+                            ? 'Draft created'
+                            : creatingDraftFromRequestId.value === request.id
+                            ? 'Creating draft...'
+                            : 'Create draft'}
+                        </button>
+                      </div>
+                    ) : null}
+                  </article>
+                )) : null}
+              </div>
+            </section>
+
+            <section class="panel glass-panel reveal-up" style={{ animationDelay: '220ms', gridColumn: '1 / -1' }}>
               <div class="section-head split">
                 <div>
                   <h2>Content Library</h2>
@@ -2895,9 +2863,160 @@ export default defineComponent({
               </div>
             </section>
 
+            <section class="panel glass-panel reveal-up" style={{ animationDelay: '240ms', gridColumn: '1 / -1' }}>
+              <div class="section-head split">
+                <div>
+                  <h2>YouTube Import Tools</h2>
+                  <p>Keep bulk YouTube sync available without mixing it into the main submission form.</p>
+                </div>
+                <div class="button-row">
+                  <button type="button" class="ghost-btn compact" onClick={() => void fetchYouTubePreview()} disabled={youtubePreviewLoading.value || youtubeSyncLoading.value}>
+                    {youtubePreviewLoading.value ? 'Fetching...' : 'Fetch Preview'}
+                  </button>
+                  <button type="button" class="ghost-btn compact" onClick={applySmartYouTubeAssignments} disabled={youtubeDraftItems.value.length === 0 || youtubeImporting.value}>
+                    Apply Smart Suggestions
+                  </button>
+                </div>
+              </div>
+
+              <details class="dashboard-disclosure">
+                <summary>Open curated YouTube import workflow</summary>
+                <div class="dashboard-disclosure-body stack-form">
+                  <label>
+                    YouTube Channel ID (optional override)
+                    <input
+                      value={youtubeSyncState.channelId}
+                      onInput={(event) => { youtubeSyncState.channelId = readValue(event); }}
+                      placeholder="Use backend default if left empty"
+                    />
+                  </label>
+
+                  <div class="grid-2">
+                    <label>
+                      Max results
+                      <input
+                        type="number"
+                        min="1"
+                        max="50"
+                        value={String(youtubeSyncState.maxResults)}
+                        onInput={(event) => { youtubeSyncState.maxResults = Number(readValue(event)) || YOUTUBE_SYNC_DEFAULT_LIMIT; }}
+                      />
+                    </label>
+
+                    <label>
+                      Import as
+                      <select value={youtubeSyncState.visibility} onChange={(event) => { youtubeSyncState.visibility = readValue(event); }}>
+                        {VISIBILITY_OPTIONS.map((visibility) => <option value={visibility} key={`yt-${visibility}`}>{visibility}</option>)}
+                      </select>
+                    </label>
+                  </div>
+
+                  <label>
+                    Default app sections for fetched videos (comma-separated)
+                    <input
+                      value={youtubeSyncState.appSectionsCsv}
+                      onInput={(event) => { youtubeSyncState.appSectionsCsv = readValue(event); }}
+                      placeholder="ClaudyGod Music, ClaudyGod Messages"
+                    />
+                  </label>
+
+                  <div class="button-row">
+                    <button type="button" class="primary-btn" onClick={() => void importSelectedYouTubeVideos()} disabled={youtubeImporting.value || youtubePreviewLoading.value || youtubeDraftItems.value.length === 0}>
+                      {youtubeImporting.value ? 'Importing Selected...' : `Import Selected (${selectedYouTubeDraftCount.value})`}
+                    </button>
+                    <button type="button" class="ghost-btn compact" onClick={() => void syncYouTubeVideos()} disabled={youtubeSyncLoading.value || youtubePreviewLoading.value}>
+                      {youtubeSyncLoading.value ? 'Syncing YouTube...' : 'Quick Sync All'}
+                    </button>
+                  </div>
+
+                  <div class="helper-card">
+                    <strong>Curated import flow</strong>
+                    <p>
+                      Fetch videos, review each one, adjust sections and tags, then import only the selected items. Quick Sync All is available when you want a one-click batch import.
+                    </p>
+                  </div>
+
+                  <div class="youtube-preview-list">
+                    {youtubeDraftItems.value.length === 0 ? (
+                      <div class="empty-state">
+                        No YouTube videos loaded yet. Click <strong>Fetch Preview</strong> to load the latest channel videos.
+                      </div>
+                    ) : youtubeDraftItems.value.map((video) => (
+                      <article class="content-card" key={`editor-yt-${video.youtubeVideoId}`}>
+                        <div class="card-top">
+                          <div class="pill-row">
+                            <span class="pill pill-video">video</span>
+                            {video.isLive ? <span class="pill pill-live">live</span> : null}
+                            <span class={['pill', video.selected ? 'pill-live' : 'pill-draft']}>{video.selected ? 'selected' : 'skipped'}</span>
+                          </div>
+                          <span class="muted-chip">{video.duration || '--:--'}</span>
+                        </div>
+                        <label class="checkbox-row">
+                          <input
+                            type="checkbox"
+                            class="inline-checkbox"
+                            checked={Boolean(video.selected)}
+                            onChange={(event) => updateYouTubeDraftItem(video.youtubeVideoId, { selected: readChecked(event) })}
+                          />
+                          <span>
+                            Include this video
+                            <small>Selected videos will be imported into the content library.</small>
+                          </span>
+                        </label>
+                        <div class="card-link-row">
+                          <img src={video.thumbnailUrl} alt={video.title} style={{ width: '120px', height: '72px', borderRadius: '12px', objectFit: 'cover' }} />
+                          <div style={{ display: 'grid', gap: '0.35rem', flex: 1 }}>
+                            <a href={video.url} target="_blank" rel="noreferrer noopener" class="media-link">Open YouTube</a>
+                            <span class="muted-chip">{formatDateTime(video.publishedAt)}</span>
+                          </div>
+                        </div>
+                        <div class="card-body">
+                          <h3>{video.title}</h3>
+                          <p>{truncate(video.description || '', 140)}</p>
+                        </div>
+                        <div class="grid-2">
+                          <label>
+                            App sections
+                            <input
+                              value={video.appSectionsCsv}
+                              onInput={(event) => updateYouTubeDraftItem(video.youtubeVideoId, {
+                                appSectionsCsv: readValue(event),
+                                appSections: parseCsvList(readValue(event)),
+                              })}
+                              placeholder="ClaudyGod Music, ClaudyGod Messages"
+                            />
+                          </label>
+                          <label>
+                            Tags
+                            <input
+                              value={video.tagsCsv}
+                              onInput={(event) => updateYouTubeDraftItem(video.youtubeVideoId, {
+                                tagsCsv: readValue(event),
+                                tags: parseCsvList(readValue(event)),
+                              })}
+                              placeholder="worship, live, message"
+                            />
+                          </label>
+                        </div>
+                        <label>
+                          Import visibility
+                          <select
+                            value={video.visibility}
+                            onChange={(event) => updateYouTubeDraftItem(video.youtubeVideoId, { visibility: readValue(event) })}
+                          >
+                            {VISIBILITY_OPTIONS.map((visibility) => <option value={visibility} key={`yt-visibility-${video.youtubeVideoId}-${visibility}`}>{visibility}</option>)}
+                          </select>
+                        </label>
+                      </article>
+                    ))}
+                  </div>
+                </div>
+              </details>
+            </section>
+
             {isAdmin.value ? (
               <>
-                <section class="panel glass-panel reveal-up" style={{ animationDelay: '260ms' }}>
+                <section class="panel glass-panel reveal-up" style={{ animationDelay: '260ms', gridColumn: '1 / -1' }}>
                   <div class="section-head split">
                     <div>
                       <h2>Mobile App Config</h2>
@@ -2923,40 +3042,45 @@ export default defineComponent({
                     </div>
                   </div>
 
-                  <div class="helper-card">
-                    <strong>Backend validation enabled</strong>
-                    <p>
-                      This JSON is validated by the API before save. Invalid fields, URLs, or missing sections will be rejected with field-level errors.
-                    </p>
-                  </div>
+                  <details class="dashboard-disclosure">
+                    <summary>Open mobile app config editor</summary>
+                    <div class="dashboard-disclosure-body stack-form">
+                      <div class="helper-card">
+                        <strong>Backend validation enabled</strong>
+                        <p>
+                          This JSON is validated by the API before save. Invalid fields, URLs, or missing sections will be rejected with field-level errors.
+                        </p>
+                      </div>
 
-                  {mobileAppConfigMeta.value ? (
-                    <div class="meta-grid" style={{ marginTop: '0.85rem', marginBottom: '0.85rem' }}>
-                      <div>
-                        <span class="meta-label">Config Key</span>
-                        <strong>{mobileAppConfigMeta.value.key}</strong>
-                      </div>
-                      <div>
-                        <span class="meta-label">Updated</span>
-                        <strong>{formatDateTime(mobileAppConfigMeta.value.updatedAt)}</strong>
-                      </div>
+                      {mobileAppConfigMeta.value ? (
+                        <div class="meta-grid">
+                          <div>
+                            <span class="meta-label">Config Key</span>
+                            <strong>{mobileAppConfigMeta.value.key}</strong>
+                          </div>
+                          <div>
+                            <span class="meta-label">Updated</span>
+                            <strong>{formatDateTime(mobileAppConfigMeta.value.updatedAt)}</strong>
+                          </div>
+                        </div>
+                      ) : null}
+
+                      <label>
+                        Mobile app experience config (JSON)
+                        <textarea
+                          rows={18}
+                          value={mobileAppConfigEditor.value}
+                          onInput={(event) => { mobileAppConfigEditor.value = readValue(event); }}
+                          placeholder='{"version":1,"privacy":{...},"help":{...}}'
+                          spellcheck={false}
+                          style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace' }}
+                        />
+                      </label>
                     </div>
-                  ) : null}
-
-                  <label>
-                    Mobile app experience config (JSON)
-                    <textarea
-                      rows={18}
-                      value={mobileAppConfigEditor.value}
-                      onInput={(event) => { mobileAppConfigEditor.value = readValue(event); }}
-                      placeholder='{"version":1,"privacy":{...},"help":{...}}'
-                      spellcheck={false}
-                      style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace' }}
-                    />
-                  </label>
+                  </details>
                 </section>
 
-                <section class="panel glass-panel reveal-up" style={{ animationDelay: '300ms' }}>
+                <section class="panel glass-panel reveal-up" style={{ animationDelay: '300ms', gridColumn: '1 / -1' }}>
                   <div class="section-head split">
                     <div>
                       <h2>Word for Today</h2>
@@ -2982,123 +3106,128 @@ export default defineComponent({
                     </div>
                   </div>
 
-                  <div class="grid-2">
-                    <label>
-                      Title
-                      <input
-                        value={wordOfDayForm.title}
-                        onInput={(event) => { wordOfDayForm.title = readValue(event); }}
-                        placeholder="Word for Today"
-                      />
-                    </label>
-                    <label>
-                      Message date
-                      <input
-                        type="date"
-                        value={wordOfDayForm.messageDate}
-                        onInput={(event) => { wordOfDayForm.messageDate = readValue(event); }}
-                      />
-                    </label>
-                  </div>
+                  <details class="dashboard-disclosure">
+                    <summary>Open Word for Today editor</summary>
+                    <div class="dashboard-disclosure-body stack-form">
+                      <div class="grid-2">
+                        <label>
+                          Title
+                          <input
+                            value={wordOfDayForm.title}
+                            onInput={(event) => { wordOfDayForm.title = readValue(event); }}
+                            placeholder="Word for Today"
+                          />
+                        </label>
+                        <label>
+                          Message date
+                          <input
+                            type="date"
+                            value={wordOfDayForm.messageDate}
+                            onInput={(event) => { wordOfDayForm.messageDate = readValue(event); }}
+                          />
+                        </label>
+                      </div>
 
-                  <div class="grid-2">
-                    <label>
-                      Passage
-                      <input
-                        value={wordOfDayForm.passage}
-                        onInput={(event) => { wordOfDayForm.passage = readValue(event); }}
-                        placeholder="Psalm 119:105"
-                      />
-                    </label>
-                    <label>
-                      Status
-                      <select value={wordOfDayForm.status} onChange={(event) => { wordOfDayForm.status = readValue(event); }}>
-                        <option value="draft">draft</option>
-                        <option value="published">published</option>
-                        <option value="archived">archived</option>
-                      </select>
-                    </label>
-                  </div>
+                      <div class="grid-2">
+                        <label>
+                          Passage
+                          <input
+                            value={wordOfDayForm.passage}
+                            onInput={(event) => { wordOfDayForm.passage = readValue(event); }}
+                            placeholder="Psalm 119:105"
+                          />
+                        </label>
+                        <label>
+                          Status
+                          <select value={wordOfDayForm.status} onChange={(event) => { wordOfDayForm.status = readValue(event); }}>
+                            <option value="draft">draft</option>
+                            <option value="published">published</option>
+                            <option value="archived">archived</option>
+                          </select>
+                        </label>
+                      </div>
 
-                  <label>
-                    Verse
-                    <textarea
-                      rows={4}
-                      value={wordOfDayForm.verse}
-                      onInput={(event) => { wordOfDayForm.verse = readValue(event); }}
-                      placeholder="Your word is a lamp to my feet and a light to my path."
-                    />
-                  </label>
+                      <label>
+                        Verse
+                        <textarea
+                          rows={4}
+                          value={wordOfDayForm.verse}
+                          onInput={(event) => { wordOfDayForm.verse = readValue(event); }}
+                          placeholder="Your word is a lamp to my feet and a light to my path."
+                        />
+                      </label>
 
-                  <label>
-                    Reflection / Message
-                    <textarea
-                      rows={5}
-                      value={wordOfDayForm.reflection}
-                      onInput={(event) => { wordOfDayForm.reflection = readValue(event); }}
-                      placeholder="Short daily reflection for users."
-                    />
-                  </label>
+                      <label>
+                        Reflection / Message
+                        <textarea
+                          rows={5}
+                          value={wordOfDayForm.reflection}
+                          onInput={(event) => { wordOfDayForm.reflection = readValue(event); }}
+                          placeholder="Short daily reflection for users."
+                        />
+                      </label>
 
-                  <label class="checkbox-row" style={{ marginTop: '0.5rem' }}>
-                    <input
-                      type="checkbox"
-                      class="inline-checkbox"
-                      checked={wordOfDayForm.notifySubscribers}
-                      onChange={(event) => { wordOfDayForm.notifySubscribers = readChecked(event); }}
-                    />
-                    <span>
-                      Email all active client users
-                      <small>Queues email notifications for users with notifications enabled.</small>
-                    </span>
-                  </label>
+                      <label class="checkbox-row" style={{ marginTop: '0.5rem' }}>
+                        <input
+                          type="checkbox"
+                          class="inline-checkbox"
+                          checked={wordOfDayForm.notifySubscribers}
+                          onChange={(event) => { wordOfDayForm.notifySubscribers = readChecked(event); }}
+                        />
+                        <span>
+                          Email all active client users
+                          <small>Queues email notifications for users with notifications enabled.</small>
+                        </span>
+                      </label>
 
-                  {wordOfDayCurrent.value ? (
-                    <div class="helper-card" style={{ marginTop: '0.9rem' }}>
-                      <strong>Current published word</strong>
-                      <p>
-                        {wordOfDayCurrent.value.messageDate} • {wordOfDayCurrent.value.passage}
-                        {wordOfDayCurrent.value.notifiedAt ? ` • Emails queued ${formatDateTime(wordOfDayCurrent.value.notifiedAt)}` : ''}
-                      </p>
+                      {wordOfDayCurrent.value ? (
+                        <div class="helper-card">
+                          <strong>Current published word</strong>
+                          <p>
+                            {wordOfDayCurrent.value.messageDate} • {wordOfDayCurrent.value.passage}
+                            {wordOfDayCurrent.value.notifiedAt ? ` • Emails queued ${formatDateTime(wordOfDayCurrent.value.notifiedAt)}` : ''}
+                          </p>
+                        </div>
+                      ) : null}
+
+                      <div class="list-wrap">
+                        {wordOfDayHistory.value.length === 0 ? (
+                          <div class="empty-state">No Word for Today entries yet.</div>
+                        ) : wordOfDayHistory.value.map((entry) => (
+                          <article class="content-card" key={entry.id}>
+                            <div class="card-top">
+                              <div class="pill-row">
+                                <span class="pill">word</span>
+                                <span class={['pill', entry.status === 'published' ? 'pill-live' : 'pill-draft']}>{entry.status}</span>
+                              </div>
+                              <span class="muted-chip">{entry.messageDate}</span>
+                            </div>
+                            <div class="card-body">
+                              <h3>{entry.passage}</h3>
+                              <p>{truncate(entry.verse, 160)}</p>
+                            </div>
+                            <div class="card-link-row">
+                              <span class="muted-chip">{entry.notifiedAt ? `Emails queued: ${formatDateTime(entry.notifiedAt)}` : 'No email queue yet'}</span>
+                              <button
+                                type="button"
+                                class="ghost-btn compact"
+                                onClick={() => {
+                                  wordOfDayForm.title = entry.title || 'Word for Today';
+                                  wordOfDayForm.passage = entry.passage || '';
+                                  wordOfDayForm.verse = entry.verse || '';
+                                  wordOfDayForm.reflection = entry.reflection || '';
+                                  wordOfDayForm.messageDate = entry.messageDate || todayDateInputValue();
+                                  wordOfDayForm.status = entry.status || 'published';
+                                }}
+                              >
+                                Load
+                              </button>
+                            </div>
+                          </article>
+                        ))}
+                      </div>
                     </div>
-                  ) : null}
-
-                  <div class="list-wrap" style={{ marginTop: '0.8rem' }}>
-                    {wordOfDayHistory.value.length === 0 ? (
-                      <div class="empty-state">No Word for Today entries yet.</div>
-                    ) : wordOfDayHistory.value.map((entry) => (
-                      <article class="content-card" key={entry.id}>
-                        <div class="card-top">
-                          <div class="pill-row">
-                            <span class="pill">word</span>
-                            <span class={['pill', entry.status === 'published' ? 'pill-live' : 'pill-draft']}>{entry.status}</span>
-                          </div>
-                          <span class="muted-chip">{entry.messageDate}</span>
-                        </div>
-                        <div class="card-body">
-                          <h3>{entry.passage}</h3>
-                          <p>{truncate(entry.verse, 160)}</p>
-                        </div>
-                        <div class="card-link-row">
-                          <span class="muted-chip">{entry.notifiedAt ? `Emails queued: ${formatDateTime(entry.notifiedAt)}` : 'No email queue yet'}</span>
-                          <button
-                            type="button"
-                            class="ghost-btn compact"
-                            onClick={() => {
-                              wordOfDayForm.title = entry.title || 'Word for Today';
-                              wordOfDayForm.passage = entry.passage || '';
-                              wordOfDayForm.verse = entry.verse || '';
-                              wordOfDayForm.reflection = entry.reflection || '';
-                              wordOfDayForm.messageDate = entry.messageDate || todayDateInputValue();
-                              wordOfDayForm.status = entry.status || 'published';
-                            }}
-                          >
-                            Load
-                          </button>
-                        </div>
-                      </article>
-                    ))}
-                  </div>
+                  </details>
                 </section>
               </>
             ) : null}
@@ -3348,10 +3477,10 @@ export default defineComponent({
                     </button>
                     <button
                       type="button"
-                      class={['drawer-nav-link', dashboardView.value === 'editor' ? 'is-active' : '']}
+                     class={['drawer-nav-link', dashboardView.value === 'editor' ? 'is-active' : '']}
                       onClick={() => setDashboardView('editor')}
                     >
-                      Manage Content
+                      Requests & Library
                     </button>
                     <button
                       type="button"

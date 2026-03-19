@@ -1,20 +1,20 @@
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap');
 
 :root {
-  --bg-1: #07111B;
-  --bg-2: #0C1A27;
-  --bg-3: #0F2230;
+  --bg-1: #07131c;
+  --bg-2: #0b1c28;
+  --bg-3: #102532;
   --ink: #F4F8FB;
   --ink-soft: #B8C7D1;
   --ink-muted: #91A4B0;
   --line: rgba(170, 200, 214, 0.14);
   --line-strong: rgba(170, 200, 214, 0.22);
-  --panel: rgba(10, 20, 31, 0.8);
-  --panel-2: rgba(13, 28, 40, 0.9);
-  --mint: #5EA8C7;
-  --blue: #7AAED6;
-  --amber: #FBBF24;
-  --rose: #E48A8A;
+  --panel: rgba(10, 24, 35, 0.82);
+  --panel-2: rgba(12, 30, 42, 0.92);
+  --mint: #59c1a8;
+  --blue: #5ea8c7;
+  --amber: #f3c969;
+  --rose: #d98d8d;
   --shadow: 0 24px 70px rgba(0, 0, 0, 0.32);
   --radius-xl: 22px;
   --radius-lg: 16px;
@@ -136,7 +136,7 @@ code {
   height: 320px;
   top: 72px;
   left: -110px;
-  background: rgba(154, 107, 255, 0.9);
+  background: rgba(89, 193, 168, 0.46);
 }
 
 .orb-b {
@@ -144,7 +144,7 @@ code {
   height: 380px;
   top: 120px;
   right: -120px;
-  background: rgba(124, 58, 237, 0.92);
+  background: rgba(94, 168, 199, 0.42);
   animation-duration: 20s;
 }
 
@@ -153,7 +153,7 @@ code {
   height: 280px;
   bottom: 80px;
   right: 20%;
-  background: rgba(196, 181, 253, 0.55);
+  background: rgba(243, 201, 105, 0.28);
   opacity: 0.12;
   animation-duration: 22s;
 }
@@ -304,7 +304,7 @@ code {
   height: 8px;
   border-radius: 999px;
   background: var(--mint);
-  box-shadow: 0 0 0 4px rgba(154, 107, 255, 0.16);
+  box-shadow: 0 0 0 4px rgba(89, 193, 168, 0.14);
 }
 
 .header-controls {
@@ -639,7 +639,7 @@ code {
 .glass-panel {
   border-radius: var(--radius-xl);
   border: 1px solid var(--line);
-  background: linear-gradient(180deg, rgba(15, 11, 25, 0.9), rgba(22, 17, 38, 0.94));
+  background: linear-gradient(180deg, rgba(10, 22, 33, 0.92), rgba(9, 19, 29, 0.96));
   box-shadow: var(--shadow);
   backdrop-filter: blur(14px);
 }
@@ -710,9 +710,9 @@ code {
 }
 
 .notice-success {
-  background: rgba(154, 107, 255, 0.12);
-  border-color: rgba(154, 107, 255, 0.24);
-  color: #EEE3FF;
+  background: rgba(89, 193, 168, 0.12);
+  border-color: rgba(89, 193, 168, 0.26);
+  color: #e6fbf5;
 }
 
 .notice-error {
@@ -764,7 +764,7 @@ code {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(520px 220px at 70% 0%, rgba(124, 58, 237, 0.14), transparent 70%);
+  background: radial-gradient(520px 220px at 70% 0%, rgba(94, 168, 199, 0.14), transparent 70%);
   pointer-events: none;
 }
 
@@ -774,7 +774,7 @@ code {
   inset: auto -20% -28% auto;
   width: 58%;
   height: 52%;
-  background: radial-gradient(circle, rgba(154, 107, 255, 0.16), transparent 72%);
+  background: radial-gradient(circle, rgba(89, 193, 168, 0.16), transparent 72%);
   filter: blur(6px);
   animation: authGlowSweep 9s ease-in-out infinite;
   pointer-events: none;
@@ -1104,8 +1104,8 @@ input:focus,
 select:focus,
 textarea:focus {
   outline: none;
-  border-color: rgba(154, 107, 255, 0.38);
-  box-shadow: 0 0 0 3px rgba(154, 107, 255, 0.14);
+  border-color: rgba(94, 168, 199, 0.38);
+  box-shadow: 0 0 0 3px rgba(94, 168, 199, 0.14);
   background: rgba(255, 255, 255, 0.045);
 }
 
@@ -1152,7 +1152,7 @@ button {
   overflow: hidden;
   color: #08060F;
   background: linear-gradient(135deg, var(--mint), var(--blue));
-  box-shadow: 0 14px 26px rgba(124, 58, 237, 0.22);
+  box-shadow: 0 14px 26px rgba(89, 193, 168, 0.2);
 }
 
 .primary-btn::after {
@@ -1309,8 +1309,24 @@ button {
 }
 
 .dashboard-view-tabs .ghost-btn.is-active {
-  border-color: rgba(154, 107, 255, 0.42);
-  background: rgba(154, 107, 255, 0.16);
+  border-color: rgba(94, 168, 199, 0.34);
+  background: rgba(94, 168, 199, 0.14);
+}
+
+.ticket-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.compact-stats-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.hero-chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 .quick-actions-grid {
@@ -1345,6 +1361,65 @@ button {
   background:
     radial-gradient(circle at top right, rgba(94, 168, 199, 0.16), transparent 50%),
     rgba(255, 255, 255, 0.03);
+}
+
+.request-card {
+  gap: 0.7rem;
+}
+
+.request-card-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.7rem;
+  align-items: end;
+}
+
+.request-note-card {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.dashboard-disclosure {
+  border-radius: 16px;
+  border: 1px solid rgba(170, 200, 214, 0.12);
+  background: rgba(255, 255, 255, 0.025);
+  overflow: hidden;
+}
+
+.dashboard-disclosure summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 0.9rem 1rem;
+  font-size: var(--font-md);
+  font-weight: 700;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dashboard-disclosure summary::-webkit-details-marker {
+  display: none;
+}
+
+.dashboard-disclosure summary::after {
+  content: '+';
+  color: var(--ink-muted);
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.dashboard-disclosure[open] summary::after {
+  content: '−';
+}
+
+.dashboard-disclosure-body {
+  display: grid;
+  gap: 0.8rem;
+  padding: 0 1rem 1rem;
+}
+
+.disclosure-list {
+  max-height: 26rem;
 }
 
 .simple-intro-panel {
@@ -1500,8 +1575,8 @@ button {
   font-size: var(--font-2xl);
 }
 
-.accent-mint::before { background: linear-gradient(90deg, var(--mint), #C4B5FD); }
-.accent-blue::before { background: linear-gradient(90deg, var(--blue), #9A6BFF); }
+.accent-mint::before { background: linear-gradient(90deg, var(--mint), #8bd6c6); }
+.accent-blue::before { background: linear-gradient(90deg, var(--blue), #7fc4de); }
 .accent-amber::before { background: linear-gradient(90deg, var(--amber), #FDE68A); }
 .accent-rose::before { background: linear-gradient(90deg, var(--rose), #FCA5A5); }
 
@@ -1570,8 +1645,8 @@ button {
 
 .helper-card {
   border-radius: 14px;
-  border: 1px solid rgba(154, 107, 255, 0.2);
-  background: rgba(154, 107, 255, 0.08);
+  border: 1px solid rgba(94, 168, 199, 0.2);
+  background: rgba(94, 168, 199, 0.08);
   padding: 0.75rem 0.8rem;
 }
 
@@ -1931,6 +2006,11 @@ button {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .ticket-summary-grid,
+  .compact-stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .quick-actions-grid,
   .simple-intro-panel {
     grid-template-columns: 1fr;
@@ -1994,6 +2074,12 @@ button {
   .filter-grid,
   .meta-grid,
   .button-row {
+    grid-template-columns: 1fr;
+  }
+
+  .ticket-summary-grid,
+  .compact-stats-grid,
+  .request-card-actions {
     grid-template-columns: 1fr;
   }
 

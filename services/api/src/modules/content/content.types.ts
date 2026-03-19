@@ -4,6 +4,7 @@ export type ContentType = 'audio' | 'video' | 'playlist' | 'announcement';
 export type ContentVisibility = 'draft' | 'published';
 export type ContentFilterType = ContentType | 'live' | 'ad';
 export type ContentSourceKind = 'upload' | 'youtube' | 'external';
+export type ContentRequestStatus = 'submitted' | 'in_review' | 'changes_requested' | 'approved' | 'fulfilled' | 'rejected';
 
 export interface ContentAuthor {
   id: string;
@@ -32,6 +33,30 @@ export interface ContentItem {
   author: ContentAuthor;
 }
 
+export interface ContentSubmissionRequest {
+  id: string;
+  title: string;
+  description: string;
+  type: ContentType;
+  url?: string;
+  thumbnailUrl?: string;
+  channelName?: string;
+  duration?: string;
+  sourceKind?: ContentSourceKind;
+  externalSourceId?: string;
+  appSections?: string[];
+  tags?: string[];
+  metadata?: Record<string, unknown>;
+  requestNotes?: string;
+  requestedVisibility: ContentVisibility;
+  status: ContentRequestStatus;
+  createdContentId?: string;
+  createdContentTitle?: string;
+  createdAt: string;
+  updatedAt: string;
+  requester: ContentAuthor;
+}
+
 export interface CreateContentInput {
   title: string;
   description: string;
@@ -48,6 +73,25 @@ export interface CreateContentInput {
   tags?: string[];
   metadata?: Record<string, unknown>;
   visibility: ContentVisibility;
+}
+
+export interface CreateContentRequestInput {
+  title: string;
+  description: string;
+  type: ContentType;
+  url?: string;
+  thumbnailUrl?: string;
+  mediaUploadSessionId?: string;
+  thumbnailUploadSessionId?: string;
+  channelName?: string;
+  duration?: string;
+  sourceKind?: ContentSourceKind;
+  externalSourceId?: string;
+  appSections?: string[];
+  tags?: string[];
+  metadata?: Record<string, unknown>;
+  requestedVisibility: ContentVisibility;
+  requestNotes?: string;
 }
 
 export interface UpdateContentInput {
