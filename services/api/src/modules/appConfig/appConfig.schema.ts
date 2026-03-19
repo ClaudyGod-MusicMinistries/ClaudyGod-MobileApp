@@ -59,6 +59,23 @@ const donatePlanSchema = z
   })
   .strict();
 
+const mobileLayoutContentTypeSchema = z.enum(['audio', 'video', 'playlist', 'announcement', 'live']);
+
+const mobileLayoutSectionSchema = z
+  .object({
+    id: z
+      .string()
+      .trim()
+      .min(2)
+      .max(80)
+      .regex(/^[a-z0-9-]+$/i, 'Section id must use letters, numbers, and hyphens only'),
+    title: shortTextSchema.max(120),
+    subtitle: shortTextSchema.max(220),
+    contentTypes: z.array(mobileLayoutContentTypeSchema).min(1).max(5),
+    maxItems: z.coerce.number().int().min(1).max(24).default(8),
+  })
+  .strict();
+
 export const mobileAppConfigSchema = z
   .object({
     version: z.coerce.number().int().min(1).max(1000).default(1),
@@ -141,6 +158,12 @@ export const mobileAppConfigSchema = z
         iosStoreUrl: urlSchema,
         androidStoreUrl: urlSchema,
         feedbackRoute: z.string().trim().min(1).max(120).default('/settingsPage/help'),
+      })
+      .strict(),
+    layout: z
+      .object({
+        homeSections: z.array(mobileLayoutSectionSchema).min(1).max(16),
+        videoSections: z.array(mobileLayoutSectionSchema).min(1).max(16),
       })
       .strict(),
   })

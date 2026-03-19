@@ -82,6 +82,8 @@ interface YouTubeVideoItem {
   duration?: string;
   isLive?: boolean;
   liveViewerCount?: number;
+  suggestedAppSections?: string[];
+  suggestedTags?: string[];
 }
 
 export interface FeedCardItem {
@@ -197,7 +199,7 @@ function normalizeYouTubeVideo(item: YouTubeVideoItem): FeedCardItem {
     isLive: Boolean(item.isLive),
     liveViewerCount: item.liveViewerCount,
     createdAt: item.publishedAt,
-    appSections: [],
+    appSections: Array.isArray(item.suggestedAppSections) ? item.suggestedAppSections : [],
   };
 }
 

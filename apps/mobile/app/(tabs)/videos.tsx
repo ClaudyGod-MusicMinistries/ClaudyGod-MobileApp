@@ -1,8 +1,7 @@
-import React from 'react';
-import { Image, Platform, ScrollView, View, useWindowDimensions } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Image, Linking, Platform, ScrollView, View, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { MaterialIcons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { TabScreenWrapper } from '../../components/layout/TabScreenWrapper';
 import { useAppTheme } from '../../util/colorScheme';
 import { Screen } from '../../components/layout/Screen';
@@ -11,35 +10,151 @@ import { FadeIn } from '../../components/ui/FadeIn';
 import { CustomText } from '../../components/CustomText';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { SectionHeader as AppSectionHeader } from '../../components/ui/SectionHeader';
+import { VideoPlayer } from '../../components/media/VideoPlayer';
 import { useContentFeed } from '../../hooks/useContentFeed';
+import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
 import type { FeedCardItem } from '../../services/contentService';
-import { buildPlayerRoute } from '../../util/playerRoute';
+import { deriveLayoutSectionItems, getVideoLayoutSections } from '../../util/mobileLayout';
+import {
+  isDirectPlayableVideoUrl,
+  isHostedVideoUrl,
+  routeParamToString,
+  shouldOpenVideoScreen,
+} from '../../util/playerRoute';
+
+function dedupeItems(items: FeedCardItem[]): FeedCardItem[] {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    const key = item.mediaUrl?.trim() ? `media:${item.mediaUrl.trim()}` : `id:${item.id}`;
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
+}
+
+function parseRouteItem(params: {
+  itemId?: string | string[];
+  itemType?: string | string[];
+  title?: string | string[];
+  subtitle?: string | string[];
+  imageUrl?: string | string[];
+  duration?: string | string[];
+  mediaUrl?: string | string[];
+}): FeedCardItem | null {
+  const itemId = routeParamToString(params.itemId);
+  if (!itemId) {
+    return null;
+  }
+
+  const itemType = routeParamToString(params.itemType);
+  const normalizedType: FeedCardItem['type'] =
+    itemType === 'audio' ||
+    itemType === 'playlist' ||
+    itemType === 'announcement' ||
+    itemType === 'live' ||
+    itemType === 'ad'
+      ? itemType
+      : 'video';
+
+  return {
+    id: itemId,
+    type: normalizedType,
+    title: routeParamToString(params.title) ?? 'Untitled',
+    subtitle: routeParamToString(params.subtitle) ?? 'ClaudyGod',
+    description: '',
+    duration: routeParamToString(params.duration) ?? '--:--',
+    imageUrl:
+      routeParamToString(params.imageUrl) ??
+      'https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=1200&q=80',
+    mediaUrl: routeParamToString(params.mediaUrl),
+  };
+}
 
 export default function VideosScreen() {
   const theme = useAppTheme();
   const router = useRouter();
+  const params = useLocalSearchParams<{
+    itemId?: string | string[];
+    itemType?: string | string[];
+    title?: string | string[];
+    subtitle?: string | string[];
+    imageUrl?: string | string[];
+    duration?: string | string[];
+    mediaUrl?: string | string[];
+  }>();
   const { width } = useWindowDimensions();
   const isTV = Platform.isTV;
   const isTablet = width >= 768 && !isTV;
   const isDark = theme.scheme === 'dark';
-  const featureHeight = isTV ? 300 : isTablet ? 260 : 220;
-  const quickCardWidth = isTV ? 320 : isTablet ? 250 : 210;
+  const featureHeight = isTV ? 420 : isTablet ? 360 : 240;
 
   const { feed } = useContentFeed();
+  const { config: mobileConfig } = useMobileAppConfig();
+  const routeItem = useMemo(() => parseRouteItem(params), [params]);
 
-  const featured = feed.videos[0] ?? feed.live[0] ?? feed.featured;
-  const quickVideos = feed.videos.slice(1, 10);
-  const liveQueue = feed.live.slice(0, 8);
+  const videoQueue = useMemo(() => {
+    const allMedia = dedupeItems([
+      ...(routeItem ? [routeItem] : []),
+      ...feed.videos,
+      ...feed.live,
+      ...feed.music,
+      ...feed.recent,
+    ]);
 
-  const openPlayer = async (item: FeedCardItem, source: string) => {
+    return allMedia.filter((item) => shouldOpenVideoScreen(item));
+  }, [feed.live, feed.music, feed.recent, feed.videos, routeItem]);
+
+  const [activeId, setActiveId] = useState(routeItem?.id ?? videoQueue[0]?.id ?? '');
+
+  useEffect(() => {
+    if (routeItem?.id) {
+      setActiveId(routeItem.id);
+      return;
+    }
+
+    if (!activeId && videoQueue[0]?.id) {
+      setActiveId(videoQueue[0].id);
+    }
+  }, [activeId, routeItem, videoQueue]);
+
+  const active = videoQueue.find((item) => item.id === activeId) ?? routeItem ?? videoQueue[0] ?? null;
+  const canRenderInlineVideo = Boolean(
+    active?.mediaUrl &&
+      (Platform.OS === 'web'
+        ? isDirectPlayableVideoUrl(active.mediaUrl) || isHostedVideoUrl(active.mediaUrl)
+        : isDirectPlayableVideoUrl(active.mediaUrl)),
+  );
+
+  const curatedSections = useMemo(
+    () =>
+      getVideoLayoutSections(mobileConfig)
+        .map((section) => ({
+          section,
+          items: deriveLayoutSectionItems(feed, section).filter((item) => shouldOpenVideoScreen(item)),
+        }))
+        .filter((entry) => entry.items.length > 0),
+    [feed, mobileConfig],
+  );
+
+  const openVideo = async (item: FeedCardItem, source: string) => {
+    setActiveId(item.id);
     await trackPlayEvent({
       contentId: item.id,
       contentType: item.type,
       title: item.title,
       source,
     });
-    router.push(buildPlayerRoute(item));
+  };
+
+  const openExternal = async () => {
+    if (!active?.mediaUrl) {
+      return;
+    }
+
+    await Linking.openURL(active.mediaUrl);
   };
 
   return (
@@ -75,16 +190,16 @@ export default function VideosScreen() {
                 }}
               >
                 <BrandedHeaderCard
-                  title="Videos"
-                  subtitle="Featured streams, quick replays and live sessions."
+                  title="Video Hub"
+                  subtitle="Watch featured ministry videos, live sessions, and curated screen sections."
                   actions={[
                     { icon: 'search', onPress: () => router.push('/(tabs)/search'), accessibilityLabel: 'Search' },
-                    { icon: 'person-outline', onPress: () => router.push('/profile'), accessibilityLabel: 'Profile' },
+                    { icon: 'music-note', onPress: () => router.push('/(tabs)/player'), accessibilityLabel: 'Music player' },
                   ]}
                   chips={[
-                    { label: 'Featured' },
-                    { label: 'Quick Videos' },
-                    { label: 'Live Queue' },
+                    { label: 'Featured Player' },
+                    { label: 'Curated Sections' },
+                    { label: 'Live Ready' },
                   ]}
                 />
               </View>
@@ -94,141 +209,183 @@ export default function VideosScreen() {
 
         <Screen>
           <View style={{ paddingTop: theme.layout.sectionGap }}>
-          {featured ? (
             <FadeIn delay={70}>
-              <TVTouchable
-                onPress={() => openPlayer(featured, 'videos_featured')}
+              <View
                 style={{
-                  borderRadius: 22,
-                  overflow: 'hidden',
+                  borderRadius: 24,
                   borderWidth: 1,
                   borderColor: theme.colors.border,
                   backgroundColor: theme.colors.surface,
+                  padding: theme.spacing.lg,
                 }}
-                showFocusBorder={false}
               >
-                <Image source={{ uri: featured.imageUrl }} style={{ width: '100%', height: featureHeight }} />
-                <LinearGradient
-                  colors={['rgba(0,0,0,0.02)', 'rgba(0,0,0,0.62)']}
-                  style={{ position: 'absolute', left: 0, right: 0, bottom: 72, height: 96 }}
-                />
-                <View
-                  style={{
-                    position: 'absolute',
-                    right: 14,
-                    bottom: 86,
-                    width: 52,
-                    height: 52,
-                    borderRadius: 26,
-                    backgroundColor: 'rgba(154,107,255,0.92)',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <MaterialIcons name="play-arrow" size={30} color="#FFFFFF" />
-                </View>
-
-                <View style={{ padding: 12 }}>
-                  <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
-                    {featured.title}
-                  </CustomText>
-                  <View
-                    style={{
-                      marginTop: 4,
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                    }}
-                  >
-                    <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
-                      {featured.subtitle}
-                    </CustomText>
-                    <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
-                      {featured.duration}
-                    </CustomText>
-                  </View>
-                </View>
-              </TVTouchable>
-            </FadeIn>
-          ) : null}
-
-          <FadeIn delay={110}>
-            <View style={{ marginTop: theme.layout.sectionGapLarge }}>
-              <AppSectionHeader title="Quick Videos" actionLabel={`${quickVideos.length} items`} />
-              {quickVideos.length > 0 ? (
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} overScrollMode="never">
-                  {quickVideos.map((item) => (
-                    <TVTouchable
-                      key={item.id}
-                      onPress={() => openPlayer(item, 'videos_quick')}
+                {active ? (
+                  <>
+                    <View
                       style={{
-                        width: quickCardWidth,
-                        marginRight: theme.spacing.md,
-                        borderRadius: theme.radius.lg,
-                        overflow: 'hidden',
-                        borderWidth: 1,
-                        borderColor: theme.colors.border,
-                        backgroundColor: theme.colors.surface,
-                      }}
-                      showFocusBorder={false}
-                    >
-                      <Image source={{ uri: item.imageUrl }} style={{ width: '100%', height: 124 }} />
-                      <View style={{ padding: theme.spacing.md }}>
-                        <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }} numberOfLines={1}>
-                          {item.title}
-                        </CustomText>
-                        <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 3 }}>
-                          {item.subtitle}
-                        </CustomText>
-                      </View>
-                    </TVTouchable>
-                  ))}
-                </ScrollView>
-              ) : (
-                <EmptyHint text="No quick videos uploaded yet." />
-              )}
-            </View>
-          </FadeIn>
-
-          <FadeIn delay={140}>
-            <View style={{ marginTop: theme.layout.sectionGapLarge }}>
-              <AppSectionHeader title="Live Queue" actionLabel={`${liveQueue.length} live`} />
-              {liveQueue.length > 0 ? (
-                <View style={{ gap: theme.spacing.sm }}>
-                  {liveQueue.map((item) => (
-                    <TVTouchable
-                      key={item.id}
-                      onPress={() => openPlayer(item, 'videos_live_queue')}
-                      style={{
-                        minHeight: 76,
-                        borderRadius: 18,
-                        borderWidth: 1,
-                        borderColor: 'rgba(248,113,113,0.45)',
-                        backgroundColor: theme.colors.surface,
-                        padding: 10,
                         flexDirection: 'row',
                         alignItems: 'center',
+                        justifyContent: 'space-between',
+                        marginBottom: 14,
                       }}
-                      showFocusBorder={false}
                     >
-                      <Image source={{ uri: item.imageUrl }} style={{ width: 56, height: 56, borderRadius: 12 }} />
-                      <View style={{ marginLeft: 10, flex: 1 }}>
-                        <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }} numberOfLines={1}>
-                          {item.title}
+                      <View>
+                        <CustomText variant="label" style={{ color: theme.colors.text.secondary }}>
+                          Now Showing
                         </CustomText>
-                        <CustomText variant="caption" style={{ color: '#ef9a9a', marginTop: 2 }}>
-                          LIVE • {item.liveViewerCount ?? 0} watching
+                        <CustomText variant="heading" style={{ color: theme.colors.text.primary, marginTop: 4 }}>
+                          {active.title}
                         </CustomText>
                       </View>
-                      <MaterialIcons name="chevron-right" size={22} color={theme.colors.text.secondary} />
-                    </TVTouchable>
-                  ))}
+                      <TVTouchable
+                        onPress={() => router.push('/(tabs)/player')}
+                        style={{
+                          borderRadius: 999,
+                          paddingHorizontal: 12,
+                          paddingVertical: 10,
+                          backgroundColor: theme.colors.surfaceAlt,
+                          borderWidth: 1,
+                          borderColor: theme.colors.border,
+                        }}
+                        showFocusBorder={false}
+                      >
+                        <CustomText variant="caption" style={{ color: theme.colors.text.primary }}>
+                          Music Player
+                        </CustomText>
+                      </TVTouchable>
+                    </View>
+
+                    {canRenderInlineVideo && active.mediaUrl ? (
+                      <VideoPlayer
+                        title={active.title}
+                        sourceUri={active.mediaUrl}
+                        height={featureHeight}
+                      />
+                    ) : (
+                      <View
+                        style={{
+                          borderRadius: 22,
+                          overflow: 'hidden',
+                          borderWidth: 1,
+                          borderColor: theme.colors.border,
+                          backgroundColor: theme.colors.surfaceAlt,
+                        }}
+                      >
+                        <Image
+                          source={{ uri: active.imageUrl }}
+                          style={{ width: '100%', height: featureHeight }}
+                          resizeMode="cover"
+                        />
+                        <LinearGradient
+                          colors={['rgba(9,6,18,0.06)', 'rgba(8,6,14,0.88)']}
+                          start={{ x: 0.2, y: 0 }}
+                          end={{ x: 0.7, y: 1 }}
+                          style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}
+                        />
+                        <View style={{ position: 'absolute', left: 18, right: 18, bottom: 18 }}>
+                          <CustomText variant="subtitle" style={{ color: '#FFFFFF' }}>
+                            This source opens outside the inline player on this device
+                          </CustomText>
+                          <CustomText
+                            variant="caption"
+                            style={{ color: 'rgba(255,255,255,0.82)', marginTop: 6 }}
+                          >
+                            Hosted video sources like social or platform pages can still be opened directly for viewing.
+                          </CustomText>
+                          <TVTouchable
+                            onPress={() => void openExternal()}
+                            style={{
+                              marginTop: 14,
+                              alignSelf: 'flex-start',
+                              borderRadius: 999,
+                              paddingHorizontal: 14,
+                              paddingVertical: 10,
+                              backgroundColor: 'rgba(255,255,255,0.18)',
+                              borderWidth: 1,
+                              borderColor: 'rgba(255,255,255,0.28)',
+                            }}
+                            showFocusBorder={false}
+                          >
+                            <CustomText variant="caption" style={{ color: '#FFFFFF' }}>
+                              Open Video Source
+                            </CustomText>
+                          </TVTouchable>
+                        </View>
+                      </View>
+                    )}
+
+                    <View style={{ marginTop: 14 }}>
+                      <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
+                        {active.subtitle}
+                      </CustomText>
+                      <CustomText
+                        variant="body"
+                        style={{ color: theme.colors.text.primary, marginTop: 8, lineHeight: 21 }}
+                      >
+                        {active.description || 'Video description will appear here once the content record includes it.'}
+                      </CustomText>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12 }}>
+                        <Pill label={active.type === 'live' || active.isLive ? 'Live / Video' : 'Video'} />
+                        <Pill label={active.duration} subtle />
+                      </View>
+                    </View>
+                  </>
+                ) : (
+                  <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
+                    No videos are ready yet. Publish or import video content from the admin dashboard to populate this
+                    screen.
+                  </CustomText>
+                )}
+              </View>
+            </FadeIn>
+
+            {curatedSections.map(({ section, items }, index) => (
+              <FadeIn key={section.id} delay={120 + index * 30}>
+                <View style={{ marginTop: theme.layout.sectionGapLarge }}>
+                  <AppSectionHeader title={section.title} actionLabel={`${items.length} items`} />
+                  <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 4, marginBottom: 10 }}>
+                    {section.subtitle}
+                  </CustomText>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} overScrollMode="never">
+                    {items.map((item) => {
+                      const activeItem = item.id === active?.id;
+                      return (
+                        <TVTouchable
+                          key={`${section.id}-${item.id}`}
+                          onPress={() => void openVideo(item, `${section.id}_video_section`)}
+                          style={{
+                            width: isTV ? 320 : isTablet ? 260 : 216,
+                            marginRight: theme.spacing.md,
+                            borderRadius: 20,
+                            overflow: 'hidden',
+                            borderWidth: 1,
+                            borderColor: activeItem ? `${theme.colors.primary}60` : theme.colors.border,
+                            backgroundColor: theme.colors.surface,
+                          }}
+                          showFocusBorder={false}
+                        >
+                          <Image source={{ uri: item.imageUrl }} style={{ width: '100%', height: 132 }} />
+                          <View style={{ padding: 12 }}>
+                            <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }} numberOfLines={1}>
+                              {item.title}
+                            </CustomText>
+                            <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 4 }} numberOfLines={2}>
+                              {item.subtitle}
+                            </CustomText>
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 }}>
+                              <Pill label={item.type === 'live' || item.isLive ? 'Live' : 'Video'} subtle />
+                              <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
+                                {item.duration}
+                              </CustomText>
+                            </View>
+                          </View>
+                        </TVTouchable>
+                      );
+                    })}
+                  </ScrollView>
                 </View>
-              ) : (
-                <EmptyHint text="No live sessions active now." />
-              )}
-            </View>
-          </FadeIn>
+              </FadeIn>
+            ))}
           </View>
         </Screen>
       </ScrollView>
@@ -236,22 +393,25 @@ export default function VideosScreen() {
   );
 }
 
-function EmptyHint({ text }: { text: string }) {
+function Pill({ label, subtle }: { label: string; subtle?: boolean }) {
   const theme = useAppTheme();
 
   return (
     <View
       style={{
-        borderRadius: 16,
+        borderRadius: 999,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        backgroundColor: subtle ? theme.colors.surfaceAlt : `${theme.colors.primary}14`,
         borderWidth: 1,
-        borderColor: theme.colors.border,
-        paddingVertical: 16,
-        paddingHorizontal: 16,
-        backgroundColor: theme.colors.surface,
+        borderColor: subtle ? theme.colors.border : `${theme.colors.primary}22`,
       }}
     >
-      <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
-        {text}
+      <CustomText
+        variant="caption"
+        style={{ color: subtle ? theme.colors.text.secondary : theme.colors.primary }}
+      >
+        {label}
       </CustomText>
     </View>
   );

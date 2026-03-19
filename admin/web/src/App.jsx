@@ -219,6 +219,66 @@ function parseCsvList(value) {
     .filter(Boolean);
 }
 
+function normalizeSectionCatalog(config) {
+  const sectionMap = new Map();
+
+  const register = (screen, value) => {
+    if (!value || typeof value !== 'object') return;
+
+    const id = String(value.id || '').trim();
+    const title = String(value.title || '').trim();
+    if (!id || !title) return;
+
+    const existing = sectionMap.get(id) || {
+      id,
+      title,
+      subtitle: '',
+      screens: [],
+      contentTypes: [],
+    };
+
+    existing.title = title;
+    existing.subtitle = String(value.subtitle || existing.subtitle || '').trim();
+    if (!existing.screens.includes(screen)) {
+      existing.screens.push(screen);
+    }
+
+    if (Array.isArray(value.contentTypes)) {
+      existing.contentTypes = Array.from(new Set([
+        ...existing.contentTypes,
+        ...value.contentTypes.map((item) => String(item || '').trim()).filter(Boolean),
+      ]));
+    }
+
+    sectionMap.set(id, existing);
+  };
+
+  const homeSections = Array.isArray(config?.layout?.homeSections) ? config.layout.homeSections : [];
+  const videoSections = Array.isArray(config?.layout?.videoSections) ? config.layout.videoSections : [];
+
+  homeSections.forEach((section) => register('Home', section));
+  videoSections.forEach((section) => register('Videos', section));
+
+  return Array.from(sectionMap.values());
+}
+
+function sectionSelectionMatches(value, section) {
+  const tokens = parseCsvList(value).map((item) => item.toLowerCase());
+  return tokens.includes(String(section.id || '').toLowerCase()) || tokens.includes(String(section.title || '').toLowerCase());
+}
+
+function toggleSectionSelection(value, section) {
+  const current = parseCsvList(value);
+  const targetIds = new Set([String(section.id || '').trim(), String(section.title || '').trim()].filter(Boolean));
+  const isSelected = current.some((item) => targetIds.has(item));
+
+  if (isSelected) {
+    return current.filter((item) => !targetIds.has(item)).join(', ');
+  }
+
+  return [...current.filter(Boolean), section.id].join(', ');
+}
+
 function formatBytes(bytes) {
   const value = Number(bytes || 0);
   if (!Number.isFinite(value) || value <= 0) return '0 B';
@@ -349,6 +409,7 @@ export default defineComponent({
     const youtubeDraftItems = ref([]);
     const mobileAppConfigEditor = ref('');
     const mobileAppConfigMeta = ref(null);
+    const mobileAppConfigValue = ref(null);
     const wordOfDayHistory = ref([]);
     const wordOfDayCurrent = ref(null);
     const adminOps = ref({
@@ -426,6 +487,7 @@ export default defineComponent({
     const apiHealthCheck = computed(() =>
       (endpointChecks.value || []).find((check) => check && check.label === 'API Health') || null,
     );
+    const mobileSectionCatalog = computed(() => normalizeSectionCatalog(mobileAppConfigValue.value));
 
     const stats = computed(() => {
       const total = managedItems.value.length;
@@ -731,6 +793,7 @@ export default defineComponent({
       editingContentId.value = null;
       mobileAppConfigEditor.value = '';
       mobileAppConfigMeta.value = null;
+      mobileAppConfigValue.value = null;
       wordOfDayHistory.value = [];
       wordOfDayCurrent.value = null;
       adminOps.value = {
@@ -898,6 +961,7 @@ export default defineComponent({
         const response = await http.get('/v1/admin/app-config');
         mobileAppConfigEditor.value = JSON.stringify(response.data.config || {}, null, 2);
         mobileAppConfigMeta.value = response.data.meta || null;
+        mobileAppConfigValue.value = response.data.config || null;
       } catch (error) {
         setNotice(toErrorMessage(error, 'Unable to load mobile app config.'), 'error');
       } finally {
@@ -925,12 +989,38 @@ export default defineComponent({
         const response = await http.put('/v1/admin/app-config', { config: parsedConfig });
         mobileAppConfigEditor.value = JSON.stringify(response.data.config || {}, null, 2);
         mobileAppConfigMeta.value = response.data.meta || null;
+        mobileAppConfigValue.value = response.data.config || null;
         setNotice('Mobile app config saved successfully.', 'success');
       } catch (error) {
         setNotice(toErrorMessage(error, 'Unable to save mobile app config.'), 'error');
       } finally {
         appConfigSaving.value = false;
       }
+    }
+
+    function renderSectionSelector(value, onChange) {
+      if (!mobileSectionCatalog.value.length) {
+        return null;
+      }
+
+      return (
+        <div class="section-selector">
+          {mobileSectionCatalog.value.map((section) => {
+            const selected = sectionSelectionMatches(value, section);
+            return (
+              <button
+                key={`section-pill-${section.id}`}
+                type="button"
+                class={['section-selector-pill', selected ? 'is-active' : '']}
+                onClick={() => onChange(toggleSectionSelection(value, section))}
+              >
+                <span>{section.title}</span>
+                <small>{section.screens.join(' • ')}</small>
+              </button>
+            );
+          })}
+        </div>
+      );
     }
 
     async function fetchWordOfDayDashboard() {
@@ -1125,8 +1215,11 @@ export default defineComponent({
 
     async function assignContentSections(item) {
       const current = Array.isArray(item.appSections) ? item.appSections.join(', ') : '';
+      const availableSections = mobileSectionCatalog.value
+        .map((section) => `${section.title} (${section.id})`)
+        .join('\n');
       const nextValue = window.prompt(
-        'Assign app sections (comma-separated). Example: ClaudyGod Music, ClaudyGod Nuggets of Truth',
+        `Assign app sections (comma-separated).\n\nAvailable sections:\n${availableSections || 'No mobile section catalog loaded yet.'}`,
         current,
       );
       if (nextValue === null) return;
@@ -2424,6 +2517,18 @@ export default defineComponent({
                     Publish content, assign sections, or update mobile app config in this dashboard, then click <em>Reload Preview</em> to verify changes reflected in the app UI.
                   </p>
                 </div>
+                {mobileSectionCatalog.value.length ? (
+                  <div class="section-catalog">
+                    {mobileSectionCatalog.value.map((section) => (
+                      <article class="section-catalog-card" key={`preview-section-${section.id}`}>
+                        <strong>{section.title}</strong>
+                        <span>{section.id}</span>
+                        <p>{section.subtitle || 'No subtitle configured yet.'}</p>
+                        <small>{section.screens.join(' • ')}</small>
+                      </article>
+                    ))}
+                  </div>
+                ) : null}
               </article>
 
               <article class="panel glass-panel reveal-up" style={{ animationDelay: '260ms' }}>
@@ -2638,9 +2743,13 @@ export default defineComponent({
                       <input
                         value={createForm.appSectionsCsv}
                         onInput={(event) => { createForm.appSectionsCsv = readValue(event); }}
-                        placeholder="ClaudyGod Music, ClaudyGod Nuggets of Truth"
+                        placeholder="Choose placements below or enter section ids manually"
                       />
+                      <small class="subtle-text">
+                        These placements map content to mobile home and video sections.
+                      </small>
                     </label>
+                    {renderSectionSelector(createForm.appSectionsCsv, (nextValue) => { createForm.appSectionsCsv = nextValue; })}
                   </div>
                 </details>
 
@@ -2916,9 +3025,10 @@ export default defineComponent({
                     <input
                       value={youtubeSyncState.appSectionsCsv}
                       onInput={(event) => { youtubeSyncState.appSectionsCsv = readValue(event); }}
-                      placeholder="ClaudyGod Music, ClaudyGod Messages"
+                      placeholder="Choose placements below or enter section ids manually"
                     />
                   </label>
+                  {renderSectionSelector(youtubeSyncState.appSectionsCsv, (nextValue) => { youtubeSyncState.appSectionsCsv = nextValue; })}
 
                   <div class="button-row">
                     <button type="button" class="primary-btn" onClick={() => void importSelectedYouTubeVideos()} disabled={youtubeImporting.value || youtubePreviewLoading.value || youtubeDraftItems.value.length === 0}>
@@ -2983,7 +3093,7 @@ export default defineComponent({
                                 appSectionsCsv: readValue(event),
                                 appSections: parseCsvList(readValue(event)),
                               })}
-                              placeholder="ClaudyGod Music, ClaudyGod Messages"
+                              placeholder="Choose placements below or enter section ids manually"
                             />
                           </label>
                           <label>
@@ -2998,6 +3108,10 @@ export default defineComponent({
                             />
                           </label>
                         </div>
+                        {renderSectionSelector(video.appSectionsCsv, (nextValue) => updateYouTubeDraftItem(video.youtubeVideoId, {
+                          appSectionsCsv: nextValue,
+                          appSections: parseCsvList(nextValue),
+                        }))}
                         <label>
                           Import visibility
                           <select
@@ -3051,6 +3165,14 @@ export default defineComponent({
                           This JSON is validated by the API before save. Invalid fields, URLs, or missing sections will be rejected with field-level errors.
                         </p>
                       </div>
+                      {mobileSectionCatalog.value.length ? (
+                        <div class="helper-card">
+                          <strong>Current section catalog</strong>
+                          <p>
+                            These placements drive the mobile home and video layouts. Use the same section ids when assigning content and fetched YouTube videos.
+                          </p>
+                        </div>
+                      ) : null}
 
                       {mobileAppConfigMeta.value ? (
                         <div class="meta-grid">
@@ -3350,10 +3472,11 @@ export default defineComponent({
                       <input
                         value={editForm.appSectionsCsv}
                         onInput={(event) => { editForm.appSectionsCsv = readValue(event); }}
-                        placeholder="ClaudyGod Music, ClaudyGod Nuggets of Truth"
+                        placeholder="Choose placements below or enter section ids manually"
                       />
                     </label>
                   </div>
+                  {renderSectionSelector(editForm.appSectionsCsv, (nextValue) => { editForm.appSectionsCsv = nextValue; })}
 
                   <div class="helper-card">
                     <strong>Validation rules</strong>
