@@ -9,7 +9,7 @@ interface AuthBrandPanelProps {
 }
 
 export function AuthBrandPanel({ salutation, description }: AuthBrandPanelProps) {
-  const highlights = ['Secure access', 'Recovery ready', 'Live ministry visuals'];
+  const highlights = ['Secure access', 'Recovery ready', 'One calm ministry flow'];
 
   return (
     <View
@@ -125,60 +125,17 @@ export function AuthBrandPanel({ salutation, description }: AuthBrandPanelProps)
             left: 14,
             right: 14,
             bottom: 14,
-            flexDirection: 'row',
-            alignItems: 'flex-end',
-            justifyContent: 'space-between',
-            gap: 12,
           }}
         >
-          <View style={{ flex: 1 }}>
-            <CustomText variant="caption" style={{ color: 'rgba(238,231,255,0.82)' }}>
-              Ministry experience
-            </CustomText>
-            <CustomText
-              variant="label"
-              style={{ color: '#FAF7FF', marginTop: 4, fontSize: 12.6, lineHeight: 16 }}
-            >
-              Beautiful worship visuals, secure flows, and a calmer account journey.
-            </CustomText>
-          </View>
-
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            <View
-              style={{
-                width: 54,
-                height: 70,
-                borderRadius: 18,
-                overflow: 'hidden',
-                borderWidth: 1,
-                borderColor: 'rgba(255,255,255,0.12)',
-                backgroundColor: 'rgba(255,255,255,0.05)',
-              }}
-            >
-              <Image
-                source={require('../../assets/images/FB_IMG_1743103252303.jpg')}
-                style={{ width: '100%', height: '100%' }}
-                resizeMode="cover"
-              />
-            </View>
-            <View
-              style={{
-                width: 54,
-                height: 70,
-                borderRadius: 18,
-                overflow: 'hidden',
-                borderWidth: 1,
-                borderColor: 'rgba(255,255,255,0.12)',
-                backgroundColor: 'rgba(255,255,255,0.05)',
-              }}
-            >
-              <Image
-                source={require('../../assets/images/music4.webp')}
-                style={{ width: '100%', height: '100%' }}
-                resizeMode="cover"
-              />
-            </View>
-          </View>
+          <CustomText variant="caption" style={{ color: 'rgba(238,231,255,0.82)' }}>
+            Ministry experience
+          </CustomText>
+          <CustomText
+            variant="label"
+            style={{ color: '#FAF7FF', marginTop: 4, fontSize: 12.6, lineHeight: 16 }}
+          >
+            Beautiful worship visuals, secure flows, and a calmer account journey.
+          </CustomText>
         </View>
       </View>
 
