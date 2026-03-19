@@ -49,8 +49,8 @@ export function AppButton({
     size === 'sm'
       ? { minHeight: 40, paddingHorizontal: theme.spacing.md, paddingVertical: 8 }
       : size === 'lg'
-      ? { minHeight: 54, paddingHorizontal: theme.spacing.xl, paddingVertical: 14 }
-      : { minHeight: 48, paddingHorizontal: theme.spacing.lg, paddingVertical: 11 };
+      ? { minHeight: 52, paddingHorizontal: theme.spacing.xl, paddingVertical: 13 }
+      : { minHeight: 46, paddingHorizontal: theme.spacing.lg, paddingVertical: 10 };
 
   return (
     <TVTouchable
@@ -60,7 +60,7 @@ export function AppButton({
       style={[
         {
           ...sizeStyle,
-          borderRadius: theme.radius.pill,
+          borderRadius: 18,
           backgroundColor: isPrimary
             ? theme.colors.primary
             : isSecondary
@@ -98,11 +98,14 @@ export function AppButton({
             </View>
           ) : null}
           <CustomText
-            variant={size === 'sm' ? 'label' : 'subtitle'}
+            variant={size === 'sm' ? 'label' : 'title'}
             style={{
               color: resolvedTextColor,
               textAlign: 'center',
               flexShrink: 1,
+              fontFamily: 'SpaceGrotesk_500Medium',
+              fontSize: size === 'lg' ? 15 : 14,
+              lineHeight: size === 'lg' ? 20 : 19,
               ...(textStyle || {}),
             }}
             numberOfLines={1}

@@ -41,7 +41,33 @@ export interface AuthActionResponse {
   message: string;
 }
 
-const APP_SIGN_IN_URL = Linking.createURL('/sign-in');
+const normalizePath = (value: string): string => (value.startsWith('/') ? value : `/${value}`);
+
+const getWebOrigin = (): string => {
+  const location = (globalThis as { location?: { origin?: string } }).location;
+
+  if (!location) {
+    return '';
+  }
+
+  const origin = String(location.origin || '').trim().replace(/\/+$/, '');
+  if (!origin || /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?$/i.test(origin)) {
+    return '';
+  }
+
+  return origin;
+};
+
+const buildAuthRedirectUrl = (path: string): string => {
+  const normalizedPath = normalizePath(path);
+  const webOrigin = getWebOrigin();
+
+  if (webOrigin) {
+    return `${webOrigin}${normalizedPath}`;
+  }
+
+  return Linking.createURL(normalizedPath);
+};
 
 const normalizeRole = (value: unknown): 'CLIENT' | 'ADMIN' =>
   value === 'ADMIN' ? 'ADMIN' : 'CLIENT';
@@ -140,7 +166,7 @@ export async function registerMobileUser(input: RegisterMobileUserInput): Promis
     email: input.email.trim().toLowerCase(),
     password: input.password,
     options: {
-      emailRedirectTo: APP_SIGN_IN_URL,
+      emailRedirectTo: buildAuthRedirectUrl('/verify-email'),
       data: {
         display_name: input.displayName.trim(),
         full_name: input.displayName.trim(),
@@ -166,7 +192,7 @@ export async function requestVerificationEmail(
     type: 'signup',
     email: input.email.trim().toLowerCase(),
     options: {
-      emailRedirectTo: APP_SIGN_IN_URL,
+      emailRedirectTo: buildAuthRedirectUrl('/verify-email'),
     },
   });
 
@@ -182,10 +208,35 @@ export async function requestVerificationEmail(
 export async function verifyMobileEmail(input: VerifyEmailInput): Promise<MobileAuthResponse> {
   ensureSupabaseConfig();
 
-  const { data, error } = await supabase.auth.verifyOtp({
-    token_hash: input.token.trim(),
-    type: 'signup',
-  });
+  const tokenHash = input.token.trim();
+  let data;
+  let error;
+
+  if (tokenHash) {
+    ({ data, error } = await supabase.auth.verifyOtp({
+      token_hash: tokenHash,
+      type: 'signup',
+    }));
+  } else {
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
+
+    if (sessionError) {
+      throw new Error(sessionError.message);
+    }
+
+    if (!session?.user?.email_confirmed_at) {
+      throw new Error('Open the verification link from your email to finish confirming your account.');
+    }
+
+    data = {
+      session,
+      user: session.user,
+    };
+    error = null;
+  }
 
   if (error) {
     throw new Error(error.message);
@@ -203,7 +254,7 @@ export async function requestMobilePasswordReset(
   const { error } = await supabase.auth.resetPasswordForEmail(
     input.email.trim().toLowerCase(),
     {
-      redirectTo: APP_SIGN_IN_URL,
+      redirectTo: buildAuthRedirectUrl('/reset-password'),
     },
   );
 
@@ -221,13 +272,30 @@ export async function resetMobilePassword(
 ): Promise<AuthActionResponse> {
   ensureSupabaseConfig();
 
-  const { error: verifyError } = await supabase.auth.verifyOtp({
-    token_hash: input.token.trim(),
-    type: 'recovery',
-  });
+  const tokenHash = input.token.trim();
 
-  if (verifyError) {
-    throw new Error(verifyError.message);
+  if (tokenHash) {
+    const { error: verifyError } = await supabase.auth.verifyOtp({
+      token_hash: tokenHash,
+      type: 'recovery',
+    });
+
+    if (verifyError) {
+      throw new Error(verifyError.message);
+    }
+  } else {
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
+
+    if (sessionError) {
+      throw new Error(sessionError.message);
+    }
+
+    if (!session) {
+      throw new Error('Open the reset link from your email to continue, or paste the reset token hash.');
+    }
   }
 
   const { error: updateError } = await supabase.auth.updateUser({

@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
-import { Platform, StyleProp, TouchableOpacity, TouchableOpacityProps, ViewStyle } from 'react-native';
+import { Platform, Pressable, PressableProps, StyleProp, ViewStyle } from 'react-native';
 import { useAppTheme } from '../../util/colorScheme';
 
-interface TVTouchableProps extends TouchableOpacityProps {
+interface TVTouchableProps extends Omit<PressableProps, 'style'> {
+  style?: StyleProp<ViewStyle>;
   focusScale?: number;
   focusStyle?: StyleProp<ViewStyle>;
   showFocusBorder?: boolean;
   disableTVFocusStyle?: boolean;
+  disableHoverStyle?: boolean;
+  activeOpacity?: number;
 }
 
 export function TVTouchable({
@@ -15,6 +18,7 @@ export function TVTouchable({
   focusStyle,
   showFocusBorder = true,
   disableTVFocusStyle = false,
+  disableHoverStyle = false,
   onFocus,
   onBlur,
   focusable,
@@ -25,7 +29,10 @@ export function TVTouchable({
 }: TVTouchableProps) {
   const theme = useAppTheme();
   const isTV = Platform.isTV;
+  const isWeb = Platform.OS === 'web';
   const [isFocused, setIsFocused] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const [isPressed, setIsPressed] = useState(false);
 
   const tvFocusStyle: ViewStyle | null =
     isTV && isFocused && !disableTVFocusStyle
@@ -41,12 +48,47 @@ export function TVTouchable({
         }
       : null;
 
+  const hoverStyle: ViewStyle | null =
+    isWeb && isHovered && !disableHoverStyle
+      ? {
+          opacity: 0.96,
+          shadowColor: '#A97BFF',
+          shadowOpacity: 0.12,
+          shadowRadius: 14,
+          shadowOffset: { width: 0, height: 6 },
+        }
+      : null;
+
+  const pressedStyle: ViewStyle | null = isPressed ? { opacity: activeOpacity } : null;
+
+  const webCursorStyle = isWeb
+    ? ({
+        cursor: props.disabled ? 'default' : 'pointer',
+        transitionDuration: '140ms',
+      } as ViewStyle)
+    : null;
+
   return (
-    <TouchableOpacity
+    <Pressable
       {...props}
-      activeOpacity={activeOpacity}
       focusable={focusable ?? true}
       hitSlop={hitSlop ?? (isTV ? theme.tv.hitSlop : undefined)}
+      onHoverIn={(event) => {
+        setIsHovered(true);
+        props.onHoverIn?.(event);
+      }}
+      onHoverOut={(event) => {
+        setIsHovered(false);
+        props.onHoverOut?.(event);
+      }}
+      onPressIn={(event) => {
+        setIsPressed(true);
+        props.onPressIn?.(event);
+      }}
+      onPressOut={(event) => {
+        setIsPressed(false);
+        props.onPressOut?.(event);
+      }}
       onFocus={(event) => {
         setIsFocused(true);
         onFocus?.(event);
@@ -55,9 +97,9 @@ export function TVTouchable({
         setIsFocused(false);
         onBlur?.(event);
       }}
-      style={[style, tvFocusStyle, isTV && isFocused ? focusStyle : null]}
+      style={[style, webCursorStyle, hoverStyle, pressedStyle, tvFocusStyle, isTV && isFocused ? focusStyle : null]}
     >
       {children}
-    </TouchableOpacity>
+    </Pressable>
   );
 }
