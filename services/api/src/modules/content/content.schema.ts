@@ -3,6 +3,7 @@ import { z } from 'zod';
 const contentTypeSchema = z.enum(['audio', 'video', 'playlist', 'announcement']);
 const contentFilterTypeSchema = z.enum(['audio', 'video', 'playlist', 'announcement', 'live', 'ad']);
 const visibilitySchema = z.enum(['draft', 'published']);
+const contentRequestStatusSchema = z.enum(['submitted', 'in_review', 'changes_requested', 'approved', 'fulfilled', 'rejected']);
 const sourceKindSchema = z.enum(['upload', 'youtube', 'external']);
 const httpUrlSchema = z
   .string()
@@ -118,6 +119,53 @@ export const createContentSchema = z
     }
   });
 
+export const createContentRequestSchema = z
+  .object({
+    title: z.string().trim().min(2).max(180),
+    description: z.string().trim().min(2).max(5000),
+    type: contentTypeSchema,
+    url: optionalHttpUrlSchema,
+    thumbnailUrl: optionalHttpUrlSchema,
+    mediaUploadSessionId: optionalUuidSchema,
+    thumbnailUploadSessionId: optionalUuidSchema,
+    channelName: z.preprocess((value) => (typeof value === 'string' && value.trim() === '' ? undefined : value), z.string().trim().max(180).optional()) as unknown as z.ZodType<string | undefined>,
+    duration: z.preprocess((value) => (typeof value === 'string' && value.trim() === '' ? undefined : value), z.string().trim().max(32).optional()) as unknown as z.ZodType<string | undefined>,
+    sourceKind: sourceKindSchema.default('upload'),
+    externalSourceId: z.preprocess((value) => (typeof value === 'string' && value.trim() === '' ? undefined : value), z.string().trim().max(200).optional()) as unknown as z.ZodType<string | undefined>,
+    appSections: optionalSectionsSchema,
+    tags: optionalStringArraySchema(20, 40),
+    metadata: optionalJsonRecordSchema,
+    requestedVisibility: visibilitySchema.default('draft'),
+    requestNotes: z.preprocess((value) => (typeof value === 'string' && value.trim() === '' ? undefined : value), z.string().trim().max(2000).optional()) as unknown as z.ZodType<string | undefined>,
+  })
+  .strict()
+  .superRefine((value, ctx) => {
+    const requiresUrl = value.type === 'audio' || value.type === 'video';
+    if (requiresUrl && !value.url) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['url'],
+        message: `A media URL is required for ${value.type} requests`,
+      });
+    }
+
+    if (requiresUrl && value.sourceKind === 'upload' && !value.mediaUploadSessionId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['mediaUploadSessionId'],
+        message: 'An upload session is required for uploaded audio or video requests',
+      });
+    }
+
+    if (requiresUrl && !value.thumbnailUrl) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['thumbnailUrl'],
+        message: 'A thumbnail URL is required for audio and video requests',
+      });
+    }
+  });
+
 export const updateContentSchema = z
   .object({
     title: z.string().trim().min(2).max(180).optional(),
@@ -167,6 +215,12 @@ export const contentIdParamsSchema = z
   })
   .strict();
 
+export const contentRequestIdParamsSchema = z
+  .object({
+    id: z.string().uuid(),
+  })
+  .strict();
+
 export const updateVisibilitySchema = z
   .object({
     visibility: visibilitySchema,
@@ -176,5 +230,11 @@ export const updateVisibilitySchema = z
 export const assignContentSectionsSchema = z
   .object({
     appSections: z.array(sectionNameSchema).max(12),
+  })
+  .strict();
+
+export const updateContentRequestStatusSchema = z
+  .object({
+    status: contentRequestStatusSchema,
   })
   .strict();
