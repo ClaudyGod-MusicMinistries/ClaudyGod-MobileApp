@@ -33,8 +33,10 @@ export function AuthScreenFrame({
   const isTV = Platform.isTV;
   const isWeb = Platform.OS === 'web';
   const isTablet = width >= 768 && !isTV;
+  const isDesktop = width >= 1040 && !isTV;
   const compact = width < 370;
   const compactViewport = height < 760;
+  const shellWidth = isDesktop ? 1080 : isTablet ? 760 : '100%';
 
   return (
     <View style={{ flex: 1, backgroundColor: '#07050F' }}>
@@ -51,6 +53,19 @@ export function AuthScreenFrame({
           width: isTablet ? 420 : 320,
           height: isTablet ? 420 : 320,
           borderRadius: 420,
+        }}
+      />
+      <LinearGradient
+        colors={['rgba(67,183,255,0.16)', 'rgba(8,7,13,0)']}
+        start={{ x: 1, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={{
+          position: 'absolute',
+          right: -80,
+          bottom: -70,
+          width: isDesktop ? 520 : 360,
+          height: isDesktop ? 520 : 360,
+          borderRadius: 999,
         }}
       />
 
@@ -75,12 +90,12 @@ export function AuthScreenFrame({
                 <TVTouchable
                   onPress={() => router.replace(backPath)}
                   style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: 22,
+                    width: 42,
+                    height: 42,
+                    borderRadius: 16,
                     borderWidth: 1,
-                    borderColor: 'rgba(255,255,255,0.18)',
-                    backgroundColor: 'rgba(255,255,255,0.06)',
+                    borderColor: 'rgba(255,255,255,0.14)',
+                    backgroundColor: 'rgba(255,255,255,0.055)',
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
@@ -93,34 +108,103 @@ export function AuthScreenFrame({
                   style={{
                     marginTop: compactViewport ? 12 : 16,
                     width: '100%',
-                    maxWidth: isTV ? 760 : isTablet ? 560 : '100%',
+                    maxWidth: shellWidth,
                     alignSelf: 'center',
-                    borderRadius: 24,
-                    padding: isTablet ? 24 : compactViewport ? 14 : compact ? 16 : 20,
-                    backgroundColor: 'rgba(13,10,22,0.90)',
+                    borderRadius: isDesktop ? 30 : 24,
+                    padding: isDesktop ? 20 : 0,
+                    backgroundColor: isDesktop ? 'rgba(12,10,22,0.82)' : 'transparent',
                     borderWidth: 1,
-                    borderColor: 'rgba(235,226,255,0.14)',
+                    borderColor: isDesktop ? 'rgba(235,226,255,0.10)' : 'transparent',
+                    flexDirection: isDesktop ? 'row' : 'column',
+                    gap: isDesktop ? 18 : 0,
                   }}
                 >
-                  <AuthBrandPanel salutation={salutation} description={description} />
-                  <CustomText
-                    variant="display"
+                  {isDesktop ? (
+                    <View style={{ flex: 0.95, justifyContent: 'center' }}>
+                      <AuthBrandPanel salutation={salutation} description={description} />
+                    </View>
+                  ) : null}
+
+                  <View
                     style={{
-                      color: '#F8F7FC',
-                      fontSize: isTablet ? 30 : 26,
-                      lineHeight: isTablet ? 36 : 31,
+                      flex: 1,
+                      borderRadius: 24,
+                      padding: isDesktop ? 26 : isTablet ? 24 : compactViewport ? 14 : compact ? 16 : 20,
+                      backgroundColor: 'rgba(13,10,22,0.90)',
+                      borderWidth: 1,
+                      borderColor: 'rgba(235,226,255,0.14)',
                     }}
                   >
-                    {title}
-                  </CustomText>
-                  <CustomText
-                    variant="body"
-                    style={{ color: 'rgba(203,196,226,0.86)', marginTop: 8 }}
-                  >
-                    {subtitle}
-                  </CustomText>
+                    {!isDesktop ? <AuthBrandPanel salutation={salutation} description={description} /> : null}
 
-                  <View style={{ marginTop: 16 }}>{children}</View>
+                    <View
+                      style={{
+                        borderRadius: 999,
+                        alignSelf: 'flex-start',
+                        borderWidth: 1,
+                        borderColor: 'rgba(255,255,255,0.10)',
+                        backgroundColor: 'rgba(255,255,255,0.045)',
+                        paddingHorizontal: 10,
+                        paddingVertical: 5,
+                        marginBottom: 12,
+                      }}
+                    >
+                      <CustomText
+                        variant="caption"
+                        style={{
+                          color: 'rgba(226,219,246,0.84)',
+                          textTransform: 'uppercase',
+                          letterSpacing: 0.8,
+                        }}
+                      >
+                        Secure account access
+                      </CustomText>
+                    </View>
+
+                    <CustomText
+                      variant="display"
+                      style={{
+                        color: '#F8F7FC',
+                        fontSize: isDesktop ? 24 : isTablet ? 24 : 22,
+                        lineHeight: isDesktop ? 30 : isTablet ? 30 : 28,
+                      }}
+                    >
+                      {title}
+                    </CustomText>
+                    <CustomText
+                      variant="body"
+                      style={{
+                        color: 'rgba(203,196,226,0.84)',
+                        marginTop: 8,
+                        fontSize: 14,
+                        lineHeight: 21,
+                      }}
+                    >
+                      {subtitle}
+                    </CustomText>
+
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
+                      {['Smooth web auth', 'Email link recovery', 'Synced across devices'].map((item) => (
+                        <View
+                          key={item}
+                          style={{
+                            borderRadius: 999,
+                            borderWidth: 1,
+                            borderColor: 'rgba(255,255,255,0.10)',
+                            backgroundColor: 'rgba(255,255,255,0.035)',
+                            paddingHorizontal: 10,
+                            paddingVertical: 6,
+                          }}
+                        >
+                          <CustomText variant="caption" style={{ color: 'rgba(232,225,249,0.84)' }}>
+                            {item}
+                          </CustomText>
+                        </View>
+                      ))}
+                    </View>
+
+                    <View style={{ marginTop: 18 }}>{children}</View>
+                  </View>
                 </View>
               </View>
             </FadeIn>

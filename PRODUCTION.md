@@ -92,3 +92,13 @@ eas build --platform all --profile production
 ```
 
 Set the same production env values in EAS secrets so the native builds use the same API and Supabase endpoints as the deployed backend.
+
+## Supabase Auth URL configuration
+
+For the Expo web app and native email auth flows to work correctly, update the Supabase dashboard for the same project:
+
+- `Authentication -> URL Configuration -> Site URL`: set this to `https://APP_DOMAIN`
+- add redirect URLs for the live web app, for example `https://APP_DOMAIN/**`
+- add native deep-link redirects if you use native email verification or password reset, for example `claudygod://**`
+
+If Supabase still points to an old development URL such as `http://localhost:3000`, email verification and password reset links will send users to the wrong place even when the deployed app is healthy.

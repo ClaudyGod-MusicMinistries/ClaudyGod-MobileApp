@@ -1,6 +1,7 @@
 import 'react-native-url-polyfill/auto';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient, processLock } from '@supabase/supabase-js';
+import { Platform } from 'react-native';
 import { ENV } from '../services/config';
 
 const supabaseUrl = ENV.supabaseUrl.trim();
@@ -30,7 +31,8 @@ export const supabase = createClient(
     storage: AsyncStorage,
     persistSession: true,
     autoRefreshToken: true,
-    detectSessionInUrl: false,
+    // Web email confirmation and recovery links arrive with auth state in the URL.
+    detectSessionInUrl: Platform.OS === 'web',
     lock: processLock,
   },
 });

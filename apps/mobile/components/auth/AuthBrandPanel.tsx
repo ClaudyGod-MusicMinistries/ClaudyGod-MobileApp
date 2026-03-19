@@ -1,4 +1,5 @@
 import React from 'react';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Image, View } from 'react-native';
 import { CustomText } from '../CustomText';
 
@@ -8,54 +9,115 @@ interface AuthBrandPanelProps {
 }
 
 export function AuthBrandPanel({ salutation, description }: AuthBrandPanelProps) {
+  const highlights = ['Secure access', 'Cross-device sync', 'Recovery ready'];
+
   return (
     <View
       style={{
-        borderRadius: 20,
+        borderRadius: 24,
         borderWidth: 1,
-        borderColor: 'rgba(235,226,255,0.14)',
-        backgroundColor: 'rgba(255,255,255,0.04)',
-        paddingHorizontal: 16,
-        paddingVertical: 16,
-        marginBottom: 18,
+        borderColor: 'rgba(235,226,255,0.12)',
+        backgroundColor: 'rgba(255,255,255,0.035)',
+        paddingHorizontal: 18,
+        paddingVertical: 18,
+        marginBottom: 16,
       }}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <View
-          style={{
-            width: 54,
-            height: 54,
-            borderRadius: 18,
-            borderWidth: 1,
-            borderColor: 'rgba(255,255,255,0.18)',
-            backgroundColor: 'rgba(255,255,255,0.05)',
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginRight: 12,
-          }}
-        >
-          <Image
-            source={require('../../assets/images/ClaudyGoLogo.webp')}
-            style={{ width: 34, height: 34, borderRadius: 17 }}
-          />
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12,
+        }}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+          <LinearGradient
+            colors={['rgba(169,123,255,0.42)', 'rgba(68,200,255,0.16)']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{
+              width: 58,
+              height: 58,
+              borderRadius: 20,
+              borderWidth: 1,
+              borderColor: 'rgba(255,255,255,0.14)',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginRight: 14,
+            }}
+          >
+            <Image
+              source={require('../../assets/images/ClaudyGoLogo.webp')}
+              style={{ width: 34, height: 34, borderRadius: 17 }}
+            />
+          </LinearGradient>
+
+          <View style={{ flex: 1 }}>
+            <CustomText
+              variant="caption"
+              style={{
+                color: 'rgba(216,205,246,0.78)',
+                textTransform: 'uppercase',
+                letterSpacing: 0.8,
+              }}
+            >
+              ClaudyGod Ministries
+            </CustomText>
+            <CustomText variant="label" style={{ color: '#F9F7FF', marginTop: 4 }}>
+              Worship archive, account access, and ministry updates
+            </CustomText>
+          </View>
         </View>
 
-        <View style={{ flex: 1 }}>
-          <CustomText variant="caption" style={{ color: 'rgba(216,205,246,0.86)' }}>
-            ClaudyGod Music Ministries
-          </CustomText>
-          <CustomText variant="label" style={{ color: '#F9F7FF', marginTop: 3 }}>
-            Worship • Messages • Nuggets of Truth
+        <View
+          style={{
+            borderRadius: 999,
+            borderWidth: 1,
+            borderColor: 'rgba(160,255,210,0.20)',
+            backgroundColor: 'rgba(74,181,121,0.12)',
+            paddingHorizontal: 10,
+            paddingVertical: 6,
+          }}
+        >
+          <CustomText variant="caption" style={{ color: '#D5FFE8' }}>
+            Protected
           </CustomText>
         </View>
       </View>
 
-      <CustomText variant="heading" style={{ color: '#F8F7FC', marginTop: 16 }}>
+      <CustomText
+        variant="heading"
+        style={{ color: '#F8F7FC', marginTop: 18, fontSize: 18, lineHeight: 24 }}
+      >
         {salutation}
       </CustomText>
-      <CustomText variant="body" style={{ color: 'rgba(203,196,226,0.86)', marginTop: 6 }}>
+      <CustomText
+        variant="body"
+        style={{ color: 'rgba(203,196,226,0.84)', marginTop: 8, fontSize: 14, lineHeight: 21 }}
+      >
         {description}
       </CustomText>
+
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
+        {highlights.map((item) => (
+          <View
+            key={item}
+            style={{
+              borderRadius: 999,
+              borderWidth: 1,
+              borderColor: 'rgba(255,255,255,0.10)',
+              backgroundColor: 'rgba(255,255,255,0.045)',
+              paddingHorizontal: 10,
+              paddingVertical: 6,
+            }}
+          >
+            <CustomText variant="caption" style={{ color: 'rgba(232,225,249,0.88)' }}>
+              {item}
+            </CustomText>
+          </View>
+        ))}
+      </View>
     </View>
   );
 }
