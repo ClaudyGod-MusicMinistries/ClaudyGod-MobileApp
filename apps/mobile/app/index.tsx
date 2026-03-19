@@ -277,6 +277,88 @@ export default function Landing() {
                   >
                     Stream ministry music, watch channels, and follow daily message drops in one place.
                   </CustomText>
+
+                  <View
+                    style={{
+                      width: '100%',
+                      marginTop: compact ? 16 : 18,
+                      flexDirection: isTablet ? 'row' : 'column',
+                      gap: 12,
+                      alignItems: 'stretch',
+                    }}
+                  >
+                    <View
+                      style={{
+                        flex: 1.3,
+                        minHeight: isTablet ? 150 : 170,
+                        borderRadius: 22,
+                        overflow: 'hidden',
+                        borderWidth: 1,
+                        borderColor: 'rgba(255,255,255,0.14)',
+                        backgroundColor: 'rgba(255,255,255,0.04)',
+                      }}
+                    >
+                      <Image
+                        source={require('../assets/images/FB_IMG_1743103252303.jpg')}
+                        style={{ width: '100%', height: '100%' }}
+                        resizeMode="cover"
+                      />
+                      <LinearGradient
+                        colors={['rgba(9,6,18,0.04)', 'rgba(8,6,15,0.82)']}
+                        start={{ x: 0.2, y: 0 }}
+                        end={{ x: 0.7, y: 1 }}
+                        style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}
+                      />
+                      <View style={{ position: 'absolute', left: 14, right: 14, bottom: 14 }}>
+                        <CustomText variant="caption" style={{ color: 'rgba(236,228,255,0.84)' }}>
+                          ClaudyGod experience
+                        </CustomText>
+                        <CustomText
+                          variant="label"
+                          style={{ color: '#FCF8FF', marginTop: 4, fontSize: compact ? 11.8 : 12.6, lineHeight: 16 }}
+                        >
+                          Worship visuals, daily encouragement, and a calmer digital ministry space.
+                        </CustomText>
+                      </View>
+                    </View>
+
+                    <View style={{ flex: 0.9, gap: 12 }}>
+                      <View
+                        style={{
+                          flex: 1,
+                          minHeight: 78,
+                          borderRadius: 20,
+                          overflow: 'hidden',
+                          borderWidth: 1,
+                          borderColor: 'rgba(255,255,255,0.12)',
+                          backgroundColor: 'rgba(255,255,255,0.04)',
+                        }}
+                      >
+                        <Image
+                          source={require('../assets/images/landing4.jpg')}
+                          style={{ width: '100%', height: '100%' }}
+                          resizeMode="cover"
+                        />
+                      </View>
+                      <View
+                        style={{
+                          flex: 1,
+                          minHeight: 78,
+                          borderRadius: 20,
+                          overflow: 'hidden',
+                          borderWidth: 1,
+                          borderColor: 'rgba(255,255,255,0.12)',
+                          backgroundColor: 'rgba(255,255,255,0.04)',
+                        }}
+                      >
+                        <Image
+                          source={require('../assets/images/CoverArt.webp')}
+                          style={{ width: '100%', height: '100%' }}
+                          resizeMode="cover"
+                        />
+                      </View>
+                    </View>
+                  </View>
                 </View>
 
                 <Animated.View style={{ opacity: ctaOpacity, marginTop: compact ? 16 : 20 }}>

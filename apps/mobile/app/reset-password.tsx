@@ -3,18 +3,29 @@ import { View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { CustomText } from '../components/CustomText';
+import { AuthFeedbackBanner } from '../components/auth/AuthFeedbackBanner';
 import { AuthOtpInput } from '../components/auth/AuthOtpInput';
 import { AuthScreenFrame } from '../components/auth/AuthScreenFrame';
 import { AuthTextField } from '../components/auth/AuthTextField';
+import { PasswordStrengthPanel } from '../components/auth/PasswordStrengthPanel';
 import { AppButton } from '../components/ui/AppButton';
 import { TVTouchable } from '../components/ui/TVTouchable';
+import {
+  getEmailValidationMessage,
+  getPasswordConfirmationMessage,
+  isLikelyValidEmail,
+  isPasswordCompliant,
+  normalizeEmail,
+} from '../lib/authValidation';
 import { resetMobilePassword } from '../services/authService';
+import { useToast } from '../context/ToastContext';
 
 const getParam = (value: string | string[] | undefined): string =>
   Array.isArray(value) ? value[0] ?? '' : value ?? '';
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
+  const { showToast } = useToast();
   const params = useLocalSearchParams<{
     token?: string | string[];
     token_hash?: string | string[];
@@ -36,10 +47,24 @@ export default function ResetPasswordScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState(() => getParam(params.notice).trim());
+  const normalizedEmail = normalizeEmail(email);
+  const emailIsValid = !normalizedEmail || isLikelyValidEmail(normalizedEmail);
+  const emailHint = getEmailValidationMessage(email);
+  const passwordIsCompliant = isPasswordCompliant(newPassword);
+  const passwordsMatch = Boolean(confirmPassword.trim()) && newPassword === confirmPassword;
+  const confirmHint = getPasswordConfirmationMessage(newPassword, confirmPassword);
 
   const canSubmit = useMemo(
-    () => Boolean((usesLegacyToken || email.trim()) && token.trim() && newPassword.trim() && confirmPassword.trim()),
-    [confirmPassword, email, newPassword, token, usesLegacyToken],
+    () =>
+      Boolean(
+        (usesLegacyToken || (normalizedEmail && emailIsValid)) &&
+          token.trim() &&
+          newPassword.trim() &&
+          confirmPassword.trim() &&
+          passwordIsCompliant &&
+          passwordsMatch,
+      ),
+    [confirmPassword, emailIsValid, newPassword, normalizedEmail, passwordIsCompliant, passwordsMatch, token, usesLegacyToken],
   );
 
   const visibilityToggle = (
@@ -56,21 +81,39 @@ export default function ResetPasswordScreen() {
     setErrorMessage('');
     setSuccessMessage('');
 
-    const normalizedEmail = email.trim().toLowerCase();
     const normalizedToken = token.trim();
 
     if (!normalizedEmail && normalizedToken.length <= 6) {
-      setErrorMessage('Enter the email address used to request the recovery code.');
+      const message = 'Enter the email address used to request the recovery code.';
+      setErrorMessage(message);
+      showToast({ title: 'Email required', message, tone: 'warning' });
+      return;
+    }
+
+    if (normalizedToken.length <= 6 && !emailIsValid) {
+      setErrorMessage(emailHint);
+      showToast({ title: 'Check your email address', message: emailHint, tone: 'warning' });
       return;
     }
 
     if (!normalizedToken) {
-      setErrorMessage('Enter the 6-digit recovery code from your email or use the secure recovery link.');
+      const message = 'Enter the 6-digit recovery code from your email or use the secure recovery link.';
+      setErrorMessage(message);
+      showToast({ title: 'Recovery code required', message, tone: 'warning' });
       return;
     }
 
-    if (newPassword !== confirmPassword) {
-      setErrorMessage('New password and confirmation do not match.');
+    if (!passwordIsCompliant) {
+      const message = 'Use at least 8 characters with uppercase, lowercase, and a number.';
+      setErrorMessage(message);
+      showToast({ title: 'Strengthen your password', message, tone: 'warning' });
+      return;
+    }
+
+    if (!passwordsMatch) {
+      const message = 'New password and confirmation do not match.';
+      setErrorMessage(message);
+      showToast({ title: 'Password confirmation mismatch', message, tone: 'warning' });
       return;
     }
 
@@ -84,8 +127,15 @@ export default function ResetPasswordScreen() {
       setSuccessMessage(response.message);
       setNewPassword('');
       setConfirmPassword('');
+      showToast({
+        title: 'Password updated',
+        message: 'Your password was changed successfully. You can sign in with it now.',
+        tone: 'success',
+      });
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Unable to reset password');
+      const message = error instanceof Error ? error.message : 'Unable to reset password';
+      setErrorMessage(message);
+      showToast({ title: 'Reset failed', message, tone: 'error' });
     } finally {
       setSubmitting(false);
     }
@@ -109,6 +159,8 @@ export default function ResetPasswordScreen() {
           autoComplete="email"
           textContentType="emailAddress"
           placeholder="name@example.com"
+          hint={usesLegacyToken ? 'Optional for older recovery links, required for code-based recovery.' : normalizedEmail ? emailHint : ''}
+          hintTone={usesLegacyToken ? 'default' : normalizedEmail ? (emailIsValid ? 'success' : 'error') : 'default'}
         />
         {usesLegacyToken ? (
           <View
@@ -145,7 +197,9 @@ export default function ResetPasswordScreen() {
           autoComplete="new-password"
           textContentType="newPassword"
           trailing={visibilityToggle}
+          hint={newPassword.trim() ? 'Keep it unique from old passwords and easy for you to remember.' : ''}
         />
+        {newPassword.trim() ? <PasswordStrengthPanel password={newPassword} /> : null}
         <AuthTextField
           label="Confirm password"
           value={confirmPassword}
@@ -157,6 +211,8 @@ export default function ResetPasswordScreen() {
           textContentType="newPassword"
           returnKeyType="done"
           onSubmitEditing={() => void handleResetPassword()}
+          hint={confirmHint}
+          hintTone={confirmPassword.trim() ? (passwordsMatch ? 'success' : 'error') : 'default'}
         />
       </View>
 
@@ -164,41 +220,9 @@ export default function ResetPasswordScreen() {
         Use at least 8 characters with uppercase, lowercase, and a number. Recovery codes expire quickly for security.
       </CustomText>
 
-      {errorMessage ? (
-        <View
-          style={{
-            marginTop: 12,
-            borderRadius: 16,
-            borderWidth: 1,
-            borderColor: 'rgba(255,120,120,0.22)',
-            backgroundColor: 'rgba(255,80,80,0.08)',
-            paddingHorizontal: 13,
-            paddingVertical: 11,
-          }}
-        >
-          <CustomText variant="caption" style={{ color: '#FFD6D6' }}>
-            {errorMessage}
-          </CustomText>
-        </View>
-      ) : null}
+      {errorMessage ? <AuthFeedbackBanner message={errorMessage} tone="error" /> : null}
 
-      {successMessage ? (
-        <View
-          style={{
-            marginTop: 12,
-            borderRadius: 16,
-            borderWidth: 1,
-            borderColor: 'rgba(122,230,166,0.30)',
-            backgroundColor: 'rgba(56,170,104,0.14)',
-            paddingHorizontal: 13,
-            paddingVertical: 11,
-          }}
-        >
-          <CustomText variant="caption" style={{ color: '#D4FFE4' }}>
-            {successMessage}
-          </CustomText>
-        </View>
-      ) : null}
+      {successMessage ? <AuthFeedbackBanner message={successMessage} tone="success" /> : null}
 
       <AppButton
         title="Update Password"

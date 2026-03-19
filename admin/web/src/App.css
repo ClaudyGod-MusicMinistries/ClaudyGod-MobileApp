@@ -1313,6 +1313,66 @@ button {
   background: rgba(154, 107, 255, 0.16);
 }
 
+.quick-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.task-card {
+  padding: 1rem;
+  border-radius: 20px;
+  display: grid;
+  gap: 0.9rem;
+  align-content: space-between;
+  min-height: 190px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.task-card h3 {
+  margin-top: 0.32rem;
+  font-size: var(--font-xl);
+}
+
+.task-card p {
+  margin-top: 0.38rem;
+  color: var(--ink-soft);
+  font-size: var(--font-md);
+  line-height: 1.5;
+}
+
+.task-card-primary {
+  background:
+    radial-gradient(circle at top right, rgba(94, 168, 199, 0.16), transparent 50%),
+    rgba(255, 255, 255, 0.03);
+}
+
+.simple-intro-panel {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 0.95rem;
+}
+
+.simple-intro-item {
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.028);
+  padding: 0.8rem 0.85rem;
+}
+
+.simple-intro-item strong {
+  display: block;
+  font-size: var(--font-md);
+}
+
+.simple-intro-item p {
+  margin-top: 0.32rem;
+  color: var(--ink-soft);
+  font-size: var(--font-sm);
+  line-height: 1.45;
+}
+
 .overview-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1869,6 +1929,11 @@ button {
 
   .stats-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .quick-actions-grid,
+  .simple-intro-panel {
+    grid-template-columns: 1fr;
   }
 
   .overview-grid {

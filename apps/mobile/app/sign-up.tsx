@@ -3,16 +3,30 @@ import { View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { CustomText } from '../components/CustomText';
+import { AuthFeedbackBanner } from '../components/auth/AuthFeedbackBanner';
 import { AuthScreenFrame } from '../components/auth/AuthScreenFrame';
 import { AuthTextField } from '../components/auth/AuthTextField';
+import { PasswordStrengthPanel } from '../components/auth/PasswordStrengthPanel';
 import { AppButton } from '../components/ui/AppButton';
 import { TVTouchable } from '../components/ui/TVTouchable';
+import {
+  getEmailValidationMessage,
+  getNameValidationMessage,
+  getPasswordConfirmationMessage,
+  getPasswordStrengthReport,
+  isLikelyValidEmail,
+  isPasswordCompliant,
+  isValidDisplayName,
+  normalizeEmail,
+} from '../lib/authValidation';
 import { registerMobileUser } from '../services/authService';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
 export default function SignUpScreen() {
   const router = useRouter();
   const { initializing, isAuthenticated } = useAuth();
+  const { showToast } = useToast();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -22,6 +36,22 @@ export default function SignUpScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
+  const normalizedEmail = useMemo(() => normalizeEmail(email), [email]);
+  const nameIsValid = useMemo(() => isValidDisplayName(name), [name]);
+  const emailIsValid = useMemo(() => isLikelyValidEmail(normalizedEmail), [normalizedEmail]);
+  const passwordReport = useMemo(() => getPasswordStrengthReport(password), [password]);
+  const passwordIsCompliant = useMemo(() => isPasswordCompliant(password), [password]);
+  const passwordsMatch = useMemo(
+    () => Boolean(confirmPassword.trim()) && password === confirmPassword,
+    [confirmPassword, password],
+  );
+  const nameHint = useMemo(() => getNameValidationMessage(name), [name]);
+  const emailHint = useMemo(() => getEmailValidationMessage(email), [email]);
+  const confirmHint = useMemo(
+    () => getPasswordConfirmationMessage(password, confirmPassword),
+    [confirmPassword, password],
+  );
+
   useEffect(() => {
     if (!initializing && isAuthenticated) {
       router.replace('/(tabs)/home');
@@ -29,25 +59,75 @@ export default function SignUpScreen() {
   }, [initializing, isAuthenticated, router]);
 
   const canSubmit = useMemo(
-    () => Boolean(name.trim() && email.trim() && password.trim() && confirmPassword.trim()),
-    [confirmPassword, email, name, password],
+    () =>
+      Boolean(
+        name.trim() &&
+          normalizedEmail &&
+          password.trim() &&
+          confirmPassword.trim() &&
+          nameIsValid &&
+          emailIsValid &&
+          passwordIsCompliant &&
+          passwordsMatch,
+      ),
+    [
+      confirmPassword,
+      emailIsValid,
+      name,
+      nameIsValid,
+      normalizedEmail,
+      password,
+      passwordIsCompliant,
+      passwordsMatch,
+    ],
   );
 
   const handleSignUp = async () => {
     setErrorMessage('');
 
-    if (!canSubmit) {
-      setErrorMessage('Fill in all fields to continue.');
+    if (!name.trim()) {
+      const message = 'Enter your full name to continue.';
+      setErrorMessage(message);
+      showToast({ title: 'Name required', message, tone: 'warning' });
       return;
     }
-    if (password !== confirmPassword) {
-      setErrorMessage('Passwords do not match.');
+    if (!nameIsValid) {
+      setErrorMessage(nameHint);
+      showToast({ title: 'Check your name', message: nameHint, tone: 'warning' });
+      return;
+    }
+    if (!normalizedEmail) {
+      const message = 'Enter the email address you want tied to this account.';
+      setErrorMessage(message);
+      showToast({ title: 'Email required', message, tone: 'warning' });
+      return;
+    }
+    if (!emailIsValid) {
+      setErrorMessage(emailHint);
+      showToast({ title: 'Email needs attention', message: emailHint, tone: 'warning' });
+      return;
+    }
+    if (!password.trim()) {
+      const message = 'Create a password before continuing.';
+      setErrorMessage(message);
+      showToast({ title: 'Password required', message, tone: 'warning' });
+      return;
+    }
+    if (!passwordIsCompliant) {
+      const message = 'Use at least 8 characters with uppercase, lowercase, and a number.';
+      setErrorMessage(message);
+      showToast({ title: 'Strengthen your password', message, tone: 'warning' });
+      return;
+    }
+    if (!confirmPassword.trim() || !passwordsMatch) {
+      const message = 'Passwords do not match.';
+      setErrorMessage(message);
+      showToast({ title: 'Password confirmation mismatch', message, tone: 'warning' });
       return;
     }
 
     setSubmitting(true);
     try {
-      const normalizedEmail = email.trim().toLowerCase();
       const session = await registerMobileUser({
         displayName: name.trim(),
         email: normalizedEmail,
@@ -62,12 +142,19 @@ export default function SignUpScreen() {
             notice: session.message ?? 'A verification code has been sent to your email.',
           },
         });
+        showToast({
+          title: 'Verification code sent',
+          message: 'Check your inbox and enter the 6-digit code to finish creating the account.',
+          tone: 'success',
+        });
         return;
       }
 
       router.replace('/(tabs)/home');
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Unable to create account');
+      const message = error instanceof Error ? error.message : 'Unable to create account';
+      setErrorMessage(message);
+      showToast({ title: 'Account creation failed', message, tone: 'error' });
     } finally {
       setSubmitting(false);
     }
@@ -90,6 +177,8 @@ export default function SignUpScreen() {
           autoComplete="name"
           textContentType="name"
           placeholder="Your full name"
+          hint={nameHint}
+          hintTone={name.trim() ? (nameIsValid ? 'success' : 'error') : 'default'}
         />
 
         <AuthTextField
@@ -101,6 +190,8 @@ export default function SignUpScreen() {
           autoComplete="email"
           textContentType="emailAddress"
           placeholder="name@example.com"
+          hint={emailHint}
+          hintTone={normalizedEmail ? (emailIsValid ? 'success' : 'error') : 'default'}
         />
 
         <AuthTextField
@@ -121,7 +212,11 @@ export default function SignUpScreen() {
               />
             </TVTouchable>
           }
+          hint={password.trim() ? `${passwordReport.label} password` : 'Use a mix of letters and numbers to protect this account.'}
+          hintTone={password.trim() ? (passwordIsCompliant ? 'success' : 'error') : 'default'}
         />
+
+        {password.trim() ? <PasswordStrengthPanel password={password} /> : null}
 
         <AuthTextField
           label="Confirm password"
@@ -132,6 +227,8 @@ export default function SignUpScreen() {
           autoComplete="new-password"
           textContentType="newPassword"
           placeholder="Confirm your password"
+          hint={confirmHint}
+          hintTone={confirmPassword.trim() ? (passwordsMatch ? 'success' : 'error') : 'default'}
         />
       </View>
 
@@ -139,23 +236,7 @@ export default function SignUpScreen() {
         Your email is used for verification, security notices, and account recovery.
       </CustomText>
 
-      {errorMessage ? (
-        <View
-          style={{
-            marginTop: 12,
-            borderRadius: 12,
-            borderWidth: 1,
-            borderColor: 'rgba(255,120,120,0.25)',
-            backgroundColor: 'rgba(255,80,80,0.08)',
-            paddingHorizontal: 12,
-            paddingVertical: 10,
-          }}
-        >
-          <CustomText variant="caption" style={{ color: '#FFD6D6' }}>
-            {errorMessage}
-          </CustomText>
-        </View>
-      ) : null}
+      {errorMessage ? <AuthFeedbackBanner message={errorMessage} tone="error" /> : null}
 
       <AppButton
         title="Create Account"
