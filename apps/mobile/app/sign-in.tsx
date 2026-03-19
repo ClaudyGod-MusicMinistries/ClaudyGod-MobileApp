@@ -3,22 +3,29 @@ import { View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { CustomText } from '../components/CustomText';
+import { AuthFeedbackBanner } from '../components/auth/AuthFeedbackBanner';
 import { AuthScreenFrame } from '../components/auth/AuthScreenFrame';
 import { AuthTextField } from '../components/auth/AuthTextField';
 import { AppButton } from '../components/ui/AppButton';
 import { TVTouchable } from '../components/ui/TVTouchable';
+import { getEmailValidationMessage, isLikelyValidEmail, normalizeEmail } from '../lib/authValidation';
 import { loginMobileUser } from '../services/authService';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
 export default function SignInScreen() {
   const router = useRouter();
   const { initializing, isAuthenticated } = useAuth();
+  const { showToast } = useToast();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [hidePassword, setHidePassword] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const normalizedEmail = normalizeEmail(email);
+  const emailIsValid = !normalizedEmail || isLikelyValidEmail(normalizedEmail);
+  const emailHint = getEmailValidationMessage(email);
 
   useEffect(() => {
     if (!initializing && isAuthenticated) {
@@ -28,9 +35,16 @@ export default function SignInScreen() {
 
   const handleSignIn = async () => {
     setErrorMessage('');
-    const normalizedEmail = email.trim().toLowerCase();
     if (!normalizedEmail || !password.trim()) {
-      setErrorMessage('Enter your email and password.');
+      const message = 'Enter your email and password.';
+      setErrorMessage(message);
+      showToast({ title: 'Missing sign-in details', message, tone: 'warning' });
+      return;
+    }
+
+    if (!emailIsValid) {
+      setErrorMessage(emailHint);
+      showToast({ title: 'Check your email address', message: emailHint, tone: 'warning' });
       return;
     }
 
@@ -53,6 +67,7 @@ export default function SignInScreen() {
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Sign in failed';
       setErrorMessage(message);
+      showToast({ title: 'Sign in failed', message, tone: 'error' });
 
       if (/email is not verified/i.test(message)) {
         router.push({
@@ -83,6 +98,8 @@ export default function SignInScreen() {
           autoComplete="email"
           textContentType="emailAddress"
           placeholder="name@example.com"
+          hint={normalizedEmail ? emailHint : ''}
+          hintTone={normalizedEmail ? (emailIsValid ? 'success' : 'error') : 'default'}
         />
 
         <AuthTextField
@@ -116,23 +133,7 @@ export default function SignInScreen() {
         </CustomText>
       </TVTouchable>
 
-      {errorMessage ? (
-        <View
-          style={{
-            marginTop: 12,
-            borderRadius: 12,
-            borderWidth: 1,
-            borderColor: 'rgba(255,120,120,0.25)',
-            backgroundColor: 'rgba(255,80,80,0.08)',
-            paddingHorizontal: 12,
-            paddingVertical: 10,
-          }}
-        >
-          <CustomText variant="caption" style={{ color: '#FFD6D6' }}>
-            {errorMessage}
-          </CustomText>
-        </View>
-      ) : null}
+      {errorMessage ? <AuthFeedbackBanner message={errorMessage} tone="error" /> : null}
 
       <AppButton
         title="Sign In"

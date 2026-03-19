@@ -26,14 +26,14 @@ fi
 
 if has_match '^services/api/.*\.(ts|tsx|js|json)$|^services/api/Dockerfile(\.dev)?$|^services/api/docker-compose.*\.ya?ml$'; then
   echo "Building backend (services/api) because backend files are staged..."
-  npm --prefix ./services/api run build
+  bash -lc 'cd ./services/api && ./node_modules/.bin/tsc'
 else
   echo "No staged backend files requiring build check."
 fi
 
 if has_match '^admin/web/.*\.(js|jsx|ts|tsx|vue|json|css)$|^admin/web/Dockerfile(\.dev)?$|^admin/docker-compose.*\.ya?ml$'; then
   echo "Building admin web (admin/web) because admin files are staged..."
-  npm --prefix ./admin/web run build
+  bash -lc 'cd ./admin/web && ./node_modules/.bin/vite build'
 else
   echo "No staged admin files requiring build check."
 fi

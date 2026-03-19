@@ -2,12 +2,15 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { CustomText } from '../components/CustomText';
+import { AuthFeedbackBanner } from '../components/auth/AuthFeedbackBanner';
 import { AuthOtpInput } from '../components/auth/AuthOtpInput';
 import { AuthScreenFrame } from '../components/auth/AuthScreenFrame';
 import { AuthTextField } from '../components/auth/AuthTextField';
 import { AppButton } from '../components/ui/AppButton';
 import { TVTouchable } from '../components/ui/TVTouchable';
+import { getEmailValidationMessage, isLikelyValidEmail, normalizeEmail } from '../lib/authValidation';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { requestVerificationEmail, verifyMobileEmail } from '../services/authService';
 
 const getParam = (value: string | string[] | undefined): string =>
@@ -16,6 +19,7 @@ const getParam = (value: string | string[] | undefined): string =>
 export default function VerifyEmailScreen() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
+  const { showToast } = useToast();
   const params = useLocalSearchParams<{
     email?: string | string[];
     notice?: string | string[];
@@ -37,11 +41,17 @@ export default function VerifyEmailScreen() {
   const [resendCooldown, setResendCooldown] = useState(0);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState(() => getParam(params.notice).trim());
+  const normalizedEmail = normalizeEmail(email);
+  const emailIsValid = !normalizedEmail || isLikelyValidEmail(normalizedEmail);
+  const emailHint = getEmailValidationMessage(email);
 
   const autoVerifyTriggered = useRef(false);
 
   const canVerify = useMemo(() => token.trim().length === 6, [token]);
-  const canResend = useMemo(() => Boolean(email.trim()) && resendCooldown === 0, [email, resendCooldown]);
+  const canResend = useMemo(
+    () => Boolean(normalizedEmail && emailIsValid) && resendCooldown === 0,
+    [emailIsValid, normalizedEmail, resendCooldown],
+  );
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -81,11 +91,18 @@ export default function VerifyEmailScreen() {
 
     setVerifying(true);
     try {
-      await verifyMobileEmail({ token: resolvedToken, email: email.trim().toLowerCase() });
+      await verifyMobileEmail({ token: resolvedToken, email: normalizedEmail });
       setSuccessMessage('Email verified successfully. Redirecting...');
+      showToast({
+        title: 'Email verified',
+        message: 'Your account is now active. Redirecting you into the app.',
+        tone: 'success',
+      });
       router.replace('/(tabs)/home');
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Unable to verify email');
+      const message = error instanceof Error ? error.message : 'Unable to verify email';
+      setErrorMessage(message);
+      showToast({ title: 'Verification failed', message, tone: 'error' });
     } finally {
       setVerifying(false);
     }
@@ -95,9 +112,16 @@ export default function VerifyEmailScreen() {
     setErrorMessage('');
     setSuccessMessage('');
 
-    const normalizedEmail = email.trim().toLowerCase();
     if (!normalizedEmail) {
-      setErrorMessage('Enter your account email to resend verification.');
+      const message = 'Enter your account email to resend verification.';
+      setErrorMessage(message);
+      showToast({ title: 'Email required', message, tone: 'warning' });
+      return;
+    }
+
+    if (!emailIsValid) {
+      setErrorMessage(emailHint);
+      showToast({ title: 'Check your email address', message: emailHint, tone: 'warning' });
       return;
     }
 
@@ -106,8 +130,15 @@ export default function VerifyEmailScreen() {
       const response = await requestVerificationEmail({ email: normalizedEmail });
       setSuccessMessage(response.message);
       setResendCooldown(45);
+      showToast({
+        title: 'Verification code resent',
+        message: 'Check your inbox for the newest 6-digit code.',
+        tone: 'success',
+      });
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Unable to resend verification email');
+      const message = error instanceof Error ? error.message : 'Unable to resend verification email';
+      setErrorMessage(message);
+      showToast({ title: 'Resend failed', message, tone: 'error' });
     } finally {
       setResending(false);
     }
@@ -125,16 +156,23 @@ export default function VerifyEmailScreen() {
 
     void (async () => {
       try {
-        await verifyMobileEmail({ token: legacyToken, email: email.trim().toLowerCase() });
+        await verifyMobileEmail({ token: legacyToken, email: normalizedEmail || undefined });
         setSuccessMessage('Email verified successfully. Redirecting...');
+        showToast({
+          title: 'Email verified',
+          message: 'Your existing verification link is valid. Redirecting now.',
+          tone: 'success',
+        });
         router.replace('/(tabs)/home');
       } catch (error) {
-        setErrorMessage(error instanceof Error ? error.message : 'Unable to verify email');
+        const message = error instanceof Error ? error.message : 'Unable to verify email';
+        setErrorMessage(message);
+        showToast({ title: 'Verification link failed', message, tone: 'error' });
       } finally {
         setVerifying(false);
       }
     })();
-  }, [email, legacyToken, router]);
+  }, [legacyToken, normalizedEmail, router, showToast]);
 
   return (
     <AuthScreenFrame
@@ -154,6 +192,8 @@ export default function VerifyEmailScreen() {
           autoComplete="email"
           textContentType="emailAddress"
           placeholder="name@example.com"
+          hint={normalizedEmail ? emailHint : ''}
+          hintTone={normalizedEmail ? (emailIsValid ? 'success' : 'error') : 'default'}
         />
         {legacyToken ? (
           <View
@@ -181,41 +221,9 @@ export default function VerifyEmailScreen() {
         />
       </View>
 
-      {errorMessage ? (
-        <View
-          style={{
-            marginTop: 12,
-            borderRadius: 16,
-            borderWidth: 1,
-            borderColor: 'rgba(255,120,120,0.22)',
-            backgroundColor: 'rgba(255,80,80,0.08)',
-            paddingHorizontal: 13,
-            paddingVertical: 11,
-          }}
-        >
-          <CustomText variant="caption" style={{ color: '#FFD6D6' }}>
-            {errorMessage}
-          </CustomText>
-        </View>
-      ) : null}
+      {errorMessage ? <AuthFeedbackBanner message={errorMessage} tone="error" /> : null}
 
-      {successMessage ? (
-        <View
-          style={{
-            marginTop: 12,
-            borderRadius: 16,
-            borderWidth: 1,
-            borderColor: 'rgba(122,230,166,0.30)',
-            backgroundColor: 'rgba(56,170,104,0.14)',
-            paddingHorizontal: 13,
-            paddingVertical: 11,
-          }}
-        >
-          <CustomText variant="caption" style={{ color: '#D4FFE4' }}>
-            {successMessage}
-          </CustomText>
-        </View>
-      ) : null}
+      {successMessage ? <AuthFeedbackBanner message={successMessage} tone="success" /> : null}
 
       <AppButton
         title="Verify Code"
