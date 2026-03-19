@@ -20,6 +20,8 @@ interface AuthTextFieldProps {
   maxLength?: number;
   autoCorrect?: boolean;
   editable?: boolean;
+  hint?: string;
+  hintTone?: 'default' | 'error' | 'success';
 }
 
 export function AuthTextField({
@@ -39,6 +41,8 @@ export function AuthTextField({
   maxLength,
   autoCorrect,
   editable = true,
+  hint,
+  hintTone = 'default',
 }: AuthTextFieldProps) {
   const inputRef = useRef<TextInput | null>(null);
   const [isFocused, setIsFocused] = useState(false);
@@ -176,6 +180,25 @@ export function AuthTextField({
           />
         </Pressable>
       </Animated.View>
+
+      {hint ? (
+        <CustomText
+          variant="caption"
+          style={{
+            marginTop: 7,
+            color:
+              hintTone === 'error'
+                ? '#FFCECE'
+                : hintTone === 'success'
+                  ? '#D7FFE6'
+                  : 'rgba(202,196,220,0.66)',
+            fontSize: compact ? 10.6 : 11,
+            lineHeight: compact ? 14 : 15,
+          }}
+        >
+          {hint}
+        </CustomText>
+      ) : null}
     </View>
   );
 }

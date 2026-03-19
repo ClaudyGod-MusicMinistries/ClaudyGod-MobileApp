@@ -2,33 +2,47 @@ import React, { useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { CustomText } from '../components/CustomText';
+import { AuthFeedbackBanner } from '../components/auth/AuthFeedbackBanner';
 import { AuthScreenFrame } from '../components/auth/AuthScreenFrame';
 import { AuthTextField } from '../components/auth/AuthTextField';
 import { AppButton } from '../components/ui/AppButton';
 import { TVTouchable } from '../components/ui/TVTouchable';
+import { getEmailValidationMessage, isLikelyValidEmail, normalizeEmail } from '../lib/authValidation';
 import { requestMobilePasswordReset } from '../services/authService';
+import { useToast } from '../context/ToastContext';
 
 const getParam = (value: string | string[] | undefined): string =>
   Array.isArray(value) ? value[0] ?? '' : value ?? '';
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
+  const { showToast } = useToast();
   const params = useLocalSearchParams<{ email?: string | string[] }>();
 
   const [email, setEmail] = useState(() => getParam(params.email).trim().toLowerCase());
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const normalizedEmail = normalizeEmail(email);
+  const emailIsValid = !normalizedEmail || isLikelyValidEmail(normalizedEmail);
+  const emailHint = getEmailValidationMessage(email);
 
-  const canSubmit = useMemo(() => Boolean(email.trim()), [email]);
+  const canSubmit = useMemo(() => Boolean(normalizedEmail && emailIsValid), [emailIsValid, normalizedEmail]);
 
   const handleRequestReset = async () => {
     setErrorMessage('');
     setSuccessMessage('');
 
-    const normalizedEmail = email.trim().toLowerCase();
     if (!normalizedEmail) {
-      setErrorMessage('Enter your email address.');
+      const message = 'Enter your email address.';
+      setErrorMessage(message);
+      showToast({ title: 'Email required', message, tone: 'warning' });
+      return;
+    }
+
+    if (!emailIsValid) {
+      setErrorMessage(emailHint);
+      showToast({ title: 'Check your email address', message: emailHint, tone: 'warning' });
       return;
     }
 
@@ -36,8 +50,15 @@ export default function ForgotPasswordScreen() {
     try {
       const response = await requestMobilePasswordReset({ email: normalizedEmail });
       setSuccessMessage(response.message);
+      showToast({
+        title: 'Recovery email sent',
+        message: 'If the account exists, the 6-digit reset code is on its way.',
+        tone: 'success',
+      });
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Unable to send reset email');
+      const message = error instanceof Error ? error.message : 'Unable to send reset email';
+      setErrorMessage(message);
+      showToast({ title: 'Recovery request failed', message, tone: 'error' });
     } finally {
       setSubmitting(false);
     }
@@ -61,6 +82,8 @@ export default function ForgotPasswordScreen() {
           autoComplete="email"
           textContentType="emailAddress"
           placeholder="name@example.com"
+          hint={normalizedEmail ? emailHint : ''}
+          hintTone={normalizedEmail ? (emailIsValid ? 'success' : 'error') : 'default'}
           returnKeyType="send"
           onSubmitEditing={() => void handleRequestReset()}
         />
@@ -70,41 +93,9 @@ export default function ForgotPasswordScreen() {
         The recovery code expires quickly and is sent only to the email used on your account.
       </CustomText>
 
-      {errorMessage ? (
-        <View
-          style={{
-            marginTop: 12,
-            borderRadius: 16,
-            borderWidth: 1,
-            borderColor: 'rgba(255,120,120,0.22)',
-            backgroundColor: 'rgba(255,80,80,0.08)',
-            paddingHorizontal: 13,
-            paddingVertical: 11,
-          }}
-        >
-          <CustomText variant="caption" style={{ color: '#FFD6D6' }}>
-            {errorMessage}
-          </CustomText>
-        </View>
-      ) : null}
+      {errorMessage ? <AuthFeedbackBanner message={errorMessage} tone="error" /> : null}
 
-      {successMessage ? (
-        <View
-          style={{
-            marginTop: 12,
-            borderRadius: 16,
-            borderWidth: 1,
-            borderColor: 'rgba(122,230,166,0.30)',
-            backgroundColor: 'rgba(56,170,104,0.14)',
-            paddingHorizontal: 13,
-            paddingVertical: 11,
-          }}
-        >
-          <CustomText variant="caption" style={{ color: '#D4FFE4' }}>
-            {successMessage}
-          </CustomText>
-        </View>
-      ) : null}
+      {successMessage ? <AuthFeedbackBanner message={successMessage} tone="success" /> : null}
 
       <AppButton
         title="Send Recovery Code"
