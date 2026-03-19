@@ -4,11 +4,14 @@ import { HttpError } from '../../lib/httpError';
 import { validateSchema } from '../../lib/validation';
 import { authenticate } from '../../middleware/authenticate';
 import {
+  sendAdminTestEmailSchema,
   supportRequestIdParamsSchema,
   updateSupportRequestStatusSchema,
 } from './admin.schema';
 import {
+  getAdminEmailDiagnostics,
   getAdminDashboard,
+  sendAdminTestEmail,
   updateAdminSupportRequestStatus,
 } from './admin.service';
 
@@ -32,6 +35,28 @@ adminRouter.get(
     requireAdmin(req);
     const result = await getAdminDashboard();
     res.status(200).json(result);
+  }),
+);
+
+adminRouter.get(
+  '/email/diagnostics',
+  asyncHandler(async (req, res) => {
+    requireAdmin(req);
+    const result = await getAdminEmailDiagnostics();
+    res.status(200).json(result);
+  }),
+);
+
+adminRouter.post(
+  '/email/test',
+  asyncHandler(async (req, res) => {
+    const actor = requireAdmin(req);
+    const payload = validateSchema(sendAdminTestEmailSchema, req.body);
+    const result = await sendAdminTestEmail({
+      recipient: payload.recipient,
+      actor,
+    });
+    res.status(202).json(result);
   }),
 );
 

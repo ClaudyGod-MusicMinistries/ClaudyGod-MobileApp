@@ -13,29 +13,30 @@ import { AppButton } from '../components/ui/AppButton';
 import { fetchUserProfileMetrics } from '../services/supabaseAnalytics';
 import { clearMobileSession } from '../services/authService';
 import { useRequireMobileSession } from '../hooks/useRequireMobileSession';
+import { APP_ROUTES } from '../util/appRoutes';
 
 const groups = [
   {
     title: 'Account',
     items: [
-      { icon: 'library-music', label: 'Your Library', href: '/(tabs)/library' },
-      { icon: 'settings-suggest', label: 'Playback Preferences', href: '/(tabs)/settings' },
-      { icon: 'security', label: 'Privacy & Security', href: '/settingsPage/Privacy' },
+      { icon: 'library-music', label: 'Your Library', href: APP_ROUTES.tabs.library },
+      { icon: 'settings-suggest', label: 'Playback Preferences', href: APP_ROUTES.tabs.settings },
+      { icon: 'security', label: 'Privacy & Security', href: APP_ROUTES.settingsPages.privacy },
     ],
   },
   {
     title: 'Discover',
     items: [
-      { icon: 'ondemand-video', label: 'Video Hub', href: '/(tabs)/videos' },
-      { icon: 'search', label: 'Search & Discovery', href: '/(tabs)/search' },
-      { icon: 'volunteer-activism', label: 'Support the Ministry', href: '/settingsPage/Donate' },
+      { icon: 'ondemand-video', label: 'Video Hub', href: APP_ROUTES.tabs.videos },
+      { icon: 'search', label: 'Search & Discovery', href: APP_ROUTES.tabs.search },
+      { icon: 'volunteer-activism', label: 'Support the Ministry', href: APP_ROUTES.settingsPages.donate },
     ],
   },
   {
     title: 'Support',
     items: [
-      { icon: 'help-outline', label: 'Help Center', href: '/settingsPage/help' },
-      { icon: 'info-outline', label: 'About ClaudyGod', href: '/settingsPage/About' },
+      { icon: 'help-outline', label: 'Help Center', href: APP_ROUTES.settingsPages.help },
+      { icon: 'info-outline', label: 'About ClaudyGod', href: APP_ROUTES.settingsPages.about },
     ],
   },
 ];
@@ -124,7 +125,7 @@ export default function Profile() {
           title="Open Settings"
           fullWidth
           size="lg"
-          onPress={() => router.push('/(tabs)/settings')}
+          onPress={() => router.push(APP_ROUTES.tabs.settings)}
         />
       </FadeIn>
 
@@ -188,7 +189,7 @@ export default function Profile() {
           textColor="#D79CAF"
           onPress={() => {
             void clearMobileSession().finally(() => {
-              router.replace('/sign-in');
+              router.replace(APP_ROUTES.auth.signIn);
             });
           }}
           style={{

@@ -12,6 +12,7 @@ import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { FadeIn } from '../../components/ui/FadeIn';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { fetchMePreferences, updateMePreferences } from '../../services/userFlowService';
+import { APP_ROUTES } from '../../util/appRoutes';
 
 type SettingItem = {
   icon: string;
@@ -126,19 +127,19 @@ export default function SettingsScreen() {
             icon: 'person',
             label: 'Profile',
             hint: 'Name, email and personal details',
-            action: () => router.push('/profile'),
+            action: () => router.push(APP_ROUTES.profile),
           },
           {
             icon: 'security',
             label: 'Privacy & Security',
             hint: 'Data controls and permissions',
-            action: () => router.push('/settingsPage/Privacy'),
+            action: () => router.push(APP_ROUTES.settingsPages.privacy),
           },
           {
             icon: 'volunteer-activism',
             label: 'Donate',
             hint: 'Contribution plans and checkout',
-            action: () => router.push('/settingsPage/Donate'),
+            action: () => router.push(APP_ROUTES.settingsPages.donate),
           },
         ] as SettingItem[],
       },
@@ -194,19 +195,19 @@ export default function SettingsScreen() {
             icon: 'help',
             label: 'Help & Support',
             hint: 'FAQs and contact channels',
-            action: () => router.push('/settingsPage/help'),
+            action: () => router.push(APP_ROUTES.settingsPages.help),
           },
           {
             icon: 'info',
             label: 'About',
             hint: 'Product mission and team',
-            action: () => router.push('/settingsPage/About'),
+            action: () => router.push(APP_ROUTES.settingsPages.about),
           },
           {
             icon: 'rate-review',
             label: 'Rate App',
             hint: 'Share product feedback',
-            action: () => router.push('/settingsPage/Rate'),
+            action: () => router.push(APP_ROUTES.settingsPages.rate),
           },
         ] as SettingItem[],
       },
@@ -258,9 +259,9 @@ export default function SettingsScreen() {
                 }}
               >
                 <SettingsHeader
-                  onOpenHome={() => router.push('/(tabs)/home')}
+                  onOpenHome={() => router.push(APP_ROUTES.tabs.home)}
                   quickLabels={quickLabels}
-                  onOpenMenu={() => router.push('/(tabs)/videos')}
+                  onOpenMenu={() => router.push(APP_ROUTES.tabs.videos)}
                 />
               </View>
             </FadeIn>

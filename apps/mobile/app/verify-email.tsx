@@ -12,6 +12,7 @@ import { getEmailValidationMessage, isLikelyValidEmail, normalizeEmail } from '.
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { requestVerificationEmail, verifyMobileEmail } from '../services/authService';
+import { APP_ROUTES } from '../util/appRoutes';
 
 const getParam = (value: string | string[] | undefined): string =>
   Array.isArray(value) ? value[0] ?? '' : value ?? '';
@@ -61,7 +62,7 @@ export default function VerifyEmailScreen() {
     setErrorMessage('');
     setSuccessMessage('Email verified successfully. Redirecting...');
     const timer = setTimeout(() => {
-      router.replace('/(tabs)/home');
+      router.replace(APP_ROUTES.tabs.home);
     }, 600);
 
     return () => clearTimeout(timer);
@@ -98,7 +99,7 @@ export default function VerifyEmailScreen() {
         message: 'Your account is now active. Redirecting you into the app.',
         tone: 'success',
       });
-      router.replace('/(tabs)/home');
+      router.replace(APP_ROUTES.tabs.home);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to verify email';
       setErrorMessage(message);
@@ -163,7 +164,7 @@ export default function VerifyEmailScreen() {
           message: 'Your existing verification link is valid. Redirecting now.',
           tone: 'success',
         });
-        router.replace('/(tabs)/home');
+        router.replace(APP_ROUTES.tabs.home);
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unable to verify email';
         setErrorMessage(message);
@@ -176,7 +177,7 @@ export default function VerifyEmailScreen() {
 
   return (
     <AuthScreenFrame
-      backPath="/sign-in"
+      backPath={APP_ROUTES.auth.signIn}
       salutation="Confirm your account"
       description="Enter the 6-digit verification code sent to your registered email to finish creating your account and unlock your personalized ministry experience."
       title="Verify your email"
@@ -259,7 +260,7 @@ export default function VerifyEmailScreen() {
       ) : null}
 
       <TVTouchable
-        onPress={() => router.replace('/sign-in')}
+        onPress={() => router.replace(APP_ROUTES.auth.signIn)}
         style={{ alignSelf: 'center', marginTop: 10 }}
         showFocusBorder={false}
       >

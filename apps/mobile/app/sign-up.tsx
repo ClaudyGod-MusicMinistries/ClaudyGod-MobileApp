@@ -22,6 +22,7 @@ import {
 import { registerMobileUser } from '../services/authService';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { APP_ROUTES } from '../util/appRoutes';
 
 export default function SignUpScreen() {
   const router = useRouter();
@@ -54,7 +55,7 @@ export default function SignUpScreen() {
 
   useEffect(() => {
     if (!initializing && isAuthenticated) {
-      router.replace('/(tabs)/home');
+      router.replace(APP_ROUTES.tabs.home);
     }
   }, [initializing, isAuthenticated, router]);
 
@@ -136,7 +137,7 @@ export default function SignUpScreen() {
 
       if (session.requiresEmailVerification) {
         router.replace({
-          pathname: '/verify-email',
+          pathname: APP_ROUTES.auth.verifyEmail,
           params: {
             email: normalizedEmail,
             notice: session.message ?? 'A verification code has been sent to your email.',
@@ -150,7 +151,7 @@ export default function SignUpScreen() {
         return;
       }
 
-      router.replace('/(tabs)/home');
+      router.replace(APP_ROUTES.tabs.home);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to create account';
       setErrorMessage(message);
@@ -162,7 +163,7 @@ export default function SignUpScreen() {
 
   return (
     <AuthScreenFrame
-      backPath="/"
+      backPath={APP_ROUTES.landing}
       salutation="Create your ministry account"
       description="Register once and keep your worship library, saved content, and ministry profile connected across devices."
       title="Create Account"
@@ -258,7 +259,7 @@ export default function SignUpScreen() {
           Already have an account?
         </CustomText>
         <TVTouchable
-          onPress={() => router.push('/sign-in')}
+          onPress={() => router.push(APP_ROUTES.auth.signIn)}
           style={{ marginTop: 6 }}
           showFocusBorder={false}
         >

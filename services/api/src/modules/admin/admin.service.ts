@@ -1,5 +1,8 @@
+import type { JwtClaims } from '../../utils/jwt';
 import { env } from '../../config/env';
 import { pool } from '../../db/pool';
+import { emailTransportInfo, verifyEmailTransport } from '../../infra/email';
+import { queueEmailJob } from '../../infra/transactionalEmails';
 import { HttpError } from '../../lib/httpError';
 
 interface SummaryRow {
@@ -77,15 +80,98 @@ interface AutomationRunRow {
   actor_email: string | null;
 }
 
+interface EmailSummaryRow {
+  pending_jobs: string;
+  processing_jobs: string;
+  completed_last_24_hours: string;
+  failed_last_24_hours: string;
+  total_last_7_days: string;
+}
+
+interface RecentEmailJobRow {
+  id: string;
+  job_type: string;
+  template_key: string | null;
+  recipients: string[] | string;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  error: string | null;
+  created_at: string | Date;
+  processed_at: string | Date | null;
+}
+
 const toIso = (value: string | Date): string => new Date(value).toISOString();
+const toIsoOrNull = (value: string | Date | null): string | null =>
+  value ? toIso(value) : null;
 
 const humanizeToken = (value: string): string =>
   value
     .replace(/_/g, ' ')
     .replace(/\b\w/g, (char) => char.toUpperCase());
 
+const escapeHtml = (value: string): string =>
+  value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
+const toRecipients = (recipients: string[] | string): string[] =>
+  Array.isArray(recipients)
+    ? recipients
+    : String(recipients)
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean);
+
+const getEmailDeliverySummaryResult = () =>
+  pool.query<EmailSummaryRow>(
+    `SELECT
+       COUNT(*) FILTER (WHERE status = 'pending')::text AS pending_jobs,
+       COUNT(*) FILTER (WHERE status = 'processing')::text AS processing_jobs,
+       COUNT(*) FILTER (
+         WHERE status = 'completed'
+           AND created_at >= NOW() - INTERVAL '24 hours'
+       )::text AS completed_last_24_hours,
+       COUNT(*) FILTER (
+         WHERE status = 'failed'
+           AND created_at >= NOW() - INTERVAL '24 hours'
+       )::text AS failed_last_24_hours,
+       COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '7 days')::text AS total_last_7_days
+     FROM email_jobs`,
+  );
+
+const getRecentEmailJobsResult = (limit: number) =>
+  pool.query<RecentEmailJobRow>(
+    `SELECT
+       id::text,
+       job_type,
+       template_key,
+       recipients,
+       status,
+       error,
+       created_at,
+       processed_at
+     FROM email_jobs
+     ORDER BY created_at DESC
+     LIMIT $1`,
+    [limit],
+  );
+
 export const getAdminDashboard = async () => {
-  const [userSummary, contentSummary, ratingSummary, requestSummary, recentUsers, feedback, supportInbox, signupTrend, automationRuns] =
+  const [
+    userSummary,
+    contentSummary,
+    ratingSummary,
+    requestSummary,
+    recentUsers,
+    feedback,
+    supportInbox,
+    signupTrend,
+    automationRuns,
+    emailSummary,
+    recentEmailJobs,
+  ] =
     await Promise.all([
       pool.query<SummaryRow>(
         `SELECT
@@ -202,12 +288,15 @@ export const getAdminDashboard = async () => {
            LIMIT 8`,
         )
         .catch(() => ({ rows: [] as AutomationRunRow[] })),
+      getEmailDeliverySummaryResult(),
+      getRecentEmailJobsResult(8),
     ]);
 
   const summary = userSummary.rows[0]!;
   const content = contentSummary.rows[0]!;
   const ratings = ratingSummary.rows[0]!;
   const requests = requestSummary.rows[0]!;
+  const emailDelivery = emailSummary.rows[0]!;
 
   const smartInsights = [
     summary.new_users_last_7_days === '0'
@@ -250,6 +339,22 @@ export const getAdminDashboard = async () => {
           detail: 'Set Brevo SMTP credentials and related mail settings to enable verification, onboarding, security alerts, and scheduled outreach.',
         }
       : null,
+    Number(emailDelivery.failed_last_24_hours) > 0
+      ? {
+          id: 'email-delivery-failures',
+          tone: 'warning',
+          title: 'Transactional email delivery needs attention',
+          detail: `${emailDelivery.failed_last_24_hours} email job(s) failed in the last 24 hours. Review email diagnostics, worker logs, and Postfix relay status before inviting more users.`,
+        }
+      : null,
+    Number(emailDelivery.pending_jobs) > 10
+      ? {
+          id: 'email-delivery-backlog',
+          tone: 'info',
+          title: 'Email queue is building up',
+          detail: `${emailDelivery.pending_jobs} email job(s) are still waiting to be delivered. Verify that the worker and relay are both healthy.`,
+        }
+      : null,
     Number(ratings.total_feedback) > 0 && ratings.average_rating && Number(ratings.average_rating) < 4
       ? {
           id: 'rating-health',
@@ -279,6 +384,28 @@ export const getAdminDashboard = async () => {
       activePrivacyRequests: Number(requests.active_privacy_requests),
       totalFeedback: Number(ratings.total_feedback),
       averageRating: ratings.average_rating ? Number(ratings.average_rating) : null,
+    },
+    emailDelivery: {
+      smtpEnabled: emailTransportInfo.enabled,
+      providerLabel: env.SMTP_PROVIDER_LABEL,
+      provider: emailTransportInfo.provider,
+      host: emailTransportInfo.host,
+      port: emailTransportInfo.port,
+      pendingJobs: Number(emailDelivery.pending_jobs),
+      processingJobs: Number(emailDelivery.processing_jobs),
+      completedLast24Hours: Number(emailDelivery.completed_last_24_hours),
+      failedLast24Hours: Number(emailDelivery.failed_last_24_hours),
+      totalLast7Days: Number(emailDelivery.total_last_7_days),
+      recentJobs: recentEmailJobs.rows.map((row) => ({
+        id: row.id,
+        jobType: row.job_type,
+        templateKey: row.template_key,
+        recipients: toRecipients(row.recipients),
+        status: row.status,
+        error: row.error,
+        createdAt: toIso(row.created_at),
+        processedAt: toIsoOrNull(row.processed_at),
+      })),
     },
     recentUsers: recentUsers.rows.map((row) => ({
       id: row.id,
@@ -341,6 +468,87 @@ export const getAdminDashboard = async () => {
         : null,
       label: humanizeToken(row.run_type),
     })),
+  };
+};
+
+export const getAdminEmailDiagnostics = async () => {
+  const [emailSummary, recentEmailJobs, transportCheck] = await Promise.all([
+    getEmailDeliverySummaryResult(),
+    getRecentEmailJobsResult(20),
+    verifyEmailTransport(),
+  ]);
+
+  const summary = emailSummary.rows[0]!;
+
+  return {
+    generatedAt: new Date().toISOString(),
+    transport: {
+      ...emailTransportInfo,
+      providerLabel: env.SMTP_PROVIDER_LABEL,
+      reachable: transportCheck.reachable,
+      reason: transportCheck.reason ?? null,
+    },
+    summary: {
+      pendingJobs: Number(summary.pending_jobs),
+      processingJobs: Number(summary.processing_jobs),
+      completedLast24Hours: Number(summary.completed_last_24_hours),
+      failedLast24Hours: Number(summary.failed_last_24_hours),
+      totalLast7Days: Number(summary.total_last_7_days),
+    },
+    recentJobs: recentEmailJobs.rows.map((row) => ({
+      id: row.id,
+      jobType: row.job_type,
+      templateKey: row.template_key,
+      recipients: toRecipients(row.recipients),
+      status: row.status,
+      error: row.error,
+      createdAt: toIso(row.created_at),
+      processedAt: toIsoOrNull(row.processed_at),
+    })),
+  };
+};
+
+export const sendAdminTestEmail = async (input: {
+  recipient: string;
+  actor: JwtClaims;
+}) => {
+  const recipient = input.recipient.trim().toLowerCase();
+  const subject = `${env.EMAIL_BRAND_NAME} email delivery check`;
+  const textBody = [
+    `This is a transactional email test from ${env.EMAIL_BRAND_NAME}.`,
+    '',
+    `Requested by: ${input.actor.displayName} <${input.actor.email}>`,
+    `Recipient: ${recipient}`,
+    `Generated at: ${new Date().toISOString()}`,
+    '',
+    'If you received this message, the API, worker, and relay pipeline are handing off mail successfully.',
+  ].join('\n');
+  const htmlBody = `<p>This is a transactional email test from <strong>${escapeHtml(
+    env.EMAIL_BRAND_NAME,
+  )}</strong>.</p><ul><li><strong>Requested by:</strong> ${escapeHtml(
+    input.actor.displayName,
+  )} &lt;${escapeHtml(input.actor.email)}&gt;</li><li><strong>Recipient:</strong> ${escapeHtml(
+    recipient,
+  )}</li><li><strong>Generated at:</strong> ${escapeHtml(new Date().toISOString())}</li></ul><p>If you received this message, the API, worker, and relay pipeline are handing off mail successfully.</p>`;
+
+  await queueEmailJob({
+    recipients: [recipient],
+    subject,
+    textBody,
+    htmlBody,
+    jobType: 'admin_email_test',
+    templateKey: 'admin.email-test',
+    payload: {
+      requestedByUserId: input.actor.sub,
+      requestedByEmail: input.actor.email,
+      recipient,
+    },
+  });
+
+  return {
+    queued: true,
+    recipient,
+    message: 'Test email queued successfully.',
   };
 };
 

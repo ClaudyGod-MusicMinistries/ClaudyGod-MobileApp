@@ -2,6 +2,7 @@ import React from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image, View } from 'react-native';
 import { CustomText } from '../CustomText';
+import { BRAND_LOGO_ASSET } from '../../util/brandAssets';
 
 interface AuthBrandPanelProps {
   salutation: string;
@@ -9,7 +10,7 @@ interface AuthBrandPanelProps {
 }
 
 export function AuthBrandPanel({ salutation, description }: AuthBrandPanelProps) {
-  const highlights = ['Secure access', 'Recovery ready', 'Live ministry visuals'];
+  const highlights = ['Secure access', 'Recovery ready', 'One calm ministry flow'];
 
   return (
     <View
@@ -48,7 +49,7 @@ export function AuthBrandPanel({ salutation, description }: AuthBrandPanelProps)
             }}
           >
             <Image
-              source={require('../../assets/images/ClaudyGoLogo.webp')}
+              source={BRAND_LOGO_ASSET}
               style={{ width: 34, height: 34, borderRadius: 17 }}
             />
           </LinearGradient>
@@ -91,46 +92,35 @@ export function AuthBrandPanel({ salutation, description }: AuthBrandPanelProps)
         </View>
       </View>
 
-      <View
+      <LinearGradient
+        colors={['rgba(109,80,182,0.22)', 'rgba(37,23,78,0.10)']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
         style={{
           marginTop: 15,
           borderRadius: 22,
-          overflow: 'hidden',
           borderWidth: 1,
           borderColor: 'rgba(255,255,255,0.08)',
           backgroundColor: 'rgba(255,255,255,0.03)',
+          paddingHorizontal: 14,
+          paddingVertical: 14,
         }}
       >
-        <Image
-          source={require('../../assets/images/landing4.jpg')}
-          style={{ width: '100%', height: 154 }}
-          resizeMode="cover"
-        />
-        <LinearGradient
-          colors={['rgba(10,7,20,0.05)', 'rgba(8,7,14,0.82)']}
-          start={{ x: 0.2, y: 0 }}
-          end={{ x: 0.7, y: 1 }}
-          style={{
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            top: 0,
-            bottom: 0,
-          }}
-        />
-
-        <View
-          style={{
-            position: 'absolute',
-            left: 14,
-            right: 14,
-            bottom: 14,
-            flexDirection: 'row',
-            alignItems: 'flex-end',
-            justifyContent: 'space-between',
-            gap: 12,
-          }}
-        >
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <View
+            style={{
+              width: 52,
+              height: 52,
+              borderRadius: 16,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: 'rgba(255,255,255,0.06)',
+              borderWidth: 1,
+              borderColor: 'rgba(255,255,255,0.12)',
+            }}
+          >
+            <Image source={BRAND_LOGO_ASSET} style={{ width: 30, height: 30, borderRadius: 15 }} />
+          </View>
           <View style={{ flex: 1 }}>
             <CustomText variant="caption" style={{ color: 'rgba(238,231,255,0.82)' }}>
               Ministry experience
@@ -139,48 +129,11 @@ export function AuthBrandPanel({ salutation, description }: AuthBrandPanelProps)
               variant="label"
               style={{ color: '#FAF7FF', marginTop: 4, fontSize: 12.6, lineHeight: 16 }}
             >
-              Beautiful worship visuals, secure flows, and a calmer account journey.
+              One branded entry point for access, recovery, and worship updates.
             </CustomText>
           </View>
-
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            <View
-              style={{
-                width: 54,
-                height: 70,
-                borderRadius: 18,
-                overflow: 'hidden',
-                borderWidth: 1,
-                borderColor: 'rgba(255,255,255,0.12)',
-                backgroundColor: 'rgba(255,255,255,0.05)',
-              }}
-            >
-              <Image
-                source={require('../../assets/images/FB_IMG_1743103252303.jpg')}
-                style={{ width: '100%', height: '100%' }}
-                resizeMode="cover"
-              />
-            </View>
-            <View
-              style={{
-                width: 54,
-                height: 70,
-                borderRadius: 18,
-                overflow: 'hidden',
-                borderWidth: 1,
-                borderColor: 'rgba(255,255,255,0.12)',
-                backgroundColor: 'rgba(255,255,255,0.05)',
-              }}
-            >
-              <Image
-                source={require('../../assets/images/music4.webp')}
-                style={{ width: '100%', height: '100%' }}
-                resizeMode="cover"
-              />
-            </View>
-          </View>
         </View>
-      </View>
+      </LinearGradient>
 
       <CustomText
         variant="heading"

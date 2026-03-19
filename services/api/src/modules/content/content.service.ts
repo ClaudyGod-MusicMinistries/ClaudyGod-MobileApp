@@ -3,8 +3,8 @@ import type { JwtClaims } from '../../utils/jwt';
 import { pool } from '../../db/pool';
 import { HttpError } from '../../lib/httpError';
 import { contentQueue, type ContentEventType } from '../../queues/contentQueue';
-import { emailQueue } from '../../queues/emailQueue';
 import { env } from '../../config/env';
+import { queueEmailJob } from '../../infra/transactionalEmails';
 import type { UserRole } from '../auth/auth.types';
 import type {
   ContentItem,
@@ -187,45 +187,31 @@ const enqueueContentEvent = async ({
 const enqueuePublishEmail = async (item: ContentItem, actor: JwtClaims): Promise<void> => {
   if (env.ADMIN_ALERT_EMAILS_LIST.length === 0) return;
 
-  const emailInsert = await pool.query<{ id: number }>(
-    `INSERT INTO email_jobs (job_type, recipients, subject, text_body, html_body, status, payload)
-     VALUES ($1, $2::text[], $3, $4, $5, 'pending', $6::jsonb)
-     RETURNING id`,
-    [
-      'content_published',
-      env.ADMIN_ALERT_EMAILS_LIST,
-      `Content published: ${item.title}`,
-      [
-        'A content item was published in Claudy Content Studio.',
-        '',
-        `Title: ${item.title}`,
-        `Type: ${item.type}`,
-        `Visibility: ${item.visibility}`,
-        `Published by: ${actor.displayName} <${actor.email}>`,
-        item.url ? `URL: ${item.url}` : '',
-      ]
-        .filter(Boolean)
-        .join('\n'),
-      `<p>A content item was published in <strong>Claudy Content Studio</strong>.</p><ul><li><strong>Title:</strong> ${escapeHtml(
-        item.title,
-      )}</li><li><strong>Type:</strong> ${escapeHtml(item.type)}</li><li><strong>Visibility:</strong> ${escapeHtml(
-        item.visibility,
-      )}</li><li><strong>Published by:</strong> ${escapeHtml(actor.displayName)} &lt;${escapeHtml(
-        actor.email,
-      )}&gt;</li>${item.url ? `<li><strong>URL:</strong> ${escapeHtml(item.url)}</li>` : ''}</ul>`,
-      JSON.stringify({ contentId: item.id, actorId: actor.sub }),
-    ],
-  );
-
-  const emailJobId = emailInsert.rows[0]!.id;
-  const queueJob = await emailQueue.add('email.content_published', { emailJobId });
-
-  await pool.query(
-    `UPDATE email_jobs
-     SET queue_job_id = $2, updated_at = NOW()
-     WHERE id = $1`,
-    [emailJobId, String(queueJob.id)],
-  );
+  await queueEmailJob({
+    recipients: env.ADMIN_ALERT_EMAILS_LIST,
+    subject: `Content published: ${item.title}`,
+    textBody: [
+      'A content item was published in Claudy Content Studio.',
+      '',
+      `Title: ${item.title}`,
+      `Type: ${item.type}`,
+      `Visibility: ${item.visibility}`,
+      `Published by: ${actor.displayName} <${actor.email}>`,
+      item.url ? `URL: ${item.url}` : '',
+    ]
+      .filter(Boolean)
+      .join('\n'),
+    htmlBody: `<p>A content item was published in <strong>Claudy Content Studio</strong>.</p><ul><li><strong>Title:</strong> ${escapeHtml(
+      item.title,
+    )}</li><li><strong>Type:</strong> ${escapeHtml(item.type)}</li><li><strong>Visibility:</strong> ${escapeHtml(
+      item.visibility,
+    )}</li><li><strong>Published by:</strong> ${escapeHtml(actor.displayName)} &lt;${escapeHtml(
+      actor.email,
+    )}&gt;</li>${item.url ? `<li><strong>URL:</strong> ${escapeHtml(item.url)}</li>` : ''}</ul>`,
+    jobType: 'content_published',
+    templateKey: 'content.published',
+    payload: { contentId: item.id, actorId: actor.sub },
+  });
 };
 
 const buildListResponse = (rows: ContentRow[], total: number, query: ContentListQuery): ContentListResponse => ({

@@ -1,7 +1,8 @@
 import type { FeedCardItem } from '../services/contentService';
+import { APP_ROUTES, type PlayerRoutePath } from './appRoutes';
 
 type PlayerRouteObject = {
-  pathname: '/(tabs)/player';
+  pathname: PlayerRoutePath;
   params: Record<string, string>;
 };
 
@@ -20,7 +21,7 @@ export function buildPlayerRoute(item: FeedCardItem): PlayerRouteObject {
   }
 
   return {
-    pathname: '/(tabs)/player',
+    pathname: shouldOpenVideoScreen(item) ? APP_ROUTES.tabs.videos : APP_ROUTES.tabs.player,
     params,
   };
 }
@@ -37,15 +38,7 @@ export function isDirectPlayableVideoUrl(url?: string): boolean {
   const normalized = url.trim().toLowerCase();
   if (!normalized) return false;
 
-  // Hosted pages (YouTube, Vimeo, etc.) need an embed/player integration rather than direct native file playback.
-  if (
-    normalized.includes('youtube.com') ||
-    normalized.includes('youtu.be') ||
-    normalized.includes('vimeo.com') ||
-    normalized.includes('facebook.com') ||
-    normalized.includes('instagram.com') ||
-    normalized.includes('tiktok.com')
-  ) {
+  if (isHostedVideoUrl(url)) {
     return false;
   }
 
@@ -65,14 +58,7 @@ export function isDirectPlayableAudioUrl(url?: string): boolean {
   const normalized = url.trim().toLowerCase();
   if (!normalized) return false;
 
-  if (
-    normalized.includes('youtube.com') ||
-    normalized.includes('youtu.be') ||
-    normalized.includes('vimeo.com') ||
-    normalized.includes('facebook.com') ||
-    normalized.includes('instagram.com') ||
-    normalized.includes('tiktok.com')
-  ) {
+  if (isHostedVideoUrl(url)) {
     return false;
   }
 
@@ -87,4 +73,35 @@ export function isDirectPlayableAudioUrl(url?: string): boolean {
     normalized.startsWith('https://') ||
     normalized.startsWith('http://')
   );
+}
+
+export function isHostedVideoUrl(url?: string): boolean {
+  if (!url) return false;
+  const normalized = url.trim().toLowerCase();
+  if (!normalized) return false;
+
+  return (
+    normalized.includes('youtube.com') ||
+    normalized.includes('youtu.be') ||
+    normalized.includes('vimeo.com') ||
+    normalized.includes('facebook.com') ||
+    normalized.includes('instagram.com') ||
+    normalized.includes('tiktok.com')
+  );
+}
+
+export function shouldOpenVideoScreen(item: Pick<FeedCardItem, 'type' | 'mediaUrl' | 'isLive'>): boolean {
+  if (item.isLive || item.type === 'video' || item.type === 'live') {
+    return true;
+  }
+
+  if (isHostedVideoUrl(item.mediaUrl)) {
+    return true;
+  }
+
+  if (isDirectPlayableVideoUrl(item.mediaUrl) && !isDirectPlayableAudioUrl(item.mediaUrl)) {
+    return true;
+  }
+
+  return false;
 }

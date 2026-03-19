@@ -105,6 +105,22 @@ export interface MobileAppExperienceConfig {
     androidStoreUrl: string;
     feedbackRoute: string;
   };
+  layout: {
+    homeSections: {
+      id: string;
+      title: string;
+      subtitle: string;
+      contentTypes: ('audio' | 'video' | 'playlist' | 'announcement' | 'live')[];
+      maxItems: number;
+    }[];
+    videoSections: {
+      id: string;
+      title: string;
+      subtitle: string;
+      contentTypes: ('audio' | 'video' | 'playlist' | 'announcement' | 'live')[];
+      maxItems: number;
+    }[];
+  };
 }
 
 export interface MeLibraryItem {

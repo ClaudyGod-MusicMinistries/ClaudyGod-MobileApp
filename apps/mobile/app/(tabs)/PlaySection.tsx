@@ -1,12 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Image, Platform, ScrollView, View, useWindowDimensions } from 'react-native';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withSequence,
-  withTiming,
-} from 'react-native-reanimated';
+import { Image, Linking, ScrollView, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { TabScreenWrapper } from '../../components/layout/TabScreenWrapper';
@@ -15,10 +8,66 @@ import { Screen } from '../../components/layout/Screen';
 import { FadeIn } from '../../components/ui/FadeIn';
 import { CustomText } from '../../components/CustomText';
 import { TVTouchable } from '../../components/ui/TVTouchable';
+import { AudioPlayer } from '../../components/media/AudioPlayer';
 import { useContentFeed } from '../../hooks/useContentFeed';
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
 import type { FeedCardItem } from '../../services/contentService';
-import { routeParamToString } from '../../util/playerRoute';
+import { APP_ROUTES } from '../../util/appRoutes';
+import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
+import {
+  buildPlayerRoute,
+  isDirectPlayableAudioUrl,
+  routeParamToString,
+  shouldOpenVideoScreen,
+} from '../../util/playerRoute';
+
+function dedupeItems(items: FeedCardItem[]): FeedCardItem[] {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    const key = item.mediaUrl?.trim() ? `media:${item.mediaUrl.trim()}` : `id:${item.id}`;
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
+}
+
+function parseRouteItem(params: {
+  itemId?: string | string[];
+  itemType?: string | string[];
+  title?: string | string[];
+  subtitle?: string | string[];
+  imageUrl?: string | string[];
+  duration?: string | string[];
+  mediaUrl?: string | string[];
+}): FeedCardItem | null {
+  const itemId = routeParamToString(params.itemId);
+  if (!itemId) {
+    return null;
+  }
+
+  const itemType = routeParamToString(params.itemType);
+  const normalizedType: FeedCardItem['type'] =
+    itemType === 'video' ||
+    itemType === 'playlist' ||
+    itemType === 'announcement' ||
+    itemType === 'live' ||
+    itemType === 'ad'
+      ? itemType
+      : 'audio';
+
+  return {
+    id: itemId,
+    type: normalizedType,
+    title: routeParamToString(params.title) ?? 'Untitled',
+    subtitle: routeParamToString(params.subtitle) ?? 'ClaudyGod',
+    description: '',
+    duration: routeParamToString(params.duration) ?? '--:--',
+    imageUrl: routeParamToString(params.imageUrl) ?? DEFAULT_CONTENT_IMAGE_URI,
+    mediaUrl: routeParamToString(params.mediaUrl),
+  };
+}
 
 export default function PlaySection() {
   const theme = useAppTheme();
@@ -32,181 +81,58 @@ export default function PlaySection() {
     duration?: string | string[];
     mediaUrl?: string | string[];
   }>();
-  const { width } = useWindowDimensions();
-  const isTV = Platform.isTV;
-  const isTablet = width >= 768 && !isTV;
-
   const { feed } = useContentFeed();
-  const routeItem = useMemo<FeedCardItem | null>(() => {
-    const itemId = routeParamToString(params.itemId);
-    if (!itemId) {
-      return null;
-    }
 
-    const itemType = routeParamToString(params.itemType);
-    const normalizedType: FeedCardItem['type'] =
-      itemType === 'video' ||
-      itemType === 'playlist' ||
-      itemType === 'announcement' ||
-      itemType === 'live' ||
-      itemType === 'ad'
-        ? itemType
-        : 'audio';
-
-    return {
-      id: itemId,
-      type: normalizedType,
-      title: routeParamToString(params.title) ?? 'Untitled',
-      subtitle: routeParamToString(params.subtitle) ?? 'ClaudyGod',
-      description: '',
-      duration: routeParamToString(params.duration) ?? '--:--',
-      imageUrl:
-        routeParamToString(params.imageUrl) ??
-        'https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=1200&q=80',
-      mediaUrl: routeParamToString(params.mediaUrl),
-    };
-  }, [
-    params.duration,
-    params.imageUrl,
-    params.itemId,
-    params.itemType,
-    params.mediaUrl,
-    params.subtitle,
-    params.title,
-  ]);
+  const routeItem = useMemo(() => parseRouteItem(params), [params]);
 
   const queue = useMemo(() => {
-    const combined = [...feed.mostPlayed, ...feed.music, ...feed.videos, ...feed.live];
-    const seen = new Set<string>();
-    const deduped = combined.filter((item) => {
-      if (seen.has(item.id)) {
-        return false;
-      }
-      seen.add(item.id);
-      return true;
-    });
+    const combined = dedupeItems([
+      ...(routeItem ? [routeItem] : []),
+      ...feed.music,
+      ...feed.mostPlayed,
+      ...feed.playlists,
+      ...feed.recent,
+    ]);
 
-    if (routeItem && !seen.has(routeItem.id)) {
-      return [routeItem, ...deduped];
-    }
+    return combined.filter((item) => !shouldOpenVideoScreen(item));
+  }, [feed.mostPlayed, feed.music, feed.playlists, feed.recent, routeItem]);
 
-    return deduped;
-  }, [feed.live, feed.mostPlayed, feed.music, feed.videos, routeItem]);
-
-  const firstTrack = queue[0] ?? null;
-  const [activeId, setActiveId] = useState(routeItem?.id ?? firstTrack?.id ?? '');
-  const [isPlaying, setIsPlaying] = useState(true);
-  const [showLyrics, setShowLyrics] = useState(false);
-  const [shuffleEnabled, setShuffleEnabled] = useState(false);
-  const [repeatEnabled, setRepeatEnabled] = useState(false);
+  const [activeId, setActiveId] = useState(routeItem?.id ?? queue[0]?.id ?? '');
 
   useEffect(() => {
     if (routeItem?.id) {
       setActiveId(routeItem.id);
-      setIsPlaying(true);
       return;
     }
 
-    if (!activeId && firstTrack?.id) {
-      setActiveId(firstTrack.id);
+    if (!activeId && queue[0]?.id) {
+      setActiveId(queue[0].id);
     }
-  }, [activeId, firstTrack?.id, routeItem?.id]);
+  }, [activeId, queue, routeItem]);
 
-  const active = queue.find((item) => item.id === activeId) ?? routeItem ?? firstTrack;
-  const activeIndex = active ? queue.findIndex((item) => item.id === active.id) : -1;
+  const active = queue.find((item) => item.id === activeId) ?? routeItem ?? queue[0] ?? null;
+  const activeHasInlineAudio = Boolean(active?.mediaUrl && isDirectPlayableAudioUrl(active.mediaUrl));
 
-  const pulse = useSharedValue(1);
-  const playPulseStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: isPlaying ? pulse.value : 1 }],
-  }));
-
-  useEffect(() => {
-    if (isPlaying) {
-      pulse.value = withRepeat(
-        withSequence(withTiming(1.07, { duration: 760 }), withTiming(1, { duration: 760 })),
-        -1,
-        false,
-      );
-      return;
-    }
-
-    pulse.value = withTiming(1, { duration: 180 });
-  }, [isPlaying, pulse]);
-
-  const artworkSize = isTV ? 360 : isTablet ? 320 : Math.min(272, width - 92);
-  const titleSize = isTV ? 30 : isTablet ? 27 : 22;
-
-  const playTrack = async (track: FeedCardItem, source: string) => {
-    setActiveId(track.id);
-    setIsPlaying(true);
+  const openItem = async (item: FeedCardItem, source: string) => {
+    setActiveId(item.id);
     await trackPlayEvent({
-      contentId: track.id,
-      contentType: track.type,
-      title: track.title,
+      contentId: item.id,
+      contentType: item.type,
+      title: item.title,
       source,
     });
   };
 
-  const onPlayPress = async () => {
-    if (!active) {
+  const openVideoFallback = async () => {
+    if (!active) return;
+
+    if (shouldOpenVideoScreen(active)) {
+      router.push(buildPlayerRoute(active));
       return;
     }
 
-    const next = !isPlaying;
-    setIsPlaying(next);
-
-    if (next) {
-      await playTrack(active, 'player_screen');
-    }
-  };
-
-  const onSelectTrack = async (id: string) => {
-    const track = queue.find((item) => item.id === id);
-    if (!track) {
-      return;
-    }
-
-    await playTrack(track, 'player_queue');
-  };
-
-  const onSkipPrevious = async () => {
-    if (!queue.length || activeIndex < 0) {
-      return;
-    }
-
-    const previousIndex = activeIndex > 0 ? activeIndex - 1 : repeatEnabled ? queue.length - 1 : -1;
-    if (previousIndex < 0) {
-      return;
-    }
-
-    await playTrack(queue[previousIndex]!, 'player_previous');
-  };
-
-  const onSkipNext = async () => {
-    if (!queue.length || activeIndex < 0) {
-      return;
-    }
-
-    const nextIndex = activeIndex < queue.length - 1 ? activeIndex + 1 : repeatEnabled ? 0 : -1;
-    if (nextIndex < 0) {
-      return;
-    }
-
-    await playTrack(queue[nextIndex]!, 'player_next');
-  };
-
-  const onShufflePress = async () => {
-    const nextState = !shuffleEnabled;
-    setShuffleEnabled(nextState);
-
-    if (!nextState || queue.length < 2) {
-      return;
-    }
-
-    const nextCandidates = queue.filter((item) => item.id !== active?.id);
-    const randomTrack = nextCandidates[Math.floor(Math.random() * nextCandidates.length)];
-    if (randomTrack) {
-      await playTrack(randomTrack, 'player_shuffle');
+    if (active.mediaUrl) {
+      await Linking.openURL(active.mediaUrl);
     }
   };
 
@@ -221,341 +147,269 @@ export default function PlaySection() {
         overScrollMode="never"
       >
         <Screen>
-          {active ? (
-            <>
-              <FadeIn>
-                <View
+          <FadeIn>
+            <View
+              style={{
+                borderRadius: 24,
+                borderWidth: 1,
+                borderColor: theme.colors.border,
+                backgroundColor: theme.colors.surface,
+                padding: theme.spacing.lg,
+              }}
+            >
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <TVTouchable
+                  onPress={() => router.push(APP_ROUTES.tabs.home)}
                   style={{
-                    borderRadius: 26,
+                    width: 42,
+                    height: 42,
+                    borderRadius: 21,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: theme.colors.surfaceAlt,
                     borderWidth: 1,
                     borderColor: theme.colors.border,
-                    backgroundColor: theme.colors.surface,
-                    padding: 16,
                   }}
+                  showFocusBorder={false}
                 >
+                  <MaterialIcons name="arrow-back" size={20} color={theme.colors.text.primary} />
+                </TVTouchable>
+
+                <View style={{ alignItems: 'center' }}>
+                  <CustomText variant="label" style={{ color: theme.colors.text.secondary }}>
+                    Music Player
+                  </CustomText>
+                  <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 2 }}>
+                    Audio-first playback queue
+                  </CustomText>
+                </View>
+
+                <TVTouchable
+                  onPress={() => router.push(APP_ROUTES.tabs.videos)}
+                  style={{
+                    paddingHorizontal: 12,
+                    paddingVertical: 10,
+                    borderRadius: 999,
+                    backgroundColor: theme.colors.surfaceAlt,
+                    borderWidth: 1,
+                    borderColor: theme.colors.border,
+                  }}
+                  showFocusBorder={false}
+                >
+                  <CustomText variant="caption" style={{ color: theme.colors.text.primary }}>
+                    Video Hub
+                  </CustomText>
+                </TVTouchable>
+              </View>
+
+              {active ? (
+                <>
                   <View
                     style={{
+                      marginTop: 18,
                       flexDirection: 'row',
                       alignItems: 'center',
-                      justifyContent: 'space-between',
+                      gap: 14,
                     }}
                   >
-                    <TVTouchable
-                      onPress={() => router.push('/(tabs)/home')}
-                      style={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: 20,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        backgroundColor: theme.colors.surfaceAlt,
-                        borderWidth: 1,
-                        borderColor: theme.colors.border,
-                      }}
-                      showFocusBorder={false}
-                    >
-                      <MaterialIcons
-                        name="arrow-back"
-                        size={20}
-                        color={theme.colors.text.primary}
-                      />
-                    </TVTouchable>
-
-                    <CustomText variant="label" style={{ color: theme.colors.text.secondary }}>
-                      Now Playing
-                    </CustomText>
-
-                    <TVTouchable
-                      onPress={() => setShowLyrics((prev) => !prev)}
-                      style={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: 20,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        backgroundColor: theme.colors.surfaceAlt,
-                        borderWidth: 1,
-                        borderColor: theme.colors.border,
-                      }}
-                      showFocusBorder={false}
-                    >
-                      <MaterialIcons
-                        name={showLyrics ? 'lyrics' : 'subtitles'}
-                        size={19}
-                        color={theme.colors.primary}
-                      />
-                    </TVTouchable>
-                  </View>
-
-                  <View style={{ alignItems: 'center', marginTop: 14 }}>
                     <Image
                       source={{ uri: active.imageUrl }}
-                      style={{ width: artworkSize, height: artworkSize, borderRadius: 36 }}
-                      resizeMode="cover"
+                      style={{
+                        width: 92,
+                        height: 92,
+                        borderRadius: 24,
+                        backgroundColor: theme.colors.surfaceAlt,
+                      }}
                     />
+                    <View style={{ flex: 1 }}>
+                      <CustomText variant="heading" style={{ color: theme.colors.text.primary }}>
+                        {active.title}
+                      </CustomText>
+                      <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 6 }}>
+                        {active.subtitle}
+                      </CustomText>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10 }}>
+                        <Pill label={active.type === 'playlist' ? 'Playlist' : 'Audio'} />
+                        <Pill label={active.duration} subtle />
+                      </View>
+                    </View>
                   </View>
 
-                  <View style={{ marginTop: 16 }}>
-                    <CustomText
-                      variant="display"
-                      style={{
-                        color: theme.colors.text.primary,
-                        textAlign: 'center',
-                        fontFamily: 'ClashDisplay_700Bold',
-                        fontSize: titleSize,
-                        lineHeight: titleSize + 6,
-                      }}
-                    >
-                      {active.title}
-                    </CustomText>
-                    <CustomText
-                      variant="subtitle"
-                      style={{
-                        color: theme.colors.text.secondary,
-                        textAlign: 'center',
-                        marginTop: 4,
-                      }}
-                    >
-                      {active.subtitle}
-                    </CustomText>
-
-                    <View style={{ marginTop: 16 }}>
-                      <View
-                        style={{
-                          height: 2,
-                          borderRadius: 99,
-                          backgroundColor: theme.colors.muted,
-                          overflow: 'hidden',
+                  <View style={{ marginTop: 18 }}>
+                    {activeHasInlineAudio && active.mediaUrl ? (
+                      <AudioPlayer
+                        track={{
+                          id: active.id,
+                          title: active.title,
+                          artist: active.subtitle,
+                          uri: active.mediaUrl,
+                          duration: active.duration,
                         }}
-                      >
-                        <View
-                          style={{
-                            width: '42%',
-                            height: 2,
-                            borderRadius: 99,
-                            backgroundColor: theme.colors.primary,
-                          }}
-                        />
-                      </View>
+                      />
+                    ) : (
                       <View
                         style={{
-                          flexDirection: 'row',
-                          justifyContent: 'space-between',
-                          marginTop: 8,
-                        }}
-                      >
-                        <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
-                          1:28
-                        </CustomText>
-                        <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
-                          {active.duration}
-                        </CustomText>
-                      </View>
-                    </View>
-
-                    <View
-                      style={{
-                        marginTop: 16,
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                      }}
-                    >
-                      <ControlIcon
-                        icon="shuffle"
-                        onPress={() => void onShufflePress()}
-                        color={shuffleEnabled ? theme.colors.primary : theme.colors.text.secondary}
-                      />
-                      <ControlIcon
-                        icon="skip-previous"
-                        onPress={() => void onSkipPrevious()}
-                        color={theme.colors.text.primary}
-                      />
-
-                      <Animated.View style={playPulseStyle}>
-                        <TVTouchable
-                          onPress={() => void onPlayPress()}
-                          style={{
-                            width: 70,
-                            height: 70,
-                            borderRadius: 35,
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            backgroundColor: theme.colors.primary,
-                            shadowColor: '#9A6BFF',
-                            shadowOpacity: 0.5,
-                            shadowRadius: 22,
-                            shadowOffset: { width: 0, height: 12 },
-                            elevation: 10,
-                          }}
-                          showFocusBorder={false}
-                        >
-                          <MaterialIcons
-                            name={isPlaying ? 'pause' : 'play-arrow'}
-                            size={32}
-                            color={theme.colors.text.inverse}
-                          />
-                        </TVTouchable>
-                      </Animated.View>
-
-                      <ControlIcon
-                        icon="skip-next"
-                        onPress={() => void onSkipNext()}
-                        color={theme.colors.text.primary}
-                      />
-                      <ControlIcon
-                        icon="repeat"
-                        onPress={() => setRepeatEnabled((prev) => !prev)}
-                        color={repeatEnabled ? theme.colors.primary : theme.colors.text.secondary}
-                      />
-                    </View>
-
-                    {showLyrics ? (
-                      <View
-                        style={{
-                          marginTop: 12,
-                          borderRadius: 16,
+                          borderRadius: 18,
                           borderWidth: 1,
                           borderColor: theme.colors.border,
                           backgroundColor: theme.colors.surfaceAlt,
-                          padding: 12,
+                          padding: theme.spacing.lg,
                         }}
                       >
-                        <CustomText
-                          variant="body"
-                          style={{ color: theme.colors.text.secondary, lineHeight: 22 }}
-                        >
-                          Holy, holy, You are worthy of all praise.{"\n"}
-                          Let our hearts keep singing, let our spirits rise.{"\n"}
-                          Jesus reigns forever, light within the night.
+                        <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
+                          This item is not a direct audio stream
                         </CustomText>
-                      </View>
-                    ) : null}
-                  </View>
-                </View>
-              </FadeIn>
-
-              <FadeIn delay={100}>
-                <View
-                  style={{
-                    marginTop: 14,
-                    borderRadius: 22,
-                    borderWidth: 1,
-                    borderColor: theme.colors.border,
-                    backgroundColor: theme.colors.surface,
-                    padding: 12,
-                  }}
-                >
-                  <CustomText
-                    variant="subtitle"
-                    style={{ color: theme.colors.text.primary, marginBottom: 8 }}
-                  >
-                    Up Next
-                  </CustomText>
-
-                  <View style={{ gap: 8 }}>
-                    {queue.slice(0, 12).map((track) => {
-                      const selected = track.id === active.id;
-                      return (
+                        <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 6 }}>
+                          Uploaded audio will play here. If this item is actually a video or hosted stream, open it in
+                          the video hub instead.
+                        </CustomText>
                         <TVTouchable
-                          key={track.id}
-                          onPress={() => void onSelectTrack(track.id)}
+                          onPress={() => void openVideoFallback()}
                           style={{
-                            borderRadius: 14,
-                            paddingHorizontal: 10,
+                            marginTop: 14,
+                            alignSelf: 'flex-start',
+                            borderRadius: 999,
+                            backgroundColor: theme.colors.primary,
+                            paddingHorizontal: 14,
                             paddingVertical: 10,
-                            backgroundColor: selected
-                              ? 'rgba(154,107,255,0.12)'
-                              : theme.colors.surfaceAlt,
-                            borderWidth: 1,
-                            borderColor: selected
-                              ? 'rgba(154,107,255,0.36)'
-                              : theme.colors.border,
-                            flexDirection: 'row',
-                            alignItems: 'center',
                           }}
                           showFocusBorder={false}
                         >
-                          <Image
-                            source={{ uri: track.imageUrl }}
-                            style={{ width: 42, height: 42, borderRadius: 12, marginRight: 10 }}
-                          />
-                          <View style={{ flex: 1 }}>
-                            <CustomText
-                              variant="body"
-                              style={{ color: theme.colors.text.primary }}
-                              numberOfLines={1}
-                            >
-                              {track.title}
-                            </CustomText>
-                            <CustomText
-                              variant="caption"
-                              style={{ color: theme.colors.text.secondary, marginTop: 2 }}
-                            >
-                              {track.subtitle}
-                            </CustomText>
-                          </View>
-                          <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
-                            {track.duration}
+                          <CustomText variant="caption" style={{ color: theme.colors.text.inverse }}>
+                            Open source
                           </CustomText>
                         </TVTouchable>
-                      );
-                    })}
+                      </View>
+                    )}
                   </View>
+                </>
+              ) : (
+                <View
+                  style={{
+                    marginTop: 18,
+                    borderRadius: 18,
+                    borderWidth: 1,
+                    borderColor: theme.colors.border,
+                    backgroundColor: theme.colors.surfaceAlt,
+                    padding: theme.spacing.lg,
+                  }}
+                >
+                  <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
+                    No audio queued yet
+                  </CustomText>
+                  <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 6 }}>
+                    Publish audio content or assign audio placements from the admin dashboard, then tracks will appear
+                    here.
+                  </CustomText>
                 </View>
-              </FadeIn>
-            </>
-          ) : (
-            <FadeIn>
+              )}
+            </View>
+          </FadeIn>
+
+          <FadeIn delay={90}>
+            <View
+              style={{
+                marginTop: 16,
+                borderRadius: 22,
+                borderWidth: 1,
+                borderColor: theme.colors.border,
+                backgroundColor: theme.colors.surface,
+                padding: 14,
+              }}
+            >
               <View
                 style={{
-                  borderRadius: 20,
-                  borderWidth: 1,
-                  borderColor: theme.colors.border,
-                  backgroundColor: theme.colors.surface,
-                  padding: 18,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: 10,
                 }}
               >
                 <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
-                  No queued media yet
+                  Up Next
                 </CustomText>
-                <CustomText
-                  variant="caption"
-                  style={{ color: theme.colors.text.secondary, marginTop: 6 }}
-                >
-                  Publish audio or video content, then it will appear here with a professional queue.
+                <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
+                  {queue.length} queued
                 </CustomText>
               </View>
-            </FadeIn>
-          )}
+
+              <View style={{ gap: 8 }}>
+                {queue.length > 0 ? (
+                  queue.slice(0, 12).map((item) => {
+                    const selected = item.id === active?.id;
+                    return (
+                      <TVTouchable
+                        key={item.id}
+                        onPress={() => void openItem(item, 'player_queue')}
+                        style={{
+                          borderRadius: 16,
+                          padding: 10,
+                          backgroundColor: selected ? 'rgba(154,107,255,0.12)' : theme.colors.surfaceAlt,
+                          borderWidth: 1,
+                          borderColor: selected ? 'rgba(154,107,255,0.34)' : theme.colors.border,
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                        }}
+                        showFocusBorder={false}
+                      >
+                        <Image
+                          source={{ uri: item.imageUrl }}
+                          style={{ width: 46, height: 46, borderRadius: 14, marginRight: 10 }}
+                        />
+                        <View style={{ flex: 1 }}>
+                          <CustomText variant="body" style={{ color: theme.colors.text.primary }} numberOfLines={1}>
+                            {item.title}
+                          </CustomText>
+                          <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 2 }}>
+                            {item.subtitle}
+                          </CustomText>
+                        </View>
+                        <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
+                          {item.duration}
+                        </CustomText>
+                      </TVTouchable>
+                    );
+                  })
+                ) : (
+                  <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
+                    The queue will populate once audio content is published and assigned.
+                  </CustomText>
+                )}
+              </View>
+            </View>
+          </FadeIn>
         </Screen>
       </ScrollView>
     </TabScreenWrapper>
   );
 }
 
-function ControlIcon({
-  icon,
-  onPress,
-  color,
-}: {
-  icon: React.ComponentProps<typeof MaterialIcons>['name'];
-  onPress: () => void;
-  color: string;
-}) {
+function Pill({ label, subtle }: { label: string; subtle?: boolean }) {
+  const theme = useAppTheme();
+
   return (
-    <TVTouchable
-      onPress={onPress}
+    <View
       style={{
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        alignItems: 'center',
-        justifyContent: 'center',
+        borderRadius: 999,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        backgroundColor: subtle ? theme.colors.surfaceAlt : `${theme.colors.primary}14`,
+        borderWidth: 1,
+        borderColor: subtle ? theme.colors.border : `${theme.colors.primary}22`,
       }}
-      showFocusBorder={false}
     >
-      <MaterialIcons name={icon} size={22} color={color} />
-    </TVTouchable>
+      <CustomText
+        variant="caption"
+        style={{ color: subtle ? theme.colors.text.secondary : theme.colors.primary }}
+      >
+        {label}
+      </CustomText>
+    </View>
   );
 }
