@@ -4,6 +4,7 @@ This repo now uses one root environment file per runtime mode:
 
 - `.env.development` for local development, Docker, and device testing
 - `.env.production` for production deployment
+- `.env.development.example` and `.env.production.example` as committed templates
 
 Mode selection is controlled by the runtime:
 
@@ -18,14 +19,15 @@ All three applications read from the repo root:
 
 ## Required workflow
 
-1. Keep secrets only in the root `.env.development` and `.env.production`
-2. Do not recreate package-level env files inside `apps/mobile`, `admin/web`, or `services/api`
-3. Mirror the production values into your deployment platform and EAS environment
+1. Copy `.env.development.example` to `.env.development` and `.env.production.example` to `.env.production`
+2. Keep secrets only in the root `.env.development` and `.env.production`
+3. Do not recreate package-level env files inside `apps/mobile`, `admin/web`, or `services/api`
+4. Mirror the production values into your deployment platform and EAS environment
 
 ## Key groups
 
 - Admin web: `VITE_API_URL`, `VITE_GOOGLE_LOGIN_URL`, `VITE_MOBILE_PREVIEW_URL`
-- Mobile: `EXPO_PUBLIC_API_URL`, `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_KEY`, `EXPO_PUBLIC_EAS_PROJECT_ID`
+- Mobile: `EXPO_PUBLIC_API_URL`, `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_KEY`, `EAS_PROJECT_ID`
 - API and workers: `DATABASE_URL`, `REDIS_URL`, `JWT_ACCESS_SECRET`, `MOBILE_API_KEY`
 - Integrations: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SMTP_*`, `YOUTUBE_*`
 
