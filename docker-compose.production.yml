@@ -55,12 +55,16 @@ x-backend-env: &backend-env
 services:
   traefik:
     image: traefik:v3.1
+    container_name: claudygod-production-traefik-1
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
     ports:
       - "80:80"
       - "443:443"
+    environment:
+      # Force Traefik to use Docker API version compatible with your daemon (1.40-1.54)
+      - DOCKER_API_VERSION=1.41
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./ops/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
@@ -75,6 +79,7 @@ services:
 
   redis:
     image: redis:7-alpine
+    container_name: claudygod-production-redis-1
     restart: unless-stopped
     command: ["redis-server", "--appendonly", "yes", "--save", "60", "1000"]
     security_opt:
@@ -92,6 +97,7 @@ services:
   postfix-relay:
     build:
       context: ./ops/postfix
+    container_name: claudygod-production-postfix-relay-1
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
@@ -113,6 +119,7 @@ services:
     build:
       context: ./services/api
       dockerfile: Dockerfile
+    container_name: claudygod-production-api-1
     restart: unless-stopped
     init: true
     security_opt:
@@ -162,6 +169,7 @@ services:
     build:
       context: ./services/api
       dockerfile: Dockerfile
+    container_name: claudygod-production-worker-1
     restart: unless-stopped
     command: ["node", "dist/worker.js"]
     init: true
@@ -187,6 +195,7 @@ services:
         VITE_API_URL: ${VITE_API_URL}
         VITE_GOOGLE_LOGIN_URL: ${VITE_GOOGLE_LOGIN_URL:-}
         VITE_MOBILE_PREVIEW_URL: ${VITE_MOBILE_PREVIEW_URL:-}
+    container_name: claudygod-production-admin-web-1
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
@@ -227,9 +236,8 @@ services:
         EXPO_PUBLIC_API_URL: ${EXPO_PUBLIC_API_URL}
         EXPO_PUBLIC_SUPABASE_URL: ${EXPO_PUBLIC_SUPABASE_URL}
         EXPO_PUBLIC_SUPABASE_KEY: ${EXPO_PUBLIC_SUPABASE_KEY}
-        EXPO_PUBLIC_SUPABASE_ANON_KEY: ${EXPO_PUBLIC_SUPABASE_ANON_KEY:-}
         EAS_PROJECT_ID: ${EAS_PROJECT_ID:-}
-        EXPO_PUBLIC_EAS_PROJECT_ID: ${EXPO_PUBLIC_EAS_PROJECT_ID:-}
+    container_name: claudygod-production-mobile-web-1
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
