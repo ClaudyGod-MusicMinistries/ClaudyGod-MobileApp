@@ -170,7 +170,7 @@ function LoadingScreen() {
               transform: [{ rotate: rotation }],
             }}
           >
-            <View
+            <Animated.View
               style={{
                 width: ringSize - 28,
                 height: ringSize - 28,
@@ -188,7 +188,7 @@ function LoadingScreen() {
                 source={require('../assets/images/ClaudyGoLogo.webp')}
                 style={{ width: logoSize, height: logoSize, borderRadius: logoSize / 2 }}
               />
-            </View>
+            </Animated.View>
           </Animated.View>
 
           <View style={{ marginTop: 20, flexDirection: 'row', gap: 6, alignItems: 'flex-end', height: 22 }}>
