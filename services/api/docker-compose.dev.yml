@@ -40,7 +40,7 @@ services:
       SUPABASE_URL: ${SUPABASE_URL:-}
       SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
       SUPABASE_STORAGE_BUCKET: ${SUPABASE_STORAGE_BUCKET:-mobile-uploads}
-      MAIL_FROM: ${MAIL_FROM:-Claudy Platform <noreply@claudygod.example>}
+      MAIL_FROM: ${MAIL_FROM:-ClaudyGod <noreply@claudygod.example>}
       MAIL_REPLY_TO: ${MAIL_REPLY_TO:-}
       EMAIL_BRAND_NAME: ${EMAIL_BRAND_NAME:-ClaudyGod}
       EMAIL_SUPPORT_EMAIL: ${EMAIL_SUPPORT_EMAIL:-}
@@ -103,7 +103,7 @@ services:
       SUPABASE_URL: ${SUPABASE_URL:-}
       SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
       SUPABASE_STORAGE_BUCKET: ${SUPABASE_STORAGE_BUCKET:-mobile-uploads}
-      MAIL_FROM: ${MAIL_FROM:-Claudy Platform <noreply@claudygod.example>}
+      MAIL_FROM: ${MAIL_FROM:-ClaudyGod <noreply@claudygod.example>}
       MAIL_REPLY_TO: ${MAIL_REPLY_TO:-}
       EMAIL_BRAND_NAME: ${EMAIL_BRAND_NAME:-ClaudyGod}
       EMAIL_SUPPORT_EMAIL: ${EMAIL_SUPPORT_EMAIL:-}

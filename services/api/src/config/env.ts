@@ -161,7 +161,7 @@ const envSchema = z
 
     MOBILE_API_KEY: z.string().min(8).default('dev-mobile-api-key'),
 
-    MAIL_FROM: z.string().default('Claudy Platform <noreply@claudygod.example>'),
+    MAIL_FROM: z.string().default('ClaudyGod <noreply@claudygod.example>'),
     MAIL_REPLY_TO: z.string().optional().default(''),
     EMAIL_BRAND_NAME: z.string().trim().min(2).max(80).default('ClaudyGod'),
     EMAIL_SUPPORT_EMAIL: z.string().optional().default(''),

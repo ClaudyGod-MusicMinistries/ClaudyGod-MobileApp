@@ -1,4 +1,4 @@
-A modern, cross-platform mobile application built with React Native (Expo) for ClaudyGod Music Ministry to share gospel music, connect with followers, and spread the message of faith through digital ministry.
+A modern, cross-platform mobile application built with React Native (Expo) for ClaudyGod to deliver worship, ministry updates, and secure account access across mobile, TV, and web.
 
 
 
@@ -146,7 +146,7 @@ This complete README and codebase include:
 - 🎵 **Complete mobile app structure** for ClaudyGod Music Ministry  
 - 📱 **Ready-to-use components** (`MusicCard`, `AudioPlayer`, etc.)  
 - 🎨 **Professional styling** with Tailwind CSS and NativeWind  
-- 🎧 **Music player functionality** with persistent state management  
+- 🎧 **Music player functionality** with production-aligned content routing
 - 🔐 **Authentication setup** using backend JWT and transactional email flows
 - 🗂️ **Database schema** for ministry content  
 - 🚀 **Deployment-ready** configuration for Expo EAS  

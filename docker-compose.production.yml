@@ -130,7 +130,7 @@ services:
       redis:
         condition: service_healthy
       postfix-relay:
-        condition: service_started
+        condition: service_healthy
     expose:
       - "4000"
     healthcheck:
