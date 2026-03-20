@@ -89,7 +89,7 @@ export default function Privacy() {
   const [activeModal, setActiveModal] = useState<ActionModalKey>(null);
   const [deleteFullName, setDeleteFullName] = useState('');
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
-  const privacyContactEmail = config?.privacy.contactEmail ?? 'privacy@claudygodmusic.com';
+  const privacyContactEmail = config?.privacy.contactEmail ?? 'privacy@claudygod.org';
   const deletePhrase = config?.privacy.deleteConfirmPhrase ?? 'I CONFIRM';
   const activePrivacyPrinciples = config?.privacy.principles ?? [...privacyPrinciples];
 

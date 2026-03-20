@@ -4,6 +4,10 @@ import { HttpError } from '../../lib/httpError';
 import { validateSchema } from '../../lib/validation';
 import { authenticate } from '../../middleware/authenticate';
 import {
+  clearAuthSessionCookie,
+  respondWithAuthSession,
+} from './authSessionCookie';
+import {
   forgotPasswordSchema,
   loginSchema,
   registerSchema,
@@ -20,15 +24,26 @@ import {
   resetPassword,
   verifyEmail,
 } from './auth.service';
+import type { AuthResponse } from './auth.types';
 
 export const authRouter = Router();
+
+authRouter.use((_req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store');
+  next();
+});
 
 authRouter.post(
   '/register',
   asyncHandler(async (req, res) => {
     const payload = validateSchema(registerSchema, req.body);
     const result = await registerUser(payload, req.ip);
-    res.status(201).json(result);
+    if (result.requiresEmailVerification || !result.accessToken || !result.user) {
+      res.status(201).json(result);
+      return;
+    }
+
+    respondWithAuthSession(req, res, result as AuthResponse, 201);
   }),
 );
 
@@ -37,7 +52,7 @@ authRouter.post(
   asyncHandler(async (req, res) => {
     const payload = validateSchema(loginSchema, req.body);
     const result = await loginUser(payload);
-    res.status(200).json(result);
+    respondWithAuthSession(req, res, result, 200);
   }),
 );
 
@@ -46,7 +61,7 @@ authRouter.post(
   asyncHandler(async (req, res) => {
     const payload = validateSchema(verifyEmailSchema, req.body);
     const result = await verifyEmail(payload);
-    res.status(200).json(result);
+    respondWithAuthSession(req, res, result, 200);
   }),
 );
 
@@ -74,6 +89,14 @@ authRouter.post(
     const payload = validateSchema(resetPasswordSchema, req.body);
     const result = await resetPassword(payload);
     res.status(200).json(result);
+  }),
+);
+
+authRouter.post(
+  '/logout',
+  asyncHandler(async (_req, res) => {
+    clearAuthSessionCookie(res);
+    res.status(204).send();
   }),
 );
 

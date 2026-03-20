@@ -1,9 +1,14 @@
+import { Platform } from 'react-native';
 import { apiFetch } from './apiClient';
 import { getStoredMobileSession } from './authService';
 
 type JsonRecord = Record<string, unknown>;
 
 async function apiFetchAuthed<T>(path: string, init?: RequestInit): Promise<T> {
+  if (Platform.OS === 'web') {
+    return apiFetch<T>(path, init);
+  }
+
   const { accessToken } = await getStoredMobileSession();
   if (!accessToken) {
     throw new Error('Sign in required');
