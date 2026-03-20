@@ -18,7 +18,7 @@
     "lint-staged": "lint-staged",
     "typecheck": "tsc --noEmit",
     "hooks:install": "lefthook install",
-    "postinstall": "lefthook install || true"
+    "postinstall": "node ./scripts/postinstall.js"
   },
   "dependencies": {
     "@expo-google-fonts/sora": "^0.4.2",
