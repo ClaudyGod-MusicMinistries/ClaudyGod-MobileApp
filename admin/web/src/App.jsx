@@ -75,10 +75,29 @@ const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000;
 const BRAND_LOGO_URL = '/brand/claudy-logo.webp';
 const CONTENT_TYPES = ['audio', 'video', 'playlist', 'announcement'];
 const VISIBILITY_OPTIONS = ['draft', 'published'];
+const USER_ROLE_OPTIONS = ['CLIENT', 'ADMIN'];
 const CONTENT_REQUEST_STATUS_OPTIONS = ['submitted', 'in_review', 'changes_requested', 'approved', 'fulfilled', 'rejected'];
 const YOUTUBE_SYNC_DEFAULT_LIMIT = 8;
+
+function normalizePublicUrl(value) {
+  const next = String(value || '').trim();
+  if (!next) return '';
+
+  const candidate = /^https?:\/\//i.test(next) ? next : `https://${next}`;
+
+  try {
+    const parsed = new URL(candidate);
+    if (isPrivateOrLocalHostname(parsed.hostname)) {
+      return '';
+    }
+    return parsed.toString().replace(/\/+$/, '');
+  } catch (error) {
+    return '';
+  }
+}
+
 const DEFAULT_MOBILE_PREVIEW_URL =
-  import.meta.env.VITE_MOBILE_PREVIEW_URL || deriveSiblingOrigin('app') || '';
+  normalizePublicUrl(import.meta.env.VITE_MOBILE_PREVIEW_URL) || deriveSiblingOrigin('app') || '';
 const WORKFLOW_STEPS = [
   {
     title: 'Submit',
@@ -118,17 +137,18 @@ function readStoredToken() {
 }
 
 function normalizePreviewUrl(value) {
-  const next = String(value || '').trim();
-  if (!next) return DEFAULT_MOBILE_PREVIEW_URL;
-  if (/^https?:\/\//i.test(next)) return next;
-  return `https://${next}`;
+  return normalizePublicUrl(value) || DEFAULT_MOBILE_PREVIEW_URL;
 }
 
 function readStoredMobilePreviewUrl() {
   try {
     const stored = localStorage.getItem(MOBILE_PREVIEW_URL_KEY) || '';
     if (stored.trim()) {
-      return normalizePreviewUrl(stored);
+      const normalized = normalizePreviewUrl(stored);
+      if (normalized !== stored.trim().replace(/\/+$/, '')) {
+        localStorage.setItem(MOBILE_PREVIEW_URL_KEY, normalized);
+      }
+      return normalized;
     }
   } catch (error) {
     // Keep default URL when storage is unavailable.
@@ -341,6 +361,7 @@ export default defineComponent({
     const editContentOpen = ref(false);
     const editContentSaving = ref(false);
     const supportStatusUpdatingId = ref(null);
+    const userRoleUpdatingId = ref(null);
     const contentRequestStatusUpdatingId = ref(null);
     const creatingDraftFromRequestId = ref(null);
     const headerMenuOpen = ref(false);
@@ -552,6 +573,7 @@ export default defineComponent({
     ]);
 
     const requestQueuePreview = computed(() => (contentRequests.value || []).slice(0, 5));
+    const directPublishMode = computed(() => isAdmin.value);
 
     const filteredItems = computed(() => {
       const query = (filterState.search || '').trim().toLowerCase();
@@ -639,6 +661,38 @@ export default defineComponent({
 
     function reloadMobilePreview() {
       mobilePreviewFrameKey.value += 1;
+    }
+
+    function buildCreatePayload() {
+      const needsUrl = createForm.type === 'audio' || createForm.type === 'video';
+      return {
+        title: createForm.title.trim(),
+        description: createForm.description.trim(),
+        type: createForm.type,
+        url: createForm.url.trim() || undefined,
+        thumbnailUrl: createForm.thumbnailUrl.trim() || undefined,
+        mediaUploadSessionId: createForm.mediaUploadSessionId || undefined,
+        thumbnailUploadSessionId: createForm.thumbnailUploadSessionId || undefined,
+        sourceKind: createForm.mediaUploadSessionId ? 'upload' : needsUrl ? 'external' : undefined,
+        channelName: createForm.channelName.trim() || undefined,
+        duration: createForm.duration.trim() || undefined,
+        tags: parseCsvList(createForm.tagsCsv),
+        appSections: parseCsvList(createForm.appSectionsCsv),
+      };
+    }
+
+    function resetCreateForm() {
+      createForm.title = '';
+      createForm.description = '';
+      createForm.url = '';
+      createForm.thumbnailUrl = '';
+      createForm.mediaUploadSessionId = '';
+      createForm.thumbnailUploadSessionId = '';
+      createForm.channelName = '';
+      createForm.duration = '';
+      createForm.tagsCsv = '';
+      createForm.appSectionsCsv = '';
+      createForm.visibility = 'published';
     }
 
     function mapProbeError(error, fallback) {
@@ -1115,6 +1169,7 @@ export default defineComponent({
     async function updateContentItem(itemId, patch) {
       const response = await http.patch(`/v1/content/${itemId}`, patch);
       managedItems.value = managedItems.value.map((entry) => (entry.id === itemId ? response.data : entry));
+      reloadMobilePreview();
       return response.data;
     }
 
@@ -1453,33 +1508,39 @@ export default defineComponent({
 
       savingContent.value = true;
       try {
+        const payload = buildCreatePayload();
+        const selectedVisibility = createForm.visibility;
+
+        if (directPublishMode.value) {
+          await http.post('/v1/content', {
+            ...payload,
+            visibility: selectedVisibility,
+          });
+
+          resetCreateForm();
+          await Promise.all([
+            fetchManagedContent(),
+            fetchContentRequests(),
+            fetchAdminOperationsDashboard(),
+          ]);
+          if (selectedVisibility === 'published') {
+            reloadMobilePreview();
+          }
+          setNotice(
+            selectedVisibility === 'published'
+              ? 'Content published. It will flow into the mobile app feed on the next refresh.'
+              : 'Draft content created. Review it in the library before publishing.',
+            'success',
+          );
+          return;
+        }
+
         await http.post('/v1/content/requests', {
-          title: createForm.title.trim(),
-          description: createForm.description.trim(),
-          type: createForm.type,
-          url: createForm.url.trim() || undefined,
-          thumbnailUrl: createForm.thumbnailUrl.trim() || undefined,
-          mediaUploadSessionId: createForm.mediaUploadSessionId || undefined,
-          thumbnailUploadSessionId: createForm.thumbnailUploadSessionId || undefined,
-          sourceKind: createForm.mediaUploadSessionId ? 'upload' : needsUrl ? 'external' : undefined,
-          channelName: createForm.channelName.trim() || undefined,
-          duration: createForm.duration.trim() || undefined,
-          tags: parseCsvList(createForm.tagsCsv),
-          appSections: parseCsvList(createForm.appSectionsCsv),
+          ...payload,
           requestedVisibility: createForm.visibility,
         });
 
-        createForm.title = '';
-        createForm.description = '';
-        createForm.url = '';
-        createForm.thumbnailUrl = '';
-        createForm.mediaUploadSessionId = '';
-        createForm.thumbnailUploadSessionId = '';
-        createForm.channelName = '';
-        createForm.duration = '';
-        createForm.tagsCsv = '';
-        createForm.appSectionsCsv = '';
-        createForm.visibility = 'published';
+        resetCreateForm();
         await Promise.all([fetchContentRequests(), fetchManagedContent()]);
         setNotice('Submission ticket created. The request is now in the review queue.', 'success');
       } catch (error) {
@@ -1587,6 +1648,20 @@ export default defineComponent({
       }
     }
 
+    async function updateUserRole(userId, role) {
+      userRoleUpdatingId.value = userId;
+      clearNotice();
+      try {
+        await http.patch(`/v1/admin/users/${userId}/role`, { role });
+        await fetchAdminOperationsDashboard();
+        setNotice(`Role updated to ${humanizeToken(role)}.`, 'success');
+      } catch (error) {
+        setNotice(toErrorMessage(error, 'Unable to update this user role right now.'), 'error');
+      } finally {
+        userRoleUpdatingId.value = null;
+      }
+    }
+
     async function createDraftFromRequest(request) {
       creatingDraftFromRequestId.value = request.id;
       clearNotice();
@@ -1612,6 +1687,7 @@ export default defineComponent({
           visibility: nextVisibility,
         });
         managedItems.value = managedItems.value.map((entry) => (entry.id === item.id ? response.data : entry));
+        reloadMobilePreview();
         setNotice(nextVisibility === 'published' ? 'Content is now published.' : 'Content moved to drafts.', 'success');
       } catch (error) {
         setNotice(toErrorMessage(error, 'Unable to update this item right now.'), 'error');
@@ -2352,45 +2428,101 @@ export default defineComponent({
                 ) : null}
 
                 {isAdmin.value ? (
-                  <details class="dashboard-disclosure" style={{ marginTop: '0.9rem' }}>
-                    <summary>Open support and feedback details</summary>
-                    <div class="dashboard-disclosure-body">
-                      <div class="list-wrap disclosure-list">
-                        {adminOps.value.supportInbox.length === 0 ? (
-                          <div class="empty-state">No complaints or support tickets have been submitted yet.</div>
-                        ) : adminOps.value.supportInbox.slice(0, 4).map((ticket) => (
-                          <article class="content-card" key={`support-ticket-${ticket.id}`}>
-                            <div class="card-top">
-                              <div class="pill-row">
-                                <span class={['pill', ticket.status === 'resolved' || ticket.status === 'closed' ? 'pill-live' : 'pill-draft']}>
-                                  {humanizeToken(ticket.status)}
-                                </span>
-                                <span class="muted-chip">{humanizeToken(ticket.priority)}</span>
+                  <>
+                    <details class="dashboard-disclosure" style={{ marginTop: '0.9rem' }}>
+                      <summary>Open support and feedback details</summary>
+                      <div class="dashboard-disclosure-body">
+                        <div class="list-wrap disclosure-list">
+                          {adminOps.value.supportInbox.length === 0 ? (
+                            <div class="empty-state">No complaints or support tickets have been submitted yet.</div>
+                          ) : adminOps.value.supportInbox.slice(0, 4).map((ticket) => (
+                            <article class="content-card" key={`support-ticket-${ticket.id}`}>
+                              <div class="card-top">
+                                <div class="pill-row">
+                                  <span class={['pill', ticket.status === 'resolved' || ticket.status === 'closed' ? 'pill-live' : 'pill-draft']}>
+                                    {humanizeToken(ticket.status)}
+                                  </span>
+                                  <span class="muted-chip">{humanizeToken(ticket.priority)}</span>
+                                </div>
+                                <span class="muted-chip">{formatDateTime(ticket.createdAt)}</span>
                               </div>
-                              <span class="muted-chip">{formatDateTime(ticket.createdAt)}</span>
-                            </div>
-                            <div class="card-body">
-                              <h3>{ticket.subject}</h3>
-                              <p>{truncate(ticket.message, 140)}</p>
-                            </div>
-                            <label>
-                              Ticket status
-                              <select
-                                value={ticket.status}
-                                disabled={supportStatusUpdatingId.value === ticket.id}
-                                onChange={(event) => void updateSupportRequestStatus(ticket.id, readValue(event))}
-                              >
-                                <option value="open">Open</option>
-                                <option value="in_progress">In Progress</option>
-                                <option value="resolved">Resolved</option>
-                                <option value="closed">Closed</option>
-                              </select>
-                            </label>
-                          </article>
-                        ))}
+                              <div class="card-body">
+                                <h3>{ticket.subject}</h3>
+                                <p>{truncate(ticket.message, 140)}</p>
+                              </div>
+                              <label>
+                                Ticket status
+                                <select
+                                  value={ticket.status}
+                                  disabled={supportStatusUpdatingId.value === ticket.id}
+                                  onChange={(event) => void updateSupportRequestStatus(ticket.id, readValue(event))}
+                                >
+                                  <option value="open">Open</option>
+                                  <option value="in_progress">In Progress</option>
+                                  <option value="resolved">Resolved</option>
+                                  <option value="closed">Closed</option>
+                                </select>
+                              </label>
+                            </article>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  </details>
+                    </details>
+
+                    <details class="dashboard-disclosure" style={{ marginTop: '0.9rem' }}>
+                      <summary>Manage user access</summary>
+                      <div class="dashboard-disclosure-body">
+                        <div class="list-wrap disclosure-list">
+                          {adminOps.value.recentUsers.length === 0 ? (
+                            <div class="empty-state">No registered users yet.</div>
+                          ) : adminOps.value.recentUsers.slice(0, 6).map((user) => (
+                            <article class="content-card" key={`recent-user-${user.id}`}>
+                              <div class="card-top">
+                                <div class="pill-row">
+                                  <span class={['pill', user.role === 'ADMIN' ? 'pill-live' : 'pill-draft']}>
+                                    {humanizeToken(user.role)}
+                                  </span>
+                                  <span class="muted-chip">{humanizeToken(user.authProvider || 'local')}</span>
+                                </div>
+                                <span class="muted-chip">{formatDateTime(user.createdAt)}</span>
+                              </div>
+                              <div class="card-body">
+                                <h3>{user.displayName || 'Unnamed user'}</h3>
+                                <p>{user.email}</p>
+                              </div>
+                              <div class="meta-grid">
+                                <div>
+                                  <span class="meta-label">Last login</span>
+                                  <strong>{user.lastLoginAt ? formatDateTime(user.lastLoginAt) : 'Not yet recorded'}</strong>
+                                </div>
+                                <div>
+                                  <span class="meta-label">Email status</span>
+                                  <strong>{user.emailVerifiedAt ? 'Verified' : 'Pending verification'}</strong>
+                                </div>
+                              </div>
+                              <label class="role-select-field">
+                                Assign role
+                                <select
+                                  value={user.role}
+                                  disabled={userRoleUpdatingId.value === user.id || user.id === currentUser.value?.id}
+                                  onChange={(event) => void updateUserRole(user.id, readValue(event))}
+                                >
+                                  {USER_ROLE_OPTIONS.map((role) => (
+                                    <option value={role} key={`user-role-${user.id}-${role}`}>{humanizeToken(role)}</option>
+                                  ))}
+                                </select>
+                                <small class="subtle-text">
+                                  {user.id === currentUser.value?.id
+                                    ? 'You cannot change your own role from this dashboard.'
+                                    : 'Role changes apply immediately to protected admin actions.'}
+                                </small>
+                              </label>
+                            </article>
+                          ))}
+                        </div>
+                      </div>
+                    </details>
+                  </>
                 ) : null}
               </article>
 
@@ -2471,50 +2603,61 @@ export default defineComponent({
                 <div class="section-head split">
                   <div>
                     <h2>Mobile App Live Preview</h2>
-                    <p>Preview the mobile interface while updating content and backend-managed app config.</p>
+                    <p>Preview the live mobile experience while updating content and backend-managed app config.</p>
                   </div>
-                  <button
-                    type="button"
-                    class="ghost-btn compact"
-                    onClick={reloadMobilePreview}
-                  >
+                  <button type="button" class="ghost-btn compact" onClick={reloadMobilePreview}>
                     Reload Preview
                   </button>
                 </div>
 
                 <div class="mobile-preview-controls">
                   <label>
-                    Mobile preview URL
+                    Live mobile app URL
                     <input
-                      value={mobilePreviewDraft.value}
-                      onInput={(event) => { mobilePreviewDraft.value = readValue(event); }}
+                      value={mobilePreviewUrl.value}
+                      readonly
                       placeholder="https://app.your-domain.com"
                     />
                   </label>
                   <div class="button-row mobile-preview-actions">
-                    <button type="button" class="primary-btn" onClick={applyMobilePreviewUrl}>
-                      Apply URL
+                    <button type="button" class="ghost-btn compact" onClick={() => {
+                      mobilePreviewDraft.value = DEFAULT_MOBILE_PREVIEW_URL;
+                      applyMobilePreviewUrl();
+                    }}>
+                      Reset to live app
                     </button>
-                    <a href={mobilePreviewUrl.value} target="_blank" rel="noreferrer noopener" class="ghost-btn compact mobile-preview-link">
-                      Open in New Tab
-                    </a>
+                    {mobilePreviewUrl.value ? (
+                      <a href={mobilePreviewUrl.value} target="_blank" rel="noreferrer noopener" class="ghost-btn compact mobile-preview-link">
+                        Open in New Tab
+                      </a>
+                    ) : (
+                      <span class="ghost-btn compact mobile-preview-link is-disabled">
+                        No preview URL
+                      </span>
+                    )}
                   </div>
                 </div>
 
                 <div class="mobile-preview-frame-wrap">
-                  <iframe
-                    key={`mobile-preview-${mobilePreviewFrameKey.value}`}
-                    src={mobilePreviewUrl.value}
-                    title="Mobile app preview"
-                    class="mobile-preview-frame"
-                    loading="lazy"
-                  />
+                  {mobilePreviewUrl.value ? (
+                    <iframe
+                      key={`mobile-preview-${mobilePreviewFrameKey.value}`}
+                      src={mobilePreviewUrl.value}
+                      title="Mobile app preview"
+                      class="mobile-preview-frame"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div class="empty-state" style={{ minHeight: '560px', display: 'grid', placeItems: 'center', padding: '1.4rem' }}>
+                      Configure a public app URL in <code>VITE_MOBILE_PREVIEW_URL</code> to load the live mobile preview here.
+                    </div>
+                  )}
                 </div>
 
                 <div class="helper-card" style={{ marginTop: '0.9rem' }}>
                   <strong>Live flow</strong>
                   <p>
-                    Publish content, assign sections, or update mobile app config in this dashboard, then click <em>Reload Preview</em> to verify changes reflected in the app UI.
+                    Publish content, assign sections, or update mobile app config in this dashboard, then click <em>Reload Preview</em> to verify the live app UI. Private or localhost preview URLs are ignored automatically.
                   </p>
                 </div>
                 {mobileSectionCatalog.value.length ? (
@@ -2583,10 +2726,14 @@ export default defineComponent({
             <section class="panel glass-panel reveal-up" style={{ animationDelay: '140ms' }}>
               <div class="section-head">
                 <div>
-                  <h2>Submission Request</h2>
-                  <p>Send one clean ticket to the backend review queue instead of publishing directly from this screen.</p>
+                  <h2>{directPublishMode.value ? 'Publish Content' : 'Submission Request'}</h2>
+                  <p>
+                    {directPublishMode.value
+                      ? 'Upload media, choose the mobile app section, and create content directly from this screen.'
+                      : 'Send one clean ticket to the backend review queue instead of publishing directly from this screen.'}
+                  </p>
                 </div>
-                <span class="section-badge">Request Desk</span>
+                <span class="section-badge">{directPublishMode.value ? 'Direct Publish' : 'Request Desk'}</span>
               </div>
 
               <form class="stack-form" onSubmit={(event) => void createContent(event)}>
@@ -2622,7 +2769,7 @@ export default defineComponent({
                   </label>
 
                   <label>
-                    Requested release
+                    {directPublishMode.value ? 'Visibility' : 'Requested release'}
                     <select value={createForm.visibility} onChange={(event) => { createForm.visibility = readValue(event); }}>
                       {VISIBILITY_OPTIONS.map((visibility) => <option value={visibility} key={visibility}>{visibility}</option>)}
                     </select>
@@ -2682,7 +2829,11 @@ export default defineComponent({
                     <strong>Asset status</strong>
                     <p>
                       {createForm.mediaUploadSessionId || createForm.thumbnailUploadSessionId
-                        ? 'Uploaded files are linked to this request and will be traceable in backend review.'
+                        ? directPublishMode.value
+                          ? 'Uploaded files are linked to the content item and ready for the mobile feed.'
+                          : 'Uploaded files are linked to this request and will be traceable in backend review.'
+                        : directPublishMode.value
+                        ? 'Upload media and a thumbnail to create a production-ready mobile content item.'
                         : 'Upload media and a thumbnail to keep the request complete and easy to review.'}
                     </p>
                   </div>
@@ -2690,7 +2841,9 @@ export default defineComponent({
                   <div class="helper-card">
                     <strong>Release target</strong>
                     <p>
-                      Choose <em>draft</em> when the team still needs editorial review. Choose <em>published</em> only when the item should go live quickly after approval.
+                      {directPublishMode.value
+                        ? 'Choose draft when you still want to review in the library. Choose published when the item should flow into the mobile app immediately.'
+                        : 'Choose draft when the team still needs editorial review. Choose published only when the item should go live quickly after approval.'}
                     </p>
                   </div>
                 </div>
@@ -2756,12 +2909,24 @@ export default defineComponent({
                 <div class="helper-card">
                   <strong>What happens next</strong>
                   <p>
-                    After you submit, the ticket appears in the review queue. Admins can change status, request edits, and create a draft in the library when it is approved.
+                    {directPublishMode.value
+                      ? 'Published items are available to the mobile app feed immediately. Draft items stay in the library until you publish them.'
+                      : 'After you submit, the ticket appears in the review queue. Admins can change status, request edits, and create a draft in the library when it is approved.'}
                   </p>
                 </div>
 
                 <button type="submit" class="primary-btn primary-btn-large" disabled={savingContent.value}>
-                  {savingContent.value ? 'Submitting ticket...' : 'Send request to review queue'}
+                  {savingContent.value
+                    ? directPublishMode.value
+                      ? createForm.visibility === 'published'
+                        ? 'Publishing...'
+                        : 'Creating draft...'
+                      : 'Submitting ticket...'
+                    : directPublishMode.value
+                    ? createForm.visibility === 'published'
+                      ? 'Publish to mobile app'
+                      : 'Create draft content'
+                    : 'Send request to review queue'}
                 </button>
               </form>
             </section>

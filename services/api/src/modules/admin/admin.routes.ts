@@ -4,14 +4,17 @@ import { HttpError } from '../../lib/httpError';
 import { validateSchema } from '../../lib/validation';
 import { authenticate } from '../../middleware/authenticate';
 import {
+  adminUserIdParamsSchema,
   sendAdminTestEmailSchema,
   supportRequestIdParamsSchema,
+  updateAdminUserRoleSchema,
   updateSupportRequestStatusSchema,
 } from './admin.schema';
 import {
   getAdminEmailDiagnostics,
   getAdminDashboard,
   sendAdminTestEmail,
+  updateAdminUserRole,
   updateAdminSupportRequestStatus,
 } from './admin.service';
 
@@ -57,6 +60,21 @@ adminRouter.post(
       actor,
     });
     res.status(202).json(result);
+  }),
+);
+
+adminRouter.patch(
+  '/users/:id/role',
+  asyncHandler(async (req, res) => {
+    const actor = requireAdmin(req);
+    const params = validateSchema(adminUserIdParamsSchema, req.params);
+    const payload = validateSchema(updateAdminUserRoleSchema, req.body);
+    const result = await updateAdminUserRole({
+      userId: params.id,
+      role: payload.role,
+      actor,
+    });
+    res.status(200).json(result);
   }),
 );
 
