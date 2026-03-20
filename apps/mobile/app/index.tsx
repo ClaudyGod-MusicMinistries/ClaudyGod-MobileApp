@@ -25,6 +25,7 @@ export default function Landing() {
   const { initializing, isAuthenticated } = useAuth();
   const { width, height } = useWindowDimensions();
 
+  const isWeb = typeof globalThis === 'object' && globalThis !== null && 'window' in globalThis;
   const isTV = Platform.isTV;
   const isTablet = width >= 768 && !isTV;
   const compact = height < 730;
@@ -130,6 +131,124 @@ export default function Landing() {
       orbLoop.stop();
     };
   }, [ctaOpacity, headerOpacity, heroOpacity, heroY, logoFloat, orbDrift, useNativeAnimations]);
+
+  if (isWeb) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#05040D' }}>
+        <StatusBar translucent={false} barStyle="light-content" backgroundColor="#05040D" />
+
+        <LinearGradient
+          colors={['#130A2A', '#090614', '#05040D']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+        />
+
+        <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
+          <Screen style={{ flex: 1 }} contentStyle={{ flex: 1 }}>
+            <View
+              style={{
+                flex: 1,
+                justifyContent: 'center',
+                paddingTop: 24,
+                paddingBottom: 24,
+              }}
+            >
+              <View
+                style={{
+                  borderRadius: 24,
+                  borderWidth: 1,
+                  borderColor: 'rgba(176,153,230,0.30)',
+                  backgroundColor: 'rgba(14,10,24,0.88)',
+                  paddingHorizontal: isTablet ? 28 : 20,
+                  paddingVertical: 24,
+                }}
+              >
+                <View style={{ alignItems: 'center' }}>
+                  <Image
+                    source={BRAND_LOGO_ASSET}
+                    style={{ width: isTablet ? 112 : 92, height: isTablet ? 112 : 92, borderRadius: 999 }}
+                  />
+
+                  <CustomText
+                    variant="hero"
+                    style={{
+                      marginTop: 18,
+                      color: '#F8F6FF',
+                      textAlign: 'center',
+                      fontSize: isTablet ? 30 : 24,
+                      lineHeight: isTablet ? 36 : 30,
+                      fontFamily: 'ClashDisplay_700Bold',
+                    }}
+                  >
+                    Worship. Word. Growth.
+                  </CustomText>
+
+                  <CustomText
+                    variant="body"
+                    style={{
+                      marginTop: 10,
+                      color: 'rgba(214,205,236,0.92)',
+                      textAlign: 'center',
+                      maxWidth: 480,
+                      fontFamily: 'Sora_400Regular',
+                    }}
+                  >
+                    Stream ministry music, watch channels, and follow daily message drops in one place.
+                  </CustomText>
+
+                  <View
+                    style={{
+                      width: '100%',
+                      marginTop: 18,
+                      minHeight: isTablet ? 220 : 188,
+                      borderRadius: 20,
+                      overflow: 'hidden',
+                      borderWidth: 1,
+                      borderColor: 'rgba(255,255,255,0.12)',
+                    }}
+                  >
+                    <Image
+                      source={require('../assets/images/FB_IMG_1743103252303.jpg')}
+                      style={{ width: '100%', height: '100%' }}
+                      resizeMode="cover"
+                    />
+                  </View>
+
+                  <View style={{ width: '100%', marginTop: 20 }}>
+                    <AppButton
+                      title="Create Account"
+                      size="lg"
+                      fullWidth
+                      onPress={() => router.push(APP_ROUTES.auth.signUp)}
+                      rightIcon={<MaterialIcons name="person-add" size={18} color="#08060F" />}
+                    />
+
+                    <AppButton
+                      title="Sign In"
+                      variant="ghost"
+                      size="lg"
+                      fullWidth
+                      onPress={() => router.push(APP_ROUTES.auth.signIn)}
+                      leftIcon={<MaterialIcons name="login" size={18} color="#E8DDFF" />}
+                      textColor="#E8DDFF"
+                      style={{
+                        marginTop: 10,
+                        borderRadius: 16,
+                        borderWidth: 1,
+                        borderColor: 'rgba(233,221,255,0.32)',
+                        backgroundColor: 'rgba(255,255,255,0.04)',
+                      }}
+                    />
+                  </View>
+                </View>
+              </View>
+            </View>
+          </Screen>
+        </SafeAreaView>
+      </View>
+    );
+  }
 
   const orbTranslate = orbDrift.interpolate({
     inputRange: [0, 1],
