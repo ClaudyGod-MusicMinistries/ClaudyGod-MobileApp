@@ -12,12 +12,12 @@ import { TVTouchable } from '../../components/ui/TVTouchable';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 
 const featureChips = [
-  { icon: 'library-music', label: 'Massive catalog' },
-  { icon: 'cloud-download', label: 'Offline ready' },
-  { icon: 'equalizer', label: 'Adaptive streaming' },
-  { icon: 'cast', label: 'TV + Cast support' },
-  { icon: 'lock', label: 'Privacy-first' },
-  { icon: 'groups', label: 'Community playlists' },
+  { icon: 'library-music', label: 'Worship releases' },
+  { icon: 'smart-display', label: 'Video replays' },
+  { icon: 'menu-book', label: 'Daily word' },
+  { icon: 'cast', label: 'TV + web ready' },
+  { icon: 'lock', label: 'Secure access' },
+  { icon: 'support-agent', label: 'Support desk' },
 ];
 
 const team = [
@@ -27,11 +27,10 @@ const team = [
 ];
 
 const social = [
-  { icon: 'smart-display', label: 'YouTube', url: 'https://youtube.com/claudygodmusic' },
+  { icon: 'public', label: 'Website', url: 'https://claudygod.org' },
+  { icon: 'smart-display', label: 'YouTube', url: 'https://www.youtube.com/@ClaudyGODMinistries' },
   { icon: 'forum', label: 'WhatsApp', url: 'https://wa.me/18002528394' },
-  { icon: 'photo-camera', label: 'Instagram', url: 'https://instagram.com/claudygodmusic' },
-  { icon: 'facebook', label: 'Facebook', url: 'https://facebook.com/claudygodmusic' },
-  { icon: 'alternate-email', label: 'Newsletter', url: 'mailto:hello@claudygodmusic.com' },
+  { icon: 'alternate-email', label: 'Support', url: 'mailto:support@claudygod.org' },
 ];
 
 export default function About() {
@@ -43,9 +42,9 @@ export default function About() {
   const chipWidth = isCompact ? '100%' : '48%';
   const aboutConfig = config?.about;
   const heroStats = aboutConfig?.heroStats ?? [
-    { label: 'Monthly listeners', value: '3.2M' },
-    { label: 'Countries', value: '48' },
-    { label: 'Avg uptime', value: '99.96%' },
+    { label: 'Platforms', value: 'Mobile + Web' },
+    { label: 'Support desk', value: 'Human-led' },
+    { label: 'Content flow', value: 'Daily' },
   ];
   const featureChipItems = aboutConfig?.featureChips ?? featureChips;
   const teamMembers = aboutConfig?.team ?? team;
@@ -87,7 +86,7 @@ export default function About() {
               Built for worshipers. Crafted for creators.
             </CustomText>
             <CustomText variant="body" style={{ color: '#E5E7EB', marginTop: 6 }}>
-              ClaudyGod brings premium audio and video to mobile, web, and TV with stability and speed.
+              ClaudyGod brings worship, ministry updates, and secure account access to every screen with clarity and calm.
             </CustomText>
 
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: spacing.md, justifyContent: 'space-between' }}>
@@ -158,7 +157,7 @@ export default function About() {
             Our mission
           </CustomText>
           <CustomText variant="body" style={{ color: theme.colors.text.secondary, marginTop: 8 }}>
-            Empower every believer and creator with a streaming product that is fast, accessible, and trusted on every screen.
+            Build a focused ministry experience where worship, messages, and daily truth stay easy to discover and simple to use.
           </CustomText>
         </SurfaceCard>
       </FadeIn>

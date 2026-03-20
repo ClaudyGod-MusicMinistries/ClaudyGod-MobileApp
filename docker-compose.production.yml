@@ -18,6 +18,7 @@ x-backend-env: &backend-env
   AUTH_RESET_PASSWORD_PATH: ${AUTH_RESET_PASSWORD_PATH:-/reset-password}
   AUTH_SIGN_IN_PATH: ${AUTH_SIGN_IN_PATH:-/sign-in}
   AUTH_ACCOUNT_REVIEW_PATH: ${AUTH_ACCOUNT_REVIEW_PATH:-/settings/account}
+  AUTH_SESSION_COOKIE_NAME: ${AUTH_SESSION_COOKIE_NAME:-claudygod_session}
   AUTH_VERIFICATION_TOKEN_TTL_MINUTES: ${AUTH_VERIFICATION_TOKEN_TTL_MINUTES:-1440}
   AUTH_PASSWORD_RESET_TOKEN_TTL_MINUTES: ${AUTH_PASSWORD_RESET_TOKEN_TTL_MINUTES:-30}
   AUTH_REQUIRE_EMAIL_VERIFICATION: ${AUTH_REQUIRE_EMAIL_VERIFICATION:-true}
@@ -129,7 +130,7 @@ services:
       redis:
         condition: service_healthy
       postfix-relay:
-        condition: service_started
+        condition: service_healthy
     expose:
       - "4000"
     healthcheck:

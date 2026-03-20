@@ -3,7 +3,7 @@ import type { MobileAppConfig } from './appConfig.schema';
 export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
   version: 1,
   privacy: {
-    contactEmail: 'privacy@claudygodmusic.com',
+    contactEmail: 'privacy@claudygod.org',
     deleteConfirmPhrase: 'I CONFIRM',
     principles: [
       'We do not sell personal data.',
@@ -13,21 +13,21 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
     ],
   },
   help: {
-    supportCenterUrl: 'https://claudygodmusic.com/support',
+    supportCenterUrl: 'https://claudygod.org',
     contact: [
       {
-        id: 'chat',
-        icon: 'chat-bubble',
-        title: 'Live chat',
-        desc: 'Average response under 2 minutes',
-        actionUrl: 'https://claudygodmusic.com/support/chat',
+        id: 'website',
+        icon: 'public',
+        title: 'Ministry website',
+        desc: 'Open the ClaudyGod website',
+        actionUrl: 'https://claudygod.org',
       },
       {
         id: 'email',
         icon: 'email',
         title: 'Email support',
-        desc: 'support@claudygodmusic.com',
-        actionUrl: 'mailto:support@claudygodmusic.com',
+        desc: 'support@claudygod.org',
+        actionUrl: 'mailto:support@claudygod.org',
       },
       {
         id: 'whatsapp',
@@ -69,17 +69,17 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
   },
   about: {
     heroStats: [
-      { label: 'Monthly listeners', value: '3.2M' },
-      { label: 'Countries', value: '48' },
-      { label: 'Avg uptime', value: '99.96%' },
+      { label: 'Platforms', value: 'Mobile + Web' },
+      { label: 'Support desk', value: 'Human-led' },
+      { label: 'Content flow', value: 'Daily' },
     ],
     featureChips: [
-      { icon: 'library-music', label: 'Massive catalog' },
-      { icon: 'cloud-download', label: 'Offline ready' },
-      { icon: 'equalizer', label: 'Adaptive streaming' },
-      { icon: 'cast', label: 'TV + Cast support' },
-      { icon: 'lock', label: 'Privacy-first' },
-      { icon: 'groups', label: 'Community playlists' },
+      { icon: 'library-music', label: 'Worship releases' },
+      { icon: 'smart-display', label: 'Video replays' },
+      { icon: 'menu-book', label: 'Daily word' },
+      { icon: 'cast', label: 'TV + web ready' },
+      { icon: 'lock', label: 'Secure access' },
+      { icon: 'support-agent', label: 'Support desk' },
     ],
     team: [
       { name: 'Claudy God', role: 'Founder & Lead Artist', desc: 'Vision, music direction, and weekly drops.' },
@@ -87,11 +87,10 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
       { name: 'Engineering', role: 'Platform', desc: 'Streaming quality, playback reliability, and APIs.' },
     ],
     social: [
-      { icon: 'smart-display', label: 'YouTube', url: 'https://youtube.com/@ClaudyGODMinistries' },
+      { icon: 'public', label: 'Website', url: 'https://claudygod.org' },
+      { icon: 'smart-display', label: 'YouTube', url: 'https://www.youtube.com/@ClaudyGODMinistries' },
       { icon: 'forum', label: 'WhatsApp', url: 'https://wa.me/18002528394' },
-      { icon: 'photo-camera', label: 'Instagram', url: 'https://instagram.com/claudygodmusic' },
-      { icon: 'facebook', label: 'Facebook', url: 'https://facebook.com/claudygodmusic' },
-      { icon: 'alternate-email', label: 'Newsletter', url: 'mailto:hello@claudygodmusic.com' },
+      { icon: 'alternate-email', label: 'Support', url: 'mailto:support@claudygod.org' },
     ],
     versionLabel: 'Version 1.0.0',
   },

@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import { ENV } from './config';
 
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
@@ -11,8 +12,10 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
 
   const response = await fetch(`${ENV.apiUrl}${path}`, {
     ...init,
+    credentials: Platform.OS === 'web' ? 'include' : init?.credentials,
     headers: {
       'Content-Type': 'application/json',
+      'X-Claudy-Client-Platform': Platform.OS,
       ...(init?.headers ?? {}),
     },
   });

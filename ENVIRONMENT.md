@@ -50,6 +50,14 @@ All three applications read from the repo root:
 - Postfix then relays outbound mail to Brevo on `smtp-relay.brevo.com:587` without changing the application email code
 - `EMAIL_BRAND_NAME`, `MAIL_FROM`, `MAIL_REPLY_TO`, and `EMAIL_SUPPORT_EMAIL` control the branded email experience
 - Direct Brevo SMTP is still acceptable for development or emergency fallback, but production should route through Postfix so the application tier stays provider-agnostic
+- Production verification for mail should use all three layers together:
+  - `docker compose --env-file .env.production -f docker-compose.production.yml logs -f api worker postfix-relay`
+  - `GET /v1/admin/email/diagnostics`
+  - `POST /v1/admin/email/test`
+- A healthy path means:
+  - the API queues an `email_jobs` row
+  - the worker marks the job `completed`
+  - the Postfix relay shows handoff to Brevo without SASL or TLS errors
 
 ## Deployment notes
 
@@ -61,3 +69,4 @@ All three applications read from the repo root:
 - After this email upgrade, rerun `npm --prefix ./services/api run migrate` so the `email_jobs` table gets the delivery-tracking columns
 - For shared end-user testing and deployment, keep `DATABASE_URL` pointed at the same Supabase Postgres instance you want your end users to use
 - `SEED_ADMIN_ON_BOOT=true` in development will ensure the configured admin account exists whenever the API boots
+- Expo production app metadata now uses the ClaudyGod brand name. For store submission, export a square PNG version of the ClaudyGod logo and keep the paths in `apps/mobile/app.config.js` aligned with that asset.
