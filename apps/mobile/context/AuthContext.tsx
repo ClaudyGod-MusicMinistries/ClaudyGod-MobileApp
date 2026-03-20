@@ -6,7 +6,7 @@ import {
   type ReactNode,
 } from 'react';
 import type { MobileAuthUser } from '../services/authService';
-import { getStoredMobileSession, subscribeToMobileAuthStateChange } from '../services/authService';
+import { restoreMobileSession, subscribeToMobileAuthStateChange } from '../services/authService';
 
 type AuthContextValue = {
   accessToken: string | null;
@@ -25,7 +25,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let active = true;
 
-    void getStoredMobileSession()
+    void restoreMobileSession()
       .then((storedSession) => {
         if (!active) {
           return;
@@ -58,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         accessToken,
         user,
         initializing,
-        isAuthenticated: Boolean(accessToken && user),
+        isAuthenticated: Boolean(user),
       }}
     >
       {children}
