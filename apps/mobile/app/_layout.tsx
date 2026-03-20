@@ -29,9 +29,45 @@ function ThemedLayout({ children }: { children: ReactNode }) {
   );
 }
 
-function LoadingScreen() {
-  const { width } = useWindowDimensions();
-  const compact = width < 380;
+function WebLoadingScreen({ compact }: { compact: boolean }) {
+  return (
+    <View style={{ flex: 1, backgroundColor: '#06040D' }}>
+      <StatusBar translucent={false} barStyle="light-content" backgroundColor="#06040D" />
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#06040D' }} edges={['top', 'bottom']}>
+        <View
+          style={{
+            flex: 1,
+            alignItems: 'center',
+            justifyContent: 'center',
+            paddingHorizontal: 24,
+          }}
+        >
+          <Text
+            style={{
+              color: '#F7F1FF',
+              fontSize: compact ? 16 : 18,
+              fontWeight: '600',
+            }}
+          >
+            Loading ClaudyGod
+          </Text>
+          <Text
+            style={{
+              marginTop: 8,
+              color: 'rgba(214,198,247,0.9)',
+              fontSize: compact ? 12 : 13,
+              textAlign: 'center',
+            }}
+          >
+            Preparing your experience...
+          </Text>
+        </View>
+      </SafeAreaView>
+    </View>
+  );
+}
+
+function NativeLoadingScreen({ compact }: { compact: boolean }) {
   const ringSize = compact ? 126 : 144;
   const logoSize = compact ? 58 : 66;
   const useNativeAnimations = Platform.OS !== 'web';
@@ -291,6 +327,16 @@ function LoadingScreen() {
       </SafeAreaView>
     </View>
   );
+}
+
+function LoadingScreen() {
+  const { width } = useWindowDimensions();
+  const compact = width < 380;
+  const isWeb = typeof globalThis === 'object' && globalThis !== null && 'window' in globalThis;
+  if (isWeb) {
+    return <WebLoadingScreen compact={compact} />;
+  }
+  return <NativeLoadingScreen compact={compact} />;
 }
 
 function RootLayoutInner() {
