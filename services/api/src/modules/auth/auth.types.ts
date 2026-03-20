@@ -26,6 +26,7 @@ export interface AuthResponse {
   accessToken: string;
   user: SafeUser;
   requiresEmailVerification?: boolean;
+  message?: string;
 }
 
 export interface RegisterResponse {

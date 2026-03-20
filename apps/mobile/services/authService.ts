@@ -1,5 +1,6 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 import { apiFetch } from './apiClient';
+import { authSessionStorage } from '../lib/authSessionStorage';
 
 export interface MobileAuthUser {
   id: string;
@@ -11,7 +12,7 @@ export interface MobileAuthUser {
 }
 
 export interface MobileAuthResponse {
-  accessToken: string;
+  accessToken?: string;
   user: MobileAuthUser;
   requiresEmailVerification?: boolean;
   message?: string;
@@ -51,7 +52,7 @@ export interface AuthActionResponse {
 }
 
 interface StoredMobileSession {
-  accessToken: string;
+  accessToken: string | null;
   user: MobileAuthUser;
 }
 
@@ -62,6 +63,7 @@ interface MobileSessionSnapshot {
 
 const MOBILE_AUTH_STORAGE_KEY = 'claudygod.mobile-auth-session.v1';
 const authStateListeners = new Set<(_snapshot: MobileSessionSnapshot) => void>();
+const usesBrowserCookieSession = Platform.OS === 'web';
 
 const isMobileAuthUser = (value: unknown): value is MobileAuthUser => {
   if (!value || typeof value !== 'object') {
@@ -86,12 +88,17 @@ const parseStoredMobileSession = (raw: string | null): MobileSessionSnapshot => 
 
   try {
     const parsed = JSON.parse(raw) as Partial<StoredMobileSession>;
-    if (typeof parsed.accessToken !== 'string' || !isMobileAuthUser(parsed.user)) {
+    if (
+      (parsed.accessToken !== null &&
+        parsed.accessToken !== undefined &&
+        typeof parsed.accessToken !== 'string') ||
+      !isMobileAuthUser(parsed.user)
+    ) {
       return { accessToken: null, user: null };
     }
 
     return {
-      accessToken: parsed.accessToken,
+      accessToken: typeof parsed.accessToken === 'string' ? parsed.accessToken : null,
       user: parsed.user,
     };
   } catch {
@@ -107,11 +114,11 @@ const notifyAuthStateListeners = (snapshot: MobileSessionSnapshot): void => {
 
 const persistMobileSession = async (response: Pick<MobileAuthResponse, 'accessToken' | 'user'>) => {
   const nextSession: StoredMobileSession = {
-    accessToken: response.accessToken,
+    accessToken: typeof response.accessToken === 'string' ? response.accessToken : null,
     user: response.user,
   };
 
-  await AsyncStorage.setItem(MOBILE_AUTH_STORAGE_KEY, JSON.stringify(nextSession));
+  await authSessionStorage.setItem(MOBILE_AUTH_STORAGE_KEY, JSON.stringify(nextSession));
   notifyAuthStateListeners(nextSession);
 };
 
@@ -134,6 +141,35 @@ export const subscribeToMobileAuthStateChange = (
   };
 };
 
+const fetchCurrentMobileUser = async (): Promise<MobileSessionSnapshot> => {
+  const response = await apiFetch<{ user: MobileAuthUser }>('/v1/auth/me');
+  return {
+    accessToken: null,
+    user: response.user,
+  };
+};
+
+export async function restoreMobileSession(): Promise<MobileSessionSnapshot> {
+  if (usesBrowserCookieSession) {
+    try {
+      const snapshot = await fetchCurrentMobileUser();
+      await authSessionStorage.setItem(
+        MOBILE_AUTH_STORAGE_KEY,
+        JSON.stringify({
+          accessToken: null,
+          user: snapshot.user,
+        }),
+      );
+      return snapshot;
+    } catch {
+      await authSessionStorage.removeItem(MOBILE_AUTH_STORAGE_KEY);
+      return { accessToken: null, user: null };
+    }
+  }
+
+  return getStoredMobileSession();
+}
+
 export async function loginMobileUser(input: {
   email: string;
   password: string;
@@ -145,6 +181,14 @@ export async function loginMobileUser(input: {
       password: input.password,
     }),
   });
+
+  if (!response.user) {
+    throw new Error('Sign-in completed without a user session');
+  }
+
+  if (!usesBrowserCookieSession && !response.accessToken) {
+    throw new Error('Sign-in completed without an access token');
+  }
 
   await persistMobileSession(response);
   return createSessionSnapshot(response);
@@ -163,7 +207,7 @@ export async function registerMobileUser(input: RegisterMobileUserInput): Promis
 
   if (response.requiresEmailVerification) {
     return {
-      accessToken: '',
+      accessToken: undefined,
       user: {
         id: '',
         email: response.pendingEmail ?? input.email.trim().toLowerCase(),
@@ -177,8 +221,12 @@ export async function registerMobileUser(input: RegisterMobileUserInput): Promis
     };
   }
 
-  if (!response.accessToken || !response.user) {
+  if (!response.user) {
     throw new Error('Registration completed without a usable session response');
+  }
+
+  if (!usesBrowserCookieSession && !response.accessToken) {
+    throw new Error('Registration completed without a usable access token');
   }
 
   const authResponse: MobileAuthResponse = {
@@ -216,6 +264,14 @@ export async function verifyMobileEmail(input: VerifyEmailInput): Promise<Mobile
     }),
   });
 
+  if (!response.user) {
+    throw new Error('Email verification completed without a user session');
+  }
+
+  if (!usesBrowserCookieSession && !response.accessToken) {
+    throw new Error('Email verification completed without an access token');
+  }
+
   await persistMobileSession(response);
   return createSessionSnapshot(response);
 }
@@ -250,16 +306,24 @@ export async function resetMobilePassword(
 }
 
 export async function clearMobileSession(): Promise<void> {
-  await AsyncStorage.removeItem(MOBILE_AUTH_STORAGE_KEY);
+  try {
+    await apiFetch('/v1/auth/logout', {
+      method: 'POST',
+    });
+  } catch {
+    // Fall through so local session state is still cleared for the client.
+  }
+
+  await authSessionStorage.removeItem(MOBILE_AUTH_STORAGE_KEY);
   notifyAuthStateListeners({ accessToken: null, user: null });
 }
 
 export async function getStoredMobileSession(): Promise<MobileSessionSnapshot> {
-  const storedSession = await AsyncStorage.getItem(MOBILE_AUTH_STORAGE_KEY);
+  const storedSession = await authSessionStorage.getItem(MOBILE_AUTH_STORAGE_KEY);
   const parsed = parseStoredMobileSession(storedSession);
 
-  if (storedSession && !parsed.accessToken) {
-    await AsyncStorage.removeItem(MOBILE_AUTH_STORAGE_KEY);
+  if (storedSession && !parsed.user) {
+    await authSessionStorage.removeItem(MOBILE_AUTH_STORAGE_KEY);
   }
 
   return parsed;

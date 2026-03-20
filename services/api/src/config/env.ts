@@ -150,6 +150,7 @@ const envSchema = z
     AUTH_RESET_PASSWORD_PATH: pathSegment('AUTH_RESET_PASSWORD_PATH', '/reset-password'),
     AUTH_SIGN_IN_PATH: pathSegment('AUTH_SIGN_IN_PATH', '/sign-in'),
     AUTH_ACCOUNT_REVIEW_PATH: pathSegment('AUTH_ACCOUNT_REVIEW_PATH', '/settings/account'),
+    AUTH_SESSION_COOKIE_NAME: z.string().trim().min(3).max(80).default('claudygod_session'),
     AUTH_VERIFICATION_TOKEN_TTL_MINUTES: z.coerce.number().int().min(10).max(10080).default(1440),
     AUTH_PASSWORD_RESET_TOKEN_TTL_MINUTES: z.coerce.number().int().min(5).max(1440).default(30),
     AUTH_REQUIRE_EMAIL_VERIFICATION: toBoolean(false),
