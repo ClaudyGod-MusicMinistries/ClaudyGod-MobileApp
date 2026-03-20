@@ -34,7 +34,7 @@ services:
       - SUPABASE_URL=${SUPABASE_URL:-}
       - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:-}
       - SUPABASE_STORAGE_BUCKET=${SUPABASE_STORAGE_BUCKET:-mobile-uploads}
-      - MAIL_FROM=${MAIL_FROM:-Claudy Platform <noreply@claudygod.example>}
+      - MAIL_FROM=${MAIL_FROM:-ClaudyGod <noreply@claudygod.example>}
       - ADMIN_ALERT_EMAILS=${ADMIN_ALERT_EMAILS:-}
       - SMTP_HOST=${SMTP_HOST:-}
       - SMTP_PORT=${SMTP_PORT:-587}
@@ -67,7 +67,7 @@ services:
       - SUPABASE_URL=${SUPABASE_URL:-}
       - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:-}
       - SUPABASE_STORAGE_BUCKET=${SUPABASE_STORAGE_BUCKET:-mobile-uploads}
-      - MAIL_FROM=${MAIL_FROM:-Claudy Platform <noreply@claudygod.example>}
+      - MAIL_FROM=${MAIL_FROM:-ClaudyGod <noreply@claudygod.example>}
       - ADMIN_ALERT_EMAILS=${ADMIN_ALERT_EMAILS:-}
       - SMTP_HOST=${SMTP_HOST:-}
       - SMTP_PORT=${SMTP_PORT:-587}

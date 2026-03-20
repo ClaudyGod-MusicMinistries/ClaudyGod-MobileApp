@@ -13,8 +13,8 @@ import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import { createSupportRequest } from '../../services/userFlowService';
 
 const contact = [
-  { icon: 'chat-bubble', title: 'Support center', desc: 'Open the central help portal', action: () => Linking.openURL('https://claudygodmusic.com/support') },
-  { icon: 'email', title: 'Email support', desc: 'support@claudygodmusic.com', action: () => Linking.openURL('mailto:support@claudygodmusic.com') },
+  { icon: 'public', title: 'Ministry website', desc: 'Open the ClaudyGod website', action: () => Linking.openURL('https://claudygod.org') },
+  { icon: 'email', title: 'Email support', desc: 'support@claudygod.org', action: () => Linking.openURL('mailto:support@claudygod.org') },
   { icon: 'forum', title: 'WhatsApp support', desc: 'Message the ministry support desk', action: () => Linking.openURL('https://wa.me/18002528394') },
   { icon: 'phone', title: 'Call support', desc: '+1 (800) 252-8394', action: () => Linking.openURL('tel:+18002528394') },
 ];
@@ -43,7 +43,7 @@ export default function Help() {
   const [submitting, setSubmitting] = useState(false);
   const { config } = useMobileAppConfig();
 
-  const supportCenterUrl = config?.help.supportCenterUrl ?? 'https://claudygodmusic.com/support';
+  const supportCenterUrl = config?.help.supportCenterUrl ?? 'https://claudygod.org';
   const contactOptions = config?.help.contact
     ? config.help.contact.map((item) => ({
         icon: item.icon,

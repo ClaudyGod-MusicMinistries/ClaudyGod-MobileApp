@@ -62,6 +62,7 @@ const resolvedEasProjectId =
   '';
 const resolvedExpoOwner =
   fileEnv.EXPO_ACCOUNT_OWNER || process.env.EXPO_ACCOUNT_OWNER || '';
+const brandLogoAssetPath = './assets/images/ClaudyGoLogo.webp';
 
 const seedEnv = (key, value) => {
   if (typeof value !== 'string' || value.length === 0 || key in process.env) {
@@ -133,20 +134,21 @@ const getEnv = (keys, fallback = '') => {
 
 module.exports = {
   expo: {
-    name: 'ClaudyGod App',
-    slug: 'MobileApp',
+    name: 'ClaudyGod',
+    slug: 'claudygod',
     ...(resolvedExpoOwner ? { owner: resolvedExpoOwner } : {}),
     scheme: 'claudygod',
     version: '1.0.0',
     orientation: 'default',
-    icon: './assets/icon.png',
+    icon: brandLogoAssetPath,
     userInterfaceStyle: 'dark',
     newArchEnabled: true,
+    description: 'ClaudyGod worship, ministry updates, and secure account access across mobile and web.',
     runtimeVersion: {
       policy: 'appVersion',
     },
     splash: {
-      image: './assets/splash-icon.png',
+      image: brandLogoAssetPath,
       resizeMode: 'contain',
       backgroundColor: '#06040D',
     },
@@ -154,18 +156,20 @@ module.exports = {
       supportsTablet: true,
       bundleIdentifier: 'com.claudygod.app',
       buildNumber: '1',
+      icon: brandLogoAssetPath,
     },
     android: {
       package: 'com.claudygod.app',
+      icon: brandLogoAssetPath,
       adaptiveIcon: {
-        foregroundImage: './assets/adaptive-icon.png',
+        foregroundImage: brandLogoAssetPath,
         backgroundColor: '#06040D',
       },
       edgeToEdgeEnabled: true,
       versionCode: 1,
     },
     web: {
-      favicon: './assets/favicon.png',
+      favicon: brandLogoAssetPath,
     },
     ...(resolvedEasProjectId
       ? {

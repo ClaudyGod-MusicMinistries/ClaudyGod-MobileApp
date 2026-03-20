@@ -21,8 +21,7 @@ interface PublishedContentRow {
   author_display_name: string | null;
 }
 
-const FALLBACK_IMAGE =
-  'https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=1200&q=80';
+const FALLBACK_IMAGE = '';
 
 const toIso = (value: string | Date): string => new Date(value).toISOString();
 
@@ -92,7 +91,7 @@ const toMobileFeedItem = (row: PublishedContentRow): MobileFeedItem => ({
   id: row.id,
   title: row.title,
   description: row.description,
-  subtitle: row.channel_name || row.author_display_name || 'ClaudyGod Channel',
+  subtitle: row.channel_name || row.author_display_name || 'ClaudyGod',
   type: row.content_type,
   imageUrl: row.thumbnail_url || FALLBACK_IMAGE,
   mediaUrl: row.media_url ?? undefined,
@@ -109,7 +108,7 @@ const toYouTubeFeedItem = (item: YouTubeVideoItem): MobileFeedItem => ({
   id: `yt:${item.youtubeVideoId}`,
   title: item.title,
   description: item.description || 'Latest release from the ministry YouTube feed.',
-  subtitle: item.channelTitle || 'ClaudyGod YouTube',
+  subtitle: item.channelTitle || 'ClaudyGod',
   type: item.isLive ? 'live' : 'video',
   imageUrl: item.thumbnailUrl || FALLBACK_IMAGE,
   mediaUrl: item.url,
@@ -185,7 +184,7 @@ export const buildMobileFeed = async (): Promise<MobileFeedResponse> => {
       id: item.id,
       title: item.title,
       description: item.description,
-      subtitle: 'ClaudyGod Channel',
+      subtitle: 'ClaudyGod',
       type: item.type,
       imageUrl: FALLBACK_IMAGE,
       mediaUrl: item.url,
