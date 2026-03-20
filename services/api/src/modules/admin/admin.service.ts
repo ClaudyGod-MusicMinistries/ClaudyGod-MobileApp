@@ -4,6 +4,7 @@ import { pool } from '../../db/pool';
 import { emailTransportInfo, verifyEmailTransport } from '../../infra/email';
 import { queueEmailJob } from '../../infra/transactionalEmails';
 import { HttpError } from '../../lib/httpError';
+import type { UserRole } from '../auth/auth.types';
 
 interface SummaryRow {
   total_users: string;
@@ -32,7 +33,7 @@ interface RecentUserRow {
   id: string;
   email: string;
   display_name: string;
-  role: 'CLIENT' | 'ADMIN';
+  role: UserRole;
   auth_provider: 'local' | 'supabase';
   created_at: string | Date;
   last_login_at: string | Date | null;
@@ -123,6 +124,17 @@ const toRecipients = (recipients: string[] | string): string[] =>
         .split(',')
         .map((item) => item.trim())
         .filter(Boolean);
+
+const toAdminRecentUser = (row: RecentUserRow) => ({
+  id: row.id,
+  email: row.email,
+  displayName: row.display_name,
+  role: row.role,
+  authProvider: row.auth_provider,
+  createdAt: toIso(row.created_at),
+  lastLoginAt: row.last_login_at ? toIso(row.last_login_at) : null,
+  emailVerifiedAt: row.email_verified_at ? toIso(row.email_verified_at) : null,
+});
 
 const getEmailDeliverySummaryResult = () =>
   pool.query<EmailSummaryRow>(
@@ -407,16 +419,7 @@ export const getAdminDashboard = async () => {
         processedAt: toIsoOrNull(row.processed_at),
       })),
     },
-    recentUsers: recentUsers.rows.map((row) => ({
-      id: row.id,
-      email: row.email,
-      displayName: row.display_name,
-      role: row.role,
-      authProvider: row.auth_provider,
-      createdAt: toIso(row.created_at),
-      lastLoginAt: row.last_login_at ? toIso(row.last_login_at) : null,
-      emailVerifiedAt: row.email_verified_at ? toIso(row.email_verified_at) : null,
-    })),
+    recentUsers: recentUsers.rows.map(toAdminRecentUser),
     feedback: feedback.rows.map((row) => ({
       id: row.id,
       rating: row.rating,
@@ -549,6 +552,79 @@ export const sendAdminTestEmail = async (input: {
     queued: true,
     recipient,
     message: 'Test email queued successfully.',
+  };
+};
+
+export const updateAdminUserRole = async (input: {
+  userId: string;
+  role: UserRole;
+  actor: JwtClaims;
+}) => {
+  if (input.userId === input.actor.sub) {
+    throw new HttpError(400, 'You cannot change your own role from the dashboard');
+  }
+
+  const existingResult = await pool.query<RecentUserRow>(
+    `SELECT
+       id,
+       email,
+       display_name,
+       role,
+       auth_provider,
+       created_at,
+       last_login_at,
+       email_verified_at
+     FROM app_users
+     WHERE id = $1
+     LIMIT 1`,
+    [input.userId],
+  );
+
+  if (existingResult.rowCount === 0) {
+    throw new HttpError(404, 'User not found');
+  }
+
+  const existing = existingResult.rows[0]!;
+
+  if (existing.role === input.role) {
+    return {
+      user: toAdminRecentUser(existing),
+      message: 'Role already matches the selected value.',
+    };
+  }
+
+  if (existing.role === 'ADMIN' && input.role !== 'ADMIN') {
+    const adminCountResult = await pool.query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count
+       FROM app_users
+       WHERE role = 'ADMIN'`,
+    );
+
+    if (Number(adminCountResult.rows[0]?.count || 0) <= 1) {
+      throw new HttpError(400, 'At least one admin user must remain assigned');
+    }
+  }
+
+  const updatedResult = await pool.query<RecentUserRow>(
+    `UPDATE app_users
+     SET role = $2,
+         updated_at = NOW()
+     WHERE id = $1
+     RETURNING
+       id,
+       email,
+       display_name,
+       role,
+       auth_provider,
+       created_at,
+       last_login_at,
+       email_verified_at`,
+    [input.userId, input.role],
+  );
+
+  return {
+    user: toAdminRecentUser(updatedResult.rows[0]!),
+    message: `User role updated to ${input.role}.`,
   };
 };
 
