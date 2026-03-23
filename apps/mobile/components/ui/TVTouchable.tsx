@@ -52,9 +52,9 @@ export function TVTouchable({
     isWeb && isHovered && !disableHoverStyle
       ? {
           opacity: 0.96,
-          shadowColor: '#A97BFF',
-          shadowOpacity: 0.12,
-          shadowRadius: 14,
+          shadowColor: '#000000',
+          shadowOpacity: 0.16,
+          shadowRadius: 12,
           shadowOffset: { width: 0, height: 6 },
         }
       : null;

@@ -89,13 +89,13 @@ export default function Landing() {
       <StatusBar translucent={false} barStyle="light-content" backgroundColor="#060709" />
 
       <LinearGradient
-        colors={['#111317', '#090A0D', '#060709']}
+        colors={['#0F1012', '#08090B', '#060709']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
       />
       <LinearGradient
-        colors={['rgba(188,145,62,0.18)', 'rgba(188,145,62,0)']}
+        colors={['rgba(188,145,62,0.12)', 'rgba(188,145,62,0)']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={{
@@ -108,7 +108,7 @@ export default function Landing() {
         }}
       />
       <LinearGradient
-        colors={['rgba(80,104,128,0.16)', 'rgba(80,104,128,0)']}
+        colors={['rgba(80,104,128,0.10)', 'rgba(80,104,128,0)']}
         start={{ x: 1, y: 0 }}
         end={{ x: 0, y: 1 }}
         style={{
@@ -310,6 +310,9 @@ export default function Landing() {
                     justifyContent: 'space-between',
                     gap: 10,
                     paddingHorizontal: 2,
+                    paddingTop: 6,
+                    borderTopWidth: 1,
+                    borderTopColor: 'rgba(255,255,255,0.06)',
                   }}
                 >
                   <CustomText variant="caption" style={{ color: 'rgba(224,214,197,0.56)' }}>
