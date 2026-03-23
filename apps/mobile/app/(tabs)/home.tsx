@@ -46,16 +46,18 @@ function QuickLink({
   label: string;
   onPress: () => void;
 }) {
+  const theme = useAppTheme();
+
   return (
     <TVTouchable
       onPress={onPress}
       style={{
         flex: 1,
         minWidth: 0,
-        borderRadius: 14,
+        borderRadius: theme.radius.md,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.08)',
-        backgroundColor: 'rgba(17,22,27,0.88)',
+        borderColor: theme.colors.border,
+        backgroundColor: theme.colors.surface,
         paddingHorizontal: 14,
         paddingVertical: 14,
         gap: 10,
@@ -66,17 +68,17 @@ function QuickLink({
         style={{
           width: 34,
           height: 34,
-          borderRadius: 10,
+          borderRadius: theme.radius.sm,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: 'rgba(210,176,105,0.12)',
+          backgroundColor: 'rgba(139,92,246,0.14)',
           borderWidth: 1,
-          borderColor: 'rgba(210,176,105,0.18)',
+          borderColor: 'rgba(139,92,246,0.24)',
         }}
       >
-        <MaterialIcons name={icon} size={18} color="#DFC07E" />
+        <MaterialIcons name={icon} size={18} color={theme.colors.primary} />
       </View>
-      <CustomText variant="label" style={{ color: '#F4F0E7' }}>
+      <CustomText variant="label" style={{ color: theme.colors.text.primary }}>
         {label}
       </CustomText>
     </TVTouchable>

@@ -10,6 +10,7 @@ import { TVTouchable } from '../components/ui/TVTouchable';
 import { AppButton } from '../components/ui/AppButton';
 import { CinematicHeroCard } from '../components/sections/CinematicHeroCard';
 import { useAuth } from '../context/AuthContext';
+import { useAppTheme } from '../util/colorScheme';
 import { APP_ROUTES } from '../util/appRoutes';
 import { BRAND_HERO_ASSET, BRAND_LOGO_ASSET } from '../util/brandAssets';
 
@@ -28,16 +29,18 @@ function DestinationCard({
   label: string;
   onPress: () => void;
 }) {
+  const theme = useAppTheme();
+
   return (
     <TVTouchable
       onPress={onPress}
       style={{
         flex: 1,
         minWidth: 0,
-        borderRadius: 14,
+        borderRadius: theme.radius.md,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.08)',
-        backgroundColor: 'rgba(17,22,27,0.88)',
+        borderColor: theme.colors.border,
+        backgroundColor: theme.colors.surface,
         paddingHorizontal: 14,
         paddingVertical: 14,
         gap: 10,
@@ -48,17 +51,17 @@ function DestinationCard({
         style={{
           width: 34,
           height: 34,
-          borderRadius: 10,
+          borderRadius: theme.radius.sm,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: 'rgba(210,176,105,0.12)',
+          backgroundColor: 'rgba(139,92,246,0.14)',
           borderWidth: 1,
-          borderColor: 'rgba(210,176,105,0.18)',
+          borderColor: 'rgba(139,92,246,0.24)',
         }}
       >
-        <MaterialIcons name={icon} size={18} color="#DFC07E" />
+        <MaterialIcons name={icon} size={18} color={theme.colors.primary} />
       </View>
-      <CustomText variant="label" style={{ color: '#F4F0E7' }}>
+      <CustomText variant="label" style={{ color: theme.colors.text.primary }}>
         {label}
       </CustomText>
     </TVTouchable>
@@ -68,6 +71,7 @@ function DestinationCard({
 export default function LandingScreen() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
+  const theme = useAppTheme();
   const { width } = useWindowDimensions();
 
   const isTablet = width >= 768;
@@ -80,147 +84,159 @@ export default function LandingScreen() {
     : { title: 'Sign In', route: APP_ROUTES.auth.signIn };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#07090C' }}>
-      <StatusBar translucent={false} barStyle="light-content" backgroundColor="#07090C" />
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+      <StatusBar translucent={false} barStyle="light-content" backgroundColor={theme.colors.background} />
 
       <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
         <ScrollView
           style={{ flex: 1 }}
-          contentContainerStyle={{ paddingBottom: 28 }}
+          contentContainerStyle={{ flexGrow: 1, paddingBottom: isTablet ? 32 : 24 }}
           showsVerticalScrollIndicator={false}
           bounces={false}
           overScrollMode="never"
         >
-          <Screen>
-            <View style={{ paddingTop: 10, gap: 24 }}>
-              <FadeIn>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: 16,
-                  }}
-                >
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
-                    <View
-                      style={{
-                        width: 42,
-                        height: 42,
-                        borderRadius: 12,
-                        borderWidth: 1,
-                        borderColor: 'rgba(255,255,255,0.1)',
-                        backgroundColor: 'rgba(255,255,255,0.04)',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <Image source={BRAND_LOGO_ASSET} style={{ width: 24, height: 24, borderRadius: 8 }} />
-                    </View>
-
-                    <View>
-                      <CustomText
-                        variant="caption"
-                        style={{
-                          color: 'rgba(223,213,193,0.7)',
-                          textTransform: 'uppercase',
-                          letterSpacing: 0.9,
-                        }}
-                      >
-                        ClaudyGod
-                      </CustomText>
-                      <CustomText variant="label" style={{ color: '#F7F3EA', marginTop: 2 }}>
-                        Ministries
-                      </CustomText>
-                    </View>
-                  </View>
-
-                  {!isAuthenticated ? (
-                    <AppButton
-                      title="Sign In"
-                      variant="secondary"
-                      size="sm"
-                      onPress={() => router.push(APP_ROUTES.auth.signIn)}
-                    />
-                  ) : null}
-                </View>
-              </FadeIn>
-
-              <FadeIn delay={70}>
-                <CinematicHeroCard
-                  imageSource={BRAND_HERO_ASSET}
-                  height={isTablet ? 430 : 360}
-                  badge="ClaudyGod"
-                  eyebrow="Stream the ministry"
-                  title="Music, messages, and live worship in one clean experience."
-                  subtitle="Designed for listening, watching, and returning without friction."
-                  actions={[
-                    {
-                      label: primaryAction.title,
-                      onPress: () => router.push(primaryAction.route),
-                      icon: isAuthenticated ? 'play-arrow' : 'person-add',
-                    },
-                    {
-                      label: secondaryAction.title,
-                      onPress: () => router.push(secondaryAction.route),
-                      variant: 'secondary',
-                      icon: isAuthenticated ? 'library-music' : 'login',
-                    },
-                  ]}
-                />
-              </FadeIn>
-
-              <FadeIn delay={120}>
-                <View style={{ gap: 12 }}>
+          <Screen style={{ flex: 1 }} contentStyle={{ flex: 1 }}>
+            <View
+              style={{
+                flex: 1,
+                justifyContent: 'space-between',
+                paddingTop: isTablet ? 24 : 18,
+                gap: isTablet ? 34 : 28,
+              }}
+            >
+              <View style={{ gap: isTablet ? 30 : 24 }}>
+                <FadeIn>
                   <View
                     style={{
                       flexDirection: 'row',
-                      justifyContent: 'space-between',
                       alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 16,
                     }}
                   >
-                    <CustomText variant="heading" style={{ color: '#F3EEE5' }}>
-                      Start from anywhere
-                    </CustomText>
-                    <CustomText
-                      variant="caption"
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
+                      <View
+                        style={{
+                          width: 42,
+                          height: 42,
+                          borderRadius: 12,
+                          borderWidth: 1,
+                          borderColor: theme.colors.border,
+                          backgroundColor: theme.colors.surface,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <Image source={BRAND_LOGO_ASSET} style={{ width: 24, height: 24, borderRadius: 8 }} />
+                      </View>
+
+                      <View>
+                        <CustomText
+                          variant="caption"
+                          style={{
+                            color: theme.colors.text.secondary,
+                            textTransform: 'uppercase',
+                            letterSpacing: 0.9,
+                          }}
+                        >
+                          ClaudyGod
+                        </CustomText>
+                        <CustomText variant="label" style={{ color: theme.colors.text.primary, marginTop: 2 }}>
+                          Ministries
+                        </CustomText>
+                      </View>
+                    </View>
+
+                    {!isAuthenticated ? (
+                      <AppButton
+                        title="Sign In"
+                        variant="secondary"
+                        size="sm"
+                        onPress={() => router.push(APP_ROUTES.auth.signIn)}
+                      />
+                    ) : null}
+                  </View>
+                </FadeIn>
+
+                <FadeIn delay={70}>
+                  <CinematicHeroCard
+                    imageSource={BRAND_HERO_ASSET}
+                    height={isTablet ? 480 : 368}
+                    badge="ClaudyGod"
+                    eyebrow="Stream the ministry"
+                    title="Music, messages, and live worship in one clean experience."
+                    subtitle="Designed for listening, watching, and returning without friction."
+                    actions={[
+                      {
+                        label: primaryAction.title,
+                        onPress: () => router.push(primaryAction.route),
+                        icon: isAuthenticated ? 'play-arrow' : 'person-add',
+                      },
+                      {
+                        label: secondaryAction.title,
+                        onPress: () => router.push(secondaryAction.route),
+                        variant: 'secondary',
+                        icon: isAuthenticated ? 'library-music' : 'login',
+                      },
+                    ]}
+                  />
+                </FadeIn>
+
+                <FadeIn delay={120}>
+                  <View style={{ gap: 12 }}>
+                    <View
                       style={{
-                        color: 'rgba(205,198,186,0.62)',
-                        textTransform: 'uppercase',
-                        letterSpacing: 0.8,
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
                       }}
                     >
-                      ClaudyGod app
-                    </CustomText>
-                  </View>
+                      <CustomText variant="heading" style={{ color: theme.colors.text.primary }}>
+                        Start from anywhere
+                      </CustomText>
+                      <CustomText
+                        variant="caption"
+                        style={{
+                          color: theme.colors.text.secondary,
+                          textTransform: 'uppercase',
+                          letterSpacing: 0.8,
+                        }}
+                      >
+                        ClaudyGod app
+                      </CustomText>
+                    </View>
 
-                  <View style={{ flexDirection: 'row', gap: 10 }}>
-                    {DESTINATIONS.map((destination) => (
-                      <DestinationCard
-                        key={destination.key}
-                        icon={destination.icon}
-                        label={destination.label}
-                        onPress={() =>
-                          router.push(isAuthenticated ? destination.route : APP_ROUTES.auth.signIn)
-                        }
-                      />
-                    ))}
+                    <View style={{ flexDirection: 'row', gap: 10 }}>
+                      {DESTINATIONS.map((destination) => (
+                        <DestinationCard
+                          key={destination.key}
+                          icon={destination.icon}
+                          label={destination.label}
+                          onPress={() =>
+                            router.push(isAuthenticated ? destination.route : APP_ROUTES.auth.signIn)
+                          }
+                        />
+                      ))}
+                    </View>
                   </View>
-                </View>
-              </FadeIn>
+                </FadeIn>
+              </View>
 
               <FadeIn delay={170}>
                 <View
                   style={{
                     borderTopWidth: 1,
-                    borderTopColor: 'rgba(255,255,255,0.08)',
-                    paddingTop: 16,
+                    borderTopColor: theme.colors.border,
+                    paddingTop: 18,
+                    paddingBottom: isTablet ? 6 : 2,
                     flexDirection: isTablet ? 'row' : 'column',
                     justifyContent: 'space-between',
+                    alignItems: isTablet ? 'center' : 'flex-start',
                     gap: 12,
+                    marginTop: 'auto',
                   }}
                 >
-                  <CustomText variant="caption" style={{ color: 'rgba(200,194,184,0.62)' }}>
+                  <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
                     Worship, teaching, and live ministry without the noise.
                   </CustomText>
 
@@ -229,7 +245,7 @@ export default function LandingScreen() {
                       <CustomText
                         variant="caption"
                         style={{
-                          color: '#D8C08A',
+                          color: theme.colors.primary,
                           textTransform: 'uppercase',
                           letterSpacing: 0.9,
                         }}
@@ -241,7 +257,7 @@ export default function LandingScreen() {
                       <CustomText
                         variant="caption"
                         style={{
-                          color: 'rgba(228,221,209,0.76)',
+                          color: theme.colors.text.primary,
                           textTransform: 'uppercase',
                           letterSpacing: 0.9,
                         }}
