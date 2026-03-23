@@ -9,6 +9,8 @@ import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { CustomText } from '../../components/CustomText';
 import { FadeIn } from '../../components/ui/FadeIn';
 import { TVTouchable } from '../../components/ui/TVTouchable';
+import { AppButton } from '../../components/ui/AppButton';
+import { useToast } from '../../context/ToastContext';
 import { useAppTheme, useColorSchemeToggle } from '../../util/colorScheme';
 import { fetchMePreferences, updateMePreferences } from '../../services/userFlowService';
 import { APP_ROUTES } from '../../util/appRoutes';
@@ -26,11 +28,18 @@ type SettingItem = {
 function SettingRow({ item }: { item: SettingItem }) {
   const theme = useAppTheme();
   const isSwitch = item.type === 'switch';
+  const handlePress = () => {
+    if (isSwitch) {
+      item.onToggle?.(!Boolean(item.value));
+      return;
+    }
+
+    item.action?.();
+  };
 
   return (
     <TVTouchable
-      onPress={isSwitch ? undefined : item.action}
-      disabled={isSwitch}
+      onPress={handlePress}
       style={{
         flexDirection: 'row',
         alignItems: 'center',
@@ -84,9 +93,11 @@ export default function SettingsScreen() {
   const theme = useAppTheme();
   const toggleColorScheme = useColorSchemeToggle();
   const router = useRouter();
+  const { showToast } = useToast();
   const [notifications, setNotifications] = useState(true);
   const [autoPlay, setAutoPlay] = useState(true);
   const [highQuality, setHighQuality] = useState(false);
+  const [personalization, setPersonalization] = useState(true);
   const [preferencesLoaded, setPreferencesLoaded] = useState(false);
 
   useEffect(() => {
@@ -99,6 +110,7 @@ export default function SettingsScreen() {
         setNotifications(response.preferences.notificationsEnabled);
         setAutoPlay(response.preferences.autoplayEnabled);
         setHighQuality(response.preferences.highQualityEnabled);
+        setPersonalization(response.preferences.personalizationEnabled);
       } catch {
       } finally {
         if (active) setPreferencesLoaded(true);
@@ -156,6 +168,11 @@ export default function SettingsScreen() {
             onToggle: (value: boolean) => {
               setAutoPlay(value);
               persistPreferencePatch({ autoplayEnabled: value });
+              showToast({
+                title: 'Playback updated',
+                message: value ? 'Auto-play is on.' : 'Auto-play is off.',
+                tone: 'info',
+              });
             },
           },
           {
@@ -167,6 +184,11 @@ export default function SettingsScreen() {
             onToggle: (value: boolean) => {
               setHighQuality(value);
               persistPreferencePatch({ highQualityEnabled: value });
+              showToast({
+                title: 'Audio quality updated',
+                message: value ? 'Higher quality audio is enabled.' : 'Standard quality audio is enabled.',
+                tone: 'info',
+              });
             },
           },
         ] as SettingItem[],
@@ -183,6 +205,27 @@ export default function SettingsScreen() {
             onToggle: (value: boolean) => {
               setNotifications(value);
               persistPreferencePatch({ notificationsEnabled: value });
+              showToast({
+                title: 'Notifications updated',
+                message: value ? 'Live and release alerts are on.' : 'Alerts are off.',
+                tone: 'info',
+              });
+            },
+          },
+          {
+            icon: 'auto-awesome',
+            label: 'Personalized recommendations',
+            hint: 'Use listening activity to improve suggestions',
+            type: 'switch',
+            value: personalization,
+            onToggle: (value: boolean) => {
+              setPersonalization(value);
+              persistPreferencePatch({ personalizationEnabled: value });
+              showToast({
+                title: 'Recommendations updated',
+                message: value ? 'Personalized recommendations are on.' : 'Recommendations are less personalized now.',
+                tone: 'info',
+              });
             },
           },
           {
@@ -195,6 +238,11 @@ export default function SettingsScreen() {
               const nextTheme = theme.scheme === 'dark' ? 'light' : 'dark';
               toggleColorScheme();
               persistPreferencePatch({ themePreference: nextTheme });
+              showToast({
+                title: 'Theme updated',
+                message: nextTheme === 'dark' ? 'Dark mode is active.' : 'Light mode is active.',
+                tone: 'info',
+              });
             },
           },
         ] as SettingItem[],
@@ -227,8 +275,10 @@ export default function SettingsScreen() {
       autoPlay,
       highQuality,
       notifications,
+      personalization,
       persistPreferencePatch,
       router,
+      showToast,
       theme.scheme,
       toggleColorScheme,
     ],
@@ -274,6 +324,29 @@ export default function SettingsScreen() {
                   <CustomText variant="body" style={{ color: theme.colors.text.secondary }}>
                     Manage playback, alerts, privacy, and support from one clean settings flow.
                   </CustomText>
+                </View>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: theme.spacing.md }}>
+                  <AppButton
+                    title="Profile"
+                    variant="secondary"
+                    size="sm"
+                    onPress={() => router.push(APP_ROUTES.profile)}
+                    leftIcon={<MaterialIcons name="person-outline" size={16} color={theme.colors.text.primary} />}
+                  />
+                  <AppButton
+                    title="Library"
+                    variant="outline"
+                    size="sm"
+                    onPress={() => router.push(APP_ROUTES.tabs.library)}
+                    leftIcon={<MaterialIcons name="library-music" size={16} color={theme.colors.text.primary} />}
+                  />
+                  <AppButton
+                    title="Help"
+                    variant="outline"
+                    size="sm"
+                    onPress={() => router.push(APP_ROUTES.settingsPages.help)}
+                    leftIcon={<MaterialIcons name="help-outline" size={16} color={theme.colors.text.primary} />}
+                  />
                 </View>
               </SurfaceCard>
             </FadeIn>

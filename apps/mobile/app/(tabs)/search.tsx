@@ -15,6 +15,7 @@ import { BrandedHeaderCard } from '../../components/layout/BrandedHeaderCard';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { AppButton } from '../../components/ui/AppButton';
 import { TVTouchable } from '../../components/ui/TVTouchable';
+import { useToast } from '../../context/ToastContext';
 import { useContentFeed } from '../../hooks/useContentFeed';
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
 import { APP_ROUTES } from '../../util/appRoutes';
@@ -25,12 +26,14 @@ const baseCategories = ['All', 'audio', 'video', 'playlist', 'live', 'announceme
 export default function Search() {
   const theme = useAppTheme();
   const router = useRouter();
+  const { showToast } = useToast();
   const { width } = useWindowDimensions();
   const isDark = theme.scheme === 'dark';
   const isTablet = width >= 768;
   const shortcutWidth = isTablet ? '31.8%' : '100%';
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
+  const [recentQueries, setRecentQueries] = useState<string[]>([]);
 
   const { feed } = useContentFeed();
 
@@ -70,6 +73,9 @@ export default function Search() {
   }, [activeCategory, allItems, query]);
 
   const openResult = async (item: (typeof filtered)[number]) => {
+    if (query.trim()) {
+      setRecentQueries((current) => [query.trim(), ...current.filter((entry) => entry !== query.trim())].slice(0, 5));
+    }
     await trackPlayEvent({
       contentId: item.id,
       contentType: item.type,
@@ -77,6 +83,47 @@ export default function Search() {
       source: 'search_results',
     });
     router.push(buildPlayerRoute(item));
+  };
+
+  const applyRecentSearch = () => {
+    const recent = recentQueries[0];
+    if (!recent) {
+      showToast({
+        title: 'No recent searches',
+        message: 'Search for music, videos, or messages first.',
+        tone: 'info',
+      });
+      return;
+    }
+
+    setQuery(recent);
+    setActiveCategory('All');
+  };
+
+  const cycleCategory = () => {
+    const currentIndex = baseCategories.indexOf(activeCategory);
+    const nextCategory = baseCategories[(currentIndex + 1) % baseCategories.length];
+    setActiveCategory(nextCategory);
+    showToast({
+      title: 'Filter updated',
+      message: `Showing ${nextCategory === 'All' ? 'all results' : nextCategory} results.`,
+      tone: 'info',
+      durationMs: 1800,
+    });
+  };
+
+  const handleSubmitSearch = () => {
+    const normalized = query.trim();
+    if (!normalized) {
+      showToast({
+        title: 'Search is empty',
+        message: 'Enter a title, artist, or topic.',
+        tone: 'warning',
+      });
+      return;
+    }
+
+    setRecentQueries((current) => [normalized, ...current.filter((entry) => entry !== normalized)].slice(0, 5));
   };
 
   return (
@@ -109,8 +156,8 @@ export default function Search() {
                   title="Search"
                   subtitle="Find music, videos and playlists"
                   actions={[
-                    { icon: 'history', onPress: () => undefined, accessibilityLabel: 'Recent searches' },
-                    { icon: 'tune', onPress: () => undefined, accessibilityLabel: 'Search filters' },
+                    { icon: 'history', onPress: applyRecentSearch, accessibilityLabel: 'Recent searches' },
+                    { icon: 'tune', onPress: cycleCategory, accessibilityLabel: 'Search filters' },
                     { icon: 'person-outline', onPress: () => router.push(APP_ROUTES.profile), accessibilityLabel: 'Profile' },
                   ]}
                 />
@@ -147,7 +194,7 @@ export default function Search() {
               </View>
 
               <View style={{ marginTop: theme.spacing.md }}>
-                <SearchBar value={query} onChangeText={setQuery} onSubmit={() => undefined} />
+                <SearchBar value={query} onChangeText={setQuery} onSubmit={handleSubmitSearch} />
               </View>
 
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm, marginTop: theme.spacing.md }}>
