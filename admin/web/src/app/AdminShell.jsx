@@ -35,6 +35,13 @@ export default function AdminShell(props) {
               <nav class="portal-nav" aria-label="Portal navigation">
                 <button
                   type="button"
+                  class={['ghost-btn compact', dashboardView === 'editor' ? 'is-active' : '']}
+                  onClick={() => onSetDashboardView('editor')}
+                >
+                  Content
+                </button>
+                <button
+                  type="button"
                   class={['ghost-btn compact', dashboardView === 'live' ? 'is-active' : '']}
                   onClick={() => onSetDashboardView('live')}
                 >
@@ -42,17 +49,10 @@ export default function AdminShell(props) {
                 </button>
                 <button
                   type="button"
-                  class={['ghost-btn compact', dashboardView === 'editor' ? 'is-active' : '']}
-                  onClick={() => onSetDashboardView('editor')}
-                >
-                  Library
-                </button>
-                <button
-                  type="button"
                   class={['ghost-btn compact', dashboardView === 'mobile-preview' ? 'is-active' : '']}
                   onClick={() => onSetDashboardView('mobile-preview')}
                 >
-                  App Preview
+                  Preview
                 </button>
               </nav>
 

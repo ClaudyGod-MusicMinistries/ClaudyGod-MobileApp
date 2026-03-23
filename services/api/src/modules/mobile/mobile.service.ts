@@ -1,4 +1,5 @@
 import { pool } from '../../db/pool';
+import { isMissingDatabaseStructureError } from '../../lib/postgres';
 import { listMostPlayedContent } from '../analytics/analytics.service';
 import type { ContentSourceKind, ContentType } from '../content/content.types';
 import type { LiveSessionStatus } from '../live/live.types';
@@ -166,67 +167,83 @@ const toLiveFeedItem = (row: LiveSessionFeedRow): MobileFeedItem => ({
 });
 
 const loadPublishedContent = async (limit = 120): Promise<MobileFeedItem[]> => {
-  const result = await pool.query<PublishedContentRow>(
-    `SELECT
-       c.id,
-       c.title,
-       c.description,
-       c.content_type,
-       c.media_url,
-       c.thumbnail_url,
-       c.source_kind,
-       c.channel_name,
-       c.duration_label,
-       c.app_sections,
-       c.tags,
-       c.created_at,
-       c.updated_at,
-       u.display_name AS author_display_name
-     FROM content_items c
-     INNER JOIN app_users u ON u.id = c.author_id
-     WHERE c.visibility = 'published'
-     ORDER BY c.updated_at DESC, c.created_at DESC
-     LIMIT $1`,
-    [limit],
-  );
+  let result;
+  try {
+    result = await pool.query<PublishedContentRow>(
+      `SELECT
+         c.id,
+         c.title,
+         c.description,
+         c.content_type,
+         c.media_url,
+         c.thumbnail_url,
+         c.source_kind,
+         c.channel_name,
+         c.duration_label,
+         c.app_sections,
+         c.tags,
+         c.created_at,
+         c.updated_at,
+         u.display_name AS author_display_name
+       FROM content_items c
+       INNER JOIN app_users u ON u.id = c.author_id
+       WHERE c.visibility = 'published'
+       ORDER BY c.updated_at DESC, c.created_at DESC
+       LIMIT $1`,
+      [limit],
+    );
+  } catch (error) {
+    if (isMissingDatabaseStructureError(error)) {
+      return [];
+    }
+    throw error;
+  }
 
   return result.rows.map(toMobileFeedItem);
 };
 
 const loadLiveSessions = async (limit = 24): Promise<MobileFeedItem[]> => {
-  const result = await pool.query<LiveSessionFeedRow>(
-    `SELECT
-       ls.id,
-       ls.title,
-       ls.description,
-       ls.status,
-       ls.channel_id,
-       ls.cover_image_url,
-       ls.stream_url,
-       ls.playback_url,
-       ls.viewer_count,
-       ls.app_sections,
-       ls.tags,
-       ls.scheduled_for,
-       ls.started_at,
-       ls.ended_at,
-       ls.created_at,
-       ls.updated_at,
-       host.display_name AS host_display_name
-     FROM live_sessions ls
-     LEFT JOIN app_users host ON host.id = ls.created_by
-     WHERE ls.status IN ('live', 'scheduled', 'ended')
-       AND (ls.status != 'ended' OR COALESCE(ls.ended_at, ls.updated_at) >= NOW() - INTERVAL '45 days')
-     ORDER BY
-       CASE ls.status
-         WHEN 'live' THEN 0
-         WHEN 'scheduled' THEN 1
-         ELSE 2
-       END,
-       COALESCE(ls.started_at, ls.scheduled_for, ls.updated_at) DESC
-     LIMIT $1`,
-    [limit],
-  );
+  let result;
+  try {
+    result = await pool.query<LiveSessionFeedRow>(
+      `SELECT
+         ls.id,
+         ls.title,
+         ls.description,
+         ls.status,
+         ls.channel_id,
+         ls.cover_image_url,
+         ls.stream_url,
+         ls.playback_url,
+         ls.viewer_count,
+         ls.app_sections,
+         ls.tags,
+         ls.scheduled_for,
+         ls.started_at,
+         ls.ended_at,
+         ls.created_at,
+         ls.updated_at,
+         host.display_name AS host_display_name
+       FROM live_sessions ls
+       LEFT JOIN app_users host ON host.id = ls.created_by
+       WHERE ls.status IN ('live', 'scheduled', 'ended')
+         AND (ls.status != 'ended' OR COALESCE(ls.ended_at, ls.updated_at) >= NOW() - INTERVAL '45 days')
+       ORDER BY
+         CASE ls.status
+           WHEN 'live' THEN 0
+           WHEN 'scheduled' THEN 1
+           ELSE 2
+         END,
+         COALESCE(ls.started_at, ls.scheduled_for, ls.updated_at) DESC
+       LIMIT $1`,
+      [limit],
+    );
+  } catch (error) {
+    if (isMissingDatabaseStructureError(error)) {
+      return [];
+    }
+    throw error;
+  }
 
   return result.rows.map(toLiveFeedItem);
 };

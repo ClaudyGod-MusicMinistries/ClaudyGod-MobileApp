@@ -1,4 +1,5 @@
 import { pool } from '../../db/pool';
+import { isMissingDatabaseStructureError } from '../../lib/postgres';
 import { DEFAULT_MOBILE_APP_CONFIG } from './appConfig.defaults';
 import { mobileAppConfigSchema, type MobileAppConfig } from './appConfig.schema';
 
@@ -46,13 +47,27 @@ export const getMobileAppConfig = async (): Promise<{
   config: MobileAppConfig;
   meta: { key: string; updatedAt: string };
 }> => {
-  const result = await pool.query<AppConfigRow>(
-    `SELECT config_value, updated_at
-     FROM app_config_store
-     WHERE config_key = $1
-     LIMIT 1`,
-    [MOBILE_APP_CONFIG_KEY],
-  );
+  let result;
+  try {
+    result = await pool.query<AppConfigRow>(
+      `SELECT config_value, updated_at
+       FROM app_config_store
+       WHERE config_key = $1
+       LIMIT 1`,
+      [MOBILE_APP_CONFIG_KEY],
+    );
+  } catch (error) {
+    if (isMissingDatabaseStructureError(error)) {
+      return {
+        config: DEFAULT_MOBILE_APP_CONFIG,
+        meta: {
+          key: MOBILE_APP_CONFIG_KEY,
+          updatedAt: new Date().toISOString(),
+        },
+      };
+    }
+    throw error;
+  }
 
   if (result.rowCount === 0) {
     const inserted = await pool.query<AppConfigRow>(

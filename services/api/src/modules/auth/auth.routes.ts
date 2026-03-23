@@ -1,8 +1,6 @@
-import { Router } from 'express';
+import { type Request, Router } from 'express';
 import { asyncHandler } from '../../lib/asyncHandler';
-import { HttpError } from '../../lib/httpError';
 import { validateSchema } from '../../lib/validation';
-import { authenticate } from '../../middleware/authenticate';
 import {
   clearAuthSessionCookie,
   getAuthTokenFromRequest,
@@ -34,6 +32,22 @@ authRouter.use((_req, res, next) => {
   res.setHeader('Cache-Control', 'no-store');
   next();
 });
+
+async function resolveSessionUser(req: Request) {
+  const authorization = req.header('authorization');
+  const cookieToken = getAuthTokenFromRequest(req);
+  const token = authorization?.startsWith('Bearer ')
+    ? authorization.slice('Bearer '.length).trim()
+    : cookieToken?.trim() ?? '';
+
+  if (!token) {
+    return null;
+  }
+
+  const identity = await resolveAuthenticatedUser(token);
+  const user = await getUserById(identity.sub);
+  return { token, user };
+}
 
 authRouter.post(
   '/register',
@@ -105,21 +119,14 @@ authRouter.post(
 authRouter.get(
   '/session',
   asyncHandler(async (req, res) => {
-    const authorization = req.header('authorization');
-    const cookieToken = getAuthTokenFromRequest(req);
-    const token = authorization?.startsWith('Bearer ')
-      ? authorization.slice('Bearer '.length).trim()
-      : cookieToken?.trim() ?? '';
-
-    if (!token) {
-      res.status(200).json({ authenticated: false, user: null });
-      return;
-    }
-
     try {
-      const identity = await resolveAuthenticatedUser(token);
-      const user = await getUserById(identity.sub);
-      res.status(200).json({ authenticated: true, user });
+      const session = await resolveSessionUser(req);
+      if (!session) {
+        res.status(200).json({ authenticated: false, user: null });
+        return;
+      }
+
+      res.status(200).json({ authenticated: true, user: session.user });
     } catch {
       clearAuthSessionCookie(res);
       res.status(200).json({ authenticated: false, user: null });
@@ -129,13 +136,18 @@ authRouter.get(
 
 authRouter.get(
   '/me',
-  authenticate,
   asyncHandler(async (req, res) => {
-    if (!req.user) {
-      throw new HttpError(401, 'Unauthorized');
-    }
+    try {
+      const session = await resolveSessionUser(req);
+      if (!session) {
+        res.status(200).json({ authenticated: false, user: null });
+        return;
+      }
 
-    const user = await getUserById(req.user.sub);
-    res.status(200).json({ user });
+      res.status(200).json({ authenticated: true, user: session.user });
+    } catch {
+      clearAuthSessionCookie(res);
+      res.status(200).json({ authenticated: false, user: null });
+    }
   }),
 );
