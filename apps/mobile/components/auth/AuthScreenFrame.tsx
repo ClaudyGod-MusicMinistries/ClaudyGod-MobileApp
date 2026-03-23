@@ -34,10 +34,11 @@ export function AuthScreenFrame({
   const isWeb = Platform.OS === 'web';
   const isTablet = width >= 768 && !isTV;
   const isDesktop = width >= 1040 && !isTV;
+  const isPhone = !isTablet && !isTV;
   const compact = width < 370;
   const compactViewport = height < 760;
   const narrow = width < 430;
-  const shellWidth = isDesktop ? 1080 : isTablet ? 760 : '100%';
+  const shellWidth = isDesktop ? 1080 : isTablet ? 760 : 440;
 
   return (
     <View style={{ flex: 1, backgroundColor: '#07050F' }}>
@@ -76,7 +77,7 @@ export function AuthScreenFrame({
           contentContainerStyle={{
             flexGrow: 1,
             justifyContent: 'center',
-            paddingBottom: isWeb ? 0 : 20,
+            paddingBottom: isWeb ? 0 : 24,
           }}
           showsVerticalScrollIndicator={false}
           bounces={false}
@@ -87,13 +88,13 @@ export function AuthScreenFrame({
         >
           <Screen style={{ flex: 1 }} contentStyle={{ flex: 1, justifyContent: 'center' }}>
             <FadeIn>
-              <View style={{ paddingTop: compactViewport ? 4 : 10 }}>
+              <View style={{ paddingTop: isPhone ? 2 : compactViewport ? 4 : 10 }}>
                 <TVTouchable
                   onPress={() => router.replace(backPath)}
                   style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 14,
+                    width: isPhone ? 38 : 40,
+                    height: isPhone ? 38 : 40,
+                    borderRadius: isPhone ? 13 : 14,
                     borderWidth: 1,
                     borderColor: 'rgba(255,255,255,0.12)',
                     backgroundColor: 'rgba(255,255,255,0.04)',
@@ -107,15 +108,15 @@ export function AuthScreenFrame({
 
                 <View
                   style={{
-                    marginTop: compactViewport ? 12 : 16,
+                    marginTop: isPhone ? 12 : compactViewport ? 12 : 16,
                     width: '100%',
                     maxWidth: shellWidth,
                     alignSelf: 'center',
                     borderRadius: isDesktop ? 30 : 24,
-                    padding: isDesktop ? 20 : 0,
-                    backgroundColor: isDesktop ? 'rgba(12,10,22,0.82)' : 'transparent',
+                    padding: isDesktop ? 20 : isTablet ? 8 : 0,
+                    backgroundColor: isDesktop || isTablet ? 'rgba(12,10,22,0.82)' : 'transparent',
                     borderWidth: 1,
-                    borderColor: isDesktop ? 'rgba(235,226,255,0.10)' : 'transparent',
+                    borderColor: isDesktop || isTablet ? 'rgba(235,226,255,0.10)' : 'transparent',
                     flexDirection: isDesktop ? 'row' : 'column',
                     gap: isDesktop ? 18 : 0,
                   }}
@@ -128,48 +129,62 @@ export function AuthScreenFrame({
 
                   <View
                     style={{
-                    flex: 1,
-                    borderRadius: 24,
-                    padding: isDesktop ? 24 : isTablet ? 22 : compactViewport ? 13 : compact ? 15 : 18,
-                    backgroundColor: 'rgba(13,10,22,0.90)',
-                    borderWidth: 1,
-                    borderColor: 'rgba(235,226,255,0.12)',
-                  }}
-                >
-                    {!isDesktop ? <AuthBrandPanel salutation={salutation} description={description} /> : null}
+                      flex: 1,
+                      borderRadius: isPhone ? 26 : 24,
+                      padding: isDesktop
+                        ? 24
+                        : isTablet
+                          ? 22
+                          : compactViewport
+                            ? 18
+                            : compact
+                              ? 18
+                              : 20,
+                      backgroundColor: isPhone ? 'rgba(11,9,18,0.96)' : 'rgba(13,10,22,0.90)',
+                      borderWidth: 1,
+                      borderColor: 'rgba(235,226,255,0.12)',
+                    }}
+                  >
+                    {isPhone ? (
+                      <AuthBrandPanel salutation={salutation} description={description} compact />
+                    ) : !isDesktop ? (
+                      <AuthBrandPanel salutation={salutation} description={description} />
+                    ) : null}
 
-                    <View
-                      style={{
-                        borderRadius: 999,
-                        alignSelf: 'flex-start',
-                        borderWidth: 1,
-                        borderColor: 'rgba(255,255,255,0.08)',
-                        backgroundColor: 'rgba(255,255,255,0.03)',
-                        paddingHorizontal: 9,
-                        paddingVertical: 5,
-                        marginBottom: 11,
-                      }}
-                    >
-                      <CustomText
-                        variant="caption"
+                    {!isPhone ? (
+                      <View
                         style={{
-                          color: 'rgba(226,219,246,0.84)',
-                          textTransform: 'uppercase',
-                          letterSpacing: 0.68,
-                          fontSize: 10,
-                          lineHeight: 12,
+                          borderRadius: 999,
+                          alignSelf: 'flex-start',
+                          borderWidth: 1,
+                          borderColor: 'rgba(255,255,255,0.08)',
+                          backgroundColor: 'rgba(255,255,255,0.03)',
+                          paddingHorizontal: 9,
+                          paddingVertical: 5,
+                          marginBottom: 11,
                         }}
                       >
-                        Secure account access
-                      </CustomText>
-                    </View>
+                        <CustomText
+                          variant="caption"
+                          style={{
+                            color: 'rgba(226,219,246,0.84)',
+                            textTransform: 'uppercase',
+                            letterSpacing: 0.68,
+                            fontSize: 10,
+                            lineHeight: 12,
+                          }}
+                        >
+                          Secure account access
+                        </CustomText>
+                      </View>
+                    ) : null}
 
                     <CustomText
                       variant="display"
                       style={{
                         color: '#F8F7FC',
-                        fontSize: isDesktop ? 22 : isTablet ? 21 : narrow ? 18 : 19,
-                        lineHeight: isDesktop ? 28 : isTablet ? 27 : narrow ? 24 : 25,
+                        fontSize: isDesktop ? 22 : isTablet ? 21 : narrow ? 18.5 : 19.5,
+                        lineHeight: isDesktop ? 28 : isTablet ? 27 : narrow ? 23 : 24,
                       }}
                     >
                       {title}
@@ -178,38 +193,40 @@ export function AuthScreenFrame({
                       variant="body"
                       style={{
                         color: 'rgba(203,196,226,0.84)',
-                        marginTop: 7,
-                        fontSize: narrow ? 12.4 : 13.1,
-                        lineHeight: narrow ? 18 : 19,
+                        marginTop: isPhone ? 6 : 7,
+                        fontSize: isPhone ? (narrow ? 12.6 : 13) : narrow ? 12.4 : 13.1,
+                        lineHeight: isPhone ? 18 : narrow ? 18 : 19,
                       }}
                     >
                       {subtitle}
                     </CustomText>
 
-                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginTop: 13 }}>
-                      {['Responsive layout', 'Email verification', 'Synced across devices'].map((item) => (
-                        <View
-                          key={item}
-                          style={{
-                            borderRadius: 999,
-                            borderWidth: 1,
-                            borderColor: 'rgba(255,255,255,0.08)',
-                            backgroundColor: 'rgba(255,255,255,0.028)',
-                            paddingHorizontal: 9,
-                            paddingVertical: 5,
-                          }}
-                        >
-                          <CustomText
-                            variant="caption"
-                            style={{ color: 'rgba(232,225,249,0.82)', fontSize: 10.4, lineHeight: 12 }}
+                    {!isPhone ? (
+                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginTop: 13 }}>
+                        {['Responsive layout', 'Email verification', 'Synced across devices'].map((item) => (
+                          <View
+                            key={item}
+                            style={{
+                              borderRadius: 999,
+                              borderWidth: 1,
+                              borderColor: 'rgba(255,255,255,0.08)',
+                              backgroundColor: 'rgba(255,255,255,0.028)',
+                              paddingHorizontal: 9,
+                              paddingVertical: 5,
+                            }}
                           >
-                            {item}
-                          </CustomText>
-                        </View>
-                      ))}
-                    </View>
+                            <CustomText
+                              variant="caption"
+                              style={{ color: 'rgba(232,225,249,0.82)', fontSize: 10.4, lineHeight: 12 }}
+                            >
+                              {item}
+                            </CustomText>
+                          </View>
+                        ))}
+                      </View>
+                    ) : null}
 
-                    <View style={{ marginTop: 16 }}>{children}</View>
+                    <View style={{ marginTop: isPhone ? 18 : 16 }}>{children}</View>
                   </View>
                 </View>
               </View>

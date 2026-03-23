@@ -164,10 +164,10 @@ export default function SignUpScreen() {
   return (
     <AuthScreenFrame
       backPath={APP_ROUTES.landing}
-      salutation="Create your ministry account"
-      description="Register once and keep your worship library, saved content, and ministry profile connected across devices."
+      salutation="Create your account"
+      description="Set up your ClaudyGod account to save music, messages, and ministry updates."
       title="Create Account"
-      subtitle="Use your name and a secure email address to get started. We will send a 6-digit verification code before your account is activated."
+      subtitle="Enter your details and confirm your email with a 6-digit code."
     >
       <View style={{ gap: 12 }}>
         <AuthTextField
@@ -232,10 +232,6 @@ export default function SignUpScreen() {
           hintTone={confirmPassword.trim() ? (passwordsMatch ? 'success' : 'error') : 'default'}
         />
       </View>
-
-      <CustomText variant="caption" style={{ color: 'rgba(188,178,214,0.9)', marginTop: 10 }}>
-        Your email is used for verification, security notices, and account recovery.
-      </CustomText>
 
       {errorMessage ? <AuthFeedbackBanner message={errorMessage} tone="error" /> : null}
 

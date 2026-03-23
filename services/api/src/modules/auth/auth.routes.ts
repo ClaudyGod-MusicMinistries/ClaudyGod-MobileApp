@@ -5,6 +5,7 @@ import { validateSchema } from '../../lib/validation';
 import { authenticate } from '../../middleware/authenticate';
 import {
   clearAuthSessionCookie,
+  getAuthTokenFromRequest,
   respondWithAuthSession,
 } from './authSessionCookie';
 import {
@@ -19,12 +20,13 @@ import {
   getUserById,
   loginUser,
   registerUser,
-  requestPasswordReset,
   resendVerificationEmail,
+  requestPasswordReset,
   resetPassword,
   verifyEmail,
 } from './auth.service';
 import type { AuthResponse } from './auth.types';
+import { resolveAuthenticatedUser } from './authIdentity.service';
 
 export const authRouter = Router();
 
@@ -97,6 +99,31 @@ authRouter.post(
   asyncHandler(async (_req, res) => {
     clearAuthSessionCookie(res);
     res.status(204).send();
+  }),
+);
+
+authRouter.get(
+  '/session',
+  asyncHandler(async (req, res) => {
+    const authorization = req.header('authorization');
+    const cookieToken = getAuthTokenFromRequest(req);
+    const token = authorization?.startsWith('Bearer ')
+      ? authorization.slice('Bearer '.length).trim()
+      : cookieToken?.trim() ?? '';
+
+    if (!token) {
+      res.status(200).json({ authenticated: false, user: null });
+      return;
+    }
+
+    try {
+      const identity = await resolveAuthenticatedUser(token);
+      const user = await getUserById(identity.sub);
+      res.status(200).json({ authenticated: true, user });
+    } catch {
+      clearAuthSessionCookie(res);
+      res.status(200).json({ authenticated: false, user: null });
+    }
   }),
 );
 

@@ -1,13 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import {
-  Animated,
-  Easing,
-  Image,
-  Platform,
-  StatusBar,
-  View,
-  useWindowDimensions,
-} from 'react-native';
+import React from 'react';
+import { Image, Platform, ScrollView, StatusBar, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -16,491 +8,559 @@ import { AppButton } from '../components/ui/AppButton';
 import { CustomText } from '../components/CustomText';
 import { TVTouchable } from '../components/ui/TVTouchable';
 import { Screen } from '../components/layout/Screen';
+import { FadeIn } from '../components/ui/FadeIn';
 import { useAuth } from '../context/AuthContext';
 import { APP_ROUTES } from '../util/appRoutes';
-import { BRAND_LOGO_ASSET } from '../util/brandAssets';
+import { BRAND_HERO_ASSET, BRAND_LOGO_ASSET } from '../util/brandAssets';
+
+type LandingDestination = {
+  key: string;
+  icon: React.ComponentProps<typeof MaterialIcons>['name'];
+  title: string;
+  description: string;
+  route: string;
+  guestRoute?: string;
+  actionLabel: string;
+};
+
+function LandingPill({ label }: { label: string }) {
+  return (
+    <View
+      style={{
+        borderRadius: 999,
+        borderWidth: 1,
+        borderColor: 'rgba(198,216,255,0.14)',
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+      }}
+    >
+      <CustomText
+        variant="caption"
+        style={{ color: 'rgba(226,233,248,0.86)', fontSize: 10.5, lineHeight: 12 }}
+      >
+        {label}
+      </CustomText>
+    </View>
+  );
+}
 
 export default function Landing() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
-  const { width, height } = useWindowDimensions();
+  const { width } = useWindowDimensions();
 
-  const isWeb = typeof globalThis === 'object' && globalThis !== null && 'window' in globalThis;
   const isTV = Platform.isTV;
   const isTablet = width >= 768 && !isTV;
-  const compact = height < 730;
-  const useNativeAnimations = Platform.OS !== 'web';
-  const heroBadgeShadow =
-    Platform.OS === 'web'
-      ? { boxShadow: '0px 10px 18px rgba(154,107,255,0.36)' }
-      : {
-          shadowColor: '#9A6BFF',
-          shadowOpacity: 0.36,
-          shadowRadius: 18,
-          shadowOffset: { width: 0, height: 10 },
-          elevation: 11,
-        };
+  const isDesktop = width >= 1080 && !isTV;
+  const compact = width < 390;
+  const heroSplit = width >= 900 && !isTV;
 
-  const logoSize = isTV ? 134 : isTablet ? 116 : compact ? 92 : 102;
-  const badgeSize = isTV ? 178 : isTablet ? 160 : compact ? 132 : 144;
-  const headingSize = isTV ? 34 : isTablet ? 30 : compact ? 22 : 24;
+  const navigateTo = (route: string, guestRoute?: string) => {
+    router.push(isAuthenticated ? route : guestRoute ?? APP_ROUTES.auth.signUp);
+  };
 
-  const headerOpacity = useRef(new Animated.Value(0)).current;
-  const heroOpacity = useRef(new Animated.Value(0)).current;
-  const heroY = useRef(new Animated.Value(24)).current;
-  const ctaOpacity = useRef(new Animated.Value(0)).current;
-  const logoFloat = useRef(new Animated.Value(0)).current;
-  const orbDrift = useRef(new Animated.Value(0)).current;
+  const primaryTitle = 'Create Account';
+  const primaryRoute = APP_ROUTES.auth.signUp;
+  const secondaryTitle = 'Sign In';
+  const secondaryRoute = APP_ROUTES.auth.signIn;
 
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(headerOpacity, {
-        toValue: 1,
-        duration: 380,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: useNativeAnimations,
-      }),
-      Animated.timing(heroOpacity, {
-        toValue: 1,
-        duration: 520,
-        delay: 90,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: useNativeAnimations,
-      }),
-      Animated.timing(heroY, {
-        toValue: 0,
-        duration: 520,
-        delay: 90,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: useNativeAnimations,
-      }),
-      Animated.timing(ctaOpacity, {
-        toValue: 1,
-        duration: 520,
-        delay: 180,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: useNativeAnimations,
-      }),
-    ]).start();
+  const destinations: LandingDestination[] = [
+    {
+      key: 'music',
+      icon: 'graphic-eq',
+      title: 'Music',
+      description: 'Play worship tracks and continue from the dedicated music player.',
+      route: APP_ROUTES.tabs.player,
+      actionLabel: 'Explore music',
+    },
+    {
+      key: 'videos',
+      icon: 'smart-display',
+      title: 'Videos',
+      description: 'Watch ministry videos and channel updates from the video screen.',
+      route: APP_ROUTES.tabs.videos,
+      actionLabel: 'Watch videos',
+    },
+    {
+      key: 'library',
+      icon: 'library-music',
+      title: 'Library',
+      description: 'Keep your saved content and personal collection in one place.',
+      route: APP_ROUTES.tabs.library,
+      actionLabel: 'View library',
+    },
+  ];
 
-    const logoLoop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(logoFloat, {
-          toValue: -8,
-          duration: 1800,
-          easing: Easing.inOut(Easing.quad),
-          useNativeDriver: useNativeAnimations,
-        }),
-        Animated.timing(logoFloat, {
-          toValue: 0,
-          duration: 1800,
-          easing: Easing.inOut(Easing.quad),
-          useNativeDriver: useNativeAnimations,
-        }),
-      ]),
-    );
-
-    const orbLoop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(orbDrift, {
-          toValue: 1,
-          duration: 5000,
-          easing: Easing.inOut(Easing.quad),
-          useNativeDriver: useNativeAnimations,
-        }),
-        Animated.timing(orbDrift, {
-          toValue: 0,
-          duration: 5000,
-          easing: Easing.inOut(Easing.quad),
-          useNativeDriver: useNativeAnimations,
-        }),
-      ]),
-    );
-
-    logoLoop.start();
-    orbLoop.start();
-
-    return () => {
-      logoLoop.stop();
-      orbLoop.stop();
-    };
-  }, [ctaOpacity, headerOpacity, heroOpacity, heroY, logoFloat, orbDrift, useNativeAnimations]);
-
-  if (isWeb) {
-    const primaryTitle = isAuthenticated ? 'Open App' : 'Create Account';
-    const primaryIcon = isAuthenticated ? 'arrow-forward' : 'person-add';
-    const primaryAction = () =>
-      router.push(isAuthenticated ? APP_ROUTES.tabs.home : APP_ROUTES.auth.signUp);
-    const secondaryTitle = isAuthenticated ? 'Sign In With Another Account' : 'Sign In';
-
-    return (
-      <View style={{ flex: 1, backgroundColor: '#05040D' }}>
-        <StatusBar translucent={false} barStyle="light-content" backgroundColor="#05040D" />
-
-        <LinearGradient
-          colors={['#130A2A', '#090614', '#05040D']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-        />
-
-        <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
-          <Screen style={{ flex: 1 }} contentStyle={{ flex: 1 }}>
-            <View
-              style={{
-                flex: 1,
-                justifyContent: 'center',
-                paddingTop: 24,
-                paddingBottom: 24,
-              }}
-            >
-              <View
-                style={{
-                  borderRadius: 24,
-                  borderWidth: 1,
-                  borderColor: 'rgba(176,153,230,0.30)',
-                  backgroundColor: 'rgba(14,10,24,0.88)',
-                  paddingHorizontal: isTablet ? 28 : 20,
-                  paddingVertical: 24,
-                }}
-              >
-                <View style={{ alignItems: 'center' }}>
-                  <Image
-                    source={BRAND_LOGO_ASSET}
-                    style={{ width: isTablet ? 112 : 92, height: isTablet ? 112 : 92, borderRadius: 999 }}
-                  />
-
-                  <CustomText
-                    variant="hero"
-                    style={{
-                      marginTop: 18,
-                      color: '#F8F6FF',
-                      textAlign: 'center',
-                      fontSize: isTablet ? 30 : 24,
-                      lineHeight: isTablet ? 36 : 30,
-                      fontFamily: 'ClashDisplay_700Bold',
-                    }}
-                  >
-                    Worship. Word. Growth.
-                  </CustomText>
-
-                  <CustomText
-                    variant="body"
-                    style={{
-                      marginTop: 10,
-                      color: 'rgba(214,205,236,0.92)',
-                      textAlign: 'center',
-                      maxWidth: 480,
-                      fontFamily: 'Sora_400Regular',
-                    }}
-                  >
-                    Stream ministry music, watch channels, and follow daily message drops in one place.
-                  </CustomText>
-
-                  {isAuthenticated ? (
-                    <View
-                      style={{
-                        marginTop: 12,
-                        borderRadius: 999,
-                        borderWidth: 1,
-                        borderColor: 'rgba(216,194,255,0.24)',
-                        backgroundColor: 'rgba(154,107,255,0.12)',
-                        paddingHorizontal: 12,
-                        paddingVertical: 7,
-                      }}
-                    >
-                      <CustomText variant="caption" style={{ color: '#F1E8FF' }}>
-                        Your session is ready. You can continue straight into the app.
-                      </CustomText>
-                    </View>
-                  ) : null}
-
-                  <View
-                    style={{
-                      width: '100%',
-                      marginTop: 18,
-                      minHeight: isTablet ? 220 : 188,
-                      borderRadius: 20,
-                      overflow: 'hidden',
-                      borderWidth: 1,
-                      borderColor: 'rgba(255,255,255,0.12)',
-                    }}
-                  >
-                    <Image
-                      source={require('../assets/images/FB_IMG_1743103252303.jpg')}
-                      style={{ width: '100%', height: '100%' }}
-                      resizeMode="cover"
-                    />
-                  </View>
-
-                  <View style={{ width: '100%', marginTop: 20 }}>
-                    <AppButton
-                      title={primaryTitle}
-                      size="lg"
-                      fullWidth
-                      onPress={primaryAction}
-                      rightIcon={<MaterialIcons name={primaryIcon} size={18} color="#08060F" />}
-                    />
-
-                    <AppButton
-                      title={secondaryTitle}
-                      variant="ghost"
-                      size="lg"
-                      fullWidth
-                      onPress={() => router.push(APP_ROUTES.auth.signIn)}
-                      leftIcon={<MaterialIcons name="login" size={18} color="#E8DDFF" />}
-                      textColor="#E8DDFF"
-                      style={{
-                        marginTop: 10,
-                        borderRadius: 16,
-                        borderWidth: 1,
-                        borderColor: 'rgba(233,221,255,0.32)',
-                        backgroundColor: 'rgba(255,255,255,0.04)',
-                      }}
-                    />
-                  </View>
-                </View>
-              </View>
-            </View>
-          </Screen>
-        </SafeAreaView>
-      </View>
-    );
-  }
-
-  const orbTranslate = orbDrift.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-20, 14],
-  });
+  const footerLinks = [
+    { label: 'Create Account', route: APP_ROUTES.auth.signUp },
+    { label: 'Sign In', route: APP_ROUTES.auth.signIn },
+    { label: 'Start Here', route: APP_ROUTES.auth.signUp },
+  ];
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#05040D' }}>
-      <StatusBar translucent={false} barStyle="light-content" backgroundColor="#05040D" />
+    <View style={{ flex: 1, backgroundColor: '#050813' }}>
+      <StatusBar translucent={false} barStyle="light-content" backgroundColor="#050813" />
 
       <LinearGradient
-        colors={['#130A2A', '#090614', '#05040D']}
+        colors={['#0C1730', '#0B1020', '#06070F']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+        style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}
       />
 
-      <Animated.View
+      <View
         style={{
           position: 'absolute',
-          top: -42,
-          left: -38,
+          top: -110,
+          left: -80,
           width: 280,
           height: 280,
           borderRadius: 280,
-          backgroundColor: 'rgba(164,125,255,0.20)',
-          transform: [{ translateY: orbTranslate }],
+          backgroundColor: 'rgba(67,183,255,0.14)',
         }}
       />
-
-      <Animated.View
+      <View
         style={{
           position: 'absolute',
-          right: -100,
-          bottom: 44,
-          width: 260,
-          height: 260,
-          borderRadius: 260,
-          backgroundColor: 'rgba(110,72,190,0.17)',
-          transform: [{ translateY: orbTranslate }],
+          right: -120,
+          top: 140,
+          width: 320,
+          height: 320,
+          borderRadius: 320,
+          backgroundColor: 'rgba(129,96,255,0.16)',
         }}
       />
 
       <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
-        <Screen style={{ flex: 1 }} contentStyle={{ flex: 1 }}>
-          <View style={{ flex: 1, paddingTop: compact ? 8 : 12, paddingBottom: 16 }}>
-            <Animated.View
-              style={{
-                opacity: headerOpacity,
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Image
-                  source={BRAND_LOGO_ASSET}
-                  style={{ width: 34, height: 34, borderRadius: 17 }}
-                />
-                <View style={{ marginLeft: 10 }}>
-                  <CustomText variant="caption" style={{ color: 'rgba(216,205,246,0.86)' }}>
-                    ClaudyGod Ministry
-                  </CustomText>
-                  <CustomText variant="label" style={{ color: '#F9F7FF' }}>
-                    Welcome
-                  </CustomText>
-                </View>
-              </View>
-
-              <TVTouchable
-                onPress={() =>
-                  router.push(isAuthenticated ? APP_ROUTES.tabs.home : APP_ROUTES.auth.signIn)
-                }
-                style={{
-                  borderRadius: 999,
-                  borderWidth: 1,
-                  borderColor: 'rgba(230,217,255,0.34)',
-                  paddingHorizontal: 12,
-                  paddingVertical: 7,
-                  backgroundColor: 'rgba(255,255,255,0.06)',
-                }}
-                showFocusBorder={false}
-              >
-                <CustomText variant="caption" style={{ color: '#EADFFF' }}>
-                  {isAuthenticated ? 'Open App' : 'Sign In'}
-                </CustomText>
-                </TVTouchable>
-              </Animated.View>
-
-            <View style={{ flex: 1, justifyContent: 'center' }}>
-              <Animated.View
-                style={{
-                  opacity: heroOpacity,
-                  transform: [{ translateY: heroY }],
-                  borderRadius: 24,
-                  borderWidth: 1,
-                  borderColor: 'rgba(176,153,230,0.30)',
-                  backgroundColor: 'rgba(14,10,24,0.86)',
-                  paddingHorizontal: isTablet || isTV ? 28 : 18,
-                  paddingVertical: compact ? 18 : 22,
-                }}
-              >
-                <View style={{ alignItems: 'center' }}>
-                  <Animated.View
-                    style={{
-                      width: badgeSize,
-                      height: badgeSize,
-                      borderRadius: badgeSize / 2,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      borderWidth: 1,
-                      borderColor: 'rgba(255,255,255,0.22)',
-                      backgroundColor: 'rgba(255,255,255,0.06)',
-                      ...heroBadgeShadow,
-                      transform: [{ translateY: logoFloat }],
-                    }}
-                  >
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingBottom: 28 }}
+          showsVerticalScrollIndicator={false}
+        >
+          <Screen style={{ flex: 1 }} contentStyle={{ flex: 1 }}>
+            <View style={{ paddingTop: compact ? 10 : 14, gap: 18 }}>
+              <FadeIn>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 12,
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                     <Image
                       source={BRAND_LOGO_ASSET}
-                      style={{ width: logoSize, height: logoSize, borderRadius: logoSize / 2 }}
+                      style={{ width: 42, height: 42, borderRadius: 21 }}
                     />
-                  </Animated.View>
-
-                  <CustomText
-                    variant="hero"
-                    style={{
-                      marginTop: compact ? 16 : 20,
-                      color: '#F8F6FF',
-                      textAlign: 'center',
-                      fontSize: headingSize,
-                      lineHeight: headingSize + 6,
-                      fontFamily: 'ClashDisplay_700Bold',
-                    }}
-                  >
-                    Worship. Word. Growth.
-                  </CustomText>
-
-                  <CustomText
-                    variant="body"
-                    style={{
-                      marginTop: 10,
-                      color: 'rgba(214,205,236,0.92)',
-                      textAlign: 'center',
-                      maxWidth: 440,
-                      fontFamily: 'Sora_400Regular',
-                      fontSize: compact ? 13 : 14,
-                      lineHeight: compact ? 20 : 21,
-                    }}
-                  >
-                    Stream ministry music, watch channels, and follow daily message drops in one place.
-                  </CustomText>
-
-                  <View
-                    style={{
-                      width: '100%',
-                      marginTop: compact ? 16 : 18,
-                      minHeight: isTablet ? 210 : 188,
-                      borderRadius: 24,
-                      overflow: 'hidden',
-                      borderWidth: 1,
-                      borderColor: 'rgba(255,255,255,0.14)',
-                      backgroundColor: 'rgba(255,255,255,0.04)',
-                    }}
-                  >
-                    <Image
-                      source={require('../assets/images/FB_IMG_1743103252303.jpg')}
-                      style={{ width: '100%', height: '100%' }}
-                      resizeMode="cover"
-                    />
-                    <LinearGradient
-                      colors={['rgba(9,6,18,0.04)', 'rgba(8,6,15,0.84)']}
-                      start={{ x: 0.2, y: 0 }}
-                      end={{ x: 0.7, y: 1 }}
-                      style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}
-                    />
-                    <View style={{ position: 'absolute', left: 16, right: 16, bottom: 16 }}>
-                      <CustomText variant="caption" style={{ color: 'rgba(236,228,255,0.84)' }}>
-                        ClaudyGod experience
-                      </CustomText>
+                    <View style={{ marginLeft: 11, flex: 1 }}>
                       <CustomText
-                        variant="label"
-                        style={{ color: '#FCF8FF', marginTop: 4, fontSize: compact ? 11.8 : 12.6, lineHeight: 16 }}
+                        variant="caption"
+                        style={{
+                          color: 'rgba(194,210,240,0.78)',
+                          textTransform: 'uppercase',
+                          letterSpacing: 0.6,
+                        }}
                       >
-                        Worship visuals, daily encouragement, and a calmer digital ministry space.
+                        ClaudyGod
+                      </CustomText>
+                      <CustomText variant="label" style={{ color: '#F6F8FF', marginTop: 2 }}>
+                        Music & Ministries
                       </CustomText>
                     </View>
                   </View>
-                </View>
 
-                <Animated.View style={{ opacity: ctaOpacity, marginTop: compact ? 16 : 20 }}>
-                  <AppButton
-                    title={isAuthenticated ? 'Open App' : 'Create Account'}
-                    size="lg"
-                    fullWidth
-                    onPress={() =>
-                      router.push(isAuthenticated ? APP_ROUTES.tabs.home : APP_ROUTES.auth.signUp)
-                    }
-                    rightIcon={
-                      <MaterialIcons
-                        name={isAuthenticated ? 'arrow-forward' : 'person-add'}
-                        size={18}
-                        color="#08060F"
-                      />
-                    }
-                    style={{ borderRadius: 16 }}
-                  />
-
-                  <AppButton
-                    title={isAuthenticated ? 'Sign In With Another Account' : 'Sign In'}
-                    variant="ghost"
-                    size="lg"
-                    fullWidth
+                  <TVTouchable
                     onPress={() => router.push(APP_ROUTES.auth.signIn)}
-                    leftIcon={<MaterialIcons name="login" size={18} color="#E8DDFF" />}
-                    textColor="#E8DDFF"
                     style={{
-                      marginTop: 10,
-                      borderRadius: 16,
+                      borderRadius: 999,
                       borderWidth: 1,
-                      borderColor: 'rgba(233,221,255,0.32)',
-                      backgroundColor: 'rgba(255,255,255,0.04)',
+                      borderColor: 'rgba(199,215,249,0.22)',
+                      backgroundColor: 'rgba(255,255,255,0.05)',
+                      paddingHorizontal: 14,
+                      paddingVertical: 9,
                     }}
-                  />
-                </Animated.View>
-              </Animated.View>
-            </View>
+                    showFocusBorder={false}
+                  >
+                    <CustomText variant="label" style={{ color: '#E7F0FF' }}>
+                      Sign In
+                    </CustomText>
+                  </TVTouchable>
+                </View>
+              </FadeIn>
 
-            <View style={{ paddingTop: 8, alignItems: 'center' }}>
-              <CustomText variant="caption" style={{ color: 'rgba(217,206,244,0.88)' }}>
-                ClaudyGod Music Ministries
-              </CustomText>
+              <FadeIn delay={70}>
+                <View
+                  style={{
+                    borderRadius: 28,
+                    borderWidth: 1,
+                    borderColor: 'rgba(194,215,255,0.16)',
+                    backgroundColor: 'rgba(8,12,22,0.86)',
+                    paddingHorizontal: isTablet ? 26 : 18,
+                    paddingVertical: isTablet ? 24 : 18,
+                    gap: 20,
+                  }}
+                >
+                  <View
+                    style={{
+                      flexDirection: heroSplit ? 'row' : 'column',
+                      gap: heroSplit ? 20 : 18,
+                    }}
+                  >
+                    <View style={{ flex: heroSplit ? 1.02 : undefined }}>
+                      <LandingPill label="Worship, music, videos, and daily encouragement" />
+
+                      <CustomText
+                        variant="hero"
+                        style={{
+                          color: '#F9FBFF',
+                          marginTop: 14,
+                          fontSize: isDesktop ? 36 : isTablet ? 31 : compact ? 24 : 27,
+                          lineHeight: isDesktop ? 42 : isTablet ? 36 : compact ? 30 : 32,
+                          fontFamily: 'ClashDisplay_700Bold',
+                        }}
+                      >
+                        A calmer ClaudyGod experience built for listening, watching, and staying connected.
+                      </CustomText>
+
+                      <CustomText
+                        variant="body"
+                        style={{
+                          color: 'rgba(218,227,242,0.84)',
+                          marginTop: 12,
+                          fontSize: isTablet ? 14.3 : 13.3,
+                          lineHeight: isTablet ? 22 : 20,
+                          maxWidth: heroSplit ? 490 : undefined,
+                        }}
+                      >
+                        Move from worship music to ministry videos and your saved library without
+                        friction. ClaudyGod keeps every important part of the experience in one place.
+                      </CustomText>
+
+                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
+                        <LandingPill label="Music player" />
+                        <LandingPill label="Video screen" />
+                        <LandingPill label="Saved library" />
+                      </View>
+
+                      <View
+                        style={{
+                          flexDirection: isTablet ? 'row' : 'column',
+                          gap: 10,
+                          marginTop: 18,
+                        }}
+                      >
+                        <AppButton
+                          title={primaryTitle}
+                          size="lg"
+                          fullWidth={!isTablet}
+                          onPress={() => router.push(primaryRoute)}
+                          rightIcon={
+                            <MaterialIcons
+                              name={isAuthenticated ? 'arrow-forward' : 'person-add'}
+                              size={18}
+                              color="#050813"
+                            />
+                          }
+                          style={isTablet ? { flex: 1 } : undefined}
+                        />
+                        <AppButton
+                          title={secondaryTitle}
+                          variant="outline"
+                          size="lg"
+                          fullWidth={!isTablet}
+                          onPress={() => router.push(secondaryRoute)}
+                          leftIcon={<MaterialIcons name="play-circle-outline" size={18} color="#E8F1FF" />}
+                          textColor="#E8F1FF"
+                          style={
+                            isTablet
+                              ? {
+                                  flex: 1,
+                                  borderColor: 'rgba(194,215,255,0.28)',
+                                  backgroundColor: 'rgba(255,255,255,0.03)',
+                                }
+                              : {
+                                  borderColor: 'rgba(194,215,255,0.28)',
+                                  backgroundColor: 'rgba(255,255,255,0.03)',
+                                }
+                          }
+                        />
+                      </View>
+                    </View>
+
+                    <View style={{ flex: heroSplit ? 0.92 : undefined }}>
+                      <View
+                        style={{
+                          minHeight: isTablet ? 320 : 260,
+                          borderRadius: 24,
+                          overflow: 'hidden',
+                          borderWidth: 1,
+                          borderColor: 'rgba(220,231,255,0.12)',
+                          backgroundColor: 'rgba(255,255,255,0.04)',
+                        }}
+                      >
+                        <Image
+                          source={BRAND_HERO_ASSET}
+                          resizeMode="cover"
+                          style={{ width: '100%', height: '100%' }}
+                        />
+                        <LinearGradient
+                          colors={['rgba(4,7,14,0.05)', 'rgba(4,7,14,0.72)', 'rgba(4,7,14,0.96)']}
+                          start={{ x: 0.4, y: 0 }}
+                          end={{ x: 0.6, y: 1 }}
+                          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+                        />
+
+                        <View style={{ position: 'absolute', top: 14, left: 14, right: 14 }}>
+                          <LandingPill label="Live app preview" />
+                        </View>
+
+                        <View style={{ position: 'absolute', left: 16, right: 16, bottom: 16, gap: 10 }}>
+                          <View
+                            style={{
+                              borderRadius: 18,
+                              backgroundColor: 'rgba(10,16,28,0.72)',
+                              borderWidth: 1,
+                              borderColor: 'rgba(216,229,255,0.14)',
+                              paddingHorizontal: 14,
+                              paddingVertical: 12,
+                            }}
+                          >
+                            <CustomText variant="caption" style={{ color: 'rgba(202,218,244,0.78)' }}>
+                              Now inside the app
+                            </CustomText>
+                            <CustomText
+                              variant="label"
+                              style={{ color: '#F9FBFF', marginTop: 4, fontSize: 13.2, lineHeight: 18 }}
+                            >
+                              Music, videos, and saved content now feel like one connected flow.
+                            </CustomText>
+                          </View>
+
+                          <View style={{ flexDirection: 'row', gap: 8 }}>
+                            <View
+                              style={{
+                                flex: 1,
+                                borderRadius: 16,
+                                backgroundColor: 'rgba(10,16,28,0.72)',
+                                borderWidth: 1,
+                                borderColor: 'rgba(216,229,255,0.12)',
+                                paddingHorizontal: 12,
+                                paddingVertical: 10,
+                              }}
+                            >
+                              <CustomText variant="caption" style={{ color: 'rgba(190,209,240,0.74)' }}>
+                                Watch
+                              </CustomText>
+                              <CustomText variant="label" style={{ color: '#F7FAFF', marginTop: 4 }}>
+                                Video screen
+                              </CustomText>
+                            </View>
+                            <View
+                              style={{
+                                flex: 1,
+                                borderRadius: 16,
+                                backgroundColor: 'rgba(10,16,28,0.72)',
+                                borderWidth: 1,
+                                borderColor: 'rgba(216,229,255,0.12)',
+                                paddingHorizontal: 12,
+                                paddingVertical: 10,
+                              }}
+                            >
+                              <CustomText variant="caption" style={{ color: 'rgba(190,209,240,0.74)' }}>
+                                Listen
+                              </CustomText>
+                              <CustomText variant="label" style={{ color: '#F7FAFF', marginTop: 4 }}>
+                                Music player
+                              </CustomText>
+                            </View>
+                          </View>
+                        </View>
+                      </View>
+                    </View>
+                  </View>
+                </View>
+              </FadeIn>
+
+              <FadeIn delay={130}>
+                <View style={{ gap: 12 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <View style={{ flex: 1, paddingRight: 12 }}>
+                      <CustomText variant="heading" style={{ color: '#F7FAFF', fontSize: isTablet ? 21 : 18 }}>
+                        Move through the app faster
+                      </CustomText>
+                      <CustomText
+                        variant="body"
+                        style={{ color: 'rgba(209,221,244,0.76)', marginTop: 6, fontSize: 13, lineHeight: 19 }}
+                      >
+                        Every destination below opens a real app screen, not a placeholder page.
+                      </CustomText>
+                    </View>
+                  </View>
+
+                  <View style={{ flexDirection: isTablet ? 'row' : 'column', gap: 12 }}>
+                    {destinations.map((item) => (
+                      <TVTouchable
+                        key={item.key}
+                        onPress={() => navigateTo(item.route, item.guestRoute)}
+                        style={{
+                          flex: 1,
+                          borderRadius: 22,
+                          borderWidth: 1,
+                          borderColor: 'rgba(194,215,255,0.14)',
+                          backgroundColor: 'rgba(8,12,22,0.78)',
+                          paddingHorizontal: 16,
+                          paddingVertical: 16,
+                        }}
+                        showFocusBorder={false}
+                      >
+                        <View
+                          style={{
+                            width: 42,
+                            height: 42,
+                            borderRadius: 14,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            backgroundColor: 'rgba(74,155,255,0.16)',
+                            borderWidth: 1,
+                            borderColor: 'rgba(149,194,255,0.18)',
+                          }}
+                        >
+                          <MaterialIcons name={item.icon} size={22} color="#D9ECFF" />
+                        </View>
+
+                        <CustomText
+                          variant="heading"
+                          style={{ color: '#F8FBFF', marginTop: 14, fontSize: 16, lineHeight: 21 }}
+                        >
+                          {item.title}
+                        </CustomText>
+                        <CustomText
+                          variant="body"
+                          style={{ color: 'rgba(209,221,244,0.76)', marginTop: 7, fontSize: 12.8, lineHeight: 19 }}
+                        >
+                          {item.description}
+                        </CustomText>
+
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 14 }}>
+                          <CustomText variant="label" style={{ color: '#CFE7FF' }}>
+                            {item.actionLabel}
+                          </CustomText>
+                          <MaterialIcons
+                            name="arrow-forward"
+                            size={16}
+                            color="#CFE7FF"
+                            style={{ marginLeft: 6 }}
+                          />
+                        </View>
+                      </TVTouchable>
+                    ))}
+                  </View>
+                </View>
+              </FadeIn>
+
+              <FadeIn delay={190}>
+                <View
+                  style={{
+                    borderRadius: 24,
+                    borderWidth: 1,
+                    borderColor: 'rgba(194,215,255,0.12)',
+                    backgroundColor: 'rgba(8,12,22,0.68)',
+                    paddingHorizontal: 18,
+                    paddingVertical: 18,
+                    gap: 12,
+                  }}
+                >
+                  <CustomText variant="heading" style={{ color: '#F6FAFF', fontSize: isTablet ? 20 : 17 }}>
+                    Why the flow feels lighter now
+                  </CustomText>
+                  <View style={{ flexDirection: isTablet ? 'row' : 'column', gap: 10 }}>
+                    {[
+                      'Music opens in a dedicated player.',
+                      'Videos stay on the video screen.',
+                      'Your library keeps saved content close.',
+                    ].map((item) => (
+                      <View
+                        key={item}
+                        style={{
+                          flex: 1,
+                          borderRadius: 18,
+                          backgroundColor: 'rgba(255,255,255,0.04)',
+                          borderWidth: 1,
+                          borderColor: 'rgba(194,215,255,0.10)',
+                          paddingHorizontal: 14,
+                          paddingVertical: 12,
+                        }}
+                      >
+                        <CustomText variant="body" style={{ color: 'rgba(214,225,244,0.84)', fontSize: 12.6, lineHeight: 18 }}>
+                          {item}
+                        </CustomText>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              </FadeIn>
+
+              <FadeIn delay={240}>
+                <View
+                  style={{
+                    borderTopWidth: 1,
+                    borderTopColor: 'rgba(194,215,255,0.10)',
+                    paddingTop: 18,
+                    paddingBottom: 8,
+                    gap: 14,
+                  }}
+                >
+                  <View
+                    style={{
+                      flexDirection: isTablet ? 'row' : 'column',
+                      alignItems: isTablet ? 'center' : 'flex-start',
+                      justifyContent: 'space-between',
+                      gap: 12,
+                    }}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <Image
+                        source={BRAND_LOGO_ASSET}
+                        style={{ width: 34, height: 34, borderRadius: 17 }}
+                      />
+                      <View style={{ marginLeft: 10 }}>
+                        <CustomText variant="label" style={{ color: '#F7FAFF' }}>
+                          ClaudyGod
+                        </CustomText>
+                        <CustomText variant="caption" style={{ color: 'rgba(190,209,240,0.76)', marginTop: 2 }}>
+                          Worship, messages, and daily encouragement
+                        </CustomText>
+                      </View>
+                    </View>
+
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+                      {footerLinks.map((item) => (
+                        <TVTouchable
+                          key={item.label}
+                          onPress={() => router.push(item.route)}
+                          showFocusBorder={false}
+                        >
+                          <CustomText variant="label" style={{ color: '#D8EAFF' }}>
+                            {item.label}
+                          </CustomText>
+                        </TVTouchable>
+                      ))}
+                    </View>
+                  </View>
+
+                  <CustomText
+                    variant="caption"
+                    style={{ color: 'rgba(175,193,223,0.62)', textAlign: isTablet ? 'left' : 'center' }}
+                  >
+                    © 2026 ClaudyGod Ministries
+                  </CustomText>
+                </View>
+              </FadeIn>
             </View>
-          </View>
-        </Screen>
+          </Screen>
+        </ScrollView>
       </SafeAreaView>
     </View>
   );

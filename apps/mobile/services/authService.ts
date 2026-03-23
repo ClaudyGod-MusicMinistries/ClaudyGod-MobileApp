@@ -142,10 +142,12 @@ export const subscribeToMobileAuthStateChange = (
 };
 
 const fetchCurrentMobileUser = async (): Promise<MobileSessionSnapshot> => {
-  const response = await apiFetch<{ user: MobileAuthUser }>('/v1/auth/me');
+  const response = await apiFetch<{ authenticated: boolean; user: MobileAuthUser | null }>(
+    '/v1/auth/session',
+  );
   return {
     accessToken: null,
-    user: response.user,
+    user: response.authenticated ? response.user : null,
   };
 };
 
