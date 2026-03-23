@@ -7,6 +7,20 @@ type PlayerRouteObject = {
 };
 
 export function buildPlayerRoute(item: FeedCardItem): PlayerRouteObject {
+  if ((item.isLive || item.type === 'live') && !String(item.id || '').startsWith('yt:')) {
+    const params: Record<string, string> = {
+      sessionId: item.id,
+      title: item.title,
+    };
+    if (item.mediaUrl) {
+      params.mediaUrl = item.mediaUrl;
+    }
+    return {
+      pathname: APP_ROUTES.live.detail,
+      params,
+    };
+  }
+
   const params: Record<string, string> = {
     itemId: item.id,
     itemType: item.type,

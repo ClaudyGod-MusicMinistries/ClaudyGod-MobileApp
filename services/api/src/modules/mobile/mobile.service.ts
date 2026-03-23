@@ -1,6 +1,7 @@
 import { pool } from '../../db/pool';
 import { listMostPlayedContent } from '../analytics/analytics.service';
 import type { ContentSourceKind, ContentType } from '../content/content.types';
+import type { LiveSessionStatus } from '../live/live.types';
 import { fetchYouTubeVideos, type YouTubeVideoItem } from '../youtube/youtube.service';
 import type { MobileFeedItem, MobileFeedRail, MobileFeedResponse } from './mobile.types';
 
@@ -19,6 +20,26 @@ interface PublishedContentRow {
   created_at: string | Date;
   updated_at: string | Date;
   author_display_name: string | null;
+}
+
+interface LiveSessionFeedRow {
+  id: string;
+  title: string;
+  description: string;
+  status: LiveSessionStatus;
+  channel_id: string;
+  cover_image_url: string | null;
+  stream_url: string | null;
+  playback_url: string | null;
+  viewer_count: number | string;
+  app_sections: string[] | null;
+  tags: string[] | null;
+  scheduled_for: string | Date | null;
+  started_at: string | Date | null;
+  ended_at: string | Date | null;
+  created_at: string | Date;
+  updated_at: string | Date;
+  host_display_name: string | null;
 }
 
 const FALLBACK_IMAGE = '';
@@ -121,6 +142,27 @@ const toYouTubeFeedItem = (item: YouTubeVideoItem): MobileFeedItem => ({
   updatedAt: item.publishedAt,
   isLive: item.isLive,
   liveViewerCount: item.liveViewerCount,
+  notificationChannelId: item.isLive ? 'claudygod-live' : undefined,
+});
+
+const toLiveFeedItem = (row: LiveSessionFeedRow): MobileFeedItem => ({
+  id: row.id,
+  title: row.title,
+  description: row.description,
+  subtitle: row.host_display_name || 'ClaudyGod Live',
+  type: 'live',
+  imageUrl: row.cover_image_url || FALLBACK_IMAGE,
+  mediaUrl: row.playback_url || row.stream_url || undefined,
+  duration: row.status === 'live' ? 'LIVE' : row.status === 'scheduled' ? 'Upcoming' : 'Replay',
+  channelName: row.channel_id || 'claudygod-live',
+  sourceKind: 'external',
+  appSections: normalizeTextList(row.app_sections?.length ? row.app_sections : ['live-now']),
+  tags: normalizeTextList([...(row.tags ?? []), row.status]),
+  createdAt: toIso(row.started_at || row.scheduled_for || row.created_at),
+  updatedAt: toIso(row.updated_at),
+  isLive: row.status === 'live',
+  liveViewerCount: Number(row.viewer_count ?? 0),
+  notificationChannelId: row.channel_id || 'claudygod-live',
 });
 
 const loadPublishedContent = async (limit = 120): Promise<MobileFeedItem[]> => {
@@ -151,6 +193,44 @@ const loadPublishedContent = async (limit = 120): Promise<MobileFeedItem[]> => {
   return result.rows.map(toMobileFeedItem);
 };
 
+const loadLiveSessions = async (limit = 24): Promise<MobileFeedItem[]> => {
+  const result = await pool.query<LiveSessionFeedRow>(
+    `SELECT
+       ls.id,
+       ls.title,
+       ls.description,
+       ls.status,
+       ls.channel_id,
+       ls.cover_image_url,
+       ls.stream_url,
+       ls.playback_url,
+       ls.viewer_count,
+       ls.app_sections,
+       ls.tags,
+       ls.scheduled_for,
+       ls.started_at,
+       ls.ended_at,
+       ls.created_at,
+       ls.updated_at,
+       host.display_name AS host_display_name
+     FROM live_sessions ls
+     LEFT JOIN app_users host ON host.id = ls.created_by
+     WHERE ls.status IN ('live', 'scheduled', 'ended')
+       AND (ls.status != 'ended' OR COALESCE(ls.ended_at, ls.updated_at) >= NOW() - INTERVAL '45 days')
+     ORDER BY
+       CASE ls.status
+         WHEN 'live' THEN 0
+         WHEN 'scheduled' THEN 1
+         ELSE 2
+       END,
+       COALESCE(ls.started_at, ls.scheduled_for, ls.updated_at) DESC
+     LIMIT $1`,
+    [limit],
+  );
+
+  return result.rows.map(toLiveFeedItem);
+};
+
 const buildRail = (id: string, title: string, algorithm: string, items: MobileFeedItem[], limit: number): MobileFeedRail => ({
   id,
   title,
@@ -159,8 +239,9 @@ const buildRail = (id: string, title: string, algorithm: string, items: MobileFe
 });
 
 export const buildMobileFeed = async (): Promise<MobileFeedResponse> => {
-  const [publishedContent, mostPlayedResult, youtubeResult] = await Promise.all([
+  const [publishedContent, liveSessions, mostPlayedResult, youtubeResult] = await Promise.all([
     loadPublishedContent(),
+    loadLiveSessions(),
     listMostPlayedContent({ limit: 12, windowDays: 90 }),
     fetchYouTubeVideos({ maxResults: 20 }).catch(() => ({
       channelId: '',
@@ -195,7 +276,7 @@ export const buildMobileFeed = async (): Promise<MobileFeedResponse> => {
     } satisfies MobileFeedItem;
   });
 
-  const unifiedPool = dedupeItems([...publishedContent, ...youtubeItems, ...trending]);
+  const unifiedPool = dedupeItems([...liveSessions, ...publishedContent, ...youtubeItems, ...trending]);
 
   const ranked = [...unifiedPool].sort((left, right) => {
     const scoreDiff =
