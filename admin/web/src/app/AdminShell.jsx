@@ -9,14 +9,11 @@ export default function AdminShell(props) {
     portalRoleLabel,
     accountEmail,
     onRefreshDashboard,
-    onFetchYouTubePreview,
-    onRunEndpointChecks,
     onLogout,
     dashboardView,
     onSetDashboardView,
     appLoading,
     currentYear,
-    apiHostLabel,
     content,
   } = props;
 
@@ -34,7 +31,7 @@ export default function AdminShell(props) {
             </div>
             <div>
               <p class="eyebrow">ClaudyGod Ministries</p>
-              <div class="brand-title-line">Content Studio Admin</div>
+              <div class="brand-title-line">Client Content Studio</div>
             </div>
           </div>
 
@@ -97,7 +94,7 @@ export default function AdminShell(props) {
                   class={['drawer-nav-link', dashboardView === 'editor' ? 'is-active' : '']}
                   onClick={() => onSetDashboardView('editor')}
                 >
-                  Requests & Library
+                  Content Desk
                 </button>
                 <button
                   type="button"
@@ -118,12 +115,6 @@ export default function AdminShell(props) {
               <div class="header-drawer-actions">
                 <button type="button" class="ghost-btn compact" onClick={() => void onRefreshDashboard()}>
                   Refresh
-                </button>
-                <button type="button" class="ghost-btn compact" onClick={() => void onFetchYouTubePreview()}>
-                  YouTube Preview
-                </button>
-                <button type="button" class="ghost-btn compact" onClick={() => void onRunEndpointChecks()}>
-                  Run Checks
                 </button>
                 <button type="button" class="danger-btn compact" onClick={() => void onLogout()}>
                   Sign Out
@@ -146,7 +137,6 @@ export default function AdminShell(props) {
       <footer class="global-footer">
         <div class="global-footer-inner global-footer-minimal">
           <span>© {currentYear} ClaudyGod Ministries</span>
-          <span>{apiHostLabel}</span>
         </div>
       </footer>
     </div>

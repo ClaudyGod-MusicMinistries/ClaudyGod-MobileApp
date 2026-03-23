@@ -304,8 +304,7 @@ export default function PlaySection() {
                     No audio queued yet
                   </CustomText>
                   <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 6 }}>
-                    Publish audio content or assign audio placements from the admin dashboard, then tracks will appear
-                    here.
+                    New songs and audio releases will appear here as soon as they are published.
                   </CustomText>
                 </View>
               )}

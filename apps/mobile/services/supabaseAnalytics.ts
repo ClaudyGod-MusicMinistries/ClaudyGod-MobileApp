@@ -20,17 +20,13 @@ export async function trackPlayEvent(input: PlayEventInput): Promise<void> {
       title: input.title,
       source: input.source ?? 'unknown',
     });
-  } catch (error) {
-    console.warn('trackPlayEvent skipped:', error);
-  }
+  } catch {}
 }
 
 export async function subscribeToLiveAlerts(channelId: string): Promise<void> {
   try {
     await subscribeToLiveAlertsBackend(channelId);
-  } catch (error) {
-    console.warn('subscribeToLiveAlerts skipped:', error);
-  }
+  } catch {}
 }
 
 export async function fetchUserProfileMetrics() {

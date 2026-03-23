@@ -9,17 +9,9 @@ const supabasePublishableKey = ENV.supabasePublishableKey.trim();
 
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabasePublishableKey);
 
-if (!isSupabaseConfigured) {
-  console.warn(
-    'Supabase config missing. Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_KEY to enable auth.',
-  );
-}
-
 export function assertSupabaseConfigured(): void {
   if (!isSupabaseConfigured) {
-    throw new Error(
-      'Supabase is not configured. Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_KEY in the root .env.development or .env.production file.',
-    );
+    throw new Error('This sign-in option is not available right now.');
   }
 }
 

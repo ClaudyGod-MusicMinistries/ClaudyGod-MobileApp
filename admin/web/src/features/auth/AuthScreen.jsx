@@ -1,17 +1,13 @@
 export default function AuthScreen(props) {
   const {
-    apiHostLabel,
     brandLogoUrl,
     publicHealthSummary,
-    databaseTargetLabel,
-    publicHealth,
     isVerifyMode,
     isRegisterMode,
     authMode,
     authLoading,
     notice,
     noticeKind,
-    publicHealthTone,
     googleLoginEnabled,
     authForm,
     pendingVerificationEmail,
@@ -41,28 +37,22 @@ export default function AuthScreen(props) {
 
         <div class="auth-status-grid">
           <article class="auth-status-card">
-            <span class="auth-status-label">API Host</span>
-            <strong>{apiHostLabel}</strong>
-            <p>{publicHealthSummary}</p>
+            <span class="auth-status-label">Secure access</span>
+            <strong>Protected sign-in</strong>
+            <p>Your account stays protected while you upload, review, and manage ministry content.</p>
           </article>
           <article class="auth-status-card">
-            <span class="auth-status-label">Database</span>
-            <strong>{databaseTargetLabel}</strong>
-            <p>
-              {publicHealth?.services?.postgres === 'up'
-                ? 'Connection ready'
-                : publicHealth?.services?.postgres === 'down'
-                  ? 'Connection unavailable'
-                  : 'Waiting for backend check'}
-            </p>
+            <span class="auth-status-label">Verification</span>
+            <strong>{isVerifyMode ? 'Email code required' : 'Secure account setup'}</strong>
+            <p>{isVerifyMode ? 'Enter the code sent to your email to finish creating the account.' : 'Create an account once, then return anytime to manage your content.'}</p>
           </article>
           <article class="auth-status-card">
-            <span class="auth-status-label">Account Flow</span>
-            <strong>{isVerifyMode ? 'Email verification' : 'Username only'}</strong>
+            <span class="auth-status-label">Studio access</span>
+            <strong>{isVerifyMode ? 'Almost ready' : 'Ready to manage content'}</strong>
             <p>
               {isVerifyMode
-                ? 'Enter the code sent to your email to finish creating the account.'
-                : 'No duplicate identity fields in the current register form.'}
+                ? 'Confirm the code to open the studio and continue into your dashboard.'
+                : 'Upload content, review the library, and preview the mobile app from one place.'}
             </p>
           </article>
         </div>
@@ -106,7 +96,7 @@ export default function AuthScreen(props) {
 
         {notice ? <div class={['notice', noticeKind === 'error' ? 'notice-error' : 'notice-success']}>{notice}</div> : null}
 
-        <div class={['auth-runtime-pill', publicHealthTone]}>
+        <div class={['auth-runtime-pill', 'success']}>
           <span class="auth-runtime-dot" />
           <span>{publicHealthSummary}</span>
         </div>
@@ -146,7 +136,7 @@ export default function AuthScreen(props) {
                 placeholder="claudy_member"
                 autoComplete="nickname"
               />
-              <small class="field-note">This is the only public identity field in the admin account flow.</small>
+              <small class="field-note">This name helps identify your uploads and activity inside the studio.</small>
             </label>
           ) : null}
 

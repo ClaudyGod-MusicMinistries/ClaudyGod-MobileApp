@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { API_HOST_LABEL } from '../../app/config';
 
 export function readValue(event) {
   return event && event.target ? event.target.value : '';
@@ -15,7 +14,7 @@ export function toErrorMessage(error, fallback) {
     const errorMessage = String(error.message || '').toLowerCase();
 
     if (errorCode === 'ECONNABORTED' || errorMessage.includes('timeout')) {
-      return `The API at ${API_HOST_LABEL} did not respond in time. Confirm the backend is running and that PostgreSQL is reachable from the API.`;
+      return 'This action took too long. Please try again.';
     }
     if (error.response?.status === 401) {
       return 'Your session has expired. Please sign in again.';
@@ -24,7 +23,7 @@ export function toErrorMessage(error, fallback) {
       return 'You do not have permission for this action.';
     }
     if (!error.response) {
-      return `Unable to reach the API at ${API_HOST_LABEL}. Confirm the API domain, reverse proxy, and CORS configuration.`;
+      return 'We could not complete that request right now. Please try again shortly.';
     }
     const data = error.response && error.response.data ? error.response.data : {};
     return data.message || data.error || error.message || fallback;
@@ -76,20 +75,20 @@ export function formatBytes(bytes) {
 export function describeHealthCheckDetail(payload) {
   const services = payload && payload.services ? payload.services : null;
   const capabilities = payload && payload.capabilities ? payload.capabilities : null;
-  if (!services) return 'Core API responding';
+  if (!services) return 'Studio ready';
 
   const details = [];
   if (services.postgres) {
-    details.push(`PostgreSQL: ${services.postgres}`);
+    details.push(`Library: ${services.postgres === 'up' ? 'ready' : 'attention needed'}`);
   }
   if (services.redis) {
-    details.push(`Redis: ${services.redis}`);
+    details.push(`Sessions: ${services.redis === 'up' ? 'ready' : 'attention needed'}`);
   }
   if (capabilities && capabilities.youtube === false) {
-    details.push('YouTube is disabled in API environment');
+    details.push('Video import unavailable');
   }
 
-  return details.length > 0 ? details.join(' • ') : 'Core API responding';
+  return details.length > 0 ? details.join(' • ') : 'Studio ready';
 }
 
 export function acceptFromPolicy(policy) {

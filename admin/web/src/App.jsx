@@ -2,15 +2,12 @@ import axios from 'axios';
 import { computed, defineComponent, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import AdminShell from './app/AdminShell';
 import {
-  API_HOST_LABEL,
   BRAND_LOGO_URL,
   CONTENT_REQUEST_STATUS_OPTIONS,
   CONTENT_TYPES,
   GOOGLE_LOGIN_URL,
   INACTIVITY_TIMEOUT_MS,
-  USER_ROLE_OPTIONS,
   VISIBILITY_OPTIONS,
-  WORKFLOW_STEPS,
   YOUTUBE_SYNC_DEFAULT_LIMIT,
   normalizePreviewUrl,
   readStoredMobilePreviewUrl,
@@ -208,63 +205,15 @@ export default defineComponent({
     const portalRoleLabel = computed(() => (isAdmin.value ? 'Admin' : 'Publisher'));
     const isCompactHeader = computed(() => viewportWidth.value <= 1024);
     const googleLoginEnabled = computed(() => Boolean(GOOGLE_LOGIN_URL));
-    const publicHealthTone = computed(() => {
-      if (!publicHealth.value) return 'subtle';
-      if (publicHealth.value.status === 'ok') return 'success';
-      return 'warning';
-    });
     const publicHealthSummary = computed(() => {
-      if (publicHealthLoading.value) return 'Checking backend';
-      if (!publicHealth.value) return 'Awaiting backend check';
-      if (publicHealth.value.status === 'ok') return 'Backend ready';
-      if (publicHealth.value.services?.postgres === 'down') return 'Database unavailable';
-      if (publicHealth.value.status === 'offline') return 'API unavailable';
-      return 'Backend needs attention';
+      if (publicHealthLoading.value) return 'Preparing your studio';
+      if (!publicHealth.value) return 'Checking access';
+      if (publicHealth.value.status === 'ok') return 'Studio ready';
+      if (publicHealth.value.services?.postgres === 'down') return 'Studio temporarily unavailable';
+      if (publicHealth.value.status === 'offline') return 'Studio temporarily unavailable';
+      return 'Checking access';
     });
-    const databaseTargetLabel = computed(() => {
-      const target = publicHealth.value?.capabilities?.databaseTarget;
-      if (target === 'supabase-postgres') return 'Supabase PostgreSQL';
-      if (target === 'external-postgres') return 'External PostgreSQL';
-      return 'Database target pending';
-    });
-    const apiHealthCheck = computed(() =>
-      (endpointChecks.value || []).find((check) => check && check.label === 'API Health') || null,
-    );
     const mobileSectionCatalog = computed(() => normalizeSectionCatalog(mobileAppConfigValue.value));
-
-    const stats = computed(() => {
-      const total = managedItems.value.length;
-      const published = managedItems.value.filter((item) => item.visibility === 'published').length;
-      const drafts = managedItems.value.filter((item) => item.visibility === 'draft').length;
-      const videoItems = managedItems.value.filter((item) => item.type === 'video').length;
-      const summary = adminOps.value.summary || {};
-
-      if (isAdmin.value) {
-        return [
-          { label: 'Published Content', value: summary.publishedContent || published, accent: 'mint' },
-          { label: 'Draft Content', value: summary.draftContent || drafts, accent: 'blue' },
-          { label: 'Open Requests', value: requestSummary.value.active, accent: 'amber' },
-          { label: 'Registered Users', value: summary.totalUsers || 0, accent: 'rose' },
-        ];
-      }
-
-      return [
-        { label: 'All Content', value: total, accent: 'mint' },
-        { label: 'Open Requests', value: requestSummary.value.active, accent: 'blue' },
-        { label: 'Drafts', value: drafts, accent: 'amber' },
-        { label: 'Video Items', value: videoItems, accent: 'rose' },
-      ];
-    });
-
-    const audienceStats = computed(() => {
-      const summary = adminOps.value.summary || {};
-      return [
-        { label: 'Registered Users', value: summary.totalUsers || 0, accent: 'mint' },
-        { label: 'New This Week', value: summary.newUsersLast7Days || 0, accent: 'blue' },
-        { label: 'Open Complaints', value: summary.openSupportRequests || 0, accent: 'amber' },
-        { label: 'Avg. Rating', value: summary.averageRating != null ? summary.averageRating : '--', accent: 'rose' },
-      ];
-    });
 
     const requestSummary = computed(() => {
       const requests = contentRequests.value || [];
@@ -311,10 +260,6 @@ export default defineComponent({
     });
 
     const recentItems = computed(() => managedItems.value.slice(0, 4));
-    const selectedYouTubeDraftCount = computed(() =>
-      youtubeDraftItems.value.filter((item) => item.selected).length,
-    );
-
     function getUploadPolicy(kind) {
       return (uploadPolicies.value || []).find((item) => item && item.kind === kind) || null;
     }
@@ -820,7 +765,7 @@ export default defineComponent({
         mobileAppConfigMeta.value = response.data.meta || null;
         mobileAppConfigValue.value = response.data.config || null;
       } catch (error) {
-        setNotice(toErrorMessage(error, 'Unable to load mobile app config.'), 'error');
+        setNotice(toErrorMessage(error, 'Unable to load the mobile experience.'), 'error');
       } finally {
         appConfigLoading.value = false;
       }
@@ -828,7 +773,7 @@ export default defineComponent({
 
     async function saveMobileAppConfig() {
       if (!isAdmin.value) {
-        setNotice('Only admin accounts can update mobile app configuration.', 'error');
+        setNotice('This action is only available to administrators.', 'error');
         return;
       }
 
@@ -847,9 +792,9 @@ export default defineComponent({
         mobileAppConfigEditor.value = JSON.stringify(response.data.config || {}, null, 2);
         mobileAppConfigMeta.value = response.data.meta || null;
         mobileAppConfigValue.value = response.data.config || null;
-        setNotice('Mobile app config saved successfully.', 'success');
+        setNotice('Mobile experience updated successfully.', 'success');
       } catch (error) {
-        setNotice(toErrorMessage(error, 'Unable to save mobile app config.'), 'error');
+        setNotice(toErrorMessage(error, 'Unable to save your changes.'), 'error');
       } finally {
         appConfigSaving.value = false;
       }
@@ -1129,7 +1074,7 @@ export default defineComponent({
 
         publicHealth.value = {
           status: 'offline',
-          error: toErrorMessage(error, 'Unable to reach backend health endpoint.'),
+          error: toErrorMessage(error, 'The studio is temporarily unavailable.'),
           checkedAt: new Date().toISOString(),
         };
         return publicHealth.value;
@@ -1142,23 +1087,12 @@ export default defineComponent({
       const health = await fetchPublicHealth();
 
       if (!health || health.status === 'offline') {
-        setNotice(
-          `The API at ${API_HOST_LABEL} is not reachable. Start the backend and confirm the admin is pointing at the correct host.`,
-          'error',
-        );
+        setNotice('The studio is temporarily unavailable. Please try again shortly.', 'error');
         return false;
       }
 
       if (health.services?.postgres === 'down') {
-        const databaseTarget =
-          health.capabilities?.databaseTarget === 'supabase-postgres'
-            ? 'Supabase PostgreSQL'
-            : 'the configured PostgreSQL database';
-
-        setNotice(
-          `The backend is online, but ${databaseTarget} is unavailable. Update DATABASE_URL, start the database, and restart the API before creating accounts.`,
-          'error',
-        );
+        setNotice('The studio is not ready right now. Please try again shortly.', 'error');
         return false;
       }
 
@@ -1499,7 +1433,7 @@ export default defineComponent({
 
         setNotice(`Uploaded ${file.name}. ${assetKind === 'thumbnail' ? 'Thumbnail' : 'Media asset'} is now linked to this submission ticket.`, 'success');
       } catch (error) {
-        setNotice(toErrorMessage(error, 'File upload failed. Check storage configuration and try again.'), 'error');
+        setNotice(toErrorMessage(error, 'File upload failed. Please try again.'), 'error');
       } finally {
         uploadingAsset.value = false;
         if (input) input.value = '';
@@ -1697,7 +1631,7 @@ export default defineComponent({
         buildYouTubeDrafts(youtubePreviewItems.value);
         setNotice(`Fetched ${youtubePreviewItems.value.length} YouTube video${youtubePreviewItems.value.length === 1 ? '' : 's'} for preview.`, 'success');
       } catch (error) {
-        setNotice(toErrorMessage(error, 'Unable to fetch YouTube videos. Check your backend YouTube configuration.'), 'error');
+        setNotice(toErrorMessage(error, 'Unable to load videos right now.'), 'error');
       } finally {
         youtubePreviewLoading.value = false;
       }
@@ -1726,7 +1660,7 @@ export default defineComponent({
         ]);
         setNotice(`YouTube sync complete. Created ${summary.created}, updated ${summary.updated}, skipped ${summary.skipped}.`, 'success');
       } catch (error) {
-        setNotice(toErrorMessage(error, 'YouTube sync failed. Please verify API key, channel ID, and backend settings.'), 'error');
+        setNotice(toErrorMessage(error, 'Video import could not be completed right now.'), 'error');
       } finally {
         youtubeSyncLoading.value = false;
       }
@@ -1755,18 +1689,14 @@ export default defineComponent({
     return () => {
       const loginScreen = (
         <AuthScreen
-          apiHostLabel={API_HOST_LABEL}
           brandLogoUrl={BRAND_LOGO_URL}
           publicHealthSummary={publicHealthSummary.value}
-          databaseTargetLabel={databaseTargetLabel.value}
-          publicHealth={publicHealth.value}
           isVerifyMode={isVerifyMode.value}
           isRegisterMode={isRegisterMode.value}
           authMode={authMode.value}
           authLoading={authLoading.value}
           notice={notice.value}
           noticeKind={noticeKind.value}
-          publicHealthTone={publicHealthTone.value}
           googleLoginEnabled={googleLoginEnabled.value}
           authForm={authForm}
           pendingVerificationEmail={pendingVerificationEmail.value}
@@ -1778,31 +1708,6 @@ export default defineComponent({
         />
       );
 
-      const workspaceActions = [
-        {
-          title: 'Submit new content',
-          detail: 'Open the request desk to upload files, add links, and send one clean ticket for review.',
-          actionLabel: 'Open request desk',
-          onClick: () => setDashboardView('editor'),
-          emphasis: 'primary',
-        },
-        {
-          title: 'Preview the app',
-          detail: 'See the live mobile experience after content or config changes before you leave the studio.',
-          actionLabel: 'Open app preview',
-          onClick: () => setDashboardView('mobile-preview'),
-          emphasis: 'secondary',
-        },
-        {
-          title: 'Refresh studio data',
-          detail: 'Pull fresh audience, publishing, and health information without leaving the overview.',
-          actionLabel: contentLoading.value ? 'Refreshing...' : 'Refresh now',
-          onClick: () => void refreshDashboard(),
-          disabled: contentLoading.value,
-          emphasis: 'secondary',
-        },
-      ];
-
       const dashboardScreen = (
         <section class="dashboard-stage">
           <section class="hero-banner glass-panel reveal-up">
@@ -1813,40 +1718,34 @@ export default defineComponent({
                   <img src={BRAND_LOGO_URL} alt="ClaudyGod" class="brand-logo" />
                 </div>
                 <div>
-                  <p class="eyebrow">Publishing Center</p>
+                  <p class="eyebrow">Client Studio</p>
                   <h1>{greeting.value}, {displayName.value}</h1>
                   <p class="subtitle">
-                    Start with the request desk, review every upload in one queue, and only create drafts when the team is ready to move forward.
+                    Upload content, manage your library, and preview exactly how each update will appear in the ClaudyGod mobile app.
                   </p>
                 </div>
               </div>
 
               <div class="hero-actions">
+                <button type="button" class="primary-btn" onClick={() => setDashboardView('editor')}>
+                  Open content desk
+                </button>
                 <button type="button" class="ghost-btn" onClick={() => void refreshDashboard()} disabled={contentLoading.value}>
                   {contentLoading.value ? 'Refreshing...' : 'Refresh data'}
                 </button>
-                <button type="button" class="ghost-btn" onClick={() => void fetchYouTubePreview()} disabled={youtubePreviewLoading.value}>
-                  {youtubePreviewLoading.value ? 'Loading YouTube...' : 'Check YouTube feed'}
+                <button type="button" class="ghost-btn" onClick={() => setDashboardView('mobile-preview')}>
+                  Open mobile preview
                 </button>
                 <button type="button" class="danger-btn" onClick={logout}>Sign Out</button>
               </div>
             </div>
 
             <div class="hero-chips">
-              <span class="hero-chip">Request-led workflow</span>
-              <span class="hero-chip">Cleaner review queue</span>
-              <span class="hero-chip">Live mobile preview</span>
+              <span class="hero-chip">Upload</span>
+              <span class="hero-chip">Manage</span>
+              <span class="hero-chip">Preview</span>
             </div>
             <div class="hero-shine" />
-          </section>
-
-          <section class="stats-grid">
-            {stats.value.map((card, index) => (
-              <article class={['stat-card', 'glass-panel', `accent-${card.accent}`, 'reveal-up']} style={{ animationDelay: `${60 + index * 70}ms` }} key={card.label}>
-                <span>{card.label}</span>
-                <strong>{card.value}</strong>
-              </article>
-            ))}
           </section>
 
           {notice.value ? (
@@ -1868,7 +1767,7 @@ export default defineComponent({
               class={['ghost-btn compact', dashboardView.value === 'editor' ? 'is-active' : '']}
               onClick={() => setDashboardView('editor')}
             >
-              Requests & Library
+              Content Desk
             </button>
             <button
               type="button"
@@ -1879,56 +1778,14 @@ export default defineComponent({
             </button>
           </section>
 
-          <section class="quick-actions-grid reveal-up" style={{ animationDelay: '210ms' }}>
-            {workspaceActions.map((action, index) => (
-              <article
-                key={`workspace-action-${action.title}`}
-                class={['task-card', 'glass-panel', action.emphasis === 'primary' ? 'task-card-primary' : null]}
-                style={{ animationDelay: `${220 + index * 40}ms` }}
-              >
-                <div>
-                  <p class="eyebrow">Quick action</p>
-                  <h3>{action.title}</h3>
-                  <p>{action.detail}</p>
-                </div>
-                <button
-                  type="button"
-                  class={action.emphasis === 'primary' ? 'primary-btn' : 'ghost-btn compact'}
-                  onClick={action.onClick}
-                  disabled={action.disabled}
-                >
-                  {action.actionLabel}
-                </button>
-              </article>
-            ))}
-          </section>
-
           {dashboardView.value === 'overview' ? (
             <OverviewView
-              workflowSteps={WORKFLOW_STEPS}
-              apiHealthCheck={apiHealthCheck.value}
               requestStatusBoard={requestStatusBoard.value}
               contentRequestLoading={contentRequestLoading.value}
               requestQueuePreview={requestQueuePreview.value}
-              isAdmin={isAdmin.value}
-              contentRequestStatusUpdatingId={contentRequestStatusUpdatingId.value}
-              contentRequestStatusOptions={CONTENT_REQUEST_STATUS_OPTIONS}
-              creatingDraftFromRequestId={creatingDraftFromRequestId.value}
-              adminOpsLoading={adminOpsLoading.value}
-              audienceStats={audienceStats.value}
-              adminOps={adminOps.value}
               managedItemsCount={managedItems.value.length}
-              supportStatusUpdatingId={supportStatusUpdatingId.value}
-              userRoleUpdatingId={userRoleUpdatingId.value}
-              currentUserId={currentUser.value?.id || null}
-              userRoleOptions={USER_ROLE_OPTIONS}
               recentItems={recentItems.value}
               onSetDashboardView={setDashboardView}
-              onUpdateSubmissionRequestStatus={updateSubmissionRequestStatus}
-              onCreateDraftFromRequest={createDraftFromRequest}
-              onFetchAdminOperationsDashboard={fetchAdminOperationsDashboard}
-              onUpdateSupportRequestStatus={updateSupportRequestStatus}
-              onUpdateUserRole={updateUserRole}
               formatDateTime={formatDateTime}
               truncate={truncate}
               humanizeToken={humanizeToken}
@@ -1942,11 +1799,6 @@ export default defineComponent({
               onReloadMobilePreview={reloadMobilePreview}
               onResetMobilePreviewUrl={resetMobilePreviewUrl}
               mobileSectionCatalog={mobileSectionCatalog.value}
-              endpointChecks={endpointChecks.value}
-              endpointChecksAt={endpointChecksAt.value}
-              endpointChecksLoading={endpointChecksLoading.value}
-              onRunEndpointChecks={runEndpointChecks}
-              formatDateTime={formatDateTime}
             />
           ) : null}
 
@@ -1964,24 +1816,7 @@ export default defineComponent({
               contentLoading={contentLoading.value}
               filteredItems={filteredItems.value}
               paginationTotal={pagination.total}
-              youtubePreviewLoading={youtubePreviewLoading.value}
-              youtubeSyncLoading={youtubeSyncLoading.value}
-              youtubeImporting={youtubeImporting.value}
-              youtubeDraftItems={youtubeDraftItems.value}
-              selectedYouTubeDraftCount={selectedYouTubeDraftCount.value}
-              isAdmin={isAdmin.value}
-              appConfigLoading={appConfigLoading.value}
-              appConfigSaving={appConfigSaving.value}
-              mobileAppConfigEditor={mobileAppConfigEditor.value}
-              mobileAppConfigMeta={mobileAppConfigMeta.value}
-              mobileSectionCatalog={mobileSectionCatalog.value}
-              wordOfDayLoading={wordOfDayLoading.value}
-              wordOfDaySaving={wordOfDaySaving.value}
-              wordOfDayForm={wordOfDayForm}
-              wordOfDayCurrent={wordOfDayCurrent.value}
-              wordOfDayHistory={wordOfDayHistory.value}
               filterState={filterState}
-              youtubeSyncState={youtubeSyncState}
               contentRequestStatusUpdatingId={contentRequestStatusUpdatingId.value}
               creatingDraftFromRequestId={creatingDraftFromRequestId.value}
               togglingId={togglingId.value}
@@ -2000,25 +1835,11 @@ export default defineComponent({
               onOpenEditContentModal={openEditContentModal}
               onAssignContentSections={assignContentSections}
               onDeleteContentItem={deleteContentItem}
-              onFetchYouTubePreview={fetchYouTubePreview}
-              onApplySmartYouTubeAssignments={applySmartYouTubeAssignments}
-              onImportSelectedYouTubeVideos={importSelectedYouTubeVideos}
-              onSyncYouTubeVideos={syncYouTubeVideos}
-              onUpdateYouTubeDraftItem={updateYouTubeDraftItem}
-              onFetchMobileAppConfig={fetchMobileAppConfig}
-              onSaveMobileAppConfig={saveMobileAppConfig}
-              onFetchWordOfDayDashboard={fetchWordOfDayDashboard}
-              onSaveWordOfDay={saveWordOfDay}
-              onSetMobileAppConfigEditor={setMobileAppConfigEditorValue}
-              onLoadWordOfDayEntry={loadWordOfDayEntry}
               formatDateTime={formatDateTime}
               truncate={truncate}
-              parseCsvList={parseCsvList}
-              readChecked={readChecked}
               contentTypes={CONTENT_TYPES}
               visibilityOptions={VISIBILITY_OPTIONS}
               contentRequestStatusOptions={CONTENT_REQUEST_STATUS_OPTIONS}
-              youtubeSyncDefaultLimit={YOUTUBE_SYNC_DEFAULT_LIMIT}
               humanizeToken={humanizeToken}
             />
           ) : null}
@@ -2054,14 +1875,11 @@ export default defineComponent({
           portalRoleLabel={portalRoleLabel.value}
           accountEmail={accountEmail.value}
           onRefreshDashboard={refreshDashboard}
-          onFetchYouTubePreview={fetchYouTubePreview}
-          onRunEndpointChecks={runEndpointChecks}
           onLogout={logout}
           dashboardView={dashboardView.value}
           onSetDashboardView={setDashboardView}
           appLoading={appLoading.value}
           currentYear={currentYear}
-          apiHostLabel={API_HOST_LABEL}
           content={shellContent}
         />
       );
