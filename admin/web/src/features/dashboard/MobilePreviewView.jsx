@@ -5,11 +5,6 @@ export default function MobilePreviewView(props) {
     onReloadMobilePreview,
     onResetMobilePreviewUrl,
     mobileSectionCatalog,
-    endpointChecks,
-    endpointChecksAt,
-    endpointChecksLoading,
-    onRunEndpointChecks,
-    formatDateTime,
   } = props;
 
   return (
@@ -89,46 +84,41 @@ export default function MobilePreviewView(props) {
       <article class="panel glass-panel reveal-up" style={{ animationDelay: '260ms' }}>
         <div class="section-head split">
           <div>
-            <h2>Endpoint Diagnostics</h2>
-            <p>Validate backend endpoints used by admin and mobile clients.</p>
+            <h2>Mobile Placement Guide</h2>
+            <p>Use these sections to decide where uploaded content should appear in the ClaudyGod mobile experience.</p>
           </div>
-          <button
-            type="button"
-            class="ghost-btn compact"
-            onClick={() => void onRunEndpointChecks()}
-            disabled={endpointChecksLoading}
-          >
-            {endpointChecksLoading ? 'Checking...' : 'Run Checks'}
-          </button>
+          <span class="section-badge">Client view</span>
         </div>
 
-        {endpointChecksAt ? (
-          <div class="muted-chip">Last check: {formatDateTime(endpointChecksAt)}</div>
-        ) : null}
-
-        <div class="helper-card" style={{ marginTop: '0.8rem' }}>
-          <strong>YouTube requirement</strong>
-          <p>
-            Set <code>YOUTUBE_API_KEY</code> and <code>YOUTUBE_CHANNEL_ID</code> in the root <code>.env.development</code> or <code>.env.production</code> file, then restart the API to enable YouTube feed and sync.
-          </p>
+        <div class="simple-intro-panel">
+          <div class="simple-intro-item">
+            <strong>1. Upload or update content</strong>
+            <p>Create a request or publish directly from the content desk.</p>
+          </div>
+          <div class="simple-intro-item">
+            <strong>2. Assign the right section</strong>
+            <p>Choose the home, video, or supporting sections that match the content type.</p>
+          </div>
+          <div class="simple-intro-item">
+            <strong>3. Reload this preview</strong>
+            <p>Confirm the live mobile placement before you move on to the next upload.</p>
+          </div>
         </div>
 
-        <div class="endpoint-check-list">
-          {endpointChecks.length === 0 ? (
-            <div class="empty-state">No checks run yet. Click <strong>Run Checks</strong>.</div>
-          ) : endpointChecks.map((check) => (
-            <article class={['endpoint-check-card', check.status === 'ok' ? 'is-ok' : 'is-error']} key={`${check.label}-${check.path}`}>
-              <div class="endpoint-check-head">
-                <strong>{check.label}</strong>
-                <span class={['pill', check.status === 'ok' ? 'pill-live' : 'pill-draft']}>
-                  {check.statusCode || 'ERR'}
-                </span>
-              </div>
-              <code>{check.path}</code>
-              <p>{check.detail}</p>
-            </article>
-          ))}
-        </div>
+        {mobileSectionCatalog.length ? (
+          <div class="section-catalog">
+            {mobileSectionCatalog.map((section) => (
+              <article class="section-catalog-card" key={`mobile-placement-${section.id}`}>
+                <strong>{section.title}</strong>
+                <span>{section.id}</span>
+                <p>{section.subtitle || 'No supporting copy configured yet.'}</p>
+                <small>{section.screens.join(' • ')}</small>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <div class="empty-state">No mobile sections have been configured yet. Once sections are saved, they will appear here for quick client preview.</div>
+        )}
       </article>
     </section>
   );
