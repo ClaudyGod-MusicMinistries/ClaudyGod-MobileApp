@@ -1,4 +1,5 @@
 import { pool } from '../../db/pool';
+import { isMissingDatabaseStructureError } from '../../lib/postgres';
 
 interface MostPlayedRow {
   content_id: string;
@@ -29,35 +30,43 @@ export const listMostPlayedContent = async (params: {
     playCount: number;
   }>;
 }> => {
-  const result = await pool.query<MostPlayedRow>(
-    `WITH agg AS (
+  let result;
+  try {
+    result = await pool.query<MostPlayedRow>(
+      `WITH agg AS (
+         SELECT
+           e.content_id,
+           MAX(e.content_title) AS content_title,
+           MAX(e.content_type) AS content_type,
+           COUNT(*)::text AS play_count,
+           MAX(e.played_at) AS last_played_at
+         FROM user_play_events e
+         WHERE e.played_at >= NOW() - ($2::text || ' days')::interval
+         GROUP BY e.content_id
+       )
        SELECT
-         e.content_id,
-         MAX(e.content_title) AS content_title,
-         MAX(e.content_type) AS content_type,
-         COUNT(*)::text AS play_count,
-         MAX(e.played_at) AS last_played_at
-       FROM user_play_events e
-       WHERE e.played_at >= NOW() - ($2::text || ' days')::interval
-       GROUP BY e.content_id
-     )
-     SELECT
-       agg.content_id,
-       agg.content_title,
-       agg.content_type,
-       agg.play_count,
-       agg.last_played_at,
-       c.description,
-       c.media_url,
-       c.visibility,
-       c.created_at,
-       c.updated_at
-     FROM agg
-     LEFT JOIN content_items c ON c.id::text = agg.content_id
-     ORDER BY agg.play_count::int DESC, agg.last_played_at DESC
-     LIMIT $1`,
-    [params.limit, params.windowDays],
-  );
+         agg.content_id,
+         agg.content_title,
+         agg.content_type,
+         agg.play_count,
+         agg.last_played_at,
+         c.description,
+         c.media_url,
+         c.visibility,
+         c.created_at,
+         c.updated_at
+       FROM agg
+       LEFT JOIN content_items c ON c.id::text = agg.content_id
+       ORDER BY agg.play_count::int DESC, agg.last_played_at DESC
+       LIMIT $1`,
+      [params.limit, params.windowDays],
+    );
+  } catch (error) {
+    if (isMissingDatabaseStructureError(error)) {
+      return { items: [] };
+    }
+    throw error;
+  }
 
   return {
     items: result.rows.map((row) => {

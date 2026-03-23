@@ -78,12 +78,15 @@ export default defineComponent({
     const userRoleUpdatingId = ref(null);
     const contentRequestStatusUpdatingId = ref(null);
     const creatingDraftFromRequestId = ref(null);
+    const sectionEditorItemId = ref('');
+    const sectionEditorValue = ref('');
+    const sectionEditorSaving = ref(false);
     const liveLoading = ref(false);
     const liveDetailLoading = ref(false);
     const liveSaving = ref(false);
     const liveTransitioningId = ref(null);
     const headerMenuOpen = ref(false);
-    const dashboardView = ref('live');
+    const dashboardView = ref('editor');
     const inactivityTimerId = ref(null);
     const authResponseInterceptorId = ref(null);
     const viewportWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1366);
@@ -359,6 +362,7 @@ export default defineComponent({
       authMode.value = 'login';
       authForm.email = user.email || authForm.email.trim();
       resetAuthSecrets();
+      dashboardView.value = 'editor';
 
       await Promise.all([
         fetchManagedContent(freshToken || undefined),
@@ -391,7 +395,7 @@ export default defineComponent({
     }
 
     function setDashboardView(view) {
-      dashboardView.value = ['live', 'editor', 'mobile-preview'].includes(view) ? view : 'live';
+      dashboardView.value = ['live', 'editor', 'mobile-preview'].includes(view) ? view : 'editor';
       closeHeaderMenu();
     }
 
@@ -656,6 +660,8 @@ export default defineComponent({
       resetLiveForm();
       editContentOpen.value = false;
       editingContentId.value = null;
+      sectionEditorItemId.value = '';
+      sectionEditorValue.value = '';
       mobileAppConfigEditor.value = '';
       mobileAppConfigMeta.value = null;
       mobileAppConfigValue.value = null;
@@ -685,7 +691,7 @@ export default defineComponent({
       };
       endpointChecks.value = [];
       endpointChecksAt.value = '';
-      dashboardView.value = 'live';
+      dashboardView.value = 'editor';
       closeHeaderMenu();
     }
 
@@ -1137,6 +1143,9 @@ export default defineComponent({
     async function updateContentItem(itemId, patch) {
       const response = await http.patch(`/v1/content/${itemId}`, patch);
       managedItems.value = managedItems.value.map((entry) => (entry.id === itemId ? response.data : entry));
+      if (sectionEditorItemId.value === itemId) {
+        sectionEditorValue.value = Array.isArray(response.data?.appSections) ? response.data.appSections.join(', ') : '';
+      }
       reloadMobilePreview();
       return response.data;
     }
@@ -1236,23 +1245,33 @@ export default defineComponent({
       }
     }
 
-    async function assignContentSections(item) {
-      const current = Array.isArray(item.appSections) ? item.appSections.join(', ') : '';
-      const availableSections = mobileSectionCatalog.value
-        .map((section) => `${section.title} (${section.id})`)
-        .join('\n');
-      const nextValue = window.prompt(
-        `Assign app sections (comma-separated).\n\nAvailable sections:\n${availableSections || 'No mobile section catalog loaded yet.'}`,
-        current,
-      );
-      if (nextValue === null) return;
+    function toggleContentSectionEditor(item) {
+      if (sectionEditorItemId.value === item.id) {
+        sectionEditorItemId.value = '';
+        sectionEditorValue.value = '';
+        return;
+      }
 
+      sectionEditorItemId.value = item.id;
+      sectionEditorValue.value = Array.isArray(item.appSections) ? item.appSections.join(', ') : '';
+    }
+
+    function closeContentSectionEditor() {
+      sectionEditorItemId.value = '';
+      sectionEditorValue.value = '';
+    }
+
+    async function saveContentSections(item) {
+      sectionEditorSaving.value = true;
       clearNotice();
       try {
-        await updateContentItem(item.id, { appSections: parseCsvList(nextValue) });
-        setNotice('Content sections updated for mobile app placement.', 'success');
+        await updateContentItem(item.id, { appSections: parseCsvList(sectionEditorValue.value) });
+        closeContentSectionEditor();
+        setNotice('Content placement updated.', 'success');
       } catch (error) {
-        setNotice(toErrorMessage(error, 'Unable to update content sections.'), 'error');
+        setNotice(toErrorMessage(error, 'Unable to update content placement.'), 'error');
+      } finally {
+        sectionEditorSaving.value = false;
       }
     }
 
@@ -1264,6 +1283,9 @@ export default defineComponent({
       try {
         await http.delete(`/v1/content/${item.id}`);
         managedItems.value = managedItems.value.filter((entry) => entry.id !== item.id);
+        if (sectionEditorItemId.value === item.id) {
+          closeContentSectionEditor();
+        }
         pagination.total = Math.max(0, Number(pagination.total || 0) - 1);
         setNotice('Content deleted successfully.', 'success');
       } catch (error) {
@@ -1948,30 +1970,6 @@ export default defineComponent({
             </section>
           ) : null}
 
-          <section class="dashboard-view-tabs reveal-up" style={{ animationDelay: '170ms' }}>
-            <button
-              type="button"
-              class={['ghost-btn compact', dashboardView.value === 'live' ? 'is-active' : '']}
-              onClick={() => setDashboardView('live')}
-            >
-              Live Portal
-            </button>
-            <button
-              type="button"
-              class={['ghost-btn compact', dashboardView.value === 'editor' ? 'is-active' : '']}
-              onClick={() => setDashboardView('editor')}
-            >
-              Uploads & Library
-            </button>
-            <button
-              type="button"
-              class={['ghost-btn compact', dashboardView.value === 'mobile-preview' ? 'is-active' : '']}
-              onClick={() => setDashboardView('mobile-preview')}
-            >
-              App Preview
-            </button>
-          </section>
-
           {dashboardView.value === 'live' ? (
             <LiveView
               liveLoading={liveLoading.value}
@@ -2023,8 +2021,12 @@ export default defineComponent({
               filterState={filterState}
               contentRequestStatusUpdatingId={contentRequestStatusUpdatingId.value}
               creatingDraftFromRequestId={creatingDraftFromRequestId.value}
+              isAdmin={isAdmin.value}
               togglingId={togglingId.value}
               deletingContentId={deletingContentId.value}
+              activeSectionEditorItemId={sectionEditorItemId.value}
+              sectionEditorValue={sectionEditorValue.value}
+              sectionEditorSaving={sectionEditorSaving.value}
               onCreateContent={createContent}
               onReadValue={readValue}
               onHandleAssetUpload={handleAssetUpload}
@@ -2037,7 +2039,10 @@ export default defineComponent({
               onCreateDraftFromRequest={createDraftFromRequest}
               onToggleVisibility={toggleVisibility}
               onOpenEditContentModal={openEditContentModal}
-              onAssignContentSections={assignContentSections}
+              onToggleContentSectionEditor={toggleContentSectionEditor}
+              onUpdateSectionEditorValue={(nextValue) => { sectionEditorValue.value = nextValue; }}
+              onSaveContentSections={saveContentSections}
+              onCloseContentSectionEditor={closeContentSectionEditor}
               onDeleteContentItem={deleteContentItem}
               formatDateTime={formatDateTime}
               truncate={truncate}

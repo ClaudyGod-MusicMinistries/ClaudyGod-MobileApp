@@ -13,10 +13,14 @@ export default function EditorView(props) {
     filteredItems,
     paginationTotal,
     filterState,
+    isAdmin,
     contentRequestStatusUpdatingId,
     creatingDraftFromRequestId,
     togglingId,
     deletingContentId,
+    activeSectionEditorItemId,
+    sectionEditorValue,
+    sectionEditorSaving,
     onCreateContent,
     onReadValue,
     onHandleAssetUpload,
@@ -28,7 +32,10 @@ export default function EditorView(props) {
     onCreateDraftFromRequest,
     onToggleVisibility,
     onOpenEditContentModal,
-    onAssignContentSections,
+    onToggleContentSectionEditor,
+    onUpdateSectionEditorValue,
+    onSaveContentSections,
+    onCloseContentSectionEditor,
     onDeleteContentItem,
     formatDateTime,
     truncate,
@@ -405,9 +412,9 @@ export default function EditorView(props) {
                   <button
                     type="button"
                     class="ghost-btn compact"
-                    onClick={() => void onAssignContentSections(item)}
+                    onClick={() => onToggleContentSectionEditor(item)}
                   >
-                    Assign Sections
+                    {activeSectionEditorItemId === item.id ? 'Close Placement' : 'Assign Sections'}
                   </button>
                   <button
                     type="button"
@@ -437,6 +444,38 @@ export default function EditorView(props) {
                   <span class="muted-chip">Sections: {item.appSections.join(', ')}</span>
                 ) : null}
               </div>
+
+              {activeSectionEditorItemId === item.id ? (
+                <div class="section-editor-panel">
+                  <div class="section-editor-panel-head">
+                    <div>
+                      <strong>Mobile placement</strong>
+                      <p>Select where this content should appear in the mobile app.</p>
+                    </div>
+                    <button type="button" class="ghost-btn compact" onClick={onCloseContentSectionEditor}>
+                      Cancel
+                    </button>
+                  </div>
+
+                  {onRenderSectionSelector(sectionEditorValue, onUpdateSectionEditorValue)}
+
+                  <div class="card-link-row section-selection-summary">
+                    <span class="muted-chip">
+                      {sectionEditorValue
+                        ? `Selected: ${sectionEditorValue}`
+                        : 'No section selected yet'}
+                    </span>
+                    <button
+                      type="button"
+                      class="primary-btn compact"
+                      disabled={sectionEditorSaving}
+                      onClick={() => void onSaveContentSections(item)}
+                    >
+                      {sectionEditorSaving ? 'Saving...' : 'Save Placement'}
+                    </button>
+                  </div>
+                </div>
+              ) : null}
 
               <div class="meta-grid">
                 <div>
