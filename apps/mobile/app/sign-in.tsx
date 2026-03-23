@@ -85,7 +85,7 @@ export default function SignInScreen() {
     <AuthScreenFrame
       backPath={APP_ROUTES.landing}
       salutation="Welcome back"
-      description="Continue your worship journey with your saved music, messages, and ministry updates in one place."
+      description="Access your account and continue where you left off."
       title="Sign In"
       subtitle="Use your account email and password to continue."
     >
