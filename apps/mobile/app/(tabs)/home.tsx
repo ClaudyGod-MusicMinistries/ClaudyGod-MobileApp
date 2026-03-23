@@ -1,83 +1,119 @@
-import React, { useMemo, useState } from 'react';
-import {
-  Alert,
-  Image,
-  RefreshControl,
-  ScrollView,
-  Share,
-  View,
-  useWindowDimensions,
-} from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import React, { useMemo } from 'react';
+import { Alert, RefreshControl, ScrollView, Share, View, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { TabScreenWrapper } from '../../components/layout/TabScreenWrapper';
 import { Screen } from '../../components/layout/Screen';
+import { BrandedHeaderCard } from '../../components/layout/BrandedHeaderCard';
+import { CinematicHeroCard } from '../../components/sections/CinematicHeroCard';
+import { PosterCard } from '../../components/ui/PosterCard';
+import { SectionHeader } from '../../components/ui/SectionHeader';
+import { SurfaceCard } from '../../components/ui/SurfaceCard';
+import { AppButton } from '../../components/ui/AppButton';
 import { CustomText } from '../../components/CustomText';
 import { FadeIn } from '../../components/ui/FadeIn';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { useAppTheme } from '../../util/colorScheme';
-import { buildPlayerRoute } from '../../util/playerRoute';
 import { useContentFeed } from '../../hooks/useContentFeed';
-import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import { useWordOfDay } from '../../hooks/useWordOfDay';
-import type { FeedBundle, FeedCardItem } from '../../services/contentService';
-import { subscribeToLiveAlerts, trackPlayEvent } from '../../services/supabaseAnalytics';
+import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import { APP_ROUTES } from '../../util/appRoutes';
+import { BRAND_HERO_ASSET } from '../../util/brandAssets';
+import { buildPlayerRoute } from '../../util/playerRoute';
 import { deriveLayoutSectionItems, getHomeLayoutSections } from '../../util/mobileLayout';
-import { BRAND_LOGO_ASSET } from '../../util/brandAssets';
+import type { FeedCardItem } from '../../services/contentService';
+import { subscribeToLiveAlerts, trackPlayEvent } from '../../services/supabaseAnalytics';
 
 const WORD_FOR_TODAY_FALLBACK = {
   title: 'Word for Today',
   passage: 'Psalm 119:105',
   verse: 'Your word is a lamp to my feet and a light to my path.',
-  reflection: 'Keep this verse close and return tomorrow for the next reading.',
+  reflection: 'Return throughout the day and keep the word close.',
 };
 
-const QUICK_DESTINATIONS: {
-  key: string;
-  label: string;
+const QUICK_LINKS = [
+  { key: 'music', icon: 'graphic-eq', label: 'Music', route: APP_ROUTES.tabs.player },
+  { key: 'videos', icon: 'smart-display', label: 'Videos', route: APP_ROUTES.tabs.videos },
+  { key: 'library', icon: 'library-music', label: 'Library', route: APP_ROUTES.tabs.library },
+] as const;
+
+function QuickLink({
+  icon,
+  label,
+  onPress,
+}: {
   icon: React.ComponentProps<typeof MaterialIcons>['name'];
-  route: string;
-}[] = [
-  { key: 'music', label: 'Music', icon: 'graphic-eq', route: APP_ROUTES.tabs.player },
-  { key: 'videos', label: 'Videos', icon: 'smart-display', route: APP_ROUTES.tabs.videos },
-  { key: 'live', label: 'Live', icon: 'podcasts', route: APP_ROUTES.tabs.videos },
-];
+  label: string;
+  onPress: () => void;
+}) {
+  return (
+    <TVTouchable
+      onPress={onPress}
+      style={{
+        flex: 1,
+        minWidth: 0,
+        borderRadius: 14,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.08)',
+        backgroundColor: 'rgba(17,22,27,0.88)',
+        paddingHorizontal: 14,
+        paddingVertical: 14,
+        gap: 10,
+      }}
+      showFocusBorder={false}
+    >
+      <View
+        style={{
+          width: 34,
+          height: 34,
+          borderRadius: 10,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: 'rgba(210,176,105,0.12)',
+          borderWidth: 1,
+          borderColor: 'rgba(210,176,105,0.18)',
+        }}
+      >
+        <MaterialIcons name={icon} size={18} color="#DFC07E" />
+      </View>
+      <CustomText variant="label" style={{ color: '#F4F0E7' }}>
+        {label}
+      </CustomText>
+    </TVTouchable>
+  );
+}
 
 export default function HomeScreen() {
   const router = useRouter();
   const theme = useAppTheme();
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
-  const railCardWidth = isTablet ? 212 : 162;
+  const posterSize = isTablet ? 'lg' : 'md';
 
   const { feed, loading, error, refresh } = useContentFeed();
   const { config: mobileConfig } = useMobileAppConfig();
   const { word } = useWordOfDay();
 
-  const featured = useMemo(() => feed.featured ?? getFirstAvailable(feed), [feed]);
-  const liveItems = useMemo(() => feed.live.slice(0, isTablet ? 4 : 3), [feed.live, isTablet]);
-  const listenNow = useMemo(
-    () => (feed.music.length ? feed.music : feed.recent).slice(0, isTablet ? 8 : 6),
-    [feed.music, feed.recent, isTablet],
+  const featured = useMemo(() => feed.featured ?? feed.recent[0] ?? feed.music[0] ?? feed.videos[0] ?? null, [feed]);
+  const continueListening = useMemo(
+    () => (feed.music.length ? feed.music : feed.recent).slice(0, 8),
+    [feed.music, feed.recent],
   );
   const watchNow = useMemo(
-    () => (feed.videos.length ? feed.videos : feed.playlists).slice(0, isTablet ? 8 : 6),
-    [feed.playlists, feed.videos, isTablet],
+    () => (feed.videos.length ? feed.videos : feed.live).slice(0, 8),
+    [feed.live, feed.videos],
   );
+  const liveNow = useMemo(() => feed.live.slice(0, 6), [feed.live]);
   const homeSections = useMemo(() => getHomeLayoutSections(mobileConfig), [mobileConfig]);
   const curatedRails = useMemo(
     () =>
       homeSections
-        .map((section) => ({
-          section,
-          items: deriveLayoutSectionItems(feed, section),
-        }))
+        .map((section) => ({ section, items: deriveLayoutSectionItems(feed, section) }))
         .filter((entry) => entry.items.length > 0)
         .slice(0, 2),
     [feed, homeSections],
   );
+
   const wordForToday = word
     ? {
         title: word.title || 'Word for Today',
@@ -87,7 +123,7 @@ export default function HomeScreen() {
       }
     : WORD_FOR_TODAY_FALLBACK;
 
-  const handleOpenItem = async (item: FeedCardItem, source: string) => {
+  const openItem = async (item: FeedCardItem, source: string) => {
     await trackPlayEvent({
       contentId: item.id,
       contentType: item.type,
@@ -97,13 +133,13 @@ export default function HomeScreen() {
     router.push(buildPlayerRoute(item));
   };
 
-  const handleShareWord = async () => {
+  const shareWord = async () => {
     await Share.share({
       message: `${wordForToday.passage}\n\n${wordForToday.verse}\n\n${wordForToday.reflection}`,
     });
   };
 
-  const handleSubscribeLive = async (item: FeedCardItem) => {
+  const notifyLive = async (item: FeedCardItem) => {
     await subscribeToLiveAlerts(item.notificationChannelId || item.id);
     Alert.alert('Live alerts enabled', 'You will be notified when ClaudyGod goes live.');
   };
@@ -111,7 +147,7 @@ export default function HomeScreen() {
   return (
     <TabScreenWrapper>
       <ScrollView
-        style={{ flex: 1, backgroundColor: theme.colors.background }}
+        style={{ flex: 1, backgroundColor: 'transparent' }}
         contentContainerStyle={{ paddingBottom: theme.layout.tabBarContentPadding }}
         showsVerticalScrollIndicator={false}
         bounces={false}
@@ -127,685 +163,204 @@ export default function HomeScreen() {
         }
       >
         <Screen>
-          <View style={{ paddingTop: theme.layout.sectionGap, gap: theme.layout.sectionGapLarge }}>
+          <View style={{ paddingTop: theme.layout.headerVerticalPadding, gap: theme.layout.sectionGapLarge }}>
             <FadeIn>
-              <HomeTopBar
-                onOpenSearch={() => router.push(APP_ROUTES.tabs.search)}
-                onOpenVideos={() => router.push(APP_ROUTES.tabs.videos)}
-                onOpenProfile={() => router.push(APP_ROUTES.profile)}
+              <BrandedHeaderCard
+                title="Home"
+                subtitle="New releases, live worship, and your next listen."
+                actions={[
+                  { icon: 'search', onPress: () => router.push(APP_ROUTES.tabs.search), accessibilityLabel: 'Search' },
+                  { icon: 'person-outline', onPress: () => router.push(APP_ROUTES.profile), accessibilityLabel: 'Profile' },
+                ]}
               />
             </FadeIn>
 
             <FadeIn delay={60}>
-              <FeaturedStage
-                item={featured}
-                onOpenPrimary={() =>
-                  featured
-                    ? handleOpenItem(featured, 'home_featured')
-                    : router.push(APP_ROUTES.tabs.videos)
-                }
+              <CinematicHeroCard
+                imageSource={!featured ? BRAND_HERO_ASSET : undefined}
+                imageUrl={featured?.imageUrl}
+                badge={featured?.isLive ? 'Live now' : featured?.type === 'audio' ? 'Featured listen' : 'Featured'}
+                eyebrow={featured?.subtitle ?? 'ClaudyGod'}
+                title={featured?.title ?? 'Stay close to worship, messages, and live ministry.'}
+                subtitle={featured?.duration ?? 'ClaudyGod'}
+                description={featured?.description ?? 'Start from one featured moment, then move through the rest of the app without losing the thread.'}
+                height={isTablet ? 420 : 340}
+                actions={[
+                  {
+                    label: featured?.type === 'video' || featured?.isLive ? 'Watch now' : 'Play now',
+                    onPress: () => (featured ? openItem(featured, 'home_featured') : router.push(APP_ROUTES.tabs.player)),
+                    icon: featured?.type === 'video' || featured?.isLive ? 'smart-display' : 'play-arrow',
+                  },
+                  {
+                    label: featured?.isLive ? 'Notify me' : 'Read more',
+                    onPress: () =>
+                      featured?.isLive
+                        ? notifyLive(featured)
+                        : featured
+                          ? openItem(featured, 'home_featured_details')
+                          : router.push(APP_ROUTES.tabs.library),
+                    variant: 'secondary',
+                    icon: featured?.isLive ? 'notifications-active' : 'article',
+                  },
+                ]}
               />
             </FadeIn>
 
-            <FadeIn delay={95}>
-              <QuickDestinationRow
-                onOpenRoute={(route) => router.push(route)}
-              />
+            <FadeIn delay={100}>
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                {QUICK_LINKS.map((link) => (
+                  <QuickLink
+                    key={link.key}
+                    icon={link.icon}
+                    label={link.label}
+                    onPress={() => router.push(link.route)}
+                  />
+                ))}
+              </View>
             </FadeIn>
 
-            {liveItems.length ? (
-              <FadeIn delay={130}>
-                <RailSection title="Live now" actionLabel="See all" onPressAction={() => router.push(APP_ROUTES.tabs.videos)}>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    bounces={false}
-                    overScrollMode="never"
-                    contentContainerStyle={{ paddingRight: 8 }}
-                  >
-                    {liveItems.map((item) => (
-                      <LiveCard
+            {continueListening.length ? (
+              <FadeIn delay={140}>
+                <View>
+                  <SectionHeader
+                    title="Continue listening"
+                    actionLabel="Music"
+                    onAction={() => router.push(APP_ROUTES.tabs.player)}
+                  />
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false} overScrollMode="never">
+                    {continueListening.map((item) => (
+                      <PosterCard
                         key={item.id}
-                        item={item}
-                        width={Math.max(railCardWidth + 20, 220)}
-                        onOpen={() => handleOpenItem(item, 'home_live')}
-                        onNotify={() => handleSubscribeLive(item)}
+                        imageUrl={item.imageUrl}
+                        title={item.title}
+                        subtitle={item.subtitle}
+                        size={posterSize}
+                        onPress={() => void openItem(item, 'home_continue')}
                       />
                     ))}
                   </ScrollView>
-                </RailSection>
+                </View>
               </FadeIn>
             ) : null}
 
-            <FadeIn delay={165}>
-              <RailSection title="Listen now" actionLabel="Music" onPressAction={() => router.push(APP_ROUTES.tabs.player)}>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  bounces={false}
-                  overScrollMode="never"
-                  contentContainerStyle={{ paddingRight: 8 }}
-                >
-                  {(listenNow.length ? listenNow : []).map((item) => (
-                    <MediaCard
-                      key={item.id}
-                      item={item}
-                      width={railCardWidth}
-                      onPress={() => handleOpenItem(item, 'home_listen_now')}
-                    />
-                  ))}
-                </ScrollView>
-              </RailSection>
-            </FadeIn>
-
-            <FadeIn delay={200}>
-              <RailSection title="Watch now" actionLabel="Videos" onPressAction={() => router.push(APP_ROUTES.tabs.videos)}>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  bounces={false}
-                  overScrollMode="never"
-                  contentContainerStyle={{ paddingRight: 8 }}
-                >
-                  {(watchNow.length ? watchNow : []).map((item) => (
-                    <MediaCard
-                      key={item.id}
-                      item={item}
-                      width={railCardWidth}
-                      onPress={() => handleOpenItem(item, 'home_watch_now')}
-                    />
-                  ))}
-                </ScrollView>
-              </RailSection>
-            </FadeIn>
-
-            {curatedRails.map(({ section, items }, index) => (
-              <FadeIn key={section.title} delay={235 + index * 35}>
-                <RailSection title={section.title} actionLabel="Open" onPressAction={() => router.push(APP_ROUTES.tabs.library)}>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    bounces={false}
-                    overScrollMode="never"
-                    contentContainerStyle={{ paddingRight: 8 }}
-                  >
-                    {items.map((item) => (
-                      <MediaCard
-                        key={`${section.title}-${item.id}`}
-                        item={item}
-                        width={railCardWidth}
-                        onPress={() => handleOpenItem(item, 'home_curated')}
+            {liveNow.length ? (
+              <FadeIn delay={180}>
+                <View>
+                  <SectionHeader
+                    title="Live now"
+                    actionLabel="View all"
+                    onAction={() => router.push(APP_ROUTES.tabs.videos)}
+                  />
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false} overScrollMode="never">
+                    {liveNow.map((item) => (
+                      <PosterCard
+                        key={item.id}
+                        imageUrl={item.imageUrl}
+                        title={item.title}
+                        subtitle={item.liveViewerCount ? `${item.liveViewerCount} watching` : item.subtitle}
+                        size={posterSize}
+                        onPress={() => void openItem(item, 'home_live')}
                       />
                     ))}
                   </ScrollView>
-                </RailSection>
+                </View>
+              </FadeIn>
+            ) : null}
+
+            {watchNow.length ? (
+              <FadeIn delay={220}>
+                <View>
+                  <SectionHeader
+                    title="Watch next"
+                    actionLabel="Videos"
+                    onAction={() => router.push(APP_ROUTES.tabs.videos)}
+                  />
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false} overScrollMode="never">
+                    {watchNow.map((item) => (
+                      <PosterCard
+                        key={item.id}
+                        imageUrl={item.imageUrl}
+                        title={item.title}
+                        subtitle={item.subtitle}
+                        size={posterSize}
+                        onPress={() => void openItem(item, 'home_watch')}
+                      />
+                    ))}
+                  </ScrollView>
+                </View>
+              </FadeIn>
+            ) : null}
+
+            {curatedRails.map(({ section, items }, index) => (
+              <FadeIn key={section.id || section.title} delay={260 + index * 35}>
+                <View>
+                  <SectionHeader
+                    title={section.title}
+                    actionLabel="Library"
+                    onAction={() => router.push(APP_ROUTES.tabs.library)}
+                  />
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false} overScrollMode="never">
+                    {items.map((item) => (
+                      <PosterCard
+                        key={`${section.title}-${item.id}`}
+                        imageUrl={item.imageUrl}
+                        title={item.title}
+                        subtitle={item.subtitle}
+                        size={posterSize}
+                        onPress={() => void openItem(item, 'home_curated')}
+                      />
+                    ))}
+                  </ScrollView>
+                </View>
               </FadeIn>
             ))}
 
-            <FadeIn delay={300}>
-              <WordCard
-                title={wordForToday.title}
-                passage={wordForToday.passage}
-                verse={wordForToday.verse}
-                reflection={wordForToday.reflection}
-                onShare={handleShareWord}
-              />
+            <FadeIn delay={340}>
+              <SurfaceCard tone="subtle" style={{ padding: theme.spacing.lg }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
+                  <View style={{ flex: 1 }}>
+                    <CustomText
+                      variant="caption"
+                      style={{
+                        color: theme.colors.text.secondary,
+                        textTransform: 'uppercase',
+                        letterSpacing: 0.9,
+                      }}
+                    >
+                      {wordForToday.title}
+                    </CustomText>
+                    <CustomText variant="heading" style={{ color: theme.colors.text.primary, marginTop: 6 }}>
+                      {wordForToday.passage}
+                    </CustomText>
+                    <CustomText variant="body" style={{ color: theme.colors.text.secondary, marginTop: 8 }}>
+                      {wordForToday.verse}
+                    </CustomText>
+                    <CustomText variant="body" style={{ color: theme.colors.text.secondary, marginTop: 8 }}>
+                      {wordForToday.reflection}
+                    </CustomText>
+                  </View>
+
+                  <View style={{ justifyContent: 'flex-start' }}>
+                    <AppButton
+                      title="Share"
+                      variant="secondary"
+                      size="sm"
+                      onPress={() => void shareWord()}
+                      leftIcon={<MaterialIcons name="ios-share" size={16} color={theme.colors.text.primary} />}
+                    />
+                  </View>
+                </View>
+              </SurfaceCard>
             </FadeIn>
 
             {error ? (
-              <View style={{ marginTop: 8 }}>
-                <CustomText variant="caption" style={{ color: theme.colors.danger }}>
-                  Feed error: {error}
-                </CustomText>
-              </View>
+              <CustomText variant="caption" style={{ color: theme.colors.danger }}>
+                Feed error: {error}
+              </CustomText>
             ) : null}
           </View>
         </Screen>
       </ScrollView>
     </TabScreenWrapper>
   );
-}
-
-function HomeTopBar({
-  onOpenSearch,
-  onOpenVideos,
-  onOpenProfile,
-}: {
-  onOpenSearch: () => void;
-  onOpenVideos: () => void;
-  onOpenProfile: () => void;
-}) {
-  return (
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: 12,
-      }}
-    >
-      <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-        <Image source={BRAND_LOGO_ASSET} style={{ width: 42, height: 42, borderRadius: 21 }} />
-        <View style={{ marginLeft: 12 }}>
-          <CustomText
-            variant="caption"
-            style={{
-              color: 'rgba(217,208,196,0.66)',
-              textTransform: 'uppercase',
-              letterSpacing: 0.74,
-            }}
-          >
-            Browse
-          </CustomText>
-          <CustomText variant="display" style={{ color: '#FFF9F0', marginTop: 2 }}>
-            ClaudyGod
-          </CustomText>
-        </View>
-      </View>
-
-      <View
-        style={{
-          flexDirection: 'row',
-          gap: 0,
-          borderRadius: 12,
-          borderWidth: 1,
-          borderColor: 'rgba(255,255,255,0.08)',
-          backgroundColor: 'rgba(12,13,16,0.72)',
-          overflow: 'hidden',
-        }}
-      >
-        <IconActionButton icon="search" onPress={onOpenSearch} />
-        <IconActionButton icon="smart-display" onPress={onOpenVideos} />
-        <IconActionButton icon="person-outline" onPress={onOpenProfile} />
-      </View>
-    </View>
-  );
-}
-
-function IconActionButton({
-  icon,
-  onPress,
-}: {
-  icon: React.ComponentProps<typeof MaterialIcons>['name'];
-  onPress: () => void;
-}) {
-  return (
-    <TVTouchable
-      onPress={onPress}
-      style={{
-        width: 42,
-        height: 42,
-        borderRadius: 10,
-        borderRightWidth: icon === 'person-outline' ? 0 : 1,
-        borderRightColor: 'rgba(255,255,255,0.08)',
-        backgroundColor: 'rgba(255,255,255,0.03)',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-      showFocusBorder={false}
-    >
-      <MaterialIcons name={icon} size={20} color="#FFF9F0" />
-    </TVTouchable>
-  );
-}
-
-function FeaturedStage({
-  item,
-  onOpenPrimary,
-}: {
-  item: FeedCardItem | null;
-  onOpenPrimary: () => void;
-}) {
-  const [expanded, setExpanded] = useState(false);
-  const title = item?.title ?? 'New worship drops will appear here.';
-  const subtitle = item?.description ?? 'Music, messages, and live sessions update here as soon as they are published.';
-
-  return (
-    <TVTouchable
-      onPress={onOpenPrimary}
-      style={{
-        borderRadius: 12,
-        overflow: 'hidden',
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.08)',
-        backgroundColor: 'rgba(12,13,16,0.84)',
-      }}
-      showFocusBorder={false}
-    >
-      <View style={{ minHeight: 320 }}>
-        {item?.imageUrl ? (
-          <Image
-            source={{ uri: item.imageUrl }}
-            resizeMode="cover"
-            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-          />
-        ) : null}
-
-        <LinearGradient
-          colors={['rgba(6,7,9,0.08)', 'rgba(6,7,9,0.42)', 'rgba(6,7,9,0.96)']}
-          start={{ x: 0.5, y: 0.1 }}
-          end={{ x: 0.5, y: 1 }}
-          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-        />
-
-        <View style={{ flex: 1, justifyContent: 'flex-end', padding: 16 }}>
-          <View
-            style={{
-              borderRadius: 12,
-              borderWidth: 1,
-              borderColor: 'rgba(255,255,255,0.08)',
-              backgroundColor: 'rgba(12,13,16,0.86)',
-              padding: 14,
-            }}
-          >
-            <View
-              style={{
-                alignSelf: 'flex-start',
-                borderRadius: 8,
-                borderWidth: 1,
-                borderColor: item?.isLive ? 'rgba(239,68,68,0.24)' : 'rgba(255,255,255,0.10)',
-                backgroundColor: item?.isLive ? 'rgba(153,27,27,0.38)' : 'rgba(255,255,255,0.05)',
-                paddingHorizontal: 8,
-                paddingVertical: 5,
-              }}
-            >
-              <CustomText
-                variant="caption"
-                style={{
-                  color: item?.isLive ? '#FFE2E2' : 'rgba(240,228,208,0.82)',
-                  textTransform: 'uppercase',
-                  letterSpacing: 0.72,
-                }}
-              >
-                {item?.isLive ? 'Live now' : item ? typeLabel(item.type) : 'Featured'}
-              </CustomText>
-            </View>
-
-            <CustomText
-              variant="hero"
-              style={{ color: '#FFF9F0', marginTop: 10, maxWidth: 320, fontSize: 20, lineHeight: 25 }}
-              numberOfLines={2}
-            >
-              {title}
-            </CustomText>
-
-            <CustomText
-              variant="body"
-              style={{ color: 'rgba(235,227,216,0.72)', marginTop: 6, maxWidth: 300, fontSize: 12.5, lineHeight: 17 }}
-              numberOfLines={expanded ? 4 : 2}
-            >
-              {subtitle}
-            </CustomText>
-
-            <View style={{ flexDirection: 'row', gap: 8, marginTop: 14 }}>
-              <StageButton icon="play-arrow" label="Play" onPress={onOpenPrimary} filled />
-              <StageButton
-                icon="article"
-                label={expanded ? 'Less' : 'Read more'}
-                onPress={() => setExpanded((current) => !current)}
-              />
-            </View>
-          </View>
-        </View>
-      </View>
-    </TVTouchable>
-  );
-}
-
-function StageButton({
-  icon,
-  label,
-  onPress,
-  filled = false,
-}: {
-  icon: React.ComponentProps<typeof MaterialIcons>['name'];
-  label: string;
-  onPress: () => void;
-  filled?: boolean;
-}) {
-  return (
-    <TVTouchable
-      onPress={onPress}
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-        borderRadius: 10,
-        borderWidth: 1,
-        borderColor: filled ? '#E1B662' : 'rgba(255,255,255,0.12)',
-        backgroundColor: filled ? '#E1B662' : 'rgba(255,255,255,0.04)',
-        paddingHorizontal: 12,
-        paddingVertical: 9,
-      }}
-      showFocusBorder={false}
-    >
-      <MaterialIcons name={icon} size={18} color={filled ? '#1C160C' : '#FFF9F0'} />
-      <CustomText variant="label" style={{ color: filled ? '#1C160C' : '#FFF9F0' }}>
-        {label}
-      </CustomText>
-    </TVTouchable>
-  );
-}
-
-function QuickDestinationRow({
-  onOpenRoute,
-}: {
-  onOpenRoute: (_route: string) => void;
-}) {
-  return (
-    <View
-      style={{
-        flexDirection: 'row',
-        gap: 0,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.08)',
-        backgroundColor: 'rgba(12,13,16,0.72)',
-        overflow: 'hidden',
-      }}
-    >
-      {QUICK_DESTINATIONS.map((item) => (
-        <TVTouchable
-          key={item.key}
-          onPress={() => onOpenRoute(item.route)}
-          style={{
-            flex: 1,
-            borderRightWidth: item.key === QUICK_DESTINATIONS[QUICK_DESTINATIONS.length - 1]?.key ? 0 : 1,
-            borderRightColor: 'rgba(255,255,255,0.08)',
-            backgroundColor: 'transparent',
-            paddingHorizontal: 12,
-            paddingVertical: 12,
-            alignItems: 'center',
-          }}
-          showFocusBorder={false}
-        >
-          <View
-            style={{
-              width: 30,
-              height: 30,
-              borderRadius: 8,
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: 'rgba(187,144,63,0.14)',
-            }}
-          >
-            <MaterialIcons name={item.icon} size={15} color="#F0C87A" />
-          </View>
-          <CustomText variant="label" style={{ color: '#FFF9F0', marginTop: 8, fontSize: 11, lineHeight: 14 }}>
-            {item.label}
-          </CustomText>
-        </TVTouchable>
-      ))}
-    </View>
-  );
-}
-
-function RailSection({
-  title,
-  actionLabel,
-  onPressAction,
-  children,
-}: {
-  title: string;
-  actionLabel: string;
-  onPressAction: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <View>
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: 12,
-        }}
-      >
-        <CustomText variant="heading" style={{ color: '#FFF9F0' }}>
-          {title}
-        </CustomText>
-        <TVTouchable onPress={onPressAction} showFocusBorder={false}>
-          <CustomText variant="caption" style={{ color: 'rgba(240,228,208,0.72)' }}>
-            {actionLabel}
-          </CustomText>
-        </TVTouchable>
-      </View>
-      {children}
-    </View>
-  );
-}
-
-function MediaCard({
-  item,
-  width,
-  onPress,
-}: {
-  item: FeedCardItem;
-  width: number;
-  onPress: () => void;
-}) {
-  return (
-    <TVTouchable
-      onPress={onPress}
-      style={{ width, marginRight: 12 }}
-      showFocusBorder={false}
-    >
-      <View
-        style={{
-          borderRadius: 12,
-          overflow: 'hidden',
-          borderWidth: 1,
-          borderColor: 'rgba(255,255,255,0.08)',
-          backgroundColor: 'rgba(12,13,16,0.84)',
-        }}
-      >
-        <Image source={{ uri: item.imageUrl }} style={{ width: '100%', height: 152 }} resizeMode="cover" />
-        <LinearGradient
-          colors={['rgba(6,7,9,0)', 'rgba(6,7,9,0.82)']}
-          style={{ position: 'absolute', left: 0, right: 0, bottom: 58, height: 58 }}
-        />
-        <View style={{ padding: 12 }}>
-          <CustomText variant="label" style={{ color: '#FFF9F0' }} numberOfLines={1}>
-            {item.title}
-          </CustomText>
-          <CustomText variant="caption" style={{ color: 'rgba(229,220,210,0.66)', marginTop: 3 }} numberOfLines={1}>
-            {item.subtitle || typeLabel(item.type)}
-          </CustomText>
-        </View>
-      </View>
-    </TVTouchable>
-  );
-}
-
-function LiveCard({
-  item,
-  width,
-  onOpen,
-  onNotify,
-}: {
-  item: FeedCardItem;
-  width: number;
-  onOpen: () => void;
-  onNotify: () => void;
-}) {
-  return (
-    <View
-      style={{
-        width,
-        marginRight: 12,
-        borderRadius: 12,
-        overflow: 'hidden',
-        borderWidth: 1,
-        borderColor: 'rgba(239,68,68,0.18)',
-        backgroundColor: 'rgba(26,10,10,0.72)',
-      }}
-    >
-      <TVTouchable onPress={onOpen} showFocusBorder={false}>
-        <View style={{ height: 132 }}>
-          <Image source={{ uri: item.imageUrl }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-          <LinearGradient
-            colors={['rgba(0,0,0,0)', 'rgba(6,7,9,0.90)']}
-            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-          />
-          <View
-            style={{
-              position: 'absolute',
-              top: 10,
-              left: 10,
-              borderRadius: 8,
-              backgroundColor: 'rgba(220,38,38,0.88)',
-              paddingHorizontal: 8,
-              paddingVertical: 5,
-            }}
-          >
-            <CustomText variant="caption" style={{ color: '#FFFFFF' }}>
-              LIVE
-            </CustomText>
-          </View>
-        </View>
-      </TVTouchable>
-
-      <View style={{ padding: 12 }}>
-        <CustomText variant="label" style={{ color: '#FFF9F0' }} numberOfLines={1}>
-          {item.title}
-        </CustomText>
-        <CustomText variant="caption" style={{ color: 'rgba(255,220,220,0.72)', marginTop: 4 }} numberOfLines={2}>
-          {item.description}
-        </CustomText>
-
-        <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
-          <PillAction icon="play-arrow" label="Watch" onPress={onOpen} />
-          <PillAction icon="notifications-active" label="Notify" onPress={onNotify} />
-        </View>
-      </View>
-    </View>
-  );
-}
-
-function PillAction({
-  icon,
-  label,
-  onPress,
-}: {
-  icon: React.ComponentProps<typeof MaterialIcons>['name'];
-  label: string;
-  onPress: () => void;
-}) {
-  return (
-    <TVTouchable
-      onPress={onPress}
-      style={{
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 5,
-        borderRadius: 10,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.10)',
-        backgroundColor: 'rgba(255,255,255,0.04)',
-        paddingHorizontal: 10,
-        paddingVertical: 9,
-      }}
-      showFocusBorder={false}
-    >
-      <MaterialIcons name={icon} size={16} color="#FFF9F0" />
-      <CustomText variant="caption" style={{ color: '#FFF9F0' }}>
-        {label}
-      </CustomText>
-    </TVTouchable>
-  );
-}
-
-function WordCard({
-  title,
-  passage,
-  verse,
-  reflection,
-  onShare,
-}: {
-  title: string;
-  passage: string;
-  verse: string;
-  reflection: string;
-  onShare: () => void;
-}) {
-  return (
-    <View
-      style={{
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.08)',
-        backgroundColor: 'rgba(12,13,16,0.84)',
-        padding: 18,
-      }}
-    >
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 12,
-        }}
-      >
-        <View>
-          <CustomText
-            variant="caption"
-            style={{
-              color: 'rgba(217,208,196,0.66)',
-              textTransform: 'uppercase',
-              letterSpacing: 0.72,
-            }}
-          >
-            {title}
-          </CustomText>
-          <CustomText variant="label" style={{ color: '#FFF9F0', marginTop: 4 }}>
-            {passage}
-          </CustomText>
-        </View>
-
-        <TVTouchable
-          onPress={onShare}
-          style={{
-            width: 40,
-            height: 40,
-            borderRadius: 10,
-            borderWidth: 1,
-            borderColor: 'rgba(255,255,255,0.08)',
-            backgroundColor: 'rgba(255,255,255,0.04)',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-          showFocusBorder={false}
-        >
-          <MaterialIcons name="ios-share" size={18} color="#FFF9F0" />
-        </TVTouchable>
-      </View>
-
-      <CustomText variant="subtitle" style={{ color: '#FFF9F0', marginTop: 14 }}>
-        {verse}
-      </CustomText>
-      <CustomText variant="body" style={{ color: 'rgba(229,220,210,0.72)', marginTop: 8 }}>
-        {reflection}
-      </CustomText>
-    </View>
-  );
-}
-
-function getFirstAvailable(feed: FeedBundle): FeedCardItem | null {
-  return (
-    feed.live[0] ??
-    feed.videos[0] ??
-    feed.music[0] ??
-    feed.recent[0] ??
-    feed.playlists[0] ??
-    null
-  );
-}
-
-function typeLabel(type: FeedCardItem['type']) {
-  if (type === 'audio') return 'Music';
-  if (type === 'video') return 'Video';
-  if (type === 'live') return 'Live';
-  return 'Content';
 }

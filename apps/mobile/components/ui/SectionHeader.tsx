@@ -34,17 +34,18 @@ export function SectionHeader({ title, actionLabel, onAction }: SectionHeaderPro
             flexDirection: 'row',
             alignItems: 'center',
             gap: 6,
-            paddingHorizontal: 12,
-            paddingVertical: 8,
-            borderRadius: theme.radius.pill,
-            backgroundColor: `${theme.colors.primary}18`,
+            paddingHorizontal: 0,
+            paddingVertical: 0,
           }}
           showFocusBorder={false}
         >
-          <CustomText variant="label" style={{ color: theme.colors.primary }}>
+          <CustomText
+            variant="label"
+            style={{ color: theme.colors.text.secondary, textTransform: 'uppercase', letterSpacing: 0.18 }}
+          >
             {actionLabel}
           </CustomText>
-          <MaterialIcons name="chevron-right" size={18} color={theme.colors.primary} />
+          <MaterialIcons name="chevron-right" size={16} color={theme.colors.text.secondary} />
         </TVTouchable>
       ) : null}
     </View>
