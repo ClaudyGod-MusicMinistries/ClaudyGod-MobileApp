@@ -13,14 +13,14 @@ import { useAuth } from '../context/AuthContext';
 import { APP_ROUTES } from '../util/appRoutes';
 import { BRAND_HERO_ASSET, BRAND_LOGO_ASSET } from '../util/brandAssets';
 
-type Shortcut = {
+type LandingDestination = {
   key: string;
   icon: React.ComponentProps<typeof MaterialIcons>['name'];
   label: string;
   route: string;
 };
 
-function ShortcutTile({
+function LandingChip({
   icon,
   label,
   onPress,
@@ -34,37 +34,32 @@ function ShortcutTile({
       onPress={onPress}
       style={{
         flex: 1,
-        minHeight: 94,
-        borderRadius: 22,
+        borderRadius: 18,
         borderWidth: 1,
-        borderColor: 'rgba(198,216,255,0.10)',
-        backgroundColor: 'rgba(10,14,24,0.80)',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingHorizontal: 10,
+        borderColor: 'rgba(255,255,255,0.08)',
+        backgroundColor: 'rgba(255,255,255,0.03)',
+        paddingHorizontal: 14,
         paddingVertical: 14,
+        gap: 10,
       }}
       showFocusBorder={false}
     >
       <View
         style={{
-          width: 44,
-          height: 44,
+          width: 36,
+          height: 36,
           borderRadius: 14,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: 'rgba(98,210,255,0.12)',
+          backgroundColor: 'rgba(187,144,63,0.14)',
           borderWidth: 1,
-          borderColor: 'rgba(167,221,255,0.14)',
+          borderColor: 'rgba(187,144,63,0.20)',
         }}
       >
-        <MaterialIcons name={icon} size={22} color="#DCF0FF" />
+        <MaterialIcons name={icon} size={18} color="#F0C87A" />
       </View>
 
-      <CustomText
-        variant="label"
-        style={{ color: '#F7FAFF', marginTop: 10, fontSize: 13.2, lineHeight: 17 }}
-      >
+      <CustomText variant="label" style={{ color: '#FFF9F0' }}>
         {label}
       </CustomText>
     </TVTouchable>
@@ -76,61 +71,66 @@ export default function Landing() {
   const { isAuthenticated } = useAuth();
   const { width } = useWindowDimensions();
 
-  const isTablet = width >= 820;
-  const compact = width < 390;
+  const isTablet = width >= 860;
+  const isDesktop = width >= 1120;
 
-  const shortcuts: Shortcut[] = [
+  const destinations: LandingDestination[] = [
     { key: 'music', icon: 'graphic-eq', label: 'Music', route: APP_ROUTES.tabs.player },
     { key: 'videos', icon: 'smart-display', label: 'Videos', route: APP_ROUTES.tabs.videos },
     { key: 'library', icon: 'library-music', label: 'Library', route: APP_ROUTES.tabs.library },
   ];
 
-  const openProtectedRoute = (route: string) => {
+  const openDestination = (route: string) => {
     router.push(isAuthenticated ? route : APP_ROUTES.auth.signIn);
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#050813' }}>
-      <StatusBar translucent={false} barStyle="light-content" backgroundColor="#050813" />
+    <View style={{ flex: 1, backgroundColor: '#060709' }}>
+      <StatusBar translucent={false} barStyle="light-content" backgroundColor="#060709" />
 
       <LinearGradient
-        colors={['#0C1630', '#0A1020', '#050813']}
+        colors={['#111317', '#090A0D', '#060709']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
       />
-
-      <View
+      <LinearGradient
+        colors={['rgba(188,145,62,0.18)', 'rgba(188,145,62,0)']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
         style={{
           position: 'absolute',
+          left: -100,
           top: -120,
-          left: -90,
-          width: 270,
-          height: 270,
-          borderRadius: 270,
-          backgroundColor: 'rgba(67,183,255,0.12)',
+          width: 320,
+          height: 320,
+          borderRadius: 320,
         }}
       />
-      <View
+      <LinearGradient
+        colors={['rgba(80,104,128,0.16)', 'rgba(80,104,128,0)']}
+        start={{ x: 1, y: 0 }}
+        end={{ x: 0, y: 1 }}
         style={{
           position: 'absolute',
-          right: -110,
-          top: 200,
-          width: 280,
-          height: 280,
-          borderRadius: 280,
-          backgroundColor: 'rgba(129,96,255,0.14)',
+          right: -120,
+          bottom: -110,
+          width: 340,
+          height: 340,
+          borderRadius: 340,
         }}
       />
 
       <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
         <ScrollView
           style={{ flex: 1 }}
-          contentContainerStyle={{ paddingBottom: 28 }}
+          contentContainerStyle={{ paddingBottom: 26 }}
           showsVerticalScrollIndicator={false}
+          bounces={false}
+          overScrollMode="never"
         >
           <Screen style={{ flex: 1 }} contentStyle={{ flex: 1 }}>
-            <View style={{ paddingTop: compact ? 10 : 14, gap: 18 }}>
+            <View style={{ paddingTop: 12, gap: 18 }}>
               <FadeIn>
                 <View
                   style={{
@@ -141,23 +141,20 @@ export default function Landing() {
                   }}
                 >
                   <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                    <Image
-                      source={BRAND_LOGO_ASSET}
-                      style={{ width: 42, height: 42, borderRadius: 21 }}
-                    />
-                    <View style={{ marginLeft: 10, flex: 1 }}>
+                    <Image source={BRAND_LOGO_ASSET} style={{ width: 40, height: 40, borderRadius: 20 }} />
+                    <View style={{ marginLeft: 10 }}>
                       <CustomText
                         variant="caption"
                         style={{
-                          color: 'rgba(194,210,240,0.76)',
+                          color: 'rgba(224,214,197,0.72)',
                           textTransform: 'uppercase',
-                          letterSpacing: 0.58,
+                          letterSpacing: 0.72,
                         }}
                       >
                         ClaudyGod
                       </CustomText>
-                      <CustomText variant="label" style={{ color: '#F7FAFF', marginTop: 2 }}>
-                        Music & Ministries
+                      <CustomText variant="label" style={{ color: '#FFF9F0', marginTop: 2 }}>
+                        Ministries
                       </CustomText>
                     </View>
                   </View>
@@ -167,14 +164,14 @@ export default function Landing() {
                     style={{
                       borderRadius: 999,
                       borderWidth: 1,
-                      borderColor: 'rgba(198,216,255,0.18)',
-                      backgroundColor: 'rgba(255,255,255,0.05)',
+                      borderColor: 'rgba(255,255,255,0.10)',
+                      backgroundColor: 'rgba(255,255,255,0.04)',
                       paddingHorizontal: 14,
                       paddingVertical: 9,
                     }}
                     showFocusBorder={false}
                   >
-                    <CustomText variant="label" style={{ color: '#E7F0FF' }}>
+                    <CustomText variant="label" style={{ color: '#FFF4DE' }}>
                       Sign In
                     </CustomText>
                   </TVTouchable>
@@ -184,14 +181,14 @@ export default function Landing() {
               <FadeIn delay={70}>
                 <View
                   style={{
-                    borderRadius: 28,
+                    borderRadius: 30,
                     borderWidth: 1,
-                    borderColor: 'rgba(198,216,255,0.12)',
-                    backgroundColor: 'rgba(10,14,24,0.78)',
+                    borderColor: 'rgba(255,255,255,0.08)',
+                    backgroundColor: 'rgba(12,13,16,0.82)',
                     overflow: 'hidden',
                   }}
                 >
-                  <View style={{ minHeight: isTablet ? 470 : 360 }}>
+                  <View style={{ minHeight: isTablet ? 500 : 410 }}>
                     <Image
                       source={BRAND_HERO_ASSET}
                       resizeMode="cover"
@@ -199,57 +196,66 @@ export default function Landing() {
                     />
 
                     <LinearGradient
-                      colors={['rgba(5,8,19,0.10)', 'rgba(5,8,19,0.58)', 'rgba(5,8,19,0.94)']}
+                      colors={['rgba(6,7,9,0.16)', 'rgba(6,7,9,0.60)', 'rgba(6,7,9,0.96)']}
                       start={{ x: 0.45, y: 0 }}
                       end={{ x: 0.6, y: 1 }}
                       style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
                     />
 
-                    <View style={{ position: 'absolute', left: 18, right: 18, bottom: 18 }}>
+                    <View
+                      style={{
+                        position: 'absolute',
+                        left: 18,
+                        right: 18,
+                        bottom: 18,
+                        maxWidth: isDesktop ? 560 : 420,
+                      }}
+                    >
                       <View
                         style={{
                           alignSelf: 'flex-start',
                           borderRadius: 999,
                           borderWidth: 1,
-                          borderColor: 'rgba(214,228,255,0.14)',
-                          backgroundColor: 'rgba(255,255,255,0.06)',
+                          borderColor: 'rgba(255,255,255,0.10)',
+                          backgroundColor: 'rgba(255,255,255,0.05)',
                           paddingHorizontal: 10,
                           paddingVertical: 6,
                         }}
                       >
                         <CustomText
                           variant="caption"
-                          style={{ color: 'rgba(232,238,249,0.86)', fontSize: 10.4, lineHeight: 12 }}
+                          style={{
+                            color: 'rgba(240,228,208,0.82)',
+                            textTransform: 'uppercase',
+                            letterSpacing: 0.76,
+                          }}
                         >
-                          ClaudyGod
+                          ClaudyGod app
                         </CustomText>
                       </View>
 
                       <CustomText
                         variant="hero"
                         style={{
-                          color: '#F9FBFF',
+                          color: '#FFF9F0',
                           marginTop: 14,
-                          fontSize: isTablet ? 36 : compact ? 25 : 28,
-                          lineHeight: isTablet ? 42 : compact ? 30 : 33,
-                          fontFamily: 'ClashDisplay_700Bold',
+                          fontSize: isTablet ? 42 : 31,
+                          lineHeight: isTablet ? 48 : 36,
                           maxWidth: 420,
                         }}
                       >
-                        Hear it. Watch it.
+                        Worship, messages, and live moments in one place.
                       </CustomText>
 
                       <CustomText
                         variant="body"
                         style={{
-                          color: 'rgba(220,229,243,0.84)',
+                          color: 'rgba(236,228,218,0.74)',
                           marginTop: 10,
-                          fontSize: isTablet ? 14 : 13,
-                          lineHeight: isTablet ? 20 : 19,
                           maxWidth: 320,
                         }}
                       >
-                        Music, video, and your library in one place.
+                        Simple to enter. Easy to keep listening.
                       </CustomText>
 
                       <View
@@ -262,31 +268,29 @@ export default function Landing() {
                         <AppButton
                           title="Create Account"
                           size="lg"
-                          fullWidth={!isTablet}
                           onPress={() => router.push(APP_ROUTES.auth.signUp)}
-                          rightIcon={<MaterialIcons name="person-add" size={18} color="#050813" />}
-                          style={isTablet ? { flex: 1 } : undefined}
+                          style={{
+                            borderRadius: 18,
+                            backgroundColor: '#E1B662',
+                            minWidth: isTablet ? 180 : undefined,
+                          }}
+                          textColor="#1C160C"
+                          textStyle={{ fontSize: 14, lineHeight: 18 }}
                         />
+
                         <AppButton
                           title="Sign In"
-                          variant="outline"
                           size="lg"
-                          fullWidth={!isTablet}
+                          variant="outline"
                           onPress={() => router.push(APP_ROUTES.auth.signIn)}
-                          leftIcon={<MaterialIcons name="login" size={18} color="#E8F1FF" />}
-                          textColor="#E8F1FF"
-                          style={
-                            isTablet
-                              ? {
-                                  flex: 1,
-                                  borderColor: 'rgba(198,216,255,0.22)',
-                                  backgroundColor: 'rgba(255,255,255,0.03)',
-                                }
-                              : {
-                                  borderColor: 'rgba(198,216,255,0.22)',
-                                  backgroundColor: 'rgba(255,255,255,0.03)',
-                                }
-                          }
+                          style={{
+                            borderRadius: 18,
+                            borderColor: 'rgba(255,255,255,0.14)',
+                            backgroundColor: 'rgba(255,255,255,0.04)',
+                            minWidth: isTablet ? 150 : undefined,
+                          }}
+                          textColor="#FFF9F0"
+                          textStyle={{ fontSize: 14, lineHeight: 18 }}
                         />
                       </View>
                     </View>
@@ -294,70 +298,47 @@ export default function Landing() {
                 </View>
               </FadeIn>
 
-              <FadeIn delay={130}>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                  }}
-                >
-                  <CustomText
-                    variant="label"
-                    style={{
-                      color: 'rgba(214,225,244,0.78)',
-                      textTransform: 'uppercase',
-                      letterSpacing: 0.6,
-                    }}
-                  >
-                    Browse
-                  </CustomText>
-                </View>
-              </FadeIn>
-
-              <FadeIn delay={170}>
-                <View style={{ flexDirection: 'row', gap: 10 }}>
-                  {shortcuts.map((item) => (
-                    <ShortcutTile
+              <FadeIn delay={120}>
+                <View style={{ flexDirection: 'row', gap: 12 }}>
+                  {destinations.map((item) => (
+                    <LandingChip
                       key={item.key}
                       icon={item.icon}
                       label={item.label}
-                      onPress={() => openProtectedRoute(item.route)}
+                      onPress={() => openDestination(item.route)}
                     />
                   ))}
                 </View>
               </FadeIn>
 
-              <FadeIn delay={220}>
+              <FadeIn delay={160}>
                 <View
                   style={{
-                    borderTopWidth: 1,
-                    borderTopColor: 'rgba(198,216,255,0.10)',
-                    paddingTop: 18,
-                    paddingBottom: 8,
-                    alignItems: 'center',
+                    flexDirection: isTablet ? 'row' : 'column',
+                    alignItems: isTablet ? 'center' : 'flex-start',
+                    justifyContent: 'space-between',
                     gap: 10,
+                    paddingHorizontal: 2,
                   }}
                 >
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Image
-                      source={BRAND_LOGO_ASSET}
-                      style={{ width: 30, height: 30, borderRadius: 15 }}
-                    />
-                    <CustomText variant="label" style={{ color: '#F7FAFF', marginLeft: 10 }}>
-                      ClaudyGod
-                    </CustomText>
-                  </View>
-
+                  <CustomText variant="caption" style={{ color: 'rgba(224,214,197,0.56)' }}>
+                    ClaudyGod Ministries
+                  </CustomText>
                   <View style={{ flexDirection: 'row', gap: 14 }}>
-                    <TVTouchable onPress={() => router.push(APP_ROUTES.auth.signUp)} showFocusBorder={false}>
-                      <CustomText variant="label" style={{ color: '#D8EAFF' }}>
+                    <TVTouchable
+                      onPress={() => router.push(APP_ROUTES.auth.signUp)}
+                      showFocusBorder={false}
+                    >
+                      <CustomText variant="caption" style={{ color: 'rgba(255,249,240,0.82)' }}>
                         Create Account
                       </CustomText>
                     </TVTouchable>
-                    <TVTouchable onPress={() => router.push(APP_ROUTES.auth.signIn)} showFocusBorder={false}>
-                      <CustomText variant="label" style={{ color: '#D8EAFF' }}>
-                        Sign In
+                    <TVTouchable
+                      onPress={() => openDestination(APP_ROUTES.tabs.player)}
+                      showFocusBorder={false}
+                    >
+                      <CustomText variant="caption" style={{ color: 'rgba(255,249,240,0.82)' }}>
+                        Listen
                       </CustomText>
                     </TVTouchable>
                   </View>
