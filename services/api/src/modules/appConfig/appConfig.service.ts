@@ -40,6 +40,10 @@ function mergeWithDefaults(value: unknown): MobileAppConfig {
       ...DEFAULT_MOBILE_APP_CONFIG.layout,
       ...(input.layout ?? {}),
     },
+    navigation: {
+      ...DEFAULT_MOBILE_APP_CONFIG.navigation,
+      ...(input.navigation ?? {}),
+    },
   });
 }
 

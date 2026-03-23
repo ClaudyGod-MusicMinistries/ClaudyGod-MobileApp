@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorScheme } from '../util/colorScheme';
 import { colors } from '../constants/color';
 import { layout } from '../styles/designTokens';
+import { useMobileAppConfig } from '../hooks/useMobileAppConfig';
 import { TVTouchable } from './ui/TVTouchable';
 import { CustomText } from './CustomText';
 
@@ -19,9 +20,10 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
   const insets = useSafeAreaInsets();
   const compact = width < 370;
   const isTablet = width >= 768 && !isTV;
+  const { config } = useMobileAppConfig();
 
   const sizes = {
-    barHeight: isTV ? 86 : isTablet ? 80 : compact ? 72 : 76,
+    barHeight: isTV ? 92 : isTablet ? 84 : compact ? 74 : 78,
     iconSize: isTV ? 24 : 20,
     paddingX: isTV ? 18 : isTablet ? 16 : 14,
   };
@@ -29,13 +31,15 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
   const barMaxWidth = isTV ? 1240 : isTablet ? 880 : width;
   const barBottomInset = isTV ? 18 : Math.max(insets.bottom, 10);
 
-  const tabConfig = {
+  const fallbackTabConfig = {
     home: { icon: 'home-filled' as const, label: 'Home' },
     videos: { icon: 'ondemand-video' as const, label: 'Videos' },
     player: { icon: 'play-arrow' as const, label: 'Player', isCenter: true },
     library: { icon: 'library-music' as const, label: 'Library' },
     search: { icon: 'search' as const, label: 'Search' },
   };
+
+  const configuredTabs = config?.navigation?.tabs ?? [];
 
   return (
     <View
@@ -55,25 +59,28 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
           maxWidth: barMaxWidth,
           height: sizes.barHeight,
           borderWidth: 1,
-          borderColor: palette.border,
-          backgroundColor: palette.surface,
+          borderColor: colorScheme === 'dark' ? 'rgba(150,128,241,0.22)' : palette.border,
+          backgroundColor: colorScheme === 'dark' ? 'rgba(9,10,17,0.96)' : palette.surface,
           paddingHorizontal: sizes.paddingX,
-          paddingTop: 8,
-          paddingBottom: 8,
+          paddingTop: 10,
+          paddingBottom: 10,
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
-          borderTopLeftRadius: isTablet || isTV ? 18 : 16,
-          borderTopRightRadius: isTablet || isTV ? 18 : 16,
+          borderTopLeftRadius: isTablet || isTV ? 20 : 18,
+          borderTopRightRadius: isTablet || isTV ? 20 : 18,
           shadowColor: '#000000',
-          shadowOpacity: 0.2,
-          shadowRadius: 16,
-          shadowOffset: { width: 0, height: -6 },
-          elevation: 8,
+          shadowOpacity: 0.34,
+          shadowRadius: 24,
+          shadowOffset: { width: 0, height: -10 },
+          elevation: 10,
         }}
       >
         {state.routes.map((route, index) => {
-          const config = (tabConfig as any)[route.name];
+          const dynamic = configuredTabs.find((item) => item.id === route.name);
+          const config = dynamic
+            ? { icon: dynamic.icon as React.ComponentProps<typeof MaterialIcons>['name'], label: dynamic.label }
+            : (fallbackTabConfig as any)[route.name];
           if (!config) return null;
 
           const focused = state.index === index;
@@ -87,41 +94,64 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
               onPress={() => navigation.navigate(route.name as never)}
               style={{
                 flex: 1,
-                minHeight: 56,
-                marginHorizontal: 2,
-                borderRadius: 12,
+                minHeight: 58,
+                marginHorizontal: 3,
+                borderRadius: 14,
                 alignItems: 'center',
                 justifyContent: 'center',
-                backgroundColor: focused ? palette.surfaceAlt : 'transparent',
+                backgroundColor: focused
+                  ? colorScheme === 'dark'
+                    ? 'rgba(137,92,246,0.14)'
+                    : palette.surfaceAlt
+                  : 'transparent',
                 borderWidth: 1,
-                borderColor: focused ? palette.border : 'transparent',
+                borderColor: focused
+                  ? colorScheme === 'dark'
+                    ? 'rgba(167,139,250,0.26)'
+                    : palette.border
+                  : 'transparent',
+                gap: 4,
               }}
               focusStyle={{ transform: [{ scale: isTV ? 1.08 : 1.02 }] }}
               showFocusBorder={false}
             >
-              <MaterialIcons
-                name={config.icon}
-                size={sizes.iconSize}
-                color={focused ? palette.primary : palette.text.secondary}
-              />
+              <View
+                style={{
+                  width: 30,
+                  height: 30,
+                  borderRadius: 10,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: focused
+                    ? colorScheme === 'dark'
+                      ? 'rgba(255,255,255,0.06)'
+                      : 'rgba(255,255,255,0.66)'
+                    : 'transparent',
+                }}
+              >
+                <MaterialIcons
+                  name={config.icon}
+                  size={sizes.iconSize}
+                  color={focused ? palette.primary : palette.text.secondary}
+                />
+              </View>
               <CustomText
                 variant="caption"
                 style={{
-                  marginTop: 3,
                   color: focused ? palette.text.primary : palette.text.secondary,
                   fontSize: 10,
-                  letterSpacing: 0.18,
+                  letterSpacing: 0.14,
                   textTransform: 'uppercase',
                 }}
               >
-                {route.name === 'player' ? 'Music' : config.label}
+                {config.label}
               </CustomText>
               {focused ? (
                 <View
                   style={{
                     position: 'absolute',
-                    top: 6,
-                    width: 18,
+                    top: 5,
+                    width: 20,
                     height: 3,
                     borderRadius: 2,
                     backgroundColor: palette.primary,
