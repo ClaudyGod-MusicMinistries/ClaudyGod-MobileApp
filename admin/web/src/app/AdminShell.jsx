@@ -13,7 +13,6 @@ export default function AdminShell(props) {
     dashboardView,
     onSetDashboardView,
     appLoading,
-    currentYear,
     content,
   } = props;
 
@@ -30,8 +29,8 @@ export default function AdminShell(props) {
               <img src={brandLogoUrl} alt="ClaudyGod" class="brand-logo" />
             </div>
             <div>
-              <p class="eyebrow">ClaudyGod Ministries</p>
-              <div class="brand-title-line">Client Content Studio</div>
+              <p class="eyebrow">ClaudyGod</p>
+              <div class="brand-title-line">Content Manager</div>
             </div>
           </div>
 
@@ -49,7 +48,7 @@ export default function AdminShell(props) {
                   <span />
                   <span />
                 </span>
-                <span>{headerMenuOpen ? 'Close Nav' : 'Navigation'}</span>
+                <span>{headerMenuOpen ? 'Close Menu' : 'Menu'}</span>
               </button>
             ) : null}
 
@@ -62,7 +61,6 @@ export default function AdminShell(props) {
                       <span>{displayName}</span>
                       <span class="user-pill-role">{portalRoleLabel}</span>
                     </div>
-                    {accountEmail ? <span class="muted-chip">{accountEmail}</span> : null}
                     <div class="header-inline-actions">
                       <button type="button" class="ghost-btn compact" onClick={() => void onRefreshDashboard()}>
                         Refresh
@@ -84,24 +82,17 @@ export default function AdminShell(props) {
               <div class="header-drawer-nav">
                 <button
                   type="button"
-                  class={['drawer-nav-link', dashboardView === 'overview' ? 'is-active' : '']}
-                  onClick={() => onSetDashboardView('overview')}
-                >
-                  Overview
-                </button>
-                <button
-                  type="button"
                   class={['drawer-nav-link', dashboardView === 'editor' ? 'is-active' : '']}
                   onClick={() => onSetDashboardView('editor')}
                 >
-                  Content Desk
+                  Content
                 </button>
                 <button
                   type="button"
                   class={['drawer-nav-link', dashboardView === 'mobile-preview' ? 'is-active' : '']}
                   onClick={() => onSetDashboardView('mobile-preview')}
                 >
-                  Preview App
+                  App Preview
                 </button>
               </div>
 
@@ -133,12 +124,6 @@ export default function AdminShell(props) {
       >
         {content}
       </main>
-
-      <footer class="global-footer">
-        <div class="global-footer-inner global-footer-minimal">
-          <span>© {currentYear} ClaudyGod Ministries</span>
-        </div>
-      </footer>
     </div>
   );
 }
