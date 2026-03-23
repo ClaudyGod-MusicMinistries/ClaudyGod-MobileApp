@@ -1,21 +1,20 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ScrollView, Switch, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { TabScreenWrapper } from '../../components/layout/TabScreenWrapper';
-import { useAppTheme, useColorSchemeToggle } from '../../util/colorScheme';
-import { CustomText } from '../../components/CustomText';
 import { Screen } from '../../components/layout/Screen';
 import { BrandedHeaderCard } from '../../components/layout/BrandedHeaderCard';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
+import { CustomText } from '../../components/CustomText';
 import { FadeIn } from '../../components/ui/FadeIn';
 import { TVTouchable } from '../../components/ui/TVTouchable';
+import { useAppTheme, useColorSchemeToggle } from '../../util/colorScheme';
 import { fetchMePreferences, updateMePreferences } from '../../services/userFlowService';
 import { APP_ROUTES } from '../../util/appRoutes';
 
 type SettingItem = {
-  icon: string;
+  icon: React.ComponentProps<typeof MaterialIcons>['name'];
   label: string;
   hint?: string;
   action?: () => void;
@@ -24,31 +23,67 @@ type SettingItem = {
   onToggle?: (_value: boolean) => void;
 };
 
+function SettingRow({ item }: { item: SettingItem }) {
+  const theme = useAppTheme();
+  const isSwitch = item.type === 'switch';
+
+  return (
+    <TVTouchable
+      onPress={isSwitch ? undefined : item.action}
+      disabled={isSwitch}
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        paddingVertical: 14,
+      }}
+      showFocusBorder={false}
+    >
+      <View
+        style={{
+          width: 38,
+          height: 38,
+          borderRadius: 12,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: theme.colors.surfaceAlt,
+          borderWidth: 1,
+          borderColor: theme.colors.border,
+        }}
+      >
+        <MaterialIcons name={item.icon} size={18} color={theme.colors.text.primary} />
+      </View>
+
+      <View style={{ flex: 1 }}>
+        <CustomText variant="title" style={{ color: theme.colors.text.primary }}>
+          {item.label}
+        </CustomText>
+        {item.hint ? (
+          <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 3 }}>
+            {item.hint}
+          </CustomText>
+        ) : null}
+      </View>
+
+      {isSwitch ? (
+        <Switch
+          value={Boolean(item.value)}
+          onValueChange={(value) => item.onToggle?.(value)}
+          thumbColor={theme.colors.text.inverse}
+          trackColor={{ false: theme.colors.border, true: `${theme.colors.primary}88` }}
+          ios_backgroundColor={theme.colors.border}
+        />
+      ) : (
+        <MaterialIcons name="chevron-right" size={18} color={theme.colors.text.secondary} />
+      )}
+    </TVTouchable>
+  );
+}
+
 export default function SettingsScreen() {
   const theme = useAppTheme();
   const toggleColorScheme = useColorSchemeToggle();
   const router = useRouter();
-  const isDark = theme.scheme === 'dark';
-  const switchUi = {
-    trackOn: isDark ? 'rgba(154,107,255,0.34)' : 'rgba(109,40,217,0.26)',
-    trackOff: isDark ? 'rgba(255,255,255,0.12)' : theme.colors.border,
-    thumbOn: theme.colors.primary,
-    thumbOff: isDark ? '#D7CFF0' : '#FFFFFF',
-    iosBackground: isDark ? 'rgba(255,255,255,0.08)' : theme.colors.border,
-  } as const;
-
-  const ui = {
-    stickyBg: isDark ? '#06040D' : '#F4F1FA',
-    stickyBorder: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(20,16,33,0.08)',
-    stickyGlow: isDark ? 'rgba(154,107,255,0.06)' : 'rgba(109,40,217,0.08)',
-    headerMuted: isDark ? 'rgba(194,185,220,0.9)' : 'rgba(94,86,120,0.92)',
-    headerSubtle: isDark ? 'rgba(176,167,202,0.9)' : 'rgba(108,99,134,0.9)',
-    overviewBg: isDark ? 'rgba(12,9,20,0.88)' : '#FFFFFF',
-    overviewBorder: isDark ? 'rgba(255,255,255,0.08)' : theme.colors.border,
-    softPanel: isDark ? 'rgba(255,255,255,0.03)' : '#F8F5FD',
-    softBorder: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(20,16,33,0.06)',
-  } as const;
-
   const [notifications, setNotifications] = useState(true);
   const [autoPlay, setAutoPlay] = useState(true);
   const [highQuality, setHighQuality] = useState(false);
@@ -84,126 +119,105 @@ export default function SettingsScreen() {
     [preferencesLoaded],
   );
 
-  const onToggleNotifications = useCallback(
-    (value: boolean) => {
-      setNotifications(value);
-      persistPreferencePatch({ notificationsEnabled: value });
-    },
-    [persistPreferencePatch],
-  );
-
-  const onToggleAutoplay = useCallback(
-    (value: boolean) => {
-      setAutoPlay(value);
-      persistPreferencePatch({ autoplayEnabled: value });
-    },
-    [persistPreferencePatch],
-  );
-
-  const onToggleHighQuality = useCallback(
-    (value: boolean) => {
-      setHighQuality(value);
-      persistPreferencePatch({ highQualityEnabled: value });
-    },
-    [persistPreferencePatch],
-  );
-
-  const onToggleTheme = useCallback(() => {
-    const nextTheme = theme.scheme === 'dark' ? 'light' : 'dark';
-    toggleColorScheme();
-    persistPreferencePatch({ themePreference: nextTheme });
-  }, [persistPreferencePatch, theme.scheme, toggleColorScheme]);
-
   const sections = useMemo(
     () => [
       {
         title: 'Account',
-        description: 'Profile, privacy and subscriptions',
         items: [
           {
-            icon: 'person',
+            icon: 'person-outline',
             label: 'Profile',
-            hint: 'Name, email and personal details',
+            hint: 'Name, email, and account details',
             action: () => router.push(APP_ROUTES.profile),
           },
           {
-            icon: 'security',
-            label: 'Privacy & Security',
-            hint: 'Data controls and permissions',
+            icon: 'shield',
+            label: 'Privacy',
+            hint: 'Permissions and account controls',
             action: () => router.push(APP_ROUTES.settingsPages.privacy),
           },
           {
             icon: 'volunteer-activism',
             label: 'Donate',
-            hint: 'Contribution plans and checkout',
+            hint: 'Support the ministry',
             action: () => router.push(APP_ROUTES.settingsPages.donate),
           },
         ] as SettingItem[],
       },
       {
         title: 'Playback',
-        description: 'Auto-play and streaming quality',
         items: [
           {
-            icon: 'play-arrow',
+            icon: 'play-circle-outline',
             label: 'Auto-play',
-            hint: 'Continue to related media',
+            hint: 'Continue to the next message or song',
             type: 'switch',
             value: autoPlay,
-            onToggle: onToggleAutoplay,
+            onToggle: (value: boolean) => {
+              setAutoPlay(value);
+              persistPreferencePatch({ autoplayEnabled: value });
+            },
           },
           {
-            icon: 'hd',
-            label: 'High quality',
-            hint: 'Use more data for better sound',
+            icon: 'high-quality',
+            label: 'High quality audio',
+            hint: 'Use more data for richer playback',
             type: 'switch',
             value: highQuality,
-            onToggle: onToggleHighQuality,
+            onToggle: (value: boolean) => {
+              setHighQuality(value);
+              persistPreferencePatch({ highQualityEnabled: value });
+            },
           },
         ] as SettingItem[],
       },
       {
         title: 'Preferences',
-        description: 'Notifications and interface behavior',
         items: [
           {
-            icon: 'notifications',
+            icon: 'notifications-none',
             label: 'Notifications',
-            hint: 'Reminders for lives and releases',
+            hint: 'Live alerts and new releases',
             type: 'switch',
             value: notifications,
-            onToggle: onToggleNotifications,
+            onToggle: (value: boolean) => {
+              setNotifications(value);
+              persistPreferencePatch({ notificationsEnabled: value });
+            },
           },
           {
             icon: 'dark-mode',
             label: 'Dark mode',
-            hint: 'Keep premium dark interface enabled',
+            hint: 'Keep the app in the darker player theme',
             type: 'switch',
             value: theme.scheme === 'dark',
-            onToggle: () => onToggleTheme(),
+            onToggle: () => {
+              const nextTheme = theme.scheme === 'dark' ? 'light' : 'dark';
+              toggleColorScheme();
+              persistPreferencePatch({ themePreference: nextTheme });
+            },
           },
         ] as SettingItem[],
       },
       {
         title: 'Support',
-        description: 'Help, about and feedback',
         items: [
           {
-            icon: 'help',
-            label: 'Help & Support',
-            hint: 'FAQs and contact channels',
+            icon: 'help-outline',
+            label: 'Help',
+            hint: 'FAQs and contact options',
             action: () => router.push(APP_ROUTES.settingsPages.help),
           },
           {
-            icon: 'info',
+            icon: 'info-outline',
             label: 'About',
-            hint: 'Product mission and team',
+            hint: 'ClaudyGod and the ministry mission',
             action: () => router.push(APP_ROUTES.settingsPages.about),
           },
           {
             icon: 'rate-review',
-            label: 'Rate App',
-            hint: 'Share product feedback',
+            label: 'Rate app',
+            hint: 'Share feedback about the experience',
             action: () => router.push(APP_ROUTES.settingsPages.rate),
           },
         ] as SettingItem[],
@@ -213,235 +227,90 @@ export default function SettingsScreen() {
       autoPlay,
       highQuality,
       notifications,
-      onToggleAutoplay,
-      onToggleHighQuality,
-      onToggleNotifications,
-      onToggleTheme,
+      persistPreferencePatch,
       router,
       theme.scheme,
+      toggleColorScheme,
     ],
   );
-
-  const quickLabels = ['Account', 'Playback', 'Preferences', 'Support'];
 
   return (
     <TabScreenWrapper>
       <ScrollView
         style={{ flex: 1, backgroundColor: 'transparent' }}
-        showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: theme.layout.tabBarContentPadding }}
+        showsVerticalScrollIndicator={false}
         bounces={false}
         overScrollMode="never"
-        stickyHeaderIndices={[0]}
       >
-        <View
-          style={{
-            backgroundColor: ui.stickyBg,
-            borderBottomWidth: 1,
-            borderBottomColor: ui.stickyBorder,
-          }}
-        >
-          <LinearGradient
-            colors={[ui.stickyGlow, 'rgba(0,0,0,0)']}
-            start={{ x: 0.1, y: 0 }}
-            end={{ x: 0.9, y: 1 }}
-            style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, pointerEvents: 'none' }}
-          />
-          <Screen>
-            <FadeIn>
-              <View
-                style={{
-                  paddingTop: theme.layout.headerVerticalPadding,
-                  paddingBottom: theme.spacing.sm,
-                }}
-              >
-                <SettingsHeader
-                  onOpenHome={() => router.push(APP_ROUTES.tabs.home)}
-                  quickLabels={quickLabels}
-                  onOpenMenu={() => router.push(APP_ROUTES.tabs.videos)}
-                />
-              </View>
-            </FadeIn>
-          </Screen>
-        </View>
-
         <Screen>
-          <View style={{ paddingTop: theme.layout.sectionGap }}>
-            <FadeIn delay={70}>
-              <View
-                style={{
-                  borderRadius: 22,
-                  borderWidth: 1,
-                  borderColor: ui.overviewBorder,
-                  backgroundColor: ui.overviewBg,
-                  padding: theme.spacing.lg,
-                }}
-              >
-                <CustomText variant="caption" style={{ color: ui.headerMuted }}>
-                  Quick Settings
-                </CustomText>
-                <CustomText variant="caption" style={{ color: ui.headerSubtle, marginTop: 4 }}>
-                  Manage account, playback and notifications in one place.
-                </CustomText>
+          <View style={{ paddingTop: theme.layout.headerVerticalPadding, gap: theme.layout.sectionGapLarge }}>
+            <FadeIn>
+              <BrandedHeaderCard
+                title="Settings"
+                subtitle="Account, playback, notifications, and support."
+                actions={[
+                  { icon: 'home', onPress: () => router.push(APP_ROUTES.tabs.home), accessibilityLabel: 'Home' },
+                ]}
+              />
+            </FadeIn>
 
-                <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
-                  <View
+            <FadeIn delay={60}>
+              <SurfaceCard tone="strong" style={{ padding: theme.spacing.lg }}>
+                <View style={{ gap: 8 }}>
+                  <CustomText
+                    variant="caption"
                     style={{
-                      flex: 1,
-                      borderRadius: 14,
-                      borderWidth: 1,
-                      borderColor: ui.softBorder,
-                      backgroundColor: ui.softPanel,
-                      padding: 10,
+                      color: theme.colors.text.secondary,
+                      textTransform: 'uppercase',
+                      letterSpacing: 0.9,
                     }}
                   >
-                    <CustomText variant="caption" style={{ color: ui.headerSubtle }}>
-                      Theme
-                    </CustomText>
-                    <CustomText
-                      variant="label"
-                      style={{ color: theme.colors.text.primary, marginTop: 4 }}
-                    >
-                      {isDark ? 'Dark Mode' : 'Light Mode'}
-                    </CustomText>
-                  </View>
-                  <View
-                    style={{
-                      flex: 1,
-                      borderRadius: 14,
-                      borderWidth: 1,
-                      borderColor: ui.softBorder,
-                      backgroundColor: ui.softPanel,
-                      padding: 10,
-                    }}
-                  >
-                    <CustomText variant="caption" style={{ color: ui.headerSubtle }}>
-                      Notifications
-                    </CustomText>
-                    <CustomText
-                      variant="label"
-                      style={{ color: theme.colors.text.primary, marginTop: 4 }}
-                    >
-                      {notifications ? 'Enabled' : 'Off'}
-                    </CustomText>
-                  </View>
+                    ClaudyGod account
+                  </CustomText>
+                  <CustomText variant="hero" style={{ color: theme.colors.text.primary }}>
+                    Keep the experience simple and personal.
+                  </CustomText>
+                  <CustomText variant="body" style={{ color: theme.colors.text.secondary }}>
+                    Manage playback, alerts, privacy, and support from one clean settings flow.
+                  </CustomText>
                 </View>
-              </View>
+              </SurfaceCard>
             </FadeIn>
 
             {sections.map((section, sectionIndex) => (
-              <FadeIn key={section.title} delay={110 + sectionIndex * 60}>
-                <View style={{ marginTop: theme.spacing.lg }}>
-                  <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
-                    {section.title}
-                  </CustomText>
-                  <CustomText
-                    variant="caption"
-                    style={{ color: theme.colors.text.secondary, marginTop: 2 }}
-                  >
-                    {section.description}
-                  </CustomText>
-                  <SurfaceCard style={{ marginTop: theme.spacing.sm, paddingVertical: 2 }}>
-                    {section.items.map((item, index) => (
-                      <TVTouchable
-                        key={item.label}
-                        onPress={item.action}
-                        disabled={item.type === 'switch'}
-                        style={{
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          padding: theme.spacing.md,
-                          borderBottomWidth: index === section.items.length - 1 ? 0 : 1,
-                          borderBottomColor: theme.colors.border,
-                          backgroundColor: 'transparent',
-                        }}
-                        showFocusBorder={false}
-                      >
-                        <View
-                          style={{
-                            width: 40,
-                            height: 40,
-                            borderRadius: 10,
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            backgroundColor: `${theme.colors.primary}16`,
-                            borderWidth: 1,
-                            borderColor: isDark
-                              ? 'rgba(255,255,255,0.06)'
-                              : 'rgba(20,16,33,0.06)',
-                            marginRight: theme.spacing.md,
-                          }}
-                        >
-                          <MaterialIcons
-                            name={item.icon as any}
-                            size={18}
-                            color={theme.colors.primary}
-                          />
-                        </View>
+              <FadeIn key={section.title} delay={100 + sectionIndex * 35}>
+                <SurfaceCard tone="subtle" style={{ paddingHorizontal: theme.spacing.lg, paddingVertical: 6 }}>
+                  <View style={{ paddingTop: 12, paddingBottom: 4 }}>
+                    <CustomText
+                      variant="caption"
+                      style={{
+                        color: theme.colors.text.secondary,
+                        textTransform: 'uppercase',
+                        letterSpacing: 0.9,
+                      }}
+                    >
+                      {section.title}
+                    </CustomText>
+                  </View>
 
-                        <View style={{ flex: 1, paddingRight: theme.spacing.sm }}>
-                          <CustomText
-                            variant="label"
-                            style={{ color: theme.colors.text.primary }}
-                          >
-                            {item.label}
-                          </CustomText>
-                          {item.hint ? (
-                            <CustomText
-                              variant="caption"
-                              style={{ color: theme.colors.text.secondary, marginTop: 3 }}
-                            >
-                              {item.hint}
-                            </CustomText>
-                          ) : null}
-                        </View>
-
-                        {item.type === 'switch' ? (
-                          <Switch
-                            value={Boolean(item.value)}
-                            onValueChange={item.onToggle}
-                            trackColor={{ true: switchUi.trackOn, false: switchUi.trackOff }}
-                            thumbColor={item.value ? switchUi.thumbOn : switchUi.thumbOff}
-                            ios_backgroundColor={switchUi.iosBackground}
-                          />
-                        ) : (
-                          <MaterialIcons
-                            name="chevron-right"
-                            size={20}
-                            color={theme.colors.text.secondary}
-                          />
-                        )}
-                      </TVTouchable>
-                    ))}
-                  </SurfaceCard>
-                </View>
+                  {section.items.map((item, itemIndex) => (
+                    <View
+                      key={`${section.title}-${item.label}`}
+                      style={{
+                        borderTopWidth: itemIndex === 0 ? 0 : 1,
+                        borderTopColor: theme.colors.border,
+                      }}
+                    >
+                      <SettingRow item={item} />
+                    </View>
+                  ))}
+                </SurfaceCard>
               </FadeIn>
             ))}
           </View>
         </Screen>
       </ScrollView>
     </TabScreenWrapper>
-  );
-}
-
-function SettingsHeader({
-  onOpenHome,
-  quickLabels,
-  onOpenMenu,
-}: {
-  onOpenHome: () => void;
-  quickLabels: string[];
-  onOpenMenu: () => void;
-}) {
-  return (
-    <BrandedHeaderCard
-      title="Settings"
-      subtitle="Account, playback, notifications and support."
-      actions={[
-        { icon: 'home', onPress: onOpenHome, accessibilityLabel: 'Open home' },
-        { icon: 'more-vert', onPress: onOpenMenu, accessibilityLabel: 'More options' },
-      ]}
-      chips={quickLabels.map((label) => ({ label }))}
-    />
   );
 }

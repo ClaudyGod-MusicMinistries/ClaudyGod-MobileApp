@@ -17,6 +17,7 @@ export interface MobileFeedItem {
   updatedAt: string;
   isLive?: boolean;
   liveViewerCount?: number;
+  notificationChannelId?: string;
 }
 
 export interface MobileFeedRail {

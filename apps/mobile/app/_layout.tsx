@@ -30,45 +30,19 @@ function ThemedLayout({ children }: { children: ReactNode }) {
   );
 }
 
-function LoadingPill({ label }: { label: string }) {
-  return (
-    <View
-      style={{
-        borderRadius: 999,
-        borderWidth: 1,
-        borderColor: 'rgba(214,228,255,0.14)',
-        backgroundColor: 'rgba(255,255,255,0.05)',
-        paddingHorizontal: 10,
-        paddingVertical: 6,
-      }}
-    >
-      <Text
-        style={{
-          color: 'rgba(230,237,249,0.84)',
-          fontSize: 10.5,
-          lineHeight: 12,
-          fontWeight: '600',
-        }}
-      >
-        {label}
-      </Text>
-    </View>
-  );
-}
-
 function WebLoadingScreen({ compact }: { compact: boolean }) {
   return (
-    <View style={{ flex: 1, backgroundColor: '#06040D' }}>
-      <StatusBar translucent={false} barStyle="light-content" backgroundColor="#06040D" />
+    <View style={{ flex: 1, backgroundColor: '#060709' }}>
+      <StatusBar translucent={false} barStyle="light-content" backgroundColor="#060709" />
 
       <LinearGradient
-        colors={['#0B1631', '#0A1020', '#06040D']}
+        colors={['#101215', '#08090C', '#060709']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
       />
 
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#06040D' }} edges={['top', 'bottom']}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#060709' }} edges={['top', 'bottom']}>
         <View
           style={{
             flex: 1,
@@ -80,46 +54,59 @@ function WebLoadingScreen({ compact }: { compact: boolean }) {
           <View
             style={{
               width: '100%',
-              maxWidth: 420,
-              borderRadius: 28,
+              maxWidth: 360,
+              borderRadius: 32,
               borderWidth: 1,
-              borderColor: 'rgba(214,228,255,0.14)',
-              backgroundColor: 'rgba(9,13,23,0.82)',
+              borderColor: 'rgba(255,255,255,0.08)',
+              backgroundColor: 'rgba(12,13,16,0.88)',
               paddingHorizontal: compact ? 18 : 22,
-              paddingVertical: compact ? 20 : 24,
+              paddingVertical: compact ? 22 : 26,
+              alignItems: 'center',
             }}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-              <Image source={BRAND_LOGO_ASSET} style={{ width: 56, height: 56, borderRadius: 28 }} />
+            <View
+              style={{
+                width: 72,
+                height: 72,
+                borderRadius: 26,
+                borderWidth: 1,
+                borderColor: 'rgba(255,255,255,0.08)',
+                backgroundColor: 'rgba(255,255,255,0.04)',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Image source={BRAND_LOGO_ASSET} style={{ width: 40, height: 40, borderRadius: 20 }} />
             </View>
 
             <Text
               style={{
                 marginTop: 16,
-                color: '#F7FBFF',
-                fontSize: compact ? 18 : 20,
-                lineHeight: compact ? 22 : 24,
+                color: '#FFF9F0',
+                fontSize: compact ? 19 : 20,
+                lineHeight: compact ? 23 : 24,
                 fontWeight: '700',
                 textAlign: 'center',
               }}
             >
-              Preparing ClaudyGod
+              ClaudyGod
             </Text>
             <Text
               style={{
                 marginTop: 8,
-                color: 'rgba(214,226,247,0.84)',
-                fontSize: compact ? 12.5 : 13,
-                lineHeight: compact ? 18 : 19,
+                color: 'rgba(230,220,207,0.62)',
+                fontSize: compact ? 12 : 12.4,
+                lineHeight: compact ? 16 : 17,
                 textAlign: 'center',
               }}
             >
-              Loading your music, videos, and personal library so the app opens ready to use.
+              Opening your listening space
             </Text>
 
             <View
               style={{
-                height: 6,
+                width: '100%',
+                height: 5,
                 borderRadius: 999,
                 marginTop: 18,
                 backgroundColor: 'rgba(255,255,255,0.10)',
@@ -127,41 +114,13 @@ function WebLoadingScreen({ compact }: { compact: boolean }) {
               }}
             >
               <LinearGradient
-                colors={['#62D2FF', '#8A70FF']}
+                colors={['#E1B662', '#B88E46']}
                 start={{ x: 0, y: 0.5 }}
                 end={{ x: 1, y: 0.5 }}
-                style={{ width: '62%', height: '100%', borderRadius: 999 }}
+                style={{ width: '58%', height: '100%', borderRadius: 999 }}
               />
             </View>
-
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8, marginTop: 16 }}>
-              <LoadingPill label="Music" />
-              <LoadingPill label="Videos" />
-              <LoadingPill label="Daily Word" />
-            </View>
           </View>
-        </View>
-
-        <View style={{ alignItems: 'center', paddingHorizontal: 24, paddingBottom: 18 }}>
-          <Text
-            style={{
-              color: 'rgba(223,231,246,0.84)',
-              fontSize: 12,
-              fontWeight: '600',
-            }}
-          >
-            ClaudyGod Ministries
-          </Text>
-          <Text
-            style={{
-              marginTop: 4,
-              color: 'rgba(192,207,235,0.66)',
-              fontSize: 10.5,
-              textAlign: 'center',
-            }}
-          >
-            Worship • Messages • Daily encouragement
-          </Text>
         </View>
       </SafeAreaView>
     </View>
@@ -169,46 +128,28 @@ function WebLoadingScreen({ compact }: { compact: boolean }) {
 }
 
 function NativeLoadingScreen({ compact }: { compact: boolean }) {
-  const ringSize = compact ? 126 : 144;
-  const logoSize = compact ? 58 : 66;
+  const ringSize = compact ? 124 : 140;
+  const logoSize = compact ? 56 : 62;
   const useNativeAnimations = Platform.OS !== 'web';
-  const ringShadowStyle =
+  const cardShadowStyle =
     Platform.OS === 'web'
-      ? { boxShadow: '0px 12px 24px rgba(154,107,255,0.46)' }
+      ? { boxShadow: '0px 16px 36px rgba(0,0,0,0.30)' }
       : {
-          shadowColor: '#9A6BFF',
-          shadowOpacity: 0.46,
-          shadowRadius: 24,
-          shadowOffset: { width: 0, height: 12 },
+          shadowColor: '#000000',
+          shadowOpacity: 0.3,
+          shadowRadius: 28,
+          shadowOffset: { width: 0, height: 14 },
           elevation: 12,
         };
 
-  const pulse = useRef(new Animated.Value(0.94)).current;
-  const spin = useRef(new Animated.Value(0)).current;
-  const shimmer = useRef(new Animated.Value(0)).current;
-  const breath = useRef(new Animated.Value(0)).current;
+  const pulse = useRef(new Animated.Value(0.96)).current;
   const barAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const pulseLoop = Animated.loop(
       Animated.sequence([
-        Animated.timing(pulse, { toValue: 1.05, duration: 800, useNativeDriver: useNativeAnimations }),
-        Animated.timing(pulse, { toValue: 0.94, duration: 800, useNativeDriver: useNativeAnimations }),
-      ]),
-    );
-
-    const spinLoop = Animated.loop(
-      Animated.timing(spin, { toValue: 1, duration: 9000, useNativeDriver: useNativeAnimations }),
-    );
-
-    const shimmerLoop = Animated.loop(
-      Animated.timing(shimmer, { toValue: 1, duration: 1700, useNativeDriver: useNativeAnimations }),
-    );
-
-    const breathLoop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(breath, { toValue: 1, duration: 2400, useNativeDriver: useNativeAnimations }),
-        Animated.timing(breath, { toValue: 0, duration: 2400, useNativeDriver: useNativeAnimations }),
+        Animated.timing(pulse, { toValue: 1.03, duration: 900, useNativeDriver: useNativeAnimations }),
+        Animated.timing(pulse, { toValue: 0.96, duration: 900, useNativeDriver: useNativeAnimations }),
       ]),
     );
 
@@ -220,34 +161,13 @@ function NativeLoadingScreen({ compact }: { compact: boolean }) {
     );
 
     pulseLoop.start();
-    spinLoop.start();
-    shimmerLoop.start();
-    breathLoop.start();
     barsLoop.start();
 
     return () => {
       pulseLoop.stop();
-      spinLoop.stop();
-      shimmerLoop.stop();
-      breathLoop.stop();
       barsLoop.stop();
     };
-  }, [barAnim, breath, pulse, shimmer, spin, useNativeAnimations]);
-
-  const rotation = spin.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
-
-  const shimmerTranslate = shimmer.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-130, 130],
-  });
-
-  const breathScale = breath.interpolate({
-    inputRange: [0, 1],
-    outputRange: [1, 1.18],
-  });
+  }, [barAnim, pulse, useNativeAnimations]);
 
   const barScaleA = barAnim.interpolate({
     inputRange: [0, 1],
@@ -263,17 +183,17 @@ function NativeLoadingScreen({ compact }: { compact: boolean }) {
   });
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#06040D' }}>
-      <StatusBar translucent={false} barStyle="light-content" backgroundColor="#06040D" />
+    <View style={{ flex: 1, backgroundColor: '#060709' }}>
+      <StatusBar translucent={false} barStyle="light-content" backgroundColor="#060709" />
 
       <LinearGradient
-        colors={['#05030C', '#1A0C35', '#090512']}
+        colors={['#101215', '#08090C', '#060709']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
       />
 
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#06040D' }} edges={['top', 'bottom']}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#060709' }} edges={['top', 'bottom']}>
         <View
           style={{
             flex: 1,
@@ -285,69 +205,56 @@ function NativeLoadingScreen({ compact }: { compact: boolean }) {
         >
           <Animated.View
             style={{
-              position: 'absolute',
-              width: 300,
-              height: 300,
-              borderRadius: 300,
-              backgroundColor: 'rgba(154,107,255,0.24)',
-              transform: [{ scale: breathScale }],
-              opacity: 0.9,
-            }}
-          />
-
-          <View
-            style={{
-              width: compact ? 276 : 312,
-              borderRadius: 28,
+              width: compact ? 280 : 316,
+              borderRadius: 30,
               borderWidth: 1,
-              borderColor: 'rgba(214,228,255,0.14)',
-              backgroundColor: 'rgba(9,13,23,0.72)',
+              borderColor: 'rgba(255,255,255,0.08)',
+              backgroundColor: 'rgba(12,13,16,0.90)',
               alignItems: 'center',
               justifyContent: 'center',
               paddingHorizontal: compact ? 20 : 24,
               paddingVertical: compact ? 22 : 26,
+              transform: [{ scale: pulse }],
+              ...cardShadowStyle,
             }}
           >
-            <Animated.View
+            <View
               style={{
                 width: ringSize,
                 height: ringSize,
                 borderRadius: ringSize / 2,
                 borderWidth: 1,
-                borderColor: 'rgba(234,223,255,0.35)',
+                borderColor: 'rgba(255,255,255,0.08)',
                 alignItems: 'center',
                 justifyContent: 'center',
-                transform: [{ rotate: rotation }],
               }}
             >
-              <Animated.View
+              <View
                 style={{
-                  width: ringSize - 28,
-                  height: ringSize - 28,
-                  borderRadius: (ringSize - 28) / 2,
+                  width: ringSize - 18,
+                  height: ringSize - 18,
+                  borderRadius: (ringSize - 18) / 2,
                   borderWidth: 1,
-                  borderColor: 'rgba(255,255,255,0.25)',
-                  backgroundColor: 'rgba(255,255,255,0.08)',
+                  borderColor: 'rgba(186,145,63,0.24)',
+                  backgroundColor: 'rgba(186,145,63,0.08)',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  ...ringShadowStyle,
-                  transform: [{ scale: pulse }],
                 }}
               >
                 <Image
                   source={BRAND_LOGO_ASSET}
                   style={{ width: logoSize, height: logoSize, borderRadius: logoSize / 2 }}
                 />
-              </Animated.View>
-            </Animated.View>
+              </View>
+            </View>
 
-            <View style={{ marginTop: 18, flexDirection: 'row', gap: 6, alignItems: 'flex-end', height: 22 }}>
+            <View style={{ marginTop: 20, flexDirection: 'row', gap: 6, alignItems: 'flex-end', height: 22 }}>
               <Animated.View
                 style={{
                   width: 6,
                   height: 22,
                   borderRadius: 999,
-                  backgroundColor: 'rgba(98,210,255,0.94)',
+                  backgroundColor: '#E1B662',
                   transform: [{ scaleY: barScaleA }],
                 }}
               />
@@ -356,7 +263,7 @@ function NativeLoadingScreen({ compact }: { compact: boolean }) {
                   width: 6,
                   height: 22,
                   borderRadius: 999,
-                  backgroundColor: 'rgba(189,161,255,0.94)',
+                  backgroundColor: '#CFA256',
                   transform: [{ scaleY: barScaleB }],
                 }}
               />
@@ -365,29 +272,8 @@ function NativeLoadingScreen({ compact }: { compact: boolean }) {
                   width: 6,
                   height: 22,
                   borderRadius: 999,
-                  backgroundColor: 'rgba(98,210,255,0.94)',
+                  backgroundColor: '#A37A38',
                   transform: [{ scaleY: barScaleC }],
-                }}
-              />
-            </View>
-
-            <View
-              style={{
-                width: compact ? 154 : 172,
-                height: 5,
-                borderRadius: 999,
-                marginTop: 16,
-                backgroundColor: 'rgba(255,255,255,0.14)',
-                overflow: 'hidden',
-              }}
-            >
-              <Animated.View
-                style={{
-                  width: 88,
-                  height: 5,
-                  borderRadius: 999,
-                  backgroundColor: '#8A70FF',
-                  transform: [{ translateX: shimmerTranslate }],
                 }}
               />
             </View>
@@ -395,55 +281,27 @@ function NativeLoadingScreen({ compact }: { compact: boolean }) {
             <Text
               style={{
                 marginTop: 16,
-                color: '#F7FBFF',
+                color: '#FFF9F0',
                 fontSize: compact ? 18 : 19,
                 lineHeight: compact ? 22 : 23,
                 fontWeight: '700',
                 textAlign: 'center',
               }}
             >
-              Preparing ClaudyGod
+              ClaudyGod
             </Text>
             <Text
               style={{
                 marginTop: 8,
-                color: 'rgba(214,226,247,0.82)',
-                fontSize: compact ? 12.2 : 12.8,
-                lineHeight: compact ? 18 : 19,
+                color: 'rgba(230,220,207,0.62)',
+                fontSize: compact ? 12 : 12.4,
+                lineHeight: compact ? 16 : 17,
                 textAlign: 'center',
               }}
             >
-              Loading your music, videos, and saved library so everything feels ready when the app opens.
+              Opening your listening space
             </Text>
-
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8, marginTop: 16 }}>
-              <LoadingPill label="Music" />
-              <LoadingPill label="Videos" />
-              <LoadingPill label="Library" />
-            </View>
-          </View>
-        </View>
-
-        <View style={{ alignItems: 'center', paddingHorizontal: 20, paddingBottom: 14, paddingTop: 8 }}>
-          <Text
-            style={{
-              color: 'rgba(223,231,246,0.86)',
-              fontSize: 12,
-              fontWeight: '600',
-            }}
-          >
-            ClaudyGod Ministries
-          </Text>
-          <Text
-            style={{
-              marginTop: 4,
-              color: 'rgba(192,207,235,0.66)',
-              fontSize: 10.5,
-              textAlign: 'center',
-            }}
-          >
-            Worship • Messages • Daily encouragement
-          </Text>
+          </Animated.View>
         </View>
       </SafeAreaView>
     </View>
@@ -468,7 +326,7 @@ function RootLayoutInner() {
   const [bootDelayDone, setBootDelayDone] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => setBootDelayDone(true), 1100);
+    const timer = setTimeout(() => setBootDelayDone(true), 700);
     return () => clearTimeout(timer);
   }, []);
 

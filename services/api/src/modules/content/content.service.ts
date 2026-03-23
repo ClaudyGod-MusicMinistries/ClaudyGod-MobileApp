@@ -2,6 +2,7 @@ import type { Pool, PoolClient } from 'pg';
 import type { JwtClaims } from '../../utils/jwt';
 import { pool } from '../../db/pool';
 import { HttpError } from '../../lib/httpError';
+import { isMissingDatabaseStructureError } from '../../lib/postgres';
 import { contentQueue, type ContentEventType } from '../../queues/contentQueue';
 import { env } from '../../config/env';
 import { queueEmailJob } from '../../infra/transactionalEmails';
@@ -466,44 +467,58 @@ export const listPublicContent = async (query: ContentListQuery): Promise<Conten
 
   const whereClause = conditions.join(' AND ');
 
-  const [dataResult, countResult] = await Promise.all([
-    pool.query<ContentRow>(
-      `SELECT
-        c.id,
-        c.author_id,
-        c.title,
-        c.description,
-        c.content_type,
-        c.media_url,
-        c.thumbnail_url,
-        c.source_kind,
-        c.external_source_id,
-        c.channel_name,
-        c.duration_label,
-        c.app_sections,
-        c.tags,
-        c.metadata,
-        c.visibility,
-        c.created_at,
-        c.updated_at,
-        u.display_name AS author_display_name,
-        u.email AS author_email,
-        u.role AS author_role
-       FROM content_items c
-       INNER JOIN app_users u ON u.id = c.author_id
-       WHERE ${whereClause}
-       ORDER BY c.updated_at DESC, c.created_at DESC
-       LIMIT $${limitParam}
-       OFFSET $${offsetParam}`,
-      values,
-    ),
-    pool.query<{ count: string }>(
-      `SELECT COUNT(*)::text AS count
-       FROM content_items c
-       WHERE ${whereClause}`,
-      values.slice(0, values.length - 2),
-    ),
-  ]);
+  let dataResult;
+  let countResult;
+  try {
+    [dataResult, countResult] = await Promise.all([
+      pool.query<ContentRow>(
+        `SELECT
+          c.id,
+          c.author_id,
+          c.title,
+          c.description,
+          c.content_type,
+          c.media_url,
+          c.thumbnail_url,
+          c.source_kind,
+          c.external_source_id,
+          c.channel_name,
+          c.duration_label,
+          c.app_sections,
+          c.tags,
+          c.metadata,
+          c.visibility,
+          c.created_at,
+          c.updated_at,
+          u.display_name AS author_display_name,
+          u.email AS author_email,
+          u.role AS author_role
+         FROM content_items c
+         INNER JOIN app_users u ON u.id = c.author_id
+         WHERE ${whereClause}
+         ORDER BY c.updated_at DESC, c.created_at DESC
+         LIMIT $${limitParam}
+         OFFSET $${offsetParam}`,
+        values,
+      ),
+      pool.query<{ count: string }>(
+        `SELECT COUNT(*)::text AS count
+         FROM content_items c
+         WHERE ${whereClause}`,
+        values.slice(0, values.length - 2),
+      ),
+    ]);
+  } catch (error) {
+    if (isMissingDatabaseStructureError(error)) {
+      return {
+        page: query.page,
+        limit: query.limit,
+        total: 0,
+        items: [],
+      };
+    }
+    throw error;
+  }
 
   return buildListResponse(dataResult.rows, Number(countResult.rows[0]!.count), query);
 };
@@ -559,44 +574,58 @@ export const listManagedContent = async (
   const limitParam = values.length - 1;
   const offsetParam = values.length;
 
-  const [dataResult, countResult] = await Promise.all([
-    pool.query<ContentRow>(
-      `SELECT
-          c.id,
-          c.author_id,
-          c.title,
-          c.description,
-          c.content_type,
-          c.media_url,
-          c.thumbnail_url,
-          c.source_kind,
-          c.external_source_id,
-          c.channel_name,
-          c.duration_label,
-          c.app_sections,
-          c.tags,
-          c.metadata,
-          c.visibility,
-          c.created_at,
-          c.updated_at,
-          u.display_name AS author_display_name,
-          u.email AS author_email,
-          u.role AS author_role
-       FROM content_items c
-       INNER JOIN app_users u ON u.id = c.author_id
-       ${whereClause}
-       ORDER BY c.updated_at DESC, c.created_at DESC
-       LIMIT $${limitParam}
-       OFFSET $${offsetParam}`,
-      values,
-    ),
-    pool.query<{ count: string }>(
-      `SELECT COUNT(*)::text AS count
-       FROM content_items c
-       ${whereClause}`,
-      values.slice(0, values.length - 2),
-    ),
-  ]);
+  let dataResult;
+  let countResult;
+  try {
+    [dataResult, countResult] = await Promise.all([
+      pool.query<ContentRow>(
+        `SELECT
+            c.id,
+            c.author_id,
+            c.title,
+            c.description,
+            c.content_type,
+            c.media_url,
+            c.thumbnail_url,
+            c.source_kind,
+            c.external_source_id,
+            c.channel_name,
+            c.duration_label,
+            c.app_sections,
+            c.tags,
+            c.metadata,
+            c.visibility,
+            c.created_at,
+            c.updated_at,
+            u.display_name AS author_display_name,
+            u.email AS author_email,
+            u.role AS author_role
+         FROM content_items c
+         INNER JOIN app_users u ON u.id = c.author_id
+         ${whereClause}
+         ORDER BY c.updated_at DESC, c.created_at DESC
+         LIMIT $${limitParam}
+         OFFSET $${offsetParam}`,
+        values,
+      ),
+      pool.query<{ count: string }>(
+        `SELECT COUNT(*)::text AS count
+         FROM content_items c
+         ${whereClause}`,
+        values.slice(0, values.length - 2),
+      ),
+    ]);
+  } catch (error) {
+    if (isMissingDatabaseStructureError(error)) {
+      return {
+        page: query.page,
+        limit: query.limit,
+        total: 0,
+        items: [],
+      };
+    }
+    throw error;
+  }
 
   return buildListResponse(dataResult.rows, Number(countResult.rows[0]!.count), query);
 };
@@ -611,51 +640,59 @@ export const listContentRequests = async (requester: JwtClaims): Promise<Content
   }
 
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-  const result = await pool.query<ContentSubmissionRequestRow>(
-    `SELECT
-       r.id,
-       r.requester_id,
-       r.title,
-       r.description,
-       r.content_type,
-       r.media_url,
-       r.thumbnail_url,
-       r.source_kind,
-       r.external_source_id,
-       r.channel_name,
-       r.duration_label,
-       r.app_sections,
-       r.tags,
-       r.metadata,
-       r.request_notes,
-       r.requested_visibility,
-       r.request_status,
-       r.media_upload_session_id,
-       r.thumbnail_upload_session_id,
-       r.created_content_id,
-       r.created_at,
-       r.updated_at,
-       u.display_name AS requester_display_name,
-       u.email AS requester_email,
-       u.role AS requester_role,
-       c.title AS created_content_title
-     FROM content_submission_requests r
-     INNER JOIN app_users u ON u.id = r.requester_id
-     LEFT JOIN content_items c ON c.id = r.created_content_id
-     ${whereClause}
-     ORDER BY
-       CASE r.request_status
-         WHEN 'submitted' THEN 0
-         WHEN 'in_review' THEN 1
-         WHEN 'changes_requested' THEN 2
-         WHEN 'approved' THEN 3
-         WHEN 'fulfilled' THEN 4
-         ELSE 5
-       END,
-       r.created_at DESC
-     LIMIT 60`,
-    values,
-  );
+  let result;
+  try {
+    result = await pool.query<ContentSubmissionRequestRow>(
+      `SELECT
+         r.id,
+         r.requester_id,
+         r.title,
+         r.description,
+         r.content_type,
+         r.media_url,
+         r.thumbnail_url,
+         r.source_kind,
+         r.external_source_id,
+         r.channel_name,
+         r.duration_label,
+         r.app_sections,
+         r.tags,
+         r.metadata,
+         r.request_notes,
+         r.requested_visibility,
+         r.request_status,
+         r.media_upload_session_id,
+         r.thumbnail_upload_session_id,
+         r.created_content_id,
+         r.created_at,
+         r.updated_at,
+         u.display_name AS requester_display_name,
+         u.email AS requester_email,
+         u.role AS requester_role,
+         c.title AS created_content_title
+       FROM content_submission_requests r
+       INNER JOIN app_users u ON u.id = r.requester_id
+       LEFT JOIN content_items c ON c.id = r.created_content_id
+       ${whereClause}
+       ORDER BY
+         CASE r.request_status
+           WHEN 'submitted' THEN 0
+           WHEN 'in_review' THEN 1
+           WHEN 'changes_requested' THEN 2
+           WHEN 'approved' THEN 3
+           WHEN 'fulfilled' THEN 4
+           ELSE 5
+         END,
+         r.created_at DESC
+       LIMIT 60`,
+      values,
+    );
+  } catch (error) {
+    if (isMissingDatabaseStructureError(error)) {
+      return [];
+    }
+    throw error;
+  }
 
   return result.rows.map(toContentSubmissionRequest);
 };

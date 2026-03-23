@@ -12,6 +12,7 @@ import { adminAppConfigRouter, mobileAppConfigRouter } from './modules/appConfig
 import { authRouter } from './modules/auth/auth.routes';
 import { contentRouter } from './modules/content/content.routes';
 import { healthRouter } from './modules/health/health.routes';
+import { liveRouter } from './modules/live/live.routes';
 import { meRouter } from './modules/me/me.routes';
 import { mobileRouter } from './modules/mobile/mobile.routes';
 import { uploadsRouter } from './modules/uploads/uploads.routes';
@@ -112,6 +113,7 @@ export const createApp = () => {
   app.use('/', healthRouter);
   app.use('/v1/auth', authRouter);
   app.use('/v1/me', meRouter);
+  app.use('/v1/live', liveRouter);
   app.use('/v1/content', contentRouter);
   app.use('/v1/analytics', analyticsRouter);
   app.use('/v1/uploads', uploadsRouter);

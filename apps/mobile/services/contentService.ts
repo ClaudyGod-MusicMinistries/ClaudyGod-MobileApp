@@ -42,6 +42,7 @@ interface MobileFeedApiItem {
   updatedAt?: string;
   isLive?: boolean;
   liveViewerCount?: number;
+  notificationChannelId?: string;
 }
 
 export interface ApiContentItem {
@@ -100,6 +101,7 @@ export interface FeedCardItem {
   isLive?: boolean;
   createdAt?: string;
   appSections?: string[];
+  notificationChannelId?: string;
 }
 
 export interface FeedBundle {
@@ -166,6 +168,8 @@ function normalize(item: ApiContentItem): FeedCardItem {
     liveViewerCount: item.liveViewerCount,
     createdAt: item.createdAt || item.updatedAt,
     appSections: Array.isArray(item.appSections) ? item.appSections : [],
+    notificationChannelId:
+      typeof item.metadata?.notificationChannelId === 'string' ? item.metadata.notificationChannelId : undefined,
   };
 }
 
@@ -183,6 +187,7 @@ function normalizeFeedItem(item: MobileFeedApiItem): FeedCardItem {
     liveViewerCount: item.liveViewerCount,
     createdAt: item.createdAt || item.updatedAt,
     appSections: Array.isArray(item.appSections) ? item.appSections : [],
+    notificationChannelId: item.notificationChannelId,
   };
 }
 
@@ -200,6 +205,7 @@ function normalizeYouTubeVideo(item: YouTubeVideoItem): FeedCardItem {
     liveViewerCount: item.liveViewerCount,
     createdAt: item.publishedAt,
     appSections: Array.isArray(item.suggestedAppSections) ? item.suggestedAppSections : [],
+    notificationChannelId: item.isLive ? 'claudygod-live' : undefined,
   };
 }
 

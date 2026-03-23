@@ -12,13 +12,14 @@ interface FadeInProps extends ViewProps {
 export function FadeIn({
   children,
   delay = 0,
-  from = 16,
+  from = 12,
   duration = 420,
   style,
   ...props
 }: FadeInProps) {
   const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(from)).current;
+  const scale = useRef(new Animated.Value(0.985)).current;
   const useNativeAnimations = Platform.OS !== 'web';
 
   useEffect(() => {
@@ -37,13 +38,20 @@ export function FadeIn({
         easing: Easing.out(Easing.cubic),
         useNativeDriver: useNativeAnimations,
       }),
+      Animated.timing(scale, {
+        toValue: 1,
+        duration,
+        delay,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: useNativeAnimations,
+      }),
     ]).start();
-  }, [delay, duration, opacity, translateY, useNativeAnimations]);
+  }, [delay, duration, opacity, scale, translateY, useNativeAnimations]);
 
   return (
     <Animated.View
       {...props}
-      style={[{ opacity, transform: [{ translateY }] }, style]}
+      style={[{ opacity, transform: [{ translateY }, { scale }] }, style]}
     >
       {children}
     </Animated.View>
