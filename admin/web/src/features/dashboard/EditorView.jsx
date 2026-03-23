@@ -147,7 +147,7 @@ export default function EditorView(props) {
                 {createForm.mediaUploadSessionId || createForm.thumbnailUploadSessionId
                   ? directPublishMode
                     ? 'Uploaded files are linked to the content item and ready for the mobile feed.'
-                    : 'Uploaded files are linked to this request and will be traceable in backend review.'
+                    : 'Uploaded files are linked to this request and ready for the review queue.'
                   : directPublishMode
                     ? 'Upload media and a thumbnail to create a production-ready mobile content item.'
                     : 'Upload media and a thumbnail to keep the request complete and easy to review.'}

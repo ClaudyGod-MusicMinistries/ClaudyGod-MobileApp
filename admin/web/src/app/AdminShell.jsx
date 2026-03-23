@@ -137,7 +137,6 @@ export default function AdminShell(props) {
       <footer class="global-footer">
         <div class="global-footer-inner global-footer-minimal">
           <span>© {currentYear} ClaudyGod Ministries</span>
-          <span>Mobile publishing workspace</span>
         </div>
       </footer>
     </div>

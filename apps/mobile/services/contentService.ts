@@ -285,11 +285,7 @@ async function fetchYouTubeFeed(): Promise<{
       announcements,
       recent: normalized,
     };
-  } catch (error) {
-    console.warn(
-      '[contentService] YouTube feed fetch failed:',
-      error instanceof Error ? error.message : String(error),
-    );
+  } catch {
     return { videos: [], music: [], live: [], announcements: [], recent: [] };
   }
 }
@@ -358,12 +354,7 @@ export async function fetchFeedBundle(): Promise<FeedBundle> {
   try {
     const feed = await apiFetch<MobileFeedApiResponse>('/v1/mobile/feed');
     return bundleFromApiFeed(feed);
-  } catch (error) {
-    console.warn(
-      '[contentService] API feed fallback activated:',
-      error instanceof Error ? error.message : String(error),
-    );
-  }
+  } catch {}
 
   const [all, music, videos, playlists, live, announcements, mostPlayed, youtubeFeed] = await Promise.all([
     fetchAllPublished(),

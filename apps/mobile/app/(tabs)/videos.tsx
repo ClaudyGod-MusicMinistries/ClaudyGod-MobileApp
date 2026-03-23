@@ -332,8 +332,7 @@ export default function VideosScreen() {
                   </>
                 ) : (
                   <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
-                    No videos are ready yet. Publish or import video content from the admin dashboard to populate this
-                    screen.
+                    No videos are ready yet. New video releases will appear here as soon as they are published.
                   </CustomText>
                 )}
               </View>

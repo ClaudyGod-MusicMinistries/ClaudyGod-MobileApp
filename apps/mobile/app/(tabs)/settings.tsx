@@ -64,8 +64,7 @@ export default function SettingsScreen() {
         setNotifications(response.preferences.notificationsEnabled);
         setAutoPlay(response.preferences.autoplayEnabled);
         setHighQuality(response.preferences.highQualityEnabled);
-      } catch (error) {
-        console.warn('settings preferences fallback:', error);
+      } catch {
       } finally {
         if (active) setPreferencesLoaded(true);
       }
@@ -80,9 +79,7 @@ export default function SettingsScreen() {
   const persistPreferencePatch = useCallback(
     (patch: Partial<Parameters<typeof updateMePreferences>[0]>) => {
       if (!preferencesLoaded) return;
-      void updateMePreferences(patch).catch((error) => {
-        console.warn('settings preference sync failed:', error);
-      });
+      void updateMePreferences(patch).catch(() => {});
     },
     [preferencesLoaded],
   );

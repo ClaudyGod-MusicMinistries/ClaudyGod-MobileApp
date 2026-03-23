@@ -2,7 +2,6 @@ import axios from 'axios';
 import { computed, defineComponent, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import AdminShell from './app/AdminShell';
 import {
-  API_HOST_LABEL,
   BRAND_LOGO_URL,
   CONTENT_REQUEST_STATUS_OPTIONS,
   CONTENT_TYPES,
@@ -206,24 +205,13 @@ export default defineComponent({
     const portalRoleLabel = computed(() => (isAdmin.value ? 'Admin' : 'Publisher'));
     const isCompactHeader = computed(() => viewportWidth.value <= 1024);
     const googleLoginEnabled = computed(() => Boolean(GOOGLE_LOGIN_URL));
-    const publicHealthTone = computed(() => {
-      if (!publicHealth.value) return 'subtle';
-      if (publicHealth.value.status === 'ok') return 'success';
-      return 'warning';
-    });
     const publicHealthSummary = computed(() => {
-      if (publicHealthLoading.value) return 'Checking backend';
-      if (!publicHealth.value) return 'Awaiting backend check';
-      if (publicHealth.value.status === 'ok') return 'Backend ready';
-      if (publicHealth.value.services?.postgres === 'down') return 'Database unavailable';
-      if (publicHealth.value.status === 'offline') return 'API unavailable';
-      return 'Backend needs attention';
-    });
-    const databaseTargetLabel = computed(() => {
-      const target = publicHealth.value?.capabilities?.databaseTarget;
-      if (target === 'supabase-postgres') return 'Supabase PostgreSQL';
-      if (target === 'external-postgres') return 'External PostgreSQL';
-      return 'Database target pending';
+      if (publicHealthLoading.value) return 'Preparing your studio';
+      if (!publicHealth.value) return 'Checking access';
+      if (publicHealth.value.status === 'ok') return 'Studio ready';
+      if (publicHealth.value.services?.postgres === 'down') return 'Studio temporarily unavailable';
+      if (publicHealth.value.status === 'offline') return 'Studio temporarily unavailable';
+      return 'Checking access';
     });
     const mobileSectionCatalog = computed(() => normalizeSectionCatalog(mobileAppConfigValue.value));
 
@@ -777,7 +765,7 @@ export default defineComponent({
         mobileAppConfigMeta.value = response.data.meta || null;
         mobileAppConfigValue.value = response.data.config || null;
       } catch (error) {
-        setNotice(toErrorMessage(error, 'Unable to load mobile app config.'), 'error');
+        setNotice(toErrorMessage(error, 'Unable to load the mobile experience.'), 'error');
       } finally {
         appConfigLoading.value = false;
       }
@@ -785,7 +773,7 @@ export default defineComponent({
 
     async function saveMobileAppConfig() {
       if (!isAdmin.value) {
-        setNotice('Only admin accounts can update mobile app configuration.', 'error');
+        setNotice('This action is only available to administrators.', 'error');
         return;
       }
 
@@ -804,9 +792,9 @@ export default defineComponent({
         mobileAppConfigEditor.value = JSON.stringify(response.data.config || {}, null, 2);
         mobileAppConfigMeta.value = response.data.meta || null;
         mobileAppConfigValue.value = response.data.config || null;
-        setNotice('Mobile app config saved successfully.', 'success');
+        setNotice('Mobile experience updated successfully.', 'success');
       } catch (error) {
-        setNotice(toErrorMessage(error, 'Unable to save mobile app config.'), 'error');
+        setNotice(toErrorMessage(error, 'Unable to save your changes.'), 'error');
       } finally {
         appConfigSaving.value = false;
       }
@@ -1086,7 +1074,7 @@ export default defineComponent({
 
         publicHealth.value = {
           status: 'offline',
-          error: toErrorMessage(error, 'Unable to reach backend health endpoint.'),
+          error: toErrorMessage(error, 'The studio is temporarily unavailable.'),
           checkedAt: new Date().toISOString(),
         };
         return publicHealth.value;
@@ -1099,23 +1087,12 @@ export default defineComponent({
       const health = await fetchPublicHealth();
 
       if (!health || health.status === 'offline') {
-        setNotice(
-          `The API at ${API_HOST_LABEL} is not reachable. Start the backend and confirm the admin is pointing at the correct host.`,
-          'error',
-        );
+        setNotice('The studio is temporarily unavailable. Please try again shortly.', 'error');
         return false;
       }
 
       if (health.services?.postgres === 'down') {
-        const databaseTarget =
-          health.capabilities?.databaseTarget === 'supabase-postgres'
-            ? 'Supabase PostgreSQL'
-            : 'the configured PostgreSQL database';
-
-        setNotice(
-          `The backend is online, but ${databaseTarget} is unavailable. Update DATABASE_URL, start the database, and restart the API before creating accounts.`,
-          'error',
-        );
+        setNotice('The studio is not ready right now. Please try again shortly.', 'error');
         return false;
       }
 
@@ -1456,7 +1433,7 @@ export default defineComponent({
 
         setNotice(`Uploaded ${file.name}. ${assetKind === 'thumbnail' ? 'Thumbnail' : 'Media asset'} is now linked to this submission ticket.`, 'success');
       } catch (error) {
-        setNotice(toErrorMessage(error, 'File upload failed. Check storage configuration and try again.'), 'error');
+        setNotice(toErrorMessage(error, 'File upload failed. Please try again.'), 'error');
       } finally {
         uploadingAsset.value = false;
         if (input) input.value = '';
@@ -1654,7 +1631,7 @@ export default defineComponent({
         buildYouTubeDrafts(youtubePreviewItems.value);
         setNotice(`Fetched ${youtubePreviewItems.value.length} YouTube video${youtubePreviewItems.value.length === 1 ? '' : 's'} for preview.`, 'success');
       } catch (error) {
-        setNotice(toErrorMessage(error, 'Unable to fetch YouTube videos. Check your backend YouTube configuration.'), 'error');
+        setNotice(toErrorMessage(error, 'Unable to load videos right now.'), 'error');
       } finally {
         youtubePreviewLoading.value = false;
       }
@@ -1683,7 +1660,7 @@ export default defineComponent({
         ]);
         setNotice(`YouTube sync complete. Created ${summary.created}, updated ${summary.updated}, skipped ${summary.skipped}.`, 'success');
       } catch (error) {
-        setNotice(toErrorMessage(error, 'YouTube sync failed. Please verify API key, channel ID, and backend settings.'), 'error');
+        setNotice(toErrorMessage(error, 'Video import could not be completed right now.'), 'error');
       } finally {
         youtubeSyncLoading.value = false;
       }
@@ -1712,18 +1689,14 @@ export default defineComponent({
     return () => {
       const loginScreen = (
         <AuthScreen
-          apiHostLabel={API_HOST_LABEL}
           brandLogoUrl={BRAND_LOGO_URL}
           publicHealthSummary={publicHealthSummary.value}
-          databaseTargetLabel={databaseTargetLabel.value}
-          publicHealth={publicHealth.value}
           isVerifyMode={isVerifyMode.value}
           isRegisterMode={isRegisterMode.value}
           authMode={authMode.value}
           authLoading={authLoading.value}
           notice={notice.value}
           noticeKind={noticeKind.value}
-          publicHealthTone={publicHealthTone.value}
           googleLoginEnabled={googleLoginEnabled.value}
           authForm={authForm}
           pendingVerificationEmail={pendingVerificationEmail.value}

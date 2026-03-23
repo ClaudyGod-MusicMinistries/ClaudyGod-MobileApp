@@ -23,7 +23,7 @@ const featureChips = [
 const team = [
   { name: 'Claudy God', role: 'Founder & Lead Artist', desc: 'Vision, music direction, and weekly drops.' },
   { name: 'Product Crew', role: 'Experience', desc: 'Design systems, research, and accessibility.' },
-  { name: 'Engineering', role: 'Platform', desc: 'Streaming quality, playback reliability, and APIs.' },
+  { name: 'Platform Team', role: 'Reliability', desc: 'Streaming quality, smooth playback, and platform stability.' },
 ];
 
 const social = [
@@ -79,7 +79,7 @@ export default function About() {
               }}
             >
               <CustomText variant="label" style={{ color: '#FFFFFF' }}>
-                Enterprise-grade streaming
+                Worship made simple
               </CustomText>
             </View>
             <CustomText variant="heading" style={{ color: '#FFFFFF' }}>

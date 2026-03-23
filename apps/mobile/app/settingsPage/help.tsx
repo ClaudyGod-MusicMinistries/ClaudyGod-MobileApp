@@ -82,7 +82,7 @@ export default function Help() {
       setMessage('');
       Alert.alert(
         'Support request sent',
-        `Ticket ${response.ticket.id.slice(0, 8)} has been sent to the support desk and will appear in the admin dashboard.`,
+        `Ticket ${response.ticket.id.slice(0, 8)} has been sent to the support team.`,
       );
     } catch (error) {
       Alert.alert('Request failed', error instanceof Error ? error.message : 'Unable to send support request.');
