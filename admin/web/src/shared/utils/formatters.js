@@ -75,7 +75,7 @@ export function formatBytes(bytes) {
 export function describeHealthCheckDetail(payload) {
   const services = payload && payload.services ? payload.services : null;
   const capabilities = payload && payload.capabilities ? payload.capabilities : null;
-  if (!services) return 'Studio ready';
+  if (!services) return 'Portal ready';
 
   const details = [];
   if (services.postgres) {
@@ -88,7 +88,7 @@ export function describeHealthCheckDetail(payload) {
     details.push('Video import unavailable');
   }
 
-  return details.length > 0 ? details.join(' • ') : 'Studio ready';
+  return details.length > 0 ? details.join(' • ') : 'Portal ready';
 }
 
 export function acceptFromPolicy(policy) {
