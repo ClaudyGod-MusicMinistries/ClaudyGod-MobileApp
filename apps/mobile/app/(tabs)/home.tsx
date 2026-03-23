@@ -326,7 +326,7 @@ function IconActionButton({
       style={{
         width: 42,
         height: 42,
-        borderRadius: 16,
+        borderRadius: 10,
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.08)',
         backgroundColor: 'rgba(255,255,255,0.03)',
@@ -356,7 +356,7 @@ function FeaturedStage({
     <TVTouchable
       onPress={onOpenPrimary}
       style={{
-        borderRadius: 30,
+        borderRadius: 12,
         overflow: 'hidden',
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.08)',
@@ -364,32 +364,25 @@ function FeaturedStage({
       }}
       showFocusBorder={false}
     >
-      <View style={{ minHeight: 310 }}>
+      <View>
         {item?.imageUrl ? (
           <Image
             source={{ uri: item.imageUrl }}
             resizeMode="cover"
-            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+            style={{ width: '100%', height: 210 }}
           />
         ) : null}
 
-        <LinearGradient
-          colors={['rgba(6,7,9,0.18)', 'rgba(6,7,9,0.64)', 'rgba(6,7,9,0.96)']}
-          start={{ x: 0.45, y: 0 }}
-          end={{ x: 0.6, y: 1 }}
-          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-        />
-
-        <View style={{ flex: 1, justifyContent: 'flex-end', padding: 18 }}>
+        <View style={{ padding: 16 }}>
           <View
             style={{
               alignSelf: 'flex-start',
-              borderRadius: 999,
+              borderRadius: 8,
               borderWidth: 1,
               borderColor: item?.isLive ? 'rgba(239,68,68,0.24)' : 'rgba(255,255,255,0.10)',
               backgroundColor: item?.isLive ? 'rgba(153,27,27,0.38)' : 'rgba(255,255,255,0.05)',
-              paddingHorizontal: 10,
-              paddingVertical: 6,
+              paddingHorizontal: 8,
+              paddingVertical: 5,
             }}
           >
             <CustomText
@@ -406,7 +399,7 @@ function FeaturedStage({
 
           <CustomText
             variant="hero"
-            style={{ color: '#FFF9F0', marginTop: 14, maxWidth: 360 }}
+            style={{ color: '#FFF9F0', marginTop: 10, maxWidth: 320, fontSize: 21, lineHeight: 26 }}
             numberOfLines={2}
           >
             {title}
@@ -414,13 +407,13 @@ function FeaturedStage({
 
           <CustomText
             variant="body"
-            style={{ color: 'rgba(235,227,216,0.72)', marginTop: 8, maxWidth: 360 }}
-            numberOfLines={3}
+            style={{ color: 'rgba(235,227,216,0.72)', marginTop: 6, maxWidth: 300, fontSize: 13, lineHeight: 18 }}
+            numberOfLines={2}
           >
             {subtitle}
           </CustomText>
 
-          <View style={{ flexDirection: 'row', gap: 10, marginTop: 18 }}>
+          <View style={{ flexDirection: 'row', gap: 8, marginTop: 14 }}>
             <StageButton icon="play-arrow" label="Play" onPress={onOpenPrimary} filled />
             <StageButton icon="grid-view" label="Browse" onPress={onOpenSecondary} />
           </View>
@@ -448,12 +441,12 @@ function StageButton({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
-        borderRadius: 999,
+        borderRadius: 10,
         borderWidth: 1,
         borderColor: filled ? '#E1B662' : 'rgba(255,255,255,0.12)',
         backgroundColor: filled ? '#E1B662' : 'rgba(255,255,255,0.04)',
-        paddingHorizontal: 14,
-        paddingVertical: 11,
+        paddingHorizontal: 12,
+        paddingVertical: 9,
       }}
       showFocusBorder={false}
     >
@@ -478,20 +471,20 @@ function QuickDestinationRow({
           onPress={() => onOpenRoute(item.route)}
           style={{
             flex: 1,
-            borderRadius: 18,
+            borderRadius: 10,
             borderWidth: 1,
             borderColor: 'rgba(255,255,255,0.08)',
             backgroundColor: 'rgba(255,255,255,0.03)',
-            paddingHorizontal: 14,
-            paddingVertical: 14,
+            paddingHorizontal: 12,
+            paddingVertical: 12,
           }}
           showFocusBorder={false}
         >
           <View
             style={{
-              width: 36,
-              height: 36,
-              borderRadius: 14,
+              width: 30,
+              height: 30,
+              borderRadius: 8,
               alignItems: 'center',
               justifyContent: 'center',
               backgroundColor: 'rgba(187,144,63,0.14)',
@@ -499,9 +492,9 @@ function QuickDestinationRow({
               borderColor: 'rgba(187,144,63,0.20)',
             }}
           >
-            <MaterialIcons name={item.icon} size={18} color="#F0C87A" />
+            <MaterialIcons name={item.icon} size={15} color="#F0C87A" />
           </View>
-          <CustomText variant="label" style={{ color: '#FFF9F0', marginTop: 10 }}>
+          <CustomText variant="label" style={{ color: '#FFF9F0', marginTop: 8, fontSize: 11, lineHeight: 14 }}>
             {item.label}
           </CustomText>
         </TVTouchable>
@@ -562,7 +555,7 @@ function MediaCard({
     >
       <View
         style={{
-          borderRadius: 22,
+          borderRadius: 12,
           overflow: 'hidden',
           borderWidth: 1,
           borderColor: 'rgba(255,255,255,0.08)',
@@ -603,7 +596,7 @@ function LiveCard({
       style={{
         width,
         marginRight: 12,
-        borderRadius: 22,
+        borderRadius: 12,
         overflow: 'hidden',
         borderWidth: 1,
         borderColor: 'rgba(239,68,68,0.18)',
@@ -622,7 +615,7 @@ function LiveCard({
               position: 'absolute',
               top: 10,
               left: 10,
-              borderRadius: 999,
+              borderRadius: 8,
               backgroundColor: 'rgba(220,38,38,0.88)',
               paddingHorizontal: 8,
               paddingVertical: 5,
@@ -670,7 +663,7 @@ function PillAction({
         alignItems: 'center',
         justifyContent: 'center',
         gap: 5,
-        borderRadius: 999,
+        borderRadius: 10,
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.10)',
         backgroundColor: 'rgba(255,255,255,0.04)',
@@ -703,7 +696,7 @@ function WordCard({
   return (
     <View
       style={{
-        borderRadius: 26,
+        borderRadius: 12,
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.08)',
         backgroundColor: 'rgba(12,13,16,0.84)',
@@ -739,7 +732,7 @@ function WordCard({
           style={{
             width: 40,
             height: 40,
-            borderRadius: 15,
+            borderRadius: 10,
             borderWidth: 1,
             borderColor: 'rgba(255,255,255,0.08)',
             backgroundColor: 'rgba(255,255,255,0.04)',

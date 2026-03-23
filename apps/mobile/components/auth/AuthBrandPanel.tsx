@@ -22,14 +22,14 @@ export function AuthBrandPanel({
           flexDirection: 'row',
           alignItems: 'center',
           gap: 12,
-          marginBottom: 12,
+          marginBottom: 10,
         }}
       >
         <View
           style={{
-            width: 44,
-            height: 44,
-            borderRadius: 16,
+            width: 40,
+            height: 40,
+            borderRadius: 10,
             borderWidth: 1,
             borderColor: 'rgba(255,255,255,0.10)',
             backgroundColor: 'rgba(255,255,255,0.04)',
@@ -37,7 +37,7 @@ export function AuthBrandPanel({
             justifyContent: 'center',
           }}
         >
-          <Image source={BRAND_LOGO_ASSET} style={{ width: 28, height: 28, borderRadius: 14 }} />
+          <Image source={BRAND_LOGO_ASSET} style={{ width: 24, height: 24, borderRadius: 6 }} />
         </View>
 
         <View style={{ flex: 1 }}>
@@ -65,20 +65,20 @@ export function AuthBrandPanel({
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={{
-        borderRadius: 28,
+        borderRadius: 14,
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.08)',
-        padding: 22,
-        minHeight: 360,
-        justifyContent: 'space-between',
+        padding: 18,
+        minHeight: 280,
+        justifyContent: 'flex-start',
       }}
     >
       <View>
         <View
           style={{
-            width: 62,
-            height: 62,
-            borderRadius: 22,
+            width: 52,
+            height: 52,
+            borderRadius: 12,
             borderWidth: 1,
             borderColor: 'rgba(255,255,255,0.12)',
             backgroundColor: 'rgba(255,255,255,0.05)',
@@ -86,7 +86,7 @@ export function AuthBrandPanel({
             justifyContent: 'center',
           }}
         >
-          <Image source={BRAND_LOGO_ASSET} style={{ width: 38, height: 38, borderRadius: 19 }} />
+          <Image source={BRAND_LOGO_ASSET} style={{ width: 30, height: 30, borderRadius: 8 }} />
         </View>
 
         <CustomText
@@ -105,9 +105,9 @@ export function AuthBrandPanel({
           variant="display"
           style={{
             color: '#FFF9F0',
-            marginTop: 10,
-            fontSize: 28,
-            lineHeight: 34,
+            marginTop: 8,
+            fontSize: 22,
+            lineHeight: 28,
           }}
         >
           {salutation}
@@ -122,26 +122,6 @@ export function AuthBrandPanel({
           }}
         >
           {description}
-        </CustomText>
-      </View>
-
-      <View
-        style={{
-          borderRadius: 22,
-          borderWidth: 1,
-          borderColor: 'rgba(255,255,255,0.08)',
-          backgroundColor: 'rgba(255,255,255,0.04)',
-          padding: 16,
-        }}
-      >
-        <CustomText variant="label" style={{ color: '#FFF9F0' }}>
-          One place for music, video, and saved listening.
-        </CustomText>
-        <CustomText
-          variant="caption"
-          style={{ color: 'rgba(224,214,197,0.72)', marginTop: 6 }}
-        >
-          Clean access on every screen without the extra clutter.
         </CustomText>
       </View>
     </LinearGradient>

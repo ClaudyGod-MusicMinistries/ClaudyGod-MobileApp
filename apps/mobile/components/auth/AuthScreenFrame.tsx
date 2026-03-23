@@ -90,9 +90,9 @@ export function AuthScreenFrame({
                 <TVTouchable
                   onPress={() => router.replace(backPath)}
                   style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 14,
+                    width: 38,
+                    height: 38,
+                    borderRadius: 10,
                     borderWidth: 1,
                     borderColor: 'rgba(255,255,255,0.10)',
                     backgroundColor: 'rgba(255,255,255,0.04)',
@@ -123,12 +123,12 @@ export function AuthScreenFrame({
                   <View
                     style={{
                       flex: 1,
-                      borderRadius: isPhone ? 26 : 28,
+                      borderRadius: 12,
                       borderWidth: 1,
                       borderColor: 'rgba(255,255,255,0.08)',
                       backgroundColor: 'rgba(12,13,16,0.92)',
-                      paddingHorizontal: isPhone ? 18 : 24,
-                      paddingVertical: isPhone ? 20 : 24,
+                      paddingHorizontal: isPhone ? 16 : 22,
+                      paddingVertical: isPhone ? 18 : 20,
                     }}
                   >
                     {!isDesktop ? (
@@ -138,12 +138,12 @@ export function AuthScreenFrame({
                     <View
                       style={{
                         alignSelf: 'flex-start',
-                        borderRadius: 999,
+                        borderRadius: 8,
                         borderWidth: 1,
                         borderColor: 'rgba(255,255,255,0.08)',
                         backgroundColor: 'rgba(255,255,255,0.03)',
-                        paddingHorizontal: 10,
-                        paddingVertical: 6,
+                        paddingHorizontal: 8,
+                        paddingVertical: 5,
                       }}
                     >
                       <CustomText
@@ -162,9 +162,9 @@ export function AuthScreenFrame({
                       variant="display"
                       style={{
                         color: '#FFF9F0',
-                        marginTop: 14,
-                        fontSize: isPhone ? 24 : 28,
-                        lineHeight: isPhone ? 30 : 34,
+                        marginTop: 12,
+                        fontSize: isPhone ? 20 : 24,
+                        lineHeight: isPhone ? 25 : 30,
                       }}
                     >
                       {title}
@@ -174,14 +174,14 @@ export function AuthScreenFrame({
                       variant="body"
                       style={{
                         color: 'rgba(231,223,213,0.72)',
-                        marginTop: 8,
-                        maxWidth: 420,
+                        marginTop: 6,
+                        maxWidth: 380,
                       }}
                     >
                       {subtitle}
                     </CustomText>
 
-                    <View style={{ marginTop: isPhone ? 18 : 22 }}>{children}</View>
+                    <View style={{ marginTop: isPhone ? 16 : 18 }}>{children}</View>
                   </View>
                 </View>
               </View>
