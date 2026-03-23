@@ -85,9 +85,9 @@ export default function SignInScreen() {
     <AuthScreenFrame
       backPath={APP_ROUTES.landing}
       salutation="Welcome back"
-      description="Access your account and continue where you left off."
+      description="Sign in to continue listening, watching, and saving."
       title="Sign In"
-      subtitle="Use your account email and password to continue."
+      subtitle="Use your email and password to continue."
     >
       <View style={{ gap: 12 }}>
         <AuthTextField
