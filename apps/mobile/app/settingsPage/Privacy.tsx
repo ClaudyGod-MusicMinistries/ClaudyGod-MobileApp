@@ -37,12 +37,6 @@ const dataPolicies = [
     description: 'Control downloaded media and remove saved items from this device.',
     retention: 'Device only',
   },
-  {
-    icon: 'bug-report',
-    title: 'Performance sharing',
-    description: 'Optional performance sharing helps improve playback and reliability.',
-    retention: 'Optional',
-  },
 ] as const;
 
 const privacyPrinciples = [
@@ -83,7 +77,6 @@ export default function Privacy() {
     | 'profile'
     | 'history'
     | 'downloads'
-    | 'diagnostics'
     | null;
 
   const [activeModal, setActiveModal] = useState<ActionModalKey>(null);
@@ -286,19 +279,6 @@ export default function Privacy() {
           },
           secondaryActionLabel: 'Close',
           onSecondaryAction: closeActionModal,
-        };
-      case 'diagnostics':
-        return {
-          key: 'diagnostics',
-          title: 'Performance sharing',
-          description:
-            'Performance sharing helps improve app stability by reporting crash and playback information when enabled.',
-          bullets: [
-            'Performance sharing does not affect your saved media.',
-            'You can choose whether to participate at any time.',
-          ],
-          primaryActionLabel: 'Close',
-          onPrimaryAction: closeActionModal,
         };
       default:
         return null;
@@ -528,8 +508,7 @@ export default function Privacy() {
                 onPress={() => {
                   if (item.title === 'Profile details') return openActionModal('profile');
                   if (item.title === 'Playback history') return openActionModal('history');
-                  if (item.title === 'Offline downloads') return openActionModal('downloads');
-                  return openActionModal('diagnostics');
+                  return openActionModal('downloads');
                 }}
               />
             ))}
