@@ -1,176 +1,45 @@
 import axios from 'axios';
 import { computed, defineComponent, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
+import AdminShell from './app/AdminShell';
+import {
+  API_HOST_LABEL,
+  BRAND_LOGO_URL,
+  CONTENT_REQUEST_STATUS_OPTIONS,
+  CONTENT_TYPES,
+  GOOGLE_LOGIN_URL,
+  INACTIVITY_TIMEOUT_MS,
+  USER_ROLE_OPTIONS,
+  VISIBILITY_OPTIONS,
+  WORKFLOW_STEPS,
+  YOUTUBE_SYNC_DEFAULT_LIMIT,
+  normalizePreviewUrl,
+  readStoredMobilePreviewUrl,
+  readStoredToken,
+  storeToken,
+} from './app/config';
+import { http } from './app/http';
+import AuthScreen from './features/auth/AuthScreen';
+import EditContentModal from './features/content/EditContentModal';
+import {
+  acceptFromPolicy,
+  describeHealthCheckDetail,
+  formatBytes,
+  formatDateTime,
+  greetingByTime,
+  humanizeToken,
+  parseCsvList,
+  readChecked,
+  readValue,
+  todayDateInputValue,
+  toErrorMessage,
+  truncate,
+} from './shared/utils/formatters';
+import {
+  normalizeSectionCatalog,
+  sectionSelectionMatches,
+  toggleSectionSelection,
+} from './shared/utils/sections';
 import './App.css';
-
-function isPrivateOrLocalHostname(hostname) {
-  const value = String(hostname || '').trim().toLowerCase();
-  if (!value) return true;
-
-  if (
-    value === 'localhost' ||
-    value === '127.0.0.1' ||
-    value === '::1' ||
-    value === '0.0.0.0' ||
-    value === 'host.docker.internal' ||
-    value === '10.0.2.2'
-  ) {
-    return true;
-  }
-
-  if (value.endsWith('.local')) {
-    return true;
-  }
-
-  if (/^192\.168\.\d{1,3}\.\d{1,3}$/.test(value)) {
-    return true;
-  }
-
-  if (/^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(value)) {
-    return true;
-  }
-
-  const private172 = value.match(/^172\.(\d{1,3})\.\d{1,3}\.\d{1,3}$/);
-  if (private172) {
-    const secondOctet = Number(private172[1]);
-    return secondOctet >= 16 && secondOctet <= 31;
-  }
-
-  return false;
-}
-
-function deriveSiblingOrigin(targetSubdomain) {
-  if (typeof window === 'undefined') {
-    return '';
-  }
-
-  try {
-    const current = new URL(window.location.href);
-    if (isPrivateOrLocalHostname(current.hostname)) {
-      return '';
-    }
-
-    const parts = current.hostname.split('.');
-    if (parts.length < 3) {
-      return '';
-    }
-
-    return `${current.protocol}//${targetSubdomain}.${parts.slice(1).join('.')}`;
-  } catch (error) {
-    return '';
-  }
-}
-
-function resolveApiUrl() {
-  const explicit = String(import.meta.env.VITE_API_URL || '').trim();
-  if (explicit) return explicit.replace(/\/+$/, '');
-
-  return deriveSiblingOrigin('api');
-}
-
-const API_URL = resolveApiUrl();
-const GOOGLE_LOGIN_URL = import.meta.env.VITE_GOOGLE_LOGIN_URL || '';
-const ACCESS_TOKEN_KEY = 'claudy_admin_access_token';
-const MOBILE_PREVIEW_URL_KEY = 'claudy_admin_mobile_preview_url';
-const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000;
-const BRAND_LOGO_URL = '/brand/claudy-logo.webp';
-const CONTENT_TYPES = ['audio', 'video', 'playlist', 'announcement'];
-const VISIBILITY_OPTIONS = ['draft', 'published'];
-const USER_ROLE_OPTIONS = ['CLIENT', 'ADMIN'];
-const CONTENT_REQUEST_STATUS_OPTIONS = ['submitted', 'in_review', 'changes_requested', 'approved', 'fulfilled', 'rejected'];
-const YOUTUBE_SYNC_DEFAULT_LIMIT = 8;
-
-function normalizePublicUrl(value) {
-  const next = String(value || '').trim();
-  if (!next) return '';
-
-  const candidate = /^https?:\/\//i.test(next) ? next : `https://${next}`;
-
-  try {
-    const parsed = new URL(candidate);
-    if (isPrivateOrLocalHostname(parsed.hostname)) {
-      return '';
-    }
-    return parsed.toString().replace(/\/+$/, '');
-  } catch (error) {
-    return '';
-  }
-}
-
-const DEFAULT_MOBILE_PREVIEW_URL =
-  normalizePublicUrl(import.meta.env.VITE_MOBILE_PREVIEW_URL) || deriveSiblingOrigin('app') || '';
-const WORKFLOW_STEPS = [
-  {
-    title: 'Submit',
-    detail: 'Send one clean ticket with files, links, and placement details.',
-  },
-  {
-    title: 'Review',
-    detail: 'Track approvals, requested changes, and queue progress in one place.',
-  },
-  {
-    title: 'Release',
-    detail: 'Convert approved tickets into draft content, then publish when ready.',
-  },
-];
-const API_HOST_LABEL = (() => {
-  if (!API_URL) {
-    return 'configured API endpoint';
-  }
-  try {
-    return new URL(API_URL).host;
-  } catch (error) {
-    return String(API_URL || '').replace(/^https?:\/\//i, '');
-  }
-})();
-
-const http = axios.create({
-  baseURL: API_URL,
-  timeout: 15000,
-  withCredentials: true,
-  headers: {
-    'X-Claudy-Client-Platform': 'web',
-  },
-});
-
-function readStoredToken() {
-  try {
-    return localStorage.getItem(ACCESS_TOKEN_KEY) || '';
-  } catch (error) {
-    return '';
-  }
-}
-
-function normalizePreviewUrl(value) {
-  return normalizePublicUrl(value) || DEFAULT_MOBILE_PREVIEW_URL;
-}
-
-function readStoredMobilePreviewUrl() {
-  try {
-    const stored = localStorage.getItem(MOBILE_PREVIEW_URL_KEY) || '';
-    if (stored.trim()) {
-      const normalized = normalizePreviewUrl(stored);
-      if (normalized !== stored.trim().replace(/\/+$/, '')) {
-        localStorage.setItem(MOBILE_PREVIEW_URL_KEY, normalized);
-      }
-      return normalized;
-    }
-  } catch (error) {
-    // Keep default URL when storage is unavailable.
-  }
-  return normalizePreviewUrl(DEFAULT_MOBILE_PREVIEW_URL);
-}
-
-function storeToken(token) {
-  try {
-    if (token) {
-      localStorage.setItem(ACCESS_TOKEN_KEY, token);
-      return;
-    }
-    localStorage.removeItem(ACCESS_TOKEN_KEY);
-  } catch (error) {
-    // Storage can be blocked in strict privacy modes; keep runtime functional.
-  }
-}
 
 function applyToken(token) {
   if (token) {
@@ -178,166 +47,6 @@ function applyToken(token) {
     return;
   }
   delete http.defaults.headers.common.Authorization;
-}
-
-function readValue(event) {
-  return event && event.target ? event.target.value : '';
-}
-
-function readChecked(event) {
-  return Boolean(event && event.target ? event.target.checked : false);
-}
-
-function toErrorMessage(error, fallback) {
-  if (axios.isAxiosError(error)) {
-    const errorCode = String(error.code || '').toUpperCase();
-    const errorMessage = String(error.message || '').toLowerCase();
-
-    if (errorCode === 'ECONNABORTED' || errorMessage.includes('timeout')) {
-      return `The API at ${API_HOST_LABEL} did not respond in time. Confirm the backend is running and that PostgreSQL is reachable from the API.`;
-    }
-    if (error.response?.status === 401) {
-      return 'Your session has expired. Please sign in again.';
-    }
-    if (error.response?.status === 403) {
-      return 'You do not have permission for this action.';
-    }
-    if (!error.response) {
-      return `Unable to reach the API at ${API_HOST_LABEL}. Confirm the API domain, reverse proxy, and CORS configuration.`;
-    }
-    const data = error.response && error.response.data ? error.response.data : {};
-    return data.message || data.error || error.message || fallback;
-  }
-  if (error && error.message) return error.message;
-  return fallback;
-}
-
-function formatDateTime(value) {
-  if (!value) return '--';
-  return new Date(value).toLocaleString();
-}
-
-function truncate(value, size = 180) {
-  if (!value) return '';
-  if (value.length <= size) return value;
-  return `${value.slice(0, size - 1)}...`;
-}
-
-function humanizeToken(value) {
-  return String(value || '')
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, (char) => char.toUpperCase());
-}
-
-function greetingByTime() {
-  const hour = new Date().getHours();
-  if (hour < 12) return 'Good morning';
-  if (hour < 17) return 'Good afternoon';
-  return 'Good evening';
-}
-
-function parseCsvList(value) {
-  return String(value || '')
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
-
-function normalizeSectionCatalog(config) {
-  const sectionMap = new Map();
-
-  const register = (screen, value) => {
-    if (!value || typeof value !== 'object') return;
-
-    const id = String(value.id || '').trim();
-    const title = String(value.title || '').trim();
-    if (!id || !title) return;
-
-    const existing = sectionMap.get(id) || {
-      id,
-      title,
-      subtitle: '',
-      screens: [],
-      contentTypes: [],
-    };
-
-    existing.title = title;
-    existing.subtitle = String(value.subtitle || existing.subtitle || '').trim();
-    if (!existing.screens.includes(screen)) {
-      existing.screens.push(screen);
-    }
-
-    if (Array.isArray(value.contentTypes)) {
-      existing.contentTypes = Array.from(new Set([
-        ...existing.contentTypes,
-        ...value.contentTypes.map((item) => String(item || '').trim()).filter(Boolean),
-      ]));
-    }
-
-    sectionMap.set(id, existing);
-  };
-
-  const homeSections = Array.isArray(config?.layout?.homeSections) ? config.layout.homeSections : [];
-  const videoSections = Array.isArray(config?.layout?.videoSections) ? config.layout.videoSections : [];
-
-  homeSections.forEach((section) => register('Home', section));
-  videoSections.forEach((section) => register('Videos', section));
-
-  return Array.from(sectionMap.values());
-}
-
-function sectionSelectionMatches(value, section) {
-  const tokens = parseCsvList(value).map((item) => item.toLowerCase());
-  return tokens.includes(String(section.id || '').toLowerCase()) || tokens.includes(String(section.title || '').toLowerCase());
-}
-
-function toggleSectionSelection(value, section) {
-  const current = parseCsvList(value);
-  const targetIds = new Set([String(section.id || '').trim(), String(section.title || '').trim()].filter(Boolean));
-  const isSelected = current.some((item) => targetIds.has(item));
-
-  if (isSelected) {
-    return current.filter((item) => !targetIds.has(item)).join(', ');
-  }
-
-  return [...current.filter(Boolean), section.id].join(', ');
-}
-
-function formatBytes(bytes) {
-  const value = Number(bytes || 0);
-  if (!Number.isFinite(value) || value <= 0) return '0 B';
-  if (value < 1024) return `${value} B`;
-  if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
-  if (value < 1024 * 1024 * 1024) return `${(value / (1024 * 1024)).toFixed(1)} MB`;
-  return `${(value / (1024 * 1024 * 1024)).toFixed(2)} GB`;
-}
-
-function describeHealthCheckDetail(payload) {
-  const services = payload && payload.services ? payload.services : null;
-  const capabilities = payload && payload.capabilities ? payload.capabilities : null;
-  if (!services) return 'Core API responding';
-
-  const details = [];
-  if (services.postgres) {
-    details.push(`PostgreSQL: ${services.postgres}`);
-  }
-  if (services.redis) {
-    details.push(`Redis: ${services.redis}`);
-  }
-  if (capabilities && capabilities.youtube === false) {
-    details.push('YouTube is disabled in API environment');
-  }
-
-  return details.length > 0 ? details.join(' • ') : 'Core API responding';
-}
-
-function acceptFromPolicy(policy) {
-  if (!policy || !Array.isArray(policy.allowedExtensions) || policy.allowedExtensions.length === 0) return undefined;
-  return policy.allowedExtensions.join(',');
-}
-
-function todayDateInputValue() {
-  return new Date().toISOString().slice(0, 10);
 }
 
 export default defineComponent({
@@ -2023,257 +1732,28 @@ export default defineComponent({
 
     return () => {
       const loginScreen = (
-        <section class="auth-layout reveal-up">
-          <div class="auth-hero glass-panel">
-            <div class="brand-stack">
-              <div class="logo-wrap logo-wrap-large">
-                <div class="logo-glow" />
-                <img src={BRAND_LOGO_URL} alt="ClaudyGod" class="brand-logo" />
-              </div>
-              <div>
-                <p class="eyebrow">ClaudyGod Ministries</p>
-                <h1>Content Studio</h1>
-                <p class="subtitle">
-                  Secure publisher access for uploading, reviewing, and releasing ministry content.
-                </p>
-              </div>
-            </div>
-
-            <div class="auth-status-grid">
-              <article class="auth-status-card">
-                <span class="auth-status-label">API Host</span>
-                <strong>{API_HOST_LABEL}</strong>
-                <p>{publicHealthSummary.value}</p>
-              </article>
-              <article class="auth-status-card">
-                <span class="auth-status-label">Database</span>
-                <strong>{databaseTargetLabel.value}</strong>
-                <p>
-                  {publicHealth.value?.services?.postgres === 'up'
-                    ? 'Connection ready'
-                    : publicHealth.value?.services?.postgres === 'down'
-                      ? 'Connection unavailable'
-                      : 'Waiting for backend check'}
-                </p>
-              </article>
-              <article class="auth-status-card">
-                <span class="auth-status-label">Account Flow</span>
-                <strong>{isVerifyMode.value ? 'Email verification' : 'Username only'}</strong>
-                <p>
-                  {isVerifyMode.value
-                    ? 'Enter the code sent to your email to finish creating the account.'
-                    : 'No duplicate identity fields in the current register form.'}
-                </p>
-              </article>
-            </div>
-          </div>
-
-          <div class="auth-form-card glass-panel reveal-up" style={{ animationDelay: '120ms' }}>
-            <div class="form-header-row">
-              <div class="logo-wrap">
-                <img src={BRAND_LOGO_URL} alt="ClaudyGod" class="brand-logo" />
-              </div>
-              <div>
-                <h2>{isVerifyMode.value ? 'Verify Email' : isRegisterMode.value ? 'Create Account' : 'Sign In'}</h2>
-                <p class="subtle-text">
-                  {isVerifyMode.value
-                    ? 'Confirm your 6-digit code to activate the account and open the dashboard.'
-                    : isRegisterMode.value
-                    ? 'Create your account to manage and publish content.'
-                    : 'Enter your account details to continue.'}
-                </p>
-              </div>
-            </div>
-
-            <div class="auth-mode-toggle" role="tablist" aria-label="Authentication mode">
-              <button
-                type="button"
-                class={['auth-mode-btn', authMode.value === 'login' ? 'is-active' : '']}
-                onClick={() => switchAuthMode('login')}
-                disabled={authLoading.value}
-              >
-                Sign In
-              </button>
-              <button
-                type="button"
-                class={['auth-mode-btn', isRegisterMode.value || isVerifyMode.value ? 'is-active' : '']}
-                onClick={() => switchAuthMode('register')}
-                disabled={authLoading.value}
-              >
-                Create Account
-              </button>
-            </div>
-
-            {notice.value ? <div class={['notice', noticeKind.value === 'error' ? 'notice-error' : 'notice-success']}>{notice.value}</div> : null}
-
-            <div class={['auth-runtime-pill', publicHealthTone.value]}>
-              <span class="auth-runtime-dot" />
-              <span>{publicHealthSummary.value}</span>
-            </div>
-
-            {googleLoginEnabled.value && !isVerifyMode.value ? (
-              <div class="social-auth-block">
-                <button
-                  type="button"
-                  class="google-btn"
-                  onClick={startGoogleLogin}
-                  disabled={authLoading.value}
-                >
-                  Continue with Google
-                </button>
-              </div>
-            ) : null}
-
-            <form class="stack-form" onSubmit={(event) => void handleAuthSubmit(event)}>
-              {isRegisterMode.value ? (
-                <label class="auth-field">
-                  <span class="field-label-row">
-                    <span>Username</span>
-                    <span
-                      class="field-tooltip"
-                      data-tooltip="Your public publishing identity for uploads, content credits, and dashboard activity."
-                      tabIndex={0}
-                      role="note"
-                      aria-label="Username help"
-                    >
-                      i
-                    </span>
-                  </span>
-                  <input
-                    class="auth-input"
-                    value={authForm.username}
-                    onInput={(event) => { authForm.username = readValue(event); }}
-                    placeholder="claudy_member"
-                    autoComplete="nickname"
-                  />
-                  <small class="field-note">This is the only public identity field in the admin account flow.</small>
-                </label>
-              ) : null}
-
-              <label class="auth-field">
-                <span class="field-label-row">
-                  <span>Email address</span>
-                  <span
-                    class="field-tooltip"
-                    data-tooltip="This email is used for sign-in, verification, password recovery, and account security notices."
-                    tabIndex={0}
-                    role="note"
-                    aria-label="Email help"
-                  >
-                    i
-                  </span>
-                </span>
-                <input
-                  class="auth-input"
-                  type="email"
-                  value={authForm.email}
-                  onInput={(event) => { authForm.email = readValue(event); }}
-                  placeholder={isVerifyMode.value ? 'Enter the same email used during signup' : 'name@company.com'}
-                  autoComplete={isVerifyMode.value ? 'username' : 'email'}
-                />
-              </label>
-
-              {isVerifyMode.value ? (
-                <label class="auth-field">
-                  <span class="field-label-row">
-                    <span>Verification code</span>
-                    <span
-                      class="field-tooltip"
-                      data-tooltip="Use the 6-digit code that was sent to the email address above."
-                      tabIndex={0}
-                      role="note"
-                      aria-label="Verification code help"
-                    >
-                      i
-                    </span>
-                  </span>
-                  <input
-                    class="auth-input"
-                    value={authForm.verificationCode}
-                    onInput={(event) => { authForm.verificationCode = readValue(event).replace(/\D/g, '').slice(0, 6); }}
-                    placeholder="123456"
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                  />
-                  <small class="field-note">Check your inbox for the 6-digit code. You can resend it if needed.</small>
-                </label>
-              ) : (
-                <label class="auth-field">
-                  <span class="field-label-row">
-                    <span>Password</span>
-                    <span
-                      class="field-tooltip"
-                      data-tooltip="Use at least 8 characters with uppercase, lowercase, and a number."
-                      tabIndex={0}
-                      role="note"
-                      aria-label="Password help"
-                    >
-                      i
-                    </span>
-                  </span>
-                  <input
-                    class="auth-input"
-                    type="password"
-                    value={authForm.password}
-                    onInput={(event) => { authForm.password = readValue(event); }}
-                    placeholder={isRegisterMode.value ? 'Create a strong password' : 'Enter your password'}
-                    autoComplete={isRegisterMode.value ? 'new-password' : 'current-password'}
-                  />
-                </label>
-              )}
-
-              {isRegisterMode.value ? (
-                <label class="auth-field">
-                  <span class="field-label-row">
-                    <span>Confirm password</span>
-                    <span
-                      class="field-tooltip"
-                      data-tooltip="Repeat the password exactly to complete account creation."
-                      tabIndex={0}
-                      role="note"
-                      aria-label="Confirm password help"
-                    >
-                      i
-                    </span>
-                  </span>
-                  <input
-                    class="auth-input"
-                    type="password"
-                    value={authForm.confirmPassword}
-                    onInput={(event) => { authForm.confirmPassword = readValue(event); }}
-                    placeholder="Confirm your password"
-                    autoComplete="new-password"
-                  />
-                </label>
-              ) : null}
-
-              <button type="submit" class="primary-btn primary-btn-large" disabled={authLoading.value}>
-                {authLoading.value
-                  ? (isVerifyMode.value ? 'Verifying...' : isRegisterMode.value ? 'Creating account...' : 'Signing in...')
-                  : (isVerifyMode.value ? 'Verify Email' : isRegisterMode.value ? 'Create Account' : 'Sign In')}
-              </button>
-            </form>
-
-            {isVerifyMode.value ? (
-              <div class="button-row compact-row">
-                <button type="button" class="ghost-btn compact" onClick={() => void resendVerificationCode()} disabled={authLoading.value}>
-                  Resend Code
-                </button>
-                <button type="button" class="ghost-btn compact" onClick={() => switchAuthMode('login')} disabled={authLoading.value}>
-                  Back to Sign In
-                </button>
-              </div>
-            ) : null}
-
-            <p class="footnote-text">
-              {isVerifyMode.value
-                ? `We only activate the account after the email code is confirmed.${pendingVerificationEmail.value ? ` Code destination: ${pendingVerificationEmail.value}.` : ''}`
-                : isRegisterMode.value
-                ? 'Use one username, one email address, and one password to create your publisher account.'
-                : 'Sign in with your existing publisher account.'}
-            </p>
-          </div>
-        </section>
+        <AuthScreen
+          apiHostLabel={API_HOST_LABEL}
+          brandLogoUrl={BRAND_LOGO_URL}
+          publicHealthSummary={publicHealthSummary.value}
+          databaseTargetLabel={databaseTargetLabel.value}
+          publicHealth={publicHealth.value}
+          isVerifyMode={isVerifyMode.value}
+          isRegisterMode={isRegisterMode.value}
+          authMode={authMode.value}
+          authLoading={authLoading.value}
+          notice={notice.value}
+          noticeKind={noticeKind.value}
+          publicHealthTone={publicHealthTone.value}
+          googleLoginEnabled={googleLoginEnabled.value}
+          authForm={authForm}
+          pendingVerificationEmail={pendingVerificationEmail.value}
+          onSwitchMode={switchAuthMode}
+          onGoogleLogin={startGoogleLogin}
+          onSubmit={handleAuthSubmit}
+          onReadValue={readValue}
+          onResendVerificationCode={resendVerificationCode}
+        />
       );
 
       const workspaceActions = [
@@ -3708,150 +3188,16 @@ export default defineComponent({
           ) : null}
 
           {editContentOpen.value ? (
-            <div
-              class="modal-backdrop"
-              onClick={(event) => {
-                if (event.target === event.currentTarget && !editContentSaving.value) {
-                  closeEditContentModal();
-                }
-              }}
-            >
-              <section class="modal-card glass-panel" role="dialog" aria-modal="true" aria-labelledby="edit-content-title">
-                <div class="section-head split">
-                  <div>
-                    <h2 id="edit-content-title">Edit Content</h2>
-                    <p>Update title, description, media links, tags, and mobile app placement for this item.</p>
-                  </div>
-                  <div class="button-row">
-                    <button
-                      type="button"
-                      class="ghost-btn compact"
-                      onClick={closeEditContentModal}
-                      disabled={editContentSaving.value}
-                    >
-                      Close
-                    </button>
-                  </div>
-                </div>
-
-                <form class="stack-form" onSubmit={(event) => void saveEditedContent(event)}>
-                  <div class="field-cluster">
-                    <label>
-                      Title
-                      <input
-                        value={editForm.title}
-                        onInput={(event) => { editForm.title = readValue(event); }}
-                        placeholder="Content title"
-                      />
-                    </label>
-                  </div>
-
-                  <label>
-                    Description
-                    <textarea
-                      rows={5}
-                      value={editForm.description}
-                      onInput={(event) => { editForm.description = readValue(event); }}
-                      placeholder="Short description shown to users."
-                    />
-                  </label>
-
-                  <div class="grid-2">
-                    <label>
-                      Content type
-                      <select value={editForm.type} onChange={(event) => { editForm.type = readValue(event); }}>
-                        {CONTENT_TYPES.map((type) => <option value={type} key={`edit-${type}`}>{type}</option>)}
-                      </select>
-                    </label>
-                    <label>
-                      Status
-                      <select value={editForm.visibility} onChange={(event) => { editForm.visibility = readValue(event); }}>
-                        {VISIBILITY_OPTIONS.map((visibility) => <option value={visibility} key={`edit-v-${visibility}`}>{visibility}</option>)}
-                      </select>
-                    </label>
-                  </div>
-
-                  <div class="grid-2">
-                    <label>
-                      Media URL
-                      <input
-                        value={editForm.url}
-                        onInput={(event) => { editForm.url = readValue(event); }}
-                        placeholder="https://..."
-                      />
-                    </label>
-                    <label>
-                      Thumbnail URL
-                      <input
-                        value={editForm.thumbnailUrl}
-                        onInput={(event) => { editForm.thumbnailUrl = readValue(event); }}
-                        placeholder="https://... (required for audio/video)"
-                      />
-                    </label>
-                  </div>
-
-                  <div class="grid-2">
-                    <label>
-                      Channel / Artist Name (optional)
-                      <input
-                        value={editForm.channelName}
-                        onInput={(event) => { editForm.channelName = readValue(event); }}
-                        placeholder="ClaudyGod Ministries"
-                      />
-                    </label>
-                    <label>
-                      Duration label (optional)
-                      <input
-                        value={editForm.duration}
-                        onInput={(event) => { editForm.duration = readValue(event); }}
-                        placeholder="12:34"
-                      />
-                    </label>
-                  </div>
-
-                  <div class="grid-2">
-                    <label>
-                      Tags (comma-separated)
-                      <input
-                        value={editForm.tagsCsv}
-                        onInput={(event) => { editForm.tagsCsv = readValue(event); }}
-                        placeholder="worship, sermon, youth"
-                      />
-                    </label>
-                    <label>
-                      App sections (comma-separated)
-                      <input
-                        value={editForm.appSectionsCsv}
-                        onInput={(event) => { editForm.appSectionsCsv = readValue(event); }}
-                        placeholder="Choose placements below or enter section ids manually"
-                      />
-                    </label>
-                  </div>
-                  {renderSectionSelector(editForm.appSectionsCsv, (nextValue) => { editForm.appSectionsCsv = nextValue; })}
-
-                  <div class="helper-card">
-                    <strong>Validation rules</strong>
-                    <p>
-                      Audio and video items require both a media URL and a thumbnail URL. URLs must start with `http://` or `https://`. Tags and sections are deduplicated before save.
-                    </p>
-                  </div>
-
-                  <div class="button-row modal-actions">
-                    <button
-                      type="button"
-                      class="ghost-btn compact"
-                      onClick={closeEditContentModal}
-                      disabled={editContentSaving.value}
-                    >
-                      Cancel
-                    </button>
-                    <button type="submit" class="primary-btn" disabled={editContentSaving.value}>
-                      {editContentSaving.value ? 'Saving changes...' : 'Save Changes'}
-                    </button>
-                  </div>
-                </form>
-              </section>
-            </div>
+            <EditContentModal
+              editContentSaving={editContentSaving.value}
+              editForm={editForm}
+              contentTypes={CONTENT_TYPES}
+              visibilityOptions={VISIBILITY_OPTIONS}
+              onClose={closeEditContentModal}
+              onSubmit={saveEditedContent}
+              onReadValue={readValue}
+              renderSectionSelector={renderSectionSelector}
+            />
           ) : null}
 
         </section>
@@ -3878,135 +3224,26 @@ export default defineComponent({
         : (currentUser.value ? dashboardScreen : loginScreen);
 
       return (
-        <div class="app-root">
-          <div class="bg-orb orb-a" />
-          <div class="bg-orb orb-b" />
-          <div class="bg-orb orb-c" />
-
-          <header class="global-header">
-            <div class="global-header-inner">
-              <div class="brand-inline">
-                <div class="logo-wrap">
-                  <img src={BRAND_LOGO_URL} alt="ClaudyGod" class="brand-logo" />
-                </div>
-                <div>
-                  <p class="eyebrow">ClaudyGod Ministries</p>
-                  <div class="brand-title-line">Content Studio Admin</div>
-                </div>
-              </div>
-
-              <div class="header-controls">
-                {currentUser.value ? (
-                  <button
-                    type="button"
-                    class={['header-toggle-btn', 'header-nav-toggle', headerMenuOpen.value ? 'is-open' : '']}
-                    onClick={toggleHeaderMenu}
-                    aria-expanded={headerMenuOpen.value ? 'true' : 'false'}
-                    aria-label={headerMenuOpen.value ? 'Close navigation drawer' : 'Open navigation drawer'}
-                  >
-                    <span class="header-toggle-icon" aria-hidden="true">
-                      <span />
-                      <span />
-                      <span />
-                    </span>
-                    <span>{headerMenuOpen.value ? 'Close Nav' : 'Navigation'}</span>
-                  </button>
-                ) : null}
-
-                {!isCompactHeader.value ? (
-                  <div class="header-command-bar">
-                    {currentUser.value ? (
-                      <>
-                        <div class="user-pill">
-                          <span class="user-pill-dot" />
-                          <span>{displayName.value}</span>
-                          <span class="user-pill-role">{portalRoleLabel.value}</span>
-                        </div>
-                        {accountEmail.value ? <span class="muted-chip">{accountEmail.value}</span> : null}
-                        <div class="header-inline-actions">
-                          <button type="button" class="ghost-btn compact" onClick={() => void refreshDashboard()}>
-                            Refresh
-                          </button>
-                          <button type="button" class="danger-btn compact" onClick={logout}>
-                            Sign Out
-                          </button>
-                        </div>
-                      </>
-                    ) : null}
-                  </div>
-                ) : null}
-              </div>
-            </div>
-
-            {currentUser.value ? (
-              <div class={['header-drawer', headerMenuOpen.value ? 'is-open' : '']}>
-                <div class="header-drawer-inner">
-                  <div class="header-drawer-nav">
-                    <button
-                      type="button"
-                      class={['drawer-nav-link', dashboardView.value === 'overview' ? 'is-active' : '']}
-                      onClick={() => setDashboardView('overview')}
-                    >
-                      Overview
-                    </button>
-                    <button
-                      type="button"
-                     class={['drawer-nav-link', dashboardView.value === 'editor' ? 'is-active' : '']}
-                      onClick={() => setDashboardView('editor')}
-                    >
-                      Requests & Library
-                    </button>
-                    <button
-                      type="button"
-                      class={['drawer-nav-link', dashboardView.value === 'mobile-preview' ? 'is-active' : '']}
-                      onClick={() => setDashboardView('mobile-preview')}
-                    >
-                      Preview App
-                    </button>
-                  </div>
-
-                  <div class="user-pill">
-                    <span class="user-pill-dot" />
-                    <span>{displayName.value}</span>
-                    <span class="user-pill-role">{portalRoleLabel.value}</span>
-                  </div>
-                  {accountEmail.value ? <span class="muted-chip">{accountEmail.value}</span> : null}
-
-                  <div class="header-drawer-actions">
-                    <button type="button" class="ghost-btn compact" onClick={() => void refreshDashboard()}>
-                      Refresh
-                    </button>
-                    <button type="button" class="ghost-btn compact" onClick={() => void fetchYouTubePreview()}>
-                      YouTube Preview
-                    </button>
-                    <button type="button" class="ghost-btn compact" onClick={() => void runEndpointChecks()}>
-                      Run Checks
-                    </button>
-                    <button type="button" class="danger-btn compact" onClick={logout}>
-                      Sign Out
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ) : null}
-          </header>
-
-          <main
-            class={[
-              'page-shell',
-              appLoading.value ? 'page-shell-boot' : currentUser.value ? 'page-shell-dashboard' : 'page-shell-auth',
-            ]}
-          >
-            {shellContent}
-          </main>
-
-          <footer class="global-footer">
-            <div class="global-footer-inner global-footer-minimal">
-              <span>© {currentYear} ClaudyGod Ministries</span>
-              <span>{API_HOST_LABEL}</span>
-            </div>
-          </footer>
-        </div>
+        <AdminShell
+          brandLogoUrl={BRAND_LOGO_URL}
+          currentUser={currentUser.value}
+          headerMenuOpen={headerMenuOpen.value}
+          onToggleHeaderMenu={toggleHeaderMenu}
+          isCompactHeader={isCompactHeader.value}
+          displayName={displayName.value}
+          portalRoleLabel={portalRoleLabel.value}
+          accountEmail={accountEmail.value}
+          onRefreshDashboard={refreshDashboard}
+          onFetchYouTubePreview={fetchYouTubePreview}
+          onRunEndpointChecks={runEndpointChecks}
+          onLogout={logout}
+          dashboardView={dashboardView.value}
+          onSetDashboardView={setDashboardView}
+          appLoading={appLoading.value}
+          currentYear={currentYear}
+          apiHostLabel={API_HOST_LABEL}
+          content={shellContent}
+        />
       );
     };
   },
