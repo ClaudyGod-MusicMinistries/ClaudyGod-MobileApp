@@ -104,8 +104,8 @@ export default function HomeScreen() {
   };
 
   const onSubscribeLive = async (item: FeedCardItem) => {
-    await subscribeToLiveAlerts(item.id);
-    Alert.alert('Live alerts enabled', `You will be notified when ${item.title} goes live.`);
+    await subscribeToLiveAlerts(item.notificationChannelId || item.id);
+    Alert.alert('Live alerts enabled', 'You will be notified when ClaudyGod goes live.');
   };
 
   const onShareWord = async () => {

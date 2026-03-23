@@ -19,6 +19,7 @@ import { APP_ROUTES } from '../../util/appRoutes';
 import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
 import { deriveLayoutSectionItems, getVideoLayoutSections } from '../../util/mobileLayout';
 import {
+  buildPlayerRoute,
   isDirectPlayableVideoUrl,
   isHostedVideoUrl,
   routeParamToString,
@@ -140,6 +141,11 @@ export default function VideosScreen() {
   );
 
   const openVideo = async (item: FeedCardItem, source: string) => {
+    if ((item.isLive || item.type === 'live') && !String(item.id || '').startsWith('yt:')) {
+      router.push(buildPlayerRoute(item));
+      return;
+    }
+
     setActiveId(item.id);
     await trackPlayEvent({
       contentId: item.id,

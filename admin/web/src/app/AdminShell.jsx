@@ -26,7 +26,7 @@ export default function AdminShell(props) {
             </div>
             <div>
               <p class="eyebrow">ClaudyGod</p>
-              <div class="brand-title-line">Content Portal</div>
+              <div class="brand-title-line">Creator Portal</div>
             </div>
           </div>
 
@@ -35,10 +35,17 @@ export default function AdminShell(props) {
               <nav class="portal-nav" aria-label="Portal navigation">
                 <button
                   type="button"
+                  class={['ghost-btn compact', dashboardView === 'live' ? 'is-active' : '']}
+                  onClick={() => onSetDashboardView('live')}
+                >
+                  Live
+                </button>
+                <button
+                  type="button"
                   class={['ghost-btn compact', dashboardView === 'editor' ? 'is-active' : '']}
                   onClick={() => onSetDashboardView('editor')}
                 >
-                  Content
+                  Library
                 </button>
                 <button
                   type="button"
