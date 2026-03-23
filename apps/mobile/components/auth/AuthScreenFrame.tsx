@@ -40,10 +40,10 @@ export function AuthScreenFrame({
 
   return (
     <View style={{ flex: 1, backgroundColor: '#07090C' }}>
-      <StatusBar translucent={false} backgroundColor="#07090C" barStyle="light-content" />
+      <StatusBar translucent={false} backgroundColor="#06060B" barStyle="light-content" />
 
       <LinearGradient
-        colors={['rgba(210,176,105,0.12)', 'rgba(7,9,12,0)']}
+        colors={['rgba(139,92,246,0.16)', 'rgba(7,9,12,0)']}
         start={{ x: 0, y: 0 }}
         end={{ x: 0.8, y: 1 }}
         style={{
@@ -56,7 +56,7 @@ export function AuthScreenFrame({
         }}
       />
       <LinearGradient
-        colors={['rgba(92,118,142,0.12)', 'rgba(7,9,12,0)']}
+        colors={['rgba(101,108,255,0.12)', 'rgba(7,9,12,0)']}
         start={{ x: 1, y: 0 }}
         end={{ x: 0, y: 1 }}
         style={{
