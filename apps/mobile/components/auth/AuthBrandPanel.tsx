@@ -61,11 +61,11 @@ export function AuthBrandPanel({
 
   return (
     <LinearGradient
-      colors={['rgba(185,144,68,0.18)', 'rgba(17,20,30,0.88)']}
+      colors={['rgba(18,23,28,0.94)', 'rgba(10,13,17,0.98)']}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={{
-        borderRadius: 14,
+        borderRadius: 16,
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.08)',
         padding: 18,
@@ -78,10 +78,10 @@ export function AuthBrandPanel({
           style={{
             width: 52,
             height: 52,
-            borderRadius: 12,
+            borderRadius: 14,
             borderWidth: 1,
             borderColor: 'rgba(255,255,255,0.12)',
-            backgroundColor: 'rgba(255,255,255,0.05)',
+            backgroundColor: 'rgba(255,255,255,0.04)',
             alignItems: 'center',
             justifyContent: 'center',
           }}
@@ -92,7 +92,7 @@ export function AuthBrandPanel({
         <CustomText
           variant="caption"
           style={{
-            color: 'rgba(224,214,197,0.72)',
+            color: 'rgba(226,214,192,0.72)',
             marginTop: 18,
             textTransform: 'uppercase',
             letterSpacing: 0.88,
@@ -106,8 +106,8 @@ export function AuthBrandPanel({
           style={{
             color: '#FFF9F0',
             marginTop: 8,
-            fontSize: 22,
-            lineHeight: 28,
+            fontSize: 20,
+            lineHeight: 25,
           }}
         >
           {salutation}
@@ -116,7 +116,7 @@ export function AuthBrandPanel({
         <CustomText
           variant="body"
           style={{
-            color: 'rgba(239,232,222,0.74)',
+            color: 'rgba(194,203,210,0.78)',
             marginTop: 10,
             maxWidth: 320,
           }}

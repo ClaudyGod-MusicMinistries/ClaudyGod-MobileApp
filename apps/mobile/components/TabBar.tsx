@@ -21,9 +21,8 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
   const isTablet = width >= 768 && !isTV;
 
   const sizes = {
-    barHeight: isTV ? 92 : isTablet ? 86 : compact ? 76 : 80,
-    iconSize: isTV ? 25 : 21,
-    centerSize: isTV ? 66 : 56,
+    barHeight: isTV ? 86 : isTablet ? 80 : compact ? 72 : 76,
+    iconSize: isTV ? 24 : 20,
     paddingX: isTV ? 18 : isTablet ? 16 : 14,
   };
 
@@ -64,12 +63,12 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
-          borderTopLeftRadius: isTablet || isTV ? 24 : 22,
-          borderTopRightRadius: isTablet || isTV ? 24 : 22,
-          shadowColor: '#12092A',
-          shadowOpacity: 0.12,
-          shadowRadius: 14,
-          shadowOffset: { width: 0, height: -4 },
+          borderTopLeftRadius: isTablet || isTV ? 18 : 16,
+          borderTopRightRadius: isTablet || isTV ? 18 : 16,
+          shadowColor: '#000000',
+          shadowOpacity: 0.2,
+          shadowRadius: 16,
+          shadowOffset: { width: 0, height: -6 },
           elevation: 8,
         }}
       >
@@ -78,38 +77,6 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
           if (!config) return null;
 
           const focused = state.index === index;
-          const isCenter = Boolean(config.isCenter);
-
-          if (isCenter) {
-            return (
-              <TVTouchable
-                key={route.key}
-                accessibilityRole="button"
-                accessibilityLabel={config.label}
-                onPress={() => navigation.navigate(route.name as never)}
-                style={{
-                  width: sizes.centerSize,
-                  height: sizes.centerSize,
-                  borderRadius: sizes.centerSize / 2,
-                  marginTop: -20,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: palette.primary,
-                  borderWidth: 1,
-                  borderColor: 'rgba(255,255,255,0.44)',
-                  shadowColor: palette.primary,
-                  shadowOpacity: 0.44,
-                  shadowRadius: 20,
-                  shadowOffset: { width: 0, height: 10 },
-                  elevation: 10,
-                }}
-                focusStyle={{ transform: [{ scale: isTV ? 1.1 : 1.04 }] }}
-                showFocusBorder={false}
-              >
-                <MaterialIcons name={config.icon} size={sizes.iconSize + 4} color="#FFFFFF" />
-              </TVTouchable>
-            );
-          }
 
           return (
             <TVTouchable
@@ -120,12 +87,14 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
               onPress={() => navigation.navigate(route.name as never)}
               style={{
                 flex: 1,
-                minHeight: 52,
+                minHeight: 56,
                 marginHorizontal: 2,
-                borderRadius: 16,
+                borderRadius: 12,
                 alignItems: 'center',
                 justifyContent: 'center',
-                backgroundColor: focused ? `${palette.primary}16` : 'transparent',
+                backgroundColor: focused ? palette.surfaceAlt : 'transparent',
+                borderWidth: 1,
+                borderColor: focused ? palette.border : 'transparent',
               }}
               focusStyle={{ transform: [{ scale: isTV ? 1.08 : 1.02 }] }}
               showFocusBorder={false}
@@ -139,12 +108,26 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
                 variant="caption"
                 style={{
                   marginTop: 3,
-                  color: focused ? palette.primary : palette.text.secondary,
-                  fontSize: 11,
+                  color: focused ? palette.text.primary : palette.text.secondary,
+                  fontSize: 10,
+                  letterSpacing: 0.18,
+                  textTransform: 'uppercase',
                 }}
               >
-                {config.label}
+                {route.name === 'player' ? 'Music' : config.label}
               </CustomText>
+              {focused ? (
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: 6,
+                    width: 18,
+                    height: 3,
+                    borderRadius: 2,
+                    backgroundColor: palette.primary,
+                  }}
+                />
+              ) : null}
             </TVTouchable>
           );
         })}

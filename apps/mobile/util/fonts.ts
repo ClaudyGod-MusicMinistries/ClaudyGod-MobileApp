@@ -8,55 +8,56 @@ import * as Font from 'expo-font';
 
 export const fontConfig = {
   hero: {
-    fontFamily: 'SpaceGrotesk_600SemiBold',
-    fontSize: 24,
-    lineHeight: 30,
+    fontFamily: 'Sora_600SemiBold',
+    fontSize: 22,
+    lineHeight: 28,
     fontWeight: '600' as const,
-    letterSpacing: -0.4,
+    letterSpacing: -0.5,
   },
   display: {
-    fontFamily: 'SpaceGrotesk_600SemiBold',
-    fontSize: 20,
-    lineHeight: 25,
+    fontFamily: 'Sora_600SemiBold',
+    fontSize: 18,
+    lineHeight: 23,
     fontWeight: '600' as const,
-    letterSpacing: -0.25,
+    letterSpacing: -0.3,
   },
   heading: {
-    fontFamily: 'SpaceGrotesk_600SemiBold',
-    fontSize: 17,
-    lineHeight: 22,
+    fontFamily: 'Sora_600SemiBold',
+    fontSize: 16,
+    lineHeight: 21,
     fontWeight: '600' as const,
   },
   title: {
     fontFamily: 'Sora_500Medium',
-    fontSize: 15,
-    lineHeight: 20,
+    fontSize: 14,
+    lineHeight: 19,
     fontWeight: '500' as const,
   },
   subtitle: {
     fontFamily: 'Sora_500Medium',
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 12,
+    lineHeight: 17,
     fontWeight: '500' as const,
   },
   body: {
     fontFamily: 'Sora_400Regular',
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 13,
+    lineHeight: 19,
     fontWeight: '400' as const,
   },
   label: {
     fontFamily: 'SpaceGrotesk_500Medium',
-    fontSize: 12,
-    lineHeight: 16,
-    fontWeight: '500' as const,
-    letterSpacing: 0.1,
-  },
-  caption: {
-    fontFamily: 'Sora_400Regular',
     fontSize: 11,
     lineHeight: 15,
+    fontWeight: '500' as const,
+    letterSpacing: 0.18,
+  },
+  caption: {
+    fontFamily: 'SpaceGrotesk_500Medium',
+    fontSize: 10,
+    lineHeight: 14,
     fontWeight: '400' as const,
+    letterSpacing: 0.14,
   },
 };
 
@@ -71,13 +72,13 @@ export function getResponsiveFontStyle(variant: FontVariantKey, width: number, i
   const widthScale = isTV
     ? 1.12
     : width >= 1024
-      ? 1.1
+      ? 1.08
       : width >= 768
-        ? 1.06
+        ? 1.04
         : width <= 360
-          ? 0.95
+          ? 0.94
           : width <= 390
-            ? 0.98
+            ? 0.97
             : 1;
 
   const fontSize = clamp(Math.round(base.fontSize * widthScale), 12, 34);

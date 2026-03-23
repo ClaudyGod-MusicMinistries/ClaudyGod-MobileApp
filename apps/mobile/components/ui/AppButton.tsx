@@ -42,12 +42,15 @@ export function AppButton({
   const isGhost = variant === 'ghost';
   const resolvedTextColor =
     textColor ??
-    (isPrimary || isSecondary ? theme.colors.text.inverse : theme.colors.primary);
-  const useShadow = isPrimary || isSecondary;
+    (isPrimary
+      ? theme.colors.text.inverse
+      : isSecondary
+        ? theme.colors.text.primary
+        : theme.colors.text.primary);
 
   const sizeStyle =
     size === 'sm'
-      ? { minHeight: 36, paddingHorizontal: theme.spacing.md, paddingVertical: 6 }
+      ? { minHeight: 34, paddingHorizontal: theme.spacing.md, paddingVertical: 6 }
       : size === 'lg'
       ? { minHeight: 44, paddingHorizontal: theme.spacing.xl, paddingVertical: 10 }
       : { minHeight: 40, paddingHorizontal: theme.spacing.lg, paddingVertical: 8 };
@@ -60,23 +63,29 @@ export function AppButton({
       style={[
         {
           ...sizeStyle,
-          borderRadius: 12,
+          borderRadius: theme.radius.md,
           backgroundColor: isPrimary
             ? theme.colors.primary
             : isSecondary
-            ? theme.colors.secondary
-            : isOutline || isGhost
-            ? 'transparent'
-            : theme.colors.surface,
-          borderWidth: isOutline ? 1 : 0,
-          borderColor: isOutline ? theme.colors.primary : 'transparent',
+              ? theme.colors.surfaceAlt
+              : isGhost
+                ? 'transparent'
+                : isOutline
+                  ? 'transparent'
+                  : theme.colors.surface,
+          borderWidth: isOutline || isSecondary ? 1 : 0,
+          borderColor: isOutline
+            ? theme.colors.border
+            : isSecondary
+              ? theme.colors.border
+              : 'transparent',
           opacity: props.disabled ? 0.6 : 1,
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',
           alignSelf: fullWidth ? 'stretch' : 'flex-start',
           gap: 8,
-          ...(useShadow ? theme.shadows.soft : null),
+          ...(isPrimary ? theme.shadows.soft : null),
         },
         style,
       ]}
@@ -98,14 +107,16 @@ export function AppButton({
             </View>
           ) : null}
           <CustomText
-            variant={size === 'sm' ? 'label' : 'title'}
+            variant="label"
             style={{
               color: resolvedTextColor,
               textAlign: 'center',
               flexShrink: 1,
               fontFamily: 'SpaceGrotesk_500Medium',
-              fontSize: size === 'lg' ? 13 : 12,
-              lineHeight: size === 'lg' ? 16 : 15,
+              fontSize: size === 'lg' ? 12 : 11,
+              lineHeight: size === 'lg' ? 15 : 14,
+              letterSpacing: 0.18,
+              textTransform: 'uppercase',
               ...(textStyle || {}),
             }}
             numberOfLines={1}

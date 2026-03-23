@@ -4,6 +4,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../CustomText';
 import { TVTouchable } from '../ui/TVTouchable';
 import { useAppTheme } from '../../util/colorScheme';
+import { BRAND_LOGO_ASSET } from '../../util/brandAssets';
 
 type HeaderAction = {
   icon: React.ComponentProps<typeof MaterialIcons>['name'];
@@ -46,29 +47,23 @@ export function BrandedHeaderCard({
   const isCompact = width < 390;
   const hideSubtitle = Boolean(subtitle) && autoHideSubtitleOnPhone && isCompact;
   const actionSize = isTV ? 44 : isTablet ? 42 : 40;
-  const logoWrapSize = isTV ? 46 : isTablet ? 44 : 42;
-  const logoSize = isTV ? 26 : 24;
-  const headerRadius = 12;
+  const logoWrapSize = isTV ? 44 : isTablet ? 42 : 38;
+  const logoSize = isTV ? 24 : 22;
   const chipPaddingX = isCompact ? 10 : 12;
-  const chipPaddingY = isCompact ? 7 : 8;
+  const chipPaddingY = isCompact ? 6 : 7;
 
   const ui = {
-    cardBg: isDark ? 'rgba(12,13,16,0.94)' : theme.colors.surface,
-    cardBorder: isDark ? 'rgba(255,255,255,0.08)' : theme.colors.border,
-    logoBg: isDark ? 'rgba(255,255,255,0.04)' : theme.colors.surfaceAlt,
-    logoBorder: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(20,16,33,0.08)',
-    muted: isDark ? 'rgba(210,202,191,0.74)' : 'rgba(96,87,124,0.92)',
-    subtle: isDark ? 'rgba(196,188,178,0.70)' : 'rgba(108,99,134,0.9)',
-    iconBg: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(109,40,217,0.06)',
-    iconBorder: isDark ? 'rgba(255,255,255,0.14)' : 'rgba(20,16,33,0.08)',
-    iconColor: isDark ? '#FFF9F0' : '#3F2A76',
-    chipBg: isDark ? 'rgba(255,255,255,0.03)' : theme.colors.surface,
-    chipBorder: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(20,16,33,0.08)',
-    chipActiveBg: isDark ? 'rgba(225,182,98,0.14)' : 'rgba(109,40,217,0.08)',
-    chipActiveBorder: isDark ? 'rgba(225,182,98,0.28)' : 'rgba(109,40,217,0.16)',
-    chipText: isDark ? '#D8D1C8' : '#5C5478',
-    chipActiveText: isDark ? '#FFF4DE' : '#4C1D95',
-    cardShadow: isDark ? 'rgba(0,0,0,0.24)' : 'rgba(20,16,33,0.06)',
+    muted: isDark ? 'rgba(214,203,183,0.72)' : 'rgba(97,105,114,0.88)',
+    subtle: isDark ? 'rgba(183,191,198,0.72)' : 'rgba(97,105,114,0.88)',
+    iconBg: isDark ? 'rgba(255,255,255,0.03)' : theme.colors.surfaceAlt,
+    iconBorder: theme.colors.border,
+    iconColor: theme.colors.text.primary,
+    chipBg: theme.colors.surface,
+    chipBorder: theme.colors.border,
+    chipActiveBg: theme.colors.surfaceAlt,
+    chipActiveBorder: theme.colors.primary,
+    chipText: theme.colors.text.secondary,
+    chipActiveText: theme.colors.text.primary,
   } as const;
 
   const renderAction = (action: HeaderAction) => (
@@ -80,7 +75,7 @@ export function BrandedHeaderCard({
       style={{
         width: actionSize,
         height: actionSize,
-        borderRadius: 10,
+        borderRadius: theme.radius.md,
         borderWidth: 1,
         borderColor: ui.iconBorder,
         backgroundColor: ui.iconBg,
@@ -97,16 +92,8 @@ export function BrandedHeaderCard({
     <View>
       <View
         style={{
-          borderRadius: headerRadius,
-          borderWidth: 1,
-          borderColor: ui.cardBorder,
-          backgroundColor: ui.cardBg,
-          paddingHorizontal: isCompact ? 14 : 16,
-          paddingVertical: isCompact ? 14 : 16,
-          shadowColor: ui.cardShadow,
-          shadowOpacity: isDark ? 0 : 1,
-          shadowRadius: 12,
-          shadowOffset: { width: 0, height: 4 },
+          paddingHorizontal: 2,
+          paddingVertical: 2,
         }}
       >
         <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
@@ -125,17 +112,17 @@ export function BrandedHeaderCard({
               style={{
                 width: logoWrapSize,
                 height: logoWrapSize,
-                borderRadius: 10,
+                borderRadius: theme.radius.md,
                 borderWidth: 1,
-                borderColor: ui.logoBorder,
-                backgroundColor: ui.logoBg,
+                borderColor: theme.colors.border,
+                backgroundColor: theme.colors.surface,
                 alignItems: 'center',
                 justifyContent: 'center',
                 marginRight: 12,
               }}
             >
               <Image
-                source={require('../../assets/images/ClaudyGoLogo.webp')}
+                source={BRAND_LOGO_ASSET}
                 style={{ width: logoSize, height: logoSize, borderRadius: Math.round(logoSize / 2) }}
               />
             </View>
@@ -151,8 +138,8 @@ export function BrandedHeaderCard({
                 style={{
                   color: theme.colors.text.primary,
                   marginTop: showEyebrow ? 2 : 0,
-                  fontSize: isTV ? 20 : isTablet ? 18 : isCompact ? 16 : 17,
-                  lineHeight: isTV ? 25 : isTablet ? 23 : isCompact ? 21 : 22,
+                  fontSize: isTV ? 19 : isTablet ? 18 : isCompact ? 15 : 16,
+                  lineHeight: isTV ? 24 : isTablet ? 23 : isCompact ? 20 : 21,
                 }}
                 numberOfLines={2}
               >
@@ -164,8 +151,8 @@ export function BrandedHeaderCard({
                   style={{
                     color: ui.subtle,
                     marginTop: 5,
-                    fontSize: isCompact ? 12 : 13,
-                    lineHeight: isCompact ? 16 : 18,
+                    fontSize: isCompact ? 11 : 12,
+                    lineHeight: isCompact ? 15 : 17,
                   }}
                   numberOfLines={2}
                 >
@@ -202,7 +189,7 @@ export function BrandedHeaderCard({
                   onPress={chip.onPress}
                   style={{
                     marginRight: 8,
-                    borderRadius: 10,
+                    borderRadius: theme.radius.md,
                     borderWidth: 1,
                     borderColor: active ? ui.chipActiveBorder : ui.chipBorder,
                     backgroundColor: active ? ui.chipActiveBg : ui.chipBg,
@@ -221,7 +208,7 @@ export function BrandedHeaderCard({
                 key={chip.label}
                 style={{
                   marginRight: 8,
-                  borderRadius: 10,
+                  borderRadius: theme.radius.md,
                   borderWidth: 1,
                   borderColor: active ? ui.chipActiveBorder : ui.chipBorder,
                   backgroundColor: active ? ui.chipActiveBg : ui.chipBg,

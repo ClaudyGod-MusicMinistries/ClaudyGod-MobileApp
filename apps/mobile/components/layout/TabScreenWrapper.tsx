@@ -22,31 +22,29 @@ export function TabScreenWrapper({ children }: TabScreenWrapperProps) {
         backgroundColor={currentColors.background}
       />
       <LinearGradient
-        colors={
-          isDark
-            ? ['rgba(190,148,74,0.08)', 'rgba(8,8,10,0)']
-            : ['rgba(137,107,54,0.08)', 'rgba(244,241,250,0)']
-        }
+        colors={['rgba(210,176,105,0.12)', 'rgba(210,176,105,0)']}
         start={{ x: 0.2, y: 0 }}
-        end={{ x: 0.8, y: 0.95 }}
+        end={{ x: 0.85, y: 1 }}
         style={{
           position: 'absolute',
           top: 0,
           left: 0,
           right: 0,
-          height: 280,
+          height: 220,
           pointerEvents: 'none',
         }}
       />
-      <View
+      <LinearGradient
+        colors={['rgba(92,118,142,0.12)', 'rgba(92,118,142,0)']}
+        start={{ x: 1, y: 0 }}
+        end={{ x: 0, y: 1 }}
         style={{
           position: 'absolute',
-          top: 110,
-          right: -90,
-          width: 260,
-          height: 260,
-          borderRadius: 260,
-          backgroundColor: isDark ? 'rgba(104,123,139,0.05)' : 'rgba(120,131,148,0.05)',
+          top: 40,
+          right: -80,
+          width: 240,
+          height: 240,
+          borderRadius: 240,
           pointerEvents: 'none',
         }}
       />

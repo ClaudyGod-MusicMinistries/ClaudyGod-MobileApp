@@ -6,34 +6,34 @@ export const spacing = {
   xs: 8,
   sm: 12,
   md: 16,
-  lg: 24,
-  xl: 32,
-  xxl: 40,
-  xxxl: 48,
+  lg: 22,
+  xl: 30,
+  xxl: 38,
+  xxxl: 46,
 };
 
 export const radius = {
-  sm: 10,
-  md: 14,
-  lg: 20,
-  xl: 28,
-  pill: 999,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 22,
+  pill: 16,
 };
 
 export const shadows = {
   card: {
-    shadowColor: '#12092A',
-    shadowOpacity: 0.12,
-    shadowRadius: 18,
+    shadowColor: '#000000',
+    shadowOpacity: 0.18,
+    shadowRadius: 20,
     shadowOffset: { width: 0, height: 10 },
-    elevation: 6,
+    elevation: 8,
   },
   soft: {
-    shadowColor: '#12092A',
+    shadowColor: '#000000',
     shadowOpacity: 0.08,
-    shadowRadius: 8,
+    shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
+    elevation: 3,
   },
 };
 
@@ -42,20 +42,20 @@ export const blur = {
 };
 
 export const typography = {
-  hero: 30,
-  headline: 24,
-  title: 17,
-  body: 16,
-  label: 13,
-  caption: 12,
+  hero: 28,
+  headline: 22,
+  title: 16,
+  body: 15,
+  label: 12,
+  caption: 11,
 };
 
 export const tv = {
   hitSlop: { top: 12, bottom: 12, left: 12, right: 12 },
   focusScale: 1.08,
   focusShadow: {
-    shadowColor: '#9A6BFF',
-    shadowOpacity: 0.45,
+    shadowColor: '#D2AF69',
+    shadowOpacity: 0.34,
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 8 },
     elevation: 8,
@@ -69,7 +69,7 @@ export const layout = {
   desktopGutter: 40,
   maxContentWidth: 1360,
   sectionGap: 24,
-  sectionGapLarge: 32,
-  headerVerticalPadding: 16,
-  tabBarContentPadding: 148,
+  sectionGapLarge: 30,
+  headerVerticalPadding: 12,
+  tabBarContentPadding: 132,
 };

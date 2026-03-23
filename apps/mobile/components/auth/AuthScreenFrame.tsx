@@ -39,11 +39,11 @@ export function AuthScreenFrame({
   const shellWidth = isDesktop ? 1100 : isTablet ? 760 : 468;
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#060709' }}>
-      <StatusBar translucent={false} backgroundColor="#060709" barStyle="light-content" />
+    <View style={{ flex: 1, backgroundColor: '#07090C' }}>
+      <StatusBar translucent={false} backgroundColor="#07090C" barStyle="light-content" />
 
       <LinearGradient
-        colors={['rgba(188,145,62,0.14)', 'rgba(6,7,9,0)']}
+        colors={['rgba(210,176,105,0.12)', 'rgba(7,9,12,0)']}
         start={{ x: 0, y: 0 }}
         end={{ x: 0.8, y: 1 }}
         style={{
@@ -56,7 +56,7 @@ export function AuthScreenFrame({
         }}
       />
       <LinearGradient
-        colors={['rgba(74,118,142,0.12)', 'rgba(6,7,9,0)']}
+        colors={['rgba(92,118,142,0.12)', 'rgba(7,9,12,0)']}
         start={{ x: 1, y: 0 }}
         end={{ x: 0, y: 1 }}
         style={{
@@ -92,7 +92,7 @@ export function AuthScreenFrame({
                   style={{
                     width: 38,
                     height: 38,
-                    borderRadius: 10,
+                    borderRadius: 12,
                     borderWidth: 1,
                     borderColor: 'rgba(255,255,255,0.10)',
                     backgroundColor: 'rgba(255,255,255,0.04)',
@@ -121,12 +121,12 @@ export function AuthScreenFrame({
                   ) : null}
 
                   <View
-                    style={{
+                  style={{
                       flex: 1,
-                      borderRadius: 12,
+                      borderRadius: 16,
                       borderWidth: 1,
                       borderColor: 'rgba(255,255,255,0.08)',
-                      backgroundColor: 'rgba(12,13,16,0.92)',
+                      backgroundColor: 'rgba(12,15,18,0.94)',
                       paddingHorizontal: isPhone ? 16 : 22,
                       paddingVertical: isPhone ? 18 : 20,
                     }}
@@ -138,7 +138,7 @@ export function AuthScreenFrame({
                     <View
                       style={{
                         alignSelf: 'flex-start',
-                        borderRadius: 8,
+                        borderRadius: 10,
                         borderWidth: 1,
                         borderColor: 'rgba(255,255,255,0.08)',
                         backgroundColor: 'rgba(255,255,255,0.03)',
@@ -163,8 +163,8 @@ export function AuthScreenFrame({
                       style={{
                         color: '#FFF9F0',
                         marginTop: 12,
-                        fontSize: isPhone ? 20 : 24,
-                        lineHeight: isPhone ? 25 : 30,
+                        fontSize: isPhone ? 18 : 22,
+                        lineHeight: isPhone ? 23 : 28,
                       }}
                     >
                       {title}
@@ -173,7 +173,7 @@ export function AuthScreenFrame({
                     <CustomText
                       variant="body"
                       style={{
-                        color: 'rgba(231,223,213,0.72)',
+                        color: 'rgba(196,203,210,0.78)',
                         marginTop: 6,
                         maxWidth: 380,
                       }}
