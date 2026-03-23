@@ -2,6 +2,7 @@ import type { JwtClaims } from '../../utils/jwt';
 import { pool } from '../../db/pool';
 import { env } from '../../config/env';
 import { HttpError } from '../../lib/httpError';
+import { sendLiveStartPushNotifications } from '../../infra/push';
 import { queueEmailJob } from '../../infra/transactionalEmails';
 import type { UserRole } from '../auth/auth.types';
 import type {
@@ -498,6 +499,8 @@ export const updateLiveSession = async (
 export const startLiveSession = async (actor: JwtClaims, sessionId: string): Promise<{
   session: LiveSession;
   notifiedSubscribers: number;
+  notifiedDevices: number;
+  attemptedDevices: number;
 }> => {
   assertAdmin(actor);
   const existing = await getLiveSessionRowById(sessionId);
@@ -514,13 +517,35 @@ export const startLiveSession = async (actor: JwtClaims, sessionId: string): Pro
   );
 
   const session = toLiveSession(await getLiveSessionRowById(sessionId));
-  const notifiedSubscribers = !wasLive && session.notifySubscribers
-    ? await notifySubscribersThatSessionIsLive(session)
-    : 0;
+  let notifiedSubscribers = 0;
+  let notifiedDevices = 0;
+  let attemptedDevices = 0;
+
+  if (!wasLive && session.notifySubscribers) {
+    const [emailResult, pushResult] = await Promise.allSettled([
+      notifySubscribersThatSessionIsLive(session),
+      sendLiveStartPushNotifications({
+        channelId: session.channelId || DEFAULT_CHANNEL_ID,
+        sessionId: session.id,
+        title: `${env.EMAIL_BRAND_NAME} is live now`,
+        body: session.title,
+      }),
+    ]);
+
+    if (emailResult.status === 'fulfilled') {
+      notifiedSubscribers = emailResult.value;
+    }
+    if (pushResult.status === 'fulfilled') {
+      notifiedDevices = pushResult.value.delivered;
+      attemptedDevices = pushResult.value.attempted;
+    }
+  }
 
   return {
     session,
     notifiedSubscribers,
+    notifiedDevices,
+    attemptedDevices,
   };
 };
 

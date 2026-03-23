@@ -1006,9 +1006,10 @@ export default defineComponent({
         await fetchLiveSessions();
         await fetchLiveSessionDetail(session.id);
         const notified = Number(response.data?.notifiedSubscribers || 0);
+        const notifiedDevices = Number(response.data?.notifiedDevices || 0);
         setNotice(
-          notified > 0
-            ? `Live session started. Alerts were queued for ${notified} subscriber${notified === 1 ? '' : 's'}.`
+          notified > 0 || notifiedDevices > 0
+            ? `Live session started. Alerts were queued for ${notified} subscriber${notified === 1 ? '' : 's'} and delivered to ${notifiedDevices} device${notifiedDevices === 1 ? '' : 's'}.`
             : 'Live session started.',
           'success',
         );
