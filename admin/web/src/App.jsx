@@ -568,8 +568,9 @@ export default defineComponent({
     }
 
     async function fetchCurrentUser() {
-      const response = await http.get('/v1/auth/me');
-      currentUser.value = response.data.user;
+      const response = await http.get('/v1/auth/session');
+      currentUser.value = response.data && response.data.authenticated ? response.data.user : null;
+      return currentUser.value;
     }
 
     function clearSessionData() {
@@ -1102,7 +1103,12 @@ export default defineComponent({
           applyToken(accessToken.value);
           sessionTransport.value = 'bearer';
         }
-        await fetchCurrentUser();
+        const user = await fetchCurrentUser();
+        if (!user) {
+          setSessionTransportState('none');
+          clearSessionData();
+          return;
+        }
         if (!accessToken.value) {
           setSessionTransportState('cookie');
         } else {
@@ -1501,7 +1507,12 @@ export default defineComponent({
       if (!currentUser.value) return;
       clearNotice();
       try {
-        await fetchCurrentUser();
+        const user = await fetchCurrentUser();
+        if (!user) {
+          setSessionTransportState('none');
+          clearSessionData();
+          return;
+        }
         await Promise.all([
           fetchManagedContent(),
           fetchContentRequests(),
