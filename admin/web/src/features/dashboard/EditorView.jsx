@@ -42,14 +42,14 @@ export default function EditorView(props) {
       <section class="panel glass-panel reveal-up" style={{ animationDelay: '140ms' }}>
         <div class="section-head">
           <div>
-            <h2>{directPublishMode ? 'Upload Content' : 'Create Upload Request'}</h2>
+            <h2>{directPublishMode ? 'Upload Content' : 'Create Request'}</h2>
             <p>
               {directPublishMode
                 ? 'Upload media, choose where it should appear in the mobile app, and publish from one clean workspace.'
-                : 'Send one clear upload request so the review queue stays organized and easy to manage.'}
+                : 'Send one clear request so the review queue stays organized and easy to manage.'}
             </p>
           </div>
-          <span class="section-badge">{directPublishMode ? 'Direct publish' : 'Client request'}</span>
+          <span class="section-badge">{directPublishMode ? 'Direct publish' : 'Request flow'}</span>
         </div>
 
         <form class="stack-form" onSubmit={(event) => void onCreateContent(event)}>
@@ -149,7 +149,7 @@ export default function EditorView(props) {
                     ? 'Uploaded files are linked to the content item and ready for the mobile feed.'
                     : 'Uploaded files are linked to this request and ready for the review queue.'
                   : directPublishMode
-                    ? 'Upload media and a thumbnail to create a production-ready mobile content item.'
+                  ? 'Upload media and a thumbnail to create a production-ready mobile content item.'
                     : 'Upload media and a thumbnail to keep the request complete and easy to review.'}
               </p>
             </div>
@@ -250,8 +250,8 @@ export default function EditorView(props) {
       <section class="panel glass-panel reveal-up" style={{ animationDelay: '200ms' }}>
         <div class="section-head split">
           <div>
-            <h2>Review Queue</h2>
-            <p>Track every submission ticket and create draft content only when the request is ready.</p>
+            <h2>Requests</h2>
+            <p>Track incoming requests and create draft content only when each item is ready.</p>
           </div>
           <span class="section-badge">{requestSummary.active} open</span>
         </div>

@@ -2,12 +2,8 @@ export default function AdminShell(props) {
   const {
     brandLogoUrl,
     currentUser,
-    headerMenuOpen,
-    onToggleHeaderMenu,
-    isCompactHeader,
     displayName,
     portalRoleLabel,
-    accountEmail,
     onRefreshDashboard,
     onLogout,
     dashboardView,
@@ -23,87 +19,43 @@ export default function AdminShell(props) {
       <div class="bg-orb orb-c" />
 
       <header class="global-header">
-        <div class="global-header-inner">
+        <div class="global-header-inner portal-header">
           <div class="brand-inline">
             <div class="logo-wrap">
               <img src={brandLogoUrl} alt="ClaudyGod" class="brand-logo" />
             </div>
             <div>
               <p class="eyebrow">ClaudyGod</p>
-              <div class="brand-title-line">Content Manager</div>
+              <div class="brand-title-line">Content Portal</div>
             </div>
           </div>
 
-          <div class="header-controls">
-            {currentUser ? (
-              <button
-                type="button"
-                class={['header-toggle-btn', 'header-nav-toggle', headerMenuOpen ? 'is-open' : '']}
-                onClick={onToggleHeaderMenu}
-                aria-expanded={headerMenuOpen ? 'true' : 'false'}
-                aria-label={headerMenuOpen ? 'Close navigation drawer' : 'Open navigation drawer'}
-              >
-                <span class="header-toggle-icon" aria-hidden="true">
-                  <span />
-                  <span />
-                  <span />
-                </span>
-                <span>{headerMenuOpen ? 'Close Menu' : 'Menu'}</span>
-              </button>
-            ) : null}
-
-            {!isCompactHeader ? (
-              <div class="header-command-bar">
-                {currentUser ? (
-                  <>
-                    <div class="user-pill">
-                      <span class="user-pill-dot" />
-                      <span>{displayName}</span>
-                      <span class="user-pill-role">{portalRoleLabel}</span>
-                    </div>
-                    <div class="header-inline-actions">
-                      <button type="button" class="ghost-btn compact" onClick={() => void onRefreshDashboard()}>
-                        Refresh
-                      </button>
-                      <button type="button" class="danger-btn compact" onClick={() => void onLogout()}>
-                        Sign Out
-                      </button>
-                    </div>
-                  </>
-                ) : null}
-              </div>
-            ) : null}
-          </div>
-        </div>
-
-        {currentUser ? (
-          <div class={['header-drawer', headerMenuOpen ? 'is-open' : '']}>
-            <div class="header-drawer-inner">
-              <div class="header-drawer-nav">
+          {currentUser ? (
+            <div class="header-command-bar portal-header-bar">
+              <nav class="portal-nav" aria-label="Portal navigation">
                 <button
                   type="button"
-                  class={['drawer-nav-link', dashboardView === 'editor' ? 'is-active' : '']}
+                  class={['ghost-btn compact', dashboardView === 'editor' ? 'is-active' : '']}
                   onClick={() => onSetDashboardView('editor')}
                 >
                   Content
                 </button>
                 <button
                   type="button"
-                  class={['drawer-nav-link', dashboardView === 'mobile-preview' ? 'is-active' : '']}
+                  class={['ghost-btn compact', dashboardView === 'mobile-preview' ? 'is-active' : '']}
                   onClick={() => onSetDashboardView('mobile-preview')}
                 >
                   App Preview
                 </button>
-              </div>
+              </nav>
 
               <div class="user-pill">
                 <span class="user-pill-dot" />
                 <span>{displayName}</span>
                 <span class="user-pill-role">{portalRoleLabel}</span>
               </div>
-              {accountEmail ? <span class="muted-chip">{accountEmail}</span> : null}
 
-              <div class="header-drawer-actions">
+              <div class="header-inline-actions">
                 <button type="button" class="ghost-btn compact" onClick={() => void onRefreshDashboard()}>
                   Refresh
                 </button>
@@ -112,8 +64,8 @@ export default function AdminShell(props) {
                 </button>
               </div>
             </div>
-          </div>
-        ) : null}
+          ) : null}
+        </div>
       </header>
 
       <main

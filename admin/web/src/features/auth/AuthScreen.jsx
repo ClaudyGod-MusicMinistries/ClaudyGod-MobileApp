@@ -28,7 +28,7 @@ export default function AuthScreen(props) {
           </div>
           <div>
             <p class="eyebrow">ClaudyGod Ministries</p>
-            <h1>Content Studio</h1>
+            <h1>Content Portal</h1>
             <p class="subtitle">
               Secure publisher access for uploading, reviewing, and releasing ministry content.
             </p>
@@ -47,11 +47,11 @@ export default function AuthScreen(props) {
             <p>{isVerifyMode ? 'Enter the code sent to your email to finish creating the account.' : 'Create an account once, then return anytime to manage your content.'}</p>
           </article>
           <article class="auth-status-card">
-            <span class="auth-status-label">Studio access</span>
+            <span class="auth-status-label">Portal access</span>
             <strong>{isVerifyMode ? 'Almost ready' : 'Ready to manage content'}</strong>
             <p>
               {isVerifyMode
-                ? 'Confirm the code to open the studio and continue into your dashboard.'
+                ? 'Confirm the code to open the portal and continue into your dashboard.'
                 : 'Upload content, review the library, and preview the mobile app from one place.'}
             </p>
           </article>
@@ -136,7 +136,7 @@ export default function AuthScreen(props) {
                 placeholder="claudy_member"
                 autoComplete="nickname"
               />
-              <small class="field-note">This name helps identify your uploads and activity inside the studio.</small>
+              <small class="field-note">This name helps identify your uploads and activity inside the portal.</small>
             </label>
           ) : null}
 
