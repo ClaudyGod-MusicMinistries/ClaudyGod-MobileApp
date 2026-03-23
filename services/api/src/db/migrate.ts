@@ -218,6 +218,40 @@ const migrations = [
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     UNIQUE (user_id, channel_id)
   )`,
+  `CREATE TABLE IF NOT EXISTS live_sessions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title TEXT NOT NULL,
+    description TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'scheduled' CHECK (status IN ('scheduled', 'live', 'ended', 'cancelled')),
+    channel_id TEXT NOT NULL DEFAULT 'claudygod-live',
+    cover_image_url TEXT,
+    stream_url TEXT,
+    playback_url TEXT,
+    scheduled_for TIMESTAMPTZ,
+    started_at TIMESTAMPTZ,
+    ended_at TIMESTAMPTZ,
+    notify_subscribers BOOLEAN NOT NULL DEFAULT TRUE,
+    viewer_count INTEGER NOT NULL DEFAULT 0 CHECK (viewer_count >= 0),
+    tags TEXT[] NOT NULL DEFAULT '{}',
+    app_sections TEXT[] NOT NULL DEFAULT '{live-now}',
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    recording_content_id UUID REFERENCES content_items(id) ON DELETE SET NULL,
+    created_by UUID REFERENCES app_users(id) ON DELETE SET NULL,
+    updated_by UUID REFERENCES app_users(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  `CREATE TABLE IF NOT EXISTS live_session_messages (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    live_session_id UUID NOT NULL REFERENCES live_sessions(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES app_users(id) ON DELETE SET NULL,
+    display_name TEXT NOT NULL,
+    kind TEXT NOT NULL DEFAULT 'comment' CHECK (kind IN ('comment', 'suggestion')),
+    status TEXT NOT NULL DEFAULT 'visible' CHECK (status IN ('visible', 'hidden')),
+    message TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
   `CREATE TABLE IF NOT EXISTS user_saved_items (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,
@@ -346,6 +380,12 @@ const migrations = [
     ON user_play_events (content_id, played_at DESC)`,
   `CREATE INDEX IF NOT EXISTS idx_live_subscriptions_user_created_at
     ON live_subscriptions (user_id, created_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_live_sessions_status_schedule
+    ON live_sessions (status, COALESCE(started_at, scheduled_for, created_at) DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_live_sessions_channel_status
+    ON live_sessions (channel_id, status, updated_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_live_session_messages_session_created_at
+    ON live_session_messages (live_session_id, created_at DESC)`,
   `CREATE INDEX IF NOT EXISTS idx_user_saved_items_user_bucket_created_at
     ON user_saved_items (user_id, bucket, created_at DESC)`,
   `CREATE INDEX IF NOT EXISTS idx_user_push_tokens_user_updated_at
@@ -467,6 +507,20 @@ const migrations = [
       IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'set_live_subscriptions_updated_at') THEN
         CREATE TRIGGER set_live_subscriptions_updated_at
         BEFORE UPDATE ON live_subscriptions
+        FOR EACH ROW
+        EXECUTE FUNCTION set_updated_at();
+      END IF;
+
+      IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'set_live_sessions_updated_at') THEN
+        CREATE TRIGGER set_live_sessions_updated_at
+        BEFORE UPDATE ON live_sessions
+        FOR EACH ROW
+        EXECUTE FUNCTION set_updated_at();
+      END IF;
+
+      IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'set_live_session_messages_updated_at') THEN
+        CREATE TRIGGER set_live_session_messages_updated_at
+        BEFORE UPDATE ON live_session_messages
         FOR EACH ROW
         EXECUTE FUNCTION set_updated_at();
       END IF;

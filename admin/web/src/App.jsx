@@ -20,6 +20,7 @@ import EditContentModal from './features/content/EditContentModal';
 import BootScreen from './features/dashboard/BootScreen';
 import EditorView from './features/dashboard/EditorView';
 import MobilePreviewView from './features/dashboard/MobilePreviewView';
+import LiveView from './features/live/LiveView';
 import {
   acceptFromPolicy,
   describeHealthCheckDetail,
@@ -77,6 +78,13 @@ export default defineComponent({
     const userRoleUpdatingId = ref(null);
     const contentRequestStatusUpdatingId = ref(null);
     const creatingDraftFromRequestId = ref(null);
+    const sectionEditorItemId = ref('');
+    const sectionEditorValue = ref('');
+    const sectionEditorSaving = ref(false);
+    const liveLoading = ref(false);
+    const liveDetailLoading = ref(false);
+    const liveSaving = ref(false);
+    const liveTransitioningId = ref(null);
     const headerMenuOpen = ref(false);
     const dashboardView = ref('editor');
     const inactivityTimerId = ref(null);
@@ -118,6 +126,23 @@ export default defineComponent({
       tagsCsv: '',
       appSectionsCsv: '',
       visibility: 'published',
+    });
+
+    const liveSessions = ref([]);
+    const selectedLiveSessionId = ref('');
+    const selectedLiveSession = ref(null);
+    const liveForm = reactive({
+      title: '',
+      description: '',
+      channelId: 'claudygod-live',
+      coverImageUrl: '',
+      streamUrl: '',
+      playbackUrl: '',
+      scheduledFor: '',
+      notifySubscribers: true,
+      viewerCount: 0,
+      tagsCsv: '',
+      appSectionsCsv: 'live-now',
     });
 
     const filterState = reactive({
@@ -240,6 +265,13 @@ export default defineComponent({
 
     const requestQueuePreview = computed(() => (contentRequests.value || []).slice(0, 5));
     const directPublishMode = computed(() => isAdmin.value);
+    const liveSummary = computed(() => ({
+      total: liveSessions.value.length,
+      live: liveSessions.value.filter((item) => item.status === 'live').length,
+      upcoming: liveSessions.value.filter((item) => item.status === 'scheduled').length,
+      archive: liveSessions.value.filter((item) => item.status === 'ended').length,
+      totalMessages: liveSessions.value.reduce((sum, item) => sum + Number(item.messageCount || 0), 0),
+    }));
 
     const filteredItems = computed(() => {
       const query = (filterState.search || '').trim().toLowerCase();
@@ -330,11 +362,13 @@ export default defineComponent({
       authMode.value = 'login';
       authForm.email = user.email || authForm.email.trim();
       resetAuthSecrets();
+      dashboardView.value = 'editor';
 
       await Promise.all([
         fetchManagedContent(freshToken || undefined),
         fetchContentRequests(freshToken || undefined),
         fetchUploadPolicies(freshToken || undefined),
+        user.role === 'ADMIN' ? fetchLiveSessions(freshToken || undefined) : Promise.resolve(),
         user.role === 'ADMIN' ? fetchAdminOperationsDashboard() : Promise.resolve(),
         user.role === 'ADMIN' ? fetchMobileAppConfig() : Promise.resolve(),
         user.role === 'ADMIN' ? fetchWordOfDayDashboard() : Promise.resolve(),
@@ -361,7 +395,7 @@ export default defineComponent({
     }
 
     function setDashboardView(view) {
-      dashboardView.value = view === 'overview' ? 'editor' : view;
+      dashboardView.value = ['live', 'editor', 'mobile-preview'].includes(view) ? view : 'editor';
       closeHeaderMenu();
     }
 
@@ -429,6 +463,45 @@ export default defineComponent({
       createForm.tagsCsv = '';
       createForm.appSectionsCsv = '';
       createForm.visibility = 'published';
+    }
+
+    function resetLiveForm() {
+      liveForm.title = '';
+      liveForm.description = '';
+      liveForm.channelId = 'claudygod-live';
+      liveForm.coverImageUrl = '';
+      liveForm.streamUrl = '';
+      liveForm.playbackUrl = '';
+      liveForm.scheduledFor = '';
+      liveForm.notifySubscribers = true;
+      liveForm.viewerCount = 0;
+      liveForm.tagsCsv = '';
+      liveForm.appSectionsCsv = 'live-now';
+    }
+
+    function loadLiveForm(session) {
+      liveForm.title = session?.title || '';
+      liveForm.description = session?.description || '';
+      liveForm.channelId = session?.channelId || 'claudygod-live';
+      liveForm.coverImageUrl = session?.coverImageUrl || '';
+      liveForm.streamUrl = session?.streamUrl || '';
+      liveForm.playbackUrl = session?.playbackUrl || '';
+      liveForm.scheduledFor = session?.scheduledFor
+        ? new Date(session.scheduledFor).toISOString().slice(0, 16)
+        : '';
+      liveForm.notifySubscribers = session?.notifySubscribers !== false;
+      liveForm.viewerCount = Number(session?.viewerCount || 0);
+      liveForm.tagsCsv = Array.isArray(session?.tags) ? session.tags.join(', ') : '';
+      liveForm.appSectionsCsv = Array.isArray(session?.appSections) && session.appSections.length
+        ? session.appSections.join(', ')
+        : 'live-now';
+    }
+
+    function prepareNewLiveSession() {
+      selectedLiveSessionId.value = '';
+      selectedLiveSession.value = null;
+      resetLiveForm();
+      setDashboardView('live');
     }
 
     function mapProbeError(error, fallback) {
@@ -581,8 +654,14 @@ export default defineComponent({
       youtubePreviewItems.value = [];
       youtubeDraftItems.value = [];
       uploadPolicies.value = [];
+      liveSessions.value = [];
+      selectedLiveSession.value = null;
+      selectedLiveSessionId.value = '';
+      resetLiveForm();
       editContentOpen.value = false;
       editingContentId.value = null;
+      sectionEditorItemId.value = '';
+      sectionEditorValue.value = '';
       mobileAppConfigEditor.value = '';
       mobileAppConfigMeta.value = null;
       mobileAppConfigValue.value = null;
@@ -752,6 +831,56 @@ export default defineComponent({
       }
     }
 
+    async function fetchLiveSessions(tokenOverride) {
+      if (!isAdmin.value) return;
+
+      liveLoading.value = true;
+      try {
+        const response = await http.get('/v1/live/manage', {
+          headers: tokenOverride ? { Authorization: `Bearer ${tokenOverride}` } : undefined,
+        });
+        liveSessions.value = Array.isArray(response.data?.items) ? response.data.items : [];
+
+        const selectedId = selectedLiveSessionId.value;
+        const nextSelected =
+          (selectedId && liveSessions.value.find((item) => item.id === selectedId)) ||
+          liveSessions.value[0] ||
+          null;
+
+        if (nextSelected) {
+          await fetchLiveSessionDetail(nextSelected.id, tokenOverride);
+        } else {
+          selectedLiveSession.value = null;
+          selectedLiveSessionId.value = '';
+          resetLiveForm();
+        }
+      } catch (error) {
+        setNotice(toErrorMessage(error, 'Unable to load live sessions.'), 'error');
+      } finally {
+        liveLoading.value = false;
+      }
+    }
+
+    async function fetchLiveSessionDetail(sessionId, tokenOverride) {
+      if (!sessionId || !isAdmin.value) return;
+
+      liveDetailLoading.value = true;
+      try {
+        const response = await http.get(`/v1/live/manage/${sessionId}`, {
+          headers: tokenOverride ? { Authorization: `Bearer ${tokenOverride}` } : undefined,
+        });
+        selectedLiveSession.value = response.data || null;
+        selectedLiveSessionId.value = response.data?.id || '';
+        if (response.data) {
+          loadLiveForm(response.data);
+        }
+      } catch (error) {
+        setNotice(toErrorMessage(error, 'Unable to load this live session.'), 'error');
+      } finally {
+        liveDetailLoading.value = false;
+      }
+    }
+
     async function fetchMobileAppConfig() {
       if (!isAdmin.value) return;
       appConfigLoading.value = true;
@@ -819,6 +948,107 @@ export default defineComponent({
           })}
         </div>
       );
+    }
+
+    async function selectLiveSession(session) {
+      if (!session?.id) return;
+      selectedLiveSessionId.value = session.id;
+      await fetchLiveSessionDetail(session.id);
+    }
+
+    async function saveLiveSession(event) {
+      event.preventDefault();
+      if (!isAdmin.value) {
+        setNotice('Only admin accounts can manage live sessions.', 'error');
+        return;
+      }
+      if (liveForm.title.trim().length < 3) {
+        setNotice('Live session title must be at least 3 characters.', 'error');
+        return;
+      }
+      if (liveForm.description.trim().length < 3) {
+        setNotice('Add a short live session description.', 'error');
+        return;
+      }
+
+      liveSaving.value = true;
+      clearNotice();
+      try {
+        const isEditing = Boolean(selectedLiveSessionId.value);
+        const payload = {
+          title: liveForm.title.trim(),
+          description: liveForm.description.trim(),
+          channelId: liveForm.channelId.trim() || 'claudygod-live',
+          coverImageUrl: liveForm.coverImageUrl.trim() || undefined,
+          streamUrl: liveForm.streamUrl.trim() || undefined,
+          playbackUrl: liveForm.playbackUrl.trim() || undefined,
+          scheduledFor: liveForm.scheduledFor ? new Date(liveForm.scheduledFor).toISOString() : undefined,
+          notifySubscribers: Boolean(liveForm.notifySubscribers),
+          viewerCount: Number(liveForm.viewerCount || 0),
+          tags: parseCsvList(liveForm.tagsCsv),
+          appSections: parseCsvList(liveForm.appSectionsCsv),
+        };
+
+        const response = isEditing
+          ? await http.patch(`/v1/live/manage/${selectedLiveSessionId.value}`, payload)
+          : await http.post('/v1/live/manage', payload);
+
+        await fetchLiveSessions();
+        await fetchLiveSessionDetail(response.data.id);
+        setNotice(isEditing ? 'Live session updated.' : 'Live session created.', 'success');
+      } catch (error) {
+        setNotice(toErrorMessage(error, 'Unable to save this live session.'), 'error');
+      } finally {
+        liveSaving.value = false;
+      }
+    }
+
+    async function startSelectedLiveSession(session) {
+      if (!session?.id) return;
+      liveTransitioningId.value = session.id;
+      clearNotice();
+      try {
+        const response = await http.post(`/v1/live/manage/${session.id}/start`);
+        await fetchLiveSessions();
+        await fetchLiveSessionDetail(session.id);
+        const notified = Number(response.data?.notifiedSubscribers || 0);
+        const notifiedDevices = Number(response.data?.notifiedDevices || 0);
+        setNotice(
+          notified > 0 || notifiedDevices > 0
+            ? `Live session started. Alerts were queued for ${notified} subscriber${notified === 1 ? '' : 's'} and delivered to ${notifiedDevices} device${notifiedDevices === 1 ? '' : 's'}.`
+            : 'Live session started.',
+          'success',
+        );
+      } catch (error) {
+        setNotice(toErrorMessage(error, 'Unable to start this live session.'), 'error');
+      } finally {
+        liveTransitioningId.value = null;
+      }
+    }
+
+    async function endSelectedLiveSession(session) {
+      if (!session?.id) return;
+      liveTransitioningId.value = session.id;
+      clearNotice();
+      try {
+        await http.post(`/v1/live/manage/${session.id}/end`, {
+          playbackUrl:
+            selectedLiveSessionId.value === session.id
+              ? liveForm.playbackUrl.trim() || undefined
+              : undefined,
+          viewerCount:
+            selectedLiveSessionId.value === session.id
+              ? Number(liveForm.viewerCount || 0)
+              : undefined,
+        });
+        await fetchLiveSessions();
+        await fetchLiveSessionDetail(session.id);
+        setNotice('Live session ended. Replay is now available in the live feed when a recording URL is provided.', 'success');
+      } catch (error) {
+        setNotice(toErrorMessage(error, 'Unable to end this live session.'), 'error');
+      } finally {
+        liveTransitioningId.value = null;
+      }
     }
 
     async function fetchWordOfDayDashboard() {
@@ -913,6 +1143,9 @@ export default defineComponent({
     async function updateContentItem(itemId, patch) {
       const response = await http.patch(`/v1/content/${itemId}`, patch);
       managedItems.value = managedItems.value.map((entry) => (entry.id === itemId ? response.data : entry));
+      if (sectionEditorItemId.value === itemId) {
+        sectionEditorValue.value = Array.isArray(response.data?.appSections) ? response.data.appSections.join(', ') : '';
+      }
       reloadMobilePreview();
       return response.data;
     }
@@ -1012,23 +1245,33 @@ export default defineComponent({
       }
     }
 
-    async function assignContentSections(item) {
-      const current = Array.isArray(item.appSections) ? item.appSections.join(', ') : '';
-      const availableSections = mobileSectionCatalog.value
-        .map((section) => `${section.title} (${section.id})`)
-        .join('\n');
-      const nextValue = window.prompt(
-        `Assign app sections (comma-separated).\n\nAvailable sections:\n${availableSections || 'No mobile section catalog loaded yet.'}`,
-        current,
-      );
-      if (nextValue === null) return;
+    function toggleContentSectionEditor(item) {
+      if (sectionEditorItemId.value === item.id) {
+        sectionEditorItemId.value = '';
+        sectionEditorValue.value = '';
+        return;
+      }
 
+      sectionEditorItemId.value = item.id;
+      sectionEditorValue.value = Array.isArray(item.appSections) ? item.appSections.join(', ') : '';
+    }
+
+    function closeContentSectionEditor() {
+      sectionEditorItemId.value = '';
+      sectionEditorValue.value = '';
+    }
+
+    async function saveContentSections(item) {
+      sectionEditorSaving.value = true;
       clearNotice();
       try {
-        await updateContentItem(item.id, { appSections: parseCsvList(nextValue) });
-        setNotice('Content sections updated for mobile app placement.', 'success');
+        await updateContentItem(item.id, { appSections: parseCsvList(sectionEditorValue.value) });
+        closeContentSectionEditor();
+        setNotice('Content placement updated.', 'success');
       } catch (error) {
-        setNotice(toErrorMessage(error, 'Unable to update content sections.'), 'error');
+        setNotice(toErrorMessage(error, 'Unable to update content placement.'), 'error');
+      } finally {
+        sectionEditorSaving.value = false;
       }
     }
 
@@ -1040,6 +1283,9 @@ export default defineComponent({
       try {
         await http.delete(`/v1/content/${item.id}`);
         managedItems.value = managedItems.value.filter((entry) => entry.id !== item.id);
+        if (sectionEditorItemId.value === item.id) {
+          closeContentSectionEditor();
+        }
         pagination.total = Math.max(0, Number(pagination.total || 0) - 1);
         setNotice('Content deleted successfully.', 'success');
       } catch (error) {
@@ -1118,6 +1364,7 @@ export default defineComponent({
           fetchManagedContent(),
           fetchContentRequests(),
           fetchUploadPolicies(),
+          isAdmin.value ? fetchLiveSessions() : Promise.resolve(),
           isAdmin.value ? fetchAdminOperationsDashboard() : Promise.resolve(),
           isAdmin.value ? fetchMobileAppConfig() : Promise.resolve(),
           isAdmin.value ? fetchWordOfDayDashboard() : Promise.resolve(),
@@ -1517,6 +1764,7 @@ export default defineComponent({
           fetchManagedContent(),
           fetchContentRequests(),
           fetchUploadPolicies(),
+          isAdmin.value ? fetchLiveSessions() : Promise.resolve(),
           isAdmin.value ? fetchAdminOperationsDashboard() : Promise.resolve(),
           isAdmin.value ? fetchMobileAppConfig() : Promise.resolve(),
           isAdmin.value ? fetchWordOfDayDashboard() : Promise.resolve(),
@@ -1716,45 +1964,35 @@ export default defineComponent({
 
       const dashboardScreen = (
         <section class="dashboard-stage">
-          <section class="panel glass-panel reveal-up portal-banner" style={{ animationDelay: '140ms' }}>
-            <div class="section-head split">
-              <div>
-                <h2>Content Portal</h2>
-                <p>Manage uploads, review content, and confirm what appears in the mobile app.</p>
-              </div>
-              <div class="button-row">
-                <button type="button" class="primary-btn" onClick={() => setDashboardView('editor')}>
-                  Manage Content
-                </button>
-                <button type="button" class="ghost-btn" onClick={() => setDashboardView('mobile-preview')}>
-                  App Preview
-                </button>
-              </div>
-            </div>
-          </section>
-
           {notice.value ? (
-            <section class={['notice', noticeKind.value === 'error' ? 'notice-error' : 'notice-success', 'reveal-up']} style={{ animationDelay: '180ms' }}>
+            <section class={['notice', noticeKind.value === 'error' ? 'notice-error' : 'notice-success', 'reveal-up']} style={{ animationDelay: '140ms' }}>
               {notice.value}
             </section>
           ) : null}
 
-          <section class="dashboard-view-tabs reveal-up" style={{ animationDelay: '200ms' }}>
-            <button
-              type="button"
-              class={['ghost-btn compact', dashboardView.value === 'editor' ? 'is-active' : '']}
-              onClick={() => setDashboardView('editor')}
-            >
-              Content
-            </button>
-            <button
-              type="button"
-              class={['ghost-btn compact', dashboardView.value === 'mobile-preview' ? 'is-active' : '']}
-              onClick={() => setDashboardView('mobile-preview')}
-            >
-              App Preview
-            </button>
-          </section>
+          {dashboardView.value === 'live' ? (
+            <LiveView
+              liveLoading={liveLoading.value}
+              liveDetailLoading={liveDetailLoading.value}
+              liveSaving={liveSaving.value}
+              liveTransitioningId={liveTransitioningId.value}
+              liveSummary={liveSummary.value}
+              sessions={liveSessions.value}
+              selectedSession={selectedLiveSession.value}
+              liveForm={liveForm}
+              onReadValue={readValue}
+              onReadChecked={readChecked}
+              onSaveLiveSession={saveLiveSession}
+              onCreateNewSession={prepareNewLiveSession}
+              onSelectLiveSession={selectLiveSession}
+              onStartLiveSession={startSelectedLiveSession}
+              onEndLiveSession={endSelectedLiveSession}
+              onRenderSectionSelector={renderSectionSelector}
+              humanizeToken={humanizeToken}
+              formatDateTime={formatDateTime}
+              truncate={truncate}
+            />
+          ) : null}
 
           {dashboardView.value === 'mobile-preview' ? (
             <MobilePreviewView
@@ -1783,8 +2021,12 @@ export default defineComponent({
               filterState={filterState}
               contentRequestStatusUpdatingId={contentRequestStatusUpdatingId.value}
               creatingDraftFromRequestId={creatingDraftFromRequestId.value}
+              isAdmin={isAdmin.value}
               togglingId={togglingId.value}
               deletingContentId={deletingContentId.value}
+              activeSectionEditorItemId={sectionEditorItemId.value}
+              sectionEditorValue={sectionEditorValue.value}
+              sectionEditorSaving={sectionEditorSaving.value}
               onCreateContent={createContent}
               onReadValue={readValue}
               onHandleAssetUpload={handleAssetUpload}
@@ -1797,7 +2039,10 @@ export default defineComponent({
               onCreateDraftFromRequest={createDraftFromRequest}
               onToggleVisibility={toggleVisibility}
               onOpenEditContentModal={openEditContentModal}
-              onAssignContentSections={assignContentSections}
+              onToggleContentSectionEditor={toggleContentSectionEditor}
+              onUpdateSectionEditorValue={(nextValue) => { sectionEditorValue.value = nextValue; }}
+              onSaveContentSections={saveContentSections}
+              onCloseContentSectionEditor={closeContentSectionEditor}
               onDeleteContentItem={deleteContentItem}
               formatDateTime={formatDateTime}
               truncate={truncate}

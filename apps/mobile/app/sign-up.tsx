@@ -165,7 +165,7 @@ export default function SignUpScreen() {
     <AuthScreenFrame
       backPath={APP_ROUTES.landing}
       salutation="Create your account"
-      description="Set up your ClaudyGod account to save music, messages, and ministry updates."
+      description="Create your ClaudyGod account and keep your listening in sync."
       title="Create Account"
       subtitle="Enter your details and confirm your email with a 6-digit code."
     >

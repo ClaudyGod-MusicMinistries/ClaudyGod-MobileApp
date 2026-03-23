@@ -21,26 +21,15 @@ export function SearchBar({ placeholder, value, onChangeText, onSubmit }: Search
       style={{
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: theme.colors.surfaceAlt,
+        backgroundColor: theme.colors.surface,
         borderRadius: theme.radius.lg,
-        paddingHorizontal: theme.spacing.sm,
-        minHeight: 52,
+        paddingHorizontal: theme.spacing.md,
+        minHeight: 50,
         borderWidth: 1,
         borderColor: focused ? theme.colors.primary : theme.colors.border,
       }}
     >
-      <View
-        style={{
-          width: 32,
-          height: 32,
-          borderRadius: 8,
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: `${theme.colors.primary}12`,
-        }}
-      >
-        <MaterialIcons name="search" size={18} color={theme.colors.primary} />
-      </View>
+      <MaterialIcons name="search" size={18} color={focused ? theme.colors.primary : theme.colors.text.secondary} />
       <TextInput
         placeholder={placeholder || 'Search songs, albums, artists'}
         placeholderTextColor={theme.colors.text.secondary}
@@ -54,8 +43,8 @@ export function SearchBar({ placeholder, value, onChangeText, onSubmit }: Search
           paddingVertical: theme.spacing.sm,
           paddingHorizontal: theme.spacing.sm,
           color: theme.colors.text.primary,
-          fontSize: theme.typography.body,
-          lineHeight: 24,
+          fontSize: 14,
+          lineHeight: 19,
           fontFamily: 'Sora_400Regular',
         }}
       />
@@ -68,14 +57,16 @@ export function SearchBar({ placeholder, value, onChangeText, onSubmit }: Search
         <TVTouchable
           onPress={onSubmit}
           style={{
-            backgroundColor: theme.colors.primary,
-            paddingHorizontal: 12,
+            backgroundColor: theme.colors.surfaceAlt,
+            borderWidth: 1,
+            borderColor: theme.colors.border,
+            paddingHorizontal: 10,
             paddingVertical: 8,
-            borderRadius: theme.radius.pill,
+            borderRadius: theme.radius.md,
           }}
           showFocusBorder={false}
         >
-          <MaterialIcons name="arrow-forward" size={16} color={theme.colors.text.inverse} />
+          <MaterialIcons name="arrow-forward" size={16} color={theme.colors.text.primary} />
         </TVTouchable>
       ) : null}
     </View>

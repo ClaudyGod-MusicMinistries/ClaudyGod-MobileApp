@@ -1,6 +1,7 @@
 import type { JwtClaims } from '../../utils/jwt';
 import { pool } from '../../db/pool';
 import { queueEmailJob } from '../../infra/transactionalEmails';
+import { isMissingDatabaseStructureError } from '../../lib/postgres';
 
 type WordStatus = 'draft' | 'published' | 'archived';
 
@@ -123,13 +124,21 @@ async function enqueueWordOfDayEmailNotifications(word: ReturnType<typeof mapWor
 export const getMobileWordOfDay = async (): Promise<{
   word: ReturnType<typeof mapWord> | null;
 }> => {
-  const result = await pool.query<WordRow>(
-    `SELECT *
-     FROM word_of_day_entries
-     WHERE status = 'published'
-     ORDER BY message_date DESC, updated_at DESC
-     LIMIT 1`,
-  );
+  let result;
+  try {
+    result = await pool.query<WordRow>(
+      `SELECT *
+       FROM word_of_day_entries
+       WHERE status = 'published'
+       ORDER BY message_date DESC, updated_at DESC
+       LIMIT 1`,
+    );
+  } catch (error) {
+    if (isMissingDatabaseStructureError(error)) {
+      return { word: null };
+    }
+    throw error;
+  }
 
   if (result.rowCount === 0) {
     return { word: null };
@@ -146,13 +155,21 @@ export const getAdminWordOfDayDashboard = async (params?: {
 }> => {
   const limit = Math.min(Math.max(params?.limit ?? 20, 1), 60);
 
-  const result = await pool.query<WordRow>(
-    `SELECT *
-     FROM word_of_day_entries
-     ORDER BY message_date DESC, updated_at DESC
-     LIMIT $1`,
-    [limit],
-  );
+  let result;
+  try {
+    result = await pool.query<WordRow>(
+      `SELECT *
+       FROM word_of_day_entries
+       ORDER BY message_date DESC, updated_at DESC
+       LIMIT $1`,
+      [limit],
+    );
+  } catch (error) {
+    if (isMissingDatabaseStructureError(error)) {
+      return { current: null, items: [] };
+    }
+    throw error;
+  }
 
   const items = result.rows.map(mapWord);
   const current = items.find((item) => item.status === 'published') ?? items[0] ?? null;

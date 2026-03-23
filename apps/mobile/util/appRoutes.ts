@@ -7,6 +7,9 @@ export const APP_ROUTES = {
     forgotPassword: '/forgot-password',
     resetPassword: '/reset-password',
   },
+  live: {
+    detail: '/live/[sessionId]',
+  },
   tabs: {
     home: '/(tabs)/home',
     player: '/(tabs)/player',
@@ -26,5 +29,6 @@ export const APP_ROUTES = {
 } as const;
 
 export type PlayerRoutePath =
+  | typeof APP_ROUTES.live.detail
   | typeof APP_ROUTES.tabs.player
   | typeof APP_ROUTES.tabs.videos;

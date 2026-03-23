@@ -33,41 +33,39 @@ export function AuthScreenFrame({
   const isTV = Platform.isTV;
   const isWeb = Platform.OS === 'web';
   const isTablet = width >= 768 && !isTV;
-  const isDesktop = width >= 1040 && !isTV;
+  const isDesktop = width >= 1120 && !isTV;
   const isPhone = !isTablet && !isTV;
-  const compact = width < 370;
   const compactViewport = height < 760;
-  const narrow = width < 430;
-  const shellWidth = isDesktop ? 1080 : isTablet ? 760 : 440;
+  const shellWidth = isDesktop ? 1100 : isTablet ? 760 : 468;
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#07050F' }}>
-      <StatusBar translucent={false} backgroundColor="#07050F" barStyle="light-content" />
+    <View style={{ flex: 1, backgroundColor: '#07090C' }}>
+      <StatusBar translucent={false} backgroundColor="#07090C" barStyle="light-content" />
 
       <LinearGradient
-        colors={['rgba(154,107,255,0.30)', 'rgba(15,10,29,0)']}
+        colors={['rgba(210,176,105,0.12)', 'rgba(7,9,12,0)']}
         start={{ x: 0, y: 0 }}
-        end={{ x: 0.9, y: 1 }}
+        end={{ x: 0.8, y: 1 }}
         style={{
           position: 'absolute',
-          left: -44,
-          top: -34,
-          width: isTablet ? 420 : 320,
-          height: isTablet ? 420 : 320,
-          borderRadius: 420,
+          left: -80,
+          top: -80,
+          width: 320,
+          height: 320,
+          borderRadius: 320,
         }}
       />
       <LinearGradient
-        colors={['rgba(67,183,255,0.16)', 'rgba(8,7,13,0)']}
+        colors={['rgba(92,118,142,0.12)', 'rgba(7,9,12,0)']}
         start={{ x: 1, y: 0 }}
         end={{ x: 0, y: 1 }}
         style={{
           position: 'absolute',
-          right: -80,
-          bottom: -70,
-          width: isDesktop ? 520 : 360,
-          height: isDesktop ? 520 : 360,
-          borderRadius: 999,
+          right: -120,
+          bottom: -120,
+          width: 360,
+          height: 360,
+          borderRadius: 360,
         }}
       />
 
@@ -77,7 +75,7 @@ export function AuthScreenFrame({
           contentContainerStyle={{
             flexGrow: 1,
             justifyContent: 'center',
-            paddingBottom: isWeb ? 0 : 24,
+            paddingBottom: isWeb ? 0 : 20,
           }}
           showsVerticalScrollIndicator={false}
           bounces={false}
@@ -88,145 +86,102 @@ export function AuthScreenFrame({
         >
           <Screen style={{ flex: 1 }} contentStyle={{ flex: 1, justifyContent: 'center' }}>
             <FadeIn>
-              <View style={{ paddingTop: isPhone ? 2 : compactViewport ? 4 : 10 }}>
+              <View style={{ paddingTop: 6 }}>
                 <TVTouchable
                   onPress={() => router.replace(backPath)}
                   style={{
-                    width: isPhone ? 38 : 40,
-                    height: isPhone ? 38 : 40,
-                    borderRadius: isPhone ? 13 : 14,
+                    width: 38,
+                    height: 38,
+                    borderRadius: 12,
                     borderWidth: 1,
-                    borderColor: 'rgba(255,255,255,0.12)',
+                    borderColor: 'rgba(255,255,255,0.10)',
                     backgroundColor: 'rgba(255,255,255,0.04)',
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
                   showFocusBorder={false}
                 >
-                  <MaterialIcons name="arrow-back" size={22} color="#F8F7FC" />
+                  <MaterialIcons name="arrow-back" size={21} color="#FFF9F0" />
                 </TVTouchable>
 
                 <View
                   style={{
-                    marginTop: isPhone ? 12 : compactViewport ? 12 : 16,
+                    marginTop: 14,
                     width: '100%',
                     maxWidth: shellWidth,
                     alignSelf: 'center',
-                    borderRadius: isDesktop ? 30 : 24,
-                    padding: isDesktop ? 20 : isTablet ? 8 : 0,
-                    backgroundColor: isDesktop || isTablet ? 'rgba(12,10,22,0.82)' : 'transparent',
-                    borderWidth: 1,
-                    borderColor: isDesktop || isTablet ? 'rgba(235,226,255,0.10)' : 'transparent',
                     flexDirection: isDesktop ? 'row' : 'column',
                     gap: isDesktop ? 18 : 0,
                   }}
                 >
                   {isDesktop ? (
-                    <View style={{ flex: 0.95, justifyContent: 'center' }}>
+                    <View style={{ flex: 0.94 }}>
                       <AuthBrandPanel salutation={salutation} description={description} />
                     </View>
                   ) : null}
 
                   <View
-                    style={{
+                  style={{
                       flex: 1,
-                      borderRadius: isPhone ? 26 : 24,
-                      padding: isDesktop
-                        ? 24
-                        : isTablet
-                          ? 22
-                          : compactViewport
-                            ? 18
-                            : compact
-                              ? 18
-                              : 20,
-                      backgroundColor: isPhone ? 'rgba(11,9,18,0.96)' : 'rgba(13,10,22,0.90)',
+                      borderRadius: 16,
                       borderWidth: 1,
-                      borderColor: 'rgba(235,226,255,0.12)',
+                      borderColor: 'rgba(255,255,255,0.08)',
+                      backgroundColor: 'rgba(12,15,18,0.94)',
+                      paddingHorizontal: isPhone ? 16 : 22,
+                      paddingVertical: isPhone ? 18 : 20,
                     }}
                   >
-                    {isPhone ? (
-                      <AuthBrandPanel salutation={salutation} description={description} compact />
-                    ) : !isDesktop ? (
-                      <AuthBrandPanel salutation={salutation} description={description} />
+                    {!isDesktop ? (
+                      <AuthBrandPanel salutation={salutation} description={description} compact={isPhone} />
                     ) : null}
 
-                    {!isPhone ? (
-                      <View
+                    <View
+                      style={{
+                        alignSelf: 'flex-start',
+                        borderRadius: 10,
+                        borderWidth: 1,
+                        borderColor: 'rgba(255,255,255,0.08)',
+                        backgroundColor: 'rgba(255,255,255,0.03)',
+                        paddingHorizontal: 8,
+                        paddingVertical: 5,
+                      }}
+                    >
+                      <CustomText
+                        variant="caption"
                         style={{
-                          borderRadius: 999,
-                          alignSelf: 'flex-start',
-                          borderWidth: 1,
-                          borderColor: 'rgba(255,255,255,0.08)',
-                          backgroundColor: 'rgba(255,255,255,0.03)',
-                          paddingHorizontal: 9,
-                          paddingVertical: 5,
-                          marginBottom: 11,
+                          color: 'rgba(224,214,197,0.72)',
+                          textTransform: 'uppercase',
+                          letterSpacing: 0.72,
                         }}
                       >
-                        <CustomText
-                          variant="caption"
-                          style={{
-                            color: 'rgba(226,219,246,0.84)',
-                            textTransform: 'uppercase',
-                            letterSpacing: 0.68,
-                            fontSize: 10,
-                            lineHeight: 12,
-                          }}
-                        >
-                          Secure account access
-                        </CustomText>
-                      </View>
-                    ) : null}
+                        ClaudyGod account
+                      </CustomText>
+                    </View>
 
                     <CustomText
                       variant="display"
                       style={{
-                        color: '#F8F7FC',
-                        fontSize: isDesktop ? 22 : isTablet ? 21 : narrow ? 18.5 : 19.5,
-                        lineHeight: isDesktop ? 28 : isTablet ? 27 : narrow ? 23 : 24,
+                        color: '#FFF9F0',
+                        marginTop: 12,
+                        fontSize: isPhone ? 18 : 22,
+                        lineHeight: isPhone ? 23 : 28,
                       }}
                     >
                       {title}
                     </CustomText>
+
                     <CustomText
                       variant="body"
                       style={{
-                        color: 'rgba(203,196,226,0.84)',
-                        marginTop: isPhone ? 6 : 7,
-                        fontSize: isPhone ? (narrow ? 12.6 : 13) : narrow ? 12.4 : 13.1,
-                        lineHeight: isPhone ? 18 : narrow ? 18 : 19,
+                        color: 'rgba(196,203,210,0.78)',
+                        marginTop: 6,
+                        maxWidth: 380,
                       }}
                     >
                       {subtitle}
                     </CustomText>
 
-                    {!isPhone ? (
-                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginTop: 13 }}>
-                        {['Responsive layout', 'Email verification', 'Synced across devices'].map((item) => (
-                          <View
-                            key={item}
-                            style={{
-                              borderRadius: 999,
-                              borderWidth: 1,
-                              borderColor: 'rgba(255,255,255,0.08)',
-                              backgroundColor: 'rgba(255,255,255,0.028)',
-                              paddingHorizontal: 9,
-                              paddingVertical: 5,
-                            }}
-                          >
-                            <CustomText
-                              variant="caption"
-                              style={{ color: 'rgba(232,225,249,0.82)', fontSize: 10.4, lineHeight: 12 }}
-                            >
-                              {item}
-                            </CustomText>
-                          </View>
-                        ))}
-                      </View>
-                    ) : null}
-
-                    <View style={{ marginTop: isPhone ? 18 : 16 }}>{children}</View>
+                    <View style={{ marginTop: isPhone ? 16 : 18 }}>{children}</View>
                   </View>
                 </View>
               </View>

@@ -4,6 +4,7 @@ import { pool } from '../../db/pool';
 import { emailTransportInfo, verifyEmailTransport } from '../../infra/email';
 import { queueEmailJob } from '../../infra/transactionalEmails';
 import { HttpError } from '../../lib/httpError';
+import { isMissingDatabaseStructureError } from '../../lib/postgres';
 import type { UserRole } from '../auth/auth.types';
 
 interface SummaryRow {
@@ -170,6 +171,48 @@ const getRecentEmailJobsResult = (limit: number) =>
     [limit],
   );
 
+async function safeQueryRows<T>(queryPromise: Promise<{ rows: T[] }>, fallbackRows: T[]): Promise<{ rows: T[] }> {
+  try {
+    return await queryPromise;
+  } catch (error) {
+    if (isMissingDatabaseStructureError(error)) {
+      return { rows: fallbackRows };
+    }
+    throw error;
+  }
+}
+
+const DEFAULT_SUMMARY_ROW: SummaryRow = {
+  total_users: '0',
+  new_users_last_7_days: '0',
+  verified_users: '0',
+  admin_users: '0',
+  client_users: '0',
+};
+
+const DEFAULT_CONTENT_SUMMARY_ROW: ContentSummaryRow = {
+  published_content: '0',
+  draft_content: '0',
+};
+
+const DEFAULT_RATING_SUMMARY_ROW: RatingSummaryRow = {
+  total_feedback: '0',
+  average_rating: null,
+};
+
+const DEFAULT_REQUEST_SUMMARY_ROW: RequestSummaryRow = {
+  open_support_requests: '0',
+  active_privacy_requests: '0',
+};
+
+const DEFAULT_EMAIL_SUMMARY_ROW: EmailSummaryRow = {
+  pending_jobs: '0',
+  processing_jobs: '0',
+  completed_last_24_hours: '0',
+  failed_last_24_hours: '0',
+  total_last_7_days: '0',
+};
+
 export const getAdminDashboard = async () => {
   const [
     userSummary,
@@ -185,7 +228,8 @@ export const getAdminDashboard = async () => {
     recentEmailJobs,
   ] =
     await Promise.all([
-      pool.query<SummaryRow>(
+      safeQueryRows(
+        pool.query<SummaryRow>(
         `SELECT
            COUNT(*)::text AS total_users,
            COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '7 days')::text AS new_users_last_7_days,
@@ -194,25 +238,37 @@ export const getAdminDashboard = async () => {
            COUNT(*) FILTER (WHERE role = 'CLIENT')::text AS client_users
          FROM app_users`,
       ),
-      pool.query<ContentSummaryRow>(
+        [DEFAULT_SUMMARY_ROW],
+      ),
+      safeQueryRows(
+        pool.query<ContentSummaryRow>(
         `SELECT
            COUNT(*) FILTER (WHERE visibility = 'published')::text AS published_content,
            COUNT(*) FILTER (WHERE visibility = 'draft')::text AS draft_content
          FROM content_items`,
       ),
-      pool.query<RatingSummaryRow>(
+        [DEFAULT_CONTENT_SUMMARY_ROW],
+      ),
+      safeQueryRows(
+        pool.query<RatingSummaryRow>(
         `SELECT
            COUNT(*)::text AS total_feedback,
            ROUND(AVG(rating)::numeric, 2)::text AS average_rating
          FROM app_ratings`,
       ),
-      pool.query<RequestSummaryRow>(
+        [DEFAULT_RATING_SUMMARY_ROW],
+      ),
+      safeQueryRows(
+        pool.query<RequestSummaryRow>(
         `SELECT
            COUNT(*) FILTER (WHERE status IN ('open', 'in_progress'))::text AS open_support_requests,
            (SELECT COUNT(*)::text FROM privacy_requests WHERE status IN ('submitted', 'processing')) AS active_privacy_requests
          FROM support_requests`,
       ),
-      pool.query<RecentUserRow>(
+        [DEFAULT_REQUEST_SUMMARY_ROW],
+      ),
+      safeQueryRows(
+        pool.query<RecentUserRow>(
         `SELECT
            id,
            email,
@@ -226,7 +282,10 @@ export const getAdminDashboard = async () => {
          ORDER BY created_at DESC
          LIMIT 10`,
       ),
-      pool.query<FeedbackRow>(
+        [],
+      ),
+      safeQueryRows(
+        pool.query<FeedbackRow>(
         `SELECT
            r.id,
            r.rating,
@@ -241,7 +300,10 @@ export const getAdminDashboard = async () => {
          ORDER BY r.created_at DESC
          LIMIT 10`,
       ),
-      pool.query<SupportRow>(
+        [],
+      ),
+      safeQueryRows(
+        pool.query<SupportRow>(
         `SELECT
            s.id,
            s.status,
@@ -265,7 +327,10 @@ export const getAdminDashboard = async () => {
            s.created_at DESC
          LIMIT 12`,
       ),
-      pool.query<SignupTrendRow>(
+        [],
+      ),
+      safeQueryRows(
+        pool.query<SignupTrendRow>(
         `WITH days AS (
            SELECT generate_series(
              date_trunc('day', NOW()) - INTERVAL '13 days',
@@ -282,7 +347,10 @@ export const getAdminDashboard = async () => {
          GROUP BY days.day
          ORDER BY days.day ASC`,
       ),
-      pool
+        [],
+      ),
+      safeQueryRows(
+        pool
         .query<AutomationRunRow>(
           `SELECT
              r.id::text,
@@ -299,9 +367,16 @@ export const getAdminDashboard = async () => {
            ORDER BY r.created_at DESC
            LIMIT 8`,
         )
-        .catch(() => ({ rows: [] as AutomationRunRow[] })),
-      getEmailDeliverySummaryResult(),
-      getRecentEmailJobsResult(8),
+        .catch((error) => {
+          if (isMissingDatabaseStructureError(error)) {
+            return { rows: [] as AutomationRunRow[] };
+          }
+          throw error;
+        }),
+        [],
+      ),
+      safeQueryRows(getEmailDeliverySummaryResult(), [DEFAULT_EMAIL_SUMMARY_ROW]),
+      safeQueryRows(getRecentEmailJobsResult(8), []),
     ]);
 
   const summary = userSummary.rows[0]!;
@@ -476,8 +551,8 @@ export const getAdminDashboard = async () => {
 
 export const getAdminEmailDiagnostics = async () => {
   const [emailSummary, recentEmailJobs, transportCheck] = await Promise.all([
-    getEmailDeliverySummaryResult(),
-    getRecentEmailJobsResult(20),
+    safeQueryRows(getEmailDeliverySummaryResult(), [DEFAULT_EMAIL_SUMMARY_ROW]),
+    safeQueryRows(getRecentEmailJobsResult(20), []),
     verifyEmailTransport(),
   ]);
 
