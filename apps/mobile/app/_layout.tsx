@@ -30,32 +30,6 @@ function ThemedLayout({ children }: { children: ReactNode }) {
   );
 }
 
-function LoadingPill({ label }: { label: string }) {
-  return (
-    <View
-      style={{
-        borderRadius: 999,
-        borderWidth: 1,
-        borderColor: 'rgba(214,228,255,0.14)',
-        backgroundColor: 'rgba(255,255,255,0.05)',
-        paddingHorizontal: 10,
-        paddingVertical: 6,
-      }}
-    >
-      <Text
-        style={{
-          color: 'rgba(230,237,249,0.84)',
-          fontSize: 10.5,
-          lineHeight: 12,
-          fontWeight: '600',
-        }}
-      >
-        {label}
-      </Text>
-    </View>
-  );
-}
-
 function WebLoadingScreen({ compact }: { compact: boolean }) {
   return (
     <View style={{ flex: 1, backgroundColor: '#06040D' }}>
@@ -103,18 +77,18 @@ function WebLoadingScreen({ compact }: { compact: boolean }) {
                 textAlign: 'center',
               }}
             >
-              Preparing ClaudyGod
+              ClaudyGod
             </Text>
             <Text
               style={{
                 marginTop: 8,
-                color: 'rgba(214,226,247,0.84)',
-                fontSize: compact ? 12.5 : 13,
-                lineHeight: compact ? 18 : 19,
+                color: 'rgba(214,226,247,0.70)',
+                fontSize: compact ? 11.8 : 12.2,
+                lineHeight: compact ? 16 : 17,
                 textAlign: 'center',
               }}
             >
-              Loading your music, videos, and personal library so the app opens ready to use.
+              Loading
             </Text>
 
             <View
@@ -133,35 +107,7 @@ function WebLoadingScreen({ compact }: { compact: boolean }) {
                 style={{ width: '62%', height: '100%', borderRadius: 999 }}
               />
             </View>
-
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8, marginTop: 16 }}>
-              <LoadingPill label="Music" />
-              <LoadingPill label="Videos" />
-              <LoadingPill label="Daily Word" />
-            </View>
           </View>
-        </View>
-
-        <View style={{ alignItems: 'center', paddingHorizontal: 24, paddingBottom: 18 }}>
-          <Text
-            style={{
-              color: 'rgba(223,231,246,0.84)',
-              fontSize: 12,
-              fontWeight: '600',
-            }}
-          >
-            ClaudyGod Ministries
-          </Text>
-          <Text
-            style={{
-              marginTop: 4,
-              color: 'rgba(192,207,235,0.66)',
-              fontSize: 10.5,
-              textAlign: 'center',
-            }}
-          >
-            Worship • Messages • Daily encouragement
-          </Text>
         </View>
       </SafeAreaView>
     </View>
@@ -402,48 +348,20 @@ function NativeLoadingScreen({ compact }: { compact: boolean }) {
                 textAlign: 'center',
               }}
             >
-              Preparing ClaudyGod
+              ClaudyGod
             </Text>
             <Text
               style={{
                 marginTop: 8,
-                color: 'rgba(214,226,247,0.82)',
-                fontSize: compact ? 12.2 : 12.8,
-                lineHeight: compact ? 18 : 19,
+                color: 'rgba(214,226,247,0.70)',
+                fontSize: compact ? 11.8 : 12.2,
+                lineHeight: compact ? 16 : 17,
                 textAlign: 'center',
               }}
             >
-              Loading your music, videos, and saved library so everything feels ready when the app opens.
+              Loading
             </Text>
-
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8, marginTop: 16 }}>
-              <LoadingPill label="Music" />
-              <LoadingPill label="Videos" />
-              <LoadingPill label="Library" />
-            </View>
           </View>
-        </View>
-
-        <View style={{ alignItems: 'center', paddingHorizontal: 20, paddingBottom: 14, paddingTop: 8 }}>
-          <Text
-            style={{
-              color: 'rgba(223,231,246,0.86)',
-              fontSize: 12,
-              fontWeight: '600',
-            }}
-          >
-            ClaudyGod Ministries
-          </Text>
-          <Text
-            style={{
-              marginTop: 4,
-              color: 'rgba(192,207,235,0.66)',
-              fontSize: 10.5,
-              textAlign: 'center',
-            }}
-          >
-            Worship • Messages • Daily encouragement
-          </Text>
         </View>
       </SafeAreaView>
     </View>
@@ -468,7 +386,7 @@ function RootLayoutInner() {
   const [bootDelayDone, setBootDelayDone] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => setBootDelayDone(true), 1100);
+    const timer = setTimeout(() => setBootDelayDone(true), 700);
     return () => clearTimeout(timer);
   }, []);
 
