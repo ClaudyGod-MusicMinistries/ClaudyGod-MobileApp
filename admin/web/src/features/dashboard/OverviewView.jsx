@@ -20,11 +20,11 @@ export default function OverviewView(props) {
       <article class="panel glass-panel reveal-up" style={{ animationDelay: '180ms' }}>
         <div class="section-head split">
           <div>
-            <h2>Content Studio</h2>
+            <h2>Content Portal</h2>
             <p>A simple workspace for uploading content, managing the library, and checking how updates look in the mobile app.</p>
           </div>
           <button type="button" class="primary-btn" onClick={() => onSetDashboardView('editor')}>
-            Open content desk
+            Open content
           </button>
         </div>
 
@@ -55,10 +55,10 @@ export default function OverviewView(props) {
             <div>
               <p class="eyebrow">Preview</p>
               <h3>Check the mobile app</h3>
-              <p>Reload the live preview and confirm each item appears in the right place before you leave the studio.</p>
+              <p>Reload the live preview and confirm each item appears in the right place before you leave the portal.</p>
             </div>
             <button type="button" class="ghost-btn compact" onClick={() => onSetDashboardView('mobile-preview')}>
-              Preview app
+              Open preview
             </button>
           </article>
         </div>
@@ -67,7 +67,7 @@ export default function OverviewView(props) {
       <article class="panel glass-panel reveal-up" style={{ animationDelay: '220ms' }}>
         <div class="section-head split">
           <div>
-            <h2>Studio Snapshot</h2>
+            <h2>Portal Summary</h2>
             <p>The key numbers your clients need without the extra operational noise.</p>
           </div>
           <span class="section-badge">Today</span>
@@ -95,7 +95,7 @@ export default function OverviewView(props) {
         <div class="grid-2" style={{ marginTop: '0.8rem' }}>
           <div class="helper-card">
             <strong>Best practice</strong>
-            <p>Use the content desk for every upload so the library stays clean and the preview stays accurate.</p>
+            <p>Use the content page for every upload so the library stays clean and the preview stays accurate.</p>
           </div>
           <div class="helper-card">
             <strong>Mobile-first workflow</strong>
@@ -120,7 +120,7 @@ export default function OverviewView(props) {
             <div class="empty-state">Loading upload requests...</div>
           ) : null}
           {!contentRequestLoading && requestQueuePreview.length === 0 ? (
-            <div class="empty-state">No upload requests yet. Open the content desk to add the first item.</div>
+            <div class="empty-state">No upload requests yet. Open the content page to add the first item.</div>
           ) : null}
           {!contentRequestLoading && requestQueuePreview.map((request) => (
             <article class={['content-card', 'request-card']} key={`overview-request-${request.id}`}>
@@ -155,7 +155,7 @@ export default function OverviewView(props) {
 
         <div class="list-wrap">
           {recentItems.length === 0 ? (
-            <div class="empty-state">No content yet. Open the content desk to submit the first upload.</div>
+            <div class="empty-state">No content yet. Open the content page to submit the first upload.</div>
           ) : recentItems.map((item) => (
             <article class="content-card" key={`overview-item-${item.id}`}>
               <div class="card-top">
