@@ -20,13 +20,11 @@ import EditContentModal from './features/content/EditContentModal';
 import BootScreen from './features/dashboard/BootScreen';
 import EditorView from './features/dashboard/EditorView';
 import MobilePreviewView from './features/dashboard/MobilePreviewView';
-import OverviewView from './features/dashboard/OverviewView';
 import {
   acceptFromPolicy,
   describeHealthCheckDetail,
   formatBytes,
   formatDateTime,
-  greetingByTime,
   humanizeToken,
   parseCsvList,
   readChecked,
@@ -51,7 +49,7 @@ function applyToken(token) {
 }
 
 export default defineComponent({
-  name: 'ClaudyContentStudio',
+  name: 'ClaudyContentPortal',
   setup() {
     const accessToken = ref(readStoredToken());
     const sessionTransport = ref(accessToken.value ? 'bearer' : 'none');
@@ -80,7 +78,7 @@ export default defineComponent({
     const contentRequestStatusUpdatingId = ref(null);
     const creatingDraftFromRequestId = ref(null);
     const headerMenuOpen = ref(false);
-    const dashboardView = ref('overview');
+    const dashboardView = ref('editor');
     const inactivityTimerId = ref(null);
     const authResponseInterceptorId = ref(null);
     const viewportWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1366);
@@ -193,9 +191,6 @@ export default defineComponent({
       tagsCsv: '',
       appSectionsCsv: '',
     });
-    const currentYear = new Date().getFullYear();
-
-    const greeting = computed(() => greetingByTime());
     const displayName = computed(() => (currentUser.value && currentUser.value.displayName ? currentUser.value.displayName : 'Publishing User'));
     const accountEmail = computed(() => (currentUser.value && currentUser.value.email ? currentUser.value.email : ''));
     const isRegisterMode = computed(() => authMode.value === 'register');
@@ -206,11 +201,11 @@ export default defineComponent({
     const isCompactHeader = computed(() => viewportWidth.value <= 1024);
     const googleLoginEnabled = computed(() => Boolean(GOOGLE_LOGIN_URL));
     const publicHealthSummary = computed(() => {
-      if (publicHealthLoading.value) return 'Preparing your studio';
+      if (publicHealthLoading.value) return 'Preparing your portal';
       if (!publicHealth.value) return 'Checking access';
-      if (publicHealth.value.status === 'ok') return 'Studio ready';
-      if (publicHealth.value.services?.postgres === 'down') return 'Studio temporarily unavailable';
-      if (publicHealth.value.status === 'offline') return 'Studio temporarily unavailable';
+      if (publicHealth.value.status === 'ok') return 'Portal ready';
+      if (publicHealth.value.services?.postgres === 'down') return 'Portal temporarily unavailable';
+      if (publicHealth.value.status === 'offline') return 'Portal temporarily unavailable';
       return 'Checking access';
     });
     const mobileSectionCatalog = computed(() => normalizeSectionCatalog(mobileAppConfigValue.value));
@@ -366,7 +361,7 @@ export default defineComponent({
     }
 
     function setDashboardView(view) {
-      dashboardView.value = view;
+      dashboardView.value = view === 'overview' ? 'editor' : view;
       closeHeaderMenu();
     }
 
@@ -616,7 +611,7 @@ export default defineComponent({
       };
       endpointChecks.value = [];
       endpointChecksAt.value = '';
-      dashboardView.value = 'overview';
+      dashboardView.value = 'editor';
       closeHeaderMenu();
     }
 
@@ -1074,7 +1069,7 @@ export default defineComponent({
 
         publicHealth.value = {
           status: 'offline',
-          error: toErrorMessage(error, 'The studio is temporarily unavailable.'),
+          error: toErrorMessage(error, 'The portal is temporarily unavailable.'),
           checkedAt: new Date().toISOString(),
         };
         return publicHealth.value;
@@ -1087,12 +1082,12 @@ export default defineComponent({
       const health = await fetchPublicHealth();
 
       if (!health || health.status === 'offline') {
-        setNotice('The studio is temporarily unavailable. Please try again shortly.', 'error');
+        setNotice('The portal is temporarily unavailable. Please try again shortly.', 'error');
         return false;
       }
 
       if (health.services?.postgres === 'down') {
-        setNotice('The studio is not ready right now. Please try again shortly.', 'error');
+        setNotice('The portal is not ready right now. Please try again shortly.', 'error');
         return false;
       }
 
@@ -1710,42 +1705,21 @@ export default defineComponent({
 
       const dashboardScreen = (
         <section class="dashboard-stage">
-          <section class="hero-banner glass-panel reveal-up">
-            <div class="hero-content">
-              <div class="hero-brand">
-                <div class="logo-wrap logo-wrap-large hero-logo">
-                  <div class="logo-glow" />
-                  <img src={BRAND_LOGO_URL} alt="ClaudyGod" class="brand-logo" />
-                </div>
-                <div>
-                  <p class="eyebrow">Client Studio</p>
-                  <h1>{greeting.value}, {displayName.value}</h1>
-                  <p class="subtitle">
-                    Upload content, manage your library, and preview exactly how each update will appear in the ClaudyGod mobile app.
-                  </p>
-                </div>
+          <section class="panel glass-panel reveal-up portal-banner" style={{ animationDelay: '140ms' }}>
+            <div class="section-head split">
+              <div>
+                <h2>Content Portal</h2>
+                <p>Manage uploads, review content, and confirm what appears in the mobile app.</p>
               </div>
-
-              <div class="hero-actions">
+              <div class="button-row">
                 <button type="button" class="primary-btn" onClick={() => setDashboardView('editor')}>
-                  Open content desk
-                </button>
-                <button type="button" class="ghost-btn" onClick={() => void refreshDashboard()} disabled={contentLoading.value}>
-                  {contentLoading.value ? 'Refreshing...' : 'Refresh data'}
+                  Manage Content
                 </button>
                 <button type="button" class="ghost-btn" onClick={() => setDashboardView('mobile-preview')}>
-                  Open mobile preview
+                  App Preview
                 </button>
-                <button type="button" class="danger-btn" onClick={logout}>Sign Out</button>
               </div>
             </div>
-
-            <div class="hero-chips">
-              <span class="hero-chip">Upload</span>
-              <span class="hero-chip">Manage</span>
-              <span class="hero-chip">Preview</span>
-            </div>
-            <div class="hero-shine" />
           </section>
 
           {notice.value ? (
@@ -1757,40 +1731,19 @@ export default defineComponent({
           <section class="dashboard-view-tabs reveal-up" style={{ animationDelay: '200ms' }}>
             <button
               type="button"
-              class={['ghost-btn compact', dashboardView.value === 'overview' ? 'is-active' : '']}
-              onClick={() => setDashboardView('overview')}
-            >
-              Overview
-            </button>
-            <button
-              type="button"
               class={['ghost-btn compact', dashboardView.value === 'editor' ? 'is-active' : '']}
               onClick={() => setDashboardView('editor')}
             >
-              Content Desk
+              Content
             </button>
             <button
               type="button"
               class={['ghost-btn compact', dashboardView.value === 'mobile-preview' ? 'is-active' : '']}
               onClick={() => setDashboardView('mobile-preview')}
             >
-              Preview App
+              App Preview
             </button>
           </section>
-
-          {dashboardView.value === 'overview' ? (
-            <OverviewView
-              requestStatusBoard={requestStatusBoard.value}
-              contentRequestLoading={contentRequestLoading.value}
-              requestQueuePreview={requestQueuePreview.value}
-              managedItemsCount={managedItems.value.length}
-              recentItems={recentItems.value}
-              onSetDashboardView={setDashboardView}
-              formatDateTime={formatDateTime}
-              truncate={truncate}
-              humanizeToken={humanizeToken}
-            />
-          ) : null}
 
           {dashboardView.value === 'mobile-preview' ? (
             <MobilePreviewView
@@ -1879,7 +1832,6 @@ export default defineComponent({
           dashboardView={dashboardView.value}
           onSetDashboardView={setDashboardView}
           appLoading={appLoading.value}
-          currentYear={currentYear}
           content={shellContent}
         />
       );

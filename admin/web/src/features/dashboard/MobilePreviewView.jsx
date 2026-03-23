@@ -74,11 +74,11 @@ export default function MobilePreviewView(props) {
           <span class="section-badge">Mobile guide</span>
         </div>
 
-        <div class="simple-intro-panel">
-          <div class="simple-intro-item">
-            <strong>1. Upload or update content</strong>
-            <p>Create a request or publish directly from the content desk.</p>
-          </div>
+          <div class="simple-intro-panel">
+            <div class="simple-intro-item">
+              <strong>1. Upload or update content</strong>
+            <p>Create a request or publish directly from the content page.</p>
+            </div>
           <div class="simple-intro-item">
             <strong>2. Assign the right section</strong>
             <p>Choose the home, video, or supporting sections that match the content type.</p>

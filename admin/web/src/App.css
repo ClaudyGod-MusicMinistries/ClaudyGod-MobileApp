@@ -191,6 +191,10 @@ code {
   padding: 0.78rem 0;
 }
 
+.portal-header {
+  flex-wrap: wrap;
+}
+
 .brand-inline {
   display: flex;
   align-items: center;
@@ -353,6 +357,24 @@ code {
   gap: 0.52rem;
   flex-wrap: wrap;
   justify-content: flex-end;
+}
+
+.portal-header-bar {
+  width: 100%;
+  justify-content: space-between;
+}
+
+.portal-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.46rem;
+  flex-wrap: wrap;
+}
+
+.portal-nav .ghost-btn.is-active,
+.header-command-bar .ghost-btn.is-active {
+  border-color: rgba(94, 168, 199, 0.34);
+  background: rgba(94, 168, 199, 0.14);
 }
 
 .header-inline-actions {
@@ -1206,6 +1228,10 @@ button {
   margin: 0 auto;
   display: grid;
   gap: 1.05rem;
+}
+
+.portal-banner {
+  padding: 1rem 1.05rem;
 }
 
 .hero-banner {
@@ -2165,6 +2191,21 @@ button {
   .global-header-inner {
     flex-direction: row;
     align-items: center;
+  }
+
+  .portal-header-bar {
+    justify-content: flex-start;
+  }
+
+  .portal-nav,
+  .header-inline-actions {
+    width: 100%;
+  }
+
+  .portal-nav .ghost-btn,
+  .header-inline-actions .ghost-btn,
+  .header-inline-actions .danger-btn {
+    flex: 1;
   }
 
   .user-pill {
