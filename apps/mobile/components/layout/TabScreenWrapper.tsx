@@ -24,8 +24,8 @@ export function TabScreenWrapper({ children }: TabScreenWrapperProps) {
       <LinearGradient
         colors={
           isDark
-            ? ['rgba(164,132,255,0.08)', 'rgba(6,4,13,0)']
-            : ['rgba(109,40,217,0.09)', 'rgba(244,241,250,0)']
+            ? ['rgba(190,148,74,0.08)', 'rgba(8,8,10,0)']
+            : ['rgba(137,107,54,0.08)', 'rgba(244,241,250,0)']
         }
         start={{ x: 0.2, y: 0 }}
         end={{ x: 0.8, y: 0.95 }}
@@ -46,7 +46,7 @@ export function TabScreenWrapper({ children }: TabScreenWrapperProps) {
           width: 260,
           height: 260,
           borderRadius: 260,
-          backgroundColor: isDark ? 'rgba(171,136,255,0.07)' : 'rgba(109,40,217,0.05)',
+          backgroundColor: isDark ? 'rgba(104,123,139,0.05)' : 'rgba(120,131,148,0.05)',
           pointerEvents: 'none',
         }}
       />

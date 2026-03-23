@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Alert,
   Image,
@@ -144,7 +144,6 @@ export default function HomeScreen() {
                     ? handleOpenItem(featured, 'home_featured')
                     : router.push(APP_ROUTES.tabs.videos)
                 }
-                onOpenSecondary={() => router.push(APP_ROUTES.tabs.videos)}
               />
             </FadeIn>
 
@@ -296,15 +295,25 @@ function HomeTopBar({
               letterSpacing: 0.74,
             }}
           >
-            ClaudyGod
+            Browse
           </CustomText>
           <CustomText variant="display" style={{ color: '#FFF9F0', marginTop: 2 }}>
-            Home
+            ClaudyGod
           </CustomText>
         </View>
       </View>
 
-      <View style={{ flexDirection: 'row', gap: 8 }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          gap: 0,
+          borderRadius: 12,
+          borderWidth: 1,
+          borderColor: 'rgba(255,255,255,0.08)',
+          backgroundColor: 'rgba(12,13,16,0.72)',
+          overflow: 'hidden',
+        }}
+      >
         <IconActionButton icon="search" onPress={onOpenSearch} />
         <IconActionButton icon="smart-display" onPress={onOpenVideos} />
         <IconActionButton icon="person-outline" onPress={onOpenProfile} />
@@ -327,8 +336,8 @@ function IconActionButton({
         width: 42,
         height: 42,
         borderRadius: 10,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.08)',
+        borderRightWidth: icon === 'person-outline' ? 0 : 1,
+        borderRightColor: 'rgba(255,255,255,0.08)',
         backgroundColor: 'rgba(255,255,255,0.03)',
         alignItems: 'center',
         justifyContent: 'center',
@@ -343,12 +352,11 @@ function IconActionButton({
 function FeaturedStage({
   item,
   onOpenPrimary,
-  onOpenSecondary,
 }: {
   item: FeedCardItem | null;
   onOpenPrimary: () => void;
-  onOpenSecondary: () => void;
 }) {
+  const [expanded, setExpanded] = useState(false);
   const title = item?.title ?? 'New worship drops will appear here.';
   const subtitle = item?.description ?? 'Music, messages, and live sessions update here as soon as they are published.';
 
@@ -364,58 +372,79 @@ function FeaturedStage({
       }}
       showFocusBorder={false}
     >
-      <View>
+      <View style={{ minHeight: 320 }}>
         {item?.imageUrl ? (
           <Image
             source={{ uri: item.imageUrl }}
             resizeMode="cover"
-            style={{ width: '100%', height: 210 }}
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
           />
         ) : null}
 
-        <View style={{ padding: 16 }}>
+        <LinearGradient
+          colors={['rgba(6,7,9,0.08)', 'rgba(6,7,9,0.42)', 'rgba(6,7,9,0.96)']}
+          start={{ x: 0.5, y: 0.1 }}
+          end={{ x: 0.5, y: 1 }}
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+        />
+
+        <View style={{ flex: 1, justifyContent: 'flex-end', padding: 16 }}>
           <View
             style={{
-              alignSelf: 'flex-start',
-              borderRadius: 8,
+              borderRadius: 12,
               borderWidth: 1,
-              borderColor: item?.isLive ? 'rgba(239,68,68,0.24)' : 'rgba(255,255,255,0.10)',
-              backgroundColor: item?.isLive ? 'rgba(153,27,27,0.38)' : 'rgba(255,255,255,0.05)',
-              paddingHorizontal: 8,
-              paddingVertical: 5,
+              borderColor: 'rgba(255,255,255,0.08)',
+              backgroundColor: 'rgba(12,13,16,0.86)',
+              padding: 14,
             }}
           >
-            <CustomText
-              variant="caption"
+            <View
               style={{
-                color: item?.isLive ? '#FFE2E2' : 'rgba(240,228,208,0.82)',
-                textTransform: 'uppercase',
-                letterSpacing: 0.72,
+                alignSelf: 'flex-start',
+                borderRadius: 8,
+                borderWidth: 1,
+                borderColor: item?.isLive ? 'rgba(239,68,68,0.24)' : 'rgba(255,255,255,0.10)',
+                backgroundColor: item?.isLive ? 'rgba(153,27,27,0.38)' : 'rgba(255,255,255,0.05)',
+                paddingHorizontal: 8,
+                paddingVertical: 5,
               }}
             >
-              {item?.isLive ? 'Live now' : item ? typeLabel(item.type) : 'Featured'}
+              <CustomText
+                variant="caption"
+                style={{
+                  color: item?.isLive ? '#FFE2E2' : 'rgba(240,228,208,0.82)',
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.72,
+                }}
+              >
+                {item?.isLive ? 'Live now' : item ? typeLabel(item.type) : 'Featured'}
+              </CustomText>
+            </View>
+
+            <CustomText
+              variant="hero"
+              style={{ color: '#FFF9F0', marginTop: 10, maxWidth: 320, fontSize: 20, lineHeight: 25 }}
+              numberOfLines={2}
+            >
+              {title}
             </CustomText>
-          </View>
 
-          <CustomText
-            variant="hero"
-            style={{ color: '#FFF9F0', marginTop: 10, maxWidth: 320, fontSize: 21, lineHeight: 26 }}
-            numberOfLines={2}
-          >
-            {title}
-          </CustomText>
+            <CustomText
+              variant="body"
+              style={{ color: 'rgba(235,227,216,0.72)', marginTop: 6, maxWidth: 300, fontSize: 12.5, lineHeight: 17 }}
+              numberOfLines={expanded ? 4 : 2}
+            >
+              {subtitle}
+            </CustomText>
 
-          <CustomText
-            variant="body"
-            style={{ color: 'rgba(235,227,216,0.72)', marginTop: 6, maxWidth: 300, fontSize: 13, lineHeight: 18 }}
-            numberOfLines={2}
-          >
-            {subtitle}
-          </CustomText>
-
-          <View style={{ flexDirection: 'row', gap: 8, marginTop: 14 }}>
-            <StageButton icon="play-arrow" label="Play" onPress={onOpenPrimary} filled />
-            <StageButton icon="grid-view" label="Browse" onPress={onOpenSecondary} />
+            <View style={{ flexDirection: 'row', gap: 8, marginTop: 14 }}>
+              <StageButton icon="play-arrow" label="Play" onPress={onOpenPrimary} filled />
+              <StageButton
+                icon="article"
+                label={expanded ? 'Less' : 'Read more'}
+                onPress={() => setExpanded((current) => !current)}
+              />
+            </View>
           </View>
         </View>
       </View>
@@ -464,19 +493,29 @@ function QuickDestinationRow({
   onOpenRoute: (_route: string) => void;
 }) {
   return (
-    <View style={{ flexDirection: 'row', gap: 12 }}>
+    <View
+      style={{
+        flexDirection: 'row',
+        gap: 0,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.08)',
+        backgroundColor: 'rgba(12,13,16,0.72)',
+        overflow: 'hidden',
+      }}
+    >
       {QUICK_DESTINATIONS.map((item) => (
         <TVTouchable
           key={item.key}
           onPress={() => onOpenRoute(item.route)}
           style={{
             flex: 1,
-            borderRadius: 10,
-            borderWidth: 1,
-            borderColor: 'rgba(255,255,255,0.08)',
-            backgroundColor: 'rgba(255,255,255,0.03)',
+            borderRightWidth: item.key === QUICK_DESTINATIONS[QUICK_DESTINATIONS.length - 1]?.key ? 0 : 1,
+            borderRightColor: 'rgba(255,255,255,0.08)',
+            backgroundColor: 'transparent',
             paddingHorizontal: 12,
             paddingVertical: 12,
+            alignItems: 'center',
           }}
           showFocusBorder={false}
         >
@@ -488,8 +527,6 @@ function QuickDestinationRow({
               alignItems: 'center',
               justifyContent: 'center',
               backgroundColor: 'rgba(187,144,63,0.14)',
-              borderWidth: 1,
-              borderColor: 'rgba(187,144,63,0.20)',
             }}
           >
             <MaterialIcons name={item.icon} size={15} color="#F0C87A" />
