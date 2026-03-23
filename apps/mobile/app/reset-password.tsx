@@ -145,10 +145,10 @@ export default function ResetPasswordScreen() {
   return (
     <AuthScreenFrame
       backPath={APP_ROUTES.auth.signIn}
-      salutation="Set a new password"
-      description="Use the 6-digit recovery code from your email, then choose a new password to protect your ClaudyGod account."
+      salutation="Choose a new password"
+      description="Use the recovery code from your email and set a fresh password."
       title="Create a fresh password"
-      subtitle="Enter your account email, the recovery code, and a new password. Older recovery links still work when opened on this device."
+      subtitle="Enter your email, recovery code, and new password."
     >
       <View style={{ gap: 12 }}>
         <AuthTextField
@@ -216,10 +216,6 @@ export default function ResetPasswordScreen() {
           hintTone={confirmPassword.trim() ? (passwordsMatch ? 'success' : 'error') : 'default'}
         />
       </View>
-
-      <CustomText variant="caption" style={{ color: 'rgba(188,178,214,0.9)', marginTop: 10 }}>
-        Use at least 8 characters with uppercase, lowercase, and a number. Recovery codes expire quickly for security.
-      </CustomText>
 
       {errorMessage ? <AuthFeedbackBanner message={errorMessage} tone="error" /> : null}
 

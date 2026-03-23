@@ -178,10 +178,10 @@ export default function VerifyEmailScreen() {
   return (
     <AuthScreenFrame
       backPath={APP_ROUTES.auth.signIn}
-      salutation="Confirm your account"
-      description="Enter the 6-digit verification code sent to your registered email to finish creating your account and unlock your personalized ministry experience."
+      salutation="Check your inbox"
+      description="Enter the 6-digit code we sent to finish setting up your account."
       title="Verify your email"
-      subtitle="We only create your account after the email code is confirmed. If you open an older verification link on this device, it will still complete automatically."
+      subtitle="Your account becomes active after the code is confirmed."
     >
       <View style={{ gap: 12 }}>
         <AuthTextField

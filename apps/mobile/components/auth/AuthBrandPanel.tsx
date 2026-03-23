@@ -7,10 +7,85 @@ import { BRAND_LOGO_ASSET } from '../../util/brandAssets';
 interface AuthBrandPanelProps {
   salutation: string;
   description: string;
+  compact?: boolean;
 }
 
-export function AuthBrandPanel({ salutation, description }: AuthBrandPanelProps) {
+export function AuthBrandPanel({
+  salutation,
+  description,
+  compact = false,
+}: AuthBrandPanelProps) {
   const highlights = ['Secure access', 'Recovery ready', 'One calm ministry flow'];
+
+  if (compact) {
+    return (
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12,
+          marginBottom: 14,
+        }}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+          <LinearGradient
+            colors={['rgba(169,123,255,0.36)', 'rgba(68,200,255,0.14)']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{
+              width: 46,
+              height: 46,
+              borderRadius: 15,
+              borderWidth: 1,
+              borderColor: 'rgba(255,255,255,0.14)',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginRight: 12,
+            }}
+          >
+            <Image source={BRAND_LOGO_ASSET} style={{ width: 28, height: 28, borderRadius: 14 }} />
+          </LinearGradient>
+
+          <View style={{ flex: 1 }}>
+            <CustomText
+              variant="caption"
+              style={{
+                color: 'rgba(216,205,246,0.76)',
+                textTransform: 'uppercase',
+                letterSpacing: 0.56,
+                fontSize: 9.8,
+                lineHeight: 12,
+              }}
+            >
+              ClaudyGod
+            </CustomText>
+            <CustomText
+              variant="label"
+              style={{ color: '#F9F7FF', marginTop: 2, fontSize: 12, lineHeight: 15 }}
+            >
+              Secure account portal
+            </CustomText>
+          </View>
+        </View>
+
+        <View
+          style={{
+            borderRadius: 999,
+            borderWidth: 1,
+            borderColor: 'rgba(160,255,210,0.20)',
+            backgroundColor: 'rgba(74,181,121,0.12)',
+            paddingHorizontal: 9,
+            paddingVertical: 5,
+          }}
+        >
+          <CustomText variant="caption" style={{ color: '#D5FFE8', fontSize: 10, lineHeight: 12 }}>
+            Protected
+          </CustomText>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View
