@@ -21,6 +21,8 @@ export const FontProvider: React.FC<FontProviderProps> = ({ children }) => {
     async function loadAppFonts() {
       try {
         await loadFonts();
+      } catch {
+        // Fall back to system fonts when custom font assets are delayed or unavailable.
       } finally {
         setFontsLoaded(true);
       }

@@ -68,10 +68,10 @@ export default function ForgotPasswordScreen() {
   return (
     <AuthScreenFrame
       backPath={APP_ROUTES.auth.signIn}
-      salutation="Recover your account"
-      description="Receive a 6-digit recovery code at your registered email so you can securely choose a new password without losing your saved ministry experience."
+      salutation="Recover access"
+      description="We will send a short recovery code to your registered email."
       title="Reset your password"
-      subtitle="Enter your account email and we will send a short-lived recovery code."
+      subtitle="Enter your email to receive a 6-digit reset code."
     >
       <View style={{ gap: 12 }}>
         <AuthTextField
@@ -89,10 +89,6 @@ export default function ForgotPasswordScreen() {
           onSubmitEditing={() => void handleRequestReset()}
         />
       </View>
-
-      <CustomText variant="caption" style={{ color: 'rgba(188,178,214,0.9)', marginTop: 10 }}>
-        The recovery code expires quickly and is sent only to the email used on your account.
-      </CustomText>
 
       {errorMessage ? <AuthFeedbackBanner message={errorMessage} tone="error" /> : null}
 

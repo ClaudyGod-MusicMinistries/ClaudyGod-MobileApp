@@ -12,6 +12,7 @@ import { AuthProvider, useAuth } from '../context/AuthContext';
 import { ToastProvider } from '../context/ToastContext';
 import { ToastViewport } from '../components/ui/ToastViewport';
 import { APP_ROUTES } from '../util/appRoutes';
+import { BRAND_LOGO_ASSET } from '../util/brandAssets';
 
 function ThemedLayout({ children }: { children: ReactNode }) {
   const colorScheme = useColorScheme();
@@ -29,10 +30,44 @@ function ThemedLayout({ children }: { children: ReactNode }) {
   );
 }
 
+function LoadingPill({ label }: { label: string }) {
+  return (
+    <View
+      style={{
+        borderRadius: 999,
+        borderWidth: 1,
+        borderColor: 'rgba(214,228,255,0.14)',
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+      }}
+    >
+      <Text
+        style={{
+          color: 'rgba(230,237,249,0.84)',
+          fontSize: 10.5,
+          lineHeight: 12,
+          fontWeight: '600',
+        }}
+      >
+        {label}
+      </Text>
+    </View>
+  );
+}
+
 function WebLoadingScreen({ compact }: { compact: boolean }) {
   return (
     <View style={{ flex: 1, backgroundColor: '#06040D' }}>
       <StatusBar translucent={false} barStyle="light-content" backgroundColor="#06040D" />
+
+      <LinearGradient
+        colors={['#0B1631', '#0A1020', '#06040D']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+      />
+
       <SafeAreaView style={{ flex: 1, backgroundColor: '#06040D' }} edges={['top', 'bottom']}>
         <View
           style={{
@@ -42,24 +77,90 @@ function WebLoadingScreen({ compact }: { compact: boolean }) {
             paddingHorizontal: 24,
           }}
         >
+          <View
+            style={{
+              width: '100%',
+              maxWidth: 420,
+              borderRadius: 28,
+              borderWidth: 1,
+              borderColor: 'rgba(214,228,255,0.14)',
+              backgroundColor: 'rgba(9,13,23,0.82)',
+              paddingHorizontal: compact ? 18 : 22,
+              paddingVertical: compact ? 20 : 24,
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+              <Image source={BRAND_LOGO_ASSET} style={{ width: 56, height: 56, borderRadius: 28 }} />
+            </View>
+
+            <Text
+              style={{
+                marginTop: 16,
+                color: '#F7FBFF',
+                fontSize: compact ? 18 : 20,
+                lineHeight: compact ? 22 : 24,
+                fontWeight: '700',
+                textAlign: 'center',
+              }}
+            >
+              Preparing ClaudyGod
+            </Text>
+            <Text
+              style={{
+                marginTop: 8,
+                color: 'rgba(214,226,247,0.84)',
+                fontSize: compact ? 12.5 : 13,
+                lineHeight: compact ? 18 : 19,
+                textAlign: 'center',
+              }}
+            >
+              Loading your music, videos, and personal library so the app opens ready to use.
+            </Text>
+
+            <View
+              style={{
+                height: 6,
+                borderRadius: 999,
+                marginTop: 18,
+                backgroundColor: 'rgba(255,255,255,0.10)',
+                overflow: 'hidden',
+              }}
+            >
+              <LinearGradient
+                colors={['#62D2FF', '#8A70FF']}
+                start={{ x: 0, y: 0.5 }}
+                end={{ x: 1, y: 0.5 }}
+                style={{ width: '62%', height: '100%', borderRadius: 999 }}
+              />
+            </View>
+
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8, marginTop: 16 }}>
+              <LoadingPill label="Music" />
+              <LoadingPill label="Videos" />
+              <LoadingPill label="Daily Word" />
+            </View>
+          </View>
+        </View>
+
+        <View style={{ alignItems: 'center', paddingHorizontal: 24, paddingBottom: 18 }}>
           <Text
             style={{
-              color: '#F7F1FF',
-              fontSize: compact ? 16 : 18,
+              color: 'rgba(223,231,246,0.84)',
+              fontSize: 12,
               fontWeight: '600',
             }}
           >
-            Loading ClaudyGod
+            ClaudyGod Ministries
           </Text>
           <Text
             style={{
-              marginTop: 8,
-              color: 'rgba(214,198,247,0.9)',
-              fontSize: compact ? 12 : 13,
+              marginTop: 4,
+              color: 'rgba(192,207,235,0.66)',
+              fontSize: 10.5,
               textAlign: 'center',
             }}
           >
-            Preparing your experience...
+            Worship • Messages • Daily encouragement
           </Text>
         </View>
       </SafeAreaView>
@@ -194,134 +295,154 @@ function NativeLoadingScreen({ compact }: { compact: boolean }) {
             }}
           />
 
-          <Animated.View
-            style={{
-              width: ringSize,
-              height: ringSize,
-              borderRadius: ringSize / 2,
-              borderWidth: 1,
-              borderColor: 'rgba(234,223,255,0.35)',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transform: [{ rotate: rotation }],
-            }}
-          >
-            <Animated.View
-              style={{
-                width: ringSize - 28,
-                height: ringSize - 28,
-                borderRadius: (ringSize - 28) / 2,
-                borderWidth: 1,
-                borderColor: 'rgba(255,255,255,0.25)',
-                backgroundColor: 'rgba(255,255,255,0.08)',
-                alignItems: 'center',
-                justifyContent: 'center',
-                ...ringShadowStyle,
-                transform: [{ scale: pulse }],
-              }}
-            >
-              <Image
-                source={require('../assets/images/ClaudyGoLogo.webp')}
-                style={{ width: logoSize, height: logoSize, borderRadius: logoSize / 2 }}
-              />
-            </Animated.View>
-          </Animated.View>
-
-          <View style={{ marginTop: 20, flexDirection: 'row', gap: 6, alignItems: 'flex-end', height: 22 }}>
-            <Animated.View
-              style={{
-                width: 6,
-                height: 22,
-                borderRadius: 999,
-                backgroundColor: 'rgba(154,107,255,0.96)',
-                transform: [{ scaleY: barScaleA }],
-              }}
-            />
-            <Animated.View
-              style={{
-                width: 6,
-                height: 22,
-                borderRadius: 999,
-                backgroundColor: 'rgba(189,161,255,0.94)',
-                transform: [{ scaleY: barScaleB }],
-              }}
-            />
-            <Animated.View
-              style={{
-                width: 6,
-                height: 22,
-                borderRadius: 999,
-                backgroundColor: 'rgba(154,107,255,0.96)',
-                transform: [{ scaleY: barScaleC }],
-              }}
-            />
-          </View>
-
           <View
             style={{
-              width: compact ? 136 : 154,
-              height: 5,
-              borderRadius: 999,
-              marginTop: 16,
-              backgroundColor: 'rgba(255,255,255,0.14)',
-              overflow: 'hidden',
+              width: compact ? 276 : 312,
+              borderRadius: 28,
+              borderWidth: 1,
+              borderColor: 'rgba(214,228,255,0.14)',
+              backgroundColor: 'rgba(9,13,23,0.72)',
+              alignItems: 'center',
+              justifyContent: 'center',
+              paddingHorizontal: compact ? 20 : 24,
+              paddingVertical: compact ? 22 : 26,
             }}
           >
             <Animated.View
               style={{
-                width: 78,
+                width: ringSize,
+                height: ringSize,
+                borderRadius: ringSize / 2,
+                borderWidth: 1,
+                borderColor: 'rgba(234,223,255,0.35)',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transform: [{ rotate: rotation }],
+              }}
+            >
+              <Animated.View
+                style={{
+                  width: ringSize - 28,
+                  height: ringSize - 28,
+                  borderRadius: (ringSize - 28) / 2,
+                  borderWidth: 1,
+                  borderColor: 'rgba(255,255,255,0.25)',
+                  backgroundColor: 'rgba(255,255,255,0.08)',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  ...ringShadowStyle,
+                  transform: [{ scale: pulse }],
+                }}
+              >
+                <Image
+                  source={BRAND_LOGO_ASSET}
+                  style={{ width: logoSize, height: logoSize, borderRadius: logoSize / 2 }}
+                />
+              </Animated.View>
+            </Animated.View>
+
+            <View style={{ marginTop: 18, flexDirection: 'row', gap: 6, alignItems: 'flex-end', height: 22 }}>
+              <Animated.View
+                style={{
+                  width: 6,
+                  height: 22,
+                  borderRadius: 999,
+                  backgroundColor: 'rgba(98,210,255,0.94)',
+                  transform: [{ scaleY: barScaleA }],
+                }}
+              />
+              <Animated.View
+                style={{
+                  width: 6,
+                  height: 22,
+                  borderRadius: 999,
+                  backgroundColor: 'rgba(189,161,255,0.94)',
+                  transform: [{ scaleY: barScaleB }],
+                }}
+              />
+              <Animated.View
+                style={{
+                  width: 6,
+                  height: 22,
+                  borderRadius: 999,
+                  backgroundColor: 'rgba(98,210,255,0.94)',
+                  transform: [{ scaleY: barScaleC }],
+                }}
+              />
+            </View>
+
+            <View
+              style={{
+                width: compact ? 154 : 172,
                 height: 5,
                 borderRadius: 999,
-                backgroundColor: '#9A6BFF',
-                transform: [{ translateX: shimmerTranslate }],
+                marginTop: 16,
+                backgroundColor: 'rgba(255,255,255,0.14)',
+                overflow: 'hidden',
               }}
-            />
-          </View>
+            >
+              <Animated.View
+                style={{
+                  width: 88,
+                  height: 5,
+                  borderRadius: 999,
+                  backgroundColor: '#8A70FF',
+                  transform: [{ translateX: shimmerTranslate }],
+                }}
+              />
+            </View>
 
-          <Text
-            style={{
-              marginTop: 14,
-              color: '#F7F1FF',
-              fontSize: compact ? 13 : 14,
-              letterSpacing: 0.2,
-              fontFamily: 'SpaceGrotesk_600SemiBold',
-            }}
-          >
-            Loading ClaudyGod
-          </Text>
-          <Text
-            style={{
-              marginTop: 5,
-              color: 'rgba(214,198,247,0.9)',
-              fontSize: compact ? 11 : 12,
-              fontFamily: 'Sora_400Regular',
-              textAlign: 'center',
-            }}
-          >
-            Setting up your secure portal...
-          </Text>
+            <Text
+              style={{
+                marginTop: 16,
+                color: '#F7FBFF',
+                fontSize: compact ? 18 : 19,
+                lineHeight: compact ? 22 : 23,
+                fontWeight: '700',
+                textAlign: 'center',
+              }}
+            >
+              Preparing ClaudyGod
+            </Text>
+            <Text
+              style={{
+                marginTop: 8,
+                color: 'rgba(214,226,247,0.82)',
+                fontSize: compact ? 12.2 : 12.8,
+                lineHeight: compact ? 18 : 19,
+                textAlign: 'center',
+              }}
+            >
+              Loading your music, videos, and saved library so everything feels ready when the app opens.
+            </Text>
+
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8, marginTop: 16 }}>
+              <LoadingPill label="Music" />
+              <LoadingPill label="Videos" />
+              <LoadingPill label="Library" />
+            </View>
+          </View>
         </View>
 
         <View style={{ alignItems: 'center', paddingHorizontal: 20, paddingBottom: 14, paddingTop: 8 }}>
           <Text
             style={{
-              color: 'rgba(223,212,249,0.9)',
+              color: 'rgba(223,231,246,0.86)',
               fontSize: 12,
-              fontFamily: 'SpaceGrotesk_500Medium',
+              fontWeight: '600',
             }}
           >
-            ClaudyGod Music Ministries
+            ClaudyGod Ministries
           </Text>
           <Text
             style={{
-              marginTop: 2,
-              color: 'rgba(205,190,238,0.78)',
-              fontSize: 10,
-              fontFamily: 'Sora_400Regular',
+              marginTop: 4,
+              color: 'rgba(192,207,235,0.66)',
+              fontSize: 10.5,
               textAlign: 'center',
             }}
           >
-            Worship • Messages • Nuggets of Truth
+            Worship • Messages • Daily encouragement
           </Text>
         </View>
       </SafeAreaView>

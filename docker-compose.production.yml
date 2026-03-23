@@ -261,7 +261,6 @@ services:
       - traefik.http.middlewares.mobile-compress.compress=true
       - traefik.http.middlewares.mobile-headers.headers.contentTypeNosniff=true
       - traefik.http.middlewares.mobile-headers.headers.browserXssFilter=true
-      - traefik.http.middlewares.mobile-headers.headers.frameDeny=true
       - traefik.http.middlewares.mobile-headers.headers.referrerPolicy=strict-origin-when-cross-origin
       - traefik.http.middlewares.mobile-headers.headers.permissionsPolicy=camera=(), microphone=(), geolocation=()
       - traefik.http.middlewares.mobile-headers.headers.stsSeconds=31536000
