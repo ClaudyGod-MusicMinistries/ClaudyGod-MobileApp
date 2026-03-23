@@ -47,10 +47,10 @@ export function AppButton({
 
   const sizeStyle =
     size === 'sm'
-      ? { minHeight: 38, paddingHorizontal: theme.spacing.md, paddingVertical: 7 }
+      ? { minHeight: 36, paddingHorizontal: theme.spacing.md, paddingVertical: 6 }
       : size === 'lg'
-      ? { minHeight: 48, paddingHorizontal: theme.spacing.xl, paddingVertical: 11 }
-      : { minHeight: 42, paddingHorizontal: theme.spacing.lg, paddingVertical: 9 };
+      ? { minHeight: 44, paddingHorizontal: theme.spacing.xl, paddingVertical: 10 }
+      : { minHeight: 40, paddingHorizontal: theme.spacing.lg, paddingVertical: 8 };
 
   return (
     <TVTouchable
@@ -60,7 +60,7 @@ export function AppButton({
       style={[
         {
           ...sizeStyle,
-          borderRadius: 16,
+          borderRadius: 12,
           backgroundColor: isPrimary
             ? theme.colors.primary
             : isSecondary
@@ -104,8 +104,8 @@ export function AppButton({
               textAlign: 'center',
               flexShrink: 1,
               fontFamily: 'SpaceGrotesk_500Medium',
-              fontSize: size === 'lg' ? 14 : 13,
-              lineHeight: size === 'lg' ? 18 : 17,
+              fontSize: size === 'lg' ? 13 : 12,
+              lineHeight: size === 'lg' ? 16 : 15,
               ...(textStyle || {}),
             }}
             numberOfLines={1}

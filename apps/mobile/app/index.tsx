@@ -34,21 +34,21 @@ function LandingChip({
       onPress={onPress}
       style={{
         flex: 1,
-        borderRadius: 18,
+        borderRadius: 10,
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.08)',
         backgroundColor: 'rgba(255,255,255,0.03)',
-        paddingHorizontal: 14,
-        paddingVertical: 14,
-        gap: 10,
+        paddingHorizontal: 12,
+        paddingVertical: 12,
+        gap: 8,
       }}
       showFocusBorder={false}
     >
       <View
         style={{
-          width: 36,
-          height: 36,
-          borderRadius: 14,
+          width: 32,
+          height: 32,
+          borderRadius: 8,
           alignItems: 'center',
           justifyContent: 'center',
           backgroundColor: 'rgba(187,144,63,0.14)',
@@ -56,10 +56,10 @@ function LandingChip({
           borderColor: 'rgba(187,144,63,0.20)',
         }}
       >
-        <MaterialIcons name={icon} size={18} color="#F0C87A" />
+        <MaterialIcons name={icon} size={16} color="#F0C87A" />
       </View>
 
-      <CustomText variant="label" style={{ color: '#FFF9F0' }}>
+      <CustomText variant="label" style={{ color: '#FFF9F0', fontSize: 11, lineHeight: 14 }}>
         {label}
       </CustomText>
     </TVTouchable>
@@ -162,12 +162,12 @@ export default function Landing() {
                   <TVTouchable
                     onPress={() => router.push(APP_ROUTES.auth.signIn)}
                     style={{
-                      borderRadius: 999,
+                      borderRadius: 10,
                       borderWidth: 1,
                       borderColor: 'rgba(255,255,255,0.10)',
                       backgroundColor: 'rgba(255,255,255,0.04)',
-                      paddingHorizontal: 14,
-                      paddingVertical: 9,
+                      paddingHorizontal: 12,
+                      paddingVertical: 8,
                     }}
                     showFocusBorder={false}
                   >
@@ -181,45 +181,36 @@ export default function Landing() {
               <FadeIn delay={70}>
                 <View
                   style={{
-                    borderRadius: 30,
+                    borderRadius: 12,
                     borderWidth: 1,
                     borderColor: 'rgba(255,255,255,0.08)',
                     backgroundColor: 'rgba(12,13,16,0.82)',
                     overflow: 'hidden',
                   }}
                 >
-                  <View style={{ minHeight: isTablet ? 500 : 410 }}>
+                  <View>
                     <Image
                       source={BRAND_HERO_ASSET}
                       resizeMode="cover"
-                      style={{ width: '100%', height: '100%' }}
-                    />
-
-                    <LinearGradient
-                      colors={['rgba(6,7,9,0.16)', 'rgba(6,7,9,0.60)', 'rgba(6,7,9,0.96)']}
-                      start={{ x: 0.45, y: 0 }}
-                      end={{ x: 0.6, y: 1 }}
-                      style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+                      style={{ width: '100%', height: isTablet ? 320 : 220 }}
                     />
 
                     <View
                       style={{
-                        position: 'absolute',
-                        left: 18,
-                        right: 18,
-                        bottom: 18,
-                        maxWidth: isDesktop ? 560 : 420,
+                        paddingHorizontal: 16,
+                        paddingVertical: 16,
+                        maxWidth: isDesktop ? 600 : undefined,
                       }}
                     >
                       <View
                         style={{
                           alignSelf: 'flex-start',
-                          borderRadius: 999,
+                          borderRadius: 8,
                           borderWidth: 1,
                           borderColor: 'rgba(255,255,255,0.10)',
                           backgroundColor: 'rgba(255,255,255,0.05)',
-                          paddingHorizontal: 10,
-                          paddingVertical: 6,
+                          paddingHorizontal: 8,
+                          paddingVertical: 5,
                         }}
                       >
                         <CustomText
@@ -227,7 +218,7 @@ export default function Landing() {
                           style={{
                             color: 'rgba(240,228,208,0.82)',
                             textTransform: 'uppercase',
-                            letterSpacing: 0.76,
+                            letterSpacing: 0.68,
                           }}
                         >
                           ClaudyGod app
@@ -238,10 +229,10 @@ export default function Landing() {
                         variant="hero"
                         style={{
                           color: '#FFF9F0',
-                          marginTop: 14,
-                          fontSize: isTablet ? 42 : 31,
-                          lineHeight: isTablet ? 48 : 36,
-                          maxWidth: 420,
+                          marginTop: 10,
+                          fontSize: isTablet ? 28 : 22,
+                          lineHeight: isTablet ? 34 : 27,
+                          maxWidth: 360,
                         }}
                       >
                         Worship, messages, and live moments in one place.
@@ -251,8 +242,8 @@ export default function Landing() {
                         variant="body"
                         style={{
                           color: 'rgba(236,228,218,0.74)',
-                          marginTop: 10,
-                          maxWidth: 320,
+                          marginTop: 8,
+                          maxWidth: 280,
                         }}
                       >
                         Simple to enter. Easy to keep listening.
@@ -261,8 +252,8 @@ export default function Landing() {
                       <View
                         style={{
                           flexDirection: isTablet ? 'row' : 'column',
-                          gap: 10,
-                          marginTop: 18,
+                          gap: 8,
+                          marginTop: 14,
                         }}
                       >
                         <AppButton
@@ -270,12 +261,12 @@ export default function Landing() {
                           size="lg"
                           onPress={() => router.push(APP_ROUTES.auth.signUp)}
                           style={{
-                            borderRadius: 18,
+                            borderRadius: 10,
                             backgroundColor: '#E1B662',
-                            minWidth: isTablet ? 180 : undefined,
+                            minWidth: isTablet ? 168 : undefined,
                           }}
                           textColor="#1C160C"
-                          textStyle={{ fontSize: 14, lineHeight: 18 }}
+                          textStyle={{ fontSize: 12, lineHeight: 15 }}
                         />
 
                         <AppButton
@@ -284,13 +275,13 @@ export default function Landing() {
                           variant="outline"
                           onPress={() => router.push(APP_ROUTES.auth.signIn)}
                           style={{
-                            borderRadius: 18,
+                            borderRadius: 10,
                             borderColor: 'rgba(255,255,255,0.14)',
                             backgroundColor: 'rgba(255,255,255,0.04)',
-                            minWidth: isTablet ? 150 : undefined,
+                            minWidth: isTablet ? 140 : undefined,
                           }}
                           textColor="#FFF9F0"
-                          textStyle={{ fontSize: 14, lineHeight: 18 }}
+                          textStyle={{ fontSize: 12, lineHeight: 15 }}
                         />
                       </View>
                     </View>
