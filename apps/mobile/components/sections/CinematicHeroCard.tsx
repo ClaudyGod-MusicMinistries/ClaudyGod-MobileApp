@@ -93,10 +93,10 @@ export function CinematicHeroCard({
               borderRadius: theme.radius.pill,
               borderWidth: 1,
               borderColor: 'rgba(255,255,255,0.12)',
-              backgroundColor: 'rgba(12,16,20,0.72)',
+              backgroundColor: 'rgba(14,12,23,0.76)',
             }}
           >
-            <CustomText variant="caption" style={{ color: '#F3E8CF' }}>
+            <CustomText variant="caption" style={{ color: '#E5DBFF' }}>
               {badge}
             </CustomText>
           </View>
@@ -106,7 +106,7 @@ export function CinematicHeroCard({
           <CustomText
             variant="caption"
             style={{
-              color: 'rgba(241,229,204,0.76)',
+              color: 'rgba(226,218,255,0.76)',
               textTransform: 'uppercase',
               letterSpacing: 0.9,
             }}
