@@ -22,7 +22,7 @@ import { BRAND_LOGO_ASSET } from '../util/brandAssets';
 
 export default function Landing() {
   const router = useRouter();
-  const { initializing, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   const { width, height } = useWindowDimensions();
 
   const isWeb = typeof globalThis === 'object' && globalThis !== null && 'window' in globalThis;
@@ -51,12 +51,6 @@ export default function Landing() {
   const ctaOpacity = useRef(new Animated.Value(0)).current;
   const logoFloat = useRef(new Animated.Value(0)).current;
   const orbDrift = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    if (!initializing && isAuthenticated) {
-      router.replace(APP_ROUTES.tabs.home);
-    }
-  }, [initializing, isAuthenticated, router]);
 
   useEffect(() => {
     Animated.parallel([
@@ -133,6 +127,12 @@ export default function Landing() {
   }, [ctaOpacity, headerOpacity, heroOpacity, heroY, logoFloat, orbDrift, useNativeAnimations]);
 
   if (isWeb) {
+    const primaryTitle = isAuthenticated ? 'Open App' : 'Create Account';
+    const primaryIcon = isAuthenticated ? 'arrow-forward' : 'person-add';
+    const primaryAction = () =>
+      router.push(isAuthenticated ? APP_ROUTES.tabs.home : APP_ROUTES.auth.signUp);
+    const secondaryTitle = isAuthenticated ? 'Sign In With Another Account' : 'Sign In';
+
     return (
       <View style={{ flex: 1, backgroundColor: '#05040D' }}>
         <StatusBar translucent={false} barStyle="light-content" backgroundColor="#05040D" />
@@ -197,6 +197,24 @@ export default function Landing() {
                     Stream ministry music, watch channels, and follow daily message drops in one place.
                   </CustomText>
 
+                  {isAuthenticated ? (
+                    <View
+                      style={{
+                        marginTop: 12,
+                        borderRadius: 999,
+                        borderWidth: 1,
+                        borderColor: 'rgba(216,194,255,0.24)',
+                        backgroundColor: 'rgba(154,107,255,0.12)',
+                        paddingHorizontal: 12,
+                        paddingVertical: 7,
+                      }}
+                    >
+                      <CustomText variant="caption" style={{ color: '#F1E8FF' }}>
+                        Your session is ready. You can continue straight into the app.
+                      </CustomText>
+                    </View>
+                  ) : null}
+
                   <View
                     style={{
                       width: '100%',
@@ -217,15 +235,15 @@ export default function Landing() {
 
                   <View style={{ width: '100%', marginTop: 20 }}>
                     <AppButton
-                      title="Create Account"
+                      title={primaryTitle}
                       size="lg"
                       fullWidth
-                      onPress={() => router.push(APP_ROUTES.auth.signUp)}
-                      rightIcon={<MaterialIcons name="person-add" size={18} color="#08060F" />}
+                      onPress={primaryAction}
+                      rightIcon={<MaterialIcons name={primaryIcon} size={18} color="#08060F" />}
                     />
 
                     <AppButton
-                      title="Sign In"
+                      title={secondaryTitle}
                       variant="ghost"
                       size="lg"
                       fullWidth
@@ -319,7 +337,9 @@ export default function Landing() {
               </View>
 
               <TVTouchable
-                onPress={() => router.push(APP_ROUTES.auth.signIn)}
+                onPress={() =>
+                  router.push(isAuthenticated ? APP_ROUTES.tabs.home : APP_ROUTES.auth.signIn)
+                }
                 style={{
                   borderRadius: 999,
                   borderWidth: 1,
@@ -331,7 +351,7 @@ export default function Landing() {
                 showFocusBorder={false}
               >
                 <CustomText variant="caption" style={{ color: '#EADFFF' }}>
-                  Sign In
+                  {isAuthenticated ? 'Open App' : 'Sign In'}
                 </CustomText>
                 </TVTouchable>
               </Animated.View>
@@ -438,16 +458,24 @@ export default function Landing() {
 
                 <Animated.View style={{ opacity: ctaOpacity, marginTop: compact ? 16 : 20 }}>
                   <AppButton
-                    title="Create Account"
+                    title={isAuthenticated ? 'Open App' : 'Create Account'}
                     size="lg"
                     fullWidth
-                    onPress={() => router.push(APP_ROUTES.auth.signUp)}
-                    rightIcon={<MaterialIcons name="person-add" size={18} color="#08060F" />}
+                    onPress={() =>
+                      router.push(isAuthenticated ? APP_ROUTES.tabs.home : APP_ROUTES.auth.signUp)
+                    }
+                    rightIcon={
+                      <MaterialIcons
+                        name={isAuthenticated ? 'arrow-forward' : 'person-add'}
+                        size={18}
+                        color="#08060F"
+                      />
+                    }
                     style={{ borderRadius: 16 }}
                   />
 
                   <AppButton
-                    title="Sign In"
+                    title={isAuthenticated ? 'Sign In With Another Account' : 'Sign In'}
                     variant="ghost"
                     size="lg"
                     fullWidth
