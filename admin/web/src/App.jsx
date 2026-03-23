@@ -126,6 +126,10 @@ const API_HOST_LABEL = (() => {
 const http = axios.create({
   baseURL: API_URL,
   timeout: 15000,
+  withCredentials: true,
+  headers: {
+    'X-Claudy-Client-Platform': 'web',
+  },
 });
 
 function readStoredToken() {
@@ -340,6 +344,7 @@ export default defineComponent({
   name: 'ClaudyContentStudio',
   setup() {
     const accessToken = ref(readStoredToken());
+    const sessionTransport = ref(accessToken.value ? 'bearer' : 'none');
     const currentUser = ref(null);
     const authLoading = ref(false);
     const authMode = ref('login');
@@ -388,7 +393,9 @@ export default defineComponent({
       password: '',
       username: '',
       confirmPassword: '',
+      verificationCode: '',
     });
+    const pendingVerificationEmail = ref('');
 
     const createForm = reactive({
       title: '',
@@ -482,7 +489,9 @@ export default defineComponent({
     const displayName = computed(() => (currentUser.value && currentUser.value.displayName ? currentUser.value.displayName : 'Publishing User'));
     const accountEmail = computed(() => (currentUser.value && currentUser.value.email ? currentUser.value.email : ''));
     const isRegisterMode = computed(() => authMode.value === 'register');
+    const isVerifyMode = computed(() => authMode.value === 'verify');
     const isAdmin = computed(() => Boolean(currentUser.value && currentUser.value.role === 'ADMIN'));
+    const hasSession = computed(() => sessionTransport.value !== 'none');
     const portalRoleLabel = computed(() => (isAdmin.value ? 'Admin' : 'Publisher'));
     const isCompactHeader = computed(() => viewportWidth.value <= 1024);
     const googleLoginEnabled = computed(() => Boolean(GOOGLE_LOGIN_URL));
@@ -612,18 +621,74 @@ export default defineComponent({
       notice.value = '';
     }
 
-    function persistToken(token) {
-      if (token) {
+    function setSessionTransportState(transport, token = '') {
+      if (transport === 'bearer' && token) {
         storeToken(token);
         accessToken.value = token;
         applyToken(token);
-        syncSessionTracking();
-        return;
+      } else {
+        storeToken(null);
+        accessToken.value = '';
+        applyToken(null);
       }
-      storeToken(null);
-      accessToken.value = '';
-      applyToken(null);
+      sessionTransport.value = transport;
       syncSessionTracking();
+    }
+
+    function getPendingVerificationEmail() {
+      return String(pendingVerificationEmail.value || authForm.email || '').trim().toLowerCase();
+    }
+
+    function resetAuthSecrets() {
+      authForm.password = '';
+      authForm.confirmPassword = '';
+      authForm.verificationCode = '';
+    }
+
+    function moveToVerificationStep(message) {
+      const pendingEmail = getPendingVerificationEmail();
+      if (pendingEmail) {
+        pendingVerificationEmail.value = pendingEmail;
+        authForm.email = pendingEmail;
+      }
+      resetAuthSecrets();
+      authMode.value = 'verify';
+      setNotice(
+        message || 'We sent a 6-digit verification code to your email. Enter it to finish creating your account.',
+        'success',
+      );
+    }
+
+    async function completeAuthenticatedSession(authPayload, message) {
+      const user = authPayload && authPayload.user ? authPayload.user : null;
+      if (!user) {
+        throw new Error('Authentication succeeded but no user profile was returned.');
+      }
+
+      const freshToken = String(authPayload && authPayload.accessToken ? authPayload.accessToken : '').trim();
+      if (freshToken) {
+        setSessionTransportState('bearer', freshToken);
+      } else {
+        setSessionTransportState('cookie');
+      }
+
+      currentUser.value = user;
+      pendingVerificationEmail.value = '';
+      authMode.value = 'login';
+      authForm.email = user.email || authForm.email.trim();
+      resetAuthSecrets();
+
+      await Promise.all([
+        fetchManagedContent(freshToken || undefined),
+        fetchContentRequests(freshToken || undefined),
+        fetchUploadPolicies(freshToken || undefined),
+        user.role === 'ADMIN' ? fetchAdminOperationsDashboard() : Promise.resolve(),
+        user.role === 'ADMIN' ? fetchMobileAppConfig() : Promise.resolve(),
+        user.role === 'ADMIN' ? fetchWordOfDayDashboard() : Promise.resolve(),
+        runEndpointChecks(),
+      ]);
+
+      setNotice(message, 'success');
     }
 
     function syncViewport() {
@@ -838,6 +903,7 @@ export default defineComponent({
 
     function clearSessionData() {
       currentUser.value = null;
+      pendingVerificationEmail.value = '';
       managedItems.value = [];
       contentRequests.value = [];
       youtubePreviewItems.value = [];
@@ -887,20 +953,20 @@ export default defineComponent({
     }
 
     function handleInactivityTimeout() {
-      if (!accessToken.value) return;
-      persistToken(null);
+      if (!hasSession.value) return;
+      setSessionTransportState('none');
       clearSessionData();
       setNotice('You were signed out after 30 minutes of inactivity.', 'error');
     }
 
     function scheduleInactivityTimeout() {
-      if (typeof window === 'undefined' || !accessToken.value) return;
+      if (typeof window === 'undefined' || !hasSession.value) return;
       clearInactivityTimer();
       inactivityTimerId.value = window.setTimeout(handleInactivityTimeout, INACTIVITY_TIMEOUT_MS);
     }
 
     function onUserActivity() {
-      if (!accessToken.value) return;
+      if (!hasSession.value) return;
       scheduleInactivityTimeout();
     }
 
@@ -921,7 +987,7 @@ export default defineComponent({
     }
 
     function syncSessionTracking() {
-      if (!accessToken.value) {
+      if (!hasSession.value) {
         clearInactivityTimer();
         unbindActivityListeners();
         return;
@@ -936,21 +1002,27 @@ export default defineComponent({
       authResponseInterceptorId.value = http.interceptors.response.use(
         (response) => response,
         (error) => {
-          if (axios.isAxiosError(error) && error.response?.status === 401 && accessToken.value) {
+          if (axios.isAxiosError(error) && error.response?.status === 401 && hasSession.value) {
             const requestUrl = String(error.config?.url || '');
-            const isAuthEndpoint = requestUrl.includes('/v1/auth/login') || requestUrl.includes('/v1/auth/register');
+            const isAuthEndpoint =
+              requestUrl.includes('/v1/auth/login') ||
+              requestUrl.includes('/v1/auth/register') ||
+              requestUrl.includes('/v1/auth/email/verify') ||
+              requestUrl.includes('/v1/auth/email/verify/request');
             const failedHeaderValue =
               error.config?.headers && typeof error.config.headers === 'object'
                 ? String(error.config.headers.Authorization || error.config.headers.authorization || '')
                 : '';
-            const activeHeaderValue = accessToken.value ? `Bearer ${accessToken.value}` : '';
+            const activeHeaderValue =
+              sessionTransport.value === 'bearer' && accessToken.value ? `Bearer ${accessToken.value}` : '';
             const hadBearerHeader = failedHeaderValue.startsWith('Bearer ');
             const staleRequest =
+              sessionTransport.value === 'bearer' &&
               Boolean(activeHeaderValue) &&
               (!hadBearerHeader || failedHeaderValue !== activeHeaderValue);
 
             if (!isAuthEndpoint && !staleRequest) {
-              persistToken(null);
+              setSessionTransportState('none');
               clearSessionData();
               setNotice('Your session has expired. Please sign in again.', 'error');
             }
@@ -1363,12 +1435,19 @@ export default defineComponent({
     }
 
     async function bootstrapSession() {
-      if (!accessToken.value) return;
       appLoading.value = true;
       clearNotice();
       try {
-        applyToken(accessToken.value);
+        if (accessToken.value) {
+          applyToken(accessToken.value);
+          sessionTransport.value = 'bearer';
+        }
         await fetchCurrentUser();
+        if (!accessToken.value) {
+          setSessionTransportState('cookie');
+        } else {
+          syncSessionTracking();
+        }
         await Promise.all([
           fetchManagedContent(),
           fetchContentRequests(),
@@ -1379,9 +1458,11 @@ export default defineComponent({
           runEndpointChecks(),
         ]);
       } catch (error) {
-        persistToken(null);
+        setSessionTransportState('none');
         currentUser.value = null;
-        setNotice(toErrorMessage(error, 'Your session expired. Please sign in again.'), 'error');
+        if (!(axios.isAxiosError(error) && error.response?.status === 401)) {
+          setNotice(toErrorMessage(error, 'Your session expired. Please sign in again.'), 'error');
+        }
       } finally {
         appLoading.value = false;
       }
@@ -1390,6 +1471,39 @@ export default defineComponent({
     async function handleAuthSubmit(event) {
       event.preventDefault();
       clearNotice();
+
+      if (isVerifyMode.value) {
+        const email = getPendingVerificationEmail();
+        if (!email) {
+          setNotice('Enter the email address used for account creation.', 'error');
+          return;
+        }
+        if (!authForm.verificationCode.trim()) {
+          setNotice('Enter the 6-digit verification code sent to your email.', 'error');
+          return;
+        }
+        if (!(await ensureAuthInfrastructureReady())) {
+          return;
+        }
+
+        authLoading.value = true;
+        try {
+          const authResponse = await http.post('/v1/auth/email/verify', {
+            email,
+            token: authForm.verificationCode.trim(),
+          });
+
+          await completeAuthenticatedSession(
+            authResponse.data,
+            `Welcome, ${authResponse.data.user.displayName}. Your email is verified and your account is ready.`,
+          );
+        } catch (error) {
+          setNotice(toErrorMessage(error, 'Unable to verify this code right now.'), 'error');
+        } finally {
+          authLoading.value = false;
+        }
+        return;
+      }
 
       if (!authForm.email.trim() || !authForm.password.trim()) {
         setNotice(isRegisterMode.value ? 'Please complete the required account fields.' : 'Please enter your email and password.', 'error');
@@ -1426,31 +1540,30 @@ export default defineComponent({
             };
 
         const authResponse = await http.post(endpoint, payload);
-        const freshToken = String(authResponse.data?.accessToken || '');
-        if (!freshToken) {
-          throw new Error('Authentication succeeded but no session token was returned.');
+        if (authResponse.data?.requiresEmailVerification) {
+          pendingVerificationEmail.value = String(authResponse.data?.pendingEmail || authForm.email || '').trim().toLowerCase();
+          moveToVerificationStep(authResponse.data?.message);
+          return;
         }
 
-        persistToken(freshToken);
-        currentUser.value = authResponse.data.user;
-        authForm.password = '';
-        authForm.confirmPassword = '';
-        await Promise.all([
-          fetchManagedContent(freshToken),
-          fetchContentRequests(freshToken),
-          fetchUploadPolicies(freshToken),
-          authResponse.data.user && authResponse.data.user.role === 'ADMIN' ? fetchAdminOperationsDashboard() : Promise.resolve(),
-          authResponse.data.user && authResponse.data.user.role === 'ADMIN' ? fetchMobileAppConfig() : Promise.resolve(),
-          authResponse.data.user && authResponse.data.user.role === 'ADMIN' ? fetchWordOfDayDashboard() : Promise.resolve(),
-          runEndpointChecks(),
-        ]);
-        setNotice(
+        await completeAuthenticatedSession(
+          authResponse.data,
           isRegisterMode.value
             ? `Account created. Welcome, ${authResponse.data.user.displayName}.`
             : `Welcome back, ${authResponse.data.user.displayName}.`,
-          'success',
         );
       } catch (error) {
+        if (
+          !isRegisterMode.value &&
+          axios.isAxiosError(error) &&
+          error.response?.status === 403 &&
+          String(error.response?.data?.message || '').toLowerCase().includes('not verified')
+        ) {
+          pendingVerificationEmail.value = String(authForm.email || '').trim().toLowerCase();
+          moveToVerificationStep(error.response?.data?.message);
+          return;
+        }
+
         setNotice(
           toErrorMessage(
             error,
@@ -1469,14 +1582,42 @@ export default defineComponent({
       authMode.value = mode;
       closeHeaderMenu();
       clearNotice();
-      authForm.password = '';
-      authForm.confirmPassword = '';
+      if (mode !== 'verify') {
+        pendingVerificationEmail.value = '';
+      }
+      resetAuthSecrets();
     }
 
-    function logout() {
-      persistToken(null);
-      clearSessionData();
-      setNotice('You have signed out.', 'success');
+    async function resendVerificationCode() {
+      const email = getPendingVerificationEmail();
+      if (!email) {
+        setNotice('Enter the email address used for account creation first.', 'error');
+        return;
+      }
+
+      clearNotice();
+      authLoading.value = true;
+      try {
+        await http.post('/v1/auth/email/verify/request', { email });
+        setNotice(`A fresh verification code was sent to ${email}.`, 'success');
+      } catch (error) {
+        setNotice(toErrorMessage(error, 'Unable to resend the verification code.'), 'error');
+      } finally {
+        authLoading.value = false;
+      }
+    }
+
+    async function logout() {
+      clearNotice();
+      try {
+        await http.post('/v1/auth/logout');
+      } catch (error) {
+        // Clear the local session state even if the remote sign-out call fails.
+      } finally {
+        setSessionTransportState('none');
+        clearSessionData();
+        setNotice('You have signed out.', 'success');
+      }
     }
 
     async function createContent(event) {
@@ -1917,8 +2058,12 @@ export default defineComponent({
               </article>
               <article class="auth-status-card">
                 <span class="auth-status-label">Account Flow</span>
-                <strong>Username only</strong>
-                <p>No duplicate identity fields in the current register form.</p>
+                <strong>{isVerifyMode.value ? 'Email verification' : 'Username only'}</strong>
+                <p>
+                  {isVerifyMode.value
+                    ? 'Enter the code sent to your email to finish creating the account.'
+                    : 'No duplicate identity fields in the current register form.'}
+                </p>
               </article>
             </div>
           </div>
@@ -1929,9 +2074,11 @@ export default defineComponent({
                 <img src={BRAND_LOGO_URL} alt="ClaudyGod" class="brand-logo" />
               </div>
               <div>
-                <h2>{isRegisterMode.value ? 'Create Account' : 'Sign In'}</h2>
+                <h2>{isVerifyMode.value ? 'Verify Email' : isRegisterMode.value ? 'Create Account' : 'Sign In'}</h2>
                 <p class="subtle-text">
-                  {isRegisterMode.value
+                  {isVerifyMode.value
+                    ? 'Confirm your 6-digit code to activate the account and open the dashboard.'
+                    : isRegisterMode.value
                     ? 'Create your account to manage and publish content.'
                     : 'Enter your account details to continue.'}
                 </p>
@@ -1941,7 +2088,7 @@ export default defineComponent({
             <div class="auth-mode-toggle" role="tablist" aria-label="Authentication mode">
               <button
                 type="button"
-                class={['auth-mode-btn', !isRegisterMode.value ? 'is-active' : '']}
+                class={['auth-mode-btn', authMode.value === 'login' ? 'is-active' : '']}
                 onClick={() => switchAuthMode('login')}
                 disabled={authLoading.value}
               >
@@ -1949,7 +2096,7 @@ export default defineComponent({
               </button>
               <button
                 type="button"
-                class={['auth-mode-btn', isRegisterMode.value ? 'is-active' : '']}
+                class={['auth-mode-btn', isRegisterMode.value || isVerifyMode.value ? 'is-active' : '']}
                 onClick={() => switchAuthMode('register')}
                 disabled={authLoading.value}
               >
@@ -1964,7 +2111,7 @@ export default defineComponent({
               <span>{publicHealthSummary.value}</span>
             </div>
 
-            {googleLoginEnabled.value ? (
+            {googleLoginEnabled.value && !isVerifyMode.value ? (
               <div class="social-auth-block">
                 <button
                   type="button"
@@ -2021,33 +2168,59 @@ export default defineComponent({
                   type="email"
                   value={authForm.email}
                   onInput={(event) => { authForm.email = readValue(event); }}
-                  placeholder="name@company.com"
-                  autoComplete="email"
+                  placeholder={isVerifyMode.value ? 'Enter the same email used during signup' : 'name@company.com'}
+                  autoComplete={isVerifyMode.value ? 'username' : 'email'}
                 />
               </label>
 
-              <label class="auth-field">
-                <span class="field-label-row">
-                  <span>Password</span>
-                  <span
-                    class="field-tooltip"
-                    data-tooltip="Use at least 8 characters with uppercase, lowercase, and a number."
-                    tabIndex={0}
-                    role="note"
-                    aria-label="Password help"
-                  >
-                    i
+              {isVerifyMode.value ? (
+                <label class="auth-field">
+                  <span class="field-label-row">
+                    <span>Verification code</span>
+                    <span
+                      class="field-tooltip"
+                      data-tooltip="Use the 6-digit code that was sent to the email address above."
+                      tabIndex={0}
+                      role="note"
+                      aria-label="Verification code help"
+                    >
+                      i
+                    </span>
                   </span>
-                </span>
-                <input
-                  class="auth-input"
-                  type="password"
-                  value={authForm.password}
-                  onInput={(event) => { authForm.password = readValue(event); }}
-                  placeholder={isRegisterMode.value ? 'Create a strong password' : 'Enter your password'}
-                  autoComplete={isRegisterMode.value ? 'new-password' : 'current-password'}
-                />
-              </label>
+                  <input
+                    class="auth-input"
+                    value={authForm.verificationCode}
+                    onInput={(event) => { authForm.verificationCode = readValue(event).replace(/\D/g, '').slice(0, 6); }}
+                    placeholder="123456"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                  />
+                  <small class="field-note">Check your inbox for the 6-digit code. You can resend it if needed.</small>
+                </label>
+              ) : (
+                <label class="auth-field">
+                  <span class="field-label-row">
+                    <span>Password</span>
+                    <span
+                      class="field-tooltip"
+                      data-tooltip="Use at least 8 characters with uppercase, lowercase, and a number."
+                      tabIndex={0}
+                      role="note"
+                      aria-label="Password help"
+                    >
+                      i
+                    </span>
+                  </span>
+                  <input
+                    class="auth-input"
+                    type="password"
+                    value={authForm.password}
+                    onInput={(event) => { authForm.password = readValue(event); }}
+                    placeholder={isRegisterMode.value ? 'Create a strong password' : 'Enter your password'}
+                    autoComplete={isRegisterMode.value ? 'new-password' : 'current-password'}
+                  />
+                </label>
+              )}
 
               {isRegisterMode.value ? (
                 <label class="auth-field">
@@ -2076,13 +2249,26 @@ export default defineComponent({
 
               <button type="submit" class="primary-btn primary-btn-large" disabled={authLoading.value}>
                 {authLoading.value
-                  ? (isRegisterMode.value ? 'Creating account...' : 'Signing in...')
-                  : (isRegisterMode.value ? 'Create Account' : 'Sign In')}
+                  ? (isVerifyMode.value ? 'Verifying...' : isRegisterMode.value ? 'Creating account...' : 'Signing in...')
+                  : (isVerifyMode.value ? 'Verify Email' : isRegisterMode.value ? 'Create Account' : 'Sign In')}
               </button>
             </form>
 
+            {isVerifyMode.value ? (
+              <div class="button-row compact-row">
+                <button type="button" class="ghost-btn compact" onClick={() => void resendVerificationCode()} disabled={authLoading.value}>
+                  Resend Code
+                </button>
+                <button type="button" class="ghost-btn compact" onClick={() => switchAuthMode('login')} disabled={authLoading.value}>
+                  Back to Sign In
+                </button>
+              </div>
+            ) : null}
+
             <p class="footnote-text">
-              {isRegisterMode.value
+              {isVerifyMode.value
+                ? `We only activate the account after the email code is confirmed.${pendingVerificationEmail.value ? ` Code destination: ${pendingVerificationEmail.value}.` : ''}`
+                : isRegisterMode.value
                 ? 'Use one username, one email address, and one password to create your publisher account.'
                 : 'Sign in with your existing publisher account.'}
             </p>
