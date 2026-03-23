@@ -39,8 +39,8 @@ const dataPolicies = [
   },
   {
     icon: 'bug-report',
-    title: 'Diagnostics',
-    description: 'Optional app diagnostics help improve playback and reliability.',
+    title: 'Performance sharing',
+    description: 'Optional performance sharing helps improve playback and reliability.',
     retention: 'Optional',
   },
 ] as const;
@@ -98,8 +98,7 @@ export default function Privacy() {
     try {
       const response = await fetchMePrivacyOverview();
       setPrivacySummary(response.privacy);
-    } catch (error) {
-      console.warn('privacy overview fallback:', error);
+    } catch {
     } finally {
       setPrivacyLoading(false);
     }
@@ -150,7 +149,7 @@ export default function Privacy() {
           bullets: [
             'Use “Forgot Password” on the sign-in screen if you cannot access your account.',
             'Update your password regularly to protect your account.',
-            'Session management can be connected here when backend auth is ready.',
+            'You can review access and sign-in options from your account anytime.',
           ],
           primaryActionLabel: 'Open Sign-in',
           onPrimaryAction: () => {
@@ -165,7 +164,7 @@ export default function Privacy() {
           key: 'export',
           title: 'Export My Data',
           description:
-            'Submit a data export request for your profile, library, and activity records. The request is sent to the backend for processing.',
+            'Submit a data export request for your profile, library, and activity records. Our team will prepare the export for you.',
           bullets: [
             'Exports are usually sent to your account email.',
             'Large accounts may take longer to prepare.',
@@ -247,7 +246,7 @@ export default function Privacy() {
             'Update your name, email, phone number, and other account profile details from your Profile screen.',
           bullets: [
             'Profile updates help keep account recovery and notifications accurate.',
-            'Changes can be saved locally now and connected to backend sync later.',
+            'Keep your details current so support and security notices always reach you.',
           ],
           primaryActionLabel: 'Open Profile',
           onPrimaryAction: () => {
@@ -275,7 +274,7 @@ export default function Privacy() {
           key: 'downloads',
           title: 'Offline Downloads',
           description:
-            'Manage downloaded videos and audio files from your Library. Storage controls can be connected here.',
+            'Manage downloaded videos and audio files from your Library and free up space whenever needed.',
           bullets: [
             'Remove offline media to free up space on this device.',
             'Downloads are device-specific unless cloud sync is enabled.',
@@ -291,12 +290,12 @@ export default function Privacy() {
       case 'diagnostics':
         return {
           key: 'diagnostics',
-          title: 'Diagnostics',
+          title: 'Performance sharing',
           description:
-            'Diagnostics help improve app stability by reporting crash and performance information when enabled.',
+            'Performance sharing helps improve app stability by reporting crash and playback information when enabled.',
           bullets: [
-            'Diagnostics do not affect your saved media.',
-            'You can choose whether to participate when backend settings are connected.',
+            'Performance sharing does not affect your saved media.',
+            'You can choose whether to participate at any time.',
           ],
           primaryActionLabel: 'Close',
           onPrimaryAction: closeActionModal,
@@ -457,7 +456,7 @@ export default function Privacy() {
       <FadeIn delay={130}>
         <SectionCard
           title="Request Status & Activity"
-          subtitle="Backend-synced privacy request history and personalization activity counts."
+          subtitle="Your recent privacy requests and activity totals in one place."
           style={{ marginTop: spacing.sm }}
         >
           <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>

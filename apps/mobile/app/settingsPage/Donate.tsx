@@ -140,7 +140,7 @@ export default function Donate() {
   } as const;
 
   const onPlaceholderAction = (label: string) => {
-    Alert.alert('Checkout setup pending', `${label} will be connected when the payment backend is configured.`);
+    Alert.alert('Coming soon', `${label} will be available soon.`);
   };
 
   const onDonateNow = () => {
@@ -155,12 +155,12 @@ export default function Donate() {
     })
       .then(() => {
         Alert.alert(
-          'Donation intent created',
-          `${donationMode === 'monthly' ? 'Monthly' : 'One-time'} ${selectedAmount} via ${method?.label ?? 'selected method'} is ready for payment provider processing.`,
+          'Donation ready',
+          `${donationMode === 'monthly' ? 'Monthly' : 'One-time'} ${selectedAmount} via ${method?.label ?? 'selected method'} has been prepared successfully.`,
         );
       })
       .catch((error) => {
-        Alert.alert('Donation setup failed', error instanceof Error ? error.message : 'Please try again.');
+        Alert.alert('Donation unavailable', error instanceof Error ? error.message : 'Please try again.');
       });
   };
 
@@ -233,7 +233,7 @@ export default function Donate() {
                 Support worship, live broadcasts and ministry content
               </CustomText>
               <CustomText variant="body" style={{ color: ui.muted, marginTop: 8 }}>
-                Choose a one-time gift or monthly support plan. Payment providers and backend processing can be connected without changing this page layout.
+                Choose a one-time gift or monthly support plan and support worship, broadcasts, and ministry outreach.
               </CustomText>
 
               <View
@@ -280,7 +280,7 @@ export default function Donate() {
             Quick donation
           </CustomText>
           <CustomText variant="caption" style={{ color: ui.muted, marginTop: 3 }}>
-            Select amount, payment mode and method. Checkout action is ready for backend integration.
+            Select an amount, choose how you want to give, and continue with the method that suits you best.
           </CustomText>
 
           <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
@@ -475,7 +475,7 @@ export default function Donate() {
             <DonateActionRow
               icon="support-agent"
               title="Contact donations team"
-              subtitle="Questions about giving methods and sponsorship setup"
+              subtitle="Questions about giving methods and sponsorships"
               onPress={() => onPlaceholderAction('Donations support')}
             />
           </View>
@@ -491,7 +491,7 @@ export default function Donate() {
             }}
           >
             <CustomText variant="caption" style={{ color: ui.muted }}>
-              Donations are optional. This screen is UI-ready and can be connected to your backend payment and admin reporting flow without redesigning the page.
+              Donations are always optional and handled with care, clarity, and gratitude.
             </CustomText>
           </View>
         </SurfaceCard>

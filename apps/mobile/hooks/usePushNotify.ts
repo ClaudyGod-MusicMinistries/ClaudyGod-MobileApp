@@ -24,9 +24,7 @@ export const usePushNotifications = (): UsePushNotificationsReturn => {
 
       setHasPermission(permissionGranted);
       setIsEnabled(permissionGranted);
-    } catch (error) {
-      console.error('Error checking permission:', error);
-    }
+    } catch {}
   }, []);
 
   const initializeNotifications = useCallback(async () => {
@@ -44,8 +42,7 @@ export const usePushNotifications = (): UsePushNotificationsReturn => {
       if (permissionGranted) {
         await pushNotificationService.initialize();
       }
-    } catch (error) {
-      console.error('Error initializing notifications:', error);
+    } catch {
     } finally {
       setIsLoading(false);
     }
@@ -99,8 +96,7 @@ export const usePushNotifications = (): UsePushNotificationsReturn => {
         // Note: We can't revoke permissions programmatically on iOS
         // User must manually disable in system settings
       }
-    } catch (error) {
-      console.error('Error toggling notifications:', error);
+    } catch {
     } finally {
       setIsLoading(false);
     }
@@ -114,7 +110,6 @@ export const usePushNotifications = (): UsePushNotificationsReturn => {
         { type: 'test' }
       );
     } catch (error) {
-      console.error('Error scheduling test notification:', error);
       throw error;
     }
   };

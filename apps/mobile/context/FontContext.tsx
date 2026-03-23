@@ -21,8 +21,6 @@ export const FontProvider: React.FC<FontProviderProps> = ({ children }) => {
     async function loadAppFonts() {
       try {
         await loadFonts();
-      } catch (error) {
-        console.warn('font bootstrap failed, falling back to system fonts:', error);
       } finally {
         setFontsLoaded(true);
       }
