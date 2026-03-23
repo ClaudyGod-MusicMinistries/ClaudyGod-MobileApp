@@ -100,11 +100,11 @@ export default function LandingScreen() {
               style={{
                 flex: 1,
                 justifyContent: 'space-between',
-                paddingTop: isTablet ? 24 : 18,
-                gap: isTablet ? 34 : 28,
+                paddingTop: isTablet ? 52 : 40,
+                gap: isTablet ? 28 : 22,
               }}
             >
-              <View style={{ gap: isTablet ? 30 : 24 }}>
+              <View style={{ gap: isTablet ? 22 : 18 }}>
                 <FadeIn>
                   <View
                     style={{
@@ -227,7 +227,7 @@ export default function LandingScreen() {
                   style={{
                     borderTopWidth: 1,
                     borderTopColor: theme.colors.border,
-                    paddingTop: 18,
+                    paddingTop: 14,
                     paddingBottom: isTablet ? 6 : 2,
                     flexDirection: isTablet ? 'row' : 'column',
                     justifyContent: 'space-between',
@@ -240,8 +240,22 @@ export default function LandingScreen() {
                     Worship, teaching, and live ministry without the noise.
                   </CustomText>
 
-                  <View style={{ flexDirection: 'row', gap: 16 }}>
-                    <TVTouchable onPress={() => router.push(APP_ROUTES.auth.signUp)} showFocusBorder={false}>
+                  <View style={{ flexDirection: 'row', gap: 10 }}>
+                    <TVTouchable
+                      onPress={() => router.push(APP_ROUTES.auth.signUp)}
+                      showFocusBorder={false}
+                      style={{
+                        minHeight: 34,
+                        paddingHorizontal: 14,
+                        paddingVertical: 8,
+                        borderRadius: theme.radius.md,
+                        borderWidth: 1,
+                        borderColor: theme.colors.border,
+                        backgroundColor: theme.colors.surface,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
                       <CustomText
                         variant="caption"
                         style={{
@@ -253,7 +267,21 @@ export default function LandingScreen() {
                         Join
                       </CustomText>
                     </TVTouchable>
-                    <TVTouchable onPress={() => router.push(APP_ROUTES.tabs.videos)} showFocusBorder={false}>
+                    <TVTouchable
+                      onPress={() => router.push(APP_ROUTES.tabs.videos)}
+                      showFocusBorder={false}
+                      style={{
+                        minHeight: 34,
+                        paddingHorizontal: 14,
+                        paddingVertical: 8,
+                        borderRadius: theme.radius.md,
+                        borderWidth: 1,
+                        borderColor: theme.colors.border,
+                        backgroundColor: theme.colors.surface,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
                       <CustomText
                         variant="caption"
                         style={{
