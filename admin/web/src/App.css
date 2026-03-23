@@ -42,10 +42,9 @@ body {
   color: var(--ink);
   font-family: 'Manrope', system-ui, sans-serif;
   background:
-    linear-gradient(170deg, rgba(5, 12, 20, 0.94), rgba(7, 18, 27, 0.96)),
-    radial-gradient(920px 560px at 6% -8%, rgba(94, 168, 199, 0.18), transparent 60%),
-    radial-gradient(860px 560px at 100% -4%, rgba(122, 174, 214, 0.16), transparent 62%),
-    radial-gradient(740px 460px at 50% 108%, rgba(63, 124, 133, 0.12), transparent 64%),
+    linear-gradient(170deg, rgba(5, 12, 20, 0.96), rgba(7, 18, 27, 0.98)),
+    radial-gradient(920px 560px at 6% -8%, rgba(94, 168, 199, 0.12), transparent 60%),
+    radial-gradient(860px 560px at 100% -4%, rgba(122, 174, 214, 0.1), transparent 62%),
     linear-gradient(180deg, var(--bg-1) 0%, var(--bg-2) 48%, var(--bg-3) 100%);
   background-size: cover;
   background-position: center center;
@@ -57,9 +56,9 @@ body::before {
   content: '';
   position: fixed;
   inset: 0;
-  background: url('/brand/claudy-logo.webp') center center / min(74vw, 920px) no-repeat;
-  opacity: 0.045;
-  filter: saturate(0.72) brightness(1.06);
+  background: none;
+  opacity: 0;
+  filter: none;
   pointer-events: none;
   z-index: 0;
 }
@@ -126,7 +125,7 @@ code {
   position: absolute;
   border-radius: 999px;
   filter: blur(80px);
-  opacity: 0.24;
+  opacity: 0.14;
   pointer-events: none;
   animation: drift 16s ease-in-out infinite alternate;
 }
@@ -472,7 +471,7 @@ code {
 
 .header-drawer-actions {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.55rem;
 }
 
@@ -1212,20 +1211,13 @@ button {
 .hero-banner {
   position: relative;
   overflow: hidden;
-  padding: 1.05rem;
+  padding: 0.95rem;
   transform-origin: center top;
   transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .hero-shine {
-  position: absolute;
-  inset: -20% auto auto -30%;
-  width: 55%;
-  height: 200%;
-  background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.05), transparent);
-  transform: rotate(8deg);
-  animation: heroSweep 10s linear infinite;
-  pointer-events: none;
+  display: none;
 }
 
 @keyframes heroSweep {
@@ -1288,10 +1280,10 @@ button {
   display: inline-flex;
   align-items: center;
   border-radius: 999px;
-  padding: 0.35rem 0.7rem;
+  padding: 0.32rem 0.62rem;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.03);
-  color: #E5DAFA;
+  color: var(--ink-soft);
   font-size: var(--font-xs);
   font-weight: 700;
 }
@@ -1336,12 +1328,12 @@ button {
 }
 
 .task-card {
-  padding: 1rem;
+  padding: 0.92rem;
   border-radius: 20px;
   display: grid;
   gap: 0.9rem;
   align-content: space-between;
-  min-height: 190px;
+  min-height: 168px;
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
@@ -1459,7 +1451,7 @@ button {
 }
 
 .overview-grid .list-wrap {
-  max-height: 30rem;
+  max-height: 24rem;
 }
 
 .mobile-preview-grid {
