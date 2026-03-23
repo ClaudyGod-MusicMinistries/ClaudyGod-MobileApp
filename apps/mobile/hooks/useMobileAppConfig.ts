@@ -12,9 +12,7 @@ export function useMobileAppConfig() {
         if (!active) return;
         setConfig(response.config);
       })
-      .catch((error) => {
-        console.warn('mobile app config fallback:', error);
-      })
+      .catch(() => {})
       .finally(() => {
         if (active) setLoading(false);
       });

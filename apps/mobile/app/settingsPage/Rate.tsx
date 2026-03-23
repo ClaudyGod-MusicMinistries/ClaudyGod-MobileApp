@@ -29,18 +29,15 @@ export default function Rate() {
     return 'No rating selected';
   }, [rating]);
 
-  const iosStoreUrl = config?.rate.iosStoreUrl ?? 'https://apps.apple.com/app/idYOUR_APP_ID';
-  const androidStoreUrl =
-    config?.rate.androidStoreUrl ?? 'https://play.google.com/store/apps/details?id=com.claudygod.mobile';
+  const iosStoreUrl = config?.rate.iosStoreUrl ?? '';
+  const androidStoreUrl = config?.rate.androidStoreUrl ?? '';
   const feedbackRoute = config?.rate.feedbackRoute ?? '/settingsPage/help';
 
   const goStore = async () => {
     if (rating <= 0) return;
     try {
       await createAppRating({ rating, channel: 'mobile', comment: comment.trim() || undefined });
-    } catch (error) {
-      console.warn('rating submit failed:', error);
-    }
+    } catch {}
     if (rating <= 3) {
       router.push(feedbackRoute as any);
       return;
@@ -48,6 +45,8 @@ export default function Rate() {
     const storeUrl = iosStoreUrl || androidStoreUrl;
     if (storeUrl) {
       void Linking.openURL(storeUrl);
+    } else {
+      router.push(feedbackRoute as any);
     }
   };
 
@@ -55,9 +54,7 @@ export default function Rate() {
     if (rating > 0) {
       try {
         await createAppRating({ rating, channel: 'mobile', comment: comment.trim() || undefined });
-      } catch (error) {
-        console.warn('rating submit failed:', error);
-      }
+      } catch {}
     }
     router.push(feedbackRoute as any);
   };

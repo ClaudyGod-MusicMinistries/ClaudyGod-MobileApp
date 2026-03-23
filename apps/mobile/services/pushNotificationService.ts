@@ -55,7 +55,6 @@ export class PushNotificationService {
       }
 
       if (!isGranted) {
-        console.warn('Push notification permission not granted.');
         return false;
       }
 
@@ -68,8 +67,7 @@ export class PushNotificationService {
       }
 
       return false;
-    } catch (error) {
-      console.error('Error initializing push notifications:', error);
+    } catch {
       return false;
     }
   }
@@ -77,22 +75,17 @@ export class PushNotificationService {
   private async getPushToken(): Promise<string | null> {
     try {
       if (!Device.isDevice) {
-        console.warn('Push notifications require a physical device.');
         return null;
       }
 
       const projectId = ENV.easProjectId;
       if (!projectId) {
-        console.warn(
-          'EAS projectId is not configured. Set EXPO_PUBLIC_EAS_PROJECT_ID or EAS_PROJECT_ID for push notifications and EAS updates.',
-        );
         return null;
       }
 
       const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
       return token;
-    } catch (error) {
-      console.error('Error getting push token:', error);
+    } catch {
       return null;
     }
   }
@@ -103,9 +96,7 @@ export class PushNotificationService {
         expoPushToken: token,
         deviceType: Platform.OS,
       });
-    } catch (error) {
-      console.error('Error storing push token:', error);
-    }
+    } catch {}
   }
 
   // Schedule local notification with proper typing
@@ -125,7 +116,6 @@ export class PushNotificationService {
 
       return notificationId;
     } catch (error) {
-      console.error('Error scheduling notification:', error);
       throw error;
     }
   }
@@ -155,7 +145,6 @@ export class PushNotificationService {
 
       return notificationId;
     } catch (error) {
-      console.error('Error scheduling notification:', error);
       throw error;
     }
   }
@@ -184,9 +173,7 @@ export class PushNotificationService {
         expoPushToken: token,
         deviceType: Platform.OS,
       });
-    } catch (error) {
-      console.error('Error removing push token:', error);
-    }
+    } catch {}
   }
 }
 

@@ -13,9 +13,7 @@ export function useWordOfDay() {
         if (!active) return;
         setWord(response.word ?? null);
       })
-      .catch((error) => {
-        console.warn('wordOfDay fallback:', error);
-      })
+      .catch(() => {})
       .finally(() => {
         if (active) setLoading(false);
       });
