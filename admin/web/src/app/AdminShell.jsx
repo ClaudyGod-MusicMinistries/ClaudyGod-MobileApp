@@ -12,57 +12,91 @@ export default function AdminShell(props) {
     content,
   } = props;
 
+  const navItems = [
+    {
+      id: 'editor',
+      label: 'Content',
+      caption: 'Uploads and library',
+    },
+    {
+      id: 'live',
+      label: 'Live',
+      caption: 'Broadcast and replay',
+    },
+    {
+      id: 'mobile-preview',
+      label: 'Preview',
+      caption: 'Mobile layout view',
+    },
+  ];
+
+  const activeTitle =
+    dashboardView === 'live'
+      ? 'Live Broadcast Portal'
+      : dashboardView === 'mobile-preview'
+        ? 'Mobile Experience Preview'
+        : 'Content Publishing Portal';
+
   return (
     <div class="app-root">
       <div class="bg-orb orb-a" />
       <div class="bg-orb orb-b" />
       <div class="bg-orb orb-c" />
 
-      <header class="global-header">
-        <div class="global-header-inner portal-header">
-          <div class="brand-inline">
-            <div class="logo-wrap">
-              <img src={brandLogoUrl} alt="ClaudyGod" class="brand-logo" />
+      {currentUser ? (
+        <div class="portal-frame">
+          <aside class="portal-sidebar">
+            <div class="portal-sidebar-brand">
+              <div class="logo-wrap logo-wrap-large">
+                <img src={brandLogoUrl} alt="ClaudyGod" class="brand-logo" />
+              </div>
+              <div>
+                <p class="eyebrow">ClaudyGod</p>
+                <div class="brand-title-line">Creator Portal</div>
+                <p class="portal-sidebar-copy">Upload, arrange, and release every update from one clean workspace.</p>
+              </div>
             </div>
-            <div>
-              <p class="eyebrow">ClaudyGod</p>
-              <div class="brand-title-line">Creator Portal</div>
-            </div>
-          </div>
 
-          {currentUser ? (
-            <div class="header-command-bar portal-header-bar">
-              <nav class="portal-nav" aria-label="Portal navigation">
-                <button
-                  type="button"
-                  class={['ghost-btn compact', dashboardView === 'editor' ? 'is-active' : '']}
-                  onClick={() => onSetDashboardView('editor')}
-                >
-                  Content
-                </button>
-                <button
-                  type="button"
-                  class={['ghost-btn compact', dashboardView === 'live' ? 'is-active' : '']}
-                  onClick={() => onSetDashboardView('live')}
-                >
-                  Live
-                </button>
-                <button
-                  type="button"
-                  class={['ghost-btn compact', dashboardView === 'mobile-preview' ? 'is-active' : '']}
-                  onClick={() => onSetDashboardView('mobile-preview')}
-                >
-                  Preview
-                </button>
-              </nav>
-
+            <div class="portal-user-card">
               <div class="user-pill">
                 <span class="user-pill-dot" />
                 <span>{displayName}</span>
                 <span class="user-pill-role">{portalRoleLabel}</span>
               </div>
+              <p class="portal-user-email">{currentUser?.email}</p>
+            </div>
 
-              <div class="header-inline-actions">
+            <nav class="portal-side-nav" aria-label="Portal navigation">
+              {navItems.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  class={['portal-side-link', dashboardView === item.id ? 'is-active' : '']}
+                  onClick={() => onSetDashboardView(item.id)}
+                >
+                  <span class="portal-side-link-label">{item.label}</span>
+                  <span class="portal-side-link-copy">{item.caption}</span>
+                </button>
+              ))}
+            </nav>
+
+            <div class="portal-sidebar-footer">
+              <button type="button" class="ghost-btn compact portal-side-action" onClick={() => void onRefreshDashboard()}>
+                Refresh Workspace
+              </button>
+              <button type="button" class="danger-btn compact portal-side-action" onClick={() => void onLogout()}>
+                Sign Out
+              </button>
+            </div>
+          </aside>
+
+          <div class="portal-workspace">
+            <header class="portal-topbar">
+              <div>
+                <p class="eyebrow">ClaudyGod workspace</p>
+                <h1 class="portal-topbar-title">{activeTitle}</h1>
+              </div>
+              <div class="portal-topbar-actions">
                 <button type="button" class="ghost-btn compact" onClick={() => void onRefreshDashboard()}>
                   Refresh
                 </button>
@@ -70,19 +104,45 @@ export default function AdminShell(props) {
                   Sign Out
                 </button>
               </div>
-            </div>
-          ) : null}
-        </div>
-      </header>
+            </header>
 
-      <main
-        class={[
-          'page-shell',
-          appLoading ? 'page-shell-boot' : currentUser ? 'page-shell-dashboard' : 'page-shell-auth',
-        ]}
-      >
-        {content}
-      </main>
+            <main
+              class={[
+                'page-shell',
+                'page-shell-portal',
+                appLoading ? 'page-shell-boot' : 'page-shell-dashboard',
+              ]}
+            >
+              {content}
+            </main>
+          </div>
+        </div>
+      ) : (
+        <>
+          <header class="global-header">
+            <div class="global-header-inner portal-header">
+              <div class="brand-inline">
+                <div class="logo-wrap">
+                  <img src={brandLogoUrl} alt="ClaudyGod" class="brand-logo" />
+                </div>
+                <div>
+                  <p class="eyebrow">ClaudyGod</p>
+                  <div class="brand-title-line">Creator Portal</div>
+                </div>
+              </div>
+            </div>
+          </header>
+
+          <main
+            class={[
+              'page-shell',
+              appLoading ? 'page-shell-boot' : 'page-shell-auth',
+            ]}
+          >
+            {content}
+          </main>
+        </>
+      )}
     </div>
   );
 }

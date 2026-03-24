@@ -89,7 +89,24 @@ export function BrandedHeaderCard({
   );
 
   return (
-    <View>
+    <View
+      style={{
+        borderRadius: theme.radius.xl,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+        backgroundColor: theme.colors.surface,
+        paddingHorizontal: isTablet ? 18 : 16,
+        paddingVertical: isTablet ? 18 : 15,
+      }}
+    >
+      <View
+        style={{
+          position: 'absolute',
+          inset: 0,
+          borderRadius: theme.radius.xl,
+          backgroundColor: isDark ? 'rgba(139,92,246,0.05)' : 'rgba(124,89,230,0.04)',
+        }}
+      />
       <View
         style={{
           paddingHorizontal: 2,
@@ -112,10 +129,10 @@ export function BrandedHeaderCard({
               style={{
                 width: logoWrapSize,
                 height: logoWrapSize,
-                borderRadius: theme.radius.md,
+                borderRadius: theme.radius.lg,
                 borderWidth: 1,
                 borderColor: theme.colors.border,
-                backgroundColor: theme.colors.surface,
+                backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : theme.colors.surfaceAlt,
                 alignItems: 'center',
                 justifyContent: 'center',
                 marginRight: 12,
@@ -138,8 +155,8 @@ export function BrandedHeaderCard({
                 style={{
                   color: theme.colors.text.primary,
                   marginTop: showEyebrow ? 2 : 0,
-                  fontSize: isTV ? 19 : isTablet ? 18 : isCompact ? 15 : 16,
-                  lineHeight: isTV ? 24 : isTablet ? 23 : isCompact ? 20 : 21,
+                  fontSize: isTV ? 20 : isTablet ? 18 : isCompact ? 15 : 16,
+                  lineHeight: isTV ? 25 : isTablet ? 23 : isCompact ? 20 : 21,
                 }}
                 numberOfLines={2}
               >
@@ -162,7 +179,7 @@ export function BrandedHeaderCard({
             </View>
           </View>
 
-          {actions.length ? <View style={{ flexDirection: 'row', gap: 8 }}>{actions.map(renderAction)}</View> : null}
+          {actions.length ? <View style={{ flexDirection: 'row', gap: 8, marginLeft: 10 }}>{actions.map(renderAction)}</View> : null}
         </View>
       </View>
 
@@ -172,7 +189,7 @@ export function BrandedHeaderCard({
           showsHorizontalScrollIndicator={false}
           bounces={false}
           overScrollMode="never"
-          contentContainerStyle={{ paddingTop: 12, paddingBottom: 2, paddingRight: 8 }}
+          contentContainerStyle={{ paddingTop: 14, paddingBottom: 2, paddingRight: 8 }}
         >
           {chips.map((chip) => {
             const active = Boolean(chip.active);

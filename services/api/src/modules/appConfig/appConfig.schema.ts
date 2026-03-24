@@ -76,6 +76,14 @@ const mobileLayoutSectionSchema = z
   })
   .strict();
 
+const mobileNavigationTabSchema = z
+  .object({
+    id: z.enum(['home', 'videos', 'player', 'library', 'search']),
+    label: shortTextSchema.max(40),
+    icon: iconNameSchema,
+  })
+  .strict();
+
 export const mobileAppConfigSchema = z
   .object({
     version: z.coerce.number().int().min(1).max(1000).default(1),
@@ -164,6 +172,11 @@ export const mobileAppConfigSchema = z
       .object({
         homeSections: z.array(mobileLayoutSectionSchema).min(1).max(16),
         videoSections: z.array(mobileLayoutSectionSchema).min(1).max(16),
+      })
+      .strict(),
+    navigation: z
+      .object({
+        tabs: z.array(mobileNavigationTabSchema).length(5),
       })
       .strict(),
   })

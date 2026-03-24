@@ -19,9 +19,22 @@ interface AudioPlayerProps {
   autoPlay?: boolean;
   onClose?: () => void;
   compact?: boolean;
+  onPrevious?: () => void;
+  onNext?: () => void;
+  canGoPrevious?: boolean;
+  canGoNext?: boolean;
 }
 
-export function AudioPlayer({ track, autoPlay = true, onClose, compact }: AudioPlayerProps) {
+export function AudioPlayer({
+  track,
+  autoPlay = true,
+  onClose,
+  compact,
+  onPrevious,
+  onNext,
+  canGoPrevious = false,
+  canGoNext = false,
+}: AudioPlayerProps) {
   const theme = useAppTheme();
   const player = useAudioPlayer(track.uri, { updateInterval: 400 });
   const status = useAudioPlayerStatus(player);
@@ -66,6 +79,14 @@ export function AudioPlayer({ track, autoPlay = true, onClose, compact }: AudioP
     player.play();
   };
 
+  const seekBySeconds = (delta: number) => {
+    if (!status.isLoaded) return;
+
+    const duration = Math.max(0, status.duration);
+    const nextTime = Math.max(0, Math.min(duration || Number.MAX_SAFE_INTEGER, status.currentTime + delta));
+    void player.seekTo(nextTime);
+  };
+
   const { progress, positionLabel, durationLabel, isPlaying } = useMemo(() => {
     if (!status.isLoaded) {
       return { progress: 0, positionLabel: '0:00', durationLabel: track.duration ?? '--:--', isPlaying: false };
@@ -105,24 +126,66 @@ export function AudioPlayer({ track, autoPlay = true, onClose, compact }: AudioP
         ) : (
           <View style={{ flex: 1 }} />
         )}
-        <TVTouchable
-          onPress={togglePlay}
-          style={{
-            width: 46,
-            height: 46,
-            borderRadius: 23,
-            backgroundColor: theme.colors.primary,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-          showFocusBorder={false}
-        >
-          <MaterialIcons
-            name={isPlaying ? 'pause' : 'play-arrow'}
-            size={24}
-            color={theme.colors.text.inverse}
-          />
-        </TVTouchable>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          {onPrevious ? (
+            <TVTouchable
+              onPress={onPrevious}
+              disabled={!canGoPrevious}
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: 19,
+                backgroundColor: theme.colors.surfaceAlt,
+                borderWidth: 1,
+                borderColor: theme.colors.border,
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: canGoPrevious ? 1 : 0.48,
+              }}
+              showFocusBorder={false}
+            >
+              <MaterialIcons name="skip-previous" size={20} color={theme.colors.text.primary} />
+            </TVTouchable>
+          ) : null}
+          <TVTouchable
+            onPress={togglePlay}
+            style={{
+              width: 46,
+              height: 46,
+              borderRadius: 23,
+              backgroundColor: theme.colors.primary,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            showFocusBorder={false}
+          >
+            <MaterialIcons
+              name={isPlaying ? 'pause' : 'play-arrow'}
+              size={24}
+              color={theme.colors.text.inverse}
+            />
+          </TVTouchable>
+          {onNext ? (
+            <TVTouchable
+              onPress={onNext}
+              disabled={!canGoNext}
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: 19,
+                backgroundColor: theme.colors.surfaceAlt,
+                borderWidth: 1,
+                borderColor: theme.colors.border,
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: canGoNext ? 1 : 0.48,
+              }}
+              showFocusBorder={false}
+            >
+              <MaterialIcons name="skip-next" size={20} color={theme.colors.text.primary} />
+            </TVTouchable>
+          ) : null}
+        </View>
       </View>
 
       <View style={{ marginTop: theme.spacing.md }}>
@@ -150,6 +213,47 @@ export function AudioPlayer({ track, autoPlay = true, onClose, compact }: AudioP
             {durationLabel}
           </CustomText>
         </View>
+      </View>
+
+      <View style={{ marginTop: theme.spacing.md, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+        <TVTouchable
+          onPress={() => seekBySeconds(-15)}
+          style={{
+            minWidth: 68,
+            minHeight: 34,
+            borderRadius: theme.radius.md,
+            borderWidth: 1,
+            borderColor: theme.colors.border,
+            backgroundColor: theme.colors.surfaceAlt,
+            paddingHorizontal: 12,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          showFocusBorder={false}
+        >
+          <CustomText variant="label" style={{ color: theme.colors.text.primary }}>
+            -15s
+          </CustomText>
+        </TVTouchable>
+        <TVTouchable
+          onPress={() => seekBySeconds(15)}
+          style={{
+            minWidth: 68,
+            minHeight: 34,
+            borderRadius: theme.radius.md,
+            borderWidth: 1,
+            borderColor: theme.colors.border,
+            backgroundColor: theme.colors.surfaceAlt,
+            paddingHorizontal: 12,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          showFocusBorder={false}
+        >
+          <CustomText variant="label" style={{ color: theme.colors.text.primary }}>
+            +15s
+          </CustomText>
+        </TVTouchable>
       </View>
 
       {onClose ? (

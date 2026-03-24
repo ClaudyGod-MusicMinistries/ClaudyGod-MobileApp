@@ -126,6 +126,13 @@ export interface MobileAppExperienceConfig {
       maxItems: number;
     }[];
   };
+  navigation: {
+    tabs: {
+      id: 'home' | 'videos' | 'player' | 'library' | 'search';
+      label: string;
+      icon: string;
+    }[];
+  };
 }
 
 export interface MeLibraryItem {
