@@ -144,6 +144,21 @@ export function CinematicHeroCard({
                 onPress={action.onPress}
                 variant={action.variant ?? 'primary'}
                 size="sm"
+                style={
+                  action.variant === 'secondary'
+                    ? {
+                        borderRadius: 12,
+                        borderColor: 'rgba(255,255,255,0.10)',
+                        backgroundColor: 'rgba(11,13,22,0.82)',
+                      }
+                    : action.variant === 'primary'
+                      ? {
+                          borderRadius: 12,
+                          backgroundColor: '#8B5CF6',
+                        }
+                      : undefined
+                }
+                textColor={action.variant === 'secondary' ? '#FFF9F0' : undefined}
                 leftIcon={
                   action.icon ? (
                     <MaterialIcons
