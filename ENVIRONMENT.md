@@ -45,11 +45,11 @@ All three applications read from the repo root:
 ## Transactional email
 
 - The API now uses a queued transactional email flow for welcome, verification, password reset, and profile security notices
-- Local Docker and production Docker now both route mail through the internal `postfix-relay` container
-- Production should use the internal Postfix relay: set `SMTP_PROVIDER=postfix`, `SMTP_HOST=postfix-relay`, and keep the real Brevo relay credentials in `POSTFIX_SMTP_USERNAME` and `POSTFIX_SMTP_PASSWORD`
-- Postfix then relays outbound mail to Brevo on `smtp-relay.brevo.com:587` without changing the application email code
+- Local Docker can still route mail through the internal `postfix-relay` container
+- Production should prefer direct Brevo SMTP from the API and worker so transport verification checks the real remote hop: set `SMTP_PROVIDER=brevo`, `SMTP_HOST=smtp-relay.brevo.com`, `SMTP_PORT=587`, and `SMTP_REQUIRE_TLS=true`
+- Keep the real Brevo SMTP username and SMTP key in `POSTFIX_SMTP_USERNAME` and `POSTFIX_SMTP_PASSWORD`; the application now reuses those credentials directly when `SMTP_USER` and `SMTP_PASS` are not set separately
+- The Postfix relay can remain available as an operational fallback, but it is no longer required for the application tier to reach Brevo
 - `EMAIL_BRAND_NAME`, `MAIL_FROM`, `MAIL_REPLY_TO`, and `EMAIL_SUPPORT_EMAIL` control the branded email experience
-- Direct Brevo SMTP is still acceptable for development or emergency fallback, but production should route through Postfix so the application tier stays provider-agnostic
 - Production verification for mail should use all three layers together:
   - `docker compose --env-file .env.production -f docker-compose.production.yml logs -f api worker postfix-relay`
   - `GET /v1/admin/email/diagnostics`
@@ -57,7 +57,8 @@ All three applications read from the repo root:
 - A healthy path means:
   - the API queues an `email_jobs` row
   - the worker marks the job `completed`
-  - the Postfix relay shows handoff to Brevo without SASL or TLS errors
+  - the diagnostics endpoint shows `transport.reachable=true` against Brevo itself
+  - if Postfix is still enabled as fallback, it shows handoff to Brevo without SASL or TLS errors
 
 ## Deployment notes
 

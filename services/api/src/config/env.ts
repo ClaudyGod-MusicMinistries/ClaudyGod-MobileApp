@@ -176,6 +176,8 @@ const envSchema = z
     SMTP_SECURE: toBoolean(false),
     SMTP_USER: z.string().optional().default(''),
     SMTP_PASS: z.string().optional().default(''),
+    POSTFIX_SMTP_USERNAME: z.string().optional().default(''),
+    POSTFIX_SMTP_PASSWORD: z.string().optional().default(''),
     SMTP_POOL: toBoolean(true),
     SMTP_MAX_CONNECTIONS: z.coerce.number().int().min(1).max(20).default(5),
     SMTP_MAX_MESSAGES: z.coerce.number().int().min(1).max(1000).default(100),
@@ -444,7 +446,10 @@ const splitCsv = (value: string): string[] =>
 
 const raw = parsedEnv.data;
 const smtpHostConfigured = Boolean(raw.SMTP_HOST || raw.SMTP_PROVIDER === 'brevo');
-const smtpAuthConfigured = Boolean(raw.SMTP_USER && raw.SMTP_PASS);
+const smtpAuthConfigured = Boolean(
+  (raw.SMTP_USER && raw.SMTP_PASS)
+    || (raw.SMTP_PROVIDER === 'brevo' && raw.POSTFIX_SMTP_USERNAME && raw.POSTFIX_SMTP_PASSWORD),
+);
 const smtpEnabled =
   raw.SMTP_PROVIDER === 'brevo'
     ? smtpHostConfigured && smtpAuthConfigured

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -10,13 +10,11 @@ import { AppButton } from '../components/ui/AppButton';
 import { TVTouchable } from '../components/ui/TVTouchable';
 import { getEmailValidationMessage, isLikelyValidEmail, normalizeEmail } from '../lib/authValidation';
 import { loginMobileUser } from '../services/authService';
-import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { APP_ROUTES } from '../util/appRoutes';
 
 export default function SignInScreen() {
   const router = useRouter();
-  const { initializing, isAuthenticated } = useAuth();
   const { showToast } = useToast();
 
   const [email, setEmail] = useState('');
@@ -27,12 +25,6 @@ export default function SignInScreen() {
   const normalizedEmail = normalizeEmail(email);
   const emailIsValid = !normalizedEmail || isLikelyValidEmail(normalizedEmail);
   const emailHint = getEmailValidationMessage(email);
-
-  useEffect(() => {
-    if (!initializing && isAuthenticated) {
-      router.replace(APP_ROUTES.tabs.home);
-    }
-  }, [initializing, isAuthenticated, router]);
 
   const handleSignIn = async () => {
     setErrorMessage('');
