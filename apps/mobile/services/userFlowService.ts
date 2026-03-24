@@ -116,6 +116,8 @@ export interface MobileAppExperienceConfig {
       title: string;
       subtitle: string;
       contentTypes: ('audio' | 'video' | 'playlist' | 'announcement' | 'live')[];
+      actionLabel: string;
+      destinationTab: 'home' | 'videos' | 'player' | 'library' | 'search';
       maxItems: number;
     }[];
     videoSections: {
@@ -123,6 +125,17 @@ export interface MobileAppExperienceConfig {
       title: string;
       subtitle: string;
       contentTypes: ('audio' | 'video' | 'playlist' | 'announcement' | 'live')[];
+      actionLabel: string;
+      destinationTab: 'home' | 'videos' | 'player' | 'library' | 'search';
+      maxItems: number;
+    }[];
+    playerSections: {
+      id: string;
+      title: string;
+      subtitle: string;
+      contentTypes: ('audio' | 'video' | 'playlist' | 'announcement' | 'live')[];
+      actionLabel: string;
+      destinationTab: 'home' | 'videos' | 'player' | 'library' | 'search';
       maxItems: number;
     }[];
   };

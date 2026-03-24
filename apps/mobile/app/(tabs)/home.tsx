@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Alert, RefreshControl, ScrollView, Share, View, useWindowDimensions } from 'react-native';
+import { RefreshControl, ScrollView, Share, View, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { TabScreenWrapper } from '../../components/layout/TabScreenWrapper';
@@ -17,12 +17,13 @@ import { useAppTheme } from '../../util/colorScheme';
 import { useContentFeed } from '../../hooks/useContentFeed';
 import { useWordOfDay } from '../../hooks/useWordOfDay';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
-import { APP_ROUTES } from '../../util/appRoutes';
+import { APP_ROUTES, TAB_ROUTE_BY_ID } from '../../util/appRoutes';
 import { BRAND_HERO_ASSET } from '../../util/brandAssets';
 import { buildPlayerRoute } from '../../util/playerRoute';
 import { deriveLayoutSectionItems, getHomeLayoutSections } from '../../util/mobileLayout';
 import type { FeedCardItem } from '../../services/contentService';
 import { subscribeToLiveAlerts, trackPlayEvent } from '../../services/supabaseAnalytics';
+import { useToast } from '../../context/ToastContext';
 
 const WORD_FOR_TODAY_FALLBACK = {
   title: 'Word for Today',
@@ -31,7 +32,7 @@ const WORD_FOR_TODAY_FALLBACK = {
   reflection: 'Return throughout the day and keep the word close.',
 };
 
-const QUICK_LINKS = [
+const DEFAULT_QUICK_LINKS = [
   { key: 'music', icon: 'graphic-eq', label: 'Music', route: APP_ROUTES.tabs.player },
   { key: 'videos', icon: 'smart-display', label: 'Videos', route: APP_ROUTES.tabs.videos },
   { key: 'library', icon: 'library-music', label: 'Library', route: APP_ROUTES.tabs.library },
@@ -88,6 +89,7 @@ function QuickLink({
 export default function HomeScreen() {
   const router = useRouter();
   const theme = useAppTheme();
+  const { showToast } = useToast();
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
   const posterSize = isTablet ? 'lg' : 'md';
@@ -97,24 +99,28 @@ export default function HomeScreen() {
   const { word } = useWordOfDay();
 
   const featured = useMemo(() => feed.featured ?? feed.recent[0] ?? feed.music[0] ?? feed.videos[0] ?? null, [feed]);
-  const continueListening = useMemo(
-    () => (feed.music.length ? feed.music : feed.recent).slice(0, 8),
-    [feed.music, feed.recent],
-  );
-  const watchNow = useMemo(
-    () => (feed.videos.length ? feed.videos : feed.live).slice(0, 8),
-    [feed.live, feed.videos],
-  );
-  const liveNow = useMemo(() => feed.live.slice(0, 6), [feed.live]);
   const homeSections = useMemo(() => getHomeLayoutSections(mobileConfig), [mobileConfig]);
   const curatedRails = useMemo(
     () =>
       homeSections
         .map((section) => ({ section, items: deriveLayoutSectionItems(feed, section) }))
         .filter((entry) => entry.items.length > 0)
-        .slice(0, 2),
+        .slice(0, 5),
     [feed, homeSections],
   );
+  const quickLinks = useMemo(() => {
+    const tabs = mobileConfig?.navigation?.tabs ?? [];
+    const configuredLinks = tabs
+      .filter((tab) => tab.id === 'player' || tab.id === 'videos' || tab.id === 'library')
+      .map((tab) => ({
+        key: tab.id,
+        icon: tab.icon as React.ComponentProps<typeof MaterialIcons>['name'],
+        label: tab.label,
+        route: TAB_ROUTE_BY_ID[tab.id],
+      }));
+
+    return configuredLinks.length ? configuredLinks : DEFAULT_QUICK_LINKS;
+  }, [mobileConfig]);
 
   const wordForToday = word
     ? {
@@ -142,8 +148,20 @@ export default function HomeScreen() {
   };
 
   const notifyLive = async (item: FeedCardItem) => {
-    await subscribeToLiveAlerts(item.notificationChannelId || item.id);
-    Alert.alert('Live alerts enabled', 'You will be notified when ClaudyGod goes live.');
+    try {
+      await subscribeToLiveAlerts(item.notificationChannelId || item.id);
+      showToast({
+        title: 'Live alerts enabled',
+        message: 'You will be notified when ClaudyGod goes live.',
+        tone: 'success',
+      });
+    } catch {
+      showToast({
+        title: 'Live alerts unavailable',
+        message: 'Sign in to follow live sessions.',
+        tone: 'warning',
+      });
+    }
   };
 
   return (
@@ -210,7 +228,7 @@ export default function HomeScreen() {
 
             <FadeIn delay={100}>
               <View style={{ flexDirection: 'row', gap: 10 }}>
-                {QUICK_LINKS.map((link) => (
+                {quickLinks.map((link) => (
                   <QuickLink
                     key={link.key}
                     icon={link.icon}
@@ -221,93 +239,24 @@ export default function HomeScreen() {
               </View>
             </FadeIn>
 
-            {continueListening.length ? (
-              <FadeIn delay={140}>
-                <View>
-                  <SectionHeader
-                    title="Continue listening"
-                    actionLabel="Music"
-                    onAction={() => router.push(APP_ROUTES.tabs.player)}
-                  />
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false} overScrollMode="never">
-                    {continueListening.map((item) => (
-                      <PosterCard
-                        key={item.id}
-                        imageUrl={item.imageUrl}
-                        title={item.title}
-                        subtitle={item.subtitle}
-                        size={posterSize}
-                        onPress={() => void openItem(item, 'home_continue')}
-                      />
-                    ))}
-                  </ScrollView>
-                </View>
-              </FadeIn>
-            ) : null}
-
-            {liveNow.length ? (
-              <FadeIn delay={180}>
-                <View>
-                  <SectionHeader
-                    title="Live now"
-                    actionLabel="View all"
-                    onAction={() => router.push(APP_ROUTES.tabs.videos)}
-                  />
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false} overScrollMode="never">
-                    {liveNow.map((item) => (
-                      <PosterCard
-                        key={item.id}
-                        imageUrl={item.imageUrl}
-                        title={item.title}
-                        subtitle={item.liveViewerCount ? `${item.liveViewerCount} watching` : item.subtitle}
-                        size={posterSize}
-                        onPress={() => void openItem(item, 'home_live')}
-                      />
-                    ))}
-                  </ScrollView>
-                </View>
-              </FadeIn>
-            ) : null}
-
-            {watchNow.length ? (
-              <FadeIn delay={220}>
-                <View>
-                  <SectionHeader
-                    title="Watch next"
-                    actionLabel="Videos"
-                    onAction={() => router.push(APP_ROUTES.tabs.videos)}
-                  />
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false} overScrollMode="never">
-                    {watchNow.map((item) => (
-                      <PosterCard
-                        key={item.id}
-                        imageUrl={item.imageUrl}
-                        title={item.title}
-                        subtitle={item.subtitle}
-                        size={posterSize}
-                        onPress={() => void openItem(item, 'home_watch')}
-                      />
-                    ))}
-                  </ScrollView>
-                </View>
-              </FadeIn>
-            ) : null}
-
             {curatedRails.map(({ section, items }, index) => (
-              <FadeIn key={section.id || section.title} delay={260 + index * 35}>
+              <FadeIn key={section.id || section.title} delay={140 + index * 35}>
                 <View>
                   <SectionHeader
                     title={section.title}
-                    actionLabel="Library"
-                    onAction={() => router.push(APP_ROUTES.tabs.library)}
+                    actionLabel={section.actionLabel}
+                    onAction={() => router.push(TAB_ROUTE_BY_ID[section.destinationTab])}
                   />
+                  <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginBottom: 10 }}>
+                    {section.subtitle}
+                  </CustomText>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false} overScrollMode="never">
                     {items.map((item) => (
                       <PosterCard
                         key={`${section.title}-${item.id}`}
                         imageUrl={item.imageUrl}
                         title={item.title}
-                        subtitle={item.subtitle}
+                        subtitle={item.liveViewerCount ? `${item.liveViewerCount} watching` : item.subtitle}
                         size={posterSize}
                         onPress={() => void openItem(item, 'home_curated')}
                       />
@@ -317,7 +266,7 @@ export default function HomeScreen() {
               </FadeIn>
             ))}
 
-            <FadeIn delay={340}>
+            <FadeIn delay={320}>
               <SurfaceCard tone="subtle" style={{ padding: theme.spacing.lg }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
                   <View style={{ flex: 1 }}>

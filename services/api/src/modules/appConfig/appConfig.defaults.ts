@@ -1,7 +1,7 @@
 import type { MobileAppConfig } from './appConfig.schema';
 
 export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
-  version: 2,
+  version: 3,
   privacy: {
     contactEmail: 'privacy@claudygod.org',
     deleteConfirmPhrase: 'I CONFIRM',
@@ -163,6 +163,8 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
         title: 'ClaudyGod Music',
         subtitle: 'Featured worship videos and music drops on the mobile dashboard.',
         contentTypes: ['video', 'live'],
+        actionLabel: 'Watch',
+        destinationTab: 'videos',
         maxItems: 8,
       },
       {
@@ -170,6 +172,8 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
         title: 'ClaudyGod Nuggets of Truth',
         subtitle: 'Daily truth, devotional snippets, and scripture-led moments.',
         contentTypes: ['announcement', 'video'],
+        actionLabel: 'Open',
+        destinationTab: 'home',
         maxItems: 8,
       },
       {
@@ -177,6 +181,8 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
         title: 'ClaudyGod Worship Hour',
         subtitle: 'Worship sets, replays, and atmosphere-building collections.',
         contentTypes: ['video', 'playlist', 'live'],
+        actionLabel: 'Watch',
+        destinationTab: 'videos',
         maxItems: 8,
       },
       {
@@ -184,6 +190,8 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
         title: 'ClaudyGod Messages',
         subtitle: 'Teaching, message replays, and ministry updates.',
         contentTypes: ['announcement', 'video'],
+        actionLabel: 'Browse',
+        destinationTab: 'videos',
         maxItems: 8,
       },
       {
@@ -191,6 +199,8 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
         title: 'ClaudyGod Music (Audio)',
         subtitle: 'Pure audio releases that should lead straight into the music player.',
         contentTypes: ['audio', 'playlist'],
+        actionLabel: 'Listen',
+        destinationTab: 'player',
         maxItems: 10,
       },
     ],
@@ -200,6 +210,8 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
         title: 'Video Spotlight',
         subtitle: 'Hero video placement for the latest visual release.',
         contentTypes: ['video', 'live'],
+        actionLabel: 'Watch',
+        destinationTab: 'videos',
         maxItems: 6,
       },
       {
@@ -207,6 +219,8 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
         title: 'Worship Screen',
         subtitle: 'Worship-focused videos and replays for the video tab.',
         contentTypes: ['video', 'playlist', 'live'],
+        actionLabel: 'Watch',
+        destinationTab: 'videos',
         maxItems: 8,
       },
       {
@@ -214,6 +228,8 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
         title: 'Message Replays',
         subtitle: 'Teaching and message content curated for easy viewing.',
         contentTypes: ['video', 'announcement'],
+        actionLabel: 'Watch',
+        destinationTab: 'videos',
         maxItems: 8,
       },
       {
@@ -221,6 +237,37 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
         title: 'Live Now',
         subtitle: 'Current or recent live sessions available from the video screen.',
         contentTypes: ['live', 'video'],
+        actionLabel: 'Live',
+        destinationTab: 'videos',
+        maxItems: 8,
+      },
+    ],
+    playerSections: [
+      {
+        id: 'music-queue',
+        title: 'Keep Listening',
+        subtitle: 'Songs, worship sets, and message audio ready for the music player.',
+        contentTypes: ['audio', 'playlist'],
+        actionLabel: 'Listen',
+        destinationTab: 'player',
+        maxItems: 10,
+      },
+      {
+        id: 'worship-playlists',
+        title: 'Worship Playlists',
+        subtitle: 'Collections and longer listening journeys.',
+        contentTypes: ['playlist', 'audio'],
+        actionLabel: 'Browse',
+        destinationTab: 'library',
+        maxItems: 8,
+      },
+      {
+        id: 'audio-messages',
+        title: 'Message Audio',
+        subtitle: 'Teaching and message recordings tailored for listening.',
+        contentTypes: ['audio', 'announcement'],
+        actionLabel: 'Open',
+        destinationTab: 'player',
         maxItems: 8,
       },
     ],

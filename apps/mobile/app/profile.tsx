@@ -10,10 +10,12 @@ import { SurfaceCard } from '../components/ui/SurfaceCard';
 import { FadeIn } from '../components/ui/FadeIn';
 import { TVTouchable } from '../components/ui/TVTouchable';
 import { AppButton } from '../components/ui/AppButton';
+import { ActionSheet } from '../components/ui/ActionSheet';
 import { fetchUserProfileMetrics } from '../services/supabaseAnalytics';
 import { clearMobileSession } from '../services/authService';
 import { useRequireMobileSession } from '../hooks/useRequireMobileSession';
 import { APP_ROUTES } from '../util/appRoutes';
+import { useToast } from '../context/ToastContext';
 
 const groups = [
   {
@@ -44,6 +46,7 @@ const groups = [
 export default function Profile() {
   const theme = useAppTheme();
   const router = useRouter();
+  const { showToast } = useToast();
   const isAuthorized = useRequireMobileSession();
   const [metrics, setMetrics] = useState({
     email: '',
@@ -51,6 +54,7 @@ export default function Profile() {
     totalPlays: 0,
     liveSubscriptions: 0,
   });
+  const [isLogoutSheetVisible, setIsLogoutSheetVisible] = useState(false);
 
   useEffect(() => {
     if (!isAuthorized) {
@@ -187,11 +191,7 @@ export default function Profile() {
           size="lg"
           leftIcon={<MaterialIcons name="logout" size={18} color="#D79CAF" />}
           textColor="#D79CAF"
-          onPress={() => {
-            void clearMobileSession().finally(() => {
-              router.replace(APP_ROUTES.auth.signIn);
-            });
-          }}
+          onPress={() => setIsLogoutSheetVisible(true)}
           style={{
             marginTop: spacing.lg,
             borderWidth: 1,
@@ -201,6 +201,31 @@ export default function Profile() {
           }}
         />
       </FadeIn>
+      <ActionSheet
+        visible={isLogoutSheetVisible}
+        title="Sign out of ClaudyGod?"
+        description="You can sign back in any time to restore your account and saved content."
+        actions={[
+          {
+            key: 'sign-out',
+            label: 'Sign Out',
+            detail: 'Close your session on this device.',
+            icon: 'logout',
+            tone: 'destructive',
+            onPress: () => {
+              void clearMobileSession().finally(() => {
+                showToast({
+                  title: 'Signed out',
+                  message: 'Your session has been closed on this device.',
+                  tone: 'info',
+                });
+                router.replace(APP_ROUTES.auth.signIn);
+              });
+            },
+          },
+        ]}
+        onClose={() => setIsLogoutSheetVisible(false)}
+      />
     </SettingsScaffold>
   );
 }

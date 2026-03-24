@@ -28,6 +28,16 @@ export const APP_ROUTES = {
   },
 } as const;
 
+export type MobileTabId = 'home' | 'videos' | 'player' | 'library' | 'search';
+
+export const TAB_ROUTE_BY_ID: Record<MobileTabId, string> = {
+  home: APP_ROUTES.tabs.home,
+  videos: APP_ROUTES.tabs.videos,
+  player: APP_ROUTES.tabs.player,
+  library: APP_ROUTES.tabs.library,
+  search: APP_ROUTES.tabs.search,
+};
+
 export type PlayerRoutePath =
   | typeof APP_ROUTES.live.detail
   | typeof APP_ROUTES.tabs.player
