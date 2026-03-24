@@ -17,11 +17,11 @@ import { AppButton } from '../../components/ui/AppButton';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { useToast } from '../../context/ToastContext';
 import { useContentFeed } from '../../hooks/useContentFeed';
+import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
 import { APP_ROUTES } from '../../util/appRoutes';
+import { getDiscoveryCategories, getDiscoveryShortcuts } from '../../util/mobileExperienceConfig';
 import { buildPlayerRoute } from '../../util/playerRoute';
-
-const baseCategories = ['All', 'audio', 'video', 'playlist', 'live', 'announcement'];
 
 export default function Search() {
   const theme = useAppTheme();
@@ -36,6 +36,7 @@ export default function Search() {
   const [recentQueries, setRecentQueries] = useState<string[]>([]);
 
   const { feed } = useContentFeed();
+  const { config: mobileConfig } = useMobileAppConfig();
 
   const allItems = useMemo(
     () => [
@@ -49,14 +50,11 @@ export default function Search() {
     [feed.announcements, feed.live, feed.mostPlayed, feed.music, feed.playlists, feed.videos],
   );
 
-  const quickShortcuts = useMemo(
-    () => [
-      { icon: 'graphic-eq', label: 'Trending worship', query: 'worship' },
-      { icon: 'live-tv', label: 'Live channels', query: 'live' },
-      { icon: 'menu-book', label: 'Daily messages', query: 'message' },
-    ],
-    [],
+  const discoveryCategories = useMemo(
+    () => getDiscoveryCategories(mobileConfig, feed.topCategories),
+    [feed.topCategories, mobileConfig],
   );
+  const quickShortcuts = useMemo(() => getDiscoveryShortcuts(mobileConfig), [mobileConfig]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -101,8 +99,8 @@ export default function Search() {
   };
 
   const cycleCategory = () => {
-    const currentIndex = baseCategories.indexOf(activeCategory);
-    const nextCategory = baseCategories[(currentIndex + 1) % baseCategories.length];
+    const currentIndex = discoveryCategories.indexOf(activeCategory as (typeof discoveryCategories)[number]);
+    const nextCategory = discoveryCategories[(currentIndex + 1) % discoveryCategories.length] ?? 'All';
     setActiveCategory(nextCategory);
     showToast({
       title: 'Filter updated',
@@ -203,7 +201,7 @@ export default function Search() {
                     key={shortcut.label}
                     onPress={() => {
                       setQuery(shortcut.query);
-                      setActiveCategory('All');
+                      setActiveCategory(shortcut.category);
                     }}
                     style={{
                       width: shortcutWidth,
@@ -237,7 +235,7 @@ export default function Search() {
               overScrollMode="never"
             >
               <View style={{ flexDirection: 'row', gap: theme.spacing.sm }}>
-                {baseCategories.map((cat) => (
+                {discoveryCategories.map((cat) => (
                   <Chip
                     key={cat}
                     label={cat === 'All' ? cat : cat.toUpperCase()}

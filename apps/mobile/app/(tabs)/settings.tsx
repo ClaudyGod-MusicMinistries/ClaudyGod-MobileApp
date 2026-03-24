@@ -13,9 +13,11 @@ import { AppButton } from '../../components/ui/AppButton';
 import { ActionSheet } from '../../components/ui/ActionSheet';
 import { useToast } from '../../context/ToastContext';
 import { useAppTheme, useColorSchemeToggle } from '../../util/colorScheme';
+import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import { fetchMePreferences, updateMePreferences } from '../../services/userFlowService';
 import { clearMobileSession } from '../../services/authService';
-import { APP_ROUTES } from '../../util/appRoutes';
+import { APP_ROUTES, APP_ROUTE_BY_ID } from '../../util/appRoutes';
+import { getSettingsHubSections } from '../../util/mobileExperienceConfig';
 
 type SettingItem = {
   icon: React.ComponentProps<typeof MaterialIcons>['name'];
@@ -102,6 +104,7 @@ export default function SettingsScreen() {
   const [personalization, setPersonalization] = useState(true);
   const [preferencesLoaded, setPreferencesLoaded] = useState(false);
   const [isLogoutSheetVisible, setIsLogoutSheetVisible] = useState(false);
+  const { config: mobileConfig } = useMobileAppConfig();
 
   useEffect(() => {
     let active = true;
@@ -134,37 +137,8 @@ export default function SettingsScreen() {
     [preferencesLoaded],
   );
 
-  const sections = useMemo(
+  const controlSections = useMemo(
     () => [
-      {
-        title: 'Account',
-        items: [
-          {
-            icon: 'person-outline',
-            label: 'Profile',
-            hint: 'Name, email, and account details',
-            action: () => router.push(APP_ROUTES.profile),
-          },
-          {
-            icon: 'shield',
-            label: 'Privacy',
-            hint: 'Permissions and account controls',
-            action: () => router.push(APP_ROUTES.settingsPages.privacy),
-          },
-          {
-            icon: 'volunteer-activism',
-            label: 'Donate',
-            hint: 'Support the ministry',
-            action: () => router.push(APP_ROUTES.settingsPages.donate),
-          },
-          {
-            icon: 'logout',
-            label: 'Sign out',
-            hint: 'Leave this device securely',
-            action: () => setIsLogoutSheetVisible(true),
-          },
-        ] as SettingItem[],
-      },
       {
         title: 'Playback',
         items: [
@@ -256,29 +230,6 @@ export default function SettingsScreen() {
           },
         ] as SettingItem[],
       },
-      {
-        title: 'Support',
-        items: [
-          {
-            icon: 'help-outline',
-            label: 'Help',
-            hint: 'FAQs and contact options',
-            action: () => router.push(APP_ROUTES.settingsPages.help),
-          },
-          {
-            icon: 'info-outline',
-            label: 'About',
-            hint: 'ClaudyGod and the ministry mission',
-            action: () => router.push(APP_ROUTES.settingsPages.about),
-          },
-          {
-            icon: 'rate-review',
-            label: 'Rate app',
-            hint: 'Share feedback about the experience',
-            action: () => router.push(APP_ROUTES.settingsPages.rate),
-          },
-        ] as SettingItem[],
-      },
     ],
     [
       autoPlay,
@@ -286,11 +237,23 @@ export default function SettingsScreen() {
       notifications,
       personalization,
       persistPreferencePatch,
-      router,
       showToast,
       theme.scheme,
       toggleColorScheme,
     ],
+  );
+  const navigationSections = useMemo(
+    () =>
+      getSettingsHubSections(mobileConfig).map((section) => ({
+        title: section.title,
+        items: section.items.map((item) => ({
+          icon: item.icon as React.ComponentProps<typeof MaterialIcons>['name'],
+          label: item.label,
+          hint: item.hint,
+          action: () => router.push(APP_ROUTE_BY_ID[item.destination]),
+        })),
+      })),
+    [mobileConfig, router],
   );
 
   return (
@@ -356,11 +319,18 @@ export default function SettingsScreen() {
                     onPress={() => router.push(APP_ROUTES.settingsPages.help)}
                     leftIcon={<MaterialIcons name="help-outline" size={16} color={theme.colors.text.primary} />}
                   />
+                  <AppButton
+                    title="Sign out"
+                    variant="ghost"
+                    size="sm"
+                    onPress={() => setIsLogoutSheetVisible(true)}
+                    leftIcon={<MaterialIcons name="logout" size={16} color={theme.colors.text.primary} />}
+                  />
                 </View>
               </SurfaceCard>
             </FadeIn>
 
-            {sections.map((section, sectionIndex) => (
+            {[...navigationSections, ...controlSections].map((section, sectionIndex) => (
               <FadeIn key={section.title} delay={100 + sectionIndex * 35}>
                 <SurfaceCard tone="subtle" style={{ paddingHorizontal: theme.spacing.lg, paddingVertical: 6 }}>
                   <View style={{ paddingTop: 12, paddingBottom: 4 }}>
