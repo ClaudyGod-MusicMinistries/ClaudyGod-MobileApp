@@ -1,6 +1,16 @@
 import { Platform } from 'react-native';
 import { ENV } from './config';
 
+export class ApiError extends Error {
+  status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+  }
+}
+
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   if (!ENV.apiUrl) {
     throw new Error('ClaudyGod is temporarily unavailable. Please try again shortly.');
@@ -29,7 +39,7 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     } catch {
       message = '';
     }
-    throw new Error(message || `API request failed with ${response.status}`);
+    throw new ApiError(response.status, message || `API request failed with ${response.status}`);
   }
 
   return (await response.json()) as T;

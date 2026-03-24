@@ -2,14 +2,18 @@ import { type Request, Router } from 'express';
 import { asyncHandler } from '../../lib/asyncHandler';
 import { validateSchema } from '../../lib/validation';
 import {
+  applyAuthSessionCookies,
   clearAuthSessionCookie,
+  getRefreshTokenFromRequest,
   getAuthTokenFromRequest,
   respondWithAuthSession,
 } from './authSessionCookie';
 import {
   forgotPasswordSchema,
   loginSchema,
+  logoutSchema,
   registerSchema,
+  refreshSessionSchema,
   resendVerificationEmailSchema,
   resetPasswordSchema,
   verifyEmailSchema,
@@ -23,6 +27,11 @@ import {
   resetPassword,
   verifyEmail,
 } from './auth.service';
+import {
+  issueAuthSession,
+  refreshAuthSession,
+  revokeRefreshSession,
+} from './authSession.service';
 import type { AuthResponse } from './auth.types';
 import { resolveAuthenticatedUser } from './authIdentity.service';
 
@@ -32,6 +41,17 @@ authRouter.use((_req, res, next) => {
   res.setHeader('Cache-Control', 'no-store');
   next();
 });
+
+const buildSessionPayload = async (
+  authPayload: Pick<AuthResponse, 'user' | 'message'>,
+  req: Request,
+): Promise<AuthResponse> => {
+  const session = await issueAuthSession(authPayload.user, getAuthRequestContext(req));
+  return {
+    ...session,
+    message: authPayload.message,
+  };
+};
 
 async function resolveSessionUser(req: Request) {
   const authorization = req.header('authorization');
@@ -47,6 +67,16 @@ async function resolveSessionUser(req: Request) {
   const identity = await resolveAuthenticatedUser(token);
   const user = await getUserById(identity.sub);
   return { token, user };
+}
+
+async function resolveSessionFromRefresh(req: Request) {
+  const refreshToken = getRefreshTokenFromRequest(req);
+  if (!refreshToken) {
+    return null;
+  }
+
+  const session = await refreshAuthSession(refreshToken, getAuthRequestContext(req));
+  return { token: session.accessToken, user: session.user, refreshedSession: session };
 }
 
 function getAuthRequestContext(req: Request) {
@@ -66,7 +96,8 @@ authRouter.post(
       return;
     }
 
-    respondWithAuthSession(req, res, result as AuthResponse, 201);
+    const session = await buildSessionPayload(result as AuthResponse, req);
+    respondWithAuthSession(req, res, session, 201);
   }),
 );
 
@@ -75,7 +106,8 @@ authRouter.post(
   asyncHandler(async (req, res) => {
     const payload = validateSchema(loginSchema, req.body);
     const result = await loginUser(payload, getAuthRequestContext(req));
-    respondWithAuthSession(req, res, result, 200);
+    const session = await buildSessionPayload(result, req);
+    respondWithAuthSession(req, res, session, 200);
   }),
 );
 
@@ -84,7 +116,8 @@ authRouter.post(
   asyncHandler(async (req, res) => {
     const payload = validateSchema(verifyEmailSchema, req.body);
     const result = await verifyEmail(payload, getAuthRequestContext(req));
-    respondWithAuthSession(req, res, result, 200);
+    const session = await buildSessionPayload(result, req);
+    respondWithAuthSession(req, res, session, 200);
   }),
 );
 
@@ -116,8 +149,30 @@ authRouter.post(
 );
 
 authRouter.post(
+  '/refresh',
+  asyncHandler(async (req, res) => {
+    const payload = validateSchema(refreshSessionSchema, req.body ?? {});
+    const refreshToken = payload.refreshToken || getRefreshTokenFromRequest(req);
+
+    if (!refreshToken) {
+      clearAuthSessionCookie(res);
+      res.status(401).json({ message: 'Session expired. Sign in again.' });
+      return;
+    }
+
+    const session = await refreshAuthSession(refreshToken, getAuthRequestContext(req));
+    respondWithAuthSession(req, res, session, 200);
+  }),
+);
+
+authRouter.post(
   '/logout',
-  asyncHandler(async (_req, res) => {
+  asyncHandler(async (req, res) => {
+    const payload = validateSchema(logoutSchema, req.body ?? {});
+    const refreshToken = payload.refreshToken || getRefreshTokenFromRequest(req);
+    if (refreshToken) {
+      await revokeRefreshSession(refreshToken);
+    }
     clearAuthSessionCookie(res);
     res.status(204).send();
   }),
@@ -129,12 +184,32 @@ authRouter.get(
     try {
       const session = await resolveSessionUser(req);
       if (!session) {
-        res.status(200).json({ authenticated: false, user: null });
+        const restored = await resolveSessionFromRefresh(req);
+        if (!restored) {
+          res.status(200).json({ authenticated: false, user: null });
+          return;
+        }
+        if (getRefreshTokenFromRequest(req)) {
+          applyAuthSessionCookies(res, restored.refreshedSession);
+        }
+        res.status(200).json({ authenticated: true, user: restored.user });
         return;
       }
 
       res.status(200).json({ authenticated: true, user: session.user });
     } catch {
+      try {
+        const restored = await resolveSessionFromRefresh(req);
+        if (restored) {
+          if (getRefreshTokenFromRequest(req)) {
+            applyAuthSessionCookies(res, restored.refreshedSession);
+          }
+          res.status(200).json({ authenticated: true, user: restored.user });
+          return;
+        }
+      } catch {
+        // Fall through to anonymous state.
+      }
       clearAuthSessionCookie(res);
       res.status(200).json({ authenticated: false, user: null });
     }
@@ -147,12 +222,32 @@ authRouter.get(
     try {
       const session = await resolveSessionUser(req);
       if (!session) {
-        res.status(200).json({ authenticated: false, user: null });
+        const restored = await resolveSessionFromRefresh(req);
+        if (!restored) {
+          res.status(200).json({ authenticated: false, user: null });
+          return;
+        }
+        if (getRefreshTokenFromRequest(req)) {
+          applyAuthSessionCookies(res, restored.refreshedSession);
+        }
+        res.status(200).json({ authenticated: true, user: restored.user });
         return;
       }
 
       res.status(200).json({ authenticated: true, user: session.user });
     } catch {
+      try {
+        const restored = await resolveSessionFromRefresh(req);
+        if (restored) {
+          if (getRefreshTokenFromRequest(req)) {
+            applyAuthSessionCookies(res, restored.refreshedSession);
+          }
+          res.status(200).json({ authenticated: true, user: restored.user });
+          return;
+        }
+      } catch {
+        // Fall through to anonymous state.
+      }
       clearAuthSessionCookie(res);
       res.status(200).json({ authenticated: false, user: null });
     }

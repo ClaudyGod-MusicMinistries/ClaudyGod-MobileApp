@@ -21,6 +21,7 @@ import AuthScreen from './features/auth/AuthScreen';
 import EditContentModal from './features/content/EditContentModal';
 import BootScreen from './features/dashboard/BootScreen';
 import EditorView from './features/dashboard/EditorView';
+import OverviewView from './features/dashboard/OverviewView';
 import MobilePreviewView from './features/dashboard/MobilePreviewView';
 import LiveView from './features/live/LiveView';
 import MobileConfigView from './features/mobile-config/MobileConfigView';
@@ -101,7 +102,7 @@ export default defineComponent({
     const adCampaignSaving = ref(false);
     const adSuggestionLoading = ref(false);
     const headerMenuOpen = ref(false);
-    const dashboardView = ref('editor');
+    const dashboardView = ref('overview');
     const inactivityTimerId = ref(null);
     const authResponseInterceptorId = ref(null);
     const viewportWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1366);
@@ -218,8 +219,22 @@ export default defineComponent({
         draftContent: 0,
         openSupportRequests: 0,
         activePrivacyRequests: 0,
+        pendingSignups: 0,
+        activeSessions: 0,
+        loginSuccessLast7Days: 0,
+        loginFailuresLast7Days: 0,
+        verificationsLast7Days: 0,
+        passwordResetsLast30Days: 0,
         totalFeedback: 0,
         averageRating: null,
+      },
+      authFunnel: {
+        pendingSignups: 0,
+        activeSessions: 0,
+        loginSuccessLast7Days: 0,
+        loginFailuresLast7Days: 0,
+        verificationsLast7Days: 0,
+        passwordResetsLast30Days: 0,
       },
       recentUsers: [],
       feedback: [],
@@ -227,6 +242,7 @@ export default defineComponent({
       signupTrend: [],
       smartInsights: [],
       recentAutomation: [],
+      recentAuthActivity: [],
       generatedAt: '',
     });
     const wordOfDayForm = reactive({
@@ -262,7 +278,7 @@ export default defineComponent({
     const portalNavItems = computed(() =>
       isAdmin.value
         ? ADMIN_NAV_ITEMS
-        : ADMIN_NAV_ITEMS.filter((item) => item.id === 'editor' || item.id === 'mobile-preview'),
+        : ADMIN_NAV_ITEMS.filter((item) => item.id === 'overview' || item.id === 'editor' || item.id === 'mobile-preview'),
     );
     const publicHealthSummary = computed(() => {
       if (publicHealthLoading.value) return 'Preparing your portal';
@@ -401,7 +417,7 @@ export default defineComponent({
       authMode.value = 'login';
       authForm.email = user.email || authForm.email.trim();
       resetAuthSecrets();
-      dashboardView.value = 'editor';
+      dashboardView.value = 'overview';
 
       await Promise.all([
         fetchManagedContent(freshToken || undefined),
@@ -435,7 +451,7 @@ export default defineComponent({
     }
 
     function setDashboardView(view) {
-      dashboardView.value = ['live', 'editor', 'mobile-preview', 'mobile-config', 'ads-ai'].includes(view) ? view : 'editor';
+      dashboardView.value = ['overview', 'live', 'editor', 'mobile-preview', 'mobile-config', 'ads-ai'].includes(view) ? view : 'overview';
       closeHeaderMenu();
     }
 
@@ -981,8 +997,22 @@ export default defineComponent({
           draftContent: 0,
           openSupportRequests: 0,
           activePrivacyRequests: 0,
+          pendingSignups: 0,
+          activeSessions: 0,
+          loginSuccessLast7Days: 0,
+          loginFailuresLast7Days: 0,
+          verificationsLast7Days: 0,
+          passwordResetsLast30Days: 0,
           totalFeedback: 0,
           averageRating: null,
+        },
+        authFunnel: {
+          pendingSignups: 0,
+          activeSessions: 0,
+          loginSuccessLast7Days: 0,
+          loginFailuresLast7Days: 0,
+          verificationsLast7Days: 0,
+          passwordResetsLast30Days: 0,
         },
         recentUsers: [],
         feedback: [],
@@ -990,11 +1020,12 @@ export default defineComponent({
         signupTrend: [],
         smartInsights: [],
         recentAutomation: [],
+        recentAuthActivity: [],
         generatedAt: '',
       };
       endpointChecks.value = [];
       endpointChecksAt.value = '';
-      dashboardView.value = 'editor';
+      dashboardView.value = 'overview';
       closeHeaderMenu();
     }
 
@@ -2387,6 +2418,25 @@ export default defineComponent({
             <section class={['notice', noticeKind.value === 'error' ? 'notice-error' : 'notice-success', 'reveal-up']} style={{ animationDelay: '140ms' }}>
               {notice.value}
             </section>
+          ) : null}
+
+          {dashboardView.value === 'overview' ? (
+            <OverviewView
+              adminOpsLoading={adminOpsLoading.value}
+              summary={adminOps.value.summary || {}}
+              authFunnel={adminOps.value.authFunnel || {}}
+              smartInsights={adminOps.value.smartInsights || []}
+              recentAuthActivity={adminOps.value.recentAuthActivity || []}
+              requestStatusBoard={requestStatusBoard.value}
+              contentRequestLoading={contentRequestLoading.value}
+              requestQueuePreview={requestQueuePreview.value}
+              managedItemsCount={managedItems.value.length}
+              recentItems={recentItems.value}
+              onSetDashboardView={setDashboardView}
+              formatDateTime={formatDateTime}
+              truncate={truncate}
+              humanizeToken={humanizeToken}
+            />
           ) : null}
 
           {dashboardView.value === 'live' ? (

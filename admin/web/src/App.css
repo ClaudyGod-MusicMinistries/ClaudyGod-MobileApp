@@ -1504,7 +1504,7 @@ button {
 
 .task-card {
   padding: 0.92rem;
-  border-radius: 20px;
+  border-radius: 16px;
   display: grid;
   gap: 0.9rem;
   align-content: space-between;
@@ -1629,6 +1629,165 @@ button {
   max-height: 24rem;
 }
 
+.portal-overview-grid {
+  align-items: start;
+}
+
+.portal-hero-panel {
+  padding: 1.15rem;
+  border-radius: 18px;
+}
+
+.portal-hero-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.portal-hero-copy {
+  max-width: 42rem;
+  color: var(--ink-soft);
+  font-size: var(--font-md);
+  line-height: 1.55;
+}
+
+.portal-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.compact-metric-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.slim-metric-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 0.8rem;
+}
+
+.metric-card {
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.025)),
+    rgba(8, 7, 18, 0.86);
+  padding: 0.9rem 0.95rem;
+  display: grid;
+  gap: 0.35rem;
+  min-height: 132px;
+}
+
+.metric-card span {
+  color: var(--ink-muted);
+  font-size: var(--font-xs);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+
+.metric-card strong {
+  font-size: clamp(1.3rem, 1rem + 1vw, 2rem);
+  line-height: 1;
+}
+
+.metric-card p {
+  color: var(--ink-soft);
+  font-size: var(--font-sm);
+  line-height: 1.45;
+}
+
+.metric-card-quiet {
+  min-height: 118px;
+  background:
+    linear-gradient(180deg, rgba(var(--primary-rgb), 0.08), rgba(255, 255, 255, 0.02)),
+    rgba(8, 7, 18, 0.86);
+}
+
+.signal-stack,
+.activity-feed {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.signal-card,
+.activity-item {
+  border-radius: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.028);
+  padding: 0.85rem 0.9rem;
+}
+
+.signal-card strong,
+.activity-item strong {
+  display: block;
+  font-size: var(--font-md);
+}
+
+.signal-card p,
+.activity-item p {
+  margin-top: 0.28rem;
+  color: var(--ink-soft);
+  font-size: var(--font-sm);
+  line-height: 1.45;
+}
+
+.signal-card.is-success {
+  border-color: rgba(80, 200, 150, 0.22);
+  background: rgba(80, 200, 150, 0.08);
+}
+
+.signal-card.is-warning {
+  border-color: rgba(255, 184, 77, 0.22);
+  background: rgba(255, 184, 77, 0.08);
+}
+
+.signal-card.is-info {
+  border-color: rgba(var(--primary-rgb), 0.22);
+  background: rgba(var(--primary-rgb), 0.08);
+}
+
+.activity-item-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.activity-status {
+  border-radius: 999px;
+  padding: 0.28rem 0.58rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.035);
+  color: var(--ink-soft);
+  font-size: var(--font-xs);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.activity-status.is-success {
+  border-color: rgba(80, 200, 150, 0.24);
+  color: #aaf0d3;
+}
+
+.activity-status.is-failure {
+  border-color: rgba(252, 110, 132, 0.28);
+  color: #ffc1cb;
+}
+
+.activity-status.is-info {
+  border-color: rgba(var(--primary-rgb), 0.24);
+  color: rgb(var(--primary-soft-rgb));
+}
+
 .mobile-preview-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(300px, 0.8fr);
@@ -1725,7 +1884,7 @@ button {
 
 .stat-card {
   padding: 0.9rem;
-  border-radius: 18px;
+  border-radius: 16px;
   position: relative;
   overflow: hidden;
   transition: transform 0.18s ease, border-color 0.18s ease, background-color 0.18s ease;
@@ -1771,7 +1930,7 @@ button {
 
 .panel {
   padding: 1rem;
-  border-radius: var(--radius-xl);
+  border-radius: 18px;
   transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -1832,7 +1991,7 @@ button {
 }
 
 .helper-card {
-  border-radius: 14px;
+  border-radius: 16px;
   border: 1px solid rgba(var(--primary-rgb), 0.2);
   background: rgba(var(--primary-rgb), 0.08);
   padding: 0.75rem 0.8rem;
@@ -2460,12 +2619,19 @@ button {
   }
 
   .quick-actions-grid,
-  .simple-intro-panel {
+  .simple-intro-panel,
+  .metric-grid,
+  .compact-metric-grid,
+  .slim-metric-grid {
     grid-template-columns: 1fr;
   }
 
   .overview-grid {
     grid-template-columns: 1fr;
+  }
+
+  .portal-hero-head {
+    flex-direction: column;
   }
 
   .list-wrap {
@@ -2576,6 +2742,15 @@ button {
   .global-header-inner {
     flex-direction: row;
     align-items: center;
+  }
+
+  .portal-hero-actions {
+    width: 100%;
+  }
+
+  .portal-hero-actions .primary-btn,
+  .portal-hero-actions .ghost-btn {
+    flex: 1;
   }
 
   .user-pill {

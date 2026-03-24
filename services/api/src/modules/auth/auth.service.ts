@@ -11,6 +11,7 @@ import { HttpError } from '../../lib/httpError';
 import { isMissingDatabaseStructureError } from '../../lib/postgres';
 import { hashPassword, verifyPassword } from '../../utils/password';
 import { signAccessToken } from '../../utils/jwt';
+import { revokeAllUserSessions } from './authSession.service';
 import type {
   AuthActionResponse,
   AuthResponse,
@@ -464,6 +465,15 @@ const completePendingPasswordReset = async ({
        WHERE user_id = $1
          AND token_type = 'password_reset'
          AND used_at IS NULL`,
+      [pendingReset.user_id],
+    );
+
+    await client.query(
+      `UPDATE auth_refresh_sessions
+       SET revoked_at = COALESCE(revoked_at, NOW()),
+           updated_at = NOW()
+       WHERE user_id = $1
+         AND revoked_at IS NULL`,
       [pendingReset.user_id],
     );
 
@@ -979,6 +989,8 @@ export const resetPassword = async (input: ResetPasswordInput, context: AuthRequ
      WHERE id = $1`,
     [tokenUse.user_id, nextPasswordHash],
   );
+
+  await revokeAllUserSessions(tokenUse.user_id);
 
   await pool.query(
     `UPDATE auth_action_tokens

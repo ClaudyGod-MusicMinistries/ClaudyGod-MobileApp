@@ -1,25 +1,5 @@
-import { Platform } from 'react-native';
 import { apiFetch } from './apiClient';
-import { getStoredMobileSession } from './authService';
-
-async function apiFetchAuthed<T>(path: string, init?: RequestInit): Promise<T> {
-  if (Platform.OS === 'web') {
-    return apiFetch<T>(path, init);
-  }
-
-  const { accessToken } = await getStoredMobileSession();
-  if (!accessToken) {
-    throw new Error('Sign in required');
-  }
-
-  return apiFetch<T>(path, {
-    ...init,
-    headers: {
-      ...(init?.headers ?? {}),
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
-}
+import { apiFetchWithMobileSession } from './authService';
 
 export type LiveSessionStatus = 'scheduled' | 'live' | 'ended' | 'cancelled';
 export type LiveMessageKind = 'comment' | 'suggestion';
@@ -129,7 +109,7 @@ export async function postLiveSessionMessage(
     message: string;
   },
 ): Promise<LiveSessionMessage> {
-  return apiFetchAuthed(`/v1/live/sessions/${encodeURIComponent(sessionId)}/messages`, {
+  return apiFetchWithMobileSession(`/v1/live/sessions/${encodeURIComponent(sessionId)}/messages`, {
     method: 'POST',
     body: JSON.stringify(input),
   });
