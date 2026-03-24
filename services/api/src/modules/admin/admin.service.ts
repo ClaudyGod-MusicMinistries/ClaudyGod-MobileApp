@@ -32,6 +32,7 @@ interface RequestSummaryRow {
 
 interface AuthSummaryRow {
   pending_signups: string;
+  active_sessions: string;
   login_success_last_7_days: string;
   login_failures_last_7_days: string;
   verifications_last_7_days: string;
@@ -228,6 +229,7 @@ const DEFAULT_REQUEST_SUMMARY_ROW: RequestSummaryRow = {
 
 const DEFAULT_AUTH_SUMMARY_ROW: AuthSummaryRow = {
   pending_signups: '0',
+  active_sessions: '0',
   login_success_last_7_days: '0',
   login_failures_last_7_days: '0',
   verifications_last_7_days: '0',
@@ -302,6 +304,10 @@ export const getAdminDashboard = async () => {
         pool.query<AuthSummaryRow>(
           `SELECT
              (SELECT COUNT(*)::text FROM pending_signups WHERE expires_at > NOW()) AS pending_signups,
+             (SELECT COUNT(*)::text
+                FROM auth_refresh_sessions
+               WHERE revoked_at IS NULL
+                 AND expires_at > NOW()) AS active_sessions,
              COUNT(*) FILTER (
                WHERE event_key = 'login_success'
                  AND created_at >= NOW() - INTERVAL '7 days'
@@ -494,6 +500,14 @@ export const getAdminDashboard = async () => {
           detail: `${auth.pending_signups} account(s) are waiting on email verification. Review delivery timing and onboarding clarity.`,
         }
       : null,
+    Number(auth.active_sessions) === 0 && Number(summary.total_users) > 0
+      ? {
+          id: 'session-coverage',
+          tone: 'warning',
+          title: 'No active sessions are open',
+          detail: 'Users are not currently holding active sessions. Review sign-in flow, session rotation, and app resume behaviour.',
+        }
+      : null,
     Number(content.draft_content) > Number(content.published_content)
       ? {
           id: 'draft-backlog',
@@ -562,6 +576,7 @@ export const getAdminDashboard = async () => {
       openSupportRequests: Number(requests.open_support_requests),
       activePrivacyRequests: Number(requests.active_privacy_requests),
       pendingSignups: Number(auth.pending_signups),
+      activeSessions: Number(auth.active_sessions),
       loginSuccessLast7Days: Number(auth.login_success_last_7_days),
       loginFailuresLast7Days: Number(auth.login_failures_last_7_days),
       verificationsLast7Days: Number(auth.verifications_last_7_days),
@@ -571,6 +586,7 @@ export const getAdminDashboard = async () => {
     },
     authFunnel: {
       pendingSignups: Number(auth.pending_signups),
+      activeSessions: Number(auth.active_sessions),
       loginSuccessLast7Days: Number(auth.login_success_last_7_days),
       loginFailuresLast7Days: Number(auth.login_failures_last_7_days),
       verificationsLast7Days: Number(auth.verifications_last_7_days),

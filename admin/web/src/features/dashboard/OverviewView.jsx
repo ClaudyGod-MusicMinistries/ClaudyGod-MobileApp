@@ -1,5 +1,16 @@
+const toneClassMap = {
+  success: 'is-success',
+  warning: 'is-warning',
+  info: 'is-info',
+};
+
 export default function OverviewView(props) {
   const {
+    adminOpsLoading,
+    summary,
+    authFunnel,
+    smartInsights,
+    recentAuthActivity,
     requestStatusBoard,
     contentRequestLoading,
     requestQueuePreview,
@@ -8,167 +19,216 @@ export default function OverviewView(props) {
     onSetDashboardView,
     formatDateTime,
     truncate,
-    humanizeToken,
   } = props;
 
-  const openRequests = requestStatusBoard[0] ? requestStatusBoard[0].value : 0;
-  const needsChanges = requestStatusBoard[1] ? requestStatusBoard[1].value : 0;
-  const convertedDrafts = requestStatusBoard[2] ? requestStatusBoard[2].value : 0;
+  const accessCards = [
+    {
+      label: 'Pending verification',
+      value: authFunnel.pendingSignups ?? 0,
+      hint: 'Accounts waiting on email verification',
+    },
+    {
+      label: 'Active sessions',
+      value: authFunnel.activeSessions ?? 0,
+      hint: 'Signed-in devices with a valid session',
+    },
+    {
+      label: 'Sign-ins · 7 days',
+      value: authFunnel.loginSuccessLast7Days ?? 0,
+      hint: 'Successful access in the last week',
+    },
+    {
+      label: 'Failed sign-ins · 7 days',
+      value: authFunnel.loginFailuresLast7Days ?? 0,
+      hint: 'Users who hit sign-in friction recently',
+    },
+  ];
+
+  const portalCards = [
+    {
+      label: 'Managed content',
+      value: managedItemsCount,
+      hint: 'Published and draft media tracked here',
+    },
+    {
+      label: 'Verified users',
+      value: summary.verifiedUsers ?? 0,
+      hint: 'Accounts cleared for full access',
+    },
+    {
+      label: 'New accounts · 7 days',
+      value: summary.newUsersLast7Days ?? 0,
+      hint: 'Recent growth across the product',
+    },
+    {
+      label: 'Password resets · 30 days',
+      value: authFunnel.passwordResetsLast30Days ?? 0,
+      hint: 'Security recovery flow usage',
+    },
+  ];
 
   return (
-    <section class="overview-grid">
-      <article class="panel glass-panel reveal-up" style={{ animationDelay: '180ms' }}>
-        <div class="section-head split">
+    <section class="overview-grid portal-overview-grid">
+      <article class="panel glass-panel portal-hero-panel reveal-up" style={{ animationDelay: '140ms' }}>
+        <div class="portal-hero-head">
           <div>
-            <h2>Content Portal</h2>
-            <p>A simple workspace for uploading content, managing the library, and checking how updates look in the mobile app.</p>
+            <p class="eyebrow">Portal overview</p>
+            <h2>Content, access, and mobile delivery in one view.</h2>
+            <p class="portal-hero-copy">
+              Use this page to watch account health, upload momentum, and the signals that matter before you publish.
+            </p>
           </div>
-          <button type="button" class="primary-btn" onClick={() => onSetDashboardView('editor')}>
-            Open content
-          </button>
-        </div>
-
-        <div class="quick-actions-grid">
-          <article class={['task-card', 'glass-panel', 'task-card-primary']}>
-            <div>
-              <p class="eyebrow">Upload</p>
-              <h3>Add new content</h3>
-              <p>Upload audio or video, attach a thumbnail, and set where it should appear in the app.</p>
-            </div>
+          <div class="portal-hero-actions">
             <button type="button" class="primary-btn" onClick={() => onSetDashboardView('editor')}>
-              Start upload
+              Open content
             </button>
-          </article>
-
-          <article class="task-card glass-panel">
-            <div>
-              <p class="eyebrow">Manage</p>
-              <h3>Review your library</h3>
-              <p>Publish drafts, move items back to draft, assign sections, and delete outdated content.</p>
-            </div>
-            <button type="button" class="ghost-btn compact" onClick={() => onSetDashboardView('editor')}>
-              Open library
-            </button>
-          </article>
-
-          <article class="task-card glass-panel">
-            <div>
-              <p class="eyebrow">Preview</p>
-              <h3>Check the mobile app</h3>
-              <p>Reload the live preview and confirm each item appears in the right place before you leave the portal.</p>
-            </div>
             <button type="button" class="ghost-btn compact" onClick={() => onSetDashboardView('mobile-preview')}>
-              Open preview
+              Preview app
             </button>
-          </article>
-        </div>
-      </article>
-
-      <article class="panel glass-panel reveal-up" style={{ animationDelay: '220ms' }}>
-        <div class="section-head split">
-          <div>
-            <h2>Portal Summary</h2>
-            <p>The key numbers your clients need without the extra operational noise.</p>
           </div>
-          <span class="section-badge">Today</span>
         </div>
 
-        <section class="stats-grid compact-stats-grid">
-          <article class={['stat-card', 'glass-panel', 'accent-mint']}>
-            <span>Managed content</span>
-            <strong>{managedItemsCount}</strong>
-          </article>
-          <article class={['stat-card', 'glass-panel', 'accent-blue']}>
-            <span>Open requests</span>
-            <strong>{openRequests}</strong>
-          </article>
-          <article class={['stat-card', 'glass-panel', 'accent-amber']}>
-            <span>Needs changes</span>
-            <strong>{needsChanges}</strong>
-          </article>
-          <article class={['stat-card', 'glass-panel', 'accent-rose']}>
-            <span>Drafts created</span>
-            <strong>{convertedDrafts}</strong>
-          </article>
+        <section class="metric-grid">
+          {portalCards.map((card) => (
+            <article class="metric-card" key={card.label}>
+              <span>{card.label}</span>
+              <strong>{card.value}</strong>
+              <p>{card.hint}</p>
+            </article>
+          ))}
         </section>
+      </article>
 
-        <div class="grid-2" style={{ marginTop: '0.8rem' }}>
-          <div class="helper-card">
-            <strong>Best practice</strong>
-            <p>Use the content page for every upload so the library stays clean and the preview stays accurate.</p>
+      <article class="panel glass-panel reveal-up" style={{ animationDelay: '170ms' }}>
+        <div class="section-head compact">
+          <div>
+            <h3>Access Health</h3>
+            <p>Keep sign-in, verification, and recovery friction visible.</p>
           </div>
-          <div class="helper-card">
-            <strong>Mobile-first workflow</strong>
-            <p>Every upload should end with a preview check to confirm it is showing in the right mobile section.</p>
+          <span class="section-badge">{adminOpsLoading ? 'Refreshing' : 'Live'}</span>
+        </div>
+
+        <section class="metric-grid compact-metric-grid">
+          {accessCards.map((card) => (
+            <article class="metric-card metric-card-quiet" key={card.label}>
+              <span>{card.label}</span>
+              <strong>{card.value}</strong>
+              <p>{card.hint}</p>
+            </article>
+          ))}
+        </section>
+      </article>
+
+      <article class="panel glass-panel reveal-up" style={{ animationDelay: '190ms' }}>
+        <div class="section-head compact">
+          <div>
+            <h3>Signals</h3>
+            <p>Only the alerts worth acting on right now.</p>
           </div>
+        </div>
+
+        <div class="signal-stack">
+          {smartInsights.length === 0 ? (
+            <div class="empty-state">No urgent signals right now.</div>
+          ) : smartInsights.slice(0, 4).map((signal) => (
+            <article class={['signal-card', toneClassMap[signal.tone] || 'is-info']} key={signal.id}>
+              <strong>{signal.title}</strong>
+              <p>{signal.detail}</p>
+            </article>
+          ))}
         </div>
       </article>
 
-      <article class="panel glass-panel reveal-up" style={{ animationDelay: '240ms' }}>
-        <div class="section-head split">
+      <article class="panel glass-panel reveal-up" style={{ animationDelay: '210ms' }}>
+        <div class="section-head compact">
           <div>
-            <h2>Recent Requests</h2>
-            <p>Latest upload requests waiting for review or release.</p>
+            <h3>Recent Access Activity</h3>
+            <p>The latest account events moving through the system.</p>
+          </div>
+        </div>
+
+        <div class="activity-feed">
+          {recentAuthActivity.length === 0 ? (
+            <div class="empty-state">No account activity recorded yet.</div>
+          ) : recentAuthActivity.slice(0, 6).map((item) => (
+            <article class="activity-item" key={item.id}>
+              <div class="activity-item-head">
+                <strong>{item.user?.displayName || item.email || 'Unknown account'}</strong>
+                <span class={['activity-status', item.status === 'failure' ? 'is-failure' : item.status === 'success' ? 'is-success' : 'is-info']}>
+                  {item.label}
+                </span>
+              </div>
+              <p>{item.email || item.user?.email || 'No email attached'}</p>
+              <span class="muted-chip">{formatDateTime(item.createdAt)}</span>
+            </article>
+          ))}
+        </div>
+      </article>
+
+      <article class="panel glass-panel reveal-up" style={{ animationDelay: '230ms' }}>
+        <div class="section-head compact">
+          <div>
+            <h3>Request Queue</h3>
+            <p>The upload work that still needs attention.</p>
           </div>
           <button type="button" class="ghost-btn compact" onClick={() => onSetDashboardView('editor')}>
             Open queue
           </button>
         </div>
 
-        <div class="list-wrap">
+        <section class="metric-grid slim-metric-grid">
+          {requestStatusBoard.map((item) => (
+            <article class="metric-card metric-card-quiet" key={item.label}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+            </article>
+          ))}
+        </section>
+
+        <div class="activity-feed">
           {contentRequestLoading ? (
             <div class="empty-state">Loading upload requests...</div>
           ) : null}
           {!contentRequestLoading && requestQueuePreview.length === 0 ? (
-            <div class="empty-state">No upload requests yet. Open the content page to add the first item.</div>
+            <div class="empty-state">No upload requests waiting right now.</div>
           ) : null}
           {!contentRequestLoading && requestQueuePreview.map((request) => (
-            <article class={['content-card', 'request-card']} key={`overview-request-${request.id}`}>
-              <div class="card-top">
-                <div class="pill-row">
-                  <span class={['pill', `pill-${request.type}`]}>{request.type}</span>
-                  <span class={['pill', request.status === 'fulfilled' ? 'pill-live' : request.status === 'changes_requested' || request.status === 'rejected' ? 'pill-draft' : 'pill-playlist']}>
-                    {humanizeToken(request.status)}
-                  </span>
-                </div>
-                <span class="muted-chip">{formatDateTime(request.createdAt)}</span>
+            <article class="activity-item" key={`overview-request-${request.id}`}>
+              <div class="activity-item-head">
+                <strong>{request.title}</strong>
+                <span class="activity-status is-info">{request.status.replace(/_/g, ' ')}</span>
               </div>
-              <div class="card-body">
-                <h3>{request.title}</h3>
-                <p>{truncate(request.description, 130)}</p>
-              </div>
+              <p>{truncate(request.description, 110)}</p>
+              <span class="muted-chip">{formatDateTime(request.createdAt)}</span>
             </article>
           ))}
         </div>
       </article>
 
-      <article class="panel glass-panel reveal-up" style={{ animationDelay: '260ms' }}>
-        <div class="section-head split">
+      <article class="panel glass-panel reveal-up" style={{ animationDelay: '250ms' }}>
+        <div class="section-head compact">
           <div>
-            <h2>Latest Content</h2>
-            <p>Your most recent drafts and published updates.</p>
+            <h3>Latest Content</h3>
+            <p>Most recent items already attached to the mobile experience.</p>
           </div>
           <button type="button" class="ghost-btn compact" onClick={() => onSetDashboardView('editor')}>
             Open library
           </button>
         </div>
 
-        <div class="list-wrap">
+        <div class="activity-feed">
           {recentItems.length === 0 ? (
-            <div class="empty-state">No content yet. Open the content page to submit the first upload.</div>
+            <div class="empty-state">No content has been uploaded yet.</div>
           ) : recentItems.map((item) => (
-            <article class="content-card" key={`overview-item-${item.id}`}>
-              <div class="card-top">
-                <div class="pill-row">
-                  <span class={['pill', `pill-${item.type}`]}>{item.type}</span>
-                  <span class={['pill', item.visibility === 'published' ? 'pill-live' : 'pill-draft']}>{item.visibility}</span>
-                </div>
-                <span class="muted-chip">{formatDateTime(item.updatedAt)}</span>
+            <article class="activity-item" key={`overview-item-${item.id}`}>
+              <div class="activity-item-head">
+                <strong>{item.title}</strong>
+                <span class={['activity-status', item.visibility === 'published' ? 'is-success' : 'is-info']}>
+                  {item.visibility}
+                </span>
               </div>
-              <div class="card-body">
-                <h3>{item.title}</h3>
-                <p>{truncate(item.description, 120)}</p>
-              </div>
+              <p>{truncate(item.description, 110)}</p>
+              <span class="muted-chip">{formatDateTime(item.updatedAt)}</span>
             </article>
           ))}
         </div>
