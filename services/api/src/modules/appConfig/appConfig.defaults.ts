@@ -1,7 +1,7 @@
 import type { MobileAppConfig } from './appConfig.schema';
 
 export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
-  version: 4,
+  version: 6,
   privacy: {
     contactEmail: 'privacy@claudygod.org',
     deleteConfirmPhrase: 'I CONFIRM',
@@ -181,8 +181,8 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
         title: 'ClaudyGod Worship Hour',
         subtitle: 'Worship sets, replays, and atmosphere-building collections.',
         contentTypes: ['video', 'playlist', 'live'],
-        actionLabel: 'Watch',
-        destinationTab: 'videos',
+        actionLabel: 'Live',
+        destinationTab: 'live',
         maxItems: 8,
       },
       {
@@ -237,8 +237,8 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
         title: 'Live Now',
         subtitle: 'Current or recent live sessions available from the video screen.',
         contentTypes: ['live', 'video'],
-        actionLabel: 'Live',
-        destinationTab: 'videos',
+        actionLabel: 'Open Live',
+        destinationTab: 'live',
         maxItems: 8,
       },
     ],
@@ -304,10 +304,10 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
   navigation: {
     tabs: [
       { id: 'home', label: 'Home', icon: 'home-filled' },
-      { id: 'videos', label: 'Watch', icon: 'smart-display' },
       { id: 'player', label: 'Music', icon: 'graphic-eq' },
+      { id: 'videos', label: 'Videos', icon: 'smart-display' },
+      { id: 'live', label: 'Live', icon: 'live-tv' },
       { id: 'library', label: 'Library', icon: 'library-music' },
-      { id: 'search', label: 'Search', icon: 'travel-explore' },
     ],
   },
   discovery: {
@@ -369,20 +369,20 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
         id: 'discover',
         title: 'Discover',
         items: [
-          {
-            id: 'videos',
-            icon: 'ondemand-video',
-            label: 'Video Hub',
-            hint: 'Live streams, replays, and featured watchlists',
-            destination: 'tabs.videos',
-          },
-          {
-            id: 'search',
-            icon: 'search',
-            label: 'Search & Discovery',
-            hint: 'Explore songs, videos, playlists, and ministry topics',
-            destination: 'tabs.search',
-          },
+        {
+          id: 'live',
+          icon: 'live-tv',
+          label: 'Live & Replays',
+          hint: 'Current broadcasts, upcoming sessions, and recent replays',
+          destination: 'tabs.live',
+        },
+        {
+          id: 'videos',
+          icon: 'ondemand-video',
+          label: 'Video Hub',
+          hint: 'Featured watchlists, live clips, and message replays',
+          destination: 'tabs.videos',
+        },
           {
             id: 'donate',
             icon: 'volunteer-activism',
@@ -420,5 +420,49 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
         ],
       },
     ],
+  },
+  monetization: {
+    adsEnabled: true,
+    disclosureLabel: 'Sponsored',
+    placements: [
+      {
+        id: 'landing-hero',
+        title: 'Landing promotion',
+        subtitle: 'Featured campaign slot for the public landing experience.',
+        screen: 'landing',
+        enabled: true,
+        maxItems: 1,
+      },
+      {
+        id: 'home-spotlight',
+        title: 'Home spotlight',
+        subtitle: 'Sponsored placement inside the signed-in home feed.',
+        screen: 'home',
+        enabled: true,
+        maxItems: 1,
+      },
+      {
+        id: 'video-spotlight',
+        title: 'Video spotlight',
+        subtitle: 'Campaigns targeted at the video screen.',
+        screen: 'videos',
+        enabled: true,
+        maxItems: 1,
+      },
+      {
+        id: 'music-spotlight',
+        title: 'Music spotlight',
+        subtitle: 'Campaigns targeted at listening flows and the player screen.',
+        screen: 'player',
+        enabled: true,
+        maxItems: 1,
+      },
+    ],
+  },
+  intelligence: {
+    assistantEnabled: true,
+    adCopySuggestionsEnabled: true,
+    providerLabel: 'Integrated AI',
+    defaultTone: 'Confident, concise, ministry-safe',
   },
 };

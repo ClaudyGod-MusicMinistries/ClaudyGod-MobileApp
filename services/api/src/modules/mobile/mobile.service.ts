@@ -1,6 +1,10 @@
 import { pool } from '../../db/pool';
 import { isMissingDatabaseStructureError } from '../../lib/postgres';
 import { listMostPlayedContent } from '../analytics/analytics.service';
+import { listActiveAdCampaignsForPlacement } from '../ads/ads.service';
+import type { AdCampaign } from '../ads/ads.types';
+import { getMobileAppConfig } from '../appConfig/appConfig.service';
+import type { AdPlacementScreen, MobileAppConfig } from '../appConfig/appConfig.schema';
 import type { ContentSourceKind, ContentType } from '../content/content.types';
 import type { LiveSessionStatus } from '../live/live.types';
 import { fetchYouTubeVideos, type YouTubeVideoItem } from '../youtube/youtube.service';
@@ -166,6 +170,30 @@ const toLiveFeedItem = (row: LiveSessionFeedRow): MobileFeedItem => ({
   notificationChannelId: row.channel_id || 'claudygod-live',
 });
 
+const toAdFeedItem = (
+  campaign: AdCampaign,
+  placement: MobileAppConfig['monetization']['placements'][number],
+  disclosureLabel: string,
+): MobileFeedItem => ({
+  id: `ad:${campaign.id}:${placement.id}`,
+  campaignId: campaign.id,
+  title: campaign.headline,
+  description: campaign.body,
+  subtitle: `${disclosureLabel} • ${campaign.sponsorName}`,
+  type: 'ad',
+  imageUrl: campaign.imageUrl || FALLBACK_IMAGE,
+  mediaUrl: campaign.ctaUrl,
+  sourceKind: 'external',
+  appSections: [placement.id],
+  tags: normalizeTextList([placement.screen, ...(campaign.audienceTags ?? [])]),
+  createdAt: campaign.createdAt,
+  updatedAt: campaign.updatedAt,
+  ctaLabel: campaign.ctaLabel,
+  ctaUrl: campaign.ctaUrl,
+  sponsorName: campaign.sponsorName,
+  placement: placement.screen,
+});
+
 const loadPublishedContent = async (limit = 120): Promise<MobileFeedItem[]> => {
   let result;
   try {
@@ -255,8 +283,49 @@ const buildRail = (id: string, title: string, algorithm: string, items: MobileFe
   items: dedupeItems(items).slice(0, limit),
 });
 
+const buildSponsoredRails = async (
+  config: MobileAppConfig,
+): Promise<MobileFeedRail[]> => {
+  if (!config.monetization?.adsEnabled) {
+    return [];
+  }
+
+  const placements = (config.monetization.placements ?? []).filter((placement) => placement.enabled);
+  if (!placements.length) {
+    return [];
+  }
+
+  const placementLimitByScreen = placements.reduce((map, placement) => {
+    const current = map.get(placement.screen) ?? 0;
+    map.set(placement.screen, Math.max(current, placement.maxItems || 1));
+    return map;
+  }, new Map<AdPlacementScreen, number>());
+
+  const campaignEntries = await Promise.all(
+    [...placementLimitByScreen.entries()].map(async ([screen, limit]) => {
+      const items = await listActiveAdCampaignsForPlacement(screen, limit);
+      return [screen, items] as const;
+    }),
+  );
+  const campaignsByScreen = new Map<AdPlacementScreen, AdCampaign[]>(campaignEntries);
+
+  return placements
+    .map((placement) =>
+      buildRail(
+        `sponsored-${placement.id}`,
+        placement.title,
+        `ad_campaign_${placement.screen}_v1`,
+        (campaignsByScreen.get(placement.screen) ?? []).map((campaign) =>
+          toAdFeedItem(campaign, placement, config.monetization.disclosureLabel),
+        ),
+        placement.maxItems || 1,
+      ),
+    )
+    .filter((rail) => rail.items.length > 0);
+};
+
 export const buildMobileFeed = async (): Promise<MobileFeedResponse> => {
-  const [publishedContent, liveSessions, mostPlayedResult, youtubeResult] = await Promise.all([
+  const [publishedContent, liveSessions, mostPlayedResult, youtubeResult, mobileConfigResult] = await Promise.all([
     loadPublishedContent(),
     loadLiveSessions(),
     listMostPlayedContent({ limit: 12, windowDays: 90 }),
@@ -265,6 +334,7 @@ export const buildMobileFeed = async (): Promise<MobileFeedResponse> => {
       fetchedAt: new Date().toISOString(),
       items: [] as YouTubeVideoItem[],
     })),
+    getMobileAppConfig(),
   ]);
 
   const youtubeItems = youtubeResult.items.map(toYouTubeFeedItem);
@@ -315,6 +385,8 @@ export const buildMobileFeed = async (): Promise<MobileFeedResponse> => {
     (left, right) => Date.parse(right.updatedAt || right.createdAt) - Date.parse(left.updatedAt || left.createdAt),
   );
 
+  const sponsoredRails = await buildSponsoredRails(mobileConfigResult.config);
+
   const rails = [
     buildRail('top-picks', 'Top Picks', 'editorial_blend_v1', ranked, 12),
     buildRail('trending-now', 'Trending Now', 'engagement_90d_v1', trending, 12),
@@ -324,12 +396,16 @@ export const buildMobileFeed = async (): Promise<MobileFeedResponse> => {
     buildRail('playlists', 'Playlists', 'collection_curated_v1', playlists, 12),
     buildRail('ministry-updates', 'Ministry Updates', 'announcement_editorial_v1', announcements, 8),
     buildRail('latest-releases', 'Latest Releases', 'recency_v1', recent, 12),
+    ...sponsoredRails,
   ].filter((rail) => rail.items.length > 0);
 
   return {
     generatedAt: new Date().toISOString(),
     featured: ranked[0] ?? null,
     rails,
-    topCategories: rails.map((rail) => rail.title).slice(0, 5),
+    topCategories: rails
+      .filter((rail) => !rail.id.startsWith('sponsored-'))
+      .map((rail) => rail.title)
+      .slice(0, 5),
   };
 };

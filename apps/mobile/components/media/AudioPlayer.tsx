@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo } from 'react';
-import { View } from 'react-native';
+import { Image, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../CustomText';
 import { useAppTheme } from '../../util/colorScheme';
 import { TVTouchable } from '../ui/TVTouchable';
+import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
 
 export interface AudioTrack {
   id: string;
@@ -12,6 +14,7 @@ export interface AudioTrack {
   artist?: string;
   uri: string;
   duration?: string;
+  imageUrl?: string;
 }
 
 interface AudioPlayerProps {
@@ -38,6 +41,7 @@ export function AudioPlayer({
   const theme = useAppTheme();
   const player = useAudioPlayer(track.uri, { updateInterval: 400 });
   const status = useAudioPlayerStatus(player);
+  const isCompact = Boolean(compact);
 
   useEffect(() => {
     void setAudioModeAsync({
@@ -103,38 +107,170 @@ export function AudioPlayer({
     };
   }, [status, track.duration]);
 
+  const artworkSize = isCompact ? 144 : 212;
+  const artworkUrl = track.imageUrl || DEFAULT_CONTENT_IMAGE_URI;
+
   return (
-    <View
+    <LinearGradient
+      colors={
+        theme.scheme === 'dark'
+          ? ['rgba(18,13,31,0.98)', 'rgba(7,6,12,0.98)']
+          : ['rgba(249,247,255,0.98)', 'rgba(238,234,248,0.98)']
+      }
       style={{
-        borderRadius: theme.radius.lg,
-        padding: theme.spacing.lg,
-        backgroundColor: theme.colors.surface,
+        borderRadius: theme.radius.xl,
+        padding: isCompact ? theme.spacing.lg : theme.spacing.xl,
         borderWidth: 1,
         borderColor: theme.colors.border,
+        overflow: 'hidden',
       }}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        {!compact ? (
-          <View style={{ flex: 1 }}>
-            <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
+      <View
+        style={{
+          position: 'absolute',
+          top: -26,
+          left: -18,
+          width: 170,
+          height: 170,
+          borderRadius: 170,
+          backgroundColor: theme.scheme === 'dark' ? 'rgba(141,99,255,0.14)' : 'rgba(126,86,255,0.08)',
+        }}
+      />
+      <View
+        style={{
+          position: 'absolute',
+          bottom: -34,
+          right: -24,
+          width: 190,
+          height: 190,
+          borderRadius: 190,
+          backgroundColor: theme.scheme === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(126,86,255,0.05)',
+        }}
+      />
+
+      <View style={{ gap: isCompact ? 18 : 22 }}>
+        <View
+          style={{
+            flexDirection: isCompact ? 'column' : 'row',
+            alignItems: isCompact ? 'center' : 'flex-start',
+            justifyContent: 'space-between',
+            gap: isCompact ? 18 : 22,
+          }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <PillMeta label="Music player" />
+            <PillMeta label={isPlaying ? 'Playing' : 'Paused'} />
+          </View>
+
+          {onClose ? (
+            <TVTouchable
+              onPress={onClose}
+              style={{
+                minHeight: 34,
+                paddingHorizontal: 12,
+                borderRadius: theme.radius.md,
+                borderWidth: 1,
+                borderColor: theme.colors.border,
+                backgroundColor: theme.colors.surfaceAlt,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              showFocusBorder={false}
+            >
+              <CustomText variant="label" style={{ color: theme.colors.text.primary }}>
+                Close
+              </CustomText>
+            </TVTouchable>
+          ) : null}
+        </View>
+
+        <View style={{ alignItems: 'center', gap: 16 }}>
+          <View
+            style={{
+              width: artworkSize,
+              height: artworkSize,
+              borderRadius: isCompact ? 20 : 22,
+              overflow: 'hidden',
+              borderWidth: 1,
+              borderColor: 'rgba(255,255,255,0.08)',
+              backgroundColor: theme.colors.surfaceAlt,
+              ...theme.shadows.card,
+            }}
+          >
+            <Image source={{ uri: artworkUrl }} resizeMode="cover" style={{ width: '100%', height: '100%' }} />
+          </View>
+
+          <View style={{ width: '100%', gap: 6, alignItems: 'center' }}>
+            <CustomText
+              variant="hero"
+              style={{
+                color: theme.colors.text.primary,
+                textAlign: 'center',
+              }}
+              numberOfLines={2}
+            >
               {track.title}
             </CustomText>
-            <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 4 }}>
-              {track.artist || 'Local file'}
+            <CustomText
+              variant="subtitle"
+              style={{
+                color: theme.colors.text.secondary,
+                textAlign: 'center',
+              }}
+              numberOfLines={2}
+            >
+              {track.artist || 'ClaudyGod Ministries'}
+            </CustomText>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4 }}>
+              <PillMeta label={durationLabel} />
+              <PillMeta label="Connected queue" />
+            </View>
+          </View>
+        </View>
+
+        <View style={{ marginTop: isCompact ? 0 : 2 }}>
+          <View
+            style={{
+              height: 5,
+              borderRadius: 999,
+              backgroundColor: theme.scheme === 'dark' ? 'rgba(255,255,255,0.08)' : theme.colors.muted,
+              overflow: 'hidden',
+            }}
+          >
+            <View
+              style={{
+                width: `${Math.round(progress * 100)}%`,
+                height: 5,
+                backgroundColor: theme.colors.primary,
+              }}
+            />
+          </View>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 }}>
+            <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
+              {positionLabel}
+            </CustomText>
+            <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
+              {durationLabel}
             </CustomText>
           </View>
-        ) : (
-          <View style={{ flex: 1 }} />
-        )}
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        </View>
+
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: isCompact ? 10 : 14,
+          }}
+        >
           {onPrevious ? (
             <TVTouchable
               onPress={onPrevious}
               disabled={!canGoPrevious}
               style={{
-                width: 38,
-                height: 38,
-                borderRadius: 19,
+                width: 44,
+                height: 44,
+                borderRadius: theme.radius.md,
                 backgroundColor: theme.colors.surfaceAlt,
                 borderWidth: 1,
                 borderColor: theme.colors.border,
@@ -144,35 +280,72 @@ export function AudioPlayer({
               }}
               showFocusBorder={false}
             >
-              <MaterialIcons name="skip-previous" size={20} color={theme.colors.text.primary} />
+              <MaterialIcons name="skip-previous" size={22} color={theme.colors.text.primary} />
             </TVTouchable>
           ) : null}
+
           <TVTouchable
-            onPress={togglePlay}
+            onPress={() => seekBySeconds(-10)}
             style={{
-              width: 46,
-              height: 46,
-              borderRadius: 23,
-              backgroundColor: theme.colors.primary,
+              width: 48,
+              height: 48,
+              borderRadius: theme.radius.lg,
+              backgroundColor: theme.colors.surfaceAlt,
+              borderWidth: 1,
+              borderColor: theme.colors.border,
               alignItems: 'center',
               justifyContent: 'center',
             }}
             showFocusBorder={false}
           >
+            <MaterialIcons name="replay-10" size={22} color={theme.colors.text.primary} />
+          </TVTouchable>
+
+          <TVTouchable
+            onPress={togglePlay}
+            style={{
+              width: isCompact ? 74 : 84,
+              height: isCompact ? 74 : 84,
+              borderRadius: isCompact ? 22 : 24,
+              backgroundColor: theme.colors.primary,
+              alignItems: 'center',
+              justifyContent: 'center',
+              ...theme.shadows.card,
+            }}
+            showFocusBorder={false}
+          >
             <MaterialIcons
               name={isPlaying ? 'pause' : 'play-arrow'}
-              size={24}
+              size={isCompact ? 32 : 38}
               color={theme.colors.text.inverse}
             />
           </TVTouchable>
+
+          <TVTouchable
+            onPress={() => seekBySeconds(10)}
+            style={{
+              width: 48,
+              height: 48,
+              borderRadius: theme.radius.lg,
+              backgroundColor: theme.colors.surfaceAlt,
+              borderWidth: 1,
+              borderColor: theme.colors.border,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            showFocusBorder={false}
+          >
+            <MaterialIcons name="forward-10" size={22} color={theme.colors.text.primary} />
+          </TVTouchable>
+
           {onNext ? (
             <TVTouchable
               onPress={onNext}
               disabled={!canGoNext}
               style={{
-                width: 38,
-                height: 38,
-                borderRadius: 19,
+                width: 44,
+                height: 44,
+                borderRadius: theme.radius.md,
                 backgroundColor: theme.colors.surfaceAlt,
                 borderWidth: 1,
                 borderColor: theme.colors.border,
@@ -182,87 +355,33 @@ export function AudioPlayer({
               }}
               showFocusBorder={false}
             >
-              <MaterialIcons name="skip-next" size={20} color={theme.colors.text.primary} />
+              <MaterialIcons name="skip-next" size={22} color={theme.colors.text.primary} />
             </TVTouchable>
           ) : null}
         </View>
-      </View>
 
-      <View style={{ marginTop: theme.spacing.md }}>
-        <View
-          style={{
-            height: 4,
-            borderRadius: 999,
-            backgroundColor: theme.colors.muted,
-            overflow: 'hidden',
-          }}
-        >
-          <View
-            style={{
-              width: `${Math.round(progress * 100)}%`,
-              height: 4,
-              backgroundColor: theme.colors.primary,
-            }}
-          />
-        </View>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 }}>
-          <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
-            {positionLabel}
-          </CustomText>
-          <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
-            {durationLabel}
-          </CustomText>
-        </View>
       </View>
+    </LinearGradient>
+  );
+}
 
-      <View style={{ marginTop: theme.spacing.md, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-        <TVTouchable
-          onPress={() => seekBySeconds(-15)}
-          style={{
-            minWidth: 68,
-            minHeight: 34,
-            borderRadius: theme.radius.md,
-            borderWidth: 1,
-            borderColor: theme.colors.border,
-            backgroundColor: theme.colors.surfaceAlt,
-            paddingHorizontal: 12,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-          showFocusBorder={false}
-        >
-          <CustomText variant="label" style={{ color: theme.colors.text.primary }}>
-            -15s
-          </CustomText>
-        </TVTouchable>
-        <TVTouchable
-          onPress={() => seekBySeconds(15)}
-          style={{
-            minWidth: 68,
-            minHeight: 34,
-            borderRadius: theme.radius.md,
-            borderWidth: 1,
-            borderColor: theme.colors.border,
-            backgroundColor: theme.colors.surfaceAlt,
-            paddingHorizontal: 12,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-          showFocusBorder={false}
-        >
-          <CustomText variant="label" style={{ color: theme.colors.text.primary }}>
-            +15s
-          </CustomText>
-        </TVTouchable>
-      </View>
+function PillMeta({ label }: { label: string }) {
+  const theme = useAppTheme();
 
-      {onClose ? (
-        <TVTouchable onPress={onClose} style={{ marginTop: theme.spacing.md, alignSelf: 'flex-start' }} showFocusBorder={false}>
-          <CustomText variant="label" style={{ color: theme.colors.primary }}>
-            Close player
-          </CustomText>
-        </TVTouchable>
-      ) : null}
+  return (
+    <View
+      style={{
+        borderRadius: 999,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+        backgroundColor: theme.colors.surfaceAlt,
+      }}
+    >
+      <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
+        {label}
+      </CustomText>
     </View>
   );
 }

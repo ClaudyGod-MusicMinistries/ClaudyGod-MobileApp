@@ -3,6 +3,7 @@ import { env } from '../../config/env';
 import type { AuthResponse } from './auth.types';
 
 const DEFAULT_SESSION_COOKIE_NAME = 'claudygod_session';
+const DEFAULT_REFRESH_COOKIE_NAME = 'claudygod_refresh_session';
 const WEB_CLIENT_PLATFORM = 'web';
 
 const serializeCookie = (
@@ -62,11 +63,20 @@ const parseCookies = (cookieHeader?: string): Record<string, string> => {
 export const getAuthSessionCookieName = (): string =>
   env.AUTH_SESSION_COOKIE_NAME || DEFAULT_SESSION_COOKIE_NAME;
 
+export const getAuthRefreshCookieName = (): string =>
+  env.AUTH_REFRESH_COOKIE_NAME || DEFAULT_REFRESH_COOKIE_NAME;
+
 export const isWebClientRequest = (request: Request): boolean =>
   request.header('x-claudy-client-platform')?.trim().toLowerCase() === WEB_CLIENT_PLATFORM;
 
 export const getAuthTokenFromRequest = (request: Request): string | null => {
   const cookieName = getAuthSessionCookieName();
+  const cookies = parseCookies(request.headers.cookie);
+  return cookies[cookieName] ?? null;
+};
+
+export const getRefreshTokenFromRequest = (request: Request): string | null => {
+  const cookieName = getAuthRefreshCookieName();
   const cookies = parseCookies(request.headers.cookie);
   return cookies[cookieName] ?? null;
 };
@@ -83,10 +93,43 @@ export const applyAuthSessionCookie = (response: Response, accessToken: string):
   );
 };
 
+export const applyAuthRefreshCookie = (response: Response, refreshToken: string): void => {
+  response.append(
+    'Set-Cookie',
+    serializeCookie(getAuthRefreshCookieName(), refreshToken, {
+      httpOnly: true,
+      secure: env.NODE_ENV === 'production',
+      sameSite: 'Lax',
+      path: '/',
+      maxAge: env.JWT_REFRESH_TTL_DAYS * 24 * 60 * 60,
+    }),
+  );
+};
+
+export const applyAuthSessionCookies = (
+  response: Response,
+  payload: Pick<AuthResponse, 'accessToken' | 'refreshToken'>,
+): void => {
+  applyAuthSessionCookie(response, payload.accessToken);
+  if (payload.refreshToken) {
+    applyAuthRefreshCookie(response, payload.refreshToken);
+  }
+};
+
 export const clearAuthSessionCookie = (response: Response): void => {
   response.append(
     'Set-Cookie',
     serializeCookie(getAuthSessionCookieName(), '', {
+      httpOnly: true,
+      secure: env.NODE_ENV === 'production',
+      sameSite: 'Lax',
+      path: '/',
+      maxAge: 0,
+    }),
+  );
+  response.append(
+    'Set-Cookie',
+    serializeCookie(getAuthRefreshCookieName(), '', {
       httpOnly: true,
       secure: env.NODE_ENV === 'production',
       sameSite: 'Lax',
@@ -105,7 +148,7 @@ export const respondWithAuthSession = (
   response.setHeader('Cache-Control', 'no-store');
 
   if (isWebClientRequest(request)) {
-    applyAuthSessionCookie(response, payload.accessToken);
+    applyAuthSessionCookies(response, payload);
     response.status(statusCode).json({
       user: payload.user,
       requiresEmailVerification: payload.requiresEmailVerification ?? false,

@@ -1,4 +1,5 @@
 import {
+  AD_PLACEMENT_SCREEN_OPTIONS,
   DISCOVERY_CATEGORY_OPTIONS,
   MOBILE_CONTENT_TYPE_OPTIONS,
   MOBILE_LAYOUT_GROUPS,
@@ -117,6 +118,92 @@ function LayoutSectionCard(props) {
   );
 }
 
+function AdPlacementCard(props) {
+  const {
+    placement,
+    index,
+    onReadValue,
+    onUpdate,
+    onRemove,
+  } = props;
+
+  return (
+    <article class="mobile-config-section-card">
+      <div class="mobile-config-card-head">
+        <strong>{placement.title || 'Sponsored placement'}</strong>
+        <button type="button" class="ghost-btn compact" onClick={() => onRemove(index)}>
+          Remove
+        </button>
+      </div>
+
+      <div class="grid-2">
+        <label>
+          Placement title
+          <input
+            value={placement.title || ''}
+            onInput={(event) => onUpdate(index, { title: onReadValue(event) })}
+            placeholder="Sponsored placement"
+          />
+        </label>
+        <label>
+          Placement ID
+          <input
+            value={placement.id || ''}
+            onInput={(event) => onUpdate(index, { id: onReadValue(event) })}
+            placeholder="placement-id"
+          />
+        </label>
+      </div>
+
+      <label>
+        Subtitle
+        <textarea
+          rows={3}
+          value={placement.subtitle || ''}
+          onInput={(event) => onUpdate(index, { subtitle: onReadValue(event) })}
+          placeholder="Short note for where this sponsored slot should appear."
+        />
+      </label>
+
+      <div class="grid-3">
+        <label>
+          Screen
+          <select
+            value={placement.screen || 'home'}
+            onChange={(event) => onUpdate(index, { screen: onReadValue(event) })}
+          >
+            {AD_PLACEMENT_SCREEN_OPTIONS.map((option) => (
+              <option value={option.value} key={`${placement.id}-${option.value}`}>{option.label}</option>
+            ))}
+          </select>
+        </label>
+
+        <label>
+          Max items
+          <input
+            type="number"
+            min="1"
+            max="8"
+            value={placement.maxItems ?? 1}
+            onInput={(event) => onUpdate(index, { maxItems: Number(onReadValue(event) || 1) })}
+          />
+        </label>
+
+        <label>
+          Enabled
+          <select
+            value={placement.enabled === false ? 'false' : 'true'}
+            onChange={(event) => onUpdate(index, { enabled: onReadValue(event) === 'true' })}
+          >
+            <option value="true">Enabled</option>
+            <option value="false">Disabled</option>
+          </select>
+        </label>
+      </div>
+    </article>
+  );
+}
+
 export default function MobileConfigView(props) {
   const {
     mobileAppConfigValue,
@@ -140,12 +227,19 @@ export default function MobileConfigView(props) {
     onAddSettingsHubItem,
     onUpdateSettingsHubItem,
     onRemoveSettingsHubItem,
+    onAddAdPlacement,
+    onUpdateAdPlacement,
+    onRemoveAdPlacement,
+    onUpdateMonetization,
+    onUpdateIntelligence,
   } = props;
 
   const config = mobileAppConfigValue || {};
   const layout = config.layout || {};
   const discovery = config.discovery || {};
   const settingsHub = config.settingsHub || {};
+  const monetization = config.monetization || {};
+  const intelligence = config.intelligence || {};
 
   return (
     <section class="mobile-config-grid">
@@ -194,6 +288,100 @@ export default function MobileConfigView(props) {
             </p>
           </div>
         )}
+      </article>
+
+      <article class="panel glass-panel reveal-up" style={{ animationDelay: '190ms' }}>
+        <div class="section-head split">
+          <div>
+            <h2>Ads And AI</h2>
+            <p>Control sponsored placements and the built-in assistant behavior from the same mobile configuration.</p>
+          </div>
+          <button type="button" class="ghost-btn compact" onClick={onAddAdPlacement}>
+            Add Placement
+          </button>
+        </div>
+
+        <div class="mobile-config-layout-stack">
+          <div class="grid-2">
+            <label>
+              Ads enabled
+              <select
+                value={monetization.adsEnabled === false ? 'false' : 'true'}
+                onChange={(event) => onUpdateMonetization({ adsEnabled: onReadValue(event) === 'true' })}
+              >
+                <option value="true">Enabled</option>
+                <option value="false">Disabled</option>
+              </select>
+            </label>
+            <label>
+              Disclosure label
+              <input
+                value={monetization.disclosureLabel || ''}
+                onInput={(event) => onUpdateMonetization({ disclosureLabel: onReadValue(event) })}
+                placeholder="Sponsored"
+              />
+            </label>
+          </div>
+
+          <div class="grid-2">
+            <label>
+              Assistant enabled
+              <select
+                value={intelligence.assistantEnabled === false ? 'false' : 'true'}
+                onChange={(event) => onUpdateIntelligence({ assistantEnabled: onReadValue(event) === 'true' })}
+              >
+                <option value="true">Enabled</option>
+                <option value="false">Disabled</option>
+              </select>
+            </label>
+            <label>
+              Ad copy suggestions
+              <select
+                value={intelligence.adCopySuggestionsEnabled === false ? 'false' : 'true'}
+                onChange={(event) => onUpdateIntelligence({ adCopySuggestionsEnabled: onReadValue(event) === 'true' })}
+              >
+                <option value="true">Enabled</option>
+                <option value="false">Disabled</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="grid-2">
+            <label>
+              Provider label
+              <input
+                value={intelligence.providerLabel || ''}
+                onInput={(event) => onUpdateIntelligence({ providerLabel: onReadValue(event) })}
+                placeholder="Integrated AI"
+              />
+            </label>
+            <label>
+              Default tone
+              <input
+                value={intelligence.defaultTone || ''}
+                onInput={(event) => onUpdateIntelligence({ defaultTone: onReadValue(event) })}
+                placeholder="Confident, concise, ministry-safe"
+              />
+            </label>
+          </div>
+
+          {Array.isArray(monetization.placements) && monetization.placements.length ? (
+            <div class="mobile-config-section-list">
+              {monetization.placements.map((placement, index) => (
+                <AdPlacementCard
+                  key={`${placement.id || index}-placement`}
+                  placement={placement}
+                  index={index}
+                  onReadValue={onReadValue}
+                  onUpdate={onUpdateAdPlacement}
+                  onRemove={onRemoveAdPlacement}
+                />
+              ))}
+            </div>
+          ) : (
+            <div class="empty-state">No sponsored placements configured yet.</div>
+          )}
+        </div>
       </article>
 
       <article class="panel glass-panel reveal-up" style={{ animationDelay: '210ms' }}>

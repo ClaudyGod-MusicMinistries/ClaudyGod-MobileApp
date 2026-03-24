@@ -8,6 +8,8 @@ import { errorHandler } from './middleware/errorHandler';
 import { notFoundHandler } from './middleware/notFoundHandler';
 import { analyticsRouter } from './modules/analytics/analytics.routes';
 import { adminRouter } from './modules/admin/admin.routes';
+import { adminAiRouter } from './modules/ai/ai.routes';
+import { adminAdsRouter } from './modules/ads/ads.routes';
 import { adminAppConfigRouter, mobileAppConfigRouter } from './modules/appConfig/appConfig.routes';
 import { authRouter } from './modules/auth/auth.routes';
 import { contentRouter } from './modules/content/content.routes';
@@ -121,6 +123,8 @@ export const createApp = () => {
   app.use('/v1/mobile/app', mobileAppConfigRouter);
   app.use('/v1/mobile/word-of-day', mobileWordOfDayRouter);
   app.use('/v1/admin', adminRouter);
+  app.use('/v1/admin/ads', adminAdsRouter);
+  app.use('/v1/admin/ai', adminAiRouter);
   app.use('/v1/admin/app-config', adminAppConfigRouter);
   app.use('/v1/admin/word-of-day', adminWordOfDayRouter);
   app.use('/v1/youtube', youtubeRouter);

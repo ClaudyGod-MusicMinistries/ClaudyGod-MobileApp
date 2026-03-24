@@ -142,6 +142,8 @@ const envSchema = z
     REDIS_URL: z.string().trim().min(1),
     JWT_ACCESS_SECRET: z.string().min(32, 'JWT_ACCESS_SECRET must contain at least 32 characters'),
     JWT_ACCESS_TTL: z.string().trim().min(1).default('1d'),
+    JWT_REFRESH_SECRET: z.string().trim().default(''),
+    JWT_REFRESH_TTL_DAYS: z.coerce.number().int().min(1).max(180).default(30),
     BCRYPT_ROUNDS: z.coerce.number().int().min(10).max(15).default(12),
     CORS_ORIGIN: z.string().trim().default(''),
 
@@ -151,6 +153,7 @@ const envSchema = z
     AUTH_SIGN_IN_PATH: pathSegment('AUTH_SIGN_IN_PATH', '/sign-in'),
     AUTH_ACCOUNT_REVIEW_PATH: pathSegment('AUTH_ACCOUNT_REVIEW_PATH', '/settings/account'),
     AUTH_SESSION_COOKIE_NAME: z.string().trim().min(3).max(80).default('claudygod_session'),
+    AUTH_REFRESH_COOKIE_NAME: z.string().trim().min(3).max(80).default('claudygod_refresh_session'),
     AUTH_VERIFICATION_TOKEN_TTL_MINUTES: z.coerce.number().int().min(10).max(10080).default(1440),
     AUTH_PASSWORD_RESET_TOKEN_TTL_MINUTES: z.coerce.number().int().min(5).max(1440).default(30),
     AUTH_REQUIRE_EMAIL_VERIFICATION: toBoolean(false),
@@ -196,6 +199,11 @@ const envSchema = z
     SEED_ADMIN_PASSWORD: z.string().min(8).default('ChangeMe123!'),
     SEED_ADMIN_DISPLAY_NAME: z.string().trim().min(2).max(80).default('Claudy Admin'),
     SEED_ADMIN_ON_BOOT: toBoolean(runtimeEnv === 'development'),
+    AI_PROVIDER_NAME: z.string().trim().min(2).max(80).default('Integrated AI'),
+    AI_PROVIDER_URL: optionalUrl(),
+    AI_PROVIDER_API_KEY: z.string().optional().default(''),
+    AI_MODEL: z.string().trim().max(120).default(''),
+    AI_TIMEOUT_MS: z.coerce.number().int().min(1000).max(120000).default(15000),
   })
   .superRefine((value, ctx) => {
     if (looksLikeJwtToken(value.JWT_ACCESS_SECRET)) {
@@ -374,6 +382,18 @@ const envSchema = z
         });
       }
 
+      if (
+        value.JWT_REFRESH_SECRET &&
+        (value.JWT_REFRESH_SECRET.includes('replace-this') ||
+          value.JWT_REFRESH_SECRET.toLowerCase().includes('changeme'))
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['JWT_REFRESH_SECRET'],
+          message: 'JWT_REFRESH_SECRET must be rotated before production',
+        });
+      }
+
       if (value.MOBILE_API_KEY === 'dev-mobile-api-key' || value.MOBILE_API_KEY.length < 16) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -432,6 +452,7 @@ const smtpEnabled =
 
 export const env = {
   ...raw,
+  JWT_REFRESH_SECRET: raw.JWT_REFRESH_SECRET || raw.JWT_ACCESS_SECRET,
   CORS_ORIGINS: splitCsv(raw.CORS_ORIGIN),
   ADMIN_ALERT_EMAILS_LIST: splitCsv(raw.ADMIN_ALERT_EMAILS),
   SUPABASE_ENABLED: Boolean(raw.SUPABASE_URL && raw.SUPABASE_SERVICE_ROLE_KEY),

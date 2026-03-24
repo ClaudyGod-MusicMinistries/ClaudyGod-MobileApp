@@ -49,22 +49,26 @@ export function TVTouchable({
       : null;
 
   const hoverStyle: ViewStyle | null =
-    isWeb && isHovered && !disableHoverStyle
+    isWeb && isHovered && !disableHoverStyle && !props.disabled
       ? {
-          opacity: 0.96,
+          opacity: 0.98,
+          transform: [{ translateY: -1 }],
           shadowColor: '#000000',
-          shadowOpacity: 0.16,
-          shadowRadius: 12,
-          shadowOffset: { width: 0, height: 6 },
+          shadowOpacity: 0.18,
+          shadowRadius: 14,
+          shadowOffset: { width: 0, height: 8 },
         }
       : null;
 
-  const pressedStyle: ViewStyle | null = isPressed ? { opacity: activeOpacity } : null;
+  const pressedStyle: ViewStyle | null =
+    isPressed && !props.disabled ? { opacity: activeOpacity, transform: [{ scale: 0.985 }] } : null;
 
   const webCursorStyle = isWeb
     ? ({
         cursor: props.disabled ? 'default' : 'pointer',
-        transitionDuration: '140ms',
+        transitionDuration: '160ms',
+        transitionProperty: 'transform, opacity, box-shadow, background-color, border-color',
+        transitionTimingFunction: 'ease',
       } as ViewStyle)
     : null;
 

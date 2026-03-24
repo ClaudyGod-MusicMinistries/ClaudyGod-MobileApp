@@ -3,18 +3,10 @@ import { View } from 'react-native';
 import TabBar from '../../components/TabBar';
 import { useColorScheme } from '../../util/colorScheme';
 import { colors } from '../../constants/color';
-import { useRequireMobileSession } from '../../hooks/useRequireMobileSession';
-
-const PROTECTED_ROUTE_BACKGROUND = '#07080E';
 
 export default function TabsLayout() {
   const colorScheme = useColorScheme();
   const currentColors = colors[colorScheme] ?? colors.dark;
-  const isAuthorized = useRequireMobileSession();
-
-  if (!isAuthorized) {
-    return <View style={{ flex: 1, backgroundColor: PROTECTED_ROUTE_BACKGROUND }} />;
-  }
 
   return (
     <View style={{ flex: 1, backgroundColor: currentColors.background }}>
@@ -26,10 +18,11 @@ export default function TabsLayout() {
         tabBar={(props) => <TabBar {...props} />}
       >
         <Tabs.Screen name="home" />
-        <Tabs.Screen name="videos" />
         <Tabs.Screen name="player" />
+        <Tabs.Screen name="videos" />
+        <Tabs.Screen name="live" />
         <Tabs.Screen name="library" />
-        <Tabs.Screen name="search" />
+        <Tabs.Screen name="search" options={{ href: null }} />
         <Tabs.Screen name="settings" options={{ href: null }} />
         <Tabs.Screen name="PlaySection" options={{ href: null }} />
         <Tabs.Screen name="Favourites" options={{ href: null }} />

@@ -113,6 +113,33 @@ const migrations = [
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`,
+  `CREATE TABLE IF NOT EXISTS auth_activity_events (
+    id BIGSERIAL PRIMARY KEY,
+    user_id UUID REFERENCES app_users(id) ON DELETE SET NULL,
+    email TEXT,
+    event_key TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'info' CHECK (status IN ('success', 'failure', 'info')),
+    ip_address TEXT,
+    user_agent TEXT,
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  `CREATE TABLE IF NOT EXISTS auth_refresh_sessions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,
+    session_family_id UUID NOT NULL,
+    rotated_from_session_id UUID REFERENCES auth_refresh_sessions(id) ON DELETE SET NULL,
+    refresh_token_hash TEXT NOT NULL UNIQUE,
+    revoked_at TIMESTAMPTZ,
+    expires_at TIMESTAMPTZ NOT NULL,
+    created_ip TEXT,
+    created_user_agent TEXT,
+    last_used_ip TEXT,
+    last_used_user_agent TEXT,
+    last_used_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
   `CREATE TABLE IF NOT EXISTS upload_sessions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     channel TEXT NOT NULL CHECK (channel IN ('admin', 'mobile')),
@@ -335,6 +362,38 @@ const migrations = [
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     UNIQUE (message_date)
   )`,
+  `CREATE TABLE IF NOT EXISTS ad_campaigns (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    placement TEXT NOT NULL CHECK (placement IN ('landing', 'home', 'videos', 'player', 'live', 'library', 'search')),
+    status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'active', 'paused', 'archived')),
+    sponsor_name TEXT NOT NULL,
+    headline TEXT NOT NULL,
+    body_text TEXT NOT NULL,
+    cta_label TEXT NOT NULL,
+    cta_url TEXT NOT NULL,
+    image_url TEXT,
+    audience_tags TEXT[] NOT NULL DEFAULT '{}',
+    daily_budget_cents INTEGER NOT NULL DEFAULT 0 CHECK (daily_budget_cents >= 0),
+    weight INTEGER NOT NULL DEFAULT 100 CHECK (weight >= 1 AND weight <= 1000),
+    starts_at TIMESTAMPTZ,
+    ends_at TIMESTAMPTZ,
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_by UUID REFERENCES app_users(id) ON DELETE SET NULL,
+    updated_by UUID REFERENCES app_users(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  `CREATE TABLE IF NOT EXISTS ai_generation_runs (
+    id BIGSERIAL PRIMARY KEY,
+    feature_key TEXT NOT NULL,
+    provider_name TEXT NOT NULL,
+    mode TEXT NOT NULL CHECK (mode IN ('heuristic', 'remote')),
+    actor_user_id UUID REFERENCES app_users(id) ON DELETE SET NULL,
+    input_payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+    output_payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
   `CREATE INDEX IF NOT EXISTS idx_content_items_visibility_created_at
     ON content_items (visibility, created_at DESC)`,
   `CREATE INDEX IF NOT EXISTS idx_content_items_author_created_at
@@ -356,6 +415,10 @@ const migrations = [
     ON content_jobs (status, created_at DESC)`,
   `CREATE INDEX IF NOT EXISTS idx_email_jobs_status_created_at
     ON email_jobs (status, created_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_ad_campaigns_status_placement_dates
+    ON ad_campaigns (status, placement, starts_at, ends_at, updated_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_ai_generation_runs_feature_created_at
+    ON ai_generation_runs (feature_key, created_at DESC)`,
   `CREATE INDEX IF NOT EXISTS idx_auth_action_tokens_user_type_created_at
     ON auth_action_tokens (user_id, token_type, created_at DESC)`,
   `CREATE INDEX IF NOT EXISTS idx_auth_action_tokens_token_type_expires_at
@@ -368,6 +431,14 @@ const migrations = [
     ON pending_password_resets (email, created_at DESC)`,
   `CREATE INDEX IF NOT EXISTS idx_pending_password_resets_expires_at
     ON pending_password_resets (expires_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_auth_activity_events_event_created_at
+    ON auth_activity_events (event_key, created_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_auth_activity_events_user_created_at
+    ON auth_activity_events (user_id, created_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_auth_refresh_sessions_user_expires_at
+    ON auth_refresh_sessions (user_id, expires_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_auth_refresh_sessions_family_active
+    ON auth_refresh_sessions (session_family_id, revoked_at, expires_at DESC)`,
   `CREATE INDEX IF NOT EXISTS idx_upload_sessions_channel_status_created_at
     ON upload_sessions (channel, status, created_at DESC)`,
   `CREATE INDEX IF NOT EXISTS idx_content_submission_requests_status_created_at
@@ -458,6 +529,13 @@ const migrations = [
       IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'set_pending_password_resets_updated_at') THEN
         CREATE TRIGGER set_pending_password_resets_updated_at
         BEFORE UPDATE ON pending_password_resets
+        FOR EACH ROW
+        EXECUTE FUNCTION set_updated_at();
+      END IF;
+
+      IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'set_auth_refresh_sessions_updated_at') THEN
+        CREATE TRIGGER set_auth_refresh_sessions_updated_at
+        BEFORE UPDATE ON auth_refresh_sessions
         FOR EACH ROW
         EXECUTE FUNCTION set_updated_at();
       END IF;

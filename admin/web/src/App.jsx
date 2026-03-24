@@ -8,6 +8,7 @@ import {
   CONTENT_TYPES,
   GOOGLE_LOGIN_URL,
   INACTIVITY_TIMEOUT_MS,
+  MOBILE_PREVIEW_URL_KEY,
   VISIBILITY_OPTIONS,
   YOUTUBE_SYNC_DEFAULT_LIMIT,
   normalizePreviewUrl,
@@ -20,9 +21,11 @@ import AuthScreen from './features/auth/AuthScreen';
 import EditContentModal from './features/content/EditContentModal';
 import BootScreen from './features/dashboard/BootScreen';
 import EditorView from './features/dashboard/EditorView';
+import OverviewView from './features/dashboard/OverviewView';
 import MobilePreviewView from './features/dashboard/MobilePreviewView';
 import LiveView from './features/live/LiveView';
 import MobileConfigView from './features/mobile-config/MobileConfigView';
+import AdsAiView from './features/ads/AdsAiView';
 import {
   acceptFromPolicy,
   describeHealthCheckDetail,
@@ -43,6 +46,7 @@ import {
 } from './shared/utils/sections';
 import {
   cloneMobileConfig,
+  createAdPlacement,
   createDiscoveryShortcut,
   createLayoutSection,
   createSettingsHubItem,
@@ -94,8 +98,11 @@ export default defineComponent({
     const liveDetailLoading = ref(false);
     const liveSaving = ref(false);
     const liveTransitioningId = ref(null);
+    const adsLoading = ref(false);
+    const adCampaignSaving = ref(false);
+    const adSuggestionLoading = ref(false);
     const headerMenuOpen = ref(false);
-    const dashboardView = ref('editor');
+    const dashboardView = ref('overview');
     const inactivityTimerId = ref(null);
     const authResponseInterceptorId = ref(null);
     const viewportWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1366);
@@ -138,8 +145,10 @@ export default defineComponent({
     });
 
     const liveSessions = ref([]);
+    const adCampaigns = ref([]);
     const selectedLiveSessionId = ref('');
     const selectedLiveSession = ref(null);
+    const selectedAdCampaignId = ref('');
     const liveForm = reactive({
       title: '',
       description: '',
@@ -152,6 +161,23 @@ export default defineComponent({
       viewerCount: 0,
       tagsCsv: '',
       appSectionsCsv: 'live-now',
+    });
+    const adCampaignForm = reactive({
+      name: '',
+      placement: 'home',
+      status: 'draft',
+      sponsorName: '',
+      headline: '',
+      body: '',
+      ctaLabel: 'Open now',
+      ctaUrl: '',
+      imageUrl: '',
+      audienceTagsCsv: '',
+      dailyBudgetCents: 0,
+      weight: 100,
+      startsAt: '',
+      endsAt: '',
+      notes: '',
     });
 
     const filterState = reactive({
@@ -193,8 +219,22 @@ export default defineComponent({
         draftContent: 0,
         openSupportRequests: 0,
         activePrivacyRequests: 0,
+        pendingSignups: 0,
+        activeSessions: 0,
+        loginSuccessLast7Days: 0,
+        loginFailuresLast7Days: 0,
+        verificationsLast7Days: 0,
+        passwordResetsLast30Days: 0,
         totalFeedback: 0,
         averageRating: null,
+      },
+      authFunnel: {
+        pendingSignups: 0,
+        activeSessions: 0,
+        loginSuccessLast7Days: 0,
+        loginFailuresLast7Days: 0,
+        verificationsLast7Days: 0,
+        passwordResetsLast30Days: 0,
       },
       recentUsers: [],
       feedback: [],
@@ -202,6 +242,7 @@ export default defineComponent({
       signupTrend: [],
       smartInsights: [],
       recentAutomation: [],
+      recentAuthActivity: [],
       generatedAt: '',
     });
     const wordOfDayForm = reactive({
@@ -234,6 +275,11 @@ export default defineComponent({
     const portalRoleLabel = computed(() => (isAdmin.value ? 'Admin' : 'Publisher'));
     const isCompactHeader = computed(() => viewportWidth.value <= 1024);
     const googleLoginEnabled = computed(() => Boolean(GOOGLE_LOGIN_URL));
+    const portalNavItems = computed(() =>
+      isAdmin.value
+        ? ADMIN_NAV_ITEMS
+        : ADMIN_NAV_ITEMS.filter((item) => item.id === 'overview' || item.id === 'editor' || item.id === 'mobile-preview'),
+    );
     const publicHealthSummary = computed(() => {
       if (publicHealthLoading.value) return 'Preparing your portal';
       if (!publicHealth.value) return 'Checking access';
@@ -371,13 +417,14 @@ export default defineComponent({
       authMode.value = 'login';
       authForm.email = user.email || authForm.email.trim();
       resetAuthSecrets();
-      dashboardView.value = 'editor';
+      dashboardView.value = 'overview';
 
       await Promise.all([
         fetchManagedContent(freshToken || undefined),
         fetchContentRequests(freshToken || undefined),
         fetchUploadPolicies(freshToken || undefined),
         user.role === 'ADMIN' ? fetchLiveSessions(freshToken || undefined) : Promise.resolve(),
+        user.role === 'ADMIN' ? fetchAdCampaigns() : Promise.resolve(),
         user.role === 'ADMIN' ? fetchAdminOperationsDashboard() : Promise.resolve(),
         user.role === 'ADMIN' ? fetchMobileAppConfig() : Promise.resolve(),
         user.role === 'ADMIN' ? fetchWordOfDayDashboard() : Promise.resolve(),
@@ -404,7 +451,7 @@ export default defineComponent({
     }
 
     function setDashboardView(view) {
-      dashboardView.value = ['live', 'editor', 'mobile-preview', 'mobile-config'].includes(view) ? view : 'editor';
+      dashboardView.value = ['overview', 'live', 'editor', 'mobile-preview', 'mobile-config', 'ads-ai'].includes(view) ? view : 'overview';
       closeHeaderMenu();
     }
 
@@ -461,6 +508,35 @@ export default defineComponent({
       }
       if (!Array.isArray(next.settingsHub.sections)) {
         next.settingsHub.sections = [];
+      }
+
+      if (!next.monetization || typeof next.monetization !== 'object') {
+        next.monetization = {};
+      }
+      if (typeof next.monetization.adsEnabled !== 'boolean') {
+        next.monetization.adsEnabled = true;
+      }
+      if (typeof next.monetization.disclosureLabel !== 'string') {
+        next.monetization.disclosureLabel = 'Sponsored';
+      }
+      if (!Array.isArray(next.monetization.placements)) {
+        next.monetization.placements = [];
+      }
+
+      if (!next.intelligence || typeof next.intelligence !== 'object') {
+        next.intelligence = {};
+      }
+      if (typeof next.intelligence.assistantEnabled !== 'boolean') {
+        next.intelligence.assistantEnabled = true;
+      }
+      if (typeof next.intelligence.adCopySuggestionsEnabled !== 'boolean') {
+        next.intelligence.adCopySuggestionsEnabled = true;
+      }
+      if (typeof next.intelligence.providerLabel !== 'string') {
+        next.intelligence.providerLabel = 'Integrated AI';
+      }
+      if (typeof next.intelligence.defaultTone !== 'string') {
+        next.intelligence.defaultTone = 'Confident, concise, ministry-safe';
       }
 
       return next;
@@ -589,6 +665,38 @@ export default defineComponent({
       });
     }
 
+    function addAdPlacement() {
+      mutateMobileAppConfig((next) => {
+        next.monetization.placements.push(createAdPlacement());
+      });
+    }
+
+    function updateAdPlacement(index, patch) {
+      mutateMobileAppConfig((next) => {
+        const target = next.monetization.placements[index];
+        if (!target) return;
+        Object.assign(target, patch);
+      });
+    }
+
+    function removeAdPlacement(index) {
+      mutateMobileAppConfig((next) => {
+        next.monetization.placements.splice(index, 1);
+      });
+    }
+
+    function updateMonetizationConfig(patch) {
+      mutateMobileAppConfig((next) => {
+        Object.assign(next.monetization, patch);
+      });
+    }
+
+    function updateIntelligenceConfig(patch) {
+      mutateMobileAppConfig((next) => {
+        Object.assign(next.intelligence, patch);
+      });
+    }
+
     function loadWordOfDayEntry(entry) {
       wordOfDayForm.title = entry.title || 'Word for Today';
       wordOfDayForm.passage = entry.passage || '';
@@ -644,6 +752,44 @@ export default defineComponent({
       liveForm.appSectionsCsv = 'live-now';
     }
 
+    function resetAdCampaignForm() {
+      selectedAdCampaignId.value = '';
+      adCampaignForm.name = '';
+      adCampaignForm.placement = 'home';
+      adCampaignForm.status = 'draft';
+      adCampaignForm.sponsorName = '';
+      adCampaignForm.headline = '';
+      adCampaignForm.body = '';
+      adCampaignForm.ctaLabel = 'Open now';
+      adCampaignForm.ctaUrl = '';
+      adCampaignForm.imageUrl = '';
+      adCampaignForm.audienceTagsCsv = '';
+      adCampaignForm.dailyBudgetCents = 0;
+      adCampaignForm.weight = 100;
+      adCampaignForm.startsAt = '';
+      adCampaignForm.endsAt = '';
+      adCampaignForm.notes = '';
+    }
+
+    function loadAdCampaignForm(campaign) {
+      selectedAdCampaignId.value = campaign?.id || '';
+      adCampaignForm.name = campaign?.name || '';
+      adCampaignForm.placement = campaign?.placement || 'home';
+      adCampaignForm.status = campaign?.status || 'draft';
+      adCampaignForm.sponsorName = campaign?.sponsorName || '';
+      adCampaignForm.headline = campaign?.headline || '';
+      adCampaignForm.body = campaign?.body || '';
+      adCampaignForm.ctaLabel = campaign?.ctaLabel || 'Open now';
+      adCampaignForm.ctaUrl = campaign?.ctaUrl || '';
+      adCampaignForm.imageUrl = campaign?.imageUrl || '';
+      adCampaignForm.audienceTagsCsv = Array.isArray(campaign?.audienceTags) ? campaign.audienceTags.join(', ') : '';
+      adCampaignForm.dailyBudgetCents = Number(campaign?.dailyBudgetCents || 0);
+      adCampaignForm.weight = Number(campaign?.weight || 100);
+      adCampaignForm.startsAt = campaign?.startsAt ? new Date(campaign.startsAt).toISOString().slice(0, 16) : '';
+      adCampaignForm.endsAt = campaign?.endsAt ? new Date(campaign.endsAt).toISOString().slice(0, 16) : '';
+      adCampaignForm.notes = typeof campaign?.metadata?.notes === 'string' ? campaign.metadata.notes : '';
+    }
+
     function loadLiveForm(session) {
       liveForm.title = session?.title || '';
       liveForm.description = session?.description || '';
@@ -660,6 +806,11 @@ export default defineComponent({
       liveForm.appSectionsCsv = Array.isArray(session?.appSections) && session.appSections.length
         ? session.appSections.join(', ')
         : 'live-now';
+    }
+
+    function selectAdCampaign(campaign) {
+      loadAdCampaignForm(campaign);
+      setDashboardView('ads-ai');
     }
 
     function prepareNewLiveSession() {
@@ -820,9 +971,12 @@ export default defineComponent({
       youtubeDraftItems.value = [];
       uploadPolicies.value = [];
       liveSessions.value = [];
+      adCampaigns.value = [];
       selectedLiveSession.value = null;
       selectedLiveSessionId.value = '';
+      selectedAdCampaignId.value = '';
       resetLiveForm();
+      resetAdCampaignForm();
       editContentOpen.value = false;
       editingContentId.value = null;
       sectionEditorItemId.value = '';
@@ -843,8 +997,22 @@ export default defineComponent({
           draftContent: 0,
           openSupportRequests: 0,
           activePrivacyRequests: 0,
+          pendingSignups: 0,
+          activeSessions: 0,
+          loginSuccessLast7Days: 0,
+          loginFailuresLast7Days: 0,
+          verificationsLast7Days: 0,
+          passwordResetsLast30Days: 0,
           totalFeedback: 0,
           averageRating: null,
+        },
+        authFunnel: {
+          pendingSignups: 0,
+          activeSessions: 0,
+          loginSuccessLast7Days: 0,
+          loginFailuresLast7Days: 0,
+          verificationsLast7Days: 0,
+          passwordResetsLast30Days: 0,
         },
         recentUsers: [],
         feedback: [],
@@ -852,11 +1020,12 @@ export default defineComponent({
         signupTrend: [],
         smartInsights: [],
         recentAutomation: [],
+        recentAuthActivity: [],
         generatedAt: '',
       };
       endpointChecks.value = [];
       endpointChecksAt.value = '';
-      dashboardView.value = 'editor';
+      dashboardView.value = 'overview';
       closeHeaderMenu();
     }
 
@@ -1060,6 +1229,27 @@ export default defineComponent({
       }
     }
 
+    async function fetchAdCampaigns() {
+      if (!isAdmin.value) return;
+      adsLoading.value = true;
+      try {
+        const response = await http.get('/v1/admin/ads');
+        adCampaigns.value = Array.isArray(response.data?.items) ? response.data.items : [];
+        if (selectedAdCampaignId.value) {
+          const active = adCampaigns.value.find((item) => item.id === selectedAdCampaignId.value);
+          if (active) {
+            loadAdCampaignForm(active);
+          } else {
+            resetAdCampaignForm();
+          }
+        }
+      } catch (error) {
+        setNotice(toErrorMessage(error, 'Unable to load ad campaigns.'), 'error');
+      } finally {
+        adsLoading.value = false;
+      }
+    }
+
     async function saveMobileAppConfig() {
       if (!isAdmin.value) {
         setNotice('This action is only available to administrators.', 'error');
@@ -1080,11 +1270,106 @@ export default defineComponent({
         const response = await http.put('/v1/admin/app-config', { config: parsedConfig });
         mobileAppConfigMeta.value = response.data.meta || null;
         syncMobileAppConfigState(response.data.config || {});
+        reloadMobilePreview();
         setNotice('Mobile experience updated successfully.', 'success');
       } catch (error) {
         setNotice(toErrorMessage(error, 'Unable to save your changes.'), 'error');
       } finally {
         appConfigSaving.value = false;
+      }
+    }
+
+    function buildAdCampaignPayload() {
+      return {
+        name: adCampaignForm.name.trim(),
+        placement: adCampaignForm.placement,
+        status: adCampaignForm.status,
+        sponsorName: adCampaignForm.sponsorName.trim(),
+        headline: adCampaignForm.headline.trim(),
+        body: adCampaignForm.body.trim(),
+        ctaLabel: adCampaignForm.ctaLabel.trim(),
+        ctaUrl: adCampaignForm.ctaUrl.trim(),
+        imageUrl: adCampaignForm.imageUrl.trim() || undefined,
+        audienceTags: parseCsvList(adCampaignForm.audienceTagsCsv),
+        dailyBudgetCents: Number(adCampaignForm.dailyBudgetCents || 0),
+        weight: Number(adCampaignForm.weight || 100),
+        startsAt: adCampaignForm.startsAt ? new Date(adCampaignForm.startsAt).toISOString() : undefined,
+        endsAt: adCampaignForm.endsAt ? new Date(adCampaignForm.endsAt).toISOString() : undefined,
+        metadata: adCampaignForm.notes.trim() ? { notes: adCampaignForm.notes.trim() } : {},
+      };
+    }
+
+    async function saveAdCampaign() {
+      if (!isAdmin.value) {
+        setNotice('Only administrators can manage campaigns.', 'error');
+        return;
+      }
+
+      const payload = buildAdCampaignPayload();
+      if (!payload.name || !payload.sponsorName || !payload.headline || !payload.body || !payload.ctaLabel || !payload.ctaUrl) {
+        setNotice('Complete campaign name, sponsor, copy, and call-to-action before saving.', 'error');
+        return;
+      }
+
+      const isEditing = Boolean(selectedAdCampaignId.value);
+      adCampaignSaving.value = true;
+      clearNotice();
+      try {
+        const response = isEditing
+          ? await http.patch(`/v1/admin/ads/${selectedAdCampaignId.value}`, payload)
+          : await http.post('/v1/admin/ads', payload);
+
+        await fetchAdCampaigns();
+        loadAdCampaignForm(response.data);
+        reloadMobilePreview();
+        setNotice(isEditing ? 'Campaign updated.' : 'Campaign created.', 'success');
+      } catch (error) {
+        setNotice(toErrorMessage(error, 'Unable to save this campaign.'), 'error');
+      } finally {
+        adCampaignSaving.value = false;
+      }
+    }
+
+    async function generateAdSuggestion() {
+      if (!isAdmin.value) {
+        setNotice('Only administrators can generate suggestions.', 'error');
+        return;
+      }
+
+      if (!adCampaignForm.sponsorName.trim()) {
+        setNotice('Enter the sponsor name before requesting AI copy.', 'error');
+        return;
+      }
+
+      adSuggestionLoading.value = true;
+      clearNotice();
+      try {
+        const response = await http.post('/v1/admin/ai/ad-copy', {
+          sponsorName: adCampaignForm.sponsorName.trim(),
+          placement: adCampaignForm.placement,
+          objective: adCampaignForm.body.trim() || adCampaignForm.name.trim() || 'Promote a featured campaign on ClaudyGod.',
+          audience: adCampaignForm.audienceTagsCsv.trim() || undefined,
+          landingUrl: adCampaignForm.ctaUrl.trim() || undefined,
+          tone: mobileAppConfigValue.value?.intelligence?.defaultTone || undefined,
+          notes: adCampaignForm.notes.trim() || undefined,
+        });
+
+        const suggestion = response.data?.suggestion;
+        if (!suggestion) {
+          throw new Error('No suggestion returned.');
+        }
+
+        adCampaignForm.headline = suggestion.headline || adCampaignForm.headline;
+        adCampaignForm.body = suggestion.body || adCampaignForm.body;
+        adCampaignForm.ctaLabel = suggestion.ctaLabel || adCampaignForm.ctaLabel;
+        adCampaignForm.audienceTagsCsv = Array.isArray(suggestion.audienceTags)
+          ? suggestion.audienceTags.join(', ')
+          : adCampaignForm.audienceTagsCsv;
+        setNotice(`Copy suggestion ready from ${response.data?.meta?.provider || 'AI assistant'}.`, 'success');
+      } catch (error) {
+        setNotice(toErrorMessage(error, 'Unable to generate ad copy right now.'), 'error');
+      } finally {
+        adSuggestionLoading.value = false;
       }
     }
 
@@ -1528,6 +1813,7 @@ export default defineComponent({
           fetchContentRequests(),
           fetchUploadPolicies(),
           isAdmin.value ? fetchLiveSessions() : Promise.resolve(),
+          isAdmin.value ? fetchAdCampaigns() : Promise.resolve(),
           isAdmin.value ? fetchAdminOperationsDashboard() : Promise.resolve(),
           isAdmin.value ? fetchMobileAppConfig() : Promise.resolve(),
           isAdmin.value ? fetchWordOfDayDashboard() : Promise.resolve(),
@@ -1928,6 +2214,7 @@ export default defineComponent({
           fetchContentRequests(),
           fetchUploadPolicies(),
           isAdmin.value ? fetchLiveSessions() : Promise.resolve(),
+          isAdmin.value ? fetchAdCampaigns() : Promise.resolve(),
           isAdmin.value ? fetchAdminOperationsDashboard() : Promise.resolve(),
           isAdmin.value ? fetchMobileAppConfig() : Promise.resolve(),
           isAdmin.value ? fetchWordOfDayDashboard() : Promise.resolve(),
@@ -2133,6 +2420,25 @@ export default defineComponent({
             </section>
           ) : null}
 
+          {dashboardView.value === 'overview' ? (
+            <OverviewView
+              adminOpsLoading={adminOpsLoading.value}
+              summary={adminOps.value.summary || {}}
+              authFunnel={adminOps.value.authFunnel || {}}
+              smartInsights={adminOps.value.smartInsights || []}
+              recentAuthActivity={adminOps.value.recentAuthActivity || []}
+              requestStatusBoard={requestStatusBoard.value}
+              contentRequestLoading={contentRequestLoading.value}
+              requestQueuePreview={requestQueuePreview.value}
+              managedItemsCount={managedItems.value.length}
+              recentItems={recentItems.value}
+              onSetDashboardView={setDashboardView}
+              formatDateTime={formatDateTime}
+              truncate={truncate}
+              humanizeToken={humanizeToken}
+            />
+          ) : null}
+
           {dashboardView.value === 'live' ? (
             <LiveView
               liveLoading={liveLoading.value}
@@ -2180,6 +2486,29 @@ export default defineComponent({
               onAddSettingsHubItem={addSettingsHubGroupItem}
               onUpdateSettingsHubItem={updateSettingsHubGroupItem}
               onRemoveSettingsHubItem={removeSettingsHubGroupItem}
+              onAddAdPlacement={addAdPlacement}
+              onUpdateAdPlacement={updateAdPlacement}
+              onRemoveAdPlacement={removeAdPlacement}
+              onUpdateMonetization={updateMonetizationConfig}
+              onUpdateIntelligence={updateIntelligenceConfig}
+            />
+          ) : null}
+
+          {dashboardView.value === 'ads-ai' ? (
+            <AdsAiView
+              campaigns={adCampaigns.value}
+              adsLoading={adsLoading.value}
+              adCampaignSaving={adCampaignSaving.value}
+              adSuggestionLoading={adSuggestionLoading.value}
+              selectedAdCampaignId={selectedAdCampaignId.value}
+              adCampaignForm={adCampaignForm}
+              mobileAppConfigValue={mobileAppConfigValue.value}
+              onReadValue={readValue}
+              onSelectAdCampaign={selectAdCampaign}
+              onResetAdCampaignForm={resetAdCampaignForm}
+              onSaveAdCampaign={saveAdCampaign}
+              onGenerateAdSuggestion={generateAdSuggestion}
+              formatDateTime={formatDateTime}
             />
           ) : null}
 
@@ -2276,7 +2605,7 @@ export default defineComponent({
           onLogout={logout}
           dashboardView={dashboardView.value}
           onSetDashboardView={setDashboardView}
-          navItems={ADMIN_NAV_ITEMS}
+          navItems={portalNavItems.value}
           appLoading={appLoading.value}
           content={shellContent}
         />

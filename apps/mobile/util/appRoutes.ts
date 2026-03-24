@@ -14,6 +14,7 @@ export const APP_ROUTES = {
     home: '/(tabs)/home',
     player: '/(tabs)/player',
     videos: '/(tabs)/videos',
+    live: '/(tabs)/live',
     search: '/(tabs)/search',
     settings: '/(tabs)/settings',
     library: '/(tabs)/library',
@@ -28,11 +29,12 @@ export const APP_ROUTES = {
   },
 } as const;
 
-export type MobileTabId = 'home' | 'videos' | 'player' | 'library' | 'search';
+export type MobileTabId = 'home' | 'videos' | 'player' | 'live' | 'library' | 'search';
 export type AppRouteId =
   | 'tabs.home'
   | 'tabs.player'
   | 'tabs.videos'
+  | 'tabs.live'
   | 'tabs.library'
   | 'tabs.search'
   | 'tabs.settings'
@@ -47,6 +49,7 @@ export const TAB_ROUTE_BY_ID: Record<MobileTabId, string> = {
   home: APP_ROUTES.tabs.home,
   videos: APP_ROUTES.tabs.videos,
   player: APP_ROUTES.tabs.player,
+  live: APP_ROUTES.tabs.live,
   library: APP_ROUTES.tabs.library,
   search: APP_ROUTES.tabs.search,
 };
@@ -55,6 +58,7 @@ export const APP_ROUTE_BY_ID: Record<AppRouteId, string> = {
   'tabs.home': APP_ROUTES.tabs.home,
   'tabs.player': APP_ROUTES.tabs.player,
   'tabs.videos': APP_ROUTES.tabs.videos,
+  'tabs.live': APP_ROUTES.tabs.live,
   'tabs.library': APP_ROUTES.tabs.library,
   'tabs.search': APP_ROUTES.tabs.search,
   'tabs.settings': APP_ROUTES.tabs.settings,
