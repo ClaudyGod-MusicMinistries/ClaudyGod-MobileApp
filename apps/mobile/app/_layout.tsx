@@ -313,7 +313,6 @@ function RootLayoutInner() {
 
     const firstSegment = segments[0];
     const secondSegment = Array.from(segments)[1];
-    const isAuthRoute = firstSegment === 'sign-in' || firstSegment === 'sign-up';
     const isProtectedRoute =
       firstSegment === 'profile' ||
       firstSegment === 'settingsPage' ||
@@ -322,10 +321,6 @@ function RootLayoutInner() {
     if (!isAuthenticated && isProtectedRoute) {
       router.replace(APP_ROUTES.auth.signIn);
       return;
-    }
-
-    if (isAuthenticated && isAuthRoute) {
-      router.replace(APP_ROUTES.tabs.home);
     }
   }, [bootDelayDone, fontsLoaded, initializing, isAuthenticated, router, segments]);
 
