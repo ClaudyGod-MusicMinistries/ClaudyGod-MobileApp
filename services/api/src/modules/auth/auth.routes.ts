@@ -49,11 +49,18 @@ async function resolveSessionUser(req: Request) {
   return { token, user };
 }
 
+function getAuthRequestContext(req: Request) {
+  return {
+    requestIp: req.ip,
+    userAgent: req.header('user-agent') || undefined,
+  };
+}
+
 authRouter.post(
   '/register',
   asyncHandler(async (req, res) => {
     const payload = validateSchema(registerSchema, req.body);
-    const result = await registerUser(payload, req.ip);
+    const result = await registerUser(payload, getAuthRequestContext(req));
     if (result.requiresEmailVerification || !result.accessToken || !result.user) {
       res.status(201).json(result);
       return;
@@ -67,7 +74,7 @@ authRouter.post(
   '/login',
   asyncHandler(async (req, res) => {
     const payload = validateSchema(loginSchema, req.body);
-    const result = await loginUser(payload);
+    const result = await loginUser(payload, getAuthRequestContext(req));
     respondWithAuthSession(req, res, result, 200);
   }),
 );
@@ -76,7 +83,7 @@ authRouter.post(
   '/email/verify',
   asyncHandler(async (req, res) => {
     const payload = validateSchema(verifyEmailSchema, req.body);
-    const result = await verifyEmail(payload);
+    const result = await verifyEmail(payload, getAuthRequestContext(req));
     respondWithAuthSession(req, res, result, 200);
   }),
 );
@@ -85,7 +92,7 @@ authRouter.post(
   '/email/verify/request',
   asyncHandler(async (req, res) => {
     const payload = validateSchema(resendVerificationEmailSchema, req.body);
-    const result = await resendVerificationEmail(payload, req.ip);
+    const result = await resendVerificationEmail(payload, getAuthRequestContext(req));
     res.status(202).json(result);
   }),
 );
@@ -94,7 +101,7 @@ authRouter.post(
   '/password/forgot',
   asyncHandler(async (req, res) => {
     const payload = validateSchema(forgotPasswordSchema, req.body);
-    const result = await requestPasswordReset(payload, req.ip);
+    const result = await requestPasswordReset(payload, getAuthRequestContext(req));
     res.status(202).json(result);
   }),
 );
@@ -103,7 +110,7 @@ authRouter.post(
   '/password/reset',
   asyncHandler(async (req, res) => {
     const payload = validateSchema(resetPasswordSchema, req.body);
-    const result = await resetPassword(payload);
+    const result = await resetPassword(payload, getAuthRequestContext(req));
     res.status(200).json(result);
   }),
 );

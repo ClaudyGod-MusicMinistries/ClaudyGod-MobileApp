@@ -1,7 +1,7 @@
 import type { MobileAppConfig } from './appConfig.schema';
 
 export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
-  version: 5,
+  version: 6,
   privacy: {
     contactEmail: 'privacy@claudygod.org',
     deleteConfirmPhrase: 'I CONFIRM',
@@ -420,5 +420,49 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
         ],
       },
     ],
+  },
+  monetization: {
+    adsEnabled: true,
+    disclosureLabel: 'Sponsored',
+    placements: [
+      {
+        id: 'landing-hero',
+        title: 'Landing promotion',
+        subtitle: 'Featured campaign slot for the public landing experience.',
+        screen: 'landing',
+        enabled: true,
+        maxItems: 1,
+      },
+      {
+        id: 'home-spotlight',
+        title: 'Home spotlight',
+        subtitle: 'Sponsored placement inside the signed-in home feed.',
+        screen: 'home',
+        enabled: true,
+        maxItems: 1,
+      },
+      {
+        id: 'video-spotlight',
+        title: 'Video spotlight',
+        subtitle: 'Campaigns targeted at the video screen.',
+        screen: 'videos',
+        enabled: true,
+        maxItems: 1,
+      },
+      {
+        id: 'music-spotlight',
+        title: 'Music spotlight',
+        subtitle: 'Campaigns targeted at listening flows and the player screen.',
+        screen: 'player',
+        enabled: true,
+        maxItems: 1,
+      },
+    ],
+  },
+  intelligence: {
+    assistantEnabled: true,
+    adCopySuggestionsEnabled: true,
+    providerLabel: 'Integrated AI',
+    defaultTone: 'Confident, concise, ministry-safe',
   },
 };

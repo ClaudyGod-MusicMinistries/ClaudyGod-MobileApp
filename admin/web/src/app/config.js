@@ -103,6 +103,11 @@ export const ADMIN_NAV_ITEMS = [
     caption: 'App structure',
   },
   {
+    id: 'ads-ai',
+    label: 'Ads & AI',
+    caption: 'Campaigns and automation',
+  },
+  {
     id: 'live',
     label: 'Live',
     caption: 'Broadcast and replay',

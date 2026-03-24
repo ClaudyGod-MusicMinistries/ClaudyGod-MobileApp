@@ -27,6 +27,16 @@ export const SETTINGS_DESTINATION_OPTIONS = [
   { value: 'settings.rate', label: 'Rate app' },
 ];
 
+export const AD_PLACEMENT_SCREEN_OPTIONS = [
+  { value: 'landing', label: 'Landing' },
+  { value: 'home', label: 'Home' },
+  { value: 'videos', label: 'Videos' },
+  { value: 'player', label: 'Music player' },
+  { value: 'live', label: 'Live' },
+  { value: 'library', label: 'Library' },
+  { value: 'search', label: 'Search' },
+];
+
 export const MOBILE_LAYOUT_GROUPS = [
   {
     key: 'homeSections',
@@ -107,5 +117,16 @@ export function createSettingsHubItem() {
     label: 'New item',
     hint: 'Describe where this link should take the user.',
     destination: 'tabs.settings',
+  };
+}
+
+export function createAdPlacement() {
+  return {
+    id: makeId('placement'),
+    title: 'Sponsored placement',
+    subtitle: 'Promoted slot inside the mobile app experience.',
+    screen: 'home',
+    enabled: true,
+    maxItems: 1,
   };
 }

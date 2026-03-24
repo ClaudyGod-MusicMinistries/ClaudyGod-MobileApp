@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { RefreshControl, ScrollView, Share, View, useWindowDimensions } from 'react-native';
+import { Linking, RefreshControl, ScrollView, Share, View, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { TabScreenWrapper } from '../../components/layout/TabScreenWrapper';
@@ -100,6 +100,8 @@ export default function HomeScreen() {
 
   const featured = useMemo(() => feed.featured ?? feed.recent[0] ?? feed.music[0] ?? feed.videos[0] ?? null, [feed]);
   const homeSections = useMemo(() => getHomeLayoutSections(mobileConfig), [mobileConfig]);
+  const sponsoredItem = useMemo(() => feed.ads[0] ?? null, [feed]);
+  const sponsoredLabel = mobileConfig?.monetization?.disclosureLabel || 'Sponsored';
   const curatedRails = useMemo(
     () =>
       homeSections
@@ -162,6 +164,22 @@ export default function HomeScreen() {
         tone: 'warning',
       });
     }
+  };
+
+  const openSponsoredItem = async (item: FeedCardItem) => {
+    const target = item.ctaUrl || item.mediaUrl;
+    if (!target) {
+      return;
+    }
+
+    await trackPlayEvent({
+      contentId: item.campaignId || item.id,
+      contentType: 'ad',
+      title: item.title,
+      source: 'home_sponsored',
+    });
+
+    await Linking.openURL(target);
   };
 
   return (
@@ -238,6 +256,60 @@ export default function HomeScreen() {
                 ))}
               </View>
             </FadeIn>
+
+            {sponsoredItem ? (
+              <FadeIn delay={120}>
+                <SurfaceCard tone="subtle" style={{ padding: theme.spacing.lg }}>
+                  <View style={{ gap: 14 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start' }}>
+                      <View style={{ flex: 1 }}>
+                        <CustomText
+                          variant="caption"
+                          style={{
+                            color: theme.colors.primary,
+                            textTransform: 'uppercase',
+                            letterSpacing: 1,
+                          }}
+                        >
+                          {sponsoredLabel}
+                        </CustomText>
+                        <CustomText variant="heading" style={{ color: theme.colors.text.primary, marginTop: 6 }}>
+                          {sponsoredItem.title}
+                        </CustomText>
+                        <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 4 }}>
+                          {sponsoredItem.sponsorName || sponsoredItem.subtitle}
+                        </CustomText>
+                        <CustomText variant="body" style={{ color: theme.colors.text.secondary, marginTop: 8 }}>
+                          {sponsoredItem.description}
+                        </CustomText>
+                      </View>
+
+                      <View
+                        style={{
+                          width: 42,
+                          height: 42,
+                          borderRadius: theme.radius.sm,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          backgroundColor: 'rgba(139,92,246,0.16)',
+                          borderWidth: 1,
+                          borderColor: 'rgba(139,92,246,0.28)',
+                        }}
+                      >
+                        <MaterialIcons name="campaign" size={20} color={theme.colors.primary} />
+                      </View>
+                    </View>
+
+                    <AppButton
+                      title={sponsoredItem.ctaLabel || 'Open'}
+                      onPress={() => void openSponsoredItem(sponsoredItem)}
+                      size="sm"
+                      leftIcon={<MaterialIcons name="open-in-new" size={16} color={theme.colors.text.inverse} />}
+                    />
+                  </View>
+                </SurfaceCard>
+              </FadeIn>
+            ) : null}
 
             {curatedRails.map(({ section, items }, index) => (
               <FadeIn key={section.id || section.title} delay={140 + index * 35}>

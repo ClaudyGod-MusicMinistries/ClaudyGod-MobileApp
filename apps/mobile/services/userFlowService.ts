@@ -191,6 +191,24 @@ export interface MobileAppExperienceConfig {
       }[];
     }[];
   };
+  monetization: {
+    adsEnabled: boolean;
+    disclosureLabel: string;
+    placements: {
+      id: string;
+      title: string;
+      subtitle: string;
+      screen: 'landing' | 'home' | 'videos' | 'player' | 'live' | 'library' | 'search';
+      enabled: boolean;
+      maxItems: number;
+    }[];
+  };
+  intelligence: {
+    assistantEnabled: boolean;
+    adCopySuggestionsEnabled: boolean;
+    providerLabel: string;
+    defaultTone: string;
+  };
 }
 
 export interface MeLibraryItem {

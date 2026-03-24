@@ -80,6 +80,14 @@ function mergeWithDefaults(value: unknown): MobileAppConfig {
       ...DEFAULT_MOBILE_APP_CONFIG.settingsHub,
       ...(input.settingsHub ?? {}),
     },
+    monetization: {
+      ...DEFAULT_MOBILE_APP_CONFIG.monetization,
+      ...(input.monetization ?? {}),
+    },
+    intelligence: {
+      ...DEFAULT_MOBILE_APP_CONFIG.intelligence,
+      ...(input.intelligence ?? {}),
+    },
   });
 }
 
