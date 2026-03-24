@@ -35,7 +35,7 @@ const WORD_FOR_TODAY_FALLBACK = {
 const DEFAULT_QUICK_LINKS = [
   { key: 'music', icon: 'graphic-eq', label: 'Music', route: APP_ROUTES.tabs.player },
   { key: 'videos', icon: 'smart-display', label: 'Videos', route: APP_ROUTES.tabs.videos },
-  { key: 'library', icon: 'library-music', label: 'Library', route: APP_ROUTES.tabs.library },
+  { key: 'live', icon: 'live-tv', label: 'Live', route: APP_ROUTES.tabs.live },
 ] as const;
 
 function QuickLink({
@@ -111,7 +111,7 @@ export default function HomeScreen() {
   const quickLinks = useMemo(() => {
     const tabs = mobileConfig?.navigation?.tabs ?? [];
     const configuredLinks = tabs
-      .filter((tab) => tab.id === 'player' || tab.id === 'videos' || tab.id === 'library')
+      .filter((tab) => tab.id === 'player' || tab.id === 'videos' || tab.id === 'live')
       .map((tab) => ({
         key: tab.id,
         icon: tab.icon as React.ComponentProps<typeof MaterialIcons>['name'],

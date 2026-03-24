@@ -76,6 +76,48 @@ export interface LiveSessionDetail {
   messages: LiveSessionMessage[];
 }
 
+export interface LiveSessionSummary {
+  id: string;
+  title: string;
+  description: string;
+  status: LiveSessionStatus;
+  channelId: string;
+  coverImageUrl?: string;
+  streamUrl?: string;
+  playbackUrl?: string;
+  scheduledFor?: string;
+  startedAt?: string;
+  endedAt?: string;
+  notifySubscribers: boolean;
+  viewerCount: number;
+  tags: string[];
+  appSections: string[];
+  metadata: Record<string, unknown>;
+  messageCount: number;
+  latestMessageAt?: string;
+  createdAt: string;
+  updatedAt: string;
+  createdBy?: {
+    id?: string;
+    displayName: string;
+    email?: string;
+    role?: 'CLIENT' | 'ADMIN';
+  };
+  updatedBy?: {
+    id?: string;
+    displayName: string;
+    email?: string;
+    role?: 'CLIENT' | 'ADMIN';
+  };
+}
+
+export async function fetchLiveSessions(scope: 'all' | 'live' | 'upcoming' | 'archive' = 'all'): Promise<{
+  items: LiveSessionSummary[];
+}> {
+  const query = new URLSearchParams({ scope });
+  return apiFetch(`/v1/live/sessions?${query.toString()}`);
+}
+
 export async function fetchLiveSessionDetail(sessionId: string): Promise<LiveSessionDetail> {
   return apiFetch(`/v1/live/sessions/${encodeURIComponent(sessionId)}`);
 }

@@ -7,8 +7,10 @@ import { getTheme, AppTheme } from '../theme';
 
 interface ThemeContextType {
   colorScheme: ColorScheme;
+  themePreference: ColorScheme | 'system';
   toggleColorScheme: () => void;
   setColorScheme: (_scheme: ColorScheme) => void;
+  setThemePreference: (_scheme: ColorScheme | 'system') => void;
   theme: AppTheme;
 }
 
@@ -64,12 +66,19 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     void AsyncStorage.setItem(THEME_STORAGE_KEY, scheme).catch(() => undefined);
   };
 
+  const applyThemePreference = (scheme: ColorScheme | 'system') => {
+    setThemePreference(scheme);
+    void AsyncStorage.setItem(THEME_STORAGE_KEY, scheme).catch(() => undefined);
+  };
+
   const theme = useMemo(() => getTheme(colorScheme), [colorScheme]);
 
   const value = {
     colorScheme,
+    themePreference,
     toggleColorScheme,
     setColorScheme,
+    setThemePreference: applyThemePreference,
     theme,
   };
 

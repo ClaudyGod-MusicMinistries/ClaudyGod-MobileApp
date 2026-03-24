@@ -9,7 +9,6 @@ import { FadeIn } from '../components/ui/FadeIn';
 import { TVTouchable } from '../components/ui/TVTouchable';
 import { AppButton } from '../components/ui/AppButton';
 import { CinematicHeroCard } from '../components/sections/CinematicHeroCard';
-import { useAuth } from '../context/AuthContext';
 import { useAppTheme } from '../util/colorScheme';
 import { APP_ROUTES } from '../util/appRoutes';
 import { BRAND_HERO_ASSET, BRAND_LOGO_ASSET } from '../util/brandAssets';
@@ -28,7 +27,7 @@ const LANDING_COLORS = {
 const DESTINATIONS = [
   { key: 'music', icon: 'graphic-eq', label: 'Music', route: APP_ROUTES.tabs.player },
   { key: 'videos', icon: 'smart-display', label: 'Videos', route: APP_ROUTES.tabs.videos },
-  { key: 'library', icon: 'library-music', label: 'Library', route: APP_ROUTES.tabs.library },
+  { key: 'live', icon: 'live-tv', label: 'Live', route: APP_ROUTES.tabs.live },
 ] as const;
 
 function DestinationCard({
@@ -81,17 +80,9 @@ function DestinationCard({
 
 export default function LandingScreen() {
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
   const { width } = useWindowDimensions();
 
   const isTablet = width >= 768;
-
-  const primaryAction = isAuthenticated
-    ? { title: 'Continue', route: APP_ROUTES.tabs.home }
-    : { title: 'Create Account', route: APP_ROUTES.auth.signUp };
-  const secondaryAction = isAuthenticated
-    ? { title: 'Library', route: APP_ROUTES.tabs.library }
-    : { title: 'Sign In', route: APP_ROUTES.auth.signIn };
 
   return (
     <View style={{ flex: 1, backgroundColor: LANDING_COLORS.background }}>
@@ -163,20 +154,18 @@ export default function LandingScreen() {
                       </View>
                     </View>
 
-                    {!isAuthenticated ? (
-                      <AppButton
-                        title="Sign In"
-                        variant="secondary"
-                        size="sm"
-                        onPress={() => router.push(APP_ROUTES.auth.signIn)}
-                        style={{
-                          borderRadius: 12,
-                          borderColor: LANDING_COLORS.border,
-                          backgroundColor: LANDING_COLORS.panelStrong,
-                        }}
-                        textColor={LANDING_COLORS.textPrimary}
-                      />
-                    ) : null}
+                    <AppButton
+                      title="Sign In"
+                      variant="secondary"
+                      size="sm"
+                      onPress={() => router.push(APP_ROUTES.auth.signIn)}
+                      style={{
+                        borderRadius: 12,
+                        borderColor: LANDING_COLORS.border,
+                        backgroundColor: LANDING_COLORS.panelStrong,
+                      }}
+                      textColor={LANDING_COLORS.textPrimary}
+                    />
                   </View>
                 </FadeIn>
 
@@ -191,15 +180,15 @@ export default function LandingScreen() {
                       subtitle="Designed for listening, watching, and returning without friction."
                       actions={[
                         {
-                          label: primaryAction.title,
-                          onPress: () => router.push(primaryAction.route),
-                          icon: isAuthenticated ? 'play-arrow' : 'person-add',
+                          label: 'Create Account',
+                          onPress: () => router.push(APP_ROUTES.auth.signUp),
+                          icon: 'person-add',
                         },
                         {
-                          label: secondaryAction.title,
-                          onPress: () => router.push(secondaryAction.route),
+                          label: 'Sign In',
+                          onPress: () => router.push(APP_ROUTES.auth.signIn),
                           variant: 'secondary',
-                          icon: isAuthenticated ? 'library-music' : 'login',
+                          icon: 'login',
                         },
                       ]}
                     />
@@ -236,9 +225,7 @@ export default function LandingScreen() {
                           key={destination.key}
                           icon={destination.icon}
                           label={destination.label}
-                          onPress={() =>
-                            router.push(isAuthenticated ? destination.route : APP_ROUTES.auth.signIn)
-                          }
+                          onPress={() => router.push(destination.route)}
                         />
                       ))}
                     </View>
@@ -292,9 +279,7 @@ export default function LandingScreen() {
                       </CustomText>
                     </TVTouchable>
                     <TVTouchable
-                      onPress={() =>
-                        router.push(isAuthenticated ? APP_ROUTES.tabs.videos : APP_ROUTES.auth.signIn)
-                      }
+                      onPress={() => router.push(APP_ROUTES.tabs.videos)}
                       showFocusBorder={false}
                       style={{
                         minHeight: 34,

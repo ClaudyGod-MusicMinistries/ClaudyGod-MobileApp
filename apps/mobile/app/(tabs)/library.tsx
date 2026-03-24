@@ -7,6 +7,7 @@ import { BrandedHeaderCard } from '../../components/layout/BrandedHeaderCard';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { PosterCard } from '../../components/ui/PosterCard';
 import { SectionHeader } from '../../components/ui/SectionHeader';
+import { AppButton } from '../../components/ui/AppButton';
 import { CustomText } from '../../components/CustomText';
 import { FadeIn } from '../../components/ui/FadeIn';
 import { useAppTheme } from '../../util/colorScheme';
@@ -18,6 +19,7 @@ import { buildPlayerRoute } from '../../util/playerRoute';
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
 import { fetchMeLibrary, type MeLibrary, type MeLibraryItem } from '../../services/userFlowService';
 import { getLibraryLayoutSections, type MobileLayoutSection } from '../../util/mobileLayout';
+import { useAuth } from '../../context/AuthContext';
 
 function toFeedCardItem(item: MeLibraryItem): FeedCardItem {
   return {
@@ -92,6 +94,7 @@ function deriveLibraryItems(
 export default function LibraryScreen() {
   const theme = useAppTheme();
   const router = useRouter();
+  const { isAuthenticated } = useAuth();
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
   const posterSize = isTablet ? 'lg' : 'md';
@@ -101,6 +104,13 @@ export default function LibraryScreen() {
 
   useEffect(() => {
     let active = true;
+
+    if (!isAuthenticated) {
+      setLibrary(null);
+      return () => {
+        active = false;
+      };
+    }
 
     void fetchMeLibrary()
       .then((response) => {
@@ -112,7 +122,7 @@ export default function LibraryScreen() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [isAuthenticated]);
 
   const liked = useMemo(
     () => (library?.liked.length ? library.liked.map(toFeedCardItem) : feed.mostPlayed),
@@ -141,6 +151,102 @@ export default function LibraryScreen() {
     });
     router.push(buildPlayerRoute(item));
   };
+
+  if (!isAuthenticated) {
+    const guestPreview = dedupeItems([...feed.mostPlayed, ...feed.music, ...feed.videos, ...feed.recent]).slice(0, 10);
+
+    return (
+      <TabScreenWrapper>
+        <ScrollView
+          style={{ flex: 1, backgroundColor: 'transparent' }}
+          contentContainerStyle={{ paddingBottom: theme.layout.tabBarContentPadding }}
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+          overScrollMode="never"
+        >
+          <Screen>
+            <View style={{ paddingTop: theme.layout.headerVerticalPadding, gap: theme.layout.sectionGapLarge }}>
+              <FadeIn>
+                <BrandedHeaderCard
+                  title="Library"
+                  subtitle="Save worship tracks, replays, and playlists to your personal space."
+                  actions={[
+                    { icon: 'search', onPress: () => router.push(APP_ROUTES.tabs.search), accessibilityLabel: 'Search' },
+                  ]}
+                />
+              </FadeIn>
+
+              <FadeIn delay={60}>
+                <SurfaceCard tone="strong" style={{ padding: theme.spacing.lg }}>
+                  <View style={{ gap: 12 }}>
+                    <View style={{ gap: 6 }}>
+                      <CustomText
+                        variant="caption"
+                        style={{
+                          color: theme.colors.text.secondary,
+                          textTransform: 'uppercase',
+                          letterSpacing: 0.8,
+                        }}
+                      >
+                        Personal library
+                      </CustomText>
+                      <CustomText variant="heading" style={{ color: theme.colors.text.primary }}>
+                        Sign in to save what matters
+                      </CustomText>
+                      <CustomText variant="body" style={{ color: theme.colors.text.secondary }}>
+                        Keep your music, video replays, playlists, and history in one place across devices.
+                      </CustomText>
+                    </View>
+
+                    <View style={{ flexDirection: 'row', gap: 10 }}>
+                      <AppButton
+                        title="Create Account"
+                        size="sm"
+                        onPress={() => router.push(APP_ROUTES.auth.signUp)}
+                      />
+                      <AppButton
+                        title="Sign In"
+                        variant="secondary"
+                        size="sm"
+                        onPress={() => router.push(APP_ROUTES.auth.signIn)}
+                      />
+                    </View>
+                  </View>
+                </SurfaceCard>
+              </FadeIn>
+
+              {guestPreview.length ? (
+                <FadeIn delay={100}>
+                  <View>
+                    <SectionHeader
+                      title="Keep listening"
+                      actionLabel="Home"
+                      onAction={() => router.push(APP_ROUTES.tabs.home)}
+                    />
+                    <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginBottom: 10 }}>
+                      Browse the app freely, then sign in when you want to save your collection.
+                    </CustomText>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false} overScrollMode="never">
+                      {guestPreview.map((item) => (
+                        <PosterCard
+                          key={`guest-library-${item.id}`}
+                          imageUrl={item.imageUrl}
+                          title={item.title}
+                          subtitle={item.subtitle}
+                          size={posterSize}
+                          onPress={() => void openItem(item, 'library_guest_preview')}
+                        />
+                      ))}
+                    </ScrollView>
+                  </View>
+                </FadeIn>
+              ) : null}
+            </View>
+          </Screen>
+        </ScrollView>
+      </TabScreenWrapper>
+    );
+  }
 
   return (
     <TabScreenWrapper>
