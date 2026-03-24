@@ -1,7 +1,7 @@
 import type { MobileAppConfig } from './appConfig.schema';
 
 export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
-  version: 1,
+  version: 2,
   privacy: {
     contactEmail: 'privacy@claudygod.org',
     deleteConfirmPhrase: 'I CONFIRM',
@@ -223,6 +223,15 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
         contentTypes: ['live', 'video'],
         maxItems: 8,
       },
+    ],
+  },
+  navigation: {
+    tabs: [
+      { id: 'home', label: 'Home', icon: 'home-filled' },
+      { id: 'videos', label: 'Watch', icon: 'smart-display' },
+      { id: 'player', label: 'Music', icon: 'graphic-eq' },
+      { id: 'library', label: 'Library', icon: 'library-music' },
+      { id: 'search', label: 'Search', icon: 'travel-explore' },
     ],
   },
 };
