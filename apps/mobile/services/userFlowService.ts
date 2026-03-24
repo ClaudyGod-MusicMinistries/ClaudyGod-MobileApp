@@ -117,7 +117,7 @@ export interface MobileAppExperienceConfig {
       subtitle: string;
       contentTypes: ('audio' | 'video' | 'playlist' | 'announcement' | 'live')[];
       actionLabel: string;
-      destinationTab: 'home' | 'videos' | 'player' | 'library' | 'search';
+      destinationTab: 'home' | 'videos' | 'player' | 'live' | 'library' | 'search';
       maxItems: number;
     }[];
     videoSections: {
@@ -126,7 +126,7 @@ export interface MobileAppExperienceConfig {
       subtitle: string;
       contentTypes: ('audio' | 'video' | 'playlist' | 'announcement' | 'live')[];
       actionLabel: string;
-      destinationTab: 'home' | 'videos' | 'player' | 'library' | 'search';
+      destinationTab: 'home' | 'videos' | 'player' | 'live' | 'library' | 'search';
       maxItems: number;
     }[];
     playerSections: {
@@ -135,7 +135,7 @@ export interface MobileAppExperienceConfig {
       subtitle: string;
       contentTypes: ('audio' | 'video' | 'playlist' | 'announcement' | 'live')[];
       actionLabel: string;
-      destinationTab: 'home' | 'videos' | 'player' | 'library' | 'search';
+      destinationTab: 'home' | 'videos' | 'player' | 'live' | 'library' | 'search';
       maxItems: number;
     }[];
     librarySections: {
@@ -144,13 +144,13 @@ export interface MobileAppExperienceConfig {
       subtitle: string;
       contentTypes: ('audio' | 'video' | 'playlist' | 'announcement' | 'live')[];
       actionLabel: string;
-      destinationTab: 'home' | 'videos' | 'player' | 'library' | 'search';
+      destinationTab: 'home' | 'videos' | 'player' | 'live' | 'library' | 'search';
       maxItems: number;
     }[];
   };
   navigation: {
     tabs: {
-      id: 'home' | 'videos' | 'player' | 'library' | 'search';
+      id: 'home' | 'videos' | 'player' | 'live' | 'library' | 'search';
       label: string;
       icon: string;
     }[];
@@ -178,6 +178,7 @@ export interface MobileAppExperienceConfig {
           | 'tabs.home'
           | 'tabs.player'
           | 'tabs.videos'
+          | 'tabs.live'
           | 'tabs.library'
           | 'tabs.search'
           | 'tabs.settings'

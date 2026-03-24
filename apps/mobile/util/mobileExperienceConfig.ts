@@ -68,6 +68,13 @@ const DEFAULT_SETTINGS_HUB: MobileAppExperienceConfig['settingsHub'] = {
           destination: 'tabs.videos',
         },
         {
+          id: 'live',
+          icon: 'live-tv',
+          label: 'Live & Replays',
+          hint: 'Current broadcasts, upcoming sessions, and saved replays',
+          destination: 'tabs.live',
+        },
+        {
           id: 'search',
           icon: 'search',
           label: 'Search & Discovery',

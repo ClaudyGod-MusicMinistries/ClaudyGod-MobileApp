@@ -4,6 +4,7 @@ export const MOBILE_TAB_DESTINATION_OPTIONS = [
   { value: 'home', label: 'Home' },
   { value: 'videos', label: 'Videos' },
   { value: 'player', label: 'Music' },
+  { value: 'live', label: 'Live' },
   { value: 'library', label: 'Library' },
   { value: 'search', label: 'Search' },
 ];
@@ -14,6 +15,7 @@ export const SETTINGS_DESTINATION_OPTIONS = [
   { value: 'tabs.home', label: 'Home tab' },
   { value: 'tabs.player', label: 'Music tab' },
   { value: 'tabs.videos', label: 'Videos tab' },
+  { value: 'tabs.live', label: 'Live tab' },
   { value: 'tabs.library', label: 'Library tab' },
   { value: 'tabs.search', label: 'Search tab' },
   { value: 'tabs.settings', label: 'Settings tab' },

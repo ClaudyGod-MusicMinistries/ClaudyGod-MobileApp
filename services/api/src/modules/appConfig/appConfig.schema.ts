@@ -73,14 +73,14 @@ const mobileLayoutSectionSchema = z
     subtitle: shortTextSchema.max(220),
     contentTypes: z.array(mobileLayoutContentTypeSchema).min(1).max(5),
     actionLabel: z.string().trim().min(1).max(40).default('Open'),
-    destinationTab: z.enum(['home', 'videos', 'player', 'library', 'search']).default('home'),
+    destinationTab: z.enum(['home', 'videos', 'player', 'live', 'library', 'search']).default('home'),
     maxItems: z.coerce.number().int().min(1).max(24).default(8),
   })
   .strict();
 
 const mobileNavigationTabSchema = z
   .object({
-    id: z.enum(['home', 'videos', 'player', 'library', 'search']),
+    id: z.enum(['home', 'videos', 'player', 'live', 'library', 'search']),
     label: shortTextSchema.max(40),
     icon: iconNameSchema,
   })
@@ -102,6 +102,7 @@ const settingsDestinationSchema = z.enum([
   'tabs.home',
   'tabs.player',
   'tabs.videos',
+  'tabs.live',
   'tabs.library',
   'tabs.search',
   'tabs.settings',

@@ -33,10 +33,10 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
 
   const fallbackTabConfig = {
     home: { icon: 'home-filled' as const, label: 'Home' },
+    player: { icon: 'graphic-eq' as const, label: 'Music', isCenter: true },
     videos: { icon: 'ondemand-video' as const, label: 'Videos' },
-    player: { icon: 'play-arrow' as const, label: 'Player', isCenter: true },
+    live: { icon: 'live-tv' as const, label: 'Live' },
     library: { icon: 'library-music' as const, label: 'Library' },
-    search: { icon: 'search' as const, label: 'Search' },
   };
 
   const configuredTabs = config?.navigation?.tabs ?? [];
