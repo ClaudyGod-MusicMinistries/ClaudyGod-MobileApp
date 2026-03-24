@@ -38,6 +38,18 @@ const resolveSmtpHost = (): string => {
 };
 
 const smtpHost = resolveSmtpHost();
+const smtpAuth =
+  env.SMTP_USER && env.SMTP_PASS
+    ? {
+        user: env.SMTP_USER,
+        pass: env.SMTP_PASS,
+      }
+    : env.SMTP_PROVIDER === 'brevo' && env.POSTFIX_SMTP_USERNAME && env.POSTFIX_SMTP_PASSWORD
+      ? {
+          user: env.POSTFIX_SMTP_USERNAME,
+          pass: env.POSTFIX_SMTP_PASSWORD,
+        }
+      : undefined;
 
 const smtpOptions: PooledSmtpOptions = {
   host: smtpHost,
@@ -49,13 +61,7 @@ const smtpOptions: PooledSmtpOptions = {
   connectionTimeout: env.SMTP_CONNECTION_TIMEOUT_MS,
   greetingTimeout: env.SMTP_GREETING_TIMEOUT_MS,
   requireTLS: env.SMTP_REQUIRE_TLS,
-  auth:
-    env.SMTP_USER && env.SMTP_PASS
-      ? {
-          user: env.SMTP_USER,
-          pass: env.SMTP_PASS,
-        }
-      : undefined,
+  auth: smtpAuth,
   tls: {
     rejectUnauthorized: env.SMTP_TLS_REJECT_UNAUTHORIZED,
   },
