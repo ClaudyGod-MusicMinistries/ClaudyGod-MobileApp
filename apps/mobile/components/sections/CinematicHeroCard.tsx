@@ -78,100 +78,110 @@ export function CinematicHeroCard({
           left: 0,
           right: 0,
           bottom: 0,
-          paddingHorizontal: theme.spacing.lg,
-          paddingTop: theme.spacing.xl,
-          paddingBottom: theme.spacing.lg,
-          gap: 10,
+          paddingHorizontal: theme.spacing.md,
+          paddingBottom: theme.spacing.md,
         }}
       >
-        {badge ? (
+        <View style={{ gap: 6 }}>
           <View
             style={{
-              alignSelf: 'flex-start',
-              paddingHorizontal: 10,
-              paddingVertical: 6,
-              borderRadius: theme.radius.pill,
+              borderRadius: theme.radius.lg,
               borderWidth: 1,
-              borderColor: 'rgba(255,255,255,0.12)',
-              backgroundColor: 'rgba(14,12,23,0.76)',
+              borderColor: 'rgba(255,255,255,0.08)',
+              backgroundColor: 'rgba(8,8,16,0.82)',
+              paddingHorizontal: theme.spacing.md,
+              paddingVertical: theme.spacing.md,
+              gap: 10,
             }}
           >
-            <CustomText variant="caption" style={{ color: '#E5DBFF' }}>
-              {badge}
-            </CustomText>
+            {badge ? (
+              <View
+                style={{
+                  alignSelf: 'flex-start',
+                  paddingHorizontal: 10,
+                  paddingVertical: 5,
+                  borderRadius: theme.radius.pill,
+                  borderWidth: 1,
+                  borderColor: 'rgba(255,255,255,0.1)',
+                  backgroundColor: 'rgba(141,99,255,0.12)',
+                }}
+              >
+                <CustomText variant="caption" style={{ color: '#E7DEFF' }}>
+                  {badge}
+                </CustomText>
+              </View>
+            ) : null}
+
+            {eyebrow ? (
+              <CustomText
+                variant="caption"
+                style={{
+                  color: 'rgba(226,218,255,0.74)',
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.75,
+                }}
+              >
+                {eyebrow}
+              </CustomText>
+            ) : null}
+
+            <View style={{ gap: 4 }}>
+              <CustomText variant="hero" style={{ color: '#F7F4FF' }} numberOfLines={2}>
+                {title}
+              </CustomText>
+              {subtitle ? (
+                <CustomText variant="subtitle" style={{ color: 'rgba(230,224,246,0.76)' }} numberOfLines={1}>
+                  {subtitle}
+                </CustomText>
+              ) : null}
+              {description ? (
+                <CustomText
+                  variant="body"
+                  style={{ color: 'rgba(221,214,238,0.72)', maxWidth: '86%' }}
+                  numberOfLines={2}
+                >
+                  {description}
+                </CustomText>
+              ) : null}
+            </View>
+
+            {actions.length ? (
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 2 }}>
+                {actions.map((action) => (
+                  <AppButton
+                    key={`${action.label}-${action.icon ?? 'action'}`}
+                    title={action.label}
+                    onPress={action.onPress}
+                    variant={action.variant ?? 'primary'}
+                    size="sm"
+                    style={
+                      action.variant === 'secondary'
+                        ? {
+                            borderColor: 'rgba(255,255,255,0.1)',
+                            backgroundColor: 'rgba(11,13,22,0.86)',
+                          }
+                        : action.variant === 'primary'
+                          ? {
+                              backgroundColor: '#8D63FF',
+                            }
+                          : undefined
+                    }
+                    textColor={action.variant === 'secondary' ? '#F7F4FF' : undefined}
+                    leftIcon={
+                      action.icon ? (
+                        <MaterialIcons
+                          name={action.icon}
+                          size={16}
+                          color={action.variant === 'outline' || action.variant === 'ghost' ? theme.colors.text.primary : theme.colors.text.inverse}
+                        />
+                      ) : undefined
+                    }
+                  />
+                ))}
+              </View>
+            ) : null}
           </View>
-        ) : null}
-
-        {eyebrow ? (
-          <CustomText
-            variant="caption"
-            style={{
-              color: 'rgba(226,218,255,0.76)',
-              textTransform: 'uppercase',
-              letterSpacing: 0.9,
-            }}
-          >
-            {eyebrow}
-          </CustomText>
-        ) : null}
-
-        <View style={{ gap: 6 }}>
-          <CustomText variant="hero" style={{ color: '#F8F4EA' }} numberOfLines={2}>
-            {title}
-          </CustomText>
-          {subtitle ? (
-            <CustomText variant="subtitle" style={{ color: 'rgba(241,236,225,0.78)' }} numberOfLines={1}>
-              {subtitle}
-            </CustomText>
-          ) : null}
-          {description ? (
-            <CustomText
-              variant="body"
-              style={{ color: 'rgba(230,223,210,0.76)', maxWidth: '88%' }}
-              numberOfLines={2}
-            >
-              {description}
-            </CustomText>
-          ) : null}
         </View>
-
-        {actions.length ? (
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 4 }}>
-            {actions.map((action) => (
-              <AppButton
-                key={`${action.label}-${action.icon ?? 'action'}`}
-                title={action.label}
-                onPress={action.onPress}
-                variant={action.variant ?? 'primary'}
-                size="sm"
-                style={
-                  action.variant === 'secondary'
-                    ? {
-                        borderRadius: 12,
-                        borderColor: 'rgba(255,255,255,0.10)',
-                        backgroundColor: 'rgba(11,13,22,0.82)',
-                      }
-                    : action.variant === 'primary'
-                      ? {
-                          borderRadius: 12,
-                          backgroundColor: '#8B5CF6',
-                        }
-                      : undefined
-                }
-                textColor={action.variant === 'secondary' ? '#FFF9F0' : undefined}
-                leftIcon={
-                  action.icon ? (
-                    <MaterialIcons
-                      name={action.icon}
-                      size={16}
-                      color={action.variant === 'outline' || action.variant === 'ghost' ? theme.colors.text.primary : theme.colors.text.inverse}
-                    />
-                  ) : undefined
-                }
-              />
-            ))}
-          </View>
-        ) : null}
       </View>
     </View>
   );
