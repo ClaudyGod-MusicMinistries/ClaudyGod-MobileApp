@@ -60,6 +60,7 @@ const donatePlanSchema = z
   .strict();
 
 const mobileLayoutContentTypeSchema = z.enum(['audio', 'video', 'playlist', 'announcement', 'live']);
+const adPlacementScreenSchema = z.enum(['landing', 'home', 'videos', 'player', 'live', 'library', 'search']);
 
 const mobileLayoutSectionSchema = z
   .object({
@@ -129,6 +130,31 @@ const settingsHubSectionSchema = z
     id: z.string().trim().min(1).max(80),
     title: shortTextSchema.max(80),
     items: z.array(settingsHubItemSchema).min(1).max(12),
+  })
+  .strict();
+
+const adPlacementSchema = z
+  .object({
+    id: z
+      .string()
+      .trim()
+      .min(2)
+      .max(80)
+      .regex(/^[a-z0-9-]+$/i, 'Placement id must use letters, numbers, and hyphens only'),
+    title: shortTextSchema.max(120),
+    subtitle: shortTextSchema.max(220),
+    screen: adPlacementScreenSchema,
+    enabled: z.boolean().default(true),
+    maxItems: z.coerce.number().int().min(1).max(8).default(1),
+  })
+  .strict();
+
+const aiAssistantConfigSchema = z
+  .object({
+    assistantEnabled: z.boolean().default(true),
+    adCopySuggestionsEnabled: z.boolean().default(true),
+    providerLabel: shortTextSchema.max(80).default('Integrated AI'),
+    defaultTone: shortTextSchema.max(80).default('Confident, concise, ministry-safe'),
   })
   .strict();
 
@@ -240,6 +266,14 @@ export const mobileAppConfigSchema = z
         sections: z.array(settingsHubSectionSchema).min(1).max(10),
       })
       .strict(),
+    monetization: z
+      .object({
+        adsEnabled: z.boolean().default(true),
+        disclosureLabel: shortTextSchema.max(40).default('Sponsored'),
+        placements: z.array(adPlacementSchema).min(1).max(12),
+      })
+      .strict(),
+    intelligence: aiAssistantConfigSchema,
   })
   .strict();
 
@@ -250,3 +284,4 @@ export const updateMobileAppConfigSchema = z
   .strict();
 
 export type MobileAppConfig = z.infer<typeof mobileAppConfigSchema>;
+export type AdPlacementScreen = z.infer<typeof adPlacementScreenSchema>;

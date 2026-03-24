@@ -8,6 +8,7 @@ import {
   queueWelcomeEmail,
 } from '../../infra/transactionalEmails';
 import { HttpError } from '../../lib/httpError';
+import { isMissingDatabaseStructureError } from '../../lib/postgres';
 import { hashPassword, verifyPassword } from '../../utils/password';
 import { signAccessToken } from '../../utils/jwt';
 import type {
@@ -67,6 +68,11 @@ interface PendingPasswordResetRow {
   id: string;
   user_id: string;
   email: string;
+}
+
+interface AuthRequestContext {
+  requestIp?: string;
+  userAgent?: string;
 }
 
 const ACTION_TOKEN_BYTES = 32;
@@ -136,6 +142,37 @@ const buildPendingRegisterResponse = (email: string, message = PENDING_VERIFICAT
   pendingEmail: email,
   message,
 });
+
+const recordAuthActivity = async (params: {
+  userId?: string | null;
+  email?: string | null;
+  eventKey: string;
+  status?: 'success' | 'failure' | 'info';
+  requestIp?: string;
+  userAgent?: string;
+  metadata?: Record<string, unknown>;
+}): Promise<void> => {
+  try {
+    await pool.query(
+      `INSERT INTO auth_activity_events (user_id, email, event_key, status, ip_address, user_agent, metadata)
+       VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb)`,
+      [
+        params.userId ?? null,
+        params.email?.trim().toLowerCase() ?? null,
+        params.eventKey,
+        params.status ?? 'info',
+        params.requestIp ?? null,
+        params.userAgent ?? null,
+        JSON.stringify(params.metadata ?? {}),
+      ],
+    );
+  } catch (error) {
+    if (isMissingDatabaseStructureError(error)) {
+      return;
+    }
+    throw error;
+  }
+};
 
 const issueAuthActionToken = async ({
   userId,
@@ -441,7 +478,7 @@ const completePendingPasswordReset = async ({
 
 export const registerUser = async (
   input: RegisterInput,
-  requestIp?: string,
+  context: AuthRequestContext = {},
 ): Promise<AuthResponse | RegisterResponse> => {
   const email = input.email.trim().toLowerCase();
   const displayName = input.username.trim();
@@ -477,7 +514,7 @@ export const registerUser = async (
         userId: existingUser.id,
         tokenType: 'email_verification',
         ttlMinutes: env.AUTH_VERIFICATION_TOKEN_TTL_MINUTES,
-        requestIp,
+        requestIp: context.requestIp,
       });
       await queueVerificationEmail(
         {
@@ -494,6 +531,16 @@ export const registerUser = async (
       );
     }
 
+    await recordAuthActivity({
+      userId: existingUser.id,
+      email,
+      eventKey: 'register_conflict',
+      status: 'failure',
+      requestIp: context.requestIp,
+      userAgent: context.userAgent,
+      metadata: { requestedRole },
+    });
+
     throw new HttpError(409, 'Email is already registered');
   }
 
@@ -505,7 +552,7 @@ export const registerUser = async (
       passwordHash,
       displayName,
       role: requestedRole,
-      requestIp,
+      requestIp: context.requestIp,
     });
 
     await queueVerificationEmail(
@@ -516,6 +563,15 @@ export const registerUser = async (
       },
       { verificationCode: pendingSignup.verificationCode },
     );
+
+    await recordAuthActivity({
+      email,
+      eventKey: 'register_pending',
+      status: 'success',
+      requestIp: context.requestIp,
+      userAgent: context.userAgent,
+      metadata: { requestedRole },
+    });
 
     return buildPendingRegisterResponse(email);
   }
@@ -535,6 +591,16 @@ export const registerUser = async (
     displayName: user.displayName,
   });
 
+  await recordAuthActivity({
+    userId: user.id,
+    email: user.email,
+    eventKey: 'register_completed',
+    status: 'success',
+    requestIp: context.requestIp,
+    userAgent: context.userAgent,
+    metadata: { requestedRole, immediateAccess: true },
+  });
+
   return {
     accessToken: buildAccessToken(user),
     user,
@@ -542,7 +608,7 @@ export const registerUser = async (
   };
 };
 
-export const loginUser = async (input: LoginInput): Promise<AuthResponse> => {
+export const loginUser = async (input: LoginInput, context: AuthRequestContext = {}): Promise<AuthResponse> => {
   const email = input.email.trim().toLowerCase();
 
   const result = await pool.query<UserRow>(
@@ -564,24 +630,57 @@ export const loginUser = async (input: LoginInput): Promise<AuthResponse> => {
     );
 
     if ((pending.rowCount ?? 0) > 0) {
+      await recordAuthActivity({
+        email,
+        eventKey: 'login_unverified',
+        status: 'failure',
+        requestIp: context.requestIp,
+        userAgent: context.userAgent,
+      });
       throw new HttpError(
         403,
         'Email is not verified. Enter the 6-digit code sent to your email to finish creating your account.',
       );
     }
 
+    await recordAuthActivity({
+      email,
+      eventKey: 'login_failed',
+      status: 'failure',
+      requestIp: context.requestIp,
+      userAgent: context.userAgent,
+      metadata: { reason: 'user_not_found' },
+    });
     throw new HttpError(401, 'Invalid credentials');
   }
 
   const userRow = result.rows[0]!;
 
   if (!userRow.is_active) {
+    await recordAuthActivity({
+      userId: userRow.id,
+      email,
+      eventKey: 'login_failed',
+      status: 'failure',
+      requestIp: context.requestIp,
+      userAgent: context.userAgent,
+      metadata: { reason: 'inactive' },
+    });
     throw new HttpError(403, 'Account is inactive');
   }
 
   const isValidPassword = await verifyPassword(input.password, userRow.password_hash);
 
   if (!isValidPassword) {
+    await recordAuthActivity({
+      userId: userRow.id,
+      email,
+      eventKey: 'login_failed',
+      status: 'failure',
+      requestIp: context.requestIp,
+      userAgent: context.userAgent,
+      metadata: { reason: 'invalid_password' },
+    });
     throw new HttpError(401, 'Invalid credentials');
   }
 
@@ -592,6 +691,14 @@ export const loginUser = async (input: LoginInput): Promise<AuthResponse> => {
     safeUser.role === 'CLIENT' &&
     !safeUser.emailVerifiedAt
   ) {
+    await recordAuthActivity({
+      userId: safeUser.id,
+      email: safeUser.email,
+      eventKey: 'login_unverified',
+      status: 'failure',
+      requestIp: context.requestIp,
+      userAgent: context.userAgent,
+    });
     throw new HttpError(
       403,
       'Email is not verified. Enter the 6-digit code sent to your email or request a new verification email.',
@@ -601,6 +708,14 @@ export const loginUser = async (input: LoginInput): Promise<AuthResponse> => {
   await Promise.all([
     ensureUserScaffold(safeUser),
     pool.query(`UPDATE app_users SET last_login_at = NOW() WHERE id = $1`, [safeUser.id]),
+    recordAuthActivity({
+      userId: safeUser.id,
+      email: safeUser.email,
+      eventKey: 'login_success',
+      status: 'success',
+      requestIp: context.requestIp,
+      userAgent: context.userAgent,
+    }),
   ]);
 
   return {
@@ -609,7 +724,7 @@ export const loginUser = async (input: LoginInput): Promise<AuthResponse> => {
   };
 };
 
-export const verifyEmail = async (input: VerifyEmailInput): Promise<AuthResponse> => {
+export const verifyEmail = async (input: VerifyEmailInput, context: AuthRequestContext = {}): Promise<AuthResponse> => {
   const submittedToken = input.token.trim();
 
   if (isOtpCode(submittedToken)) {
@@ -627,6 +742,16 @@ export const verifyEmail = async (input: VerifyEmailInput): Promise<AuthResponse
       id: user.id,
       email: user.email,
       displayName: user.displayName,
+    });
+
+    await recordAuthActivity({
+      userId: user.id,
+      email: user.email,
+      eventKey: 'verification_completed',
+      status: 'success',
+      requestIp: context.requestIp,
+      userAgent: context.userAgent,
+      metadata: { method: 'otp' },
     });
 
     return {
@@ -661,6 +786,16 @@ export const verifyEmail = async (input: VerifyEmailInput): Promise<AuthResponse
     displayName: user.displayName,
   });
 
+  await recordAuthActivity({
+    userId: user.id,
+    email: user.email,
+    eventKey: 'verification_completed',
+    status: 'success',
+    requestIp: context.requestIp,
+    userAgent: context.userAgent,
+    metadata: { method: 'token' },
+  });
+
   return {
     accessToken: buildAccessToken(user),
     user,
@@ -670,7 +805,7 @@ export const verifyEmail = async (input: VerifyEmailInput): Promise<AuthResponse
 
 export const resendVerificationEmail = async (
   input: ResendVerificationEmailInput,
-  requestIp?: string,
+  context: AuthRequestContext = {},
 ): Promise<AuthActionResponse> => {
   const email = input.email.trim().toLowerCase();
 
@@ -689,7 +824,7 @@ export const resendVerificationEmail = async (
       passwordHash: pendingSignup.password_hash,
       displayName: pendingSignup.display_name,
       role: pendingSignup.role,
-      requestIp,
+      requestIp: context.requestIp,
     });
 
     await queueVerificationEmail(
@@ -700,6 +835,15 @@ export const resendVerificationEmail = async (
       },
       { verificationCode: pendingCode.verificationCode },
     );
+
+    await recordAuthActivity({
+      email: pendingSignup.email,
+      eventKey: 'verification_requested',
+      status: 'success',
+      requestIp: context.requestIp,
+      userAgent: context.userAgent,
+      metadata: { target: 'pending_signup' },
+    });
 
     return { message: AUTH_GENERIC_EMAIL_MESSAGE };
   }
@@ -726,7 +870,7 @@ export const resendVerificationEmail = async (
     userId: user.id,
     tokenType: 'email_verification',
     ttlMinutes: env.AUTH_VERIFICATION_TOKEN_TTL_MINUTES,
-    requestIp,
+    requestIp: context.requestIp,
   });
   await queueVerificationEmail(
     {
@@ -737,12 +881,22 @@ export const resendVerificationEmail = async (
     { rawToken: verificationToken.rawToken },
   );
 
+  await recordAuthActivity({
+    userId: user.id,
+    email: user.email,
+    eventKey: 'verification_requested',
+    status: 'success',
+    requestIp: context.requestIp,
+    userAgent: context.userAgent,
+    metadata: { target: 'existing_user' },
+  });
+
   return { message: AUTH_GENERIC_EMAIL_MESSAGE };
 };
 
 export const requestPasswordReset = async (
   input: ForgotPasswordInput,
-  requestIp?: string,
+  context: AuthRequestContext = {},
 ): Promise<AuthActionResponse> => {
   const email = input.email.trim().toLowerCase();
 
@@ -762,7 +916,7 @@ export const requestPasswordReset = async (
   const pendingReset = await issuePendingPasswordResetCode({
     userId: user.id,
     email: user.email,
-    requestIp,
+    requestIp: context.requestIp,
   });
   await queuePasswordResetEmail(
     {
@@ -773,10 +927,19 @@ export const requestPasswordReset = async (
     { resetCode: pendingReset.resetCode },
   );
 
+  await recordAuthActivity({
+    userId: user.id,
+    email: user.email,
+    eventKey: 'password_reset_requested',
+    status: 'success',
+    requestIp: context.requestIp,
+    userAgent: context.userAgent,
+  });
+
   return { message: AUTH_GENERIC_EMAIL_MESSAGE };
 };
 
-export const resetPassword = async (input: ResetPasswordInput): Promise<AuthActionResponse> => {
+export const resetPassword = async (input: ResetPasswordInput, context: AuthRequestContext = {}): Promise<AuthActionResponse> => {
   const submittedToken = input.token.trim();
 
   if (isOtpCode(submittedToken)) {
@@ -789,6 +952,15 @@ export const resetPassword = async (input: ResetPasswordInput): Promise<AuthActi
       email,
       resetCode: submittedToken,
       newPassword: input.newPassword,
+    });
+
+    await recordAuthActivity({
+      email,
+      eventKey: 'password_reset_completed',
+      status: 'success',
+      requestIp: context.requestIp,
+      userAgent: context.userAgent,
+      metadata: { method: 'otp' },
     });
 
     return { message: 'Password updated successfully.' };
@@ -816,6 +988,15 @@ export const resetPassword = async (input: ResetPasswordInput): Promise<AuthActi
        AND used_at IS NULL`,
     [tokenUse.user_id],
   );
+
+  await recordAuthActivity({
+    userId: tokenUse.user_id,
+    eventKey: 'password_reset_completed',
+    status: 'success',
+    requestIp: context.requestIp,
+    userAgent: context.userAgent,
+    metadata: { method: 'token' },
+  });
 
   return { message: 'Password updated successfully.' };
 };

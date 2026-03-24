@@ -1,9 +1,7 @@
 import {
-  SpaceGrotesk_400Regular,
   SpaceGrotesk_500Medium,
-  SpaceGrotesk_600SemiBold,
 } from '@expo-google-fonts/space-grotesk';
-import { Sora_400Regular, Sora_500Medium, Sora_600SemiBold } from '@expo-google-fonts/sora';
+import { Sora_400Regular, Sora_600SemiBold } from '@expo-google-fonts/sora';
 import * as Font from 'expo-font';
 
 export const fontConfig = {
@@ -28,16 +26,16 @@ export const fontConfig = {
     fontWeight: '600' as const,
   },
   title: {
-    fontFamily: 'Sora_500Medium',
+    fontFamily: 'Sora_600SemiBold',
     fontSize: 14,
     lineHeight: 18,
-    fontWeight: '500' as const,
+    fontWeight: '600' as const,
   },
   subtitle: {
-    fontFamily: 'Sora_500Medium',
+    fontFamily: 'Sora_400Regular',
     fontSize: 12,
     lineHeight: 16,
-    fontWeight: '500' as const,
+    fontWeight: '400' as const,
   },
   body: {
     fontFamily: 'Sora_400Regular',
@@ -96,14 +94,12 @@ export const loadFonts = async () => {
     // Preserve legacy keys while remapping them to calmer, more readable weights.
     ClashDisplay_600SemiBold: Sora_600SemiBold,
     ClashDisplay_700Bold: Sora_600SemiBold,
-
-    SpaceGrotesk_400Regular,
     SpaceGrotesk_500Medium,
-    SpaceGrotesk_600SemiBold,
-
     Sora_400Regular,
-    Sora_500Medium,
     Sora_600SemiBold,
+    SpaceGrotesk_400Regular: SpaceGrotesk_500Medium,
+    SpaceGrotesk_600SemiBold: SpaceGrotesk_500Medium,
+    Sora_500Medium: Sora_600SemiBold,
   });
 };
 
@@ -111,6 +107,6 @@ export const fontWeights = {
   light: 'Sora_400Regular',
   regular: 'Sora_400Regular',
   medium: 'SpaceGrotesk_500Medium',
-  semiBold: 'SpaceGrotesk_600SemiBold',
-  bold: 'SpaceGrotesk_600SemiBold',
+  semiBold: 'Sora_600SemiBold',
+  bold: 'Sora_600SemiBold',
 };

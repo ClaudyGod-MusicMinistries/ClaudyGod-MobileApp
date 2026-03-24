@@ -18,9 +18,11 @@ export default function AdminShell(props) {
       ? 'Live Broadcast Portal'
       : dashboardView === 'mobile-config'
         ? 'Mobile Experience Portal'
-      : dashboardView === 'mobile-preview'
-        ? 'Mobile Experience Preview'
-        : 'Content Publishing Portal';
+        : dashboardView === 'ads-ai'
+          ? 'Ads & AI Portal'
+        : dashboardView === 'mobile-preview'
+          ? 'Mobile Experience Preview'
+          : 'Content Publishing Portal';
 
   return (
     <div class="app-root">

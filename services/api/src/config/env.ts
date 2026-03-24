@@ -196,6 +196,11 @@ const envSchema = z
     SEED_ADMIN_PASSWORD: z.string().min(8).default('ChangeMe123!'),
     SEED_ADMIN_DISPLAY_NAME: z.string().trim().min(2).max(80).default('Claudy Admin'),
     SEED_ADMIN_ON_BOOT: toBoolean(runtimeEnv === 'development'),
+    AI_PROVIDER_NAME: z.string().trim().min(2).max(80).default('Integrated AI'),
+    AI_PROVIDER_URL: optionalUrl(),
+    AI_PROVIDER_API_KEY: z.string().optional().default(''),
+    AI_MODEL: z.string().trim().max(120).default(''),
+    AI_TIMEOUT_MS: z.coerce.number().int().min(1000).max(120000).default(15000),
   })
   .superRefine((value, ctx) => {
     if (looksLikeJwtToken(value.JWT_ACCESS_SECRET)) {

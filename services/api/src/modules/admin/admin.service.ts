@@ -30,6 +30,14 @@ interface RequestSummaryRow {
   active_privacy_requests: string;
 }
 
+interface AuthSummaryRow {
+  pending_signups: string;
+  login_success_last_7_days: string;
+  login_failures_last_7_days: string;
+  verifications_last_7_days: string;
+  password_resets_last_30_days: string;
+}
+
 interface RecentUserRow {
   id: string;
   email: string;
@@ -80,6 +88,19 @@ interface AutomationRunRow {
   created_at: string | Date;
   actor_display_name: string | null;
   actor_email: string | null;
+}
+
+interface RecentAuthActivityRow {
+  id: string;
+  user_id: string | null;
+  email: string | null;
+  event_key: string;
+  status: 'success' | 'failure' | 'info';
+  ip_address: string | null;
+  user_agent: string | null;
+  metadata: Record<string, unknown> | null;
+  created_at: string | Date;
+  display_name: string | null;
 }
 
 interface EmailSummaryRow {
@@ -205,6 +226,14 @@ const DEFAULT_REQUEST_SUMMARY_ROW: RequestSummaryRow = {
   active_privacy_requests: '0',
 };
 
+const DEFAULT_AUTH_SUMMARY_ROW: AuthSummaryRow = {
+  pending_signups: '0',
+  login_success_last_7_days: '0',
+  login_failures_last_7_days: '0',
+  verifications_last_7_days: '0',
+  password_resets_last_30_days: '0',
+};
+
 const DEFAULT_EMAIL_SUMMARY_ROW: EmailSummaryRow = {
   pending_jobs: '0',
   processing_jobs: '0',
@@ -219,11 +248,13 @@ export const getAdminDashboard = async () => {
     contentSummary,
     ratingSummary,
     requestSummary,
+    authSummary,
     recentUsers,
     feedback,
     supportInbox,
     signupTrend,
     automationRuns,
+    recentAuthActivity,
     emailSummary,
     recentEmailJobs,
   ] =
@@ -266,6 +297,30 @@ export const getAdminDashboard = async () => {
          FROM support_requests`,
       ),
         [DEFAULT_REQUEST_SUMMARY_ROW],
+      ),
+      safeQueryRows(
+        pool.query<AuthSummaryRow>(
+          `SELECT
+             (SELECT COUNT(*)::text FROM pending_signups WHERE expires_at > NOW()) AS pending_signups,
+             COUNT(*) FILTER (
+               WHERE event_key = 'login_success'
+                 AND created_at >= NOW() - INTERVAL '7 days'
+             )::text AS login_success_last_7_days,
+             COUNT(*) FILTER (
+               WHERE event_key IN ('login_failed', 'login_unverified')
+                 AND created_at >= NOW() - INTERVAL '7 days'
+             )::text AS login_failures_last_7_days,
+             COUNT(*) FILTER (
+               WHERE event_key = 'verification_completed'
+                 AND created_at >= NOW() - INTERVAL '7 days'
+             )::text AS verifications_last_7_days,
+             COUNT(*) FILTER (
+               WHERE event_key = 'password_reset_completed'
+                 AND created_at >= NOW() - INTERVAL '30 days'
+             )::text AS password_resets_last_30_days
+           FROM auth_activity_events`,
+        ),
+        [DEFAULT_AUTH_SUMMARY_ROW],
       ),
       safeQueryRows(
         pool.query<RecentUserRow>(
@@ -375,6 +430,26 @@ export const getAdminDashboard = async () => {
         }),
         [],
       ),
+      safeQueryRows(
+        pool.query<RecentAuthActivityRow>(
+          `SELECT
+             e.id::text,
+             e.user_id,
+             e.email,
+             e.event_key,
+             e.status,
+             e.ip_address,
+             e.user_agent,
+             e.metadata,
+             e.created_at,
+             u.display_name
+           FROM auth_activity_events e
+           LEFT JOIN app_users u ON u.id = e.user_id
+           ORDER BY e.created_at DESC
+           LIMIT 12`,
+        ),
+        [],
+      ),
       safeQueryRows(getEmailDeliverySummaryResult(), [DEFAULT_EMAIL_SUMMARY_ROW]),
       safeQueryRows(getRecentEmailJobsResult(8), []),
     ]);
@@ -383,6 +458,7 @@ export const getAdminDashboard = async () => {
   const content = contentSummary.rows[0]!;
   const ratings = ratingSummary.rows[0]!;
   const requests = requestSummary.rows[0]!;
+  const auth = authSummary.rows[0]!;
   const emailDelivery = emailSummary.rows[0]!;
 
   const smartInsights = [
@@ -400,6 +476,22 @@ export const getAdminDashboard = async () => {
           tone: 'warning',
           title: 'Support backlog needs attention',
           detail: `${requests.open_support_requests} complaint tickets are open or in progress. Resolve them before expanding traffic.`,
+        }
+      : null,
+    Number(auth.login_failures_last_7_days) >= Math.max(10, Number(auth.login_success_last_7_days))
+      ? {
+          id: 'auth-friction',
+          tone: 'warning',
+          title: 'Sign-in friction is elevated',
+          detail: `${auth.login_failures_last_7_days} unsuccessful sign-in attempts were recorded in the last 7 days. Review password UX, verification flow, and support guidance.`,
+        }
+      : null,
+    Number(auth.pending_signups) >= 5
+      ? {
+          id: 'pending-signups',
+          tone: 'info',
+          title: 'Pending signups are accumulating',
+          detail: `${auth.pending_signups} account(s) are waiting on email verification. Review delivery timing and onboarding clarity.`,
         }
       : null,
     Number(content.draft_content) > Number(content.published_content)
@@ -469,8 +561,20 @@ export const getAdminDashboard = async () => {
       draftContent: Number(content.draft_content),
       openSupportRequests: Number(requests.open_support_requests),
       activePrivacyRequests: Number(requests.active_privacy_requests),
+      pendingSignups: Number(auth.pending_signups),
+      loginSuccessLast7Days: Number(auth.login_success_last_7_days),
+      loginFailuresLast7Days: Number(auth.login_failures_last_7_days),
+      verificationsLast7Days: Number(auth.verifications_last_7_days),
+      passwordResetsLast30Days: Number(auth.password_resets_last_30_days),
       totalFeedback: Number(ratings.total_feedback),
       averageRating: ratings.average_rating ? Number(ratings.average_rating) : null,
+    },
+    authFunnel: {
+      pendingSignups: Number(auth.pending_signups),
+      loginSuccessLast7Days: Number(auth.login_success_last_7_days),
+      loginFailuresLast7Days: Number(auth.login_failures_last_7_days),
+      verificationsLast7Days: Number(auth.verifications_last_7_days),
+      passwordResetsLast30Days: Number(auth.password_resets_last_30_days),
     },
     emailDelivery: {
       smtpEnabled: emailTransportInfo.enabled,
@@ -545,6 +649,24 @@ export const getAdminDashboard = async () => {
           }
         : null,
       label: humanizeToken(row.run_type),
+    })),
+    recentAuthActivity: recentAuthActivity.rows.map((row) => ({
+      id: row.id,
+      eventKey: row.event_key,
+      label: humanizeToken(row.event_key),
+      status: row.status,
+      createdAt: toIso(row.created_at),
+      email: row.email ?? '',
+      ipAddress: row.ip_address ?? '',
+      userAgent: row.user_agent ?? '',
+      metadata: row.metadata ?? {},
+      user: row.user_id
+        ? {
+            id: row.user_id,
+            displayName: row.display_name ?? 'Unknown user',
+            email: row.email ?? '',
+          }
+        : null,
     })),
   };
 };
