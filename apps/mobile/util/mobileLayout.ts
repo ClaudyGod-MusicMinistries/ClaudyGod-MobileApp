@@ -118,6 +118,35 @@ const DEFAULT_LAYOUT: MobileAppExperienceConfig['layout'] = {
       maxItems: 8,
     },
   ],
+  librarySections: [
+    {
+      id: 'most-played',
+      title: 'Most Played',
+      subtitle: 'Your strongest listening patterns and familiar replays.',
+      contentTypes: ['audio', 'video', 'playlist', 'live'],
+      actionLabel: 'Play',
+      destinationTab: 'player',
+      maxItems: 10,
+    },
+    {
+      id: 'saved-music',
+      title: 'Saved Music',
+      subtitle: 'Music and message audio you have kept in your personal collection.',
+      contentTypes: ['audio', 'playlist'],
+      actionLabel: 'Music',
+      destinationTab: 'player',
+      maxItems: 10,
+    },
+    {
+      id: 'playlist-collections',
+      title: 'Playlists',
+      subtitle: 'Collections and grouped listening journeys from your library.',
+      contentTypes: ['playlist', 'audio'],
+      actionLabel: 'Search',
+      destinationTab: 'search',
+      maxItems: 8,
+    },
+  ],
 };
 
 function normalizeToken(value: string): string {
@@ -169,6 +198,10 @@ export function getVideoLayoutSections(config?: MobileAppExperienceConfig | null
 
 export function getPlayerLayoutSections(config?: MobileAppExperienceConfig | null): MobileLayoutSection[] {
   return config?.layout?.playerSections?.length ? config.layout.playerSections : DEFAULT_LAYOUT.playerSections;
+}
+
+export function getLibraryLayoutSections(config?: MobileAppExperienceConfig | null): MobileLayoutSection[] {
+  return config?.layout?.librarySections?.length ? config.layout.librarySections : DEFAULT_LAYOUT.librarySections;
 }
 
 export function matchesLayoutSection(item: FeedCardItem, section: MobileLayoutSection): boolean {

@@ -1,7 +1,7 @@
 import type { MobileAppConfig } from './appConfig.schema';
 
 export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
-  version: 3,
+  version: 4,
   privacy: {
     contactEmail: 'privacy@claudygod.org',
     deleteConfirmPhrase: 'I CONFIRM',
@@ -271,6 +271,35 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
         maxItems: 8,
       },
     ],
+    librarySections: [
+      {
+        id: 'most-played',
+        title: 'Most Played',
+        subtitle: 'Your strongest listening patterns and familiar replays.',
+        contentTypes: ['audio', 'video', 'playlist', 'live'],
+        actionLabel: 'Play',
+        destinationTab: 'player',
+        maxItems: 10,
+      },
+      {
+        id: 'saved-music',
+        title: 'Saved Music',
+        subtitle: 'Music and message audio you have kept in your personal collection.',
+        contentTypes: ['audio', 'playlist'],
+        actionLabel: 'Music',
+        destinationTab: 'player',
+        maxItems: 10,
+      },
+      {
+        id: 'playlist-collections',
+        title: 'Playlists',
+        subtitle: 'Collections and grouped listening journeys from your library.',
+        contentTypes: ['playlist', 'audio'],
+        actionLabel: 'Search',
+        destinationTab: 'search',
+        maxItems: 8,
+      },
+    ],
   },
   navigation: {
     tabs: [
@@ -279,6 +308,117 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
       { id: 'player', label: 'Music', icon: 'graphic-eq' },
       { id: 'library', label: 'Library', icon: 'library-music' },
       { id: 'search', label: 'Search', icon: 'travel-explore' },
+    ],
+  },
+  discovery: {
+    categories: ['All', 'audio', 'video', 'playlist', 'live', 'announcement'],
+    shortcuts: [
+      {
+        id: 'worship',
+        icon: 'graphic-eq',
+        label: 'Trending worship',
+        query: 'worship',
+        category: 'audio',
+      },
+      {
+        id: 'live',
+        icon: 'live-tv',
+        label: 'Live now',
+        query: 'live',
+        category: 'live',
+      },
+      {
+        id: 'message',
+        icon: 'menu-book',
+        label: 'Message audio',
+        query: 'message',
+        category: 'announcement',
+      },
+    ],
+  },
+  settingsHub: {
+    sections: [
+      {
+        id: 'account',
+        title: 'Account',
+        items: [
+          {
+            id: 'profile',
+            icon: 'person-outline',
+            label: 'Profile',
+            hint: 'Name, email, and account details',
+            destination: 'profile',
+          },
+          {
+            id: 'library',
+            icon: 'library-music',
+            label: 'Your Library',
+            hint: 'Saved listening and playlists',
+            destination: 'tabs.library',
+          },
+          {
+            id: 'privacy',
+            icon: 'shield',
+            label: 'Privacy',
+            hint: 'Permissions and account controls',
+            destination: 'settings.privacy',
+          },
+        ],
+      },
+      {
+        id: 'discover',
+        title: 'Discover',
+        items: [
+          {
+            id: 'videos',
+            icon: 'ondemand-video',
+            label: 'Video Hub',
+            hint: 'Live streams, replays, and featured watchlists',
+            destination: 'tabs.videos',
+          },
+          {
+            id: 'search',
+            icon: 'search',
+            label: 'Search & Discovery',
+            hint: 'Explore songs, videos, playlists, and ministry topics',
+            destination: 'tabs.search',
+          },
+          {
+            id: 'donate',
+            icon: 'volunteer-activism',
+            label: 'Support the Ministry',
+            hint: 'Give and support the mission',
+            destination: 'settings.donate',
+          },
+        ],
+      },
+      {
+        id: 'support',
+        title: 'Support',
+        items: [
+          {
+            id: 'help',
+            icon: 'help-outline',
+            label: 'Help',
+            hint: 'FAQs and support options',
+            destination: 'settings.help',
+          },
+          {
+            id: 'about',
+            icon: 'info-outline',
+            label: 'About ClaudyGod',
+            hint: 'Learn about the ministry and the platform',
+            destination: 'settings.about',
+          },
+          {
+            id: 'rate',
+            icon: 'rate-review',
+            label: 'Rate App',
+            hint: 'Share feedback about the experience',
+            destination: 'settings.rate',
+          },
+        ],
+      },
     ],
   },
 };
