@@ -72,6 +72,8 @@ const mobileLayoutSectionSchema = z
     title: shortTextSchema.max(120),
     subtitle: shortTextSchema.max(220),
     contentTypes: z.array(mobileLayoutContentTypeSchema).min(1).max(5),
+    actionLabel: z.string().trim().min(1).max(40).default('Open'),
+    destinationTab: z.enum(['home', 'videos', 'player', 'library', 'search']).default('home'),
     maxItems: z.coerce.number().int().min(1).max(24).default(8),
   })
   .strict();
@@ -172,6 +174,7 @@ export const mobileAppConfigSchema = z
       .object({
         homeSections: z.array(mobileLayoutSectionSchema).min(1).max(16),
         videoSections: z.array(mobileLayoutSectionSchema).min(1).max(16),
+        playerSections: z.array(mobileLayoutSectionSchema).min(1).max(16),
       })
       .strict(),
     navigation: z

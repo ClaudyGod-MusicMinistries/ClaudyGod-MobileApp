@@ -10,9 +10,11 @@ import { CustomText } from '../../components/CustomText';
 import { FadeIn } from '../../components/ui/FadeIn';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { AppButton } from '../../components/ui/AppButton';
+import { ActionSheet } from '../../components/ui/ActionSheet';
 import { useToast } from '../../context/ToastContext';
 import { useAppTheme, useColorSchemeToggle } from '../../util/colorScheme';
 import { fetchMePreferences, updateMePreferences } from '../../services/userFlowService';
+import { clearMobileSession } from '../../services/authService';
 import { APP_ROUTES } from '../../util/appRoutes';
 
 type SettingItem = {
@@ -99,6 +101,7 @@ export default function SettingsScreen() {
   const [highQuality, setHighQuality] = useState(false);
   const [personalization, setPersonalization] = useState(true);
   const [preferencesLoaded, setPreferencesLoaded] = useState(false);
+  const [isLogoutSheetVisible, setIsLogoutSheetVisible] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -153,6 +156,12 @@ export default function SettingsScreen() {
             label: 'Donate',
             hint: 'Support the ministry',
             action: () => router.push(APP_ROUTES.settingsPages.donate),
+          },
+          {
+            icon: 'logout',
+            label: 'Sign out',
+            hint: 'Leave this device securely',
+            action: () => setIsLogoutSheetVisible(true),
           },
         ] as SettingItem[],
       },
@@ -384,6 +393,31 @@ export default function SettingsScreen() {
           </View>
         </Screen>
       </ScrollView>
+      <ActionSheet
+        visible={isLogoutSheetVisible}
+        title="Sign out of ClaudyGod?"
+        description="You will need to sign in again to restore your library and preferences."
+        actions={[
+          {
+            key: 'sign-out',
+            label: 'Sign Out',
+            detail: 'End your current session on this device.',
+            icon: 'logout',
+            tone: 'destructive',
+            onPress: () => {
+              void clearMobileSession().finally(() => {
+                showToast({
+                  title: 'Signed out',
+                  message: 'Your session has been closed on this device.',
+                  tone: 'info',
+                });
+                router.replace(APP_ROUTES.auth.signIn);
+              });
+            },
+          },
+        ]}
+        onClose={() => setIsLogoutSheetVisible(false)}
+      />
     </TabScreenWrapper>
   );
 }

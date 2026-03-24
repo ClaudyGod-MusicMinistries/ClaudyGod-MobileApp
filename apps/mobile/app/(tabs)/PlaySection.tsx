@@ -10,17 +10,20 @@ import { PosterCard } from '../../components/ui/PosterCard';
 import { SectionHeader } from '../../components/ui/SectionHeader';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { AppButton } from '../../components/ui/AppButton';
+import { ActionSheet, type ActionSheetAction } from '../../components/ui/ActionSheet';
 import { CustomText } from '../../components/CustomText';
 import { AudioPlayer } from '../../components/media/AudioPlayer';
 import { CinematicHeroCard } from '../../components/sections/CinematicHeroCard';
 import { useToast } from '../../context/ToastContext';
 import { useAppTheme } from '../../util/colorScheme';
 import { useContentFeed } from '../../hooks/useContentFeed';
+import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import type { FeedCardItem } from '../../services/contentService';
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
 import { fetchMeLibrary, removeMeLibraryItem, saveMeLibraryItem } from '../../services/userFlowService';
-import { APP_ROUTES } from '../../util/appRoutes';
+import { APP_ROUTES, TAB_ROUTE_BY_ID } from '../../util/appRoutes';
 import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
+import { deriveLayoutSectionItems, getPlayerLayoutSections } from '../../util/mobileLayout';
 import {
   buildPlayerRoute,
   isDirectPlayableAudioUrl,
@@ -91,6 +94,7 @@ export default function PlaySection() {
   const isTablet = width >= 768;
   const posterSize = isTablet ? 'lg' : 'md';
   const { feed } = useContentFeed();
+  const { config: mobileConfig } = useMobileAppConfig();
 
   const routeItem = useMemo(() => parseRouteItem(params), [params]);
   const queue = useMemo(() => {
@@ -106,6 +110,7 @@ export default function PlaySection() {
 
   const [activeId, setActiveId] = useState(routeItem?.id ?? queue[0]?.id ?? '');
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+  const [isActionSheetVisible, setIsActionSheetVisible] = useState(false);
 
   useEffect(() => {
     if (routeItem?.id) {
@@ -149,6 +154,17 @@ export default function PlaySection() {
   const canGoPrevious = activeIndex > 0;
   const canGoNext = activeIndex >= 0 && activeIndex < queue.length - 1;
   const isSaved = active ? savedIds.has(active.id) : false;
+  const curatedSections = useMemo(
+    () =>
+      getPlayerLayoutSections(mobileConfig)
+        .map((section) => ({
+          section,
+          items: deriveLayoutSectionItems(feed, section).filter((item) => !shouldOpenVideoScreen(item)),
+        }))
+        .filter((entry) => entry.items.length > 0)
+        .slice(0, 5),
+    [feed, mobileConfig],
+  );
 
   const openItem = async (item: FeedCardItem, source: string) => {
     setActiveId(item.id);
@@ -250,6 +266,48 @@ export default function PlaySection() {
     }
   };
 
+  const actionSheetActions: ActionSheetAction[] = !active
+    ? []
+    : [
+        {
+          key: 'save',
+          label: isSaved ? 'Remove from Library' : 'Save to Library',
+          detail: isSaved ? 'Remove this item from your saved library.' : 'Keep this item in your library.',
+          icon: isSaved ? 'bookmark' : 'bookmark-border',
+          onPress: () => {
+            void toggleSave();
+          },
+        },
+        {
+          key: 'share',
+          label: 'Share',
+          detail: 'Send this listening item to someone else.',
+          icon: 'ios-share',
+          onPress: () => {
+            void shareActive();
+          },
+        },
+        {
+          key: 'open-browser',
+          label: 'Open in Browser',
+          detail: 'Open the source link outside the app.',
+          icon: 'open-in-new',
+          onPress: () => {
+            void openExternal();
+          },
+        },
+        {
+          key: 'open-detail',
+          label: 'Open Related Screen',
+          detail: 'Open the dedicated player route for this item.',
+          icon: 'open-in-full',
+          tone: 'accent' as const,
+          onPress: () => {
+            router.push(buildPlayerRoute(active));
+          },
+        },
+      ];
+
   return (
     <TabScreenWrapper>
       <ScrollView
@@ -318,18 +376,11 @@ export default function PlaySection() {
                         leftIcon={<MaterialIcons name={isSaved ? 'bookmark' : 'bookmark-border'} size={16} color={theme.colors.text.primary} />}
                       />
                       <AppButton
-                        title="Share"
+                        title="More"
                         variant="outline"
                         size="sm"
-                        onPress={() => void shareActive()}
-                        leftIcon={<MaterialIcons name="ios-share" size={16} color={theme.colors.text.primary} />}
-                      />
-                      <AppButton
-                        title="Open in browser"
-                        variant="outline"
-                        size="sm"
-                        onPress={() => void openExternal()}
-                        leftIcon={<MaterialIcons name="open-in-new" size={16} color={theme.colors.text.primary} />}
+                        onPress={() => setIsActionSheetVisible(true)}
+                        leftIcon={<MaterialIcons name="more-horiz" size={16} color={theme.colors.text.primary} />}
                       />
                     </View>
                   </View>
@@ -350,10 +401,10 @@ export default function PlaySection() {
                       icon: 'play-arrow',
                     },
                     {
-                      label: isSaved ? 'Saved' : 'Save',
-                      onPress: () => void toggleSave(),
+                      label: 'More',
+                      onPress: () => setIsActionSheetVisible(true),
                       variant: 'secondary',
-                      icon: isSaved ? 'bookmark' : 'bookmark-border',
+                      icon: 'more-horiz',
                     },
                   ]}
                 />
@@ -384,32 +435,42 @@ export default function PlaySection() {
               </FadeIn>
             ) : null}
 
-            {feed.playlists.length ? (
-              <FadeIn delay={170}>
+            {curatedSections.map(({ section, items }, index) => (
+              <FadeIn key={section.id || section.title} delay={170 + index * 35}>
                 <View>
                   <SectionHeader
-                    title="Playlists"
-                    actionLabel="Search"
-                    onAction={() => router.push(APP_ROUTES.tabs.search)}
+                    title={section.title}
+                    actionLabel={section.actionLabel}
+                    onAction={() => router.push(TAB_ROUTE_BY_ID[section.destinationTab])}
                   />
+                  <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginBottom: 10 }}>
+                    {section.subtitle}
+                  </CustomText>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false} overScrollMode="never">
-                    {feed.playlists.map((item) => (
+                    {items.map((item) => (
                       <PosterCard
-                        key={item.id}
+                        key={`${section.title}-${item.id}`}
                         imageUrl={item.imageUrl}
                         title={item.title}
                         subtitle={item.subtitle}
                         size={posterSize}
-                        onPress={() => void openItem(item, 'player_playlists')}
+                        onPress={() => void openItem(item, 'player_curated')}
                       />
                     ))}
                   </ScrollView>
                 </View>
               </FadeIn>
-            ) : null}
+            ))}
           </View>
         </Screen>
       </ScrollView>
+      <ActionSheet
+        visible={isActionSheetVisible}
+        title={active?.title ?? 'Player actions'}
+        description={active?.subtitle ?? 'Choose what to do with this listening item.'}
+        actions={actionSheetActions}
+        onClose={() => setIsActionSheetVisible(false)}
+      />
     </TabScreenWrapper>
   );
 }
