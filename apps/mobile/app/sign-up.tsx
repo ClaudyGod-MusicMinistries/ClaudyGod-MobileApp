@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -20,13 +20,11 @@ import {
   normalizeEmail,
 } from '../lib/authValidation';
 import { registerMobileUser } from '../services/authService';
-import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { APP_ROUTES } from '../util/appRoutes';
 
 export default function SignUpScreen() {
   const router = useRouter();
-  const { initializing, isAuthenticated } = useAuth();
   const { showToast } = useToast();
 
   const [name, setName] = useState('');
@@ -52,12 +50,6 @@ export default function SignUpScreen() {
     () => getPasswordConfirmationMessage(password, confirmPassword),
     [confirmPassword, password],
   );
-
-  useEffect(() => {
-    if (!initializing && isAuthenticated) {
-      router.replace(APP_ROUTES.tabs.home);
-    }
-  }, [initializing, isAuthenticated, router]);
 
   const canSubmit = useMemo(
     () =>
