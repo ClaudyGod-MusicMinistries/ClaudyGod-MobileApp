@@ -101,9 +101,9 @@ export default function LandingScreen() {
         backgroundColor={LANDING_COLORS.background}
       />
 
-      <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: LANDING_COLORS.background }} edges={['top', 'bottom']}>
         <ScrollView
-          style={{ flex: 1 }}
+          style={{ flex: 1, backgroundColor: LANDING_COLORS.background }}
           contentContainerStyle={{ flexGrow: 1, paddingBottom: isTablet ? 32 : 24 }}
           showsVerticalScrollIndicator={false}
           bounces={false}
@@ -292,7 +292,9 @@ export default function LandingScreen() {
                       </CustomText>
                     </TVTouchable>
                     <TVTouchable
-                      onPress={() => router.push(APP_ROUTES.tabs.videos)}
+                      onPress={() =>
+                        router.push(isAuthenticated ? APP_ROUTES.tabs.videos : APP_ROUTES.auth.signIn)
+                      }
                       showFocusBorder={false}
                       style={{
                         minHeight: 34,
