@@ -14,6 +14,17 @@ import { useAppTheme } from '../util/colorScheme';
 import { APP_ROUTES } from '../util/appRoutes';
 import { BRAND_HERO_ASSET, BRAND_LOGO_ASSET } from '../util/brandAssets';
 
+const LANDING_COLORS = {
+  background: '#07080E',
+  panel: 'rgba(12,15,18,0.94)',
+  panelStrong: 'rgba(16,18,28,0.96)',
+  border: 'rgba(255,255,255,0.09)',
+  textPrimary: '#FFF9F0',
+  textSecondary: 'rgba(196,203,210,0.78)',
+  accent: '#CDB9FF',
+  accentSoft: 'rgba(139,92,246,0.16)',
+};
+
 const DESTINATIONS = [
   { key: 'music', icon: 'graphic-eq', label: 'Music', route: APP_ROUTES.tabs.player },
   { key: 'videos', icon: 'smart-display', label: 'Videos', route: APP_ROUTES.tabs.videos },
@@ -37,12 +48,12 @@ function DestinationCard({
       style={{
         flex: 1,
         minWidth: 0,
-        borderRadius: theme.radius.md,
+        borderRadius: theme.radius.sm,
         borderWidth: 1,
-        borderColor: theme.colors.border,
-        backgroundColor: theme.colors.surface,
+        borderColor: LANDING_COLORS.border,
+        backgroundColor: LANDING_COLORS.panel,
         paddingHorizontal: 14,
-        paddingVertical: 14,
+        paddingVertical: 15,
         gap: 10,
       }}
       showFocusBorder={false}
@@ -54,14 +65,14 @@ function DestinationCard({
           borderRadius: theme.radius.sm,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: 'rgba(139,92,246,0.14)',
+          backgroundColor: LANDING_COLORS.accentSoft,
           borderWidth: 1,
           borderColor: 'rgba(139,92,246,0.24)',
         }}
       >
-        <MaterialIcons name={icon} size={18} color={theme.colors.primary} />
+        <MaterialIcons name={icon} size={18} color={LANDING_COLORS.accent} />
       </View>
-      <CustomText variant="label" style={{ color: theme.colors.text.primary }}>
+      <CustomText variant="label" style={{ color: LANDING_COLORS.textPrimary }}>
         {label}
       </CustomText>
     </TVTouchable>
@@ -71,7 +82,6 @@ function DestinationCard({
 export default function LandingScreen() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
-  const theme = useAppTheme();
   const { width } = useWindowDimensions();
 
   const isTablet = width >= 768;
@@ -84,8 +94,12 @@ export default function LandingScreen() {
     : { title: 'Sign In', route: APP_ROUTES.auth.signIn };
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-      <StatusBar translucent={false} barStyle="light-content" backgroundColor={theme.colors.background} />
+    <View style={{ flex: 1, backgroundColor: LANDING_COLORS.background }}>
+      <StatusBar
+        translucent={false}
+        barStyle="light-content"
+        backgroundColor={LANDING_COLORS.background}
+      />
 
       <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
         <ScrollView
@@ -99,12 +113,11 @@ export default function LandingScreen() {
             <View
               style={{
                 flex: 1,
-                justifyContent: 'space-between',
-                paddingTop: isTablet ? 52 : 40,
-                gap: isTablet ? 28 : 22,
+                paddingTop: isTablet ? 74 : 58,
+                gap: isTablet ? 24 : 20,
               }}
             >
-              <View style={{ gap: isTablet ? 22 : 18 }}>
+              <View style={{ gap: isTablet ? 24 : 20 }}>
                 <FadeIn>
                   <View
                     style={{
@@ -121,8 +134,8 @@ export default function LandingScreen() {
                           height: 42,
                           borderRadius: 12,
                           borderWidth: 1,
-                          borderColor: theme.colors.border,
-                          backgroundColor: theme.colors.surface,
+                          borderColor: LANDING_COLORS.border,
+                          backgroundColor: LANDING_COLORS.panel,
                           alignItems: 'center',
                           justifyContent: 'center',
                         }}
@@ -134,14 +147,17 @@ export default function LandingScreen() {
                         <CustomText
                           variant="caption"
                           style={{
-                            color: theme.colors.text.secondary,
+                            color: LANDING_COLORS.textSecondary,
                             textTransform: 'uppercase',
                             letterSpacing: 0.9,
                           }}
                         >
                           ClaudyGod
                         </CustomText>
-                        <CustomText variant="label" style={{ color: theme.colors.text.primary, marginTop: 2 }}>
+                        <CustomText
+                          variant="label"
+                          style={{ color: LANDING_COLORS.textPrimary, marginTop: 2 }}
+                        >
                           Ministries
                         </CustomText>
                       </View>
@@ -153,33 +169,41 @@ export default function LandingScreen() {
                         variant="secondary"
                         size="sm"
                         onPress={() => router.push(APP_ROUTES.auth.signIn)}
+                        style={{
+                          borderRadius: 12,
+                          borderColor: LANDING_COLORS.border,
+                          backgroundColor: LANDING_COLORS.panelStrong,
+                        }}
+                        textColor={LANDING_COLORS.textPrimary}
                       />
                     ) : null}
                   </View>
                 </FadeIn>
 
                 <FadeIn delay={70}>
-                  <CinematicHeroCard
-                    imageSource={BRAND_HERO_ASSET}
-                    height={isTablet ? 480 : 368}
-                    badge="ClaudyGod"
-                    eyebrow="Stream the ministry"
-                    title="Music, messages, and live worship in one clean experience."
-                    subtitle="Designed for listening, watching, and returning without friction."
-                    actions={[
-                      {
-                        label: primaryAction.title,
-                        onPress: () => router.push(primaryAction.route),
-                        icon: isAuthenticated ? 'play-arrow' : 'person-add',
-                      },
-                      {
-                        label: secondaryAction.title,
-                        onPress: () => router.push(secondaryAction.route),
-                        variant: 'secondary',
-                        icon: isAuthenticated ? 'library-music' : 'login',
-                      },
-                    ]}
-                  />
+                  <View style={{ paddingTop: isTablet ? 10 : 14 }}>
+                    <CinematicHeroCard
+                      imageSource={BRAND_HERO_ASSET}
+                      height={isTablet ? 480 : 372}
+                      badge="ClaudyGod"
+                      eyebrow="Stream the ministry"
+                      title="Music, messages, and live worship in one clean experience."
+                      subtitle="Designed for listening, watching, and returning without friction."
+                      actions={[
+                        {
+                          label: primaryAction.title,
+                          onPress: () => router.push(primaryAction.route),
+                          icon: isAuthenticated ? 'play-arrow' : 'person-add',
+                        },
+                        {
+                          label: secondaryAction.title,
+                          onPress: () => router.push(secondaryAction.route),
+                          variant: 'secondary',
+                          icon: isAuthenticated ? 'library-music' : 'login',
+                        },
+                      ]}
+                    />
+                  </View>
                 </FadeIn>
 
                 <FadeIn delay={120}>
@@ -191,13 +215,13 @@ export default function LandingScreen() {
                         alignItems: 'center',
                       }}
                     >
-                      <CustomText variant="heading" style={{ color: theme.colors.text.primary }}>
+                      <CustomText variant="heading" style={{ color: LANDING_COLORS.textPrimary }}>
                         Start from anywhere
                       </CustomText>
                       <CustomText
                         variant="caption"
                         style={{
-                          color: theme.colors.text.secondary,
+                          color: LANDING_COLORS.textSecondary,
                           textTransform: 'uppercase',
                           letterSpacing: 0.8,
                         }}
@@ -226,17 +250,17 @@ export default function LandingScreen() {
                 <View
                   style={{
                     borderTopWidth: 1,
-                    borderTopColor: theme.colors.border,
-                    paddingTop: 14,
+                    borderTopColor: LANDING_COLORS.border,
+                    paddingTop: 16,
                     paddingBottom: isTablet ? 6 : 2,
                     flexDirection: isTablet ? 'row' : 'column',
                     justifyContent: 'space-between',
                     alignItems: isTablet ? 'center' : 'flex-start',
                     gap: 12,
-                    marginTop: 'auto',
+                    marginTop: isTablet ? 'auto' : 8,
                   }}
                 >
-                  <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
+                  <CustomText variant="caption" style={{ color: LANDING_COLORS.textSecondary }}>
                     Worship, teaching, and live ministry without the noise.
                   </CustomText>
 
@@ -248,10 +272,10 @@ export default function LandingScreen() {
                         minHeight: 34,
                         paddingHorizontal: 14,
                         paddingVertical: 8,
-                        borderRadius: theme.radius.md,
+                        borderRadius: 12,
                         borderWidth: 1,
-                        borderColor: theme.colors.border,
-                        backgroundColor: theme.colors.surface,
+                        borderColor: LANDING_COLORS.border,
+                        backgroundColor: LANDING_COLORS.panelStrong,
                         alignItems: 'center',
                         justifyContent: 'center',
                       }}
@@ -259,7 +283,7 @@ export default function LandingScreen() {
                       <CustomText
                         variant="caption"
                         style={{
-                          color: theme.colors.primary,
+                          color: LANDING_COLORS.accent,
                           textTransform: 'uppercase',
                           letterSpacing: 0.9,
                         }}
@@ -274,10 +298,10 @@ export default function LandingScreen() {
                         minHeight: 34,
                         paddingHorizontal: 14,
                         paddingVertical: 8,
-                        borderRadius: theme.radius.md,
+                        borderRadius: 12,
                         borderWidth: 1,
-                        borderColor: theme.colors.border,
-                        backgroundColor: theme.colors.surface,
+                        borderColor: LANDING_COLORS.border,
+                        backgroundColor: LANDING_COLORS.panelStrong,
                         alignItems: 'center',
                         justifyContent: 'center',
                       }}
@@ -285,7 +309,7 @@ export default function LandingScreen() {
                       <CustomText
                         variant="caption"
                         style={{
-                          color: theme.colors.text.primary,
+                          color: LANDING_COLORS.textPrimary,
                           textTransform: 'uppercase',
                           letterSpacing: 0.9,
                         }}

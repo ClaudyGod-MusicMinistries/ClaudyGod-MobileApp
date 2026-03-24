@@ -52,7 +52,7 @@ export function AuthBrandPanel({
             ClaudyGod
           </CustomText>
           <CustomText variant="label" style={{ color: '#FFF9F0', marginTop: 2 }}>
-            Account
+            Ministries
           </CustomText>
         </View>
       </View>
@@ -98,7 +98,7 @@ export function AuthBrandPanel({
             letterSpacing: 0.88,
           }}
         >
-          ClaudyGod account
+          ClaudyGod Ministries
         </CustomText>
 
         <CustomText
