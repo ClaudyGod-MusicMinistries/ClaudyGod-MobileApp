@@ -121,7 +121,7 @@ export function AuthScreenFrame({
                   ) : null}
 
                   <View
-                  style={{
+                    style={{
                       flex: 1,
                       borderRadius: 16,
                       borderWidth: 1,
@@ -154,7 +154,7 @@ export function AuthScreenFrame({
                           letterSpacing: 0.72,
                         }}
                       >
-                        ClaudyGod account
+                        ClaudyGod Ministries
                       </CustomText>
                     </View>
 
