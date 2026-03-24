@@ -9,40 +9,40 @@ import * as Font from 'expo-font';
 export const fontConfig = {
   hero: {
     fontFamily: 'Sora_600SemiBold',
-    fontSize: 22,
-    lineHeight: 28,
+    fontSize: 20,
+    lineHeight: 26,
     fontWeight: '600' as const,
-    letterSpacing: -0.5,
+    letterSpacing: -0.45,
   },
   display: {
     fontFamily: 'Sora_600SemiBold',
-    fontSize: 18,
-    lineHeight: 23,
+    fontSize: 17,
+    lineHeight: 22,
     fontWeight: '600' as const,
-    letterSpacing: -0.3,
+    letterSpacing: -0.26,
   },
   heading: {
     fontFamily: 'Sora_600SemiBold',
-    fontSize: 16,
-    lineHeight: 21,
+    fontSize: 15,
+    lineHeight: 20,
     fontWeight: '600' as const,
   },
   title: {
     fontFamily: 'Sora_500Medium',
     fontSize: 14,
-    lineHeight: 19,
+    lineHeight: 18,
     fontWeight: '500' as const,
   },
   subtitle: {
     fontFamily: 'Sora_500Medium',
     fontSize: 12,
-    lineHeight: 17,
+    lineHeight: 16,
     fontWeight: '500' as const,
   },
   body: {
     fontFamily: 'Sora_400Regular',
     fontSize: 13,
-    lineHeight: 19,
+    lineHeight: 18,
     fontWeight: '400' as const,
   },
   label: {
@@ -50,14 +50,14 @@ export const fontConfig = {
     fontSize: 11,
     lineHeight: 15,
     fontWeight: '500' as const,
-    letterSpacing: 0.18,
+    letterSpacing: 0.1,
   },
   caption: {
     fontFamily: 'SpaceGrotesk_500Medium',
     fontSize: 10,
-    lineHeight: 14,
+    lineHeight: 13,
     fontWeight: '400' as const,
-    letterSpacing: 0.14,
+    letterSpacing: 0.08,
   },
 };
 
@@ -81,8 +81,8 @@ export function getResponsiveFontStyle(variant: FontVariantKey, width: number, i
             ? 0.97
             : 1;
 
-  const fontSize = clamp(Math.round(base.fontSize * widthScale), 12, 34);
-  const lineHeight = clamp(Math.round(base.lineHeight * widthScale), fontSize + 4, 42);
+  const fontSize = clamp(Math.round(base.fontSize * widthScale), 10, 32);
+  const lineHeight = clamp(Math.round(base.lineHeight * widthScale), fontSize + 3, 40);
 
   return {
     ...base,

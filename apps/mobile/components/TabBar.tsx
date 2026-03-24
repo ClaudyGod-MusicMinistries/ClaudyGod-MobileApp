@@ -23,9 +23,9 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
   const { config } = useMobileAppConfig();
 
   const sizes = {
-    barHeight: isTV ? 92 : isTablet ? 84 : compact ? 74 : 78,
+    barHeight: isTV ? 88 : isTablet ? 82 : compact ? 72 : 76,
     iconSize: isTV ? 24 : 20,
-    paddingX: isTV ? 18 : isTablet ? 16 : 14,
+    paddingX: isTV ? 20 : isTablet ? 18 : 14,
   };
 
   const barMaxWidth = isTV ? 1240 : isTablet ? 880 : width;
@@ -59,20 +59,19 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
           maxWidth: barMaxWidth,
           height: sizes.barHeight,
           borderWidth: 1,
-          borderColor: colorScheme === 'dark' ? 'rgba(150,128,241,0.22)' : palette.border,
-          backgroundColor: colorScheme === 'dark' ? 'rgba(9,10,17,0.96)' : palette.surface,
+          borderColor: colorScheme === 'dark' ? 'rgba(150,128,241,0.18)' : palette.border,
+          backgroundColor: colorScheme === 'dark' ? 'rgba(8,8,14,0.96)' : 'rgba(255,255,255,0.96)',
           paddingHorizontal: sizes.paddingX,
-          paddingTop: 10,
-          paddingBottom: 10,
+          paddingTop: 8,
+          paddingBottom: 8,
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
-          borderTopLeftRadius: isTablet || isTV ? 20 : 18,
-          borderTopRightRadius: isTablet || isTV ? 20 : 18,
+          borderRadius: isTablet || isTV ? 22 : 20,
           shadowColor: '#000000',
-          shadowOpacity: 0.34,
+          shadowOpacity: 0.28,
           shadowRadius: 24,
-          shadowOffset: { width: 0, height: -10 },
+          shadowOffset: { width: 0, height: 10 },
           elevation: 10,
         }}
       >
@@ -94,20 +93,20 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
               onPress={() => navigation.navigate(route.name as never)}
               style={{
                 flex: 1,
-                minHeight: 58,
+                minHeight: 56,
                 marginHorizontal: 3,
-                borderRadius: 14,
+                borderRadius: 16,
                 alignItems: 'center',
                 justifyContent: 'center',
                 backgroundColor: focused
                   ? colorScheme === 'dark'
-                    ? 'rgba(137,92,246,0.14)'
+                    ? 'rgba(141,99,255,0.16)'
                     : palette.surfaceAlt
                   : 'transparent',
                 borderWidth: 1,
                 borderColor: focused
                   ? colorScheme === 'dark'
-                    ? 'rgba(167,139,250,0.26)'
+                    ? 'rgba(167,139,250,0.22)'
                     : palette.border
                   : 'transparent',
                 gap: 4,
@@ -119,12 +118,12 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
                 style={{
                   width: 30,
                   height: 30,
-                  borderRadius: 10,
+                  borderRadius: 9,
                   alignItems: 'center',
                   justifyContent: 'center',
                   backgroundColor: focused
                     ? colorScheme === 'dark'
-                      ? 'rgba(255,255,255,0.06)'
+                      ? 'rgba(255,255,255,0.05)'
                       : 'rgba(255,255,255,0.66)'
                     : 'transparent',
                 }}
@@ -140,8 +139,7 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
                 style={{
                   color: focused ? palette.text.primary : palette.text.secondary,
                   fontSize: 10,
-                  letterSpacing: 0.14,
-                  textTransform: 'uppercase',
+                  letterSpacing: 0.06,
                 }}
               >
                 {config.label}

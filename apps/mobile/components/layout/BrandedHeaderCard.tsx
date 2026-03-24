@@ -47,14 +47,14 @@ export function BrandedHeaderCard({
   const isCompact = width < 390;
   const hideSubtitle = Boolean(subtitle) && autoHideSubtitleOnPhone && isCompact;
   const actionSize = isTV ? 44 : isTablet ? 42 : 40;
-  const logoWrapSize = isTV ? 44 : isTablet ? 42 : 38;
-  const logoSize = isTV ? 24 : 22;
+  const logoWrapSize = isTV ? 42 : isTablet ? 40 : 36;
+  const logoSize = isTV ? 22 : 20;
   const chipPaddingX = isCompact ? 10 : 12;
   const chipPaddingY = isCompact ? 6 : 7;
 
   const ui = {
-    muted: isDark ? 'rgba(214,203,183,0.72)' : 'rgba(97,105,114,0.88)',
-    subtle: isDark ? 'rgba(183,191,198,0.72)' : 'rgba(97,105,114,0.88)',
+    muted: theme.colors.text.secondary,
+    subtle: theme.colors.text.secondary,
     iconBg: isDark ? 'rgba(255,255,255,0.03)' : theme.colors.surfaceAlt,
     iconBorder: theme.colors.border,
     iconColor: theme.colors.text.primary,
@@ -96,91 +96,95 @@ export function BrandedHeaderCard({
         borderColor: theme.colors.border,
         backgroundColor: theme.colors.surface,
         paddingHorizontal: isTablet ? 18 : 16,
-        paddingVertical: isTablet ? 18 : 15,
+        paddingVertical: isTablet ? 16 : 14,
+        overflow: 'hidden',
       }}
     >
       <View
         style={{
           position: 'absolute',
-          inset: 0,
-          borderRadius: theme.radius.xl,
-          backgroundColor: isDark ? 'rgba(139,92,246,0.05)' : 'rgba(124,89,230,0.04)',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 3,
+          backgroundColor: theme.colors.primary,
         }}
       />
       <View
         style={{
-          paddingHorizontal: 2,
-          paddingVertical: 2,
+          position: 'absolute',
+          inset: 0,
+          borderRadius: theme.radius.xl,
+          backgroundColor: isDark ? 'rgba(141,99,255,0.04)' : 'rgba(126,86,255,0.035)',
         }}
-      >
-        <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+      />
+      <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            flex: 1,
+            marginRight: 12,
+            minHeight: logoWrapSize,
+          }}
+        >
+          {leadingAction ? <View style={{ marginRight: 10 }}>{renderAction(leadingAction)}</View> : null}
+
           <View
             style={{
-              flexDirection: 'row',
+              width: logoWrapSize,
+              height: logoWrapSize,
+              borderRadius: theme.radius.md,
+              borderWidth: 1,
+              borderColor: theme.colors.border,
+              backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : theme.colors.surfaceAlt,
               alignItems: 'center',
-              flex: 1,
+              justifyContent: 'center',
               marginRight: 12,
-              minHeight: logoWrapSize,
             }}
           >
-            {leadingAction ? <View style={{ marginRight: 10 }}>{renderAction(leadingAction)}</View> : null}
+            <Image
+              source={BRAND_LOGO_ASSET}
+              style={{ width: logoSize, height: logoSize, borderRadius: Math.round(logoSize / 2) }}
+            />
+          </View>
 
-            <View
+          <View style={{ flex: 1 }}>
+            {showEyebrow ? (
+              <CustomText variant="caption" style={{ color: ui.muted }}>
+                {eyebrow}
+              </CustomText>
+            ) : null}
+            <CustomText
+              variant="heading"
               style={{
-                width: logoWrapSize,
-                height: logoWrapSize,
-                borderRadius: theme.radius.lg,
-                borderWidth: 1,
-                borderColor: theme.colors.border,
-                backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : theme.colors.surfaceAlt,
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginRight: 12,
+                color: theme.colors.text.primary,
+                marginTop: showEyebrow ? 2 : 0,
+                fontSize: isTV ? 19 : isTablet ? 17 : isCompact ? 14 : 15,
+                lineHeight: isTV ? 24 : isTablet ? 22 : isCompact ? 18 : 20,
               }}
+              numberOfLines={2}
             >
-              <Image
-                source={BRAND_LOGO_ASSET}
-                style={{ width: logoSize, height: logoSize, borderRadius: Math.round(logoSize / 2) }}
-              />
-            </View>
-
-            <View style={{ flex: 1 }}>
-              {showEyebrow ? (
-                <CustomText variant="caption" style={{ color: ui.muted }}>
-                  {eyebrow}
-                </CustomText>
-              ) : null}
+              {title}
+            </CustomText>
+            {subtitle && !hideSubtitle ? (
               <CustomText
-                variant="heading"
+                variant="body"
                 style={{
-                  color: theme.colors.text.primary,
-                  marginTop: showEyebrow ? 2 : 0,
-                  fontSize: isTV ? 20 : isTablet ? 18 : isCompact ? 15 : 16,
-                  lineHeight: isTV ? 25 : isTablet ? 23 : isCompact ? 20 : 21,
+                  color: ui.subtle,
+                  marginTop: 4,
+                  fontSize: isCompact ? 11 : 12,
+                  lineHeight: isCompact ? 15 : 16,
                 }}
                 numberOfLines={2}
               >
-                {title}
+                {subtitle}
               </CustomText>
-              {subtitle && !hideSubtitle ? (
-                <CustomText
-                  variant="body"
-                  style={{
-                    color: ui.subtle,
-                    marginTop: 5,
-                    fontSize: isCompact ? 11 : 12,
-                    lineHeight: isCompact ? 15 : 17,
-                  }}
-                  numberOfLines={2}
-                >
-                  {subtitle}
-                </CustomText>
-              ) : null}
-            </View>
+            ) : null}
           </View>
-
-          {actions.length ? <View style={{ flexDirection: 'row', gap: 8, marginLeft: 10 }}>{actions.map(renderAction)}</View> : null}
         </View>
+
+        {actions.length ? <View style={{ flexDirection: 'row', gap: 8, marginLeft: 10 }}>{actions.map(renderAction)}</View> : null}
       </View>
 
       {chips?.length ? (

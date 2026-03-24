@@ -108,22 +108,22 @@ function AppearanceModePicker({
   ];
 
   return (
-    <View style={{ gap: 12 }}>
-      <View>
-        <CustomText
-          variant="caption"
+      <View style={{ gap: 12 }}>
+        <View>
+          <CustomText
+            variant="caption"
           style={{
             color: theme.colors.text.secondary,
             textTransform: 'uppercase',
             letterSpacing: 0.9,
           }}
-        >
-          Appearance
-        </CustomText>
-        <CustomText variant="body" style={{ color: theme.colors.text.secondary, marginTop: 6 }}>
-          Choose how ClaudyGod looks while keeping the preference synced to your account.
-        </CustomText>
-      </View>
+          >
+            Appearance
+          </CustomText>
+          <CustomText variant="body" style={{ color: theme.colors.text.secondary, marginTop: 6 }}>
+            Light, dark, or device theme. Your choice stays synced to your account.
+          </CustomText>
+        </View>
 
       <View style={{ flexDirection: 'row', gap: 10 }}>
         {options.map((option) => {
@@ -135,7 +135,7 @@ function AppearanceModePicker({
               style={{
                 flex: 1,
                 minHeight: 54,
-                borderRadius: 14,
+                borderRadius: theme.radius.lg,
                 borderWidth: 1,
                 borderColor: active ? theme.colors.primary : theme.colors.border,
                 backgroundColor: active ? theme.colors.surfaceAlt : theme.colors.surface,
@@ -341,13 +341,16 @@ export default function SettingsScreen() {
                       letterSpacing: 0.9,
                     }}
                   >
-                    ClaudyGod account
+                    Account & playback
+                  </CustomText>
+                  <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
+                    Preferences
                   </CustomText>
                   <CustomText variant="hero" style={{ color: theme.colors.text.primary }}>
-                    Keep the experience simple and personal.
+                    Keep playback and appearance in sync.
                   </CustomText>
                   <CustomText variant="body" style={{ color: theme.colors.text.secondary }}>
-                    Manage playback, alerts, privacy, and support from one clean settings flow.
+                    Control playback, notifications, and support without leaving the app.
                   </CustomText>
                 </View>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: theme.spacing.md }}>
