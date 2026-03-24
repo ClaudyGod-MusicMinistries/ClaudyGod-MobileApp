@@ -222,7 +222,7 @@ export default function EditorView(props) {
                   placeholder="Choose placements below or enter section ids manually"
                 />
                 <small class="subtle-text">
-                  These placements map content to mobile home and video sections.
+                  These placements control where content appears across the mobile app.
                 </small>
               </label>
               {onRenderSectionSelector(createForm.appSectionsCsv, (nextValue) => { createForm.appSectionsCsv = nextValue; })}
@@ -414,7 +414,7 @@ export default function EditorView(props) {
                     class="ghost-btn compact"
                     onClick={() => onToggleContentSectionEditor(item)}
                   >
-                    {activeSectionEditorItemId === item.id ? 'Close Placement' : 'Assign Sections'}
+                    {activeSectionEditorItemId === item.id ? 'Close Placement' : 'Edit Placement'}
                   </button>
                   <button
                     type="button"

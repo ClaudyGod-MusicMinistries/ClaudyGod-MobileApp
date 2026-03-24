@@ -72,6 +72,8 @@ const mobileLayoutSectionSchema = z
     title: shortTextSchema.max(120),
     subtitle: shortTextSchema.max(220),
     contentTypes: z.array(mobileLayoutContentTypeSchema).min(1).max(5),
+    actionLabel: z.string().trim().min(1).max(40).default('Open'),
+    destinationTab: z.enum(['home', 'videos', 'player', 'library', 'search']).default('home'),
     maxItems: z.coerce.number().int().min(1).max(24).default(8),
   })
   .strict();
@@ -81,6 +83,51 @@ const mobileNavigationTabSchema = z
     id: z.enum(['home', 'videos', 'player', 'library', 'search']),
     label: shortTextSchema.max(40),
     icon: iconNameSchema,
+  })
+  .strict();
+
+const mobileDiscoveryCategorySchema = z.enum(['All', 'audio', 'video', 'playlist', 'live', 'announcement']);
+
+const mobileSearchShortcutSchema = z
+  .object({
+    id: z.string().trim().min(1).max(80),
+    icon: iconNameSchema,
+    label: shortTextSchema.max(80),
+    query: z.string().trim().min(1).max(80),
+    category: mobileDiscoveryCategorySchema.default('All'),
+  })
+  .strict();
+
+const settingsDestinationSchema = z.enum([
+  'tabs.home',
+  'tabs.player',
+  'tabs.videos',
+  'tabs.library',
+  'tabs.search',
+  'tabs.settings',
+  'profile',
+  'settings.privacy',
+  'settings.donate',
+  'settings.help',
+  'settings.about',
+  'settings.rate',
+]);
+
+const settingsHubItemSchema = z
+  .object({
+    id: z.string().trim().min(1).max(80),
+    icon: iconNameSchema,
+    label: shortTextSchema.max(120),
+    hint: shortTextSchema.max(220),
+    destination: settingsDestinationSchema,
+  })
+  .strict();
+
+const settingsHubSectionSchema = z
+  .object({
+    id: z.string().trim().min(1).max(80),
+    title: shortTextSchema.max(80),
+    items: z.array(settingsHubItemSchema).min(1).max(12),
   })
   .strict();
 
@@ -172,11 +219,24 @@ export const mobileAppConfigSchema = z
       .object({
         homeSections: z.array(mobileLayoutSectionSchema).min(1).max(16),
         videoSections: z.array(mobileLayoutSectionSchema).min(1).max(16),
+        playerSections: z.array(mobileLayoutSectionSchema).min(1).max(16),
+        librarySections: z.array(mobileLayoutSectionSchema).min(1).max(16),
       })
       .strict(),
     navigation: z
       .object({
         tabs: z.array(mobileNavigationTabSchema).length(5),
+      })
+      .strict(),
+    discovery: z
+      .object({
+        categories: z.array(mobileDiscoveryCategorySchema).min(1).max(8),
+        shortcuts: z.array(mobileSearchShortcutSchema).min(1).max(12),
+      })
+      .strict(),
+    settingsHub: z
+      .object({
+        sections: z.array(settingsHubSectionSchema).min(1).max(10),
       })
       .strict(),
   })

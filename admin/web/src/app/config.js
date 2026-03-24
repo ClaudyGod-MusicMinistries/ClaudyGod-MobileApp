@@ -91,6 +91,28 @@ export const VISIBILITY_OPTIONS = ['draft', 'published'];
 export const USER_ROLE_OPTIONS = ['CLIENT', 'ADMIN'];
 export const CONTENT_REQUEST_STATUS_OPTIONS = ['submitted', 'in_review', 'changes_requested', 'approved', 'fulfilled', 'rejected'];
 export const YOUTUBE_SYNC_DEFAULT_LIMIT = 8;
+export const ADMIN_NAV_ITEMS = [
+  {
+    id: 'editor',
+    label: 'Content',
+    caption: 'Uploads and library',
+  },
+  {
+    id: 'mobile-config',
+    label: 'Mobile',
+    caption: 'App structure',
+  },
+  {
+    id: 'live',
+    label: 'Live',
+    caption: 'Broadcast and replay',
+  },
+  {
+    id: 'mobile-preview',
+    label: 'Preview',
+    caption: 'Live app view',
+  },
+];
 export const DEFAULT_MOBILE_PREVIEW_URL =
   normalizePublicUrl(import.meta.env.VITE_MOBILE_PREVIEW_URL) || deriveSiblingOrigin('app') || '';
 export const WORKFLOW_STEPS = [

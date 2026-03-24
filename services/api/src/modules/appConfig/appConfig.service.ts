@@ -44,6 +44,14 @@ function mergeWithDefaults(value: unknown): MobileAppConfig {
       ...DEFAULT_MOBILE_APP_CONFIG.navigation,
       ...(input.navigation ?? {}),
     },
+    discovery: {
+      ...DEFAULT_MOBILE_APP_CONFIG.discovery,
+      ...(input.discovery ?? {}),
+    },
+    settingsHub: {
+      ...DEFAULT_MOBILE_APP_CONFIG.settingsHub,
+      ...(input.settingsHub ?? {}),
+    },
   });
 }
 

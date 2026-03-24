@@ -10,6 +10,7 @@ import { PosterCard } from '../../components/ui/PosterCard';
 import { SectionHeader } from '../../components/ui/SectionHeader';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { AppButton } from '../../components/ui/AppButton';
+import { ActionSheet, type ActionSheetAction } from '../../components/ui/ActionSheet';
 import { CustomText } from '../../components/CustomText';
 import { VideoPlayer } from '../../components/media/VideoPlayer';
 import { CinematicHeroCard } from '../../components/sections/CinematicHeroCard';
@@ -20,7 +21,7 @@ import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import type { FeedCardItem } from '../../services/contentService';
 import { subscribeToLiveAlerts, trackPlayEvent } from '../../services/supabaseAnalytics';
 import { fetchMeLibrary, removeMeLibraryItem, saveMeLibraryItem } from '../../services/userFlowService';
-import { APP_ROUTES } from '../../util/appRoutes';
+import { APP_ROUTES, TAB_ROUTE_BY_ID } from '../../util/appRoutes';
 import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
 import { deriveLayoutSectionItems, getVideoLayoutSections } from '../../util/mobileLayout';
 import {
@@ -111,6 +112,7 @@ export default function VideosScreen() {
 
   const [activeId, setActiveId] = useState(routeItem?.id ?? queue[0]?.id ?? '');
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+  const [isActionSheetVisible, setIsActionSheetVisible] = useState(false);
 
   useEffect(() => {
     if (routeItem?.id) {
@@ -167,7 +169,7 @@ export default function VideosScreen() {
           items: deriveLayoutSectionItems(feed, section).filter((item) => shouldOpenVideoScreen(item)),
         }))
         .filter((entry) => entry.items.length > 0)
-        .slice(0, 2),
+        .slice(0, 5),
     [feed, mobileConfig],
   );
 
@@ -281,6 +283,52 @@ export default function VideosScreen() {
     }
   };
 
+  const actionSheetActions: ActionSheetAction[] = !active
+    ? []
+    : [
+        {
+          key: 'save',
+          label: isSaved ? 'Remove from Library' : 'Save to Library',
+          detail: isSaved ? 'Remove this video from your saved list.' : 'Keep this video in your library.',
+          icon: isSaved ? 'bookmark' : 'bookmark-border',
+          onPress: () => {
+            void toggleSave();
+          },
+        },
+        {
+          key: 'share',
+          label: 'Share',
+          detail: 'Send this video to someone else.',
+          icon: 'ios-share',
+          onPress: () => {
+            void shareActive();
+          },
+        },
+        {
+          key: active.isLive ? 'follow-live' : 'open-browser',
+          label: active.isLive ? 'Follow Live Alerts' : 'Open in Browser',
+          detail: active.isLive ? 'Get notified when the next live session starts.' : 'Open the source link outside the app.',
+          icon: active.isLive ? 'notifications-active' : 'open-in-new',
+          onPress: () => {
+            if (active.isLive) {
+              void followLive();
+              return;
+            }
+            void openExternal();
+          },
+        },
+        {
+          key: 'open-detail',
+          label: 'Open Detail Screen',
+          detail: 'Switch to the dedicated player route for this item.',
+          icon: 'open-in-full',
+          tone: 'accent' as const,
+          onPress: () => {
+            router.push(buildPlayerRoute(active));
+          },
+        },
+      ];
+
   return (
     <TabScreenWrapper>
       <ScrollView
@@ -343,22 +391,10 @@ export default function VideosScreen() {
                         leftIcon={<MaterialIcons name={canGoNext ? 'skip-next' : isSaved ? 'bookmark' : 'bookmark-border'} size={16} color={theme.colors.text.inverse} />}
                       />
                       <AppButton
-                        title="Share"
+                        title="More"
                         variant="outline"
-                        onPress={() => void shareActive()}
-                        leftIcon={<MaterialIcons name="ios-share" size={16} color={theme.colors.text.primary} />}
-                      />
-                      <AppButton
-                        title={active.isLive ? 'Follow live' : 'Open in browser'}
-                        variant="outline"
-                        onPress={() => (active.isLive ? void followLive() : void openExternal())}
-                        leftIcon={<MaterialIcons name={active.isLive ? 'notifications-active' : 'open-in-new'} size={16} color={theme.colors.text.primary} />}
-                      />
-                      <AppButton
-                        title="Open detail"
-                        variant="ghost"
-                        onPress={() => router.push(buildPlayerRoute(active))}
-                        leftIcon={<MaterialIcons name="open-in-full" size={16} color={theme.colors.text.inverse} />}
+                        onPress={() => setIsActionSheetVisible(true)}
+                        leftIcon={<MaterialIcons name="more-horiz" size={16} color={theme.colors.text.primary} />}
                       />
                     </View>
                   </View>
@@ -382,10 +418,10 @@ export default function VideosScreen() {
                       icon: 'play-arrow',
                     },
                     {
-                      label: active?.isLive ? 'Follow live' : isSaved ? 'Saved' : 'Save',
-                      onPress: () => (active?.isLive ? void followLive() : void toggleSave()),
+                      label: 'More',
+                      onPress: () => setIsActionSheetVisible(true),
                       variant: 'secondary',
-                      icon: active?.isLive ? 'notifications-active' : isSaved ? 'bookmark' : 'bookmark-border',
+                      icon: 'more-horiz',
                     },
                   ]}
                 />
@@ -416,38 +452,17 @@ export default function VideosScreen() {
               </FadeIn>
             ) : null}
 
-            {feed.live.length ? (
-              <FadeIn delay={160}>
-                <View>
-                  <SectionHeader
-                    title="Live and replay"
-                    actionLabel="Home"
-                    onAction={() => router.push(APP_ROUTES.tabs.home)}
-                  />
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false} overScrollMode="never">
-                    {feed.live.map((item) => (
-                      <PosterCard
-                        key={item.id}
-                        imageUrl={item.imageUrl}
-                        title={item.title}
-                        subtitle={item.liveViewerCount ? `${item.liveViewerCount} watching` : item.subtitle}
-                        size={posterSize}
-                        onPress={() => void openVideo(item, 'videos_live')}
-                      />
-                    ))}
-                  </ScrollView>
-                </View>
-              </FadeIn>
-            ) : null}
-
             {curatedSections.map(({ section, items }, index) => (
-              <FadeIn key={section.id || section.title} delay={200 + index * 35}>
+              <FadeIn key={section.id || section.title} delay={160 + index * 35}>
                 <View>
                   <SectionHeader
                     title={section.title}
-                    actionLabel="View all"
-                    onAction={() => router.push(APP_ROUTES.tabs.library)}
+                    actionLabel={section.actionLabel}
+                    onAction={() => router.push(TAB_ROUTE_BY_ID[section.destinationTab])}
                   />
+                  <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginBottom: 10 }}>
+                    {section.subtitle}
+                  </CustomText>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false} overScrollMode="never">
                     {items.map((item) => (
                       <PosterCard
@@ -466,6 +481,13 @@ export default function VideosScreen() {
           </View>
         </Screen>
       </ScrollView>
+      <ActionSheet
+        visible={isActionSheetVisible}
+        title={active?.title ?? 'Video actions'}
+        description={active?.subtitle ?? 'Choose what to do with this video.'}
+        actions={actionSheetActions}
+        onClose={() => setIsActionSheetVisible(false)}
+      />
     </TabScreenWrapper>
   );
 }

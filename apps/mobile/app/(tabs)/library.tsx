@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ScrollView, View, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { TabScreenWrapper } from '../../components/layout/TabScreenWrapper';
@@ -11,10 +11,83 @@ import { CustomText } from '../../components/CustomText';
 import { FadeIn } from '../../components/ui/FadeIn';
 import { useAppTheme } from '../../util/colorScheme';
 import { useContentFeed } from '../../hooks/useContentFeed';
+import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import type { FeedCardItem } from '../../services/contentService';
-import { APP_ROUTES } from '../../util/appRoutes';
+import { APP_ROUTES, TAB_ROUTE_BY_ID } from '../../util/appRoutes';
 import { buildPlayerRoute } from '../../util/playerRoute';
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
+import { fetchMeLibrary, type MeLibrary, type MeLibraryItem } from '../../services/userFlowService';
+import { getLibraryLayoutSections, type MobileLayoutSection } from '../../util/mobileLayout';
+
+function toFeedCardItem(item: MeLibraryItem): FeedCardItem {
+  return {
+    id: item.id,
+    title: item.title,
+    subtitle: item.subtitle,
+    description: item.description,
+    duration: item.duration || '--:--',
+    imageUrl: item.imageUrl || '',
+    mediaUrl: item.mediaUrl,
+    type: item.type,
+    createdAt: item.createdAt,
+  };
+}
+
+function buildPlaylistCards(playlists: MeLibrary['playlists']): FeedCardItem[] {
+  return playlists.map((playlist, index) => {
+    const seed = playlist.items[0];
+    return {
+      id: `playlist:${playlist.name}:${index}`,
+      title: playlist.name,
+      subtitle: `${playlist.items.length} saved item${playlist.items.length === 1 ? '' : 's'}`,
+      description: seed?.description || 'Saved listening gathered inside your library.',
+      duration: seed?.duration || '--:--',
+      imageUrl: seed?.imageUrl || '',
+      mediaUrl: seed?.mediaUrl,
+      type: 'playlist',
+      createdAt: seed?.createdAt,
+    };
+  });
+}
+
+function dedupeItems(items: FeedCardItem[]): FeedCardItem[] {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    const key = item.mediaUrl?.trim() ? `media:${item.mediaUrl.trim()}` : `id:${item.id}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function deriveLibraryItems(
+  section: MobileLayoutSection,
+  params: {
+    liked: FeedCardItem[];
+    downloaded: FeedCardItem[];
+    playlists: FeedCardItem[];
+    fallback: FeedCardItem[];
+  },
+): FeedCardItem[] {
+  const token = `${section.id} ${section.title}`.toLowerCase();
+  if (token.includes('most-played')) {
+    return params.liked.slice(0, section.maxItems);
+  }
+  if (token.includes('saved') || token.includes('music')) {
+    return params.downloaded.slice(0, section.maxItems);
+  }
+  if (token.includes('playlist')) {
+    return params.playlists.slice(0, section.maxItems);
+  }
+
+  return params.fallback
+    .filter(
+      (item) =>
+        item.type !== 'ad' &&
+        section.contentTypes.includes(item.type),
+    )
+    .slice(0, section.maxItems);
+}
 
 export default function LibraryScreen() {
   const theme = useAppTheme();
@@ -23,10 +96,41 @@ export default function LibraryScreen() {
   const isTablet = width >= 768;
   const posterSize = isTablet ? 'lg' : 'md';
   const { feed } = useContentFeed();
+  const { config: mobileConfig } = useMobileAppConfig();
+  const [library, setLibrary] = useState<MeLibrary | null>(null);
 
-  const liked = feed.mostPlayed;
-  const downloaded = feed.music;
-  const playlists = feed.playlists;
+  useEffect(() => {
+    let active = true;
+
+    void fetchMeLibrary()
+      .then((response) => {
+        if (!active) return;
+        setLibrary(response);
+      })
+      .catch(() => {});
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const liked = useMemo(
+    () => (library?.liked.length ? library.liked.map(toFeedCardItem) : feed.mostPlayed),
+    [library?.liked, feed.mostPlayed],
+  );
+  const downloaded = useMemo(
+    () => (library?.downloaded.length ? library.downloaded.map(toFeedCardItem) : feed.music),
+    [library?.downloaded, feed.music],
+  );
+  const playlists = useMemo(
+    () => (library?.playlists.length ? buildPlaylistCards(library.playlists) : feed.playlists),
+    [library?.playlists, feed.playlists],
+  );
+  const fallbackPool = useMemo(
+    () => dedupeItems([...liked, ...downloaded, ...playlists, ...feed.recent, ...feed.playlists]),
+    [downloaded, feed.playlists, feed.recent, liked, playlists],
+  );
+  const librarySections = useMemo(() => getLibraryLayoutSections(mobileConfig), [mobileConfig]);
 
   const openItem = async (item: FeedCardItem, source: string) => {
     await trackPlayEvent({
@@ -69,76 +173,45 @@ export default function LibraryScreen() {
               </SurfaceCard>
             </FadeIn>
 
-            <FadeIn delay={100}>
-              <View>
-                <SectionHeader
-                  title="Most played"
-                  actionLabel="Play"
-                  onAction={() => {
-                    const item = liked[0];
-                    if (item) {
-                      void openItem(item, 'library_most_played');
-                    }
-                  }}
-                />
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false} overScrollMode="never">
-                  {liked.map((item) => (
-                    <PosterCard
-                      key={item.id}
-                      imageUrl={item.imageUrl}
-                      title={item.title}
-                      subtitle={item.subtitle}
-                      size={posterSize}
-                      onPress={() => void openItem(item, 'library_most_played')}
-                    />
-                  ))}
-                </ScrollView>
-              </View>
-            </FadeIn>
+            {librarySections.map((section, index) => {
+              const items = deriveLibraryItems(section, {
+                liked,
+                downloaded,
+                playlists,
+                fallback: fallbackPool,
+              });
 
-            <FadeIn delay={140}>
-              <View>
-                <SectionHeader
-                  title="Saved music"
-                  actionLabel="Music"
-                  onAction={() => router.push(APP_ROUTES.tabs.player)}
-                />
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false} overScrollMode="never">
-                  {downloaded.map((item) => (
-                    <PosterCard
-                      key={item.id}
-                      imageUrl={item.imageUrl}
-                      title={item.title}
-                      subtitle={item.subtitle}
-                      size={posterSize}
-                      onPress={() => void openItem(item, 'library_saved')}
-                    />
-                  ))}
-                </ScrollView>
-              </View>
-            </FadeIn>
+              if (!items.length) {
+                return null;
+              }
 
-            <FadeIn delay={180}>
-              <View>
-                <SectionHeader
-                  title="Playlists"
-                  actionLabel="Search"
-                  onAction={() => router.push(APP_ROUTES.tabs.search)}
-                />
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false} overScrollMode="never">
-                  {playlists.map((item) => (
-                    <PosterCard
-                      key={item.id}
-                      imageUrl={item.imageUrl}
-                      title={item.title}
-                      subtitle={item.subtitle}
-                      size={posterSize}
-                      onPress={() => void openItem(item, 'library_playlists')}
+              return (
+                <FadeIn key={section.id} delay={100 + index * 40}>
+                  <View>
+                    <SectionHeader
+                      title={section.title}
+                      actionLabel={section.actionLabel}
+                      onAction={() => router.push(TAB_ROUTE_BY_ID[section.destinationTab])}
                     />
-                  ))}
-                </ScrollView>
-              </View>
-            </FadeIn>
+                    <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginBottom: 10 }}>
+                      {section.subtitle}
+                    </CustomText>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false} overScrollMode="never">
+                      {items.map((item) => (
+                        <PosterCard
+                          key={`${section.id}-${item.id}`}
+                          imageUrl={item.imageUrl}
+                          title={item.title}
+                          subtitle={item.subtitle}
+                          size={posterSize}
+                          onPress={() => void openItem(item, `library_${section.id}`)}
+                        />
+                      ))}
+                    </ScrollView>
+                  </View>
+                </FadeIn>
+              );
+            })}
           </View>
         </Screen>
       </ScrollView>
