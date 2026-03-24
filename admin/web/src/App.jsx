@@ -2,6 +2,7 @@ import axios from 'axios';
 import { computed, defineComponent, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import AdminShell from './app/AdminShell';
 import {
+  ADMIN_NAV_ITEMS,
   BRAND_LOGO_URL,
   CONTENT_REQUEST_STATUS_OPTIONS,
   CONTENT_TYPES,
@@ -21,6 +22,7 @@ import BootScreen from './features/dashboard/BootScreen';
 import EditorView from './features/dashboard/EditorView';
 import MobilePreviewView from './features/dashboard/MobilePreviewView';
 import LiveView from './features/live/LiveView';
+import MobileConfigView from './features/mobile-config/MobileConfigView';
 import {
   acceptFromPolicy,
   describeHealthCheckDetail,
@@ -39,6 +41,13 @@ import {
   sectionSelectionMatches,
   toggleSectionSelection,
 } from './shared/utils/sections';
+import {
+  cloneMobileConfig,
+  createDiscoveryShortcut,
+  createLayoutSection,
+  createSettingsHubItem,
+  createSettingsHubSection,
+} from './shared/utils/mobileConfig';
 import './App.css';
 
 function applyToken(token) {
@@ -395,7 +404,7 @@ export default defineComponent({
     }
 
     function setDashboardView(view) {
-      dashboardView.value = ['live', 'editor', 'mobile-preview'].includes(view) ? view : 'editor';
+      dashboardView.value = ['live', 'editor', 'mobile-preview', 'mobile-config'].includes(view) ? view : 'editor';
       closeHeaderMenu();
     }
 
@@ -420,8 +429,164 @@ export default defineComponent({
       mobilePreviewFrameKey.value += 1;
     }
 
-    function setMobileAppConfigEditorValue(value) {
-      mobileAppConfigEditor.value = value;
+    function syncMobileAppConfigState(configValue) {
+      const next = cloneMobileConfig(configValue || {});
+      mobileAppConfigValue.value = next;
+      mobileAppConfigEditor.value = JSON.stringify(next, null, 2);
+    }
+
+    function ensureMobileAppConfigStructure(configValue) {
+      const next = configValue && typeof configValue === 'object' ? configValue : {};
+      if (!next.layout || typeof next.layout !== 'object') {
+        next.layout = {};
+      }
+      ['homeSections', 'videoSections', 'playerSections', 'librarySections'].forEach((key) => {
+        if (!Array.isArray(next.layout[key])) {
+          next.layout[key] = [];
+        }
+      });
+
+      if (!next.discovery || typeof next.discovery !== 'object') {
+        next.discovery = {};
+      }
+      if (!Array.isArray(next.discovery.categories)) {
+        next.discovery.categories = ['All'];
+      }
+      if (!Array.isArray(next.discovery.shortcuts)) {
+        next.discovery.shortcuts = [];
+      }
+
+      if (!next.settingsHub || typeof next.settingsHub !== 'object') {
+        next.settingsHub = {};
+      }
+      if (!Array.isArray(next.settingsHub.sections)) {
+        next.settingsHub.sections = [];
+      }
+
+      return next;
+    }
+
+    function mutateMobileAppConfig(mutator) {
+      const next = ensureMobileAppConfigStructure(cloneMobileConfig(mobileAppConfigValue.value || {}));
+      mutator(next);
+      syncMobileAppConfigState(next);
+    }
+
+    function addMobileLayoutSection(group) {
+      mutateMobileAppConfig((next) => {
+        next.layout[group].push(createLayoutSection(group));
+      });
+    }
+
+    function updateMobileLayoutSection(group, index, patch) {
+      mutateMobileAppConfig((next) => {
+        const target = next.layout[group] && next.layout[group][index];
+        if (!target) return;
+        Object.assign(target, patch);
+      });
+    }
+
+    function toggleMobileLayoutSectionContentType(group, index, type) {
+      mutateMobileAppConfig((next) => {
+        const target = next.layout[group] && next.layout[group][index];
+        if (!target) return;
+        const current = Array.isArray(target.contentTypes) ? target.contentTypes : [];
+        const hasType = current.includes(type);
+        if (hasType && current.length > 1) {
+          target.contentTypes = current.filter((entry) => entry !== type);
+          return;
+        }
+        if (!hasType) {
+          target.contentTypes = [...current, type];
+        }
+      });
+    }
+
+    function removeMobileLayoutSection(group, index) {
+      mutateMobileAppConfig((next) => {
+        next.layout[group].splice(index, 1);
+      });
+    }
+
+    function toggleDiscoveryCategory(category) {
+      mutateMobileAppConfig((next) => {
+        const categories = Array.isArray(next.discovery.categories) ? next.discovery.categories : [];
+        const hasCategory = categories.includes(category);
+        if (hasCategory && categories.length > 1) {
+          next.discovery.categories = categories.filter((entry) => entry !== category);
+          return;
+        }
+        if (!hasCategory) {
+          next.discovery.categories = [...categories, category];
+        }
+      });
+    }
+
+    function addDiscoveryShortcutItem() {
+      mutateMobileAppConfig((next) => {
+        next.discovery.shortcuts.push(createDiscoveryShortcut());
+      });
+    }
+
+    function updateDiscoveryShortcutItem(index, patch) {
+      mutateMobileAppConfig((next) => {
+        const target = next.discovery.shortcuts[index];
+        if (!target) return;
+        Object.assign(target, patch);
+      });
+    }
+
+    function removeDiscoveryShortcutItem(index) {
+      mutateMobileAppConfig((next) => {
+        next.discovery.shortcuts.splice(index, 1);
+      });
+    }
+
+    function addSettingsHubGroup() {
+      mutateMobileAppConfig((next) => {
+        next.settingsHub.sections.push(createSettingsHubSection());
+      });
+    }
+
+    function updateSettingsHubGroup(index, patch) {
+      mutateMobileAppConfig((next) => {
+        const target = next.settingsHub.sections[index];
+        if (!target) return;
+        Object.assign(target, patch);
+      });
+    }
+
+    function removeSettingsHubGroup(index) {
+      mutateMobileAppConfig((next) => {
+        next.settingsHub.sections.splice(index, 1);
+      });
+    }
+
+    function addSettingsHubGroupItem(sectionIndex) {
+      mutateMobileAppConfig((next) => {
+        const section = next.settingsHub.sections[sectionIndex];
+        if (!section) return;
+        if (!Array.isArray(section.items)) {
+          section.items = [];
+        }
+        section.items.push(createSettingsHubItem());
+      });
+    }
+
+    function updateSettingsHubGroupItem(sectionIndex, itemIndex, patch) {
+      mutateMobileAppConfig((next) => {
+        const item = next.settingsHub.sections[sectionIndex]?.items?.[itemIndex];
+        if (!item) return;
+        Object.assign(item, patch);
+      });
+    }
+
+    function removeSettingsHubGroupItem(sectionIndex, itemIndex) {
+      mutateMobileAppConfig((next) => {
+        const section = next.settingsHub.sections[sectionIndex];
+        if (!section || !Array.isArray(section.items)) return;
+        section.items.splice(itemIndex, 1);
+      });
     }
 
     function loadWordOfDayEntry(entry) {
@@ -886,9 +1051,8 @@ export default defineComponent({
       appConfigLoading.value = true;
       try {
         const response = await http.get('/v1/admin/app-config');
-        mobileAppConfigEditor.value = JSON.stringify(response.data.config || {}, null, 2);
         mobileAppConfigMeta.value = response.data.meta || null;
-        mobileAppConfigValue.value = response.data.config || null;
+        syncMobileAppConfigState(response.data.config || {});
       } catch (error) {
         setNotice(toErrorMessage(error, 'Unable to load the mobile experience.'), 'error');
       } finally {
@@ -904,7 +1068,7 @@ export default defineComponent({
 
       let parsedConfig;
       try {
-        parsedConfig = JSON.parse(mobileAppConfigEditor.value || '{}');
+        parsedConfig = cloneMobileConfig(mobileAppConfigValue.value || (mobileAppConfigEditor.value ? JSON.parse(mobileAppConfigEditor.value) : {}));
       } catch (error) {
         setNotice(`Invalid JSON: ${error && error.message ? error.message : 'Parse failed'}`, 'error');
         return;
@@ -914,9 +1078,8 @@ export default defineComponent({
       clearNotice();
       try {
         const response = await http.put('/v1/admin/app-config', { config: parsedConfig });
-        mobileAppConfigEditor.value = JSON.stringify(response.data.config || {}, null, 2);
         mobileAppConfigMeta.value = response.data.meta || null;
-        mobileAppConfigValue.value = response.data.config || null;
+        syncMobileAppConfigState(response.data.config || {});
         setNotice('Mobile experience updated successfully.', 'success');
       } catch (error) {
         setNotice(toErrorMessage(error, 'Unable to save your changes.'), 'error');
@@ -1994,6 +2157,32 @@ export default defineComponent({
             />
           ) : null}
 
+          {dashboardView.value === 'mobile-config' ? (
+            <MobileConfigView
+              mobileAppConfigValue={mobileAppConfigValue.value}
+              mobileAppConfigMeta={mobileAppConfigMeta.value}
+              appConfigLoading={appConfigLoading.value}
+              appConfigSaving={appConfigSaving.value}
+              onRefreshMobileConfig={fetchMobileAppConfig}
+              onSaveMobileAppConfig={saveMobileAppConfig}
+              onReadValue={readValue}
+              onAddLayoutSection={addMobileLayoutSection}
+              onUpdateLayoutSection={updateMobileLayoutSection}
+              onToggleLayoutSectionContentType={toggleMobileLayoutSectionContentType}
+              onRemoveLayoutSection={removeMobileLayoutSection}
+              onToggleDiscoveryCategory={toggleDiscoveryCategory}
+              onAddDiscoveryShortcut={addDiscoveryShortcutItem}
+              onUpdateDiscoveryShortcut={updateDiscoveryShortcutItem}
+              onRemoveDiscoveryShortcut={removeDiscoveryShortcutItem}
+              onAddSettingsHubSection={addSettingsHubGroup}
+              onUpdateSettingsHubSection={updateSettingsHubGroup}
+              onRemoveSettingsHubSection={removeSettingsHubGroup}
+              onAddSettingsHubItem={addSettingsHubGroupItem}
+              onUpdateSettingsHubItem={updateSettingsHubGroupItem}
+              onRemoveSettingsHubItem={removeSettingsHubGroupItem}
+            />
+          ) : null}
+
           {dashboardView.value === 'mobile-preview' ? (
             <MobilePreviewView
               mobilePreviewUrl={mobilePreviewUrl.value}
@@ -2087,6 +2276,7 @@ export default defineComponent({
           onLogout={logout}
           dashboardView={dashboardView.value}
           onSetDashboardView={setDashboardView}
+          navItems={ADMIN_NAV_ITEMS}
           appLoading={appLoading.value}
           content={shellContent}
         />

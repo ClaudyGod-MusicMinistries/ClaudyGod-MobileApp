@@ -116,6 +116,8 @@ export interface MobileAppExperienceConfig {
       title: string;
       subtitle: string;
       contentTypes: ('audio' | 'video' | 'playlist' | 'announcement' | 'live')[];
+      actionLabel: string;
+      destinationTab: 'home' | 'videos' | 'player' | 'library' | 'search';
       maxItems: number;
     }[];
     videoSections: {
@@ -123,6 +125,26 @@ export interface MobileAppExperienceConfig {
       title: string;
       subtitle: string;
       contentTypes: ('audio' | 'video' | 'playlist' | 'announcement' | 'live')[];
+      actionLabel: string;
+      destinationTab: 'home' | 'videos' | 'player' | 'library' | 'search';
+      maxItems: number;
+    }[];
+    playerSections: {
+      id: string;
+      title: string;
+      subtitle: string;
+      contentTypes: ('audio' | 'video' | 'playlist' | 'announcement' | 'live')[];
+      actionLabel: string;
+      destinationTab: 'home' | 'videos' | 'player' | 'library' | 'search';
+      maxItems: number;
+    }[];
+    librarySections: {
+      id: string;
+      title: string;
+      subtitle: string;
+      contentTypes: ('audio' | 'video' | 'playlist' | 'announcement' | 'live')[];
+      actionLabel: string;
+      destinationTab: 'home' | 'videos' | 'player' | 'library' | 'search';
       maxItems: number;
     }[];
   };
@@ -131,6 +153,41 @@ export interface MobileAppExperienceConfig {
       id: 'home' | 'videos' | 'player' | 'library' | 'search';
       label: string;
       icon: string;
+    }[];
+  };
+  discovery: {
+    categories: ('All' | 'audio' | 'video' | 'playlist' | 'live' | 'announcement')[];
+    shortcuts: {
+      id: string;
+      icon: string;
+      label: string;
+      query: string;
+      category: 'All' | 'audio' | 'video' | 'playlist' | 'live' | 'announcement';
+    }[];
+  };
+  settingsHub: {
+    sections: {
+      id: string;
+      title: string;
+      items: {
+        id: string;
+        icon: string;
+        label: string;
+        hint: string;
+        destination:
+          | 'tabs.home'
+          | 'tabs.player'
+          | 'tabs.videos'
+          | 'tabs.library'
+          | 'tabs.search'
+          | 'tabs.settings'
+          | 'profile'
+          | 'settings.privacy'
+          | 'settings.donate'
+          | 'settings.help'
+          | 'settings.about'
+          | 'settings.rate';
+      }[];
     }[];
   };
 }

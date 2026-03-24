@@ -36,9 +36,13 @@ export function normalizeSectionCatalog(config) {
 
   const homeSections = Array.isArray(config?.layout?.homeSections) ? config.layout.homeSections : [];
   const videoSections = Array.isArray(config?.layout?.videoSections) ? config.layout.videoSections : [];
+  const playerSections = Array.isArray(config?.layout?.playerSections) ? config.layout.playerSections : [];
+  const librarySections = Array.isArray(config?.layout?.librarySections) ? config.layout.librarySections : [];
 
   homeSections.forEach((section) => register('Home', section));
   videoSections.forEach((section) => register('Videos', section));
+  playerSections.forEach((section) => register('Music', section));
+  librarySections.forEach((section) => register('Library', section));
 
   return Array.from(sectionMap.values());
 }
