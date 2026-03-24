@@ -81,7 +81,7 @@ export default function MobilePreviewView(props) {
             </div>
           <div class="simple-intro-item">
             <strong>2. Assign the right section</strong>
-            <p>Choose the home, video, or supporting sections that match the content type.</p>
+            <p>Choose the home, video, music, or library sections that match the content type.</p>
           </div>
           <div class="simple-intro-item">
             <strong>3. Reload this preview</strong>

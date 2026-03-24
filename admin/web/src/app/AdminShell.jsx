@@ -8,31 +8,16 @@ export default function AdminShell(props) {
     onLogout,
     dashboardView,
     onSetDashboardView,
+    navItems,
     appLoading,
     content,
   } = props;
 
-  const navItems = [
-    {
-      id: 'editor',
-      label: 'Content',
-      caption: 'Uploads and library',
-    },
-    {
-      id: 'live',
-      label: 'Live',
-      caption: 'Broadcast and replay',
-    },
-    {
-      id: 'mobile-preview',
-      label: 'Preview',
-      caption: 'Mobile layout view',
-    },
-  ];
-
   const activeTitle =
     dashboardView === 'live'
       ? 'Live Broadcast Portal'
+      : dashboardView === 'mobile-config'
+        ? 'Mobile Experience Portal'
       : dashboardView === 'mobile-preview'
         ? 'Mobile Experience Preview'
         : 'Content Publishing Portal';
