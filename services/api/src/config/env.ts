@@ -413,11 +413,18 @@ const envSchema = z
         });
       }
 
-      if (value.SMTP_PROVIDER === 'brevo' && (!value.SMTP_USER || !value.SMTP_PASS)) {
+      if (
+        value.SMTP_PROVIDER === 'brevo'
+        && !(
+          (value.SMTP_USER && value.SMTP_PASS)
+          || (value.POSTFIX_SMTP_USERNAME && value.POSTFIX_SMTP_PASSWORD)
+        )
+      ) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['SMTP_USER'],
-          message: 'Brevo SMTP requires SMTP_USER and SMTP_PASS in production',
+          message:
+            'Brevo SMTP requires either SMTP_USER/SMTP_PASS or POSTFIX_SMTP_USERNAME/POSTFIX_SMTP_PASSWORD in production',
         });
       }
 
