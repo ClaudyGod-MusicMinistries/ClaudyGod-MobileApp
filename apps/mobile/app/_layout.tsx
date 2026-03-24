@@ -5,7 +5,7 @@ import { useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { View, StatusBar, Animated, Image, Platform, Text, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ThemeProvider } from '../context/ThemeProvider';
-import { useColorScheme } from '../util/colorScheme';
+import { useColorScheme, useThemeContext } from '../util/colorScheme';
 import { colors } from '../constants/color';
 import { FontProvider, FontContext } from '../context/FontContext';
 import { AuthProvider, useAuth } from '../context/AuthContext';
@@ -13,6 +13,7 @@ import { ToastProvider } from '../context/ToastContext';
 import { ToastViewport } from '../components/ui/ToastViewport';
 import { APP_ROUTES } from '../util/appRoutes';
 import { BRAND_LOGO_ASSET } from '../util/brandAssets';
+import { fetchMePreferences } from '../services/userFlowService';
 
 function ThemedLayout({ children }: { children: ReactNode }) {
   const colorScheme = useColorScheme();
@@ -293,10 +294,12 @@ function LoadingScreen() {
 
 function RootLayoutInner() {
   const { fontsLoaded } = useContext(FontContext);
-  const { initializing, isAuthenticated } = useAuth();
+  const { initializing, isAuthenticated, user } = useAuth();
+  const { setThemePreference } = useThemeContext();
   const router = useRouter();
   const segments = useSegments();
   const [bootDelayDone, setBootDelayDone] = useState(false);
+  const [themePreferenceHydratedForUserId, setThemePreferenceHydratedForUserId] = useState<string | null>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => setBootDelayDone(true), 700);
@@ -309,9 +312,12 @@ function RootLayoutInner() {
     }
 
     const firstSegment = segments[0];
+    const secondSegment = Array.from(segments)[1];
     const isAuthRoute = firstSegment === 'sign-in' || firstSegment === 'sign-up';
     const isProtectedRoute =
-      firstSegment === '(tabs)' || firstSegment === 'profile' || firstSegment === 'settingsPage';
+      firstSegment === 'profile' ||
+      firstSegment === 'settingsPage' ||
+      (firstSegment === '(tabs)' && secondSegment === 'settings');
 
     if (!isAuthenticated && isProtectedRoute) {
       router.replace(APP_ROUTES.auth.signIn);
@@ -322,6 +328,37 @@ function RootLayoutInner() {
       router.replace(APP_ROUTES.tabs.home);
     }
   }, [bootDelayDone, fontsLoaded, initializing, isAuthenticated, router, segments]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !user?.id) {
+      setThemePreferenceHydratedForUserId(null);
+      return;
+    }
+
+    if (themePreferenceHydratedForUserId === user.id) {
+      return;
+    }
+
+    let active = true;
+
+    void fetchMePreferences()
+      .then((response) => {
+        if (!active) {
+          return;
+        }
+        setThemePreference(response.preferences.themePreference ?? 'system');
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        if (active) {
+          setThemePreferenceHydratedForUserId(user.id);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [isAuthenticated, setThemePreference, themePreferenceHydratedForUserId, user?.id]);
 
   if (!fontsLoaded || !bootDelayDone) {
     return <LoadingScreen />;

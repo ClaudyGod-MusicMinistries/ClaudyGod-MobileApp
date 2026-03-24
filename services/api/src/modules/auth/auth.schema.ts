@@ -60,3 +60,11 @@ export const resendVerificationEmailSchema = z
     email: emailSchema,
   })
   .strict();
+
+export const refreshSessionSchema = z
+  .object({
+    refreshToken: z.string().trim().min(20).max(4096).optional(),
+  })
+  .strict();
+
+export const logoutSchema = refreshSessionSchema;

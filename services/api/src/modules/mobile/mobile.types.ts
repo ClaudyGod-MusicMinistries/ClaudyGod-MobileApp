@@ -18,6 +18,11 @@ export interface MobileFeedItem {
   isLive?: boolean;
   liveViewerCount?: number;
   notificationChannelId?: string;
+  ctaLabel?: string;
+  ctaUrl?: string;
+  sponsorName?: string;
+  placement?: string;
+  campaignId?: string;
 }
 
 export interface MobileFeedRail {

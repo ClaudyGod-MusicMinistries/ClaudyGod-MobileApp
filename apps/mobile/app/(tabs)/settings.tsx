@@ -12,7 +12,7 @@ import { TVTouchable } from '../../components/ui/TVTouchable';
 import { AppButton } from '../../components/ui/AppButton';
 import { ActionSheet } from '../../components/ui/ActionSheet';
 import { useToast } from '../../context/ToastContext';
-import { useAppTheme, useColorSchemeToggle } from '../../util/colorScheme';
+import { useAppTheme, useThemeContext } from '../../util/colorScheme';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import { fetchMePreferences, updateMePreferences } from '../../services/userFlowService';
 import { clearMobileSession } from '../../services/authService';
@@ -93,9 +93,81 @@ function SettingRow({ item }: { item: SettingItem }) {
   );
 }
 
+function AppearanceModePicker({
+  value,
+  onChange,
+}: {
+  value: 'system' | 'light' | 'dark';
+  onChange: (_value: 'system' | 'light' | 'dark') => void;
+}) {
+  const theme = useAppTheme();
+  const options: { value: 'system' | 'light' | 'dark'; label: string; icon: React.ComponentProps<typeof MaterialIcons>['name'] }[] = [
+    { value: 'system', label: 'System', icon: 'devices' },
+    { value: 'light', label: 'Light', icon: 'light-mode' },
+    { value: 'dark', label: 'Dark', icon: 'dark-mode' },
+  ];
+
+  return (
+      <View style={{ gap: 12 }}>
+        <View>
+          <CustomText
+            variant="caption"
+          style={{
+            color: theme.colors.text.secondary,
+            textTransform: 'uppercase',
+            letterSpacing: 0.9,
+          }}
+          >
+            Appearance
+          </CustomText>
+          <CustomText variant="body" style={{ color: theme.colors.text.secondary, marginTop: 6 }}>
+            Light, dark, or device theme. Your choice stays synced to your account.
+          </CustomText>
+        </View>
+
+      <View style={{ flexDirection: 'row', gap: 10 }}>
+        {options.map((option) => {
+          const active = value === option.value;
+          return (
+            <TVTouchable
+              key={option.value}
+              onPress={() => onChange(option.value)}
+              style={{
+                flex: 1,
+                minHeight: 54,
+                borderRadius: theme.radius.lg,
+                borderWidth: 1,
+                borderColor: active ? theme.colors.primary : theme.colors.border,
+                backgroundColor: active ? theme.colors.surfaceAlt : theme.colors.surface,
+                paddingHorizontal: 12,
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+              }}
+              showFocusBorder={false}
+            >
+              <MaterialIcons
+                name={option.icon}
+                size={18}
+                color={active ? theme.colors.primary : theme.colors.text.secondary}
+              />
+              <CustomText
+                variant="label"
+                style={{ color: active ? theme.colors.text.primary : theme.colors.text.secondary }}
+              >
+                {option.label}
+              </CustomText>
+            </TVTouchable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
 export default function SettingsScreen() {
   const theme = useAppTheme();
-  const toggleColorScheme = useColorSchemeToggle();
+  const { themePreference, setThemePreference } = useThemeContext();
   const router = useRouter();
   const { showToast } = useToast();
   const [notifications, setNotifications] = useState(true);
@@ -211,23 +283,6 @@ export default function SettingsScreen() {
               });
             },
           },
-          {
-            icon: 'dark-mode',
-            label: 'Dark mode',
-            hint: 'Keep the app in the darker player theme',
-            type: 'switch',
-            value: theme.scheme === 'dark',
-            onToggle: () => {
-              const nextTheme = theme.scheme === 'dark' ? 'light' : 'dark';
-              toggleColorScheme();
-              persistPreferencePatch({ themePreference: nextTheme });
-              showToast({
-                title: 'Theme updated',
-                message: nextTheme === 'dark' ? 'Dark mode is active.' : 'Light mode is active.',
-                tone: 'info',
-              });
-            },
-          },
         ] as SettingItem[],
       },
     ],
@@ -238,8 +293,6 @@ export default function SettingsScreen() {
       personalization,
       persistPreferencePatch,
       showToast,
-      theme.scheme,
-      toggleColorScheme,
     ],
   );
   const navigationSections = useMemo(
@@ -288,13 +341,16 @@ export default function SettingsScreen() {
                       letterSpacing: 0.9,
                     }}
                   >
-                    ClaudyGod account
+                    Account & playback
+                  </CustomText>
+                  <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
+                    Preferences
                   </CustomText>
                   <CustomText variant="hero" style={{ color: theme.colors.text.primary }}>
-                    Keep the experience simple and personal.
+                    Keep playback and appearance in sync.
                   </CustomText>
                   <CustomText variant="body" style={{ color: theme.colors.text.secondary }}>
-                    Manage playback, alerts, privacy, and support from one clean settings flow.
+                    Control playback, notifications, and support without leaving the app.
                   </CustomText>
                 </View>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: theme.spacing.md }}>
@@ -330,8 +386,30 @@ export default function SettingsScreen() {
               </SurfaceCard>
             </FadeIn>
 
+            <FadeIn delay={85}>
+              <SurfaceCard tone="subtle" style={{ padding: theme.spacing.lg }}>
+                <AppearanceModePicker
+                  value={themePreference}
+                  onChange={(nextTheme) => {
+                    setThemePreference(nextTheme);
+                    persistPreferencePatch({ themePreference: nextTheme });
+                    showToast({
+                      title: 'Appearance updated',
+                      message:
+                        nextTheme === 'system'
+                          ? 'ClaudyGod now follows your device appearance.'
+                          : nextTheme === 'dark'
+                            ? 'Dark mode is active.'
+                            : 'Light mode is active.',
+                      tone: 'info',
+                    });
+                  }}
+                />
+              </SurfaceCard>
+            </FadeIn>
+
             {[...navigationSections, ...controlSections].map((section, sectionIndex) => (
-              <FadeIn key={section.title} delay={100 + sectionIndex * 35}>
+              <FadeIn key={section.title} delay={120 + sectionIndex * 35}>
                 <SurfaceCard tone="subtle" style={{ paddingHorizontal: theme.spacing.lg, paddingVertical: 6 }}>
                   <View style={{ paddingTop: 12, paddingBottom: 4 }}>
                     <CustomText

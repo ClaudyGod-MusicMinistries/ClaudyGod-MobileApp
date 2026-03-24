@@ -4,6 +4,7 @@ export const MOBILE_TAB_DESTINATION_OPTIONS = [
   { value: 'home', label: 'Home' },
   { value: 'videos', label: 'Videos' },
   { value: 'player', label: 'Music' },
+  { value: 'live', label: 'Live' },
   { value: 'library', label: 'Library' },
   { value: 'search', label: 'Search' },
 ];
@@ -14,6 +15,7 @@ export const SETTINGS_DESTINATION_OPTIONS = [
   { value: 'tabs.home', label: 'Home tab' },
   { value: 'tabs.player', label: 'Music tab' },
   { value: 'tabs.videos', label: 'Videos tab' },
+  { value: 'tabs.live', label: 'Live tab' },
   { value: 'tabs.library', label: 'Library tab' },
   { value: 'tabs.search', label: 'Search tab' },
   { value: 'tabs.settings', label: 'Settings tab' },
@@ -23,6 +25,16 @@ export const SETTINGS_DESTINATION_OPTIONS = [
   { value: 'settings.help', label: 'Help' },
   { value: 'settings.about', label: 'About' },
   { value: 'settings.rate', label: 'Rate app' },
+];
+
+export const AD_PLACEMENT_SCREEN_OPTIONS = [
+  { value: 'landing', label: 'Landing' },
+  { value: 'home', label: 'Home' },
+  { value: 'videos', label: 'Videos' },
+  { value: 'player', label: 'Music player' },
+  { value: 'live', label: 'Live' },
+  { value: 'library', label: 'Library' },
+  { value: 'search', label: 'Search' },
 ];
 
 export const MOBILE_LAYOUT_GROUPS = [
@@ -105,5 +117,16 @@ export function createSettingsHubItem() {
     label: 'New item',
     hint: 'Describe where this link should take the user.',
     destination: 'tabs.settings',
+  };
+}
+
+export function createAdPlacement() {
+  return {
+    id: makeId('placement'),
+    title: 'Sponsored placement',
+    subtitle: 'Promoted slot inside the mobile app experience.',
+    screen: 'home',
+    enabled: true,
+    maxItems: 1,
   };
 }

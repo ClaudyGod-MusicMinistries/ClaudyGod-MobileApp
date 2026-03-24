@@ -10,6 +10,33 @@ interface AppConfigRow {
   updated_at: string | Date;
 }
 
+function normalizeNavigationTabs(
+  tabs?: Partial<MobileAppConfig['navigation']['tabs']>,
+): MobileAppConfig['navigation']['tabs'] {
+  const defaults = DEFAULT_MOBILE_APP_CONFIG.navigation.tabs;
+  const entries = Array.isArray(tabs) ? tabs : [];
+  const byId = new Map(entries.map((tab) => [tab?.id, tab]));
+
+  return defaults.map((defaultTab) => {
+    const existing = byId.get(defaultTab.id);
+    if (!existing) {
+      return defaultTab;
+    }
+
+    return {
+      id: defaultTab.id,
+      label:
+        typeof existing.label === 'string' && existing.label.trim().length > 0
+          ? existing.label.trim()
+          : defaultTab.label,
+      icon:
+        typeof existing.icon === 'string' && existing.icon.trim().length > 0
+          ? existing.icon.trim()
+          : defaultTab.icon,
+    };
+  });
+}
+
 function mergeWithDefaults(value: unknown): MobileAppConfig {
   const input = value && typeof value === 'object' ? (value as Partial<MobileAppConfig>) : {};
 
@@ -43,6 +70,7 @@ function mergeWithDefaults(value: unknown): MobileAppConfig {
     navigation: {
       ...DEFAULT_MOBILE_APP_CONFIG.navigation,
       ...(input.navigation ?? {}),
+      tabs: normalizeNavigationTabs(input.navigation?.tabs),
     },
     discovery: {
       ...DEFAULT_MOBILE_APP_CONFIG.discovery,
@@ -51,6 +79,14 @@ function mergeWithDefaults(value: unknown): MobileAppConfig {
     settingsHub: {
       ...DEFAULT_MOBILE_APP_CONFIG.settingsHub,
       ...(input.settingsHub ?? {}),
+    },
+    monetization: {
+      ...DEFAULT_MOBILE_APP_CONFIG.monetization,
+      ...(input.monetization ?? {}),
+    },
+    intelligence: {
+      ...DEFAULT_MOBILE_APP_CONFIG.intelligence,
+      ...(input.intelligence ?? {}),
     },
   });
 }

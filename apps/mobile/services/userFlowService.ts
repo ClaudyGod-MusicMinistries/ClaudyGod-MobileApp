@@ -1,27 +1,7 @@
-import { Platform } from 'react-native';
 import { apiFetch } from './apiClient';
-import { getStoredMobileSession } from './authService';
+import { apiFetchWithMobileSession } from './authService';
 
 type JsonRecord = Record<string, unknown>;
-
-async function apiFetchAuthed<T>(path: string, init?: RequestInit): Promise<T> {
-  if (Platform.OS === 'web') {
-    return apiFetch<T>(path, init);
-  }
-
-  const { accessToken } = await getStoredMobileSession();
-  if (!accessToken) {
-    throw new Error('Sign in required');
-  }
-
-  return apiFetch<T>(path, {
-    ...init,
-    headers: {
-      ...(init?.headers ?? {}),
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
-}
 
 export interface MeProfile {
   id: string;
@@ -117,7 +97,7 @@ export interface MobileAppExperienceConfig {
       subtitle: string;
       contentTypes: ('audio' | 'video' | 'playlist' | 'announcement' | 'live')[];
       actionLabel: string;
-      destinationTab: 'home' | 'videos' | 'player' | 'library' | 'search';
+      destinationTab: 'home' | 'videos' | 'player' | 'live' | 'library' | 'search';
       maxItems: number;
     }[];
     videoSections: {
@@ -126,7 +106,7 @@ export interface MobileAppExperienceConfig {
       subtitle: string;
       contentTypes: ('audio' | 'video' | 'playlist' | 'announcement' | 'live')[];
       actionLabel: string;
-      destinationTab: 'home' | 'videos' | 'player' | 'library' | 'search';
+      destinationTab: 'home' | 'videos' | 'player' | 'live' | 'library' | 'search';
       maxItems: number;
     }[];
     playerSections: {
@@ -135,7 +115,7 @@ export interface MobileAppExperienceConfig {
       subtitle: string;
       contentTypes: ('audio' | 'video' | 'playlist' | 'announcement' | 'live')[];
       actionLabel: string;
-      destinationTab: 'home' | 'videos' | 'player' | 'library' | 'search';
+      destinationTab: 'home' | 'videos' | 'player' | 'live' | 'library' | 'search';
       maxItems: number;
     }[];
     librarySections: {
@@ -144,13 +124,13 @@ export interface MobileAppExperienceConfig {
       subtitle: string;
       contentTypes: ('audio' | 'video' | 'playlist' | 'announcement' | 'live')[];
       actionLabel: string;
-      destinationTab: 'home' | 'videos' | 'player' | 'library' | 'search';
+      destinationTab: 'home' | 'videos' | 'player' | 'live' | 'library' | 'search';
       maxItems: number;
     }[];
   };
   navigation: {
     tabs: {
-      id: 'home' | 'videos' | 'player' | 'library' | 'search';
+      id: 'home' | 'videos' | 'player' | 'live' | 'library' | 'search';
       label: string;
       icon: string;
     }[];
@@ -178,6 +158,7 @@ export interface MobileAppExperienceConfig {
           | 'tabs.home'
           | 'tabs.player'
           | 'tabs.videos'
+          | 'tabs.live'
           | 'tabs.library'
           | 'tabs.search'
           | 'tabs.settings'
@@ -189,6 +170,24 @@ export interface MobileAppExperienceConfig {
           | 'settings.rate';
       }[];
     }[];
+  };
+  monetization: {
+    adsEnabled: boolean;
+    disclosureLabel: string;
+    placements: {
+      id: string;
+      title: string;
+      subtitle: string;
+      screen: 'landing' | 'home' | 'videos' | 'player' | 'live' | 'library' | 'search';
+      enabled: boolean;
+      maxItems: number;
+    }[];
+  };
+  intelligence: {
+    assistantEnabled: boolean;
+    adCopySuggestionsEnabled: boolean;
+    providerLabel: string;
+    defaultTone: string;
   };
 }
 
@@ -230,39 +229,39 @@ export async function fetchMeBootstrap(): Promise<{
   };
   library: MeLibrary;
 }> {
-  return apiFetchAuthed('/v1/me/bootstrap');
+  return apiFetchWithMobileSession('/v1/me/bootstrap');
 }
 
 export async function fetchMeProfile(): Promise<{ user: MeProfile }> {
-  return apiFetchAuthed('/v1/me/profile');
+  return apiFetchWithMobileSession('/v1/me/profile');
 }
 
 export async function updateMeProfile(input: Partial<Omit<MeProfile, 'id' | 'email' | 'role' | 'createdAt' | 'updatedAt'>>): Promise<{ user: MeProfile }> {
-  return apiFetchAuthed('/v1/me/profile', {
+  return apiFetchWithMobileSession('/v1/me/profile', {
     method: 'PATCH',
     body: JSON.stringify(input),
   });
 }
 
 export async function fetchMePreferences(): Promise<{ preferences: MePreferences }> {
-  return apiFetchAuthed('/v1/me/preferences');
+  return apiFetchWithMobileSession('/v1/me/preferences');
 }
 
 export async function updateMePreferences(input: Partial<MePreferences>): Promise<{ preferences: MePreferences }> {
   const payload: Partial<MePreferences> = { ...input };
   delete (payload as Partial<MePreferences>).updatedAt;
-  return apiFetchAuthed('/v1/me/preferences', {
+  return apiFetchWithMobileSession('/v1/me/preferences', {
     method: 'PATCH',
     body: JSON.stringify(payload),
   });
 }
 
 export async function fetchMeMetrics(): Promise<MeMetrics> {
-  return apiFetchAuthed('/v1/me/metrics');
+  return apiFetchWithMobileSession('/v1/me/metrics');
 }
 
 export async function fetchMeLibrary(): Promise<MeLibrary> {
-  return apiFetchAuthed('/v1/me/library');
+  return apiFetchWithMobileSession('/v1/me/library');
 }
 
 export async function saveMeLibraryItem(input: {
@@ -278,7 +277,7 @@ export async function saveMeLibraryItem(input: {
   duration?: string;
   metadata?: JsonRecord;
 }): Promise<{ saved: true }> {
-  return apiFetchAuthed('/v1/me/library/items', {
+  return apiFetchWithMobileSession('/v1/me/library/items', {
     method: 'POST',
     body: JSON.stringify(input),
   });
@@ -289,7 +288,7 @@ export async function removeMeLibraryItem(input: {
   contentId: string;
   playlistName?: string;
 }): Promise<{ removed: boolean }> {
-  return apiFetchAuthed('/v1/me/library/items', {
+  return apiFetchWithMobileSession('/v1/me/library/items', {
     method: 'DELETE',
     body: JSON.stringify(input),
   });
@@ -302,14 +301,14 @@ export async function trackMePlayEvent(input: {
   source?: string;
   metadata?: JsonRecord;
 }): Promise<void> {
-  await apiFetchAuthed('/v1/me/engagement/play-events', {
+  await apiFetchWithMobileSession('/v1/me/engagement/play-events', {
     method: 'POST',
     body: JSON.stringify(input),
   });
 }
 
 export async function subscribeToLiveAlertsBackend(channelId: string, label?: string): Promise<void> {
-  await apiFetchAuthed('/v1/me/engagement/live-subscriptions', {
+  await apiFetchWithMobileSession('/v1/me/engagement/live-subscriptions', {
     method: 'POST',
     body: JSON.stringify({ channelId, label }),
   });
@@ -319,7 +318,7 @@ export async function saveDevicePushToken(input: {
   expoPushToken: string;
   deviceType?: string;
 }): Promise<void> {
-  await apiFetchAuthed('/v1/me/devices/push-token', {
+  await apiFetchWithMobileSession('/v1/me/devices/push-token', {
     method: 'POST',
     body: JSON.stringify(input),
   });
@@ -329,14 +328,14 @@ export async function removeDevicePushToken(input: {
   expoPushToken: string;
   deviceType?: string;
 }): Promise<void> {
-  await apiFetchAuthed('/v1/me/devices/push-token', {
+  await apiFetchWithMobileSession('/v1/me/devices/push-token', {
     method: 'DELETE',
     body: JSON.stringify(input),
   });
 }
 
 export async function fetchMePrivacyOverview() {
-  return apiFetchAuthed<{
+  return apiFetchWithMobileSession<{
     privacy: {
       totalRequests: number;
       latestRequests: { id: string; type: 'export' | 'delete'; status: string; createdAt: string }[];
@@ -347,7 +346,7 @@ export async function fetchMePrivacyOverview() {
 }
 
 export async function requestPrivacyDataExport(notes?: string) {
-  return apiFetchAuthed<{
+  return apiFetchWithMobileSession<{
     request: { id: string; type: 'export'; status: string; createdAt: string };
   }>('/v1/me/privacy/export-request', {
     method: 'POST',
@@ -360,7 +359,7 @@ export async function requestPrivacyDeleteAccount(input: {
   confirmText: string;
   notes?: string;
 }) {
-  return apiFetchAuthed<{
+  return apiFetchWithMobileSession<{
     request: { id: string; type: 'delete'; status: string; createdAt: string };
   }>('/v1/me/privacy/delete-request', {
     method: 'POST',
@@ -369,7 +368,7 @@ export async function requestPrivacyDeleteAccount(input: {
 }
 
 export async function resetRecommendationHistory() {
-  return apiFetchAuthed<{ clearedPlayEvents: number }>('/v1/me/privacy/reset-history', {
+  return apiFetchWithMobileSession<{ clearedPlayEvents: number }>('/v1/me/privacy/reset-history', {
     method: 'POST',
     body: JSON.stringify({}),
   });
@@ -382,7 +381,7 @@ export async function createSupportRequest(input: {
   priority?: 'low' | 'normal' | 'high' | 'urgent';
   metadata?: JsonRecord;
 }) {
-  return apiFetchAuthed<{
+  return apiFetchWithMobileSession<{
     ticket: { id: string; status: string; createdAt: string };
   }>('/v1/me/support-requests', {
     method: 'POST',
@@ -396,7 +395,7 @@ export async function createAppRating(input: {
   channel?: 'mobile' | 'admin' | 'web';
   metadata?: JsonRecord;
 }) {
-  return apiFetchAuthed<{
+  return apiFetchWithMobileSession<{
     rating: { id: string; value: number; createdAt: string };
   }>('/v1/me/ratings', {
     method: 'POST',
@@ -412,7 +411,7 @@ export async function createDonationIntent(input: {
   planId?: string;
   metadata?: JsonRecord;
 }) {
-  return apiFetchAuthed<{
+  return apiFetchWithMobileSession<{
     donationIntent: {
       id: string;
       status: string;

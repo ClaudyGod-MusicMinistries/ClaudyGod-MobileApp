@@ -334,25 +334,6 @@ export default function PlaySection() {
               {active && hasInlineAudio && active.mediaUrl ? (
                 <SurfaceCard tone="strong" style={{ padding: theme.spacing.lg }}>
                   <View style={{ gap: 16 }}>
-                    <View style={{ gap: 6 }}>
-                      <CustomText
-                        variant="caption"
-                        style={{
-                          color: theme.colors.text.secondary,
-                          textTransform: 'uppercase',
-                          letterSpacing: 0.9,
-                        }}
-                      >
-                        Now playing
-                      </CustomText>
-                      <CustomText variant="hero" style={{ color: theme.colors.text.primary }}>
-                        {active.title}
-                      </CustomText>
-                      <CustomText variant="body" style={{ color: theme.colors.text.secondary }}>
-                        {active.subtitle}
-                      </CustomText>
-                    </View>
-
                     <AudioPlayer
                       track={{
                         id: active.id,
@@ -360,6 +341,7 @@ export default function PlaySection() {
                         artist: active.subtitle,
                         uri: active.mediaUrl,
                         duration: active.duration,
+                        imageUrl: active.imageUrl,
                       }}
                       onPrevious={goPrevious}
                       onNext={goNext}

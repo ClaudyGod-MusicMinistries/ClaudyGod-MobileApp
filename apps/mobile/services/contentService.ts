@@ -43,6 +43,11 @@ interface MobileFeedApiItem {
   isLive?: boolean;
   liveViewerCount?: number;
   notificationChannelId?: string;
+  ctaLabel?: string;
+  ctaUrl?: string;
+  sponsorName?: string;
+  placement?: string;
+  campaignId?: string;
 }
 
 export interface ApiContentItem {
@@ -102,6 +107,11 @@ export interface FeedCardItem {
   createdAt?: string;
   appSections?: string[];
   notificationChannelId?: string;
+  ctaLabel?: string;
+  ctaUrl?: string;
+  sponsorName?: string;
+  placement?: string;
+  campaignId?: string;
 }
 
 export interface FeedBundle {
@@ -188,6 +198,11 @@ function normalizeFeedItem(item: MobileFeedApiItem): FeedCardItem {
     createdAt: item.createdAt || item.updatedAt,
     appSections: Array.isArray(item.appSections) ? item.appSections : [],
     notificationChannelId: item.notificationChannelId,
+    ctaLabel: item.ctaLabel,
+    ctaUrl: item.ctaUrl,
+    sponsorName: item.sponsorName,
+    placement: item.placement,
+    campaignId: item.campaignId,
   };
 }
 
@@ -326,9 +341,11 @@ function removeAdItems(items: FeedCardItem[]): FeedCardItem[] {
 }
 
 function bundleFromApiFeed(response: MobileFeedApiResponse): FeedBundle {
-  const railMap = new Map(
-    (response.rails || []).map((rail) => [rail.id, rail.items.map(normalizeFeedItem)]),
-  );
+  const normalizedRails = (response.rails || []).map((rail) => ({
+    ...rail,
+    items: rail.items.map(normalizeFeedItem),
+  }));
+  const railMap = new Map(normalizedRails.map((rail) => [rail.id, rail.items]));
 
   const featured = response.featured ? normalizeFeedItem(response.featured) : null;
   const music = dedupe(removeAdItems(railMap.get('worship-music') || []));
@@ -338,6 +355,12 @@ function bundleFromApiFeed(response: MobileFeedApiResponse): FeedBundle {
   const announcements = dedupe(removeAdItems(railMap.get('ministry-updates') || []));
   const mostPlayed = dedupe(removeAdItems(railMap.get('trending-now') || []));
   const recent = dedupe(removeAdItems(railMap.get('latest-releases') || []));
+  const ads = dedupe(
+    normalizedRails
+      .filter((rail) => rail.id.startsWith('sponsored-'))
+      .flatMap((rail) => rail.items)
+      .filter((item) => item.type === 'ad'),
+  );
 
   return {
     ...DEFAULT_BUNDLE,
@@ -346,6 +369,7 @@ function bundleFromApiFeed(response: MobileFeedApiResponse): FeedBundle {
     videos: videos.slice(0, 14),
     playlists: playlists.slice(0, 12),
     live: live.slice(0, 10),
+    ads: ads.slice(0, 8),
     announcements: announcements.slice(0, 8),
     mostPlayed: mostPlayed.slice(0, 12),
     recent: recent.slice(0, 12),

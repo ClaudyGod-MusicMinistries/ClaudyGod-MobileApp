@@ -93,6 +93,11 @@ export const CONTENT_REQUEST_STATUS_OPTIONS = ['submitted', 'in_review', 'change
 export const YOUTUBE_SYNC_DEFAULT_LIMIT = 8;
 export const ADMIN_NAV_ITEMS = [
   {
+    id: 'overview',
+    label: 'Overview',
+    caption: 'Health and access',
+  },
+  {
     id: 'editor',
     label: 'Content',
     caption: 'Uploads and library',
@@ -101,6 +106,11 @@ export const ADMIN_NAV_ITEMS = [
     id: 'mobile-config',
     label: 'Mobile',
     caption: 'App structure',
+  },
+  {
+    id: 'ads-ai',
+    label: 'Ads & AI',
+    caption: 'Campaigns and automation',
   },
   {
     id: 'live',
