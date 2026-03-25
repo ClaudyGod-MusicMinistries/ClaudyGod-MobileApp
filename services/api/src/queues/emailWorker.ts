@@ -1,6 +1,6 @@
 import { Worker } from 'bullmq';
 import { pool } from '../db/pool';
-import { sendEmail } from '../infra/email';
+import { sendEmail, emailTransportInfo } from '../infra/email';
 import { redis } from '../infra/redis';
 import { EMAIL_QUEUE_NAME, type EmailQueuePayload } from './emailQueue';
 
@@ -19,6 +19,11 @@ const markEmailJobFailed = async (emailJobId: number, reason: string): Promise<v
      WHERE id = $1`,
     [emailJobId, reason],
   );
+};
+
+const logEmailStatus = (message: string): void => {
+  const timestamp = new Date().toISOString();
+  console.log(`[${timestamp}] [email-worker] ${message}`);
 };
 
 export const startEmailWorker = (): Worker<EmailQueuePayload> => {
@@ -55,12 +60,16 @@ export const startEmailWorker = (): Worker<EmailQueuePayload> => {
               .map((item) => item.trim())
               .filter(Boolean);
 
+        logEmailStatus(`Sending email to ${recipients.join(', ')} (Job #${emailJobId})`);
+
         const delivery = await sendEmail({
           to: recipients,
           subject: row.subject,
           text: row.text_body,
           html: row.html_body ?? undefined,
         });
+
+        logEmailStatus(`✓ Email delivered (Job #${emailJobId}, Message ID: ${delivery.messageId})`);
 
         await pool.query(
           `UPDATE email_jobs
@@ -72,6 +81,7 @@ export const startEmailWorker = (): Worker<EmailQueuePayload> => {
         return { success: true };
       } catch (error) {
         const reason = error instanceof Error ? error.message : 'Unknown email worker error';
+        logEmailStatus(`✗ Email delivery failed (Job #${emailJobId}): ${reason}`);
         await markEmailJobFailed(emailJobId, reason);
         throw error;
       }
@@ -83,11 +93,11 @@ export const startEmailWorker = (): Worker<EmailQueuePayload> => {
   );
 
   worker.on('completed', (job) => {
-    console.log(`[email-worker] Completed job ${job?.id}`);
+    logEmailStatus(`Completed job ${job?.id}`);
   });
 
   worker.on('failed', (job, error) => {
-    console.error(`[email-worker] Failed job ${job?.id}: ${error.message}`);
+    logEmailStatus(`Failed job ${job?.id}: ${error.message}`);
   });
 
   return worker;
