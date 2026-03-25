@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { env } from '../../config/env';
 import { pool } from '../../db/pool';
 import { redis } from '../../infra/redis';
+import { verifyEmailTransport } from '../../infra/email';
 
 export const healthRouter = Router();
 
@@ -53,6 +54,14 @@ healthRouter.get('/health', async (_req, res, next) => {
 
     const status = postgres === 'up' && redisState === 'up' ? 'ok' : 'degraded';
 
+    const smtpStatus = await verifyEmailTransport();
+    const smtpHealth = {
+      enabled: smtpStatus.enabled,
+      reachable: smtpStatus.reachable,
+      reason: smtpStatus.reason,
+      provider: env.SMTP_PROVIDER_LABEL,
+    };
+
     res.status(status === 'ok' ? 200 : 503).json({
       status,
       capabilities: capabilities(),
@@ -60,6 +69,7 @@ healthRouter.get('/health', async (_req, res, next) => {
         postgres,
         redis: redisState,
       },
+      smtp: smtpHealth,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
