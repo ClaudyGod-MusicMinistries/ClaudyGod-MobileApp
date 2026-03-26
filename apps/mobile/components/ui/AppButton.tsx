@@ -50,24 +50,33 @@ export function AppButton({
 
   const sizeStyle =
     size === 'sm'
-      ? { minHeight: 36, paddingHorizontal: 14, paddingVertical: 7 }
+      ? { minHeight: 36, paddingHorizontal: 14, paddingVertical: 8, fontSize: 12 }
       : size === 'lg'
-      ? { minHeight: 48, paddingHorizontal: 22, paddingVertical: 11 }
-      : { minHeight: 42, paddingHorizontal: 18, paddingVertical: 9 };
+      ? { minHeight: 52, paddingHorizontal: 24, paddingVertical: 14, fontSize: 14 }
+      : { minHeight: 44, paddingHorizontal: 18, paddingVertical: 10, fontSize: 13 };
+
+  const shadowStyle = isPrimary ? {
+    shadowColor: theme.colors.primary,
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 5,
+  } : {};
 
   return (
     <TVTouchable
       {...props}
       disabled={loading || props.disabled}
-      activeOpacity={0.9}
+      activeOpacity={0.85}
       style={[
         {
           ...sizeStyle,
+          ...shadowStyle,
           borderRadius: theme.radius.lg,
           backgroundColor: isPrimary
             ? theme.colors.primary
             : isSecondary
-              ? theme.colors.surfaceAlt
+              ? theme.colors.surface
               : isGhost
                 ? 'transparent'
                 : isOutline
@@ -79,13 +88,12 @@ export function AppButton({
             : isSecondary
               ? theme.colors.border
               : 'transparent',
-          opacity: props.disabled ? 0.6 : 1,
+          opacity: props.disabled ? 0.5 : 1,
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',
           alignSelf: fullWidth ? 'stretch' : 'flex-start',
           gap: 8,
-          ...(isPrimary ? theme.shadows.soft : null),
         },
         style,
       ]}
@@ -112,10 +120,11 @@ export function AppButton({
               color: resolvedTextColor,
               textAlign: 'center',
               flexShrink: 1,
-              fontFamily: 'SpaceGrotesk_500Medium',
-              fontSize: size === 'lg' ? 13 : 12,
-              lineHeight: size === 'lg' ? 16 : 15,
-              letterSpacing: 0.04,
+              fontFamily: 'SpaceGrotesk_600SemiBold',
+              fontSize: sizeStyle.fontSize,
+              lineHeight: (sizeStyle.fontSize as number) * 1.4,
+              letterSpacing: 0.3,
+              fontWeight: '600',
               ...(textStyle || {}),
             }}
             numberOfLines={1}

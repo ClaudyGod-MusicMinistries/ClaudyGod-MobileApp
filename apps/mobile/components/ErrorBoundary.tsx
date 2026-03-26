@@ -1,0 +1,230 @@
+import React, { ReactNode } from 'react';
+import { View, Text, SafeAreaView, ScrollView, TouchableOpacity } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
+import { colors } from '../constants/color';
+
+interface ErrorBoundaryProps {
+  children: ReactNode;
+  context?: string;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+  errorCount: number;
+  isDev: boolean;
+}
+
+export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = {
+      hasError: false,
+      error: null,
+      errorCount: 0,
+      isDev: process.env.NODE_ENV === 'development',
+    };
+  }
+
+  static getDerivedStateFromError(error: Error): Partial<ErrorBoundaryState> {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('[ErrorBoundary] Caught error:', error);
+    console.error('[ErrorBoundary] Component stack:', errorInfo.componentStack);
+    
+    // In production, send to error tracking service (e.g., Sentry, LogRocket)
+    if (typeof __DEV__ === 'undefined' || !__DEV__) {
+      // TODO: Send to error tracking service
+      // captureException(error, { contexts: { react: { componentStack: errorInfo.componentStack } } });
+    }
+  }
+
+  resetError = () => {
+    this.setState({
+      hasError: false,
+      error: null,
+      errorCount: this.state.errorCount + 1,
+    });
+  };
+
+  render() {
+    if (this.state.hasError && this.state.error) {
+      const darkColors = colors.dark;
+      const errorMessage = this.state.error.message || 'An unexpected error occurred';
+      const stackTrace = this.state.error.stack || '';
+
+      return (
+        <SafeAreaView style={{ flex: 1, backgroundColor: darkColors.background }}>
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 20, paddingVertical: 24 }}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Icon */}
+            <View
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: 32,
+                backgroundColor: 'rgba(239,68,68,0.1)',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 24,
+                alignSelf: 'center',
+              }}
+            >
+              <MaterialIcons name="error-outline" size={32} color={darkColors.danger} />
+            </View>
+
+            {/* Header */}
+            <View style={{ marginBottom: 24 }}>
+              <Text
+                style={{
+                  fontSize: 24,
+                  fontWeight: '700',
+                  color: darkColors.text.primary,
+                  marginBottom: 8,
+                }}
+              >
+                Oops! Something went wrong
+              </Text>
+              <Text
+                style={{
+                  fontSize: 14,
+                  color: darkColors.text.secondary,
+                  lineHeight: 20,
+                }}
+              >
+                We&apos;re sorry for the inconvenience. The app encountered an unexpected error. Please try again or contact support if the problem persists.
+              </Text>
+            </View>
+
+            {/* Error Details (Dev mode) */}
+            {this.state.isDev && (
+              <View
+                style={{
+                  backgroundColor: 'rgba(239,68,68,0.08)',
+                  borderWidth: 1,
+                  borderColor: 'rgba(239,68,68,0.3)',
+                  borderRadius: 12,
+                  padding: 16,
+                  marginBottom: 24,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 12,
+                    fontWeight: '600',
+                    color: darkColors.danger,
+                    marginBottom: 8,
+                  }}
+                >
+                  Error Message
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 11,
+                    color: darkColors.text.secondary,
+                    fontFamily: 'monospace',
+                    lineHeight: 16,
+                  }}
+                >
+                  {errorMessage}
+                </Text>
+
+                {stackTrace && (
+                  <>
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        fontWeight: '600',
+                        color: darkColors.danger,
+                        marginTop: 12,
+                        marginBottom: 8,
+                      }}
+                    >
+                      Stack Trace
+                    </Text>
+                    <Text
+                      style={{
+                        fontSize: 10,
+                        color: darkColors.text.secondary,
+                        fontFamily: 'monospace',
+                        lineHeight: 14,
+                      }}
+                      numberOfLines={8}
+                    >
+                      {stackTrace}
+                    </Text>
+                  </>
+                )}
+              </View>
+            )}
+
+            {/* Spacer */}
+            <View style={{ flex: 1 }} />
+
+            {/* Action Buttons */}
+            <View style={{ gap: 12 }}>
+              <TouchableOpacity
+                onPress={this.resetError}
+                style={{
+                  minHeight: 48,
+                  backgroundColor: darkColors.primary,
+                  borderRadius: 12,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  shadowColor: darkColors.primary,
+                  shadowOpacity: 0.3,
+                  shadowRadius: 8,
+                  shadowOffset: { width: 0, height: 4 },
+                  elevation: 5,
+                }}
+              >
+                <Text
+                  style={{
+                    color: darkColors.text.inverse,
+                    fontWeight: '600',
+                    fontSize: 14,
+                  }}
+                >
+                  Try Again
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => {
+                  // TODO: Navigate to home or support
+                  this.resetError();
+                }}
+                style={{
+                  minHeight: 48,
+                  backgroundColor: darkColors.surface,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: darkColors.border,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Text
+                  style={{
+                    color: darkColors.text.primary,
+                    fontWeight: '600',
+                    fontSize: 14,
+                  }}
+                >
+                  Go Home
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </SafeAreaView>
+      );
+    }
+
+    return this.props.children;
+  }
+}
