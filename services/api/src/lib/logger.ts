@@ -1,7 +1,48 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import winston from 'winston';
 import { env } from '../config/env';
 
 const isDevelopment = env.NODE_ENV === 'development';
+const logDirectoryCandidates = [
+  process.env.LOG_DIR,
+  path.resolve(process.cwd(), 'logs'),
+  '/tmp/claudygod-api-logs',
+].filter((value): value is string => Boolean(value && value.trim()));
+
+const ensureWritableLogDirectory = (): string | null => {
+  for (const directory of logDirectoryCandidates) {
+    try {
+      fs.mkdirSync(directory, { recursive: true });
+      fs.accessSync(directory, fs.constants.W_OK);
+      return directory;
+    } catch {
+      continue;
+    }
+  }
+
+  return null;
+};
+
+const writableLogDirectory = ensureWritableLogDirectory();
+
+const createFileTransport = (
+  filename: string,
+  options: Omit<winston.transports.FileTransportOptions, 'filename'> = {}
+): winston.transport | null => {
+  if (!writableLogDirectory) {
+    return null;
+  }
+
+  try {
+    return new winston.transports.File({
+      filename: path.join(writableLogDirectory, filename),
+      ...options,
+    });
+  } catch {
+    return null;
+  }
+};
 
 const transports: winston.transport[] = [
   // Console transport
@@ -20,17 +61,28 @@ const transports: winston.transport[] = [
 
 // File transport in production
 if (!isDevelopment) {
-  transports.push(
-    new winston.transports.File({
-      filename: 'logs/error.log',
-      level: 'error',
-      format: winston.format.json(),
-    }),
-    new winston.transports.File({
-      filename: 'logs/combined.log',
-      format: winston.format.json(),
-    })
-  );
+  const errorTransport = createFileTransport('error.log', {
+    level: 'error',
+    format: winston.format.json(),
+  });
+  const combinedTransport = createFileTransport('combined.log', {
+    format: winston.format.json(),
+  });
+
+  if (errorTransport) {
+    transports.push(errorTransport);
+  }
+
+  if (combinedTransport) {
+    transports.push(combinedTransport);
+  }
+}
+
+const exceptionHandlers: winston.transport[] = [];
+const exceptionFileTransport = createFileTransport('exceptions.log');
+
+if (exceptionFileTransport) {
+  exceptionHandlers.push(exceptionFileTransport);
 }
 
 export const logger = winston.createLogger({
@@ -42,9 +94,7 @@ export const logger = winston.createLogger({
   ),
   defaultMeta: { service: 'claudygod-api' },
   transports,
-  exceptionHandlers: [
-    new winston.transports.File({ filename: 'logs/exceptions.log' }),
-  ],
+  exceptionHandlers,
 });
 
 // Handle unhandled rejections
