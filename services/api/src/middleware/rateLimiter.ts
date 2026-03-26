@@ -44,3 +44,6 @@ export const emailVerificationLimiter = rateLimit({
   legacyHeaders: false,
   skip: (req: Request) => process.env.NODE_ENV === 'development',
 });
+
+// Alias for backward compatibility
+export const emailVerifyLimiter = emailVerificationLimiter;

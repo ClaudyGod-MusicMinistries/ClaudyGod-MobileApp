@@ -9,6 +9,11 @@ interface BrowserStorageLike {
   removeItem: (_key: string) => void;
 }
 
+interface AuthSession {
+  accessToken?: string;
+  refreshToken?: string;
+}
+
 const createMemoryStorage = () => {
   const memory = new Map<string, string>();
 
@@ -108,5 +113,15 @@ export const authSessionStorage = {
     }
 
     await memoryStorage.removeItem(key);
+  },
+
+  async restoreSession(): Promise<AuthSession> {
+    const accessToken = await this.getItem('accessToken');
+    const refreshToken = await this.getItem('refreshToken');
+    
+    return {
+      accessToken: accessToken ?? undefined,
+      refreshToken: refreshToken ?? undefined,
+    };
   },
 };

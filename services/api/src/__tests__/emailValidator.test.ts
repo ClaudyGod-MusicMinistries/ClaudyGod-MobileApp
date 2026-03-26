@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */ // @ts-nocheck
 // __tests__/emailValidator.test.ts
 /**
  * Email Validator Tests

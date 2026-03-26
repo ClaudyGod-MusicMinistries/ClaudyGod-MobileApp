@@ -52,7 +52,7 @@ export const StatCard: React.FC<StatCardProps> = ({
         style={[
           styles.card,
           {
-            backgroundColor: backgroundColor || theme.colors.card,
+            backgroundColor: backgroundColor || theme.colors.surface,
             borderColor: theme.colors.border,
           },
         ]}
