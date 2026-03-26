@@ -1,6 +1,19 @@
 import { type Request, Router } from 'express';
 import { asyncHandler } from '../../lib/asyncHandler';
-import { validateSchema } from '../../lib/validation';
+import { validateBody } from '../../lib/validationMiddleware';
+import {
+  authLimiter,
+  passwordResetLimiter,
+  emailVerificationLimiter,
+} from '../../middleware/rateLimiter';
+import {
+  signUpSchema,
+  signInSchema,
+  verifyEmailSchema,
+  emailVerifyRequestSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
+} from '../../lib/schemas';
 import {
   applyAuthSessionCookies,
   clearAuthSessionCookie,
@@ -8,16 +21,6 @@ import {
   getAuthTokenFromRequest,
   respondWithAuthSession,
 } from './authSessionCookie';
-import {
-  forgotPasswordSchema,
-  loginSchema,
-  logoutSchema,
-  registerSchema,
-  refreshSessionSchema,
-  resendVerificationEmailSchema,
-  resetPasswordSchema,
-  verifyEmailSchema,
-} from './auth.schema';
 import {
   getUserById,
   loginUser,
@@ -88,9 +91,9 @@ function getAuthRequestContext(req: Request) {
 
 authRouter.post(
   '/register',
+  validateBody(signUpSchema),
   asyncHandler(async (req, res) => {
-    const payload = validateSchema(registerSchema, req.body);
-    const result = await registerUser(payload, getAuthRequestContext(req));
+    const result = await registerUser(req.validated, getAuthRequestContext(req));
     if (result.requiresEmailVerification || !result.accessToken || !result.user) {
       res.status(201).json(result);
       return;
@@ -102,10 +105,11 @@ authRouter.post(
 );
 
 authRouter.post(
-  '/login',
+  '/sign-in',
+  authLimiter,
+  validateBody(signInSchema),
   asyncHandler(async (req, res) => {
-    const payload = validateSchema(loginSchema, req.body);
-    const result = await loginUser(payload, getAuthRequestContext(req));
+    const result = await loginUser(req.validated, getAuthRequestContext(req));
     const session = await buildSessionPayload(result, req);
     respondWithAuthSession(req, res, session, 200);
   }),
@@ -113,9 +117,10 @@ authRouter.post(
 
 authRouter.post(
   '/email/verify',
+  emailVerificationLimiter,
+  validateBody(verifyEmailSchema),
   asyncHandler(async (req, res) => {
-    const payload = validateSchema(verifyEmailSchema, req.body);
-    const result = await verifyEmail(payload, getAuthRequestContext(req));
+    const result = await verifyEmail(req.validated, getAuthRequestContext(req));
     const session = await buildSessionPayload(result, req);
     respondWithAuthSession(req, res, session, 200);
   }),
@@ -123,27 +128,32 @@ authRouter.post(
 
 authRouter.post(
   '/email/verify/request',
+  emailVerificationLimiter,
+  validateBody(emailVerifyRequestSchema),
   asyncHandler(async (req, res) => {
-    const payload = validateSchema(resendVerificationEmailSchema, req.body);
-    const result = await resendVerificationEmail(payload, getAuthRequestContext(req));
+    const result = await resendVerificationEmail(
+      { email: req.validated.email },
+      getAuthRequestContext(req)
+    );
     res.status(202).json(result);
   }),
 );
 
 authRouter.post(
-  '/password/forgot',
+  '/forgot-password',
+  passwordResetLimiter,
+  validateBody(forgotPasswordSchema),
   asyncHandler(async (req, res) => {
-    const payload = validateSchema(forgotPasswordSchema, req.body);
-    const result = await requestPasswordReset(payload, getAuthRequestContext(req));
+    const result = await requestPasswordReset(req.validated, getAuthRequestContext(req));
     res.status(202).json(result);
   }),
 );
 
 authRouter.post(
-  '/password/reset',
+  '/reset-password',
+  validateBody(resetPasswordSchema),
   asyncHandler(async (req, res) => {
-    const payload = validateSchema(resetPasswordSchema, req.body);
-    const result = await resetPassword(payload, getAuthRequestContext(req));
+    const result = await resetPassword(req.validated, getAuthRequestContext(req));
     res.status(200).json(result);
   }),
 );

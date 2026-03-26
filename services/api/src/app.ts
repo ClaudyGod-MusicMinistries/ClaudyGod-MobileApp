@@ -6,6 +6,9 @@ import morgan from 'morgan';
 import { env } from './config/env';
 import { errorHandler } from './middleware/errorHandler';
 import { notFoundHandler } from './middleware/notFoundHandler';
+import { requestTrackingMiddleware } from './middleware/requestTracking';
+import { apiLimiter } from './middleware/rateLimiter';
+import { logger } from './lib/logger';
 import { analyticsRouter } from './modules/analytics/analytics.routes';
 import { adminRouter } from './modules/admin/admin.routes';
 import { adminAiRouter } from './modules/ai/ai.routes';
@@ -101,19 +104,42 @@ const buildCorsOrigin = (): CorsOptions['origin'] => {
 export const createApp = () => {
   const app = express();
 
+  // Trust proxy (important for X-Forwarded-For in production)
+  app.set('trust proxy', 1);
+
+  // Disable server signature
   app.disable('x-powered-by');
+
+  // Security headers
   app.use(helmet());
+
+  // CORS
   app.use(
     cors({
       origin: buildCorsOrigin(),
       credentials: true,
     }),
   );
-  app.use(express.json({ limit: '3mb' }));
+
+  // Request tracking - MUST be before other middleware
+  app.use(requestTrackingMiddleware);
+
+  // Logging
   app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
+  // Body parsing
+  app.use(express.json({ limit: '3mb' }));
+
+  // Rate limiting
+  app.use(apiLimiter);
+
+  // Health check (no auth needed)
   app.use('/', healthRouter);
+
+  // Auth routes (have their own rate limiting)
   app.use('/v1/auth', authRouter);
+
+  // Protected routes
   app.use('/v1/me', meRouter);
   app.use('/v1/live', liveRouter);
   app.use('/v1/content', contentRouter);
@@ -129,6 +155,7 @@ export const createApp = () => {
   app.use('/v1/admin/word-of-day', adminWordOfDayRouter);
   app.use('/v1/youtube', youtubeRouter);
 
+  // Error handlers (MUST be last)
   app.use(notFoundHandler);
   app.use(errorHandler);
 

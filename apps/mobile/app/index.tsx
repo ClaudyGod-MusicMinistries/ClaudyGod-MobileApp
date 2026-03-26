@@ -17,14 +17,14 @@ import { BRAND_HERO_ASSET, BRAND_LOGO_ASSET } from '../util/brandAssets';
 import type { FeedCardItem } from '../services/contentService';
 
 const LANDING_COLORS = {
-  background: '#05040A',
-  panel: 'rgba(11,10,18,0.94)',
-  panelStrong: 'rgba(15,13,24,0.98)',
-  border: 'rgba(255,255,255,0.08)',
-  textPrimary: '#F7F4FF',
-  textSecondary: 'rgba(208,200,232,0.72)',
-  accent: '#8D63FF',
-  accentSoft: 'rgba(141,99,255,0.14)',
+  background: '#0A0612',
+  panel: 'rgba(26,20,47,0.80)',
+  panelStrong: 'rgba(38,33,47,0.90)',
+  border: 'rgba(167,139,250,0.15)',
+  textPrimary: '#F5F3FF',
+  textSecondary: 'rgba(184,180,212,0.75)',
+  accent: '#A78BFA',
+  accentSoft: 'rgba(167,139,250,0.12)',
 };
 
 const DEFAULT_PREVIEW_LINKS = [
@@ -181,37 +181,48 @@ export default function LandingScreen() {
   }, [config]);
 
   const heroAction = getLandingPrimaryAction(featured);
-  const heroTitle = featured?.title ?? 'Music, messages, and live worship in one place.';
-  const heroSubtitle = featured?.subtitle ?? 'ClaudyGod Ministries';
+  const heroTitle = featured?.title ?? 'Worship, Music & Ministry\nUnified';
+  const heroSubtitle = featured?.subtitle ?? 'ClaudyGod';
   const heroDescription =
-    featured?.description?.trim() || 'Stream worship, ministry videos, and live moments from one connected experience.';
+    featured?.description?.trim() || 'Experience the ultimate platform for worship, music, and live ministry in one beautifully designed space. Stream, discover, and connect with your community.';
   const shellGap = isTablet ? 18 : 12;
 
   const headlineBlock = (
     <FadeIn delay={isPhone ? 80 : 50}>
-      <View style={{ gap: isCompactPhone ? 6 : 8 }}>
+      <View style={{ gap: isCompactPhone ? 8 : 12 }}>
         <CustomText
           variant="caption"
           style={{
             color: LANDING_COLORS.accent,
             textTransform: 'uppercase',
-            letterSpacing: 0.8,
+            letterSpacing: 1.2,
+            fontWeight: '600',
           }}
         >
-          ClaudyGod stream
+          Premium Streaming
         </CustomText>
-        <CustomText variant="hero" style={{ color: LANDING_COLORS.textPrimary }}>
-          Worship, music, and live ministry without the clutter.
+        <CustomText 
+          variant="hero" 
+          style={{ 
+            color: LANDING_COLORS.textPrimary,
+            fontSize: isCompactPhone ? 32 : 42,
+            fontWeight: '700',
+            lineHeight: isCompactPhone ? 40 : 52,
+          }}
+        >
+          Worship, Music & Ministry Unified
         </CustomText>
         <CustomText
           variant="body"
           style={{
             color: LANDING_COLORS.textSecondary,
-            maxWidth: isTablet ? 520 : '100%',
+            maxWidth: isTablet ? 540 : '100%',
+            fontSize: 15,
+            lineHeight: 24,
           }}
-          numberOfLines={isPhone ? 2 : 3}
+          numberOfLines={isPhone ? 3 : 4}
         >
-          Start from the latest featured moment, then move through music, videos, and live worship in one flow.
+          Experience the ultimate platform for worship, music, and live ministry in one beautifully designed space. Stream, discover, and connect.
         </CustomText>
       </View>
     </FadeIn>
@@ -219,20 +230,24 @@ export default function LandingScreen() {
 
   const actionBlock = (
     <FadeIn delay={isPhone ? 110 : 90}>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+      <View style={{ gap: 12 }}>
         <AppButton
-          title="Create Account"
-          size="md"
+          title="Get Started"
+          size="lg"
           onPress={() => router.push(APP_ROUTES.auth.signUp)}
+          fullWidth
+          style={{ borderRadius: 14 }}
         />
         <AppButton
           title="Sign In"
           variant="secondary"
-          size="md"
+          size="lg"
           onPress={() => router.push(APP_ROUTES.auth.signIn)}
+          fullWidth
           style={{
             borderColor: LANDING_COLORS.border,
             backgroundColor: LANDING_COLORS.panel,
+            borderRadius: 14,
           }}
           textColor={LANDING_COLORS.textPrimary}
         />
@@ -242,18 +257,20 @@ export default function LandingScreen() {
 
   const quickAccessRail = (
     <FadeIn delay={isPhone ? 130 : 130}>
-      <View style={{ gap: 10 }}>
+      <View style={{ gap: 12 }}>
         <CustomText
           variant="caption"
           style={{
             color: LANDING_COLORS.textSecondary,
             textTransform: 'uppercase',
-            letterSpacing: 0.75,
+            letterSpacing: 1,
+            fontWeight: '600',
+            fontSize: 11,
           }}
         >
-          Quick access
+          Explore
         </CustomText>
-        <View style={{ flexDirection: 'row', gap: 10 }}>
+        <View style={{ flexDirection: 'row', gap: 12 }}>
           {previewLinks.map((destination) => (
             <DestinationCard
               key={destination.key}
@@ -303,10 +320,10 @@ export default function LandingScreen() {
       <StatusBar translucent={false} barStyle="light-content" backgroundColor={LANDING_COLORS.background} />
 
       <LinearGradient
-        colors={['rgba(141,99,255,0.18)', 'rgba(141,99,255,0)', 'rgba(5,4,10,0)']}
+        colors={['rgba(167,139,250,0.25)', 'rgba(167,139,250,0.08)', 'rgba(10,6,18,0)']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 280 }}
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 320 }}
       />
 
       <SafeAreaView style={{ flex: 1, backgroundColor: LANDING_COLORS.background }} edges={['top', 'bottom']}>

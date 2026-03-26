@@ -93,9 +93,9 @@ function WelcomeSpinner({
           height: size,
           borderRadius: size / 2,
           borderWidth: 2.5,
-          borderColor: 'rgba(139,92,246,0.12)',
-          borderTopColor: '#8B5CF6',
-          borderRightColor: '#A78BFA',
+          borderColor: 'rgba(167,139,250,0.12)',
+          borderTopColor: '#A78BFA',
+          borderRightColor: '#D8CAFF',
           transform: [{ rotate }],
         }}
       />
@@ -106,7 +106,7 @@ function WelcomeSpinner({
           borderRadius: (size - 24) / 2,
           borderWidth: 1,
           borderColor: 'rgba(167,139,250,0.22)',
-          backgroundColor: 'rgba(20,16,34,0.92)',
+          backgroundColor: 'rgba(26,20,47,0.92)',
           alignItems: 'center',
           justifyContent: 'center',
           transform: [{ scale: pulse }],
@@ -120,17 +120,17 @@ function WelcomeSpinner({
 
 function WebLoadingScreen({ compact }: { compact: boolean }) {
   return (
-    <View style={{ flex: 1, backgroundColor: '#05050B' }}>
-      <StatusBar translucent={false} barStyle="light-content" backgroundColor="#05050B" />
+    <View style={{ flex: 1, backgroundColor: '#0A0612' }}>
+      <StatusBar translucent={false} barStyle="light-content" backgroundColor="#0A0612" />
 
       <LinearGradient
-        colors={['#150C28', '#090712', '#05050B']}
+        colors={['#1E1A35', '#0F0C1A', '#0A0612']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
       />
 
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#05050B' }} edges={['top', 'bottom']}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#0A0612' }} edges={['top', 'bottom']}>
         <View
           style={{
             flex: 1,
@@ -146,7 +146,7 @@ function WebLoadingScreen({ compact }: { compact: boolean }) {
               borderRadius: 28,
               borderWidth: 1,
               borderColor: 'rgba(167,139,250,0.16)',
-              backgroundColor: 'rgba(12,10,20,0.94)',
+              backgroundColor: 'rgba(26,20,47,0.94)',
               paddingHorizontal: compact ? 18 : 22,
               paddingVertical: compact ? 22 : 26,
               alignItems: 'center',
@@ -157,7 +157,7 @@ function WebLoadingScreen({ compact }: { compact: boolean }) {
             <Text
               style={{
                 marginTop: 16,
-                color: '#F7F5FF',
+                color: '#F5F3FF',
                 fontSize: compact ? 19 : 20,
                 lineHeight: compact ? 23 : 24,
                 fontWeight: '700',
@@ -169,7 +169,7 @@ function WebLoadingScreen({ compact }: { compact: boolean }) {
             <Text
               style={{
                 marginTop: 8,
-                color: 'rgba(212,206,232,0.70)',
+                color: 'rgba(184,180,212,0.70)',
                 fontSize: compact ? 12 : 12.4,
                 lineHeight: compact ? 16 : 17,
                 textAlign: 'center',
@@ -215,17 +215,17 @@ function NativeLoadingScreen({ compact }: { compact: boolean }) {
   }, [pulse, useNativeAnimations]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#05050B' }}>
-      <StatusBar translucent={false} barStyle="light-content" backgroundColor="#05050B" />
+    <View style={{ flex: 1, backgroundColor: '#0A0612' }}>
+      <StatusBar translucent={false} barStyle="light-content" backgroundColor="#0A0612" />
 
       <LinearGradient
-        colors={['#150C28', '#090712', '#05050B']}
+        colors={['#1E1A35', '#0F0C1A', '#0A0612']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
       />
 
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#05050B' }} edges={['top', 'bottom']}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#0A0612' }} edges={['top', 'bottom']}>
         <View
           style={{
             flex: 1,
@@ -241,7 +241,7 @@ function NativeLoadingScreen({ compact }: { compact: boolean }) {
               borderRadius: 28,
               borderWidth: 1,
               borderColor: 'rgba(167,139,250,0.16)',
-              backgroundColor: 'rgba(12,10,20,0.94)',
+              backgroundColor: 'rgba(26,20,47,0.94)',
               alignItems: 'center',
               justifyContent: 'center',
               paddingHorizontal: compact ? 20 : 24,
@@ -255,7 +255,7 @@ function NativeLoadingScreen({ compact }: { compact: boolean }) {
             <Text
               style={{
                 marginTop: 16,
-                color: '#F7F5FF',
+                color: '#F5F3FF',
                 fontSize: compact ? 18 : 19,
                 lineHeight: compact ? 22 : 23,
                 fontWeight: '700',
@@ -267,7 +267,7 @@ function NativeLoadingScreen({ compact }: { compact: boolean }) {
             <Text
               style={{
                 marginTop: 8,
-                color: 'rgba(212,206,232,0.70)',
+                color: 'rgba(184,180,212,0.70)',
                 fontSize: compact ? 12 : 12.4,
                 lineHeight: compact ? 16 : 17,
                 textAlign: 'center',
