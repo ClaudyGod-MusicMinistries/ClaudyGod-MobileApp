@@ -1,5 +1,6 @@
 import { type Request, Router } from 'express';
 import { asyncHandler } from '../../lib/asyncHandler';
+import { validateSchema } from '../../lib/validation';
 import { validateBody } from '../../lib/validationMiddleware';
 import {
   authLimiter,
@@ -14,6 +15,7 @@ import {
   forgotPasswordSchema,
   resetPasswordSchema,
 } from '../../lib/schemas';
+import { logoutSchema, refreshSessionSchema } from './auth.schema';
 import {
   applyAuthSessionCookies,
   clearAuthSessionCookie,

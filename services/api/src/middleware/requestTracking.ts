@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import type { RequestHandler } from 'express';
 import { logger } from '../lib/logger';
+import type { JwtClaims } from '../utils/jwt';
 
 export const requestTrackingMiddleware: RequestHandler = (req, res, next) => {
   // Generate or use provided request ID
@@ -40,12 +41,7 @@ declare global {
     interface Request {
       id: string;
       validated?: any;
-      user?: {
-        sub: string;
-        email: string;
-        role: string;
-        displayName: string;
-      };
+      user?: JwtClaims;
     }
   }
 }

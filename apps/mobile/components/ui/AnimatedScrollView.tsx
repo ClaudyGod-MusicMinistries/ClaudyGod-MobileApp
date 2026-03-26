@@ -27,7 +27,7 @@ export const AnimatedScrollView = React.forwardRef<
     {
       onScroll: onScrollProp,
       children,
-      _fadeEdges,
+      fadeEdges: _fadeEdges,
       ...props
     },
     ref,
