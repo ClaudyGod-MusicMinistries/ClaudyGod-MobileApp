@@ -13,18 +13,10 @@ export default function AdminShell(props) {
     content,
   } = props;
 
-  const activeTitle =
-    dashboardView === 'overview'
-      ? 'Creator Portal Overview'
-      : dashboardView === 'live'
-      ? 'Live Broadcast Portal'
-      : dashboardView === 'mobile-config'
-        ? 'Mobile Experience Portal'
-        : dashboardView === 'ads-ai'
-          ? 'Ads & AI Portal'
-        : dashboardView === 'mobile-preview'
-          ? 'Mobile Experience Preview'
-          : 'Content Publishing Portal';
+  const activeNavItem = Array.isArray(navItems)
+    ? navItems.find((item) => item.id === dashboardView)
+    : null;
+  const activeTitle = activeNavItem?.workspaceTitle || activeNavItem?.label || 'ClaudyGod workspace';
 
   return (
     <div class="app-root">

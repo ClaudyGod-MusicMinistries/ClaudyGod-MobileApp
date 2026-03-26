@@ -6,6 +6,7 @@ import { queueEmailJob } from '../../infra/transactionalEmails';
 import { HttpError } from '../../lib/httpError';
 import { isMissingDatabaseStructureError } from '../../lib/postgres';
 import type { UserRole } from '../auth/auth.types';
+import type { ContentRequestStatus, ContentVisibility } from '../content/content.types';
 
 interface SummaryRow {
   total_users: string;
@@ -16,6 +17,7 @@ interface SummaryRow {
 }
 
 interface ContentSummaryRow {
+  total_managed_content: string;
   published_content: string;
   draft_content: string;
 }
@@ -77,6 +79,28 @@ interface SupportRow {
 interface SignupTrendRow {
   day: string;
   signups: string;
+}
+
+interface ContentQueueSummaryRow {
+  active_requests: string;
+  needs_attention_requests: string;
+  fulfilled_requests: string;
+}
+
+interface ContentQueuePreviewRow {
+  id: string;
+  title: string;
+  description: string;
+  request_status: ContentRequestStatus;
+  created_at: string | Date;
+}
+
+interface RecentManagedContentRow {
+  id: string;
+  title: string;
+  description: string;
+  visibility: ContentVisibility;
+  updated_at: string | Date;
 }
 
 interface AutomationRunRow {
@@ -213,8 +237,15 @@ const DEFAULT_SUMMARY_ROW: SummaryRow = {
 };
 
 const DEFAULT_CONTENT_SUMMARY_ROW: ContentSummaryRow = {
+  total_managed_content: '0',
   published_content: '0',
   draft_content: '0',
+};
+
+const DEFAULT_CONTENT_QUEUE_SUMMARY_ROW: ContentQueueSummaryRow = {
+  active_requests: '0',
+  needs_attention_requests: '0',
+  fulfilled_requests: '0',
 };
 
 const DEFAULT_RATING_SUMMARY_ROW: RatingSummaryRow = {
@@ -244,10 +275,238 @@ const DEFAULT_EMAIL_SUMMARY_ROW: EmailSummaryRow = {
   total_last_7_days: '0',
 };
 
-export const getAdminDashboard = async () => {
+const ADMIN_PORTAL_NAVIGATION = [
+  {
+    id: 'overview',
+    label: 'Overview',
+    caption: 'Health and access',
+    workspaceTitle: 'Creator Portal Overview',
+  },
+  {
+    id: 'editor',
+    label: 'Content',
+    caption: 'Uploads and library',
+    workspaceTitle: 'Content Publishing Portal',
+  },
+  {
+    id: 'mobile-config',
+    label: 'Mobile',
+    caption: 'App structure',
+    workspaceTitle: 'Mobile Experience Portal',
+  },
+  {
+    id: 'ads-ai',
+    label: 'Ads & AI',
+    caption: 'Campaigns and automation',
+    workspaceTitle: 'Ads & AI Portal',
+  },
+  {
+    id: 'live',
+    label: 'Live',
+    caption: 'Broadcast and replay',
+    workspaceTitle: 'Live Broadcast Portal',
+  },
+  {
+    id: 'mobile-preview',
+    label: 'Preview',
+    caption: 'Live app view',
+    workspaceTitle: 'Mobile Experience Preview',
+  },
+] as const;
+
+const PUBLISHER_PORTAL_NAVIGATION = [
+  {
+    id: 'overview',
+    label: 'Overview',
+    caption: 'Queue and delivery',
+    workspaceTitle: 'Creator Portal Overview',
+  },
+  {
+    id: 'editor',
+    label: 'Content',
+    caption: 'Uploads and library',
+    workspaceTitle: 'Content Publishing Portal',
+  },
+  {
+    id: 'mobile-preview',
+    label: 'Preview',
+    caption: 'Live app view',
+    workspaceTitle: 'Mobile Experience Preview',
+  },
+] as const;
+
+const getScopedContentSummaryResult = (requester: JwtClaims) => {
+  if (requester.role === 'ADMIN') {
+    return pool.query<ContentSummaryRow>(
+      `SELECT
+         COUNT(*)::text AS total_managed_content,
+         COUNT(*) FILTER (WHERE visibility = 'published')::text AS published_content,
+         COUNT(*) FILTER (WHERE visibility = 'draft')::text AS draft_content
+       FROM content_items`,
+    );
+  }
+
+  return pool.query<ContentSummaryRow>(
+    `SELECT
+       COUNT(*)::text AS total_managed_content,
+       COUNT(*) FILTER (WHERE visibility = 'published')::text AS published_content,
+       COUNT(*) FILTER (WHERE visibility = 'draft')::text AS draft_content
+     FROM content_items
+     WHERE author_id = $1`,
+    [requester.sub],
+  );
+};
+
+const getScopedContentQueueSummaryResult = (requester: JwtClaims) => {
+  if (requester.role === 'ADMIN') {
+    return pool.query<ContentQueueSummaryRow>(
+      `SELECT
+         COUNT(*) FILTER (WHERE request_status IN ('submitted', 'in_review', 'changes_requested', 'approved'))::text AS active_requests,
+         COUNT(*) FILTER (WHERE request_status = 'changes_requested')::text AS needs_attention_requests,
+         COUNT(*) FILTER (WHERE request_status = 'fulfilled')::text AS fulfilled_requests
+       FROM content_submission_requests`,
+    );
+  }
+
+  return pool.query<ContentQueueSummaryRow>(
+    `SELECT
+       COUNT(*) FILTER (WHERE request_status IN ('submitted', 'in_review', 'changes_requested', 'approved'))::text AS active_requests,
+       COUNT(*) FILTER (WHERE request_status = 'changes_requested')::text AS needs_attention_requests,
+       COUNT(*) FILTER (WHERE request_status = 'fulfilled')::text AS fulfilled_requests
+     FROM content_submission_requests
+     WHERE requester_id = $1`,
+    [requester.sub],
+  );
+};
+
+const getScopedContentQueuePreviewResult = (requester: JwtClaims) => {
+  if (requester.role === 'ADMIN') {
+    return pool.query<ContentQueuePreviewRow>(
+      `SELECT
+         id::text,
+         title,
+         description,
+         request_status,
+         created_at
+       FROM content_submission_requests
+       ORDER BY
+         CASE request_status
+           WHEN 'changes_requested' THEN 0
+           WHEN 'submitted' THEN 1
+           WHEN 'in_review' THEN 2
+           WHEN 'approved' THEN 3
+           WHEN 'fulfilled' THEN 4
+           ELSE 5
+         END,
+         created_at DESC
+       LIMIT 5`,
+    );
+  }
+
+  return pool.query<ContentQueuePreviewRow>(
+    `SELECT
+       id::text,
+       title,
+       description,
+       request_status,
+       created_at
+     FROM content_submission_requests
+     WHERE requester_id = $1
+     ORDER BY
+       CASE request_status
+         WHEN 'changes_requested' THEN 0
+         WHEN 'submitted' THEN 1
+         WHEN 'in_review' THEN 2
+         WHEN 'approved' THEN 3
+         WHEN 'fulfilled' THEN 4
+         ELSE 5
+       END,
+       created_at DESC
+     LIMIT 5`,
+    [requester.sub],
+  );
+};
+
+const getScopedRecentManagedContentResult = (requester: JwtClaims) => {
+  if (requester.role === 'ADMIN') {
+    return pool.query<RecentManagedContentRow>(
+      `SELECT
+         id::text,
+         title,
+         description,
+         visibility,
+         updated_at
+       FROM content_items
+       ORDER BY updated_at DESC, created_at DESC
+       LIMIT 4`,
+    );
+  }
+
+  return pool.query<RecentManagedContentRow>(
+    `SELECT
+       id::text,
+       title,
+       description,
+       visibility,
+       updated_at
+     FROM content_items
+     WHERE author_id = $1
+     ORDER BY updated_at DESC, created_at DESC
+     LIMIT 4`,
+    [requester.sub],
+  );
+};
+
+const getScopedRecentAuthActivityResult = (requester: JwtClaims) => {
+  if (requester.role === 'ADMIN') {
+    return pool.query<RecentAuthActivityRow>(
+      `SELECT
+         e.id::text,
+         e.user_id,
+         e.email,
+         e.event_key,
+         e.status,
+         e.ip_address,
+         e.user_agent,
+         e.metadata,
+         e.created_at,
+         u.display_name
+       FROM auth_activity_events e
+       LEFT JOIN app_users u ON u.id = e.user_id
+       ORDER BY e.created_at DESC
+       LIMIT 12`,
+    );
+  }
+
+  return pool.query<RecentAuthActivityRow>(
+    `SELECT
+       e.id::text,
+       e.user_id,
+       e.email,
+       e.event_key,
+       e.status,
+       e.ip_address,
+       e.user_agent,
+       e.metadata,
+       e.created_at,
+       u.display_name
+     FROM auth_activity_events e
+     LEFT JOIN app_users u ON u.id = e.user_id
+     WHERE e.user_id = $1 OR e.email = $2
+     ORDER BY e.created_at DESC
+     LIMIT 12`,
+    [requester.sub, requester.email],
+  );
+};
+
+export const getAdminDashboard = async (requester: JwtClaims) => {
+  const isAdmin = requester.role === 'ADMIN';
   const [
     userSummary,
     contentSummary,
+    contentQueueSummary,
+    contentQueuePreview,
+    recentManagedContent,
     ratingSummary,
     requestSummary,
     authSummary,
@@ -274,34 +533,46 @@ export const getAdminDashboard = async () => {
         [DEFAULT_SUMMARY_ROW],
       ),
       safeQueryRows(
-        pool.query<ContentSummaryRow>(
-        `SELECT
-           COUNT(*) FILTER (WHERE visibility = 'published')::text AS published_content,
-           COUNT(*) FILTER (WHERE visibility = 'draft')::text AS draft_content
-         FROM content_items`,
-      ),
+        getScopedContentSummaryResult(requester),
         [DEFAULT_CONTENT_SUMMARY_ROW],
       ),
       safeQueryRows(
-        pool.query<RatingSummaryRow>(
+        getScopedContentQueueSummaryResult(requester),
+        [DEFAULT_CONTENT_QUEUE_SUMMARY_ROW],
+      ),
+      safeQueryRows(
+        getScopedContentQueuePreviewResult(requester),
+        [],
+      ),
+      safeQueryRows(
+        getScopedRecentManagedContentResult(requester),
+        [],
+      ),
+      safeQueryRows(
+        isAdmin
+          ? pool.query<RatingSummaryRow>(
         `SELECT
            COUNT(*)::text AS total_feedback,
            ROUND(AVG(rating)::numeric, 2)::text AS average_rating
          FROM app_ratings`,
-      ),
+      )
+          : Promise.resolve({ rows: [DEFAULT_RATING_SUMMARY_ROW] }),
         [DEFAULT_RATING_SUMMARY_ROW],
       ),
       safeQueryRows(
-        pool.query<RequestSummaryRow>(
+        isAdmin
+          ? pool.query<RequestSummaryRow>(
         `SELECT
            COUNT(*) FILTER (WHERE status IN ('open', 'in_progress'))::text AS open_support_requests,
            (SELECT COUNT(*)::text FROM privacy_requests WHERE status IN ('submitted', 'processing')) AS active_privacy_requests
          FROM support_requests`,
-      ),
+      )
+          : Promise.resolve({ rows: [DEFAULT_REQUEST_SUMMARY_ROW] }),
         [DEFAULT_REQUEST_SUMMARY_ROW],
       ),
       safeQueryRows(
-        pool.query<AuthSummaryRow>(
+        isAdmin
+          ? pool.query<AuthSummaryRow>(
           `SELECT
              (SELECT COUNT(*)::text FROM pending_signups WHERE expires_at > NOW()) AS pending_signups,
              (SELECT COUNT(*)::text
@@ -325,11 +596,13 @@ export const getAdminDashboard = async () => {
                  AND created_at >= NOW() - INTERVAL '30 days'
              )::text AS password_resets_last_30_days
            FROM auth_activity_events`,
-        ),
+        )
+          : Promise.resolve({ rows: [DEFAULT_AUTH_SUMMARY_ROW] }),
         [DEFAULT_AUTH_SUMMARY_ROW],
       ),
       safeQueryRows(
-        pool.query<RecentUserRow>(
+        isAdmin
+          ? pool.query<RecentUserRow>(
         `SELECT
            id,
            email,
@@ -342,11 +615,13 @@ export const getAdminDashboard = async () => {
          FROM app_users
          ORDER BY created_at DESC
          LIMIT 10`,
-      ),
+      )
+          : Promise.resolve({ rows: [] as RecentUserRow[] }),
         [],
       ),
       safeQueryRows(
-        pool.query<FeedbackRow>(
+        isAdmin
+          ? pool.query<FeedbackRow>(
         `SELECT
            r.id,
            r.rating,
@@ -360,11 +635,13 @@ export const getAdminDashboard = async () => {
          LEFT JOIN app_users u ON u.id = r.user_id
          ORDER BY r.created_at DESC
          LIMIT 10`,
-      ),
+      )
+          : Promise.resolve({ rows: [] as FeedbackRow[] }),
         [],
       ),
       safeQueryRows(
-        pool.query<SupportRow>(
+        isAdmin
+          ? pool.query<SupportRow>(
         `SELECT
            s.id,
            s.status,
@@ -383,15 +660,17 @@ export const getAdminDashboard = async () => {
              WHEN 'open' THEN 0
              WHEN 'in_progress' THEN 1
              WHEN 'resolved' THEN 2
-             ELSE 3
-           END,
-           s.created_at DESC
+           ELSE 3
+         END,
+         s.created_at DESC
          LIMIT 12`,
-      ),
+      )
+          : Promise.resolve({ rows: [] as SupportRow[] }),
         [],
       ),
       safeQueryRows(
-        pool.query<SignupTrendRow>(
+        isAdmin
+          ? pool.query<SignupTrendRow>(
         `WITH days AS (
            SELECT generate_series(
              date_trunc('day', NOW()) - INTERVAL '13 days',
@@ -407,57 +686,50 @@ export const getAdminDashboard = async () => {
            ON date_trunc('day', u.created_at) = days.day
          GROUP BY days.day
          ORDER BY days.day ASC`,
-      ),
+      )
+          : Promise.resolve({ rows: [] as SignupTrendRow[] }),
         [],
       ),
       safeQueryRows(
-        pool
-        .query<AutomationRunRow>(
-          `SELECT
-             r.id::text,
-             r.run_type,
-             r.scope,
-             r.status,
-             r.summary,
-             r.notes,
-             r.created_at,
-             u.display_name AS actor_display_name,
-             u.email AS actor_email
-           FROM automation_runs r
-           LEFT JOIN app_users u ON u.id = r.actor_user_id
-           ORDER BY r.created_at DESC
-           LIMIT 8`,
-        )
-        .catch((error) => {
-          if (isMissingDatabaseStructureError(error)) {
-            return { rows: [] as AutomationRunRow[] };
-          }
-          throw error;
-        }),
+        isAdmin
+          ? pool
+              .query<AutomationRunRow>(
+                `SELECT
+                   r.id::text,
+                   r.run_type,
+                   r.scope,
+                   r.status,
+                   r.summary,
+                   r.notes,
+                   r.created_at,
+                   u.display_name AS actor_display_name,
+                   u.email AS actor_email
+                 FROM automation_runs r
+                 LEFT JOIN app_users u ON u.id = r.actor_user_id
+                 ORDER BY r.created_at DESC
+                 LIMIT 8`,
+              )
+              .catch((error) => {
+                if (isMissingDatabaseStructureError(error)) {
+                  return { rows: [] as AutomationRunRow[] };
+                }
+                throw error;
+              })
+          : Promise.resolve({ rows: [] as AutomationRunRow[] }),
         [],
       ),
       safeQueryRows(
-        pool.query<RecentAuthActivityRow>(
-          `SELECT
-             e.id::text,
-             e.user_id,
-             e.email,
-             e.event_key,
-             e.status,
-             e.ip_address,
-             e.user_agent,
-             e.metadata,
-             e.created_at,
-             u.display_name
-           FROM auth_activity_events e
-           LEFT JOIN app_users u ON u.id = e.user_id
-           ORDER BY e.created_at DESC
-           LIMIT 12`,
-        ),
+        getScopedRecentAuthActivityResult(requester),
         [],
       ),
-      safeQueryRows(getEmailDeliverySummaryResult(), [DEFAULT_EMAIL_SUMMARY_ROW]),
-      safeQueryRows(getRecentEmailJobsResult(8), []),
+      safeQueryRows(
+        isAdmin ? getEmailDeliverySummaryResult() : Promise.resolve({ rows: [DEFAULT_EMAIL_SUMMARY_ROW] }),
+        [DEFAULT_EMAIL_SUMMARY_ROW],
+      ),
+      safeQueryRows(
+        isAdmin ? getRecentEmailJobsResult(8) : Promise.resolve({ rows: [] as RecentEmailJobRow[] }),
+        [],
+      ),
     ]);
 
   const summary = userSummary.rows[0]!;
@@ -465,9 +737,11 @@ export const getAdminDashboard = async () => {
   const ratings = ratingSummary.rows[0]!;
   const requests = requestSummary.rows[0]!;
   const auth = authSummary.rows[0]!;
+  const contentQueue = contentQueueSummary.rows[0]!;
   const emailDelivery = emailSummary.rows[0]!;
 
-  const smartInsights = [
+  const smartInsights = isAdmin
+    ? [
     summary.new_users_last_7_days === '0'
       ? {
           id: 'growth-followup',
@@ -561,10 +835,241 @@ export const getAdminDashboard = async () => {
           title: 'Core launch signals are stable',
           detail: 'Content, audience, and support metrics do not show a critical blocker right now. Continue structured testing.',
         },
-  ].filter(Boolean);
+  ].filter(Boolean)
+    : [
+      Number(contentQueue.needs_attention_requests) > 0
+        ? {
+            id: 'request-revisions',
+            tone: 'warning',
+            title: 'A submission needs changes',
+            detail: `${contentQueue.needs_attention_requests} request(s) need an update before they can move forward.`,
+          }
+        : null,
+      Number(contentQueue.active_requests) > 0
+        ? {
+            id: 'queue-moving',
+            tone: 'info',
+            title: 'Your request queue is active',
+            detail: `${contentQueue.active_requests} submission request(s) are still moving through review.`,
+          }
+        : null,
+      Number(content.total_managed_content) === 0
+        ? {
+            id: 'first-upload',
+            tone: 'warning',
+            title: 'No content has been published yet',
+            detail: 'Upload your first item or submit a request so the mobile app has fresh content to show.',
+          }
+        : {
+            id: 'content-steady',
+            tone: 'success',
+            title: 'Your publishing workspace is active',
+            detail: 'Recent content and submission activity are available in the portal.',
+          },
+    ].filter(Boolean);
+
+  const navigation = isAdmin ? ADMIN_PORTAL_NAVIGATION : PUBLISHER_PORTAL_NAVIGATION;
+  const overview = isAdmin
+    ? {
+        hero: {
+          eyebrow: 'Portal overview',
+          title: 'Content, access, and mobile delivery in one view.',
+          description:
+            'Use this page to watch account health, upload momentum, and the signals that matter before you publish.',
+          primaryAction: { label: 'Open content', view: 'editor' },
+          secondaryAction: { label: 'Preview app', view: 'mobile-preview' },
+        },
+        sections: {
+          accessHealth: {
+            title: 'Access Health',
+            description: 'Keep sign-in, verification, and recovery friction visible.',
+            badgeLiveLabel: 'Live',
+            badgeRefreshingLabel: 'Refreshing',
+          },
+          signals: {
+            title: 'Signals',
+            description: 'Only the alerts worth acting on right now.',
+            emptyState: 'No urgent signals right now.',
+          },
+          recentAccessActivity: {
+            title: 'Recent Access Activity',
+            description: 'The latest account events moving through the system.',
+            emptyState: 'No account activity recorded yet.',
+            emptyEmailLabel: 'No email attached',
+            unknownUserLabel: 'Unknown account',
+          },
+          requestQueue: {
+            title: 'Request Queue',
+            description: 'The upload work that still needs attention.',
+            actionLabel: 'Open queue',
+            loadingMessage: 'Loading upload requests...',
+            emptyState: 'No upload requests waiting right now.',
+          },
+          latestContent: {
+            title: 'Latest Content',
+            description: 'Most recent items already attached to the mobile experience.',
+            actionLabel: 'Open library',
+            emptyState: 'No content has been uploaded yet.',
+          },
+        },
+        portalCards: [
+          {
+            id: 'managed-content',
+            label: 'Managed content',
+            value: Number(content.total_managed_content),
+            hint: 'Published and draft media tracked here',
+          },
+          {
+            id: 'verified-users',
+            label: 'Verified users',
+            value: Number(summary.verified_users),
+            hint: 'Accounts cleared for full access',
+          },
+          {
+            id: 'new-accounts',
+            label: 'New accounts · 7 days',
+            value: Number(summary.new_users_last_7_days),
+            hint: 'Recent growth across the product',
+          },
+          {
+            id: 'password-resets',
+            label: 'Password resets · 30 days',
+            value: Number(auth.password_resets_last_30_days),
+            hint: 'Security recovery flow usage',
+          },
+        ],
+        accessCards: [
+          {
+            id: 'pending-verification',
+            label: 'Pending verification',
+            value: Number(auth.pending_signups),
+            hint: 'Accounts waiting on email verification',
+          },
+          {
+            id: 'active-sessions',
+            label: 'Active sessions',
+            value: Number(auth.active_sessions),
+            hint: 'Signed-in devices with a valid session',
+          },
+          {
+            id: 'sign-ins',
+            label: 'Sign-ins · 7 days',
+            value: Number(auth.login_success_last_7_days),
+            hint: 'Successful access in the last week',
+          },
+          {
+            id: 'failed-sign-ins',
+            label: 'Failed sign-ins · 7 days',
+            value: Number(auth.login_failures_last_7_days),
+            hint: 'Users who hit sign-in friction recently',
+          },
+        ],
+      }
+    : {
+        hero: {
+          eyebrow: 'Workspace overview',
+          title: 'Your publishing queue and mobile delivery in one view.',
+          description:
+            'Track your submissions, recent content, and the next action required before you publish.',
+          primaryAction: { label: 'Open content', view: 'editor' },
+          secondaryAction: { label: 'Preview app', view: 'mobile-preview' },
+        },
+        sections: {
+          signals: {
+            title: 'Signals',
+            description: 'The next publishing actions that need your attention.',
+            emptyState: 'No urgent signals right now.',
+          },
+          recentAccessActivity: {
+            title: 'Recent Access Activity',
+            description: 'The latest account events tied to your portal access.',
+            emptyState: 'No account activity recorded yet.',
+            emptyEmailLabel: 'No email attached',
+            unknownUserLabel: 'Unknown account',
+          },
+          requestQueue: {
+            title: 'Request Queue',
+            description: 'Your upload work that is still moving through review.',
+            actionLabel: 'Open queue',
+            loadingMessage: 'Loading your upload requests...',
+            emptyState: 'No upload requests are waiting right now.',
+          },
+          latestContent: {
+            title: 'Latest Content',
+            description: 'Your most recent items already attached to the mobile experience.',
+            actionLabel: 'Open library',
+            emptyState: 'No content has been uploaded yet.',
+          },
+        },
+        portalCards: [
+          {
+            id: 'managed-content',
+            label: 'Managed content',
+            value: Number(content.total_managed_content),
+            hint: 'Published and draft media tracked here',
+          },
+          {
+            id: 'published-content',
+            label: 'Published live',
+            value: Number(content.published_content),
+            hint: 'Items already visible in the app',
+          },
+          {
+            id: 'draft-content',
+            label: 'Draft library',
+            value: Number(content.draft_content),
+            hint: 'Items still waiting for release',
+          },
+          {
+            id: 'active-requests',
+            label: 'Open requests',
+            value: Number(contentQueue.active_requests),
+            hint: 'Submission tickets still moving through review',
+          },
+        ],
+        accessCards: [],
+      };
 
   return {
     generatedAt: new Date().toISOString(),
+    navigation,
+    overview: {
+      ...overview,
+      requestStatusBoard: [
+        {
+          id: 'open-requests',
+          label: 'Open Requests',
+          value: Number(contentQueue.active_requests),
+          accent: 'mint',
+        },
+        {
+          id: 'needs-changes',
+          label: 'Needs Changes',
+          value: Number(contentQueue.needs_attention_requests),
+          accent: 'amber',
+        },
+        {
+          id: 'converted-to-draft',
+          label: 'Converted To Draft',
+          value: Number(contentQueue.fulfilled_requests),
+          accent: 'blue',
+        },
+      ],
+      requestQueuePreview: contentQueuePreview.rows.map((row) => ({
+        id: row.id,
+        title: row.title,
+        description: row.description,
+        status: row.request_status,
+        createdAt: toIso(row.created_at),
+      })),
+      latestContent: recentManagedContent.rows.map((row) => ({
+        id: row.id,
+        title: row.title,
+        description: row.description,
+        visibility: row.visibility,
+        updatedAt: toIso(row.updated_at),
+      })),
+    },
     summary: {
       totalUsers: Number(summary.total_users),
       newUsersLast7Days: Number(summary.new_users_last_7_days),

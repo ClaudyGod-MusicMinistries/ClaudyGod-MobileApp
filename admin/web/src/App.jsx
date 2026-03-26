@@ -2,7 +2,6 @@ import axios from 'axios';
 import { computed, defineComponent, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import AdminShell from './app/AdminShell';
 import {
-  ADMIN_NAV_ITEMS,
   BRAND_LOGO_URL,
   CONTENT_REQUEST_STATUS_OPTIONS,
   CONTENT_TYPES,
@@ -60,6 +59,56 @@ function applyToken(token) {
     return;
   }
   delete http.defaults.headers.common.Authorization;
+}
+
+function createEmptyPortalDashboard() {
+  return {
+    generatedAt: '',
+    navigation: [],
+    overview: {
+      hero: null,
+      sections: {},
+      portalCards: [],
+      accessCards: [],
+      requestStatusBoard: [],
+      requestQueuePreview: [],
+      latestContent: [],
+    },
+    summary: {
+      totalUsers: 0,
+      newUsersLast7Days: 0,
+      verifiedUsers: 0,
+      adminUsers: 0,
+      clientUsers: 0,
+      publishedContent: 0,
+      draftContent: 0,
+      openSupportRequests: 0,
+      activePrivacyRequests: 0,
+      pendingSignups: 0,
+      activeSessions: 0,
+      loginSuccessLast7Days: 0,
+      loginFailuresLast7Days: 0,
+      verificationsLast7Days: 0,
+      passwordResetsLast30Days: 0,
+      totalFeedback: 0,
+      averageRating: null,
+    },
+    authFunnel: {
+      pendingSignups: 0,
+      activeSessions: 0,
+      loginSuccessLast7Days: 0,
+      loginFailuresLast7Days: 0,
+      verificationsLast7Days: 0,
+      passwordResetsLast30Days: 0,
+    },
+    recentUsers: [],
+    feedback: [],
+    supportInbox: [],
+    signupTrend: [],
+    smartInsights: [],
+    recentAutomation: [],
+    recentAuthActivity: [],
+  };
 }
 
 export default defineComponent({
@@ -208,43 +257,7 @@ export default defineComponent({
     const mobileAppConfigValue = ref(null);
     const wordOfDayHistory = ref([]);
     const wordOfDayCurrent = ref(null);
-    const adminOps = ref({
-      summary: {
-        totalUsers: 0,
-        newUsersLast7Days: 0,
-        verifiedUsers: 0,
-        adminUsers: 0,
-        clientUsers: 0,
-        publishedContent: 0,
-        draftContent: 0,
-        openSupportRequests: 0,
-        activePrivacyRequests: 0,
-        pendingSignups: 0,
-        activeSessions: 0,
-        loginSuccessLast7Days: 0,
-        loginFailuresLast7Days: 0,
-        verificationsLast7Days: 0,
-        passwordResetsLast30Days: 0,
-        totalFeedback: 0,
-        averageRating: null,
-      },
-      authFunnel: {
-        pendingSignups: 0,
-        activeSessions: 0,
-        loginSuccessLast7Days: 0,
-        loginFailuresLast7Days: 0,
-        verificationsLast7Days: 0,
-        passwordResetsLast30Days: 0,
-      },
-      recentUsers: [],
-      feedback: [],
-      supportInbox: [],
-      signupTrend: [],
-      smartInsights: [],
-      recentAutomation: [],
-      recentAuthActivity: [],
-      generatedAt: '',
-    });
+    const adminOps = ref(createEmptyPortalDashboard());
     const wordOfDayForm = reactive({
       title: 'Word for Today',
       passage: '',
@@ -275,11 +288,7 @@ export default defineComponent({
     const portalRoleLabel = computed(() => (isAdmin.value ? 'Admin' : 'Publisher'));
     const isCompactHeader = computed(() => viewportWidth.value <= 1024);
     const googleLoginEnabled = computed(() => Boolean(GOOGLE_LOGIN_URL));
-    const portalNavItems = computed(() =>
-      isAdmin.value
-        ? ADMIN_NAV_ITEMS
-        : ADMIN_NAV_ITEMS.filter((item) => item.id === 'overview' || item.id === 'editor' || item.id === 'mobile-preview'),
-    );
+    const portalNavItems = computed(() => (Array.isArray(adminOps.value?.navigation) ? adminOps.value.navigation : []));
     const publicHealthSummary = computed(() => {
       if (publicHealthLoading.value) return 'Preparing your portal';
       if (!publicHealth.value) return 'Checking access';
@@ -318,7 +327,6 @@ export default defineComponent({
       },
     ]);
 
-    const requestQueuePreview = computed(() => (contentRequests.value || []).slice(0, 5));
     const directPublishMode = computed(() => isAdmin.value);
     const liveSummary = computed(() => ({
       total: liveSessions.value.length,
@@ -341,7 +349,6 @@ export default defineComponent({
       });
     });
 
-    const recentItems = computed(() => managedItems.value.slice(0, 4));
     function getUploadPolicy(kind) {
       return (uploadPolicies.value || []).find((item) => item && item.kind === kind) || null;
     }
@@ -425,7 +432,7 @@ export default defineComponent({
         fetchUploadPolicies(freshToken || undefined),
         user.role === 'ADMIN' ? fetchLiveSessions(freshToken || undefined) : Promise.resolve(),
         user.role === 'ADMIN' ? fetchAdCampaigns() : Promise.resolve(),
-        user.role === 'ADMIN' ? fetchAdminOperationsDashboard() : Promise.resolve(),
+        fetchAdminOperationsDashboard(),
         user.role === 'ADMIN' ? fetchMobileAppConfig() : Promise.resolve(),
         user.role === 'ADMIN' ? fetchWordOfDayDashboard() : Promise.resolve(),
         runEndpointChecks(),
@@ -986,43 +993,7 @@ export default defineComponent({
       mobileAppConfigValue.value = null;
       wordOfDayHistory.value = [];
       wordOfDayCurrent.value = null;
-      adminOps.value = {
-        summary: {
-          totalUsers: 0,
-          newUsersLast7Days: 0,
-          verifiedUsers: 0,
-          adminUsers: 0,
-          clientUsers: 0,
-          publishedContent: 0,
-          draftContent: 0,
-          openSupportRequests: 0,
-          activePrivacyRequests: 0,
-          pendingSignups: 0,
-          activeSessions: 0,
-          loginSuccessLast7Days: 0,
-          loginFailuresLast7Days: 0,
-          verificationsLast7Days: 0,
-          passwordResetsLast30Days: 0,
-          totalFeedback: 0,
-          averageRating: null,
-        },
-        authFunnel: {
-          pendingSignups: 0,
-          activeSessions: 0,
-          loginSuccessLast7Days: 0,
-          loginFailuresLast7Days: 0,
-          verificationsLast7Days: 0,
-          passwordResetsLast30Days: 0,
-        },
-        recentUsers: [],
-        feedback: [],
-        supportInbox: [],
-        signupTrend: [],
-        smartInsights: [],
-        recentAutomation: [],
-        recentAuthActivity: [],
-        generatedAt: '',
-      };
+      adminOps.value = createEmptyPortalDashboard();
       endpointChecks.value = [];
       endpointChecksAt.value = '';
       dashboardView.value = 'overview';
@@ -1524,7 +1495,7 @@ export default defineComponent({
     }
 
     async function fetchAdminOperationsDashboard() {
-      if (!isAdmin.value) return;
+      if (!currentUser.value) return;
       adminOpsLoading.value = true;
       try {
         const response = await http.get('/v1/admin/dashboard');
@@ -1814,7 +1785,7 @@ export default defineComponent({
           fetchUploadPolicies(),
           isAdmin.value ? fetchLiveSessions() : Promise.resolve(),
           isAdmin.value ? fetchAdCampaigns() : Promise.resolve(),
-          isAdmin.value ? fetchAdminOperationsDashboard() : Promise.resolve(),
+          fetchAdminOperationsDashboard(),
           isAdmin.value ? fetchMobileAppConfig() : Promise.resolve(),
           isAdmin.value ? fetchWordOfDayDashboard() : Promise.resolve(),
           runEndpointChecks(),
@@ -2215,7 +2186,7 @@ export default defineComponent({
           fetchUploadPolicies(),
           isAdmin.value ? fetchLiveSessions() : Promise.resolve(),
           isAdmin.value ? fetchAdCampaigns() : Promise.resolve(),
-          isAdmin.value ? fetchAdminOperationsDashboard() : Promise.resolve(),
+          fetchAdminOperationsDashboard(),
           isAdmin.value ? fetchMobileAppConfig() : Promise.resolve(),
           isAdmin.value ? fetchWordOfDayDashboard() : Promise.resolve(),
           runEndpointChecks(),
@@ -2308,7 +2279,7 @@ export default defineComponent({
         const summary = response.data && response.data.summary ? response.data.summary : { created: 0, updated: 0, skipped: 0 };
         await Promise.all([
           fetchManagedContent(),
-          isAdmin.value ? fetchAdminOperationsDashboard() : Promise.resolve(),
+          fetchAdminOperationsDashboard(),
         ]);
         setNotice(`Curated YouTube import complete. Created ${summary.created}, updated ${summary.updated}, skipped ${summary.skipped}.`, 'success');
       } catch (error) {
@@ -2360,7 +2331,7 @@ export default defineComponent({
         buildYouTubeDrafts(youtubePreviewItems.value);
         await Promise.all([
           fetchManagedContent(),
-          isAdmin.value ? fetchAdminOperationsDashboard() : Promise.resolve(),
+          fetchAdminOperationsDashboard(),
         ]);
         setNotice(`YouTube sync complete. Created ${summary.created}, updated ${summary.updated}, skipped ${summary.skipped}.`, 'success');
       } catch (error) {
@@ -2423,19 +2394,12 @@ export default defineComponent({
           {dashboardView.value === 'overview' ? (
             <OverviewView
               adminOpsLoading={adminOpsLoading.value}
-              summary={adminOps.value.summary || {}}
-              authFunnel={adminOps.value.authFunnel || {}}
+              overview={adminOps.value.overview || {}}
               smartInsights={adminOps.value.smartInsights || []}
               recentAuthActivity={adminOps.value.recentAuthActivity || []}
-              requestStatusBoard={requestStatusBoard.value}
-              contentRequestLoading={contentRequestLoading.value}
-              requestQueuePreview={requestQueuePreview.value}
-              managedItemsCount={managedItems.value.length}
-              recentItems={recentItems.value}
               onSetDashboardView={setDashboardView}
               formatDateTime={formatDateTime}
               truncate={truncate}
-              humanizeToken={humanizeToken}
             />
           ) : null}
 
