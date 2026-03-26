@@ -91,54 +91,8 @@ export const VISIBILITY_OPTIONS = ['draft', 'published'];
 export const USER_ROLE_OPTIONS = ['CLIENT', 'ADMIN'];
 export const CONTENT_REQUEST_STATUS_OPTIONS = ['submitted', 'in_review', 'changes_requested', 'approved', 'fulfilled', 'rejected'];
 export const YOUTUBE_SYNC_DEFAULT_LIMIT = 8;
-export const ADMIN_NAV_ITEMS = [
-  {
-    id: 'overview',
-    label: 'Overview',
-    caption: 'Health and access',
-  },
-  {
-    id: 'editor',
-    label: 'Content',
-    caption: 'Uploads and library',
-  },
-  {
-    id: 'mobile-config',
-    label: 'Mobile',
-    caption: 'App structure',
-  },
-  {
-    id: 'ads-ai',
-    label: 'Ads & AI',
-    caption: 'Campaigns and automation',
-  },
-  {
-    id: 'live',
-    label: 'Live',
-    caption: 'Broadcast and replay',
-  },
-  {
-    id: 'mobile-preview',
-    label: 'Preview',
-    caption: 'Live app view',
-  },
-];
 export const DEFAULT_MOBILE_PREVIEW_URL =
   normalizePublicUrl(import.meta.env.VITE_MOBILE_PREVIEW_URL) || deriveSiblingOrigin('app') || '';
-export const WORKFLOW_STEPS = [
-  {
-    title: 'Submit',
-    detail: 'Send one clean ticket with files, links, and placement details.',
-  },
-  {
-    title: 'Review',
-    detail: 'Track approvals, requested changes, and queue progress in one place.',
-  },
-  {
-    title: 'Release',
-    detail: 'Convert approved tickets into draft content, then publish when ready.',
-  },
-];
 export const API_HOST_LABEL = (() => {
   if (!API_URL) {
     return 'configured API endpoint';

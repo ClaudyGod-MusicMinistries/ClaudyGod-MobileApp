@@ -32,11 +32,18 @@ function requireAdmin(req: Request) {
   return req.user;
 }
 
+function requireAuthenticated(req: Request) {
+  if (!req.user) {
+    throw new HttpError(401, 'Unauthorized');
+  }
+  return req.user;
+}
+
 adminRouter.get(
   '/dashboard',
   asyncHandler(async (req, res) => {
-    requireAdmin(req);
-    const result = await getAdminDashboard();
+    const actor = requireAuthenticated(req);
+    const result = await getAdminDashboard(actor);
     res.status(200).json(result);
   }),
 );
