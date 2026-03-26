@@ -10,7 +10,7 @@ interface SkeletonLoaderProps {
   style?: any;
 }
 
-export function SkeletonLoader({
+function SkeletonLoaderComponent({
   width = '100%',
   height = 16,
   borderRadius = 8,
@@ -61,7 +61,7 @@ interface SkeletonCardProps {
   lines?: number;
 }
 
-export function SkeletonCard({ lines = 3 }: SkeletonCardProps) {
+function SkeletonCard({ lines = 3 }: SkeletonCardProps) {
   const theme = useAppTheme();
 
   return (
@@ -73,11 +73,12 @@ export function SkeletonCard({ lines = 3 }: SkeletonCardProps) {
         borderWidth: 1,
         borderColor: theme.colors.border,
         gap: 12,
+        marginBottom: 12,
       }}
     >
-      <SkeletonLoader width="40%" height={14} />
+      <SkeletonLoaderComponent width="40%" height={14} />
       {Array.from({ length: lines }).map((_, i) => (
-        <SkeletonLoader
+        <SkeletonLoaderComponent
           key={i}
           width={i === lines - 1 ? '60%' : '100%'}
           height={12}
@@ -87,11 +88,11 @@ export function SkeletonCard({ lines = 3 }: SkeletonCardProps) {
   );
 }
 
-export function SkeletonAvatar({ size = 48 }: { size?: number }) {
-  return <SkeletonLoader width={size} height={size} borderRadius={size / 2} />;
+function SkeletonAvatar({ size = 48 }: { size?: number }) {
+  return <SkeletonLoaderComponent width={size} height={size} borderRadius={size / 2} />;
 }
 
-export function SkeletonHeroCard() {
+function SkeletonHeroCard() {
   const theme = useAppTheme();
 
   return (
@@ -101,18 +102,26 @@ export function SkeletonHeroCard() {
         borderRadius: 16,
         overflow: 'hidden',
         gap: 12,
+        marginBottom: 12,
       }}
     >
-      <SkeletonLoader width="100%" height={240} borderRadius={0} />
+      <SkeletonLoaderComponent width="100%" height={240} borderRadius={0} />
       <View style={{ padding: 16, gap: 12 }}>
-        <SkeletonLoader width="50%" height={16} />
-        <SkeletonLoader width="100%" height={14} />
-        <SkeletonLoader width="80%" height={14} />
+        <SkeletonLoaderComponent width="50%" height={16} />
+        <SkeletonLoaderComponent width="100%" height={14} />
+        <SkeletonLoaderComponent width="80%" height={14} />
         <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
-          <SkeletonLoader width="45%" height={48} borderRadius={12} />
-          <SkeletonLoader width="45%" height={48} borderRadius={12} />
+          <SkeletonLoaderComponent width="45%" height={48} borderRadius={12} />
+          <SkeletonLoaderComponent width="45%" height={48} borderRadius={12} />
         </View>
       </View>
     </View>
   );
 }
+
+// Attach subcomponents as static properties
+SkeletonLoaderComponent.Card = SkeletonCard;
+SkeletonLoaderComponent.Avatar = SkeletonAvatar;
+SkeletonLoaderComponent.HeroCard = SkeletonHeroCard;
+
+export const SkeletonLoader = SkeletonLoaderComponent;

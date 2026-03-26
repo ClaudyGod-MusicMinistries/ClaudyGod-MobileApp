@@ -10,6 +10,7 @@ interface AppButtonProps extends TouchableOpacityProps {
   title: string;
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
+  icon?: ReactNode;
   leftIcon?: ReactNode;
   rightIcon?: ReactNode;
   fullWidth?: boolean;
@@ -24,6 +25,7 @@ export function AppButton({
   title,
   variant = 'primary',
   size = 'md',
+  icon,
   leftIcon,
   rightIcon,
   fullWidth,
@@ -36,6 +38,7 @@ export function AppButton({
   ...props
 }: AppButtonProps) {
   const theme = useAppTheme();
+  const resolvedLeftIcon = leftIcon ?? icon;
   const isPrimary = variant === 'primary';
   const isSecondary = variant === 'secondary';
   const isOutline = variant === 'outline';
@@ -109,9 +112,9 @@ export function AppButton({
         )
       ) : (
         <View style={{ flexDirection: 'row', alignItems: 'center', maxWidth: '100%', gap: 8 }}>
-          {leftIcon ? (
+          {resolvedLeftIcon ? (
             <View style={{ width: 18, alignItems: 'center', justifyContent: 'center' }}>
-              {leftIcon}
+              {resolvedLeftIcon}
             </View>
           ) : null}
           <CustomText

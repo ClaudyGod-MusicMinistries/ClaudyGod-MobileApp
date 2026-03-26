@@ -9,9 +9,11 @@ import {
   Animated,
   ScrollView,
   ScrollViewProps,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
 } from 'react-native';
 
-interface AnimatedScrollViewProps extends ScrollViewProps {
+interface AnimatedScrollViewProps extends Omit<ScrollViewProps, 'onScroll'> {
   parallaxFactor?: number;
   fadeEdges?: boolean;
   onScroll?: (_offset: number) => void;
@@ -25,6 +27,7 @@ export const AnimatedScrollView = React.forwardRef<
     {
       onScroll: onScrollProp,
       children,
+      _fadeEdges,
       ...props
     },
     ref,
@@ -35,24 +38,17 @@ export const AnimatedScrollView = React.forwardRef<
       [{ nativeEvent: { contentOffset: { y: scrollOffset } } }],
       {
         useNativeDriver: false,
-        listener: (event: any) => {
+        listener: (event: NativeSyntheticEvent<NativeScrollEvent>) => {
           onScrollProp?.(event.nativeEvent.contentOffset.y);
         },
       },
     );
-
-    const fadeOpacity = scrollOffset.interpolate({
-      inputRange: [0, 100],
-      outputRange: [1, 0.7],
-      extrapolate: 'clamp',
-    });
 
     return (
       <Animated.ScrollView
         ref={ref}
         scrollEventThrottle={16}
         onScroll={handleScroll}
-        opacity={fadeEdges ? fadeOpacity : 1}
         {...props}
       >
         {children}
