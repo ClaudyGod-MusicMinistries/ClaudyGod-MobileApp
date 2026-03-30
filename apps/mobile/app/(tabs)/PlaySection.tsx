@@ -355,14 +355,14 @@ export default function PlaySection() {
                         variant="secondary"
                         size="sm"
                         onPress={() => void toggleSave()}
-                        leftIcon={<MaterialIcons name={isSaved ? 'bookmark' : 'bookmark-border'} size={16} color={theme.colors.text.primary} />}
+                        leftIcon={<MaterialIcons name={isSaved ? 'bookmark' : 'bookmark-border'} size={16} color={theme.colors.text} />}
                       />
                       <AppButton
                         title="More"
                         variant="outline"
                         size="sm"
                         onPress={() => setIsActionSheetVisible(true)}
-                        leftIcon={<MaterialIcons name="more-horiz" size={16} color={theme.colors.text.primary} />}
+                        leftIcon={<MaterialIcons name="more-horiz" size={16} color={theme.colors.text} />}
                       />
                     </View>
                   </View>
@@ -425,7 +425,7 @@ export default function PlaySection() {
                     actionLabel={section.actionLabel}
                     onAction={() => router.push(TAB_ROUTE_BY_ID[section.destinationTab])}
                   />
-                  <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginBottom: 10 }}>
+                  <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginBottom: 10 }}>
                     {section.subtitle}
                   </CustomText>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false} overScrollMode="never">

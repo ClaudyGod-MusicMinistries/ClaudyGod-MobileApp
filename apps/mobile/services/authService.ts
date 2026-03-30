@@ -365,7 +365,7 @@ export async function verifyMobileEmail(input: VerifyEmailInput): Promise<Mobile
 export async function requestMobilePasswordReset(
   input: ForgotPasswordInput,
 ): Promise<AuthActionResponse> {
-  return apiFetch<AuthActionResponse>('/v1/auth/password/forgot', {
+  return apiFetch<AuthActionResponse>('/v1/auth/forgot-password', {
     method: 'POST',
     body: JSON.stringify({
       email: input.email.trim().toLowerCase(),
@@ -381,7 +381,7 @@ export async function resetMobilePassword(
     throw new Error('Enter the 6-digit reset code from your email or use the secure recovery link.');
   }
 
-  return apiFetch<AuthActionResponse>('/v1/auth/password/reset', {
+  return apiFetch<AuthActionResponse>('/v1/auth/reset-password', {
     method: 'POST',
     body: JSON.stringify({
       token: resolvedToken,

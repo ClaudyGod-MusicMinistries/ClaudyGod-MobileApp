@@ -81,12 +81,12 @@ export const ModernButton: React.FC<ModernButtonProps> = ({
   > = {
     primary: {
       colors: gradient ?? [theme.colors.primary, theme.colors.accent],
-      textColor: theme.colors.text.inverse,
+      textColor: theme.colors.textInverse,
       borderColor: 'transparent',
     },
     secondary: {
       colors: [theme.colors.secondary, theme.colors.accent],
-      textColor: theme.colors.text.primary,
+      textColor: theme.colors.text,
       borderColor: 'transparent',
     },
     outline: {
@@ -101,7 +101,7 @@ export const ModernButton: React.FC<ModernButtonProps> = ({
     },
     danger: {
       colors: [theme.colors.danger, '#c21f1f'],
-      textColor: theme.colors.text.inverse,
+      textColor: theme.colors.textInverse,
       borderColor: 'transparent',
     },
   };

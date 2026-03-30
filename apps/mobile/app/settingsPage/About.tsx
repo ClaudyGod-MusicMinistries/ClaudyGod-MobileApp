@@ -143,7 +143,7 @@ export default function About() {
               >
                 <MaterialIcons name={chip.icon as any} size={16} color={theme.colors.primary} />
               </View>
-              <CustomText variant="label" style={{ color: theme.colors.text.primary, flex: 1 }}>
+              <CustomText variant="label" style={{ color: theme.colors.text, flex: 1 }}>
                 {chip.label}
               </CustomText>
             </SurfaceCard>
@@ -153,29 +153,29 @@ export default function About() {
 
       <FadeIn delay={140}>
         <SurfaceCard style={{ padding: spacing.lg, marginBottom: spacing.lg }}>
-          <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
+          <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
             Our mission
           </CustomText>
-          <CustomText variant="body" style={{ color: theme.colors.text.secondary, marginTop: 8 }}>
+          <CustomText variant="body" style={{ color: theme.colors.textSecondary, marginTop: 8 }}>
             Build a focused ministry experience where worship, messages, and daily truth stay easy to discover and simple to use.
           </CustomText>
         </SurfaceCard>
       </FadeIn>
 
       <FadeIn delay={200}>
-        <CustomText variant="subtitle" style={{ color: theme.colors.text.primary, marginBottom: spacing.sm }}>
+        <CustomText variant="subtitle" style={{ color: theme.colors.text, marginBottom: spacing.sm }}>
           Team
         </CustomText>
         <View style={{ marginBottom: spacing.lg }}>
           {teamMembers.map((member) => (
             <SurfaceCard key={member.name} style={{ padding: spacing.md, marginBottom: spacing.sm }}>
-              <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
+              <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
                 {member.name}
               </CustomText>
               <CustomText variant="caption" style={{ color: theme.colors.primary, marginTop: 2 }}>
                 {member.role}
               </CustomText>
-              <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 6 }}>
+              <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 6 }}>
                 {member.desc}
               </CustomText>
             </SurfaceCard>
@@ -184,7 +184,7 @@ export default function About() {
       </FadeIn>
 
       <FadeIn delay={260}>
-        <CustomText variant="subtitle" style={{ color: theme.colors.text.primary, marginBottom: spacing.sm }}>
+        <CustomText variant="subtitle" style={{ color: theme.colors.text, marginBottom: spacing.sm }}>
           Connect
         </CustomText>
         <View>
@@ -211,10 +211,10 @@ export default function About() {
                 >
                   <MaterialIcons name={item.icon as any} size={18} color={theme.colors.primary} />
                 </View>
-                <CustomText variant="body" style={{ color: theme.colors.text.primary, flex: 1 }}>
+                <CustomText variant="body" style={{ color: theme.colors.text, flex: 1 }}>
                   {item.label}
                 </CustomText>
-                <MaterialIcons name="open-in-new" size={18} color={theme.colors.text.secondary} />
+                <MaterialIcons name="open-in-new" size={18} color={theme.colors.textSecondary} />
               </SurfaceCard>
             </TVTouchable>
           ))}
@@ -223,10 +223,10 @@ export default function About() {
 
       <FadeIn delay={320}>
         <SurfaceCard tone="subtle" style={{ padding: spacing.md, marginBottom: spacing.xl }}>
-          <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
+          <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
             {versionLabel}
           </CustomText>
-          <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 4 }}>
+          <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 4 }}>
             Platforms: Android, iOS, Apple TV, Google TV, and Web.
           </CustomText>
         </SurfaceCard>

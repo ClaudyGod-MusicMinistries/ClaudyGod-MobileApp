@@ -53,7 +53,7 @@ export function BottomNavBar({ items, activeItemId }: BottomNavBarProps) {
               <MaterialIcons
                 name={item.icon}
                 size={24}
-                color={isActive ? theme.colors.primary : theme.colors.text.secondary}
+                color={isActive ? theme.colors.primary : theme.colors.textSecondary}
               />
               {item.badge ? (
                 <View
@@ -86,7 +86,7 @@ export function BottomNavBar({ items, activeItemId }: BottomNavBarProps) {
                 variant="caption"
                 style={{
                   fontSize: 10,
-                  color: isActive ? theme.colors.primary : theme.colors.text.secondary,
+                  color: isActive ? theme.colors.primary : theme.colors.textSecondary,
                   fontWeight: isActive ? '600' : '500',
                 }}
               >

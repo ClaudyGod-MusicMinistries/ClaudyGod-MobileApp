@@ -131,13 +131,13 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
                 <MaterialIcons
                   name={config.icon}
                   size={sizes.iconSize}
-                  color={focused ? palette.primary : palette.text.secondary}
+                  color={focused ? palette.primary : palette.textSecondary}
                 />
               </View>
               <CustomText
                 variant="caption"
                 style={{
-                  color: focused ? palette.text.primary : palette.text.secondary,
+                  color: focused ? palette.text : palette.textSecondary,
                   fontSize: 10,
                   letterSpacing: 0.06,
                 }}

@@ -66,10 +66,10 @@ export default function Rate() {
       hero={
         <FadeIn>
           <SurfaceCard tone="subtle" style={{ padding: spacing.lg, marginBottom: spacing.lg }}>
-            <CustomText variant="heading" style={{ color: theme.colors.text.primary }}>
+            <CustomText variant="heading" style={{ color: theme.colors.text }}>
               Love the experience?
             </CustomText>
-            <CustomText variant="body" style={{ color: theme.colors.text.secondary, marginTop: 6 }}>
+            <CustomText variant="body" style={{ color: theme.colors.textSecondary, marginTop: 6 }}>
               Your rating helps improve discoverability on app stores and TV marketplaces.
             </CustomText>
           </SurfaceCard>
@@ -78,7 +78,7 @@ export default function Rate() {
     >
       <FadeIn delay={80}>
         <SurfaceCard style={{ padding: spacing.lg, alignItems: 'center', marginBottom: spacing.md }}>
-          <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
+          <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
             Select your rating
           </CustomText>
           <View style={{ flexDirection: 'row', marginTop: spacing.md }}>
@@ -92,12 +92,12 @@ export default function Rate() {
                 <MaterialIcons
                   name={rating >= star ? 'star' : 'star-border'}
                   size={34}
-                  color={rating >= star ? '#FFC107' : theme.colors.text.secondary}
+                  color={rating >= star ? '#FFC107' : theme.colors.textSecondary}
                 />
               </TVTouchable>
             ))}
           </View>
-          <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: spacing.sm }}>
+          <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: spacing.sm }}>
             {scoreLabel}
           </CustomText>
         </SurfaceCard>
@@ -105,17 +105,17 @@ export default function Rate() {
 
       <FadeIn delay={140}>
         <SurfaceCard tone="subtle" style={{ padding: spacing.md, marginBottom: spacing.md }}>
-          <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
+          <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
             Optional note
           </CustomText>
-          <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 4 }}>
+          <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 4 }}>
             Add a short comment so the admin team can understand what is working well or what needs attention.
           </CustomText>
           <TextInput
             value={comment}
             onChangeText={setComment}
             placeholder="What stood out in your experience?"
-            placeholderTextColor={theme.colors.text.secondary}
+            placeholderTextColor={theme.colors.textSecondary}
             multiline
             textAlignVertical="top"
             style={{
@@ -127,7 +127,7 @@ export default function Rate() {
               paddingHorizontal: spacing.md,
               paddingVertical: spacing.md,
               backgroundColor: theme.colors.surface,
-              color: theme.colors.text.primary,
+              color: theme.colors.text,
             }}
           />
         </SurfaceCard>
@@ -154,10 +154,10 @@ export default function Rate() {
 
       <FadeIn delay={200}>
         <SurfaceCard tone="subtle" style={{ padding: spacing.md }}>
-          <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
+          <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
             What happens next?
           </CustomText>
-          <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 4 }}>
+          <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 4 }}>
             4–5 stars open the store review flow. 1–3 stars route you to direct support for faster resolution.
           </CustomText>
         </SurfaceCard>

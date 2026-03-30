@@ -101,7 +101,7 @@ export function DashboardFooter({
             <CustomText
               variant="label"
               style={{
-                color: theme.colors.text.primary,
+                color: theme.colors.text,
                 fontWeight: '700',
                 marginBottom: 16,
                 fontSize: 13,
@@ -125,7 +125,7 @@ export function DashboardFooter({
                   )}
                   <CustomText
                     style={{
-                      color: theme.colors.text.secondary,
+                      color: theme.colors.textSecondary,
                       fontSize: 12,
                     }}
                   >
@@ -143,7 +143,7 @@ export function DashboardFooter({
         <View style={{ marginTop: 32, paddingTop: 32, borderTopWidth: 1, borderTopColor: theme.colors.border }}>
           <CustomText
             style={{
-              color: theme.colors.text.secondary,
+              color: theme.colors.textSecondary,
               fontSize: 12,
               marginBottom: 16,
             }}
@@ -171,7 +171,7 @@ export function DashboardFooter({
       <View style={{ marginTop: 32, paddingTop: 32, borderTopWidth: 1, borderTopColor: theme.colors.border }}>
         <CustomText
           style={{
-            color: theme.colors.text.secondary,
+            color: theme.colors.textSecondary,
             fontSize: 11,
             textAlign: 'center',
           }}
