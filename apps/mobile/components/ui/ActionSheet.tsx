@@ -103,11 +103,11 @@ export function ActionSheet({
                     marginBottom: 6,
                   }}
                 />
-                <CustomText variant="heading" style={{ color: theme.colors.text.primary }}>
+                <CustomText variant="heading" style={{ color: theme.colors.text }}>
                   {title}
                 </CustomText>
                 {description ? (
-                  <CustomText variant="body" style={{ color: theme.colors.text.secondary }}>
+                  <CustomText variant="body" style={{ color: theme.colors.textSecondary }}>
                     {description}
                   </CustomText>
                 ) : null}
@@ -128,7 +128,7 @@ export function ActionSheet({
                       ? '#F2A7B6'
                       : action.tone === 'accent'
                         ? theme.colors.primary
-                        : theme.colors.text.primary;
+                        : theme.colors.text;
 
                   return (
                     <TVTouchable
@@ -172,13 +172,13 @@ export function ActionSheet({
                           {action.label}
                         </CustomText>
                         {action.detail ? (
-                          <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 3 }}>
+                          <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 3 }}>
                             {action.detail}
                           </CustomText>
                         ) : null}
                       </View>
 
-                      <MaterialIcons name="chevron-right" size={18} color={theme.colors.text.secondary} />
+                      <MaterialIcons name="chevron-right" size={18} color={theme.colors.textSecondary} />
                     </TVTouchable>
                   );
                 })}
@@ -200,7 +200,7 @@ export function ActionSheet({
                 <CustomText
                   variant="label"
                   style={{
-                    color: theme.colors.text.primary,
+                    color: theme.colors.text,
                     textTransform: 'uppercase',
                     letterSpacing: 0.2,
                   }}

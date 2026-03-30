@@ -93,7 +93,7 @@ export function RecentSongsSection() {
           <CustomText 
             variant="title" 
             style={{ 
-              color: theme.colors.text.primary,
+              color: theme.colors.text,
             }}
           >
             Recent Songs

@@ -13,7 +13,7 @@ interface ChipProps {
 export function Chip({ label, active, onPress }: ChipProps) {
   const theme = useAppTheme();
   const background = active ? theme.colors.surfaceAlt : theme.colors.surface;
-  const color = active ? theme.colors.text.primary : theme.colors.text.secondary;
+  const color = active ? theme.colors.text : theme.colors.textSecondary;
 
   return (
     <TVTouchable

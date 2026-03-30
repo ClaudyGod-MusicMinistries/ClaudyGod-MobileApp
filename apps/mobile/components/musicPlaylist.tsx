@@ -104,7 +104,7 @@ export const SongList: React.FC<SongListProps> = ({
               {active ? (
                 <MaterialIcons name="equalizer" size={18} color={theme.colors.primary} />
               ) : (
-                <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
+                <CustomText variant="caption" style={{ color: theme.colors.textSecondary }}>
                   {index + 1}
                 </CustomText>
               )}
@@ -114,7 +114,7 @@ export const SongList: React.FC<SongListProps> = ({
               <CustomText
                 variant="body"
                 style={{
-                  color: active ? theme.colors.primary : theme.colors.text.primary,
+                  color: active ? theme.colors.primary : theme.colors.text,
                 }}
                 numberOfLines={1}
               >
@@ -122,7 +122,7 @@ export const SongList: React.FC<SongListProps> = ({
               </CustomText>
               <CustomText
                 variant="caption"
-                style={{ color: theme.colors.text.secondary, marginTop: 2 }}
+                style={{ color: theme.colors.textSecondary, marginTop: 2 }}
                 numberOfLines={1}
               >
                 {song.artist}
@@ -130,12 +130,12 @@ export const SongList: React.FC<SongListProps> = ({
             </View>
 
             <View style={{ alignItems: 'flex-end' }}>
-              <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
+              <CustomText variant="caption" style={{ color: theme.colors.textSecondary }}>
                 {song.duration}
               </CustomText>
               {showActions && onRemove ? (
                 <TVTouchable onPress={() => onRemove(song)} style={{ marginTop: 4 }} showFocusBorder={false}>
-                  <MaterialIcons name="more-horiz" size={16} color={theme.colors.text.secondary} />
+                  <MaterialIcons name="more-horiz" size={16} color={theme.colors.textSecondary} />
                 </TVTouchable>
               ) : null}
             </View>

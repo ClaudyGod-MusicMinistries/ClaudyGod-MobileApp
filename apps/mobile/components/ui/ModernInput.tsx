@@ -99,7 +99,7 @@ export const ModernInput: React.FC<ModernInputProps> = ({
 
   return (
     <View style={[styles.container, style]}>
-      {label && <CustomText style={[styles.label, { color: theme.colors.text.secondary }]}>{label}</CustomText>}
+      {label && <CustomText style={[styles.label, { color: theme.colors.textSecondary }]}>{label}</CustomText>}
 
       <Animated.View
         style={[
@@ -122,11 +122,11 @@ export const ModernInput: React.FC<ModernInputProps> = ({
           style={[
             styles.input,
             {
-              color: theme.colors.text.primary,
+              color: theme.colors.text,
               paddingLeft: icon ? 12 : 0,
             },
           ]}
-          placeholderTextColor={theme.colors.text.secondary}
+          placeholderTextColor={theme.colors.textSecondary}
           onFocus={handleFocus}
           onBlur={handleBlur}
           onChangeText={(text) => {

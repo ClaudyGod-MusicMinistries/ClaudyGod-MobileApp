@@ -29,10 +29,10 @@ export function SearchBar({ placeholder, value, onChangeText, onSubmit }: Search
         borderColor: focused ? theme.colors.primary : theme.colors.border,
       }}
     >
-      <MaterialIcons name="search" size={18} color={focused ? theme.colors.primary : theme.colors.text.secondary} />
+      <MaterialIcons name="search" size={18} color={focused ? theme.colors.primary : theme.colors.textSecondary} />
       <TextInput
         placeholder={placeholder || 'Search songs, albums, artists'}
-        placeholderTextColor={theme.colors.text.secondary}
+        placeholderTextColor={theme.colors.textSecondary}
         value={value}
         onChangeText={onChangeText}
         onSubmitEditing={onSubmit}
@@ -42,7 +42,7 @@ export function SearchBar({ placeholder, value, onChangeText, onSubmit }: Search
           flex: 1,
           paddingVertical: theme.spacing.sm,
           paddingHorizontal: theme.spacing.sm,
-          color: theme.colors.text.primary,
+          color: theme.colors.text,
           fontSize: 14,
           lineHeight: 19,
           fontFamily: 'Sora_400Regular',
@@ -50,7 +50,7 @@ export function SearchBar({ placeholder, value, onChangeText, onSubmit }: Search
       />
       {value.length > 0 ? (
         <TVTouchable onPress={() => onChangeText('')} style={{ marginHorizontal: 4 }} showFocusBorder={false}>
-          <MaterialIcons name="close" size={18} color={theme.colors.text.secondary} />
+          <MaterialIcons name="close" size={18} color={theme.colors.textSecondary} />
         </TVTouchable>
       ) : null}
       {onSubmit ? (
@@ -66,7 +66,7 @@ export function SearchBar({ placeholder, value, onChangeText, onSubmit }: Search
           }}
           showFocusBorder={false}
         >
-          <MaterialIcons name="arrow-forward" size={16} color={theme.colors.text.primary} />
+          <MaterialIcons name="arrow-forward" size={16} color={theme.colors.text} />
         </TVTouchable>
       ) : null}
     </View>
