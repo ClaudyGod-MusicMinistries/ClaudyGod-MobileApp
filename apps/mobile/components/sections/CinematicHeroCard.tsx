@@ -172,7 +172,7 @@ export function CinematicHeroCard({
                         <MaterialIcons
                           name={action.icon}
                           size={16}
-                          color={action.variant === 'outline' || action.variant === 'ghost' ? theme.colors.text.primary : theme.colors.text.inverse}
+                          color={action.variant === 'outline' || action.variant === 'ghost' ? theme.colors.text : theme.colors.textInverse}
                         />
                       ) : undefined
                     }

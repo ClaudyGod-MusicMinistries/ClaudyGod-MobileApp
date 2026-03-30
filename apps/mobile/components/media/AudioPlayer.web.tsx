@@ -77,7 +77,7 @@ export function AudioPlayer({
               }}
               showFocusBorder={false}
             >
-              <CustomText variant="label" style={{ color: theme.colors.text.primary }}>
+              <CustomText variant="label" style={{ color: theme.colors.text }}>
                 Close
               </CustomText>
             </TVTouchable>
@@ -105,10 +105,10 @@ export function AudioPlayer({
           </View>
 
           <View style={{ width: '100%', alignItems: 'center', gap: 6 }}>
-            <CustomText variant="hero" style={{ color: theme.colors.text.primary, textAlign: 'center' }}>
+            <CustomText variant="hero" style={{ color: theme.colors.text, textAlign: 'center' }}>
               {track.title}
             </CustomText>
-            <CustomText variant="subtitle" style={{ color: theme.colors.text.secondary, textAlign: 'center' }}>
+            <CustomText variant="subtitle" style={{ color: theme.colors.textSecondary, textAlign: 'center' }}>
               {track.artist || 'ClaudyGod Ministries'}
             </CustomText>
             <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'center', marginTop: 2 }}>
@@ -129,7 +129,7 @@ export function AudioPlayer({
                   }}
                   showFocusBorder={false}
                 >
-                  <MaterialIcons name="skip-previous" size={20} color={theme.colors.text.primary} />
+                  <MaterialIcons name="skip-previous" size={20} color={theme.colors.text} />
                 </TVTouchable>
               ) : null}
               {onNext ? (
@@ -149,7 +149,7 @@ export function AudioPlayer({
                   }}
                   showFocusBorder={false}
                 >
-                  <MaterialIcons name="skip-next" size={20} color={theme.colors.text.primary} />
+                  <MaterialIcons name="skip-next" size={20} color={theme.colors.text} />
                 </TVTouchable>
               ) : null}
             </View>
@@ -187,7 +187,7 @@ function PillMeta({ label }: { label: string }) {
         backgroundColor: theme.colors.surfaceAlt,
       }}
     >
-      <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
+      <CustomText variant="caption" style={{ color: theme.colors.textSecondary }}>
         {label}
       </CustomText>
     </View>

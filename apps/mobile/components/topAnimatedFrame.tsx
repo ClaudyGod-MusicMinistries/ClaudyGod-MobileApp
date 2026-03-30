@@ -259,7 +259,7 @@ export const TopAnimatedSection = ({
                   opacity: getDotOpacity(index),
                   transform: [{ scale: getDotScale(index) }],
                   width: getDotWidth(index),
-                  backgroundColor: index === currentIndex ? currentColors.primary : currentColors.text.secondary,
+                  backgroundColor: index === currentIndex ? currentColors.primary : currentColors.textSecondary,
                 }}
               />
             </TouchableOpacity>

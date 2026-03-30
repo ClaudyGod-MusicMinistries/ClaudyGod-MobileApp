@@ -9,6 +9,7 @@ import { View, StyleSheet, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAppTheme } from '../../util/colorScheme';
 import { CustomText } from '../CustomText';
+import { spacing, radius, shadows } from '../../styles/designTokens';
 
 type GradientColors = readonly [string, string, ...string[]];
 
@@ -51,7 +52,7 @@ export const StatCard: React.FC<StatCardProps> = ({
     <Animated.View
       style={{
         transform: [{ scale: scaleAnim }],
-        marginBottom: 16,
+        marginBottom: spacing.md,
       }}
     >
       <View style={styles.cardContainer}>
@@ -76,16 +77,16 @@ export const StatCard: React.FC<StatCardProps> = ({
             ]}
           >
             <View style={styles.header}>
-              {icon && <View style={{ marginRight: 12 }}>{icon}</View>}
+              {icon && <View style={{ marginRight: spacing.sm }}>{icon}</View>}
               <CustomText
-                style={[styles.label, { color: theme.colors.text.secondary }]}
+                style={[styles.label, { color: theme.colors.textSecondary }]}
               >
                 {label}
               </CustomText>
             </View>
 
             <View style={styles.content}>
-              <CustomText style={[styles.value, { color: theme.colors.text.primary }]}>
+              <CustomText style={[styles.value, { color: theme.colors.text }]}>
                 {value}
               </CustomText>
 
@@ -111,22 +112,22 @@ export const StatCard: React.FC<StatCardProps> = ({
 
 const styles = StyleSheet.create({
   cardContainer: {
-    borderRadius: 16,
+    borderRadius: radius.lg,
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: shadows.card.shadowOpacity,
+    shadowRadius: shadows.card.shadowRadius,
+    shadowOffset: shadows.card.shadowOffset,
     elevation: 8,
   },
   card: {
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: spacing.md,
   },
   label: {
     fontSize: 13,
@@ -145,10 +146,10 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   trend: {
-    paddingVertical: 6,
-    paddingHorizontal: 10,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
     backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 8,
+    borderRadius: radius.sm,
   },
   trendValue: {
     fontSize: 13,

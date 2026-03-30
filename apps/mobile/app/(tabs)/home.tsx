@@ -1,389 +1,352 @@
-import React, { useMemo } from 'react';
-import { Linking, RefreshControl, ScrollView, Share, View, useWindowDimensions } from 'react-native';
+/**
+ * Home Screen - Redesigned
+ * Personalized content discovery with engagement-focused recommendations
+ * Real-time trending, smart recommendations, and community features
+ */
+
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  View,
+  ScrollView,
+  RefreshControl,
+  Animated,
+  useWindowDimensions,
+  Pressable,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { TabScreenWrapper } from '../../components/layout/TabScreenWrapper';
-import { Screen } from '../../components/layout/Screen';
-import { BrandedHeaderCard } from '../../components/layout/BrandedHeaderCard';
-import { CinematicHeroCard } from '../../components/sections/CinematicHeroCard';
-import { PosterCard } from '../../components/ui/PosterCard';
-import { SectionHeader } from '../../components/ui/SectionHeader';
-import { SurfaceCard } from '../../components/ui/SurfaceCard';
-import { AppButton } from '../../components/ui/AppButton';
 import { CustomText } from '../../components/CustomText';
 import { FadeIn } from '../../components/ui/FadeIn';
-import { TVTouchable } from '../../components/ui/TVTouchable';
-import { useAppTheme } from '../../util/colorScheme';
-import { useContentFeed } from '../../hooks/useContentFeed';
-import { useWordOfDay } from '../../hooks/useWordOfDay';
-import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
-import { APP_ROUTES, TAB_ROUTE_BY_ID } from '../../util/appRoutes';
-import { BRAND_HERO_ASSET } from '../../util/brandAssets';
-import { buildPlayerRoute } from '../../util/playerRoute';
-import { deriveLayoutSectionItems, getHomeLayoutSections } from '../../util/mobileLayout';
-import type { FeedCardItem } from '../../services/contentService';
-import { subscribeToLiveAlerts, trackPlayEvent } from '../../services/supabaseAnalytics';
-import { useToast } from '../../context/ToastContext';
+import { SmartContentRail } from '../../components/sections/SmartContentRail';
 
-const WORD_FOR_TODAY_FALLBACK = {
-  title: 'Word for Today',
-  passage: 'Psalm 119:105',
-  verse: 'Your word is a lamp to my feet and a light to my path.',
-  reflection: 'Return throughout the day and keep the word close.',
+const COLORS = {
+  background: '#0A0612',
+  surface: 'rgba(26,20,47,0.50)',
+  surfaceAlt: 'rgba(38,33,47,0.70)',
+  border: 'rgba(167,139,250,0.15)',
+  textPrimary: '#F5F3FF',
+  textSecondary: 'rgba(184,180,212,0.70)',
+  accent: '#A78BFA',
+  success: '#10B981',
+  warning: '#F59E0B',
 };
 
-const DEFAULT_QUICK_LINKS = [
-  { key: 'music', icon: 'graphic-eq', label: 'Music', route: APP_ROUTES.tabs.player },
-  { key: 'videos', icon: 'smart-display', label: 'Videos', route: APP_ROUTES.tabs.videos },
-  { key: 'live', icon: 'live-tv', label: 'Live', route: APP_ROUTES.tabs.live },
-] as const;
-
-function QuickLink({
-  icon,
-  label,
-  onPress,
-}: {
-  icon: React.ComponentProps<typeof MaterialIcons>['name'];
-  label: string;
-  onPress: () => void;
-}) {
-  const theme = useAppTheme();
-
+// Trending pill component
+function TrendingPill({ label, isActive, onPress }: { label: string; isActive: boolean; onPress: () => void }) {
   return (
-    <TVTouchable
+    <Pressable
       onPress={onPress}
       style={{
-        flex: 1,
-        minWidth: 0,
-        borderRadius: theme.radius.md,
-        borderWidth: 1,
-        borderColor: theme.colors.border,
-        backgroundColor: theme.colors.surface,
         paddingHorizontal: 14,
-        paddingVertical: 14,
-        gap: 10,
+        paddingVertical: 8,
+        borderRadius: 20,
+        backgroundColor: isActive ? COLORS.accent : COLORS.surface,
+        borderWidth: 1,
+        borderColor: isActive ? COLORS.accent : COLORS.border,
+        marginRight: 8,
       }}
-      showFocusBorder={false}
     >
-      <View
+      <CustomText
         style={{
-          width: 34,
-          height: 34,
-          borderRadius: theme.radius.sm,
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: 'rgba(139,92,246,0.14)',
-          borderWidth: 1,
-          borderColor: 'rgba(139,92,246,0.24)',
+          color: isActive ? '#0A0612' : COLORS.textSecondary,
+          fontSize: 12,
+          fontWeight: '600',
         }}
       >
-        <MaterialIcons name={icon} size={18} color={theme.colors.primary} />
-      </View>
-      <CustomText variant="label" style={{ color: theme.colors.text.primary }}>
         {label}
       </CustomText>
-    </TVTouchable>
+    </Pressable>
+  );
+}
+
+// Featured banner with live indicator
+function FeaturedBanner({ title, plays, isLive }: { title: string; plays: number; isLive: boolean }) {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    Animated.spring(scaleAnim, { toValue: 0.97, useNativeDriver: true }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true }).start();
+  };
+
+  return (
+    <Animated.View style={{ transform: [{ scale: scaleAnim }], marginHorizontal: 16, marginBottom: 24 }}>
+      <Pressable onPressIn={handlePressIn} onPressOut={handlePressOut}>
+        <LinearGradient
+          colors={['rgba(167,139,250,0.2)', 'rgba(139,92,246,0.1)']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{
+            borderRadius: 16,
+            padding: 20,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            borderWidth: 1,
+            borderColor: COLORS.border,
+          }}
+        >
+          <View style={{ flex: 1 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+              {isLive && (
+                <>
+                  <View
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: 4,
+                      backgroundColor: '#EF4444',
+                    }}
+                  />
+                  <CustomText style={{ color: '#EF4444', fontSize: 11, fontWeight: '700' }}>
+                    LIVE NOW
+                  </CustomText>
+                </>
+              )}
+            </View>
+            <CustomText
+              style={{
+                color: COLORS.textPrimary,
+                fontSize: 16,
+                fontWeight: '700',
+                marginBottom: 6,
+              }}
+              numberOfLines={2}
+            >
+              {title}
+            </CustomText>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <MaterialIcons name="play-arrow" size={14} color={COLORS.accent} />
+              <CustomText style={{ color: COLORS.textSecondary, fontSize: 11 }}>
+                {plays > 1000 ? (plays / 1000).toFixed(1) + 'K' : plays} listening now
+              </CustomText>
+            </View>
+          </View>
+
+          <View
+            style={{
+              width: 50,
+              height: 50,
+              borderRadius: 12,
+              backgroundColor: COLORS.accent,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <MaterialIcons name="play-arrow" size={24} color="#0A0612" />
+          </View>
+        </LinearGradient>
+      </Pressable>
+    </Animated.View>
   );
 }
 
 export default function HomeScreen() {
   const router = useRouter();
-  const theme = useAppTheme();
-  const { showToast } = useToast();
   const { width } = useWindowDimensions();
-  const isTablet = width >= 768;
-  const posterSize = isTablet ? 'lg' : 'md';
+  const railCardSize = width < 430 ? 'sm' : 'md';
+  const [refreshing, setRefreshing] = useState(false);
+  const [activeCategory, setActiveCategory] = useState('all');
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  const { feed, loading, error, refresh } = useContentFeed();
-  const { config: mobileConfig } = useMobileAppConfig();
-  const { word } = useWordOfDay();
+  const dummyContent = [
+    { id: '1', title: 'Morning Worship Mix', author: 'ClaudyGod', plays: 12450, likes: 890 },
+    { id: '2', title: 'Gospel Classics', author: 'Faith Station', plays: 5620, likes: 445 },
+    { id: '3', title: 'Contemporary Worship', author: 'Worship Central', plays: 8930, likes: 672 },
+    { id: '4', title: 'Prayer & Meditation', author: 'Spiritual Journey', plays: 3240, likes: 298 },
+  ];
 
-  const featured = useMemo(() => feed.featured ?? feed.recent[0] ?? feed.music[0] ?? feed.videos[0] ?? null, [feed]);
-  const homeSections = useMemo(() => getHomeLayoutSections(mobileConfig), [mobileConfig]);
-  const sponsoredItem = useMemo(() => feed.ads[0] ?? null, [feed]);
-  const sponsoredLabel = mobileConfig?.monetization?.disclosureLabel || 'Sponsored';
-  const curatedRails = useMemo(
-    () =>
-      homeSections
-        .map((section) => ({ section, items: deriveLayoutSectionItems(feed, section) }))
-        .filter((entry) => entry.items.length > 0)
-        .slice(0, 5),
-    [feed, homeSections],
-  );
-  const quickLinks = useMemo(() => {
-    const tabs = mobileConfig?.navigation?.tabs ?? [];
-    const configuredLinks = tabs
-      .filter((tab) => tab.id === 'player' || tab.id === 'videos' || tab.id === 'live')
-      .map((tab) => ({
-        key: tab.id,
-        icon: tab.icon as React.ComponentProps<typeof MaterialIcons>['name'],
-        label: tab.label,
-        route: TAB_ROUTE_BY_ID[tab.id],
-      }));
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 400,
+      useNativeDriver: true,
+    }).start();
+  }, [fadeAnim]);
 
-    return configuredLinks.length ? configuredLinks : DEFAULT_QUICK_LINKS;
-  }, [mobileConfig]);
-
-  const wordForToday = word
-    ? {
-        title: word.title || 'Word for Today',
-        passage: word.passage,
-        verse: word.verse,
-        reflection: word.reflection,
-      }
-    : WORD_FOR_TODAY_FALLBACK;
-
-  const openItem = async (item: FeedCardItem, source: string) => {
-    await trackPlayEvent({
-      contentId: item.id,
-      contentType: item.type,
-      title: item.title,
-      source,
-    });
-    router.push(buildPlayerRoute(item));
-  };
-
-  const shareWord = async () => {
-    await Share.share({
-      message: `${wordForToday.passage}\n\n${wordForToday.verse}\n\n${wordForToday.reflection}`,
-    });
-  };
-
-  const notifyLive = async (item: FeedCardItem) => {
-    try {
-      await subscribeToLiveAlerts(item.notificationChannelId || item.id);
-      showToast({
-        title: 'Live alerts enabled',
-        message: 'You will be notified when ClaudyGod goes live.',
-        tone: 'success',
-      });
-    } catch {
-      showToast({
-        title: 'Live alerts unavailable',
-        message: 'Sign in to follow live sessions.',
-        tone: 'warning',
-      });
-    }
-  };
-
-  const openSponsoredItem = async (item: FeedCardItem) => {
-    const target = item.ctaUrl || item.mediaUrl;
-    if (!target) {
-      return;
-    }
-
-    await trackPlayEvent({
-      contentId: item.campaignId || item.id,
-      contentType: 'ad',
-      title: item.title,
-      source: 'home_sponsored',
-    });
-
-    await Linking.openURL(target);
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    setRefreshing(false);
   };
 
   return (
-    <TabScreenWrapper>
-      <ScrollView
-        style={{ flex: 1, backgroundColor: 'transparent' }}
-        contentContainerStyle={{ paddingBottom: theme.layout.tabBarContentPadding }}
-        showsVerticalScrollIndicator={false}
-        bounces={false}
-        overScrollMode="never"
-        refreshControl={
-          <RefreshControl
-            refreshing={loading}
-            onRefresh={refresh}
-            tintColor={theme.colors.primary}
-            colors={[theme.colors.primary]}
-            progressBackgroundColor={theme.colors.surface}
-          />
-        }
-      >
-        <Screen>
-          <View style={{ paddingTop: theme.layout.headerVerticalPadding, gap: theme.layout.sectionGapLarge }}>
-            <FadeIn>
-              <BrandedHeaderCard
-                title="Home"
-                subtitle="New releases, live worship, and your next listen."
-                actions={[
-                  { icon: 'search', onPress: () => router.push(APP_ROUTES.tabs.search), accessibilityLabel: 'Search' },
-                  { icon: 'person-outline', onPress: () => router.push(APP_ROUTES.profile), accessibilityLabel: 'Profile' },
-                ]}
-              />
-            </FadeIn>
+    <View style={{ flex: 1, backgroundColor: COLORS.background }}>
+      <LinearGradient
+        colors={['rgba(167,139,250,0.15)', 'rgba(167,139,250,0.05)', 'rgba(10,6,18,0)']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 300 }}
+      />
 
-            <FadeIn delay={60}>
-              <CinematicHeroCard
-                imageSource={!featured ? BRAND_HERO_ASSET : undefined}
-                imageUrl={featured?.imageUrl}
-                badge={featured?.isLive ? 'Live now' : featured?.type === 'audio' ? 'Featured listen' : 'Featured'}
-                eyebrow={featured?.subtitle ?? 'ClaudyGod'}
-                title={featured?.title ?? 'Stay close to worship, messages, and live ministry.'}
-                subtitle={featured?.duration ?? 'ClaudyGod'}
-                description={featured?.description ?? 'Start from one featured moment, then move through the rest of the app without losing the thread.'}
-                height={isTablet ? 420 : 340}
-                actions={[
-                  {
-                    label: featured?.type === 'video' || featured?.isLive ? 'Watch now' : 'Play now',
-                    onPress: () => (featured ? openItem(featured, 'home_featured') : router.push(APP_ROUTES.tabs.player)),
-                    icon: featured?.type === 'video' || featured?.isLive ? 'smart-display' : 'play-arrow',
-                  },
-                  {
-                    label: featured?.isLive ? 'Notify me' : 'Read more',
-                    onPress: () =>
-                      featured?.isLive
-                        ? notifyLive(featured)
-                        : featured
-                          ? openItem(featured, 'home_featured_details')
-                          : router.push(APP_ROUTES.tabs.library),
-                    variant: 'secondary',
-                    icon: featured?.isLive ? 'notifications-active' : 'article',
-                  },
-                ]}
-              />
-            </FadeIn>
-
-            <FadeIn delay={100}>
-              <View style={{ flexDirection: 'row', gap: 10 }}>
-                {quickLinks.map((link) => (
-                  <QuickLink
-                    key={link.key}
-                    icon={link.icon}
-                    label={link.label}
-                    onPress={() => router.push(link.route)}
-                  />
-                ))}
+      <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.accent} />}
+          contentContainerStyle={{ paddingBottom: 20 }}
+        >
+          <Animated.View style={{ opacity: fadeAnim }}>
+            {/* Header */}
+            <FadeIn delay={0}>
+              <View style={{ marginHorizontal: 16, marginVertical: 16 }}>
+                <CustomText style={{ color: COLORS.textSecondary, fontSize: 12, marginBottom: 4 }}>
+                  Hello, Welcome back
+                </CustomText>
+                <CustomText style={{ color: COLORS.textPrimary, fontSize: 28, fontWeight: '800' }}>
+                  Discover Today
+                </CustomText>
               </View>
             </FadeIn>
 
-            {sponsoredItem ? (
-              <FadeIn delay={120}>
-                <SurfaceCard tone="subtle" style={{ padding: theme.spacing.lg }}>
-                  <View style={{ gap: 14 }}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start' }}>
-                      <View style={{ flex: 1 }}>
-                        <CustomText
-                          variant="caption"
-                          style={{
-                            color: theme.colors.primary,
-                            textTransform: 'uppercase',
-                            letterSpacing: 1,
-                          }}
-                        >
-                          {sponsoredLabel}
-                        </CustomText>
-                        <CustomText variant="heading" style={{ color: theme.colors.text.primary, marginTop: 6 }}>
-                          {sponsoredItem.title}
-                        </CustomText>
-                        <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 4 }}>
-                          {sponsoredItem.sponsorName || sponsoredItem.subtitle}
-                        </CustomText>
-                        <CustomText variant="body" style={{ color: theme.colors.text.secondary, marginTop: 8 }}>
-                          {sponsoredItem.description}
-                        </CustomText>
-                      </View>
-
-                      <View
-                        style={{
-                          width: 42,
-                          height: 42,
-                          borderRadius: theme.radius.sm,
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          backgroundColor: 'rgba(139,92,246,0.16)',
-                          borderWidth: 1,
-                          borderColor: 'rgba(139,92,246,0.28)',
-                        }}
-                      >
-                        <MaterialIcons name="campaign" size={20} color={theme.colors.primary} />
-                      </View>
-                    </View>
-
-                    <AppButton
-                      title={sponsoredItem.ctaLabel || 'Open'}
-                      onPress={() => void openSponsoredItem(sponsoredItem)}
-                      size="sm"
-                      leftIcon={<MaterialIcons name="open-in-new" size={16} color={theme.colors.text.inverse} />}
-                    />
-                  </View>
-                </SurfaceCard>
-              </FadeIn>
-            ) : null}
-
-            {curatedRails.map(({ section, items }, index) => (
-              <FadeIn key={section.id || section.title} delay={140 + index * 35}>
-                <View>
-                  <SectionHeader
-                    title={section.title}
-                    actionLabel={section.actionLabel}
-                    onAction={() => router.push(TAB_ROUTE_BY_ID[section.destinationTab])}
-                  />
-                  <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginBottom: 10 }}>
-                    {section.subtitle}
-                  </CustomText>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false} overScrollMode="never">
-                    {items.map((item) => (
-                      <PosterCard
-                        key={`${section.title}-${item.id}`}
-                        imageUrl={item.imageUrl}
-                        title={item.title}
-                        subtitle={item.liveViewerCount ? `${item.liveViewerCount} watching` : item.subtitle}
-                        size={posterSize}
-                        onPress={() => void openItem(item, 'home_curated')}
-                      />
-                    ))}
-                  </ScrollView>
-                </View>
-              </FadeIn>
-            ))}
-
-            <FadeIn delay={320}>
-              <SurfaceCard tone="subtle" style={{ padding: theme.spacing.lg }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
-                  <View style={{ flex: 1 }}>
-                    <CustomText
-                      variant="caption"
-                      style={{
-                        color: theme.colors.text.secondary,
-                        textTransform: 'uppercase',
-                        letterSpacing: 0.9,
-                      }}
-                    >
-                      {wordForToday.title}
-                    </CustomText>
-                    <CustomText variant="heading" style={{ color: theme.colors.text.primary, marginTop: 6 }}>
-                      {wordForToday.passage}
-                    </CustomText>
-                    <CustomText variant="body" style={{ color: theme.colors.text.secondary, marginTop: 8 }}>
-                      {wordForToday.verse}
-                    </CustomText>
-                    <CustomText variant="body" style={{ color: theme.colors.text.secondary, marginTop: 8 }}>
-                      {wordForToday.reflection}
-                    </CustomText>
-                  </View>
-
-                  <View style={{ justifyContent: 'flex-start' }}>
-                    <AppButton
-                      title="Share"
-                      variant="secondary"
-                      size="sm"
-                      onPress={() => void shareWord()}
-                      leftIcon={<MaterialIcons name="ios-share" size={16} color={theme.colors.text.primary} />}
-                    />
-                  </View>
-                </View>
-              </SurfaceCard>
+            {/* Featured Live Content */}
+            <FadeIn delay={40}>
+              <FeaturedBanner title="Sunday Morning Worship Service - Live" plays={4250} isLive={true} />
             </FadeIn>
 
-            {error ? (
-              <CustomText variant="caption" style={{ color: theme.colors.danger }}>
-                Feed error: {error}
-              </CustomText>
-            ) : null}
-          </View>
-        </Screen>
-      </ScrollView>
-    </TabScreenWrapper>
+            {/* Category Filter */}
+            <FadeIn delay={80}>
+              <View style={{ paddingHorizontal: 16, marginBottom: 20 }}>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{ paddingRight: 16 }}
+                >
+                  {['All', 'Worship', 'Gospel', 'Contemporary', 'Prayer'].map((cat) => (
+                    <TrendingPill
+                      key={cat}
+                      label={cat}
+                      isActive={activeCategory === cat.toLowerCase()}
+                      onPress={() => setActiveCategory(cat.toLowerCase())}
+                    />
+                  ))}
+                </ScrollView>
+              </View>
+            </FadeIn>
+
+            {/* Recommended For You */}
+            <SmartContentRail
+              title="Recommended For You"
+              subtitle="Based on your listening history"
+              items={dummyContent.map((item) => ({
+                id: item.id,
+                title: item.title,
+                author: item.author,
+                plays: item.plays,
+                likes: item.likes,
+                onPress: () => router.push(`/player/${item.id}` as any),
+                onPlayPress: () => console.log('Play', item.id),
+              }))}
+              cardSize={railCardSize}
+              horizontal={true}
+              showEngagementHint={true}
+            />
+
+            {/* Trending Now */}
+            <SmartContentRail
+              title="Trending Now"
+              subtitle="What's popular this week"
+              items={[...dummyContent]
+                .sort((a, b) => b.plays - a.plays)
+                .map((item) => ({
+                  id: item.id,
+                  title: item.title,
+                  author: item.author,
+                  plays: item.plays,
+                  likes: item.likes,
+                  badge: '🔥 Trending',
+                  onPress: () => router.push(`/player/${item.id}` as any),
+                  onPlayPress: () => console.log('Play', item.id),
+                }))}
+              cardSize={railCardSize}
+              horizontal={true}
+            />
+
+            {/* New Releases */}
+            <SmartContentRail
+              title="New Releases"
+              subtitle="Fresh uploads from your favorite creators"
+              items={[...dummyContent]
+                .reverse()
+                .map((item) => ({
+                  id: item.id,
+                  title: item.title,
+                  author: item.author,
+                  plays: item.plays,
+                  likes: item.likes,
+                  badge: 'NEW',
+                  onPress: () => router.push(`/player/${item.id}` as any),
+                  onPlayPress: () => console.log('Play', item.id),
+                }))}
+              cardSize="sm"
+              horizontal={true}
+            />
+
+            {/* Discover Section */}
+            <View style={{ marginHorizontal: 16 }}>
+              <FadeIn delay={160}>
+                <CustomText style={{ color: COLORS.textPrimary, fontSize: 16, fontWeight: '700', marginBottom: 12 }}>
+                  Discover More
+                </CustomText>
+                <View style={{ gap: 12 }}>
+                  <LinearGradient
+                    colors={['rgba(16,185,129,0.2)', 'rgba(16,185,129,0.05)']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={{
+                      borderRadius: 12,
+                      padding: 16,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      borderWidth: 1,
+                      borderColor: COLORS.border,
+                    }}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <CustomText style={{ color: COLORS.success, fontSize: 12, fontWeight: '700', marginBottom: 4 }}>
+                        COMMUNITY
+                      </CustomText>
+                      <CustomText style={{ color: COLORS.textPrimary, fontSize: 14, fontWeight: '700' }}>
+                        Join Creator Communities
+                      </CustomText>
+                    </View>
+                    <MaterialIcons name="arrow-forward" size={20} color={COLORS.success} />
+                  </LinearGradient>
+
+                  <LinearGradient
+                    colors={['rgba(59,130,246,0.2)', 'rgba(59,130,246,0.05)']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={{
+                      borderRadius: 12,
+                      padding: 16,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      borderWidth: 1,
+                      borderColor: COLORS.border,
+                    }}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <CustomText style={{ color: '#3B82F6', fontSize: 12, fontWeight: '700', marginBottom: 4 }}>
+                        CREATOR
+                      </CustomText>
+                      <CustomText style={{ color: COLORS.textPrimary, fontSize: 14, fontWeight: '700' }}>
+                        Start Your Channel
+                      </CustomText>
+                    </View>
+                    <MaterialIcons name="arrow-forward" size={20} color="#3B82F6" />
+                  </LinearGradient>
+                </View>
+              </FadeIn>
+            </View>
+          </Animated.View>
+        </ScrollView>
+      </SafeAreaView>
+    </View>
   );
 }

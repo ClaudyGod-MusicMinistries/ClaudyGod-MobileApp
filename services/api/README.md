@@ -19,8 +19,8 @@ Node.js + TypeScript backend for the Claudy admin portal and mobile app content 
 - `GET /v1/auth/me`
 - `POST /v1/auth/email/verify`
 - `POST /v1/auth/email/verify/request`
-- `POST /v1/auth/password/forgot`
-- `POST /v1/auth/password/reset`
+- `POST /v1/auth/forgot-password` (`POST /v1/auth/password/forgot` is also supported for older clients)
+- `POST /v1/auth/reset-password` (`POST /v1/auth/password/reset` is also supported for older clients)
 - `GET /v1/content/manage`
 - `POST /v1/content`
 - `PATCH /v1/content/:id/visibility`

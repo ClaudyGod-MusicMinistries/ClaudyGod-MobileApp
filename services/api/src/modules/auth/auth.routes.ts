@@ -97,6 +97,16 @@ async function handleSignIn(req: Request, res: Response) {
   respondWithAuthSession(req, res, session, 200);
 }
 
+async function handleForgotPassword(req: Request, res: Response) {
+  const result = await requestPasswordReset(req.validated, getAuthRequestContext(req));
+  res.status(202).json(result);
+}
+
+async function handleResetPassword(req: Request, res: Response) {
+  const result = await resetPassword(req.validated, getAuthRequestContext(req));
+  res.status(200).json(result);
+}
+
 authRouter.post(
   '/register',
   validateBody(signUpSchema),
@@ -154,19 +164,26 @@ authRouter.post(
   '/forgot-password',
   passwordResetLimiter,
   validateBody(forgotPasswordSchema),
-  asyncHandler(async (req, res) => {
-    const result = await requestPasswordReset(req.validated, getAuthRequestContext(req));
-    res.status(202).json(result);
-  }),
+  asyncHandler(handleForgotPassword),
+);
+
+authRouter.post(
+  '/password/forgot',
+  passwordResetLimiter,
+  validateBody(forgotPasswordSchema),
+  asyncHandler(handleForgotPassword),
 );
 
 authRouter.post(
   '/reset-password',
   validateBody(resetPasswordSchema),
-  asyncHandler(async (req, res) => {
-    const result = await resetPassword(req.validated, getAuthRequestContext(req));
-    res.status(200).json(result);
-  }),
+  asyncHandler(handleResetPassword),
+);
+
+authRouter.post(
+  '/password/reset',
+  validateBody(resetPasswordSchema),
+  asyncHandler(handleResetPassword),
 );
 
 authRouter.post(

@@ -53,7 +53,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
       <View className="px-1">
         <CustomText
           variant="body"
-          style={{ color: palette.text.primary }}
+          style={{ color: palette.text }}
           numberOfLines={1}
         >
           {title}
@@ -61,7 +61,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
         {subtitle && (
           <CustomText
             variant="caption"
-            style={{ color: palette.text.secondary }}
+            style={{ color: palette.textSecondary }}
             numberOfLines={1}
           >
             {subtitle}
