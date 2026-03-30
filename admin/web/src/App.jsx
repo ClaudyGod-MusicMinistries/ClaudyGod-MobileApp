@@ -1061,6 +1061,7 @@ export default defineComponent({
           if (axios.isAxiosError(error) && error.response?.status === 401 && hasSession.value) {
             const requestUrl = String(error.config?.url || '');
             const isAuthEndpoint =
+              requestUrl.includes('/v1/auth/sign-in') ||
               requestUrl.includes('/v1/auth/login') ||
               requestUrl.includes('/v1/auth/register') ||
               requestUrl.includes('/v1/auth/email/verify') ||
@@ -1860,7 +1861,7 @@ export default defineComponent({
 
       authLoading.value = true;
       try {
-        const endpoint = isRegisterMode.value ? '/v1/auth/register' : '/v1/auth/login';
+        const endpoint = isRegisterMode.value ? '/v1/auth/register' : '/v1/auth/sign-in';
         const payload = isRegisterMode.value
           ? {
               email: authForm.email.trim(),

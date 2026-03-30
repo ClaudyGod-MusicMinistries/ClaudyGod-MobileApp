@@ -1,4 +1,4 @@
-import { type Request, Router } from 'express';
+import { type Request, type Response, Router } from 'express';
 import { asyncHandler } from '../../lib/asyncHandler';
 import { validateSchema } from '../../lib/validation';
 import { validateBody } from '../../lib/validationMiddleware';
@@ -91,6 +91,12 @@ function getAuthRequestContext(req: Request) {
   };
 }
 
+async function handleSignIn(req: Request, res: Response) {
+  const result = await loginUser(req.validated, getAuthRequestContext(req));
+  const session = await buildSessionPayload(result, req);
+  respondWithAuthSession(req, res, session, 200);
+}
+
 authRouter.post(
   '/register',
   validateBody(signUpSchema),
@@ -110,11 +116,14 @@ authRouter.post(
   '/sign-in',
   authLimiter,
   validateBody(signInSchema),
-  asyncHandler(async (req, res) => {
-    const result = await loginUser(req.validated, getAuthRequestContext(req));
-    const session = await buildSessionPayload(result, req);
-    respondWithAuthSession(req, res, session, 200);
-  }),
+  asyncHandler(handleSignIn),
+);
+
+authRouter.post(
+  '/login',
+  authLimiter,
+  validateBody(signInSchema),
+  asyncHandler(handleSignIn),
 );
 
 authRouter.post(

@@ -15,7 +15,7 @@ Node.js + TypeScript backend for the Claudy admin portal and mobile app content 
 
 ## Key Endpoints
 - `POST /v1/auth/register`
-- `POST /v1/auth/login`
+- `POST /v1/auth/sign-in` (`POST /v1/auth/login` is also supported for older clients)
 - `GET /v1/auth/me`
 - `POST /v1/auth/email/verify`
 - `POST /v1/auth/email/verify/request`
