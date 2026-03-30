@@ -98,10 +98,10 @@ export default function Help() {
       hero={
         <FadeIn>
           <SurfaceCard tone="subtle" style={{ padding: spacing.lg, marginBottom: spacing.lg }}>
-            <CustomText variant="heading" style={{ color: theme.colors.text.primary }}>
+            <CustomText variant="heading" style={{ color: theme.colors.text }}>
               We keep you streaming
             </CustomText>
-            <CustomText variant="body" style={{ color: theme.colors.text.secondary, marginTop: 6 }}>
+            <CustomText variant="body" style={{ color: theme.colors.textSecondary, marginTop: 6 }}>
               Reach support anytime or use the quick fixes below for playback, library, and account issues.
             </CustomText>
             <View style={{ marginTop: spacing.md }}>
@@ -117,7 +117,7 @@ export default function Help() {
       }
     >
       <FadeIn delay={90}>
-        <CustomText variant="subtitle" style={{ color: theme.colors.text.primary, marginBottom: spacing.sm }}>
+        <CustomText variant="subtitle" style={{ color: theme.colors.text, marginBottom: spacing.sm }}>
           Contact options
         </CustomText>
         <View style={{ marginBottom: spacing.lg }}>
@@ -138,14 +138,14 @@ export default function Help() {
                   <MaterialIcons name={item.icon as any} size={20} color={theme.colors.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <CustomText variant="body" style={{ color: theme.colors.text.primary }}>
+                  <CustomText variant="body" style={{ color: theme.colors.text }}>
                     {item.title}
                   </CustomText>
-                  <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 2 }}>
+                  <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 2 }}>
                     {item.desc}
                   </CustomText>
                 </View>
-                <MaterialIcons name="chevron-right" size={20} color={theme.colors.text.secondary} />
+                <MaterialIcons name="chevron-right" size={20} color={theme.colors.textSecondary} />
               </SurfaceCard>
             </TVTouchable>
           ))}
@@ -153,11 +153,11 @@ export default function Help() {
       </FadeIn>
 
       <FadeIn delay={160}>
-        <CustomText variant="subtitle" style={{ color: theme.colors.text.primary, marginBottom: spacing.sm }}>
+        <CustomText variant="subtitle" style={{ color: theme.colors.text, marginBottom: spacing.sm }}>
           Send a support request
         </CustomText>
         <SurfaceCard tone="subtle" style={{ padding: spacing.lg, marginBottom: spacing.lg }}>
-          <CustomText variant="body" style={{ color: theme.colors.text.secondary }}>
+          <CustomText variant="body" style={{ color: theme.colors.textSecondary }}>
             Use this form for complaints, broken playback, login issues, or content problems. Submissions are sent to the admin support inbox.
           </CustomText>
 
@@ -181,7 +181,7 @@ export default function Help() {
                       backgroundColor: active ? `${theme.colors.primary}1A` : theme.colors.surface,
                     }}
                   >
-                    <CustomText variant="caption" style={{ color: active ? theme.colors.primary : theme.colors.text.secondary }}>
+                    <CustomText variant="caption" style={{ color: active ? theme.colors.primary : theme.colors.textSecondary }}>
                       {category.label}
                     </CustomText>
                   </View>
@@ -195,7 +195,7 @@ export default function Help() {
               value={subject}
               onChangeText={setSubject}
               placeholder="Short subject"
-              placeholderTextColor={theme.colors.text.secondary}
+              placeholderTextColor={theme.colors.textSecondary}
               style={{
                 borderWidth: 1,
                 borderColor: theme.colors.border,
@@ -203,7 +203,7 @@ export default function Help() {
                 paddingHorizontal: spacing.md,
                 paddingVertical: spacing.md,
                 backgroundColor: theme.colors.surface,
-                color: theme.colors.text.primary,
+                color: theme.colors.text,
                 marginBottom: spacing.sm,
               }}
             />
@@ -211,7 +211,7 @@ export default function Help() {
               value={message}
               onChangeText={setMessage}
               placeholder="Describe the issue, device, and what you expected to happen"
-              placeholderTextColor={theme.colors.text.secondary}
+              placeholderTextColor={theme.colors.textSecondary}
               multiline
               textAlignVertical="top"
               style={{
@@ -222,7 +222,7 @@ export default function Help() {
                 paddingHorizontal: spacing.md,
                 paddingVertical: spacing.md,
                 backgroundColor: theme.colors.surface,
-                color: theme.colors.text.primary,
+                color: theme.colors.text,
               }}
             />
           </View>
@@ -242,7 +242,7 @@ export default function Help() {
       </FadeIn>
 
       <FadeIn delay={220}>
-        <CustomText variant="subtitle" style={{ color: theme.colors.text.primary, marginBottom: spacing.sm }}>
+        <CustomText variant="subtitle" style={{ color: theme.colors.text, marginBottom: spacing.sm }}>
           Quick answers
         </CustomText>
         <View style={{ marginBottom: spacing.xl }}>
@@ -260,14 +260,14 @@ export default function Help() {
                     <MaterialIcons
                       name={open ? 'expand-less' : 'expand-more'}
                       size={20}
-                      color={theme.colors.text.secondary}
+                      color={theme.colors.textSecondary}
                     />
-                    <CustomText variant="body" style={{ color: theme.colors.text.primary, marginLeft: spacing.sm, flex: 1 }}>
+                    <CustomText variant="body" style={{ color: theme.colors.text, marginLeft: spacing.sm, flex: 1 }}>
                       {faq.q}
                     </CustomText>
                   </View>
                   {open ? (
-                    <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: spacing.sm }}>
+                    <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: spacing.sm }}>
                       {faq.a}
                     </CustomText>
                   ) : null}

@@ -55,7 +55,7 @@ export function VideoPlayer({ title, sourceUri, height = 210 }: VideoPlayerProps
 
       {title ? (
         <View style={{ padding: theme.spacing.md }}>
-          <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
+          <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
             {title}
           </CustomText>
         </View>
