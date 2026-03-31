@@ -126,42 +126,26 @@ export default function LandingScreen() {
         route: TAB_ROUTE_BY_ID[tab.id],
       }));
 
-    return configured.length
-      ? configured
-      : [
-          { key: 'player', icon: 'graphic-eq' as const, label: 'Music', route: APP_ROUTES.tabs.player },
-          { key: 'videos', icon: 'smart-display' as const, label: 'Videos', route: APP_ROUTES.tabs.videos },
-          { key: 'live', icon: 'live-tv' as const, label: 'Live', route: APP_ROUTES.tabs.live },
-        ];
+    return configured;
   }, [config]);
 
+  const spotlight =
+    feed.featured ??
+    feed.live[0] ??
+    feed.music[0] ??
+    feed.videos[0] ??
+    feed.recent[0] ??
+    null;
+
   const landingStory = useMemo(() => {
-    const topCategories = feed.topCategories.filter((item) => item && item.toLowerCase() !== 'all').slice(0, 3);
-    const featuredTitle = feed.featured?.title?.trim();
-    const featuredDescription = feed.featured?.description?.trim();
-    const liveCount = feed.live.length;
-    const musicCount = feed.music.length;
-    const videoCount = feed.videos.length;
+    if (!spotlight) return null;
 
     return {
-      eyebrow:
-        liveCount > 0
-          ? `${liveCount} live session${liveCount === 1 ? '' : 's'} ready now`
-          : topCategories.length
-            ? `${topCategories.join(' • ')} on deck`
-            : 'ClaudyGod mobile experience',
-      title:
-        featuredTitle ||
-        (topCategories.length
-          ? `${topCategories.join(', ')} shaped for a calmer mobile flow`
-          : 'Worship, messages, and live moments arranged for your phone'),
-      description:
-        featuredDescription ||
-        `Browse ${musicCount} music items, ${videoCount} video moments, and ${
-          liveCount || 'new'
-        } live updates without the clutter.`,
+      eyebrow: spotlight.subtitle || (spotlight.isLive ? 'Live now' : undefined),
+      title: spotlight.title,
+      description: spotlight.description,
     };
-  }, [feed]);
+  }, [spotlight]);
 
   const featureCardWidth = isCompactPhone ? '48%' : isMediumScreen ? '31.5%' : undefined;
 
@@ -194,9 +178,10 @@ export default function LandingScreen() {
       >
         <Screen style={{ flex: 1 }} contentStyle={{ flex: 1 }}>
           <ScrollView
+            style={{ flex: 1 }}
             showsVerticalScrollIndicator={false}
             bounces={false}
-            contentContainerStyle={{ flexGrow: 1, paddingBottom: spacing.md }}
+            contentContainerStyle={{ paddingBottom: spacing.xl }}
           >
             {/* Minimal Header */}
             <FadeIn delay={0}>
@@ -307,43 +292,49 @@ export default function LandingScreen() {
               </FadeIn>
 
               {/* Headline - responsive font sizing */}
-              <FadeIn delay={120}>
-                <View style={{ marginBottom: spacing.lg }}>
-                  <CustomText
-                    variant="label"
-                    style={{
-                      color: colors_light.accent,
-                      fontSize: isCompactPhone ? 10 : 11,
-                      fontWeight: '600',
-                      letterSpacing: 0.7,
-                      textTransform: 'uppercase',
-                      marginBottom: spacing.xs,
-                    }}
-                  >
-                    {landingStory.eyebrow}
-                  </CustomText>
-                  <CustomText
-                    style={{
-                      color: colors_light.text,
-                      fontSize: isCompactPhone ? 22 : isMediumScreen ? 26 : 30,
-                      fontWeight: '700',
-                      lineHeight: isCompactPhone ? 29 : isMediumScreen ? 32 : 36,
-                      marginBottom: spacing.sm,
-                    }}
-                  >
-                    {landingStory.title}
-                  </CustomText>
-                  <CustomText
-                    style={{
-                      color: colors_light.textSecondary,
-                      fontSize: isCompactPhone ? 12 : typography.body,
-                      lineHeight: isCompactPhone ? 18 : 20,
-                    }}
-                  >
-                    {landingStory.description}
-                  </CustomText>
-                </View>
-              </FadeIn>
+              {landingStory ? (
+                <FadeIn delay={120}>
+                  <View style={{ marginBottom: spacing.lg }}>
+                    {landingStory.eyebrow ? (
+                      <CustomText
+                        variant="label"
+                        style={{
+                          color: colors_light.accent,
+                          fontSize: isCompactPhone ? 10 : 11,
+                          fontWeight: '600',
+                          letterSpacing: 0.7,
+                          textTransform: 'uppercase',
+                          marginBottom: spacing.xs,
+                        }}
+                      >
+                        {landingStory.eyebrow}
+                      </CustomText>
+                    ) : null}
+                    <CustomText
+                      style={{
+                        color: colors_light.text,
+                        fontSize: isCompactPhone ? 22 : isMediumScreen ? 26 : 30,
+                        fontWeight: '700',
+                        lineHeight: isCompactPhone ? 29 : isMediumScreen ? 32 : 36,
+                        marginBottom: landingStory.description ? spacing.sm : 0,
+                      }}
+                    >
+                      {landingStory.title}
+                    </CustomText>
+                    {landingStory.description ? (
+                      <CustomText
+                        style={{
+                          color: colors_light.textSecondary,
+                          fontSize: isCompactPhone ? 12 : typography.body,
+                          lineHeight: isCompactPhone ? 18 : 20,
+                        }}
+                      >
+                        {landingStory.description}
+                      </CustomText>
+                    ) : null}
+                  </View>
+                </FadeIn>
+              ) : null}
 
               {/* CTA Buttons - responsive spacing */}
               <FadeIn delay={160}>
@@ -373,34 +364,24 @@ export default function LandingScreen() {
               </FadeIn>
 
               {/* Quick Access Features - responsive layout */}
-              <FadeIn delay={200}>
-                <View>
-                  <CustomText
-                    variant="label"
-                    style={{
-                      color: colors_light.textSecondary,
-                      fontWeight: '700',
-                      textTransform: 'uppercase',
-                      letterSpacing: 0.8,
-                      marginBottom: spacing.sm,
-                    }}
-                  >
-                    Explore Categories
-                  </CustomText>
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-                    {previewLinks.map((link) => (
-                      <View key={link.key} style={featureCardWidth ? { width: featureCardWidth } : { flex: 1 }}>
-                        <FeatureCard
-                          compact={isCompactPhone}
-                          icon={link.icon as React.ComponentProps<typeof MaterialIcons>['name']}
-                          label={link.label}
-                          onPress={() => router.push(link.route)}
-                        />
-                      </View>
-                    ))}
+              {previewLinks.length ? (
+                <FadeIn delay={200}>
+                  <View>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+                      {previewLinks.map((link) => (
+                        <View key={link.key} style={featureCardWidth ? { width: featureCardWidth } : { flex: 1 }}>
+                          <FeatureCard
+                            compact={isCompactPhone}
+                            icon={link.icon as React.ComponentProps<typeof MaterialIcons>['name']}
+                            label={link.label}
+                            onPress={() => router.push(link.route)}
+                          />
+                        </View>
+                      ))}
+                    </View>
                   </View>
-                </View>
-              </FadeIn>
+                </FadeIn>
+              ) : null}
             </View>
           </ScrollView>
         </Screen>
