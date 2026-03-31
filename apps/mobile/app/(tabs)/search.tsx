@@ -258,6 +258,7 @@ export default function Search() {
                   imageUrl={item.imageUrl}
                   title={item.title}
                   subtitle={item.subtitle}
+                  size="sm"
                   onPress={() => void openResult(item)}
                 />
               )}

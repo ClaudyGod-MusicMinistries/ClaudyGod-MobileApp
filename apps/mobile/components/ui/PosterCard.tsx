@@ -26,9 +26,9 @@ export function PosterCard({
 }: PosterCardProps) {
   const theme = useAppTheme();
   const sizes = {
-    sm: { w: 132, h: 168 },
-    md: { w: 168, h: 214 },
-    lg: { w: 210, h: 262 },
+    sm: { w: 108, h: 140 },
+    md: { w: 128, h: 168 },
+    lg: { w: 156, h: 200 },
   }[size];
 
   return (
@@ -41,7 +41,7 @@ export function PosterCard({
         style={{
           width: sizes.w,
           height: sizes.h,
-          borderRadius: theme.radius.lg,
+          borderRadius: theme.radius.md,
           overflow: 'hidden',
           backgroundColor: theme.colors.surfaceAlt,
           borderWidth: 1,
@@ -55,25 +55,25 @@ export function PosterCard({
           locations={[0, 0.45, 1]}
           style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: Math.min(110, sizes.h * 0.56) }}
         />
-        {showPlay ? (
-          <View
-            style={{
-              position: 'absolute',
-              right: theme.spacing.sm,
-              top: theme.spacing.sm,
-              width: 32,
-              height: 32,
-              borderRadius: 10,
-              backgroundColor: 'rgba(9,12,16,0.72)',
-              borderWidth: 1,
-              borderColor: 'rgba(255,255,255,0.12)',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <MaterialIcons name="play-arrow" size={18} color="#F7F3EA" />
-          </View>
-        ) : null}
+          {showPlay ? (
+            <View
+              style={{
+                position: 'absolute',
+                right: theme.spacing.sm,
+                top: theme.spacing.sm,
+                width: 26,
+                height: 26,
+                borderRadius: 8,
+                backgroundColor: 'rgba(9,12,16,0.72)',
+                borderWidth: 1,
+                borderColor: 'rgba(255,255,255,0.12)',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <MaterialIcons name="play-arrow" size={14} color="#F7F3EA" />
+            </View>
+          ) : null}
 
         <View
           style={{
@@ -88,7 +88,7 @@ export function PosterCard({
         >
           <CustomText
             variant="subtitle"
-            style={{ color: '#F7F3EA', fontSize: 12, lineHeight: 16 }}
+            style={{ color: '#F7F3EA', fontSize: 10, lineHeight: 13 }}
             numberOfLines={2}
           >
             {title}

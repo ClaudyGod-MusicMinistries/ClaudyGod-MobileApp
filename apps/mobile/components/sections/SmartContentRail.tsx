@@ -43,9 +43,9 @@ interface SmartContentRailProps {
 
 // Get responsive card width based on size
 const getCardWidth = (size: 'sm' | 'md' | 'lg', screenWidth: number) => {
-  if (size === 'sm') return Math.max(130, screenWidth * 0.35);
-  if (size === 'lg') return Math.max(200, screenWidth * 0.6);
-  return Math.max(160, screenWidth * 0.45);
+  if (size === 'sm') return Math.max(96, screenWidth * 0.3);
+  if (size === 'lg') return Math.max(150, screenWidth * 0.5);
+  return Math.max(120, screenWidth * 0.4);
 };
 
 export function SmartContentRail({
@@ -85,6 +85,9 @@ export function SmartContentRail({
                 style={{
                   color: colors_light.text,
                   marginBottom: spacing.xs,
+                  fontSize: 12,
+                  lineHeight: 16,
+                  fontWeight: '600',
                 }}
               >
                 {title}
@@ -94,6 +97,8 @@ export function SmartContentRail({
                   variant="label"
                   style={{
                     color: colors_light.textSecondary,
+                    fontSize: 10,
+                    lineHeight: 14,
                   }}
                 >
                   {subtitle}
@@ -178,25 +183,30 @@ export function SmartContentRail({
           }}
         >
           <View style={{ flex: 1 }}>
-            <CustomText
-              variant="title"
-              style={{
-                color: colors_light.text,
-                marginBottom: spacing.xs,
-              }}
-            >
-              {title}
-            </CustomText>
-            {subtitle && (
               <CustomText
-                variant="label"
+                variant="title"
                 style={{
-                  color: colors_light.textSecondary,
+                  color: colors_light.text,
+                  marginBottom: spacing.xs,
+                  fontSize: 12,
+                  lineHeight: 16,
+                  fontWeight: '600',
                 }}
               >
-                {subtitle}
+                {title}
               </CustomText>
-            )}
+              {subtitle && (
+                <CustomText
+                  variant="label"
+                  style={{
+                    color: colors_light.textSecondary,
+                    fontSize: 10,
+                    lineHeight: 14,
+                  }}
+                >
+                  {subtitle}
+                </CustomText>
+              )}
           </View>
 
           {onSeeAll && (
