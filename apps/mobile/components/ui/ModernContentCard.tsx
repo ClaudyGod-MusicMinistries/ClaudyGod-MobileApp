@@ -31,11 +31,11 @@ interface ModernContentCardProps {
 const getCardDimensions = (size: 'sm' | 'md' | 'lg') => {
   switch (size) {
     case 'sm':
-      return { imageHeight: 120, imageWidth: 120, fontSize: 12, gap: 6 };
+      return { imageHeight: 96, imageWidth: 96, fontSize: 10, gap: 4 };
     case 'lg':
-      return { imageHeight: 220, imageWidth: 220, fontSize: 14, gap: 10 };
+      return { imageHeight: 160, imageWidth: 160, fontSize: 12, gap: 6 };
     default:
-      return { imageHeight: 160, imageWidth: 160, fontSize: 13, gap: 8 };
+      return { imageHeight: 124, imageWidth: 124, fontSize: 11, gap: 5 };
   }
 };
 
@@ -70,13 +70,13 @@ export function ModernContentCard({
   const dims = getCardDimensions(size);
 
   return (
-    <Animated.View style={{ transform: [{ scale: scaleAnim }], borderRadius: radius.md }}>
+    <Animated.View style={{ transform: [{ scale: scaleAnim }], borderRadius: radius.sm }}>
       <Pressable
         onPress={onPress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         style={{
-          borderRadius: radius.md,
+          borderRadius: radius.sm,
           overflow: 'hidden',
           backgroundColor: colors_light.surface,
           borderWidth: 1,
@@ -138,7 +138,7 @@ export function ModernContentCard({
                 variant="caption"
                 style={{
                   color: colors_light.background,
-                  fontWeight: '700',
+                  fontWeight: '600',
                 }}
               >
                 {badge}
@@ -152,16 +152,16 @@ export function ModernContentCard({
               onPress={onPlayPress}
               style={{
                 position: 'absolute',
-                width: spacing.xxxl,
-                height: spacing.xxxl,
-                borderRadius: spacing.xxxl / 2,
+                width: spacing.xxl,
+                height: spacing.xxl,
+                borderRadius: spacing.xxl / 2,
                 backgroundColor: pressed ? colors_light.accent : `rgba(${colors_light.accentRgba ?? '167,139,250'},0.85)`,
                 alignItems: 'center',
                 justifyContent: 'center',
                 top: '50%',
                 left: '50%',
-                marginTop: -(spacing.xxxl / 2 + spacing.sm),
-                marginLeft: -(spacing.xxxl / 2 + spacing.sm),
+                marginTop: -(spacing.xxl / 2),
+                marginLeft: -(spacing.xxl / 2),
               }}
             >
               <MaterialIcons name={isPlaying ? 'pause' : 'play-arrow'} size={dims.fontSize} color={colors_light.text} />
@@ -176,7 +176,7 @@ export function ModernContentCard({
             style={{
               color: colors_light.text,
               fontSize: dims.fontSize,
-              fontWeight: '700',
+              fontWeight: '600',
               marginBottom: spacing.xs,
             }}
           >
@@ -189,7 +189,7 @@ export function ModernContentCard({
               style={{
                 color: colors_light.textSecondary,
                 fontSize: dims.fontSize * 0.85,
-                marginBottom: spacing.sm,
+                marginBottom: spacing.xs,
               }}
             >
               {subtitle}
@@ -201,8 +201,8 @@ export function ModernContentCard({
               numberOfLines={1}
               style={{
                 color: colors_light.textSecondary,
-                fontSize: 10,
-                marginBottom: 8,
+                fontSize: 9,
+                marginBottom: 6,
               }}
             >
               {author}
