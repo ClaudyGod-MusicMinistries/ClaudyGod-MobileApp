@@ -108,14 +108,14 @@ code {
 }
 
 .app-root {
-  --type-scale: 0.92;
-  --font-2xs: calc(0.66rem * var(--type-scale));
-  --font-xs: calc(0.74rem * var(--type-scale));
-  --font-sm: calc(0.8rem * var(--type-scale));
-  --font-md: calc(0.84rem * var(--type-scale));
-  --font-lg: calc(0.9rem * var(--type-scale));
-  --font-xl: calc(1rem * var(--type-scale));
-  --font-2xl: calc(1.18rem * var(--type-scale));
+  --type-scale: 0.84;
+  --font-2xs: calc(0.62rem * var(--type-scale));
+  --font-xs: calc(0.7rem * var(--type-scale));
+  --font-sm: calc(0.76rem * var(--type-scale));
+  --font-md: calc(0.8rem * var(--type-scale));
+  --font-lg: calc(0.86rem * var(--type-scale));
+  --font-xl: calc(0.96rem * var(--type-scale));
+  --font-2xl: calc(1.12rem * var(--type-scale));
   position: relative;
   min-height: 100vh;
   display: flex;
