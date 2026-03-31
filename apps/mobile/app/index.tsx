@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Image, ScrollView, StatusBar, View, useWindowDimensions } from 'react-native';
+import { Image, ImageBackground, ScrollView, StatusBar, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -13,7 +13,7 @@ import { CinematicHeroCard } from '../components/sections/CinematicHeroCard';
 import { useContentFeed } from '../hooks/useContentFeed';
 import { useMobileAppConfig } from '../hooks/useMobileAppConfig';
 import { APP_ROUTES, TAB_ROUTE_BY_ID } from '../util/appRoutes';
-import { BRAND_HERO_ASSET, BRAND_LOGO_ASSET } from '../util/brandAssets';
+import { BRAND_HERO_ASSET, BRAND_LOGO_ASSET, LANDING_BG_ASSET } from '../util/brandAssets';
 import type { FeedCardItem } from '../services/contentService';
 
 const LANDING_COLORS = {
@@ -190,39 +190,28 @@ export default function LandingScreen() {
   const headlineBlock = (
     <FadeIn delay={isPhone ? 80 : 50}>
       <View style={{ gap: isCompactPhone ? 8 : 12 }}>
-        <CustomText
-          variant="caption"
-          style={{
-            color: LANDING_COLORS.accent,
-            textTransform: 'uppercase',
-            letterSpacing: 1.2,
-            fontWeight: '600',
-          }}
-        >
-          Premium Streaming
-        </CustomText>
         <CustomText 
           variant="hero" 
           style={{ 
             color: LANDING_COLORS.textPrimary,
-            fontSize: isCompactPhone ? 32 : 42,
-            fontWeight: '700',
-            lineHeight: isCompactPhone ? 40 : 52,
+            fontSize: isCompactPhone ? 24 : 30,
+            fontWeight: '600',
+            lineHeight: isCompactPhone ? 30 : 36,
           }}
         >
-          Worship, Music & Ministry Unified
+          Stream the ministry
         </CustomText>
         <CustomText
           variant="body"
           style={{
             color: LANDING_COLORS.textSecondary,
             maxWidth: isTablet ? 540 : '100%',
-            fontSize: 15,
-            lineHeight: 24,
+            fontSize: 12.5,
+            lineHeight: 19,
           }}
           numberOfLines={isPhone ? 3 : 4}
         >
-          Experience the ultimate platform for worship, music, and live ministry in one beautifully designed space. Stream, discover, and connect.
+          Music, messages, and live worship in one calm experience.
         </CustomText>
       </View>
     </FadeIn>
@@ -230,24 +219,24 @@ export default function LandingScreen() {
 
   const actionBlock = (
     <FadeIn delay={isPhone ? 110 : 90}>
-      <View style={{ gap: 12 }}>
+      <View style={{ gap: 10 }}>
         <AppButton
           title="Get Started"
-          size="lg"
+          size="md"
           onPress={() => router.push(APP_ROUTES.auth.signUp)}
           fullWidth
-          style={{ borderRadius: 14 }}
+          style={{ borderRadius: 10 }}
         />
         <AppButton
-          title="Sign In"
+          title="Browse as Guest"
           variant="secondary"
-          size="lg"
-          onPress={() => router.push(APP_ROUTES.auth.signIn)}
+          size="md"
+          onPress={() => router.push(APP_ROUTES.tabs.home)}
           fullWidth
           style={{
             borderColor: LANDING_COLORS.border,
             backgroundColor: LANDING_COLORS.panel,
-            borderRadius: 14,
+            borderRadius: 10,
           }}
           textColor={LANDING_COLORS.textPrimary}
         />
@@ -319,16 +308,16 @@ export default function LandingScreen() {
     <View style={{ flex: 1, backgroundColor: LANDING_COLORS.background }}>
       <StatusBar translucent={false} barStyle="light-content" backgroundColor={LANDING_COLORS.background} />
 
-      <LinearGradient
-        colors={['rgba(167,139,250,0.25)', 'rgba(167,139,250,0.08)', 'rgba(10,6,18,0)']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 320 }}
-      />
-
-      <SafeAreaView style={{ flex: 1, backgroundColor: LANDING_COLORS.background }} edges={['top', 'bottom']}>
-        <Screen style={{ flex: 1 }} contentStyle={{ flex: 1 }}>
-          <View style={{ flex: 1, paddingTop: isTablet ? 18 : 12, gap: shellGap }}>
+      <ImageBackground source={LANDING_BG_ASSET} style={{ flex: 1 }} resizeMode="cover">
+        <LinearGradient
+          colors={['rgba(8,6,14,0.92)', 'rgba(8,6,14,0.75)', 'rgba(8,6,14,0.98)']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          style={{ flex: 1 }}
+        >
+          <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top', 'bottom']}>
+            <Screen style={{ flex: 1 }} contentStyle={{ flex: 1 }}>
+              <View style={{ flex: 1, paddingTop: isTablet ? 18 : 8, gap: shellGap }}>
             <FadeIn>
               <View
                 style={{
@@ -389,9 +378,9 @@ export default function LandingScreen() {
                   onPress={() => router.push(APP_ROUTES.auth.signIn)}
                   showFocusBorder={false}
                   style={{
-                    minHeight: 36,
-                    paddingHorizontal: 12,
-                    borderRadius: 11,
+                    minHeight: 32,
+                    paddingHorizontal: 10,
+                    borderRadius: 10,
                     borderWidth: 1,
                     borderColor: LANDING_COLORS.border,
                     backgroundColor: LANDING_COLORS.panel,
@@ -399,7 +388,7 @@ export default function LandingScreen() {
                     justifyContent: 'center',
                   }}
                 >
-                  <CustomText variant="label" style={{ color: LANDING_COLORS.textPrimary }}>
+                  <CustomText variant="label" style={{ color: LANDING_COLORS.textPrimary, fontSize: 10 }}>
                     Sign In
                   </CustomText>
                 </TVTouchable>
@@ -408,7 +397,7 @@ export default function LandingScreen() {
 
             <ScrollView
               style={{ flex: 1, backgroundColor: LANDING_COLORS.background }}
-              contentContainerStyle={{ paddingBottom: isTablet ? 14 : 10, gap: isTablet ? 22 : 16 }}
+              contentContainerStyle={{ paddingBottom: isTablet ? 14 : 10, gap: isTablet ? 18 : 14 }}
               showsVerticalScrollIndicator={false}
               bounces={false}
               overScrollMode="never"
@@ -437,16 +426,29 @@ export default function LandingScreen() {
                     {heroCard}
                   </View>
                 ) : (
-                  <View style={{ gap: 14 }}>
+                  <View style={{ gap: 12 }}>
                     {heroCard}
                     <View
                       style={{
-                        gap: 14,
+                        gap: 12,
                         paddingHorizontal: 2,
+                        alignItems: 'center',
                       }}
                     >
                       {headlineBlock}
-                      {actionBlock}
+                      <View
+                        style={{
+                          width: '100%',
+                          borderWidth: 1,
+                          borderColor: LANDING_COLORS.border,
+                          backgroundColor: LANDING_COLORS.panelStrong,
+                          borderRadius: 14,
+                          paddingHorizontal: 14,
+                          paddingVertical: 12,
+                        }}
+                      >
+                        {actionBlock}
+                      </View>
                       {quickAccessRail}
                     </View>
                   </View>
@@ -461,12 +463,12 @@ export default function LandingScreen() {
                   borderColor: LANDING_COLORS.border,
                   backgroundColor: LANDING_COLORS.panelStrong,
                   borderRadius: 16,
-                  paddingHorizontal: isPhone ? 14 : 16,
-                  paddingVertical: isPhone ? 12 : 14,
+                  paddingHorizontal: isPhone ? 12 : 16,
+                  paddingVertical: isPhone ? 10 : 14,
                   flexDirection: isTablet ? 'row' : 'column',
                   justifyContent: 'space-between',
                   alignItems: isTablet ? 'center' : 'flex-start',
-                  gap: isPhone ? 10 : 12,
+                  gap: isPhone ? 8 : 12,
                 }}
               >
                 <View style={{ flex: 1, gap: 3 }}>
@@ -476,13 +478,14 @@ export default function LandingScreen() {
                       color: LANDING_COLORS.accent,
                       textTransform: 'uppercase',
                       letterSpacing: 0.75,
+                      fontSize: 10,
                     }}
                   >
                     Go straight to
                   </CustomText>
                   <CustomText
                     variant="body"
-                    style={{ color: LANDING_COLORS.textSecondary }}
+                    style={{ color: LANDING_COLORS.textSecondary, fontSize: 11 }}
                     numberOfLines={isPhone ? 1 : 2}
                   >
                     Music, videos, and live worship.
@@ -496,9 +499,11 @@ export default function LandingScreen() {
                 </View>
               </View>
             </FadeIn>
-          </View>
-        </Screen>
-      </SafeAreaView>
+              </View>
+            </Screen>
+          </SafeAreaView>
+        </LinearGradient>
+      </ImageBackground>
     </View>
   );
 }
