@@ -93,7 +93,7 @@ export default function VideosScreen() {
   }>();
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
-  const posterSize = isTablet ? 'lg' : 'md';
+  const posterSize = isTablet ? 'md' : 'sm';
 
   const { feed } = useContentFeed();
   const { config: mobileConfig } = useMobileAppConfig();
