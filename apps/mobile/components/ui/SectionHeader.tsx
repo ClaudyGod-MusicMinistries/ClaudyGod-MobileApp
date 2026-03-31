@@ -24,7 +24,14 @@ export function SectionHeader({ title, actionLabel, onAction }: SectionHeaderPro
         marginBottom: theme.spacing.sm,
       }}
     >
-      <CustomText variant="heading" style={{ color: theme.colors.text }}>
+      <CustomText
+        variant="label"
+        style={{
+          color: theme.colors.text,
+          fontWeight: '600',
+          letterSpacing: 0.2,
+        }}
+      >
         {title}
       </CustomText>
       {actionLabel ? (

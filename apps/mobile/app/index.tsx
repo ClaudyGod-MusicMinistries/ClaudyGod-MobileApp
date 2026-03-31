@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import {
   Image,
+  ImageBackground,
   ScrollView,
   StatusBar,
   View,
@@ -19,7 +20,7 @@ import { AppButton } from '../components/ui/AppButton';
 import { useContentFeed } from '../hooks/useContentFeed';
 import { useMobileAppConfig } from '../hooks/useMobileAppConfig';
 import { APP_ROUTES, TAB_ROUTE_BY_ID } from '../util/appRoutes';
-import { BRAND_HERO_ASSET, BRAND_LOGO_ASSET } from '../util/brandAssets';
+import { BRAND_LOGO_ASSET, LANDING_BG_ASSET } from '../util/brandAssets';
 import { colors } from '../constants/color';
 import { spacing, typography } from '../styles/designTokens';
 
@@ -64,14 +65,14 @@ function FeatureCard({
         onPressOut={handlePressOut}
         style={{
           flex: 1,
-          minHeight: compact ? 108 : 118,
-          paddingVertical: compact ? spacing.sm : spacing.md,
+          minHeight: compact ? 92 : 100,
+          paddingVertical: compact ? spacing.xs : spacing.sm,
           paddingHorizontal: spacing.sm,
-          borderRadius: 14,
+          borderRadius: 10,
           backgroundColor: pressed ? colors_light.surfaceAlt : colors_light.surface,
           alignItems: 'center',
           justifyContent: 'center',
-          gap: compact ? spacing.sm : spacing.md,
+          gap: compact ? spacing.xs : spacing.sm,
           borderWidth: 1,
           borderColor: pressed ? colors_light.accent : colors_light.border,
         }}
@@ -81,14 +82,14 @@ function FeatureCard({
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={{
-            width: compact ? 42 : 46,
-            height: compact ? 42 : 46,
-            borderRadius: 13,
+            width: compact ? 34 : 38,
+            height: compact ? 34 : 38,
+            borderRadius: 10,
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
-          <MaterialIcons name={icon} size={compact ? 20 : 21} color={colors_light.text} />
+        <MaterialIcons name={icon} size={compact ? 16 : 18} color={colors_light.text} />
         </LinearGradient>
         <CustomText
           variant="label"
@@ -96,8 +97,8 @@ function FeatureCard({
             color: colors_light.text,
             fontWeight: '500',
             textAlign: 'center',
-            fontSize: compact ? 10 : typography.label,
-            lineHeight: compact ? 14 : 16,
+          fontSize: compact ? 9 : 10,
+          lineHeight: compact ? 12 : 14,
           }}
         >
           {label}
@@ -153,24 +154,18 @@ export default function LandingScreen() {
     <View style={{ flex: 1, backgroundColor: colors_light.background }}>
       <StatusBar translucent={false} barStyle="light-content" backgroundColor={colors_light.background} />
 
-      {/* Gradient overlay background */}
-      <LinearGradient
-        colors={[
-          `rgba(${colors_light.accentRgba ?? '167,139,250'},0.20)`,
-          `rgba(${colors_light.accentRgba ?? '167,139,250'},0.05)`,
-          'rgba(10,6,18,0)',
-        ]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          height: 350,
-          zIndex: 0,
-        }}
-      />
+      <ImageBackground
+        source={LANDING_BG_ASSET}
+        resizeMode="cover"
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+      >
+        <LinearGradient
+          colors={['rgba(6,4,12,0.68)', 'rgba(6,4,12,0.86)', 'rgba(6,4,12,0.98)']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+        />
+      </ImageBackground>
 
       <SafeAreaView
         style={{ flex: 1, backgroundColor: colors_light.background }}
@@ -257,38 +252,7 @@ export default function LandingScreen() {
               }}
             >
               <FadeIn delay={80}>
-                {/* Hero Image with overlay */}
-                <View
-                  style={{
-                    marginBottom: spacing.lg,
-                    borderRadius: 18,
-                    overflow: 'hidden',
-                    height: isCompactPhone ? 220 : isMediumScreen ? 250 : 286,
-                    shadowColor: '#000',
-                    shadowOpacity: 0.22,
-                    shadowRadius: 18,
-                    shadowOffset: { width: 0, height: 8 },
-                    elevation: 6,
-                  }}
-                >
-                  <Image
-                    source={BRAND_HERO_ASSET}
-                    style={{ width: '100%', height: '100%' }}
-                    resizeMode="cover"
-                  />
-                  <LinearGradient
-                    colors={['transparent', `rgba(${colors_light.backgroundRgba ?? '10,6,18'},0.8)`]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 0, y: 1 }}
-                    style={{
-                      position: 'absolute',
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      height: 140,
-                    }}
-                  />
-                </View>
+                <View style={{ height: isCompactPhone ? 10 : 16 }} />
               </FadeIn>
 
               {/* Headline - responsive font sizing */}
@@ -341,21 +305,21 @@ export default function LandingScreen() {
                 <View style={{ gap: spacing.sm, marginBottom: spacing.lg }}>
                   <AppButton
                     title="Get Started"
-                    size={isCompactPhone ? 'md' : 'lg'}
+                    size={isCompactPhone ? 'sm' : 'md'}
                     onPress={() => router.push(APP_ROUTES.auth.signUp)}
                     fullWidth
-                    style={{ borderRadius: 13 }}
+                    style={{ borderRadius: 10 }}
                   />
                   <AppButton
                     title="Browse as Guest"
                     variant="secondary"
-                    size={isCompactPhone ? 'md' : 'lg'}
+                    size={isCompactPhone ? 'sm' : 'md'}
                     onPress={() => router.push(APP_ROUTES.tabs.player)}
                     fullWidth
                     style={{
                       borderColor: colors_light.border,
                       backgroundColor: colors_light.surface,
-                      borderRadius: 13,
+                      borderRadius: 10,
                       borderWidth: 1,
                     }}
                     textColor={colors_light.text}

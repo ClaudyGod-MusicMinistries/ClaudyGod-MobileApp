@@ -17,7 +17,7 @@ import { spacing } from '../../styles/designTokens';
 export default function HomeScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const railCardSize = width < 430 ? 'sm' : 'md';
+  const railCardSize = width < 900 ? 'sm' : 'md';
   const { feed } = useContentFeed();
   const { config: mobileConfig } = useMobileAppConfig();
   const { user } = useAuth();
