@@ -3,8 +3,6 @@ import React from 'react';
 import { View, Image, Pressable } from 'react-native';
 import { CustomText } from './CustomText';
 import { radius } from '../styles/designTokens';
-import { useColorScheme } from '../util/colorScheme';
-import { colors } from '../constants/color';
 import { TVTouchable } from './ui/TVTouchable';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -36,9 +34,6 @@ export const MediaCard: React.FC<MediaCardProps> = ({
   showMore = false,
   onMorePress,
 }) => {
-  const colorScheme = useColorScheme();
-  const palette = colors[colorScheme];
-
   const sizeClasses = {
     sm: { w: 140, h: 200 },
     md: { w: 160, h: 220 },
@@ -64,14 +59,8 @@ export const MediaCard: React.FC<MediaCardProps> = ({
           height: sizeConfig.h,
           overflow: 'hidden',
           borderRadius: radius.lg,
-          backgroundColor: palette.surface,
-          borderWidth: 1.5,
-          borderColor: palette.border || 'rgba(0,0,0,0.1)',
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.15,
-          shadowRadius: 8,
-          elevation: 5,
+          backgroundColor: 'transparent',
+          borderWidth: 0,
         }}
       >
         {/* Image with proper constraint */}
@@ -85,8 +74,8 @@ export const MediaCard: React.FC<MediaCardProps> = ({
 
         {/* Gradient Overlay */}
         <LinearGradient
-          colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.2)', 'rgba(0,0,0,0.9)']}
-          locations={[0, 0.5, 1]}
+          colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.15)', 'rgba(0,0,0,0.86)']}
+          locations={[0, 0.55, 1]}
           style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}
         />
 
@@ -165,6 +154,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
               borderColor: 'rgba(255,255,255,0.18)',
               alignItems: 'center',
               justifyContent: 'center',
+              zIndex: 4,
             }}
           >
             <MaterialIcons name="more-vert" size={18} color="#FFFFFF" />

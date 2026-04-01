@@ -1,7 +1,8 @@
 // components/ui/MinimalPosterCard.tsx
 import React from 'react';
-import { View, Image } from 'react-native';
+import { View, Image, Pressable } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../CustomText';
 import { useAppTheme } from '../../util/colorScheme';
 import { TVTouchable } from './TVTouchable';
@@ -15,6 +16,8 @@ interface MinimalPosterCardProps {
   size?: 'sm' | 'md' | 'lg';
   badge?: string;
   isLive?: boolean;
+  showMore?: boolean;
+  onMorePress?: () => void;
 }
 
 /**
@@ -30,6 +33,8 @@ export function MinimalPosterCard({
   size = 'md',
   badge,
   isLive = false,
+  showMore = false,
+  onMorePress,
 }: MinimalPosterCardProps) {
   const theme = useAppTheme();
 
@@ -57,10 +62,8 @@ export function MinimalPosterCard({
           height: '100%',
           borderRadius: theme.radius.lg,
           overflow: 'hidden',
-          backgroundColor: theme.colors.surfaceAlt,
-          borderWidth: 1,
-          borderColor: theme.colors.border,
-          ...theme.shadows.card,
+          backgroundColor: 'transparent',
+          borderWidth: 0,
         }}
       >
         {/* Image */}
@@ -105,21 +108,27 @@ export function MinimalPosterCard({
           </View>
         )}
 
-        {/* Minimal corner marker */}
-        {!isLive ? (
-          <View
+        {/* More Actions */}
+        {showMore && onMorePress ? (
+          <Pressable
+            onPress={onMorePress}
             style={{
               position: 'absolute',
-              right: 8,
-              top: 8,
-              width: 22,
-              height: 22,
-              borderRadius: theme.radius.sm,
-              backgroundColor: 'rgba(10,10,15,0.6)',
+              right: 6,
+              top: 6,
+              width: 26,
+              height: 26,
+              borderRadius: 13,
+              backgroundColor: 'rgba(10,10,15,0.72)',
               borderWidth: 1,
               borderColor: 'rgba(255,255,255,0.18)',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 4,
             }}
-          />
+          >
+            <MaterialIcons name="more-vert" size={16} color="#F7F3EA" />
+          </Pressable>
         ) : null}
 
         {/* Title - Minimal */}
