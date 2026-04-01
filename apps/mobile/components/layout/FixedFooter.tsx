@@ -92,7 +92,7 @@ export function FixedFooter({
             <CustomText
               variant="label"
               style={{
-                color: theme.colors.text.primary,
+                color: theme.colors.text,
                 fontWeight: '600',
                 marginBottom: 12,
                 fontSize: 11,
@@ -118,7 +118,7 @@ export function FixedFooter({
                   )}
                   <CustomText
                     style={{
-                      color: theme.colors.text.secondary,
+                      color: theme.colors.textSecondary,
                       fontSize: 11,
                     }}
                     numberOfLines={1}
@@ -143,7 +143,7 @@ export function FixedFooter({
       >
         <CustomText
           style={{
-            color: theme.colors.text.secondary,
+            color: theme.colors.textSecondary,
             fontSize: 10,
             textAlign: 'center',
           }}

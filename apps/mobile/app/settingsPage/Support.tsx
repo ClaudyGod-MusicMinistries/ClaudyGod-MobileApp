@@ -48,7 +48,7 @@ export default function SupportScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} style={styles.backBtn}>
-            <MaterialIcons name="arrow-back" size={24} color={colorsLight.text.primary} />
+            <MaterialIcons name="arrow-back" size={24} color={colorsLight.text} />
           </Pressable>
           <CustomText style={styles.headerTitle}>Support Our Ministry</CustomText>
           <View style={{ width: 24 }} />
@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: colors_light.text.primary,
+    color: colors_light.text,
   },
   heroSection: {
     marginHorizontal: spacing.md,
@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: colors_light.text.primary,
+    color: colors_light.text,
     marginBottom: spacing.md,
   },
   frequencyGrid: {
@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
   frequencyCardText: {
     fontSize: 12,
     fontWeight: '600',
-    color: colors_light.text.primary,
+    color: colors_light.text,
     marginTop: spacing.xs,
     textAlign: 'center',
   },
@@ -293,7 +293,7 @@ const styles = StyleSheet.create({
   amountText: {
     fontSize: 14,
     fontWeight: '700',
-    color: colors_light.text.primary,
+    color: colors_light.text,
   },
   amountTextActive: {
     color: 'white',
@@ -319,12 +319,12 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontSize: 13,
-    color: colors_light.text.secondary,
+    color: colors_light.textSecondary,
   },
   summaryValue: {
     fontSize: 13,
     fontWeight: '600',
-    color: colors_light.text.primary,
+    color: colors_light.text,
   },
   summaryAmount: {
     fontSize: 16,
@@ -343,7 +343,7 @@ const styles = StyleSheet.create({
   benefitText: {
     flex: 1,
     fontSize: 13,
-    color: colors_light.text.primary,
+    color: colors_light.text,
     lineHeight: 18,
   },
 });
