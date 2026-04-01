@@ -71,7 +71,7 @@ function MetricCard({
         onPressOut={handlePressOut}
         style={{
           flex: 1,
-          minHeight: 140,
+          minHeight: 128,
           borderRadius: radius.lg,
           overflow: 'hidden',
           borderWidth: 1,
@@ -86,8 +86,8 @@ function MetricCard({
         >
           <View
             style={{
-              width: spacing.xxxl,
-              height: spacing.xxxl,
+              width: spacing.xxl,
+              height: spacing.xxl,
               borderRadius: radius.md,
               backgroundColor: `rgba(${colors_light.accentRgba ?? '167,139,250'},0.2)`,
               alignItems: 'center',
@@ -99,18 +99,18 @@ function MetricCard({
           </View>
 
           <View>
-            <CustomText style={{ color: COLORS.textSecondary, fontSize: 12, marginBottom: spacing.xs }}>
+            <CustomText style={{ color: COLORS.textSecondary, fontSize: 11, marginBottom: spacing.xs }}>
               {label}
             </CustomText>
             <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm }}>
-              <CustomText style={{ color: COLORS.textPrimary, fontSize: 28, fontWeight: '700' }}>
+              <CustomText style={{ color: COLORS.textPrimary, fontSize: 24, fontWeight: '700' }}>
                 {value}
               </CustomText>
               {trend !== undefined && (
                 <CustomText
                   style={{
                     color: trend > 0 ? COLORS.success : COLORS.danger,
-                    fontSize: 12,
+                    fontSize: 11,
                     fontWeight: '600',
                   }}
                 >

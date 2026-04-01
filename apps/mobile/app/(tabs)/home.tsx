@@ -24,7 +24,8 @@ import { BRAND_HERO_ASSET } from '../../util/brandAssets';
 import { buildPlayerRoute } from '../../util/playerRoute';
 import { deriveLayoutSectionItems, getHomeLayoutSections } from '../../util/mobileLayout';
 import type { FeedCardItem } from '../../services/contentService';
-import { subscribeToLiveAlerts, trackPlayEvent } from '../../services/supabaseAnalytics';
+import { trackPlayEvent } from '../../services/supabaseAnalytics';
+import { subscribeToLiveAlertsBackend } from '../../services/userFlowService';
 import { useToast } from '../../context/ToastContext';
 
 const WORD_FOR_TODAY_FALLBACK = {
@@ -130,6 +131,9 @@ export default function HomeScreen() {
     return configuredLinks.length ? configuredLinks : DEFAULT_QUICK_LINKS;
   }, [mobileConfig]);
 
+  const formatMeta = (item: FeedCardItem) =>
+    [item.subtitle, item.duration].filter((value) => Boolean(value)).join(' · ');
+
   const wordForToday = word
     ? {
         title: word.title || 'Word for Today',
@@ -157,7 +161,7 @@ export default function HomeScreen() {
 
   const notifyLive = async (item: FeedCardItem) => {
     try {
-      await subscribeToLiveAlerts(item.notificationChannelId || item.id);
+      await subscribeToLiveAlertsBackend(item.notificationChannelId || item.id, item.title);
       showToast({
         title: 'Live alerts enabled',
         message: 'You will be notified when ClaudyGod goes live.',
@@ -174,7 +178,10 @@ export default function HomeScreen() {
 
   const notifyLiveGeneral = async () => {
     try {
-      await subscribeToLiveAlerts(liveAlertTarget?.notificationChannelId || liveAlertTarget?.id || 'claudygod-live');
+      await subscribeToLiveAlertsBackend(
+        liveAlertTarget?.notificationChannelId || liveAlertTarget?.id || 'claudygod-live',
+        liveAlertTarget?.title ?? 'ClaudyGod',
+      );
       showToast({
         title: 'Live alerts enabled',
         message: 'You will be notified when ClaudyGod goes live.',
@@ -299,6 +306,7 @@ export default function HomeScreen() {
                         key={`${section.title}-${item.id}`}
                         imageUrl={item.imageUrl}
                         title={item.title}
+                        meta={formatMeta(item)}
                         size={posterSize}
                         onPress={() => void openItem(item, 'home_curated')}
                       />
@@ -385,6 +393,7 @@ export default function HomeScreen() {
                         key={`${section.title}-${item.id}`}
                         imageUrl={item.imageUrl}
                         title={item.title}
+                        meta={formatMeta(item)}
                         size={posterSize}
                         onPress={() => void openItem(item, 'home_curated')}
                       />

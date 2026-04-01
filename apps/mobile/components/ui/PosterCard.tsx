@@ -11,6 +11,7 @@ interface PosterCardProps {
   imageUrl: string;
   title: string;
   subtitle?: string;
+  meta?: string;
   onPress?: () => void;
   size?: 'sm' | 'md' | 'lg';
   showPlay?: boolean;
@@ -24,6 +25,7 @@ export function PosterCard({
   imageUrl,
   title,
   subtitle,
+  meta,
   onPress,
   size = 'md',
   showPlay = true,
@@ -202,25 +204,25 @@ export function PosterCard({
             variant="subtitle"
             style={{ 
               color: '#F7F3EA', 
-              fontSize: 11.5, 
+              fontSize: 12,
               lineHeight: 16,
-              fontWeight: '500',
+              fontWeight: '600',
             }}
-            numberOfLines={1}
+            numberOfLines={2}
           >
             {title}
           </CustomText>
-          {subtitle ? (
+          {meta || subtitle ? (
             <CustomText
               variant="caption"
               style={{ 
-                color: 'rgba(232,226,216,0.72)', 
-                marginTop: 4,
-                fontSize: 10,
+                color: 'rgba(232,226,216,0.7)', 
+                marginTop: 3,
+                fontSize: 10.5,
               }}
               numberOfLines={1}
             >
-              {subtitle}
+              {meta ?? subtitle}
             </CustomText>
           ) : null}
         </View>
