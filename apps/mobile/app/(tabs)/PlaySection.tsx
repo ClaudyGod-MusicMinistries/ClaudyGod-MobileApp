@@ -202,6 +202,11 @@ export default function PlaySection() {
     });
   };
 
+  const openMoreForItem = (item: FeedCardItem) => {
+    setActiveId(item.id);
+    setIsActionSheetVisible(true);
+  };
+
   const formatMeta = (item: FeedCardItem) =>
     [item.subtitle, item.duration].filter((value) => Boolean(value)).join(' · ');
 
@@ -450,6 +455,8 @@ export default function PlaySection() {
                         title={item.title}
                         meta={formatMeta(item)}
                         size={posterSize}
+                        showMore
+                        onMorePress={() => openMoreForItem(item)}
                         onPress={() => void openItem(item, 'player_queue')}
                       />
                     ))}
@@ -477,6 +484,8 @@ export default function PlaySection() {
                         title={item.title}
                         meta={formatMeta(item)}
                         size={posterSize}
+                        showMore
+                        onMorePress={() => openMoreForItem(item)}
                         onPress={() => void openItem(item, 'player_curated')}
                       />
                     ))}

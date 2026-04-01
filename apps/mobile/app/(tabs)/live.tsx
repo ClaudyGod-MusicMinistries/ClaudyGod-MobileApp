@@ -8,6 +8,7 @@ import { FadeIn } from '../../components/ui/FadeIn';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { SectionHeader } from '../../components/ui/SectionHeader';
 import { PosterCard } from '../../components/ui/PosterCard';
+import { ActionSheet, type ActionSheetAction } from '../../components/ui/ActionSheet';
 import { AppButton } from '../../components/ui/AppButton';
 import { CinematicHeroCard } from '../../components/sections/CinematicHeroCard';
 import { CustomText } from '../../components/CustomText';
@@ -16,10 +17,12 @@ import { useContentFeed } from '../../hooks/useContentFeed';
 import { APP_ROUTES } from '../../util/appRoutes';
 import { buildPlayerRoute } from '../../util/playerRoute';
 import { BRAND_HERO_ASSET } from '../../util/brandAssets';
-import { subscribeToLiveAlerts, trackPlayEvent } from '../../services/supabaseAnalytics';
+import { trackPlayEvent } from '../../services/supabaseAnalytics';
 import { fetchLiveSessions, type LiveSessionSummary } from '../../services/liveService';
 import type { FeedCardItem } from '../../services/contentService';
 import { useToast } from '../../context/ToastContext';
+import { saveMeLibraryItem, subscribeToLiveAlertsBackend } from '../../services/userFlowService';
+import { useAuth } from '../../context/AuthContext';
 
 function toFeedCard(session: LiveSessionSummary): FeedCardItem {
   return {
@@ -60,6 +63,7 @@ export default function LiveScreen() {
   const theme = useAppTheme();
   const router = useRouter();
   const { showToast } = useToast();
+  const { isAuthenticated } = useAuth();
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
   const posterSize = isTablet ? 'md' : 'sm';
@@ -67,6 +71,8 @@ export default function LiveScreen() {
 
   const [sessions, setSessions] = useState<LiveSessionSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeActionItem, setActiveActionItem] = useState<FeedCardItem | null>(null);
+  const [isActionSheetVisible, setIsActionSheetVisible] = useState(false);
 
   const refresh = async () => {
     setLoading(true);
@@ -98,6 +104,8 @@ export default function LiveScreen() {
       ]).slice(0, 12),
     [archive, feed.live, feed.videos],
   );
+  const formatMeta = (item: FeedCardItem) =>
+    [item.subtitle, item.duration].filter((value) => Boolean(value)).join(' · ');
 
   const openSession = async (item: FeedCardItem, source: string) => {
     await trackPlayEvent({
@@ -111,7 +119,7 @@ export default function LiveScreen() {
 
   const followLiveSession = async (session: LiveSessionSummary) => {
     try {
-      await subscribeToLiveAlerts(session.channelId || session.id);
+      await subscribeToLiveAlertsBackend(session.channelId || session.id, session.title);
       showToast({
         title: 'Live alerts enabled',
         message: `You will be notified when ${session.title} starts.`,
@@ -140,6 +148,177 @@ export default function LiveScreen() {
       });
     }
   };
+
+  const openMoreForItem = (item: FeedCardItem) => {
+    setActiveActionItem(item);
+    setIsActionSheetVisible(true);
+  };
+
+  const shareActive = async () => {
+    if (!activeActionItem) return;
+    try {
+      await Share.share({
+        message: `${activeActionItem.title}\n${activeActionItem.subtitle}${activeActionItem.mediaUrl ? `\n${activeActionItem.mediaUrl}` : ''}`,
+      });
+    } catch {
+      showToast({
+        title: 'Share unavailable',
+        message: 'Try again in a moment.',
+        tone: 'warning',
+      });
+    }
+  };
+
+  const saveToLibrary = async () => {
+    if (!activeActionItem) return;
+    if (!isAuthenticated) {
+      showToast({
+        title: 'Sign in to save',
+        message: 'Create an account to save items to your library.',
+        tone: 'warning',
+      });
+      return;
+    }
+    try {
+      await saveMeLibraryItem({
+        bucket: 'liked',
+        contentId: activeActionItem.id,
+        contentType: activeActionItem.type,
+        title: activeActionItem.title,
+        subtitle: activeActionItem.subtitle,
+        description: activeActionItem.description,
+        imageUrl: activeActionItem.imageUrl,
+        mediaUrl: activeActionItem.mediaUrl,
+        duration: activeActionItem.duration,
+        metadata: { source: 'live_action_sheet' },
+      });
+      showToast({
+        title: 'Saved to Library',
+        message: 'We saved this for you.',
+        tone: 'success',
+      });
+    } catch (error) {
+      showToast({
+        title: 'Save unavailable',
+        message: error instanceof Error ? error.message : 'Please try again.',
+        tone: 'warning',
+      });
+    }
+  };
+
+  const listenLater = async () => {
+    if (!activeActionItem) return;
+    if (!isAuthenticated) {
+      showToast({
+        title: 'Sign in to save',
+        message: 'Create an account to use Listen Later.',
+        tone: 'warning',
+      });
+      return;
+    }
+    try {
+      await saveMeLibraryItem({
+        bucket: 'playlist',
+        playlistName: 'Listen Later',
+        contentId: activeActionItem.id,
+        contentType: activeActionItem.type,
+        title: activeActionItem.title,
+        subtitle: activeActionItem.subtitle,
+        description: activeActionItem.description,
+        imageUrl: activeActionItem.imageUrl,
+        mediaUrl: activeActionItem.mediaUrl,
+        duration: activeActionItem.duration,
+        metadata: { source: 'live_action_sheet' },
+      });
+      showToast({
+        title: 'Added to Listen Later',
+        message: 'We saved this for you.',
+        tone: 'success',
+      });
+    } catch (error) {
+      showToast({
+        title: 'Listen later unavailable',
+        message: error instanceof Error ? error.message : 'Please try again.',
+        tone: 'warning',
+      });
+    }
+  };
+
+  const followActiveLive = async () => {
+    if (!activeActionItem) return;
+    try {
+      await subscribeToLiveAlertsBackend(activeActionItem.notificationChannelId || activeActionItem.id, activeActionItem.title);
+      showToast({
+        title: 'Live alerts enabled',
+        message: `You will be notified when ${activeActionItem.title} goes live.`,
+        tone: 'success',
+      });
+    } catch {
+      showToast({
+        title: 'Live alerts unavailable',
+        message: 'Sign in to follow live sessions.',
+        tone: 'warning',
+      });
+    }
+  };
+
+  const openReviews = () => {
+    router.push(APP_ROUTES.settingsPages.rate);
+  };
+
+  const actionSheetActions: ActionSheetAction[] = !activeActionItem
+    ? []
+    : [
+        {
+          key: 'save',
+          label: 'Save to Library',
+          detail: 'Keep this in your library.',
+          icon: 'bookmark-border',
+          onPress: () => void saveToLibrary(),
+        },
+        {
+          key: 'share',
+          label: 'Share',
+          detail: 'Send this session to someone else.',
+          icon: 'ios-share',
+          onPress: () => void shareActive(),
+        },
+        {
+          key: 'listen-later',
+          label: 'Listen Later',
+          detail: 'Save this for later.',
+          icon: 'schedule',
+          onPress: () => void listenLater(),
+        },
+        {
+          key: 'reviews',
+          label: 'Reviews & Ratings',
+          detail: 'See what others are saying.',
+          icon: 'reviews',
+          onPress: openReviews,
+        },
+        ...(activeActionItem.type === 'live'
+          ? [
+              {
+                key: 'follow-live',
+                label: 'Follow Live Alerts',
+                detail: 'Get notified before the stream starts.',
+                icon: 'notifications-active',
+                onPress: () => void followActiveLive(),
+              } as ActionSheetAction,
+            ]
+          : []),
+        {
+          key: 'open-detail',
+          label: 'Open Player',
+          detail: 'Open the full player screen.',
+          icon: 'open-in-full',
+          tone: 'accent' as const,
+          onPress: () => {
+            router.push(buildPlayerRoute(activeActionItem));
+          },
+        },
+      ];
 
   return (
     <TabScreenWrapper>
@@ -193,36 +372,51 @@ export default function LiveScreen() {
                       : 'Live feed'
                 }
                 description={
-                  featuredCard?.description ||
-                  'Keep up with the live ministry schedule and move into the stream or replay without leaving the app.'
+                  isTablet
+                    ? featuredCard?.description ||
+                      'Keep up with the live ministry schedule and move into the stream or replay without leaving the app.'
+                    : undefined
                 }
-                height={isTablet ? 420 : 340}
-                actions={[
-                  {
-                    label: featuredSession?.status === 'scheduled' ? 'Open session' : 'Watch now',
-                    onPress: () =>
-                      featuredCard
-                        ? void openSession(featuredCard, 'live_featured')
-                        : router.push(APP_ROUTES.tabs.videos),
-                    icon: 'play-arrow',
-                  },
-                  {
-                    label: featuredSession?.status === 'ended' ? 'Share' : 'Get alerts',
-                    onPress: () => {
-                      if (!featuredSession) {
-                        router.push(APP_ROUTES.auth.signIn);
-                        return;
-                      }
-                      if (featuredSession.status === 'ended') {
-                        void shareLiveSession(featuredSession);
-                        return;
-                      }
-                      void followLiveSession(featuredSession);
-                    },
-                    variant: 'secondary',
-                    icon: featuredSession?.status === 'ended' ? 'ios-share' : 'notifications-active',
-                  },
-                ]}
+                height={isTablet ? 420 : 320}
+                actions={
+                  isTablet
+                    ? [
+                        {
+                          label: featuredSession?.status === 'scheduled' ? 'Open session' : 'Watch now',
+                          onPress: () =>
+                            featuredCard
+                              ? void openSession(featuredCard, 'live_featured')
+                              : router.push(APP_ROUTES.tabs.videos),
+                          icon: 'play-arrow',
+                        },
+                        {
+                          label: featuredSession?.status === 'ended' ? 'Share' : 'Get alerts',
+                          onPress: () => {
+                            if (!featuredSession) {
+                              router.push(APP_ROUTES.auth.signIn);
+                              return;
+                            }
+                            if (featuredSession.status === 'ended') {
+                              void shareLiveSession(featuredSession);
+                              return;
+                            }
+                            void followLiveSession(featuredSession);
+                          },
+                          variant: 'secondary',
+                          icon: featuredSession?.status === 'ended' ? 'ios-share' : 'notifications-active',
+                        },
+                      ]
+                    : [
+                        {
+                          label: featuredSession?.status === 'scheduled' ? 'Open session' : 'Watch now',
+                          onPress: () =>
+                            featuredCard
+                              ? void openSession(featuredCard, 'live_featured')
+                              : router.push(APP_ROUTES.tabs.videos),
+                          icon: 'play-arrow',
+                        },
+                      ]
+                }
               />
             </FadeIn>
 
@@ -244,9 +438,11 @@ export default function LiveScreen() {
                     actionLabel="Open"
                     onAction={() => void openSession(toFeedCard(liveNow[0]!), 'live_now')}
                   />
-                  <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginBottom: 10 }}>
-                    Join the current broadcast or follow the stream so you do not miss the next session.
-                  </CustomText>
+                  {isTablet ? (
+                    <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginBottom: 10 }}>
+                      Join the current broadcast or follow the stream so you do not miss the next session.
+                    </CustomText>
+                  ) : null}
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false} overScrollMode="never">
                     {liveNow.map((session) => {
                       const item = toFeedCard(session);
@@ -255,9 +451,14 @@ export default function LiveScreen() {
                           key={`live-now-${session.id}`}
                           imageUrl={item.imageUrl}
                           title={item.title}
-                          subtitle={`${session.viewerCount || 0} watching`}
+                          meta={formatMeta({
+                            ...item,
+                            subtitle: `${session.viewerCount || 0} watching`,
+                          })}
                           size={posterSize}
                           onPress={() => void openSession(item, 'live_now_rail')}
+                          showMore
+                          onMorePress={() => openMoreForItem(item)}
                         />
                       );
                     })}
@@ -274,9 +475,11 @@ export default function LiveScreen() {
                     actionLabel="Alerts"
                     onAction={() => void followLiveSession(upcoming[0]!)}
                   />
-                  <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginBottom: 10 }}>
-                    Get notified when the next session starts.
-                  </CustomText>
+                  {isTablet ? (
+                    <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginBottom: 10 }}>
+                      Get notified when the next session starts.
+                    </CustomText>
+                  ) : null}
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false} overScrollMode="never">
                     {upcoming.map((session) => {
                       const item = toFeedCard(session);
@@ -285,9 +488,11 @@ export default function LiveScreen() {
                           key={`live-upcoming-${session.id}`}
                           imageUrl={item.imageUrl}
                           title={item.title}
-                          subtitle={item.subtitle}
+                          meta={formatMeta(item)}
                           size={posterSize}
                           onPress={() => void openSession(item, 'live_upcoming')}
+                          showMore
+                          onMorePress={() => openMoreForItem(item)}
                         />
                       );
                     })}
@@ -304,18 +509,22 @@ export default function LiveScreen() {
                     actionLabel="Videos"
                     onAction={() => router.push(APP_ROUTES.tabs.videos)}
                   />
-                  <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginBottom: 10 }}>
-                    Watch saved live sessions and recent ministry replays.
-                  </CustomText>
+                  {isTablet ? (
+                    <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginBottom: 10 }}>
+                      Watch saved live sessions and recent ministry replays.
+                    </CustomText>
+                  ) : null}
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false} overScrollMode="never">
                     {replayCards.map((item) => (
                       <PosterCard
                         key={`live-replay-${item.id}`}
                         imageUrl={item.imageUrl}
                         title={item.title}
-                        subtitle={item.subtitle}
+                        meta={formatMeta(item)}
                         size={posterSize}
                         onPress={() => void openSession(item, 'live_replays')}
+                        showMore
+                        onMorePress={() => openMoreForItem(item)}
                       />
                     ))}
                   </ScrollView>
@@ -349,6 +558,13 @@ export default function LiveScreen() {
           </View>
         </Screen>
       </ScrollView>
+      <ActionSheet
+        visible={isActionSheetVisible}
+        title={activeActionItem?.title ?? 'Live options'}
+        description={activeActionItem?.subtitle}
+        actions={actionSheetActions}
+        onClose={() => setIsActionSheetVisible(false)}
+      />
     </TabScreenWrapper>
   );
 }
