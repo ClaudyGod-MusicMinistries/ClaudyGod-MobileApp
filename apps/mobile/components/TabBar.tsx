@@ -2,6 +2,7 @@ import React from 'react';
 import { Platform, View, useWindowDimensions } from 'react-native';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { MaterialIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorScheme } from '../util/colorScheme';
 import { colors } from '../constants/color';
@@ -23,9 +24,9 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
   const { config } = useMobileAppConfig();
 
   const sizes = {
-    barHeight: isTV ? 88 : isTablet ? 82 : compact ? 72 : 76,
+    barHeight: isTV ? 88 : isTablet ? 80 : compact ? 70 : 74,
     iconSize: isTV ? 24 : 20,
-    paddingX: isTV ? 20 : isTablet ? 18 : 14,
+    paddingX: isTV ? 22 : isTablet ? 18 : 12,
   };
 
   const barMaxWidth = isTV ? 1240 : isTablet ? 880 : width;
@@ -41,6 +42,10 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
 
   const configuredTabs = config?.navigation?.tabs ?? [];
 
+  const barSurface = colorScheme === 'dark' ? 'rgba(11,10,18,0.98)' : 'rgba(255,255,255,0.98)';
+  const barBorder = colorScheme === 'dark' ? 'rgba(150,128,241,0.22)' : palette.border;
+  const barGlow = colorScheme === 'dark' ? 'rgba(141,99,255,0.25)' : 'rgba(124,58,237,0.18)';
+
   return (
     <View
       style={{
@@ -51,28 +56,35 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
         paddingBottom: barBottomInset,
         paddingHorizontal: isTablet || isTV ? 0 : 12,
         alignItems: 'center',
+        backgroundColor: 'transparent',
       }}
     >
-      <View
+      <LinearGradient
+        colors={
+          colorScheme === 'dark'
+            ? ['rgba(22,18,32,0.98)', barSurface]
+            : ['rgba(255,255,255,0.98)', 'rgba(246,243,255,0.98)']
+        }
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
         style={{
           width: '100%',
           maxWidth: barMaxWidth,
           height: sizes.barHeight,
           borderWidth: 1,
-          borderColor: colorScheme === 'dark' ? 'rgba(150,128,241,0.18)' : palette.border,
-          backgroundColor: colorScheme === 'dark' ? 'rgba(8,8,14,0.96)' : 'rgba(255,255,255,0.96)',
+          borderColor: barBorder,
           paddingHorizontal: sizes.paddingX,
           paddingTop: 8,
           paddingBottom: 8,
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
-          borderRadius: isTablet || isTV ? 22 : 20,
-          shadowColor: '#000000',
-          shadowOpacity: 0.28,
-          shadowRadius: 24,
-          shadowOffset: { width: 0, height: 10 },
-          elevation: 10,
+          borderRadius: isTablet || isTV ? 24 : 22,
+          shadowColor: barGlow,
+          shadowOpacity: 0.55,
+          shadowRadius: 30,
+          shadowOffset: { width: 0, height: 12 },
+          elevation: 12,
         }}
       >
         {state.routes.map((route, index) => {
@@ -95,21 +107,17 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
                 flex: 1,
                 minHeight: 56,
                 marginHorizontal: 3,
-                borderRadius: 16,
+                borderRadius: 18,
                 alignItems: 'center',
                 justifyContent: 'center',
                 backgroundColor: focused
                   ? colorScheme === 'dark'
-                    ? 'rgba(141,99,255,0.16)'
-                    : palette.surfaceAlt
+                    ? 'rgba(141,99,255,0.2)'
+                    : 'rgba(124,58,237,0.08)'
                   : 'transparent',
                 borderWidth: 1,
-                borderColor: focused
-                  ? colorScheme === 'dark'
-                    ? 'rgba(167,139,250,0.22)'
-                    : palette.border
-                  : 'transparent',
-                gap: 4,
+                borderColor: focused ? barBorder : 'transparent',
+                gap: compact ? 2 : 4,
               }}
               focusStyle={{ transform: [{ scale: isTV ? 1.08 : 1.02 }] }}
               showFocusBorder={false}
@@ -124,7 +132,7 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
                   backgroundColor: focused
                     ? colorScheme === 'dark'
                       ? 'rgba(255,255,255,0.05)'
-                      : 'rgba(255,255,255,0.66)'
+                      : 'rgba(255,255,255,0.86)'
                     : 'transparent',
                 }}
               >
@@ -134,22 +142,24 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
                   color={focused ? palette.primary : palette.textSecondary}
                 />
               </View>
-              <CustomText
-                variant="caption"
-                style={{
-                  color: focused ? palette.text : palette.textSecondary,
-                  fontSize: 10,
-                  letterSpacing: 0.06,
-                }}
-              >
-                {config.label}
-              </CustomText>
+              {!compact ? (
+                <CustomText
+                  variant="caption"
+                  style={{
+                    color: focused ? palette.text : palette.textSecondary,
+                    fontSize: 10,
+                    letterSpacing: 0.06,
+                  }}
+                >
+                  {config.label}
+                </CustomText>
+              ) : null}
               {focused ? (
                 <View
                   style={{
                     position: 'absolute',
-                    top: 5,
-                    width: 20,
+                    bottom: 6,
+                    width: 18,
                     height: 3,
                     borderRadius: 2,
                     backgroundColor: palette.primary,
@@ -159,7 +169,7 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
             </TVTouchable>
           );
         })}
-      </View>
+      </LinearGradient>
     </View>
   );
 };

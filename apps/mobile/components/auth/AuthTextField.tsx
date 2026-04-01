@@ -54,35 +54,17 @@ export function AuthTextField({
   const compact = width < 390;
   const spacious = width >= 1024;
 
-  const accentOpacity = useRef(new Animated.Value(value ? 1 : 0.18)).current;
-  const accentScale = useRef(new Animated.Value(value ? 1 : 0.42)).current;
   const translateY = useRef(new Animated.Value(0)).current;
   const useNativeAnimations = Platform.OS !== 'web';
 
   useEffect(() => {
-    const highlighted = isActive || value.trim().length > 0;
-
-    Animated.parallel([
-      Animated.timing(accentOpacity, {
-        toValue: highlighted ? 1 : 0.18,
-        duration: 180,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: useNativeAnimations,
-      }),
-      Animated.spring(accentScale, {
-        toValue: highlighted ? 1 : 0.42,
-        tension: 110,
-        friction: 14,
-        useNativeDriver: useNativeAnimations,
-      }),
-      Animated.timing(translateY, {
-        toValue: isActive ? -2 : 0,
-        duration: 180,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: useNativeAnimations,
-      }),
-    ]).start();
-  }, [accentOpacity, accentScale, isActive, translateY, useNativeAnimations, value]);
+    Animated.timing(translateY, {
+      toValue: isActive ? -2 : 0,
+      duration: 180,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: useNativeAnimations,
+    }).start();
+  }, [isActive, translateY, useNativeAnimations, value]);
 
   const minHeight = compact ? 48 : spacious ? 54 : 50;
   const inputFontSize = compact ? 12.8 : spacious ? 14.2 : 13.4;
@@ -117,9 +99,9 @@ export function AuthTextField({
           onHoverOut={() => setIsHovered(false)}
           style={{
             borderRadius: 18,
-            borderWidth: 1,
-            borderColor: 'rgba(255,255,255,0.10)',
-            backgroundColor: 'rgba(255,255,255,0.028)',
+            borderWidth: 0,
+            borderColor: 'transparent',
+            backgroundColor: isActive ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.03)',
             paddingHorizontal: compact ? 13 : 14,
             paddingVertical: 0,
             overflow: 'hidden',
@@ -163,21 +145,6 @@ export function AuthTextField({
           />
 
           {trailing ? <View style={{ marginLeft: 10 }}>{trailing}</View> : null}
-
-          <Animated.View
-            pointerEvents="none"
-            style={{
-              position: 'absolute',
-              left: 14,
-              right: 14,
-              bottom: 0,
-              height: 2,
-              borderRadius: 999,
-              backgroundColor: '#9C7DFF',
-              opacity: accentOpacity,
-              transform: [{ scaleX: accentScale }],
-            }}
-          />
         </Pressable>
       </Animated.View>
 
