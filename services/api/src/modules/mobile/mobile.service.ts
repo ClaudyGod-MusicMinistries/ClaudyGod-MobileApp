@@ -1,5 +1,5 @@
 import { pool } from '../../db/pool';
-import { isMissingDatabaseStructureError } from '../../lib/postgres';
+import { isDatabaseConnectivityError, isMissingDatabaseStructureError } from '../../lib/postgres';
 import { listMostPlayedContent } from '../analytics/analytics.service';
 import { listActiveAdCampaignsForPlacement } from '../ads/ads.service';
 import type { AdCampaign } from '../ads/ads.types';
@@ -221,7 +221,7 @@ const loadPublishedContent = async (limit = 120): Promise<MobileFeedItem[]> => {
       [limit],
     );
   } catch (error) {
-    if (isMissingDatabaseStructureError(error)) {
+    if (isMissingDatabaseStructureError(error) || isDatabaseConnectivityError(error)) {
       return [];
     }
     throw error;
@@ -267,7 +267,7 @@ const loadLiveSessions = async (limit = 24): Promise<MobileFeedItem[]> => {
       [limit],
     );
   } catch (error) {
-    if (isMissingDatabaseStructureError(error)) {
+    if (isMissingDatabaseStructureError(error) || isDatabaseConnectivityError(error)) {
       return [];
     }
     throw error;

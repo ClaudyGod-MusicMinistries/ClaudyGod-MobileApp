@@ -2,7 +2,7 @@ import type { Pool, PoolClient } from 'pg';
 import type { JwtClaims } from '../../utils/jwt';
 import { pool } from '../../db/pool';
 import { HttpError } from '../../lib/httpError';
-import { isMissingDatabaseStructureError } from '../../lib/postgres';
+import { isDatabaseConnectivityError, isMissingDatabaseStructureError } from '../../lib/postgres';
 import { contentQueue, type ContentEventType } from '../../queues/contentQueue';
 import { env } from '../../config/env';
 import { queueEmailJob } from '../../infra/transactionalEmails';
@@ -509,7 +509,7 @@ export const listPublicContent = async (query: ContentListQuery): Promise<Conten
       ),
     ]);
   } catch (error) {
-    if (isMissingDatabaseStructureError(error)) {
+    if (isMissingDatabaseStructureError(error) || isDatabaseConnectivityError(error)) {
       return {
         page: query.page,
         limit: query.limit,
