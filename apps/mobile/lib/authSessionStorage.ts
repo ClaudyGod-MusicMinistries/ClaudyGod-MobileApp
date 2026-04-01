@@ -1,4 +1,3 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
 const isWeb = Platform.OS === 'web';
@@ -76,8 +75,9 @@ export const authSessionStorage = {
       return null;
     }
 
-    if (Platform.OS !== 'web') {
-      return AsyncStorage.getItem(key);
+    // Mobile: never persist auth tokens locally.
+    if (!isWeb) {
+      return memoryStorage.getItem(key);
     }
 
     return memoryStorage.getItem(key);
@@ -91,8 +91,9 @@ export const authSessionStorage = {
       return;
     }
 
-    if (Platform.OS !== 'web') {
-      await AsyncStorage.setItem(key, value);
+    // Mobile: in-memory only.
+    if (!isWeb) {
+      await memoryStorage.setItem(key, value);
       return;
     }
 
@@ -107,8 +108,9 @@ export const authSessionStorage = {
       return;
     }
 
-    if (Platform.OS !== 'web') {
-      await AsyncStorage.removeItem(key);
+    // Mobile: in-memory only.
+    if (!isWeb) {
+      await memoryStorage.removeItem(key);
       return;
     }
 
@@ -116,12 +118,31 @@ export const authSessionStorage = {
   },
 
   async restoreSession(): Promise<AuthSession> {
-    const accessToken = await this.getItem('accessToken');
-    const refreshToken = await this.getItem('refreshToken');
+    const key = 'claudygod.mobile-auth-session.v1';
+    const storedSession = await this.getItem(key);
     
-    return {
-      accessToken: accessToken ?? undefined,
-      refreshToken: refreshToken ?? undefined,
-    };
+    if (!storedSession) {
+      return {};
+    }
+
+    try {
+      const parsed = JSON.parse(storedSession) as {
+        accessToken?: string | null;
+        refreshToken?: string | null;
+      };
+      return {
+        accessToken: parsed.accessToken ?? undefined,
+        refreshToken: parsed.refreshToken ?? undefined,
+      };
+    } catch {
+      // Fallback: try old individual keys if JSON parsing fails
+      const accessToken = await this.getItem('accessToken');
+      const refreshToken = await this.getItem('refreshToken');
+      
+      return {
+        accessToken: accessToken ?? undefined,
+        refreshToken: refreshToken ?? undefined,
+      };
+    }
   },
 };

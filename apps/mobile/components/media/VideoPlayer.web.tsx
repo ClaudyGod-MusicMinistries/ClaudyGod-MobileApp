@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { View } from 'react-native';
 import { CustomText } from '../CustomText';
 import { useAppTheme } from '../../util/colorScheme';
@@ -8,11 +8,52 @@ interface VideoPlayerProps {
   title?: string;
   sourceUri: string;
   height?: number;
+  onRegisterControls?: (_controls?: { pause: () => void; resume: () => void }) => void;
+  onPlayStateChange?: (_isPlaying: boolean) => void;
+  onProgress?: (_currentTime: number, _duration: number) => void;
 }
 
-export function VideoPlayer({ title, sourceUri, height = 210 }: VideoPlayerProps) {
+export function VideoPlayer({
+  title,
+  sourceUri,
+  height = 210,
+  onRegisterControls,
+  onPlayStateChange,
+  onProgress,
+}: VideoPlayerProps) {
   const theme = useAppTheme();
   const embedUrl = buildEmbedUrl(sourceUri);
+  const videoRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (embedUrl) {
+      onRegisterControls?.(undefined);
+      return;
+    }
+
+    const element = videoRef.current;
+    if (!element) return;
+
+    onRegisterControls?.({
+      pause: () => element.pause?.(),
+      resume: () => void element.play?.(),
+    });
+
+    const handlePlay = () => onPlayStateChange?.(true);
+    const handlePause = () => onPlayStateChange?.(false);
+    const handleTime = () => onProgress?.(element.currentTime || 0, element.duration || 0);
+
+    element.addEventListener('play', handlePlay);
+    element.addEventListener('pause', handlePause);
+    element.addEventListener('timeupdate', handleTime);
+
+    return () => {
+      element.removeEventListener('play', handlePlay);
+      element.removeEventListener('pause', handlePause);
+      element.removeEventListener('timeupdate', handleTime);
+      onRegisterControls?.(undefined);
+    };
+  }, [embedUrl, onPlayStateChange, onProgress, onRegisterControls]);
 
   return (
     <View
@@ -45,6 +86,7 @@ export function VideoPlayer({ title, sourceUri, height = 210 }: VideoPlayerProps
             src: sourceUri,
             playsInline: true,
             preload: 'metadata',
+            ref: videoRef,
             style: {
               width: '100%',
               height,

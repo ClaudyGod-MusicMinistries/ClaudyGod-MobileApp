@@ -22,6 +22,9 @@ interface AudioPlayerProps {
   autoPlay?: boolean;
   onClose?: () => void;
   compact?: boolean;
+  onRegisterControls?: (_controls?: { pause: () => void; resume: () => void }) => void;
+  onPlayStateChange?: (_isPlaying: boolean) => void;
+  onProgress?: (_currentTime: number, _duration: number) => void;
   onPrevious?: () => void;
   onNext?: () => void;
   canGoPrevious?: boolean;
@@ -33,6 +36,9 @@ export function AudioPlayer({
   autoPlay = true,
   onClose,
   compact,
+  onRegisterControls,
+  onPlayStateChange,
+  onProgress,
   onPrevious,
   onNext,
   canGoPrevious = false,
@@ -67,10 +73,29 @@ export function AudioPlayer({
   }, [autoPlay, player, status.isLoaded, track.uri]);
 
   useEffect(() => {
+    if (!status.isLoaded) {
+      return;
+    }
+
+    onPlayStateChange?.(status.playing);
+    onProgress?.(status.currentTime, status.duration);
+  }, [onPlayStateChange, onProgress, status.currentTime, status.duration, status.isLoaded, status.playing]);
+
+  useEffect(() => {
+    if (!status.isLoaded) {
+      return;
+    }
+
+    onRegisterControls?.({
+      pause: () => player.pause(),
+      resume: () => player.play(),
+    });
+
     return () => {
+      onRegisterControls?.(undefined);
       player.pause();
     };
-  }, [player]);
+  }, [onRegisterControls, player, status.isLoaded]);
 
   const togglePlay = () => {
     if (!status.isLoaded) return;
