@@ -1,5 +1,5 @@
 import { pool } from '../../db/pool';
-import { isMissingDatabaseStructureError } from '../../lib/postgres';
+import { isDatabaseConnectivityError, isMissingDatabaseStructureError } from '../../lib/postgres';
 
 interface MostPlayedRow {
   content_id: string;
@@ -62,7 +62,7 @@ export const listMostPlayedContent = async (params: {
       [params.limit, params.windowDays],
     );
   } catch (error) {
-    if (isMissingDatabaseStructureError(error)) {
+    if (isMissingDatabaseStructureError(error) || isDatabaseConnectivityError(error)) {
       return { items: [] };
     }
     throw error;
