@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ScrollView, Share, View, useWindowDimensions } from 'react-native';
+import { Image, ScrollView, Share, View, useWindowDimensions } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { TabScreenWrapper } from '../../components/layout/TabScreenWrapper';
 import { Screen } from '../../components/layout/Screen';
@@ -11,6 +12,8 @@ import { SectionHeader } from '../../components/ui/SectionHeader';
 import { AppButton } from '../../components/ui/AppButton';
 import { CustomText } from '../../components/CustomText';
 import { FadeIn } from '../../components/ui/FadeIn';
+import { TVTouchable } from '../../components/ui/TVTouchable';
+import { Chip } from '../../components/ui/Chip';
 import { useAppTheme } from '../../util/colorScheme';
 import { useContentFeed } from '../../hooks/useContentFeed';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
@@ -22,6 +25,13 @@ import { fetchMeLibrary, saveMeLibraryItem, type MeLibrary, type MeLibraryItem }
 import { getLibraryLayoutSections, type MobileLayoutSection } from '../../util/mobileLayout';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+
+const LIBRARY_CHIPS = [
+  { key: 'all', label: 'All' },
+  { key: 'saved', label: 'Saved' },
+  { key: 'downloads', label: 'Downloads' },
+  { key: 'playlists', label: 'Playlists' },
+] as const;
 
 function toFeedCardItem(item: MeLibraryItem): FeedCardItem {
   return {
@@ -64,6 +74,133 @@ function dedupeItems(items: FeedCardItem[]): FeedCardItem[] {
   });
 }
 
+function PickedForYouCard({
+  item,
+  onPress,
+  onMorePress,
+}: {
+  item: FeedCardItem;
+  onPress: () => void;
+  onMorePress: () => void;
+}) {
+  const theme = useAppTheme();
+
+  return (
+    <SurfaceCard tone="subtle" style={{ padding: theme.spacing.md }}>
+      <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
+        <Image source={{ uri: item.imageUrl }} style={{ width: 96, height: 96, borderRadius: theme.radius.md }} />
+        <View style={{ flex: 1, gap: 4 }}>
+          <CustomText variant="caption" style={{ color: theme.colors.textSecondary }}>
+            {item.duration ?? item.subtitle ?? 'ClaudyGod'}
+          </CustomText>
+          <CustomText variant="label" style={{ color: theme.colors.text }}>
+            {item.title}
+          </CustomText>
+          {item.description ? (
+            <CustomText variant="caption" style={{ color: theme.colors.textSecondary }} numberOfLines={2}>
+              {item.description}
+            </CustomText>
+          ) : null}
+        </View>
+        <View style={{ alignItems: 'center', gap: 8 }}>
+          <TVTouchable onPress={onMorePress} showFocusBorder={false}>
+            <MaterialIcons name="more-vert" size={20} color={theme.colors.textSecondary} />
+          </TVTouchable>
+          <TVTouchable
+            onPress={onPress}
+            style={{
+              width: 38,
+              height: 38,
+              borderRadius: 19,
+              backgroundColor: theme.colors.primary,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            showFocusBorder={false}
+          >
+            <MaterialIcons name="play-arrow" size={20} color={theme.colors.textInverse} />
+          </TVTouchable>
+        </View>
+      </View>
+    </SurfaceCard>
+  );
+}
+
+function RotationRow({
+  item,
+  onPress,
+  onMorePress,
+}: {
+  item: FeedCardItem;
+  onPress: () => void;
+  onMorePress: () => void;
+}) {
+  const theme = useAppTheme();
+
+  return (
+    <TVTouchable
+      onPress={onPress}
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        paddingVertical: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(255,255,255,0.06)',
+      }}
+      showFocusBorder={false}
+    >
+      <Image source={{ uri: item.imageUrl }} style={{ width: 44, height: 44, borderRadius: theme.radius.md }} />
+      <View style={{ flex: 1 }}>
+        <CustomText variant="label" style={{ color: theme.colors.text }} numberOfLines={1}>
+          {item.title}
+        </CustomText>
+        <CustomText variant="caption" style={{ color: theme.colors.textSecondary }} numberOfLines={1}>
+          {item.subtitle ?? 'ClaudyGod'}
+        </CustomText>
+      </View>
+      <TVTouchable onPress={onMorePress} showFocusBorder={false}>
+        <MaterialIcons name="more-vert" size={20} color={theme.colors.textSecondary} />
+      </TVTouchable>
+    </TVTouchable>
+  );
+}
+
+function QuickPickCard({
+  item,
+  onPress,
+  width,
+}: {
+  item: FeedCardItem;
+  onPress: () => void;
+  width: string;
+}) {
+  const theme = useAppTheme();
+
+  return (
+    <TVTouchable
+      onPress={onPress}
+      style={{
+        width,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        padding: 10,
+        borderRadius: theme.radius.lg,
+        backgroundColor: theme.colors.surface,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+      }}
+      showFocusBorder={false}
+    >
+      <Image source={{ uri: item.imageUrl }} style={{ width: 44, height: 44, borderRadius: theme.radius.md }} />
+      <CustomText variant="caption" style={{ color: theme.colors.text }} numberOfLines={2}>
+        {item.title}
+      </CustomText>
+    </TVTouchable>
+  );
+}
+
 function deriveLibraryItems(
   section: MobileLayoutSection,
   params: {
@@ -101,6 +238,7 @@ export default function LibraryScreen() {
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
   const posterSize = isTablet ? 'md' : 'sm';
+  const [activeChip, setActiveChip] = useState(LIBRARY_CHIPS[0].key);
   const formatMeta = (item: FeedCardItem) =>
     [item.subtitle, item.duration].filter((value) => Boolean(value)).join(' · ');
   const { feed } = useContentFeed();
@@ -148,6 +286,21 @@ export default function LibraryScreen() {
     [downloaded, feed.playlists, feed.recent, liked, playlists],
   );
   const librarySections = useMemo(() => getLibraryLayoutSections(mobileConfig), [mobileConfig]);
+  const quickPicks = useMemo(() => dedupeItems([...liked, ...downloaded, ...playlists]).slice(0, 4), [downloaded, liked, playlists]);
+  const pickedItem = useMemo(
+    () => liked[0] ?? downloaded[0] ?? playlists[0] ?? fallbackPool[0] ?? null,
+    [downloaded, fallbackPool, liked, playlists],
+  );
+  const rotationItems = useMemo(
+    () => (downloaded.length ? downloaded : liked).slice(0, 3),
+    [downloaded, liked],
+  );
+  const filteredByChip = useMemo(() => {
+    if (activeChip === 'saved') return liked;
+    if (activeChip === 'downloads') return downloaded;
+    if (activeChip === 'playlists') return playlists;
+    return fallbackPool;
+  }, [activeChip, downloaded, fallbackPool, liked, playlists]);
 
   const openItem = async (item: FeedCardItem, source: string) => {
     await trackPlayEvent({
@@ -321,32 +474,96 @@ export default function LibraryScreen() {
               </FadeIn>
 
               {guestPreview.length ? (
-                <FadeIn delay={100}>
-                  <View>
-                    <SectionHeader
-                      title="Keep listening"
-                      actionLabel="Home"
-                      onAction={() => router.push(APP_ROUTES.tabs.home)}
-                    />
-                    <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginBottom: 10 }}>
-                      Browse the app freely, then sign in when you want to save your collection.
-                    </CustomText>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false} overScrollMode="never">
-                      {guestPreview.map((item) => (
-                        <PosterCard
-                          key={`guest-library-${item.id}`}
-                          imageUrl={item.imageUrl}
-                          title={item.title}
-                          meta={formatMeta(item)}
-                          size={posterSize}
-                          onPress={() => void openItem(item, 'library_guest_preview')}
-                          showMore
-                          onMorePress={() => openMoreForItem(item)}
+                <>
+                  <FadeIn delay={90}>
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={{ gap: 8, paddingVertical: 4 }}
+                      bounces={false}
+                      overScrollMode="never"
+                    >
+                      {LIBRARY_CHIPS.map((chip) => (
+                        <Chip
+                          key={chip.key}
+                          label={chip.label}
+                          active={activeChip === chip.key}
+                          onPress={() => setActiveChip(chip.key)}
                         />
                       ))}
                     </ScrollView>
-                  </View>
-                </FadeIn>
+                  </FadeIn>
+
+                  <FadeIn delay={110}>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+                      {guestPreview.slice(0, 4).map((item) => (
+                        <QuickPickCard
+                          key={`guest-quick-${item.id}`}
+                          item={item}
+                          width={isTablet ? '31.8%' : '48%'}
+                          onPress={() => void openItem(item, 'library_guest_quick_pick')}
+                        />
+                      ))}
+                    </View>
+                  </FadeIn>
+
+                  <FadeIn delay={120}>
+                    <View style={{ gap: 10 }}>
+                      <CustomText variant="heading" style={{ color: theme.colors.text }}>
+                        Picked for you
+                      </CustomText>
+                      <PickedForYouCard
+                        item={guestPreview[0]}
+                        onPress={() => void openItem(guestPreview[0], 'library_guest_picked')}
+                        onMorePress={() => openMoreForItem(guestPreview[0])}
+                      />
+                    </View>
+                  </FadeIn>
+
+                  <FadeIn delay={140}>
+                    <View style={{ gap: 10 }}>
+                      <SectionHeader
+                        title="Your recent rotation"
+                        actionLabel="Home"
+                        onAction={() => router.push(APP_ROUTES.tabs.home)}
+                      />
+                      <View style={{ gap: 2 }}>
+                        {guestPreview.slice(0, 3).map((item) => (
+                          <RotationRow
+                            key={`guest-rotation-${item.id}`}
+                            item={item}
+                            onPress={() => void openItem(item, 'library_guest_rotation')}
+                            onMorePress={() => openMoreForItem(item)}
+                          />
+                        ))}
+                      </View>
+                    </View>
+                  </FadeIn>
+
+                  <FadeIn delay={160}>
+                    <View>
+                      <SectionHeader
+                        title="Recents"
+                        actionLabel="Show all"
+                        onAction={() => router.push(APP_ROUTES.tabs.home)}
+                      />
+                      <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false} overScrollMode="never">
+                        {guestPreview.slice(0, 12).map((item) => (
+                          <PosterCard
+                            key={`guest-library-${item.id}`}
+                            imageUrl={item.imageUrl}
+                            title={item.title}
+                            meta={formatMeta(item)}
+                            size={posterSize}
+                            onPress={() => void openItem(item, 'library_guest_preview')}
+                            showMore
+                            onMorePress={() => openMoreForItem(item)}
+                          />
+                        ))}
+                      </ScrollView>
+                    </View>
+                  </FadeIn>
+                </>
               ) : null}
             </View>
           </Screen>
@@ -376,7 +593,102 @@ export default function LibraryScreen() {
               />
             </FadeIn>
 
-            <FadeIn delay={60}>
+            <FadeIn delay={70}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: 8, paddingVertical: 4 }}
+                bounces={false}
+                overScrollMode="never"
+              >
+                {LIBRARY_CHIPS.map((chip) => (
+                  <Chip
+                    key={chip.key}
+                    label={chip.label}
+                    active={activeChip === chip.key}
+                    onPress={() => setActiveChip(chip.key)}
+                  />
+                ))}
+              </ScrollView>
+            </FadeIn>
+
+            {quickPicks.length ? (
+              <FadeIn delay={90}>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+                  {quickPicks.map((item) => (
+                    <QuickPickCard
+                      key={`quick-${item.id}`}
+                      item={item}
+                      width={isTablet ? '31.8%' : '48%'}
+                      onPress={() => void openItem(item, 'library_quick_pick')}
+                    />
+                  ))}
+                </View>
+              </FadeIn>
+            ) : null}
+
+            {pickedItem ? (
+              <FadeIn delay={110}>
+                <View style={{ gap: 10 }}>
+                  <CustomText variant="heading" style={{ color: theme.colors.text }}>
+                    Picked for you
+                  </CustomText>
+                  <PickedForYouCard
+                    item={pickedItem}
+                    onPress={() => void openItem(pickedItem, 'library_picked')}
+                    onMorePress={() => openMoreForItem(pickedItem)}
+                  />
+                </View>
+              </FadeIn>
+            ) : null}
+
+            {rotationItems.length ? (
+              <FadeIn delay={130}>
+                <View style={{ gap: 10 }}>
+                  <SectionHeader
+                    title="Your recent rotation"
+                    actionLabel="See all"
+                    onAction={() => router.push(APP_ROUTES.tabs.library)}
+                  />
+                  <View style={{ gap: 2 }}>
+                    {rotationItems.map((item) => (
+                      <RotationRow
+                        key={`rotation-${item.id}`}
+                        item={item}
+                        onPress={() => void openItem(item, 'library_rotation')}
+                        onMorePress={() => openMoreForItem(item)}
+                      />
+                    ))}
+                  </View>
+                </View>
+              </FadeIn>
+            ) : null}
+
+            <FadeIn delay={150}>
+              <View>
+                <SectionHeader
+                  title="Recents"
+                  actionLabel="Show all"
+                  onAction={() => router.push(APP_ROUTES.tabs.library)}
+                />
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false} overScrollMode="never">
+                  {filteredByChip.slice(0, 12).map((item) => (
+                    <PosterCard
+                      key={`recent-${item.id}`}
+                      imageUrl={item.imageUrl}
+                      title={item.title}
+                      meta={formatMeta(item)}
+                      size={posterSize}
+                      onPress={() => void openItem(item, 'library_recents')}
+                      showMore
+                      onMorePress={() => openMoreForItem(item)}
+                    />
+                  ))}
+                </ScrollView>
+              </View>
+            </FadeIn>
+
+            <FadeIn delay={170}>
               <SurfaceCard tone="strong" style={{ padding: theme.spacing.lg }}>
                 <View style={{ flexDirection: 'row', gap: 12 }}>
                   <StatCard label="Most played" value={liked.length} />

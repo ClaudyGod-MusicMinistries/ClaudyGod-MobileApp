@@ -19,6 +19,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { CustomText } from '../../components/CustomText';
 import { FadeIn } from '../../components/ui/FadeIn';
+import { Chip } from '../../components/ui/Chip';
 import { wsService } from '../../services/websocketService';
 import { engagementAnalytics, type UserEngagementMetrics, type EngagementInsight } from '../../services/engagementAnalytics';
 import { colors_light } from '../../constants/color';
@@ -36,6 +37,12 @@ const COLORS = {
   warning: '#F59E0B',
   danger: '#EF4444',
 };
+
+const DASH_CHIPS = [
+  { key: 'overview', label: 'Overview' },
+  { key: 'insights', label: 'Insights' },
+  { key: 'community', label: 'Community' },
+] as const;
 
 // Professional metric card component
 function MetricCard({
@@ -193,6 +200,9 @@ export default function DashboardScreen() {
   const [insights, setInsights] = useState<EngagementInsight[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeChip, setActiveChip] = useState(DASH_CHIPS[0].key);
+  const featuredInsight = insights[0] ?? null;
+  const rotationInsights = insights.slice(0, 3);
 
   const loadDashboardData = useCallback(async () => {
     setIsLoading(true);
@@ -286,6 +296,125 @@ export default function DashboardScreen() {
               ) : null}
             </View>
           </FadeIn>
+
+          <FadeIn delay={40}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: 8, paddingVertical: 4, marginBottom: 12 }}
+              bounces={false}
+              overScrollMode="never"
+            >
+              {DASH_CHIPS.map((chip) => (
+                <Chip
+                  key={chip.key}
+                  label={chip.label}
+                  active={activeChip === chip.key}
+                  onPress={() => setActiveChip(chip.key)}
+                />
+              ))}
+            </ScrollView>
+          </FadeIn>
+
+          {featuredInsight ? (
+            <FadeIn delay={60}>
+              <View style={{ marginBottom: 20 }}>
+                <CustomText style={{ color: COLORS.textPrimary, fontSize: 16, fontWeight: '700', marginBottom: 10 }}>
+                  Picked for you
+                </CustomText>
+                <Pressable
+                  onPress={() => {
+                    if (featuredInsight.actionRoute) {
+                      router.push(featuredInsight.actionRoute as any);
+                    }
+                  }}
+                  style={({ pressed }) => ({
+                    backgroundColor: COLORS.surface,
+                    borderRadius: 16,
+                    padding: 16,
+                    borderWidth: 1,
+                    borderColor: COLORS.border,
+                    opacity: pressed ? 0.9 : 1,
+                    flexDirection: 'row',
+                    gap: 12,
+                    alignItems: 'center',
+                  })}
+                >
+                  <View
+                    style={{
+                      width: 64,
+                      height: 64,
+                      borderRadius: 12,
+                      backgroundColor: 'rgba(167,139,250,0.12)',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <MaterialIcons name="star" size={24} color={COLORS.accent} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <CustomText style={{ color: COLORS.textPrimary, fontSize: 14, fontWeight: '700' }}>
+                      {featuredInsight.title}
+                    </CustomText>
+                    <CustomText style={{ color: COLORS.textSecondary, fontSize: 12, marginTop: 4 }}>
+                      {featuredInsight.description}
+                    </CustomText>
+                  </View>
+                </Pressable>
+              </View>
+            </FadeIn>
+          ) : null}
+
+          {rotationInsights.length ? (
+            <FadeIn delay={80}>
+              <View style={{ marginBottom: 20 }}>
+                <CustomText style={{ color: COLORS.textPrimary, fontSize: 16, fontWeight: '700', marginBottom: 10 }}>
+                  Your recent rotation
+                </CustomText>
+                {rotationInsights.map((insight, idx) => (
+                  <Pressable
+                    key={`${insight.title}-${idx}`}
+                    onPress={() => {
+                      if (insight.actionRoute) {
+                        router.push(insight.actionRoute as any);
+                      }
+                    }}
+                    style={({ pressed }) => ({
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 12,
+                      paddingVertical: 10,
+                      borderBottomWidth: idx === rotationInsights.length - 1 ? 0 : 1,
+                      borderBottomColor: COLORS.border,
+                      opacity: pressed ? 0.85 : 1,
+                    })}
+                  >
+                    <View
+                      style={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: 10,
+                        backgroundColor: 'rgba(59,130,246,0.12)',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <MaterialIcons name="insights" size={20} color="#60A5FA" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <CustomText style={{ color: COLORS.textPrimary, fontSize: 13, fontWeight: '700' }}>
+                        {insight.title}
+                      </CustomText>
+                      <CustomText style={{ color: COLORS.textSecondary, fontSize: 11, marginTop: 2 }} numberOfLines={1}>
+                        {insight.description}
+                      </CustomText>
+                    </View>
+                    <MaterialIcons name="more-vert" size={18} color={COLORS.textSecondary} />
+                  </Pressable>
+                ))}
+              </View>
+            </FadeIn>
+          ) : null}
 
           {/* Engagement Score Card */}
           <FadeIn delay={80}>

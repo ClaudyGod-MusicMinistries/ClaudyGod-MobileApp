@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import type { DimensionValue } from 'react-native';
 import { Image, Linking, RefreshControl, ScrollView, Share, View, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -60,17 +61,17 @@ function PickedForYouCard({
       <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
         <Image
           source={{ uri: item.imageUrl }}
-          style={{ width: 72, height: 72, borderRadius: theme.radius.md }}
+          style={{ width: 96, height: 96, borderRadius: theme.radius.md }}
         />
         <View style={{ flex: 1, gap: 4 }}>
+          <CustomText variant="caption" style={{ color: theme.colors.textSecondary }}>
+            {item.duration ?? item.subtitle ?? 'ClaudyGod'}
+          </CustomText>
           <CustomText variant="label" style={{ color: theme.colors.text }}>
             {item.title}
           </CustomText>
-          <CustomText variant="caption" style={{ color: theme.colors.textSecondary }} numberOfLines={1}>
-            {item.subtitle ?? 'ClaudyGod'}
-          </CustomText>
           {item.description ? (
-            <CustomText variant="caption" style={{ color: theme.colors.textSecondary }} numberOfLines={1}>
+            <CustomText variant="caption" style={{ color: theme.colors.textSecondary }} numberOfLines={2}>
               {item.description}
             </CustomText>
           ) : null}
@@ -117,7 +118,9 @@ function RotationRow({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 12,
-        paddingVertical: 8,
+        paddingVertical: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(255,255,255,0.06)',
       }}
       showFocusBorder={false}
     >
@@ -137,6 +140,41 @@ function RotationRow({
   );
 }
 
+function QuickPickCard({
+  item,
+  onPress,
+  width,
+}: {
+  item: FeedCardItem;
+  onPress: () => void;
+  width: DimensionValue;
+}) {
+  const theme = useAppTheme();
+
+  return (
+    <TVTouchable
+      onPress={onPress}
+      style={{
+        width,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        padding: 10,
+        borderRadius: theme.radius.lg,
+        backgroundColor: theme.colors.surface,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+      }}
+      showFocusBorder={false}
+    >
+      <Image source={{ uri: item.imageUrl }} style={{ width: 44, height: 44, borderRadius: theme.radius.md }} />
+      <CustomText variant="caption" style={{ color: theme.colors.text }} numberOfLines={2}>
+        {item.title}
+      </CustomText>
+    </TVTouchable>
+  );
+}
+
 export default function HomeScreen() {
   const router = useRouter();
   const theme = useAppTheme();
@@ -151,7 +189,7 @@ export default function HomeScreen() {
   const { feed, loading, error, refresh } = useContentFeed();
   const { config: mobileConfig } = useMobileAppConfig();
   const { word } = useWordOfDay();
-  const [activeChip, setActiveChip] = useState(HOME_CHIPS[0].key);
+  const [activeChip, setActiveChip] = useState<(typeof HOME_CHIPS)[number]['key']>(HOME_CHIPS[0].key);
 
   const featured = useMemo(() => feed.featured ?? feed.recent[0] ?? feed.music[0] ?? feed.videos[0] ?? null, [feed]);
   const homeSections = useMemo(() => getHomeLayoutSections(mobileConfig), [mobileConfig]);
@@ -175,6 +213,10 @@ export default function HomeScreen() {
     if (activeChip === 'live') return feed.live;
     return feed.recent;
   }, [activeChip, feed.live, feed.music, feed.recent, feed.videos]);
+  const quickPicks = useMemo(() => {
+    const pool = [...feed.music, ...feed.playlists, ...feed.videos, ...feed.recent];
+    return pool.filter((item) => item.imageUrl).slice(0, 4);
+  }, [feed.music, feed.playlists, feed.recent, feed.videos]);
 
   const formatMeta = (item: FeedCardItem) =>
     [item.subtitle, item.duration].filter((value) => Boolean(value)).join(' · ');
@@ -460,55 +502,44 @@ export default function HomeScreen() {
             </FadeIn>
 
             <FadeIn delay={60}>
-              <View style={{ marginTop: isTablet ? 6 : 12 }}>
-                <CinematicHeroCard
-                  imageSource={!featured ? BRAND_HERO_ASSET : undefined}
-                  imageUrl={featured?.imageUrl}
-                  badge={featured?.isLive ? 'Live now' : featured?.type === 'audio' ? 'Featured listen' : 'Featured'}
-                  eyebrow={isTablet ? featured?.subtitle ?? 'ClaudyGod' : undefined}
-                  title={featured?.title ?? 'Stay close to worship, messages, and live ministry.'}
-                  subtitle={isTablet ? featured?.duration ?? 'ClaudyGod' : undefined}
-                  description={
-                    isTablet
-                      ? featured?.description ??
-                        'Start from one featured moment, then move through the rest of the app without losing the thread.'
-                      : undefined
-                  }
-                  height={isTablet ? 420 : 310}
-                  contentSurface={isTablet}
-                  overlayStrength={isTablet ? 0.84 : 0.62}
-                  actions={
-                    isTablet
-                      ? [
-                          {
-                            label: featured?.type === 'video' || featured?.isLive ? 'Watch now' : 'Play now',
-                            onPress: () =>
-                              featured ? openItem(featured, 'home_featured') : router.push(APP_ROUTES.tabs.player),
-                            icon: featured?.type === 'video' || featured?.isLive ? 'smart-display' : 'play-arrow',
-                          },
-                          {
-                            label: featured?.isLive ? 'Notify me' : 'Read more',
-                            onPress: () =>
-                              featured?.isLive
-                                ? notifyLive(featured)
-                                : featured
-                                  ? openItem(featured, 'home_featured_details')
-                                  : router.push(APP_ROUTES.tabs.library),
-                            variant: 'secondary',
-                            icon: featured?.isLive ? 'notifications-active' : 'article',
-                          },
-                        ]
-                      : [
-                          {
-                            label: featured?.type === 'video' || featured?.isLive ? 'Watch now' : 'Play now',
-                            onPress: () =>
-                              featured ? openItem(featured, 'home_featured') : router.push(APP_ROUTES.tabs.player),
-                            icon: featured?.type === 'video' || featured?.isLive ? 'smart-display' : 'play-arrow',
-                          },
-                        ]
-                  }
-                />
-              </View>
+              {isTablet ? (
+                <View style={{ marginTop: 6 }}>
+                  <CinematicHeroCard
+                    imageSource={!featured ? BRAND_HERO_ASSET : undefined}
+                    imageUrl={featured?.imageUrl}
+                    badge={featured?.isLive ? 'Live now' : featured?.type === 'audio' ? 'Featured listen' : 'Featured'}
+                    eyebrow={featured?.subtitle ?? 'ClaudyGod'}
+                    title={featured?.title ?? 'Stay close to worship, messages, and live ministry.'}
+                    subtitle={featured?.duration ?? 'ClaudyGod'}
+                    description={
+                      featured?.description ??
+                      'Start from one featured moment, then move through the rest of the app without losing the thread.'
+                    }
+                    height={420}
+                    contentSurface
+                    overlayStrength={0.84}
+                    actions={[
+                      {
+                        label: featured?.type === 'video' || featured?.isLive ? 'Watch now' : 'Play now',
+                        onPress: () =>
+                          featured ? openItem(featured, 'home_featured') : router.push(APP_ROUTES.tabs.player),
+                        icon: featured?.type === 'video' || featured?.isLive ? 'smart-display' : 'play-arrow',
+                      },
+                      {
+                        label: featured?.isLive ? 'Notify me' : 'Read more',
+                        onPress: () =>
+                          featured?.isLive
+                            ? notifyLive(featured)
+                            : featured
+                              ? openItem(featured, 'home_featured_details')
+                              : router.push(APP_ROUTES.tabs.library),
+                        variant: 'secondary',
+                        icon: featured?.isLive ? 'notifications-active' : 'article',
+                      },
+                    ]}
+                  />
+                </View>
+              ) : null}
             </FadeIn>
 
             <FadeIn delay={100}>
@@ -530,6 +561,21 @@ export default function HomeScreen() {
               </ScrollView>
             </FadeIn>
 
+            {quickPicks.length ? (
+              <FadeIn delay={110}>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+                  {quickPicks.map((item) => (
+                    <QuickPickCard
+                      key={`quick-${item.id}`}
+                      item={item}
+                      width={isTablet ? '31.8%' : '48%'}
+                      onPress={() => void openItem(item, 'home_quick_pick')}
+                    />
+                  ))}
+                </View>
+              </FadeIn>
+            ) : null}
+
             {featured ? (
               <FadeIn delay={120}>
                 <View style={{ gap: 10 }}>
@@ -547,8 +593,12 @@ export default function HomeScreen() {
 
             <FadeIn delay={140}>
               <View style={{ gap: 10 }}>
-                <SectionHeader title="Your recent rotation" actionLabel="See all" onAction={() => router.push(APP_ROUTES.tabs.library)} />
-                <View style={{ gap: 6 }}>
+                <SectionHeader
+                  title="Your recent rotation"
+                  actionLabel="See all"
+                  onAction={() => router.push(APP_ROUTES.tabs.library)}
+                />
+                <View style={{ gap: 2 }}>
                   {feed.recent.slice(0, 3).map((item) => (
                     <RotationRow
                       key={`rotation-${item.id}`}
