@@ -192,6 +192,25 @@ export default function PlaySection() {
   }, [active, isFocused, maximize, minimize]);
 
   const openItem = async (item: FeedCardItem, source: string) => {
+    if (!item.mediaUrl) {
+      showToast({
+        title: 'Playback unavailable',
+        message: 'This item has no playable source yet.',
+        tone: 'warning',
+      });
+      return;
+    }
+
+    if (!isDirectPlayableAudioUrl(item.mediaUrl)) {
+      if (shouldOpenVideoScreen(item)) {
+        router.push(buildPlayerRoute(item));
+        return;
+      }
+
+      await Linking.openURL(item.mediaUrl);
+      return;
+    }
+
     setActiveId(item.id);
     startPlaying(item, 'audio', queue);
     await trackPlayEvent({
