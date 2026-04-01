@@ -200,7 +200,7 @@ export default function DashboardScreen() {
   const [insights, setInsights] = useState<EngagementInsight[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeChip, setActiveChip] = useState(DASH_CHIPS[0].key);
+  const [activeChip, setActiveChip] = useState<(typeof DASH_CHIPS)[number]['key']>(DASH_CHIPS[0].key);
   const featuredInsight = insights[0] ?? null;
   const rotationInsights = insights.slice(0, 3);
 
