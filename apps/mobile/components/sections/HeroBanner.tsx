@@ -46,7 +46,7 @@ export function HeroBanner({ imageUrl, title, subtitle, onPlay, onSave }: HeroBa
             variant="primary"
             size="sm"
             onPress={onPlay}
-            leftIcon={<MaterialIcons name="play-arrow" size={18} color={theme.colors.text.inverse} />}
+            leftIcon={<MaterialIcons name="play-arrow" size={18} color={theme.colors.textInverse} />}
             style={{ marginRight: 10 }}
           />
           <AppButton

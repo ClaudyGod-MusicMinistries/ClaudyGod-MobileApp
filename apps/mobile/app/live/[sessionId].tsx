@@ -157,7 +157,7 @@ export default function LiveSessionScreen() {
                       }}
                       showFocusBorder={false}
                     >
-                      <MaterialIcons name="arrow-back" size={20} color={theme.colors.text.primary} />
+                      <MaterialIcons name="arrow-back" size={20} color={theme.colors.text} />
                     </TVTouchable>
 
                     <View
@@ -172,17 +172,17 @@ export default function LiveSessionScreen() {
                           session?.status === 'live' ? 'rgba(220,38,38,0.24)' : 'rgba(109,40,217,0.16)',
                       }}
                     >
-                      <CustomText variant="caption" style={{ color: theme.colors.text.primary }}>
+                      <CustomText variant="caption" style={{ color: theme.colors.text }}>
                         {session?.status === 'live' ? 'Live Now' : session?.status === 'scheduled' ? 'Upcoming' : 'Replay'}
                       </CustomText>
                     </View>
                   </View>
 
                   <View style={{ marginTop: theme.spacing.lg }}>
-                    <CustomText variant="heading" style={{ color: theme.colors.text.primary }}>
+                    <CustomText variant="heading" style={{ color: theme.colors.text }}>
                       {session?.title || 'Live Session'}
                     </CustomText>
-                    <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 6 }}>
+                    <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 6 }}>
                       {session ? formatSessionMeta(session) : 'Preparing live session'}
                     </CustomText>
                   </View>
@@ -206,10 +206,10 @@ export default function LiveSessionScreen() {
                   padding: theme.spacing.lg,
                 }}
               >
-                <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
+                <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
                   Unable to open this live session
                 </CustomText>
-                <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 8 }}>
+                <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 8 }}>
                   {error}
                 </CustomText>
               </View>
@@ -237,7 +237,7 @@ export default function LiveSessionScreen() {
                       />
                     )}
                     <View style={{ padding: theme.spacing.lg, gap: 10 }}>
-                      <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
+                      <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
                         {session.description}
                       </CustomText>
                       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
@@ -253,7 +253,7 @@ export default function LiveSessionScreen() {
                               borderColor: theme.colors.border,
                             }}
                           >
-                            <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
+                            <CustomText variant="caption" style={{ color: theme.colors.textSecondary }}>
                               {tag}
                             </CustomText>
                           </View>
@@ -275,10 +275,10 @@ export default function LiveSessionScreen() {
                     }}
                   >
                     <View>
-                      <CustomText variant="heading" style={{ color: theme.colors.text.primary }}>
+                      <CustomText variant="heading" style={{ color: theme.colors.text }}>
                         Join the live conversation
                       </CustomText>
-                      <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 6 }}>
+                      <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 6 }}>
                         Send a comment or suggestion while the live stream is active.
                       </CustomText>
                     </View>
@@ -302,7 +302,7 @@ export default function LiveSessionScreen() {
                           >
                             <CustomText
                               variant="caption"
-                              style={{ color: active ? '#FFFFFF' : theme.colors.text.primary }}
+                              style={{ color: active ? '#FFFFFF' : theme.colors.text }}
                             >
                               {kind === 'comment' ? 'Comment' : 'Suggestion'}
                             </CustomText>
@@ -315,7 +315,7 @@ export default function LiveSessionScreen() {
                       value={draftMessage}
                       onChangeText={setDraftMessage}
                       placeholder={messageKind === 'comment' ? 'Share your comment' : 'Share your suggestion'}
-                      placeholderTextColor={theme.colors.text.secondary}
+                      placeholderTextColor={theme.colors.textSecondary}
                       multiline
                       style={{
                         minHeight: 120,
@@ -323,7 +323,7 @@ export default function LiveSessionScreen() {
                         borderWidth: 1,
                         borderColor: theme.colors.border,
                         backgroundColor: theme.colors.surfaceAlt,
-                        color: theme.colors.text.primary,
+                        color: theme.colors.text,
                         padding: 16,
                         textAlignVertical: 'top',
                       }}
@@ -361,10 +361,10 @@ export default function LiveSessionScreen() {
                     }}
                   >
                     <View>
-                      <CustomText variant="heading" style={{ color: theme.colors.text.primary }}>
+                      <CustomText variant="heading" style={{ color: theme.colors.text }}>
                         Live audience feed
                       </CustomText>
-                      <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 6 }}>
+                      <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 6 }}>
                         {session.messageCount} viewer message{session.messageCount === 1 ? '' : 's'}
                       </CustomText>
                     </View>
@@ -383,17 +383,17 @@ export default function LiveSessionScreen() {
                           }}
                         >
                           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <CustomText variant="label" style={{ color: theme.colors.text.primary }}>
+                            <CustomText variant="label" style={{ color: theme.colors.text }}>
                               {message.author.displayName}
                             </CustomText>
-                            <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
+                            <CustomText variant="caption" style={{ color: theme.colors.textSecondary }}>
                               {message.kind === 'comment' ? 'Comment' : 'Suggestion'}
                             </CustomText>
                           </View>
-                          <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
+                          <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
                             {message.message}
                           </CustomText>
-                          <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
+                          <CustomText variant="caption" style={{ color: theme.colors.textSecondary }}>
                             {new Date(message.createdAt).toLocaleString()}
                           </CustomText>
                         </View>
@@ -408,7 +408,7 @@ export default function LiveSessionScreen() {
                           padding: 18,
                         }}
                       >
-                        <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
+                        <CustomText variant="caption" style={{ color: theme.colors.textSecondary }}>
                           No viewer messages yet. Comments and suggestions will appear here during the live session.
                         </CustomText>
                       </View>

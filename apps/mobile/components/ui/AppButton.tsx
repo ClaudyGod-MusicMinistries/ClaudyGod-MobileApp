@@ -46,10 +46,10 @@ export function AppButton({
   const resolvedTextColor =
     textColor ??
     (isPrimary
-      ? theme.colors.text.inverse
+      ? theme.colors.textInverse
       : isSecondary
-        ? theme.colors.text.primary
-        : theme.colors.text.primary);
+        ? theme.colors.text
+        : theme.colors.text);
 
   const sizeStyle =
     size === 'sm'

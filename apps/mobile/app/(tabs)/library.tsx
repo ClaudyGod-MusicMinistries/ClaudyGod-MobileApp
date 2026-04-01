@@ -183,17 +183,17 @@ export default function LibraryScreen() {
                       <CustomText
                         variant="caption"
                         style={{
-                          color: theme.colors.text.secondary,
+                          color: theme.colors.textSecondary,
                           textTransform: 'uppercase',
                           letterSpacing: 0.8,
                         }}
                       >
                         Personal library
                       </CustomText>
-                      <CustomText variant="heading" style={{ color: theme.colors.text.primary }}>
+                      <CustomText variant="heading" style={{ color: theme.colors.text }}>
                         Sign in to save what matters
                       </CustomText>
-                      <CustomText variant="body" style={{ color: theme.colors.text.secondary }}>
+                      <CustomText variant="body" style={{ color: theme.colors.textSecondary }}>
                         Keep your music, video replays, playlists, and history in one place across devices.
                       </CustomText>
                     </View>
@@ -223,7 +223,7 @@ export default function LibraryScreen() {
                       actionLabel="Home"
                       onAction={() => router.push(APP_ROUTES.tabs.home)}
                     />
-                    <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginBottom: 10 }}>
+                    <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginBottom: 10 }}>
                       Browse the app freely, then sign in when you want to save your collection.
                     </CustomText>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false} overScrollMode="never">
@@ -299,7 +299,7 @@ export default function LibraryScreen() {
                       actionLabel={section.actionLabel}
                       onAction={() => router.push(TAB_ROUTE_BY_ID[section.destinationTab])}
                     />
-                    <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginBottom: 10 }}>
+                    <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginBottom: 10 }}>
                       {section.subtitle}
                     </CustomText>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false} overScrollMode="never">
@@ -343,14 +343,14 @@ function StatCard({ label, value }: { label: string; value: number }) {
       <CustomText
         variant="caption"
         style={{
-          color: theme.colors.text.secondary,
+          color: theme.colors.textSecondary,
           textTransform: 'uppercase',
           letterSpacing: 0.8,
         }}
       >
         {label}
       </CustomText>
-      <CustomText variant="display" style={{ color: theme.colors.text.primary, marginTop: 6 }}>
+      <CustomText variant="display" style={{ color: theme.colors.text, marginTop: 6 }}>
         {value}
       </CustomText>
     </View>

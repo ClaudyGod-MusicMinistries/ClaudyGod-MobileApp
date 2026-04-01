@@ -103,7 +103,7 @@ export default function Profile() {
             <CustomText
               variant="display"
               style={{
-                color: theme.colors.text.primary,
+                color: theme.colors.text,
                 marginTop: 14,
                 fontSize: 25,
                 lineHeight: 31,
@@ -112,7 +112,7 @@ export default function Profile() {
             >
               {metrics.displayName}
             </CustomText>
-            <CustomText variant="body" style={{ color: theme.colors.text.secondary, marginTop: 4 }}>
+            <CustomText variant="body" style={{ color: theme.colors.textSecondary, marginTop: 4 }}>
               {metrics.email || 'Sign in to sync your profile'}
             </CustomText>
 
@@ -136,7 +136,7 @@ export default function Profile() {
       {groups.map((group, groupIndex) => (
         <FadeIn key={group.title} delay={120 + groupIndex * 35}>
           <SurfaceCard style={{ marginTop: spacing.md, padding: spacing.md }}>
-            <CustomText variant="subtitle" style={{ color: theme.colors.text.primary, marginBottom: 10 }}>
+            <CustomText variant="subtitle" style={{ color: theme.colors.text, marginBottom: 10 }}>
               {group.title}
             </CustomText>
 
@@ -171,11 +171,11 @@ export default function Profile() {
                     <MaterialIcons name={item.icon as any} size={17} color={theme.colors.primary} />
                   </View>
 
-                  <CustomText variant="body" style={{ color: theme.colors.text.primary, flex: 1 }}>
+                  <CustomText variant="body" style={{ color: theme.colors.text, flex: 1 }}>
                     {item.label}
                   </CustomText>
 
-                  <MaterialIcons name="chevron-right" size={20} color={theme.colors.text.secondary} />
+                  <MaterialIcons name="chevron-right" size={20} color={theme.colors.textSecondary} />
                 </TVTouchable>
               ))}
             </View>

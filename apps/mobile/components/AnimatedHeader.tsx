@@ -60,10 +60,10 @@ export const AnimatedHeader = ({
             style={{ width: 34, height: 34, borderRadius: 10 }}
           />
           <View style={{ marginLeft: 10 }}>
-            <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
+            <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
               ClaudyGod
             </CustomText>
-            <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
+            <CustomText variant="caption" style={{ color: theme.colors.textSecondary }}>
               Music + Video
             </CustomText>
           </View>
@@ -71,13 +71,13 @@ export const AnimatedHeader = ({
 
         <View style={headerStyles.actionRow}>
           <TVTouchable onPress={onPressSearch} style={[iconButton(theme), headerStyles.actionSpacer]}>
-            <MaterialIcons name="search" size={20} color={theme.colors.text.primary} />
+            <MaterialIcons name="search" size={20} color={theme.colors.text} />
           </TVTouchable>
           <TVTouchable onPress={onPressCast} style={[iconButton(theme), headerStyles.actionSpacer]}>
-            <MaterialIcons name="cast" size={20} color={theme.colors.text.primary} />
+            <MaterialIcons name="cast" size={20} color={theme.colors.text} />
           </TVTouchable>
           <TVTouchable onPress={onPressNotifications} style={[iconButton(theme), headerStyles.actionSpacer]}>
-            <MaterialIcons name="notifications" size={20} color={theme.colors.text.primary} />
+            <MaterialIcons name="notifications" size={20} color={theme.colors.text} />
           </TVTouchable>
           <TVTouchable onPress={onPressProfile} style={iconButton(theme)}>
             <MaterialIcons name="account-circle" size={22} color={theme.colors.primary} />
