@@ -97,7 +97,7 @@ export default function LibraryScreen() {
   const { isAuthenticated } = useAuth();
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
-  const posterSize = isTablet ? 'lg' : 'md';
+  const posterSize = isTablet ? 'md' : 'sm';
   const { feed } = useContentFeed();
   const { config: mobileConfig } = useMobileAppConfig();
   const [library, setLibrary] = useState<MeLibrary | null>(null);

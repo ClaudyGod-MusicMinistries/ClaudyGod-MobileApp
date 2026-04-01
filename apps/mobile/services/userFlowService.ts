@@ -78,7 +78,7 @@ export interface MobileAppExperienceConfig {
       id: string;
       name: string;
       amount: string;
-      period: 'once' | 'monthly';
+      period: 'daily' | 'weekly' | 'monthly' | 'once';
       note: string;
       featured?: boolean;
       icon: string;
@@ -405,7 +405,7 @@ export async function createAppRating(input: {
 
 export async function createDonationIntent(input: {
   amount: string;
-  mode: 'once' | 'monthly';
+  mode: 'daily' | 'weekly' | 'monthly';
   methodId: string;
   currency?: string;
   planId?: string;
@@ -417,7 +417,7 @@ export async function createDonationIntent(input: {
       status: string;
       amountCents: number;
       currency: string;
-      mode: 'once' | 'monthly';
+      mode: 'daily' | 'weekly' | 'monthly';
       methodId: string;
       createdAt: string;
     };

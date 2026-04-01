@@ -25,7 +25,7 @@ type SupportPlan = {
   id: string;
   name: string;
   amount: string;
-  period: 'once' | 'monthly';
+  period: 'daily' | 'weekly' | 'monthly';
   note: string;
   featured?: boolean;
   icon: React.ComponentProps<typeof MaterialIcons>['name'];
@@ -37,7 +37,7 @@ type ImpactBreakdownItem = {
   icon: React.ComponentProps<typeof MaterialIcons>['name'];
 };
 
-const quickAmounts = ['$5', '$10', '$25', '$50', '$100'];
+const quickAmounts = ['$2', '$5', '$10', '$25', '$50'];
 
 const supportMethods: DonateMethod[] = [
   {
@@ -63,28 +63,28 @@ const supportMethods: DonateMethod[] = [
 
 const supportPlans: SupportPlan[] = [
   {
-    id: 'supporter',
-    name: 'Supporter',
-    amount: '$10',
-    period: 'monthly',
-    note: 'Helps cover storage, bandwidth and publishing operations.',
-    icon: 'favorite-border',
+    id: 'daily',
+    name: 'Daily Support',
+    amount: '$2',
+    period: 'daily',
+    note: 'Keeps daily worship and devotionals flowing.',
+    icon: 'wb-sunny',
   },
   {
-    id: 'partner',
-    name: 'Partner',
+    id: 'weekly',
+    name: 'Weekly Support',
+    amount: '$10',
+    period: 'weekly',
+    note: 'Covers weekly live streams and production costs.',
+    featured: true,
+    icon: 'calendar-today',
+  },
+  {
+    id: 'monthly',
+    name: 'Monthly Support',
     amount: '$25',
     period: 'monthly',
-    note: 'Supports music drops, live streaming and content production.',
-    featured: true,
-    icon: 'auto-awesome',
-  },
-  {
-    id: 'mission',
-    name: 'Mission Gift',
-    amount: '$100',
-    period: 'once',
-    note: 'One-time support for outreach campaigns and platform improvements.',
+    note: 'Sustains ongoing outreach and ministry expansion.',
     icon: 'public',
   },
 ];
@@ -110,6 +110,7 @@ export default function Donate() {
   }));
   const configuredPlans: SupportPlan[] = (config?.donate.plans ?? supportPlans).map((plan) => ({
     ...plan,
+    period: plan.period === 'once' ? 'monthly' : (plan.period as SupportPlan['period']),
     icon: plan.icon as SupportPlan['icon'],
   }));
   const configuredImpactBreakdown: ImpactBreakdownItem[] = (config?.donate.impactBreakdown ?? impactBreakdown).map((item) => ({
@@ -119,13 +120,14 @@ export default function Donate() {
   const configuredCurrency = config?.donate.currency ?? 'USD';
 
   const [selectedAmount, setSelectedAmount] = useState<string>('$25');
-  const [donationMode, setDonationMode] = useState<'once' | 'monthly'>('once');
+  const [donationMode, setDonationMode] = useState<'daily' | 'weekly' | 'monthly'>('monthly');
   const [selectedMethod, setSelectedMethod] = useState<string>((config?.donate.methods?.[0]?.id ?? supportMethods[0].id));
 
   const selectedPlan = useMemo(
-    () => configuredPlans.find((plan) => plan.period === donationMode && (donationMode === 'monthly' ? plan.featured : true)),
+    () => configuredPlans.find((plan) => plan.period === donationMode) ?? configuredPlans[0] ?? null,
     [configuredPlans, donationMode],
   );
+  const cadenceLabel = donationMode === 'daily' ? 'daily' : donationMode === 'weekly' ? 'weekly' : 'monthly';
 
   const ui = {
     heroBg: isDark ? 'rgba(10,8,17,0.9)' : '#FFFFFF',
@@ -156,7 +158,9 @@ export default function Donate() {
       .then(() => {
         Alert.alert(
           'Donation ready',
-          `${donationMode === 'monthly' ? 'Monthly' : 'One-time'} ${selectedAmount} via ${method?.label ?? 'selected method'} has been prepared successfully.`,
+          `${cadenceLabel.charAt(0).toUpperCase() + cadenceLabel.slice(1)} ${selectedAmount} via ${
+            method?.label ?? 'selected method'
+          } has been prepared successfully.`,
         );
       })
       .catch((error) => {
@@ -233,7 +237,7 @@ export default function Donate() {
                 Support worship, live broadcasts and ministry content
               </CustomText>
               <CustomText variant="body" style={{ color: ui.muted, marginTop: 8 }}>
-                Choose a one-time gift or monthly support plan and support worship, broadcasts, and ministry outreach.
+                Choose a daily, weekly, or monthly plan and support worship, broadcasts, and ministry outreach.
               </CustomText>
 
               <View
@@ -284,8 +288,9 @@ export default function Donate() {
           </CustomText>
 
           <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
-            {(['once', 'monthly'] as const).map((mode) => {
+            {(['daily', 'weekly', 'monthly'] as const).map((mode) => {
               const active = donationMode === mode;
+              const label = mode === 'daily' ? 'Daily' : mode === 'weekly' ? 'Weekly' : 'Monthly';
               return (
                 <TVTouchable
                   key={mode}
@@ -303,7 +308,7 @@ export default function Donate() {
                   showFocusBorder={false}
                 >
                   <CustomText variant="label" style={{ color: active ? theme.colors.primary : theme.colors.text.primary }}>
-                    {mode === 'once' ? 'One-time' : 'Monthly'}
+                    {label}
                   </CustomText>
                 </TVTouchable>
               );
@@ -405,7 +410,7 @@ export default function Donate() {
 
           <View style={{ marginTop: 14 }}>
             <AppButton
-              title={`Give ${selectedAmount}${donationMode === 'monthly' ? ' monthly' : ' now'}`}
+              title={`Give ${selectedAmount} ${cadenceLabel}`}
               fullWidth
               onPress={onDonateNow}
               leftIcon={<MaterialIcons name="favorite" size={16} color={theme.colors.text.inverse} />}
@@ -598,7 +603,7 @@ function SupportPlanCard({
             {plan.amount}
           </CustomText>
           <CustomText variant="caption" style={{ color: ui.muted, marginTop: 2 }}>
-            {plan.period === 'monthly' ? 'monthly' : 'one-time'}
+            {plan.period}
           </CustomText>
         </View>
       </View>
