@@ -58,10 +58,8 @@ export function PosterCard({
           height: sizes.h,
           borderRadius: theme.radius.lg,
           overflow: 'hidden',
-          backgroundColor: theme.colors.surfaceAlt,
-          borderWidth: 1.5,
-          borderColor: theme.colors.border,
-          ...theme.shadows.card,
+          backgroundColor: 'transparent',
+          borderWidth: 0,
         }}
       >
         {/* Image Container with proper fit */}
@@ -75,8 +73,8 @@ export function PosterCard({
 
         {/* Gradient Overlay */}
         <LinearGradient
-          colors={['rgba(7,9,12,0)', 'rgba(7,9,12,0.15)', 'rgba(7,9,12,0.92)']}
-          locations={[0, 0.5, 1]}
+          colors={['rgba(7,9,12,0)', 'rgba(7,9,12,0.1)', 'rgba(7,9,12,0.86)']}
+          locations={[0, 0.55, 1]}
           style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: '100%' }}
         />
 
@@ -154,6 +152,7 @@ export function PosterCard({
               borderColor: 'rgba(255,255,255,0.18)',
               alignItems: 'center',
               justifyContent: 'center',
+              zIndex: 4,
             }}
           >
             <MaterialIcons name="more-vert" size={18} color="#F7F3EA" />

@@ -40,13 +40,16 @@ function DestinationCard({
   onPress,
   compact = false,
   containerStyle,
+  layout = 'tile',
 }: {
   icon: React.ComponentProps<typeof MaterialIcons>['name'];
   label: string;
   onPress: () => void;
   compact?: boolean;
   containerStyle?: object;
+  layout?: 'tile' | 'row';
 }) {
+  const isRow = layout === 'row';
   return (
     <TVTouchable
       onPress={onPress}
@@ -60,6 +63,8 @@ function DestinationCard({
         paddingHorizontal: compact ? 12 : 14,
         paddingVertical: compact ? 12 : 14,
         gap: compact ? 8 : 10,
+        flexDirection: isRow ? 'row' : 'column',
+        alignItems: isRow ? 'center' : 'flex-start',
         ...containerStyle,
       }}
       showFocusBorder={false}
@@ -192,7 +197,8 @@ export default function LandingScreen() {
   const heroTitle = featured?.title ?? 'Worship, Music & Ministry\nUnified';
   const heroSubtitle = featured?.subtitle ?? 'ClaudyGod';
   const heroDescription =
-    featured?.description?.trim() || 'Experience the ultimate platform for worship, music, and live ministry in one beautifully designed space. Stream, discover, and connect with your community.';
+    featured?.description?.trim() ||
+    'Experience worship, music, and live ministry in one beautifully designed space.';
   const shellGap = isTablet ? 16 : 10;
 
   const headlineBlock = (
@@ -270,24 +276,33 @@ export default function LandingScreen() {
         >
           Explore
         </CustomText>
-        <View
-          style={{
-            flexDirection: 'row',
-            flexWrap: isPhone ? 'wrap' : 'nowrap',
-            gap: 10,
-          }}
-        >
-          {previewLinks.map((destination) => (
-            <DestinationCard
-              key={destination.key}
-              icon={destination.icon}
-              label={destination.label}
-              onPress={() => router.push(destination.route)}
-              compact={isPhone}
-              containerStyle={isPhone ? { flexBasis: '48%', flexGrow: 0 } : undefined}
-            />
-          ))}
-        </View>
+        {isPhone ? (
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+            {previewLinks.map((destination) => (
+              <DestinationCard
+                key={destination.key}
+                icon={destination.icon}
+                label={destination.label}
+                onPress={() => router.push(destination.route)}
+                compact
+                layout="tile"
+                containerStyle={{ width: '48%' }}
+              />
+            ))}
+          </View>
+        ) : (
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            {previewLinks.map((destination) => (
+              <DestinationCard
+                key={destination.key}
+                icon={destination.icon}
+                label={destination.label}
+                onPress={() => router.push(destination.route)}
+                compact={isPhone}
+              />
+            ))}
+          </View>
+        )}
       </View>
     </FadeIn>
   );
@@ -303,20 +318,30 @@ export default function LandingScreen() {
           eyebrow={heroSubtitle}
           title={heroTitle}
           subtitle={featured?.duration ?? 'ClaudyGod Ministries'}
-          description={heroDescription}
-          actions={[
-            {
-              label: heroAction.label,
-              onPress: () => router.push(heroAction.route),
-              icon: heroAction.icon,
-            },
-            {
-              label: 'Create Account',
-              onPress: () => router.push(APP_ROUTES.auth.signUp),
-              variant: 'secondary',
-              icon: 'person-add',
-            },
-          ]}
+          description={isPhone ? undefined : heroDescription}
+          actions={
+            isPhone
+              ? [
+                  {
+                    label: heroAction.label,
+                    onPress: () => router.push(heroAction.route),
+                    icon: heroAction.icon,
+                  },
+                ]
+              : [
+                  {
+                    label: heroAction.label,
+                    onPress: () => router.push(heroAction.route),
+                    icon: heroAction.icon,
+                  },
+                  {
+                    label: 'Create Account',
+                    onPress: () => router.push(APP_ROUTES.auth.signUp),
+                    variant: 'secondary',
+                    icon: 'person-add',
+                  },
+                ]
+          }
         />
       </View>
     </FadeIn>
@@ -485,29 +510,20 @@ export default function LandingScreen() {
                   paddingHorizontal: isPhone ? 10 : 14,
                   paddingVertical: isPhone ? 8 : 10,
                   flexDirection: 'column',
-                  gap: 10,
+                  gap: 8,
                 }}
               >
-                <View style={{ flex: 1, gap: 3 }}>
-                  <CustomText
-                    variant="caption"
-                    style={{
-                      color: LANDING_COLORS.accent,
-                      textTransform: 'uppercase',
-                      letterSpacing: 0.75,
-                      fontSize: 10,
-                    }}
-                  >
-                    Quick access
-                  </CustomText>
-                  <CustomText
-                    variant="body"
-                    style={{ color: LANDING_COLORS.textSecondary, fontSize: 11 }}
-                    numberOfLines={2}
-                  >
-                    Jump straight into music, videos, or live worship.
-                  </CustomText>
-                </View>
+                <CustomText
+                  variant="caption"
+                  style={{
+                    color: LANDING_COLORS.accent,
+                    textTransform: 'uppercase',
+                    letterSpacing: 0.75,
+                    fontSize: 10,
+                  }}
+                >
+                  Quick access
+                </CustomText>
 
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                   {previewLinks.map((link) => (

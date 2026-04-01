@@ -1,11 +1,10 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Linking, RefreshControl, ScrollView, Share, View, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { TabScreenWrapper } from '../../components/layout/TabScreenWrapper';
 import { Screen } from '../../components/layout/Screen';
 import { BrandedHeaderCard } from '../../components/layout/BrandedHeaderCard';
-import { DashboardFooter } from '../../components/layout/DashboardFooter';
 import { CinematicHeroCard } from '../../components/sections/CinematicHeroCard';
 import { MinimalPosterCard } from '../../components/ui/MinimalPosterCard';
 import { SupportMinistryCard } from '../../components/ui/SupportMinistryCard';
@@ -15,6 +14,7 @@ import { AppButton } from '../../components/ui/AppButton';
 import { CustomText } from '../../components/CustomText';
 import { FadeIn } from '../../components/ui/FadeIn';
 import { TVTouchable } from '../../components/ui/TVTouchable';
+import { ActionSheet, type ActionSheetAction } from '../../components/ui/ActionSheet';
 import { useAppTheme } from '../../util/colorScheme';
 import { useContentFeed } from '../../hooks/useContentFeed';
 import { useWordOfDay } from '../../hooks/useWordOfDay';
@@ -25,8 +25,9 @@ import { buildPlayerRoute } from '../../util/playerRoute';
 import { deriveLayoutSectionItems, getHomeLayoutSections } from '../../util/mobileLayout';
 import type { FeedCardItem } from '../../services/contentService';
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
-import { subscribeToLiveAlertsBackend } from '../../services/userFlowService';
+import { saveMeLibraryItem, subscribeToLiveAlertsBackend } from '../../services/userFlowService';
 import { useToast } from '../../context/ToastContext';
+import { useAuth } from '../../context/AuthContext';
 
 const WORD_FOR_TODAY_FALLBACK = {
   title: 'Word for Today',
@@ -62,16 +63,16 @@ function QuickLink({
         borderWidth: 1,
         borderColor: theme.colors.border,
         backgroundColor: theme.colors.surface,
-        paddingHorizontal: 14,
-        paddingVertical: 14,
-        gap: 10,
+        paddingHorizontal: 12,
+        paddingVertical: 12,
+        gap: 8,
       }}
       showFocusBorder={false}
     >
       <View
         style={{
-          width: 34,
-          height: 34,
+          width: 30,
+          height: 30,
           borderRadius: theme.radius.sm,
           alignItems: 'center',
           justifyContent: 'center',
@@ -80,7 +81,7 @@ function QuickLink({
           borderColor: 'rgba(139,92,246,0.24)',
         }}
       >
-        <MaterialIcons name={icon} size={18} color={theme.colors.primary} />
+        <MaterialIcons name={icon} size={16} color={theme.colors.primary} />
       </View>
       <CustomText variant="label" style={{ color: theme.colors.text }}>
         {label}
@@ -93,9 +94,12 @@ export default function HomeScreen() {
   const router = useRouter();
   const theme = useAppTheme();
   const { showToast } = useToast();
+  const { isAuthenticated } = useAuth();
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
   const posterSize = isTablet ? 'md' : 'sm';
+  const [activeActionItem, setActiveActionItem] = useState<FeedCardItem | null>(null);
+  const [isActionSheetVisible, setIsActionSheetVisible] = useState(false);
 
   const { feed, loading, error, refresh } = useContentFeed();
   const { config: mobileConfig } = useMobileAppConfig();
@@ -196,6 +200,177 @@ export default function HomeScreen() {
     }
   };
 
+  const openMoreForItem = (item: FeedCardItem) => {
+    setActiveActionItem(item);
+    setIsActionSheetVisible(true);
+  };
+
+  const shareActive = async () => {
+    if (!activeActionItem) return;
+    try {
+      await Share.share({
+        message: `${activeActionItem.title}\n${activeActionItem.subtitle}${activeActionItem.mediaUrl ? `\n${activeActionItem.mediaUrl}` : ''}`,
+      });
+    } catch {
+      showToast({
+        title: 'Share unavailable',
+        message: 'Try again in a moment.',
+        tone: 'warning',
+      });
+    }
+  };
+
+  const saveToLibrary = async () => {
+    if (!activeActionItem) return;
+    if (!isAuthenticated) {
+      showToast({
+        title: 'Sign in to save',
+        message: 'Create an account to save items to your library.',
+        tone: 'warning',
+      });
+      return;
+    }
+    try {
+      await saveMeLibraryItem({
+        bucket: 'liked',
+        contentId: activeActionItem.id,
+        contentType: activeActionItem.type,
+        title: activeActionItem.title,
+        subtitle: activeActionItem.subtitle,
+        description: activeActionItem.description,
+        imageUrl: activeActionItem.imageUrl,
+        mediaUrl: activeActionItem.mediaUrl,
+        duration: activeActionItem.duration,
+        metadata: { source: 'home_action_sheet' },
+      });
+      showToast({
+        title: 'Saved to Library',
+        message: 'We saved this for you.',
+        tone: 'success',
+      });
+    } catch (error) {
+      showToast({
+        title: 'Save unavailable',
+        message: error instanceof Error ? error.message : 'Please try again.',
+        tone: 'warning',
+      });
+    }
+  };
+
+  const listenLater = async () => {
+    if (!activeActionItem) return;
+    if (!isAuthenticated) {
+      showToast({
+        title: 'Sign in to save',
+        message: 'Create an account to use Listen Later.',
+        tone: 'warning',
+      });
+      return;
+    }
+    try {
+      await saveMeLibraryItem({
+        bucket: 'playlist',
+        playlistName: 'Listen Later',
+        contentId: activeActionItem.id,
+        contentType: activeActionItem.type,
+        title: activeActionItem.title,
+        subtitle: activeActionItem.subtitle,
+        description: activeActionItem.description,
+        imageUrl: activeActionItem.imageUrl,
+        mediaUrl: activeActionItem.mediaUrl,
+        duration: activeActionItem.duration,
+        metadata: { source: 'home_action_sheet' },
+      });
+      showToast({
+        title: 'Added to Listen Later',
+        message: 'We saved this for you.',
+        tone: 'success',
+      });
+    } catch (error) {
+      showToast({
+        title: 'Listen later unavailable',
+        message: error instanceof Error ? error.message : 'Please try again.',
+        tone: 'warning',
+      });
+    }
+  };
+
+  const followActiveLive = async () => {
+    if (!activeActionItem) return;
+    try {
+      await subscribeToLiveAlertsBackend(activeActionItem.notificationChannelId || activeActionItem.id, activeActionItem.title);
+      showToast({
+        title: 'Live alerts enabled',
+        message: `You will be notified when ${activeActionItem.title} goes live.`,
+        tone: 'success',
+      });
+    } catch {
+      showToast({
+        title: 'Live alerts unavailable',
+        message: 'Sign in to follow live sessions.',
+        tone: 'warning',
+      });
+    }
+  };
+
+  const openReviews = () => {
+    router.push(APP_ROUTES.settingsPages.rate);
+  };
+
+  const actionSheetActions: ActionSheetAction[] = !activeActionItem
+    ? []
+    : [
+        {
+          key: 'save',
+          label: 'Save to Library',
+          detail: 'Keep this item in your library.',
+          icon: 'bookmark-border',
+          onPress: () => void saveToLibrary(),
+        },
+        {
+          key: 'share',
+          label: 'Share',
+          detail: 'Send this to someone else.',
+          icon: 'ios-share',
+          onPress: () => void shareActive(),
+        },
+        {
+          key: 'listen-later',
+          label: 'Listen Later',
+          detail: 'Save this for later.',
+          icon: 'schedule',
+          onPress: () => void listenLater(),
+        },
+        {
+          key: 'reviews',
+          label: 'Reviews & Ratings',
+          detail: 'See what others are saying.',
+          icon: 'reviews',
+          onPress: openReviews,
+        },
+        ...(activeActionItem.type === 'live'
+          ? [
+              {
+                key: 'follow-live',
+                label: 'Follow Live Alerts',
+                detail: 'Get notified before the stream starts.',
+                icon: 'notifications-active',
+                onPress: () => void followActiveLive(),
+              } as ActionSheetAction,
+            ]
+          : []),
+        {
+          key: 'open-detail',
+          label: 'Open Player',
+          detail: 'Open the full player screen.',
+          icon: 'open-in-full',
+          tone: 'accent' as const,
+          onPress: () => {
+            router.push(buildPlayerRoute(activeActionItem));
+          },
+        },
+      ];
+
   const openSponsoredItem = async (item: FeedCardItem) => {
     const target = item.ctaUrl || item.mediaUrl;
     if (!target) {
@@ -235,7 +410,7 @@ export default function HomeScreen() {
             <FadeIn>
               <BrandedHeaderCard
                 title="Home"
-                subtitle="New releases, live worship, and your next listen."
+                subtitle={isTablet ? 'New releases, live worship, and your next listen.' : undefined}
                 actions={[
                   { icon: 'search', onPress: () => router.push(APP_ROUTES.tabs.search), accessibilityLabel: 'Search' },
                   { icon: 'person-outline', onPress: () => router.push(APP_ROUTES.profile), accessibilityLabel: 'Profile' },
@@ -251,26 +426,43 @@ export default function HomeScreen() {
                 eyebrow={featured?.subtitle ?? 'ClaudyGod'}
                 title={featured?.title ?? 'Stay close to worship, messages, and live ministry.'}
                 subtitle={featured?.duration ?? 'ClaudyGod'}
-                description={featured?.description ?? 'Start from one featured moment, then move through the rest of the app without losing the thread.'}
-                height={isTablet ? 420 : 340}
-                actions={[
-                  {
-                    label: featured?.type === 'video' || featured?.isLive ? 'Watch now' : 'Play now',
-                    onPress: () => (featured ? openItem(featured, 'home_featured') : router.push(APP_ROUTES.tabs.player)),
-                    icon: featured?.type === 'video' || featured?.isLive ? 'smart-display' : 'play-arrow',
-                  },
-                  {
-                    label: featured?.isLive ? 'Notify me' : 'Read more',
-                    onPress: () =>
-                      featured?.isLive
-                        ? notifyLive(featured)
-                        : featured
-                          ? openItem(featured, 'home_featured_details')
-                          : router.push(APP_ROUTES.tabs.library),
-                    variant: 'secondary',
-                    icon: featured?.isLive ? 'notifications-active' : 'article',
-                  },
-                ]}
+                description={
+                  isTablet
+                    ? featured?.description ??
+                      'Start from one featured moment, then move through the rest of the app without losing the thread.'
+                    : undefined
+                }
+                height={isTablet ? 420 : 310}
+                actions={
+                  isTablet
+                    ? [
+                        {
+                          label: featured?.type === 'video' || featured?.isLive ? 'Watch now' : 'Play now',
+                          onPress: () =>
+                            featured ? openItem(featured, 'home_featured') : router.push(APP_ROUTES.tabs.player),
+                          icon: featured?.type === 'video' || featured?.isLive ? 'smart-display' : 'play-arrow',
+                        },
+                        {
+                          label: featured?.isLive ? 'Notify me' : 'Read more',
+                          onPress: () =>
+                            featured?.isLive
+                              ? notifyLive(featured)
+                              : featured
+                                ? openItem(featured, 'home_featured_details')
+                                : router.push(APP_ROUTES.tabs.library),
+                          variant: 'secondary',
+                          icon: featured?.isLive ? 'notifications-active' : 'article',
+                        },
+                      ]
+                    : [
+                        {
+                          label: featured?.type === 'video' || featured?.isLive ? 'Watch now' : 'Play now',
+                          onPress: () =>
+                            featured ? openItem(featured, 'home_featured') : router.push(APP_ROUTES.tabs.player),
+                          icon: featured?.type === 'video' || featured?.isLive ? 'smart-display' : 'play-arrow',
+                        },
+                      ]
+                }
               />
             </FadeIn>
 
@@ -295,7 +487,7 @@ export default function HomeScreen() {
                     actionLabel={section.actionLabel}
                     onAction={() => router.push(TAB_ROUTE_BY_ID[section.destinationTab])}
                   />
-                  {section.subtitle ? (
+                  {section.subtitle && isTablet ? (
                     <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginBottom: 10 }}>
                       {section.subtitle}
                     </CustomText>
@@ -309,6 +501,8 @@ export default function HomeScreen() {
                         meta={formatMeta(item)}
                         size={posterSize}
                         onPress={() => void openItem(item, 'home_curated')}
+                        showMore
+                        onMorePress={() => openMoreForItem(item)}
                       />
                     ))}
                   </ScrollView>
@@ -382,7 +576,7 @@ export default function HomeScreen() {
                     actionLabel={section.actionLabel}
                     onAction={() => router.push(TAB_ROUTE_BY_ID[section.destinationTab])}
                   />
-                  {section.subtitle ? (
+                  {section.subtitle && isTablet ? (
                     <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginBottom: 10 }}>
                       {section.subtitle}
                     </CustomText>
@@ -396,6 +590,8 @@ export default function HomeScreen() {
                         meta={formatMeta(item)}
                         size={posterSize}
                         onPress={() => void openItem(item, 'home_curated')}
+                        showMore
+                        onMorePress={() => openMoreForItem(item)}
                       />
                     ))}
                   </ScrollView>
@@ -491,16 +687,16 @@ export default function HomeScreen() {
               </CustomText>
             ) : null}
 
-            <FadeIn delay={400}>
-              <DashboardFooter
-                onSupportPress={() => router.push(APP_ROUTES.settingsPages.donate)}
-                onLiveAlertsPress={() => void notifyLiveGeneral()}
-                onFeedbackPress={() => router.push(APP_ROUTES.settingsPages.help)}
-              />
-            </FadeIn>
           </View>
         </Screen>
       </ScrollView>
+      <ActionSheet
+        visible={isActionSheetVisible}
+        title={activeActionItem?.title ?? 'Content options'}
+        description={activeActionItem?.subtitle}
+        actions={actionSheetActions}
+        onClose={() => setIsActionSheetVisible(false)}
+      />
     </TabScreenWrapper>
   );
 }
