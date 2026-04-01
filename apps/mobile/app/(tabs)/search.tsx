@@ -18,6 +18,7 @@ import { TVTouchable } from '../../components/ui/TVTouchable';
 import { useToast } from '../../context/ToastContext';
 import { useContentFeed } from '../../hooks/useContentFeed';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
+import { fetchSearchResults } from '../../services/contentService';
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
 import { saveMeLibraryItem, subscribeToLiveAlertsBackend } from '../../services/userFlowService';
 import { APP_ROUTES } from '../../util/appRoutes';
@@ -40,6 +41,8 @@ export default function Search() {
   const [recentQueries, setRecentQueries] = useState<string[]>([]);
   const [activeActionItem, setActiveActionItem] = useState<FeedCardItem | null>(null);
   const [isActionSheetVisible, setIsActionSheetVisible] = useState(false);
+  const [remoteResults, setRemoteResults] = useState<FeedCardItem[] | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
 
   const { feed } = useContentFeed();
   const { config: mobileConfig } = useMobileAppConfig();
@@ -67,7 +70,19 @@ export default function Search() {
   );
   const browsePalette = ['#2563EB', '#10B981', '#F59E0B', '#EC4899', '#8B5CF6', '#14B8A6', '#F97316'];
 
+  const resolveCategoryType = (category: string): FeedCardItem['type'] | undefined => {
+    const normalized = category.toLowerCase();
+    if (normalized === 'audio' || normalized === 'video' || normalized === 'playlist' || normalized === 'live' || normalized === 'announcement') {
+      return normalized as FeedCardItem['type'];
+    }
+    return undefined;
+  };
+
   const filtered = useMemo(() => {
+    if (remoteResults) {
+      return remoteResults;
+    }
+
     const q = query.trim().toLowerCase();
 
     return allItems.filter((item) => {
@@ -79,7 +94,30 @@ export default function Search() {
       const matchesCategory = activeCategory === 'All' || item.type === activeCategory;
       return matchesText && matchesCategory;
     });
-  }, [activeCategory, allItems, query]);
+  }, [activeCategory, allItems, query, remoteResults]);
+
+  const runRemoteSearch = async (nextQuery: string, category: string) => {
+    const trimmed = nextQuery.trim();
+    if (!trimmed) {
+      setRemoteResults(null);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      const results = await fetchSearchResults(trimmed, resolveCategoryType(category));
+      setRemoteResults(results);
+      if (!results.length) {
+        showToast({
+          title: 'No matches',
+          message: 'Try a different keyword or category.',
+          tone: 'info',
+        });
+      }
+    } finally {
+      setIsSearching(false);
+    }
+  };
 
   const formatMeta = (item: (typeof filtered)[number]) =>
     [item.subtitle, item.duration].filter((value) => Boolean(value)).join(' · ');
@@ -281,12 +319,16 @@ export default function Search() {
 
     setQuery(recent);
     setActiveCategory('All');
+    void runRemoteSearch(recent, 'All');
   };
 
   const cycleCategory = () => {
     const currentIndex = discoveryCategories.indexOf(activeCategory as (typeof discoveryCategories)[number]);
     const nextCategory = discoveryCategories[(currentIndex + 1) % discoveryCategories.length] ?? 'All';
     setActiveCategory(nextCategory);
+    if (query.trim()) {
+      void runRemoteSearch(query, nextCategory);
+    }
     showToast({
       title: 'Filter updated',
       message: `Showing ${nextCategory === 'All' ? 'all results' : nextCategory} results.`,
@@ -307,6 +349,7 @@ export default function Search() {
     }
 
     setRecentQueries((current) => [normalized, ...current.filter((entry) => entry !== normalized)].slice(0, 5));
+    void runRemoteSearch(normalized, activeCategory);
   };
 
   return (
@@ -357,6 +400,11 @@ export default function Search() {
                 <CustomText variant="caption" style={{ color: theme.colors.textSecondary }}>
                   Try artists, sermons, playlists, or live sessions.
                 </CustomText>
+                {isSearching ? (
+                  <CustomText variant="caption" style={{ color: theme.colors.textSecondary }}>
+                    Searching…
+                  </CustomText>
+                ) : null}
               </View>
             </FadeIn>
 
@@ -404,6 +452,7 @@ export default function Search() {
                       onPress={() => {
                         setQuery(shortcut.query);
                         setActiveCategory(shortcut.category);
+                        void runRemoteSearch(shortcut.query, shortcut.category);
                         showToast({
                           title: 'Filter applied',
                           message: `Showing ${shortcut.label.toLowerCase()}.`,
@@ -469,6 +518,7 @@ export default function Search() {
                       onPress={() => {
                         setActiveCategory('All');
                         setQuery('');
+                        setRemoteResults(null);
                       }}
                     />
                   </View>

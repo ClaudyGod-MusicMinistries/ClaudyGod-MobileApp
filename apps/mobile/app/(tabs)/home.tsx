@@ -211,8 +211,9 @@ export default function HomeScreen() {
     if (activeChip === 'music') return feed.music;
     if (activeChip === 'videos') return feed.videos;
     if (activeChip === 'live') return feed.live;
-    return feed.recent;
-  }, [activeChip, feed.live, feed.music, feed.recent, feed.videos]);
+    return [...feed.music, ...feed.videos, ...feed.live, ...feed.playlists, ...feed.recent]
+      .filter((item, index, arr) => arr.findIndex((entry) => entry.id === item.id) === index);
+  }, [activeChip, feed.live, feed.music, feed.playlists, feed.recent, feed.videos]);
   const quickPicks = useMemo(() => {
     const pool = [...feed.music, ...feed.playlists, ...feed.videos, ...feed.recent];
     return pool.filter((item) => item.imageUrl).slice(0, 4);
@@ -502,45 +503,86 @@ export default function HomeScreen() {
             </FadeIn>
 
             <FadeIn delay={60}>
-              {isTablet ? (
-                <View style={{ marginTop: 6 }}>
-                  <CinematicHeroCard
-                    imageSource={!featured ? BRAND_HERO_ASSET : undefined}
-                    imageUrl={featured?.imageUrl}
-                    badge={featured?.isLive ? 'Live now' : featured?.type === 'audio' ? 'Featured listen' : 'Featured'}
-                    eyebrow={featured?.subtitle ?? 'ClaudyGod'}
-                    title={featured?.title ?? 'Stay close to worship, messages, and live ministry.'}
-                    subtitle={featured?.duration ?? 'ClaudyGod'}
-                    description={
-                      featured?.description ??
-                      'Start from one featured moment, then move through the rest of the app without losing the thread.'
-                    }
-                    height={420}
-                    contentSurface
-                    overlayStrength={0.84}
-                    actions={[
-                      {
-                        label: featured?.type === 'video' || featured?.isLive ? 'Watch now' : 'Play now',
-                        onPress: () =>
-                          featured ? openItem(featured, 'home_featured') : router.push(APP_ROUTES.tabs.player),
-                        icon: featured?.type === 'video' || featured?.isLive ? 'smart-display' : 'play-arrow',
-                      },
-                      {
-                        label: featured?.isLive ? 'Notify me' : 'Read more',
-                        onPress: () =>
-                          featured?.isLive
-                            ? notifyLive(featured)
-                            : featured
-                              ? openItem(featured, 'home_featured_details')
-                              : router.push(APP_ROUTES.tabs.library),
-                        variant: 'secondary',
-                        icon: featured?.isLive ? 'notifications-active' : 'article',
-                      },
-                    ]}
-                  />
-                </View>
-              ) : null}
+              <View style={{ marginTop: isTablet ? 6 : 10 }}>
+                <CinematicHeroCard
+                  imageSource={!featured ? BRAND_HERO_ASSET : undefined}
+                  imageUrl={featured?.imageUrl}
+                  badge={featured?.isLive ? 'Live now' : featured?.type === 'audio' ? 'Featured listen' : 'Featured'}
+                  eyebrow={featured?.subtitle ?? 'ClaudyGod'}
+                  title={featured?.title ?? 'Stay close to worship, messages, and live ministry.'}
+                  subtitle={featured?.duration ?? 'ClaudyGod'}
+                  description={
+                    isTablet
+                      ? featured?.description ??
+                        'Start from one featured moment, then move through the rest of the app without losing the thread.'
+                      : undefined
+                  }
+                  height={isTablet ? 420 : 300}
+                  contentSurface={isTablet}
+                  overlayStrength={isTablet ? 0.84 : 0.6}
+                  actions={[
+                    {
+                      label: featured?.type === 'video' || featured?.isLive ? 'Watch now' : 'Play now',
+                      onPress: () =>
+                        featured ? openItem(featured, 'home_featured') : router.push(APP_ROUTES.tabs.player),
+                      icon: featured?.type === 'video' || featured?.isLive ? 'smart-display' : 'play-arrow',
+                    },
+                    ...(isTablet
+                      ? [
+                          {
+                            label: featured?.isLive ? 'Notify me' : 'Read more',
+                            onPress: () =>
+                              featured?.isLive
+                                ? notifyLive(featured)
+                                : featured
+                                  ? openItem(featured, 'home_featured_details')
+                                  : router.push(APP_ROUTES.tabs.library),
+                            variant: 'secondary' as const,
+                            icon: featured?.isLive ? 'notifications-active' : 'article',
+                          },
+                        ]
+                      : []),
+                  ]}
+                />
+              </View>
             </FadeIn>
+
+            {liveAlertTarget ? (
+              <FadeIn delay={80}>
+                <SurfaceCard tone="subtle" style={{ padding: theme.spacing.md }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                    <View
+                      style={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: 12,
+                        backgroundColor: 'rgba(34,197,94,0.14)',
+                        borderWidth: 1,
+                        borderColor: 'rgba(34,197,94,0.25)',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <MaterialIcons name="notifications-active" size={20} color={theme.colors.success} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <CustomText variant="label" style={{ color: theme.colors.text }}>
+                        Stay ready for the next live moment
+                      </CustomText>
+                      <CustomText variant="caption" style={{ color: theme.colors.textSecondary }}>
+                        Get notified when we go live.
+                      </CustomText>
+                    </View>
+                    <AppButton
+                      title="Notify"
+                      size="sm"
+                      variant="secondary"
+                      onPress={() => void notifyLiveGeneral()}
+                    />
+                  </View>
+                </SurfaceCard>
+              </FadeIn>
+            ) : null}
 
             <FadeIn delay={100}>
               <ScrollView
