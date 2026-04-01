@@ -13,6 +13,7 @@ interface MediaCardProps {
   imageUrl: string;
   title: string;
   subtitle?: string;
+  meta?: string;
   onPress?: () => void;
   size?: 'sm' | 'md' | 'lg';
   badge?: string;
@@ -26,6 +27,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
   imageUrl,
   title,
   subtitle,
+  meta,
   onPress,
   size = 'md',
   badge,
@@ -212,7 +214,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
             variant="body"
             style={{
               color: '#FFFFFF',
-              fontSize: 12,
+              fontSize: 12.5,
               fontWeight: '600',
               lineHeight: 16,
             }}
@@ -220,18 +222,18 @@ export const MediaCard: React.FC<MediaCardProps> = ({
           >
             {title}
           </CustomText>
-          {subtitle && (
+          {(meta || subtitle) && (
             <CustomText
               variant="caption"
               style={{
                 color: 'rgba(255,255,255,0.7)',
                 marginTop: 3,
-                fontSize: 10,
+                fontSize: 10.5,
                 lineHeight: 14,
               }}
               numberOfLines={1}
             >
-              {subtitle}
+              {meta ?? subtitle}
             </CustomText>
           )}
         </View>

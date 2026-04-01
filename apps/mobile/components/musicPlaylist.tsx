@@ -125,12 +125,12 @@ export const SongList: React.FC<SongListProps> = ({
                 style={{ color: theme.colors.textSecondary, marginTop: 2 }}
                 numberOfLines={1}
               >
-                {song.artist}
+                {[song.artist, song.album].filter(Boolean).join(' · ')}
               </CustomText>
             </View>
 
             <View style={{ alignItems: 'flex-end' }}>
-              <CustomText variant="caption" style={{ color: theme.colors.textSecondary }}>
+              <CustomText variant="caption" style={{ color: theme.colors.textSecondary, fontSize: 10.5 }}>
                 {song.duration}
               </CustomText>
               {showActions && onRemove ? (

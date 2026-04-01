@@ -98,6 +98,8 @@ export default function LibraryScreen() {
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
   const posterSize = isTablet ? 'md' : 'sm';
+  const formatMeta = (item: FeedCardItem) =>
+    [item.subtitle, item.duration].filter((value) => Boolean(value)).join(' · ');
   const { feed } = useContentFeed();
   const { config: mobileConfig } = useMobileAppConfig();
   const [library, setLibrary] = useState<MeLibrary | null>(null);
@@ -232,7 +234,7 @@ export default function LibraryScreen() {
                           key={`guest-library-${item.id}`}
                           imageUrl={item.imageUrl}
                           title={item.title}
-                          subtitle={item.subtitle}
+                          meta={formatMeta(item)}
                           size={posterSize}
                           onPress={() => void openItem(item, 'library_guest_preview')}
                         />
@@ -308,7 +310,7 @@ export default function LibraryScreen() {
                           key={`${section.id}-${item.id}`}
                           imageUrl={item.imageUrl}
                           title={item.title}
-                          subtitle={item.subtitle}
+                          meta={formatMeta(item)}
                           size={posterSize}
                           onPress={() => void openItem(item, `library_${section.id}`)}
                         />
