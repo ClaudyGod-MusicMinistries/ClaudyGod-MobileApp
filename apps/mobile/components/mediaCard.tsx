@@ -18,6 +18,8 @@ interface MediaCardProps {
   badge?: string;
   isLive?: boolean;
   viewCount?: number;
+  showMore?: boolean;
+  onMorePress?: () => void;
 }
 
 export const MediaCard: React.FC<MediaCardProps> = ({
@@ -29,6 +31,8 @@ export const MediaCard: React.FC<MediaCardProps> = ({
   badge,
   isLive = false,
   viewCount,
+  showMore = false,
+  onMorePress,
 }) => {
   const colorScheme = useColorScheme();
   const palette = colors[colorScheme];
@@ -115,24 +119,55 @@ export const MediaCard: React.FC<MediaCardProps> = ({
 
         {/* Play Button or Live Indicator */}
         {!isLive && (
-          <Pressable
+          <View
             style={{
               position: 'absolute',
-              right: 8,
-              top: 8,
-              width: 38,
-              height: 38,
-              borderRadius: radius.md,
-              backgroundColor: 'rgba(10,10,15,0.8)',
-              borderWidth: 1,
-              borderColor: 'rgba(255,255,255,0.2)',
+              left: 0,
+              right: 0,
+              top: 0,
+              bottom: 0,
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <MaterialIcons name="play-arrow" size={20} color="#FFFFFF" />
-          </Pressable>
+            <View
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 24,
+                backgroundColor: 'rgba(10,10,15,0.82)',
+                borderWidth: 1,
+                borderColor: 'rgba(255,255,255,0.2)',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <MaterialIcons name="play-arrow" size={24} color="#FFFFFF" />
+            </View>
+          </View>
         )}
+
+        {/* More Actions */}
+        {showMore && onMorePress ? (
+          <Pressable
+            onPress={onMorePress}
+            style={{
+              position: 'absolute',
+              right: 8,
+              top: 8,
+              width: 32,
+              height: 32,
+              borderRadius: 16,
+              backgroundColor: 'rgba(10,10,15,0.75)',
+              borderWidth: 1,
+              borderColor: 'rgba(255,255,255,0.18)',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <MaterialIcons name="more-vert" size={18} color="#FFFFFF" />
+          </Pressable>
+        ) : null}
 
         {/* View Count */}
         {viewCount !== undefined && (

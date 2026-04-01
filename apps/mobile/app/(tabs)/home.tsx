@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { TabScreenWrapper } from '../../components/layout/TabScreenWrapper';
 import { Screen } from '../../components/layout/Screen';
 import { BrandedHeaderCard } from '../../components/layout/BrandedHeaderCard';
+import { DashboardFooter } from '../../components/layout/DashboardFooter';
 import { CinematicHeroCard } from '../../components/sections/CinematicHeroCard';
 import { MinimalPosterCard } from '../../components/ui/MinimalPosterCard';
 import { SupportMinistryCard } from '../../components/ui/SupportMinistryCard';
@@ -103,6 +104,10 @@ export default function HomeScreen() {
   const homeSections = useMemo(() => getHomeLayoutSections(mobileConfig), [mobileConfig]);
   const sponsoredItem = useMemo(() => feed.ads[0] ?? null, [feed]);
   const sponsoredLabel = mobileConfig?.monetization?.disclosureLabel || 'Sponsored';
+  const liveAlertTarget = useMemo(
+    () => feed.live[0] ?? (featured?.isLive ? featured : null) ?? feed.videos[0] ?? null,
+    [feed.live, feed.videos, featured],
+  );
   const curatedRails = useMemo(
     () =>
       homeSections
@@ -153,6 +158,23 @@ export default function HomeScreen() {
   const notifyLive = async (item: FeedCardItem) => {
     try {
       await subscribeToLiveAlerts(item.notificationChannelId || item.id);
+      showToast({
+        title: 'Live alerts enabled',
+        message: 'You will be notified when ClaudyGod goes live.',
+        tone: 'success',
+      });
+    } catch {
+      showToast({
+        title: 'Live alerts unavailable',
+        message: 'Sign in to follow live sessions.',
+        tone: 'warning',
+      });
+    }
+  };
+
+  const notifyLiveGeneral = async () => {
+    try {
+      await subscribeToLiveAlerts(liveAlertTarget?.notificationChannelId || liveAlertTarget?.id || 'claudygod-live');
       showToast({
         title: 'Live alerts enabled',
         message: 'You will be notified when ClaudyGod goes live.',
@@ -372,6 +394,53 @@ export default function HomeScreen() {
               </FadeIn>
             ))}
 
+            <FadeIn delay={320}>
+              <SurfaceCard tone="subtle" style={{ padding: theme.spacing.lg }}>
+                <View style={{ gap: 12 }}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
+                    <View style={{ flex: 1 }}>
+                      <CustomText
+                        variant="caption"
+                        style={{
+                          color: theme.colors.textSecondary,
+                          textTransform: 'uppercase',
+                          letterSpacing: 0.9,
+                        }}
+                      >
+                        Live alerts
+                      </CustomText>
+                      <CustomText variant="heading" style={{ color: theme.colors.text, marginTop: 6 }}>
+                        Get notified when we go live
+                      </CustomText>
+                      <CustomText variant="body" style={{ color: theme.colors.textSecondary, marginTop: 8 }}>
+                        Turn on alerts so you never miss a worship moment.
+                      </CustomText>
+                    </View>
+                    <View
+                      style={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: theme.radius.md,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: 'rgba(34,197,94,0.12)',
+                        borderWidth: 1,
+                        borderColor: 'rgba(34,197,94,0.2)',
+                      }}
+                    >
+                      <MaterialIcons name="notifications-active" size={22} color={theme.colors.success} />
+                    </View>
+                  </View>
+                  <AppButton
+                    title="Notify me"
+                    variant="secondary"
+                    onPress={() => void notifyLiveGeneral()}
+                    leftIcon={<MaterialIcons name="notifications" size={16} color={theme.colors.text} />}
+                  />
+                </View>
+              </SurfaceCard>
+            </FadeIn>
+
             <FadeIn delay={340}>
               <SurfaceCard tone="subtle" style={{ padding: theme.spacing.lg }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
@@ -412,6 +481,14 @@ export default function HomeScreen() {
                 Feed error: {error}
               </CustomText>
             ) : null}
+
+            <FadeIn delay={400}>
+              <DashboardFooter
+                onSupportPress={() => router.push(APP_ROUTES.settingsPages.donate)}
+                onLiveAlertsPress={() => void notifyLiveGeneral()}
+                onFeedbackPress={() => router.push(APP_ROUTES.settingsPages.help)}
+              />
+            </FadeIn>
           </View>
         </Screen>
       </ScrollView>

@@ -231,6 +231,11 @@ export default function VideosScreen() {
     await Linking.openURL(active.mediaUrl);
   };
 
+  const openMoreForItem = (item: FeedCardItem) => {
+    setActiveId(item.id);
+    setIsActionSheetVisible(true);
+  };
+
   const toggleSave = async () => {
     if (!active) return;
 
@@ -319,6 +324,22 @@ export default function VideosScreen() {
     }
   };
 
+  const listenLater = () => {
+    showToast({
+      title: 'Added to Listen Later',
+      message: 'We will keep this in your queue for later.',
+      tone: 'success',
+    });
+  };
+
+  const openReviews = () => {
+    showToast({
+      title: 'Reviews coming soon',
+      message: 'We are adding reviews and ratings shortly.',
+      tone: 'info',
+    });
+  };
+
   const actionSheetActions: ActionSheetAction[] = !active
     ? []
     : [
@@ -339,6 +360,20 @@ export default function VideosScreen() {
           onPress: () => {
             void shareActive();
           },
+        },
+        {
+          key: 'listen-later',
+          label: 'Listen Later',
+          detail: 'Save this for a quieter moment.',
+          icon: 'schedule',
+          onPress: listenLater,
+        },
+        {
+          key: 'reviews',
+          label: 'Reviews & Ratings',
+          detail: 'See what others are saying.',
+          icon: 'reviews',
+          onPress: openReviews,
         },
         {
           key: active.isLive ? 'follow-live' : 'open-browser',
@@ -486,6 +521,8 @@ export default function VideosScreen() {
                         title={item.title}
                         subtitle={item.subtitle}
                         size={posterSize}
+                        showMore
+                        onMorePress={() => openMoreForItem(item)}
                         onPress={() => void openVideo(item, 'videos_queue')}
                       />
                     ))}
@@ -513,6 +550,8 @@ export default function VideosScreen() {
                         title={item.title}
                         subtitle={item.subtitle}
                         size={posterSize}
+                        showMore
+                        onMorePress={() => openMoreForItem(item)}
                         onPress={() => void openVideo(item, 'videos_curated')}
                       />
                     ))}
