@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { Linking, RefreshControl, ScrollView, Share, View, useWindowDimensions } from 'react-native';
+import type { DimensionValue } from 'react-native';
+import { Image, Linking, RefreshControl, ScrollView, Share, View, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { TabScreenWrapper } from '../../components/layout/TabScreenWrapper';
@@ -15,6 +16,7 @@ import { CustomText } from '../../components/CustomText';
 import { FadeIn } from '../../components/ui/FadeIn';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { ActionSheet, type ActionSheetAction } from '../../components/ui/ActionSheet';
+import { Chip } from '../../components/ui/Chip';
 import { useAppTheme } from '../../util/colorScheme';
 import { useContentFeed } from '../../hooks/useContentFeed';
 import { useWordOfDay } from '../../hooks/useWordOfDay';
@@ -36,20 +38,76 @@ const WORD_FOR_TODAY_FALLBACK = {
   reflection: 'Return throughout the day and keep the word close.',
 };
 
-const DEFAULT_QUICK_LINKS = [
-  { key: 'music', icon: 'graphic-eq', label: 'Music', route: APP_ROUTES.tabs.player },
-  { key: 'videos', icon: 'smart-display', label: 'Videos', route: APP_ROUTES.tabs.videos },
-  { key: 'live', icon: 'live-tv', label: 'Live', route: APP_ROUTES.tabs.live },
+const HOME_CHIPS = [
+  { key: 'all', label: 'All' },
+  { key: 'music', label: 'Music' },
+  { key: 'videos', label: 'Videos' },
+  { key: 'live', label: 'Live' },
 ] as const;
 
-function QuickLink({
-  icon,
-  label,
+function PickedForYouCard({
+  item,
   onPress,
+  onMorePress,
 }: {
-  icon: React.ComponentProps<typeof MaterialIcons>['name'];
-  label: string;
+  item: FeedCardItem;
   onPress: () => void;
+  onMorePress: () => void;
+}) {
+  const theme = useAppTheme();
+
+  return (
+    <SurfaceCard tone="subtle" style={{ padding: theme.spacing.md }}>
+      <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
+        <Image
+          source={{ uri: item.imageUrl }}
+          style={{ width: 96, height: 96, borderRadius: theme.radius.md }}
+        />
+        <View style={{ flex: 1, gap: 4 }}>
+          <CustomText variant="caption" style={{ color: theme.colors.textSecondary }}>
+            {item.duration ?? item.subtitle ?? 'ClaudyGod'}
+          </CustomText>
+          <CustomText variant="label" style={{ color: theme.colors.text }}>
+            {item.title}
+          </CustomText>
+          {item.description ? (
+            <CustomText variant="caption" style={{ color: theme.colors.textSecondary }} numberOfLines={2}>
+              {item.description}
+            </CustomText>
+          ) : null}
+        </View>
+        <View style={{ alignItems: 'center', gap: 8 }}>
+          <TVTouchable onPress={onMorePress} showFocusBorder={false}>
+            <MaterialIcons name="more-vert" size={20} color={theme.colors.textSecondary} />
+          </TVTouchable>
+          <TVTouchable
+            onPress={onPress}
+            style={{
+              width: 38,
+              height: 38,
+              borderRadius: 19,
+              backgroundColor: theme.colors.primary,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            showFocusBorder={false}
+          >
+            <MaterialIcons name="play-arrow" size={20} color={theme.colors.textInverse} />
+          </TVTouchable>
+        </View>
+      </View>
+    </SurfaceCard>
+  );
+}
+
+function RotationRow({
+  item,
+  onPress,
+  onMorePress,
+}: {
+  item: FeedCardItem;
+  onPress: () => void;
+  onMorePress: () => void;
 }) {
   const theme = useAppTheme();
 
@@ -57,34 +115,61 @@ function QuickLink({
     <TVTouchable
       onPress={onPress}
       style={{
-        flex: 1,
-        minWidth: 0,
-        borderRadius: theme.radius.md,
-        borderWidth: 1,
-        borderColor: theme.colors.border,
-        backgroundColor: theme.colors.surface,
-        paddingHorizontal: 12,
-        paddingVertical: 12,
-        gap: 8,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        paddingVertical: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(255,255,255,0.06)',
       }}
       showFocusBorder={false}
     >
-      <View
-        style={{
-          width: 30,
-          height: 30,
-          borderRadius: theme.radius.sm,
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: 'rgba(139,92,246,0.14)',
-          borderWidth: 1,
-          borderColor: 'rgba(139,92,246,0.24)',
-        }}
-      >
-        <MaterialIcons name={icon} size={16} color={theme.colors.primary} />
+      <Image source={{ uri: item.imageUrl }} style={{ width: 44, height: 44, borderRadius: theme.radius.md }} />
+      <View style={{ flex: 1 }}>
+        <CustomText variant="label" style={{ color: theme.colors.text }} numberOfLines={1}>
+          {item.title}
+        </CustomText>
+        <CustomText variant="caption" style={{ color: theme.colors.textSecondary }} numberOfLines={1}>
+          {item.subtitle ?? 'ClaudyGod'}
+        </CustomText>
       </View>
-      <CustomText variant="label" style={{ color: theme.colors.text }}>
-        {label}
+      <TVTouchable onPress={onMorePress} showFocusBorder={false}>
+        <MaterialIcons name="more-vert" size={20} color={theme.colors.textSecondary} />
+      </TVTouchable>
+    </TVTouchable>
+  );
+}
+
+function QuickPickCard({
+  item,
+  onPress,
+  width,
+}: {
+  item: FeedCardItem;
+  onPress: () => void;
+  width: DimensionValue;
+}) {
+  const theme = useAppTheme();
+
+  return (
+    <TVTouchable
+      onPress={onPress}
+      style={{
+        width,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        padding: 10,
+        borderRadius: theme.radius.lg,
+        backgroundColor: theme.colors.surface,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+      }}
+      showFocusBorder={false}
+    >
+      <Image source={{ uri: item.imageUrl }} style={{ width: 44, height: 44, borderRadius: theme.radius.md }} />
+      <CustomText variant="caption" style={{ color: theme.colors.text }} numberOfLines={2}>
+        {item.title}
       </CustomText>
     </TVTouchable>
   );
@@ -104,6 +189,7 @@ export default function HomeScreen() {
   const { feed, loading, error, refresh } = useContentFeed();
   const { config: mobileConfig } = useMobileAppConfig();
   const { word } = useWordOfDay();
+  const [activeChip, setActiveChip] = useState<(typeof HOME_CHIPS)[number]['key']>(HOME_CHIPS[0].key);
 
   const featured = useMemo(() => feed.featured ?? feed.recent[0] ?? feed.music[0] ?? feed.videos[0] ?? null, [feed]);
   const homeSections = useMemo(() => getHomeLayoutSections(mobileConfig), [mobileConfig]);
@@ -121,19 +207,16 @@ export default function HomeScreen() {
         .slice(0, 5),
     [feed, homeSections],
   );
-  const quickLinks = useMemo(() => {
-    const tabs = mobileConfig?.navigation?.tabs ?? [];
-    const configuredLinks = tabs
-      .filter((tab) => tab.id === 'player' || tab.id === 'videos' || tab.id === 'live')
-      .map((tab) => ({
-        key: tab.id,
-        icon: tab.icon as React.ComponentProps<typeof MaterialIcons>['name'],
-        label: tab.label,
-        route: TAB_ROUTE_BY_ID[tab.id],
-      }));
-
-    return configuredLinks.length ? configuredLinks : DEFAULT_QUICK_LINKS;
-  }, [mobileConfig]);
+  const filteredByChip = useMemo(() => {
+    if (activeChip === 'music') return feed.music;
+    if (activeChip === 'videos') return feed.videos;
+    if (activeChip === 'live') return feed.live;
+    return feed.recent;
+  }, [activeChip, feed.live, feed.music, feed.recent, feed.videos]);
+  const quickPicks = useMemo(() => {
+    const pool = [...feed.music, ...feed.playlists, ...feed.videos, ...feed.recent];
+    return pool.filter((item) => item.imageUrl).slice(0, 4);
+  }, [feed.music, feed.playlists, feed.recent, feed.videos]);
 
   const formatMeta = (item: FeedCardItem) =>
     [item.subtitle, item.duration].filter((value) => Boolean(value)).join(' · ');
@@ -419,96 +502,138 @@ export default function HomeScreen() {
             </FadeIn>
 
             <FadeIn delay={60}>
-              <CinematicHeroCard
-                imageSource={!featured ? BRAND_HERO_ASSET : undefined}
-                imageUrl={featured?.imageUrl}
-                badge={featured?.isLive ? 'Live now' : featured?.type === 'audio' ? 'Featured listen' : 'Featured'}
-                eyebrow={featured?.subtitle ?? 'ClaudyGod'}
-                title={featured?.title ?? 'Stay close to worship, messages, and live ministry.'}
-                subtitle={featured?.duration ?? 'ClaudyGod'}
-                description={
-                  isTablet
-                    ? featured?.description ??
+              {isTablet ? (
+                <View style={{ marginTop: 6 }}>
+                  <CinematicHeroCard
+                    imageSource={!featured ? BRAND_HERO_ASSET : undefined}
+                    imageUrl={featured?.imageUrl}
+                    badge={featured?.isLive ? 'Live now' : featured?.type === 'audio' ? 'Featured listen' : 'Featured'}
+                    eyebrow={featured?.subtitle ?? 'ClaudyGod'}
+                    title={featured?.title ?? 'Stay close to worship, messages, and live ministry.'}
+                    subtitle={featured?.duration ?? 'ClaudyGod'}
+                    description={
+                      featured?.description ??
                       'Start from one featured moment, then move through the rest of the app without losing the thread.'
-                    : undefined
-                }
-                height={isTablet ? 420 : 310}
-                actions={
-                  isTablet
-                    ? [
-                        {
-                          label: featured?.type === 'video' || featured?.isLive ? 'Watch now' : 'Play now',
-                          onPress: () =>
-                            featured ? openItem(featured, 'home_featured') : router.push(APP_ROUTES.tabs.player),
-                          icon: featured?.type === 'video' || featured?.isLive ? 'smart-display' : 'play-arrow',
-                        },
-                        {
-                          label: featured?.isLive ? 'Notify me' : 'Read more',
-                          onPress: () =>
-                            featured?.isLive
-                              ? notifyLive(featured)
-                              : featured
-                                ? openItem(featured, 'home_featured_details')
-                                : router.push(APP_ROUTES.tabs.library),
-                          variant: 'secondary',
-                          icon: featured?.isLive ? 'notifications-active' : 'article',
-                        },
-                      ]
-                    : [
-                        {
-                          label: featured?.type === 'video' || featured?.isLive ? 'Watch now' : 'Play now',
-                          onPress: () =>
-                            featured ? openItem(featured, 'home_featured') : router.push(APP_ROUTES.tabs.player),
-                          icon: featured?.type === 'video' || featured?.isLive ? 'smart-display' : 'play-arrow',
-                        },
-                      ]
-                }
-              />
+                    }
+                    height={420}
+                    contentSurface
+                    overlayStrength={0.84}
+                    actions={[
+                      {
+                        label: featured?.type === 'video' || featured?.isLive ? 'Watch now' : 'Play now',
+                        onPress: () =>
+                          featured ? openItem(featured, 'home_featured') : router.push(APP_ROUTES.tabs.player),
+                        icon: featured?.type === 'video' || featured?.isLive ? 'smart-display' : 'play-arrow',
+                      },
+                      {
+                        label: featured?.isLive ? 'Notify me' : 'Read more',
+                        onPress: () =>
+                          featured?.isLive
+                            ? notifyLive(featured)
+                            : featured
+                              ? openItem(featured, 'home_featured_details')
+                              : router.push(APP_ROUTES.tabs.library),
+                        variant: 'secondary',
+                        icon: featured?.isLive ? 'notifications-active' : 'article',
+                      },
+                    ]}
+                  />
+                </View>
+              ) : null}
             </FadeIn>
 
             <FadeIn delay={100}>
-              <View style={{ flexDirection: 'row', gap: 10 }}>
-                {quickLinks.map((link) => (
-                  <QuickLink
-                    key={link.key}
-                    icon={link.icon}
-                    label={link.label}
-                    onPress={() => router.push(link.route)}
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: 8, paddingVertical: 4 }}
+                bounces={false}
+                overScrollMode="never"
+              >
+                {HOME_CHIPS.map((chip) => (
+                  <Chip
+                    key={chip.key}
+                    label={chip.label}
+                    active={activeChip === chip.key}
+                    onPress={() => setActiveChip(chip.key)}
                   />
                 ))}
+              </ScrollView>
+            </FadeIn>
+
+            {quickPicks.length ? (
+              <FadeIn delay={110}>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+                  {quickPicks.map((item) => (
+                    <QuickPickCard
+                      key={`quick-${item.id}`}
+                      item={item}
+                      width={isTablet ? '31.8%' : '48%'}
+                      onPress={() => void openItem(item, 'home_quick_pick')}
+                    />
+                  ))}
+                </View>
+              </FadeIn>
+            ) : null}
+
+            {featured ? (
+              <FadeIn delay={120}>
+                <View style={{ gap: 10 }}>
+                  <CustomText variant="heading" style={{ color: theme.colors.text }}>
+                    Picked for you
+                  </CustomText>
+                  <PickedForYouCard
+                    item={featured}
+                    onPress={() => void openItem(featured, 'home_picked')}
+                    onMorePress={() => openMoreForItem(featured)}
+                  />
+                </View>
+              </FadeIn>
+            ) : null}
+
+            <FadeIn delay={140}>
+              <View style={{ gap: 10 }}>
+                <SectionHeader
+                  title="Your recent rotation"
+                  actionLabel="See all"
+                  onAction={() => router.push(APP_ROUTES.tabs.library)}
+                />
+                <View style={{ gap: 2 }}>
+                  {feed.recent.slice(0, 3).map((item) => (
+                    <RotationRow
+                      key={`rotation-${item.id}`}
+                      item={item}
+                      onPress={() => void openItem(item, 'home_rotation')}
+                      onMorePress={() => openMoreForItem(item)}
+                    />
+                  ))}
+                </View>
               </View>
             </FadeIn>
 
-            {curatedRails.slice(0, 2).map(({ section, items }, index) => (
-              <FadeIn key={section.id || section.title} delay={110 + index * 35}>
-                <View>
-                  <SectionHeader
-                    title={section.title}
-                    actionLabel={section.actionLabel}
-                    onAction={() => router.push(TAB_ROUTE_BY_ID[section.destinationTab])}
-                  />
-                  {section.subtitle && isTablet ? (
-                    <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginBottom: 10 }}>
-                      {section.subtitle}
-                    </CustomText>
-                  ) : null}
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false} overScrollMode="never">
-                    {items.map((item) => (
-                      <MinimalPosterCard
-                        key={`${section.title}-${item.id}`}
-                        imageUrl={item.imageUrl}
-                        title={item.title}
-                        meta={formatMeta(item)}
-                        size={posterSize}
-                        onPress={() => void openItem(item, 'home_curated')}
-                        showMore
-                        onMorePress={() => openMoreForItem(item)}
-                      />
-                    ))}
-                  </ScrollView>
-                </View>
-              </FadeIn>
-            ))}
+            <FadeIn delay={160}>
+              <View>
+                <SectionHeader
+                  title="Recents"
+                  actionLabel="Show all"
+                  onAction={() => router.push(TAB_ROUTE_BY_ID.home)}
+                />
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false} overScrollMode="never">
+                  {filteredByChip.slice(0, 12).map((item) => (
+                    <MinimalPosterCard
+                      key={`recent-${item.id}`}
+                      imageUrl={item.imageUrl}
+                      title={item.title}
+                      meta={formatMeta(item)}
+                      size={posterSize}
+                      onPress={() => void openItem(item, 'home_recents')}
+                      showMore
+                      onMorePress={() => openMoreForItem(item)}
+                    />
+                  ))}
+                </ScrollView>
+              </View>
+            </FadeIn>
 
             <FadeIn delay={190}>
               <SupportMinistryCard onPress={() => router.push(APP_ROUTES.settingsPages.donate)} />

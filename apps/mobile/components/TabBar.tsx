@@ -54,7 +54,14 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
         paddingBottom: barBottomInset,
         paddingHorizontal: isTablet || isTV ? 0 : 12,
         alignItems: 'center',
-        backgroundColor: 'transparent',
+        backgroundColor: barSurface,
+        borderTopWidth: 1,
+        borderTopColor: barBorder,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -8 },
+        shadowOpacity: colorScheme === 'dark' ? 0.35 : 0.12,
+        shadowRadius: 12,
+        elevation: 18,
       }}
     >
       <View
@@ -62,8 +69,6 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
           width: '100%',
           maxWidth: barMaxWidth,
           height: sizes.barHeight,
-          borderTopWidth: 1,
-          borderColor: barBorder,
           backgroundColor: barSurface,
           paddingHorizontal: sizes.paddingX,
           paddingTop: 6,

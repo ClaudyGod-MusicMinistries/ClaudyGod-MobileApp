@@ -5,7 +5,6 @@ import { useRouter } from 'expo-router';
 import { TabScreenWrapper } from '../../components/layout/TabScreenWrapper';
 import { useAppTheme } from '../../util/colorScheme';
 import { SearchBar } from '../../components/ui/SearchBar';
-import { Chip } from '../../components/ui/Chip';
 import { MediaRail } from '../../components/sections/MediaRail';
 import { PosterCard } from '../../components/ui/PosterCard';
 import { ActionSheet, type ActionSheetAction } from '../../components/ui/ActionSheet';
@@ -35,7 +34,7 @@ export default function Search() {
   const { width } = useWindowDimensions();
   const isDark = theme.scheme === 'dark';
   const isTablet = width >= 768;
-  const shortcutWidth = isTablet ? '31.8%' : '100%';
+  const shortcutWidth = isTablet ? '31.8%' : '48%';
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [recentQueries, setRecentQueries] = useState<string[]>([]);
@@ -62,6 +61,11 @@ export default function Search() {
     [feed.topCategories, mobileConfig],
   );
   const quickShortcuts = useMemo(() => getDiscoveryShortcuts(mobileConfig), [mobileConfig]);
+  const discoverStack = useMemo(
+    () => [...feed.music, ...feed.videos, ...feed.playlists, ...feed.live].slice(0, 8),
+    [feed.live, feed.music, feed.playlists, feed.videos],
+  );
+  const browsePalette = ['#2563EB', '#10B981', '#F59E0B', '#EC4899', '#8B5CF6', '#14B8A6', '#F97316'];
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -347,88 +351,81 @@ export default function Search() {
 
         <Screen>
           <View style={{ paddingTop: theme.layout.sectionGap }}>
-          <FadeIn>
-            <SurfaceCard tone="subtle" style={{ padding: theme.spacing.xl }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <View style={{ flex: 1 }}>
-                  <CustomText variant="heading" style={{ color: theme.colors.text }}>
-                    Discover
-                  </CustomText>
-                  <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 4 }}>
-                    Search live streams, music, videos, playlists, and messages.
-                  </CustomText>
-                </View>
-                <View
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: theme.radius.md,
-                    backgroundColor: `${theme.colors.primary}18`,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <MaterialIcons name="travel-explore" size={18} color={theme.colors.primary} />
-                </View>
-              </View>
-
-              <View style={{ marginTop: theme.spacing.md }}>
+            <FadeIn>
+              <View style={{ gap: theme.spacing.sm }}>
                 <SearchBar value={query} onChangeText={setQuery} onSubmit={handleSubmitSearch} />
+                <CustomText variant="caption" style={{ color: theme.colors.textSecondary }}>
+                  Try artists, sermons, playlists, or live sessions.
+                </CustomText>
               </View>
+            </FadeIn>
 
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm, marginTop: theme.spacing.md }}>
-                {quickShortcuts.map((shortcut) => (
-                  <TVTouchable
-                    key={shortcut.label}
-                    onPress={() => {
-                      setQuery(shortcut.query);
-                      setActiveCategory(shortcut.category);
-                    }}
-                    style={{
-                      width: shortcutWidth,
-                      borderRadius: theme.radius.md,
-                      borderWidth: 1,
-                      borderColor: theme.colors.border,
-                      backgroundColor: theme.colors.surface,
-                      paddingVertical: 11,
-                      paddingHorizontal: 11,
-                    }}
-                    showFocusBorder={false}
-                  >
-                    <MaterialIcons name={shortcut.icon as any} size={16} color={theme.colors.primary} />
-                    <CustomText variant="caption" style={{ color: theme.colors.text, marginTop: 6 }}>
-                      {shortcut.label}
-                    </CustomText>
-                  </TVTouchable>
-                ))}
+            <FadeIn delay={90}>
+              <View style={{ marginTop: theme.spacing.lg }}>
+                <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
+                  Discover something new
+                </CustomText>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{
+                    paddingTop: theme.spacing.sm,
+                    paddingRight: theme.spacing.md,
+                  }}
+                  overScrollMode="never"
+                >
+                  <View style={{ flexDirection: 'row', gap: theme.spacing.md }}>
+                    {discoverStack.map((item) => (
+                      <PosterCard
+                        key={item.id}
+                        imageUrl={item.imageUrl}
+                        title={item.title}
+                        meta={formatMeta(item)}
+                        size="sm"
+                        onPress={() => void openResult(item)}
+                        showMore
+                        onMorePress={() => openMoreForItem(item)}
+                      />
+                    ))}
+                  </View>
+                </ScrollView>
               </View>
-            </SurfaceCard>
-          </FadeIn>
+            </FadeIn>
 
-          <FadeIn delay={120}>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{
-                paddingVertical: theme.spacing.md,
-                paddingRight: theme.spacing.md,
-              }}
-              overScrollMode="never"
-            >
-              <View style={{ flexDirection: 'row', gap: theme.spacing.sm }}>
-                {discoveryCategories.map((cat) => (
-                  <Chip
-                    key={cat}
-                    label={cat === 'All' ? cat : cat.toUpperCase()}
-                    active={cat === activeCategory}
-                    onPress={() => setActiveCategory(cat)}
-                  />
-                ))}
+            <FadeIn delay={140}>
+              <View style={{ marginTop: theme.spacing.lg }}>
+                <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
+                  Browse all
+                </CustomText>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm, marginTop: theme.spacing.sm }}>
+                  {quickShortcuts.map((shortcut, index) => (
+                    <TVTouchable
+                      key={shortcut.label}
+                      onPress={() => {
+                        setQuery(shortcut.query);
+                        setActiveCategory(shortcut.category);
+                      }}
+                      style={{
+                        width: shortcutWidth,
+                        borderRadius: theme.radius.lg,
+                        backgroundColor: browsePalette[index % browsePalette.length],
+                        padding: theme.spacing.md,
+                        minHeight: 96,
+                        justifyContent: 'space-between',
+                      }}
+                      showFocusBorder={false}
+                    >
+                      <MaterialIcons name={shortcut.icon as any} size={20} color="#fff" />
+                      <CustomText variant="caption" style={{ color: '#fff', fontWeight: '600' }}>
+                        {shortcut.label}
+                      </CustomText>
+                    </TVTouchable>
+                  ))}
+                </View>
               </View>
-            </ScrollView>
-          </FadeIn>
+            </FadeIn>
 
-          <FadeIn delay={200}>
+            <FadeIn delay={200}>
             <MediaRail
               title="Results"
               actionLabel={`${filtered.length} found`}
@@ -448,30 +445,30 @@ export default function Search() {
             />
           </FadeIn>
 
-          {!filtered.length ? (
-            <FadeIn delay={260}>
-              <SurfaceCard style={{ padding: theme.spacing.lg }}>
-                <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
-                  No matches found
-                </CustomText>
-                <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 4 }}>
-                  Try a broader keyword or reset your active category.
-                </CustomText>
-                <View style={{ marginTop: theme.spacing.md }}>
-                  <AppButton
-                    title="Reset filters"
-                    variant="outline"
-                    size="sm"
-                    fullWidth
-                    onPress={() => {
-                      setActiveCategory('All');
-                      setQuery('');
-                    }}
-                  />
-                </View>
-              </SurfaceCard>
-            </FadeIn>
-          ) : null}
+            {!filtered.length ? (
+              <FadeIn delay={260}>
+                <SurfaceCard style={{ padding: theme.spacing.lg }}>
+                  <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
+                    No matches found
+                  </CustomText>
+                  <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 4 }}>
+                    Try a broader keyword or reset your active category.
+                  </CustomText>
+                  <View style={{ marginTop: theme.spacing.md }}>
+                    <AppButton
+                      title="Reset filters"
+                      variant="outline"
+                      size="sm"
+                      fullWidth
+                      onPress={() => {
+                        setActiveCategory('All');
+                        setQuery('');
+                      }}
+                    />
+                  </View>
+                </SurfaceCard>
+              </FadeIn>
+            ) : null}
           </View>
         </Screen>
       </ScrollView>

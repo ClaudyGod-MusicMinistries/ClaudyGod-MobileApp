@@ -36,9 +36,9 @@ export function PosterCard({
 }: PosterCardProps) {
   const theme = useAppTheme();
   const sizes = {
-    sm: { w: 120, h: 172 },
-    md: { w: 140, h: 196 },
-    lg: { w: 168, h: 236 },
+    sm: { w: 156, h: 200 },
+    md: { w: 184, h: 232 },
+    lg: { w: 212, h: 270 },
   }[size];
 
   return (

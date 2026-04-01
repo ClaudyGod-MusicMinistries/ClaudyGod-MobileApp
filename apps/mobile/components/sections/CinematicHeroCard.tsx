@@ -28,6 +28,7 @@ interface CinematicHeroCardProps {
   height?: number;
   actions?: HeroAction[];
   overlayStrength?: number;
+  contentSurface?: boolean;
 }
 
 export function CinematicHeroCard({
@@ -41,6 +42,7 @@ export function CinematicHeroCard({
   height = 360,
   actions = [],
   overlayStrength = 0.94,
+  contentSurface = true,
 }: CinematicHeroCardProps) {
   const theme = useAppTheme();
 
@@ -84,15 +86,19 @@ export function CinematicHeroCard({
       >
         <View style={{ gap: 6 }}>
           <View
-            style={{
-              borderRadius: theme.radius.lg,
-              borderWidth: 1,
-              borderColor: 'rgba(255,255,255,0.08)',
-              backgroundColor: 'rgba(8,8,16,0.82)',
-              paddingHorizontal: theme.spacing.md,
-              paddingVertical: theme.spacing.md,
-              gap: 10,
-            }}
+            style={
+              contentSurface
+                ? {
+                    borderRadius: theme.radius.lg,
+                    borderWidth: 1,
+                    borderColor: 'rgba(255,255,255,0.08)',
+                    backgroundColor: 'rgba(8,8,16,0.82)',
+                    paddingHorizontal: theme.spacing.md,
+                    paddingVertical: theme.spacing.md,
+                    gap: 10,
+                  }
+                : { gap: 8 }
+            }
           >
             {badge ? (
               <View
