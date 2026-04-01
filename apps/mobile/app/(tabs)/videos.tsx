@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import type { DimensionValue } from 'react-native';
 import { Image, Linking, Platform, ScrollView, Share, View, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -143,7 +144,7 @@ function QuickPickCard({
 }: {
   item: FeedCardItem;
   onPress: () => void;
-  width: string;
+  width: DimensionValue;
 }) {
   const theme = useAppTheme();
 
@@ -237,7 +238,7 @@ export default function VideosScreen() {
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
   const posterSize = isTablet ? 'md' : 'sm';
-  const [activeChip, setActiveChip] = useState(VIDEO_CHIPS[0].key);
+  const [activeChip, setActiveChip] = useState<(typeof VIDEO_CHIPS)[number]['key']>(VIDEO_CHIPS[0].key);
 
   const { feed } = useContentFeed();
   const { config: mobileConfig } = useMobileAppConfig();
@@ -664,20 +665,17 @@ export default function VideosScreen() {
                 />
               ) : (
                 <CinematicHeroCard
-                  imageUrl={active?.imageUrl}
-                  badge={active?.isLive ? 'Live now' : active?.type === 'live' ? 'Live replay' : 'Featured watch'}
-                  eyebrow={active?.subtitle ?? 'ClaudyGod'}
-                  title={active?.title ?? 'Watch ministry videos, live moments, and full replays.'}
-                  subtitle={active?.duration ?? 'Video hub'}
-                  description={active?.description ?? 'Move between live sessions, messages, and saved replays from one video screen.'}
+                  imageUrl={undefined}
+                  badge="Featured watch"
+                  eyebrow="ClaudyGod"
+                  title="Watch ministry videos, live moments, and full replays."
+                  subtitle="Video hub"
+                  description="Move between live sessions, messages, and saved replays from one video screen."
                   height={isTablet ? 420 : 330}
                   actions={[
                     {
-                      label: active?.isLive ? 'Watch live' : 'Watch now',
-                      onPress: () =>
-                        active
-                          ? openVideo(active, 'videos_featured')
-                          : router.push(APP_ROUTES.tabs.home),
+                      label: 'Watch now',
+                      onPress: () => router.push(APP_ROUTES.tabs.home),
                       icon: 'play-arrow',
                     },
                     {

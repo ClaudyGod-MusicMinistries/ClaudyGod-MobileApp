@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import type { DimensionValue } from 'react-native';
 import { Image, ScrollView, Share, View, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -173,7 +174,7 @@ function QuickPickCard({
 }: {
   item: FeedCardItem;
   onPress: () => void;
-  width: string;
+  width: DimensionValue;
 }) {
   const theme = useAppTheme();
 
@@ -238,7 +239,7 @@ export default function LibraryScreen() {
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
   const posterSize = isTablet ? 'md' : 'sm';
-  const [activeChip, setActiveChip] = useState(LIBRARY_CHIPS[0].key);
+  const [activeChip, setActiveChip] = useState<(typeof LIBRARY_CHIPS)[number]['key']>(LIBRARY_CHIPS[0].key);
   const formatMeta = (item: FeedCardItem) =>
     [item.subtitle, item.duration].filter((value) => Boolean(value)).join(' · ');
   const { feed } = useContentFeed();
