@@ -45,10 +45,12 @@ const DEFAULT_QUICK_LINKS = [
 function QuickLink({
   icon,
   label,
+  description,
   onPress,
 }: {
   icon: React.ComponentProps<typeof MaterialIcons>['name'];
   label: string;
+  description: string;
   onPress: () => void;
 }) {
   const theme = useAppTheme();
@@ -59,33 +61,41 @@ function QuickLink({
       style={{
         flex: 1,
         minWidth: 0,
-        borderRadius: theme.radius.md,
+        borderRadius: theme.radius.lg,
         borderWidth: 1,
         borderColor: theme.colors.border,
         backgroundColor: theme.colors.surface,
-        paddingHorizontal: 12,
+        paddingHorizontal: 14,
         paddingVertical: 12,
-        gap: 8,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
       }}
       showFocusBorder={false}
     >
       <View
         style={{
-          width: 30,
-          height: 30,
-          borderRadius: theme.radius.sm,
+          width: 36,
+          height: 36,
+          borderRadius: 12,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: 'rgba(139,92,246,0.14)',
+          backgroundColor: theme.colors.surfaceAlt,
           borderWidth: 1,
-          borderColor: 'rgba(139,92,246,0.24)',
+          borderColor: theme.colors.border,
         }}
       >
-        <MaterialIcons name={icon} size={16} color={theme.colors.primary} />
+        <MaterialIcons name={icon} size={18} color={theme.colors.primary} />
       </View>
-      <CustomText variant="label" style={{ color: theme.colors.text }}>
-        {label}
-      </CustomText>
+      <View style={{ flex: 1 }}>
+        <CustomText variant="label" style={{ color: theme.colors.text }}>
+          {label}
+        </CustomText>
+        <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 2 }}>
+          {description}
+        </CustomText>
+      </View>
+      <MaterialIcons name="chevron-right" size={18} color={theme.colors.textSecondary} />
     </TVTouchable>
   );
 }
@@ -134,6 +144,13 @@ export default function HomeScreen() {
 
     return configuredLinks.length ? configuredLinks : DEFAULT_QUICK_LINKS;
   }, [mobileConfig]);
+
+  const quickLinkDescriptions: Record<string, string> = {
+    music: 'Latest worship audio',
+    player: 'Latest worship audio',
+    videos: 'Recent video messages',
+    live: 'Live streams & replays',
+  };
 
   const formatMeta = (item: FeedCardItem) =>
     [item.subtitle, item.duration].filter((value) => Boolean(value)).join(' · ');
@@ -419,60 +436,65 @@ export default function HomeScreen() {
             </FadeIn>
 
             <FadeIn delay={60}>
-              <CinematicHeroCard
-                imageSource={!featured ? BRAND_HERO_ASSET : undefined}
-                imageUrl={featured?.imageUrl}
-                badge={featured?.isLive ? 'Live now' : featured?.type === 'audio' ? 'Featured listen' : 'Featured'}
-                eyebrow={featured?.subtitle ?? 'ClaudyGod'}
-                title={featured?.title ?? 'Stay close to worship, messages, and live ministry.'}
-                subtitle={featured?.duration ?? 'ClaudyGod'}
-                description={
-                  isTablet
-                    ? featured?.description ??
-                      'Start from one featured moment, then move through the rest of the app without losing the thread.'
-                    : undefined
-                }
-                height={isTablet ? 420 : 310}
-                actions={
-                  isTablet
-                    ? [
-                        {
-                          label: featured?.type === 'video' || featured?.isLive ? 'Watch now' : 'Play now',
-                          onPress: () =>
-                            featured ? openItem(featured, 'home_featured') : router.push(APP_ROUTES.tabs.player),
-                          icon: featured?.type === 'video' || featured?.isLive ? 'smart-display' : 'play-arrow',
-                        },
-                        {
-                          label: featured?.isLive ? 'Notify me' : 'Read more',
-                          onPress: () =>
-                            featured?.isLive
-                              ? notifyLive(featured)
-                              : featured
-                                ? openItem(featured, 'home_featured_details')
-                                : router.push(APP_ROUTES.tabs.library),
-                          variant: 'secondary',
-                          icon: featured?.isLive ? 'notifications-active' : 'article',
-                        },
-                      ]
-                    : [
-                        {
-                          label: featured?.type === 'video' || featured?.isLive ? 'Watch now' : 'Play now',
-                          onPress: () =>
-                            featured ? openItem(featured, 'home_featured') : router.push(APP_ROUTES.tabs.player),
-                          icon: featured?.type === 'video' || featured?.isLive ? 'smart-display' : 'play-arrow',
-                        },
-                      ]
-                }
-              />
+              <View style={{ marginTop: isTablet ? 6 : 12 }}>
+                <CinematicHeroCard
+                  imageSource={!featured ? BRAND_HERO_ASSET : undefined}
+                  imageUrl={featured?.imageUrl}
+                  badge={featured?.isLive ? 'Live now' : featured?.type === 'audio' ? 'Featured listen' : 'Featured'}
+                  eyebrow={isTablet ? featured?.subtitle ?? 'ClaudyGod' : undefined}
+                  title={featured?.title ?? 'Stay close to worship, messages, and live ministry.'}
+                  subtitle={isTablet ? featured?.duration ?? 'ClaudyGod' : undefined}
+                  description={
+                    isTablet
+                      ? featured?.description ??
+                        'Start from one featured moment, then move through the rest of the app without losing the thread.'
+                      : undefined
+                  }
+                  height={isTablet ? 420 : 310}
+                  contentSurface={isTablet}
+                  overlayStrength={isTablet ? 0.84 : 0.62}
+                  actions={
+                    isTablet
+                      ? [
+                          {
+                            label: featured?.type === 'video' || featured?.isLive ? 'Watch now' : 'Play now',
+                            onPress: () =>
+                              featured ? openItem(featured, 'home_featured') : router.push(APP_ROUTES.tabs.player),
+                            icon: featured?.type === 'video' || featured?.isLive ? 'smart-display' : 'play-arrow',
+                          },
+                          {
+                            label: featured?.isLive ? 'Notify me' : 'Read more',
+                            onPress: () =>
+                              featured?.isLive
+                                ? notifyLive(featured)
+                                : featured
+                                  ? openItem(featured, 'home_featured_details')
+                                  : router.push(APP_ROUTES.tabs.library),
+                            variant: 'secondary',
+                            icon: featured?.isLive ? 'notifications-active' : 'article',
+                          },
+                        ]
+                      : [
+                          {
+                            label: featured?.type === 'video' || featured?.isLive ? 'Watch now' : 'Play now',
+                            onPress: () =>
+                              featured ? openItem(featured, 'home_featured') : router.push(APP_ROUTES.tabs.player),
+                            icon: featured?.type === 'video' || featured?.isLive ? 'smart-display' : 'play-arrow',
+                          },
+                        ]
+                  }
+                />
+              </View>
             </FadeIn>
 
             <FadeIn delay={100}>
-              <View style={{ flexDirection: 'row', gap: 10 }}>
+              <View style={{ flexDirection: 'column', gap: 10 }}>
                 {quickLinks.map((link) => (
                   <QuickLink
                     key={link.key}
                     icon={link.icon}
                     label={link.label}
+                    description={quickLinkDescriptions[link.key] ?? 'Explore the ministry'}
                     onPress={() => router.push(link.route)}
                   />
                 ))}
