@@ -80,7 +80,7 @@ function QuickLink({
       >
         <MaterialIcons name={icon} size={18} color={theme.colors.primary} />
       </View>
-      <CustomText variant="label" style={{ color: theme.colors.text.primary }}>
+      <CustomText variant="label" style={{ color: theme.colors.text }}>
         {label}
       </CustomText>
     </TVTouchable>
@@ -267,7 +267,7 @@ export default function HomeScreen() {
                     onAction={() => router.push(TAB_ROUTE_BY_ID[section.destinationTab])}
                   />
                   {section.subtitle ? (
-                    <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginBottom: 10 }}>
+                    <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginBottom: 10 }}>
                       {section.subtitle}
                     </CustomText>
                   ) : null}
@@ -306,13 +306,13 @@ export default function HomeScreen() {
                         >
                           {sponsoredLabel}
                         </CustomText>
-                        <CustomText variant="heading" style={{ color: theme.colors.text.primary, marginTop: 6 }}>
+                        <CustomText variant="heading" style={{ color: theme.colors.text, marginTop: 6 }}>
                           {sponsoredItem.title}
                         </CustomText>
-                        <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 4 }}>
+                        <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 4 }}>
                           {sponsoredItem.sponsorName || sponsoredItem.subtitle}
                         </CustomText>
-                        <CustomText variant="body" style={{ color: theme.colors.text.secondary, marginTop: 8 }}>
+                        <CustomText variant="body" style={{ color: theme.colors.textSecondary, marginTop: 8 }}>
                           {sponsoredItem.description}
                         </CustomText>
                       </View>
@@ -337,7 +337,7 @@ export default function HomeScreen() {
                       title={sponsoredItem.ctaLabel || 'Open'}
                       onPress={() => void openSponsoredItem(sponsoredItem)}
                       size="sm"
-                      leftIcon={<MaterialIcons name="open-in-new" size={16} color={theme.colors.text.inverse} />}
+                      leftIcon={<MaterialIcons name="open-in-new" size={16} color={theme.colors.textInverse} />}
                     />
                   </View>
                 </SurfaceCard>
@@ -353,7 +353,7 @@ export default function HomeScreen() {
                     onAction={() => router.push(TAB_ROUTE_BY_ID[section.destinationTab])}
                   />
                   {section.subtitle ? (
-                    <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginBottom: 10 }}>
+                    <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginBottom: 10 }}>
                       {section.subtitle}
                     </CustomText>
                   ) : null}
@@ -379,17 +379,17 @@ export default function HomeScreen() {
                     <CustomText
                       variant="caption"
                       style={{
-                        color: theme.colors.text.secondary,
+                        color: theme.colors.textSecondary,
                         textTransform: 'uppercase',
                         letterSpacing: 0.9,
                       }}
                     >
                       {wordForToday.title}
                     </CustomText>
-                    <CustomText variant="heading" style={{ color: theme.colors.text.primary, marginTop: 6 }}>
+                    <CustomText variant="heading" style={{ color: theme.colors.text, marginTop: 6 }}>
                       {wordForToday.passage}
                     </CustomText>
-                    <CustomText variant="body" style={{ color: theme.colors.text.secondary, marginTop: 8 }} numberOfLines={3}>
+                    <CustomText variant="body" style={{ color: theme.colors.textSecondary, marginTop: 8 }} numberOfLines={3}>
                       {wordForToday.verse}
                     </CustomText>
                   </View>
@@ -400,7 +400,7 @@ export default function HomeScreen() {
                       variant="secondary"
                       size="sm"
                       onPress={() => void shareWord()}
-                      leftIcon={<MaterialIcons name="ios-share" size={16} color={theme.colors.text.primary} />}
+                      leftIcon={<MaterialIcons name="ios-share" size={16} color={theme.colors.text} />}
                     />
                   </View>
                 </View>

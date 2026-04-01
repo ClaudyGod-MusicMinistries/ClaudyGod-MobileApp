@@ -134,7 +134,7 @@ export default function Donate() {
     heroBorder: isDark ? 'rgba(255,255,255,0.08)' : theme.colors.border,
     panelBg: isDark ? 'rgba(255,255,255,0.03)' : theme.colors.surfaceAlt,
     panelBorder: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(20,16,33,0.06)',
-    muted: isDark ? 'rgba(194,185,220,0.92)' : theme.colors.text.secondary,
+    muted: isDark ? 'rgba(194,185,220,0.92)' : theme.colors.textSecondary,
     subtle: isDark ? 'rgba(176,167,202,0.9)' : 'rgba(108,99,134,0.92)',
     accentSoft: isDark ? 'rgba(154,107,255,0.14)' : 'rgba(109,40,217,0.08)',
     accentLine: isDark ? 'rgba(216,194,255,0.22)' : 'rgba(109,40,217,0.14)',
@@ -233,7 +233,7 @@ export default function Donate() {
                 </View>
               </View>
 
-              <CustomText variant="heading" style={{ color: theme.colors.text.primary, marginTop: 12 }}>
+              <CustomText variant="heading" style={{ color: theme.colors.text, marginTop: 12 }}>
                 Support worship, live broadcasts and ministry content
               </CustomText>
               <CustomText variant="body" style={{ color: ui.muted, marginTop: 8 }}>
@@ -264,7 +264,7 @@ export default function Donate() {
                       padding: 10,
                     }}
                   >
-                    <CustomText variant="label" style={{ color: theme.colors.text.primary }}>
+                    <CustomText variant="label" style={{ color: theme.colors.text }}>
                       {metric.value}
                     </CustomText>
                     <CustomText variant="caption" style={{ color: ui.subtle, marginTop: 2 }}>
@@ -280,7 +280,7 @@ export default function Donate() {
     >
       <FadeIn delay={70}>
         <SurfaceCard style={{ padding: spacing.md }}>
-          <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
+          <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
             Quick donation
           </CustomText>
           <CustomText variant="caption" style={{ color: ui.muted, marginTop: 3 }}>
@@ -307,7 +307,7 @@ export default function Donate() {
                   }}
                   showFocusBorder={false}
                 >
-                  <CustomText variant="label" style={{ color: active ? theme.colors.primary : theme.colors.text.primary }}>
+                  <CustomText variant="label" style={{ color: active ? theme.colors.primary : theme.colors.text }}>
                     {label}
                   </CustomText>
                 </TVTouchable>
@@ -335,7 +335,7 @@ export default function Donate() {
                   }}
                   showFocusBorder={false}
                 >
-                  <CustomText variant="label" style={{ color: active ? theme.colors.primary : theme.colors.text.primary }}>
+                  <CustomText variant="label" style={{ color: active ? theme.colors.primary : theme.colors.text }}>
                     {amount}
                   </CustomText>
                 </TVTouchable>
@@ -374,11 +374,11 @@ export default function Donate() {
                       marginRight: 10,
                     }}
                   >
-                    <MaterialIcons name={method.icon} size={18} color={active ? theme.colors.primary : theme.colors.text.secondary} />
+                    <MaterialIcons name={method.icon} size={18} color={active ? theme.colors.primary : theme.colors.textSecondary} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                      <CustomText variant="label" style={{ color: theme.colors.text.primary }}>
+                      <CustomText variant="label" style={{ color: theme.colors.text }}>
                         {method.label}
                       </CustomText>
                       {method.badge ? (
@@ -413,7 +413,7 @@ export default function Donate() {
               title={`Give ${selectedAmount} ${cadenceLabel}`}
               fullWidth
               onPress={onDonateNow}
-              leftIcon={<MaterialIcons name="favorite" size={16} color={theme.colors.text.inverse} />}
+              leftIcon={<MaterialIcons name="favorite" size={16} color={theme.colors.textInverse} />}
             />
           </View>
         </SurfaceCard>
@@ -421,7 +421,7 @@ export default function Donate() {
 
       <FadeIn delay={120}>
         <View style={{ marginTop: spacing.lg }}>
-          <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
+          <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
             Support plans
           </CustomText>
           <CustomText variant="caption" style={{ color: ui.muted, marginTop: 3 }}>
@@ -446,7 +446,7 @@ export default function Donate() {
 
       <FadeIn delay={170}>
         <SurfaceCard style={{ marginTop: spacing.lg, padding: spacing.md }}>
-          <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
+          <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
             Where support goes
           </CustomText>
           <CustomText variant="caption" style={{ color: ui.muted, marginTop: 3 }}>
@@ -463,7 +463,7 @@ export default function Donate() {
 
       <FadeIn delay={220}>
         <SurfaceCard style={{ marginTop: spacing.lg, padding: spacing.md }}>
-          <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
+          <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
             Donation support
           </CustomText>
           <CustomText variant="caption" style={{ color: ui.muted, marginTop: 3 }}>
@@ -531,7 +531,7 @@ function SupportPlanCard({
       : isDark
         ? 'rgba(255,255,255,0.08)'
         : theme.colors.border,
-    muted: isDark ? 'rgba(194,185,220,0.9)' : theme.colors.text.secondary,
+    muted: isDark ? 'rgba(194,185,220,0.9)' : theme.colors.textSecondary,
     tagBg: selected ? (isDark ? 'rgba(255,255,255,0.04)' : theme.colors.surface) : theme.colors.surfaceAlt,
     tagBorder: selected
       ? isDark
@@ -568,12 +568,12 @@ function SupportPlanCard({
             marginRight: 10,
           }}
         >
-          <MaterialIcons name={plan.icon} size={18} color={selected ? theme.colors.primary : theme.colors.text.secondary} />
+          <MaterialIcons name={plan.icon} size={18} color={selected ? theme.colors.primary : theme.colors.textSecondary} />
         </View>
 
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <CustomText variant="label" style={{ color: theme.colors.text.primary }}>
+            <CustomText variant="label" style={{ color: theme.colors.text }}>
               {plan.name}
             </CustomText>
             {plan.featured ? (
@@ -599,7 +599,7 @@ function SupportPlanCard({
         </View>
 
         <View style={{ alignItems: 'flex-end', marginLeft: 10 }}>
-          <CustomText variant="subtitle" style={{ color: selected ? theme.colors.primary : theme.colors.text.primary }}>
+          <CustomText variant="subtitle" style={{ color: selected ? theme.colors.primary : theme.colors.text }}>
             {plan.amount}
           </CustomText>
           <CustomText variant="caption" style={{ color: ui.muted, marginTop: 2 }}>
@@ -628,11 +628,11 @@ function ImpactRow({
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <MaterialIcons name={icon} size={16} color={theme.colors.primary} />
-          <CustomText variant="caption" style={{ color: theme.colors.text.primary, marginLeft: 6 }}>
+          <CustomText variant="caption" style={{ color: theme.colors.text, marginLeft: 6 }}>
             {label}
           </CustomText>
         </View>
-        <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
+        <CustomText variant="caption" style={{ color: theme.colors.textSecondary }}>
           {value}%
         </CustomText>
       </View>
@@ -701,14 +701,14 @@ function DonateActionRow({
         <MaterialIcons name={icon} size={18} color={theme.colors.primary} />
       </View>
       <View style={{ flex: 1 }}>
-        <CustomText variant="label" style={{ color: theme.colors.text.primary }}>
+        <CustomText variant="label" style={{ color: theme.colors.text }}>
           {title}
         </CustomText>
-        <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 2 }}>
+        <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 2 }}>
           {subtitle}
         </CustomText>
       </View>
-      <MaterialIcons name="chevron-right" size={18} color={theme.colors.text.secondary} />
+      <MaterialIcons name="chevron-right" size={18} color={theme.colors.textSecondary} />
     </TVTouchable>
   );
 }

@@ -95,7 +95,7 @@ export function MinimizedFloatingPlayer() {
         <CustomText
           variant="label"
           style={{
-            color: theme.colors.text.primary,
+            color: theme.colors.text,
             fontSize: 12,
             fontWeight: '600',
           }}
@@ -106,7 +106,7 @@ export function MinimizedFloatingPlayer() {
         <CustomText
           variant="caption"
           style={{
-            color: theme.colors.text.secondary,
+            color: theme.colors.textSecondary,
             fontSize: 10,
           }}
           numberOfLines={1}
@@ -170,7 +170,7 @@ export function MinimizedFloatingPlayer() {
           <MaterialIcons
             name="close"
             size={16}
-            color={theme.colors.text.secondary}
+            color={theme.colors.textSecondary}
           />
         </TouchableOpacity>
       </View>
