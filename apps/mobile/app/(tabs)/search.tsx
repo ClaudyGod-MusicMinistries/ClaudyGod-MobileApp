@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, ScrollView, useWindowDimensions } from 'react-native';
+import { Share, View, ScrollView, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { TabScreenWrapper } from '../../components/layout/TabScreenWrapper';
@@ -8,6 +8,7 @@ import { SearchBar } from '../../components/ui/SearchBar';
 import { Chip } from '../../components/ui/Chip';
 import { MediaRail } from '../../components/sections/MediaRail';
 import { PosterCard } from '../../components/ui/PosterCard';
+import { ActionSheet, type ActionSheetAction } from '../../components/ui/ActionSheet';
 import { CustomText } from '../../components/CustomText';
 import { FadeIn } from '../../components/ui/FadeIn';
 import { Screen } from '../../components/layout/Screen';
@@ -19,14 +20,18 @@ import { useToast } from '../../context/ToastContext';
 import { useContentFeed } from '../../hooks/useContentFeed';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
+import { saveMeLibraryItem, subscribeToLiveAlertsBackend } from '../../services/userFlowService';
 import { APP_ROUTES } from '../../util/appRoutes';
 import { getDiscoveryCategories, getDiscoveryShortcuts } from '../../util/mobileExperienceConfig';
 import { buildPlayerRoute } from '../../util/playerRoute';
+import { useAuth } from '../../context/AuthContext';
+import type { FeedCardItem } from '../../services/contentService';
 
 export default function Search() {
   const theme = useAppTheme();
   const router = useRouter();
   const { showToast } = useToast();
+  const { isAuthenticated } = useAuth();
   const { width } = useWindowDimensions();
   const isDark = theme.scheme === 'dark';
   const isTablet = width >= 768;
@@ -34,6 +39,8 @@ export default function Search() {
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [recentQueries, setRecentQueries] = useState<string[]>([]);
+  const [activeActionItem, setActiveActionItem] = useState<FeedCardItem | null>(null);
+  const [isActionSheetVisible, setIsActionSheetVisible] = useState(false);
 
   const { feed } = useContentFeed();
   const { config: mobileConfig } = useMobileAppConfig();
@@ -70,6 +77,9 @@ export default function Search() {
     });
   }, [activeCategory, allItems, query]);
 
+  const formatMeta = (item: (typeof filtered)[number]) =>
+    [item.subtitle, item.duration].filter((value) => Boolean(value)).join(' · ');
+
   const openResult = async (item: (typeof filtered)[number]) => {
     if (query.trim()) {
       setRecentQueries((current) => [query.trim(), ...current.filter((entry) => entry !== query.trim())].slice(0, 5));
@@ -82,6 +92,177 @@ export default function Search() {
     });
     router.push(buildPlayerRoute(item));
   };
+
+  const openMoreForItem = (item: (typeof filtered)[number]) => {
+    setActiveActionItem(item);
+    setIsActionSheetVisible(true);
+  };
+
+  const shareActive = async () => {
+    if (!activeActionItem) return;
+    try {
+      await Share.share({
+        message: `${activeActionItem.title}\n${activeActionItem.subtitle}${activeActionItem.mediaUrl ? `\n${activeActionItem.mediaUrl}` : ''}`,
+      });
+    } catch {
+      showToast({
+        title: 'Share unavailable',
+        message: 'Try again in a moment.',
+        tone: 'warning',
+      });
+    }
+  };
+
+  const saveToLibrary = async () => {
+    if (!activeActionItem) return;
+    if (!isAuthenticated) {
+      showToast({
+        title: 'Sign in to save',
+        message: 'Create an account to save items to your library.',
+        tone: 'warning',
+      });
+      return;
+    }
+    try {
+      await saveMeLibraryItem({
+        bucket: 'liked',
+        contentId: activeActionItem.id,
+        contentType: activeActionItem.type,
+        title: activeActionItem.title,
+        subtitle: activeActionItem.subtitle,
+        description: activeActionItem.description,
+        imageUrl: activeActionItem.imageUrl,
+        mediaUrl: activeActionItem.mediaUrl,
+        duration: activeActionItem.duration,
+        metadata: { source: 'search_action_sheet' },
+      });
+      showToast({
+        title: 'Saved to Library',
+        message: 'We saved this for you.',
+        tone: 'success',
+      });
+    } catch (error) {
+      showToast({
+        title: 'Save unavailable',
+        message: error instanceof Error ? error.message : 'Please try again.',
+        tone: 'warning',
+      });
+    }
+  };
+
+  const listenLater = async () => {
+    if (!activeActionItem) return;
+    if (!isAuthenticated) {
+      showToast({
+        title: 'Sign in to save',
+        message: 'Create an account to use Listen Later.',
+        tone: 'warning',
+      });
+      return;
+    }
+    try {
+      await saveMeLibraryItem({
+        bucket: 'playlist',
+        playlistName: 'Listen Later',
+        contentId: activeActionItem.id,
+        contentType: activeActionItem.type,
+        title: activeActionItem.title,
+        subtitle: activeActionItem.subtitle,
+        description: activeActionItem.description,
+        imageUrl: activeActionItem.imageUrl,
+        mediaUrl: activeActionItem.mediaUrl,
+        duration: activeActionItem.duration,
+        metadata: { source: 'search_action_sheet' },
+      });
+      showToast({
+        title: 'Added to Listen Later',
+        message: 'We saved this for you.',
+        tone: 'success',
+      });
+    } catch (error) {
+      showToast({
+        title: 'Listen later unavailable',
+        message: error instanceof Error ? error.message : 'Please try again.',
+        tone: 'warning',
+      });
+    }
+  };
+
+  const followActiveLive = async () => {
+    if (!activeActionItem) return;
+    try {
+      await subscribeToLiveAlertsBackend(activeActionItem.notificationChannelId || activeActionItem.id, activeActionItem.title);
+      showToast({
+        title: 'Live alerts enabled',
+        message: `You will be notified when ${activeActionItem.title} goes live.`,
+        tone: 'success',
+      });
+    } catch {
+      showToast({
+        title: 'Live alerts unavailable',
+        message: 'Sign in to follow live sessions.',
+        tone: 'warning',
+      });
+    }
+  };
+
+  const openReviews = () => {
+    router.push(APP_ROUTES.settingsPages.rate);
+  };
+
+  const actionSheetActions: ActionSheetAction[] = !activeActionItem
+    ? []
+    : [
+        {
+          key: 'save',
+          label: 'Save to Library',
+          detail: 'Keep this item in your library.',
+          icon: 'bookmark-border',
+          onPress: () => void saveToLibrary(),
+        },
+        {
+          key: 'share',
+          label: 'Share',
+          detail: 'Send this to someone else.',
+          icon: 'ios-share',
+          onPress: () => void shareActive(),
+        },
+        {
+          key: 'listen-later',
+          label: 'Listen Later',
+          detail: 'Save this for later.',
+          icon: 'schedule',
+          onPress: () => void listenLater(),
+        },
+        {
+          key: 'reviews',
+          label: 'Reviews & Ratings',
+          detail: 'See what others are saying.',
+          icon: 'reviews',
+          onPress: openReviews,
+        },
+        ...(activeActionItem.type === 'live'
+          ? [
+              {
+                key: 'follow-live',
+                label: 'Follow Live Alerts',
+                detail: 'Get notified before the stream starts.',
+                icon: 'notifications-active',
+                onPress: () => void followActiveLive(),
+              } as ActionSheetAction,
+            ]
+          : []),
+        {
+          key: 'open-detail',
+          label: 'Open Player',
+          detail: 'Open the full player screen.',
+          icon: 'open-in-full',
+          tone: 'accent' as const,
+          onPress: () => {
+            router.push(buildPlayerRoute(activeActionItem));
+          },
+        },
+      ];
 
   const applyRecentSearch = () => {
     const recent = recentQueries[0];
@@ -257,9 +438,11 @@ export default function Search() {
                   key={item.id}
                   imageUrl={item.imageUrl}
                   title={item.title}
-                  subtitle={item.subtitle}
+                  meta={formatMeta(item)}
                   size="sm"
                   onPress={() => void openResult(item)}
+                  showMore
+                  onMorePress={() => openMoreForItem(item)}
                 />
               )}
             />
@@ -292,6 +475,13 @@ export default function Search() {
           </View>
         </Screen>
       </ScrollView>
+      <ActionSheet
+        visible={isActionSheetVisible}
+        title={activeActionItem?.title ?? 'Content options'}
+        description={activeActionItem?.subtitle}
+        actions={actionSheetActions}
+        onClose={() => setIsActionSheetVisible(false)}
+      />
     </TabScreenWrapper>
   );
 }

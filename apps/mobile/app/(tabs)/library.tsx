@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ScrollView, View, useWindowDimensions } from 'react-native';
+import { ScrollView, Share, View, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { TabScreenWrapper } from '../../components/layout/TabScreenWrapper';
 import { Screen } from '../../components/layout/Screen';
 import { BrandedHeaderCard } from '../../components/layout/BrandedHeaderCard';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { PosterCard } from '../../components/ui/PosterCard';
+import { ActionSheet, type ActionSheetAction } from '../../components/ui/ActionSheet';
 import { SectionHeader } from '../../components/ui/SectionHeader';
 import { AppButton } from '../../components/ui/AppButton';
 import { CustomText } from '../../components/CustomText';
@@ -17,9 +18,10 @@ import type { FeedCardItem } from '../../services/contentService';
 import { APP_ROUTES, TAB_ROUTE_BY_ID } from '../../util/appRoutes';
 import { buildPlayerRoute } from '../../util/playerRoute';
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
-import { fetchMeLibrary, type MeLibrary, type MeLibraryItem } from '../../services/userFlowService';
+import { fetchMeLibrary, saveMeLibraryItem, type MeLibrary, type MeLibraryItem } from '../../services/userFlowService';
 import { getLibraryLayoutSections, type MobileLayoutSection } from '../../util/mobileLayout';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 
 function toFeedCardItem(item: MeLibraryItem): FeedCardItem {
   return {
@@ -95,6 +97,7 @@ export default function LibraryScreen() {
   const theme = useAppTheme();
   const router = useRouter();
   const { isAuthenticated } = useAuth();
+  const { showToast } = useToast();
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
   const posterSize = isTablet ? 'md' : 'sm';
@@ -103,6 +106,8 @@ export default function LibraryScreen() {
   const { feed } = useContentFeed();
   const { config: mobileConfig } = useMobileAppConfig();
   const [library, setLibrary] = useState<MeLibrary | null>(null);
+  const [activeActionItem, setActiveActionItem] = useState<FeedCardItem | null>(null);
+  const [isActionSheetVisible, setIsActionSheetVisible] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -153,6 +158,104 @@ export default function LibraryScreen() {
     });
     router.push(buildPlayerRoute(item));
   };
+
+  const openMoreForItem = (item: FeedCardItem) => {
+    setActiveActionItem(item);
+    setIsActionSheetVisible(true);
+  };
+
+  const shareActive = async () => {
+    if (!activeActionItem) return;
+    try {
+      await Share.share({
+        message: `${activeActionItem.title}\n${activeActionItem.subtitle}${activeActionItem.mediaUrl ? `\n${activeActionItem.mediaUrl}` : ''}`,
+      });
+    } catch {
+      showToast({
+        title: 'Share unavailable',
+        message: 'Try again in a moment.',
+        tone: 'warning',
+      });
+    }
+  };
+
+  const listenLater = async () => {
+    if (!activeActionItem) return;
+    if (!isAuthenticated) {
+      showToast({
+        title: 'Sign in to save',
+        message: 'Create an account to use Listen Later.',
+        tone: 'warning',
+      });
+      return;
+    }
+    try {
+      await saveMeLibraryItem({
+        bucket: 'playlist',
+        playlistName: 'Listen Later',
+        contentId: activeActionItem.id,
+        contentType: activeActionItem.type,
+        title: activeActionItem.title,
+        subtitle: activeActionItem.subtitle,
+        description: activeActionItem.description,
+        imageUrl: activeActionItem.imageUrl,
+        mediaUrl: activeActionItem.mediaUrl,
+        duration: activeActionItem.duration,
+        metadata: { source: 'library_action_sheet' },
+      });
+      showToast({
+        title: 'Added to Listen Later',
+        message: 'We saved this for you.',
+        tone: 'success',
+      });
+    } catch (error) {
+      showToast({
+        title: 'Listen later unavailable',
+        message: error instanceof Error ? error.message : 'Please try again.',
+        tone: 'warning',
+      });
+    }
+  };
+
+  const openReviews = () => {
+    router.push(APP_ROUTES.settingsPages.rate);
+  };
+
+  const actionSheetActions: ActionSheetAction[] = !activeActionItem
+    ? []
+    : [
+        {
+          key: 'share',
+          label: 'Share',
+          detail: 'Send this item to someone else.',
+          icon: 'ios-share',
+          onPress: () => void shareActive(),
+        },
+        {
+          key: 'listen-later',
+          label: 'Listen Later',
+          detail: 'Save this for later.',
+          icon: 'schedule',
+          onPress: () => void listenLater(),
+        },
+        {
+          key: 'reviews',
+          label: 'Reviews & Ratings',
+          detail: 'See what others are saying.',
+          icon: 'reviews',
+          onPress: openReviews,
+        },
+        {
+          key: 'open-detail',
+          label: 'Open Player',
+          detail: 'Open the full player screen.',
+          icon: 'open-in-full',
+          tone: 'accent' as const,
+          onPress: () => {
+            router.push(buildPlayerRoute(activeActionItem));
+          },
+        },
+      ];
 
   if (!isAuthenticated) {
     const guestPreview = dedupeItems([...feed.mostPlayed, ...feed.music, ...feed.videos, ...feed.recent]).slice(0, 10);
@@ -237,6 +340,8 @@ export default function LibraryScreen() {
                           meta={formatMeta(item)}
                           size={posterSize}
                           onPress={() => void openItem(item, 'library_guest_preview')}
+                          showMore
+                          onMorePress={() => openMoreForItem(item)}
                         />
                       ))}
                     </ScrollView>
@@ -301,9 +406,11 @@ export default function LibraryScreen() {
                       actionLabel={section.actionLabel}
                       onAction={() => router.push(TAB_ROUTE_BY_ID[section.destinationTab])}
                     />
-                    <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginBottom: 10 }}>
-                      {section.subtitle}
-                    </CustomText>
+                    {isTablet ? (
+                      <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginBottom: 10 }}>
+                        {section.subtitle}
+                      </CustomText>
+                    ) : null}
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false} overScrollMode="never">
                       {items.map((item) => (
                         <PosterCard
@@ -313,6 +420,8 @@ export default function LibraryScreen() {
                           meta={formatMeta(item)}
                           size={posterSize}
                           onPress={() => void openItem(item, `library_${section.id}`)}
+                          showMore
+                          onMorePress={() => openMoreForItem(item)}
                         />
                       ))}
                     </ScrollView>
@@ -323,6 +432,13 @@ export default function LibraryScreen() {
           </View>
         </Screen>
       </ScrollView>
+      <ActionSheet
+        visible={isActionSheetVisible}
+        title={activeActionItem?.title ?? 'Content options'}
+        description={activeActionItem?.subtitle}
+        actions={actionSheetActions}
+        onClose={() => setIsActionSheetVisible(false)}
+      />
     </TabScreenWrapper>
   );
 }

@@ -18,7 +18,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { CustomText } from '../../components/CustomText';
-import { DashboardFooter } from '../../components/layout/DashboardFooter';
 import { FadeIn } from '../../components/ui/FadeIn';
 import { wsService } from '../../services/websocketService';
 import { engagementAnalytics, type UserEngagementMetrics, type EngagementInsight } from '../../services/engagementAnalytics';
@@ -447,11 +446,6 @@ export default function DashboardScreen() {
               </Pressable>
             </View>
           </FadeIn>
-          <DashboardFooter
-            onSupportPress={() => router.push('/settingsPage/Donate')}
-            onLiveAlertsPress={() => router.push('/(tabs)/live')}
-            onFeedbackPress={() => router.push('/settingsPage/help')}
-          />
         </ScrollView>
       </SafeAreaView>
     </View>
