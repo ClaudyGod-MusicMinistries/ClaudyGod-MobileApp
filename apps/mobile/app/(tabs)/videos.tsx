@@ -352,6 +352,20 @@ export default function VideosScreen() {
   }, [active, isFocused, maximize, minimize]);
 
   const openVideo = async (item: FeedCardItem, source: string) => {
+    if (!item.mediaUrl) {
+      showToast({
+        title: 'Playback unavailable',
+        message: 'This video has no playable source yet.',
+        tone: 'warning',
+      });
+      return;
+    }
+
+    if (!isDirectPlayableVideoUrl(item.mediaUrl)) {
+      await Linking.openURL(item.mediaUrl);
+      return;
+    }
+
     setActiveId(item.id);
     startPlaying(item, 'video', queue);
     await trackPlayEvent({
