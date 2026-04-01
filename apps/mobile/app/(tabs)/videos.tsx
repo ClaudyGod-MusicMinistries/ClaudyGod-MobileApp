@@ -330,8 +330,8 @@ export default function VideosScreen() {
     if (activeChip === 'live') return feed.live.filter((item) => shouldOpenVideoScreen(item));
     if (activeChip === 'replays') return feed.videos;
     if (activeChip === 'videos') return feed.videos;
-    return dedupeItems([...feed.videos, ...feed.live]);
-  }, [activeChip, feed.live, feed.videos]);
+    return dedupeItems([...feed.videos, ...feed.live, ...feed.recent]);
+  }, [activeChip, feed.live, feed.recent, feed.videos]);
   const rotationItems = useMemo(
     () => queue.filter((item) => item.id !== active?.id).slice(0, 3),
     [active?.id, queue],
@@ -352,6 +352,20 @@ export default function VideosScreen() {
   }, [active, isFocused, maximize, minimize]);
 
   const openVideo = async (item: FeedCardItem, source: string) => {
+    if (!item.mediaUrl) {
+      showToast({
+        title: 'Playback unavailable',
+        message: 'This video has no playable source yet.',
+        tone: 'warning',
+      });
+      return;
+    }
+
+    if (!isDirectPlayableVideoUrl(item.mediaUrl)) {
+      await Linking.openURL(item.mediaUrl);
+      return;
+    }
+
     setActiveId(item.id);
     startPlaying(item, 'video', queue);
     await trackPlayEvent({

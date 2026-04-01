@@ -34,65 +34,6 @@ const DEFAULT_PREVIEW_LINKS = [
   { key: 'live', icon: 'live-tv', label: 'Live', route: APP_ROUTES.tabs.live },
 ] as const;
 
-function DestinationCard({
-  icon,
-  label,
-  onPress,
-  compact = false,
-  containerStyle,
-  layout = 'tile',
-}: {
-  icon: React.ComponentProps<typeof MaterialIcons>['name'];
-  label: string;
-  onPress: () => void;
-  compact?: boolean;
-  containerStyle?: object;
-  layout?: 'tile' | 'row';
-}) {
-  const isRow = layout === 'row';
-  return (
-    <TVTouchable
-      onPress={onPress}
-      style={{
-        flex: 1,
-        minWidth: 0,
-        borderRadius: compact ? 12 : 14,
-        borderWidth: 1,
-        borderColor: LANDING_COLORS.border,
-        backgroundColor: LANDING_COLORS.panel,
-        paddingHorizontal: compact ? 12 : 14,
-        paddingVertical: compact ? 12 : 14,
-        gap: compact ? 8 : 10,
-        flexDirection: isRow ? 'row' : 'column',
-        alignItems: isRow ? 'center' : 'flex-start',
-        ...containerStyle,
-      }}
-      showFocusBorder={false}
-    >
-      <View
-        style={{
-          width: compact ? 30 : 34,
-          height: compact ? 30 : 34,
-          borderRadius: compact ? 9 : 10,
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: LANDING_COLORS.accentSoft,
-          borderWidth: 1,
-          borderColor: 'rgba(141,99,255,0.22)',
-        }}
-      >
-        <MaterialIcons name={icon} size={compact ? 16 : 18} color={LANDING_COLORS.accent} />
-      </View>
-      <CustomText
-        variant="label"
-        style={{ color: LANDING_COLORS.textPrimary, fontSize: compact ? 10.5 : undefined }}
-      >
-        {label}
-      </CustomText>
-    </TVTouchable>
-  );
-}
-
 function FooterLink({
   label,
   onPress,
@@ -262,54 +203,36 @@ export default function LandingScreen() {
   );
 
   const quickAccessRail = (
-    <FadeIn delay={isPhone ? 130 : 130}>
-      <View style={{ gap: 10, marginTop: isPhone ? 26 : 10 }}>
+    <FadeIn delay={170}>
+      <View
+        style={{
+          borderWidth: 1,
+          borderColor: LANDING_COLORS.border,
+          backgroundColor: LANDING_COLORS.panelStrong,
+          borderRadius: 12,
+          paddingHorizontal: isPhone ? 10 : 14,
+          paddingVertical: isPhone ? 8 : 10,
+          flexDirection: 'column',
+          gap: 8,
+        }}
+      >
         <CustomText
           variant="caption"
           style={{
-            color: LANDING_COLORS.textSecondary,
+            color: LANDING_COLORS.accent,
             textTransform: 'uppercase',
-            letterSpacing: 1,
-            fontWeight: '600',
-            fontSize: 11,
+            letterSpacing: 0.75,
+            fontSize: 10,
           }}
         >
-          Explore
+          Quick access
         </CustomText>
-        <CustomText
-          variant="body"
-          style={{ color: LANDING_COLORS.textSecondary, fontSize: 11 }}
-          numberOfLines={2}
-        >
-          Jump straight into music, videos, or live worship.
-        </CustomText>
-        {isPhone ? (
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-            {previewLinks.map((destination) => (
-              <DestinationCard
-                key={destination.key}
-                icon={destination.icon}
-                label={destination.label}
-                onPress={() => router.push(destination.route)}
-                compact
-                layout="tile"
-                containerStyle={{ width: '48%' }}
-              />
-            ))}
-          </View>
-        ) : (
-          <View style={{ flexDirection: 'row', gap: 12 }}>
-            {previewLinks.map((destination) => (
-              <DestinationCard
-                key={destination.key}
-                icon={destination.icon}
-                label={destination.label}
-                onPress={() => router.push(destination.route)}
-                compact={isPhone}
-              />
-            ))}
-          </View>
-        )}
+
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          {previewLinks.map((link) => (
+            <FooterLink key={`footer-${link.key}`} label={link.label} onPress={() => router.push(link.route)} />
+          ))}
+        </View>
       </View>
     </FadeIn>
   );
@@ -507,46 +430,17 @@ export default function LandingScreen() {
                   >
                     {actionBlock}
                   </View>
-                  {quickAccessRail}
                 </View>
               </View>
             )}
           </View>
         </ScrollView>
 
-            <FadeIn delay={170}>
-              <View
-                style={{
-                  borderWidth: 1,
-                  borderColor: LANDING_COLORS.border,
-                  backgroundColor: LANDING_COLORS.panelStrong,
-                  borderRadius: 12,
-                  paddingHorizontal: isPhone ? 10 : 14,
-                  paddingVertical: isPhone ? 8 : 10,
-                  flexDirection: 'column',
-                  gap: 8,
-                  marginTop: isPhone ? 8 : 0,
-                }}
-              >
-                <CustomText
-                  variant="caption"
-                  style={{
-                    color: LANDING_COLORS.accent,
-                    textTransform: 'uppercase',
-                    letterSpacing: 0.75,
-                    fontSize: 10,
-                  }}
-                >
-                  Quick access
-                </CustomText>
-
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                  {previewLinks.map((link) => (
-                    <FooterLink key={`footer-${link.key}`} label={link.label} onPress={() => router.push(link.route)} />
-                  ))}
-                </View>
+            {!isTablet && (
+              <View style={{ marginTop: isPhone ? 8 : 0 }}>
+                {quickAccessRail}
               </View>
-            </FadeIn>
+            )}
               </View>
             </Screen>
           </SafeAreaView>

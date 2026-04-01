@@ -271,6 +271,27 @@ async function fetchAllPublished(): Promise<FeedCardItem[]> {
   }
 }
 
+export async function fetchSearchResults(query: string, type?: ContentType): Promise<FeedCardItem[]> {
+  const trimmed = query.trim();
+  if (!trimmed) {
+    return [];
+  }
+
+  try {
+    const params = new URLSearchParams({
+      status: 'published',
+      search: trimmed,
+    });
+    if (type) {
+      params.set('type', type);
+    }
+    const response = await apiFetch<ContentApiResponse>(`/v1/mobile/content?${params.toString()}`);
+    return response.items.map(normalize);
+  } catch {
+    return [];
+  }
+}
+
 async function fetchYouTubeFeed(): Promise<{
   videos: FeedCardItem[];
   music: FeedCardItem[];
