@@ -538,7 +538,9 @@ export default function HomeScreen() {
                                   ? openItem(featured, 'home_featured_details')
                                   : router.push(APP_ROUTES.tabs.library),
                             variant: 'secondary' as const,
-                            icon: featured?.isLive ? 'notifications-active' : 'description',
+                            icon: (featured?.isLive ? 'notifications-active' : 'description') as React.ComponentProps<
+                              typeof MaterialIcons
+                            >['name'],
                           },
                         ]
                       : []),
