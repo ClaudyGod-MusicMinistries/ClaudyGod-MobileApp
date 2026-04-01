@@ -39,9 +39,9 @@ export function MinimalPosterCard({
   const theme = useAppTheme();
 
   const sizes = {
-    sm: { w: 96, h: 140 },
-    md: { w: 112, h: 160 },
-    lg: { w: 124, h: 176 },
+    sm: { w: 120, h: 120 },
+    md: { w: 136, h: 136 },
+    lg: { w: 152, h: 152 },
   }[size];
 
   return (

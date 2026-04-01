@@ -93,6 +93,38 @@ function DestinationCard({
   );
 }
 
+function FooterLink({
+  label,
+  onPress,
+}: {
+  label: string;
+  onPress: () => void;
+}) {
+  return (
+    <TVTouchable
+      onPress={onPress}
+      showFocusBorder={false}
+      style={{
+        minHeight: 34,
+        paddingHorizontal: 12,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: LANDING_COLORS.border,
+        backgroundColor: LANDING_COLORS.panelStrong,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <CustomText
+        variant="label"
+        style={{ color: LANDING_COLORS.textPrimary, fontSize: 10.5, fontWeight: '500' }}
+      >
+        {label}
+      </CustomText>
+    </TVTouchable>
+  );
+}
+
 function getLandingBadge(item: FeedCardItem | null) {
   if (!item) return 'ClaudyGod';
   if (item.isLive || item.type === 'live') return 'Live now';
@@ -171,7 +203,7 @@ export default function LandingScreen() {
 
   const headlineBlock = (
     <FadeIn delay={isPhone ? 80 : 50}>
-      <View style={{ gap: isCompactPhone ? 6 : 10 }}>
+      <View style={{ gap: isCompactPhone ? 6 : 10, marginTop: isPhone ? 14 : 0 }}>
         <CustomText 
           variant="hero" 
           style={{ 
@@ -231,7 +263,7 @@ export default function LandingScreen() {
 
   const quickAccessRail = (
     <FadeIn delay={isPhone ? 130 : 130}>
-      <View style={{ gap: 12 }}>
+      <View style={{ gap: 10, marginTop: isPhone ? 26 : 10 }}>
         <CustomText
           variant="caption"
           style={{
@@ -243,6 +275,13 @@ export default function LandingScreen() {
           }}
         >
           Explore
+        </CustomText>
+        <CustomText
+          variant="body"
+          style={{ color: LANDING_COLORS.textSecondary, fontSize: 11 }}
+          numberOfLines={2}
+        >
+          Jump straight into music, videos, or live worship.
         </CustomText>
         {isPhone ? (
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
@@ -282,11 +321,13 @@ export default function LandingScreen() {
           imageSource={!featured ? BRAND_HERO_ASSET : undefined}
           imageUrl={featured?.imageUrl}
           height={isTablet ? 460 : isCompactPhone ? 282 : 308}
-          badge={getLandingBadge(featured)}
-          eyebrow={heroSubtitle}
+          badge={isPhone ? undefined : getLandingBadge(featured)}
+          eyebrow={isPhone ? undefined : heroSubtitle}
           title={heroTitle}
-          subtitle={featured?.duration ?? 'ClaudyGod Ministries'}
+          subtitle={isPhone ? undefined : featured?.duration ?? 'ClaudyGod Ministries'}
           description={isPhone ? undefined : heroDescription}
+          contentSurface={isPhone ? false : true}
+          overlayStrength={isPhone ? 0.62 : 0.82}
           actions={
             isPhone
               ? [
@@ -409,7 +450,12 @@ export default function LandingScreen() {
 
             <ScrollView
               style={{ flex: 1, backgroundColor: LANDING_COLORS.background }}
-              contentContainerStyle={{ paddingBottom: isTablet ? 12 : 8, gap: isTablet ? 16 : 12 }}
+              contentContainerStyle={{
+                paddingTop: isPhone ? 6 : 10,
+                paddingBottom: isTablet ? 12 : 8,
+                gap: isTablet ? 16 : 12,
+                flexGrow: 1,
+              }}
               showsVerticalScrollIndicator={false}
               bounces={false}
               overScrollMode="never"
@@ -439,35 +485,68 @@ export default function LandingScreen() {
                   </View>
                 ) : (
                   <View style={{ gap: 10 }}>
-                    {heroCard}
-                    <View
-                      style={{
-                        gap: 10,
-                        paddingHorizontal: 2,
-                        alignItems: 'center',
-                      }}
-                    >
-                      {headlineBlock}
-                      <View
-                        style={{
-                          width: '100%',
-                          borderWidth: 1,
-                          borderColor: LANDING_COLORS.border,
-                          backgroundColor: LANDING_COLORS.panelStrong,
-                          borderRadius: 10,
-                          paddingHorizontal: 10,
-                          paddingVertical: 8,
-                        }}
-                      >
-                        {actionBlock}
-                      </View>
-                      {quickAccessRail}
-                    </View>
+                {heroCard}
+                <View
+                  style={{
+                    gap: 10,
+                    paddingHorizontal: 2,
+                    alignItems: 'center',
+                  }}
+                >
+                  {headlineBlock}
+                  <View
+                    style={{
+                      width: '100%',
+                      borderWidth: 1,
+                      borderColor: LANDING_COLORS.border,
+                      backgroundColor: LANDING_COLORS.panelStrong,
+                      borderRadius: 10,
+                      paddingHorizontal: 10,
+                      paddingVertical: 8,
+                    }}
+                  >
+                    {actionBlock}
                   </View>
-                )}
+                  {quickAccessRail}
+                </View>
               </View>
-            </ScrollView>
+            )}
+          </View>
+        </ScrollView>
 
+            <FadeIn delay={170}>
+              <View
+                style={{
+                  borderWidth: 1,
+                  borderColor: LANDING_COLORS.border,
+                  backgroundColor: LANDING_COLORS.panelStrong,
+                  borderRadius: 12,
+                  paddingHorizontal: isPhone ? 10 : 14,
+                  paddingVertical: isPhone ? 8 : 10,
+                  flexDirection: 'column',
+                  gap: 8,
+                  marginTop: isPhone ? 8 : 0,
+                }}
+              >
+                <CustomText
+                  variant="caption"
+                  style={{
+                    color: LANDING_COLORS.accent,
+                    textTransform: 'uppercase',
+                    letterSpacing: 0.75,
+                    fontSize: 10,
+                  }}
+                >
+                  Quick access
+                </CustomText>
+
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                  {previewLinks.map((link) => (
+                    <FooterLink key={`footer-${link.key}`} label={link.label} onPress={() => router.push(link.route)} />
+                  ))}
+                </View>
+              </View>
+            </FadeIn>
               </View>
             </Screen>
           </SafeAreaView>
