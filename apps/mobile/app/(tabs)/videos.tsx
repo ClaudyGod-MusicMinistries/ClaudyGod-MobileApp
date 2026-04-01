@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Linking, Platform, ScrollView, Share, View, useWindowDimensions } from 'react-native';
+import { Image, Linking, Platform, ScrollView, Share, View, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useIsFocused } from '@react-navigation/native';
@@ -15,6 +15,8 @@ import { ActionSheet, type ActionSheetAction } from '../../components/ui/ActionS
 import { CustomText } from '../../components/CustomText';
 import { VideoPlayer } from '../../components/media/VideoPlayer';
 import { CinematicHeroCard } from '../../components/sections/CinematicHeroCard';
+import { TVTouchable } from '../../components/ui/TVTouchable';
+import { Chip } from '../../components/ui/Chip';
 import { useToast } from '../../context/ToastContext';
 import { useGuestMode } from '../../context/GuestModeContext';
 import { useFloatingPlayer } from '../../context/FloatingPlayerContext';
@@ -23,7 +25,7 @@ import { useContentFeed } from '../../hooks/useContentFeed';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import type { FeedCardItem } from '../../services/contentService';
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
-import { fetchMeLibrary, removeMeLibraryItem, saveMeLibraryItem , subscribeToLiveAlertsBackend } from '../../services/userFlowService';
+import { fetchMeLibrary, removeMeLibraryItem, saveMeLibraryItem, subscribeToLiveAlertsBackend } from '../../services/userFlowService';
 import { APP_ROUTES, TAB_ROUTE_BY_ID } from '../../util/appRoutes';
 import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
 import { deriveLayoutSectionItems, getVideoLayoutSections } from '../../util/mobileLayout';
@@ -34,6 +36,140 @@ import {
   routeParamToString,
   shouldOpenVideoScreen,
 } from '../../util/playerRoute';
+
+const VIDEO_CHIPS = [
+  { key: 'all', label: 'All' },
+  { key: 'videos', label: 'Videos' },
+  { key: 'live', label: 'Live' },
+  { key: 'replays', label: 'Replays' },
+] as const;
+
+function PickedForYouCard({
+  item,
+  onPress,
+  onMorePress,
+}: {
+  item: FeedCardItem;
+  onPress: () => void;
+  onMorePress: () => void;
+}) {
+  const theme = useAppTheme();
+
+  return (
+    <SurfaceCard tone="subtle" style={{ padding: theme.spacing.md }}>
+      <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
+        <Image source={{ uri: item.imageUrl }} style={{ width: 96, height: 96, borderRadius: theme.radius.md }} />
+        <View style={{ flex: 1, gap: 4 }}>
+          <CustomText variant="caption" style={{ color: theme.colors.textSecondary }}>
+            {item.duration ?? item.subtitle ?? 'ClaudyGod'}
+          </CustomText>
+          <CustomText variant="label" style={{ color: theme.colors.text }}>
+            {item.title}
+          </CustomText>
+          {item.description ? (
+            <CustomText variant="caption" style={{ color: theme.colors.textSecondary }} numberOfLines={2}>
+              {item.description}
+            </CustomText>
+          ) : null}
+        </View>
+        <View style={{ alignItems: 'center', gap: 8 }}>
+          <TVTouchable onPress={onMorePress} showFocusBorder={false}>
+            <MaterialIcons name="more-vert" size={20} color={theme.colors.textSecondary} />
+          </TVTouchable>
+          <TVTouchable
+            onPress={onPress}
+            style={{
+              width: 38,
+              height: 38,
+              borderRadius: 19,
+              backgroundColor: theme.colors.primary,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            showFocusBorder={false}
+          >
+            <MaterialIcons name="play-arrow" size={20} color={theme.colors.textInverse} />
+          </TVTouchable>
+        </View>
+      </View>
+    </SurfaceCard>
+  );
+}
+
+function RotationRow({
+  item,
+  onPress,
+  onMorePress,
+}: {
+  item: FeedCardItem;
+  onPress: () => void;
+  onMorePress: () => void;
+}) {
+  const theme = useAppTheme();
+
+  return (
+    <TVTouchable
+      onPress={onPress}
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        paddingVertical: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(255,255,255,0.06)',
+      }}
+      showFocusBorder={false}
+    >
+      <Image source={{ uri: item.imageUrl }} style={{ width: 44, height: 44, borderRadius: theme.radius.md }} />
+      <View style={{ flex: 1 }}>
+        <CustomText variant="label" style={{ color: theme.colors.text }} numberOfLines={1}>
+          {item.title}
+        </CustomText>
+        <CustomText variant="caption" style={{ color: theme.colors.textSecondary }} numberOfLines={1}>
+          {item.subtitle ?? 'ClaudyGod'}
+        </CustomText>
+      </View>
+      <TVTouchable onPress={onMorePress} showFocusBorder={false}>
+        <MaterialIcons name="more-vert" size={20} color={theme.colors.textSecondary} />
+      </TVTouchable>
+    </TVTouchable>
+  );
+}
+
+function QuickPickCard({
+  item,
+  onPress,
+  width,
+}: {
+  item: FeedCardItem;
+  onPress: () => void;
+  width: string;
+}) {
+  const theme = useAppTheme();
+
+  return (
+    <TVTouchable
+      onPress={onPress}
+      style={{
+        width,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        padding: 10,
+        borderRadius: theme.radius.lg,
+        backgroundColor: theme.colors.surface,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+      }}
+      showFocusBorder={false}
+    >
+      <Image source={{ uri: item.imageUrl }} style={{ width: 44, height: 44, borderRadius: theme.radius.md }} />
+      <CustomText variant="caption" style={{ color: theme.colors.text }} numberOfLines={2}>
+        {item.title}
+      </CustomText>
+    </TVTouchable>
+  );
+}
 
 function dedupeItems(items: FeedCardItem[]): FeedCardItem[] {
   const seen = new Set<string>();
@@ -101,6 +237,7 @@ export default function VideosScreen() {
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
   const posterSize = isTablet ? 'md' : 'sm';
+  const [activeChip, setActiveChip] = useState(VIDEO_CHIPS[0].key);
 
   const { feed } = useContentFeed();
   const { config: mobileConfig } = useMobileAppConfig();
@@ -183,6 +320,20 @@ export default function VideosScreen() {
         .filter((entry) => entry.items.length > 0)
         .slice(0, 5),
     [feed, mobileConfig],
+  );
+  const quickPicks = useMemo(
+    () => dedupeItems([...feed.videos, ...feed.live, ...feed.recent, ...feed.playlists]).slice(0, 4),
+    [feed.live, feed.playlists, feed.recent, feed.videos],
+  );
+  const filteredByChip = useMemo(() => {
+    if (activeChip === 'live') return feed.live.filter((item) => shouldOpenVideoScreen(item));
+    if (activeChip === 'replays') return feed.videos;
+    if (activeChip === 'videos') return feed.videos;
+    return dedupeItems([...feed.videos, ...feed.live]);
+  }, [activeChip, feed.live, feed.videos]);
+  const rotationItems = useMemo(
+    () => queue.filter((item) => item.id !== active?.id).slice(0, 3),
+    [active?.id, queue],
   );
 
   useEffect(() => {
@@ -452,7 +603,7 @@ export default function VideosScreen() {
             </FadeIn>
 
             <FadeIn delay={70}>
-              {active && canInlinePlay && active.mediaUrl ? (
+              {isTablet && active && canInlinePlay && active.mediaUrl ? (
                 <SurfaceCard tone="strong" style={{ padding: theme.spacing.md }}>
                     <View style={{ gap: 14 }}>
                       <View style={{ aspectRatio: 16 / 9, borderRadius: theme.radius.lg, overflow: 'hidden' }}>
@@ -505,6 +656,12 @@ export default function VideosScreen() {
                     </View>
                   </View>
                 </SurfaceCard>
+              ) : active ? (
+                <PickedForYouCard
+                  item={active}
+                  onPress={() => void openVideo(active, 'videos_featured')}
+                  onMorePress={() => setIsActionSheetVisible(true)}
+                />
               ) : (
                 <CinematicHeroCard
                   imageUrl={active?.imageUrl}
@@ -534,34 +691,103 @@ export default function VideosScreen() {
               )}
             </FadeIn>
 
-            {queue.length > 1 ? (
-              <FadeIn delay={120}>
-                <View>
-                  <SectionHeader
-                    title="Up next"
-                    actionLabel="Queue"
-                    onAction={() => router.push(APP_ROUTES.tabs.library)}
+            <FadeIn delay={90}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: 8, paddingVertical: 4 }}
+                bounces={false}
+                overScrollMode="never"
+              >
+                {VIDEO_CHIPS.map((chip) => (
+                  <Chip
+                    key={chip.key}
+                    label={chip.label}
+                    active={activeChip === chip.key}
+                    onPress={() => setActiveChip(chip.key)}
                   />
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false} overScrollMode="never">
-                    {queue.filter((item) => item.id !== active?.id).map((item) => (
-                      <PosterCard
-                        key={item.id}
-                        imageUrl={item.imageUrl}
-                        title={item.title}
-                        meta={formatMeta(item)}
-                        size={posterSize}
-                        showMore
-                        onMorePress={() => openMoreForItem(item)}
-                        onPress={() => void openVideo(item, 'videos_queue')}
-                      />
-                    ))}
-                  </ScrollView>
+                ))}
+              </ScrollView>
+            </FadeIn>
+
+            {quickPicks.length ? (
+              <FadeIn delay={110}>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+                  {quickPicks.map((item) => (
+                    <QuickPickCard
+                      key={`quick-${item.id}`}
+                      item={item}
+                      width={isTablet ? '31.8%' : '48%'}
+                      onPress={() => void openVideo(item, 'videos_quick_pick')}
+                    />
+                  ))}
                 </View>
               </FadeIn>
             ) : null}
 
+            {active ? (
+              <FadeIn delay={120}>
+                <View style={{ gap: 10 }}>
+                  <CustomText variant="heading" style={{ color: theme.colors.text }}>
+                    Picked for you
+                  </CustomText>
+                  <PickedForYouCard
+                    item={active}
+                    onPress={() => void openVideo(active, 'videos_picked')}
+                    onMorePress={() => openMoreForItem(active)}
+                  />
+                </View>
+              </FadeIn>
+            ) : null}
+
+            {rotationItems.length ? (
+              <FadeIn delay={140}>
+                <View style={{ gap: 10 }}>
+                  <SectionHeader
+                    title="Your recent rotation"
+                    actionLabel="Queue"
+                    onAction={() => router.push(APP_ROUTES.tabs.library)}
+                  />
+                  <View style={{ gap: 2 }}>
+                    {rotationItems.map((item) => (
+                      <RotationRow
+                        key={`rotation-${item.id}`}
+                        item={item}
+                        onPress={() => void openVideo(item, 'videos_rotation')}
+                        onMorePress={() => openMoreForItem(item)}
+                      />
+                    ))}
+                  </View>
+                </View>
+              </FadeIn>
+            ) : null}
+
+            <FadeIn delay={160}>
+              <View>
+                <SectionHeader
+                  title="Recents"
+                  actionLabel="Show all"
+                  onAction={() => router.push(APP_ROUTES.tabs.library)}
+                />
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false} overScrollMode="never">
+                  {filteredByChip.slice(0, 12).map((item) => (
+                    <PosterCard
+                      key={`recent-${item.id}`}
+                      imageUrl={item.imageUrl}
+                      title={item.title}
+                      meta={formatMeta(item)}
+                      size={posterSize}
+                      showMore
+                      onMorePress={() => openMoreForItem(item)}
+                      onPress={() => void openVideo(item, 'videos_recents')}
+                    />
+                  ))}
+                </ScrollView>
+              </View>
+            </FadeIn>
+
             {curatedSections.map(({ section, items }, index) => (
-              <FadeIn key={section.id || section.title} delay={160 + index * 35}>
+              <FadeIn key={section.id || section.title} delay={200 + index * 35}>
                 <View>
                   <SectionHeader
                     title={section.title}
