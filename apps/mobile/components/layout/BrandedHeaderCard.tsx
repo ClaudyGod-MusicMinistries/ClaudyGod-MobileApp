@@ -50,20 +50,20 @@ export function BrandedHeaderCard({
   const logoWrapSize = isTV ? 42 : isTablet ? 40 : 36;
   const logoSize = isTV ? 22 : 20;
   const chipPaddingX = isCompact ? 10 : 12;
-  const chipPaddingY = isCompact ? 6 : 7;
+  const chipPaddingY = isCompact ? 5 : 6;
 
   const ui = {
-    muted: theme.colors.text.secondary,
-    subtle: theme.colors.text.secondary,
+    muted: theme.colors.textSecondary,
+    subtle: theme.colors.textSecondary,
     iconBg: isDark ? 'rgba(255,255,255,0.03)' : theme.colors.surfaceAlt,
     iconBorder: theme.colors.border,
-    iconColor: theme.colors.text.primary,
+    iconColor: theme.colors.text,
     chipBg: theme.colors.surface,
     chipBorder: theme.colors.border,
     chipActiveBg: theme.colors.surfaceAlt,
     chipActiveBorder: theme.colors.primary,
-    chipText: theme.colors.text.secondary,
-    chipActiveText: theme.colors.text.primary,
+    chipText: theme.colors.textSecondary,
+    chipActiveText: theme.colors.text,
   } as const;
 
   const renderAction = (action: HeaderAction) => (
@@ -95,8 +95,8 @@ export function BrandedHeaderCard({
         borderWidth: 1,
         borderColor: theme.colors.border,
         backgroundColor: theme.colors.surface,
-        paddingHorizontal: isTablet ? 18 : 16,
-        paddingVertical: isTablet ? 16 : 14,
+        paddingHorizontal: isTablet ? 16 : 14,
+        paddingVertical: isTablet ? 14 : 12,
         overflow: 'hidden',
       }}
     >
@@ -106,7 +106,7 @@ export function BrandedHeaderCard({
           top: 0,
           left: 0,
           right: 0,
-          height: 3,
+          height: 2,
           backgroundColor: theme.colors.primary,
         }}
       />
@@ -115,7 +115,7 @@ export function BrandedHeaderCard({
           position: 'absolute',
           inset: 0,
           borderRadius: theme.radius.xl,
-          backgroundColor: isDark ? 'rgba(141,99,255,0.04)' : 'rgba(126,86,255,0.035)',
+          backgroundColor: isDark ? 'rgba(141,99,255,0.03)' : 'rgba(126,86,255,0.025)',
         }}
       />
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
@@ -158,10 +158,10 @@ export function BrandedHeaderCard({
             <CustomText
               variant="heading"
               style={{
-                color: theme.colors.text.primary,
+                color: theme.colors.text,
                 marginTop: showEyebrow ? 2 : 0,
-                fontSize: isTV ? 19 : isTablet ? 17 : isCompact ? 14 : 15,
-                lineHeight: isTV ? 24 : isTablet ? 22 : isCompact ? 18 : 20,
+                fontSize: isTV ? 18 : isTablet ? 16 : isCompact ? 13 : 14,
+                lineHeight: isTV ? 23 : isTablet ? 21 : isCompact ? 17 : 19,
               }}
               numberOfLines={2}
             >
@@ -172,9 +172,9 @@ export function BrandedHeaderCard({
                 variant="body"
                 style={{
                   color: ui.subtle,
-                  marginTop: 4,
-                  fontSize: isCompact ? 11 : 12,
-                  lineHeight: isCompact ? 15 : 16,
+                  marginTop: 3,
+                  fontSize: isCompact ? 10 : 11,
+                  lineHeight: isCompact ? 14 : 15,
                 }}
                 numberOfLines={2}
               >

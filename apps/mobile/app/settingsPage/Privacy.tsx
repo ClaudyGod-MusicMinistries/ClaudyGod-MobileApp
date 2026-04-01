@@ -392,10 +392,10 @@ export default function Privacy() {
                   <MaterialIcons name="shield" size={20} color={theme.colors.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
+                  <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
                     Privacy Controls
                   </CustomText>
-                  <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 3 }}>
+                  <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 3 }}>
                     Manage sign-in, exports, request history, and account actions.
                   </CustomText>
                 </View>
@@ -469,21 +469,21 @@ export default function Privacy() {
                   }}
                 >
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <CustomText variant="label" style={{ color: theme.colors.text.primary }}>
+                    <CustomText variant="label" style={{ color: theme.colors.text }}>
                       {request.type === 'export' ? 'Data export request' : 'Delete account request'}
                     </CustomText>
                     <CustomText variant="caption" style={{ color: theme.colors.primary }}>
                       {request.status}
                     </CustomText>
                   </View>
-                  <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 3 }}>
+                  <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 3 }}>
                     {new Date(request.createdAt).toLocaleString()}
                   </CustomText>
                 </View>
               ))}
             </View>
           ) : (
-            <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
+            <CustomText variant="caption" style={{ color: theme.colors.textSecondary }}>
               No privacy requests submitted yet.
             </CustomText>
           )}
@@ -538,7 +538,7 @@ export default function Privacy() {
                 }}
               >
                 <MaterialIcons name="check-circle" size={16} color={theme.colors.primary} style={{ marginTop: 1 }} />
-                <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginLeft: 8, flex: 1 }}>
+                <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginLeft: 8, flex: 1 }}>
                   {item}
                 </CustomText>
               </View>
@@ -569,14 +569,14 @@ export default function Privacy() {
                 <MaterialIcons name="support-agent" size={20} color={theme.colors.primary} />
               </View>
               <View style={{ flex: 1 }}>
-                <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
+                <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
                   Contact Privacy Support
                 </CustomText>
-                <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 4 }}>
+                <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 4 }}>
                   Email {privacyContactEmail} for help with exports, corrections, or account requests.
                 </CustomText>
               </View>
-              <MaterialIcons name="chevron-right" size={18} color={theme.colors.text.secondary} />
+              <MaterialIcons name="chevron-right" size={18} color={theme.colors.textSecondary} />
             </View>
           </SurfaceCard>
         </TVTouchable>
@@ -613,10 +613,10 @@ function StatusTile({
         paddingVertical: 9,
       }}
     >
-      <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
+      <CustomText variant="caption" style={{ color: theme.colors.textSecondary }}>
         {label}
       </CustomText>
-      <CustomText variant="label" style={{ color: theme.colors.text.primary, marginTop: 4 }}>
+      <CustomText variant="label" style={{ color: theme.colors.text, marginTop: 4 }}>
         {value}
       </CustomText>
     </View>
@@ -638,10 +638,10 @@ function SectionCard({
 
   return (
     <SurfaceCard style={[{ padding: spacing.md }, style]}>
-      <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
+      <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
         {title}
       </CustomText>
-      <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 4, marginBottom: 10 }}>
+      <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 4, marginBottom: 10 }}>
         {subtitle}
       </CustomText>
       {children}
@@ -700,14 +700,14 @@ function SecurityActionRow({
         <MaterialIcons name={icon} size={18} color={accent.icon} />
       </View>
       <View style={{ flex: 1 }}>
-        <CustomText variant="label" style={{ color: theme.colors.text.primary }}>
+        <CustomText variant="label" style={{ color: theme.colors.text }}>
           {title}
         </CustomText>
-        <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 3 }}>
+        <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 3 }}>
           {subtitle}
         </CustomText>
       </View>
-      <MaterialIcons name="chevron-right" size={18} color={theme.colors.text.secondary} />
+      <MaterialIcons name="chevron-right" size={18} color={theme.colors.textSecondary} />
     </TVTouchable>
   );
 }
@@ -765,7 +765,7 @@ function DataPolicyRow({
         </View>
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <CustomText variant="label" style={{ color: theme.colors.text.primary, flex: 1, marginRight: 8 }}>
+            <CustomText variant="label" style={{ color: theme.colors.text, flex: 1, marginRight: 8 }}>
               {title}
             </CustomText>
             <View
@@ -778,12 +778,12 @@ function DataPolicyRow({
                 paddingVertical: 4,
               }}
             >
-              <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
+              <CustomText variant="caption" style={{ color: theme.colors.textSecondary }}>
                 {retention}
               </CustomText>
             </View>
           </View>
-          <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 4 }}>
+          <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 4 }}>
             {description}
           </CustomText>
           {onPress ? (
@@ -832,7 +832,7 @@ function QuickActionTile({
           bg: isDark ? 'rgba(255,255,255,0.02)' : theme.colors.surfaceAlt,
           border: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(20,16,33,0.06)',
           icon: theme.colors.primary,
-          text: theme.colors.text.primary,
+          text: theme.colors.text,
         };
 
   return (
@@ -904,14 +904,14 @@ function PrivacyActionModal({
     backdrop: 'rgba(5,4,10,0.72)',
     cardBg: isDark ? 'rgba(14,11,23,0.98)' : '#FFFFFF',
     cardBorder: isDark ? 'rgba(255,255,255,0.08)' : theme.colors.border,
-    muted: isDark ? 'rgba(190,181,216,0.92)' : theme.colors.text.secondary,
+    muted: isDark ? 'rgba(190,181,216,0.92)' : theme.colors.textSecondary,
     softBg: isDark ? 'rgba(255,255,255,0.03)' : theme.colors.surfaceAlt,
     softBorder: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(20,16,33,0.06)',
     primaryBg: config.danger ? (isDark ? 'rgba(220,38,38,0.92)' : '#DC2626') : theme.colors.primary,
     primaryText: '#FFFFFF',
     secondaryBg: isDark ? 'rgba(255,255,255,0.04)' : theme.colors.surface,
     secondaryBorder: isDark ? 'rgba(255,255,255,0.1)' : theme.colors.border,
-    secondaryText: theme.colors.text.primary,
+    secondaryText: theme.colors.text,
   } as const;
 
   return (
@@ -936,7 +936,7 @@ function PrivacyActionModal({
         >
           <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
             <View style={{ flex: 1, paddingRight: 12 }}>
-              <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
+              <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
                 {config.title}
               </CustomText>
               <CustomText variant="caption" style={{ color: ui.muted, marginTop: 5 }}>
@@ -957,7 +957,7 @@ function PrivacyActionModal({
                 justifyContent: 'center',
               }}
             >
-              <MaterialIcons name="close" size={18} color={theme.colors.text.primary} />
+              <MaterialIcons name="close" size={18} color={theme.colors.text} />
             </TVTouchable>
           </View>
 
@@ -1059,7 +1059,7 @@ function DeleteConfirmationFields({
   return (
     <View style={{ gap: 10 }}>
       <View>
-        <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginBottom: 5 }}>
+        <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginBottom: 5 }}>
           Full name
         </CustomText>
         <TextInput
@@ -1074,13 +1074,13 @@ function DeleteConfirmationFields({
             borderColor: border,
             backgroundColor: bg,
             paddingHorizontal: 12,
-            color: theme.colors.text.primary,
+            color: theme.colors.text,
           }}
         />
       </View>
 
       <View>
-        <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginBottom: 5 }}>
+        <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginBottom: 5 }}>
           Confirmation phrase
         </CustomText>
         <TextInput
@@ -1096,10 +1096,10 @@ function DeleteConfirmationFields({
             borderColor: border,
             backgroundColor: bg,
             paddingHorizontal: 12,
-            color: theme.colors.text.primary,
+            color: theme.colors.text,
           }}
         />
-        <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 5 }}>
+        <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 5 }}>
           Type “{confirmPhrase}” exactly to authorize this request.
         </CustomText>
       </View>

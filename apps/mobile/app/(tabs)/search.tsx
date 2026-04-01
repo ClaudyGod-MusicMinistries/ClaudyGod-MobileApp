@@ -170,10 +170,10 @@ export default function Search() {
             <SurfaceCard tone="subtle" style={{ padding: theme.spacing.xl }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <View style={{ flex: 1 }}>
-                  <CustomText variant="heading" style={{ color: theme.colors.text.primary }}>
+                  <CustomText variant="heading" style={{ color: theme.colors.text }}>
                     Discover
                   </CustomText>
-                  <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 4 }}>
+                  <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 4 }}>
                     Search live streams, music, videos, playlists, and messages.
                   </CustomText>
                 </View>
@@ -215,7 +215,7 @@ export default function Search() {
                     showFocusBorder={false}
                   >
                     <MaterialIcons name={shortcut.icon as any} size={16} color={theme.colors.primary} />
-                    <CustomText variant="caption" style={{ color: theme.colors.text.primary, marginTop: 6 }}>
+                    <CustomText variant="caption" style={{ color: theme.colors.text, marginTop: 6 }}>
                       {shortcut.label}
                     </CustomText>
                   </TVTouchable>
@@ -258,6 +258,7 @@ export default function Search() {
                   imageUrl={item.imageUrl}
                   title={item.title}
                   subtitle={item.subtitle}
+                  size="sm"
                   onPress={() => void openResult(item)}
                 />
               )}
@@ -267,10 +268,10 @@ export default function Search() {
           {!filtered.length ? (
             <FadeIn delay={260}>
               <SurfaceCard style={{ padding: theme.spacing.lg }}>
-                <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
+                <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
                   No matches found
                 </CustomText>
-                <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginTop: 4 }}>
+                <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 4 }}>
                   Try a broader keyword or reset your active category.
                 </CustomText>
                 <View style={{ marginTop: theme.spacing.md }}>

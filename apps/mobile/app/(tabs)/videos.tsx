@@ -404,17 +404,17 @@ export default function VideosScreen() {
                       <CustomText
                         variant="caption"
                         style={{
-                          color: theme.colors.text.secondary,
+                          color: theme.colors.textSecondary,
                           textTransform: 'uppercase',
                           letterSpacing: 0.9,
                         }}
                       >
                         {active.isLive ? 'Live now' : 'Now showing'}
                       </CustomText>
-                      <CustomText variant="hero" style={{ color: theme.colors.text.primary }}>
+                      <CustomText variant="hero" style={{ color: theme.colors.text }}>
                         {active.title}
                       </CustomText>
-                      <CustomText variant="body" style={{ color: theme.colors.text.secondary }}>
+                      <CustomText variant="body" style={{ color: theme.colors.textSecondary }}>
                         {active.subtitle}
                       </CustomText>
                     </View>
@@ -424,19 +424,19 @@ export default function VideosScreen() {
                           title="Previous"
                           onPress={goPrevious}
                           variant="secondary"
-                          leftIcon={<MaterialIcons name="skip-previous" size={16} color={theme.colors.text.primary} />}
+                          leftIcon={<MaterialIcons name="skip-previous" size={16} color={theme.colors.text} />}
                         />
                       ) : null}
                       <AppButton
                         title={canGoNext ? 'Next' : isSaved ? 'Saved' : 'Save'}
                         onPress={() => (canGoNext ? goNext() : void toggleSave())}
-                        leftIcon={<MaterialIcons name={canGoNext ? 'skip-next' : isSaved ? 'bookmark' : 'bookmark-border'} size={16} color={theme.colors.text.inverse} />}
+                        leftIcon={<MaterialIcons name={canGoNext ? 'skip-next' : isSaved ? 'bookmark' : 'bookmark-border'} size={16} color={theme.colors.textInverse} />}
                       />
                       <AppButton
                         title="More"
                         variant="outline"
                         onPress={() => setIsActionSheetVisible(true)}
-                        leftIcon={<MaterialIcons name="more-horiz" size={16} color={theme.colors.text.primary} />}
+                        leftIcon={<MaterialIcons name="more-horiz" size={16} color={theme.colors.text} />}
                       />
                     </View>
                   </View>
@@ -502,7 +502,7 @@ export default function VideosScreen() {
                     actionLabel={section.actionLabel}
                     onAction={() => router.push(TAB_ROUTE_BY_ID[section.destinationTab])}
                   />
-                  <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginBottom: 10 }}>
+                  <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginBottom: 10 }}>
                     {section.subtitle}
                   </CustomText>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false} overScrollMode="never">

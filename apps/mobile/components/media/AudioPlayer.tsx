@@ -202,7 +202,7 @@ export function AudioPlayer({
               }}
               showFocusBorder={false}
             >
-              <CustomText variant="label" style={{ color: theme.colors.text.primary }}>
+              <CustomText variant="label" style={{ color: theme.colors.text }}>
                 Close
               </CustomText>
             </TVTouchable>
@@ -229,7 +229,7 @@ export function AudioPlayer({
             <CustomText
               variant="hero"
               style={{
-                color: theme.colors.text.primary,
+                color: theme.colors.text,
                 textAlign: 'center',
               }}
               numberOfLines={2}
@@ -239,7 +239,7 @@ export function AudioPlayer({
             <CustomText
               variant="subtitle"
               style={{
-                color: theme.colors.text.secondary,
+                color: theme.colors.textSecondary,
                 textAlign: 'center',
               }}
               numberOfLines={2}
@@ -271,10 +271,10 @@ export function AudioPlayer({
             />
           </View>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 }}>
-            <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
+            <CustomText variant="caption" style={{ color: theme.colors.textSecondary }}>
               {positionLabel}
             </CustomText>
-            <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
+            <CustomText variant="caption" style={{ color: theme.colors.textSecondary }}>
               {durationLabel}
             </CustomText>
           </View>
@@ -305,7 +305,7 @@ export function AudioPlayer({
               }}
               showFocusBorder={false}
             >
-              <MaterialIcons name="skip-previous" size={22} color={theme.colors.text.primary} />
+              <MaterialIcons name="skip-previous" size={22} color={theme.colors.text} />
             </TVTouchable>
           ) : null}
 
@@ -323,7 +323,7 @@ export function AudioPlayer({
             }}
             showFocusBorder={false}
           >
-            <MaterialIcons name="replay-10" size={22} color={theme.colors.text.primary} />
+            <MaterialIcons name="replay-10" size={22} color={theme.colors.text} />
           </TVTouchable>
 
           <TVTouchable
@@ -342,7 +342,7 @@ export function AudioPlayer({
             <MaterialIcons
               name={isPlaying ? 'pause' : 'play-arrow'}
               size={isCompact ? 32 : 38}
-              color={theme.colors.text.inverse}
+              color={theme.colors.textInverse}
             />
           </TVTouchable>
 
@@ -360,7 +360,7 @@ export function AudioPlayer({
             }}
             showFocusBorder={false}
           >
-            <MaterialIcons name="forward-10" size={22} color={theme.colors.text.primary} />
+            <MaterialIcons name="forward-10" size={22} color={theme.colors.text} />
           </TVTouchable>
 
           {onNext ? (
@@ -380,7 +380,7 @@ export function AudioPlayer({
               }}
               showFocusBorder={false}
             >
-              <MaterialIcons name="skip-next" size={22} color={theme.colors.text.primary} />
+              <MaterialIcons name="skip-next" size={22} color={theme.colors.text} />
             </TVTouchable>
           ) : null}
         </View>
@@ -404,7 +404,7 @@ function PillMeta({ label }: { label: string }) {
         backgroundColor: theme.colors.surfaceAlt,
       }}
     >
-      <CustomText variant="caption" style={{ color: theme.colors.text.secondary }}>
+      <CustomText variant="caption" style={{ color: theme.colors.textSecondary }}>
         {label}
       </CustomText>
     </View>

@@ -24,7 +24,14 @@ export function SectionHeader({ title, actionLabel, onAction }: SectionHeaderPro
         marginBottom: theme.spacing.sm,
       }}
     >
-      <CustomText variant="heading" style={{ color: theme.colors.text.primary }}>
+      <CustomText
+        variant="label"
+        style={{
+          color: theme.colors.text,
+          fontWeight: '600',
+          letterSpacing: 0.2,
+        }}
+      >
         {title}
       </CustomText>
       {actionLabel ? (
@@ -41,11 +48,11 @@ export function SectionHeader({ title, actionLabel, onAction }: SectionHeaderPro
         >
           <CustomText
             variant="label"
-            style={{ color: theme.colors.text.secondary, textTransform: 'uppercase', letterSpacing: 0.18 }}
+            style={{ color: theme.colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.18 }}
           >
             {actionLabel}
           </CustomText>
-          <MaterialIcons name="chevron-right" size={16} color={theme.colors.text.secondary} />
+          <MaterialIcons name="chevron-right" size={16} color={theme.colors.textSecondary} />
         </TVTouchable>
       ) : null}
     </View>

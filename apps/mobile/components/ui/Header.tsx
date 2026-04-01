@@ -58,7 +58,7 @@ export const Header: React.FC<HeaderProps> = ({
               animated ? styles.animatedTitleContainer : null,
             ]}
           >
-            <CustomText style={[styles.title, { color: theme.colors.text.inverse }]}>
+            <CustomText style={[styles.title, { color: theme.colors.textInverse }]}>
               {title}
             </CustomText>
             {subtitle && (

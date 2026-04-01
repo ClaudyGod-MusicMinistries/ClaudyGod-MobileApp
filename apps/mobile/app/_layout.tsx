@@ -124,17 +124,17 @@ function WelcomeSpinner({
 
 function WebLoadingScreen({ compact }: { compact: boolean }) {
   return (
-    <View style={{ flex: 1, backgroundColor: '#0A0612' }}>
-      <StatusBar translucent={false} barStyle="light-content" backgroundColor="#0A0612" />
+    <View style={{ flex: 1, backgroundColor: '#06040C' }}>
+      <StatusBar translucent={false} barStyle="light-content" backgroundColor="#06040C" />
 
       <LinearGradient
-        colors={['#1E1A35', '#0F0C1A', '#0A0612']}
+        colors={['#140F22', '#0B0714', '#06040C']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
       />
 
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#0A0612' }} edges={['top', 'bottom']}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#06040C' }} edges={['top', 'bottom']}>
         <View
           style={{
             flex: 1,
@@ -149,8 +149,8 @@ function WebLoadingScreen({ compact }: { compact: boolean }) {
               maxWidth: 360,
               borderRadius: 28,
               borderWidth: 1,
-              borderColor: 'rgba(167,139,250,0.16)',
-              backgroundColor: 'rgba(26,20,47,0.94)',
+              borderColor: 'rgba(167,139,250,0.14)',
+              backgroundColor: 'rgba(18,12,28,0.92)',
               paddingHorizontal: compact ? 18 : 22,
               paddingVertical: compact ? 22 : 26,
               alignItems: 'center',

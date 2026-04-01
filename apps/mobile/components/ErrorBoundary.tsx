@@ -51,12 +51,13 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 
   render() {
     if (this.state.hasError && this.state.error) {
-      const darkColors = colors.dark;
+      const darkPalette = colors.dark;
       const errorMessage = this.state.error.message || 'An unexpected error occurred';
       const stackTrace = this.state.error.stack || '';
+      const contextLabel = this.props.context ? ` while loading ${this.props.context}` : '';
 
       return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: darkColors.background }}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: darkPalette.background }}>
           <ScrollView
             style={{ flex: 1 }}
             contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 20, paddingVertical: 24 }}
@@ -75,7 +76,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
                 alignSelf: 'center',
               }}
             >
-              <MaterialIcons name="error-outline" size={32} color={darkColors.danger} />
+              <MaterialIcons name="error-outline" size={32} color={darkPalette.danger} />
             </View>
 
             {/* Header */}
@@ -84,7 +85,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
                 style={{
                   fontSize: 24,
                   fontWeight: '700',
-                  color: darkColors.text.primary,
+                  color: darkPalette.text,
                   marginBottom: 8,
                 }}
               >
@@ -93,11 +94,12 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
               <Text
                 style={{
                   fontSize: 14,
-                  color: darkColors.text.secondary,
+                  color: darkPalette.textSecondary,
                   lineHeight: 20,
                 }}
               >
-                We&apos;re sorry for the inconvenience. The app encountered an unexpected error. Please try again or contact support if the problem persists.
+                We ran into an unexpected error{contextLabel}. Please try again or contact
+                support if the problem persists.
               </Text>
             </View>
 
@@ -114,22 +116,22 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
                 }}
               >
                 <Text
-                  style={{
-                    fontSize: 12,
-                    fontWeight: '600',
-                    color: darkColors.danger,
-                    marginBottom: 8,
-                  }}
-                >
+                    style={{
+                      fontSize: 12,
+                      fontWeight: '600',
+                      color: darkPalette.danger,
+                      marginBottom: 8,
+                    }}
+                  >
                   Error Message
                 </Text>
                 <Text
-                  style={{
-                    fontSize: 11,
-                    color: darkColors.text.secondary,
-                    fontFamily: 'monospace',
-                    lineHeight: 16,
-                  }}
+                    style={{
+                      fontSize: 11,
+                      color: darkPalette.textSecondary,
+                      fontFamily: 'monospace',
+                      lineHeight: 16,
+                    }}
                 >
                   {errorMessage}
                 </Text>
@@ -140,7 +142,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
                       style={{
                         fontSize: 12,
                         fontWeight: '600',
-                        color: darkColors.danger,
+                        color: darkPalette.danger,
                         marginTop: 12,
                         marginBottom: 8,
                       }}
@@ -150,7 +152,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
                     <Text
                       style={{
                         fontSize: 10,
-                        color: darkColors.text.secondary,
+                        color: darkPalette.textSecondary,
                         fontFamily: 'monospace',
                         lineHeight: 14,
                       }}
@@ -172,11 +174,11 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
                 onPress={this.resetError}
                 style={{
                   minHeight: 48,
-                  backgroundColor: darkColors.primary,
+                  backgroundColor: darkPalette.primary,
                   borderRadius: 12,
                   alignItems: 'center',
                   justifyContent: 'center',
-                  shadowColor: darkColors.primary,
+                  shadowColor: darkPalette.primary,
                   shadowOpacity: 0.3,
                   shadowRadius: 8,
                   shadowOffset: { width: 0, height: 4 },
@@ -185,7 +187,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
               >
                 <Text
                   style={{
-                    color: darkColors.text.inverse,
+                    color: darkPalette.textInverse,
                     fontWeight: '600',
                     fontSize: 14,
                   }}
@@ -196,27 +198,26 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 
               <TouchableOpacity
                 onPress={() => {
-                  // TODO: Navigate to home or support
                   this.resetError();
                 }}
                 style={{
                   minHeight: 48,
-                  backgroundColor: darkColors.surface,
+                  backgroundColor: darkPalette.surface,
                   borderRadius: 12,
                   borderWidth: 1,
-                  borderColor: darkColors.border,
+                  borderColor: darkPalette.border,
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
               >
                 <Text
                   style={{
-                    color: darkColors.text.primary,
+                    color: darkPalette.text,
                     fontWeight: '600',
                     fontSize: 14,
                   }}
                 >
-                  Go Home
+                  Dismiss Error
                 </Text>
               </TouchableOpacity>
             </View>

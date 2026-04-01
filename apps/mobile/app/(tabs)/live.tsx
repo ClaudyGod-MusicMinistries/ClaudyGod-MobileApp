@@ -62,7 +62,7 @@ export default function LiveScreen() {
   const { showToast } = useToast();
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
-  const posterSize = isTablet ? 'lg' : 'md';
+  const posterSize = isTablet ? 'md' : 'sm';
   const { feed } = useContentFeed();
 
   const [sessions, setSessions] = useState<LiveSessionSummary[]>([]);
@@ -244,7 +244,7 @@ export default function LiveScreen() {
                     actionLabel="Open"
                     onAction={() => void openSession(toFeedCard(liveNow[0]!), 'live_now')}
                   />
-                  <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginBottom: 10 }}>
+                  <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginBottom: 10 }}>
                     Join the current broadcast or follow the stream so you do not miss the next session.
                   </CustomText>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false} overScrollMode="never">
@@ -274,7 +274,7 @@ export default function LiveScreen() {
                     actionLabel="Alerts"
                     onAction={() => void followLiveSession(upcoming[0]!)}
                   />
-                  <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginBottom: 10 }}>
+                  <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginBottom: 10 }}>
                     Get notified when the next session starts.
                   </CustomText>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false} overScrollMode="never">
@@ -304,7 +304,7 @@ export default function LiveScreen() {
                     actionLabel="Videos"
                     onAction={() => router.push(APP_ROUTES.tabs.videos)}
                   />
-                  <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginBottom: 10 }}>
+                  <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginBottom: 10 }}>
                     Watch saved live sessions and recent ministry replays.
                   </CustomText>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false} overScrollMode="never">
@@ -327,10 +327,10 @@ export default function LiveScreen() {
               <FadeIn delay={270}>
                 <SurfaceCard tone="subtle" style={{ padding: theme.spacing.lg }}>
                   <View style={{ gap: 10 }}>
-                    <CustomText variant="heading" style={{ color: theme.colors.text.primary }}>
+                    <CustomText variant="heading" style={{ color: theme.colors.text }}>
                       No live sessions yet
                     </CustomText>
-                    <CustomText variant="body" style={{ color: theme.colors.text.secondary }}>
+                    <CustomText variant="body" style={{ color: theme.colors.textSecondary }}>
                       When a live session is scheduled or started from the admin portal, it will appear here automatically.
                     </CustomText>
                     <View style={{ flexDirection: 'row', gap: 10 }}>
@@ -371,14 +371,14 @@ function LiveStatCard({ label, value }: { label: string; value: number }) {
       <CustomText
         variant="caption"
         style={{
-          color: theme.colors.text.secondary,
+          color: theme.colors.textSecondary,
           textTransform: 'uppercase',
           letterSpacing: 0.8,
         }}
       >
         {label}
       </CustomText>
-      <CustomText variant="display" style={{ color: theme.colors.text.primary, marginTop: 6 }}>
+      <CustomText variant="display" style={{ color: theme.colors.text, marginTop: 6 }}>
         {value}
       </CustomText>
     </View>

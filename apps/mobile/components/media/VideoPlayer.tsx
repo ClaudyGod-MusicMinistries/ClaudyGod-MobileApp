@@ -86,7 +86,7 @@ export function VideoPlayer({
       />
       {title ? (
         <View style={{ padding: theme.spacing.md }}>
-          <CustomText variant="subtitle" style={{ color: theme.colors.text.primary }}>
+          <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
             {title}
           </CustomText>
         </View>
