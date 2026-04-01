@@ -330,8 +330,8 @@ export default function VideosScreen() {
     if (activeChip === 'live') return feed.live.filter((item) => shouldOpenVideoScreen(item));
     if (activeChip === 'replays') return feed.videos;
     if (activeChip === 'videos') return feed.videos;
-    return dedupeItems([...feed.videos, ...feed.live]);
-  }, [activeChip, feed.live, feed.videos]);
+    return dedupeItems([...feed.videos, ...feed.live, ...feed.recent]);
+  }, [activeChip, feed.live, feed.recent, feed.videos]);
   const rotationItems = useMemo(
     () => queue.filter((item) => item.id !== active?.id).slice(0, 3),
     [active?.id, queue],

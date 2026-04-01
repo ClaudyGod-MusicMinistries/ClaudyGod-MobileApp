@@ -91,8 +91,9 @@ export function FloatingPlayerProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const close = useCallback(() => {
+    player.controls?.pause();
     setPlayer(INITIAL_STATE);
-  }, []);
+  }, [player.controls]);
 
   const updateProgress = useCallback((currentTime: number, duration: number) => {
     setPlayer((prev) => ({
