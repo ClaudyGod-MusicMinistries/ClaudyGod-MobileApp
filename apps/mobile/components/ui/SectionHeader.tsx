@@ -25,11 +25,12 @@ export function SectionHeader({ title, actionLabel, onAction }: SectionHeaderPro
       }}
     >
       <CustomText
-        variant="label"
+        variant="subtitle"
         style={{
           color: theme.colors.text,
-          fontWeight: '600',
-          letterSpacing: 0.2,
+          fontWeight: '700',
+          letterSpacing: 0.1,
+          fontSize: 14,
         }}
       >
         {title}
@@ -48,7 +49,7 @@ export function SectionHeader({ title, actionLabel, onAction }: SectionHeaderPro
         >
           <CustomText
             variant="label"
-            style={{ color: theme.colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.18 }}
+            style={{ color: theme.colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.24, fontSize: 10 }}
           >
             {actionLabel}
           </CustomText>

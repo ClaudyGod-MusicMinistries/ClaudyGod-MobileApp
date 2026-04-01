@@ -11,9 +11,12 @@ interface PosterCardProps {
   imageUrl: string;
   title: string;
   subtitle?: string;
+  meta?: string;
   onPress?: () => void;
   size?: 'sm' | 'md' | 'lg';
   showPlay?: boolean;
+  showMore?: boolean;
+  onMorePress?: () => void;
   badge?: string;
   isLive?: boolean;
 }
@@ -22,9 +25,12 @@ export function PosterCard({
   imageUrl,
   title,
   subtitle,
+  meta,
   onPress,
   size = 'md',
   showPlay = true,
+  showMore = false,
+  onMorePress,
   badge,
   isLive = false,
 }: PosterCardProps) {
@@ -104,24 +110,55 @@ export function PosterCard({
 
         {/* Play Button */}
         {showPlay && !isLive && (
-          <Pressable
+          <View
             style={{
               position: 'absolute',
-              right: theme.spacing.md,
-              top: theme.spacing.md,
-              width: 40,
-              height: 40,
-              borderRadius: theme.radius.md,
-              backgroundColor: 'rgba(9,12,16,0.75)',
-              borderWidth: 1.5,
-              borderColor: 'rgba(255,255,255,0.15)',
+              left: 0,
+              right: 0,
+              top: 0,
+              bottom: 0,
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <MaterialIcons name="play-arrow" size={22} color="#F7F3EA" />
-          </Pressable>
+            <View
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 24,
+                backgroundColor: 'rgba(9,12,16,0.75)',
+                borderWidth: 1.5,
+                borderColor: 'rgba(255,255,255,0.2)',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <MaterialIcons name="play-arrow" size={24} color="#F7F3EA" />
+            </View>
+          </View>
         )}
+
+        {/* More Actions */}
+        {showMore && onMorePress ? (
+          <Pressable
+            onPress={onMorePress}
+            style={{
+              position: 'absolute',
+              right: theme.spacing.sm,
+              top: theme.spacing.sm,
+              width: 32,
+              height: 32,
+              borderRadius: 16,
+              backgroundColor: 'rgba(9,12,16,0.72)',
+              borderWidth: 1,
+              borderColor: 'rgba(255,255,255,0.18)',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <MaterialIcons name="more-vert" size={18} color="#F7F3EA" />
+          </Pressable>
+        ) : null}
 
         {/* Live Indicator Pulsing Dot */}
         {isLive && (
@@ -167,25 +204,25 @@ export function PosterCard({
             variant="subtitle"
             style={{ 
               color: '#F7F3EA', 
-              fontSize: 11.5, 
+              fontSize: 12,
               lineHeight: 16,
-              fontWeight: '500',
+              fontWeight: '600',
             }}
-            numberOfLines={1}
+            numberOfLines={2}
           >
             {title}
           </CustomText>
-          {subtitle ? (
+          {meta || subtitle ? (
             <CustomText
               variant="caption"
               style={{ 
-                color: 'rgba(232,226,216,0.72)', 
-                marginTop: 4,
-                fontSize: 10,
+                color: 'rgba(232,226,216,0.7)', 
+                marginTop: 3,
+                fontSize: 10.5,
               }}
               numberOfLines={1}
             >
-              {subtitle}
+              {meta ?? subtitle}
             </CustomText>
           ) : null}
         </View>

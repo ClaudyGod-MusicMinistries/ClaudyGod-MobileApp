@@ -22,8 +22,8 @@ import { useAppTheme } from '../../util/colorScheme';
 import { useContentFeed } from '../../hooks/useContentFeed';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import type { FeedCardItem } from '../../services/contentService';
-import { subscribeToLiveAlerts, trackPlayEvent } from '../../services/supabaseAnalytics';
-import { fetchMeLibrary, removeMeLibraryItem, saveMeLibraryItem } from '../../services/userFlowService';
+import { trackPlayEvent } from '../../services/supabaseAnalytics';
+import { fetchMeLibrary, removeMeLibraryItem, saveMeLibraryItem , subscribeToLiveAlertsBackend } from '../../services/userFlowService';
 import { APP_ROUTES, TAB_ROUTE_BY_ID } from '../../util/appRoutes';
 import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
 import { deriveLayoutSectionItems, getVideoLayoutSections } from '../../util/mobileLayout';
@@ -210,6 +210,9 @@ export default function VideosScreen() {
     });
   };
 
+  const formatMeta = (item: FeedCardItem) =>
+    [item.subtitle, item.duration].filter((value) => Boolean(value)).join(' · ');
+
   const goPrevious = () => {
     if (!canGoPrevious) return;
     const previous = queue[activeIndex - 1];
@@ -229,6 +232,11 @@ export default function VideosScreen() {
   const openExternal = async () => {
     if (!active?.mediaUrl) return;
     await Linking.openURL(active.mediaUrl);
+  };
+
+  const openMoreForItem = (item: FeedCardItem) => {
+    setActiveId(item.id);
+    setIsActionSheetVisible(true);
   };
 
   const toggleSave = async () => {
@@ -304,7 +312,7 @@ export default function VideosScreen() {
   const followLive = async () => {
     if (!active) return;
     try {
-      await subscribeToLiveAlerts(active.notificationChannelId || active.id);
+      await subscribeToLiveAlertsBackend(active.notificationChannelId || active.id, active.title);
       showToast({
         title: 'Live alerts enabled',
         message: `You will be notified when ${active.title} goes live.`,
@@ -317,6 +325,48 @@ export default function VideosScreen() {
         tone: 'warning',
       });
     }
+  };
+
+  const listenLater = async () => {
+    if (!active) return;
+    if (isGuestMode) {
+      showToast({
+        title: 'Sign in to save',
+        message: 'Create an account to use Listen Later.',
+        tone: 'warning',
+      });
+      return;
+    }
+    try {
+      await saveMeLibraryItem({
+        bucket: 'playlist',
+        playlistName: 'Listen Later',
+        contentId: active.id,
+        contentType: active.type,
+        title: active.title,
+        subtitle: active.subtitle,
+        description: active.description,
+        imageUrl: active.imageUrl,
+        mediaUrl: active.mediaUrl,
+        duration: active.duration,
+        metadata: { source: 'videos_action_sheet' },
+      });
+      showToast({
+        title: 'Added to Listen Later',
+        message: 'We saved this for you.',
+        tone: 'success',
+      });
+    } catch (error) {
+      showToast({
+        title: 'Listen later unavailable',
+        message: error instanceof Error ? error.message : 'Please try again.',
+        tone: 'warning',
+      });
+    }
+  };
+
+  const openReviews = () => {
+    router.push(APP_ROUTES.settingsPages.rate);
   };
 
   const actionSheetActions: ActionSheetAction[] = !active
@@ -339,6 +389,20 @@ export default function VideosScreen() {
           onPress: () => {
             void shareActive();
           },
+        },
+        {
+          key: 'listen-later',
+          label: 'Listen Later',
+          detail: 'Save this for a quieter moment.',
+          icon: 'schedule',
+          onPress: listenLater,
+        },
+        {
+          key: 'reviews',
+          label: 'Reviews & Ratings',
+          detail: 'See what others are saying.',
+          icon: 'reviews',
+          onPress: openReviews,
         },
         {
           key: active.isLive ? 'follow-live' : 'open-browser',
@@ -484,8 +548,10 @@ export default function VideosScreen() {
                         key={item.id}
                         imageUrl={item.imageUrl}
                         title={item.title}
-                        subtitle={item.subtitle}
+                        meta={formatMeta(item)}
                         size={posterSize}
+                        showMore
+                        onMorePress={() => openMoreForItem(item)}
                         onPress={() => void openVideo(item, 'videos_queue')}
                       />
                     ))}
@@ -511,8 +577,10 @@ export default function VideosScreen() {
                         key={`${section.title}-${item.id}`}
                         imageUrl={item.imageUrl}
                         title={item.title}
-                        subtitle={item.subtitle}
+                        meta={formatMeta(item)}
                         size={posterSize}
+                        showMore
+                        onMorePress={() => openMoreForItem(item)}
                         onPress={() => void openVideo(item, 'videos_curated')}
                       />
                     ))}

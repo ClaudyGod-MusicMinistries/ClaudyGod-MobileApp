@@ -42,8 +42,8 @@ function WelcomeSpinner({
   compact: boolean;
   useNativeAnimations: boolean;
 }) {
-  const size = compact ? 96 : 112;
-  const logoSize = compact ? 40 : 46;
+  const size = compact ? 76 : 88;
+  const logoSize = compact ? 30 : 34;
   const spin = useRef(new Animated.Value(0)).current;
   const pulse = useRef(new Animated.Value(0.94)).current;
 
@@ -96,7 +96,7 @@ function WelcomeSpinner({
           width: size,
           height: size,
           borderRadius: size / 2,
-          borderWidth: 2.5,
+          borderWidth: 2,
           borderColor: 'rgba(167,139,250,0.12)',
           borderTopColor: '#A78BFA',
           borderRightColor: '#D8CAFF',
@@ -105,9 +105,9 @@ function WelcomeSpinner({
       />
       <Animated.View
         style={{
-          width: size - 24,
-          height: size - 24,
-          borderRadius: (size - 24) / 2,
+          width: size - 20,
+          height: size - 20,
+          borderRadius: (size - 20) / 2,
           borderWidth: 1,
           borderColor: 'rgba(167,139,250,0.22)',
           backgroundColor: 'rgba(26,20,47,0.92)',
@@ -241,15 +241,15 @@ function NativeLoadingScreen({ compact }: { compact: boolean }) {
         >
           <Animated.View
             style={{
-              width: compact ? 280 : 316,
+            width: compact ? 240 : 270,
               borderRadius: 28,
               borderWidth: 1,
               borderColor: 'rgba(167,139,250,0.16)',
               backgroundColor: 'rgba(26,20,47,0.94)',
               alignItems: 'center',
               justifyContent: 'center',
-              paddingHorizontal: compact ? 20 : 24,
-              paddingVertical: compact ? 22 : 26,
+              paddingHorizontal: compact ? 16 : 18,
+              paddingVertical: compact ? 16 : 18,
               transform: [{ scale: pulse }],
               ...cardShadowStyle,
             }}
@@ -260,8 +260,8 @@ function NativeLoadingScreen({ compact }: { compact: boolean }) {
               style={{
                 marginTop: 16,
                 color: '#F5F3FF',
-                fontSize: compact ? 18 : 19,
-                lineHeight: compact ? 22 : 23,
+                fontSize: compact ? 16 : 17,
+                lineHeight: compact ? 20 : 21,
                 fontWeight: '700',
                 textAlign: 'center',
               }}
@@ -272,8 +272,8 @@ function NativeLoadingScreen({ compact }: { compact: boolean }) {
               style={{
                 marginTop: 8,
                 color: 'rgba(184,180,212,0.70)',
-                fontSize: compact ? 12 : 12.4,
-                lineHeight: compact ? 16 : 17,
+                fontSize: compact ? 11 : 11.4,
+                lineHeight: compact ? 14 : 15,
                 textAlign: 'center',
               }}
             >
@@ -317,9 +317,12 @@ function RootLayoutInner() {
 
     const firstSegment = segments[0];
     const secondSegment = Array.from(segments)[1];
+    const isSettingsPage = firstSegment === 'settingsPage';
+    const isGuestAllowedSettingsPage =
+      isSettingsPage && (secondSegment === 'Donate' || secondSegment === 'Support' || secondSegment === 'Help' || secondSegment === 'Rate');
     const isProtectedRoute =
       firstSegment === 'profile' ||
-      firstSegment === 'settingsPage' ||
+      (isSettingsPage && !isGuestAllowedSettingsPage) ||
       (firstSegment === '(tabs)' && secondSegment === 'settings');
 
     if (!isAuthenticated && isProtectedRoute) {
