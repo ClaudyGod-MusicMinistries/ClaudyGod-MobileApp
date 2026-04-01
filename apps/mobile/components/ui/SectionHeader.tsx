@@ -28,7 +28,7 @@ export function SectionHeader({ title, actionLabel, onAction }: SectionHeaderPro
         variant="subtitle"
         style={{
           color: theme.colors.text,
-          fontWeight: '600',
+          fontWeight: '700',
           letterSpacing: 0.1,
           fontSize: 14,
         }}
