@@ -404,6 +404,12 @@ export default function Search() {
                       onPress={() => {
                         setQuery(shortcut.query);
                         setActiveCategory(shortcut.category);
+                        showToast({
+                          title: 'Filter applied',
+                          message: `Showing ${shortcut.label.toLowerCase()}.`,
+                          tone: 'info',
+                          durationMs: 1400,
+                        });
                       }}
                       style={{
                         width: shortcutWidth,
