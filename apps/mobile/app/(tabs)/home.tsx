@@ -538,7 +538,7 @@ export default function HomeScreen() {
                                   ? openItem(featured, 'home_featured_details')
                                   : router.push(APP_ROUTES.tabs.library),
                             variant: 'secondary' as const,
-                            icon: featured?.isLive ? 'notifications-active' : 'article',
+                            icon: featured?.isLive ? 'notifications-active' : 'description',
                           },
                         ]
                       : []),
