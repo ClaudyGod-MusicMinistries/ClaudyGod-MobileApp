@@ -93,38 +93,6 @@ function DestinationCard({
   );
 }
 
-function FooterLink({
-  label,
-  onPress,
-}: {
-  label: string;
-  onPress: () => void;
-}) {
-  return (
-    <TVTouchable
-      onPress={onPress}
-      showFocusBorder={false}
-      style={{
-        minHeight: 36,
-        paddingHorizontal: 14,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: LANDING_COLORS.border,
-        backgroundColor: LANDING_COLORS.panelStrong,
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      <CustomText
-        variant="label"
-        style={{ color: LANDING_COLORS.textPrimary, fontSize: 10.5, fontWeight: '500' }}
-      >
-        {label}
-      </CustomText>
-    </TVTouchable>
-  );
-}
-
 function getLandingBadge(item: FeedCardItem | null) {
   if (!item) return 'ClaudyGod';
   if (item.isLive || item.type === 'live') return 'Live now';
@@ -500,38 +468,6 @@ export default function LandingScreen() {
               </View>
             </ScrollView>
 
-            <FadeIn delay={170}>
-              <View
-                style={{
-                  borderWidth: 1,
-                  borderColor: LANDING_COLORS.border,
-                  backgroundColor: LANDING_COLORS.panelStrong,
-                  borderRadius: 12,
-                  paddingHorizontal: isPhone ? 10 : 14,
-                  paddingVertical: isPhone ? 8 : 10,
-                  flexDirection: 'column',
-                  gap: 8,
-                }}
-              >
-                <CustomText
-                  variant="caption"
-                  style={{
-                    color: LANDING_COLORS.accent,
-                    textTransform: 'uppercase',
-                    letterSpacing: 0.75,
-                    fontSize: 10,
-                  }}
-                >
-                  Quick access
-                </CustomText>
-
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                  {previewLinks.map((link) => (
-                    <FooterLink key={`footer-${link.key}`} label={link.label} onPress={() => router.push(link.route)} />
-                  ))}
-                </View>
-              </View>
-            </FadeIn>
               </View>
             </Screen>
           </SafeAreaView>
