@@ -70,19 +70,19 @@ export const ModernInput: React.FC<ModernInputProps> = ({
 
   const borderColor = focusAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [theme.colors.border, theme.colors.primary],
+    outputRange: [theme.colors.border, theme.colors.border],
   });
 
   const shadowOpacity = focusAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.05, 0.3],
+    outputRange: [0.02, 0.08],
   });
 
   const variantStyles = {
     outlined: {
-      borderWidth: 1.5,
+      borderWidth: 1,
       borderColor: theme.colors.border,
-      backgroundColor: 'transparent',
+      backgroundColor: theme.colors.surfaceAlt,
     },
     filled: {
       borderWidth: 0,
@@ -90,9 +90,9 @@ export const ModernInput: React.FC<ModernInputProps> = ({
     },
     flat: {
       borderWidth: 0,
-      borderBottomWidth: 2,
-      borderBottomColor: theme.colors.border,
-      backgroundColor: 'transparent',
+      borderBottomWidth: 0,
+      borderBottomColor: 'transparent',
+      backgroundColor: theme.colors.surfaceAlt,
       borderRadius: 0,
     },
   };

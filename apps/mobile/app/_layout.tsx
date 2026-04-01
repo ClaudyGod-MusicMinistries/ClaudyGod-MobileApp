@@ -9,8 +9,12 @@ import { useColorScheme, useThemeContext } from '../util/colorScheme';
 import { colors } from '../constants/color';
 import { FontProvider, FontContext } from '../context/FontContext';
 import { AuthProvider, useAuth } from '../context/AuthContext';
+import { GuestModeProvider } from '../context/GuestModeContext';
+import { FloatingPlayerProvider } from '../context/FloatingPlayerContext';
 import { ToastProvider } from '../context/ToastContext';
 import { ToastViewport } from '../components/ui/ToastViewport';
+import { MinimizedFloatingPlayer } from '../components/player/MinimizedFloatingPlayer';
+import { FixedFooter } from '../components/layout/FixedFooter';
 import { APP_ROUTES } from '../util/appRoutes';
 import { BRAND_LOGO_ASSET } from '../util/brandAssets';
 import { fetchMePreferences } from '../services/userFlowService';
@@ -377,6 +381,8 @@ function RootLayoutInner() {
         <Stack.Screen name="profile" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
       </Stack>
+      <MinimizedFloatingPlayer />
+      {Platform.OS === 'web' ? <FixedFooter /> : null}
     </ThemedLayout>
   );
 }
@@ -388,7 +394,11 @@ export default function RootLayout() {
         <SafeAreaProvider>
           <ToastProvider>
             <AuthProvider>
-              <RootLayoutInner />
+              <GuestModeProvider>
+                <FloatingPlayerProvider>
+                  <RootLayoutInner />
+                </FloatingPlayerProvider>
+              </GuestModeProvider>
             </AuthProvider>
           </ToastProvider>
         </SafeAreaProvider>

@@ -11,17 +11,18 @@ export default function TabsLayout() {
   return (
     <View style={{ flex: 1, backgroundColor: currentColors.background }}>
       <Tabs
+        initialRouteName="home"
         screenOptions={{
           headerShown: false,
           sceneStyle: { backgroundColor: currentColors.background },
         }}
         tabBar={(props) => <TabBar {...props} />}
       >
-        <Tabs.Screen name="home" />
-        <Tabs.Screen name="player" />
-        <Tabs.Screen name="videos" />
-        <Tabs.Screen name="live" />
-        <Tabs.Screen name="library" />
+        <Tabs.Screen name="home" options={{ tabBarLabel: 'Home' }} />
+        <Tabs.Screen name="player" options={{ tabBarLabel: 'Music' }} />
+        <Tabs.Screen name="videos" options={{ tabBarLabel: 'Videos' }} />
+        <Tabs.Screen name="live" options={{ tabBarLabel: 'Live' }} />
+        <Tabs.Screen name="library" options={{ tabBarLabel: 'Library' }} />
         <Tabs.Screen name="search" options={{ href: null }} />
         <Tabs.Screen name="settings" options={{ href: null }} />
         <Tabs.Screen name="PlaySection" options={{ href: null }} />

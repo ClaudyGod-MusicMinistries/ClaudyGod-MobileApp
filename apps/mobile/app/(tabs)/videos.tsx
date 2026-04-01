@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Linking, Platform, ScrollView, Share, View, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useIsFocused } from '@react-navigation/native';
 import { TabScreenWrapper } from '../../components/layout/TabScreenWrapper';
 import { Screen } from '../../components/layout/Screen';
 import { BrandedHeaderCard } from '../../components/layout/BrandedHeaderCard';
@@ -15,6 +16,8 @@ import { CustomText } from '../../components/CustomText';
 import { VideoPlayer } from '../../components/media/VideoPlayer';
 import { CinematicHeroCard } from '../../components/sections/CinematicHeroCard';
 import { useToast } from '../../context/ToastContext';
+import { useGuestMode } from '../../context/GuestModeContext';
+import { useFloatingPlayer } from '../../context/FloatingPlayerContext';
 import { useAppTheme } from '../../util/colorScheme';
 import { useContentFeed } from '../../hooks/useContentFeed';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
@@ -82,6 +85,10 @@ export default function VideosScreen() {
   const theme = useAppTheme();
   const router = useRouter();
   const { showToast } = useToast();
+  const { isGuestMode } = useGuestMode();
+  const { startPlaying, minimize, maximize, updateProgress, pause, resume, setPlaybackControls } =
+    useFloatingPlayer();
+  const isFocused = useIsFocused();
   const params = useLocalSearchParams<{
     itemId?: string | string[];
     itemType?: string | string[];
@@ -93,7 +100,7 @@ export default function VideosScreen() {
   }>();
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
-  const posterSize = isTablet ? 'lg' : 'md';
+  const posterSize = isTablet ? 'md' : 'sm';
 
   const { feed } = useContentFeed();
   const { config: mobileConfig } = useMobileAppConfig();
@@ -130,6 +137,11 @@ export default function VideosScreen() {
 
     const loadLibrary = async () => {
       try {
+        if (isGuestMode) {
+          setSavedIds(new Set());
+          return;
+        }
+
         const library = await fetchMeLibrary();
         if (!mounted) return;
 
@@ -148,7 +160,7 @@ export default function VideosScreen() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [isGuestMode]);
 
   const active = queue.find((item) => item.id === activeId) ?? routeItem ?? queue[0] ?? null;
   const activeIndex = active ? queue.findIndex((item) => item.id === active.id) : -1;
@@ -173,8 +185,23 @@ export default function VideosScreen() {
     [feed, mobileConfig],
   );
 
+  useEffect(() => {
+    if (!active) return;
+    startPlaying(active, 'video', queue);
+  }, [active, queue, startPlaying]);
+
+  useEffect(() => {
+    if (!active) return;
+    if (isFocused) {
+      maximize();
+    } else {
+      minimize();
+    }
+  }, [active, isFocused, maximize, minimize]);
+
   const openVideo = async (item: FeedCardItem, source: string) => {
     setActiveId(item.id);
+    startPlaying(item, 'video', queue);
     await trackPlayEvent({
       contentId: item.id,
       contentType: item.type,
@@ -206,6 +233,15 @@ export default function VideosScreen() {
 
   const toggleSave = async () => {
     if (!active) return;
+
+    if (isGuestMode) {
+      showToast({
+        title: 'Sign in to save',
+        message: 'Create an account to add items to your library.',
+        tone: 'warning',
+      });
+      return;
+    }
 
     try {
       if (savedIds.has(active.id)) {
@@ -356,7 +392,13 @@ export default function VideosScreen() {
                 <SurfaceCard tone="strong" style={{ padding: theme.spacing.md }}>
                     <View style={{ gap: 14 }}>
                       <View style={{ aspectRatio: 16 / 9, borderRadius: theme.radius.lg, overflow: 'hidden' }}>
-                        <VideoPlayer sourceUri={active.mediaUrl} title={active.title} />
+                        <VideoPlayer
+                          sourceUri={active.mediaUrl}
+                          title={active.title}
+                          onRegisterControls={(controls) => setPlaybackControls(controls)}
+                          onPlayStateChange={(playing) => (playing ? resume() : pause())}
+                          onProgress={(currentTime, duration) => updateProgress(currentTime, duration)}
+                        />
                       </View>
                     <View style={{ gap: 6 }}>
                       <CustomText

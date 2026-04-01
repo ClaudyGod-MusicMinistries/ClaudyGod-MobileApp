@@ -5,6 +5,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Screen } from '../components/layout/Screen';
+import { useGuestMode } from '../context/GuestModeContext';
 import { CustomText } from '../components/CustomText';
 import { FadeIn } from '../components/ui/FadeIn';
 import { TVTouchable } from '../components/ui/TVTouchable';
@@ -106,7 +107,10 @@ function FooterLink({
         justifyContent: 'center',
       }}
     >
-      <CustomText variant="label" style={{ color: LANDING_COLORS.textPrimary }}>
+      <CustomText
+        variant="label"
+        style={{ color: LANDING_COLORS.textPrimary, fontSize: 10.5, fontWeight: '500' }}
+      >
         {label}
       </CustomText>
     </TVTouchable>
@@ -155,6 +159,7 @@ function getLandingPrimaryAction(item: FeedCardItem | null) {
 
 export default function LandingScreen() {
   const router = useRouter();
+  const { enterGuestMode } = useGuestMode();
   const { width } = useWindowDimensions();
   const isTablet = width >= 900;
   const isPhone = width < 900;
@@ -231,7 +236,10 @@ export default function LandingScreen() {
           title="Browse as Guest"
           variant="secondary"
           size="md"
-          onPress={() => router.push(APP_ROUTES.tabs.home)}
+          onPress={() => {
+            enterGuestMode();
+            requestAnimationFrame(() => router.replace(APP_ROUTES.tabs.home));
+          }}
           fullWidth
           style={{
             borderColor: LANDING_COLORS.border,

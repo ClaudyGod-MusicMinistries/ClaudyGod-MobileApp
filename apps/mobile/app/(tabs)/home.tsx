@@ -6,7 +6,8 @@ import { TabScreenWrapper } from '../../components/layout/TabScreenWrapper';
 import { Screen } from '../../components/layout/Screen';
 import { BrandedHeaderCard } from '../../components/layout/BrandedHeaderCard';
 import { CinematicHeroCard } from '../../components/sections/CinematicHeroCard';
-import { PosterCard } from '../../components/ui/PosterCard';
+import { MinimalPosterCard } from '../../components/ui/MinimalPosterCard';
+import { SupportMinistryCard } from '../../components/ui/SupportMinistryCard';
 import { SectionHeader } from '../../components/ui/SectionHeader';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { AppButton } from '../../components/ui/AppButton';
@@ -92,7 +93,7 @@ export default function HomeScreen() {
   const { showToast } = useToast();
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
-  const posterSize = isTablet ? 'lg' : 'md';
+  const posterSize = isTablet ? 'md' : 'sm';
 
   const { feed, loading, error, refresh } = useContentFeed();
   const { config: mobileConfig } = useMobileAppConfig();
@@ -257,6 +258,38 @@ export default function HomeScreen() {
               </View>
             </FadeIn>
 
+            {curatedRails.slice(0, 2).map(({ section, items }, index) => (
+              <FadeIn key={section.id || section.title} delay={110 + index * 35}>
+                <View>
+                  <SectionHeader
+                    title={section.title}
+                    actionLabel={section.actionLabel}
+                    onAction={() => router.push(TAB_ROUTE_BY_ID[section.destinationTab])}
+                  />
+                  {section.subtitle ? (
+                    <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginBottom: 10 }}>
+                      {section.subtitle}
+                    </CustomText>
+                  ) : null}
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false} overScrollMode="never">
+                    {items.map((item) => (
+                      <MinimalPosterCard
+                        key={`${section.title}-${item.id}`}
+                        imageUrl={item.imageUrl}
+                        title={item.title}
+                        size={posterSize}
+                        onPress={() => void openItem(item, 'home_curated')}
+                      />
+                    ))}
+                  </ScrollView>
+                </View>
+              </FadeIn>
+            ))}
+
+            <FadeIn delay={190}>
+              <SupportMinistryCard onPress={() => router.push(APP_ROUTES.settingsPages.donate)} />
+            </FadeIn>
+
             {sponsoredItem ? (
               <FadeIn delay={120}>
                 <SurfaceCard tone="subtle" style={{ padding: theme.spacing.lg }}>
@@ -311,24 +344,25 @@ export default function HomeScreen() {
               </FadeIn>
             ) : null}
 
-            {curatedRails.map(({ section, items }, index) => (
-              <FadeIn key={section.id || section.title} delay={140 + index * 35}>
+            {curatedRails.slice(2, 5).map(({ section, items }, index) => (
+              <FadeIn key={section.id || section.title} delay={220 + index * 35}>
                 <View>
                   <SectionHeader
                     title={section.title}
                     actionLabel={section.actionLabel}
                     onAction={() => router.push(TAB_ROUTE_BY_ID[section.destinationTab])}
                   />
-                  <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginBottom: 10 }}>
-                    {section.subtitle}
-                  </CustomText>
+                  {section.subtitle ? (
+                    <CustomText variant="caption" style={{ color: theme.colors.text.secondary, marginBottom: 10 }}>
+                      {section.subtitle}
+                    </CustomText>
+                  ) : null}
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false} overScrollMode="never">
                     {items.map((item) => (
-                      <PosterCard
+                      <MinimalPosterCard
                         key={`${section.title}-${item.id}`}
                         imageUrl={item.imageUrl}
                         title={item.title}
-                        subtitle={item.liveViewerCount ? `${item.liveViewerCount} watching` : item.subtitle}
                         size={posterSize}
                         onPress={() => void openItem(item, 'home_curated')}
                       />
@@ -338,7 +372,7 @@ export default function HomeScreen() {
               </FadeIn>
             ))}
 
-            <FadeIn delay={320}>
+            <FadeIn delay={340}>
               <SurfaceCard tone="subtle" style={{ padding: theme.spacing.lg }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
                   <View style={{ flex: 1 }}>
@@ -355,11 +389,8 @@ export default function HomeScreen() {
                     <CustomText variant="heading" style={{ color: theme.colors.text.primary, marginTop: 6 }}>
                       {wordForToday.passage}
                     </CustomText>
-                    <CustomText variant="body" style={{ color: theme.colors.text.secondary, marginTop: 8 }}>
+                    <CustomText variant="body" style={{ color: theme.colors.text.secondary, marginTop: 8 }} numberOfLines={3}>
                       {wordForToday.verse}
-                    </CustomText>
-                    <CustomText variant="body" style={{ color: theme.colors.text.secondary, marginTop: 8 }}>
-                      {wordForToday.reflection}
                     </CustomText>
                   </View>
 

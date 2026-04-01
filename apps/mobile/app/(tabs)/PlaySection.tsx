@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Linking, ScrollView, Share, View, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useIsFocused } from '@react-navigation/native';
 import { TabScreenWrapper } from '../../components/layout/TabScreenWrapper';
 import { Screen } from '../../components/layout/Screen';
 import { BrandedHeaderCard } from '../../components/layout/BrandedHeaderCard';
@@ -15,6 +16,8 @@ import { CustomText } from '../../components/CustomText';
 import { AudioPlayer } from '../../components/media/AudioPlayer';
 import { CinematicHeroCard } from '../../components/sections/CinematicHeroCard';
 import { useToast } from '../../context/ToastContext';
+import { useGuestMode } from '../../context/GuestModeContext';
+import { useFloatingPlayer } from '../../context/FloatingPlayerContext';
 import { useAppTheme } from '../../util/colorScheme';
 import { useContentFeed } from '../../hooks/useContentFeed';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
@@ -81,6 +84,9 @@ export default function PlaySection() {
   const theme = useAppTheme();
   const router = useRouter();
   const { showToast } = useToast();
+  const { isGuestMode } = useGuestMode();
+  const { startPlaying, minimize, maximize, updateProgress, pause, resume, setPlaybackControls } = useFloatingPlayer();
+  const isFocused = useIsFocused();
   const params = useLocalSearchParams<{
     itemId?: string | string[];
     itemType?: string | string[];
@@ -92,7 +98,7 @@ export default function PlaySection() {
   }>();
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
-  const posterSize = isTablet ? 'lg' : 'md';
+  const posterSize = isTablet ? 'md' : 'sm';
   const { feed } = useContentFeed();
   const { config: mobileConfig } = useMobileAppConfig();
 
@@ -128,6 +134,11 @@ export default function PlaySection() {
 
     const loadLibrary = async () => {
       try {
+        if (isGuestMode) {
+          setSavedIds(new Set());
+          return;
+        }
+
         const library = await fetchMeLibrary();
         if (!mounted) return;
 
@@ -146,7 +157,7 @@ export default function PlaySection() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [isGuestMode]);
 
   const active = queue.find((item) => item.id === activeId) ?? routeItem ?? queue[0] ?? null;
   const hasInlineAudio = Boolean(active?.mediaUrl && isDirectPlayableAudioUrl(active.mediaUrl));
@@ -166,8 +177,23 @@ export default function PlaySection() {
     [feed, mobileConfig],
   );
 
+  useEffect(() => {
+    if (!active) return;
+    startPlaying(active, 'audio', queue);
+  }, [active, queue, startPlaying]);
+
+  useEffect(() => {
+    if (!active) return;
+    if (isFocused) {
+      maximize();
+    } else {
+      minimize();
+    }
+  }, [active, isFocused, maximize, minimize]);
+
   const openItem = async (item: FeedCardItem, source: string) => {
     setActiveId(item.id);
+    startPlaying(item, 'audio', queue);
     await trackPlayEvent({
       contentId: item.id,
       contentType: item.type,
@@ -207,6 +233,15 @@ export default function PlaySection() {
 
   const toggleSave = async () => {
     if (!active) return;
+
+    if (isGuestMode) {
+      showToast({
+        title: 'Sign in to save',
+        message: 'Create an account to add items to your library.',
+        tone: 'warning',
+      });
+      return;
+    }
 
     try {
       if (savedIds.has(active.id)) {
@@ -347,6 +382,9 @@ export default function PlaySection() {
                       onNext={goNext}
                       canGoPrevious={canGoPrevious}
                       canGoNext={canGoNext}
+                      onRegisterControls={(controls) => setPlaybackControls(controls)}
+                      onPlayStateChange={(playing) => (playing ? resume() : pause())}
+                      onProgress={(currentTime, duration) => updateProgress(currentTime, duration)}
                     />
 
                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
