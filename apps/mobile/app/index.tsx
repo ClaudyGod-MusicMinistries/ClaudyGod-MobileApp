@@ -39,11 +39,13 @@ function DestinationCard({
   label,
   onPress,
   compact = false,
+  containerStyle,
 }: {
   icon: React.ComponentProps<typeof MaterialIcons>['name'];
   label: string;
   onPress: () => void;
   compact?: boolean;
+  containerStyle?: object;
 }) {
   return (
     <TVTouchable
@@ -58,6 +60,7 @@ function DestinationCard({
         paddingHorizontal: compact ? 12 : 14,
         paddingVertical: compact ? 12 : 14,
         gap: compact ? 8 : 10,
+        ...containerStyle,
       }}
       showFocusBorder={false}
     >
@@ -190,18 +193,18 @@ export default function LandingScreen() {
   const heroSubtitle = featured?.subtitle ?? 'ClaudyGod';
   const heroDescription =
     featured?.description?.trim() || 'Experience the ultimate platform for worship, music, and live ministry in one beautifully designed space. Stream, discover, and connect with your community.';
-  const shellGap = isTablet ? 18 : 12;
+  const shellGap = isTablet ? 16 : 10;
 
   const headlineBlock = (
     <FadeIn delay={isPhone ? 80 : 50}>
-      <View style={{ gap: isCompactPhone ? 8 : 12 }}>
+      <View style={{ gap: isCompactPhone ? 6 : 10 }}>
         <CustomText 
           variant="hero" 
           style={{ 
             color: LANDING_COLORS.textPrimary,
-            fontSize: isCompactPhone ? 24 : 30,
+            fontSize: isCompactPhone ? 22 : 28,
             fontWeight: '600',
-            lineHeight: isCompactPhone ? 30 : 36,
+            lineHeight: isCompactPhone ? 28 : 34,
           }}
         >
           Stream the ministry
@@ -211,8 +214,8 @@ export default function LandingScreen() {
           style={{
             color: LANDING_COLORS.textSecondary,
             maxWidth: isTablet ? 540 : '100%',
-            fontSize: 12.5,
-            lineHeight: 19,
+            fontSize: 12,
+            lineHeight: 18,
           }}
           numberOfLines={isPhone ? 3 : 4}
         >
@@ -227,7 +230,7 @@ export default function LandingScreen() {
       <View style={{ gap: 10 }}>
         <AppButton
           title="Get Started"
-          size="md"
+          size={isCompactPhone ? 'sm' : 'md'}
           onPress={() => router.push(APP_ROUTES.auth.signUp)}
           fullWidth
           style={{ borderRadius: 10 }}
@@ -235,7 +238,7 @@ export default function LandingScreen() {
         <AppButton
           title="Browse as Guest"
           variant="secondary"
-          size="md"
+          size={isCompactPhone ? 'sm' : 'md'}
           onPress={() => {
             enterGuestMode();
             requestAnimationFrame(() => router.replace(APP_ROUTES.tabs.home));
@@ -267,7 +270,13 @@ export default function LandingScreen() {
         >
           Explore
         </CustomText>
-        <View style={{ flexDirection: 'row', gap: 12 }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            flexWrap: isPhone ? 'wrap' : 'nowrap',
+            gap: 10,
+          }}
+        >
           {previewLinks.map((destination) => (
             <DestinationCard
               key={destination.key}
@@ -275,6 +284,7 @@ export default function LandingScreen() {
               label={destination.label}
               onPress={() => router.push(destination.route)}
               compact={isPhone}
+              containerStyle={isPhone ? { flexBasis: '48%', flexGrow: 0 } : undefined}
             />
           ))}
         </View>
@@ -288,7 +298,7 @@ export default function LandingScreen() {
         <CinematicHeroCard
           imageSource={!featured ? BRAND_HERO_ASSET : undefined}
           imageUrl={featured?.imageUrl}
-          height={isTablet ? 500 : isCompactPhone ? 330 : 352}
+          height={isTablet ? 460 : isCompactPhone ? 282 : 308}
           badge={getLandingBadge(featured)}
           eyebrow={heroSubtitle}
           title={heroTitle}
@@ -325,16 +335,16 @@ export default function LandingScreen() {
         >
           <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top', 'bottom']}>
             <Screen style={{ flex: 1 }} contentStyle={{ flex: 1 }}>
-              <View style={{ flex: 1, paddingTop: isTablet ? 18 : 8, gap: shellGap }}>
+              <View style={{ flex: 1, paddingTop: isTablet ? 12 : 4, gap: shellGap }}>
             <FadeIn>
               <View
                 style={{
-                  borderRadius: 16,
+                  borderRadius: 12,
                   borderWidth: 1,
                   borderColor: LANDING_COLORS.border,
                   backgroundColor: LANDING_COLORS.panelStrong,
-                  paddingHorizontal: isTablet ? 18 : 14,
-                  paddingVertical: isTablet ? 14 : 12,
+                  paddingHorizontal: isTablet ? 14 : 10,
+                  paddingVertical: isTablet ? 10 : 8,
                   flexDirection: 'row',
                   alignItems: 'center',
                   justifyContent: 'space-between',
@@ -344,8 +354,8 @@ export default function LandingScreen() {
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
                   <View
                     style={{
-                      width: isTablet ? 44 : 38,
-                      height: isTablet ? 44 : 38,
+                      width: isTablet ? 36 : 30,
+                      height: isTablet ? 36 : 30,
                       borderRadius: 12,
                       borderWidth: 1,
                       borderColor: LANDING_COLORS.border,
@@ -356,7 +366,7 @@ export default function LandingScreen() {
                   >
                     <Image
                       source={BRAND_LOGO_ASSET}
-                      style={{ width: isTablet ? 24 : 22, height: isTablet ? 24 : 22, borderRadius: 8 }}
+                      style={{ width: isTablet ? 20 : 18, height: isTablet ? 20 : 18, borderRadius: 6 }}
                     />
                   </View>
 
@@ -373,7 +383,8 @@ export default function LandingScreen() {
                       style={{
                         color: LANDING_COLORS.textSecondary,
                         marginTop: 2,
-                        letterSpacing: 0.45,
+                        letterSpacing: 0.35,
+                        fontSize: 10.5,
                       }}
                       numberOfLines={1}
                     >
@@ -386,8 +397,8 @@ export default function LandingScreen() {
                   onPress={() => router.push(APP_ROUTES.auth.signIn)}
                   showFocusBorder={false}
                   style={{
-                    minHeight: 32,
-                    paddingHorizontal: 10,
+                    minHeight: 28,
+                    paddingHorizontal: 8,
                     borderRadius: 10,
                     borderWidth: 1,
                     borderColor: LANDING_COLORS.border,
@@ -396,7 +407,7 @@ export default function LandingScreen() {
                     justifyContent: 'center',
                   }}
                 >
-                  <CustomText variant="label" style={{ color: LANDING_COLORS.textPrimary, fontSize: 10 }}>
+                  <CustomText variant="label" style={{ color: LANDING_COLORS.textPrimary, fontSize: 9.5 }}>
                     Sign In
                   </CustomText>
                 </TVTouchable>
@@ -405,7 +416,7 @@ export default function LandingScreen() {
 
             <ScrollView
               style={{ flex: 1, backgroundColor: LANDING_COLORS.background }}
-              contentContainerStyle={{ paddingBottom: isTablet ? 14 : 10, gap: isTablet ? 18 : 14 }}
+              contentContainerStyle={{ paddingBottom: isTablet ? 12 : 8, gap: isTablet ? 16 : 12 }}
               showsVerticalScrollIndicator={false}
               bounces={false}
               overScrollMode="never"
@@ -434,11 +445,11 @@ export default function LandingScreen() {
                     {heroCard}
                   </View>
                 ) : (
-                  <View style={{ gap: 12 }}>
+                  <View style={{ gap: 10 }}>
                     {heroCard}
                     <View
                       style={{
-                        gap: 12,
+                        gap: 10,
                         paddingHorizontal: 2,
                         alignItems: 'center',
                       }}
@@ -450,9 +461,9 @@ export default function LandingScreen() {
                           borderWidth: 1,
                           borderColor: LANDING_COLORS.border,
                           backgroundColor: LANDING_COLORS.panelStrong,
-                          borderRadius: 14,
-                          paddingHorizontal: 14,
-                          paddingVertical: 12,
+                          borderRadius: 10,
+                          paddingHorizontal: 10,
+                          paddingVertical: 8,
                         }}
                       >
                         {actionBlock}
@@ -470,13 +481,11 @@ export default function LandingScreen() {
                   borderWidth: 1,
                   borderColor: LANDING_COLORS.border,
                   backgroundColor: LANDING_COLORS.panelStrong,
-                  borderRadius: 16,
-                  paddingHorizontal: isPhone ? 12 : 16,
-                  paddingVertical: isPhone ? 10 : 14,
-                  flexDirection: isTablet ? 'row' : 'column',
-                  justifyContent: 'space-between',
-                  alignItems: isTablet ? 'center' : 'flex-start',
-                  gap: isPhone ? 8 : 12,
+                  borderRadius: 12,
+                  paddingHorizontal: isPhone ? 10 : 14,
+                  paddingVertical: isPhone ? 8 : 10,
+                  flexDirection: 'column',
+                  gap: 10,
                 }}
               >
                 <View style={{ flex: 1, gap: 3 }}>
@@ -489,18 +498,18 @@ export default function LandingScreen() {
                       fontSize: 10,
                     }}
                   >
-                    Go straight to
+                    Quick access
                   </CustomText>
                   <CustomText
                     variant="body"
                     style={{ color: LANDING_COLORS.textSecondary, fontSize: 11 }}
-                    numberOfLines={isPhone ? 1 : 2}
+                    numberOfLines={2}
                   >
-                    Music, videos, and live worship.
+                    Jump straight into music, videos, or live worship.
                   </CustomText>
                 </View>
 
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                   {previewLinks.map((link) => (
                     <FooterLink key={`footer-${link.key}`} label={link.label} onPress={() => router.push(link.route)} />
                   ))}

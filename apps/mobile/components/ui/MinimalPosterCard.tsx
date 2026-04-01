@@ -9,6 +9,8 @@ import { TVTouchable } from './TVTouchable';
 interface MinimalPosterCardProps {
   imageUrl: string;
   title: string;
+  subtitle?: string;
+  meta?: string;
   onPress?: () => void;
   size?: 'sm' | 'md' | 'lg';
   badge?: string;
@@ -22,6 +24,8 @@ interface MinimalPosterCardProps {
 export function MinimalPosterCard({
   imageUrl,
   title,
+  subtitle,
+  meta,
   onPress,
   size = 'md',
   badge,
@@ -134,14 +138,28 @@ export function MinimalPosterCard({
             variant="body"
             style={{
               color: '#FFFFFF',
-              fontSize: 10,
-              fontWeight: '500',
+              fontSize: 10.5,
+              fontWeight: '600',
               lineHeight: 14,
             }}
-            numberOfLines={1}
+            numberOfLines={2}
           >
             {title}
           </CustomText>
+          {meta || subtitle ? (
+            <CustomText
+              variant="caption"
+              style={{
+                color: 'rgba(232,226,216,0.7)',
+                marginTop: 2,
+                fontSize: 9.5,
+                lineHeight: 12,
+              }}
+              numberOfLines={1}
+            >
+              {meta ?? subtitle}
+            </CustomText>
+          ) : null}
         </View>
       </View>
     </TVTouchable>

@@ -69,7 +69,7 @@ function SettingRow({ item }: { item: SettingItem }) {
       </View>
 
       <View style={{ flex: 1 }}>
-        <CustomText variant="body" style={{ color: theme.colors.text, fontWeight: '600' }}>
+        <CustomText variant="body" style={{ color: theme.colors.text, fontWeight: '700' }}>
           {item.label}
         </CustomText>
         {item.hint ? (
@@ -115,15 +115,16 @@ function AppearanceModePicker({
         <View>
           <CustomText
             variant="caption"
-          style={{
-            color: theme.colors.textSecondary,
-            textTransform: 'uppercase',
-            letterSpacing: 0.9,
-          }}
+            style={{
+              color: theme.colors.textSecondary,
+              textTransform: 'uppercase',
+              letterSpacing: 0.9,
+              fontSize: 10.5,
+            }}
           >
             Appearance
           </CustomText>
-          <CustomText variant="body" style={{ color: theme.colors.textSecondary, marginTop: 6 }}>
+          <CustomText variant="body" style={{ color: theme.colors.textSecondary, marginTop: 4 }}>
             Light, dark, or device theme. Your choice stays synced to your account.
           </CustomText>
         </View>

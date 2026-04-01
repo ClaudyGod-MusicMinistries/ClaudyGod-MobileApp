@@ -1,10 +1,12 @@
 import React from 'react';
 import { Image, ScrollView, View, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { CustomText } from '../CustomText';
 import { TVTouchable } from '../ui/TVTouchable';
 import { useAppTheme } from '../../util/colorScheme';
 import { BRAND_LOGO_ASSET } from '../../util/brandAssets';
+import { APP_ROUTES } from '../../util/appRoutes';
 
 type HeaderAction = {
   icon: React.ComponentProps<typeof MaterialIcons>['name'];
@@ -27,6 +29,7 @@ interface BrandedHeaderCardProps {
   chips?: HeaderChip[];
   showEyebrow?: boolean;
   autoHideSubtitleOnPhone?: boolean;
+  onLogoPress?: () => void;
 }
 
 export function BrandedHeaderCard({
@@ -38,8 +41,10 @@ export function BrandedHeaderCard({
   chips,
   showEyebrow = false,
   autoHideSubtitleOnPhone = true,
+  onLogoPress,
 }: BrandedHeaderCardProps) {
   const theme = useAppTheme();
+  const router = useRouter();
   const { width } = useWindowDimensions();
   const isDark = theme.scheme === 'dark';
   const isTV = width >= 1200;
@@ -88,6 +93,8 @@ export function BrandedHeaderCard({
     </TVTouchable>
   );
 
+  const handleLogoPress = onLogoPress ?? (() => router.push(APP_ROUTES.tabs.home));
+
   return (
     <View
       style={{
@@ -130,7 +137,9 @@ export function BrandedHeaderCard({
         >
           {leadingAction ? <View style={{ marginRight: 10 }}>{renderAction(leadingAction)}</View> : null}
 
-          <View
+          <TVTouchable
+            onPress={handleLogoPress}
+            showFocusBorder={false}
             style={{
               width: logoWrapSize,
               height: logoWrapSize,
@@ -147,7 +156,7 @@ export function BrandedHeaderCard({
               source={BRAND_LOGO_ASSET}
               style={{ width: logoSize, height: logoSize, borderRadius: Math.round(logoSize / 2) }}
             />
-          </View>
+          </TVTouchable>
 
           <View style={{ flex: 1 }}>
             {showEyebrow ? (
