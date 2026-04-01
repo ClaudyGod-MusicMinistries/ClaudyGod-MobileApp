@@ -317,9 +317,12 @@ function RootLayoutInner() {
 
     const firstSegment = segments[0];
     const secondSegment = Array.from(segments)[1];
+    const isSettingsPage = firstSegment === 'settingsPage';
+    const isGuestAllowedSettingsPage =
+      isSettingsPage && (secondSegment === 'Donate' || secondSegment === 'Support' || secondSegment === 'Help' || secondSegment === 'Rate');
     const isProtectedRoute =
       firstSegment === 'profile' ||
-      firstSegment === 'settingsPage' ||
+      (isSettingsPage && !isGuestAllowedSettingsPage) ||
       (firstSegment === '(tabs)' && secondSegment === 'settings');
 
     if (!isAuthenticated && isProtectedRoute) {
