@@ -7,8 +7,8 @@ export const passwordSchema = z
   .string()
   .min(8, 'Password must be at least 8 characters')
   .regex(/[A-Z]/, 'Password must contain uppercase letter')
-  .regex(/[0-9]/, 'Password must contain number')
-  .regex(/[!@#$%^&*]/, 'Password must contain special character');
+  .regex(/[a-z]/, 'Password must contain lowercase letter')
+  .regex(/[0-9]/, 'Password must contain number');
 
 export const idSchema = z.string().uuid('Invalid ID format');
 
@@ -18,11 +18,28 @@ export const paginationSchema = z.object({
 });
 
 // ============ Auth Schemas ============
-export const signUpSchema = z.object({
-  email: emailSchema,
-  password: passwordSchema,
-  displayName: z.string().min(2).max(100).trim(),
-});
+const displayNameSchema = z.string().min(2, 'Display name must be at least 2 characters').max(100).trim();
+
+export const signUpSchema = z
+  .object({
+    email: emailSchema,
+    password: passwordSchema,
+    username: displayNameSchema.optional(),
+    displayName: displayNameSchema.optional(),
+    role: z.enum(['CLIENT', 'ADMIN']).optional(),
+    adminSignupCode: z.string().trim().min(8).max(128).optional(),
+  })
+  .transform((value) => ({
+    email: value.email,
+    password: value.password,
+    username: (value.username ?? value.displayName ?? '').trim(),
+    role: value.role,
+    adminSignupCode: value.adminSignupCode,
+  }))
+  .refine((value) => value.username.length >= 2, {
+    path: ['username'],
+    message: 'Display name must be at least 2 characters',
+  });
 
 export const signInSchema = z.object({
   email: emailSchema,
