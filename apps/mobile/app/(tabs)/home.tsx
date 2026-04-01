@@ -231,7 +231,7 @@ export default function HomeScreen() {
         }
       >
         <Screen>
-          <View style={{ paddingTop: theme.layout.headerVerticalPadding, gap: theme.layout.sectionGapLarge }}>
+          <View style={{ paddingTop: theme.layout.headerVerticalPadding, gap: theme.layout.sectionGapLarge + 4 }}>
             <FadeIn>
               <BrandedHeaderCard
                 title="Home"

@@ -39,11 +39,13 @@ function DestinationCard({
   label,
   onPress,
   compact = false,
+  containerStyle,
 }: {
   icon: React.ComponentProps<typeof MaterialIcons>['name'];
   label: string;
   onPress: () => void;
   compact?: boolean;
+  containerStyle?: object;
 }) {
   return (
     <TVTouchable
@@ -58,6 +60,7 @@ function DestinationCard({
         paddingHorizontal: compact ? 12 : 14,
         paddingVertical: compact ? 12 : 14,
         gap: compact ? 8 : 10,
+        ...containerStyle,
       }}
       showFocusBorder={false}
     >
@@ -267,7 +270,13 @@ export default function LandingScreen() {
         >
           Explore
         </CustomText>
-        <View style={{ flexDirection: 'row', gap: 12 }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            flexWrap: isPhone ? 'wrap' : 'nowrap',
+            gap: 10,
+          }}
+        >
           {previewLinks.map((destination) => (
             <DestinationCard
               key={destination.key}
@@ -275,6 +284,7 @@ export default function LandingScreen() {
               label={destination.label}
               onPress={() => router.push(destination.route)}
               compact={isPhone}
+              containerStyle={isPhone ? { flexBasis: '48%', flexGrow: 0 } : undefined}
             />
           ))}
         </View>
@@ -471,13 +481,11 @@ export default function LandingScreen() {
                   borderWidth: 1,
                   borderColor: LANDING_COLORS.border,
                   backgroundColor: LANDING_COLORS.panelStrong,
-                  borderRadius: 14,
+                  borderRadius: 12,
                   paddingHorizontal: isPhone ? 10 : 14,
-                  paddingVertical: isPhone ? 8 : 12,
-                  flexDirection: isTablet ? 'row' : 'column',
-                  justifyContent: 'space-between',
-                  alignItems: isTablet ? 'center' : 'flex-start',
-                  gap: isPhone ? 8 : 12,
+                  paddingVertical: isPhone ? 8 : 10,
+                  flexDirection: 'column',
+                  gap: 10,
                 }}
               >
                 <View style={{ flex: 1, gap: 3 }}>
@@ -490,18 +498,18 @@ export default function LandingScreen() {
                       fontSize: 10,
                     }}
                   >
-                    Go straight to
+                    Quick access
                   </CustomText>
                   <CustomText
                     variant="body"
                     style={{ color: LANDING_COLORS.textSecondary, fontSize: 11 }}
-                    numberOfLines={isPhone ? 1 : 2}
+                    numberOfLines={2}
                   >
-                    Music, videos, and live worship.
+                    Jump straight into music, videos, or live worship.
                   </CustomText>
                 </View>
 
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                   {previewLinks.map((link) => (
                     <FooterLink key={`footer-${link.key}`} label={link.label} onPress={() => router.push(link.route)} />
                   ))}
