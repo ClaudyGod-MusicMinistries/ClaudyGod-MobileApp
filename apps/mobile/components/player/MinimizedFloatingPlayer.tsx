@@ -20,6 +20,7 @@ export function MinimizedFloatingPlayer() {
   const progressPercentage =
     player.duration > 0 ? Math.min(100, (player.currentTime / player.duration) * 100) : 0;
   const isAudio = player.type === 'audio';
+  const hasControls = Boolean(player.controls);
   const handleExpand = () => {
     if (!player.content) return;
     maximize();
@@ -119,7 +120,7 @@ export function MinimizedFloatingPlayer() {
       <View style={{ flexDirection: 'row', gap: 4, alignItems: 'center' }}>
         {/* Play/Pause */}
         <TouchableOpacity
-          onPress={player.isPlaying ? pause : resume}
+          onPress={hasControls ? (player.isPlaying ? pause : resume) : undefined}
           style={{
             width: 32,
             height: 32,
@@ -127,6 +128,7 @@ export function MinimizedFloatingPlayer() {
             alignItems: 'center',
             justifyContent: 'center',
             backgroundColor: 'rgba(255,255,255,0.05)',
+            opacity: hasControls ? 1 : 0.4,
           }}
         >
           <MaterialIcons
