@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import type { DimensionValue } from 'react-native';
-import { Image, Linking, Platform, ScrollView, Share, View, useWindowDimensions } from 'react-native';
+import { Image, Linking, ScrollView, Share, View, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useIsFocused } from '@react-navigation/native';
@@ -306,10 +306,7 @@ export default function VideosScreen() {
   const canGoNext = activeIndex >= 0 && activeIndex < queue.length - 1;
   const isSaved = active ? savedIds.has(active.id) : false;
   const canInlinePlay = Boolean(
-    active?.mediaUrl &&
-      (Platform.OS === 'web'
-        ? isDirectPlayableVideoUrl(active.mediaUrl) || isHostedVideoUrl(active.mediaUrl)
-        : isDirectPlayableVideoUrl(active.mediaUrl)),
+    active?.mediaUrl && (isDirectPlayableVideoUrl(active.mediaUrl) || isHostedVideoUrl(active.mediaUrl)),
   );
   const curatedSections = useMemo(
     () =>
@@ -361,7 +358,7 @@ export default function VideosScreen() {
       return;
     }
 
-    if (!isDirectPlayableVideoUrl(item.mediaUrl)) {
+    if (!isDirectPlayableVideoUrl(item.mediaUrl) && !isHostedVideoUrl(item.mediaUrl)) {
       await Linking.openURL(item.mediaUrl);
       return;
     }
@@ -618,13 +615,14 @@ export default function VideosScreen() {
             </FadeIn>
 
             <FadeIn delay={70}>
-              {isTablet && active && canInlinePlay && active.mediaUrl ? (
+              {active && canInlinePlay && active.mediaUrl ? (
                 <SurfaceCard tone="strong" style={{ padding: theme.spacing.md }}>
                     <View style={{ gap: 14 }}>
                       <View style={{ aspectRatio: 16 / 9, borderRadius: theme.radius.lg, overflow: 'hidden' }}>
                         <VideoPlayer
                           sourceUri={active.mediaUrl}
                           title={active.title}
+                          height={isTablet ? 280 : 220}
                           onRegisterControls={(controls) => setPlaybackControls(controls)}
                           onPlayStateChange={(playing) => (playing ? resume() : pause())}
                           onProgress={(currentTime, duration) => updateProgress(currentTime, duration)}
