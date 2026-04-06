@@ -218,7 +218,23 @@ export const mobileAppConfigSchema = z
     donate: z
       .object({
         currency: z.string().trim().length(3).transform((value) => value.toUpperCase()),
+        currencyOptions: z
+          .array(
+            z
+              .object({
+                code: z.string().trim().length(3).transform((value) => value.toUpperCase()),
+                label: shortTextSchema.max(60),
+                symbol: shortTextSchema.max(6).optional(),
+              })
+              .strict(),
+          )
+          .min(1)
+          .max(6)
+          .optional(),
         quickAmounts: z.array(z.string().trim().min(1).max(16)).min(1).max(12),
+        quickAmountsByCurrency: z
+          .record(z.array(z.string().trim().min(1).max(16)).min(1).max(12))
+          .optional(),
         methods: z.array(donateMethodSchema).min(1).max(20),
         plans: z.array(donatePlanSchema).min(1).max(20),
         impactBreakdown: z

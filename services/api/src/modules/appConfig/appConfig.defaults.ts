@@ -96,7 +96,15 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
   },
   donate: {
     currency: 'USD',
+    currencyOptions: [
+      { code: 'USD', label: 'US Dollar', symbol: '$' },
+      { code: 'NGN', label: 'Nigerian Naira', symbol: '₦' },
+    ],
     quickAmounts: ['$5', '$10', '$25', '$50', '$100'],
+    quickAmountsByCurrency: {
+      USD: ['$5', '$10', '$25', '$50', '$100'],
+      NGN: ['₦1000', '₦2500', '₦5000', '₦10000', '₦20000'],
+    },
     methods: [
       {
         id: 'card',
@@ -104,6 +112,18 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
         label: 'Card / Apple Pay / Google Pay',
         subtitle: 'Fast checkout with secure payment providers',
         badge: 'Recommended',
+      },
+      {
+        id: 'paystack',
+        icon: 'bolt',
+        label: 'Paystack',
+        subtitle: 'Local card & bank payments (NGN)',
+      },
+      {
+        id: 'flutterwave',
+        icon: 'flare',
+        label: 'Flutterwave',
+        subtitle: 'Local transfers & cards (NGN)',
       },
       {
         id: 'bank',

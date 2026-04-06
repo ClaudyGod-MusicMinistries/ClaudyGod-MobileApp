@@ -232,7 +232,13 @@ const consumeAuthActionToken = async ({
   );
 
   if (result.rowCount === 0) {
-    throw new HttpError(400, 'Invalid or expired token');
+    throw new HttpError(
+      400,
+      'Invalid or expired token',
+      { reason: 'token_invalid' },
+      'AUTH_TOKEN_INVALID',
+      'token',
+    );
   }
 
   return result.rows[0]!;
@@ -363,7 +369,13 @@ const completePendingSignup = async ({
     );
 
     if (pendingResult.rowCount === 0) {
-      throw new HttpError(400, 'Invalid or expired verification code');
+      throw new HttpError(
+        400,
+        'Invalid or expired verification code',
+        { reason: 'invalid_code' },
+        'AUTH_INVALID_OTP',
+        'token',
+      );
     }
 
     const pendingSignup = pendingResult.rows[0]!;
@@ -446,7 +458,13 @@ const completePendingPasswordReset = async ({
     );
 
     if (pendingResult.rowCount === 0) {
-      throw new HttpError(400, 'Invalid or expired reset code');
+      throw new HttpError(
+        400,
+        'Invalid or expired reset code',
+        { reason: 'invalid_code' },
+        'AUTH_INVALID_RESET',
+        'token',
+      );
     }
 
     const pendingReset = pendingResult.rows[0]!;
@@ -505,10 +523,22 @@ export const registerUser = async (
   if (requestedRole === 'ADMIN') {
     const providedCode = input.adminSignupCode?.trim();
     if (!env.ADMIN_SIGNUP_CODE) {
-      throw new HttpError(403, 'Admin signup is disabled');
+      throw new HttpError(
+        403,
+        'Admin signup is disabled',
+        { reason: 'admin_signup_disabled' },
+        'AUTH_ADMIN_DISABLED',
+        'adminSignupCode',
+      );
     }
     if (!providedCode || providedCode !== env.ADMIN_SIGNUP_CODE) {
-      throw new HttpError(403, 'Invalid admin signup code');
+      throw new HttpError(
+        403,
+        'Invalid admin signup code',
+        { reason: 'invalid_admin_code' },
+        'AUTH_ADMIN_CODE_INVALID',
+        'adminSignupCode',
+      );
     }
   }
 
@@ -551,7 +581,13 @@ export const registerUser = async (
       metadata: { requestedRole },
     });
 
-    throw new HttpError(409, 'Email is already registered');
+    throw new HttpError(
+      409,
+      'Email is already registered',
+      { reason: 'email_registered' },
+      'AUTH_EMAIL_TAKEN',
+      'email',
+    );
   }
 
   const passwordHash = await hashPassword(input.password);
@@ -650,6 +686,9 @@ export const loginUser = async (input: LoginInput, context: AuthRequestContext =
       throw new HttpError(
         403,
         'Email is not verified. Enter the 6-digit code sent to your email to finish creating your account.',
+        { reason: 'email_not_verified' },
+        'AUTH_EMAIL_NOT_VERIFIED',
+        'email',
       );
     }
 
@@ -661,7 +700,13 @@ export const loginUser = async (input: LoginInput, context: AuthRequestContext =
       userAgent: context.userAgent,
       metadata: { reason: 'user_not_found' },
     });
-    throw new HttpError(401, 'Invalid credentials');
+    throw new HttpError(
+      401,
+      'Invalid credentials',
+      { reason: 'invalid_credentials' },
+      'AUTH_INVALID_CREDENTIALS',
+      'password',
+    );
   }
 
   const userRow = result.rows[0]!;
@@ -676,7 +721,13 @@ export const loginUser = async (input: LoginInput, context: AuthRequestContext =
       userAgent: context.userAgent,
       metadata: { reason: 'inactive' },
     });
-    throw new HttpError(403, 'Account is inactive');
+    throw new HttpError(
+      403,
+      'Account is inactive',
+      { reason: 'account_inactive' },
+      'AUTH_INACTIVE',
+      'account',
+    );
   }
 
   const isValidPassword = await verifyPassword(input.password, userRow.password_hash);
@@ -691,7 +742,13 @@ export const loginUser = async (input: LoginInput, context: AuthRequestContext =
       userAgent: context.userAgent,
       metadata: { reason: 'invalid_password' },
     });
-    throw new HttpError(401, 'Invalid credentials');
+    throw new HttpError(
+      401,
+      'Invalid credentials',
+      { reason: 'invalid_credentials' },
+      'AUTH_INVALID_CREDENTIALS',
+      'password',
+    );
   }
 
   const safeUser = toSafeUser(userRow);
@@ -712,6 +769,9 @@ export const loginUser = async (input: LoginInput, context: AuthRequestContext =
     throw new HttpError(
       403,
       'Email is not verified. Enter the 6-digit code sent to your email or request a new verification email.',
+      { reason: 'email_not_verified' },
+      'AUTH_EMAIL_NOT_VERIFIED',
+      'email',
     );
   }
 
@@ -738,9 +798,42 @@ export const verifyEmail = async (input: VerifyEmailInput, context: AuthRequestC
   const submittedToken = input.token.trim();
 
   if (isOtpCode(submittedToken)) {
-    const email = input.email?.trim().toLowerCase();
+    let email = input.email?.trim().toLowerCase();
     if (!email) {
-      throw new HttpError(400, 'Email is required when verifying with a code');
+      const pendingLookup = await pool.query<{ email: string }>(
+        `SELECT email
+         FROM pending_signups
+         WHERE otp_hash = $1
+           AND expires_at > NOW()
+         ORDER BY created_at DESC
+         LIMIT 1`,
+        [tokenHash(submittedToken)],
+      );
+      if (pendingLookup.rowCount === 0) {
+        await recordAuthActivity({
+          eventKey: 'verification_failed',
+          status: 'failure',
+          requestIp: context.requestIp,
+          userAgent: context.userAgent,
+          metadata: { method: 'otp_lookup', reason: 'invalid_code' },
+        });
+        throw new HttpError(
+          400,
+          'Invalid or expired verification code',
+          { reason: 'invalid_code' },
+          'AUTH_INVALID_OTP',
+          'token',
+        );
+      }
+      email = pendingLookup.rows[0]!.email;
+      await recordAuthActivity({
+        email,
+        eventKey: 'verification_lookup',
+        status: 'info',
+        requestIp: context.requestIp,
+        userAgent: context.userAgent,
+        metadata: { method: 'otp_lookup' },
+      });
     }
 
     const user = await completePendingSignup({
@@ -785,7 +878,7 @@ export const verifyEmail = async (input: VerifyEmailInput, context: AuthRequestC
   );
 
   if (userUpdate.rowCount === 0) {
-    throw new HttpError(404, 'User not found');
+    throw new HttpError(404, 'User not found', { reason: 'user_not_found' }, 'AUTH_USER_NOT_FOUND', 'user');
   }
 
   const user = toSafeUser(userUpdate.rows[0]!);
@@ -955,7 +1048,13 @@ export const resetPassword = async (input: ResetPasswordInput, context: AuthRequ
   if (isOtpCode(submittedToken)) {
     const email = input.email?.trim().toLowerCase();
     if (!email) {
-      throw new HttpError(400, 'Email is required when resetting with a code');
+      throw new HttpError(
+        400,
+        'Email is required when resetting with a code',
+        { reason: 'email_required' },
+        'AUTH_EMAIL_REQUIRED',
+        'email',
+      );
     }
 
     await completePendingPasswordReset({
@@ -1023,7 +1122,7 @@ export const getUserById = async (userId: string): Promise<SafeUser> => {
   );
 
   if (result.rowCount === 0) {
-    throw new HttpError(404, 'User not found');
+    throw new HttpError(404, 'User not found', { reason: 'user_not_found' }, 'AUTH_USER_NOT_FOUND', 'user');
   }
 
   return toSafeUser(result.rows[0]!);

@@ -146,7 +146,7 @@ export const createRatingSchema = z
 export const createDonationIntentSchema = z
   .object({
     amount: z.string().trim().min(1).max(32),
-    mode: z.enum(['once', 'monthly']),
+    mode: z.enum(['once', 'daily', 'weekly', 'monthly']),
     methodId: z.string().trim().min(1).max(80),
     currency: z.string().trim().length(3).optional(),
     planId: optionalTrimmedString(80),
