@@ -44,8 +44,8 @@ export interface ResetPasswordInput {
 }
 
 export interface VerifyEmailInput {
-  token: string;
-  email?: string;
+  code: string;
+  email: string;
 }
 
 export interface AuthActionResponse {
@@ -337,16 +337,23 @@ export async function requestVerificationEmail(
 }
 
 export async function verifyMobileEmail(input: VerifyEmailInput): Promise<MobileAuthResponse> {
-  const resolvedToken = input.token.trim();
-  if (!resolvedToken) {
-    throw new Error('Open the verification link from your email or paste the verification token.');
+  const resolvedCode = input.code.trim();
+  if (!resolvedCode) {
+    throw new Error('Enter the 6-digit verification code from your email.');
+  }
+  if (resolvedCode.length !== 6) {
+    throw new Error('Verification code must be 6 digits.');
+  }
+  const resolvedEmail = input.email.trim().toLowerCase();
+  if (!resolvedEmail) {
+    throw new Error('Enter the email address used to create your account.');
   }
 
   const response = await apiFetch<MobileAuthResponse>('/v1/auth/email/verify', {
     method: 'POST',
     body: JSON.stringify({
-      token: resolvedToken,
-      email: input.email?.trim().toLowerCase() || undefined,
+      code: resolvedCode,
+      email: resolvedEmail,
     }),
   });
 
