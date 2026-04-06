@@ -23,7 +23,7 @@ export function SupportMinistryCard({ onPress }: SupportCardProps) {
         colors={[palette.primary, palette.accent]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={[styles.card, { marginHorizontal: spacing.md, marginBottom: spacing.lg }]}
+        style={styles.card}
       >
         {/* Icon */}
         <View style={styles.iconContainer}>

@@ -15,6 +15,7 @@ import { ActionSheet, type ActionSheetAction } from '../../components/ui/ActionS
 import { CustomText } from '../../components/CustomText';
 import { AudioPlayer } from '../../components/media/AudioPlayer';
 import { CinematicHeroCard } from '../../components/sections/CinematicHeroCard';
+import { SupportMinistryCard } from '../../components/ui/SupportMinistryCard';
 import { useToast } from '../../context/ToastContext';
 import { useGuestMode } from '../../context/GuestModeContext';
 import { useFloatingPlayer } from '../../context/FloatingPlayerContext';
@@ -484,8 +485,12 @@ export default function PlaySection() {
               </FadeIn>
             ) : null}
 
+            <FadeIn delay={150}>
+              <SupportMinistryCard onPress={() => router.push(APP_ROUTES.settingsPages.donate)} />
+            </FadeIn>
+
             {curatedSections.map(({ section, items }, index) => (
-              <FadeIn key={section.id || section.title} delay={170 + index * 35}>
+              <FadeIn key={section.id || section.title} delay={190 + index * 35}>
                 <View>
                   <SectionHeader
                     title={section.title}
