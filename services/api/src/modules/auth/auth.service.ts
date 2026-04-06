@@ -7,6 +7,7 @@ import {
   queueVerificationEmail,
   queueWelcomeEmail,
 } from '../../infra/transactionalEmails';
+import { logger } from '../../lib/logger';
 import { HttpError } from '../../lib/httpError';
 import { isMissingDatabaseStructureError } from '../../lib/postgres';
 import { hashPassword, verifyPassword } from '../../utils/password';
@@ -850,11 +851,19 @@ export const verifyEmail = async (input: VerifyEmailInput, context: AuthRequestC
       verificationCode: submittedToken,
     });
 
-    await queueWelcomeEmail({
-      id: user.id,
-      email: user.email,
-      displayName: user.displayName,
-    });
+    try {
+      await queueWelcomeEmail({
+        id: user.id,
+        email: user.email,
+        displayName: user.displayName,
+      });
+    } catch (error) {
+      logger.error('Welcome email enqueue failed', {
+        error: error instanceof Error ? error.message : String(error),
+        userId: user.id,
+        email: user.email,
+      });
+    }
 
     await recordAuthActivity({
       userId: user.id,
@@ -892,11 +901,19 @@ export const verifyEmail = async (input: VerifyEmailInput, context: AuthRequestC
 
   const user = toSafeUser(userUpdate.rows[0]!);
   await ensureUserScaffold(user);
-  await queueWelcomeEmail({
-    id: user.id,
-    email: user.email,
-    displayName: user.displayName,
-  });
+  try {
+    await queueWelcomeEmail({
+      id: user.id,
+      email: user.email,
+      displayName: user.displayName,
+    });
+  } catch (error) {
+    logger.error('Welcome email enqueue failed', {
+      error: error instanceof Error ? error.message : String(error),
+      userId: user.id,
+      email: user.email,
+    });
+  }
 
   await recordAuthActivity({
     userId: user.id,

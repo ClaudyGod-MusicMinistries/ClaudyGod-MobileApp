@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { asyncHandler } from '../../lib/asyncHandler';
 import { HttpError } from '../../lib/httpError';
+import { JwtClaims } from '../../utils/jwt';
 import { validateSchema } from '../../lib/validation';
 import { authenticate } from '../../middleware/authenticate';
 import {
@@ -29,6 +30,20 @@ import {
 } from './content.service';
 
 export const contentRouter = Router();
+
+function requireAdmin(user: unknown): JwtClaims {
+  if (!user || typeof user !== 'object') {
+    throw new HttpError(401, 'Unauthorized');
+  }
+  const candidate = user as JwtClaims;
+  if (candidate.role !== 'ADMIN') {
+    throw new HttpError(403, 'Admin access required');
+  }
+  if (!candidate.sub || !candidate.email || !candidate.displayName) {
+    throw new HttpError(401, 'Unauthorized');
+  }
+  return candidate;
+}
 
 contentRouter.get(
   '/',
@@ -66,7 +81,7 @@ contentRouter.get(
       search: parsed.search,
       updatedAfter: parsed.updatedAfter,
     };
-    const data = await listManagedContent(req.user, query);
+    const data = await listManagedContent(req.user!, query);
     res.status(200).json(data);
   }),
 );
@@ -75,11 +90,9 @@ contentRouter.get(
   '/requests',
   authenticate,
   asyncHandler(async (req, res) => {
-    if (!req.user) {
-      throw new HttpError(401, 'Unauthorized');
-    }
+    const actor = requireAdmin(req.user);
 
-    const data = await listContentRequests(req.user);
+    const data = await listContentRequests(actor);
     res.status(200).json({ items: data });
   }),
 );
@@ -93,7 +106,7 @@ contentRouter.post(
     }
 
     const payload = validateSchema(createContentRequestSchema, req.body);
-    const item = await createContentRequest(req.user, payload);
+    const item = await createContentRequest(req.user!, payload);
     res.status(201).json(item);
   }),
 );
@@ -102,16 +115,14 @@ contentRouter.patch(
   '/requests/:id/status',
   authenticate,
   asyncHandler(async (req, res) => {
-    if (!req.user) {
-      throw new HttpError(401, 'Unauthorized');
-    }
+    const actor = requireAdmin(req.user);
 
     const params = validateSchema(contentRequestIdParamsSchema, req.params);
     const payload = validateSchema(updateContentRequestStatusSchema, req.body);
     const item = await updateContentRequestStatus({
       requestId: params.id,
       status: payload.status,
-      requester: req.user,
+      requester: actor,
     });
     res.status(200).json(item);
   }),
@@ -121,14 +132,12 @@ contentRouter.post(
   '/requests/:id/create-draft',
   authenticate,
   asyncHandler(async (req, res) => {
-    if (!req.user) {
-      throw new HttpError(401, 'Unauthorized');
-    }
+    const actor = requireAdmin(req.user);
 
     const params = validateSchema(contentRequestIdParamsSchema, req.params);
     const result = await createDraftFromContentRequest({
       requestId: params.id,
-      requester: req.user,
+      requester: actor,
     });
     res.status(201).json(result);
   }),
@@ -138,16 +147,14 @@ contentRouter.post(
   '/',
   authenticate,
   asyncHandler(async (req, res) => {
-    if (!req.user) {
-      throw new HttpError(401, 'Unauthorized');
-    }
+    const actor = requireAdmin(req.user);
 
     const parsed = validateSchema(createContentSchema, req.body);
     const payload = {
       ...parsed,
       visibility: parsed.visibility ?? 'draft',
     };
-    const item = await createContent(req.user, payload);
+    const item = await createContent(actor, payload);
     res.status(201).json(item);
   }),
 );
@@ -156,16 +163,14 @@ contentRouter.patch(
   '/:id',
   authenticate,
   asyncHandler(async (req, res) => {
-    if (!req.user) {
-      throw new HttpError(401, 'Unauthorized');
-    }
+    const actor = requireAdmin(req.user);
 
     const params = validateSchema(contentIdParamsSchema, req.params);
     const payload = validateSchema(updateContentSchema, req.body);
     const item = await updateContent({
       contentId: params.id,
       input: payload,
-      requester: req.user,
+      requester: actor,
     });
     res.status(200).json(item);
   }),
@@ -175,16 +180,14 @@ contentRouter.patch(
   '/:id/sections',
   authenticate,
   asyncHandler(async (req, res) => {
-    if (!req.user) {
-      throw new HttpError(401, 'Unauthorized');
-    }
+    const actor = requireAdmin(req.user);
 
     const params = validateSchema(contentIdParamsSchema, req.params);
     const payload = validateSchema(assignContentSectionsSchema, req.body);
     const item = await updateContentSections({
       contentId: params.id,
       appSections: payload.appSections,
-      requester: req.user,
+      requester: actor,
     });
     res.status(200).json(item);
   }),
@@ -194,16 +197,14 @@ contentRouter.patch(
   '/:id/visibility',
   authenticate,
   asyncHandler(async (req, res) => {
-    if (!req.user) {
-      throw new HttpError(401, 'Unauthorized');
-    }
+    const actor = requireAdmin(req.user);
 
     const params = validateSchema(contentIdParamsSchema, req.params);
     const parsed = validateSchema(updateVisibilitySchema, req.body);
     const item = await updateContentVisibility({
       contentId: params.id,
       visibility: parsed.visibility,
-      requester: req.user,
+      requester: actor,
     });
     res.status(200).json(item);
   }),
@@ -213,14 +214,12 @@ contentRouter.delete(
   '/:id',
   authenticate,
   asyncHandler(async (req, res) => {
-    if (!req.user) {
-      throw new HttpError(401, 'Unauthorized');
-    }
+    const actor = requireAdmin(req.user);
 
     const params = validateSchema(contentIdParamsSchema, req.params);
     const result = await deleteContent({
       contentId: params.id,
-      requester: req.user,
+      requester: actor,
     });
     res.status(200).json(result);
   }),

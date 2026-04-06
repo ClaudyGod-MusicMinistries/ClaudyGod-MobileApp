@@ -34,9 +34,10 @@ export async function fetchUserProfileMetrics() {
     return await fetchMeMetrics();
   } catch {
     const { user } = await getStoredMobileSession();
+    const emailPrefix = user?.email ? user.email.split('@')[0] : '';
     return {
       email: user?.email ?? '',
-      displayName: user?.displayName ?? 'ClaudyGod User',
+      displayName: user?.displayName ?? emailPrefix,
       totalPlays: 0,
       liveSubscriptions: 0,
     };

@@ -100,7 +100,7 @@ export default function PlaySection() {
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
   const posterSize = isTablet ? 'md' : 'sm';
-  const { feed } = useContentFeed();
+  const { feed, refresh } = useContentFeed();
   const { config: mobileConfig } = useMobileAppConfig();
 
   const routeItem = useMemo(() => parseRouteItem(params), [params]);
@@ -485,7 +485,85 @@ export default function PlaySection() {
               </FadeIn>
             ) : null}
 
-            <FadeIn delay={150}>
+            {feed.recent.length ? (
+              <FadeIn delay={140}>
+                <View>
+                  <SectionHeader
+                    title="Recently played"
+                    actionLabel="See all"
+                    onAction={() => router.push(APP_ROUTES.tabs.library)}
+                  />
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false} overScrollMode="never">
+                    {feed.recent.slice(0, 12).map((item) => (
+                      <PosterCard
+                        key={`recent-${item.id}`}
+                        imageUrl={item.imageUrl}
+                        title={item.title}
+                        meta={formatMeta(item)}
+                        size={posterSize}
+                        showMore
+                        onMorePress={() => openMoreForItem(item)}
+                        onPress={() => void openItem(item, 'player_recent')}
+                      />
+                    ))}
+                  </ScrollView>
+                </View>
+              </FadeIn>
+            ) : null}
+
+            {feed.mostPlayed.length ? (
+              <FadeIn delay={150}>
+                <View>
+                  <SectionHeader
+                    title="Most played"
+                    actionLabel="See all"
+                    onAction={() => router.push(APP_ROUTES.tabs.library)}
+                  />
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false} overScrollMode="never">
+                    {feed.mostPlayed.slice(0, 12).map((item) => (
+                      <PosterCard
+                        key={`most-${item.id}`}
+                        imageUrl={item.imageUrl}
+                        title={item.title}
+                        meta={formatMeta(item)}
+                        size={posterSize}
+                        showMore
+                        onMorePress={() => openMoreForItem(item)}
+                        onPress={() => void openItem(item, 'player_most_played')}
+                      />
+                    ))}
+                  </ScrollView>
+                </View>
+              </FadeIn>
+            ) : null}
+
+            {feed.recommendations.length ? (
+              <FadeIn delay={160}>
+                <View>
+                  <SectionHeader
+                    title="Suggested for you"
+                    actionLabel="Refresh"
+                    onAction={() => refresh()}
+                  />
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false} overScrollMode="never">
+                    {feed.recommendations.slice(0, 12).map((item) => (
+                      <PosterCard
+                        key={`suggested-${item.id}`}
+                        imageUrl={item.imageUrl}
+                        title={item.title}
+                        meta={formatMeta(item)}
+                        size={posterSize}
+                        showMore
+                        onMorePress={() => openMoreForItem(item)}
+                        onPress={() => void openItem(item, 'player_suggested')}
+                      />
+                    ))}
+                  </ScrollView>
+                </View>
+              </FadeIn>
+            ) : null}
+
+            <FadeIn delay={190}>
               <SupportMinistryCard onPress={() => router.push(APP_ROUTES.settingsPages.donate)} />
             </FadeIn>
 

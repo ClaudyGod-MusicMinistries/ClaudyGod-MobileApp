@@ -7,6 +7,7 @@ import { HttpError } from '../../lib/httpError';
 import { isMissingDatabaseStructureError } from '../../lib/postgres';
 import type { UserRole } from '../auth/auth.types';
 import type { ContentRequestStatus, ContentVisibility } from '../content/content.types';
+import { getMobileAppConfig } from '../appConfig/appConfig.service';
 
 interface SummaryRow {
   total_users: string;
@@ -103,6 +104,26 @@ interface RecentManagedContentRow {
   updated_at: string | Date;
 }
 
+interface UnassignedContentRow {
+  id: string;
+  title: string;
+  description: string;
+  visibility: ContentVisibility;
+  content_type: string;
+  media_url: string | null;
+  thumbnail_url: string | null;
+  channel_name: string | null;
+  duration_label: string | null;
+  app_sections: string[] | null;
+  tags: string[] | null;
+  created_at: string | Date;
+  updated_at: string | Date;
+  author_id: string;
+  author_display_name: string | null;
+  author_email: string | null;
+  author_role: UserRole;
+}
+
 interface AutomationRunRow {
   id: string;
   run_type: string;
@@ -150,6 +171,9 @@ interface RecentEmailJobRow {
 const toIso = (value: string | Date): string => new Date(value).toISOString();
 const toIsoOrNull = (value: string | Date | null): string | null =>
   value ? toIso(value) : null;
+
+const normalizeTextList = (items?: string[] | null): string[] =>
+  [...new Set((items ?? []).map((item) => item.trim()).filter(Boolean))];
 
 const humanizeToken = (value: string): string =>
   value
@@ -1363,4 +1387,178 @@ export const updateAdminSupportRequestStatus = async (input: {
   }
 
   return { updated: true, id: input.requestId, status: input.status };
+};
+
+export const listAdminUnassignedContent = async (params: {
+  limit: number;
+  visibility?: ContentVisibility;
+}) => {
+  const values: Array<string | number> = [];
+  const conditions: string[] = ['(c.app_sections IS NULL OR array_length(c.app_sections, 1) = 0)'];
+
+  if (params.visibility) {
+    values.push(params.visibility);
+    conditions.push(`c.visibility = $${values.length}`);
+  }
+
+  values.push(params.limit);
+  const limitParam = values.length;
+
+  let result;
+  try {
+    result = await pool.query<UnassignedContentRow>(
+      `SELECT
+         c.id,
+         c.title,
+         c.description,
+         c.visibility,
+         c.content_type,
+         c.media_url,
+         c.thumbnail_url,
+         c.channel_name,
+         c.duration_label,
+         c.app_sections,
+         c.tags,
+         c.created_at,
+         c.updated_at,
+         u.id AS author_id,
+         u.display_name AS author_display_name,
+         u.email AS author_email,
+         u.role AS author_role
+       FROM content_items c
+       INNER JOIN app_users u ON u.id = c.author_id
+       WHERE ${conditions.join(' AND ')}
+       ORDER BY c.updated_at DESC, c.created_at DESC
+       LIMIT $${limitParam}`,
+      values,
+    );
+  } catch (error) {
+    if (isMissingDatabaseStructureError(error)) {
+      return { items: [] };
+    }
+    throw error;
+  }
+
+  return {
+    items: result.rows.map((row) => ({
+      id: row.id,
+      title: row.title,
+      description: row.description,
+      type:
+        row.content_type === 'audio' ||
+        row.content_type === 'video' ||
+        row.content_type === 'playlist' ||
+        row.content_type === 'announcement' ||
+        row.content_type === 'live' ||
+        row.content_type === 'ad'
+          ? row.content_type
+          : 'audio',
+      visibility: row.visibility,
+      url: row.media_url ?? undefined,
+      thumbnailUrl: row.thumbnail_url ?? undefined,
+      channelName: row.channel_name ?? undefined,
+      duration: row.duration_label ?? undefined,
+      appSections: row.app_sections ?? [],
+      tags: row.tags ?? [],
+      createdAt: toIso(row.created_at),
+      updatedAt: toIso(row.updated_at),
+      author: {
+        id: row.author_id,
+        displayName: row.author_display_name ?? 'Unknown',
+        email: row.author_email ?? '',
+        role: row.author_role,
+      },
+    })),
+  };
+};
+
+export const getAdminContentSectionSuggestions = async (contentId: string) => {
+  const contentResult = await pool.query<UnassignedContentRow>(
+    `SELECT
+       c.id,
+       c.title,
+       c.description,
+       c.visibility,
+       c.content_type,
+       c.media_url,
+       c.thumbnail_url,
+       c.channel_name,
+       c.duration_label,
+       c.app_sections,
+       c.tags,
+       c.created_at,
+       c.updated_at,
+       u.id AS author_id,
+       u.display_name AS author_display_name,
+       u.email AS author_email,
+       u.role AS author_role
+     FROM content_items c
+     INNER JOIN app_users u ON u.id = c.author_id
+     WHERE c.id = $1
+     LIMIT 1`,
+    [contentId],
+  );
+
+  if (contentResult.rowCount === 0) {
+    throw new HttpError(404, 'Content not found');
+  }
+
+  const content = contentResult.rows[0]!;
+  const contentType =
+    content.content_type === 'audio' ||
+    content.content_type === 'video' ||
+    content.content_type === 'playlist' ||
+    content.content_type === 'announcement' ||
+    content.content_type === 'live'
+      ? content.content_type
+      : 'audio';
+
+  const configResult = await getMobileAppConfig();
+  const sectionPool = [
+    ...(configResult.config.layout?.homeSections ?? []),
+    ...(configResult.config.layout?.videoSections ?? []),
+    ...(configResult.config.layout?.playerSections ?? []),
+    ...(configResult.config.layout?.librarySections ?? []),
+  ];
+
+  const tagTokens = new Set(normalizeTextList(content.tags).map((tag) => tag.toLowerCase()));
+  const titleTokens = new Set(
+    content.title
+      .split(/\s+/)
+      .map((token) => token.toLowerCase().replace(/[^a-z0-9-]/gi, ''))
+      .filter(Boolean),
+  );
+
+  const suggestions = sectionPool
+    .filter((section) => section.contentTypes.includes(contentType))
+    .map((section) => {
+      const sectionTokens = new Set(
+        `${section.id} ${section.title} ${section.subtitle ?? ''}`
+          .split(/\s+/)
+          .map((token) => token.toLowerCase().replace(/[^a-z0-9-]/gi, ''))
+          .filter(Boolean),
+      );
+      let score = 0;
+      sectionTokens.forEach((token) => {
+        if (tagTokens.has(token)) score += 3;
+        if (titleTokens.has(token)) score += 2;
+      });
+
+      return {
+        sectionId: section.id,
+        title: section.title,
+        subtitle: section.subtitle ?? null,
+        destinationTab: section.destinationTab,
+        contentTypes: section.contentTypes,
+        score,
+      };
+    })
+    .filter((suggestion) => suggestion.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 6);
+
+  return {
+    contentId,
+    suggestions,
+  };
 };

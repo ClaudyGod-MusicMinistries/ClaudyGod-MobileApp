@@ -43,9 +43,9 @@ export function PosterCard({
     width < 360 ? 0.92 :
     1;
   const sizes = {
-    sm: { w: 164, h: 214 },
-    md: { w: 192, h: 244 },
-    lg: { w: 220, h: 280 },
+    sm: { w: 172, h: 228 },
+    md: { w: 204, h: 262 },
+    lg: { w: 232, h: 296 },
   }[size];
   const cardWidth = Math.round(sizes.w * scale);
   const cardHeight = Math.round(sizes.h * scale);
