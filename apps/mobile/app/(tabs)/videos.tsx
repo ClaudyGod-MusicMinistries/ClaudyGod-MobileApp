@@ -330,6 +330,18 @@ export default function VideosScreen() {
     if (activeChip === 'videos') return feed.videos;
     return dedupeItems([...feed.videos, ...feed.live, ...feed.recent]);
   }, [activeChip, feed.live, feed.recent, feed.videos]);
+  const chipAvailability = useMemo(() => {
+    const liveItems = feed.live.filter((item) => shouldOpenVideoScreen(item));
+    const videoItems = feed.videos;
+    const replayItems = feed.videos;
+    const allItems = dedupeItems([...feed.videos, ...feed.live, ...feed.recent]);
+    return {
+      all: allItems.length,
+      videos: videoItems.length,
+      live: liveItems.length,
+      replays: replayItems.length,
+    };
+  }, [feed.live, feed.recent, feed.videos]);
   const rotationItems = useMemo(
     () => queue.filter((item) => item.id !== active?.id).slice(0, 3),
     [active?.id, queue],
@@ -372,6 +384,19 @@ export default function VideosScreen() {
       title: item.title,
       source,
     });
+  };
+
+  const handleChipPress = (key: (typeof VIDEO_CHIPS)[number]['key']) => {
+    const available = chipAvailability[key] ?? 0;
+    if (!available) {
+      showToast({
+        title: 'No videos yet',
+        message: 'New content for this category is coming soon.',
+        tone: 'warning',
+      });
+      return;
+    }
+    setActiveChip(key);
   };
 
   const formatMeta = (item: FeedCardItem) =>
@@ -715,7 +740,8 @@ export default function VideosScreen() {
                     key={chip.key}
                     label={chip.label}
                     active={activeChip === chip.key}
-                    onPress={() => setActiveChip(chip.key)}
+                    disabled={(chipAvailability[chip.key] ?? 0) === 0}
+                    onPress={() => handleChipPress(chip.key)}
                   />
                 ))}
               </ScrollView>
