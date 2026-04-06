@@ -243,7 +243,7 @@ export default function LibraryScreen() {
   const [activeChip, setActiveChip] = useState<(typeof LIBRARY_CHIPS)[number]['key']>(LIBRARY_CHIPS[0].key);
   const formatMeta = (item: FeedCardItem) =>
     [item.subtitle, item.duration].filter((value) => Boolean(value)).join(' · ');
-  const { feed } = useContentFeed();
+  const { feed, refresh } = useContentFeed();
   const { config: mobileConfig } = useMobileAppConfig();
   const [library, setLibrary] = useState<MeLibrary | null>(null);
   const [activeActionItem, setActiveActionItem] = useState<FeedCardItem | null>(null);
@@ -714,14 +714,66 @@ export default function LibraryScreen() {
               </View>
             </FadeIn>
 
-            <FadeIn delay={170}>
+            {feed.mostPlayed.length ? (
+              <FadeIn delay={160}>
+                <View>
+                  <SectionHeader
+                    title="Most played"
+                    actionLabel="See all"
+                    onAction={() => router.push(APP_ROUTES.tabs.library)}
+                  />
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false} overScrollMode="never">
+                    {feed.mostPlayed.slice(0, 12).map((item) => (
+                      <PosterCard
+                        key={`most-${item.id}`}
+                        imageUrl={item.imageUrl}
+                        title={item.title}
+                        meta={formatMeta(item)}
+                        size={posterSize}
+                        onPress={() => void openItem(item, 'library_most_played')}
+                        showMore
+                        onMorePress={() => openMoreForItem(item)}
+                      />
+                    ))}
+                  </ScrollView>
+                </View>
+              </FadeIn>
+            ) : null}
+
+            {feed.recommendations.length ? (
+              <FadeIn delay={165}>
+                <View>
+                  <SectionHeader
+                    title="Suggested for you"
+                    actionLabel="Refresh"
+                    onAction={() => refresh()}
+                  />
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false} overScrollMode="never">
+                    {feed.recommendations.slice(0, 12).map((item) => (
+                      <PosterCard
+                        key={`suggested-${item.id}`}
+                        imageUrl={item.imageUrl}
+                        title={item.title}
+                        meta={formatMeta(item)}
+                        size={posterSize}
+                        onPress={() => void openItem(item, 'library_suggested')}
+                        showMore
+                        onMorePress={() => openMoreForItem(item)}
+                      />
+                    ))}
+                  </ScrollView>
+                </View>
+              </FadeIn>
+            ) : null}
+
+            <FadeIn delay={180}>
               <SupportMinistryCard onPress={() => router.push(APP_ROUTES.settingsPages.donate)} />
             </FadeIn>
 
-            <FadeIn delay={190}>
+            <FadeIn delay={200}>
               <SurfaceCard tone="strong" style={{ padding: theme.spacing.lg }}>
                 <View style={{ flexDirection: 'row', gap: 12 }}>
-                  <StatCard label="Most played" value={liked.length} />
+                  <StatCard label="Most played" value={feed.mostPlayed.length} />
                   <StatCard label="Saved audio" value={downloaded.length} />
                   <StatCard label="Playlists" value={playlists.length} />
                 </View>

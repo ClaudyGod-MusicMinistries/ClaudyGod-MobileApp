@@ -43,7 +43,7 @@ const renderShell = (input: {
       ? `
         <tr>
           <td style="padding: 0 32px 28px 32px;">
-            <a href="${escapeHtml(normalizeUrl(input.ctaUrl))}" style="display: inline-block; border-radius: 999px; background: #1d4ed8; color: #ffffff; text-decoration: none; font-weight: 700; padding: 12px 22px;">
+            <a href="${escapeHtml(normalizeUrl(input.ctaUrl))}" style="display: inline-block; border-radius: 10px; background: #2563eb; color: #ffffff; text-decoration: none; font-weight: 600; padding: 12px 22px;">
               ${escapeHtml(input.ctaLabel)}
             </a>
           </td>
@@ -55,7 +55,7 @@ const renderShell = (input: {
     ? `
         <tr>
           <td style="padding: 0 32px 28px 32px;">
-            <div style="border: 1px solid #dbe4f0; border-radius: 12px; padding: 18px 20px; background: #f8fafc; color: #334155;">
+            <div style="border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px 20px; background: #f8fafc; color: #1f2937;">
               ${input.asideHtml}
             </div>
           </td>
@@ -70,20 +70,20 @@ const renderShell = (input: {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>${escapeHtml(input.title)}</title>
   </head>
-  <body style="margin: 0; padding: 24px 12px; background: #eef2f8; color: #0f172a; font-family: Arial, Helvetica, sans-serif;">
+  <body style="margin: 0; padding: 24px 12px; background: #f1f5f9; color: #0f172a; font-family: Arial, Helvetica, sans-serif;">
     <div style="display: none; max-height: 0; overflow: hidden; opacity: 0;">
       ${escapeHtml(input.preview)}
     </div>
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse;">
       <tr>
         <td align="center">
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse; max-width: 640px; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 16px 40px rgba(15, 23, 42, 0.12);">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse; max-width: 640px; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0;">
             <tr>
-              <td style="padding: 28px 32px 20px 32px; background: linear-gradient(135deg, #0b1220 0%, #1d4ed8 100%); color: #ffffff;">
-                <div style="font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.78;">${escapeHtml(
+              <td style="padding: 28px 32px 20px 32px; background: #0f172a; color: #ffffff;">
+                <div style="font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.75;">${escapeHtml(
                   input.eyebrow,
                 )}</div>
-                <div style="font-size: 28px; line-height: 1.2; font-weight: 700; margin-top: 10px;">${escapeHtml(
+                <div style="font-size: 28px; line-height: 1.2; font-weight: 700; margin-top: 10px; color: #e2e8f0;">${escapeHtml(
                   brandName,
                 )}</div>
               </td>

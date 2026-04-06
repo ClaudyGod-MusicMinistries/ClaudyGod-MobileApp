@@ -225,6 +225,43 @@ const buildListResponse = (rows: ContentRow[], total: number, query: ContentList
 const normalizeTextList = (items?: string[]): string[] =>
   [...new Set((items ?? []).map((item) => item.trim()).filter(Boolean))];
 
+const ensurePublishableContent = (params: {
+  type: ContentType;
+  mediaUrl: string | null;
+  thumbnailUrl: string | null;
+  appSections: string[];
+}) => {
+  if (!params.appSections.length) {
+    throw new HttpError(
+      400,
+      'Published content must include at least one app section',
+      { reason: 'missing_app_sections' },
+      'CONTENT_PUBLISH_MISSING_APP_SECTIONS',
+      'appSections',
+    );
+  }
+
+  if ((params.type === 'audio' || params.type === 'video') && !params.mediaUrl) {
+    throw new HttpError(
+      400,
+      `Published ${params.type} content requires a media URL`,
+      { reason: 'missing_media_url' },
+      'CONTENT_PUBLISH_MISSING_MEDIA_URL',
+      'url',
+    );
+  }
+
+  if ((params.type === 'audio' || params.type === 'video') && !params.thumbnailUrl) {
+    throw new HttpError(
+      400,
+      `Published ${params.type} content requires a thumbnail`,
+      { reason: 'missing_thumbnail' },
+      'CONTENT_PUBLISH_MISSING_THUMBNAIL',
+      'thumbnailUrl',
+    );
+  }
+};
+
 const buildStoragePublicUrl = (bucket: string, objectPath: string): string =>
   `${env.SUPABASE_URL.replace(/\/+$/, '')}/storage/v1/object/public/${bucket}/${objectPath}`;
 
@@ -981,6 +1018,16 @@ export const createContent = async (requester: JwtClaims, input: CreateContentIn
       throw new HttpError(400, `A media URL is required for ${input.type} content`);
     }
 
+    const normalizedSections = normalizeTextList(input.appSections);
+    if (input.visibility === 'published') {
+      ensurePublishableContent({
+        type: input.type,
+        mediaUrl: resolvedUrl,
+        thumbnailUrl: resolvedThumbnailUrl,
+        appSections: normalizedSections,
+      });
+    }
+
     const insertResult = await client.query<{ id: string }>(
       `INSERT INTO content_items (
          author_id, title, description, content_type, media_url, thumbnail_url, source_kind,
@@ -1003,7 +1050,7 @@ export const createContent = async (requester: JwtClaims, input: CreateContentIn
         input.externalSourceId ?? null,
         input.channelName ?? null,
         input.duration ?? null,
-        normalizeTextList(input.appSections),
+        normalizedSections,
         normalizeTextList(input.tags),
         JSON.stringify(input.metadata ?? {}),
         input.visibility,
@@ -1107,6 +1154,20 @@ export const updateContent = async ({
       throw new HttpError(400, `A media URL is required for ${nextType} content`);
     }
 
+    const nextVisibility = input.visibility ?? existing.visibility;
+    const nextAppSections = Object.prototype.hasOwnProperty.call(input, 'appSections')
+      ? normalizeTextList(input.appSections)
+      : existing.app_sections ?? [];
+
+    if (nextVisibility === 'published') {
+      ensurePublishableContent({
+        type: nextType,
+        mediaUrl: nextUrl ?? null,
+        thumbnailUrl: nextThumbnailUrl ?? null,
+        appSections: nextAppSections,
+      });
+    }
+
     const nextSourceKind =
       input.sourceKind ??
       (mediaUpload || thumbnailUpload ? 'upload' : existing.source_kind ?? (nextUrl ? 'external' : 'upload'));
@@ -1142,7 +1203,7 @@ export const updateContent = async ({
         Object.prototype.hasOwnProperty.call(input, 'externalSourceId') ? (input.externalSourceId ?? null) : null,
         Object.prototype.hasOwnProperty.call(input, 'channelName') ? (input.channelName ?? null) : null,
         Object.prototype.hasOwnProperty.call(input, 'duration') ? (input.duration ?? null) : null,
-        Object.prototype.hasOwnProperty.call(input, 'appSections') ? normalizeTextList(input.appSections) : null,
+        Object.prototype.hasOwnProperty.call(input, 'appSections') ? nextAppSections : null,
         Object.prototype.hasOwnProperty.call(input, 'tags') ? normalizeTextList(input.tags) : null,
         Object.prototype.hasOwnProperty.call(input, 'metadata') ? JSON.stringify(input.metadata ?? {}) : null,
         input.visibility ?? null,
@@ -1213,17 +1274,24 @@ export const updateContentVisibility = async ({
   visibility: ContentVisibility;
   requester: JwtClaims;
 }): Promise<ContentItem> => {
+  const existing = await loadContentRowById(pool, contentId);
+  if (!existing) {
+    throw new HttpError(404, 'Content not found');
+  }
+
   if (requester.role !== 'ADMIN') {
-    const ownerResult = await pool.query<{ author_id: string }>(
-      `SELECT author_id FROM content_items WHERE id = $1 LIMIT 1`,
-      [contentId],
-    );
-    if (ownerResult.rowCount === 0) {
-      throw new HttpError(404, 'Content not found');
-    }
-    if (ownerResult.rows[0]!.author_id !== requester.sub) {
+    if (existing.author_id !== requester.sub) {
       throw new HttpError(403, 'You can only update visibility for your own content');
     }
+  }
+
+  if (visibility === 'published') {
+    ensurePublishableContent({
+      type: existing.content_type,
+      mediaUrl: existing.media_url,
+      thumbnailUrl: existing.thumbnail_url,
+      appSections: existing.app_sections ?? [],
+    });
   }
 
   const updated = await pool.query<ContentRow>(

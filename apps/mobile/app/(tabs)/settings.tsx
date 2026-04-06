@@ -18,7 +18,6 @@ import { fetchMePreferences, updateMePreferences } from '../../services/userFlow
 import { clearMobileSession } from '../../services/authService';
 import { APP_ROUTES, APP_ROUTE_BY_ID } from '../../util/appRoutes';
 import { getSettingsHubSections } from '../../util/mobileExperienceConfig';
-import { BRAND_HERO_ASSET } from '../../util/brandAssets';
 
 type SettingItem = {
   icon: React.ComponentProps<typeof MaterialIcons>['name'];
@@ -317,15 +316,7 @@ export default function SettingsScreen() {
   );
 
   return (
-    <TabScreenWrapper
-      backgroundImage={BRAND_HERO_ASSET}
-      backgroundHeight={340}
-      backgroundOverlayColors={
-        theme.scheme === 'dark'
-          ? ['rgba(8,7,14,0.12)', 'rgba(8,7,14,0.62)', theme.colors.background]
-          : ['rgba(76,29,149,0.08)', 'rgba(249,247,254,0.48)', theme.colors.background]
-      }
-    >
+    <TabScreenWrapper>
       <ScrollView
         style={{ flex: 1, backgroundColor: 'transparent' }}
         contentContainerStyle={{ paddingBottom: theme.layout.tabBarContentPadding }}
@@ -346,7 +337,7 @@ export default function SettingsScreen() {
             </FadeIn>
 
             <FadeIn delay={60}>
-              <SurfaceCard tone="strong" style={{ padding: theme.spacing.md }}>
+              <SurfaceCard tone="subtle" style={{ padding: theme.spacing.md }}>
                 <View style={{ gap: 6 }}>
                   <CustomText
                     variant="caption"
@@ -356,13 +347,13 @@ export default function SettingsScreen() {
                       letterSpacing: 0.9,
                     }}
                   >
-                    Control center
+                    Quick actions
                   </CustomText>
                   <CustomText variant="heading" style={{ color: theme.colors.text }}>
-                    Playback, appearance, and support in one calmer layout.
+                    Account shortcuts
                   </CustomText>
                   <CustomText variant="body" style={{ color: theme.colors.textSecondary }}>
-                    Adjust your daily preferences, then jump straight to profile, library, or help without scanning oversized cards.
+                    Jump to your profile, library, or help desk without scrolling.
                   </CustomText>
                 </View>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: theme.spacing.md }}>
@@ -424,36 +415,49 @@ export default function SettingsScreen() {
               </SurfaceCard>
             </FadeIn>
 
-            {[...navigationSections, ...controlSections].map((section, sectionIndex) => (
-              <FadeIn key={section.title} delay={120 + sectionIndex * 35}>
-                <SurfaceCard tone="subtle" style={{ paddingHorizontal: theme.spacing.md, paddingVertical: 4 }}>
-                  <View style={{ paddingTop: 10, paddingBottom: 2 }}>
-                    <CustomText
-                      variant="caption"
-                      style={{
-                        color: theme.colors.textSecondary,
-                        textTransform: 'uppercase',
-                        letterSpacing: 0.9,
-                      }}
-                    >
-                      {section.title}
-                    </CustomText>
-                  </View>
-
-                  {section.items.map((item, itemIndex) => (
-                    <View
-                      key={`${section.title}-${item.label}`}
-                      style={{
-                        borderTopWidth: itemIndex === 0 ? 0 : 1,
-                        borderTopColor: theme.colors.border,
-                      }}
-                    >
-                      <SettingRow item={item} />
+            {[...navigationSections, ...controlSections].length ? (
+              [...navigationSections, ...controlSections].map((section, sectionIndex) => (
+                <FadeIn key={section.title} delay={120 + sectionIndex * 35}>
+                  <SurfaceCard tone="subtle" style={{ paddingHorizontal: theme.spacing.md, paddingVertical: 4 }}>
+                    <View style={{ paddingTop: 10, paddingBottom: 2 }}>
+                      <CustomText
+                        variant="caption"
+                        style={{
+                          color: theme.colors.textSecondary,
+                          textTransform: 'uppercase',
+                          letterSpacing: 0.9,
+                        }}
+                      >
+                        {section.title}
+                      </CustomText>
                     </View>
-                  ))}
+
+                    {section.items.map((item, itemIndex) => (
+                      <View
+                        key={`${section.title}-${item.label}`}
+                        style={{
+                          borderTopWidth: itemIndex === 0 ? 0 : 1,
+                          borderTopColor: theme.colors.border,
+                        }}
+                      >
+                        <SettingRow item={item} />
+                      </View>
+                    ))}
+                  </SurfaceCard>
+                </FadeIn>
+              ))
+            ) : (
+              <FadeIn delay={120}>
+                <SurfaceCard tone="subtle" style={{ padding: theme.spacing.md }}>
+                  <CustomText variant="heading" style={{ color: theme.colors.text }}>
+                    Settings are being prepared
+                  </CustomText>
+                  <CustomText variant="body" style={{ color: theme.colors.textSecondary, marginTop: 6 }}>
+                    Your admin team has not published settings sections yet.
+                  </CustomText>
                 </SurfaceCard>
               </FadeIn>
-            ))}
+            )}
           </View>
         </Screen>
       </ScrollView>
