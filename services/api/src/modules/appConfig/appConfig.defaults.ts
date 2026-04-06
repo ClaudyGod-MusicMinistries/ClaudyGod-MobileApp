@@ -34,7 +34,7 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
         icon: 'forum',
         title: 'WhatsApp support',
         desc: 'Message the ministry support desk',
-        actionUrl: 'https://wa.me/18002528394',
+        actionUrl: 'https://wa.me/08188346382',
       },
       {
         id: 'phone',
