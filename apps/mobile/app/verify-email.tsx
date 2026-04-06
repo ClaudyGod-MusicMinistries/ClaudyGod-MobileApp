@@ -89,6 +89,13 @@ export default function VerifyEmailScreen() {
       setErrorMessage('Enter the 6-digit verification code from your email.');
       return;
     }
+    const needsEmail = resolvedToken.length <= 6;
+    if (needsEmail && !normalizedEmail) {
+      const message = 'Enter your account email to verify this 6-digit code.';
+      setErrorMessage(message);
+      showToast({ title: 'Email required', message, tone: 'warning' });
+      return;
+    }
 
     setVerifying(true);
     try {
