@@ -1,6 +1,6 @@
 // components/ui/PosterCard.tsx
 import React from 'react';
-import { View, Image, Pressable } from 'react-native';
+import { View, Image, Pressable, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../CustomText';
@@ -35,17 +35,26 @@ export function PosterCard({
   isLive = false,
 }: PosterCardProps) {
   const theme = useAppTheme();
+  const { width } = useWindowDimensions();
+  const scale =
+    width >= 1024 ? 1.12 :
+    width >= 820 ? 1.08 :
+    width >= 768 ? 1.05 :
+    width < 360 ? 0.92 :
+    1;
   const sizes = {
-    sm: { w: 156, h: 200 },
-    md: { w: 184, h: 232 },
-    lg: { w: 212, h: 270 },
+    sm: { w: 164, h: 214 },
+    md: { w: 192, h: 244 },
+    lg: { w: 220, h: 280 },
   }[size];
+  const cardWidth = Math.round(sizes.w * scale);
+  const cardHeight = Math.round(sizes.h * scale);
 
   return (
     <TVTouchable
       onPress={onPress}
       style={{ 
-        width: sizes.w, 
+        width: cardWidth, 
         marginRight: theme.spacing.md,
         borderRadius: theme.radius.lg,
         overflow: 'hidden'
@@ -54,8 +63,8 @@ export function PosterCard({
     >
       <View
         style={{
-          width: sizes.w,
-          height: sizes.h,
+          width: cardWidth,
+          height: cardHeight,
           borderRadius: theme.radius.lg,
           overflow: 'hidden',
           backgroundColor: 'transparent',
