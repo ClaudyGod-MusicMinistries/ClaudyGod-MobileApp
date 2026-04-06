@@ -1,7 +1,8 @@
-import React, { useMemo, useState } from 'react';
-import { Alert, View, useWindowDimensions } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Alert, Linking, View, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { SettingsScaffold } from '../../components/layout/SettingsScaffold';
 import { CustomText } from '../../components/CustomText';
 import { useAppTheme } from '../../util/colorScheme';
@@ -11,7 +12,7 @@ import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { AppButton } from '../../components/ui/AppButton';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
-import { createDonationIntent } from '../../services/userFlowService';
+import { APP_ROUTES } from '../../util/appRoutes';
 
 type DonateMethod = {
   id: string;
@@ -100,10 +101,19 @@ export default function Donate() {
   const isDark = theme.scheme === 'dark';
   const { width } = useWindowDimensions();
   const { config } = useMobileAppConfig();
+  const router = useRouter();
   const isCompact = width < 380;
   const isTablet = width >= 768;
 
-  const configuredQuickAmounts = config?.donate.quickAmounts ?? quickAmounts;
+  const configuredQuickAmounts = useMemo(() => config?.donate.quickAmounts ?? quickAmounts, [config?.donate.quickAmounts]);
+  const quickAmountsByCurrency = useMemo(
+    () => config?.donate.quickAmountsByCurrency ?? {},
+    [config?.donate.quickAmountsByCurrency],
+  );
+  const currencyOptions =
+    config?.donate.currencyOptions ?? [
+      { code: config?.donate.currency ?? 'USD', label: 'Default', symbol: '$' },
+    ];
   const configuredMethods: DonateMethod[] = (config?.donate.methods ?? supportMethods).map((method) => ({
     ...method,
     icon: method.icon as DonateMethod['icon'],
@@ -117,17 +127,23 @@ export default function Donate() {
     ...item,
     icon: item.icon as ImpactBreakdownItem['icon'],
   }));
-  const configuredCurrency = config?.donate.currency ?? 'USD';
+  const configuredCurrency = useMemo(() => (config?.donate.currency ?? 'USD').toUpperCase(), [config?.donate.currency]);
 
-  const [selectedAmount, setSelectedAmount] = useState<string>('$25');
+  const defaultAmount =
+    quickAmountsByCurrency[configuredCurrency]?.[0] ??
+    configuredQuickAmounts[0] ??
+    '$25';
+  const [selectedAmount, setSelectedAmount] = useState<string>(defaultAmount);
   const [donationMode, setDonationMode] = useState<'daily' | 'weekly' | 'monthly'>('monthly');
   const [selectedMethod, setSelectedMethod] = useState<string>((config?.donate.methods?.[0]?.id ?? supportMethods[0].id));
+  const [selectedCurrency, setSelectedCurrency] = useState<string>(configuredCurrency);
 
   const selectedPlan = useMemo(
     () => configuredPlans.find((plan) => plan.period === donationMode) ?? configuredPlans[0] ?? null,
     [configuredPlans, donationMode],
   );
   const cadenceLabel = donationMode === 'daily' ? 'daily' : donationMode === 'weekly' ? 'weekly' : 'monthly';
+  const activeQuickAmounts = quickAmountsByCurrency[selectedCurrency] ?? configuredQuickAmounts;
 
   const ui = {
     heroBg: isDark ? 'rgba(10,8,17,0.9)' : '#FFFFFF',
@@ -141,31 +157,54 @@ export default function Donate() {
     successTint: isDark ? 'rgba(34,197,94,0.12)' : 'rgba(22,163,74,0.08)',
   } as const;
 
-  const onPlaceholderAction = (label: string) => {
-    Alert.alert('Coming soon', `${label} will be available soon.`);
+  useEffect(() => {
+    const nextAmounts = quickAmountsByCurrency[selectedCurrency] ?? configuredQuickAmounts;
+    if (nextAmounts.length > 0 && !nextAmounts.includes(selectedAmount)) {
+      setSelectedAmount(nextAmounts[0]);
+    }
+  }, [configuredQuickAmounts, quickAmountsByCurrency, selectedAmount, selectedCurrency]);
+
+  const supportEmail = config?.privacy?.contactEmail || 'support@claudygod.org';
+
+  const onReceiptRequest = () => {
+    const subject = encodeURIComponent('Donation receipt request');
+    const body = encodeURIComponent(
+      'Hello, I would like to request a donation receipt. Please let me know the details needed.',
+    );
+    Linking.openURL(`mailto:${supportEmail}?subject=${subject}&body=${body}`);
+  };
+
+  const onContactSupport = () => {
+    router.push('/settingsPage/help');
   };
 
   const onDonateNow = () => {
+    if (!selectedAmount) {
+      Alert.alert('Select an amount', 'Choose an amount to continue.');
+      return;
+    }
+
     const method = configuredMethods.find((item) => item.id === selectedMethod);
-    void createDonationIntent({
-      amount: selectedAmount,
-      mode: donationMode,
-      methodId: selectedMethod,
-      currency: configuredCurrency,
-      planId: selectedPlan?.id,
-      metadata: { screen: 'donate' },
-    })
-      .then(() => {
-        Alert.alert(
-          'Donation ready',
-          `${cadenceLabel.charAt(0).toUpperCase() + cadenceLabel.slice(1)} ${selectedAmount} via ${
-            method?.label ?? 'selected method'
-          } has been prepared successfully.`,
-        );
-      })
-      .catch((error) => {
-        Alert.alert('Donation unavailable', error instanceof Error ? error.message : 'Please try again.');
-      });
+    const cadence = `${cadenceLabel.charAt(0).toUpperCase()}${cadenceLabel.slice(1)}`;
+    const amountLabel = `${selectedAmount} ${selectedCurrency}`;
+
+    Alert.alert('Review donation', `${cadence} ${amountLabel} via ${method?.label ?? 'selected method'}.`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Continue',
+        onPress: () =>
+          router.push({
+            pathname: APP_ROUTES.settingsPages.payment,
+            params: {
+              amount: selectedAmount,
+              frequency: donationMode,
+              methodId: selectedMethod,
+              currency: selectedCurrency,
+              planId: selectedPlan?.id ?? '',
+            },
+          }),
+      },
+    ]);
   };
 
   return (
@@ -278,13 +317,57 @@ export default function Donate() {
         </FadeIn>
       }
     >
+      <FadeIn delay={55}>
+        <SurfaceCard style={{ padding: spacing.md }}>
+          <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
+            Currency
+          </CustomText>
+          <CustomText variant="caption" style={{ color: ui.muted, marginTop: 3 }}>
+            Choose the currency that matches your location or payment card.
+          </CustomText>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
+            {currencyOptions.map((option) => {
+              const active = selectedCurrency === option.code;
+              return (
+                <TVTouchable
+                  key={option.code}
+                  onPress={() => {
+                    setSelectedCurrency(option.code);
+                    const nextAmounts = quickAmountsByCurrency[option.code] ?? configuredQuickAmounts;
+                    setSelectedAmount(nextAmounts[0] ?? selectedAmount);
+                  }}
+                  style={{
+                    borderRadius: radius.pill,
+                    borderWidth: 1,
+                    borderColor: active ? ui.accentLine : ui.panelBorder,
+                    backgroundColor: active ? ui.accentSoft : ui.panelBg,
+                    paddingVertical: 8,
+                    paddingHorizontal: 12,
+                  }}
+                  showFocusBorder={false}
+                >
+                  <CustomText variant="label" style={{ color: active ? theme.colors.primary : theme.colors.text }}>
+                    {option.code} {option.symbol ? `· ${option.symbol}` : ''} · {option.label}
+                  </CustomText>
+                </TVTouchable>
+              );
+            })}
+          </View>
+          <View style={{ marginTop: 10 }}>
+            <CustomText variant="caption" style={{ color: ui.subtle }}>
+              Supporters can give in USD or NGN with secure, locally optimized providers.
+            </CustomText>
+          </View>
+        </SurfaceCard>
+      </FadeIn>
+
       <FadeIn delay={70}>
         <SurfaceCard style={{ padding: spacing.md }}>
           <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
             Quick donation
           </CustomText>
           <CustomText variant="caption" style={{ color: ui.muted, marginTop: 3 }}>
-            Select an amount, choose how you want to give, and continue with the method that suits you best.
+            Select an amount, choose a cadence, and continue with the method that suits you best.
           </CustomText>
 
           <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
@@ -316,7 +399,7 @@ export default function Donate() {
           </View>
 
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
-            {configuredQuickAmounts.map((amount) => {
+            {activeQuickAmounts.map((amount) => {
               const active = selectedAmount === amount;
               return (
                 <TVTouchable
@@ -462,7 +545,7 @@ export default function Donate() {
       </FadeIn>
 
       <FadeIn delay={220}>
-        <SurfaceCard style={{ marginTop: spacing.lg, padding: spacing.md }}>
+        <SurfaceCard style={{ marginTop: spacing.lg, padding: spacing.lg }}>
           <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
             Donation support
           </CustomText>
@@ -475,13 +558,13 @@ export default function Donate() {
               icon="receipt-long"
               title="Request receipt / invoice"
               subtitle="For organizational accounting and support records"
-              onPress={() => onPlaceholderAction('Receipt / invoice request')}
+              onPress={onReceiptRequest}
             />
             <DonateActionRow
               icon="support-agent"
               title="Contact donations team"
               subtitle="Questions about giving methods and sponsorships"
-              onPress={() => onPlaceholderAction('Donations support')}
+              onPress={onContactSupport}
             />
           </View>
 

@@ -23,6 +23,7 @@ export const APP_ROUTES = {
   settingsPages: {
     privacy: '/settingsPage/Privacy',
     donate: '/settingsPage/Donate',
+    payment: '/settingsPage/Payment',
     help: '/settingsPage/help',
     about: '/settingsPage/About',
     rate: '/settingsPage/Rate',
@@ -41,6 +42,7 @@ export type AppRouteId =
   | 'profile'
   | 'settings.privacy'
   | 'settings.donate'
+  | 'settings.payment'
   | 'settings.help'
   | 'settings.about'
   | 'settings.rate';
@@ -65,6 +67,7 @@ export const APP_ROUTE_BY_ID: Record<AppRouteId, string> = {
   profile: APP_ROUTES.profile,
   'settings.privacy': APP_ROUTES.settingsPages.privacy,
   'settings.donate': APP_ROUTES.settingsPages.donate,
+  'settings.payment': APP_ROUTES.settingsPages.payment,
   'settings.help': APP_ROUTES.settingsPages.help,
   'settings.about': APP_ROUTES.settingsPages.about,
   'settings.rate': APP_ROUTES.settingsPages.rate,

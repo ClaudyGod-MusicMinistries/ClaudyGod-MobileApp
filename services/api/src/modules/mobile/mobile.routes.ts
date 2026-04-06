@@ -4,6 +4,8 @@ import { validateSchema } from '../../lib/validation';
 import { requireMobileApiKey } from '../../middleware/requireMobileApiKey';
 import { listContentQuerySchema } from '../content/content.schema';
 import { listPublicContent } from '../content/content.service';
+import { createDonationIntentSchema } from '../me/me.schema';
+import { createPublicDonationIntent } from '../me/me.service';
 import { signedUploadRequestSchema, uploadPoliciesResponse } from '../uploads/uploads.schema';
 import { requestSignedUploadUrl } from '../uploads/uploads.service';
 import { youtubeListQuerySchema } from '../youtube/youtube.schema';
@@ -61,6 +63,16 @@ mobileRouter.post(
       channel: 'mobile',
     });
 
+    res.status(201).json(result);
+  }),
+);
+
+mobileRouter.post(
+  '/donation-intents',
+  requireMobileApiKey,
+  asyncHandler(async (req, res) => {
+    const payload = validateSchema(createDonationIntentSchema, req.body);
+    const result = await createPublicDonationIntent(payload);
     res.status(201).json(result);
   }),
 );

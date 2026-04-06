@@ -188,7 +188,8 @@ export default function LandingScreen() {
           size={isCompactPhone ? 'sm' : 'md'}
           onPress={() => {
             enterGuestMode();
-            requestAnimationFrame(() => router.replace(APP_ROUTES.tabs.home));
+            // Navigate to guest welcome screen
+            router.replace('/guest-welcome');
           }}
           fullWidth
           style={{

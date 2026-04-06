@@ -66,43 +66,29 @@ services/api/
 │   │   └── env.ts           # Environment variables schema
 │   │
 │   ├── lib/                 # Utility libraries
-│   │   ├── logger.ts        # Winston logging service
+│   │   ├── logger.ts        # Logging service
 │   │   ├── emailValidator.ts # Email domain validation
-│   │   ├── authValidation.ts # Auth data validation
-│   │   └── errorHandler.ts   # Error classification & handling
+│   │   └── validation.ts    # Schema validation helpers
 │   │
 │   ├── middleware/          # Express middleware
-│   │   ├── auth.ts          # JWT authentication
+│   │   ├── authenticate.ts  # JWT authentication
 │   │   ├── rateLimiter.ts   # Rate limiting rules
-│   │   ├── validation.ts    # Input validation middleware
-│   │   └── errorMiddleware.ts # Error response handler
+│   │   ├── errorHandler.ts  # Error response handler
+│   │   └── requestTracking.ts # Request metadata
 │   │
-│   ├── services/            # Business logic
-│   │   ├── emailService.ts  # Email sending operations
-│   │   ├── authService.ts   # User authentication
-│   │   ├── userService.ts   # User management
-│   │   ├── contentService.ts # Content management
-│   │   └── notificationService.ts
+│   ├── modules/             # Domain modules (routes + services)
+│   │   ├── auth/            # Auth routes + service
+│   │   ├── me/              # User profile + preferences
+│   │   ├── content/         # Content catalog + requests
+│   │   ├── live/            # Live sessions + chat
+│   │   └── analytics/       # Playback analytics
 │   │
-│   ├── database/            # Data access layer
-│   │   ├── models/          # TypeORM entities
-│   │   │   ├── User.ts
-│   │   │   ├── Content.ts
-│   │   │   └── Notification.ts
-│   │   └── repositories/    # Query abstraction
-│   │       ├── userRepository.ts
-│   │       └── contentRepository.ts
+│   ├── db/                  # Data access layer
+│   │   ├── migrate.ts       # SQL migrations
+│   │   ├── pool.ts          # PostgreSQL pool
+│   │   └── seedAdmin.ts     # Admin bootstrap
 │   │
-│   ├── routes/              # API endpoints
-│   │   ├── auth.ts          # /api/auth
-│   │   ├── users.ts         # /api/users
-│   │   ├── content.ts       # /api/content
-│   │   └── health.ts        # /api/health
-│   │
-│   ├── controllers/         # Request handlers
-│   │   ├── AuthController.ts
-│   │   ├── UserController.ts
-│   │   └── ContentController.ts
+│   ├── routes/              # Shared routers (empty)
 │   │
 │   ├── types/               # TypeScript interfaces
 │   │   ├── User.ts
@@ -147,7 +133,7 @@ const emailConfig = {
 
 ### 2. Middleware Layer (`middleware/`)
 
-**Auth Middleware** (`auth.ts`)
+**Auth Middleware** (`authenticate.ts`)
 - Validates JWT tokens
 - Attaches user context to requests
 - Handles token refresh logic
@@ -159,9 +145,8 @@ const emailConfig = {
 - Password reset: 3 requests per hour
 - Email verification: 5 requests per hour
 
-**Validation Middleware** (`validation.ts`)
+**Validation Middleware** (`validationMiddleware.ts`)
 - Applies schema validation to all inputs
-- Prevents SQL injection, XSS, etc.
 - Type-safe request data
 
 ### 3. Services Layer (`services/`)
@@ -206,16 +191,17 @@ const emailConfig = {
 - Handle transactions
 - Cache management integration
 
-### 5. API Routes (`routes/`)
+### 5. API Routes (`modules/`)
 
-**Authentication Routes** (`/api/auth`)
-- `POST /api/auth/signup` - Register user
-- `POST /api/auth/login` - Authenticate user
-- `POST /api/auth/refresh` - Refresh JWT token
-- `POST /api/auth/verify-email` - Confirm email
-- `POST /api/auth/forgot-password` - Request reset
-- `POST /api/auth/reset-password` - Complete reset
-- `POST /api/auth/logout` - End session
+**Authentication Routes** (`/v1/auth` and mirrored at `/api/auth`)
+- `POST /v1/auth/register` - Register user
+- `POST /v1/auth/sign-in` - Authenticate user
+- `POST /v1/auth/email/verify/request` - Resend verification
+- `POST /v1/auth/email/verify` - Confirm email
+- `POST /v1/auth/forgot-password` - Request reset
+- `POST /v1/auth/reset-password` - Complete reset
+- `POST /v1/auth/refresh` - Refresh session
+- `POST /v1/auth/logout` - End session
 
 **User Routes** (`/api/users`)
 - `GET /api/users/:id` - Get user profile

@@ -331,13 +331,15 @@ const migrations = [
     user_id UUID REFERENCES app_users(id) ON DELETE SET NULL,
     amount_cents INTEGER NOT NULL CHECK (amount_cents > 0),
     currency TEXT NOT NULL DEFAULT 'USD',
-    mode TEXT NOT NULL CHECK (mode IN ('once', 'monthly')),
+    mode TEXT NOT NULL CHECK (mode IN ('once', 'daily', 'weekly', 'monthly')),
     method_id TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'succeeded', 'failed', 'cancelled')),
     payload JSONB NOT NULL DEFAULT '{}'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`,
+  `ALTER TABLE donation_intents DROP CONSTRAINT IF EXISTS donation_intents_mode_check`,
+  `ALTER TABLE donation_intents ADD CONSTRAINT donation_intents_mode_check CHECK (mode IN ('once', 'daily', 'weekly', 'monthly'))`,
   `CREATE TABLE IF NOT EXISTS app_config_store (
     config_key TEXT PRIMARY KEY,
     config_value JSONB NOT NULL,
