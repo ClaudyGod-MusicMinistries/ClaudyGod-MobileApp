@@ -41,8 +41,10 @@ export function SupportMinistryCard({ onPress }: SupportCardProps) {
 
         {/* CTA Arrow */}
         <View style={styles.cta}>
-          <CustomText style={styles.ctaText}>Click Here</CustomText>
-          <MaterialIcons name="arrow-forward" size={20} color="white" style={{ marginLeft: spacing.xs }} />
+          <View style={styles.ctaButton}>
+            <CustomText style={styles.ctaText}>Click Here</CustomText>
+            <MaterialIcons name="arrow-forward" size={18} color="white" style={{ marginLeft: spacing.xs }} />
+          </View>
         </View>
       </LinearGradient>
     </Pressable>
@@ -100,9 +102,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-start',
   },
+  ctaButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.35)',
+  },
   ctaText: {
     color: 'white',
-    fontSize: 13,
+    fontSize: 12.5,
     fontWeight: '700',
   },
 });
