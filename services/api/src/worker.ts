@@ -50,8 +50,11 @@ const bootWorker = async (): Promise<void> => {
   const emailWorker = startEmailWorker();
   console.log(`Workers started (content + email, env=${env.NODE_ENV})`);
 
-  const shutdown = async (signal: string): Promise<void> => {
+  const shutdown = async (signal: string, error?: unknown): Promise<void> => {
     console.log(`${signal} received, shutting down worker...`);
+    if (error) {
+      console.error('Worker shutdown triggered by error:', error);
+    }
     await Promise.allSettled([contentWorker.close(), emailWorker.close()]);
     await Promise.allSettled([closeRedis(), closePool()]);
     process.exit(0);
@@ -63,6 +66,14 @@ const bootWorker = async (): Promise<void> => {
 
   process.on('SIGTERM', () => {
     void shutdown('SIGTERM');
+  });
+
+  process.on('uncaughtException', (error) => {
+    void shutdown('uncaughtException', error);
+  });
+
+  process.on('unhandledRejection', (reason) => {
+    void shutdown('unhandledRejection', reason);
   });
 };
 
