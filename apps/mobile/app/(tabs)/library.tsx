@@ -303,6 +303,15 @@ export default function LibraryScreen() {
     if (activeChip === 'playlists') return playlists;
     return fallbackPool;
   }, [activeChip, downloaded, fallbackPool, liked, playlists]);
+  const chipAvailability = useMemo(
+    () => ({
+      all: fallbackPool.length,
+      saved: liked.length,
+      downloads: downloaded.length,
+      playlists: playlists.length,
+    }),
+    [downloaded.length, fallbackPool.length, liked.length, playlists.length],
+  );
 
   const openItem = async (item: FeedCardItem, source: string) => {
     await trackPlayEvent({
@@ -317,6 +326,19 @@ export default function LibraryScreen() {
   const openMoreForItem = (item: FeedCardItem) => {
     setActiveActionItem(item);
     setIsActionSheetVisible(true);
+  };
+
+  const handleChipPress = (key: (typeof LIBRARY_CHIPS)[number]['key']) => {
+    const available = chipAvailability[key] ?? 0;
+    if (!available) {
+      showToast({
+        title: 'Nothing here yet',
+        message: 'Save content to build this section.',
+        tone: 'warning',
+      });
+      return;
+    }
+    setActiveChip(key);
   };
 
   const shareActive = async () => {
@@ -485,14 +507,15 @@ export default function LibraryScreen() {
                       bounces={false}
                       overScrollMode="never"
                     >
-                      {LIBRARY_CHIPS.map((chip) => (
-                        <Chip
-                          key={chip.key}
-                          label={chip.label}
-                          active={activeChip === chip.key}
-                          onPress={() => setActiveChip(chip.key)}
-                        />
-                      ))}
+                {LIBRARY_CHIPS.map((chip) => (
+                  <Chip
+                    key={chip.key}
+                    label={chip.label}
+                    active={activeChip === chip.key}
+                    disabled={(chipAvailability[chip.key] ?? 0) === 0}
+                    onPress={() => handleChipPress(chip.key)}
+                  />
+                ))}
                     </ScrollView>
                   </FadeIn>
 
@@ -608,7 +631,8 @@ export default function LibraryScreen() {
                     key={chip.key}
                     label={chip.label}
                     active={activeChip === chip.key}
-                    onPress={() => setActiveChip(chip.key)}
+                    disabled={(chipAvailability[chip.key] ?? 0) === 0}
+                    onPress={() => handleChipPress(chip.key)}
                   />
                 ))}
               </ScrollView>
