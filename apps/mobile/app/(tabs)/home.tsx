@@ -214,6 +214,15 @@ export default function HomeScreen() {
     return [...feed.music, ...feed.videos, ...feed.live, ...feed.playlists, ...feed.recent]
       .filter((item, index, arr) => arr.findIndex((entry) => entry.id === item.id) === index);
   }, [activeChip, feed.live, feed.music, feed.playlists, feed.recent, feed.videos]);
+  const chipAvailability = useMemo(
+    () => ({
+      all: feed.music.length + feed.videos.length + feed.live.length + feed.playlists.length + feed.recent.length,
+      music: feed.music.length,
+      videos: feed.videos.length,
+      live: feed.live.length,
+    }),
+    [feed.live.length, feed.music.length, feed.playlists.length, feed.recent.length, feed.videos.length],
+  );
   const quickPicks = useMemo(() => {
     const pool = [...feed.music, ...feed.playlists, ...feed.videos, ...feed.recent];
     return pool.filter((item) => item.imageUrl).slice(0, 4);
@@ -239,6 +248,19 @@ export default function HomeScreen() {
       source,
     });
     router.push(buildPlayerRoute(item));
+  };
+
+  const handleChipPress = (key: (typeof HOME_CHIPS)[number]['key']) => {
+    const available = chipAvailability[key] ?? 0;
+    if (!available) {
+      showToast({
+        title: 'No content yet',
+        message: 'New content for this category is coming soon.',
+        tone: 'warning',
+      });
+      return;
+    }
+    setActiveChip(key);
   };
 
   const shareWord = async () => {
@@ -599,7 +621,8 @@ export default function HomeScreen() {
                     key={chip.key}
                     label={chip.label}
                     active={activeChip === chip.key}
-                    onPress={() => setActiveChip(chip.key)}
+                    disabled={(chipAvailability[chip.key] ?? 0) === 0}
+                    onPress={() => handleChipPress(chip.key)}
                   />
                 ))}
               </ScrollView>
