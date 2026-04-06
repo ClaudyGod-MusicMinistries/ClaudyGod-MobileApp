@@ -180,8 +180,8 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
     homeSections: [
       {
         id: 'claudygod-music',
-        title: 'ClaudyGod (Music)',
-        subtitle: 'Official music releases and worship audio.',
+        title: 'Featured Music',
+        subtitle: 'Latest worship releases and audio drops.',
         contentTypes: ['audio', 'playlist'],
         actionLabel: 'Listen',
         destinationTab: 'player',
@@ -189,8 +189,8 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
       },
       {
         id: 'claudygod-nuggets-of-truth',
-        title: 'ClaudyGod (Nuggets of Truth)',
-        subtitle: 'Short teachings, reflections, and devotionals.',
+        title: 'Daily Devotionals',
+        subtitle: 'Short teachings, reflections, and scripture moments.',
         contentTypes: ['announcement', 'audio', 'video'],
         actionLabel: 'Open',
         destinationTab: 'home',
@@ -198,8 +198,8 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
       },
       {
         id: 'claudygod-worship-hour',
-        title: 'ClaudyGod Worship Hour',
-        subtitle: 'Worship sessions, replays, and live moments.',
+        title: 'Worship Sessions',
+        subtitle: 'Worship sets, replays, and live moments.',
         contentTypes: ['audio', 'video', 'live'],
         actionLabel: 'Watch',
         destinationTab: 'videos',
@@ -207,7 +207,7 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
       },
       {
         id: 'claudygod-teens',
-        title: 'ClaudyGod Teens',
+        title: 'Youth Sessions',
         subtitle: 'Youth-focused worship and messages.',
         contentTypes: ['video', 'audio'],
         actionLabel: 'Open',
@@ -216,7 +216,7 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
       },
       {
         id: 'claudygod-kids',
-        title: 'ClaudyGod Kids',
+        title: 'Kids Sessions',
         subtitle: 'Kids-friendly worship and learning.',
         contentTypes: ['video', 'audio'],
         actionLabel: 'Open',
@@ -225,7 +225,7 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
       },
       {
         id: 'claudygod-speaks',
-        title: 'ClaudyGod Speaks',
+        title: 'Messages & Updates',
         subtitle: 'Messages, teachings, and ministry updates.',
         contentTypes: ['announcement', 'video', 'live'],
         actionLabel: 'Watch',
@@ -236,7 +236,7 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
     videoSections: [
       {
         id: 'claudygod-worship-hour',
-        title: 'ClaudyGod Worship Hour',
+        title: 'Worship Sessions',
         subtitle: 'Worship sessions and live replays.',
         contentTypes: ['video', 'live'],
         actionLabel: 'Watch',
@@ -245,7 +245,7 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
       },
       {
         id: 'claudygod-teens',
-        title: 'ClaudyGod Teens',
+        title: 'Youth Sessions',
         subtitle: 'Youth-focused worship and messages.',
         contentTypes: ['video'],
         actionLabel: 'Open',
@@ -254,7 +254,7 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
       },
       {
         id: 'claudygod-kids',
-        title: 'ClaudyGod Kids',
+        title: 'Kids Sessions',
         subtitle: 'Kids-friendly worship and learning.',
         contentTypes: ['video'],
         actionLabel: 'Open',
@@ -263,7 +263,7 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
       },
       {
         id: 'claudygod-speaks',
-        title: 'ClaudyGod Speaks',
+        title: 'Messages & Updates',
         subtitle: 'Messages, teachings, and ministry updates.',
         contentTypes: ['video', 'announcement', 'live'],
         actionLabel: 'Watch',
@@ -274,8 +274,8 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
     playerSections: [
       {
         id: 'claudygod-music',
-        title: 'ClaudyGod (Music)',
-        subtitle: 'Official music releases and worship audio.',
+        title: 'Featured Music',
+        subtitle: 'Latest worship releases and audio drops.',
         contentTypes: ['audio', 'playlist'],
         actionLabel: 'Listen',
         destinationTab: 'player',
@@ -283,7 +283,7 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
       },
       {
         id: 'claudygod-nuggets-of-truth',
-        title: 'ClaudyGod (Nuggets of Truth)',
+        title: 'Daily Devotionals',
         subtitle: 'Short teachings and devotionals for listening.',
         contentTypes: ['audio', 'announcement'],
         actionLabel: 'Open',
@@ -292,7 +292,7 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
       },
       {
         id: 'claudygod-worship-hour',
-        title: 'ClaudyGod Worship Hour',
+        title: 'Worship Sessions',
         subtitle: 'Long-form worship and replays.',
         contentTypes: ['audio', 'playlist'],
         actionLabel: 'Listen',
@@ -303,7 +303,7 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
     librarySections: [
       {
         id: 'claudygod-music',
-        title: 'ClaudyGod (Music)',
+        title: 'Saved Music',
         subtitle: 'Saved worship audio and playlists.',
         contentTypes: ['audio', 'playlist'],
         actionLabel: 'Play',
@@ -312,7 +312,7 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
       },
       {
         id: 'claudygod-speaks',
-        title: 'ClaudyGod Speaks',
+        title: 'Saved Messages',
         subtitle: 'Saved messages and video replays.',
         contentTypes: ['video', 'live'],
         actionLabel: 'Watch',
@@ -321,7 +321,7 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
       },
       {
         id: 'claudygod-kids',
-        title: 'ClaudyGod Kids',
+        title: 'Saved Kids',
         subtitle: 'Saved kids content.',
         contentTypes: ['video', 'audio'],
         actionLabel: 'Open',
