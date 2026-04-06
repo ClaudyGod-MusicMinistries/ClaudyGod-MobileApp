@@ -4,7 +4,7 @@
  * Focus: User retention, conversion, and community building
  */
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   ScrollView,
