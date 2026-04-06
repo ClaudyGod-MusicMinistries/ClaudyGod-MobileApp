@@ -46,10 +46,32 @@ export const signInSchema = z.object({
   password: z.string().min(1, 'Password required'),
 });
 
-export const verifyEmailSchema = z.object({
-  code: z.string().length(6, 'Code must be 6 digits').regex(/^\d+$/, 'Code must contain only digits'),
-  email: emailSchema,
-});
+export const verifyEmailSchema = z
+  .object({
+    code: z.string().trim().optional(),
+    token: z.string().trim().optional(),
+    email: emailSchema.optional(),
+  })
+  .superRefine((value, ctx) => {
+    const submitted = value.code ?? value.token ?? '';
+    if (!submitted) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Verification code or token is required',
+        path: ['code'],
+      });
+      return;
+    }
+    if (value.code) {
+      if (value.code.length !== 6 || !/^\d+$/.test(value.code)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Code must be 6 digits',
+          path: ['code'],
+        });
+      }
+    }
+  });
 
 export const emailVerifyRequestSchema = z.object({
   email: emailSchema,

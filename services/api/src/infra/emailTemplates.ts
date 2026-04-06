@@ -24,7 +24,7 @@ const supportEmail =
   '';
 
 const supportFooter = supportEmail
-  ? `Need help? Reply to this email or contact ${supportEmail}.`
+  ? `Need help? Reply to this email or reach us at ${supportEmail}.`
   : 'Need help? Reply to this email and our team will assist you.';
 
 const renderShell = (input: {
@@ -43,7 +43,7 @@ const renderShell = (input: {
       ? `
         <tr>
           <td style="padding: 0 32px 28px 32px;">
-            <a href="${escapeHtml(normalizeUrl(input.ctaUrl))}" style="display: inline-block; border-radius: 999px; background: #0f172a; color: #ffffff; text-decoration: none; font-weight: 700; padding: 14px 22px;">
+            <a href="${escapeHtml(normalizeUrl(input.ctaUrl))}" style="display: inline-block; border-radius: 999px; background: #1d4ed8; color: #ffffff; text-decoration: none; font-weight: 700; padding: 12px 22px;">
               ${escapeHtml(input.ctaLabel)}
             </a>
           </td>
@@ -55,7 +55,7 @@ const renderShell = (input: {
     ? `
         <tr>
           <td style="padding: 0 32px 28px 32px;">
-            <div style="border: 1px solid #dbe4f0; border-radius: 18px; padding: 18px 20px; background: #f8fafc; color: #334155;">
+            <div style="border: 1px solid #dbe4f0; border-radius: 12px; padding: 18px 20px; background: #f8fafc; color: #334155;">
               ${input.asideHtml}
             </div>
           </td>
@@ -70,16 +70,16 @@ const renderShell = (input: {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>${escapeHtml(input.title)}</title>
   </head>
-  <body style="margin: 0; padding: 24px 12px; background: #eef2ff; color: #0f172a; font-family: Arial, Helvetica, sans-serif;">
+  <body style="margin: 0; padding: 24px 12px; background: #eef2f8; color: #0f172a; font-family: Arial, Helvetica, sans-serif;">
     <div style="display: none; max-height: 0; overflow: hidden; opacity: 0;">
       ${escapeHtml(input.preview)}
     </div>
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse;">
       <tr>
         <td align="center">
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse; max-width: 640px; background: #ffffff; border-radius: 28px; overflow: hidden; box-shadow: 0 20px 48px rgba(15, 23, 42, 0.12);">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse; max-width: 640px; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 16px 40px rgba(15, 23, 42, 0.12);">
             <tr>
-              <td style="padding: 28px 32px 20px 32px; background: linear-gradient(135deg, #0f172a 0%, #1d4ed8 100%); color: #ffffff;">
+              <td style="padding: 28px 32px 20px 32px; background: linear-gradient(135deg, #0b1220 0%, #1d4ed8 100%); color: #ffffff;">
                 <div style="font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.78;">${escapeHtml(
                   input.eyebrow,
                 )}</div>
@@ -129,7 +129,7 @@ export const buildVerifyEmailTemplate = (input: {
   const textVerificationLine = input.verificationCode
     ? `Enter this 6-digit verification code: ${input.verificationCode}`
     : input.verifyUrl
-      ? `Verify your account: ${input.verifyUrl}`
+      ? 'Verify your account using the secure link we provided.'
       : '';
   const text = toTextBlock([
     `Hi ${input.displayName},`,
@@ -143,14 +143,9 @@ export const buildVerifyEmailTemplate = (input: {
   const ctaLabel = input.verificationCode ? 'Open verification page' : 'Verify email';
   const codeAside = input.verificationCode
     ? `<div style="font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: #64748b; margin-bottom: 10px;">Verification code</div>
-       <div style="font-size: 32px; line-height: 1; letter-spacing: 0.28em; font-weight: 700; color: #0f172a;">${escapeHtml(
+       <div style="font-size: 30px; line-height: 1; letter-spacing: 0.26em; font-weight: 700; color: #0f172a;">${escapeHtml(
          input.verificationCode,
        )}</div>`
-    : '';
-  const linkAside = input.verifyUrl
-    ? `<div style="${input.verificationCode ? 'margin-top: 18px;' : ''}"><strong>Verification link</strong><br /><span style="word-break: break-word;">${escapeHtml(
-        input.verifyUrl,
-      )}</span></div>`
     : '';
   const html = renderShell({
     preview: `Verify your email to activate your ${brandName} account.`,
@@ -170,7 +165,7 @@ export const buildVerifyEmailTemplate = (input: {
     ))} minutes.</p>`,
     ctaLabel: input.verifyUrl ? ctaLabel : undefined,
     ctaUrl: input.verifyUrl,
-    asideHtml: `${codeAside}${linkAside}` || undefined,
+    asideHtml: codeAside || undefined,
   });
   return { subject, text, html };
 };
@@ -183,10 +178,10 @@ export const buildWelcomeEmailTemplate = (input: {
   const text = toTextBlock([
     `Hi ${input.displayName},`,
     '',
-    `Your ${brandName} account is ready.`,
-    `Sign in here: ${input.signInUrl}`,
+    `Welcome to ${brandName}. Your account is ready.`,
+    `Sign in: ${input.signInUrl}`,
     '',
-    'You can now explore content, manage your profile, and continue where you left off.',
+    'You can now explore content, follow live sessions, and save favorites.',
     supportFooter,
   ]);
   const html = renderShell({
@@ -196,9 +191,9 @@ export const buildWelcomeEmailTemplate = (input: {
     greeting: `Hi ${input.displayName},`,
     bodyHtml: `<p style="margin: 0 0 16px 0;">Your ${escapeHtml(
       brandName,
-    )} account is active and ready. You can now sign in and continue your experience.</p>
-    <p style="margin: 0;">If you registered on a new device, use the link below to sign in securely.</p>`,
-    ctaLabel: 'Open sign in',
+    )} account is active. You can now sign in and continue your experience.</p>
+    <p style="margin: 0;">Use the secure sign-in button below on any device.</p>`,
+    ctaLabel: 'Sign in securely',
     ctaUrl: input.signInUrl,
   });
   return { subject, text, html };
@@ -214,7 +209,7 @@ export const buildPasswordResetTemplate = (input: {
   const textResetLine = input.resetCode
     ? `Enter this 6-digit recovery code: ${input.resetCode}`
     : input.resetUrl
-      ? `Reset password: ${input.resetUrl}`
+      ? 'Reset your password using the secure link we provided.'
       : '';
   const text = toTextBlock([
     `Hi ${input.displayName},`,
@@ -228,14 +223,9 @@ export const buildPasswordResetTemplate = (input: {
   ]);
   const codeAside = input.resetCode
     ? `<div style="font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: #64748b; margin-bottom: 10px;">Recovery code</div>
-       <div style="font-size: 32px; line-height: 1; letter-spacing: 0.28em; font-weight: 700; color: #0f172a;">${escapeHtml(
+       <div style="font-size: 30px; line-height: 1; letter-spacing: 0.26em; font-weight: 700; color: #0f172a;">${escapeHtml(
          input.resetCode,
        )}</div>`
-    : '';
-  const linkAside = input.resetUrl
-    ? `<div style="${input.resetCode ? 'margin-top: 18px;' : ''}"><strong>Reset link</strong><br /><span style="word-break: break-word;">${escapeHtml(
-        input.resetUrl,
-      )}</span></div>`
     : '';
   const html = renderShell({
     preview: `Reset your ${brandName} password.`,
@@ -255,7 +245,7 @@ export const buildPasswordResetTemplate = (input: {
     ))} minutes. If you did not request a password reset, you can ignore this email.</p>`,
     ctaLabel: input.resetUrl ? (input.resetCode ? 'Open recovery page' : 'Reset password') : undefined,
     ctaUrl: input.resetUrl,
-    asideHtml: `${codeAside}${linkAside}` || undefined,
+    asideHtml: codeAside || undefined,
   });
   return { subject, text, html };
 };

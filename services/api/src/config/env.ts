@@ -200,7 +200,7 @@ const envSchema = z
     SEED_ADMIN_EMAIL: z.string().email().default('admin@example.com'),
     SEED_ADMIN_PASSWORD: z.string().min(8).default('ChangeMe123!'),
     SEED_ADMIN_DISPLAY_NAME: z.string().trim().min(2).max(80).default('Claudy Admin'),
-    SEED_ADMIN_ON_BOOT: toBoolean(runtimeEnv === 'development'),
+    SEED_ADMIN_ON_BOOT: toBoolean(false),
     AI_PROVIDER_NAME: z.string().trim().min(2).max(80).default('Integrated AI'),
     AI_PROVIDER_URL: optionalUrl(),
     AI_PROVIDER_API_KEY: z.string().optional().default(''),
