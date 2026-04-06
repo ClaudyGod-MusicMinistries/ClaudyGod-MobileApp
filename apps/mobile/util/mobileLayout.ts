@@ -7,8 +7,8 @@ const DEFAULT_LAYOUT: MobileAppExperienceConfig['layout'] = {
   homeSections: [
     {
       id: 'claudygod-music',
-      title: 'ClaudyGod Music',
-      subtitle: 'Featured worship videos and music drops on the mobile dashboard.',
+      title: 'Featured Music',
+      subtitle: 'Featured worship videos and music drops.',
       contentTypes: ['video', 'live'],
       actionLabel: 'Watch',
       destinationTab: 'videos',
@@ -25,7 +25,7 @@ const DEFAULT_LAYOUT: MobileAppExperienceConfig['layout'] = {
     },
     {
       id: 'claudygod-worship-hour',
-      title: 'ClaudyGod Worship Hour',
+      title: 'Worship Sessions',
       subtitle: 'Worship sets, replays, and atmosphere-building collections.',
       contentTypes: ['video', 'playlist', 'live'],
       actionLabel: 'Live',
@@ -43,8 +43,8 @@ const DEFAULT_LAYOUT: MobileAppExperienceConfig['layout'] = {
     },
     {
       id: 'claudygod-music-audio',
-      title: 'ClaudyGod Music (Audio)',
-      subtitle: 'Pure audio releases that should lead straight into the music player.',
+      title: 'Audio Releases',
+      subtitle: 'Audio releases that lead straight into the music player.',
       contentTypes: ['audio', 'playlist'],
       actionLabel: 'Listen',
       destinationTab: 'player',
