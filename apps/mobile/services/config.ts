@@ -6,6 +6,7 @@ type ExtraConfig = {
   EXPO_PUBLIC_SUPABASE_URL?: string;
   EXPO_PUBLIC_SUPABASE_KEY?: string;
   EXPO_PUBLIC_SUPABASE_ANON_KEY?: string;
+  EXPO_PUBLIC_MOBILE_API_KEY?: string;
   EXPO_PUBLIC_EAS_PROJECT_ID?: string;
   eas?: { projectId?: string };
 };
@@ -14,6 +15,7 @@ type PublicEnvKey =
   | 'EXPO_PUBLIC_SUPABASE_URL'
   | 'EXPO_PUBLIC_SUPABASE_KEY'
   | 'EXPO_PUBLIC_SUPABASE_ANON_KEY'
+  | 'EXPO_PUBLIC_MOBILE_API_KEY'
   | 'EXPO_PUBLIC_EAS_PROJECT_ID';
 
 const manifestExtra = (Constants.manifest as { extra?: ExtraConfig } | null | undefined)?.extra;
@@ -35,6 +37,8 @@ const getProcessEnv = (key: PublicEnvKey): string | undefined => {
       return process.env.EXPO_PUBLIC_SUPABASE_KEY;
     case 'EXPO_PUBLIC_SUPABASE_ANON_KEY':
       return process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+    case 'EXPO_PUBLIC_MOBILE_API_KEY':
+      return process.env.EXPO_PUBLIC_MOBILE_API_KEY;
     case 'EXPO_PUBLIC_EAS_PROJECT_ID':
       return process.env.EXPO_PUBLIC_EAS_PROJECT_ID;
     default:
@@ -122,5 +126,6 @@ export const ENV = {
     ['EXPO_PUBLIC_SUPABASE_ANON_KEY', 'EXPO_PUBLIC_SUPABASE_KEY'],
     '',
   ),
+  mobileApiKey: getEnv('EXPO_PUBLIC_MOBILE_API_KEY', ''),
   easProjectId: getEnv('EXPO_PUBLIC_EAS_PROJECT_ID', extra.eas?.projectId ?? ''),
 };

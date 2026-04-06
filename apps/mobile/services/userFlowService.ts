@@ -66,7 +66,9 @@ export interface MobileAppExperienceConfig {
   };
   donate: {
     currency: string;
+    currencyOptions?: { code: string; label: string; symbol?: string }[];
     quickAmounts: string[];
+    quickAmountsByCurrency?: Record<string, string[]>;
     methods: {
       id: string;
       icon: string;
@@ -405,7 +407,7 @@ export async function createAppRating(input: {
 
 export async function createDonationIntent(input: {
   amount: string;
-  mode: 'daily' | 'weekly' | 'monthly';
+  mode: 'once' | 'daily' | 'weekly' | 'monthly';
   methodId: string;
   currency?: string;
   planId?: string;
@@ -417,11 +419,47 @@ export async function createDonationIntent(input: {
       status: string;
       amountCents: number;
       currency: string;
-      mode: 'daily' | 'weekly' | 'monthly';
+      mode: 'once' | 'daily' | 'weekly' | 'monthly';
       methodId: string;
       createdAt: string;
+      instructions?: {
+        title: string;
+        message: string;
+        actionLabel?: string;
+        actionUrl?: string;
+      };
     };
   }>('/v1/me/donation-intents', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export async function createPublicDonationIntent(input: {
+  amount: string;
+  mode: 'once' | 'daily' | 'weekly' | 'monthly';
+  methodId: string;
+  currency?: string;
+  planId?: string;
+  metadata?: JsonRecord;
+}) {
+  return apiFetch<{
+    donationIntent: {
+      id: string;
+      status: string;
+      amountCents: number;
+      currency: string;
+      mode: 'once' | 'daily' | 'weekly' | 'monthly';
+      methodId: string;
+      createdAt: string;
+      instructions?: {
+        title: string;
+        message: string;
+        actionLabel?: string;
+        actionUrl?: string;
+      };
+    };
+  }>('/v1/mobile/donation-intents', {
     method: 'POST',
     body: JSON.stringify(input),
   });

@@ -318,7 +318,7 @@ function RootLayoutInner() {
     const secondSegment = Array.from(segments)[1];
     const isSettingsPage = firstSegment === 'settingsPage';
     const isGuestAllowedSettingsPage =
-      isSettingsPage && (secondSegment === 'Donate' || secondSegment === 'Support' || secondSegment === 'Help' || secondSegment === 'Rate');
+      isSettingsPage && (secondSegment === 'Donate' || secondSegment === 'Support' || secondSegment === 'Payment' || secondSegment === 'Help' || secondSegment === 'Rate');
     const isProtectedRoute =
       firstSegment === 'profile' ||
       (isSettingsPage && !isGuestAllowedSettingsPage) ||

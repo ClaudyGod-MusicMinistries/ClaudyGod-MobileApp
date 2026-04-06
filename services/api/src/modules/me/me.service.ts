@@ -1,5 +1,6 @@
 import type { JwtClaims } from '../../utils/jwt';
 import { pool } from '../../db/pool';
+import { env } from '../../config/env';
 import { queueProfileUpdatedEmail } from '../../infra/transactionalEmails';
 import { HttpError } from '../../lib/httpError';
 import { getMobileAppConfig } from '../appConfig/appConfig.service';
@@ -742,11 +743,46 @@ const parseAmountToCents = (amount: string): number => {
   return cents;
 };
 
-export const createMeDonationIntent = async (
-  user: JwtClaims,
+const buildDonationInstructions = (params: {
+  methodId: string;
+  currency: string;
+}) => {
+  const supportEmail = env.EMAIL_SUPPORT_EMAIL || undefined;
+  const currency = params.currency.toUpperCase();
+  const method = params.methodId.toLowerCase();
+
+  if (method.includes('bank')) {
+    return {
+      title: 'Bank transfer instructions',
+      message:
+        'Use the bank details provided by the ministry team to complete the transfer. Include your donation reference in the narration.',
+      actionLabel: supportEmail ? 'Request bank details' : undefined,
+      actionUrl: supportEmail ? `mailto:${supportEmail}` : undefined,
+    };
+  }
+
+  if (currency === 'NGN') {
+    return {
+      title: 'Secure local payment',
+      message:
+        'Continue with your preferred local provider. A secure payment link will be issued for your NGN donation.',
+      actionLabel: 'Continue to payment',
+    };
+  }
+
+  return {
+    title: 'Secure card payment',
+    message:
+      'Continue with the secure checkout to complete your donation. You can use card, Apple Pay, or Google Pay where available.',
+    actionLabel: 'Continue to payment',
+  };
+};
+
+const createDonationIntentCore = async (
+  userId: string | null,
   input: {
     amount: string;
-    mode: 'once' | 'monthly';
+    mode: 'once' | 'daily' | 'weekly' | 'monthly';
     methodId: string;
     currency?: string;
     planId?: string;
@@ -755,13 +791,14 @@ export const createMeDonationIntent = async (
 ) => {
   const amountCents = parseAmountToCents(input.amount);
   const currency = (input.currency ?? 'USD').toUpperCase();
+  const instructions = buildDonationInstructions({ methodId: input.methodId, currency });
 
   const result = await pool.query<{ id: string; status: string; created_at: string | Date }>(
     `INSERT INTO donation_intents (user_id, amount_cents, currency, mode, method_id, status, payload)
      VALUES ($1, $2, $3, $4, $5, 'pending', $6::jsonb)
      RETURNING id, status, created_at`,
     [
-      user.sub,
+      userId,
       amountCents,
       currency,
       input.mode,
@@ -770,6 +807,7 @@ export const createMeDonationIntent = async (
         amountLabel: input.amount,
         planId: input.planId ?? null,
         metadata: input.metadata ?? {},
+        instructions,
       }),
     ],
   );
@@ -784,9 +822,31 @@ export const createMeDonationIntent = async (
       mode: input.mode,
       methodId: input.methodId,
       createdAt: toIso(row.created_at),
+      instructions,
     },
   };
 };
+
+export const createMeDonationIntent = async (
+  user: JwtClaims,
+  input: {
+    amount: string;
+    mode: 'once' | 'daily' | 'weekly' | 'monthly';
+    methodId: string;
+    currency?: string;
+    planId?: string;
+    metadata?: Record<string, unknown>;
+  },
+) => createDonationIntentCore(user.sub, input);
+
+export const createPublicDonationIntent = async (input: {
+  amount: string;
+  mode: 'once' | 'daily' | 'weekly' | 'monthly';
+  methodId: string;
+  currency?: string;
+  planId?: string;
+  metadata?: Record<string, unknown>;
+}) => createDonationIntentCore(null, input);
 
 export const getMeBootstrap = async (user: JwtClaims) => {
   const [profile, preferences, metrics, privacy, library] = await Promise.all([
