@@ -197,6 +197,8 @@ export function PosterCard({
             paddingHorizontal: 12,
             paddingBottom: 12,
             paddingTop: 40,
+            height: '50%',
+            justifyContent: 'flex-end',
           }}
         >
           <CustomText
@@ -206,8 +208,10 @@ export function PosterCard({
               fontSize: 12,
               lineHeight: 16,
               fontWeight: '600',
+              marginBottom: meta || subtitle ? 3 : 0,
             }}
             numberOfLines={2}
+            ellipsizeMode="tail"
           >
             {title}
           </CustomText>
@@ -216,10 +220,11 @@ export function PosterCard({
               variant="caption"
               style={{ 
                 color: 'rgba(232,226,216,0.7)', 
-                marginTop: 3,
                 fontSize: 10.5,
+                lineHeight: 14,
               }}
               numberOfLines={1}
+              ellipsizeMode="tail"
             >
               {meta ?? subtitle}
             </CustomText>
