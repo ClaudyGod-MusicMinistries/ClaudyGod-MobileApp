@@ -7,14 +7,6 @@ function normalizeToken(value: string): string {
   return value.trim().toLowerCase();
 }
 
-function itemMatchesType(item: FeedCardItem, type: MobileLayoutSection['contentTypes'][number]): boolean {
-  if (type === 'live') {
-    return item.type === 'live' || Boolean(item.isLive);
-  }
-
-  return item.type === type;
-}
-
 function dedupeItems(items: FeedCardItem[]): FeedCardItem[] {
   const seen = new Set<string>();
   const result: FeedCardItem[] = [];
@@ -72,7 +64,5 @@ export function deriveLayoutSectionItems(feed: FeedBundle, section: MobileLayout
     return curated.slice(0, section.maxItems);
   }
 
-  return pool
-    .filter((item) => section.contentTypes.some((type) => itemMatchesType(item, type)))
-    .slice(0, section.maxItems);
+  return [];
 }

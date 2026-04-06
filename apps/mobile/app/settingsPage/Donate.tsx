@@ -38,64 +38,6 @@ type ImpactBreakdownItem = {
   icon: React.ComponentProps<typeof MaterialIcons>['name'];
 };
 
-const quickAmounts = ['$2', '$5', '$10', '$25', '$50'];
-
-const supportMethods: DonateMethod[] = [
-  {
-    id: 'card',
-    icon: 'credit-card',
-    label: 'Card / Apple Pay / Google Pay',
-    subtitle: 'Fast checkout with secure payment providers',
-    badge: 'Recommended',
-  },
-  {
-    id: 'bank',
-    icon: 'account-balance',
-    label: 'Bank transfer',
-    subtitle: 'Manual transfer and reconciliation support',
-  },
-  {
-    id: 'sponsor',
-    icon: 'volunteer-activism',
-    label: 'Sponsor a live session',
-    subtitle: 'Fund one broadcast or a ministry campaign slot',
-  },
-];
-
-const supportPlans: SupportPlan[] = [
-  {
-    id: 'daily',
-    name: 'Daily Support',
-    amount: '$2',
-    period: 'daily',
-    note: 'Keeps daily worship and devotionals flowing.',
-    icon: 'wb-sunny',
-  },
-  {
-    id: 'weekly',
-    name: 'Weekly Support',
-    amount: '$10',
-    period: 'weekly',
-    note: 'Covers weekly live streams and production costs.',
-    featured: true,
-    icon: 'calendar-today',
-  },
-  {
-    id: 'monthly',
-    name: 'Monthly Support',
-    amount: '$25',
-    period: 'monthly',
-    note: 'Sustains ongoing outreach and ministry expansion.',
-    icon: 'public',
-  },
-];
-
-const impactBreakdown: ImpactBreakdownItem[] = [
-  { label: 'Streaming & CDN', value: 42, icon: 'wifi-tethering' as const },
-  { label: 'Production & Editing', value: 33, icon: 'movie-edit' as const },
-  { label: 'Outreach & Events', value: 25, icon: 'groups' as const },
-];
-
 export default function Donate() {
   const theme = useAppTheme();
   const isDark = theme.scheme === 'dark';
@@ -105,25 +47,23 @@ export default function Donate() {
   const isCompact = width < 380;
   const isTablet = width >= 768;
 
-  const configuredQuickAmounts = useMemo(() => config?.donate.quickAmounts ?? quickAmounts, [config?.donate.quickAmounts]);
+  const configuredQuickAmounts = useMemo(() => config?.donate.quickAmounts ?? [], [config?.donate.quickAmounts]);
   const quickAmountsByCurrency = useMemo(
     () => config?.donate.quickAmountsByCurrency ?? {},
     [config?.donate.quickAmountsByCurrency],
   );
   const currencyOptions =
-    config?.donate.currencyOptions ?? [
-      { code: config?.donate.currency ?? 'USD', label: 'Default', symbol: '$' },
-    ];
-  const configuredMethods: DonateMethod[] = (config?.donate.methods ?? supportMethods).map((method) => ({
+    config?.donate.currencyOptions ?? [];
+  const configuredMethods: DonateMethod[] = (config?.donate.methods ?? []).map((method) => ({
     ...method,
     icon: method.icon as DonateMethod['icon'],
   }));
-  const configuredPlans: SupportPlan[] = (config?.donate.plans ?? supportPlans).map((plan) => ({
+  const configuredPlans: SupportPlan[] = (config?.donate.plans ?? []).map((plan) => ({
     ...plan,
     period: plan.period === 'once' ? 'monthly' : (plan.period as SupportPlan['period']),
     icon: plan.icon as SupportPlan['icon'],
   }));
-  const configuredImpactBreakdown: ImpactBreakdownItem[] = (config?.donate.impactBreakdown ?? impactBreakdown).map((item) => ({
+  const configuredImpactBreakdown: ImpactBreakdownItem[] = (config?.donate.impactBreakdown ?? []).map((item) => ({
     ...item,
     icon: item.icon as ImpactBreakdownItem['icon'],
   }));
@@ -132,10 +72,10 @@ export default function Donate() {
   const defaultAmount =
     quickAmountsByCurrency[configuredCurrency]?.[0] ??
     configuredQuickAmounts[0] ??
-    '$25';
+    '';
   const [selectedAmount, setSelectedAmount] = useState<string>(defaultAmount);
   const [donationMode, setDonationMode] = useState<'daily' | 'weekly' | 'monthly'>('monthly');
-  const [selectedMethod, setSelectedMethod] = useState<string>((config?.donate.methods?.[0]?.id ?? supportMethods[0].id));
+  const [selectedMethod, setSelectedMethod] = useState<string>((config?.donate.methods?.[0]?.id ?? ''));
   const [selectedCurrency, setSelectedCurrency] = useState<string>(configuredCurrency);
 
   const selectedPlan = useMemo(
@@ -206,6 +146,12 @@ export default function Donate() {
       },
     ]);
   };
+
+  const hasDonateConfig =
+    currencyOptions.length > 0 ||
+    configuredMethods.length > 0 ||
+    configuredPlans.length > 0 ||
+    configuredQuickAmounts.length > 0;
 
   return (
     <SettingsScaffold
@@ -279,270 +225,288 @@ export default function Donate() {
                 Choose a daily, weekly, or monthly plan and support worship, broadcasts, and ministry outreach.
               </CustomText>
 
-              <View
-                style={{
-                  marginTop: spacing.md,
-                  flexDirection: 'row',
-                  flexWrap: 'wrap',
-                  gap: spacing.sm,
-                }}
-              >
-                {[
-                  { label: 'Streams/month', value: '1.2M+' },
-                  { label: 'Devices', value: 'Mobile + TV' },
-                  { label: 'Coverage', value: 'Global' },
-                ].map((metric) => (
-                  <View
-                    key={metric.label}
-                    style={{
-                      width: isCompact ? '100%' : isTablet ? '31.8%' : '31%',
-                      borderRadius: 14,
-                      borderWidth: 1,
-                      borderColor: ui.panelBorder,
-                      backgroundColor: ui.panelBg,
-                      padding: 10,
-                    }}
-                  >
-                    <CustomText variant="label" style={{ color: theme.colors.text }}>
-                      {metric.value}
-                    </CustomText>
-                    <CustomText variant="caption" style={{ color: ui.subtle, marginTop: 2 }}>
-                      {metric.label}
-                    </CustomText>
-                  </View>
-                ))}
-              </View>
+              {configuredImpactBreakdown.length ? (
+                <View
+                  style={{
+                    marginTop: spacing.md,
+                    flexDirection: 'row',
+                    flexWrap: 'wrap',
+                    gap: spacing.sm,
+                  }}
+                >
+                  {configuredImpactBreakdown.slice(0, 3).map((metric) => (
+                    <View
+                      key={metric.label}
+                      style={{
+                        width: isCompact ? '100%' : isTablet ? '31.8%' : '31%',
+                        borderRadius: 14,
+                        borderWidth: 1,
+                        borderColor: ui.panelBorder,
+                        backgroundColor: ui.panelBg,
+                        padding: 10,
+                      }}
+                    >
+                      <CustomText variant="label" style={{ color: theme.colors.text }}>
+                        {metric.value}%
+                      </CustomText>
+                      <CustomText variant="caption" style={{ color: ui.subtle, marginTop: 2 }}>
+                        {metric.label}
+                      </CustomText>
+                    </View>
+                  ))}
+                </View>
+              ) : null}
             </View>
           </SurfaceCard>
         </FadeIn>
       }
     >
-      <FadeIn delay={55}>
-        <SurfaceCard style={{ padding: spacing.md }}>
-          <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
-            Currency
-          </CustomText>
-          <CustomText variant="caption" style={{ color: ui.muted, marginTop: 3 }}>
-            Choose the currency that matches your location or payment card.
-          </CustomText>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
-            {currencyOptions.map((option) => {
-              const active = selectedCurrency === option.code;
-              return (
-                <TVTouchable
-                  key={option.code}
-                  onPress={() => {
-                    setSelectedCurrency(option.code);
-                    const nextAmounts = quickAmountsByCurrency[option.code] ?? configuredQuickAmounts;
-                    setSelectedAmount(nextAmounts[0] ?? selectedAmount);
-                  }}
-                  style={{
-                    borderRadius: radius.pill,
-                    borderWidth: 1,
-                    borderColor: active ? ui.accentLine : ui.panelBorder,
-                    backgroundColor: active ? ui.accentSoft : ui.panelBg,
-                    paddingVertical: 8,
-                    paddingHorizontal: 12,
-                  }}
-                  showFocusBorder={false}
-                >
-                  <CustomText variant="label" style={{ color: active ? theme.colors.primary : theme.colors.text }}>
-                    {option.code} {option.symbol ? `· ${option.symbol}` : ''} · {option.label}
-                  </CustomText>
-                </TVTouchable>
-              );
-            })}
-          </View>
-          <View style={{ marginTop: 10 }}>
-            <CustomText variant="caption" style={{ color: ui.subtle }}>
-              Supporters can give in USD or NGN with secure, locally optimized providers.
-            </CustomText>
-          </View>
-        </SurfaceCard>
-      </FadeIn>
+      {hasDonateConfig ? (
+        <>
+          {currencyOptions.length ? (
+            <FadeIn delay={55}>
+              <SurfaceCard style={{ padding: spacing.md }}>
+                <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
+                  Currency
+                </CustomText>
+                <CustomText variant="caption" style={{ color: ui.muted, marginTop: 3 }}>
+                  Choose the currency that matches your location or payment card.
+                </CustomText>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
+                  {currencyOptions.map((option) => {
+                    const active = selectedCurrency === option.code;
+                    return (
+                      <TVTouchable
+                        key={option.code}
+                        onPress={() => {
+                          setSelectedCurrency(option.code);
+                          const nextAmounts = quickAmountsByCurrency[option.code] ?? configuredQuickAmounts;
+                          setSelectedAmount(nextAmounts[0] ?? selectedAmount);
+                        }}
+                        style={{
+                          borderRadius: radius.pill,
+                          borderWidth: 1,
+                          borderColor: active ? ui.accentLine : ui.panelBorder,
+                          backgroundColor: active ? ui.accentSoft : ui.panelBg,
+                          paddingVertical: 8,
+                          paddingHorizontal: 12,
+                        }}
+                        showFocusBorder={false}
+                      >
+                        <CustomText variant="label" style={{ color: active ? theme.colors.primary : theme.colors.text }}>
+                          {option.code} {option.symbol ? `· ${option.symbol}` : ''} · {option.label}
+                        </CustomText>
+                      </TVTouchable>
+                    );
+                  })}
+                </View>
+              </SurfaceCard>
+            </FadeIn>
+          ) : null}
 
-      <FadeIn delay={70}>
-        <SurfaceCard style={{ padding: spacing.md }}>
-          <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
-            Quick donation
-          </CustomText>
-          <CustomText variant="caption" style={{ color: ui.muted, marginTop: 3 }}>
-            Select an amount, choose a cadence, and continue with the method that suits you best.
-          </CustomText>
+          <FadeIn delay={70}>
+            <SurfaceCard style={{ padding: spacing.md }}>
+              <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
+                Quick donation
+              </CustomText>
+              <CustomText variant="caption" style={{ color: ui.muted, marginTop: 3 }}>
+                Select an amount, choose a cadence, and continue with the method that suits you best.
+              </CustomText>
 
-          <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
-            {(['daily', 'weekly', 'monthly'] as const).map((mode) => {
-              const active = donationMode === mode;
-              const label = mode === 'daily' ? 'Daily' : mode === 'weekly' ? 'Weekly' : 'Monthly';
-              return (
-                <TVTouchable
-                  key={mode}
-                  onPress={() => setDonationMode(mode)}
-                  style={{
-                    flex: 1,
-                    borderRadius: 12,
-                    borderWidth: 1,
-                    borderColor: active ? ui.accentLine : ui.panelBorder,
-                    backgroundColor: active ? ui.accentSoft : ui.panelBg,
-                    paddingVertical: 10,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                  showFocusBorder={false}
-                >
-                  <CustomText variant="label" style={{ color: active ? theme.colors.primary : theme.colors.text }}>
-                    {label}
-                  </CustomText>
-                </TVTouchable>
-              );
-            })}
-          </View>
-
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
-            {activeQuickAmounts.map((amount) => {
-              const active = selectedAmount === amount;
-              return (
-                <TVTouchable
-                  key={amount}
-                  onPress={() => setSelectedAmount(amount)}
-                  style={{
-                    width: isCompact ? '31%' : '18.4%',
-                    minWidth: 58,
-                    borderRadius: radius.pill,
-                    borderWidth: 1,
-                    borderColor: active ? ui.accentLine : ui.panelBorder,
-                    backgroundColor: active ? ui.accentSoft : ui.panelBg,
-                    paddingVertical: 9,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                  showFocusBorder={false}
-                >
-                  <CustomText variant="label" style={{ color: active ? theme.colors.primary : theme.colors.text }}>
-                    {amount}
-                  </CustomText>
-                </TVTouchable>
-              );
-            })}
-          </View>
-
-          <View style={{ gap: 8, marginTop: 14 }}>
-            {configuredMethods.map((method) => {
-              const active = selectedMethod === method.id;
-              return (
-                <TVTouchable
-                  key={method.id}
-                  onPress={() => setSelectedMethod(method.id)}
-                  style={{
-                    borderRadius: 14,
-                    borderWidth: 1,
-                    borderColor: active ? ui.accentLine : ui.panelBorder,
-                    backgroundColor: active ? ui.accentSoft : ui.panelBg,
-                    padding: 10,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                  }}
-                  showFocusBorder={false}
-                >
-                  <View
-                    style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: 11,
-                      borderWidth: 1,
-                      borderColor: active ? ui.accentLine : ui.panelBorder,
-                      backgroundColor: active ? 'rgba(255,255,255,0.04)' : 'transparent',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      marginRight: 10,
-                    }}
-                  >
-                    <MaterialIcons name={method.icon} size={18} color={active ? theme.colors.primary : theme.colors.textSecondary} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                      <CustomText variant="label" style={{ color: theme.colors.text }}>
-                        {method.label}
+              <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+                {(['daily', 'weekly', 'monthly'] as const).map((mode) => {
+                  const active = donationMode === mode;
+                  const label = mode === 'daily' ? 'Daily' : mode === 'weekly' ? 'Weekly' : 'Monthly';
+                  return (
+                    <TVTouchable
+                      key={mode}
+                      onPress={() => setDonationMode(mode)}
+                      style={{
+                        flex: 1,
+                        borderRadius: 12,
+                        borderWidth: 1,
+                        borderColor: active ? ui.accentLine : ui.panelBorder,
+                        backgroundColor: active ? ui.accentSoft : ui.panelBg,
+                        paddingVertical: 10,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                      showFocusBorder={false}
+                    >
+                      <CustomText variant="label" style={{ color: active ? theme.colors.primary : theme.colors.text }}>
+                        {label}
                       </CustomText>
-                      {method.badge ? (
+                    </TVTouchable>
+                  );
+                })}
+              </View>
+
+              {activeQuickAmounts.length ? (
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
+                  {activeQuickAmounts.map((amount) => {
+                    const active = selectedAmount === amount;
+                    return (
+                      <TVTouchable
+                        key={amount}
+                        onPress={() => setSelectedAmount(amount)}
+                        style={{
+                          width: isCompact ? '31%' : '18.4%',
+                          minWidth: 58,
+                          borderRadius: radius.pill,
+                          borderWidth: 1,
+                          borderColor: active ? ui.accentLine : ui.panelBorder,
+                          backgroundColor: active ? ui.accentSoft : ui.panelBg,
+                          paddingVertical: 9,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                        showFocusBorder={false}
+                      >
+                        <CustomText variant="label" style={{ color: active ? theme.colors.primary : theme.colors.text }}>
+                          {amount}
+                        </CustomText>
+                      </TVTouchable>
+                    );
+                  })}
+                </View>
+              ) : null}
+
+              {configuredMethods.length ? (
+                <View style={{ gap: 8, marginTop: 14 }}>
+                  {configuredMethods.map((method) => {
+                    const active = selectedMethod === method.id;
+                    return (
+                      <TVTouchable
+                        key={method.id}
+                        onPress={() => setSelectedMethod(method.id)}
+                        style={{
+                          borderRadius: 14,
+                          borderWidth: 1,
+                          borderColor: active ? ui.accentLine : ui.panelBorder,
+                          backgroundColor: active ? ui.accentSoft : ui.panelBg,
+                          padding: 10,
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                        }}
+                        showFocusBorder={false}
+                      >
                         <View
                           style={{
-                            borderRadius: radius.pill,
+                            width: 36,
+                            height: 36,
+                            borderRadius: 11,
                             borderWidth: 1,
-                            borderColor: ui.accentLine,
-                            backgroundColor: ui.accentSoft,
-                            paddingHorizontal: 7,
-                            paddingVertical: 2,
+                            borderColor: active ? ui.accentLine : ui.panelBorder,
+                            backgroundColor: active ? 'rgba(255,255,255,0.04)' : 'transparent',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            marginRight: 10,
                           }}
                         >
-                          <CustomText variant="caption" style={{ color: theme.colors.primary }}>
-                            {method.badge}
+                          <MaterialIcons name={method.icon} size={18} color={active ? theme.colors.primary : theme.colors.textSecondary} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                            <CustomText variant="label" style={{ color: theme.colors.text }}>
+                              {method.label}
+                            </CustomText>
+                            {method.badge ? (
+                              <View
+                                style={{
+                                  borderRadius: radius.pill,
+                                  borderWidth: 1,
+                                  borderColor: ui.accentLine,
+                                  backgroundColor: ui.accentSoft,
+                                  paddingHorizontal: 7,
+                                  paddingVertical: 2,
+                                }}
+                              >
+                                <CustomText variant="caption" style={{ color: theme.colors.primary }}>
+                                  {method.badge}
+                                </CustomText>
+                              </View>
+                            ) : null}
+                          </View>
+                          <CustomText variant="caption" style={{ color: ui.muted, marginTop: 2 }}>
+                            {method.subtitle}
                           </CustomText>
                         </View>
-                      ) : null}
-                    </View>
-                    <CustomText variant="caption" style={{ color: ui.muted, marginTop: 2 }}>
-                      {method.subtitle}
-                    </CustomText>
-                  </View>
-                  {active ? <MaterialIcons name="check-circle" size={18} color={theme.colors.primary} /> : null}
-                </TVTouchable>
-              );
-            })}
+                        {active ? <MaterialIcons name="check-circle" size={18} color={theme.colors.primary} /> : null}
+                      </TVTouchable>
+                    );
+                  })}
+                </View>
+              ) : null}
+
+              <View style={{ marginTop: 14 }}>
+                <AppButton
+                  title={`Give ${selectedAmount || ''} ${cadenceLabel}`.trim()}
+                  fullWidth
+                  onPress={onDonateNow}
+                  leftIcon={<MaterialIcons name="favorite" size={16} color={theme.colors.textInverse} />}
+                />
+              </View>
+            </SurfaceCard>
+          </FadeIn>
+        </>
+      ) : (
+        <FadeIn delay={55}>
+          <SurfaceCard style={{ padding: spacing.md }}>
+            <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
+              Donations are not configured yet
+            </CustomText>
+            <CustomText variant="body" style={{ color: ui.muted, marginTop: 6 }}>
+              The giving experience will appear here once the admin team publishes donation settings.
+            </CustomText>
+          </SurfaceCard>
+        </FadeIn>
+      )}
+
+      {configuredPlans.length ? (
+        <FadeIn delay={120}>
+          <View style={{ marginTop: spacing.lg }}>
+            <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
+              Support plans
+            </CustomText>
+            <CustomText variant="caption" style={{ color: ui.muted, marginTop: 3 }}>
+              Structured options for individual supporters and recurring partners.
+            </CustomText>
+
+            <View style={{ gap: 10, marginTop: 10 }}>
+              {configuredPlans.map((plan) => (
+                <SupportPlanCard
+                  key={plan.id}
+                  plan={plan}
+                  selected={selectedPlan?.id === plan.id}
+                  onChoose={() => {
+                    setDonationMode(plan.period);
+                    setSelectedAmount(plan.amount);
+                  }}
+                />
+              ))}
+            </View>
           </View>
+        </FadeIn>
+      ) : null}
 
-          <View style={{ marginTop: 14 }}>
-            <AppButton
-              title={`Give ${selectedAmount} ${cadenceLabel}`}
-              fullWidth
-              onPress={onDonateNow}
-              leftIcon={<MaterialIcons name="favorite" size={16} color={theme.colors.textInverse} />}
-            />
-          </View>
-        </SurfaceCard>
-      </FadeIn>
+      {configuredImpactBreakdown.length ? (
+        <FadeIn delay={170}>
+          <SurfaceCard style={{ marginTop: spacing.lg, padding: spacing.md }}>
+            <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
+              Where support goes
+            </CustomText>
+            <CustomText variant="caption" style={{ color: ui.muted, marginTop: 3 }}>
+              Simple visibility into the major areas your support helps fund.
+            </CustomText>
 
-      <FadeIn delay={120}>
-        <View style={{ marginTop: spacing.lg }}>
-          <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
-            Support plans
-          </CustomText>
-          <CustomText variant="caption" style={{ color: ui.muted, marginTop: 3 }}>
-            Structured options for individual supporters and recurring partners.
-          </CustomText>
-
-          <View style={{ gap: 10, marginTop: 10 }}>
-            {configuredPlans.map((plan) => (
-              <SupportPlanCard
-                key={plan.id}
-                plan={plan}
-                selected={selectedPlan?.id === plan.id}
-                onChoose={() => {
-                  setDonationMode(plan.period);
-                  setSelectedAmount(plan.amount);
-                }}
-              />
-            ))}
-          </View>
-        </View>
-      </FadeIn>
-
-      <FadeIn delay={170}>
-        <SurfaceCard style={{ marginTop: spacing.lg, padding: spacing.md }}>
-          <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
-            Where support goes
-          </CustomText>
-          <CustomText variant="caption" style={{ color: ui.muted, marginTop: 3 }}>
-            Simple visibility into the major areas your support helps fund.
-          </CustomText>
-
-          <View style={{ gap: 12, marginTop: 12 }}>
-            {configuredImpactBreakdown.map((item) => (
-              <ImpactRow key={item.label} label={item.label} value={item.value} icon={item.icon} />
-            ))}
-          </View>
-        </SurfaceCard>
-      </FadeIn>
+            <View style={{ gap: 12, marginTop: 12 }}>
+              {configuredImpactBreakdown.map((item) => (
+                <ImpactRow key={item.label} label={item.label} value={item.value} icon={item.icon} />
+              ))}
+            </View>
+          </SurfaceCard>
+        </FadeIn>
+      ) : null}
 
       <FadeIn delay={220}>
         <SurfaceCard style={{ marginTop: spacing.lg, padding: spacing.lg }}>

@@ -702,6 +702,58 @@ export default function HomeScreen() {
               </View>
             </FadeIn>
 
+            {feed.mostPlayed.length ? (
+              <FadeIn delay={175}>
+                <View>
+                  <SectionHeader
+                    title="Most played"
+                    actionLabel="See all"
+                    onAction={() => router.push(APP_ROUTES.tabs.library)}
+                  />
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false} overScrollMode="never">
+                    {feed.mostPlayed.slice(0, 12).map((item) => (
+                      <MinimalPosterCard
+                        key={`most-${item.id}`}
+                        imageUrl={item.imageUrl}
+                        title={item.title}
+                        meta={formatMeta(item)}
+                        size={posterSize}
+                        onPress={() => void openItem(item, 'home_most_played')}
+                        showMore
+                        onMorePress={() => openMoreForItem(item)}
+                      />
+                    ))}
+                  </ScrollView>
+                </View>
+              </FadeIn>
+            ) : null}
+
+            {feed.recommendations.length ? (
+              <FadeIn delay={185}>
+                <View>
+                  <SectionHeader
+                    title="Suggested for you"
+                    actionLabel="Refresh"
+                    onAction={() => refresh()}
+                  />
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false} overScrollMode="never">
+                    {feed.recommendations.slice(0, 12).map((item) => (
+                      <MinimalPosterCard
+                        key={`suggested-${item.id}`}
+                        imageUrl={item.imageUrl}
+                        title={item.title}
+                        meta={formatMeta(item)}
+                        size={posterSize}
+                        onPress={() => void openItem(item, 'home_suggested')}
+                        showMore
+                        onMorePress={() => openMoreForItem(item)}
+                      />
+                    ))}
+                  </ScrollView>
+                </View>
+              </FadeIn>
+            ) : null}
+
             <FadeIn delay={190}>
               <SupportMinistryCard onPress={() => router.push(APP_ROUTES.settingsPages.donate)} />
             </FadeIn>

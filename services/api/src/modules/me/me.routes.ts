@@ -9,6 +9,7 @@ import {
   createPrivacyExportRequestSchema,
   createRatingSchema,
   createSupportRequestSchema,
+  engagementListQuerySchema,
   liveSubscriptionSchema,
   pushTokenSchema,
   removeLibraryItemSchema,
@@ -25,10 +26,13 @@ import {
   createMeSupportRequest,
   getMeBootstrap,
   getMeLibrary,
+  getMeMostPlayed,
   getMeMetrics,
   getMePreferences,
   getMePrivacyOverview,
   getMeProfile,
+  getMeRecentlyPlayed,
+  getMeRecommendations,
   removeMePushToken,
   recordMePlayEvent,
   removeMeLibraryItem,
@@ -167,6 +171,42 @@ meRouter.post(
     const payload = validateSchema(trackPlayEventSchema, req.body);
     const result = await recordMePlayEvent(requireUser(req), payload);
     res.status(201).json(result);
+  }),
+);
+
+meRouter.get(
+  '/engagement/recently-played',
+  asyncHandler(async (req, res) => {
+    const query = validateSchema(engagementListQuerySchema, req.query);
+    const result = await getMeRecentlyPlayed(requireUser(req), {
+      limit: query.limit,
+      windowDays: query.windowDays,
+    });
+    res.status(200).json(result);
+  }),
+);
+
+meRouter.get(
+  '/engagement/most-played',
+  asyncHandler(async (req, res) => {
+    const query = validateSchema(engagementListQuerySchema, req.query);
+    const result = await getMeMostPlayed(requireUser(req), {
+      limit: query.limit,
+      windowDays: query.windowDays,
+    });
+    res.status(200).json(result);
+  }),
+);
+
+meRouter.get(
+  '/engagement/recommendations',
+  asyncHandler(async (req, res) => {
+    const query = validateSchema(engagementListQuerySchema, req.query);
+    const result = await getMeRecommendations(requireUser(req), {
+      limit: query.limit,
+      windowDays: query.windowDays,
+    });
+    res.status(200).json(result);
   }),
 );
 

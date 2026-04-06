@@ -50,7 +50,7 @@ export default function Profile() {
   const isAuthorized = useRequireMobileSession();
   const [metrics, setMetrics] = useState({
     email: '',
-    displayName: 'ClaudyGod User',
+    displayName: '',
     totalPlays: 0,
     liveSubscriptions: 0,
   });
@@ -110,7 +110,7 @@ export default function Profile() {
                 fontFamily: 'ClashDisplay_700Bold',
               }}
             >
-              {metrics.displayName}
+              {metrics.displayName || metrics.email.split('@')[0] || ''}
             </CustomText>
             <CustomText variant="body" style={{ color: theme.colors.textSecondary, marginTop: 4 }}>
               {metrics.email || 'Sign in to sync your profile'}

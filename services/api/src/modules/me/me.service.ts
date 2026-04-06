@@ -3,6 +3,8 @@ import { pool } from '../../db/pool';
 import { env } from '../../config/env';
 import { queueProfileUpdatedEmail } from '../../infra/transactionalEmails';
 import { HttpError } from '../../lib/httpError';
+import { isDatabaseConnectivityError, isMissingDatabaseStructureError } from '../../lib/postgres';
+import { listMostPlayedContent } from '../analytics/analytics.service';
 import { getMobileAppConfig } from '../appConfig/appConfig.service';
 
 type MeContentType = 'audio' | 'video' | 'playlist' | 'announcement' | 'live' | 'ad';
@@ -60,7 +62,92 @@ interface SavedItemRow {
   updated_at: string | Date;
 }
 
+interface MeEngagementRow {
+  content_id: string;
+  content_title: string;
+  content_type: string;
+  description: string | null;
+  media_url: string | null;
+  thumbnail_url: string | null;
+  channel_name: string | null;
+  duration_label: string | null;
+  source_kind: string | null;
+  app_sections: string[] | null;
+  tags: string[] | null;
+  created_at: string | Date | null;
+  updated_at: string | Date | null;
+  last_played_at?: string | Date | null;
+  play_count?: string | null;
+}
+
 const toIso = (value: string | Date): string => new Date(value).toISOString();
+
+const normalizeTextList = (items?: string[] | null): string[] =>
+  [...new Set((items ?? []).map((item) => item.trim()).filter(Boolean))];
+
+const normalizeContentType = (value?: string | null): MeContentType =>
+  value === 'audio' ||
+  value === 'video' ||
+  value === 'playlist' ||
+  value === 'announcement' ||
+  value === 'live' ||
+  value === 'ad'
+    ? value
+    : 'audio';
+
+const toEngagementItem = (row: MeEngagementRow) => {
+  const createdAt = row.created_at
+    ? toIso(row.created_at)
+    : row.last_played_at
+      ? toIso(row.last_played_at)
+      : new Date().toISOString();
+  const updatedAt = row.updated_at ? toIso(row.updated_at) : createdAt;
+
+  return {
+    id: row.content_id,
+    title: row.content_title,
+    description: row.description ?? '',
+    subtitle: row.channel_name ?? 'ClaudyGod',
+    type: normalizeContentType(row.content_type),
+    imageUrl: row.thumbnail_url ?? '',
+    mediaUrl: row.media_url ?? undefined,
+    duration: row.duration_label ?? undefined,
+    sourceKind: row.source_kind ?? undefined,
+    appSections: normalizeTextList(row.app_sections),
+    tags: normalizeTextList(row.tags),
+    createdAt,
+    updatedAt,
+    playCount: row.play_count ? Number(row.play_count) : undefined,
+    lastPlayedAt: row.last_played_at ? toIso(row.last_played_at) : undefined,
+  };
+};
+
+const toMostPlayedEngagementItem = (row: {
+  id: string;
+  title: string;
+  description: string;
+  type: MeContentType;
+  url?: string;
+  createdAt: string;
+  updatedAt: string;
+  playCount: number;
+}) => ({
+  id: row.id,
+  title: row.title,
+  description: row.description ?? '',
+  subtitle: 'ClaudyGod',
+  type: normalizeContentType(row.type),
+  imageUrl: '',
+  mediaUrl: row.url,
+  duration: undefined,
+  sourceKind: undefined,
+  appSections: [],
+  tags: [],
+  createdAt: row.createdAt,
+  updatedAt: row.updatedAt,
+  playCount: row.playCount,
+  lastPlayedAt: undefined,
+});
 
 const profileFieldLabels: Record<
   'display_name' | 'avatar_url' | 'phone' | 'country' | 'locale' | 'timezone' | 'bio',
@@ -408,6 +495,241 @@ export const recordMePlayEvent = async (
   );
 
   return { recorded: true };
+};
+
+export const getMeRecentlyPlayed = async (
+  user: JwtClaims,
+  params: { limit?: number; windowDays?: number },
+): Promise<{ items: ReturnType<typeof toEngagementItem>[] }> => {
+  const limit = params.limit ?? 12;
+  const windowDays = params.windowDays ?? 30;
+
+  let result;
+  try {
+    result = await pool.query<MeEngagementRow>(
+      `SELECT
+         e.content_id,
+         COALESCE(c.title, e.content_title) AS content_title,
+         COALESCE(c.content_type, e.content_type) AS content_type,
+         c.description,
+         c.media_url,
+         c.thumbnail_url,
+         c.channel_name,
+         c.duration_label,
+         c.source_kind,
+         c.app_sections,
+         c.tags,
+         c.created_at,
+         c.updated_at,
+         MAX(e.played_at) AS last_played_at
+       FROM user_play_events e
+       LEFT JOIN content_items c ON c.id::text = e.content_id
+       WHERE e.user_id = $1
+         AND e.played_at >= NOW() - ($3::text || ' days')::interval
+       GROUP BY
+         e.content_id,
+         c.title,
+         e.content_title,
+         c.content_type,
+         e.content_type,
+         c.description,
+         c.media_url,
+         c.thumbnail_url,
+         c.channel_name,
+         c.duration_label,
+         c.source_kind,
+         c.app_sections,
+         c.tags,
+         c.created_at,
+         c.updated_at
+       ORDER BY MAX(e.played_at) DESC
+       LIMIT $2`,
+      [user.sub, limit, windowDays],
+    );
+  } catch (error) {
+    if (isMissingDatabaseStructureError(error) || isDatabaseConnectivityError(error)) {
+      return { items: [] };
+    }
+    throw error;
+  }
+
+  return { items: result.rows.map(toEngagementItem) };
+};
+
+export const getMeMostPlayed = async (
+  user: JwtClaims,
+  params: { limit?: number; windowDays?: number },
+): Promise<{ items: ReturnType<typeof toEngagementItem>[] }> => {
+  const limit = params.limit ?? 12;
+  const windowDays = params.windowDays ?? 90;
+
+  let result;
+  try {
+    result = await pool.query<MeEngagementRow>(
+      `SELECT
+         e.content_id,
+         COALESCE(c.title, e.content_title) AS content_title,
+         COALESCE(c.content_type, e.content_type) AS content_type,
+         c.description,
+         c.media_url,
+         c.thumbnail_url,
+         c.channel_name,
+         c.duration_label,
+         c.source_kind,
+         c.app_sections,
+         c.tags,
+         c.created_at,
+         c.updated_at,
+         COUNT(*)::text AS play_count,
+         MAX(e.played_at) AS last_played_at
+       FROM user_play_events e
+       LEFT JOIN content_items c ON c.id::text = e.content_id
+       WHERE e.user_id = $1
+         AND e.played_at >= NOW() - ($3::text || ' days')::interval
+       GROUP BY
+         e.content_id,
+         c.title,
+         e.content_title,
+         c.content_type,
+         e.content_type,
+         c.description,
+         c.media_url,
+         c.thumbnail_url,
+         c.channel_name,
+         c.duration_label,
+         c.source_kind,
+         c.app_sections,
+         c.tags,
+         c.created_at,
+         c.updated_at
+       ORDER BY COUNT(*)::int DESC, MAX(e.played_at) DESC
+       LIMIT $2`,
+      [user.sub, limit, windowDays],
+    );
+  } catch (error) {
+    if (isMissingDatabaseStructureError(error) || isDatabaseConnectivityError(error)) {
+      return { items: [] };
+    }
+    throw error;
+  }
+
+  return { items: result.rows.map(toEngagementItem) };
+};
+
+export const getMeRecommendations = async (
+  user: JwtClaims,
+  params: { limit?: number; windowDays?: number },
+): Promise<{ items: ReturnType<typeof toEngagementItem>[] }> => {
+  const limit = params.limit ?? 12;
+  const windowDays = params.windowDays ?? 120;
+
+  let preferences: {
+    preferences: {
+      notificationsEnabled: boolean;
+      autoplayEnabled: boolean;
+      highQualityEnabled: boolean;
+      diagnosticsEnabled: boolean;
+      personalizationEnabled: boolean;
+      themePreference: ThemePreference;
+      updatedAt: string;
+    };
+  };
+  try {
+    preferences = await getMePreferences(user);
+  } catch {
+    return { items: [] };
+  }
+
+  if (!preferences.preferences.personalizationEnabled) {
+    return { items: [] };
+  }
+
+  try {
+    const [tagRows, sectionRows] = await Promise.all([
+      pool.query<{ tag: string }>(
+        `SELECT tag
+         FROM (
+           SELECT unnest(c.tags) AS tag, COUNT(*)::int AS count
+           FROM user_play_events e
+           JOIN content_items c ON c.id::text = e.content_id
+           WHERE e.user_id = $1
+             AND e.played_at >= NOW() - ($2::text || ' days')::interval
+             AND c.tags IS NOT NULL
+           GROUP BY tag
+           ORDER BY count DESC
+           LIMIT 16
+         ) tags`,
+        [user.sub, windowDays],
+      ),
+      pool.query<{ section: string }>(
+        `SELECT section
+         FROM (
+           SELECT unnest(c.app_sections) AS section, COUNT(*)::int AS count
+           FROM user_play_events e
+           JOIN content_items c ON c.id::text = e.content_id
+           WHERE e.user_id = $1
+             AND e.played_at >= NOW() - ($2::text || ' days')::interval
+             AND c.app_sections IS NOT NULL
+           GROUP BY section
+           ORDER BY count DESC
+           LIMIT 16
+         ) sections`,
+        [user.sub, windowDays],
+      ),
+    ]);
+
+    const tags = tagRows.rows.map((row) => row.tag);
+    const sections = sectionRows.rows.map((row) => row.section);
+
+    if (tags.length === 0 && sections.length === 0) {
+      const fallback = await listMostPlayedContent({ limit, windowDays: 90 });
+      return {
+        items: fallback.items.map((item) => ({
+          ...toMostPlayedEngagementItem(item),
+          lastPlayedAt: undefined,
+        })),
+      };
+    }
+
+    const recResult = await pool.query<MeEngagementRow>(
+      `SELECT
+         c.id::text AS content_id,
+         c.title AS content_title,
+         c.content_type AS content_type,
+         c.description,
+         c.media_url,
+         c.thumbnail_url,
+         c.channel_name,
+         c.duration_label,
+         c.source_kind,
+         c.app_sections,
+         c.tags,
+         c.created_at,
+         c.updated_at
+       FROM content_items c
+       WHERE c.visibility = 'published'
+         AND (
+           ($2::text[] <> '{}'::text[] AND c.tags && $2::text[])
+           OR ($3::text[] <> '{}'::text[] AND c.app_sections && $3::text[])
+         )
+         AND c.id::text NOT IN (
+           SELECT content_id FROM user_play_events WHERE user_id = $1
+         )
+       ORDER BY
+         COALESCE(array_length(ARRAY(SELECT unnest(c.tags) INTERSECT SELECT unnest($2::text[])), 1), 0)
+         + COALESCE(array_length(ARRAY(SELECT unnest(c.app_sections) INTERSECT SELECT unnest($3::text[])), 1), 0) DESC,
+         c.updated_at DESC
+       LIMIT $4`,
+      [user.sub, tags, sections, limit],
+    );
+
+    return { items: recResult.rows.map(toEngagementItem) };
+  } catch (error) {
+    if (isMissingDatabaseStructureError(error) || isDatabaseConnectivityError(error)) {
+      return { items: [] };
+    }
+    throw error;
+  }
 };
 
 export const upsertMeLiveSubscription = async (
