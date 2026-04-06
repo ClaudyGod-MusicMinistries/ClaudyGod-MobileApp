@@ -99,7 +99,7 @@ export default function VerifyEmailScreen() {
 
     setVerifying(true);
     try {
-      await verifyMobileEmail({ token: resolvedToken, email: normalizedEmail });
+      await verifyMobileEmail({ code: resolvedToken, email: normalizedEmail });
       setSuccessMessage('Email verified successfully. Redirecting...');
       showToast({
         title: 'Email verified',
@@ -158,29 +158,13 @@ export default function VerifyEmailScreen() {
     }
 
     autoVerifyTriggered.current = true;
-    setErrorMessage('');
-    setSuccessMessage('');
-    setVerifying(true);
-
-    void (async () => {
-      try {
-        await verifyMobileEmail({ token: legacyToken, email: normalizedEmail || undefined });
-        setSuccessMessage('Email verified successfully. Redirecting...');
-        showToast({
-          title: 'Email verified',
-          message: 'Your existing verification link is valid. Redirecting now.',
-          tone: 'success',
-        });
-        router.replace(APP_ROUTES.tabs.home);
-      } catch (error) {
-        const message = error instanceof Error ? error.message : 'Unable to verify email';
-        setErrorMessage(message);
-        showToast({ title: 'Verification link failed', message, tone: 'error' });
-      } finally {
-        setVerifying(false);
-      }
-    })();
-  }, [legacyToken, normalizedEmail, router, showToast]);
+    setErrorMessage('This link is outdated. Enter the latest 6-digit code from your email.');
+    showToast({
+      title: 'Use the 6-digit code',
+      message: 'Enter the newest code sent to your email to complete verification.',
+      tone: 'warning',
+    });
+  }, [legacyToken, showToast]);
 
   return (
     <AuthScreenFrame
