@@ -62,6 +62,7 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
         'Content-Type': 'application/json',
         'X-Claudy-Client-Platform': Platform.OS,
         'X-Claudy-Client-Version': '1.0.0',
+        ...(ENV.mobileApiKey ? { 'x-mobile-api-key': ENV.mobileApiKey } : {}),
         ...(init?.headers ?? {}),
       },
     });
