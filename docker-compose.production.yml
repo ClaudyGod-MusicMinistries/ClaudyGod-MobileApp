@@ -302,3 +302,4 @@ networks:
     external: true
     name: ${TRAEFIK_PUBLIC_NETWORK:-traefik-public}
   internal:
+    driver: bridge
