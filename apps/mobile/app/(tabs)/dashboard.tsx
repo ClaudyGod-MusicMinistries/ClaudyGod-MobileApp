@@ -4,7 +4,7 @@
  * Focus: User retention, conversion, and community building
  */
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   ScrollView,
@@ -24,6 +24,7 @@ import { wsService } from '../../services/websocketService';
 import { engagementAnalytics, type UserEngagementMetrics, type EngagementInsight } from '../../services/engagementAnalytics';
 import { fetchEngagementMetrics, fetchEngagementInsights, fetchEngagementOverview, fetchCommunityData } from '../../services/engagementService';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 import { colors_light } from '../../constants/color';
 import { spacing, radius } from '../../styles/designTokens';
 
@@ -198,6 +199,7 @@ export default function DashboardScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const { isAuthenticated, user } = useAuth();
+  const { showToast } = useToast();
   const isCompactLayout = width < 560;
   const [metrics, setMetrics] = useState<UserEngagementMetrics | null>(null);
   const [insights, setInsights] = useState<EngagementInsight[]>([]);
@@ -208,6 +210,14 @@ export default function DashboardScreen() {
   const [communityData, setCommunityData] = useState<any>(null);
   const featuredInsight = insights[0] ?? null;
   const rotationInsights = insights.slice(0, 3);
+  const chipAvailability = useMemo(
+    () => ({
+      overview: Boolean(overviewData),
+      insights: insights.length > 0,
+      community: Boolean(communityData),
+    }),
+    [communityData, insights.length, overviewData],
+  );
 
   const loadDashboardData = useCallback(async () => {
     setIsLoading(true);
@@ -291,6 +301,19 @@ export default function DashboardScreen() {
     setRefreshing(false);
   };
 
+  const handleChipPress = (key: (typeof DASH_CHIPS)[number]['key']) => {
+    const available = chipAvailability[key];
+    if (!available) {
+      showToast({
+        title: 'Still loading',
+        message: 'We are fetching your latest insights. Try again in a moment.',
+        tone: 'warning',
+      });
+      return;
+    }
+    setActiveChip(key);
+  };
+
   if (!metrics) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.background }}>
@@ -349,7 +372,8 @@ export default function DashboardScreen() {
                   key={chip.key}
                   label={chip.label}
                   active={activeChip === chip.key}
-                  onPress={() => setActiveChip(chip.key)}
+                  disabled={!chipAvailability[chip.key]}
+                  onPress={() => handleChipPress(chip.key)}
                 />
               ))}
             </ScrollView>

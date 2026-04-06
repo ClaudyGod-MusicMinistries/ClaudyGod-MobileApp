@@ -252,6 +252,15 @@ export default function LiveScreen() {
     if (activeChip === 'replays') return replayCards;
     return dedupeFeedItems([...liveNow.map(toFeedCard), ...upcoming.map(toFeedCard), ...replayCards]);
   }, [activeChip, liveNow, replayCards, upcoming]);
+  const chipAvailability = useMemo(
+    () => ({
+      all: liveNow.length + upcoming.length + replayCards.length,
+      live: liveNow.length,
+      upcoming: upcoming.length,
+      replays: replayCards.length,
+    }),
+    [liveNow.length, replayCards.length, upcoming.length],
+  );
   const rotationItems = useMemo(() => replayCards.slice(0, 3), [replayCards]);
   const formatMeta = (item: FeedCardItem) =>
     [item.subtitle, item.duration].filter((value) => Boolean(value)).join(' · ');
@@ -281,6 +290,19 @@ export default function LiveScreen() {
         tone: 'warning',
       });
     }
+  };
+
+  const handleChipPress = (key: (typeof LIVE_CHIPS)[number]['key']) => {
+    const available = chipAvailability[key] ?? 0;
+    if (!available) {
+      showToast({
+        title: 'No sessions yet',
+        message: 'Upcoming sessions will appear here soon.',
+        tone: 'warning',
+      });
+      return;
+    }
+    setActiveChip(key);
   };
 
   const shareLiveSession = async (session: LiveSessionSummary) => {
@@ -575,7 +597,8 @@ export default function LiveScreen() {
                     key={chip.key}
                     label={chip.label}
                     active={activeChip === chip.key}
-                    onPress={() => setActiveChip(chip.key)}
+                    disabled={(chipAvailability[chip.key] ?? 0) === 0}
+                    onPress={() => handleChipPress(chip.key)}
                   />
                 ))}
               </ScrollView>
