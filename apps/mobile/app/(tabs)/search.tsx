@@ -63,9 +63,9 @@ export default function Search() {
     () => getDiscoveryCategories(mobileConfig, feed.topCategories),
     [feed.topCategories, mobileConfig],
   );
-  const quickShortcuts = useMemo(() => getDiscoveryShortcuts(mobileConfig), [mobileConfig]);
+  const quickShortcuts = useMemo(() => getDiscoveryShortcuts(mobileConfig).slice(0, 4), [mobileConfig]);
   const discoverStack = useMemo(
-    () => [...feed.music, ...feed.videos, ...feed.playlists, ...feed.live].slice(0, 8),
+    () => [...feed.music, ...feed.videos, ...feed.playlists, ...feed.live].slice(0, 4),
     [feed.live, feed.music, feed.playlists, feed.videos],
   );
   const browsePalette = ['#2563EB', '#10B981', '#F59E0B', '#EC4899', '#8B5CF6', '#14B8A6', '#F97316'];
@@ -408,97 +408,114 @@ export default function Search() {
               </View>
             </FadeIn>
 
-            <FadeIn delay={90}>
-              <View style={{ marginTop: theme.spacing.lg }}>
-                <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
-                  Discover something new
-                </CustomText>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={{
-                    paddingTop: theme.spacing.sm,
-                    paddingRight: theme.spacing.md,
-                  }}
-                  overScrollMode="never"
-                >
-                  <View style={{ flexDirection: 'row', gap: theme.spacing.md }}>
-                    {discoverStack.map((item) => (
-                      <PosterCard
-                        key={item.id}
-                        imageUrl={item.imageUrl}
-                        title={item.title}
-                        meta={formatMeta(item)}
-                        size="sm"
-                        onPress={() => void openResult(item)}
-                        showMore
-                        onMorePress={() => openMoreForItem(item)}
-                      />
+            {discoverStack.length ? (
+              <FadeIn delay={90}>
+                <View style={{ marginTop: theme.spacing.lg }}>
+                  <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
+                    Discover something new
+                  </CustomText>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{
+                      paddingTop: theme.spacing.sm,
+                      paddingRight: theme.spacing.md,
+                    }}
+                    overScrollMode="never"
+                  >
+                    <View style={{ flexDirection: 'row', gap: theme.spacing.md }}>
+                      {discoverStack.map((item) => (
+                        <PosterCard
+                          key={item.id}
+                          imageUrl={item.imageUrl}
+                          title={item.title}
+                          meta={formatMeta(item)}
+                          size="sm"
+                          onPress={() => void openResult(item)}
+                          showMore
+                          onMorePress={() => openMoreForItem(item)}
+                        />
+                      ))}
+                    </View>
+                  </ScrollView>
+                </View>
+              </FadeIn>
+            ) : null}
+
+            {quickShortcuts.length ? (
+              <FadeIn delay={140}>
+                <View style={{ marginTop: theme.spacing.lg }}>
+                  <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
+                    Browse all
+                  </CustomText>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm, marginTop: theme.spacing.sm }}>
+                    {quickShortcuts.map((shortcut, index) => (
+                      <TVTouchable
+                        key={shortcut.label}
+                        onPress={() => {
+                          setQuery(shortcut.query);
+                          setActiveCategory(shortcut.category);
+                          void runRemoteSearch(shortcut.query, shortcut.category);
+                          showToast({
+                            title: 'Filter applied',
+                            message: `Showing ${shortcut.label.toLowerCase()}.`,
+                            tone: 'info',
+                            durationMs: 1400,
+                          });
+                        }}
+                        style={{
+                          width: shortcutWidth,
+                          borderRadius: theme.radius.lg,
+                          backgroundColor: browsePalette[index % browsePalette.length],
+                          padding: theme.spacing.md,
+                          minHeight: 92,
+                          justifyContent: 'space-between',
+                        }}
+                        showFocusBorder={false}
+                      >
+                        <MaterialIcons name={shortcut.icon as any} size={20} color="#fff" />
+                        <CustomText variant="caption" style={{ color: '#fff', fontWeight: '600' }}>
+                          {shortcut.label}
+                        </CustomText>
+                      </TVTouchable>
                     ))}
                   </View>
-                </ScrollView>
-              </View>
-            </FadeIn>
-
-            <FadeIn delay={140}>
-              <View style={{ marginTop: theme.spacing.lg }}>
-                <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
-                  Browse all
-                </CustomText>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm, marginTop: theme.spacing.sm }}>
-                  {quickShortcuts.map((shortcut, index) => (
-                    <TVTouchable
-                      key={shortcut.label}
-                      onPress={() => {
-                        setQuery(shortcut.query);
-                        setActiveCategory(shortcut.category);
-                        void runRemoteSearch(shortcut.query, shortcut.category);
-                        showToast({
-                          title: 'Filter applied',
-                          message: `Showing ${shortcut.label.toLowerCase()}.`,
-                          tone: 'info',
-                          durationMs: 1400,
-                        });
-                      }}
-                      style={{
-                        width: shortcutWidth,
-                        borderRadius: theme.radius.lg,
-                        backgroundColor: browsePalette[index % browsePalette.length],
-                        padding: theme.spacing.md,
-                        minHeight: 96,
-                        justifyContent: 'space-between',
-                      }}
-                      showFocusBorder={false}
-                    >
-                      <MaterialIcons name={shortcut.icon as any} size={20} color="#fff" />
-                      <CustomText variant="caption" style={{ color: '#fff', fontWeight: '600' }}>
-                        {shortcut.label}
-                      </CustomText>
-                    </TVTouchable>
-                  ))}
                 </View>
-              </View>
-            </FadeIn>
+              </FadeIn>
+            ) : null}
 
-            <FadeIn delay={200}>
-            <MediaRail
-              title="Results"
-              actionLabel={`${filtered.length} found`}
-              data={filtered}
-              renderItem={(item) => (
-                <PosterCard
-                  key={item.id}
-                  imageUrl={item.imageUrl}
-                  title={item.title}
-                  meta={formatMeta(item)}
-                  size="sm"
-                  onPress={() => void openResult(item)}
-                  showMore
-                  onMorePress={() => openMoreForItem(item)}
+            {query.trim() || remoteResults ? (
+              <FadeIn delay={200}>
+                <MediaRail
+                  title="Results"
+                  actionLabel={`${filtered.length} found`}
+                  data={filtered}
+                  renderItem={(item) => (
+                    <PosterCard
+                      key={item.id}
+                      imageUrl={item.imageUrl}
+                      title={item.title}
+                      meta={formatMeta(item)}
+                      size="sm"
+                      onPress={() => void openResult(item)}
+                      showMore
+                      onMorePress={() => openMoreForItem(item)}
+                    />
+                  )}
                 />
-              )}
-            />
-          </FadeIn>
+              </FadeIn>
+            ) : (
+              <FadeIn delay={200}>
+                <SurfaceCard style={{ padding: theme.spacing.lg }}>
+                  <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
+                    Start searching
+                  </CustomText>
+                  <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 4 }}>
+                    Enter a title, artist, or topic to see tailored results.
+                  </CustomText>
+                </SurfaceCard>
+              </FadeIn>
+            )}
 
             {!filtered.length ? (
               <FadeIn delay={260}>
