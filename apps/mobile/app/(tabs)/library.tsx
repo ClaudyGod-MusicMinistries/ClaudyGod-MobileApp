@@ -15,6 +15,7 @@ import { CustomText } from '../../components/CustomText';
 import { FadeIn } from '../../components/ui/FadeIn';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { Chip } from '../../components/ui/Chip';
+import { SupportMinistryCard } from '../../components/ui/SupportMinistryCard';
 import { useAppTheme } from '../../util/colorScheme';
 import { useContentFeed } from '../../hooks/useContentFeed';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
@@ -690,6 +691,10 @@ export default function LibraryScreen() {
             </FadeIn>
 
             <FadeIn delay={170}>
+              <SupportMinistryCard onPress={() => router.push(APP_ROUTES.settingsPages.donate)} />
+            </FadeIn>
+
+            <FadeIn delay={190}>
               <SurfaceCard tone="strong" style={{ padding: theme.spacing.lg }}>
                 <View style={{ flexDirection: 'row', gap: 12 }}>
                   <StatCard label="Most played" value={liked.length} />
