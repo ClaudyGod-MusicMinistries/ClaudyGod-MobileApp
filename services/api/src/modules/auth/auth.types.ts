@@ -49,7 +49,8 @@ export interface ResetPasswordInput {
 }
 
 export interface VerifyEmailInput {
-  token: string;
+  code?: string;
+  token?: string;
   email?: string;
 }
 

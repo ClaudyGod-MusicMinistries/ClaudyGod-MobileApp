@@ -795,7 +795,16 @@ export const loginUser = async (input: LoginInput, context: AuthRequestContext =
 };
 
 export const verifyEmail = async (input: VerifyEmailInput, context: AuthRequestContext = {}): Promise<AuthResponse> => {
-  const submittedToken = input.token.trim();
+  const submittedToken = (input.code ?? input.token ?? '').trim();
+  if (!submittedToken) {
+    throw new HttpError(
+      400,
+      'Verification code or token is required',
+      { reason: 'missing_code' },
+      'AUTH_MISSING_OTP',
+      'code',
+    );
+  }
 
   if (isOtpCode(submittedToken)) {
     let email = input.email?.trim().toLowerCase();
