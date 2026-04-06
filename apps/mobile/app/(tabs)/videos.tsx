@@ -18,6 +18,7 @@ import { VideoPlayer } from '../../components/media/VideoPlayer';
 import { CinematicHeroCard } from '../../components/sections/CinematicHeroCard';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { Chip } from '../../components/ui/Chip';
+import { SupportMinistryCard } from '../../components/ui/SupportMinistryCard';
 import { useToast } from '../../context/ToastContext';
 import { useGuestMode } from '../../context/GuestModeContext';
 import { useFloatingPlayer } from '../../context/FloatingPlayerContext';
@@ -796,8 +797,12 @@ export default function VideosScreen() {
               </View>
             </FadeIn>
 
+            <FadeIn delay={180}>
+              <SupportMinistryCard onPress={() => router.push(APP_ROUTES.settingsPages.donate)} />
+            </FadeIn>
+
             {curatedSections.map(({ section, items }, index) => (
-              <FadeIn key={section.id || section.title} delay={200 + index * 35}>
+              <FadeIn key={section.id || section.title} delay={210 + index * 35}>
                 <View>
                   <SectionHeader
                     title={section.title}
