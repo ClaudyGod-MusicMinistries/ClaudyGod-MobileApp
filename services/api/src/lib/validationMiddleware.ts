@@ -12,6 +12,7 @@ export const validateBody = (schema: ZodSchema): RequestHandler => {
       if (error instanceof ZodError) {
         return next(
           new HttpError(400, 'Request validation failed', {
+            code: 'VALIDATION_ERROR',
             errors: error.flatten().fieldErrors,
           })
         );
@@ -30,6 +31,7 @@ export const validateQuery = (schema: ZodSchema): RequestHandler => {
       if (error instanceof ZodError) {
         return next(
           new HttpError(400, 'Query validation failed', {
+            code: 'VALIDATION_ERROR',
             errors: error.flatten().fieldErrors,
           })
         );
@@ -48,6 +50,7 @@ export const validateParams = (schema: ZodSchema): RequestHandler => {
       if (error instanceof ZodError) {
         return next(
           new HttpError(400, 'Parameter validation failed', {
+            code: 'VALIDATION_ERROR',
             errors: error.flatten().fieldErrors,
           })
         );

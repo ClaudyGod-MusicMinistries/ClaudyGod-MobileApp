@@ -136,6 +136,9 @@ export const createApp = () => {
   // Health check (no auth needed)
   app.use('/', healthRouter);
 
+  // Legacy auth routes (keep compatible with /v1/auth contract)
+  app.use('/api/auth', authRouter);
+
   // Auth routes (have their own rate limiting)
   app.use('/v1/auth', authRouter);
 
