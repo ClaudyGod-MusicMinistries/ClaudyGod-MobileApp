@@ -32,3 +32,16 @@ export const updateAdminUserRoleSchema = z
     role: adminUserRoleSchema,
   })
   .strict();
+
+export const adminUnassignedContentQuerySchema = z
+  .object({
+    limit: z.coerce.number().int().min(1).max(100).default(50),
+    visibility: z.enum(['draft', 'published']).optional(),
+  })
+  .strict();
+
+export const adminContentIdParamsSchema = z
+  .object({
+    id: z.string().uuid(),
+  })
+  .strict();

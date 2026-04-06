@@ -241,7 +241,7 @@ export default function VideosScreen() {
   const posterSize = isTablet ? 'md' : 'sm';
   const [activeChip, setActiveChip] = useState<(typeof VIDEO_CHIPS)[number]['key']>(VIDEO_CHIPS[0].key);
 
-  const { feed } = useContentFeed();
+  const { feed, refresh } = useContentFeed();
   const { config: mobileConfig } = useMobileAppConfig();
   const routeItem = useMemo(() => parseRouteItem(params), [params]);
 
@@ -823,7 +823,59 @@ export default function VideosScreen() {
               </View>
             </FadeIn>
 
-            <FadeIn delay={180}>
+            {feed.mostPlayed.length ? (
+              <FadeIn delay={170}>
+                <View>
+                  <SectionHeader
+                    title="Most played"
+                    actionLabel="See all"
+                    onAction={() => router.push(APP_ROUTES.tabs.library)}
+                  />
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false} overScrollMode="never">
+                    {feed.mostPlayed.slice(0, 12).map((item) => (
+                      <PosterCard
+                        key={`most-${item.id}`}
+                        imageUrl={item.imageUrl}
+                        title={item.title}
+                        meta={formatMeta(item)}
+                        size={posterSize}
+                        showMore
+                        onMorePress={() => openMoreForItem(item)}
+                        onPress={() => void openVideo(item, 'videos_most_played')}
+                      />
+                    ))}
+                  </ScrollView>
+                </View>
+              </FadeIn>
+            ) : null}
+
+            {feed.recommendations.length ? (
+              <FadeIn delay={175}>
+                <View>
+                  <SectionHeader
+                    title="Suggested for you"
+                    actionLabel="Refresh"
+                    onAction={() => refresh()}
+                  />
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false} overScrollMode="never">
+                    {feed.recommendations.slice(0, 12).map((item) => (
+                      <PosterCard
+                        key={`suggested-${item.id}`}
+                        imageUrl={item.imageUrl}
+                        title={item.title}
+                        meta={formatMeta(item)}
+                        size={posterSize}
+                        showMore
+                        onMorePress={() => openMoreForItem(item)}
+                        onPress={() => void openVideo(item, 'videos_suggested')}
+                      />
+                    ))}
+                  </ScrollView>
+                </View>
+              </FadeIn>
+            ) : null}
+
+            <FadeIn delay={190}>
               <SupportMinistryCard onPress={() => router.push(APP_ROUTES.settingsPages.donate)} />
             </FadeIn>
 

@@ -21,7 +21,7 @@ import { CustomText } from '../../components/CustomText';
 import { FadeIn } from '../../components/ui/FadeIn';
 import { Chip } from '../../components/ui/Chip';
 import { wsService } from '../../services/websocketService';
-import { engagementAnalytics, type UserEngagementMetrics, type EngagementInsight } from '../../services/engagementAnalytics';
+import { type UserEngagementMetrics, type EngagementInsight } from '../../services/engagementAnalytics';
 import { fetchEngagementMetrics, fetchEngagementInsights, fetchEngagementOverview, fetchCommunityData } from '../../services/engagementService';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -230,20 +230,11 @@ export default function DashboardScreen() {
         userMetrics = await fetchEngagementMetrics(user?.id);
       } catch (error) {
         console.warn('Failed to fetch metrics:', error);
-        // Fallback to mock data
-        userMetrics = {
-          userId: user?.id || 'guest',
-          totalMinutesListened: 4520,
-          contentCreated: 3,
-          contentViews: 12450,
-          followers: 342,
-          following: 245,
-          engagementScore: 78,
-          retentionScore: 85,
-          conversionRiskLevel: 'low',
-          lastActiveTime: Date.now(),
-          joinedDate: Date.now() - 90 * 24 * 60 * 60 * 1000,
-        };
+        showToast({
+          title: 'Dashboard unavailable',
+          message: 'We could not load your analytics right now.',
+          tone: 'warning',
+        });
       }
 
       setMetrics(userMetrics);
@@ -270,7 +261,7 @@ export default function DashboardScreen() {
         userInsights = await fetchEngagementInsights(user?.id);
       } catch (error) {
         console.warn('Failed to fetch insights:', error);
-        userInsights = engagementAnalytics.generateInsights(userMetrics);
+        userInsights = [];
       }
 
       setInsights(userInsights);
@@ -289,7 +280,7 @@ export default function DashboardScreen() {
     } finally {
       setIsLoading(false);
     }
-  }, [activeChip, user?.id, isAuthenticated]);
+  }, [activeChip, isAuthenticated, showToast, user?.id]);
 
   useEffect(() => {
     void loadDashboardData();

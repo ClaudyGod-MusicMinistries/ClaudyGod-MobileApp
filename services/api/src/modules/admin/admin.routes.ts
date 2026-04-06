@@ -4,6 +4,8 @@ import { HttpError } from '../../lib/httpError';
 import { validateSchema } from '../../lib/validation';
 import { authenticate } from '../../middleware/authenticate';
 import {
+  adminContentIdParamsSchema,
+  adminUnassignedContentQuerySchema,
   adminUserIdParamsSchema,
   sendAdminTestEmailSchema,
   supportRequestIdParamsSchema,
@@ -11,8 +13,10 @@ import {
   updateSupportRequestStatusSchema,
 } from './admin.schema';
 import {
+  getAdminContentSectionSuggestions,
   getAdminEmailDiagnostics,
   getAdminDashboard,
+  listAdminUnassignedContent,
   sendAdminTestEmail,
   updateAdminUserRole,
   updateAdminSupportRequestStatus,
@@ -53,6 +57,29 @@ adminRouter.get(
   asyncHandler(async (req, res) => {
     requireAdmin(req);
     const result = await getAdminEmailDiagnostics();
+    res.status(200).json(result);
+  }),
+);
+
+adminRouter.get(
+  '/content/unassigned',
+  asyncHandler(async (req, res) => {
+    requireAdmin(req);
+    const query = validateSchema(adminUnassignedContentQuerySchema, req.query);
+    const result = await listAdminUnassignedContent({
+      limit: query.limit,
+      visibility: query.visibility,
+    });
+    res.status(200).json(result);
+  }),
+);
+
+adminRouter.get(
+  '/content/:id/section-suggestions',
+  asyncHandler(async (req, res) => {
+    requireAdmin(req);
+    const params = validateSchema(adminContentIdParamsSchema, req.params);
+    const result = await getAdminContentSectionSuggestions(params.id);
     res.status(200).json(result);
   }),
 );

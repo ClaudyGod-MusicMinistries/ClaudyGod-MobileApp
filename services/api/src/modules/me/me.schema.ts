@@ -153,3 +153,10 @@ export const createDonationIntentSchema = z
     metadata: z.record(z.unknown()).optional(),
   })
   .strict();
+
+export const engagementListQuerySchema = z
+  .object({
+    limit: z.coerce.number().int().min(1).max(50).optional(),
+    windowDays: z.coerce.number().int().min(1).max(365).optional(),
+  })
+  .strict();

@@ -1,4 +1,5 @@
 import { apiFetch } from './apiClient';
+import { apiFetchWithMobileSession } from './authService';
 import { DEFAULT_CONTENT_IMAGE_URI } from '../util/brandAssets';
 
 export type ContentType = 'audio' | 'video' | 'playlist' | 'announcement' | 'live' | 'ad';
@@ -48,6 +49,10 @@ interface MobileFeedApiItem {
   sponsorName?: string;
   placement?: string;
   campaignId?: string;
+}
+
+interface EngagementFeedResponse {
+  items: MobileFeedApiItem[];
 }
 
 export interface ApiContentItem {
@@ -124,6 +129,7 @@ export interface FeedBundle {
   announcements: FeedCardItem[];
   mostPlayed: FeedCardItem[];
   recent: FeedCardItem[];
+  recommendations: FeedCardItem[];
   topCategories: string[];
 }
 
@@ -139,6 +145,7 @@ const DEFAULT_BUNDLE: FeedBundle = {
   announcements: [],
   mostPlayed: [],
   recent: [],
+  recommendations: [],
   topCategories: ['All', 'Music', 'Videos', 'Live', 'Playlists'],
 };
 
@@ -341,6 +348,39 @@ async function fetchMostPlayed(): Promise<FeedCardItem[]> {
   }
 }
 
+async function fetchMeRecentlyPlayed(): Promise<FeedCardItem[]> {
+  try {
+    const response = await apiFetchWithMobileSession<EngagementFeedResponse>(
+      '/v1/me/engagement/recently-played?limit=12',
+    );
+    return response.items.map(normalizeFeedItem);
+  } catch {
+    return [];
+  }
+}
+
+async function fetchMeMostPlayed(): Promise<FeedCardItem[]> {
+  try {
+    const response = await apiFetchWithMobileSession<EngagementFeedResponse>(
+      '/v1/me/engagement/most-played?limit=12',
+    );
+    return response.items.map(normalizeFeedItem);
+  } catch {
+    return [];
+  }
+}
+
+async function fetchMeRecommendations(): Promise<FeedCardItem[]> {
+  try {
+    const response = await apiFetchWithMobileSession<EngagementFeedResponse>(
+      '/v1/me/engagement/recommendations?limit=12',
+    );
+    return response.items.map(normalizeFeedItem);
+  } catch {
+    return [];
+  }
+}
+
 function dedupe(items: FeedCardItem[]): FeedCardItem[] {
   const seen = new Set<string>();
   const result: FeedCardItem[] = [];
@@ -394,6 +434,7 @@ function bundleFromApiFeed(response: MobileFeedApiResponse): FeedBundle {
     announcements: announcements.slice(0, 8),
     mostPlayed: mostPlayed.slice(0, 12),
     recent: recent.slice(0, 12),
+    recommendations: [],
     topCategories:
       Array.isArray(response.topCategories) && response.topCategories.length > 0
         ? response.topCategories
@@ -402,63 +443,80 @@ function bundleFromApiFeed(response: MobileFeedApiResponse): FeedBundle {
 }
 
 export async function fetchFeedBundle(): Promise<FeedBundle> {
+  let baseBundle: FeedBundle | null = null;
   try {
     const feed = await apiFetch<MobileFeedApiResponse>('/v1/mobile/feed');
-    return bundleFromApiFeed(feed);
+    baseBundle = bundleFromApiFeed(feed);
   } catch {}
 
-  const [all, music, videos, playlists, live, announcements, mostPlayed, youtubeFeed] = await Promise.all([
-    fetchAllPublished(),
-    fetchByType('audio'),
-    fetchByType('video'),
-    fetchByType('playlist'),
-    fetchByType('live'),
-    fetchByType('announcement'),
-    fetchMostPlayed(),
-    fetchYouTubeFeed(),
-  ]);
+  if (!baseBundle) {
+    const [all, music, videos, playlists, live, announcements, mostPlayed, youtubeFeed] = await Promise.all([
+      fetchAllPublished(),
+      fetchByType('audio'),
+      fetchByType('video'),
+      fetchByType('playlist'),
+      fetchByType('live'),
+      fetchByType('announcement'),
+      fetchMostPlayed(),
+      fetchYouTubeFeed(),
+    ]);
 
-  const mergedMusic = dedupe(removeAdItems([...music, ...youtubeFeed.music]));
-  const mergedVideos = dedupe(removeAdItems([...videos, ...youtubeFeed.videos]));
-  const mergedLive = dedupe(removeAdItems([...live, ...youtubeFeed.live]));
-  const mergedAnnouncements = dedupe(removeAdItems([...announcements, ...youtubeFeed.announcements]));
-  const mergedAll = dedupe(removeAdItems([
-    ...all,
-    ...youtubeFeed.recent,
-    ...youtubeFeed.videos,
-    ...youtubeFeed.music,
-    ...youtubeFeed.live,
-    ...youtubeFeed.announcements,
-  ]));
+    const mergedMusic = dedupe(removeAdItems([...music, ...youtubeFeed.music]));
+    const mergedVideos = dedupe(removeAdItems([...videos, ...youtubeFeed.videos]));
+    const mergedLive = dedupe(removeAdItems([...live, ...youtubeFeed.live]));
+    const mergedAnnouncements = dedupe(removeAdItems([...announcements, ...youtubeFeed.announcements]));
+    const mergedAll = dedupe(removeAdItems([
+      ...all,
+      ...youtubeFeed.recent,
+      ...youtubeFeed.videos,
+      ...youtubeFeed.music,
+      ...youtubeFeed.live,
+      ...youtubeFeed.announcements,
+    ]));
 
-  const recent = [...mergedAll].sort((a, b) => {
-    const aTs = a.createdAt ? Date.parse(a.createdAt) : 0;
-    const bTs = b.createdAt ? Date.parse(b.createdAt) : 0;
-    if (aTs !== bTs) return bTs - aTs;
-    return a.id < b.id ? 1 : -1;
-  });
+    const recent = [...mergedAll].sort((a, b) => {
+      const aTs = a.createdAt ? Date.parse(a.createdAt) : 0;
+      const bTs = b.createdAt ? Date.parse(b.createdAt) : 0;
+      if (aTs !== bTs) return bTs - aTs;
+      return a.id < b.id ? 1 : -1;
+    });
 
-  const pool = dedupe([
-    ...mergedLive,
-    ...mergedVideos,
-    ...mergedMusic,
-    ...playlists,
-    ...mergedAnnouncements,
-    ...mergedAll,
+    const pool = dedupe([
+      ...mergedLive,
+      ...mergedVideos,
+      ...mergedMusic,
+      ...playlists,
+      ...mergedAnnouncements,
+      ...mergedAll,
+    ]);
+
+    baseBundle = {
+      ...DEFAULT_BUNDLE,
+      featured: pool[0] ?? null,
+      music: mergedMusic.slice(0, 14),
+      videos: mergedVideos.slice(0, 14),
+      playlists: dedupe(playlists).slice(0, 12),
+      live: mergedLive.slice(0, 10),
+      ads: [],
+      announcements: mergedAnnouncements.slice(0, 8),
+      mostPlayed: dedupe(mostPlayed).slice(0, 12),
+      recent: dedupe(recent).slice(0, 12),
+      recommendations: [],
+      topCategories: DEFAULT_BUNDLE.topCategories,
+    };
+  }
+
+  const [recentlyPlayed, personalizedMostPlayed, recommendations] = await Promise.all([
+    fetchMeRecentlyPlayed(),
+    fetchMeMostPlayed(),
+    fetchMeRecommendations(),
   ]);
 
   return {
-    ...DEFAULT_BUNDLE,
-    featured: pool[0] ?? null,
-    music: mergedMusic.slice(0, 14),
-    videos: mergedVideos.slice(0, 14),
-    playlists: dedupe(playlists).slice(0, 12),
-    live: mergedLive.slice(0, 10),
-    ads: [],
-    announcements: mergedAnnouncements.slice(0, 8),
-    mostPlayed: dedupe(mostPlayed).slice(0, 12),
-    recent: dedupe(recent).slice(0, 12),
-    topCategories: DEFAULT_BUNDLE.topCategories,
+    ...baseBundle,
+    recent: recentlyPlayed.length ? recentlyPlayed : baseBundle.recent,
+    mostPlayed: personalizedMostPlayed.length ? personalizedMostPlayed : baseBundle.mostPlayed,
+    recommendations,
   };
 }
 
