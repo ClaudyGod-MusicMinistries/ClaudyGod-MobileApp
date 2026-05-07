@@ -31,7 +31,7 @@ export function SectionHeader({ title, actionLabel, onAction, eyebrow }: Section
           <CustomText
             variant="caption"
             style={{
-              color: theme.colors.textTertiary ?? theme.colors.textSecondary,
+              color: theme.colors.textMuted ?? theme.colors.textSecondary,
               textTransform: 'uppercase',
               letterSpacing: 0.9,
             }}
