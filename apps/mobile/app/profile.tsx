@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Image, View } from 'react-native';
+import { Image, View, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+
 import { SettingsScaffold } from '../components/layout/SettingsScaffold';
 import { CustomText } from '../components/CustomText';
 import { useAppTheme } from '../util/colorScheme';
-import { spacing } from '../styles/designTokens';
 import { SurfaceCard } from '../components/ui/SurfaceCard';
 import { FadeIn } from '../components/ui/FadeIn';
 import { TVTouchable } from '../components/ui/TVTouchable';
@@ -16,29 +16,53 @@ import { clearMobileSession } from '../services/authService';
 import { useRequireMobileSession } from '../hooks/useRequireMobileSession';
 import { APP_ROUTES } from '../util/appRoutes';
 import { useToast } from '../context/ToastContext';
+import { BRAND_LOGO_ASSET } from '../util/brandAssets';
 
-const groups = [
+const GROUPS = [
   {
-    title: 'Account',
+    title: 'Your space',
     items: [
-      { icon: 'library-music', label: 'Your Library', href: APP_ROUTES.tabs.library },
-      { icon: 'settings-suggest', label: 'Playback Preferences', href: APP_ROUTES.tabs.settings },
-      { icon: 'security', label: 'Privacy & Security', href: APP_ROUTES.settingsPages.privacy },
+      {
+        icon: 'library-music' as const,
+        label: 'Library',
+        hint: 'Saved songs, videos, and playlists',
+        href: APP_ROUTES.tabs.library,
+      },
+      {
+        icon: 'graphic-eq' as const,
+        label: 'Music',
+        hint: 'Open the audio player and worship queue',
+        href: APP_ROUTES.tabs.player,
+      },
+      {
+        icon: 'smart-display' as const,
+        label: 'Videos',
+        hint: 'Watch sessions and replays',
+        href: APP_ROUTES.tabs.videos,
+      },
     ],
   },
   {
-    title: 'Discover',
+    title: 'Account care',
     items: [
-      { icon: 'ondemand-video', label: 'Video Hub', href: APP_ROUTES.tabs.videos },
-      { icon: 'search', label: 'Search & Discovery', href: APP_ROUTES.tabs.search },
-      { icon: 'volunteer-activism', label: 'Support the Ministry', href: APP_ROUTES.settingsPages.donate },
-    ],
-  },
-  {
-    title: 'Support',
-    items: [
-      { icon: 'help-outline', label: 'Help Center', href: APP_ROUTES.settingsPages.help },
-      { icon: 'info-outline', label: 'About ClaudyGod', href: APP_ROUTES.settingsPages.about },
+      {
+        icon: 'settings' as const,
+        label: 'Settings',
+        hint: 'Playback, appearance, and alerts',
+        href: APP_ROUTES.tabs.settings,
+      },
+      {
+        icon: 'privacy-tip' as const,
+        label: 'Privacy',
+        hint: 'Review privacy and security notes',
+        href: APP_ROUTES.settingsPages.privacy,
+      },
+      {
+        icon: 'help-outline' as const,
+        label: 'Help',
+        hint: 'Get support when you need it',
+        href: APP_ROUTES.settingsPages.help,
+      },
     ],
   },
 ];
@@ -47,7 +71,10 @@ export default function Profile() {
   const theme = useAppTheme();
   const router = useRouter();
   const { showToast } = useToast();
+  const { width } = useWindowDimensions();
   const isAuthorized = useRequireMobileSession();
+  const isTablet = width >= 768;
+
   const [metrics, setMetrics] = useState({
     email: '',
     displayName: '',
@@ -57,170 +84,272 @@ export default function Profile() {
   const [isLogoutSheetVisible, setIsLogoutSheetVisible] = useState(false);
 
   useEffect(() => {
-    if (!isAuthorized) {
-      return;
-    }
+    if (!isAuthorized) return;
 
-    fetchUserProfileMetrics().then(setMetrics);
+    let active = true;
+
+    const loadMetrics = async () => {
+      try {
+        const nextMetrics = await fetchUserProfileMetrics();
+
+        if (active) {
+          setMetrics(nextMetrics);
+        }
+      } catch {
+        // Keep the screen usable even if profile metrics cannot be loaded.
+      }
+    };
+
+    void loadMetrics();
+
+    return () => {
+      active = false;
+    };
   }, [isAuthorized]);
 
   if (!isAuthorized) {
     return <View style={{ flex: 1, backgroundColor: theme.colors.background }} />;
   }
 
+  const displayName = metrics.displayName || metrics.email.split('@')[0] || 'Your profile';
+
+  const handleConfirmLogout = async () => {
+    try {
+      await clearMobileSession();
+    } catch {
+      // Continue navigation even if cleanup fails.
+    }
+
+    showToast({
+      title: 'Signed out',
+      message: 'Your session has been closed.',
+      tone: 'info',
+    });
+
+    router.replace(APP_ROUTES.auth.signIn);
+  };
+
   return (
     <SettingsScaffold
       title="Profile"
-      subtitle="Manage account, analytics, and live subscriptions."
+      subtitle="Your listening space, saved activity, and account shortcuts."
       hero={
-        <FadeIn>
+        <View
+          style={{
+            flexDirection: isTablet ? 'row' : 'column',
+            alignItems: isTablet ? 'center' : 'flex-start',
+            gap: theme.spacing.lg,
+          }}
+        >
+          <View
+            style={{
+              width: 108,
+              height: 108,
+              borderRadius: 34,
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderWidth: 1,
+              borderColor: 'rgba(183,148,246,0.34)',
+              backgroundColor: 'rgba(183,148,246,0.14)',
+            }}
+          >
+            <Image
+              source={BRAND_LOGO_ASSET}
+              style={{
+                width: 76,
+                height: 76,
+                borderRadius: 24,
+              }}
+            />
+          </View>
+
+          <View style={{ flex: 1, gap: 6 }}>
+            <CustomText
+              variant="caption"
+              style={{
+                color: theme.colors.primary,
+                textTransform: 'uppercase',
+                letterSpacing: 0.9,
+              }}
+            >
+              Account
+            </CustomText>
+
+            <CustomText variant="hero" style={{ color: theme.colors.text }} numberOfLines={2}>
+              {displayName}
+            </CustomText>
+
+            <CustomText
+              variant="body"
+              style={{ color: theme.colors.textSecondary }}
+              numberOfLines={2}
+            >
+              {metrics.email || 'Signed in to ClaudyGod'}
+            </CustomText>
+
+            <View
+              style={{
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                gap: 8,
+                marginTop: 8,
+              }}
+            >
+              <StatBadge icon="play-circle-outline" label={`${metrics.totalPlays} plays`} />
+              <StatBadge
+                icon="notifications-active"
+                label={`${metrics.liveSubscriptions} alerts`}
+              />
+            </View>
+          </View>
+        </View>
+      }
+    >
+      <FadeIn delay={80}>
+        <View
+          style={{
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            gap: 12,
+            marginBottom: theme.spacing.lg,
+          }}
+        >
+          <AppButton
+            title="Open library"
+            size="md"
+            onPress={() => router.push(APP_ROUTES.tabs.library)}
+            leftIcon={
+              <MaterialIcons
+                name="library-music"
+                size={17}
+                color={theme.colors.textInverse}
+              />
+            }
+            style={{ flexGrow: 1 }}
+          />
+
+          <AppButton
+            title="Settings"
+            variant="secondary"
+            size="md"
+            onPress={() => router.push(APP_ROUTES.tabs.settings)}
+            leftIcon={
+              <MaterialIcons name="settings" size={17} color={theme.colors.text} />
+            }
+            style={{ flexGrow: 1 }}
+          />
+        </View>
+      </FadeIn>
+
+      {GROUPS.map((group, groupIndex) => (
+        <FadeIn key={group.title} delay={120 + groupIndex * 40}>
           <SurfaceCard
             tone="subtle"
             style={{
-              padding: spacing.lg,
-              marginBottom: spacing.lg,
-              alignItems: 'center',
+              padding: theme.spacing.md,
+              marginBottom: theme.spacing.md,
             }}
           >
-            <View
-              style={{
-                width: 114,
-                height: 114,
-                borderRadius: 57,
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderWidth: 1,
-                borderColor: 'rgba(205,182,255,0.44)',
-                backgroundColor: 'rgba(154,107,255,0.16)',
-              }}
-            >
-              <Image
-                source={require('../assets/images/ClaudyGoLogo.webp')}
-                style={{ width: 90, height: 90, borderRadius: 45 }}
-              />
-            </View>
-
             <CustomText
-              variant="display"
+              variant="caption"
               style={{
-                color: theme.colors.text,
-                marginTop: 14,
-                fontSize: 25,
-                lineHeight: 31,
-                fontFamily: 'ClashDisplay_700Bold',
+                color: theme.colors.primary,
+                textTransform: 'uppercase',
+                letterSpacing: 0.85,
+                marginBottom: 6,
               }}
             >
-              {metrics.displayName || metrics.email.split('@')[0] || ''}
-            </CustomText>
-            <CustomText variant="body" style={{ color: theme.colors.textSecondary, marginTop: 4 }}>
-              {metrics.email || 'Sign in to sync your profile'}
-            </CustomText>
-
-            <View style={{ marginTop: 12, flexDirection: 'row', gap: 8 }}>
-              <StatBadge icon="play-circle-outline" label={`${metrics.totalPlays} Plays`} />
-              <StatBadge icon="wifi-tethering" label={`${metrics.liveSubscriptions} Live Alerts`} />
-            </View>
-          </SurfaceCard>
-        </FadeIn>
-      }
-    >
-      <FadeIn delay={90}>
-        <AppButton
-          title="Open Settings"
-          fullWidth
-          size="lg"
-          onPress={() => router.push(APP_ROUTES.tabs.settings)}
-        />
-      </FadeIn>
-
-      {groups.map((group, groupIndex) => (
-        <FadeIn key={group.title} delay={120 + groupIndex * 35}>
-          <SurfaceCard style={{ marginTop: spacing.md, padding: spacing.md }}>
-            <CustomText variant="subtitle" style={{ color: theme.colors.text, marginBottom: 10 }}>
               {group.title}
             </CustomText>
 
-            <View style={{ gap: 8 }}>
-              {group.items.map((item) => (
-                <TVTouchable
-                  key={item.label}
-                  onPress={() => router.push(item.href as never)}
+            {group.items.map((item, index) => (
+              <TVTouchable
+                key={item.label}
+                onPress={() => router.push(item.href as never)}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 12,
+                  paddingVertical: 12,
+                  borderTopWidth: index === 0 ? 0 : 1,
+                  borderTopColor: theme.colors.border,
+                }}
+                showFocusBorder={false}
+              >
+                <View
                   style={{
-                    minHeight: 54,
-                    borderRadius: 14,
-                    borderWidth: 1,
-                    borderColor: 'rgba(136,120,168,0.22)',
-                    backgroundColor: theme.colors.surfaceAlt,
-                    paddingHorizontal: 12,
-                    flexDirection: 'row',
+                    width: 38,
+                    height: 38,
+                    borderRadius: 19,
                     alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor:
+                      theme.scheme === 'dark'
+                        ? 'rgba(183,148,246,0.12)'
+                        : 'rgba(124,58,237,0.08)',
                   }}
-                  showFocusBorder={false}
                 >
-                  <View
-                    style={{
-                      width: 32,
-                      height: 32,
-                      borderRadius: 10,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      backgroundColor: 'rgba(154,107,255,0.16)',
-                      marginRight: 10,
-                    }}
-                  >
-                    <MaterialIcons name={item.icon as any} size={17} color={theme.colors.primary} />
-                  </View>
+                  <MaterialIcons name={item.icon} size={18} color={theme.colors.primary} />
+                </View>
 
-                  <CustomText variant="body" style={{ color: theme.colors.text, flex: 1 }}>
+                <View style={{ flex: 1 }}>
+                  <CustomText variant="label" style={{ color: theme.colors.text }}>
                     {item.label}
                   </CustomText>
 
-                  <MaterialIcons name="chevron-right" size={20} color={theme.colors.textSecondary} />
-                </TVTouchable>
-              ))}
-            </View>
+                  <CustomText
+                    variant="caption"
+                    style={{
+                      color: theme.colors.textSecondary,
+                      marginTop: 3,
+                    }}
+                  >
+                    {item.hint}
+                  </CustomText>
+                </View>
+
+                <MaterialIcons
+                  name="chevron-right"
+                  size={20}
+                  color={theme.colors.textSecondary}
+                />
+              </TVTouchable>
+            ))}
           </SurfaceCard>
         </FadeIn>
       ))}
 
       <FadeIn delay={240}>
         <AppButton
-          title="Log Out"
-          variant="ghost"
+          title="Sign out"
+          variant="outline"
           fullWidth
           size="lg"
-          leftIcon={<MaterialIcons name="logout" size={18} color="#D79CAF" />}
-          textColor="#D79CAF"
+          leftIcon={
+            <MaterialIcons name="logout" size={18} color={theme.colors.danger} />
+          }
+          textColor={theme.colors.danger}
           onPress={() => setIsLogoutSheetVisible(true)}
           style={{
-            marginTop: spacing.lg,
-            borderWidth: 1,
-            borderColor: 'rgba(215,156,175,0.34)',
-            borderRadius: 16,
-            backgroundColor: 'rgba(115,42,72,0.18)',
+            marginTop: theme.spacing.sm,
+            borderColor: theme.colors.danger,
           }}
         />
       </FadeIn>
+
       <ActionSheet
         visible={isLogoutSheetVisible}
-        title="Sign out of ClaudyGod?"
-        description="You can sign back in any time to restore your account and saved content."
+        title="Sign out?"
+        description="You can sign back in anytime to restore your saved content on this device."
         actions={[
           {
             key: 'sign-out',
-            label: 'Sign Out',
+            label: 'Sign out',
             detail: 'Close your session on this device.',
             icon: 'logout',
             tone: 'destructive',
             onPress: () => {
-              void clearMobileSession().finally(() => {
-                showToast({
-                  title: 'Signed out',
-                  message: 'Your session has been closed on this device.',
-                  tone: 'info',
-                });
-                router.replace(APP_ROUTES.auth.signIn);
-              });
+              void handleConfirmLogout();
             },
           },
         ]}
@@ -230,7 +359,13 @@ export default function Profile() {
   );
 }
 
-function StatBadge({ icon, label }: { icon: React.ComponentProps<typeof MaterialIcons>['name']; label: string }) {
+function StatBadge({
+  icon,
+  label,
+}: {
+  icon: React.ComponentProps<typeof MaterialIcons>['name'];
+  label: string;
+}) {
   const theme = useAppTheme();
 
   return (
@@ -238,8 +373,8 @@ function StatBadge({ icon, label }: { icon: React.ComponentProps<typeof Material
       style={{
         borderRadius: 999,
         borderWidth: 1,
-        borderColor: 'rgba(205,182,255,0.48)',
-        backgroundColor: 'rgba(154,107,255,0.12)',
+        borderColor: 'rgba(183,148,246,0.32)',
+        backgroundColor: 'rgba(183,148,246,0.10)',
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: 11,
@@ -248,7 +383,8 @@ function StatBadge({ icon, label }: { icon: React.ComponentProps<typeof Material
       }}
     >
       <MaterialIcons name={icon} size={14} color={theme.colors.primary} />
-      <CustomText variant="label" style={{ color: theme.colors.primary }}>
+
+      <CustomText variant="caption" style={{ color: theme.colors.primary }}>
         {label}
       </CustomText>
     </View>

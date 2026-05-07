@@ -19,64 +19,26 @@ interface AuthScreenFrameProps {
   children: React.ReactNode;
 }
 
-export function AuthScreenFrame({
-  backPath,
-  salutation,
-  description,
-  title,
-  subtitle,
-  children,
-}: AuthScreenFrameProps) {
+export function AuthScreenFrame({ backPath, salutation, description, title, subtitle, children }: AuthScreenFrameProps) {
   const router = useRouter();
   const { width, height } = useWindowDimensions();
-
   const isTV = Platform.isTV;
   const isWeb = Platform.OS === 'web';
   const isTablet = width >= 768 && !isTV;
   const isDesktop = width >= 1120 && !isTV;
   const isPhone = !isTablet && !isTV;
   const compactViewport = height < 760;
-  const shellWidth = isDesktop ? 1100 : isTablet ? 760 : 468;
+  const shellWidth = isDesktop ? 1120 : isTablet ? 760 : 468;
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#07090C' }}>
-      <StatusBar translucent={false} backgroundColor="#06060B" barStyle="light-content" />
-
-      <LinearGradient
-        colors={['rgba(139,92,246,0.16)', 'rgba(7,9,12,0)']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0.8, y: 1 }}
-        style={{
-          position: 'absolute',
-          left: -80,
-          top: -80,
-          width: 320,
-          height: 320,
-          borderRadius: 320,
-        }}
-      />
-      <LinearGradient
-        colors={['rgba(101,108,255,0.12)', 'rgba(7,9,12,0)']}
-        start={{ x: 1, y: 0 }}
-        end={{ x: 0, y: 1 }}
-        style={{
-          position: 'absolute',
-          right: -120,
-          bottom: -120,
-          width: 360,
-          height: 360,
-          borderRadius: 360,
-        }}
-      />
-
+    <View style={{ flex: 1, backgroundColor: '#08050F' }}>
+      <StatusBar translucent={false} backgroundColor="#08050F" barStyle="light-content" />
+      <LinearGradient colors={['rgba(183,148,246,0.20)', 'rgba(8,5,15,0)']} start={{ x: 0, y: 0 }} end={{ x: 0.8, y: 1 }} style={{ position: 'absolute', left: -100, top: -100, width: 360, height: 360, borderRadius: 360 }} />
+      <LinearGradient colors={['rgba(124,58,237,0.16)', 'rgba(8,5,15,0)']} start={{ x: 1, y: 0 }} end={{ x: 0, y: 1 }} style={{ position: 'absolute', right: -140, bottom: -140, width: 400, height: 400, borderRadius: 400 }} />
       <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top', 'bottom']}>
         <ScrollView
           style={{ flex: 1, backgroundColor: 'transparent' }}
-          contentContainerStyle={{
-            flexGrow: 1,
-            justifyContent: 'center',
-            paddingBottom: isWeb ? 0 : 20,
-          }}
+          contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingBottom: isWeb ? 0 : 20 }}
           showsVerticalScrollIndicator={false}
           bounces={false}
           alwaysBounceVertical={false}
@@ -87,101 +49,19 @@ export function AuthScreenFrame({
           <Screen style={{ flex: 1 }} contentStyle={{ flex: 1, justifyContent: 'center' }}>
             <FadeIn>
               <View style={{ paddingTop: 6 }}>
-                <TVTouchable
-                  onPress={() => router.replace(backPath)}
-                  style={{
-                    width: 38,
-                    height: 38,
-                    borderRadius: 12,
-                    borderWidth: 1,
-                    borderColor: 'rgba(255,255,255,0.10)',
-                    backgroundColor: 'rgba(255,255,255,0.04)',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                  showFocusBorder={false}
-                >
-                  <MaterialIcons name="arrow-back" size={21} color="#FFF9F0" />
+                <TVTouchable onPress={() => router.replace(backPath)} style={{ width: 42, height: 42, borderRadius: 21, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', backgroundColor: 'rgba(255,255,255,0.06)', alignItems: 'center', justifyContent: 'center' }} showFocusBorder={false}>
+                  <MaterialIcons name="arrow-back" size={21} color="#FFFFFF" />
                 </TVTouchable>
-
-                <View
-                  style={{
-                    marginTop: 14,
-                    width: '100%',
-                    maxWidth: shellWidth,
-                    alignSelf: 'center',
-                    flexDirection: isDesktop ? 'row' : 'column',
-                    gap: isDesktop ? 18 : 0,
-                  }}
-                >
-                  {isDesktop ? (
-                    <View style={{ flex: 0.94 }}>
-                      <AuthBrandPanel salutation={salutation} description={description} />
+                <View style={{ marginTop: 16, width: '100%', maxWidth: shellWidth, alignSelf: 'center', flexDirection: isDesktop ? 'row' : 'column', gap: isDesktop ? 20 : 0 }}>
+                  {isDesktop ? <View style={{ flex: 0.95 }}><AuthBrandPanel salutation={salutation} description={description} /></View> : null}
+                  <View style={{ flex: 1, borderRadius: 28, borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)', backgroundColor: 'rgba(16,11,28,0.88)', paddingHorizontal: isPhone ? 18 : 24, paddingVertical: isPhone ? 20 : 24 }}>
+                    {!isDesktop ? <AuthBrandPanel salutation={salutation} description={description} compact={isPhone} /> : null}
+                    <View style={{ alignSelf: 'flex-start', borderRadius: 999, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', backgroundColor: 'rgba(255,255,255,0.06)', paddingHorizontal: 10, paddingVertical: 6 }}>
+                      <CustomText variant="caption" style={{ color: 'rgba(255,255,255,0.70)', textTransform: 'uppercase', letterSpacing: 0.72 }}>Secure access</CustomText>
                     </View>
-                  ) : null}
-
-                  <View
-                    style={{
-                      flex: 1,
-                      borderRadius: 16,
-                      borderWidth: 1,
-                      borderColor: 'rgba(255,255,255,0.08)',
-                      backgroundColor: 'rgba(12,15,18,0.94)',
-                      paddingHorizontal: isPhone ? 16 : 22,
-                      paddingVertical: isPhone ? 18 : 20,
-                    }}
-                  >
-                    {!isDesktop ? (
-                      <AuthBrandPanel salutation={salutation} description={description} compact={isPhone} />
-                    ) : null}
-
-                    <View
-                      style={{
-                        alignSelf: 'flex-start',
-                        borderRadius: 10,
-                        borderWidth: 1,
-                        borderColor: 'rgba(255,255,255,0.08)',
-                        backgroundColor: 'rgba(255,255,255,0.03)',
-                        paddingHorizontal: 8,
-                        paddingVertical: 5,
-                      }}
-                    >
-                      <CustomText
-                        variant="caption"
-                        style={{
-                          color: 'rgba(224,214,197,0.72)',
-                          textTransform: 'uppercase',
-                          letterSpacing: 0.72,
-                        }}
-                      >
-                        ClaudyGod Ministries
-                      </CustomText>
-                    </View>
-
-                    <CustomText
-                      variant="display"
-                      style={{
-                        color: '#FFF9F0',
-                        marginTop: 12,
-                        fontSize: isPhone ? 18 : 22,
-                        lineHeight: isPhone ? 23 : 28,
-                      }}
-                    >
-                      {title}
-                    </CustomText>
-
-                    <CustomText
-                      variant="body"
-                      style={{
-                        color: 'rgba(196,203,210,0.78)',
-                        marginTop: 6,
-                        maxWidth: 380,
-                      }}
-                    >
-                      {subtitle}
-                    </CustomText>
-
-                    <View style={{ marginTop: isPhone ? 16 : 18 }}>{children}</View>
+                    <CustomText variant="display" style={{ color: '#FFFFFF', marginTop: 14 }}>{title}</CustomText>
+                    <CustomText variant="body" style={{ color: 'rgba(255,255,255,0.70)', marginTop: 8, maxWidth: 420 }}>{subtitle}</CustomText>
+                    <View style={{ marginTop: isPhone ? 18 : 22 }}>{children}</View>
                   </View>
                 </View>
               </View>
