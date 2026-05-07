@@ -1,5 +1,5 @@
 // styles/designTokens.ts
-// Centralized design system tokens for spacing, radius, shadow, typography, and TV focus states.
+// Centralized mobile design tokens for a calmer premium streaming UI.
 
 export const spacing = {
   xxs: 4,
@@ -9,67 +9,76 @@ export const spacing = {
   lg: 20,
   xl: 28,
   xxl: 36,
-  xxxl: 44,
+  xxxl: 48,
 };
 
 export const radius = {
-  sm: 8,
-  md: 10,
-  lg: 14,
-  xl: 18,
-  pill: 14,
+  sm: 10,
+  md: 14,
+  lg: 18,
+  xl: 24,
+  xxl: 30,
+  pill: 999,
 };
 
 export const shadows = {
   card: {
     shadowColor: '#000000',
-    shadowOpacity: 0.2,
-    shadowRadius: 22,
-    shadowOffset: { width: 0, height: 12 },
-    elevation: 8,
+    shadowOpacity: 0.28,
+    shadowRadius: 28,
+    shadowOffset: { width: 0, height: 18 },
+    elevation: 12,
   },
   soft: {
     shadowColor: '#000000',
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
+    shadowOpacity: 0.14,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 6,
+  },
+  glow: {
+    shadowColor: '#A78BFA',
+    shadowOpacity: 0.24,
+    shadowRadius: 22,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 10,
   },
 };
 
 export const blur = {
-  glass: 12,
+  glass: 18,
 };
 
 export const typography = {
-  hero: 26,
-  headline: 20,
-  title: 15,
+  hero: 32,
+  display: 25,
+  headline: 21,
+  title: 17,
   body: 14,
   label: 12,
-  caption: 10,
+  caption: 11,
 };
 
 export const tv = {
   hitSlop: { top: 12, bottom: 12, left: 12, right: 12 },
-  focusScale: 1.08,
+  focusScale: 1.06,
   focusShadow: {
-    shadowColor: '#8B5CF6',
+    shadowColor: '#A78BFA',
     shadowOpacity: 0.34,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 8,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 10,
   },
 };
 
 export const layout = {
   compactPhoneGutter: 16,
   phoneGutter: 20,
-  tabletGutter: 28,
-  desktopGutter: 40,
-  maxContentWidth: 1320,
-  sectionGap: 22,
-  sectionGapLarge: 28,
-  headerVerticalPadding: 10,
-  tabBarContentPadding: 128,
+  tabletGutter: 30,
+  desktopGutter: 44,
+  maxContentWidth: 1180,
+  sectionGap: 24,
+  sectionGapLarge: 32,
+  headerVerticalPadding: 12,
+  tabBarContentPadding: 132,
 };

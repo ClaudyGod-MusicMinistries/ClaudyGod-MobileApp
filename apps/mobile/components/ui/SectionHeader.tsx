@@ -10,9 +10,10 @@ interface SectionHeaderProps {
   title: string;
   actionLabel?: string;
   onAction?: () => void;
+  eyebrow?: string;
 }
 
-export function SectionHeader({ title, actionLabel, onAction }: SectionHeaderProps) {
+export function SectionHeader({ title, actionLabel, onAction, eyebrow }: SectionHeaderProps) {
   const theme = useAppTheme();
 
   return (
@@ -20,36 +21,62 @@ export function SectionHeader({ title, actionLabel, onAction }: SectionHeaderPro
       style={{
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'center',
+        alignItems: 'flex-end',
         marginBottom: theme.spacing.sm,
+        gap: theme.spacing.md,
       }}
     >
-      <CustomText
-        variant="subtitle"
-        style={{
-          color: theme.colors.text,
-          fontWeight: '700',
-          letterSpacing: 0.1,
-          fontSize: 14,
-        }}
-      >
-        {title}
-      </CustomText>
+      <View style={{ flex: 1, gap: eyebrow ? 2 : 0 }}>
+        {eyebrow ? (
+          <CustomText
+            variant="caption"
+            style={{
+              color: theme.colors.textTertiary ?? theme.colors.textSecondary,
+              textTransform: 'uppercase',
+              letterSpacing: 0.9,
+            }}
+            numberOfLines={1}
+          >
+            {eyebrow}
+          </CustomText>
+        ) : null}
+        <CustomText
+          variant="heading"
+          style={{
+            color: theme.colors.text,
+            letterSpacing: -0.25,
+          }}
+          numberOfLines={1}
+        >
+          {title}
+        </CustomText>
+      </View>
+
       {actionLabel ? (
         <TVTouchable
           onPress={onAction}
           style={{
+            minHeight: 34,
             flexDirection: 'row',
             alignItems: 'center',
-            gap: 6,
-            paddingHorizontal: 0,
-            paddingVertical: 0,
+            gap: 3,
+            paddingHorizontal: 11,
+            paddingVertical: 7,
+            borderRadius: theme.radius.pill,
+            backgroundColor: theme.scheme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(124,58,237,0.08)',
+            borderWidth: 1,
+            borderColor: theme.colors.border,
           }}
+          activeOpacity={0.78}
           showFocusBorder={false}
         >
           <CustomText
-            variant="label"
-            style={{ color: theme.colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.24, fontSize: 10 }}
+            variant="caption"
+            style={{
+              color: theme.colors.text,
+              letterSpacing: 0.08,
+            }}
+            numberOfLines={1}
           >
             {actionLabel}
           </CustomText>

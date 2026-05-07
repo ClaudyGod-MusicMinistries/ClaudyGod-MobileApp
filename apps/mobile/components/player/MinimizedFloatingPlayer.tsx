@@ -1,6 +1,7 @@
 import React from 'react';
 import { Image, View, TouchableOpacity } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useFloatingPlayer } from '../../context/FloatingPlayerContext';
 import { useAppTheme } from '../../util/colorScheme';
@@ -12,15 +13,14 @@ export function MinimizedFloatingPlayer() {
   const theme = useAppTheme();
   const router = useRouter();
 
-  // Don't render if no content is playing
   if (!player.content || !player.isMinimized) {
     return null;
   }
 
-  const progressPercentage =
-    player.duration > 0 ? Math.min(100, (player.currentTime / player.duration) * 100) : 0;
+  const progressPercentage = player.duration > 0 ? Math.min(100, (player.currentTime / player.duration) * 100) : 0;
   const isAudio = player.type === 'audio';
   const hasControls = Boolean(player.controls);
+
   const handleExpand = () => {
     if (!player.content) return;
     maximize();
@@ -31,151 +31,112 @@ export function MinimizedFloatingPlayer() {
     <View
       style={{
         position: 'absolute',
-        bottom: 80, // Above the tab bar
-        left: 12,
-        right: 12,
-        height: 56,
-        borderRadius: 12,
+        bottom: 94,
+        left: 14,
+        right: 14,
+        minHeight: 64,
+        borderRadius: 24,
         overflow: 'hidden',
-        backgroundColor: theme.colors.surface,
         borderWidth: 1,
-        borderColor: theme.colors.border,
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 10,
-        gap: 10,
+        borderColor: theme.colors.borderStrong ?? theme.colors.border,
         zIndex: 100,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 5,
+        shadowOffset: { width: 0, height: 16 },
+        shadowOpacity: 0.32,
+        shadowRadius: 26,
+        elevation: 18,
       }}
     >
-      {/* Progress Bar */}
-      <View
+      <LinearGradient
+        colors={theme.scheme === 'dark' ? ['rgba(34,25,48,0.98)', 'rgba(13,8,20,0.98)'] : ['rgba(255,255,255,0.98)', 'rgba(244,238,253,0.98)']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
         style={{
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          height: 2,
-          width: `${progressPercentage}%`,
-          backgroundColor: theme.colors.primary,
-        }}
-      />
-
-      {/* Album Art / Icon */}
-      <TouchableOpacity
-        onPress={handleExpand}
-        style={{
-          width: 40,
-          height: 40,
-          borderRadius: 8,
-          overflow: 'hidden',
-          backgroundColor: isAudio ? 'rgba(139,92,246,0.2)' : 'rgba(59,130,246,0.2)',
+          flex: 1,
+          flexDirection: 'row',
           alignItems: 'center',
-          justifyContent: 'center',
+          paddingHorizontal: 10,
+          paddingVertical: 9,
+          gap: 10,
         }}
       >
-        {player.content.imageUrl ? (
-          <Image source={{ uri: player.content.imageUrl }} style={{ width: '100%', height: '100%' }} />
-        ) : (
-          <MaterialIcons
-            name={isAudio ? 'graphic-eq' : 'play-circle'}
-            size={20}
-            color={theme.colors.primary}
-          />
-        )}
-      </TouchableOpacity>
-
-      {/* Title and Type */}
-      <TouchableOpacity
-        onPress={handleExpand}
-        style={{ flex: 1, minWidth: 0 }}
-      >
-        <CustomText
-          variant="label"
+        <View
           style={{
-            color: theme.colors.text,
-            fontSize: 12,
-            fontWeight: '600',
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            height: 3,
+            width: `${progressPercentage}%`,
+            backgroundColor: theme.colors.primary,
           }}
-          numberOfLines={1}
-        >
-          {player.content.title}
-        </CustomText>
-        <CustomText
-          variant="caption"
-          style={{
-            color: theme.colors.textSecondary,
-            fontSize: 10,
-          }}
-          numberOfLines={1}
-        >
-          {isAudio ? 'Music' : 'Video'} • {player.content.subtitle || 'ClaudyGod'}
-        </CustomText>
-      </TouchableOpacity>
+        />
 
-      {/* Controls */}
-      <View style={{ flexDirection: 'row', gap: 4, alignItems: 'center' }}>
-        {/* Play/Pause */}
-        <TouchableOpacity
-          onPress={hasControls ? (player.isPlaying ? pause : resume) : undefined}
-          style={{
-            width: 32,
-            height: 32,
-            borderRadius: 8,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: 'rgba(255,255,255,0.05)',
-            opacity: hasControls ? 1 : 0.4,
-          }}
-        >
-          <MaterialIcons
-            name={player.isPlaying ? 'pause' : 'play-arrow'}
-            size={16}
-            color={theme.colors.primary}
-          />
-        </TouchableOpacity>
-
-        {/* Expand */}
         <TouchableOpacity
           onPress={handleExpand}
+          activeOpacity={0.86}
           style={{
-            width: 32,
-            height: 32,
-            borderRadius: 8,
+            width: 46,
+            height: 46,
+            borderRadius: 14,
+            overflow: 'hidden',
+            backgroundColor: theme.colors.surfaceAlt,
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: 'rgba(255,255,255,0.05)',
           }}
         >
-          <MaterialIcons
-            name="expand-less"
-            size={16}
-            color={theme.colors.primary}
-          />
+          {player.content.imageUrl ? (
+            <Image source={{ uri: player.content.imageUrl }} style={{ width: '100%', height: '100%' }} />
+          ) : (
+            <MaterialIcons name={isAudio ? 'graphic-eq' : 'play-circle'} size={22} color={theme.colors.primary} />
+          )}
         </TouchableOpacity>
 
-        {/* Close */}
-        <TouchableOpacity
-          onPress={close}
-          style={{
-            width: 32,
-            height: 32,
-            borderRadius: 8,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: 'rgba(255,255,255,0.05)',
-          }}
-        >
-          <MaterialIcons
-            name="close"
-            size={16}
-            color={theme.colors.textSecondary}
-          />
+        <TouchableOpacity onPress={handleExpand} activeOpacity={0.86} style={{ flex: 1, minWidth: 0 }}>
+          <CustomText variant="label" style={{ color: theme.colors.text, fontSize: 12.5 }} numberOfLines={1}>
+            {player.content.title}
+          </CustomText>
+          <CustomText
+            variant="caption"
+            style={{ color: theme.colors.textSecondary, marginTop: 2, fontSize: 10.5 }}
+            numberOfLines={1}
+          >
+            {isAudio ? 'Now playing' : 'Continue watching'} • {player.content.subtitle || 'ClaudyGod'}
+          </CustomText>
         </TouchableOpacity>
-      </View>
+
+        <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+          <TouchableOpacity
+            onPress={hasControls ? (player.isPlaying ? pause : resume) : undefined}
+            activeOpacity={0.8}
+            style={{
+              width: 38,
+              height: 38,
+              borderRadius: 19,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: theme.colors.primary,
+              opacity: hasControls ? 1 : 0.48,
+            }}
+          >
+            <MaterialIcons name={player.isPlaying ? 'pause' : 'play-arrow'} size={20} color={theme.colors.textInverse} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={close}
+            activeOpacity={0.78}
+            style={{
+              width: 34,
+              height: 34,
+              borderRadius: 17,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: theme.scheme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(18,10,32,0.06)',
+            }}
+          >
+            <MaterialIcons name="close" size={18} color={theme.colors.textSecondary} />
+          </TouchableOpacity>
+        </View>
+      </LinearGradient>
     </View>
   );
 }
