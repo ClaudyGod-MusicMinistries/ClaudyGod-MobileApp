@@ -121,13 +121,13 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
                 <MaterialIcons
                   name={itemConfig.icon}
                   size={focused ? 23 : 21}
-                  color={focused ? palette.primary : palette.textTertiary ?? palette.textSecondary}
+                  color={focused ? palette.primary : palette.textMuted ?? palette.textSecondary}
                 />
                 {!compact ? (
                   <CustomText
                     variant="caption"
                     style={{
-                      color: focused ? palette.text : palette.textTertiary ?? palette.textSecondary,
+                      color: focused ? palette.text : palette.textMuted ?? palette.textSecondary,
                       fontSize: 10.5,
                       letterSpacing: 0.05,
                     }}
