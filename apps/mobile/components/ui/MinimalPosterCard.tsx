@@ -1,6 +1,6 @@
 // components/ui/MinimalPosterCard.tsx
 import React from 'react';
-import { View, Image, Pressable } from 'react-native';
+import { View, Image, Pressable, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../CustomText';
@@ -20,10 +20,6 @@ interface MinimalPosterCardProps {
   onMorePress?: () => void;
 }
 
-/**
- * Minimal Poster Card - Clean, professional design with minimal text
- * Perfect for content discovery in feed/rails
- */
 export function MinimalPosterCard({
   imageUrl,
   title,
@@ -37,120 +33,106 @@ export function MinimalPosterCard({
   onMorePress,
 }: MinimalPosterCardProps) {
   const theme = useAppTheme();
+  const { width } = useWindowDimensions();
+  const scale = width >= 768 ? 1.06 : width < 360 ? 0.92 : 1;
 
   const sizes = {
-    sm: { w: 120, h: 120 },
-    md: { w: 136, h: 136 },
-    lg: { w: 152, h: 152 },
+    sm: { w: 132, h: 160 },
+    md: { w: 148, h: 178 },
+    lg: { w: 166, h: 200 },
   }[size];
+
+  const cardWidth = Math.round(sizes.w * scale);
+  const cardHeight = Math.round(sizes.h * scale);
 
   return (
     <TVTouchable
       onPress={onPress}
       style={{
-        width: sizes.w,
-        height: sizes.h,
+        width: cardWidth,
         marginRight: theme.spacing.md,
-        borderRadius: theme.radius.lg,
-        overflow: 'hidden',
+        borderRadius: theme.radius.xl,
       }}
-      activeOpacity={0.85}
+      activeOpacity={0.82}
+      showFocusBorder={false}
     >
       <View
         style={{
-          width: '100%',
-          height: '100%',
-          borderRadius: theme.radius.lg,
+          width: cardWidth,
+          height: cardHeight,
+          borderRadius: theme.radius.xl,
           overflow: 'hidden',
-          backgroundColor: 'transparent',
-          borderWidth: 0,
+          backgroundColor: theme.colors.surfaceAlt,
+          borderWidth: 1,
+          borderColor: 'rgba(255,255,255,0.10)',
+          ...theme.shadows.soft,
         }}
       >
-        {/* Image */}
-        <Image
-          source={{ uri: imageUrl }}
-          style={{ width: '100%', height: '100%' }}
-          resizeMode="cover"
-        />
+        <Image source={{ uri: imageUrl }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
 
-        {/* Dark Overlay */}
         <LinearGradient
-          colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.4)', 'rgba(0,0,0,0.9)']}
-          locations={[0, 0.5, 1]}
+          colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.22)', 'rgba(0,0,0,0.88)']}
+          locations={[0, 0.48, 1]}
           style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}
         />
 
-        {/* Badge */}
         {(badge || isLive) && (
           <View
             style={{
               position: 'absolute',
-              top: 8,
-              left: 8,
-              paddingHorizontal: 6,
-              paddingVertical: 3,
-              borderRadius: theme.radius.sm,
-              backgroundColor: isLive ? 'rgba(239,68,68,0.95)' : 'rgba(59,130,246,0.9)',
+              top: 10,
+              left: 10,
+              paddingHorizontal: 8,
+              paddingVertical: 4,
+              borderRadius: theme.radius.pill,
+              backgroundColor: isLive ? 'rgba(239,68,68,0.95)' : 'rgba(12,8,18,0.70)',
               borderWidth: 1,
-              borderColor: isLive ? 'rgba(255,100,100,0.5)' : 'rgba(100,150,255,0.5)',
+              borderColor: isLive ? 'rgba(255,255,255,0.30)' : 'rgba(255,255,255,0.18)',
             }}
           >
-            <CustomText
-              variant="caption"
-              style={{
-                color: '#FFFFFF',
-                fontSize: 9,
-                fontWeight: '700',
-              }}
-            >
-              {isLive ? '●' : badge}
+            <CustomText variant="caption" style={{ color: '#FFFFFF', fontSize: 9.5, letterSpacing: 0.4 }}>
+              {isLive ? 'LIVE' : badge}
             </CustomText>
           </View>
         )}
 
-        {/* More Actions */}
         {showMore && onMorePress ? (
           <Pressable
             onPress={onMorePress}
+            hitSlop={8}
             style={{
               position: 'absolute',
-              right: 6,
-              top: 6,
-              width: 26,
-              height: 26,
-              borderRadius: 13,
-              backgroundColor: 'rgba(10,10,15,0.72)',
+              right: 8,
+              top: 8,
+              width: 30,
+              height: 30,
+              borderRadius: 15,
+              backgroundColor: 'rgba(10,7,17,0.70)',
               borderWidth: 1,
-              borderColor: 'rgba(255,255,255,0.18)',
+              borderColor: 'rgba(255,255,255,0.16)',
               alignItems: 'center',
               justifyContent: 'center',
               zIndex: 4,
             }}
           >
-            <MaterialIcons name="more-vert" size={16} color="#F7F3EA" />
+            <MaterialIcons name="more-horiz" size={18} color="#FFFFFF" />
           </Pressable>
         ) : null}
 
-        {/* Title - Minimal */}
         <View
           style={{
             position: 'absolute',
             left: 0,
             right: 0,
             bottom: 0,
-            paddingHorizontal: 10,
-            paddingBottom: 10,
-            paddingTop: 20,
+            paddingHorizontal: 12,
+            paddingBottom: 12,
+            paddingTop: 28,
           }}
         >
           <CustomText
-            variant="body"
-            style={{
-              color: '#FFFFFF',
-              fontSize: 10.5,
-              fontWeight: '600',
-              lineHeight: 14,
-            }}
+            variant="label"
+            style={{ color: '#FFFFFF', fontSize: 12, lineHeight: 16, letterSpacing: -0.08 }}
             numberOfLines={2}
           >
             {title}
@@ -158,12 +140,7 @@ export function MinimalPosterCard({
           {meta || subtitle ? (
             <CustomText
               variant="caption"
-              style={{
-                color: 'rgba(232,226,216,0.7)',
-                marginTop: 2,
-                fontSize: 9.5,
-                lineHeight: 12,
-              }}
+              style={{ color: 'rgba(255,255,255,0.70)', marginTop: 3, fontSize: 10.5, lineHeight: 14 }}
               numberOfLines={1}
             >
               {meta ?? subtitle}

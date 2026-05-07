@@ -1,60 +1,70 @@
 import {
+  SpaceGrotesk_400Regular,
   SpaceGrotesk_500Medium,
+  SpaceGrotesk_600SemiBold,
 } from '@expo-google-fonts/space-grotesk';
-import { Sora_400Regular, Sora_600SemiBold } from '@expo-google-fonts/sora';
+import {
+  Sora_400Regular,
+  Sora_500Medium,
+  Sora_600SemiBold,
+  Sora_700Bold,
+} from '@expo-google-fonts/sora';
 import * as Font from 'expo-font';
 
 export const fontConfig = {
   hero: {
-    fontFamily: 'Sora_600SemiBold',
-    fontSize: 18,
-    lineHeight: 24,
-    fontWeight: '600' as const,
-    letterSpacing: -0.45,
+    fontFamily: 'Sora_700Bold',
+    fontSize: 30,
+    lineHeight: 36,
+    fontWeight: '700' as const,
+    letterSpacing: -0.9,
   },
   display: {
-    fontFamily: 'Sora_600SemiBold',
-    fontSize: 15,
-    lineHeight: 20,
-    fontWeight: '600' as const,
-    letterSpacing: -0.26,
+    fontFamily: 'Sora_700Bold',
+    fontSize: 24,
+    lineHeight: 30,
+    fontWeight: '700' as const,
+    letterSpacing: -0.72,
   },
   heading: {
     fontFamily: 'Sora_600SemiBold',
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 20,
+    lineHeight: 26,
     fontWeight: '600' as const,
+    letterSpacing: -0.36,
   },
   title: {
     fontFamily: 'Sora_600SemiBold',
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 17,
+    lineHeight: 23,
     fontWeight: '600' as const,
+    letterSpacing: -0.18,
   },
   subtitle: {
-    fontFamily: 'Sora_400Regular',
-    fontSize: 11,
-    lineHeight: 15,
-    fontWeight: '400' as const,
+    fontFamily: 'Sora_500Medium',
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: '500' as const,
+    letterSpacing: -0.05,
   },
   body: {
     fontFamily: 'Sora_400Regular',
-    fontSize: 11,
-    lineHeight: 15,
+    fontSize: 13,
+    lineHeight: 20,
     fontWeight: '400' as const,
   },
   label: {
-    fontFamily: 'SpaceGrotesk_500Medium',
-    fontSize: 10,
-    lineHeight: 13,
-    fontWeight: '500' as const,
-    letterSpacing: 0.1,
+    fontFamily: 'SpaceGrotesk_600SemiBold',
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: '600' as const,
+    letterSpacing: 0.12,
   },
   caption: {
     fontFamily: 'SpaceGrotesk_500Medium',
-    fontSize: 9,
-    lineHeight: 12,
-    fontWeight: '400' as const,
+    fontSize: 11,
+    lineHeight: 15,
+    fontWeight: '500' as const,
     letterSpacing: 0.08,
   },
 };
@@ -66,21 +76,20 @@ const clamp = (value: number, min: number, max: number) => Math.min(max, Math.ma
 export function getResponsiveFontStyle(variant: FontVariantKey, width: number, isTV = false) {
   const base = fontConfig[variant];
 
-  // Slightly tighten on compact phones and relax on larger viewports without making text oversized.
   const widthScale = isTV
-    ? 1.12
+    ? 1.18
     : width >= 1024
-      ? 1.08
+      ? 1.1
       : width >= 768
-        ? 1.04
+        ? 1.05
         : width <= 360
-          ? 0.94
+          ? 0.92
           : width <= 390
-            ? 0.97
+            ? 0.96
             : 1;
 
-  const fontSize = clamp(Math.round(base.fontSize * widthScale), 9, 28);
-  const lineHeight = clamp(Math.round(base.lineHeight * widthScale), fontSize + 3, 34);
+  const fontSize = clamp(Math.round(base.fontSize * widthScale), 10, isTV ? 42 : 34);
+  const lineHeight = clamp(Math.round(base.lineHeight * widthScale), fontSize + 3, isTV ? 50 : 42);
 
   return {
     ...base,
@@ -91,22 +100,22 @@ export function getResponsiveFontStyle(variant: FontVariantKey, width: number, i
 
 export const loadFonts = async () => {
   await Font.loadAsync({
-    // Preserve legacy keys while remapping them to calmer, more readable weights.
     ClashDisplay_600SemiBold: Sora_600SemiBold,
-    ClashDisplay_700Bold: Sora_600SemiBold,
+    ClashDisplay_700Bold: Sora_700Bold,
+    SpaceGrotesk_400Regular,
     SpaceGrotesk_500Medium,
+    SpaceGrotesk_600SemiBold,
     Sora_400Regular,
+    Sora_500Medium,
     Sora_600SemiBold,
-    SpaceGrotesk_400Regular: SpaceGrotesk_500Medium,
-    SpaceGrotesk_600SemiBold: SpaceGrotesk_500Medium,
-    Sora_500Medium: Sora_600SemiBold,
+    Sora_700Bold,
   });
 };
 
 export const fontWeights = {
   light: 'Sora_400Regular',
   regular: 'Sora_400Regular',
-  medium: 'SpaceGrotesk_500Medium',
+  medium: 'Sora_500Medium',
   semiBold: 'Sora_600SemiBold',
-  bold: 'Sora_600SemiBold',
+  bold: 'Sora_700Bold',
 };

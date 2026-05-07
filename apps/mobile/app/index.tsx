@@ -10,440 +10,62 @@ import { CustomText } from '../components/CustomText';
 import { FadeIn } from '../components/ui/FadeIn';
 import { TVTouchable } from '../components/ui/TVTouchable';
 import { AppButton } from '../components/ui/AppButton';
-import { CinematicHeroCard } from '../components/sections/CinematicHeroCard';
+import { PremiumHero, QuickActionGrid, getFeaturedItem } from '../components/Exp/PremiumContent';
 import { useContentFeed } from '../hooks/useContentFeed';
-import { useMobileAppConfig } from '../hooks/useMobileAppConfig';
-import { APP_ROUTES, TAB_ROUTE_BY_ID } from '../util/appRoutes';
-import { BRAND_HERO_ASSET, BRAND_LOGO_ASSET, LANDING_BG_ASSET } from '../util/brandAssets';
-import type { FeedCardItem } from '../services/contentService';
-
-const LANDING_COLORS = {
-  background: '#0A0612',
-  panel: 'rgba(26,20,47,0.80)',
-  panelStrong: 'rgba(38,33,47,0.90)',
-  border: 'rgba(167,139,250,0.15)',
-  textPrimary: '#F5F3FF',
-  textSecondary: 'rgba(184,180,212,0.75)',
-  accent: '#A78BFA',
-  accentSoft: 'rgba(167,139,250,0.12)',
-};
-
-const DEFAULT_PREVIEW_LINKS = [
-  { key: 'player', icon: 'graphic-eq', label: 'Music', route: APP_ROUTES.tabs.player },
-  { key: 'videos', icon: 'smart-display', label: 'Videos', route: APP_ROUTES.tabs.videos },
-  { key: 'live', icon: 'live-tv', label: 'Live', route: APP_ROUTES.tabs.live },
-] as const;
-
-function FooterLink({
-  label,
-  onPress,
-}: {
-  label: string;
-  onPress: () => void;
-}) {
-  return (
-    <TVTouchable
-      onPress={onPress}
-      showFocusBorder={false}
-      style={{
-        minHeight: 34,
-        paddingHorizontal: 12,
-        borderRadius: 10,
-        borderWidth: 1,
-        borderColor: LANDING_COLORS.border,
-        backgroundColor: LANDING_COLORS.panelStrong,
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      <CustomText
-        variant="label"
-        style={{ color: LANDING_COLORS.textPrimary, fontSize: 10.5, fontWeight: '500' }}
-      >
-        {label}
-      </CustomText>
-    </TVTouchable>
-  );
-}
-
-function getLandingBadge(item: FeedCardItem | null) {
-  if (!item) return 'ClaudyGod';
-  if (item.isLive || item.type === 'live') return 'Live now';
-  if (item.type === 'video') return 'Featured video';
-  if (item.type === 'playlist') return 'Featured playlist';
-  return 'Featured music';
-}
-
-function getLandingPrimaryAction(item: FeedCardItem | null) {
-  if (!item) {
-    return {
-      label: 'Browse music',
-      route: APP_ROUTES.tabs.player,
-      icon: 'graphic-eq' as const,
-    };
-  }
-
-  if (item.isLive || item.type === 'live') {
-    return {
-      label: 'Watch live',
-      route: APP_ROUTES.tabs.live,
-      icon: 'live-tv' as const,
-    };
-  }
-
-  if (item.type === 'video') {
-    return {
-      label: 'Watch now',
-      route: APP_ROUTES.tabs.videos,
-      icon: 'smart-display' as const,
-    };
-  }
-
-  return {
-    label: 'Play now',
-    route: APP_ROUTES.tabs.player,
-    icon: 'play-arrow' as const,
-  };
-}
+import { APP_ROUTES } from '../util/appRoutes';
+import { BRAND_LOGO_ASSET, LANDING_BG_ASSET } from '../util/brandAssets';
 
 export default function LandingScreen() {
   const router = useRouter();
   const { enterGuestMode } = useGuestMode();
   const { width } = useWindowDimensions();
-  const isTablet = width >= 900;
-  const isPhone = width < 900;
-  const isCompactPhone = width < 430;
   const { feed } = useContentFeed();
-  const { config } = useMobileAppConfig();
-
-  const featured = useMemo(
-    () => feed.featured ?? feed.live[0] ?? feed.music[0] ?? feed.videos[0] ?? null,
-    [feed.featured, feed.live, feed.music, feed.videos],
-  );
-
-  const previewLinks = useMemo(() => {
-    const configured = (config?.navigation?.tabs ?? [])
-      .filter((tab) => tab.id === 'player' || tab.id === 'videos' || tab.id === 'live')
-      .map((tab) => ({
-        key: tab.id,
-        icon: tab.icon as React.ComponentProps<typeof MaterialIcons>['name'],
-        label: tab.label,
-        route: TAB_ROUTE_BY_ID[tab.id],
-      }));
-
-    return configured.length ? configured : DEFAULT_PREVIEW_LINKS;
-  }, [config]);
-
-  const heroAction = getLandingPrimaryAction(featured);
-  const heroTitle = featured?.title ?? 'Worship, Music & Ministry\nUnified';
-  const heroSubtitle = featured?.subtitle ?? 'ClaudyGod';
-  const heroDescription =
-    featured?.description?.trim() ||
-    'Experience worship, music, and live ministry in one beautifully designed space.';
-  const shellGap = isTablet ? 16 : 10;
-
-  const headlineBlock = (
-    <FadeIn delay={isPhone ? 80 : 50}>
-      <View style={{ gap: isCompactPhone ? 6 : 10, marginTop: isPhone ? 14 : 0 }}>
-        <CustomText 
-          variant="hero" 
-          style={{ 
-            color: LANDING_COLORS.textPrimary,
-            fontSize: isCompactPhone ? 22 : 28,
-            fontWeight: '600',
-            lineHeight: isCompactPhone ? 28 : 34,
-          }}
-        >
-          Stream the ministry
-        </CustomText>
-        <CustomText
-          variant="body"
-          style={{
-            color: LANDING_COLORS.textSecondary,
-            maxWidth: isTablet ? 540 : '100%',
-            fontSize: 12,
-            lineHeight: 18,
-          }}
-          numberOfLines={isPhone ? 3 : 4}
-        >
-          Music, messages, and live worship in one calm experience.
-        </CustomText>
-      </View>
-    </FadeIn>
-  );
-
-  const actionBlock = (
-    <FadeIn delay={isPhone ? 110 : 90}>
-      <View style={{ gap: 10 }}>
-        <AppButton
-          title="Get Started"
-          size={isCompactPhone ? 'sm' : 'md'}
-          onPress={() => router.push(APP_ROUTES.auth.signUp)}
-          fullWidth
-          style={{ borderRadius: 10 }}
-        />
-        <AppButton
-          title="Browse as Guest"
-          variant="secondary"
-          size={isCompactPhone ? 'sm' : 'md'}
-          onPress={() => {
-            enterGuestMode();
-            // Navigate to guest welcome screen
-            router.replace('/guest-welcome');
-          }}
-          fullWidth
-          style={{
-            borderColor: LANDING_COLORS.border,
-            backgroundColor: LANDING_COLORS.panel,
-            borderRadius: 10,
-          }}
-          textColor={LANDING_COLORS.textPrimary}
-        />
-      </View>
-    </FadeIn>
-  );
-
-  const quickAccessRail = (
-    <FadeIn delay={170}>
-      <View
-        style={{
-          borderWidth: 1,
-          borderColor: LANDING_COLORS.border,
-          backgroundColor: LANDING_COLORS.panelStrong,
-          borderRadius: 12,
-          paddingHorizontal: isPhone ? 10 : 14,
-          paddingVertical: isPhone ? 8 : 10,
-          flexDirection: 'column',
-          gap: 8,
-        }}
-      >
-        <CustomText
-          variant="caption"
-          style={{
-            color: LANDING_COLORS.accent,
-            textTransform: 'uppercase',
-            letterSpacing: 0.75,
-            fontSize: 10,
-          }}
-        >
-          Quick access
-        </CustomText>
-
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          {previewLinks.map((link) => (
-            <FooterLink key={`footer-${link.key}`} label={link.label} onPress={() => router.push(link.route)} />
-          ))}
-        </View>
-      </View>
-    </FadeIn>
-  );
-
-  const heroCard = (
-    <FadeIn delay={isPhone ? 40 : 80}>
-      <View style={{ flex: isTablet ? 1.04 : undefined }}>
-        <CinematicHeroCard
-          imageSource={!featured ? BRAND_HERO_ASSET : undefined}
-          imageUrl={featured?.imageUrl}
-          height={isTablet ? 460 : isCompactPhone ? 282 : 308}
-          badge={isPhone ? undefined : getLandingBadge(featured)}
-          eyebrow={isPhone ? undefined : heroSubtitle}
-          title={heroTitle}
-          subtitle={isPhone ? undefined : featured?.duration ?? 'ClaudyGod Ministries'}
-          description={isPhone ? undefined : heroDescription}
-          contentSurface={isPhone ? false : true}
-          overlayStrength={isPhone ? 0.62 : 0.82}
-          actions={
-            isPhone
-              ? [
-                  {
-                    label: heroAction.label,
-                    onPress: () => router.push(heroAction.route),
-                    icon: heroAction.icon,
-                  },
-                ]
-              : [
-                  {
-                    label: heroAction.label,
-                    onPress: () => router.push(heroAction.route),
-                    icon: heroAction.icon,
-                  },
-                  {
-                    label: 'Create Account',
-                    onPress: () => router.push(APP_ROUTES.auth.signUp),
-                    variant: 'secondary',
-                    icon: 'person-add',
-                  },
-                ]
-          }
-        />
-      </View>
-    </FadeIn>
-  );
+  const isTablet = width >= 900;
+  const isCompact = width < 390;
+  const featured = useMemo(() => getFeaturedItem(feed.live, feed.music, feed.videos, feed.recent), [feed]);
+  const handleGuest = () => { enterGuestMode(); router.replace(APP_ROUTES.tabs.home); };
 
   return (
-    <View style={{ flex: 1, backgroundColor: LANDING_COLORS.background }}>
-      <StatusBar translucent={false} barStyle="light-content" backgroundColor={LANDING_COLORS.background} />
-
+    <View style={{ flex: 1, backgroundColor: '#08050F' }}>
+      <StatusBar translucent={false} barStyle="light-content" backgroundColor="#08050F" />
       <ImageBackground source={LANDING_BG_ASSET} style={{ flex: 1 }} resizeMode="cover">
-        <LinearGradient
-          colors={['rgba(8,6,14,0.92)', 'rgba(8,6,14,0.75)', 'rgba(8,6,14,0.98)']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0, y: 1 }}
-          style={{ flex: 1 }}
-        >
+        <LinearGradient colors={['rgba(8,5,15,0.96)', 'rgba(8,5,15,0.78)', 'rgba(8,5,15,0.98)']} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ flex: 1 }}>
           <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top', 'bottom']}>
-            <Screen style={{ flex: 1 }} contentStyle={{ flex: 1 }}>
-              <View style={{ flex: 1, paddingTop: isTablet ? 12 : 4, gap: shellGap }}>
-            <FadeIn>
-              <View
-                style={{
-                  borderRadius: 12,
-                  borderWidth: 1,
-                  borderColor: LANDING_COLORS.border,
-                  backgroundColor: LANDING_COLORS.panelStrong,
-                  paddingHorizontal: isTablet ? 14 : 10,
-                  paddingVertical: isTablet ? 10 : 8,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 12,
-                }}
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
-                  <View
-                    style={{
-                      width: isTablet ? 36 : 30,
-                      height: isTablet ? 36 : 30,
-                      borderRadius: 12,
-                      borderWidth: 1,
-                      borderColor: LANDING_COLORS.border,
-                      backgroundColor: LANDING_COLORS.panel,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Image
-                      source={BRAND_LOGO_ASSET}
-                      style={{ width: isTablet ? 20 : 18, height: isTablet ? 20 : 18, borderRadius: 6 }}
-                    />
-                  </View>
-
-                  <View style={{ flex: 1 }}>
-                    <CustomText
-                      variant="label"
-                      style={{ color: LANDING_COLORS.textPrimary }}
-                      numberOfLines={1}
-                    >
-                      ClaudyGod Ministries
-                    </CustomText>
-                    <CustomText
-                      variant="caption"
-                      style={{
-                        color: LANDING_COLORS.textSecondary,
-                        marginTop: 2,
-                        letterSpacing: 0.35,
-                        fontSize: 10.5,
-                      }}
-                      numberOfLines={1}
-                    >
-                      Worship, music, video, and live ministry
-                    </CustomText>
-                  </View>
-                </View>
-
-                <TVTouchable
-                  onPress={() => router.push(APP_ROUTES.auth.signIn)}
-                  showFocusBorder={false}
-                  style={{
-                    minHeight: 28,
-                    paddingHorizontal: 8,
-                    borderRadius: 10,
-                    borderWidth: 1,
-                    borderColor: LANDING_COLORS.border,
-                    backgroundColor: LANDING_COLORS.panel,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <CustomText variant="label" style={{ color: LANDING_COLORS.textPrimary, fontSize: 9.5 }}>
-                    Sign In
-                  </CustomText>
-                </TVTouchable>
-              </View>
-            </FadeIn>
-
-            <ScrollView
-              style={{ flex: 1, backgroundColor: LANDING_COLORS.background }}
-              contentContainerStyle={{
-                paddingTop: isPhone ? 6 : 10,
-                paddingBottom: isTablet ? 12 : 8,
-                gap: isTablet ? 16 : 12,
-                flexGrow: 1,
-              }}
-              showsVerticalScrollIndicator={false}
-              bounces={false}
-              overScrollMode="never"
-            >
-              <View style={{ flex: 1, justifyContent: 'center' }}>
-                {isTablet ? (
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'stretch',
-                      gap: 24,
-                    }}
-                  >
-                    <View
-                      style={{
-                        flex: 0.88,
-                        justifyContent: 'center',
-                        gap: 16,
-                        paddingTop: 22,
-                      }}
-                    >
-                      {headlineBlock}
-                      {actionBlock}
-                      {quickAccessRail}
+            <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false} bounces={false} overScrollMode="never">
+              <Screen style={{ flex: 1 }} contentStyle={{ flex: 1 }}>
+                <View style={{ flex: 1, paddingTop: 10, paddingBottom: 24, gap: isTablet ? 24 : 18 }}>
+                  <FadeIn>
+                    <View style={{ borderRadius: 999, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', backgroundColor: 'rgba(255,255,255,0.06)', paddingHorizontal: 12, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+                        <Image source={BRAND_LOGO_ASSET} style={{ width: 30, height: 30, borderRadius: 10 }} />
+                        <View style={{ flex: 1 }}><CustomText variant="label" style={{ color: '#FFFFFF' }} numberOfLines={1}>ClaudyGod</CustomText><CustomText variant="caption" style={{ color: 'rgba(255,255,255,0.58)' }} numberOfLines={1}>Music, worship, video, and live ministry</CustomText></View>
+                      </View>
+                      <TVTouchable onPress={() => router.push(APP_ROUTES.auth.signIn)} showFocusBorder={false} style={{ minHeight: 34, paddingHorizontal: 14, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }}><CustomText variant="label" style={{ color: '#FFFFFF' }}>Sign in</CustomText></TVTouchable>
                     </View>
-                    {heroCard}
-                  </View>
-                ) : (
-                  <View style={{ gap: 10 }}>
-                {heroCard}
-                <View
-                  style={{
-                    gap: 10,
-                    paddingHorizontal: 2,
-                    alignItems: 'center',
-                  }}
-                >
-                  {headlineBlock}
-                  <View
-                    style={{
-                      width: '100%',
-                      borderWidth: 1,
-                      borderColor: LANDING_COLORS.border,
-                      backgroundColor: LANDING_COLORS.panelStrong,
-                      borderRadius: 10,
-                      paddingHorizontal: 10,
-                      paddingVertical: 8,
-                    }}
-                  >
-                    {actionBlock}
+                  </FadeIn>
+                  <View style={{ flex: 1, justifyContent: 'center', gap: 18 }}>
+                    <FadeIn delay={60}>
+                      <View style={{ gap: 10, maxWidth: isTablet ? 720 : undefined }}>
+                        <CustomText variant="hero" style={{ color: '#FFFFFF', fontSize: isCompact ? 32 : isTablet ? 52 : 40, lineHeight: isCompact ? 38 : isTablet ? 60 : 48, letterSpacing: -1.2 }}>Worship, music, and live moments.</CustomText>
+                        <CustomText variant="body" style={{ color: 'rgba(255,255,255,0.70)', maxWidth: 620 }}>Stream songs, watch videos, follow live sessions, and keep your favorite ministry moments close.</CustomText>
+                      </View>
+                    </FadeIn>
+                    <View style={{ flexDirection: isTablet ? 'row' : 'column', gap: 16, alignItems: isTablet ? 'stretch' : undefined }}>
+                      <View style={{ flex: isTablet ? 1.05 : undefined }}>
+                        <PremiumHero item={featured} title={featured?.title ?? 'Start your worship experience'} subtitle={featured?.description ?? 'Discover music, videos, and live sessions curated for everyday worship.'} eyebrow={featured?.subtitle ?? 'Featured'} primaryLabel={featured?.type === 'video' || featured?.type === 'live' ? 'Watch now' : 'Play now'} primaryIcon={featured?.type === 'video' || featured?.type === 'live' ? 'smart-display' : 'play-arrow'} onPrimary={() => router.replace(APP_ROUTES.tabs.home)} secondaryLabel="Browse as guest" secondaryIcon="explore" onSecondary={handleGuest} height={isTablet ? 460 : isCompact ? 330 : 370} />
+                      </View>
+                      <FadeIn delay={120}>
+                        <View style={{ flex: isTablet ? 0.72 : undefined, gap: 12 }}>
+                          <AppButton title="Create account" size="lg" fullWidth onPress={() => router.push(APP_ROUTES.auth.signUp)} leftIcon={<MaterialIcons name="person-add" size={18} color="#130C22" />} />
+                          <AppButton title="Continue as guest" variant="secondary" size="lg" fullWidth textColor="#FFFFFF" onPress={handleGuest} leftIcon={<MaterialIcons name="explore" size={18} color="#FFFFFF" />} style={{ backgroundColor: 'rgba(255,255,255,0.10)', borderColor: 'rgba(255,255,255,0.12)' }} />
+                          <QuickActionGrid actions={[{ label: 'Music', hint: 'Songs and messages', icon: 'graphic-eq', onPress: () => router.replace(APP_ROUTES.tabs.player) }, { label: 'Videos', hint: 'Watch latest releases', icon: 'smart-display', onPress: () => router.replace(APP_ROUTES.tabs.videos) }, { label: 'Live', hint: 'Join sessions', icon: 'live-tv', onPress: () => router.replace(APP_ROUTES.tabs.live) }, { label: 'Library', hint: 'Saved moments', icon: 'library-music', onPress: () => router.replace(APP_ROUTES.tabs.library) }]} />
+                        </View>
+                      </FadeIn>
+                    </View>
                   </View>
                 </View>
-              </View>
-            )}
-          </View>
-        </ScrollView>
-
-            {!isTablet && (
-              <View style={{ marginTop: isPhone ? 8 : 0 }}>
-                {quickAccessRail}
-              </View>
-            )}
-              </View>
-            </Screen>
+              </Screen>
+            </ScrollView>
           </SafeAreaView>
         </LinearGradient>
       </ImageBackground>

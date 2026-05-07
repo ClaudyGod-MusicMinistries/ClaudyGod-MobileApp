@@ -1,557 +1,82 @@
 import React, { useMemo, useState } from 'react';
-import { Share, View, ScrollView, useWindowDimensions } from 'react-native';
+import { TextInput, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { TabScreenWrapper } from '../../components/layout/TabScreenWrapper';
-import { useAppTheme } from '../../util/colorScheme';
-import { SearchBar } from '../../components/ui/SearchBar';
-import { MediaRail } from '../../components/sections/MediaRail';
-import { PosterCard } from '../../components/ui/PosterCard';
-import { ActionSheet, type ActionSheetAction } from '../../components/ui/ActionSheet';
-import { CustomText } from '../../components/CustomText';
-import { FadeIn } from '../../components/ui/FadeIn';
-import { Screen } from '../../components/layout/Screen';
-import { BrandedHeaderCard } from '../../components/layout/BrandedHeaderCard';
-import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { AppButton } from '../../components/ui/AppButton';
+import { CustomText } from '../../components/CustomText';
+import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { TVTouchable } from '../../components/ui/TVTouchable';
+import { useAppTheme } from '../../util/colorScheme';
 import { useToast } from '../../context/ToastContext';
 import { useContentFeed } from '../../hooks/useContentFeed';
-import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import { fetchSearchResults } from '../../services/contentService';
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
-import { saveMeLibraryItem, subscribeToLiveAlertsBackend } from '../../services/userFlowService';
 import { APP_ROUTES } from '../../util/appRoutes';
-import { getDiscoveryCategories, getDiscoveryShortcuts } from '../../util/mobileExperienceConfig';
 import { buildPlayerRoute } from '../../util/playerRoute';
-import { useAuth } from '../../context/AuthContext';
 import type { FeedCardItem } from '../../services/contentService';
+import { ContentList, ContentRail, EmptyState, PremiumPage, QuickActionGrid, dedupeFeedItems } from '../../components/Exp/PremiumContent';
+
+const CATEGORIES = ['All', 'audio', 'video', 'live', 'playlist'] as const;
 
 export default function Search() {
   const theme = useAppTheme();
   const router = useRouter();
   const { showToast } = useToast();
-  const { isAuthenticated } = useAuth();
-  const { width } = useWindowDimensions();
-  const isDark = theme.scheme === 'dark';
-  const isTablet = width >= 768;
-  const shortcutWidth = isTablet ? '31.8%' : '48%';
   const [query, setQuery] = useState('');
-  const [activeCategory, setActiveCategory] = useState('All');
-  const [recentQueries, setRecentQueries] = useState<string[]>([]);
-  const [activeActionItem, setActiveActionItem] = useState<FeedCardItem | null>(null);
-  const [isActionSheetVisible, setIsActionSheetVisible] = useState(false);
+  const [activeCategory, setActiveCategory] = useState<(typeof CATEGORIES)[number]>('All');
   const [remoteResults, setRemoteResults] = useState<FeedCardItem[] | null>(null);
   const [isSearching, setIsSearching] = useState(false);
+  const { feed, loading, refresh } = useContentFeed();
 
-  const { feed } = useContentFeed();
-  const { config: mobileConfig } = useMobileAppConfig();
-
-  const allItems = useMemo(
-    () => [
-      ...feed.music,
-      ...feed.videos,
-      ...feed.playlists,
-      ...feed.live,
-      ...feed.announcements,
-      ...feed.mostPlayed,
-    ],
-    [feed.announcements, feed.live, feed.mostPlayed, feed.music, feed.playlists, feed.videos],
-  );
-
-  const discoveryCategories = useMemo(
-    () => getDiscoveryCategories(mobileConfig, feed.topCategories),
-    [feed.topCategories, mobileConfig],
-  );
-  const quickShortcuts = useMemo(() => getDiscoveryShortcuts(mobileConfig).slice(0, 4), [mobileConfig]);
-  const discoverStack = useMemo(
-    () => [...feed.music, ...feed.videos, ...feed.playlists, ...feed.live].slice(0, 4),
-    [feed.live, feed.music, feed.playlists, feed.videos],
-  );
-  const browsePalette = ['#2563EB', '#10B981', '#F59E0B', '#EC4899', '#8B5CF6', '#14B8A6', '#F97316'];
-
-  const resolveCategoryType = (category: string): FeedCardItem['type'] | undefined => {
-    const normalized = category.toLowerCase();
-    if (normalized === 'audio' || normalized === 'video' || normalized === 'playlist' || normalized === 'live' || normalized === 'announcement') {
-      return normalized as FeedCardItem['type'];
-    }
-    return undefined;
-  };
-
+  const allItems = useMemo(() => dedupeFeedItems([...feed.music, ...feed.videos, ...feed.playlists, ...feed.live, ...feed.announcements, ...feed.mostPlayed, ...feed.recent]), [feed]);
   const filtered = useMemo(() => {
-    if (remoteResults) {
-      return remoteResults;
-    }
-
+    if (remoteResults) return remoteResults;
     const q = query.trim().toLowerCase();
-
     return allItems.filter((item) => {
-      const matchesText =
-        !q ||
-        item.title.toLowerCase().includes(q) ||
-        item.subtitle.toLowerCase().includes(q) ||
-        item.description.toLowerCase().includes(q);
+      const matchesText = !q || item.title.toLowerCase().includes(q) || item.subtitle.toLowerCase().includes(q) || item.description.toLowerCase().includes(q);
       const matchesCategory = activeCategory === 'All' || item.type === activeCategory;
       return matchesText && matchesCategory;
     });
   }, [activeCategory, allItems, query, remoteResults]);
 
-  const runRemoteSearch = async (nextQuery: string, category: string) => {
-    const trimmed = nextQuery.trim();
-    if (!trimmed) {
-      setRemoteResults(null);
-      return;
-    }
-
+  const runSearch = async () => {
+    const normalized = query.trim();
+    if (!normalized) { setRemoteResults(null); showToast({ title: 'Search is empty', message: 'Enter a title, artist, or topic.', tone: 'warning' }); return; }
     setIsSearching(true);
     try {
-      const results = await fetchSearchResults(trimmed, resolveCategoryType(category));
+      const results = await fetchSearchResults(normalized, activeCategory === 'All' ? undefined : activeCategory);
       setRemoteResults(results);
-      if (!results.length) {
-        showToast({
-          title: 'No matches',
-          message: 'Try a different keyword or category.',
-          tone: 'info',
-        });
-      }
-    } finally {
-      setIsSearching(false);
-    }
+      if (!results.length) showToast({ title: 'No matches', message: 'Try another word or category.', tone: 'info' });
+    } finally { setIsSearching(false); }
   };
 
-  const formatMeta = (item: (typeof filtered)[number]) =>
-    [item.subtitle, item.duration].filter((value) => Boolean(value)).join(' · ');
-
-  const openResult = async (item: (typeof filtered)[number]) => {
-    if (query.trim()) {
-      setRecentQueries((current) => [query.trim(), ...current.filter((entry) => entry !== query.trim())].slice(0, 5));
-    }
-    await trackPlayEvent({
-      contentId: item.id,
-      contentType: item.type,
-      title: item.title,
-      source: 'search_results',
-    });
+  const openResult = async (item: FeedCardItem) => {
+    await trackPlayEvent({ contentId: item.id, contentType: item.type, title: item.title, source: 'search' });
     router.push(buildPlayerRoute(item));
   };
 
-  const openMoreForItem = (item: (typeof filtered)[number]) => {
-    setActiveActionItem(item);
-    setIsActionSheetVisible(true);
-  };
-
-  const shareActive = async () => {
-    if (!activeActionItem) return;
-    try {
-      await Share.share({
-        message: `${activeActionItem.title}\n${activeActionItem.subtitle}${activeActionItem.mediaUrl ? `\n${activeActionItem.mediaUrl}` : ''}`,
-      });
-    } catch {
-      showToast({
-        title: 'Share unavailable',
-        message: 'Try again in a moment.',
-        tone: 'warning',
-      });
-    }
-  };
-
-  const saveToLibrary = async () => {
-    if (!activeActionItem) return;
-    if (!isAuthenticated) {
-      showToast({
-        title: 'Sign in to save',
-        message: 'Create an account to save items to your library.',
-        tone: 'warning',
-      });
-      return;
-    }
-    try {
-      await saveMeLibraryItem({
-        bucket: 'liked',
-        contentId: activeActionItem.id,
-        contentType: activeActionItem.type,
-        title: activeActionItem.title,
-        subtitle: activeActionItem.subtitle,
-        description: activeActionItem.description,
-        imageUrl: activeActionItem.imageUrl,
-        mediaUrl: activeActionItem.mediaUrl,
-        duration: activeActionItem.duration,
-        metadata: { source: 'search_action_sheet' },
-      });
-      showToast({
-        title: 'Saved to Library',
-        message: 'We saved this for you.',
-        tone: 'success',
-      });
-    } catch (error) {
-      showToast({
-        title: 'Save unavailable',
-        message: error instanceof Error ? error.message : 'Please try again.',
-        tone: 'warning',
-      });
-    }
-  };
-
-  const listenLater = async () => {
-    if (!activeActionItem) return;
-    if (!isAuthenticated) {
-      showToast({
-        title: 'Sign in to save',
-        message: 'Create an account to use Listen Later.',
-        tone: 'warning',
-      });
-      return;
-    }
-    try {
-      await saveMeLibraryItem({
-        bucket: 'playlist',
-        playlistName: 'Listen Later',
-        contentId: activeActionItem.id,
-        contentType: activeActionItem.type,
-        title: activeActionItem.title,
-        subtitle: activeActionItem.subtitle,
-        description: activeActionItem.description,
-        imageUrl: activeActionItem.imageUrl,
-        mediaUrl: activeActionItem.mediaUrl,
-        duration: activeActionItem.duration,
-        metadata: { source: 'search_action_sheet' },
-      });
-      showToast({
-        title: 'Added to Listen Later',
-        message: 'We saved this for you.',
-        tone: 'success',
-      });
-    } catch (error) {
-      showToast({
-        title: 'Listen later unavailable',
-        message: error instanceof Error ? error.message : 'Please try again.',
-        tone: 'warning',
-      });
-    }
-  };
-
-  const followActiveLive = async () => {
-    if (!activeActionItem) return;
-    try {
-      await subscribeToLiveAlertsBackend(activeActionItem.notificationChannelId || activeActionItem.id, activeActionItem.title);
-      showToast({
-        title: 'Live alerts enabled',
-        message: `You will be notified when ${activeActionItem.title} goes live.`,
-        tone: 'success',
-      });
-    } catch {
-      showToast({
-        title: 'Live alerts unavailable',
-        message: 'Sign in to follow live sessions.',
-        tone: 'warning',
-      });
-    }
-  };
-
-  const openReviews = () => {
-    router.push(APP_ROUTES.settingsPages.rate);
-  };
-
-  const actionSheetActions: ActionSheetAction[] = !activeActionItem
-    ? []
-    : [
-        {
-          key: 'save',
-          label: 'Save to Library',
-          detail: 'Keep this item in your library.',
-          icon: 'bookmark-border',
-          onPress: () => void saveToLibrary(),
-        },
-        {
-          key: 'share',
-          label: 'Share',
-          detail: 'Send this to someone else.',
-          icon: 'ios-share',
-          onPress: () => void shareActive(),
-        },
-        {
-          key: 'listen-later',
-          label: 'Listen Later',
-          detail: 'Save this for later.',
-          icon: 'schedule',
-          onPress: () => void listenLater(),
-        },
-        {
-          key: 'reviews',
-          label: 'Reviews & Ratings',
-          detail: 'See what others are saying.',
-          icon: 'reviews',
-          onPress: openReviews,
-        },
-        ...(activeActionItem.type === 'live'
-          ? [
-              {
-                key: 'follow-live',
-                label: 'Follow Live Alerts',
-                detail: 'Get notified before the stream starts.',
-                icon: 'notifications-active',
-                onPress: () => void followActiveLive(),
-              } as ActionSheetAction,
-            ]
-          : []),
-        {
-          key: 'open-detail',
-          label: 'Open Player',
-          detail: 'Open the full player screen.',
-          icon: 'open-in-full',
-          tone: 'accent' as const,
-          onPress: () => {
-            router.push(buildPlayerRoute(activeActionItem));
-          },
-        },
-      ];
-
-  const applyRecentSearch = () => {
-    const recent = recentQueries[0];
-    if (!recent) {
-      showToast({
-        title: 'No recent searches',
-        message: 'Search for music, videos, or messages first.',
-        tone: 'info',
-      });
-      return;
-    }
-
-    setQuery(recent);
-    setActiveCategory('All');
-    void runRemoteSearch(recent, 'All');
-  };
-
-  const cycleCategory = () => {
-    const currentIndex = discoveryCategories.indexOf(activeCategory as (typeof discoveryCategories)[number]);
-    const nextCategory = discoveryCategories[(currentIndex + 1) % discoveryCategories.length] ?? 'All';
-    setActiveCategory(nextCategory);
-    if (query.trim()) {
-      void runRemoteSearch(query, nextCategory);
-    }
-    showToast({
-      title: 'Filter updated',
-      message: `Showing ${nextCategory === 'All' ? 'all results' : nextCategory} results.`,
-      tone: 'info',
-      durationMs: 1800,
-    });
-  };
-
-  const handleSubmitSearch = () => {
-    const normalized = query.trim();
-    if (!normalized) {
-      showToast({
-        title: 'Search is empty',
-        message: 'Enter a title, artist, or topic.',
-        tone: 'warning',
-      });
-      return;
-    }
-
-    setRecentQueries((current) => [normalized, ...current.filter((entry) => entry !== normalized)].slice(0, 5));
-    void runRemoteSearch(normalized, activeCategory);
-  };
-
   return (
-    <TabScreenWrapper>
-      <ScrollView
-        style={{ flex: 1, backgroundColor: 'transparent' }}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: theme.layout.tabBarContentPadding }}
-        stickyHeaderIndices={[0]}
-        bounces={false}
-        alwaysBounceVertical={false}
-        overScrollMode="never"
-      >
-        <View
-          style={{
-            backgroundColor: isDark ? '#06040D' : theme.colors.background,
-            borderBottomWidth: 1,
-            borderBottomColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(20,16,33,0.08)',
-          }}
-        >
-          <Screen>
-            <FadeIn>
-              <View
-                style={{
-                  paddingTop: theme.layout.headerVerticalPadding,
-                  paddingBottom: theme.spacing.sm,
-                }}
-              >
-                <BrandedHeaderCard
-                  title="Search"
-                  subtitle="Find music, videos and playlists"
-                  actions={[
-                    { icon: 'history', onPress: applyRecentSearch, accessibilityLabel: 'Recent searches' },
-                    { icon: 'tune', onPress: cycleCategory, accessibilityLabel: 'Search filters' },
-                    { icon: 'person-outline', onPress: () => router.push(APP_ROUTES.profile), accessibilityLabel: 'Profile' },
-                  ]}
-                />
-              </View>
-            </FadeIn>
-          </Screen>
+    <PremiumPage title="Search" subtitle="Find music, videos, playlists, live sessions, and messages quickly." eyebrow="Discover" refreshing={loading || isSearching} onRefresh={refresh} rightAction={<AppButton title="Home" variant="secondary" size="sm" onPress={() => router.push(APP_ROUTES.tabs.home)} leftIcon={<MaterialIcons name="home-filled" size={16} color={theme.colors.text} />} />}>
+      <SurfaceCard tone="strong" style={{ padding: theme.spacing.md }}>
+        <View style={{ minHeight: 52, borderRadius: theme.radius.pill, backgroundColor: theme.scheme === 'dark' ? 'rgba(255,255,255,0.07)' : 'rgba(17,10,31,0.05)', borderWidth: 1, borderColor: theme.colors.border, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, gap: 10 }}>
+          <MaterialIcons name="search" size={20} color={theme.colors.textSecondary} />
+          <TextInput value={query} onChangeText={(value) => { setQuery(value); setRemoteResults(null); }} placeholder="Search songs, videos, live sessions" placeholderTextColor={theme.colors.textSecondary} autoCapitalize="none" returnKeyType="search" onSubmitEditing={() => void runSearch()} style={{ flex: 1, minHeight: 48, color: theme.colors.text, fontSize: 14, outlineStyle: 'none' as never }} />
+          {query.trim() ? <TVTouchable onPress={() => { setQuery(''); setRemoteResults(null); }} showFocusBorder={false}><MaterialIcons name="close" size={20} color={theme.colors.textSecondary} /></TVTouchable> : null}
         </View>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
+          {CATEGORIES.map((category) => {
+            const active = category === activeCategory;
+            return <TVTouchable key={category} onPress={() => { setActiveCategory(category); setRemoteResults(null); }} showFocusBorder={false} style={{ minHeight: 34, borderRadius: theme.radius.pill, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: active ? theme.colors.primary : theme.colors.surfaceAlt, borderWidth: 1, borderColor: active ? theme.colors.primary : theme.colors.border }}><CustomText variant="caption" style={{ color: active ? theme.colors.textInverse : theme.colors.textSecondary }}>{category === 'audio' ? 'Music' : category}</CustomText></TVTouchable>;
+          })}
+        </View>
+        <AppButton title="Search" onPress={() => void runSearch()} loading={isSearching} loadingLabel="Searching" style={{ marginTop: 14 }} leftIcon={<MaterialIcons name="search" size={17} color={theme.colors.textInverse} />} />
+      </SurfaceCard>
 
-        <Screen>
-          <View style={{ paddingTop: theme.layout.sectionGap }}>
-            <FadeIn>
-              <View style={{ gap: theme.spacing.sm }}>
-                <SearchBar value={query} onChangeText={setQuery} onSubmit={handleSubmitSearch} />
-                <CustomText variant="caption" style={{ color: theme.colors.textSecondary }}>
-                  Try artists, sermons, playlists, or live sessions.
-                </CustomText>
-                {isSearching ? (
-                  <CustomText variant="caption" style={{ color: theme.colors.textSecondary }}>
-                    Searching…
-                  </CustomText>
-                ) : null}
-              </View>
-            </FadeIn>
-
-            {discoverStack.length ? (
-              <FadeIn delay={90}>
-                <View style={{ marginTop: theme.spacing.lg }}>
-                  <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
-                    Discover something new
-                  </CustomText>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={{
-                      paddingTop: theme.spacing.sm,
-                      paddingRight: theme.spacing.md,
-                    }}
-                    overScrollMode="never"
-                  >
-                    <View style={{ flexDirection: 'row', gap: theme.spacing.md }}>
-                      {discoverStack.map((item) => (
-                        <PosterCard
-                          key={item.id}
-                          imageUrl={item.imageUrl}
-                          title={item.title}
-                          meta={formatMeta(item)}
-                          size="sm"
-                          onPress={() => void openResult(item)}
-                          showMore
-                          onMorePress={() => openMoreForItem(item)}
-                        />
-                      ))}
-                    </View>
-                  </ScrollView>
-                </View>
-              </FadeIn>
-            ) : null}
-
-            {quickShortcuts.length ? (
-              <FadeIn delay={140}>
-                <View style={{ marginTop: theme.spacing.lg }}>
-                  <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
-                    Browse all
-                  </CustomText>
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm, marginTop: theme.spacing.sm }}>
-                    {quickShortcuts.map((shortcut, index) => (
-                      <TVTouchable
-                        key={shortcut.label}
-                        onPress={() => {
-                          setQuery(shortcut.query);
-                          setActiveCategory(shortcut.category);
-                          void runRemoteSearch(shortcut.query, shortcut.category);
-                          showToast({
-                            title: 'Filter applied',
-                            message: `Showing ${shortcut.label.toLowerCase()}.`,
-                            tone: 'info',
-                            durationMs: 1400,
-                          });
-                        }}
-                        style={{
-                          width: shortcutWidth,
-                          borderRadius: theme.radius.lg,
-                          backgroundColor: browsePalette[index % browsePalette.length],
-                          padding: theme.spacing.md,
-                          minHeight: 92,
-                          justifyContent: 'space-between',
-                        }}
-                        showFocusBorder={false}
-                      >
-                        <MaterialIcons name={shortcut.icon as any} size={20} color="#fff" />
-                        <CustomText variant="caption" style={{ color: '#fff', fontWeight: '600' }}>
-                          {shortcut.label}
-                        </CustomText>
-                      </TVTouchable>
-                    ))}
-                  </View>
-                </View>
-              </FadeIn>
-            ) : null}
-
-            {query.trim() || remoteResults ? (
-              <FadeIn delay={200}>
-                <MediaRail
-                  title="Results"
-                  actionLabel={`${filtered.length} found`}
-                  data={filtered}
-                  renderItem={(item) => (
-                    <PosterCard
-                      key={item.id}
-                      imageUrl={item.imageUrl}
-                      title={item.title}
-                      meta={formatMeta(item)}
-                      size="sm"
-                      onPress={() => void openResult(item)}
-                      showMore
-                      onMorePress={() => openMoreForItem(item)}
-                    />
-                  )}
-                />
-              </FadeIn>
-            ) : (
-              <FadeIn delay={200}>
-                <SurfaceCard style={{ padding: theme.spacing.lg }}>
-                  <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
-                    Start searching
-                  </CustomText>
-                  <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 4 }}>
-                    Enter a title, artist, or topic to see tailored results.
-                  </CustomText>
-                </SurfaceCard>
-              </FadeIn>
-            )}
-
-            {!filtered.length ? (
-              <FadeIn delay={260}>
-                <SurfaceCard style={{ padding: theme.spacing.lg }}>
-                  <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
-                    No matches found
-                  </CustomText>
-                  <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 4 }}>
-                    Try a broader keyword or reset your active category.
-                  </CustomText>
-                  <View style={{ marginTop: theme.spacing.md }}>
-                    <AppButton
-                      title="Reset filters"
-                      variant="outline"
-                      size="sm"
-                      fullWidth
-                      onPress={() => {
-                        setActiveCategory('All');
-                        setQuery('');
-                        setRemoteResults(null);
-                      }}
-                    />
-                  </View>
-                </SurfaceCard>
-              </FadeIn>
-            ) : null}
-          </View>
-        </Screen>
-      </ScrollView>
-      <ActionSheet
-        visible={isActionSheetVisible}
-        title={activeActionItem?.title ?? 'Content options'}
-        description={activeActionItem?.subtitle}
-        actions={actionSheetActions}
-        onClose={() => setIsActionSheetVisible(false)}
-      />
-    </TabScreenWrapper>
+      {!query.trim() ? <QuickActionGrid actions={[{ label: 'Music', hint: 'Songs and messages', icon: 'graphic-eq', onPress: () => router.push(APP_ROUTES.tabs.player) }, { label: 'Videos', hint: 'Visual sessions', icon: 'smart-display', onPress: () => router.push(APP_ROUTES.tabs.videos) }, { label: 'Live', hint: 'Now and upcoming', icon: 'live-tv', onPress: () => router.push(APP_ROUTES.tabs.live) }, { label: 'Library', hint: 'Saved favorites', icon: 'library-music', onPress: () => router.push(APP_ROUTES.tabs.library) }]} /> : null}
+      <ContentList title={query.trim() ? 'Results' : 'Explore'} items={filtered} onPressItem={(item) => void openResult(item)} />
+      <ContentRail title="Popular music" items={feed.music} compact onPressItem={(item) => void openResult(item)} />
+      <ContentRail title="Latest videos" items={feed.videos} compact onPressItem={(item) => void openResult(item)} />
+      {!loading && query.trim() && !filtered.length ? <EmptyState title="No results found" message="Try another title, artist, topic, or category." actionLabel="Clear search" onAction={() => { setQuery(''); setRemoteResults(null); }} icon="search-off" /> : null}
+    </PremiumPage>
   );
 }
