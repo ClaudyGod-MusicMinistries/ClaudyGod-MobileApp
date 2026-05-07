@@ -2,6 +2,7 @@ import React from 'react';
 import { Platform, View, useWindowDimensions } from 'react-native';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { MaterialIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorScheme } from '../util/colorScheme';
 import { colors } from '../constants/color';
@@ -12,133 +13,145 @@ import { CustomText } from './CustomText';
 
 export const BOTTOM_TAB_CONTENT_SPACER = layout.tabBarContentPadding;
 
+const FALLBACK_TAB_CONFIG = {
+  home: { icon: 'home-filled' as const, label: 'Home' },
+  player: { icon: 'graphic-eq' as const, label: 'Music' },
+  videos: { icon: 'ondemand-video' as const, label: 'Videos' },
+  live: { icon: 'live-tv' as const, label: 'Live' },
+  library: { icon: 'library-music' as const, label: 'Library' },
+};
+
 const TabBar = ({ state, navigation }: BottomTabBarProps) => {
   const colorScheme = useColorScheme();
   const palette = colors[colorScheme] ?? colors.dark;
   const isTV = Platform.isTV;
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const compact = width < 370;
+  const compact = width < 380;
   const isTablet = width >= 768 && !isTV;
   const { config } = useMobileAppConfig();
 
-  const sizes = {
-    barHeight: isTV ? 78 : isTablet ? 70 : compact ? 62 : 66,
-    iconSize: isTV ? 22 : 20,
-    paddingX: isTV ? 18 : isTablet ? 14 : 8,
-  };
-
-  const barMaxWidth = isTV ? 1240 : isTablet ? 880 : width;
-  const barBottomInset = isTV ? 18 : Math.max(insets.bottom, 10);
-
-  const fallbackTabConfig = {
-    home: { icon: 'home-filled' as const, label: 'Home' },
-    player: { icon: 'graphic-eq' as const, label: 'Music', isCenter: true },
-    videos: { icon: 'ondemand-video' as const, label: 'Videos' },
-    live: { icon: 'live-tv' as const, label: 'Live' },
-    library: { icon: 'library-music' as const, label: 'Library' },
-  };
-
+  const barMaxWidth = isTV ? 1120 : isTablet ? 720 : width - 24;
+  const barBottomInset = isTV ? 20 : Math.max(insets.bottom, 12);
   const configuredTabs = config?.navigation?.tabs ?? [];
-
-  const barSurface = colorScheme === 'dark' ? 'rgba(10,10,16,0.96)' : 'rgba(255,255,255,0.98)';
-  const barBorder = colorScheme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(17,18,23,0.08)';
+  const visibleRoutes = state.routes.filter((route) => Boolean((FALLBACK_TAB_CONFIG as Record<string, unknown>)[route.name]));
 
   return (
     <View
+      pointerEvents="box-none"
       style={{
         position: 'absolute',
         left: 0,
         right: 0,
         bottom: 0,
         paddingBottom: barBottomInset,
-        paddingHorizontal: isTablet || isTV ? 0 : 12,
+        paddingHorizontal: 12,
         alignItems: 'center',
-        backgroundColor: barSurface,
-        borderTopWidth: 1,
-        borderTopColor: barBorder,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -8 },
-        shadowOpacity: colorScheme === 'dark' ? 0.35 : 0.12,
-        shadowRadius: 12,
-        elevation: 18,
       }}
     >
       <View
         style={{
           width: '100%',
           maxWidth: barMaxWidth,
-          height: sizes.barHeight,
-          backgroundColor: barSurface,
-          paddingHorizontal: sizes.paddingX,
-          paddingTop: 6,
-          paddingBottom: 6,
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
+          minHeight: compact ? 68 : 74,
+          borderRadius: 28,
+          overflow: 'hidden',
+          borderWidth: 1,
+          borderColor: colorScheme === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(56,42,84,0.14)',
+          backgroundColor: colorScheme === 'dark' ? 'rgba(10,7,17,0.92)' : 'rgba(255,255,255,0.92)',
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 18 },
+          shadowOpacity: colorScheme === 'dark' ? 0.42 : 0.16,
+          shadowRadius: 32,
+          elevation: 22,
         }}
       >
-        {state.routes.map((route, index) => {
-          const dynamic = configuredTabs.find((item) => item.id === route.name);
-          const config = dynamic
-            ? { icon: dynamic.icon as React.ComponentProps<typeof MaterialIcons>['name'], label: dynamic.label }
-            : (fallbackTabConfig as any)[route.name];
-          if (!config) return null;
+        <LinearGradient
+          colors={
+            colorScheme === 'dark'
+              ? ['rgba(255,255,255,0.08)', 'rgba(255,255,255,0.02)']
+              : ['rgba(255,255,255,0.96)', 'rgba(247,243,255,0.86)']
+          }
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+        />
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingHorizontal: compact ? 6 : 8,
+            paddingVertical: 8,
+          }}
+        >
+          {visibleRoutes.map((route) => {
+            const routeIndex = state.routes.findIndex((entry) => entry.key === route.key);
+            const dynamic = configuredTabs.find((item) => item.id === route.name);
+            const fallback = (FALLBACK_TAB_CONFIG as Record<string, { icon: React.ComponentProps<typeof MaterialIcons>['name']; label: string }>)[route.name];
+            const itemConfig = dynamic
+              ? { icon: dynamic.icon as React.ComponentProps<typeof MaterialIcons>['name'], label: dynamic.label }
+              : fallback;
+            if (!itemConfig) return null;
 
-          const focused = state.index === index;
+            const focused = state.index === routeIndex;
+            const activeBg = colorScheme === 'dark' ? 'rgba(183,148,246,0.16)' : 'rgba(124,58,237,0.10)';
 
-          return (
-            <TVTouchable
-              key={route.key}
-              accessibilityRole="button"
-              accessibilityLabel={config.label}
-              hasTVPreferredFocus={index === 0}
-              onPress={() => navigation.navigate(route.name as never)}
-              style={{
-                flex: 1,
-                minHeight: 52,
-                marginHorizontal: 2,
-                borderRadius: 12,
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: 'transparent',
-                gap: compact ? 1 : 3,
-              }}
-              focusStyle={{ transform: [{ scale: isTV ? 1.08 : 1.02 }] }}
-              showFocusBorder={false}
-            >
-              <MaterialIcons
-                name={config.icon}
-                size={sizes.iconSize}
-                color={focused ? palette.primary : palette.textSecondary}
-              />
-              {!compact ? (
-                <CustomText
-                  variant="caption"
-                  style={{
-                    color: focused ? palette.text : palette.textSecondary,
-                    fontSize: 10.5,
-                    letterSpacing: 0.08,
-                  }}
-                >
-                  {config.label}
-                </CustomText>
-              ) : null}
-              {focused ? (
-                <View
-                  style={{
-                    position: 'absolute',
-                    bottom: 4,
-                    width: 16,
-                    height: 2,
-                    borderRadius: 2,
-                    backgroundColor: palette.primary,
-                  }}
+            return (
+              <TVTouchable
+                key={route.key}
+                accessibilityRole="button"
+                accessibilityLabel={itemConfig.label}
+                accessibilityState={{ selected: focused }}
+                hasTVPreferredFocus={routeIndex === 0}
+                onPress={() => navigation.navigate(route.name as never)}
+                style={{
+                  flex: 1,
+                  minHeight: compact ? 52 : 58,
+                  marginHorizontal: 2,
+                  borderRadius: 22,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: focused ? activeBg : 'transparent',
+                  gap: compact ? 2 : 4,
+                }}
+                focusStyle={{ transform: [{ scale: isTV ? 1.06 : 1.01 }] }}
+                showFocusBorder={false}
+              >
+                <MaterialIcons
+                  name={itemConfig.icon}
+                  size={focused ? 23 : 21}
+                  color={focused ? palette.primary : palette.textTertiary ?? palette.textSecondary}
                 />
-              ) : null}
-            </TVTouchable>
-          );
-        })}
+                {!compact ? (
+                  <CustomText
+                    variant="caption"
+                    style={{
+                      color: focused ? palette.text : palette.textTertiary ?? palette.textSecondary,
+                      fontSize: 10.5,
+                      letterSpacing: 0.05,
+                    }}
+                    numberOfLines={1}
+                  >
+                    {itemConfig.label}
+                  </CustomText>
+                ) : null}
+                {focused ? (
+                  <View
+                    style={{
+                      position: 'absolute',
+                      bottom: 6,
+                      width: 18,
+                      height: 3,
+                      borderRadius: 3,
+                      backgroundColor: palette.primary,
+                    }}
+                  />
+                ) : null}
+              </TVTouchable>
+            );
+          })}
+        </View>
       </View>
     </View>
   );
