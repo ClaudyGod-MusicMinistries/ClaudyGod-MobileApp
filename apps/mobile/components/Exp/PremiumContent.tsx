@@ -347,48 +347,66 @@ export function QuickActionGrid({ actions }: { actions: QuickAction[] }) {
   const { width } = useWindowDimensions();
   const compact = width < 430;
   const itemWidth = compact ? '48.5%' : width >= 900 ? '23.5%' : '48%';
+  const actionCards = actions.map((action) => (
+    <TVTouchable
+      key={action.label}
+      onPress={action.onPress}
+      style={{ width: compact ? 154 : itemWidth }}
+      showFocusBorder={false}
+    >
+      <SurfaceCard
+        tone="subtle"
+        style={{
+          minHeight: compact ? 54 : 64,
+          paddingHorizontal: compact ? 10 : 11,
+          paddingVertical: compact ? 9 : 10,
+          justifyContent: 'center',
+        }}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: compact ? 8 : 10 }}>
+          <View
+            style={{
+              width: compact ? 30 : 32,
+              height: compact ? 30 : 32,
+              borderRadius: compact ? 15 : 16,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: theme.scheme === 'dark' ? 'rgba(183,148,246,0.12)' : 'rgba(124,58,237,0.08)',
+            }}
+          >
+            <MaterialIcons name={action.icon} size={17} color={theme.colors.primary} />
+          </View>
+
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <CustomText variant="label" style={{ color: theme.colors.text }} numberOfLines={1}>
+              {action.label}
+            </CustomText>
+            {action.hint ? (
+              <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 1 }} numberOfLines={1}>
+                {action.hint}
+              </CustomText>
+            ) : null}
+          </View>
+        </View>
+      </SurfaceCard>
+    </TVTouchable>
+  ));
+
+  if (compact) {
+    return (
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ gap: 8, paddingRight: 6 }}
+      >
+        {actionCards}
+      </ScrollView>
+    );
+  }
 
   return (
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-      {actions.map((action) => (
-        <TVTouchable key={action.label} onPress={action.onPress} style={{ width: itemWidth }} showFocusBorder={false}>
-          <SurfaceCard
-            tone="subtle"
-            style={{
-              minHeight: compact ? 58 : 64,
-              paddingHorizontal: 11,
-              paddingVertical: 10,
-              justifyContent: 'center',
-            }}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <View
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 16,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: theme.scheme === 'dark' ? 'rgba(183,148,246,0.12)' : 'rgba(124,58,237,0.08)',
-                }}
-              >
-                <MaterialIcons name={action.icon} size={17} color={theme.colors.primary} />
-              </View>
-
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <CustomText variant="label" style={{ color: theme.colors.text }} numberOfLines={1}>
-                  {action.label}
-                </CustomText>
-                {action.hint ? (
-                  <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 1 }} numberOfLines={1}>
-                    {action.hint}
-                  </CustomText>
-                ) : null}
-              </View>
-            </View>
-          </SurfaceCard>
-        </TVTouchable>
-      ))}
+      {actionCards}
     </View>
   );
 }
