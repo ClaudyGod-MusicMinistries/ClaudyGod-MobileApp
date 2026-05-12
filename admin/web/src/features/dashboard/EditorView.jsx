@@ -1,67 +1,27 @@
-import './EditorView.css';
+import '../../app/AdminShell.css';
 
-const CONTENT_LABELS = {
-  audio: 'Audio',
-  video: 'Video',
-  playlist: 'Playlist',
-  announcement: 'Announcement',
-  live: 'Live',
-  ad: 'Sponsored',
-};
-
-const STATUS_LABELS = {
-  draft: 'Draft',
-  published: 'Published',
-  submitted: 'Submitted',
-  in_review: 'In review',
-  changes_requested: 'Changes requested',
-  approved: 'Approved',
-  fulfilled: 'Draft created',
-  rejected: 'Rejected',
-};
-
-function titleCaseToken(value) {
-  const token = String(value || '').replace(/_/g, ' ').trim();
-  if (!token) return 'Unknown';
-  return token.charAt(0).toUpperCase() + token.slice(1);
+function hasText(value) {
+  return String(value || '').trim().length > 0;
 }
 
-function readableContentType(type) {
-  return CONTENT_LABELS[type] || titleCaseToken(type);
+function readiness(createForm) {
+  const mediaType = createForm.type === 'audio' || createForm.type === 'video';
+  const mediaReady = !mediaType || hasText(createForm.url) || hasText(createForm.mediaUploadSessionId);
+  const thumbReady = !mediaType || hasText(createForm.thumbnailUrl) || hasText(createForm.thumbnailUploadSessionId);
+  return [
+    { label: 'Title added', ok: hasText(createForm.title), note: 'Use a clear public title.' },
+    { label: 'Description added', ok: hasText(createForm.description), note: 'Explain what users will hear or watch.' },
+    { label: 'Media ready', ok: mediaReady, note: 'Upload media or paste the approved media URL.' },
+    { label: 'Thumbnail ready', ok: thumbReady, note: 'Audio and video should have a poster image.' },
+    { label: 'Mobile placement selected', ok: hasText(createForm.appSectionsCsv), note: 'Choose where this content appears in the app.' },
+  ];
 }
 
-function readableStatus(status, fallback) {
-  return STATUS_LABELS[status] || fallback || titleCaseToken(status);
-}
-
-function countReadyAssets(createForm) {
-  let count = 0;
-  if (createForm.mediaUploadSessionId || createForm.url) count += 1;
-  if (createForm.thumbnailUploadSessionId || createForm.thumbnailUrl) count += 1;
-  if (createForm.title && createForm.description) count += 1;
-  if (createForm.appSectionsCsv) count += 1;
-  return count;
-}
-
-function needsPlayableAsset(type) {
-  return type === 'audio' || type === 'video';
-}
-
-function policyText(policy, formatBytes) {
-  if (!policy) return 'Rules load automatically from the platform.';
-  const extensions = Array.isArray(policy.allowedExtensions) ? policy.allowedExtensions.join(', ') : 'approved formats';
-  return `Allowed: ${extensions} • Max ${formatBytes(policy.maxBytes)}`;
-}
-
-function firstNonEmpty(...values) {
-  return values.find((value) => String(value || '').trim().length > 0) || '';
-}
-
-function requestStatusClass(status) {
-  if (status === 'fulfilled' || status === 'approved') return 'is-ready';
-  if (status === 'changes_requested' || status === 'rejected') return 'is-warning';
-  if (status === 'in_review' || status === 'submitted') return 'is-active';
-  return '';
+function itemStatusClass(status) {
+  if (status === 'published' || status === 'fulfilled' || status === 'approved') return 'is-success';
+  if (status === 'changes_requested' || status === 'draft' || status === 'in_review') return 'is-warning';
+  if (status === 'rejected') return 'is-danger';
+  return 'is-info';
 }
 
 export default function EditorView(props) {
@@ -110,549 +70,404 @@ export default function EditorView(props) {
     contentRequestStatusOptions,
   } = props;
 
-  const mediaKind = onResolveMediaAssetKind();
-  const mediaPolicy = mediaKind ? onGetUploadPolicy(mediaKind) : null;
-  const thumbnailPolicy = onGetUploadPolicy('thumbnail');
-  const hasPlayableAsset = Boolean(createForm.url || createForm.mediaUploadSessionId);
-  const hasThumbnail = Boolean(createForm.thumbnailUrl || createForm.thumbnailUploadSessionId);
-  const readyScore = countReadyAssets(createForm);
-  const canUploadMedia = needsPlayableAsset(createForm.type);
-  const currentTypeLabel = readableContentType(createForm.type);
-  const destinationCopy = directPublishMode
-    ? 'Publish directly to the mobile app or save as a draft for final review.'
-    : 'Create a clear request for the admin review queue before it becomes a mobile item.';
+  const checks = readiness(createForm);
+  const completeChecks = checks.filter((check) => check.ok).length;
+  const requests = Array.isArray(contentRequests) ? contentRequests : [];
+  const items = Array.isArray(filteredItems) ? filteredItems : [];
 
   return (
-    <main class="studio-workspace">
-      <section class="studio-hero glass-panel reveal-up">
-        <div class="studio-hero-copy">
-          <span class="studio-kicker">{directPublishMode ? 'Admin publishing workspace' : 'Creator request workspace'}</span>
-          <h2>Upload once. Review clearly. Release confidently.</h2>
-          <p>
-            This workspace guides your client through content details, media upload, thumbnail, mobile placement,
-            and final release status without jumping between confusing screens.
-          </p>
+    <section class="cg-page">
+      <article class="cg-panel cg-hero">
+        <div class="cg-section-head">
+          <div>
+            <p class="cg-kicker">Publishing Studio</p>
+            <h2 class="cg-page-title">Create, correct, and publish without confusion.</h2>
+            <p class="cg-hero-copy">
+              Use this guided workspace to upload content, attach thumbnails, choose mobile app placement, review requests, and correct existing items before they go live.
+            </p>
+          </div>
+          <span class="cg-chip is-info">{directPublishMode ? 'Direct publishing enabled' : 'Request review mode'}</span>
         </div>
 
-        <div class="studio-score-card">
-          <span>Content readiness</span>
-          <strong>{readyScore}/4</strong>
-          <p>{destinationCopy}</p>
-          <div class="studio-progress-track" aria-hidden="true">
-            <span style={{ width: `${Math.min(100, readyScore * 25)}%` }} />
+        <div class="cg-progress-steps" style={{ marginTop: '20px' }}>
+          <div class="cg-step">
+            <span class="cg-step-pill">1</span>
+            <strong>Add details</strong>
+            <p class="cg-muted">Title, description, type, artist/channel, and visibility.</p>
+          </div>
+          <div class="cg-step">
+            <span class="cg-step-pill">2</span>
+            <strong>Attach assets</strong>
+            <p class="cg-muted">Upload or paste media and thumbnail links.</p>
+          </div>
+          <div class="cg-step">
+            <span class="cg-step-pill">3</span>
+            <strong>Choose placement</strong>
+            <p class="cg-muted">Select the mobile sections where users should see it.</p>
           </div>
         </div>
-      </section>
+      </article>
 
-      <section class="studio-flow-grid">
-        <article class="studio-card glass-panel reveal-up studio-publish-card" style={{ animationDelay: '80ms' }}>
-          <div class="studio-section-head">
+      <main class="cg-main-grid">
+        <section class="cg-panel cg-form-card">
+          <div class="cg-section-head">
             <div>
-              <span class="studio-kicker">Step 1</span>
-              <h3>{directPublishMode ? 'Create mobile content' : 'Submit content request'}</h3>
-              <p>
-                Add the core details first. The title, description, type, and release status control how the item is
-                reviewed and shown in the mobile app.
+              <p class="cg-kicker">New content</p>
+              <h2>{directPublishMode ? 'Upload to mobile app' : 'Submit for review'}</h2>
+              <p class="cg-muted">
+                {directPublishMode
+                  ? 'Create a draft or publish directly after all required details are ready.'
+                  : 'Send a clean request to the review queue so admins can approve and publish it.'}
               </p>
             </div>
-            <span class={['studio-status-pill', directPublishMode ? 'is-ready' : 'is-active']}>
-              {directPublishMode ? 'Direct publish' : 'Review queue'}
-            </span>
+            <span class="cg-chip">{completeChecks}/{checks.length} ready</span>
           </div>
 
-          <form class="studio-form" onSubmit={(event) => void onCreateContent(event)}>
-            <div class="studio-field">
-              <label>Title</label>
+          <form class="cg-form" onSubmit={(event) => void onCreateContent(event)}>
+            <label>
+              <span>Content title</span>
               <input
                 value={createForm.title}
                 onInput={(event) => { createForm.title = onReadValue(event); }}
-                placeholder="Enter a clear title for the mobile app"
+                placeholder="Friday Worship Session"
               />
-              <small>Use the exact name your audience should see.</small>
-            </div>
+            </label>
 
-            <div class="studio-field">
-              <label>Description</label>
+            <label>
+              <span>Description</span>
               <textarea
                 value={createForm.description}
                 onInput={(event) => { createForm.description = onReadValue(event); }}
                 rows={5}
-                placeholder="Describe the worship song, video, live replay, or announcement."
+                placeholder="Tell users what this content contains and why it matters."
               />
-              <small>Keep it understandable for the mobile audience and the review team.</small>
-            </div>
+            </label>
 
-            <div class="studio-grid-2">
-              <div class="studio-field">
-                <label>Content type</label>
+            <div class="cg-grid-2">
+              <label>
+                <span>Content type</span>
                 <select value={createForm.type} onChange={(event) => { createForm.type = onReadValue(event); }}>
-                  {contentTypes.map((type) => (
-                    <option value={type} key={`create-content-type-${type}`}>{readableContentType(type)}</option>
-                  ))}
+                  {contentTypes.map((type) => <option value={type} key={type}>{type}</option>)}
                 </select>
-              </div>
+              </label>
 
-              <div class="studio-field">
-                <label>{directPublishMode ? 'Release status' : 'Requested release'}</label>
+              <label>
+                <span>{directPublishMode ? 'Visibility' : 'Requested release'}</span>
                 <select value={createForm.visibility} onChange={(event) => { createForm.visibility = onReadValue(event); }}>
-                  {visibilityOptions.map((visibility) => (
-                    <option value={visibility} key={`create-visibility-${visibility}`}>{readableStatus(visibility)}</option>
-                  ))}
+                  {visibilityOptions.map((visibility) => <option value={visibility} key={visibility}>{visibility}</option>)}
                 </select>
-              </div>
+              </label>
             </div>
 
-            <div class="studio-divider" />
-
-            <div class="studio-section-minihead">
-              <span class="studio-kicker">Step 2</span>
-              <h4>Media and artwork</h4>
-              <p>Upload files from this screen or paste an approved media link when the file already exists.</p>
-            </div>
-
-            <div class="studio-field">
-              <label>Media link</label>
+            <label>
+              <span>Media URL</span>
               <input
                 value={createForm.url}
                 onInput={(event) => { createForm.url = onReadValue(event); }}
-                placeholder="Paste storage, CDN, YouTube, audio, or video link"
+                placeholder="Paste approved storage, CDN, YouTube, or stream URL"
               />
-              <small>
-                {hasPlayableAsset
-                  ? 'A playable media source is attached.'
-                  : canUploadMedia
-                    ? 'Upload the media file below or paste a media link.'
-                    : 'This content type may not need a playable media file.'}
-              </small>
-            </div>
+              <small>Use this when the media is already hosted outside the upload flow.</small>
+            </label>
 
-            <div class="studio-upload-grid">
-              <label class={['studio-upload-box', createForm.mediaUploadSessionId ? 'is-complete' : '']}>
-                <span class="studio-upload-icon">{createForm.mediaUploadSessionId ? '✓' : '01'}</span>
-                <strong>Upload {canUploadMedia ? currentTypeLabel.toLowerCase() : 'media'}</strong>
-                <small>
-                  {mediaKind
-                    ? policyText(mediaPolicy, onFormatBytes)
-                    : uploadPoliciesLoading
-                      ? 'Loading upload rules...'
-                      : 'Select Audio or Video before uploading media.'}
-                </small>
+            <div class="cg-grid-2">
+              <label>
+                <span>Upload media</span>
                 <input
                   type="file"
-                  accept={props.onAcceptFromPolicy(mediaPolicy) || 'audio/*,video/*'}
+                  accept={props.onAcceptFromPolicy(onGetUploadPolicy(onResolveMediaAssetKind())) || 'audio/*,video/*'}
                   onChange={(event) => void onHandleAssetUpload(event, 'media')}
-                  disabled={uploadingAsset || !canUploadMedia}
+                  disabled={uploadingAsset || (createForm.type !== 'audio' && createForm.type !== 'video')}
                 />
+                <small>
+                  {(() => {
+                    const kind = onResolveMediaAssetKind();
+                    const policy = kind ? onGetUploadPolicy(kind) : null;
+                    if (!kind) return 'Choose Audio or Video before uploading a media file.';
+                    if (!policy) return uploadPoliciesLoading ? 'Loading upload rules...' : 'Allowed formats and size limits are applied automatically.';
+                    return `Allowed: ${policy.allowedExtensions.join(', ')} • Max ${onFormatBytes(policy.maxBytes)}`;
+                  })()}
+                </small>
               </label>
 
-              <label class={['studio-upload-box', createForm.thumbnailUploadSessionId ? 'is-complete' : '']}>
-                <span class="studio-upload-icon">{createForm.thumbnailUploadSessionId ? '✓' : '02'}</span>
-                <strong>Upload thumbnail</strong>
-                <small>
-                  {thumbnailPolicy
-                    ? policyText(thumbnailPolicy, onFormatBytes)
-                    : uploadPoliciesLoading
-                      ? 'Loading thumbnail rules...'
-                      : 'Use a clear image for mobile cards and player artwork.'}
-                </small>
+              <label>
+                <span>Upload thumbnail</span>
                 <input
                   type="file"
-                  accept={props.onAcceptFromPolicy(thumbnailPolicy) || 'image/jpeg,image/png,image/webp'}
+                  accept={props.onAcceptFromPolicy(onGetUploadPolicy('thumbnail')) || 'image/jpeg,image/png,image/webp'}
                   onChange={(event) => void onHandleAssetUpload(event, 'thumbnail')}
                   disabled={uploadingAsset}
                 />
+                <small>
+                  {(() => {
+                    const policy = onGetUploadPolicy('thumbnail');
+                    if (!policy) return uploadPoliciesLoading ? 'Loading thumbnail rules...' : 'Allowed formats and size limits are applied automatically.';
+                    return `Allowed: ${policy.allowedExtensions.join(', ')} • Max ${onFormatBytes(policy.maxBytes)}`;
+                  })()}
+                </small>
               </label>
             </div>
 
-            {uploadingAsset ? <div class="studio-inline-alert">Uploading asset to storage...</div> : null}
+            {uploadingAsset ? <span class="cg-chip is-info">Uploading to storage...</span> : null}
 
-            <div class="studio-grid-2">
-              <div class="studio-field">
-                <label>Thumbnail URL</label>
+            <div class="cg-grid-2">
+              <label>
+                <span>Thumbnail URL override</span>
                 <input
                   value={createForm.thumbnailUrl}
                   onInput={(event) => { createForm.thumbnailUrl = onReadValue(event); }}
-                  placeholder="Optional image URL override"
+                  placeholder="Paste poster image URL when needed"
                 />
-                <small>{hasThumbnail ? 'Artwork source is ready.' : 'Use this only when the image is already hosted.'}</small>
-              </div>
+              </label>
 
-              <div class="studio-field">
-                <label>Artist / Channel</label>
+              <label>
+                <span>Channel / artist</span>
                 <input
                   value={createForm.channelName}
                   onInput={(event) => { createForm.channelName = onReadValue(event); }}
                   placeholder="ClaudyGod Music Ministries"
                 />
-              </div>
+              </label>
             </div>
 
-            <div class="studio-grid-2">
-              <div class="studio-field">
-                <label>Duration label</label>
+            <div class="cg-grid-2">
+              <label>
+                <span>Duration label</span>
                 <input
                   value={createForm.duration}
                   onInput={(event) => { createForm.duration = onReadValue(event); }}
-                  placeholder="Example: 45:12"
+                  placeholder="45:12"
                 />
-              </div>
+              </label>
 
-              <div class="studio-field">
-                <label>Tags</label>
+              <label>
+                <span>Tags</span>
                 <input
                   value={createForm.tagsCsv}
                   onInput={(event) => { createForm.tagsCsv = onReadValue(event); }}
-                  placeholder="worship, praise, live session"
+                  placeholder="worship, live session, choir"
                 />
-              </div>
+              </label>
             </div>
 
-            <div class="studio-divider" />
-
-            <div class="studio-section-minihead">
-              <span class="studio-kicker">Step 3</span>
-              <h4>Mobile app placement</h4>
-              <p>Select where this content appears in the mobile app. This replaces confusing manual guessing.</p>
-            </div>
-
-            <div class="studio-field">
-              <label>Selected mobile sections</label>
+            <label>
+              <span>Mobile placement</span>
               <input
                 value={createForm.appSectionsCsv}
                 onInput={(event) => { createForm.appSectionsCsv = onReadValue(event); }}
-                placeholder="Choose sections below or enter section ids"
+                placeholder="Choose placements below or enter section ids manually"
               />
-              <small>Examples can include home rails, music sections, video rails, live sections, or library collections.</small>
-            </div>
+              <small>These sections decide where the item appears in the mobile app.</small>
+            </label>
 
-            <div class="studio-placement-box">
-              {onRenderSectionSelector(createForm.appSectionsCsv, (nextValue) => { createForm.appSectionsCsv = nextValue; })}
-            </div>
+            {onRenderSectionSelector(createForm.appSectionsCsv, (nextValue) => { createForm.appSectionsCsv = nextValue; })}
 
-            <div class="studio-submit-row">
-              <div>
-                <strong>{directPublishMode ? 'Ready to save?' : 'Ready to submit?'}</strong>
-                <p>
-                  {directPublishMode
-                    ? 'Draft keeps it private. Published sends it to the mobile feed.'
-                    : 'The request enters the queue for review, approval, and draft creation.'}
-                </p>
-              </div>
-              <button type="submit" class="studio-primary-btn" disabled={savingContent}>
-                {savingContent
-                  ? directPublishMode
-                    ? createForm.visibility === 'published'
-                      ? 'Publishing...'
-                      : 'Creating draft...'
-                    : 'Submitting...'
-                  : directPublishMode
-                    ? createForm.visibility === 'published'
-                      ? 'Publish to mobile'
-                      : 'Save as draft'
-                    : 'Submit request'}
-              </button>
-            </div>
+            <button type="submit" class="cg-primary" disabled={savingContent}>
+              {savingContent
+                ? directPublishMode
+                  ? createForm.visibility === 'published'
+                    ? 'Publishing...'
+                    : 'Creating draft...'
+                  : 'Submitting request...'
+                : directPublishMode
+                  ? createForm.visibility === 'published'
+                    ? 'Publish to mobile app'
+                    : 'Create draft'
+                  : 'Send request to review'}
+            </button>
           </form>
-        </article>
+        </section>
 
-        <aside class="studio-side-stack">
-          <article class="studio-card glass-panel reveal-up" style={{ animationDelay: '120ms' }}>
-            <div class="studio-section-head compact">
+        <aside class="cg-stack">
+          <section class="cg-panel cg-card">
+            <div class="cg-section-head">
               <div>
-                <span class="studio-kicker">Workflow</span>
-                <h3>Client-safe checklist</h3>
+                <h2>Readiness checklist</h2>
+                <p class="cg-muted">Your client can follow this before publishing.</p>
               </div>
             </div>
-
-            <div class="studio-checklist">
-              <div class={['studio-check-item', createForm.title && createForm.description ? 'is-done' : '']}>
-                <span>{createForm.title && createForm.description ? '✓' : '1'}</span>
-                <div>
-                  <strong>Details added</strong>
-                  <p>Title and description are clear.</p>
-                </div>
-              </div>
-              <div class={['studio-check-item', hasPlayableAsset || !canUploadMedia ? 'is-done' : '']}>
-                <span>{hasPlayableAsset || !canUploadMedia ? '✓' : '2'}</span>
-                <div>
-                  <strong>Media source ready</strong>
-                  <p>{canUploadMedia ? 'Upload or link audio/video.' : 'No playable file required for this type.'}</p>
-                </div>
-              </div>
-              <div class={['studio-check-item', hasThumbnail ? 'is-done' : '']}>
-                <span>{hasThumbnail ? '✓' : '3'}</span>
-                <div>
-                  <strong>Artwork attached</strong>
-                  <p>Thumbnail improves mobile presentation.</p>
-                </div>
-              </div>
-              <div class={['studio-check-item', createForm.appSectionsCsv ? 'is-done' : '']}>
-                <span>{createForm.appSectionsCsv ? '✓' : '4'}</span>
-                <div>
-                  <strong>Placement selected</strong>
-                  <p>Choose mobile sections before publishing.</p>
-                </div>
-              </div>
-            </div>
-          </article>
-
-          <article class="studio-card glass-panel reveal-up" style={{ animationDelay: '160ms' }}>
-            <div class="studio-section-head compact">
-              <div>
-                <span class="studio-kicker">Review queue</span>
-                <h3>{requestSummary.active} active request{requestSummary.active === 1 ? '' : 's'}</h3>
-                <p>Track submissions and turn approved requests into drafts.</p>
-              </div>
-            </div>
-
-            <div class="studio-mini-stats">
-              {requestStatusBoard.map((card) => (
-                <div class={['studio-mini-stat', `accent-${card.accent}`]} key={`request-status-${card.label}`}>
-                  <span>{card.label}</span>
-                  <strong>{card.value}</strong>
+            <div class="cg-checklist">
+              {checks.map((check) => (
+                <div class="cg-check-row" key={check.label}>
+                  <span class="cg-check-dot">{check.ok ? '✓' : '!'}</span>
+                  <div>
+                    <strong>{check.label}</strong>
+                    <p class="cg-muted">{check.note}</p>
+                  </div>
                 </div>
               ))}
             </div>
-          </article>
-        </aside>
-      </section>
+          </section>
 
-      <section class="studio-card glass-panel reveal-up" style={{ animationDelay: '180ms' }}>
-        <div class="studio-section-head">
-          <div>
-            <span class="studio-kicker">Requests</span>
-            <h3>Submission review queue</h3>
-            <p>Every request stays visible with status, creator notes, draft status, and next action.</p>
-          </div>
-          <span class="studio-status-pill is-active">{contentRequests.length} total</span>
-        </div>
+          <section class="cg-panel cg-card">
+            <div class="cg-section-head">
+              <div>
+                <h2>Request board</h2>
+                <p class="cg-muted">Track client submissions and review status.</p>
+              </div>
+              <span class="cg-chip">{requestSummary.active} open</span>
+            </div>
 
-        {contentRequestLoading ? <div class="studio-empty">Loading submission requests...</div> : null}
+            <div class="cg-grid-3" style={{ marginBottom: '12px' }}>
+              {requestStatusBoard.map((card) => (
+                <article class="cg-mini-card" key={`request-stat-${card.label}`}>
+                  <span>{card.label}</span>
+                  <strong>{card.value}</strong>
+                </article>
+              ))}
+            </div>
 
-        {!contentRequestLoading && contentRequests.length === 0 ? (
-          <div class="studio-empty">
-            No content requests yet. When your client submits content for review, it will appear here.
-          </div>
-        ) : null}
+            <div class="cg-list">
+              {contentRequestLoading ? <div class="cg-empty">Loading requests...</div> : null}
+              {!contentRequestLoading && requests.length === 0 ? (
+                <div class="cg-empty">No content requests yet.</div>
+              ) : null}
 
-        {!contentRequestLoading && contentRequests.length > 0 ? (
-          <div class="studio-request-grid">
-            {contentRequests.map((request) => (
-              <article class="studio-request-card" key={`request-${request.id}`}>
-                <div class="studio-card-topline">
-                  <div class="studio-pill-row">
-                    <span class="studio-type-pill">{readableContentType(request.type)}</span>
-                    <span class={['studio-status-pill', requestStatusClass(request.status)]}>
-                      {readableStatus(request.status, props.humanizeToken(request.status))}
-                    </span>
-                  </div>
-                  <span class="studio-muted-chip">{formatDateTime(request.createdAt)}</span>
-                </div>
-
-                <h4>{request.title}</h4>
-                <p>{truncate(request.description, 180)}</p>
-
-                <div class="studio-meta-grid">
-                  <div>
-                    <span>Requested by</span>
-                    <strong>{request.requester?.displayName || request.requester?.email || 'Unknown requester'}</strong>
-                  </div>
-                  <div>
-                    <span>Release target</span>
-                    <strong>{readableStatus(request.requestedVisibility)}</strong>
-                  </div>
-                  <div>
-                    <span>Draft</span>
-                    <strong>{request.createdContentTitle || 'Not created yet'}</strong>
-                  </div>
-                </div>
-
-                {request.requestNotes ? (
-                  <div class="studio-note">
-                    <strong>Notes</strong>
-                    <p>{truncate(request.requestNotes, 180)}</p>
-                  </div>
-                ) : null}
-
-                {isAdmin ? (
-                  <div class="studio-request-actions">
-                    <label>
-                      Status
-                      <select
-                        value={request.status}
-                        disabled={contentRequestStatusUpdatingId === request.id}
-                        onChange={(event) => void onUpdateSubmissionRequestStatus(request.id, event.target.value)}
-                      >
-                        {contentRequestStatusOptions.map((status) => (
-                          <option value={status} key={`status-${request.id}-${status}`}>
-                            {readableStatus(status, props.humanizeToken(status))}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-
-                    <button
-                      type="button"
-                      class="studio-secondary-btn"
-                      disabled={Boolean(request.createdContentId) || creatingDraftFromRequestId === request.id || request.status === 'rejected'}
-                      onClick={() => void onCreateDraftFromRequest(request)}
-                    >
-                      {request.createdContentId
-                        ? 'Draft created'
-                        : creatingDraftFromRequestId === request.id
-                          ? 'Creating...'
-                          : 'Create draft'}
-                    </button>
-                  </div>
-                ) : null}
-              </article>
-            ))}
-          </div>
-        ) : null}
-      </section>
-
-      <section class="studio-card glass-panel reveal-up" style={{ animationDelay: '220ms' }}>
-        <div class="studio-section-head">
-          <div>
-            <span class="studio-kicker">Library</span>
-            <h3>Published and draft content</h3>
-            <p>Search, correct, publish, move to draft, adjust mobile placement, or delete content from one table-free view.</p>
-          </div>
-          <span class="studio-status-pill">{paginationTotal} items</span>
-        </div>
-
-        <div class="studio-filter-bar">
-          <input
-            value={filterState.search}
-            onInput={(event) => { filterState.search = onReadValue(event); }}
-            placeholder="Search title, description, creator, or media link"
-          />
-          <select value={filterState.type} onChange={(event) => { filterState.type = onReadValue(event); }}>
-            <option value="all">All types</option>
-            {contentTypes.map((type) => (
-              <option value={type} key={`filter-type-${type}`}>{readableContentType(type)}</option>
-            ))}
-          </select>
-          <select value={filterState.visibility} onChange={(event) => { filterState.visibility = onReadValue(event); }}>
-            <option value="all">All status</option>
-            {visibilityOptions.map((visibility) => (
-              <option value={visibility} key={`filter-visibility-${visibility}`}>{readableStatus(visibility)}</option>
-            ))}
-          </select>
-        </div>
-
-        {contentLoading ? <div class="studio-empty">Loading content library...</div> : null}
-
-        {!contentLoading && filteredItems.length === 0 ? (
-          <div class="studio-empty">No content found. Clear the filters or create a new content item above.</div>
-        ) : null}
-
-        {!contentLoading && filteredItems.length > 0 ? (
-          <div class="studio-library-list">
-            {filteredItems.map((item) => (
-              <article class="studio-library-card" key={item.id}>
-                <div class="studio-library-main">
-                  <div class="studio-card-topline">
-                    <div class="studio-pill-row">
-                      <span class="studio-type-pill">{readableContentType(item.type)}</span>
-                      <span class={['studio-status-pill', item.visibility === 'published' ? 'is-ready' : '']}>
-                        {readableStatus(item.visibility)}
-                      </span>
-                      {item.sourceKind ? <span class="studio-muted-chip">{item.sourceKind}</span> : null}
+              {!contentRequestLoading ? requests.slice(0, 8).map((request) => (
+                <article class="cg-item" key={`request-${request.id}`}>
+                  <div class="cg-item-head">
+                    <div>
+                      <h3>{request.title}</h3>
+                      <p>{truncate(request.description, 120)}</p>
                     </div>
-                    <span class="studio-muted-chip">Updated {formatDateTime(item.updatedAt)}</span>
+                    <span class={['cg-status', itemStatusClass(request.status)]}>{props.humanizeToken(request.status)}</span>
                   </div>
-
-                  <h4>{item.title}</h4>
-                  <p>{truncate(item.description, 190)}</p>
-
-                  <div class="studio-card-link-row">
-                    {item.url ? (
-                      <a href={item.url} target="_blank" rel="noreferrer noopener">Open media</a>
-                    ) : (
-                      <span class="studio-muted-chip">No media link</span>
-                    )}
-
-                    {Array.isArray(item.appSections) && item.appSections.length ? (
-                      <span class="studio-muted-chip">Sections: {item.appSections.join(', ')}</span>
-                    ) : (
-                      <span class="studio-muted-chip">No mobile placement</span>
-                    )}
+                  <div class="cg-chip-row">
+                    <span class="cg-chip">{request.type}</span>
+                    <span class="cg-chip">Target: {request.requestedVisibility}</span>
+                    <span class="cg-chip">{formatDateTime(request.createdAt)}</span>
                   </div>
-
-                  {activeSectionEditorItemId === item.id ? (
-                    <div class="studio-placement-editor">
-                      <div class="studio-section-head compact">
-                        <div>
-                          <h4>Mobile placement</h4>
-                          <p>Choose where this item appears in the app.</p>
-                        </div>
-                        <button type="button" class="studio-tertiary-btn" onClick={onCloseContentSectionEditor}>
-                          Close
-                        </button>
-                      </div>
-
-                      {onRenderSectionSelector(sectionEditorValue, onUpdateSectionEditorValue)}
-
-                      <div class="studio-submit-row compact">
-                        <span class="studio-muted-chip">
-                          {sectionEditorValue ? `Selected: ${sectionEditorValue}` : 'No section selected'}
-                        </span>
-                        <button
-                          type="button"
-                          class="studio-primary-btn compact"
-                          disabled={sectionEditorSaving}
-                          onClick={() => void onSaveContentSections(item)}
+                  {isAdmin ? (
+                    <div class="cg-grid-2" style={{ marginTop: '12px' }}>
+                      <label class="cg-field">
+                        <span>Review status</span>
+                        <select
+                          class="cg-select"
+                          value={request.status}
+                          disabled={contentRequestStatusUpdatingId === request.id}
+                          onChange={(event) => void onUpdateSubmissionRequestStatus(request.id, event.target.value)}
                         >
-                          {sectionEditorSaving ? 'Saving...' : 'Save placement'}
-                        </button>
-                      </div>
+                          {contentRequestStatusOptions.map((status) => (
+                            <option value={status} key={`request-status-${request.id}-${status}`}>{props.humanizeToken(status)}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <button
+                        type="button"
+                        class="cg-primary"
+                        disabled={Boolean(request.createdContentId) || creatingDraftFromRequestId === request.id || request.status === 'rejected'}
+                        onClick={() => void onCreateDraftFromRequest(request)}
+                      >
+                        {request.createdContentId ? 'Draft created' : creatingDraftFromRequestId === request.id ? 'Creating...' : 'Create draft'}
+                      </button>
                     </div>
                   ) : null}
-                </div>
+                </article>
+              )) : null}
+            </div>
+          </section>
+        </aside>
+      </main>
 
-                <div class="studio-library-actions">
-                  <button
-                    type="button"
-                    class="studio-secondary-btn"
-                    onClick={() => void onToggleVisibility(item)}
-                    disabled={togglingId === item.id}
-                  >
-                    {togglingId === item.id
-                      ? 'Updating...'
-                      : item.visibility === 'published'
-                        ? 'Move to draft'
-                        : 'Publish'}
-                  </button>
-                  <button
-                    type="button"
-                    class="studio-tertiary-btn"
-                    onClick={() => onOpenEditContentModal(item)}
-                    disabled={deletingContentId === item.id}
-                  >
+      <section class="cg-panel cg-card">
+        <div class="cg-section-head">
+          <div>
+            <p class="cg-kicker">Content library</p>
+            <h2>Correct, place, publish, or remove existing content</h2>
+            <p class="cg-muted">Every item below comes from the real managed content library.</p>
+          </div>
+          <span class="cg-chip">{paginationTotal} total items</span>
+        </div>
+
+        <div class="cg-grid-3" style={{ marginBottom: '16px' }}>
+          <input
+            class="cg-input"
+            value={filterState.search}
+            onInput={(event) => { filterState.search = onReadValue(event); }}
+            placeholder="Search title, description, creator, or link"
+          />
+          <select class="cg-select" value={filterState.type} onChange={(event) => { filterState.type = onReadValue(event); }}>
+            <option value="all">All types</option>
+            {contentTypes.map((type) => <option value={type} key={type}>{type}</option>)}
+          </select>
+          <select class="cg-select" value={filterState.visibility} onChange={(event) => { filterState.visibility = onReadValue(event); }}>
+            <option value="all">All status</option>
+            {visibilityOptions.map((visibility) => <option value={visibility} key={visibility}>{visibility}</option>)}
+          </select>
+        </div>
+
+        <div class="cg-list">
+          {contentLoading ? <div class="cg-empty">Loading content library...</div> : null}
+          {!contentLoading && items.length === 0 ? <div class="cg-empty">No content found for the selected filters.</div> : null}
+
+          {!contentLoading ? items.map((item) => (
+            <article class="cg-item" key={item.id}>
+              <div class="cg-item-head">
+                <div>
+                  <div class="cg-chip-row" style={{ marginBottom: '8px' }}>
+                    <span class="cg-chip">{item.type}</span>
+                    <span class={['cg-status', item.visibility === 'published' ? 'is-success' : 'is-warning']}>{item.visibility}</span>
+                    {item.sourceKind ? <span class="cg-chip">{item.sourceKind}</span> : null}
+                  </div>
+                  <h3>{item.title}</h3>
+                  <p>{truncate(item.description, 190)}</p>
+                </div>
+                <div class="cg-button-row">
+                  <button type="button" class="cg-secondary compact" onClick={() => onOpenEditContentModal(item)} disabled={deletingContentId === item.id}>
                     Correct
                   </button>
-                  <button
-                    type="button"
-                    class="studio-tertiary-btn"
-                    onClick={() => onToggleContentSectionEditor(item)}
-                  >
+                  <button type="button" class="cg-secondary compact" onClick={() => onToggleContentSectionEditor(item)}>
                     {activeSectionEditorItemId === item.id ? 'Close placement' : 'Placement'}
                   </button>
-                  <button
-                    type="button"
-                    class="studio-danger-btn"
-                    onClick={() => void onDeleteContentItem(item)}
-                    disabled={deletingContentId === item.id}
-                  >
+                  <button type="button" class="cg-primary compact" onClick={() => void onToggleVisibility(item)} disabled={togglingId === item.id}>
+                    {togglingId === item.id ? 'Updating...' : item.visibility === 'published' ? 'Move to draft' : 'Publish'}
+                  </button>
+                  <button type="button" class="cg-danger compact" onClick={() => void onDeleteContentItem(item)} disabled={deletingContentId === item.id}>
                     {deletingContentId === item.id ? 'Deleting...' : 'Delete'}
                   </button>
                 </div>
-              </article>
-            ))}
-          </div>
-        ) : null}
+              </div>
+
+              <div class="cg-grid-3">
+                <div>
+                  <span class="cg-meta-label">Created by</span>
+                  <p class="cg-copy">{item.author && item.author.displayName ? item.author.displayName : 'Unknown'}</p>
+                </div>
+                <div>
+                  <span class="cg-meta-label">Updated</span>
+                  <p class="cg-copy">{formatDateTime(item.updatedAt)}</p>
+                </div>
+                <div>
+                  <span class="cg-meta-label">Sections</span>
+                  <p class="cg-copy">{Array.isArray(item.appSections) && item.appSections.length ? item.appSections.join(', ') : 'Not placed yet'}</p>
+                </div>
+              </div>
+
+              <div class="cg-chip-row" style={{ marginTop: '12px' }}>
+                {item.url ? <a href={item.url} target="_blank" rel="noreferrer noopener" class="cg-secondary compact">Open media</a> : <span class="cg-chip is-warning">No media link</span>}
+              </div>
+
+              {activeSectionEditorItemId === item.id ? (
+                <div class="cg-card" style={{ marginTop: '14px', padding: '14px' }}>
+                  <div class="cg-section-head">
+                    <div>
+                      <h3>Mobile placement</h3>
+                      <p class="cg-muted">Choose where this item should appear in the app.</p>
+                    </div>
+                    <button type="button" class="cg-secondary compact" onClick={onCloseContentSectionEditor}>Cancel</button>
+                  </div>
+                  {onRenderSectionSelector(sectionEditorValue, onUpdateSectionEditorValue)}
+                  <div class="cg-button-row" style={{ marginTop: '12px' }}>
+                    <span class="cg-chip">{sectionEditorValue ? `Selected: ${sectionEditorValue}` : 'No section selected yet'}</span>
+                    <button type="button" class="cg-primary compact" disabled={sectionEditorSaving} onClick={() => void onSaveContentSections(item)}>
+                      {sectionEditorSaving ? 'Saving...' : 'Save placement'}
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+            </article>
+          )) : null}
+        </div>
       </section>
-    </main>
+    </section>
   );
 }
