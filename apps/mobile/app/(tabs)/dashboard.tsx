@@ -198,7 +198,7 @@ function InsightCard({ insight, onPress }: { insight: EngagementInsight; onPress
 export default function DashboardScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const { isAuthenticated, user } = useAuth();
+  const { accessToken, isAuthenticated, user } = useAuth();
   const { showToast } = useToast();
   const isCompactLayout = width < 560;
   const [metrics, setMetrics] = useState<UserEngagementMetrics | null>(null);
@@ -222,7 +222,6 @@ export default function DashboardScreen() {
   const loadDashboardData = useCallback(async () => {
     setIsLoading(true);
     try {
-      // Fetch real data from backend based on active chip
       let userMetrics: UserEngagementMetrics | null = null;
       let userInsights: EngagementInsight[] = [];
 
@@ -239,7 +238,6 @@ export default function DashboardScreen() {
 
       setMetrics(userMetrics);
 
-      // Fetch insights and chip-specific data
       if (activeChip === 'overview') {
         try {
           const overview = await fetchEngagementOverview(user?.id);
@@ -256,7 +254,6 @@ export default function DashboardScreen() {
         }
       }
 
-      // Generate personalized insights
       try {
         userInsights = await fetchEngagementInsights(user?.id);
       } catch (error) {
@@ -266,10 +263,9 @@ export default function DashboardScreen() {
 
       setInsights(userInsights);
 
-      // Try to connect WebSocket for real-time updates
-      if (isAuthenticated && user?.id) {
+      if (isAuthenticated && user?.id && accessToken) {
         try {
-          await wsService.connect(user.id, 'mock-auth-token');
+          await wsService.connect(user.id, accessToken);
           wsService.subscribe('engagement', (data) => {
             setMetrics((prev) => (prev ? { ...prev, ...data } : null));
           });
@@ -280,7 +276,7 @@ export default function DashboardScreen() {
     } finally {
       setIsLoading(false);
     }
-  }, [activeChip, isAuthenticated, showToast, user?.id]);
+  }, [accessToken, activeChip, isAuthenticated, showToast, user?.id]);
 
   useEffect(() => {
     void loadDashboardData();
