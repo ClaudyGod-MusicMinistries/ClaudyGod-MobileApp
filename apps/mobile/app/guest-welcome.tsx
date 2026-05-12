@@ -1,157 +1,167 @@
 import React from 'react';
-import { Image, ScrollView, StatusBar, View, useWindowDimensions } from 'react-native';
+import { ScrollView, StatusBar, View, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+
 import { AppButton } from '../components/ui/AppButton';
+import { AppScreenFooter } from '../components/layout/AppScreenFooter';
 import { CustomText } from '../components/CustomText';
-import { FadeIn } from '../components/ui/FadeIn';
+import { Screen } from '../components/layout/Screen';
 import { SurfaceCard } from '../components/ui/SurfaceCard';
 import { TVTouchable } from '../components/ui/TVTouchable';
+import { useGuestMode } from '../context/GuestModeContext';
 import { useAppTheme } from '../util/colorScheme';
 import { APP_ROUTES } from '../util/appRoutes';
-import { BRAND_LOGO_ASSET } from '../util/brandAssets';
 
-const FEATURES: {
-  icon: React.ComponentProps<typeof MaterialIcons>['name'];
-  title: string;
-  description: string;
-}[] = [
+const previewRules = [
   {
-    icon: 'graphic-eq',
-    title: 'Listen freely',
-    description: 'Explore worship songs, messages, playlists, and recent releases.',
+    icon: 'visibility' as const,
+    title: 'Preview public content',
+    text: 'Guest mode is for exploring public music, videos, and live updates only.',
   },
   {
-    icon: 'smart-display',
-    title: 'Watch sessions',
-    description: 'Enjoy ministry videos, replays, and visual worship moments.',
+    icon: 'lock-outline' as const,
+    title: 'No saved account access',
+    text: 'Library saves, personal history, notifications, and account settings require sign in.',
   },
   {
-    icon: 'live-tv',
-    title: 'Join live',
-    description: 'Open live sessions and return to replays when they are available.',
-  },
-  {
-    icon: 'person-add-alt',
-    title: 'Create later',
-    description: 'Start now as a guest, then sign in whenever you want saved access.',
+    icon: 'person-add-alt' as const,
+    title: 'Create an account anytime',
+    text: 'Sign up when you are ready to save favourites and personalize the experience.',
   },
 ];
 
-export default function GuestWelcomeScreen() {
+export default function GuestWelcome() {
   const theme = useAppTheme();
   const router = useRouter();
+  const { enterGuestMode } = useGuestMode();
   const { width } = useWindowDimensions();
-  const isTablet = width >= 768;
-  const isWide = width >= 1024;
-  const isCompact = width < 380;
-  const cardWidth = isWide ? '23.8%' : isTablet ? '48.5%' : '100%';
+  const compact = width < 420;
+
+  const continueGuest = () => {
+    enterGuestMode();
+    router.replace(APP_ROUTES.tabs.home);
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-      <StatusBar translucent={false} barStyle="light-content" backgroundColor={theme.colors.background} />
+      <StatusBar translucent={false} barStyle={theme.scheme === 'dark' ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
       <LinearGradient
-        colors={theme.scheme === 'dark' ? ['#130B24', '#07040D', '#05030A'] : ['#F8F5FF', '#F1ECFF', '#FFFFFF']}
+        colors={theme.scheme === 'dark' ? ['rgba(76,29,149,0.22)', theme.colors.background] : ['rgba(124,58,237,0.12)', theme.colors.background]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={{ flex: 1 }}
       >
-        <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            bounces={false}
-            overScrollMode="never"
-            contentContainerStyle={{
-              flexGrow: 1,
-              paddingHorizontal: isTablet ? theme.spacing.xxl : theme.spacing.lg,
-              paddingVertical: isTablet ? theme.spacing.xxl : theme.spacing.lg,
-              justifyContent: 'center',
-            }}
-          >
-            <View style={{ width: '100%', maxWidth: 1120, alignSelf: 'center', gap: theme.spacing.xl }}>
-              <FadeIn>
-                <SurfaceCard tone="strong" style={{ padding: isTablet ? theme.spacing.xxl : theme.spacing.xl }}>
-                  <View style={{ flexDirection: isWide ? 'row' : 'column', gap: theme.spacing.xl, alignItems: isWide ? 'center' : 'flex-start' }}>
-                    <View style={{ flex: 1, gap: theme.spacing.lg }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                        <View style={{ width: 48, height: 48, borderRadius: 18, backgroundColor: 'rgba(183,148,246,0.16)', borderWidth: 1, borderColor: 'rgba(183,148,246,0.28)', alignItems: 'center', justifyContent: 'center' }}>
-                          <Image source={BRAND_LOGO_ASSET} style={{ width: 30, height: 30, borderRadius: 10 }} />
-                        </View>
-                        <View>
-                          <CustomText variant="caption" style={{ color: theme.colors.primary, textTransform: 'uppercase', letterSpacing: 0.9 }}>
-                            Guest mode
-                          </CustomText>
-                          <CustomText variant="label" style={{ color: theme.colors.text, marginTop: 2 }}>
-                            ClaudyGod Ministries
-                          </CustomText>
-                        </View>
-                      </View>
-
-                      <View style={{ gap: 10 }}>
-                        <CustomText variant="hero" style={{ color: theme.colors.text, fontSize: isCompact ? 28 : isTablet ? 46 : 34, lineHeight: isCompact ? 34 : isTablet ? 54 : 42, letterSpacing: -1.1 }}>
-                          Start listening without friction.
-                        </CustomText>
-                        <CustomText variant="body" style={{ color: theme.colors.textSecondary, maxWidth: 560, fontSize: isTablet ? 15 : 13.5, lineHeight: isTablet ? 23 : 20 }}>
-                          Browse worship music, videos, live sessions, and playlists now. Sign in later when you want to keep your library across devices.
-                        </CustomText>
-                      </View>
-
-                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
-                        <AppButton
-                          title="Enter app"
-                          size={isCompact ? 'md' : 'lg'}
-                          onPress={() => router.replace(APP_ROUTES.tabs.home)}
-                          leftIcon={<MaterialIcons name="arrow-forward" size={18} color={theme.colors.textInverse} />}
-                          style={{ minWidth: isCompact ? '100%' : 160 }}
-                        />
-                        <AppButton
-                          title="Create account"
-                          variant="secondary"
-                          size={isCompact ? 'md' : 'lg'}
-                          onPress={() => router.replace(APP_ROUTES.auth.signUp)}
-                          leftIcon={<MaterialIcons name="person-add-alt" size={18} color={theme.colors.text} />}
-                          style={{ minWidth: isCompact ? '100%' : 180 }}
-                        />
-                      </View>
+        <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 34 }}>
+            <Screen>
+              <View style={{ paddingTop: theme.layout.headerVerticalPadding, gap: theme.layout.sectionGap }}>
+                <SurfaceCard tone="strong" style={{ padding: theme.spacing.lg }}>
+                  <View style={{ gap: 12 }}>
+                    <View
+                      style={{
+                        alignSelf: 'flex-start',
+                        borderRadius: theme.radius.pill,
+                        borderWidth: 1,
+                        borderColor: theme.colors.border,
+                        backgroundColor: theme.scheme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(20,16,33,0.04)',
+                        paddingHorizontal: 10,
+                        paddingVertical: 6,
+                      }}
+                    >
+                      <CustomText variant="caption" style={{ color: theme.colors.primary, textTransform: 'uppercase', letterSpacing: 0.72 }}>
+                        Guest preview
+                      </CustomText>
                     </View>
 
-                    <View style={{ width: isWide ? 340 : '100%', gap: 12 }}>
-                      {['Music', 'Videos', 'Live', 'Library'].map((label, index) => (
-                        <View key={label} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: theme.radius.xl, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)', padding: 14 }}>
-                          <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(183,148,246,0.14)', alignItems: 'center', justifyContent: 'center' }}>
-                            <CustomText variant="label" style={{ color: theme.colors.primary }}>{index + 1}</CustomText>
-                          </View>
-                          <CustomText variant="label" style={{ flex: 1, color: '#FFFFFF' }}>{label}</CustomText>
-                          <MaterialIcons name="chevron-right" size={18} color="rgba(255,255,255,0.58)" />
-                        </View>
-                      ))}
+                    <CustomText variant="display" style={{ color: theme.colors.text }} numberOfLines={2}>
+                      Explore first. Sign in when you want the full experience.
+                    </CustomText>
+
+                    <CustomText variant="body" style={{ color: theme.colors.textSecondary, maxWidth: 620 }}>
+                      Guest mode gives visitors a controlled preview of public ClaudyGod content. Personal features stay protected until the user signs in or creates an account.
+                    </CustomText>
+
+                    <View style={{ flexDirection: compact ? 'column' : 'row', flexWrap: 'wrap', gap: 10, marginTop: 4 }}>
+                      <AppButton
+                        title="Create account"
+                        size="md"
+                        onPress={() => router.replace(APP_ROUTES.auth.signUp)}
+                        leftIcon={<MaterialIcons name="person-add-alt" size={17} color={theme.colors.textInverse} />}
+                        fullWidth={compact}
+                      />
+                      <AppButton
+                        title="Sign in"
+                        variant="secondary"
+                        size="md"
+                        onPress={() => router.replace(APP_ROUTES.auth.signIn)}
+                        leftIcon={<MaterialIcons name="login" size={17} color={theme.colors.text} />}
+                        fullWidth={compact}
+                      />
                     </View>
                   </View>
                 </SurfaceCard>
-              </FadeIn>
 
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
-                {FEATURES.map((feature, index) => (
-                  <FadeIn key={feature.title} delay={90 + index * 30}>
-                    <SurfaceCard tone="subtle" style={{ width: cardWidth, minWidth: isTablet ? 220 : undefined, padding: theme.spacing.md }}>
-                      <View style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: theme.scheme === 'dark' ? 'rgba(183,148,246,0.12)' : 'rgba(124,58,237,0.08)', alignItems: 'center', justifyContent: 'center' }}>
-                        <MaterialIcons name={feature.icon} size={20} color={theme.colors.primary} />
+                <View style={{ gap: 10 }}>
+                  {previewRules.map((item) => (
+                    <SurfaceCard key={item.title} tone="subtle" style={{ padding: theme.spacing.md }}>
+                      <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
+                        <View
+                          style={{
+                            width: 38,
+                            height: 38,
+                            borderRadius: 19,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            backgroundColor: theme.scheme === 'dark' ? 'rgba(183,148,246,0.12)' : 'rgba(124,58,237,0.08)',
+                          }}
+                        >
+                          <MaterialIcons name={item.icon} size={18} color={theme.colors.primary} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <CustomText variant="label" style={{ color: theme.colors.text }}>
+                            {item.title}
+                          </CustomText>
+                          <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 3 }}>
+                            {item.text}
+                          </CustomText>
+                        </View>
                       </View>
-                      <CustomText variant="label" style={{ color: theme.colors.text, marginTop: 12 }}>{feature.title}</CustomText>
-                      <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 5, lineHeight: 16 }}>{feature.description}</CustomText>
                     </SurfaceCard>
-                  </FadeIn>
-                ))}
-              </View>
+                  ))}
+                </View>
 
-              <TVTouchable onPress={() => router.replace(APP_ROUTES.landing)} showFocusBorder={false} style={{ alignSelf: 'center', padding: 10 }}>
-                <CustomText variant="label" style={{ color: theme.colors.textSecondary }}>
-                  Back to welcome
-                </CustomText>
-              </TVTouchable>
-            </View>
+                <SurfaceCard tone="subtle" style={{ padding: theme.spacing.lg }}>
+                  <View style={{ gap: 10 }}>
+                    <CustomText variant="title" style={{ color: theme.colors.text }}>
+                      Continue with limited preview
+                    </CustomText>
+                    <CustomText variant="caption" style={{ color: theme.colors.textSecondary }}>
+                      Use this only when you want to browse public content without saving history, favourites, downloads, notifications, or account preferences.
+                    </CustomText>
+                    <View style={{ flexDirection: compact ? 'column' : 'row', gap: 10, marginTop: 4 }}>
+                      <AppButton
+                        title="Continue as guest"
+                        variant="outline"
+                        size="md"
+                        onPress={continueGuest}
+                        leftIcon={<MaterialIcons name="visibility" size={17} color={theme.colors.text} />}
+                        fullWidth={compact}
+                      />
+                      <TVTouchable onPress={() => router.replace(APP_ROUTES.landing)} showFocusBorder={false} style={{ justifyContent: 'center', padding: 8 }}>
+                        <CustomText variant="label" style={{ color: theme.colors.textSecondary }}>
+                          Back to welcome
+                        </CustomText>
+                      </TVTouchable>
+                    </View>
+                  </View>
+                </SurfaceCard>
+
+                <AppScreenFooter compact />
+              </View>
+            </Screen>
           </ScrollView>
         </SafeAreaView>
       </LinearGradient>

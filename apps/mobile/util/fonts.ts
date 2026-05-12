@@ -14,58 +14,58 @@ import * as Font from 'expo-font';
 export const fontConfig = {
   hero: {
     fontFamily: 'Sora_700Bold',
-    fontSize: 30,
-    lineHeight: 36,
+    fontSize: 24,
+    lineHeight: 31,
     fontWeight: '700' as const,
-    letterSpacing: -0.9,
+    letterSpacing: -0.58,
   },
   display: {
     fontFamily: 'Sora_700Bold',
-    fontSize: 24,
-    lineHeight: 30,
+    fontSize: 21,
+    lineHeight: 27,
     fontWeight: '700' as const,
-    letterSpacing: -0.72,
+    letterSpacing: -0.42,
   },
   heading: {
-    fontFamily: 'Sora_600SemiBold',
-    fontSize: 20,
-    lineHeight: 26,
-    fontWeight: '600' as const,
-    letterSpacing: -0.36,
-  },
-  title: {
     fontFamily: 'Sora_600SemiBold',
     fontSize: 17,
     lineHeight: 23,
     fontWeight: '600' as const,
-    letterSpacing: -0.18,
+    letterSpacing: -0.22,
+  },
+  title: {
+    fontFamily: 'Sora_600SemiBold',
+    fontSize: 15,
+    lineHeight: 21,
+    fontWeight: '600' as const,
+    letterSpacing: -0.08,
   },
   subtitle: {
     fontFamily: 'Sora_500Medium',
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 13,
+    lineHeight: 19,
     fontWeight: '500' as const,
-    letterSpacing: -0.05,
+    letterSpacing: 0,
   },
   body: {
     fontFamily: 'Sora_400Regular',
-    fontSize: 13,
-    lineHeight: 20,
+    fontSize: 12.5,
+    lineHeight: 19,
     fontWeight: '400' as const,
   },
   label: {
     fontFamily: 'SpaceGrotesk_600SemiBold',
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 11.5,
+    lineHeight: 15.5,
     fontWeight: '600' as const,
-    letterSpacing: 0.12,
+    letterSpacing: 0.08,
   },
   caption: {
     fontFamily: 'SpaceGrotesk_500Medium',
-    fontSize: 11,
-    lineHeight: 15,
+    fontSize: 10.5,
+    lineHeight: 14.5,
     fontWeight: '500' as const,
-    letterSpacing: 0.08,
+    letterSpacing: 0.06,
   },
 };
 
@@ -77,19 +77,19 @@ export function getResponsiveFontStyle(variant: FontVariantKey, width: number, i
   const base = fontConfig[variant];
 
   const widthScale = isTV
-    ? 1.18
-    : width >= 1024
-      ? 1.1
+    ? 1.12
+    : width >= 1180
+      ? 1.04
       : width >= 768
-        ? 1.05
+        ? 1.02
         : width <= 360
-          ? 0.92
+          ? 0.9
           : width <= 390
-            ? 0.96
+            ? 0.94
             : 1;
 
-  const fontSize = clamp(Math.round(base.fontSize * widthScale), 10, isTV ? 42 : 34);
-  const lineHeight = clamp(Math.round(base.lineHeight * widthScale), fontSize + 3, isTV ? 50 : 42);
+  const fontSize = clamp(Number((base.fontSize * widthScale).toFixed(1)), 10, isTV ? 36 : 28);
+  const lineHeight = clamp(Math.round(base.lineHeight * widthScale), Math.ceil(fontSize + 3), isTV ? 44 : 36);
 
   return {
     ...base,
