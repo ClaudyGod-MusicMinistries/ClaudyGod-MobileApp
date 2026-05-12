@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Alert, Linking, TextInput, View } from 'react-native';
+import { Linking, TextInput, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 
 import { SettingsScaffold } from '../../components/layout/SettingsScaffold';
@@ -11,6 +11,7 @@ import { AppButton } from '../../components/ui/AppButton';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import { createSupportRequest } from '../../services/userFlowService';
+import { useAppModal } from '../../context/AppModalContext';
 
 const SUPPORT_CATEGORIES = [
   { id: 'playback', label: 'Playback' },
@@ -25,6 +26,7 @@ type SupportCategory = (typeof SUPPORT_CATEGORIES)[number]['id'];
 export default function Help() {
   const theme = useAppTheme();
   const { config } = useMobileAppConfig();
+  const { showModal } = useAppModal();
   const [expanded, setExpanded] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<SupportCategory>('playback');
   const [subject, setSubject] = useState('');
@@ -37,12 +39,22 @@ export default function Help() {
 
   const submitSupportTicket = async () => {
     if (subject.trim().length < 4) {
-      Alert.alert('Add a subject', 'Enter a short subject so support can understand the request.');
+      showModal({
+        title: 'Add a subject',
+        message: 'Enter a short subject so support can understand the request.',
+        tone: 'warning',
+        primaryAction: { label: 'Continue' },
+      });
       return;
     }
 
     if (message.trim().length < 12) {
-      Alert.alert('Add more detail', 'Describe what happened and the device you are using.');
+      showModal({
+        title: 'Add more detail',
+        message: 'Describe what happened and the device you are using.',
+        tone: 'warning',
+        primaryAction: { label: 'Continue' },
+      });
       return;
     }
 
@@ -57,9 +69,19 @@ export default function Help() {
       });
       setSubject('');
       setMessage('');
-      Alert.alert('Support request sent', `Ticket ${response.ticket.id.slice(0, 8)} has been created.`);
+      showModal({
+        title: 'Support request sent',
+        message: `Ticket ${response.ticket.id.slice(0, 8)} has been created.`,
+        tone: 'success',
+        primaryAction: { label: 'Done' },
+      });
     } catch (error) {
-      Alert.alert('Request failed', error instanceof Error ? error.message : 'Unable to send support request.');
+      showModal({
+        title: 'Request failed',
+        message: error instanceof Error ? error.message : 'Unable to send support request.',
+        tone: 'error',
+        primaryAction: { label: 'Try again' },
+      });
     }
     setSubmitting(false);
   };

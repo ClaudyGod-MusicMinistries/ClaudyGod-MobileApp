@@ -12,6 +12,7 @@ import { FontProvider, FontContext } from '../context/FontContext';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import { FloatingPlayerProvider } from '../context/FloatingPlayerContext';
 import { ToastProvider } from '../context/ToastContext';
+import { AppModalProvider } from '../context/AppModalContext';
 import { ToastViewport } from '../components/ui/ToastViewport';
 import { MinimizedFloatingPlayer } from '../components/player/MinimizedFloatingPlayer';
 import { APP_ROUTES } from '../util/appRoutes';
@@ -214,7 +215,9 @@ export default function RootLayout() {
           <ToastProvider>
             <AuthProvider>
               <FloatingPlayerProvider>
-                <RootLayoutInner />
+                <AppModalProvider>
+                  <RootLayoutInner />
+                </AppModalProvider>
               </FloatingPlayerProvider>
             </AuthProvider>
           </ToastProvider>

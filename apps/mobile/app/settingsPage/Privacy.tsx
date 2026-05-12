@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Linking, TextInput, View } from 'react-native';
+import { Linking, TextInput, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
@@ -12,6 +12,7 @@ import { TVTouchable } from '../../components/ui/TVTouchable';
 import { AppButton } from '../../components/ui/AppButton';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import { APP_ROUTES } from '../../util/appRoutes';
+import { useAppModal } from '../../context/AppModalContext';
 import {
   fetchMePrivacyOverview,
   requestPrivacyDataExport,
@@ -23,6 +24,7 @@ export default function Privacy() {
   const theme = useAppTheme();
   const router = useRouter();
   const { config } = useMobileAppConfig();
+  const { showModal } = useAppModal();
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState<{ totalRequests: number; totalPlayEvents: number; totalLiveSubscriptions: number } | null>(null);
   const [deleteName, setDeleteName] = useState('');
@@ -52,36 +54,87 @@ export default function Privacy() {
   const requestExport = async () => {
     try {
       const response = await requestPrivacyDataExport();
-      Alert.alert('Export request submitted', `Request ${response.request.id.slice(0, 8)} has been received.`);
+      showModal({
+        title: 'Export request submitted',
+        message: `Request ${response.request.id.slice(0, 8)} has been received.`,
+        tone: 'success',
+        primaryAction: { label: 'Done' },
+      });
       void refreshPrivacy();
     } catch (error) {
-      Alert.alert('Request failed', error instanceof Error ? error.message : 'Please try again.');
+      showModal({
+        title: 'Request failed',
+        message: error instanceof Error ? error.message : 'Please try again.',
+        tone: 'error',
+        primaryAction: { label: 'Try again' },
+      });
     }
   };
 
-  const resetHistory = async () => {
+  const performResetHistory = async () => {
     try {
       const response = await resetRecommendationHistory();
-      Alert.alert('Recommendations reset', `Cleared ${response.clearedPlayEvents} playback event(s).`);
+      showModal({
+        title: 'Recommendations reset',
+        message: `Cleared ${response.clearedPlayEvents} playback event(s).`,
+        tone: 'success',
+        primaryAction: { label: 'Done' },
+      });
       void refreshPrivacy();
     } catch (error) {
-      Alert.alert('Reset failed', error instanceof Error ? error.message : 'Please try again.');
+      showModal({
+        title: 'Reset failed',
+        message: error instanceof Error ? error.message : 'Please try again.',
+        tone: 'error',
+        primaryAction: { label: 'Try again' },
+      });
     }
   };
 
-  const submitDeleteRequest = async () => {
+  const resetHistory = () => {
+    showModal({
+      title: 'Reset recommendations?',
+      message: 'This clears the activity used to shape your recommendations. Your account and saved library stay intact.',
+      tone: 'warning',
+      primaryAction: { label: 'Reset', onPress: () => void performResetHistory() },
+      secondaryAction: { label: 'Cancel', variant: 'secondary' },
+    });
+  };
+
+  const performDeleteRequest = async () => {
     if (!canDelete) return;
     setSubmittingDelete(true);
     try {
       const response = await requestPrivacyDeleteAccount({ fullName: deleteName.trim(), confirmText: deletePhraseInput.trim() });
       setDeleteName('');
       setDeletePhraseInput('');
-      Alert.alert('Delete request submitted', `Request ${response.request.id.slice(0, 8)} has been received.`);
+      showModal({
+        title: 'Delete request submitted',
+        message: `Request ${response.request.id.slice(0, 8)} has been received.`,
+        tone: 'success',
+        primaryAction: { label: 'Done' },
+      });
       void refreshPrivacy();
     } catch (error) {
-      Alert.alert('Request failed', error instanceof Error ? error.message : 'Please try again.');
+      showModal({
+        title: 'Request failed',
+        message: error instanceof Error ? error.message : 'Please try again.',
+        tone: 'error',
+        primaryAction: { label: 'Try again' },
+      });
     }
     setSubmittingDelete(false);
+  };
+
+  const submitDeleteRequest = () => {
+    if (!canDelete) return;
+    showModal({
+      title: 'Submit delete request?',
+      message: 'This sends your account deletion request for review. You can still contact privacy support if you need help.',
+      tone: 'danger',
+      primaryAction: { label: 'Submit', onPress: () => void performDeleteRequest() },
+      secondaryAction: { label: 'Cancel', variant: 'secondary' },
+    });
   };
 
   return (
@@ -120,7 +173,7 @@ export default function Privacy() {
           <View style={{ gap: 10, marginTop: 14 }}>
             <PrivacyAction icon="password" title="Password & sign in" description="Update access through the sign-in flow." onPress={() => router.push(APP_ROUTES.auth.forgotPassword)} />
             <PrivacyAction icon="download" title="Export my data" description="Request a copy of account and activity data." onPress={() => void requestExport()} />
-            <PrivacyAction icon="history-toggle-off" title="Reset recommendations" description="Clear activity used for recommendations." onPress={() => void resetHistory()} />
+            <PrivacyAction icon="history-toggle-off" title="Reset recommendations" description="Clear activity used for recommendations." onPress={resetHistory} />
             <PrivacyAction icon="email" title="Contact privacy team" description={contactEmail} onPress={() => void Linking.openURL(`mailto:${contactEmail}`)} />
           </View>
         </SurfaceCard>
@@ -176,7 +229,7 @@ export default function Privacy() {
             disabled={!canDelete || submittingDelete}
             loading={submittingDelete}
             loadingLabel="Submitting request"
-            onPress={() => void submitDeleteRequest()}
+            onPress={submitDeleteRequest}
             textColor={theme.colors.danger}
             style={{ marginTop: 14, borderColor: theme.colors.danger }}
           />

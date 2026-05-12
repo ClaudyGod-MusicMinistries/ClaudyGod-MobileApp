@@ -1,7 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
   Image,
   RefreshControl,
   ScrollView,
@@ -17,8 +15,10 @@ import { CustomText } from '../../components/CustomText';
 import { FadeIn } from '../../components/ui/FadeIn';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { VideoPlayer } from '../../components/media/VideoPlayer';
+import { BrandLoader } from '../../components/branding/BrandLoader';
 import { useAppTheme } from '../../util/colorScheme';
 import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
+import { useAppModal } from '../../context/AppModalContext';
 import {
   fetchLiveSessionDetail,
   postLiveSessionMessage,
@@ -41,6 +41,7 @@ function formatSessionMeta(session: LiveSessionDetail): string {
 
 export default function LiveSessionScreen() {
   const theme = useAppTheme();
+  const { showModal } = useAppModal();
   const router = useRouter();
   const params = useLocalSearchParams<{ sessionId?: string | string[] }>();
   const sessionId = Array.isArray(params.sessionId) ? params.sessionId[0] : params.sessionId;
@@ -83,7 +84,12 @@ export default function LiveSessionScreen() {
       return;
     }
     if (!draftMessage.trim()) {
-      Alert.alert('Add a message', 'Enter a comment or suggestion before sending.');
+      showModal({
+        title: 'Add a message',
+        message: 'Enter a comment or suggestion before sending.',
+        tone: 'warning',
+        primaryAction: { label: 'Continue' },
+      });
       return;
     }
 
@@ -103,8 +109,19 @@ export default function LiveSessionScreen() {
           : current,
       );
       setDraftMessage('');
+      showModal({
+        title: 'Message sent',
+        message: messageKind === 'comment' ? 'Your comment has been added to the live feed.' : 'Your suggestion has been sent to the live host.',
+        tone: 'success',
+        primaryAction: { label: 'Done' },
+      });
     } catch (err) {
-      Alert.alert('Unable to send', err instanceof Error ? err.message : 'Sign in to join the live conversation.');
+      showModal({
+        title: 'Unable to send',
+        message: err instanceof Error ? err.message : 'Sign in to join the live conversation.',
+        tone: 'error',
+        primaryAction: { label: 'Try again' },
+      });
     } finally {
       setSaving(false);
     }
@@ -192,7 +209,7 @@ export default function LiveSessionScreen() {
 
             {loading && !session ? (
               <View style={{ alignItems: 'center', paddingVertical: 60 }}>
-                <ActivityIndicator size="large" color={theme.colors.primary} />
+                <BrandLoader label="Opening live session" size="md" />
               </View>
             ) : null}
 
