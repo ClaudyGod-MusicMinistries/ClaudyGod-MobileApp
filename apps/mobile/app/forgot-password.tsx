@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+
 import { CustomText } from '../components/CustomText';
 import { AuthFeedbackBanner } from '../components/auth/AuthFeedbackBanner';
 import { AuthScreenFrame } from '../components/auth/AuthScreenFrame';
@@ -12,8 +13,7 @@ import { requestMobilePasswordReset } from '../services/authService';
 import { useToast } from '../context/ToastContext';
 import { APP_ROUTES } from '../util/appRoutes';
 
-const getParam = (value: string | string[] | undefined): string =>
-  Array.isArray(value) ? value[0] ?? '' : value ?? '';
+const getParam = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] ?? '' : value ?? '');
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
@@ -24,10 +24,10 @@ export default function ForgotPasswordScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+
   const normalizedEmail = normalizeEmail(email);
   const emailIsValid = !normalizedEmail || isLikelyValidEmail(normalizedEmail);
   const emailHint = getEmailValidationMessage(email);
-
   const canSubmit = useMemo(() => Boolean(normalizedEmail && emailIsValid), [emailIsValid, normalizedEmail]);
 
   const handleRequestReset = async () => {
@@ -52,26 +52,34 @@ export default function ForgotPasswordScreen() {
       const response = await requestMobilePasswordReset({ email: normalizedEmail });
       setSuccessMessage(response.message);
       showToast({
-        title: 'Recovery email sent',
-        message: 'If the account exists, the 6-digit reset code is on its way.',
+        title: 'Recovery code sent',
+        message: 'Check your inbox for the password recovery code.',
         tone: 'success',
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to send reset email';
+      const message = error instanceof Error ? error.message : 'Unable to send recovery code.';
       setErrorMessage(message);
       showToast({ title: 'Recovery request failed', message, tone: 'error' });
-    } finally {
-      setSubmitting(false);
     }
+    setSubmitting(false);
+  };
+
+  const openResetScreen = () => {
+    const currentEmail = email.trim().toLowerCase();
+    if (currentEmail) {
+      router.push({ pathname: APP_ROUTES.auth.resetPassword, params: { email: currentEmail } });
+      return;
+    }
+    router.push(APP_ROUTES.auth.resetPassword);
   };
 
   return (
     <AuthScreenFrame
       backPath={APP_ROUTES.auth.signIn}
-      salutation="Recover access"
-      description="We will send a short recovery code to your registered email."
-      title="Reset your password"
-      subtitle="Enter your email to receive a 6-digit reset code."
+      salutation="Recover your access"
+      description="Use your account email and we will send a short recovery code."
+      title="Reset password"
+      subtitle="Enter your email to receive a recovery code."
     >
       <View style={{ gap: 12 }}>
         <AuthTextField
@@ -91,48 +99,29 @@ export default function ForgotPasswordScreen() {
       </View>
 
       {errorMessage ? <AuthFeedbackBanner message={errorMessage} tone="error" /> : null}
-
       {successMessage ? <AuthFeedbackBanner message={successMessage} tone="success" /> : null}
 
       <AppButton
-        title="Send Recovery Code"
+        title="Send recovery code"
         size="lg"
         fullWidth
         loading={submitting}
-        loadingLabel="Sending recovery email"
+        loadingLabel="Sending code"
         loadingVariant="brand"
         onPress={() => void handleRequestReset()}
         disabled={!canSubmit || submitting}
         style={{ marginTop: 16 }}
       />
 
-      <TVTouchable
-        onPress={() => {
-          const normalizedEmail = email.trim().toLowerCase();
-          if (normalizedEmail) {
-            router.push({
-              pathname: APP_ROUTES.auth.resetPassword,
-              params: { email: normalizedEmail },
-            });
-            return;
-          }
-          router.push(APP_ROUTES.auth.resetPassword);
-        }}
-        style={{ alignSelf: 'center', marginTop: 12 }}
-        showFocusBorder={false}
-      >
+      <TVTouchable onPress={openResetScreen} style={{ alignSelf: 'center', marginTop: 12 }} showFocusBorder={false}>
         <CustomText variant="label" style={{ color: '#CDB9FF' }}>
-          Already have the recovery code?
+          Already have a code?
         </CustomText>
       </TVTouchable>
 
-      <TVTouchable
-        onPress={() => router.replace(APP_ROUTES.auth.signIn)}
-        style={{ alignSelf: 'center', marginTop: 8 }}
-        showFocusBorder={false}
-      >
+      <TVTouchable onPress={() => router.replace(APP_ROUTES.auth.signIn)} style={{ alignSelf: 'center', marginTop: 8 }} showFocusBorder={false}>
         <CustomText variant="label" style={{ color: 'rgba(220,213,240,0.84)' }}>
-          Back to Sign In
+          Back to sign in
         </CustomText>
       </TVTouchable>
     </AuthScreenFrame>
