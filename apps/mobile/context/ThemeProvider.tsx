@@ -23,7 +23,7 @@ interface ThemeProviderProps {
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
   const nativeColorScheme = useNativeColorScheme();
-  const [themePreference, setThemePreference] = useState<ColorScheme | 'system'>('system');
+  const [themePreference, setThemePreference] = useState<ColorScheme | 'system'>('dark');
 
   useEffect(() => {
     let active = true;

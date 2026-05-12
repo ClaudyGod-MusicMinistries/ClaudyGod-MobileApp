@@ -44,13 +44,14 @@ export function AppButton({
   const isSecondary = variant === 'secondary';
   const isOutline = variant === 'outline';
   const isGhost = variant === 'ghost';
+  const hasTitle = title.trim().length > 0;
 
   const sizeStyle =
     size === 'sm'
-      ? { minHeight: 38, paddingHorizontal: 15, paddingVertical: 8, fontSize: 12 }
+      ? { minHeight: 34, paddingHorizontal: 13, paddingVertical: 7, fontSize: 11 }
       : size === 'lg'
-        ? { minHeight: 56, paddingHorizontal: 24, paddingVertical: 15, fontSize: 14 }
-        : { minHeight: 46, paddingHorizontal: 18, paddingVertical: 11, fontSize: 13 };
+        ? { minHeight: 50, paddingHorizontal: 21, paddingVertical: 13, fontSize: 13 }
+        : { minHeight: 42, paddingHorizontal: 16, paddingVertical: 10, fontSize: 12 };
 
   const resolvedTextColor =
     textColor ??
@@ -67,26 +68,28 @@ export function AppButton({
       <ActivityIndicator size="small" color={resolvedTextColor} />
     )
   ) : (
-    <View style={{ flexDirection: 'row', alignItems: 'center', maxWidth: '100%', gap: 8 }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', maxWidth: '100%', gap: hasTitle ? 7 : 0 }}>
       {resolvedLeftIcon ? (
-        <View style={{ width: 18, alignItems: 'center', justifyContent: 'center' }}>{resolvedLeftIcon}</View>
+        <View style={{ width: 17, alignItems: 'center', justifyContent: 'center' }}>{resolvedLeftIcon}</View>
       ) : null}
-      <CustomText
-        variant="label"
-        style={{
-          color: resolvedTextColor,
-          textAlign: 'center',
-          flexShrink: 1,
-          fontSize: sizeStyle.fontSize,
-          lineHeight: (sizeStyle.fontSize as number) * 1.35,
-          letterSpacing: 0.18,
-          ...(textStyle || {}),
-        }}
-        numberOfLines={1}
-      >
-        {title}
-      </CustomText>
-      {rightIcon ? <View style={{ width: 18, alignItems: 'center', justifyContent: 'center' }}>{rightIcon}</View> : null}
+      {hasTitle ? (
+        <CustomText
+          variant="label"
+          style={{
+            color: resolvedTextColor,
+            textAlign: 'center',
+            flexShrink: 1,
+            fontSize: sizeStyle.fontSize,
+            lineHeight: (sizeStyle.fontSize as number) * 1.32,
+            letterSpacing: 0,
+            ...(textStyle || {}),
+          }}
+          numberOfLines={1}
+        >
+          {title}
+        </CustomText>
+      ) : null}
+      {rightIcon ? <View style={{ width: 17, alignItems: 'center', justifyContent: 'center' }}>{rightIcon}</View> : null}
     </View>
   );
 
@@ -94,7 +97,7 @@ export function AppButton({
     <TVTouchable
       {...props}
       disabled={loading || props.disabled}
-      activeOpacity={0.82}
+      activeOpacity={0.84}
       style={[
         {
           ...sizeStyle,
@@ -102,12 +105,8 @@ export function AppButton({
           backgroundColor: isPrimary
             ? theme.colors.primary
             : isSecondary
-              ? theme.scheme === 'dark'
-                ? 'rgba(255,255,255,0.08)'
-                : 'rgba(18,10,32,0.06)'
-              : isGhost
-                ? 'transparent'
-                : 'transparent',
+              ? 'rgba(255,255,255,0.055)'
+              : 'transparent',
           borderWidth: isOutline || isSecondary ? 1 : 0,
           borderColor: isOutline
             ? theme.colors.borderStrong ?? theme.colors.border
@@ -119,7 +118,7 @@ export function AppButton({
           alignItems: 'center',
           justifyContent: 'center',
           alignSelf: fullWidth ? 'stretch' : 'flex-start',
-          gap: 8,
+          gap: 7,
           overflow: 'hidden',
           ...(isPrimary ? theme.shadows.glow ?? theme.shadows.soft : {}),
         },

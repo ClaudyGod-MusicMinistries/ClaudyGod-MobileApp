@@ -1,67 +1,60 @@
-import React, { useState } from 'react';
-import { Alert, Linking, TextInput, View } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { Linking, TextInput, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+
 import { SettingsScaffold } from '../../components/layout/SettingsScaffold';
 import { CustomText } from '../../components/CustomText';
 import { useAppTheme } from '../../util/colorScheme';
-import { spacing } from '../../styles/designTokens';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { FadeIn } from '../../components/ui/FadeIn';
 import { AppButton } from '../../components/ui/AppButton';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import { createSupportRequest } from '../../services/userFlowService';
+import { useAppModal } from '../../context/AppModalContext';
 
-const contact = [
-  { icon: 'public', title: 'Ministry website', desc: 'Open the ClaudyGod website', action: () => Linking.openURL('https://claudygod.org') },
-  { icon: 'email', title: 'Email support', desc: 'support@claudygod.org', action: () => Linking.openURL('mailto:support@claudygod.org') },
-  { icon: 'forum', title: 'WhatsApp support', desc: 'Message the ministry support desk', action: () => Linking.openURL('https://wa.me/18002528394') },
-  { icon: 'phone', title: 'Call support', desc: '+1 (800) 252-8394', action: () => Linking.openURL('tel:+18002528394') },
-];
-
-const faqs = [
-  { q: 'Playback buffering on TV?', a: 'Use Ethernet or 5GHz Wi-Fi and keep playback quality on Adaptive mode.' },
-  { q: 'Downloads not showing?', a: 'Open Library → Downloads and refresh. Check if storage permission is allowed.' },
-  { q: 'Wrong recommendations?', a: 'Clear watch and listen history in Privacy settings to reset suggestions.' },
-  { q: 'How do I report content?', a: 'Open track menu and tap Report, or send the media link to support email.' },
-];
-
-const supportCategories = [
+const SUPPORT_CATEGORIES = [
   { id: 'playback', label: 'Playback' },
   { id: 'account', label: 'Account' },
   { id: 'content', label: 'Content' },
-  { id: 'billing', label: 'Donations' },
+  { id: 'billing', label: 'Giving' },
   { id: 'technical', label: 'Technical' },
 ] as const;
 
+type SupportCategory = (typeof SUPPORT_CATEGORIES)[number]['id'];
+
 export default function Help() {
   const theme = useAppTheme();
+  const { config } = useMobileAppConfig();
+  const { showModal } = useAppModal();
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<(typeof supportCategories)[number]['id']>('playback');
+  const [selectedCategory, setSelectedCategory] = useState<SupportCategory>('playback');
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const { config } = useMobileAppConfig();
 
-  const supportCenterUrl = config?.help.supportCenterUrl ?? 'https://claudygod.org';
-  const contactOptions = config?.help.contact
-    ? config.help.contact.map((item) => ({
-        icon: item.icon,
-        title: item.title,
-        desc: item.desc,
-        action: () => Linking.openURL(item.actionUrl),
-      }))
-    : contact;
-  const faqItems = (config?.help.faqs ?? faqs).map((item) => ({ q: item.q, a: item.a }));
+  const supportCenterUrl = config?.help?.supportCenterUrl ?? 'https://claudygod.org';
+  const contactOptions = useMemo(() => config?.help?.contact ?? [], [config]);
+  const faqItems = useMemo(() => config?.help?.faqs ?? [], [config]);
 
   const submitSupportTicket = async () => {
     if (subject.trim().length < 4) {
-      Alert.alert('Add a subject', 'Please enter a short subject so the team can triage the issue.');
+      showModal({
+        title: 'Add a subject',
+        message: 'Enter a short subject so support can understand the request.',
+        tone: 'warning',
+        primaryAction: { label: 'Continue' },
+      });
       return;
     }
 
     if (message.trim().length < 12) {
-      Alert.alert('Add more detail', 'Please describe the issue in a little more detail before sending.');
+      showModal({
+        title: 'Add more detail',
+        message: 'Describe what happened and the device you are using.',
+        tone: 'warning',
+        primaryAction: { label: 'Continue' },
+      });
       return;
     }
 
@@ -72,211 +65,160 @@ export default function Help() {
         subject: subject.trim(),
         message: message.trim(),
         priority: 'normal',
-        metadata: {
-          source: 'mobile_help_screen',
-          platform: 'mobile',
-        },
+        metadata: { source: 'mobile_help_screen', platform: 'mobile' },
       });
-
       setSubject('');
       setMessage('');
-      Alert.alert(
-        'Support request sent',
-        `Ticket ${response.ticket.id.slice(0, 8)} has been sent to the support team.`,
-      );
+      showModal({
+        title: 'Support request sent',
+        message: `Ticket ${response.ticket.id.slice(0, 8)} has been created.`,
+        tone: 'success',
+        primaryAction: { label: 'Done' },
+      });
     } catch (error) {
-      Alert.alert('Request failed', error instanceof Error ? error.message : 'Unable to send support request.');
-    } finally {
-      setSubmitting(false);
+      showModal({
+        title: 'Request failed',
+        message: error instanceof Error ? error.message : 'Unable to send support request.',
+        tone: 'error',
+        primaryAction: { label: 'Try again' },
+      });
     }
+    setSubmitting(false);
   };
 
   return (
     <SettingsScaffold
       title="Help & Support"
-      subtitle="Fast support built for mobile and TV users."
+      subtitle="Simple support for playback, account access, giving, and content."
       hero={
         <FadeIn>
-          <SurfaceCard tone="subtle" style={{ padding: spacing.lg, marginBottom: spacing.lg }}>
-            <CustomText variant="heading" style={{ color: theme.colors.text }}>
-              We keep you streaming
+          <SurfaceCard tone="strong" style={{ padding: theme.spacing.xl, marginBottom: theme.spacing.lg }}>
+            <CustomText variant="caption" style={{ color: theme.colors.primary, textTransform: 'uppercase', letterSpacing: 0.9 }}>
+              Support center
             </CustomText>
-            <CustomText variant="body" style={{ color: theme.colors.textSecondary, marginTop: 6 }}>
-              Reach support anytime or use the quick fixes below for playback, library, and account issues.
+            <CustomText variant="display" style={{ color: theme.colors.text, marginTop: 8 }}>
+              Get help without confusion.
             </CustomText>
-            <View style={{ marginTop: spacing.md }}>
-              <AppButton
-                title="Open Support Center"
-                size="sm"
-                variant="primary"
-                onPress={() => Linking.openURL(supportCenterUrl)}
-              />
-            </View>
+            <CustomText variant="body" style={{ color: theme.colors.textSecondary, marginTop: 8 }}>
+              Choose a quick contact option, send a clear request, or review answers to common questions.
+            </CustomText>
+            <AppButton title="Open support center" onPress={() => void Linking.openURL(supportCenterUrl)} style={{ marginTop: 16 }} />
           </SurfaceCard>
         </FadeIn>
       }
     >
-      <FadeIn delay={90}>
-        <CustomText variant="subtitle" style={{ color: theme.colors.text, marginBottom: spacing.sm }}>
-          Contact options
-        </CustomText>
-        <View style={{ marginBottom: spacing.lg }}>
-          {contactOptions.map((item) => (
-            <TVTouchable key={item.title} onPress={item.action} style={{ marginBottom: spacing.sm }} showFocusBorder={false}>
-              <SurfaceCard style={{ padding: spacing.md, flexDirection: 'row', alignItems: 'center' }}>
-                <View
-                  style={{
-                    width: 42,
-                    height: 42,
-                    borderRadius: 12,
-                    backgroundColor: `${theme.colors.primary}1F`,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginRight: spacing.md,
-                  }}
-                >
-                  <MaterialIcons name={item.icon as any} size={20} color={theme.colors.primary} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <CustomText variant="body" style={{ color: theme.colors.text }}>
-                    {item.title}
-                  </CustomText>
-                  <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 2 }}>
-                    {item.desc}
-                  </CustomText>
-                </View>
-                <MaterialIcons name="chevron-right" size={20} color={theme.colors.textSecondary} />
-              </SurfaceCard>
-            </TVTouchable>
-          ))}
-        </View>
-      </FadeIn>
+      {contactOptions.length ? (
+        <FadeIn delay={70}>
+          <View style={{ gap: theme.spacing.sm }}>
+            <CustomText variant="heading" style={{ color: theme.colors.text }}>
+              Contact options
+            </CustomText>
+            {contactOptions.map((item) => (
+              <TVTouchable key={item.id} onPress={() => void Linking.openURL(item.actionUrl)} showFocusBorder={false}>
+                <SurfaceCard tone="subtle" style={{ padding: theme.spacing.md, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                  <View style={{ width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center', backgroundColor: `${theme.colors.primary}1A` }}>
+                    <MaterialIcons name={item.icon as React.ComponentProps<typeof MaterialIcons>['name']} size={19} color={theme.colors.primary} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <CustomText variant="label" style={{ color: theme.colors.text }}>
+                      {item.title}
+                    </CustomText>
+                    <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 3 }}>
+                      {item.desc}
+                    </CustomText>
+                  </View>
+                  <MaterialIcons name="chevron-right" size={20} color={theme.colors.textSecondary} />
+                </SurfaceCard>
+              </TVTouchable>
+            ))}
+          </View>
+        </FadeIn>
+      ) : null}
 
-      <FadeIn delay={160}>
-        <CustomText variant="subtitle" style={{ color: theme.colors.text, marginBottom: spacing.sm }}>
-          Send a support request
-        </CustomText>
-        <SurfaceCard tone="subtle" style={{ padding: spacing.lg, marginBottom: spacing.lg }}>
-          <CustomText variant="body" style={{ color: theme.colors.textSecondary }}>
-            Use this form for complaints, broken playback, login issues, or content problems. Submissions are sent to the admin support inbox.
+      <FadeIn delay={110}>
+        <SurfaceCard tone="subtle" style={{ padding: theme.spacing.lg }}>
+          <CustomText variant="heading" style={{ color: theme.colors.text }}>
+            Send a request
+          </CustomText>
+          <CustomText variant="body" style={{ color: theme.colors.textSecondary, marginTop: 6 }}>
+            Share the issue clearly and the support team will follow up through your account channel.
           </CustomText>
 
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: spacing.md }}>
-            {supportCategories.map((category) => {
-              const active = category.id === selectedCategory;
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
+            {SUPPORT_CATEGORIES.map((category) => {
+              const active = selectedCategory === category.id;
               return (
                 <TVTouchable
                   key={category.id}
                   onPress={() => setSelectedCategory(category.id)}
-                  style={{ marginRight: spacing.xs, marginBottom: spacing.xs }}
+                  style={{
+                    borderRadius: theme.radius.pill,
+                    borderWidth: 1,
+                    borderColor: active ? theme.colors.primary : theme.colors.border,
+                    backgroundColor: active ? `${theme.colors.primary}1A` : theme.colors.surface,
+                    paddingHorizontal: 12,
+                    paddingVertical: 8,
+                  }}
                   showFocusBorder={false}
                 >
-                  <View
-                    style={{
-                      paddingHorizontal: spacing.md,
-                      paddingVertical: spacing.sm,
-                      borderRadius: 999,
-                      borderWidth: 1,
-                      borderColor: active ? theme.colors.primary : theme.colors.border,
-                      backgroundColor: active ? `${theme.colors.primary}1A` : theme.colors.surface,
-                    }}
-                  >
-                    <CustomText variant="caption" style={{ color: active ? theme.colors.primary : theme.colors.textSecondary }}>
-                      {category.label}
-                    </CustomText>
-                  </View>
+                  <CustomText variant="caption" style={{ color: active ? theme.colors.primary : theme.colors.textSecondary }}>
+                    {category.label}
+                  </CustomText>
                 </TVTouchable>
               );
             })}
           </View>
 
-          <View style={{ marginTop: spacing.md }}>
-            <TextInput
-              value={subject}
-              onChangeText={setSubject}
-              placeholder="Short subject"
-              placeholderTextColor={theme.colors.textSecondary}
-              style={{
-                borderWidth: 1,
-                borderColor: theme.colors.border,
-                borderRadius: 16,
-                paddingHorizontal: spacing.md,
-                paddingVertical: spacing.md,
-                backgroundColor: theme.colors.surface,
-                color: theme.colors.text,
-                marginBottom: spacing.sm,
-              }}
-            />
-            <TextInput
-              value={message}
-              onChangeText={setMessage}
-              placeholder="Describe the issue, device, and what you expected to happen"
-              placeholderTextColor={theme.colors.textSecondary}
-              multiline
-              textAlignVertical="top"
-              style={{
-                minHeight: 140,
-                borderWidth: 1,
-                borderColor: theme.colors.border,
-                borderRadius: 16,
-                paddingHorizontal: spacing.md,
-                paddingVertical: spacing.md,
-                backgroundColor: theme.colors.surface,
-                color: theme.colors.text,
-              }}
-            />
-          </View>
+          <TextInput
+            value={subject}
+            onChangeText={setSubject}
+            placeholder="Short subject"
+            placeholderTextColor={theme.colors.textSecondary}
+            style={{ marginTop: 14, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 12, backgroundColor: theme.colors.surface, color: theme.colors.text }}
+          />
+          <TextInput
+            value={message}
+            onChangeText={setMessage}
+            placeholder="Describe the issue and your device"
+            placeholderTextColor={theme.colors.textSecondary}
+            multiline
+            textAlignVertical="top"
+            style={{ minHeight: 132, marginTop: 10, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 12, backgroundColor: theme.colors.surface, color: theme.colors.text }}
+          />
 
-          <View style={{ marginTop: spacing.md }}>
-            <AppButton
-              title="Submit support request"
-              variant="primary"
-              size="md"
-              onPress={() => void submitSupportTicket()}
-              loading={submitting}
-              loadingLabel="Sending request"
-              fullWidth
-            />
-          </View>
+          <AppButton title="Submit request" loading={submitting} loadingLabel="Sending" fullWidth onPress={() => void submitSupportTicket()} style={{ marginTop: 14 }} />
         </SurfaceCard>
       </FadeIn>
 
-      <FadeIn delay={220}>
-        <CustomText variant="subtitle" style={{ color: theme.colors.text, marginBottom: spacing.sm }}>
-          Quick answers
-        </CustomText>
-        <View style={{ marginBottom: spacing.xl }}>
-          {faqItems.map((faq) => {
-            const open = expanded === faq.q;
-            return (
-              <TVTouchable
-                key={faq.q}
-                onPress={() => setExpanded(open ? null : faq.q)}
-                style={{ marginBottom: spacing.sm }}
-                showFocusBorder={false}
-              >
-                <SurfaceCard tone={open ? 'subtle' : 'default'} style={{ padding: spacing.md }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <MaterialIcons
-                      name={open ? 'expand-less' : 'expand-more'}
-                      size={20}
-                      color={theme.colors.textSecondary}
-                    />
-                    <CustomText variant="body" style={{ color: theme.colors.text, marginLeft: spacing.sm, flex: 1 }}>
-                      {faq.q}
-                    </CustomText>
-                  </View>
-                  {open ? (
-                    <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: spacing.sm }}>
-                      {faq.a}
-                    </CustomText>
-                  ) : null}
-                </SurfaceCard>
-              </TVTouchable>
-            );
-          })}
-        </View>
-      </FadeIn>
+      {faqItems.length ? (
+        <FadeIn delay={150}>
+          <View style={{ gap: theme.spacing.sm }}>
+            <CustomText variant="heading" style={{ color: theme.colors.text }}>
+              Quick answers
+            </CustomText>
+            {faqItems.map((faq) => {
+              const open = expanded === faq.id;
+              return (
+                <TVTouchable key={faq.id} onPress={() => setExpanded(open ? null : faq.id)} showFocusBorder={false}>
+                  <SurfaceCard tone="subtle" style={{ padding: theme.spacing.md }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                      <MaterialIcons name={open ? 'expand-less' : 'expand-more'} size={20} color={theme.colors.textSecondary} />
+                      <CustomText variant="label" style={{ color: theme.colors.text, flex: 1 }}>
+                        {faq.q}
+                      </CustomText>
+                    </View>
+                    {open ? (
+                      <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 8, lineHeight: 18 }}>
+                        {faq.a}
+                      </CustomText>
+                    ) : null}
+                  </SurfaceCard>
+                </TVTouchable>
+              );
+            })}
+          </View>
+        </FadeIn>
+      ) : null}
     </SettingsScaffold>
   );
 }

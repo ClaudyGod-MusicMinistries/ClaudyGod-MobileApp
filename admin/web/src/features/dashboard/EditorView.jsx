@@ -1,3 +1,29 @@
+import '../../app/AdminShell.css';
+
+function hasText(value) {
+  return String(value || '').trim().length > 0;
+}
+
+function readiness(createForm) {
+  const mediaType = createForm.type === 'audio' || createForm.type === 'video';
+  const mediaReady = !mediaType || hasText(createForm.url) || hasText(createForm.mediaUploadSessionId);
+  const thumbReady = !mediaType || hasText(createForm.thumbnailUrl) || hasText(createForm.thumbnailUploadSessionId);
+  return [
+    { label: 'Title added', ok: hasText(createForm.title), note: 'Use a clear public title.' },
+    { label: 'Description added', ok: hasText(createForm.description), note: 'Explain what users will hear or watch.' },
+    { label: 'Media ready', ok: mediaReady, note: 'Upload media or paste the approved media URL.' },
+    { label: 'Thumbnail ready', ok: thumbReady, note: 'Audio and video should have a poster image.' },
+    { label: 'Mobile placement selected', ok: hasText(createForm.appSectionsCsv), note: 'Choose where this content appears in the app.' },
+  ];
+}
+
+function itemStatusClass(status) {
+  if (status === 'published' || status === 'fulfilled' || status === 'approved') return 'is-success';
+  if (status === 'changes_requested' || status === 'draft' || status === 'in_review') return 'is-warning';
+  if (status === 'rejected') return 'is-danger';
+  return 'is-info';
+}
+
 export default function EditorView(props) {
   const {
     directPublishMode,
@@ -44,454 +70,404 @@ export default function EditorView(props) {
     contentRequestStatusOptions,
   } = props;
 
+  const checks = readiness(createForm);
+  const completeChecks = checks.filter((check) => check.ok).length;
+  const requests = Array.isArray(contentRequests) ? contentRequests : [];
+  const items = Array.isArray(filteredItems) ? filteredItems : [];
+
   return (
-    <main class="main-grid">
-      <section class="panel glass-panel reveal-up" style={{ animationDelay: '140ms' }}>
-        <div class="section-head">
+    <section class="cg-page">
+      <article class="cg-panel cg-hero">
+        <div class="cg-section-head">
           <div>
-            <h2>{directPublishMode ? 'Upload Content' : 'Create Request'}</h2>
-            <p>
-              {directPublishMode
-                ? 'Upload media, choose where it should appear in the mobile app, and publish from one clean workspace.'
-                : 'Send one clear request so the review queue stays organized and easy to manage.'}
+            <p class="cg-kicker">Publishing Studio</p>
+            <h2 class="cg-page-title">Create, correct, and publish without confusion.</h2>
+            <p class="cg-hero-copy">
+              Use this guided workspace to upload content, attach thumbnails, choose mobile app placement, review requests, and correct existing items before they go live.
             </p>
           </div>
-          <span class="section-badge">{directPublishMode ? 'Direct publish' : 'Request flow'}</span>
+          <span class="cg-chip is-info">{directPublishMode ? 'Direct publishing enabled' : 'Request review mode'}</span>
         </div>
 
-        <form class="stack-form" onSubmit={(event) => void onCreateContent(event)}>
-          <div class="field-cluster">
+        <div class="cg-progress-steps" style={{ marginTop: '20px' }}>
+          <div class="cg-step">
+            <span class="cg-step-pill">1</span>
+            <strong>Add details</strong>
+            <p class="cg-muted">Title, description, type, artist/channel, and visibility.</p>
+          </div>
+          <div class="cg-step">
+            <span class="cg-step-pill">2</span>
+            <strong>Attach assets</strong>
+            <p class="cg-muted">Upload or paste media and thumbnail links.</p>
+          </div>
+          <div class="cg-step">
+            <span class="cg-step-pill">3</span>
+            <strong>Choose placement</strong>
+            <p class="cg-muted">Select the mobile sections where users should see it.</p>
+          </div>
+        </div>
+      </article>
+
+      <main class="cg-main-grid">
+        <section class="cg-panel cg-form-card">
+          <div class="cg-section-head">
+            <div>
+              <p class="cg-kicker">New content</p>
+              <h2>{directPublishMode ? 'Upload to mobile app' : 'Submit for review'}</h2>
+              <p class="cg-muted">
+                {directPublishMode
+                  ? 'Create a draft or publish directly after all required details are ready.'
+                  : 'Send a clean request to the review queue so admins can approve and publish it.'}
+              </p>
+            </div>
+            <span class="cg-chip">{completeChecks}/{checks.length} ready</span>
+          </div>
+
+          <form class="cg-form" onSubmit={(event) => void onCreateContent(event)}>
             <label>
-              Title
+              <span>Content title</span>
               <input
                 value={createForm.title}
                 onInput={(event) => { createForm.title = onReadValue(event); }}
-                placeholder="Example: Friday Worship Session"
+                placeholder="Friday Worship Session"
               />
             </label>
-          </div>
 
-          <div class="field-cluster">
             <label>
-              Description
+              <span>Description</span>
               <textarea
                 value={createForm.description}
                 onInput={(event) => { createForm.description = onReadValue(event); }}
                 rows={5}
-                placeholder="Describe what was recorded, the audience it is for, and any editorial notes the review team should know."
+                placeholder="Tell users what this content contains and why it matters."
               />
             </label>
-          </div>
 
-          <div class="grid-2">
-            <label>
-              Content type
-              <select value={createForm.type} onChange={(event) => { createForm.type = onReadValue(event); }}>
-                {contentTypes.map((type) => <option value={type} key={type}>{type}</option>)}
-              </select>
-            </label>
-
-            <label>
-              {directPublishMode ? 'Visibility' : 'Requested release'}
-              <select value={createForm.visibility} onChange={(event) => { createForm.visibility = onReadValue(event); }}>
-                {visibilityOptions.map((visibility) => <option value={visibility} key={visibility}>{visibility}</option>)}
-              </select>
-            </label>
-          </div>
-
-          <label>
-            Media link
-            <input
-              value={createForm.url}
-              onInput={(event) => { createForm.url = onReadValue(event); }}
-              placeholder="Paste the audio or video link from storage, CDN, or external hosting"
-            />
-          </label>
-
-          <div class="grid-2">
-            <label>
-              Upload media ({createForm.type === 'video' ? 'video' : createForm.type === 'audio' ? 'audio' : 'select audio/video first'})
-              <input
-                type="file"
-                accept={props.onAcceptFromPolicy(onGetUploadPolicy(onResolveMediaAssetKind())) || 'audio/*,video/*'}
-                onChange={(event) => void onHandleAssetUpload(event, 'media')}
-                disabled={uploadingAsset || (createForm.type !== 'audio' && createForm.type !== 'video')}
-              />
-              <small class="subtle-text">
-                {(() => {
-                  const kind = onResolveMediaAssetKind();
-                  const policy = kind ? onGetUploadPolicy(kind) : null;
-                  if (!kind) return 'Select content type Audio or Video to upload a media file.';
-                  if (!policy) return uploadPoliciesLoading ? 'Loading upload rules...' : 'Allowed formats and size limits are applied automatically.';
-                  return `Allowed: ${policy.allowedExtensions.join(', ')} • Max ${onFormatBytes(policy.maxBytes)}`;
-                })()}
-              </small>
-            </label>
-
-            <label>
-              Upload thumbnail (required for audio/video)
-              <input
-                type="file"
-                accept={props.onAcceptFromPolicy(onGetUploadPolicy('thumbnail')) || 'image/jpeg,image/png,image/webp'}
-                onChange={(event) => void onHandleAssetUpload(event, 'thumbnail')}
-                disabled={uploadingAsset}
-              />
-              <small class="subtle-text">
-                {(() => {
-                  const policy = onGetUploadPolicy('thumbnail');
-                  if (!policy) return uploadPoliciesLoading ? 'Loading thumbnail rules...' : 'Allowed formats and size limits are applied automatically.';
-                  return `Allowed: ${policy.allowedExtensions.join(', ')} • Max ${onFormatBytes(policy.maxBytes)}`;
-                })()}
-              </small>
-            </label>
-          </div>
-          {uploadingAsset ? <div class="muted-chip">Uploading to storage...</div> : null}
-
-          <div class="grid-2">
-            <div class="helper-card">
-              <strong>Asset status</strong>
-              <p>
-                {createForm.mediaUploadSessionId || createForm.thumbnailUploadSessionId
-                  ? directPublishMode
-                    ? 'Uploaded files are linked to the content item and ready for the mobile feed.'
-                    : 'Uploaded files are linked to this request and ready for the review queue.'
-                  : directPublishMode
-                  ? 'Upload media and a thumbnail to create a production-ready mobile content item.'
-                    : 'Upload media and a thumbnail to keep the request complete and easy to review.'}
-              </p>
-            </div>
-
-            <div class="helper-card">
-              <strong>Release target</strong>
-              <p>
-                {directPublishMode
-                  ? 'Choose draft when you still want to review in the library. Choose published when the item should flow into the mobile app immediately.'
-                  : 'Choose draft when the team still needs editorial review. Choose published only when the item should go live quickly after approval.'}
-              </p>
-            </div>
-          </div>
-
-          <details class="dashboard-disclosure">
-            <summary>Add optional metadata and placement</summary>
-            <div class="dashboard-disclosure-body stack-form">
-              <div class="grid-2">
-                <label>
-                  Thumbnail URL (optional override)
-                  <input
-                    value={createForm.thumbnailUrl}
-                    onInput={(event) => { createForm.thumbnailUrl = onReadValue(event); }}
-                    placeholder="Paste image URL for posters/cards"
-                  />
-                </label>
-
-                <label>
-                  Channel / Artist
-                  <input
-                    value={createForm.channelName}
-                    onInput={(event) => { createForm.channelName = onReadValue(event); }}
-                    placeholder="ClaudyGod Music Ministries"
-                  />
-                </label>
-              </div>
-
-              <div class="grid-2">
-                <label>
-                  Duration label
-                  <input
-                    value={createForm.duration}
-                    onInput={(event) => { createForm.duration = onReadValue(event); }}
-                    placeholder="45:12"
-                  />
-                </label>
-
-                <label>
-                  Tags (comma-separated)
-                  <input
-                    value={createForm.tagsCsv}
-                    onInput={(event) => { createForm.tagsCsv = onReadValue(event); }}
-                    placeholder="worship, live session, choir"
-                  />
-                </label>
-              </div>
+            <div class="cg-grid-2">
+              <label>
+                <span>Content type</span>
+                <select value={createForm.type} onChange={(event) => { createForm.type = onReadValue(event); }}>
+                  {contentTypes.map((type) => <option value={type} key={type}>{type}</option>)}
+                </select>
+              </label>
 
               <label>
-                App sections (comma-separated)
+                <span>{directPublishMode ? 'Visibility' : 'Requested release'}</span>
+                <select value={createForm.visibility} onChange={(event) => { createForm.visibility = onReadValue(event); }}>
+                  {visibilityOptions.map((visibility) => <option value={visibility} key={visibility}>{visibility}</option>)}
+                </select>
+              </label>
+            </div>
+
+            <label>
+              <span>Media URL</span>
+              <input
+                value={createForm.url}
+                onInput={(event) => { createForm.url = onReadValue(event); }}
+                placeholder="Paste approved storage, CDN, YouTube, or stream URL"
+              />
+              <small>Use this when the media is already hosted outside the upload flow.</small>
+            </label>
+
+            <div class="cg-grid-2">
+              <label>
+                <span>Upload media</span>
                 <input
-                  value={createForm.appSectionsCsv}
-                  onInput={(event) => { createForm.appSectionsCsv = onReadValue(event); }}
-                  placeholder="Choose placements below or enter section ids manually"
+                  type="file"
+                  accept={props.onAcceptFromPolicy(onGetUploadPolicy(onResolveMediaAssetKind())) || 'audio/*,video/*'}
+                  onChange={(event) => void onHandleAssetUpload(event, 'media')}
+                  disabled={uploadingAsset || (createForm.type !== 'audio' && createForm.type !== 'video')}
                 />
-                <small class="subtle-text">
-                  These placements control where content appears across the mobile app.
+                <small>
+                  {(() => {
+                    const kind = onResolveMediaAssetKind();
+                    const policy = kind ? onGetUploadPolicy(kind) : null;
+                    if (!kind) return 'Choose Audio or Video before uploading a media file.';
+                    if (!policy) return uploadPoliciesLoading ? 'Loading upload rules...' : 'Allowed formats and size limits are applied automatically.';
+                    return `Allowed: ${policy.allowedExtensions.join(', ')} • Max ${onFormatBytes(policy.maxBytes)}`;
+                  })()}
                 </small>
               </label>
-              {onRenderSectionSelector(createForm.appSectionsCsv, (nextValue) => { createForm.appSectionsCsv = nextValue; })}
+
+              <label>
+                <span>Upload thumbnail</span>
+                <input
+                  type="file"
+                  accept={props.onAcceptFromPolicy(onGetUploadPolicy('thumbnail')) || 'image/jpeg,image/png,image/webp'}
+                  onChange={(event) => void onHandleAssetUpload(event, 'thumbnail')}
+                  disabled={uploadingAsset}
+                />
+                <small>
+                  {(() => {
+                    const policy = onGetUploadPolicy('thumbnail');
+                    if (!policy) return uploadPoliciesLoading ? 'Loading thumbnail rules...' : 'Allowed formats and size limits are applied automatically.';
+                    return `Allowed: ${policy.allowedExtensions.join(', ')} • Max ${onFormatBytes(policy.maxBytes)}`;
+                  })()}
+                </small>
+              </label>
             </div>
-          </details>
 
-          <div class="helper-card">
-            <strong>What happens next</strong>
-            <p>
-              {directPublishMode
-                ? 'Published items are available to the mobile app feed immediately. Draft items stay in the library until you publish them.'
-                : 'After you submit, the ticket appears in the review queue. Admins can change status, request edits, and create a draft in the library when it is approved.'}
-            </p>
-          </div>
+            {uploadingAsset ? <span class="cg-chip is-info">Uploading to storage...</span> : null}
 
-          <button type="submit" class="primary-btn primary-btn-large" disabled={savingContent}>
-            {savingContent
-              ? directPublishMode
-                ? createForm.visibility === 'published'
-                  ? 'Publishing...'
-                  : 'Creating draft...'
-                : 'Submitting ticket...'
-              : directPublishMode
-                ? createForm.visibility === 'published'
-                  ? 'Publish to mobile app'
-                  : 'Create draft content'
-                : 'Send request to review queue'}
-          </button>
-        </form>
-      </section>
+            <div class="cg-grid-2">
+              <label>
+                <span>Thumbnail URL override</span>
+                <input
+                  value={createForm.thumbnailUrl}
+                  onInput={(event) => { createForm.thumbnailUrl = onReadValue(event); }}
+                  placeholder="Paste poster image URL when needed"
+                />
+              </label>
 
-      <section class="panel glass-panel reveal-up" style={{ animationDelay: '200ms' }}>
-        <div class="section-head split">
-          <div>
-            <h2>Requests</h2>
-            <p>Track incoming requests and create draft content only when each item is ready.</p>
-          </div>
-          <span class="section-badge">{requestSummary.active} open</span>
-        </div>
+              <label>
+                <span>Channel / artist</span>
+                <input
+                  value={createForm.channelName}
+                  onInput={(event) => { createForm.channelName = onReadValue(event); }}
+                  placeholder="ClaudyGod Music Ministries"
+                />
+              </label>
+            </div>
 
-        <section class="ticket-summary-grid">
-          {requestStatusBoard.map((card, index) => (
-            <article
-              class={['stat-card', 'glass-panel', `accent-${card.accent}`]}
-              style={{ animationDelay: `${index * 60}ms` }}
-              key={`editor-request-stat-${card.label}`}
-            >
-              <span>{card.label}</span>
-              <strong>{card.value}</strong>
-            </article>
-          ))}
+            <div class="cg-grid-2">
+              <label>
+                <span>Duration label</span>
+                <input
+                  value={createForm.duration}
+                  onInput={(event) => { createForm.duration = onReadValue(event); }}
+                  placeholder="45:12"
+                />
+              </label>
+
+              <label>
+                <span>Tags</span>
+                <input
+                  value={createForm.tagsCsv}
+                  onInput={(event) => { createForm.tagsCsv = onReadValue(event); }}
+                  placeholder="worship, live session, choir"
+                />
+              </label>
+            </div>
+
+            <label>
+              <span>Mobile placement</span>
+              <input
+                value={createForm.appSectionsCsv}
+                onInput={(event) => { createForm.appSectionsCsv = onReadValue(event); }}
+                placeholder="Choose placements below or enter section ids manually"
+              />
+              <small>These sections decide where the item appears in the mobile app.</small>
+            </label>
+
+            {onRenderSectionSelector(createForm.appSectionsCsv, (nextValue) => { createForm.appSectionsCsv = nextValue; })}
+
+            <button type="submit" class="cg-primary" disabled={savingContent}>
+              {savingContent
+                ? directPublishMode
+                  ? createForm.visibility === 'published'
+                    ? 'Publishing...'
+                    : 'Creating draft...'
+                  : 'Submitting request...'
+                : directPublishMode
+                  ? createForm.visibility === 'published'
+                    ? 'Publish to mobile app'
+                    : 'Create draft'
+                  : 'Send request to review'}
+            </button>
+          </form>
         </section>
 
-        <div class="list-wrap" style={{ marginTop: '0.9rem' }}>
-          {contentRequestLoading ? <div class="empty-state">Loading submission requests...</div> : null}
-          {!contentRequestLoading && contentRequests.length === 0 ? (
-            <div class="empty-state">No requests yet. Submit a ticket from the left panel to start the workflow.</div>
-          ) : null}
-
-          {!contentRequestLoading ? contentRequests.map((request) => (
-            <article class={['content-card', 'request-card']} key={`editor-request-${request.id}`}>
-              <div class="card-top">
-                <div class="pill-row">
-                  <span class={['pill', `pill-${request.type}`]}>{request.type}</span>
-                  <span class={['pill', request.status === 'fulfilled' ? 'pill-live' : request.status === 'changes_requested' || request.status === 'rejected' ? 'pill-draft' : 'pill-playlist']}>
-                    {props.humanizeToken(request.status)}
-                  </span>
-                  <span class="muted-chip">Target: {request.requestedVisibility}</span>
-                </div>
-                <span class="muted-chip">{formatDateTime(request.createdAt)}</span>
+        <aside class="cg-stack">
+          <section class="cg-panel cg-card">
+            <div class="cg-section-head">
+              <div>
+                <h2>Readiness checklist</h2>
+                <p class="cg-muted">Your client can follow this before publishing.</p>
               </div>
+            </div>
+            <div class="cg-checklist">
+              {checks.map((check) => (
+                <div class="cg-check-row" key={check.label}>
+                  <span class="cg-check-dot">{check.ok ? '✓' : '!'}</span>
+                  <div>
+                    <strong>{check.label}</strong>
+                    <p class="cg-muted">{check.note}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
 
-              <div class="card-body">
-                <h3>{request.title}</h3>
-                <p>{truncate(request.description, 160)}</p>
+          <section class="cg-panel cg-card">
+            <div class="cg-section-head">
+              <div>
+                <h2>Request board</h2>
+                <p class="cg-muted">Track client submissions and review status.</p>
               </div>
+              <span class="cg-chip">{requestSummary.active} open</span>
+            </div>
 
-              <div class="meta-grid">
-                <div>
-                  <span class="meta-label">Requested by</span>
-                  <strong>{request.requester && request.requester.displayName ? request.requester.displayName : 'Unknown requester'}</strong>
-                </div>
-                <div>
-                  <span class="meta-label">Draft status</span>
-                  <strong>{request.createdContentTitle || 'Not created yet'}</strong>
-                </div>
-              </div>
+            <div class="cg-grid-3" style={{ marginBottom: '12px' }}>
+              {requestStatusBoard.map((card) => (
+                <article class="cg-mini-card" key={`request-stat-${card.label}`}>
+                  <span>{card.label}</span>
+                  <strong>{card.value}</strong>
+                </article>
+              ))}
+            </div>
 
-              {request.requestNotes ? (
-                <div class="helper-card request-note-card">
-                  <strong>Review notes</strong>
-                  <p>{truncate(request.requestNotes, 180)}</p>
-                </div>
+            <div class="cg-list">
+              {contentRequestLoading ? <div class="cg-empty">Loading requests...</div> : null}
+              {!contentRequestLoading && requests.length === 0 ? (
+                <div class="cg-empty">No content requests yet.</div>
               ) : null}
 
-              {isAdmin ? (
-                <div class="request-card-actions">
-                  <label>
-                    Review status
-                    <select
-                      value={request.status}
-                      disabled={contentRequestStatusUpdatingId === request.id}
-                      onChange={(event) => void onUpdateSubmissionRequestStatus(request.id, event.target.value)}
-                    >
-                      {contentRequestStatusOptions.map((status) => (
-                        <option value={status} key={`queue-request-status-${request.id}-${status}`}>{props.humanizeToken(status)}</option>
-                      ))}
-                    </select>
-                  </label>
-                  <button
-                    type="button"
-                    class="primary-btn"
-                    disabled={Boolean(request.createdContentId) || creatingDraftFromRequestId === request.id || request.status === 'rejected'}
-                    onClick={() => void onCreateDraftFromRequest(request)}
-                  >
-                    {request.createdContentId
-                      ? 'Draft created'
-                      : creatingDraftFromRequestId === request.id
-                        ? 'Creating draft...'
-                        : 'Create draft'}
-                  </button>
-                </div>
-              ) : null}
-            </article>
-          )) : null}
-        </div>
-      </section>
+              {!contentRequestLoading ? requests.slice(0, 8).map((request) => (
+                <article class="cg-item" key={`request-${request.id}`}>
+                  <div class="cg-item-head">
+                    <div>
+                      <h3>{request.title}</h3>
+                      <p>{truncate(request.description, 120)}</p>
+                    </div>
+                    <span class={['cg-status', itemStatusClass(request.status)]}>{props.humanizeToken(request.status)}</span>
+                  </div>
+                  <div class="cg-chip-row">
+                    <span class="cg-chip">{request.type}</span>
+                    <span class="cg-chip">Target: {request.requestedVisibility}</span>
+                    <span class="cg-chip">{formatDateTime(request.createdAt)}</span>
+                  </div>
+                  {isAdmin ? (
+                    <div class="cg-grid-2" style={{ marginTop: '12px' }}>
+                      <label class="cg-field">
+                        <span>Review status</span>
+                        <select
+                          class="cg-select"
+                          value={request.status}
+                          disabled={contentRequestStatusUpdatingId === request.id}
+                          onChange={(event) => void onUpdateSubmissionRequestStatus(request.id, event.target.value)}
+                        >
+                          {contentRequestStatusOptions.map((status) => (
+                            <option value={status} key={`request-status-${request.id}-${status}`}>{props.humanizeToken(status)}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <button
+                        type="button"
+                        class="cg-primary"
+                        disabled={Boolean(request.createdContentId) || creatingDraftFromRequestId === request.id || request.status === 'rejected'}
+                        onClick={() => void onCreateDraftFromRequest(request)}
+                      >
+                        {request.createdContentId ? 'Draft created' : creatingDraftFromRequestId === request.id ? 'Creating...' : 'Create draft'}
+                      </button>
+                    </div>
+                  ) : null}
+                </article>
+              )) : null}
+            </div>
+          </section>
+        </aside>
+      </main>
 
-      <section class="panel glass-panel reveal-up" style={{ animationDelay: '220ms', gridColumn: '1 / -1' }}>
-        <div class="section-head split">
+      <section class="cg-panel cg-card">
+        <div class="cg-section-head">
           <div>
-            <h2>Content Library</h2>
-            <p>Browse, search, and update your uploaded content.</p>
+            <p class="cg-kicker">Content library</p>
+            <h2>Correct, place, publish, or remove existing content</h2>
+            <p class="cg-muted">Every item below comes from the real managed content library.</p>
           </div>
-          <div class="library-total">{paginationTotal} total items</div>
+          <span class="cg-chip">{paginationTotal} total items</span>
         </div>
 
-        <div class="filter-grid">
+        <div class="cg-grid-3" style={{ marginBottom: '16px' }}>
           <input
+            class="cg-input"
             value={filterState.search}
             onInput={(event) => { filterState.search = onReadValue(event); }}
-            placeholder="Search by title, description, creator, or link"
+            placeholder="Search title, description, creator, or link"
           />
-          <select value={filterState.type} onChange={(event) => { filterState.type = onReadValue(event); }}>
+          <select class="cg-select" value={filterState.type} onChange={(event) => { filterState.type = onReadValue(event); }}>
             <option value="all">All types</option>
             {contentTypes.map((type) => <option value={type} key={type}>{type}</option>)}
           </select>
-          <select value={filterState.visibility} onChange={(event) => { filterState.visibility = onReadValue(event); }}>
+          <select class="cg-select" value={filterState.visibility} onChange={(event) => { filterState.visibility = onReadValue(event); }}>
             <option value="all">All status</option>
             {visibilityOptions.map((visibility) => <option value={visibility} key={visibility}>{visibility}</option>)}
           </select>
         </div>
 
-        <div class="list-wrap">
-          {contentLoading ? <div class="empty-state">Loading your content library...</div> : null}
-          {!contentLoading && filteredItems.length === 0 ? (
-            <div class="empty-state">
-              No content found. Try adjusting your search or create a new item.
-            </div>
-          ) : null}
+        <div class="cg-list">
+          {contentLoading ? <div class="cg-empty">Loading content library...</div> : null}
+          {!contentLoading && items.length === 0 ? <div class="cg-empty">No content found for the selected filters.</div> : null}
 
-          {!contentLoading ? filteredItems.map((item, index) => (
-            <article class="content-card" key={item.id} style={{ animationDelay: `${index * 60}ms` }}>
-              <div class="card-top">
-                <div class="pill-row">
-                  <span class={['pill', `pill-${item.type}`]}>{item.type}</span>
-                  <span class={['pill', item.visibility === 'published' ? 'pill-live' : 'pill-draft']}>{item.visibility}</span>
-                  {item.sourceKind ? <span class="pill">{item.sourceKind}</span> : null}
+          {!contentLoading ? items.map((item) => (
+            <article class="cg-item" key={item.id}>
+              <div class="cg-item-head">
+                <div>
+                  <div class="cg-chip-row" style={{ marginBottom: '8px' }}>
+                    <span class="cg-chip">{item.type}</span>
+                    <span class={['cg-status', item.visibility === 'published' ? 'is-success' : 'is-warning']}>{item.visibility}</span>
+                    {item.sourceKind ? <span class="cg-chip">{item.sourceKind}</span> : null}
+                  </div>
+                  <h3>{item.title}</h3>
+                  <p>{truncate(item.description, 190)}</p>
                 </div>
-                <div class="button-row">
-                  <button
-                    type="button"
-                    class="ghost-btn compact"
-                    onClick={() => void onToggleVisibility(item)}
-                    disabled={togglingId === item.id}
-                  >
-                    {togglingId === item.id ? 'Updating...' : item.visibility === 'published' ? 'Move to Draft' : 'Publish'}
+                <div class="cg-button-row">
+                  <button type="button" class="cg-secondary compact" onClick={() => onOpenEditContentModal(item)} disabled={deletingContentId === item.id}>
+                    Correct
                   </button>
-                  <button
-                    type="button"
-                    class="ghost-btn compact"
-                    onClick={() => onOpenEditContentModal(item)}
-                    disabled={deletingContentId === item.id}
-                  >
-                    Edit
+                  <button type="button" class="cg-secondary compact" onClick={() => onToggleContentSectionEditor(item)}>
+                    {activeSectionEditorItemId === item.id ? 'Close placement' : 'Placement'}
                   </button>
-                  <button
-                    type="button"
-                    class="ghost-btn compact"
-                    onClick={() => onToggleContentSectionEditor(item)}
-                  >
-                    {activeSectionEditorItemId === item.id ? 'Close Placement' : 'Edit Placement'}
+                  <button type="button" class="cg-primary compact" onClick={() => void onToggleVisibility(item)} disabled={togglingId === item.id}>
+                    {togglingId === item.id ? 'Updating...' : item.visibility === 'published' ? 'Move to draft' : 'Publish'}
                   </button>
-                  <button
-                    type="button"
-                    class="danger-btn"
-                    onClick={() => void onDeleteContentItem(item)}
-                    disabled={deletingContentId === item.id}
-                  >
+                  <button type="button" class="cg-danger compact" onClick={() => void onDeleteContentItem(item)} disabled={deletingContentId === item.id}>
                     {deletingContentId === item.id ? 'Deleting...' : 'Delete'}
                   </button>
                 </div>
               </div>
 
-              <div class="card-body">
-                <h3>{item.title}</h3>
-                <p>{truncate(item.description, 190)}</p>
+              <div class="cg-grid-3">
+                <div>
+                  <span class="cg-meta-label">Created by</span>
+                  <p class="cg-copy">{item.author && item.author.displayName ? item.author.displayName : 'Unknown'}</p>
+                </div>
+                <div>
+                  <span class="cg-meta-label">Updated</span>
+                  <p class="cg-copy">{formatDateTime(item.updatedAt)}</p>
+                </div>
+                <div>
+                  <span class="cg-meta-label">Sections</span>
+                  <p class="cg-copy">{Array.isArray(item.appSections) && item.appSections.length ? item.appSections.join(', ') : 'Not placed yet'}</p>
+                </div>
               </div>
 
-              <div class="card-link-row">
-                {item.url ? (
-                  <a href={item.url} target="_blank" rel="noreferrer noopener" class="media-link">
-                    Open media link
-                  </a>
-                ) : (
-                  <span class="muted-chip">No media link added</span>
-                )}
-                {Array.isArray(item.appSections) && item.appSections.length ? (
-                  <span class="muted-chip">Sections: {item.appSections.join(', ')}</span>
-                ) : null}
+              <div class="cg-chip-row" style={{ marginTop: '12px' }}>
+                {item.url ? <a href={item.url} target="_blank" rel="noreferrer noopener" class="cg-secondary compact">Open media</a> : <span class="cg-chip is-warning">No media link</span>}
               </div>
 
               {activeSectionEditorItemId === item.id ? (
-                <div class="section-editor-panel">
-                  <div class="section-editor-panel-head">
+                <div class="cg-card" style={{ marginTop: '14px', padding: '14px' }}>
+                  <div class="cg-section-head">
                     <div>
-                      <strong>Mobile placement</strong>
-                      <p>Select where this content should appear in the mobile app.</p>
+                      <h3>Mobile placement</h3>
+                      <p class="cg-muted">Choose where this item should appear in the app.</p>
                     </div>
-                    <button type="button" class="ghost-btn compact" onClick={onCloseContentSectionEditor}>
-                      Cancel
-                    </button>
+                    <button type="button" class="cg-secondary compact" onClick={onCloseContentSectionEditor}>Cancel</button>
                   </div>
-
                   {onRenderSectionSelector(sectionEditorValue, onUpdateSectionEditorValue)}
-
-                  <div class="card-link-row section-selection-summary">
-                    <span class="muted-chip">
-                      {sectionEditorValue
-                        ? `Selected: ${sectionEditorValue}`
-                        : 'No section selected yet'}
-                    </span>
-                    <button
-                      type="button"
-                      class="primary-btn compact"
-                      disabled={sectionEditorSaving}
-                      onClick={() => void onSaveContentSections(item)}
-                    >
-                      {sectionEditorSaving ? 'Saving...' : 'Save Placement'}
+                  <div class="cg-button-row" style={{ marginTop: '12px' }}>
+                    <span class="cg-chip">{sectionEditorValue ? `Selected: ${sectionEditorValue}` : 'No section selected yet'}</span>
+                    <button type="button" class="cg-primary compact" disabled={sectionEditorSaving} onClick={() => void onSaveContentSections(item)}>
+                      {sectionEditorSaving ? 'Saving...' : 'Save placement'}
                     </button>
                   </div>
                 </div>
               ) : null}
-
-              <div class="meta-grid">
-                <div>
-                  <span class="meta-label">Created by</span>
-                  <strong>{item.author && item.author.displayName ? item.author.displayName : 'Unknown'}</strong>
-                </div>
-                <div>
-                  <span class="meta-label">Updated</span>
-                  <strong>{formatDateTime(item.updatedAt)}</strong>
-                </div>
-              </div>
             </article>
           )) : null}
         </div>
       </section>
-
-    </main>
+    </section>
   );
 }

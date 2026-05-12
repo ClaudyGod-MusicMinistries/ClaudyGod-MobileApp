@@ -1,11 +1,49 @@
-export const spacing = { xxs: 4, xs: 8, sm: 12, md: 16, lg: 20, xl: 28, xxl: 36, xxxl: 44 };
-export const radius = { sm: 10, md: 14, lg: 18, xl: 24, xxl: 32, pill: 999 };
+export const spacing = { xxs: 4, xs: 7, sm: 10, md: 14, lg: 18, xl: 24, xxl: 30, xxxl: 38 };
+export const radius = { sm: 9, md: 13, lg: 17, xl: 22, xxl: 28, pill: 999 };
 export const shadows = {
-  card: { shadowColor: '#000000', shadowOpacity: 0.24, shadowRadius: 26, shadowOffset: { width: 0, height: 16 }, elevation: 10 },
-  soft: { shadowColor: '#000000', shadowOpacity: 0.12, shadowRadius: 16, shadowOffset: { width: 0, height: 8 }, elevation: 5 },
-  glow: { shadowColor: '#A78BFA', shadowOpacity: 0.36, shadowRadius: 22, shadowOffset: { width: 0, height: 12 }, elevation: 12 },
+  card: {
+    shadowColor: '#000000',
+    shadowOpacity: 0.18,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 7,
+  },
+  soft: {
+    shadowColor: '#000000',
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 3,
+  },
+  glow: {
+    shadowColor: '#A78BFA',
+    shadowOpacity: 0.16,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 7 },
+    elevation: 5,
+  },
 };
-export const blur = { glass: 12 };
-export const typography = { hero: 34, headline: 26, title: 18, body: 15, label: 13, caption: 11 };
-export const tv = { hitSlop: { top: 12, bottom: 12, left: 12, right: 12 }, focusScale: 1.06, focusShadow: { shadowColor: '#A78BFA', shadowOpacity: 0.4, shadowRadius: 18, shadowOffset: { width: 0, height: 10 }, elevation: 10 } };
-export const layout = { compactPhoneGutter: 16, phoneGutter: 20, tabletGutter: 32, desktopGutter: 48, maxContentWidth: 1180, sectionGap: 24, sectionGapLarge: 32, headerVerticalPadding: 10, tabBarContentPadding: 138 };
+export const blur = { glass: 10 };
+export const typography = { hero: 23, headline: 19, title: 15.5, body: 12.5, label: 11.5, caption: 10.5 };
+export const tv = {
+  hitSlop: { top: 12, bottom: 12, left: 12, right: 12 },
+  focusScale: 1.035,
+  focusShadow: {
+    shadowColor: '#A78BFA',
+    shadowOpacity: 0.24,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 7 },
+    elevation: 7,
+  },
+};
+export const layout = {
+  compactPhoneGutter: 14,
+  phoneGutter: 16,
+  tabletGutter: 28,
+  desktopGutter: 42,
+  maxContentWidth: 1120,
+  sectionGap: 16,
+  sectionGapLarge: 22,
+  headerVerticalPadding: 6,
+  tabBarContentPadding: 128,
+};
