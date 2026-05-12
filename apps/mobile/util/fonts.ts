@@ -1,71 +1,66 @@
 import {
-  SpaceGrotesk_400Regular,
-  SpaceGrotesk_500Medium,
-  SpaceGrotesk_600SemiBold,
-} from '@expo-google-fonts/space-grotesk';
-import {
-  Sora_400Regular,
-  Sora_500Medium,
-  Sora_600SemiBold,
-  Sora_700Bold,
-} from '@expo-google-fonts/sora';
+  Manrope_300Light,
+  Manrope_400Regular,
+  Manrope_500Medium,
+  Manrope_600SemiBold,
+} from '@expo-google-fonts/manrope';
 import * as Font from 'expo-font';
 
 export const fontConfig = {
   hero: {
-    fontFamily: 'SpaceGrotesk_600SemiBold',
-    fontSize: 22,
+    fontFamily: 'Manrope_500Medium',
+    fontSize: 21,
     lineHeight: 29,
-    fontWeight: '600' as const,
-    letterSpacing: 0,
+    fontWeight: '500' as const,
+    letterSpacing: 0.1,
   },
   display: {
-    fontFamily: 'SpaceGrotesk_600SemiBold',
-    fontSize: 19,
+    fontFamily: 'Manrope_500Medium',
+    fontSize: 18.5,
     lineHeight: 25,
-    fontWeight: '600' as const,
-    letterSpacing: 0,
+    fontWeight: '500' as const,
+    letterSpacing: 0.06,
   },
   heading: {
-    fontFamily: 'SpaceGrotesk_600SemiBold',
+    fontFamily: 'Manrope_500Medium',
     fontSize: 16,
     lineHeight: 22,
-    fontWeight: '600' as const,
-    letterSpacing: 0,
+    fontWeight: '500' as const,
+    letterSpacing: 0.04,
   },
   title: {
-    fontFamily: 'SpaceGrotesk_600SemiBold',
+    fontFamily: 'Manrope_500Medium',
     fontSize: 14.5,
     lineHeight: 21,
-    fontWeight: '600' as const,
-    letterSpacing: 0,
-  },
-  subtitle: {
-    fontFamily: 'SpaceGrotesk_500Medium',
-    fontSize: 13,
-    lineHeight: 19,
     fontWeight: '500' as const,
     letterSpacing: 0,
   },
+  subtitle: {
+    fontFamily: 'Manrope_400Regular',
+    fontSize: 13,
+    lineHeight: 19,
+    fontWeight: '400' as const,
+    letterSpacing: 0,
+  },
   body: {
-    fontFamily: 'SpaceGrotesk_400Regular',
+    fontFamily: 'Manrope_400Regular',
     fontSize: 12.5,
     lineHeight: 19,
     fontWeight: '400' as const,
   },
   label: {
-    fontFamily: 'SpaceGrotesk_600SemiBold',
+    fontFamily: 'Manrope_500Medium',
     fontSize: 11.5,
     lineHeight: 15.5,
-    fontWeight: '600' as const,
-    letterSpacing: 0.08,
+    fontWeight: '500' as const,
+    letterSpacing: 0,
   },
   caption: {
-    fontFamily: 'SpaceGrotesk_500Medium',
+    fontFamily: 'Manrope_400Regular',
     fontSize: 10.5,
     lineHeight: 14.5,
-    fontWeight: '500' as const,
-    letterSpacing: 0.06,
+    fontWeight: '400' as const,
+    letterSpacing: 0,
   },
 };
 
@@ -100,22 +95,17 @@ export function getResponsiveFontStyle(variant: FontVariantKey, width: number, i
 
 export const loadFonts = async () => {
   await Font.loadAsync({
-    ClashDisplay_600SemiBold: Sora_600SemiBold,
-    ClashDisplay_700Bold: Sora_700Bold,
-    SpaceGrotesk_400Regular,
-    SpaceGrotesk_500Medium,
-    SpaceGrotesk_600SemiBold,
-    Sora_400Regular,
-    Sora_500Medium,
-    Sora_600SemiBold,
-    Sora_700Bold,
+    Manrope_300Light,
+    Manrope_400Regular,
+    Manrope_500Medium,
+    Manrope_600SemiBold,
   });
 };
 
 export const fontWeights = {
-  light: 'Sora_400Regular',
-  regular: 'Sora_400Regular',
-  medium: 'Sora_500Medium',
-  semiBold: 'Sora_600SemiBold',
-  bold: 'Sora_700Bold',
+  light: 'Manrope_300Light',
+  regular: 'Manrope_400Regular',
+  medium: 'Manrope_500Medium',
+  semiBold: 'Manrope_600SemiBold',
+  bold: 'Manrope_600SemiBold',
 };

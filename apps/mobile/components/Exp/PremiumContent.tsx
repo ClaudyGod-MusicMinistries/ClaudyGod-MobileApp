@@ -446,8 +446,8 @@ export function PremiumHero({
         <LinearGradient
           colors={
             theme.scheme === 'dark'
-              ? ['rgba(5,4,10,0.16)', 'rgba(5,4,10,0.66)', 'rgba(5,4,10,0.96)']
-              : ['rgba(10,7,17,0.08)', 'rgba(255,255,255,0.62)', 'rgba(255,255,255,0.98)']
+              ? ['rgba(5,4,10,0.34)', 'rgba(5,4,10,0.76)', 'rgba(5,4,10,0.98)']
+              : ['rgba(6,4,12,0.28)', 'rgba(6,4,12,0.64)', 'rgba(6,4,12,0.90)']
           }
           start={{ x: 0, y: 0 }}
           end={{ x: isWide ? 1 : 0, y: 1 }}
@@ -459,8 +459,8 @@ export function PremiumHero({
                 alignSelf: 'flex-start',
                 borderRadius: 999,
                 borderWidth: 1,
-                borderColor: 'rgba(255,255,255,0.20)',
-                backgroundColor: 'rgba(0,0,0,0.22)',
+                borderColor: 'rgba(255,255,255,0.30)',
+                backgroundColor: 'rgba(0,0,0,0.56)',
                 paddingHorizontal: 10,
                 paddingVertical: 5,
                 marginBottom: 9,
@@ -471,13 +471,13 @@ export function PremiumHero({
               </CustomText>
             </View>
 
-            <CustomText variant="display" style={{ color: '#FFFFFF', fontSize: isWide ? 23 : 20, lineHeight: isWide ? 29 : 26 }} numberOfLines={2}>
+            <CustomText variant="display" style={{ color: '#FFFFFF', fontSize: isWide ? 23 : 20, lineHeight: isWide ? 29 : 26, textShadowColor: 'rgba(0,0,0,0.36)', textShadowRadius: 10 }} numberOfLines={2}>
               {item?.title || title || 'Welcome to ClaudyGod'}
             </CustomText>
 
             <CustomText
               variant="caption"
-              style={{ color: 'rgba(255,255,255,0.78)', marginTop: 7, maxWidth: 520 }}
+              style={{ color: 'rgba(255,255,255,0.88)', marginTop: 7, maxWidth: 520 }}
               numberOfLines={3}
             >
               {item?.description || subtitle || 'Worship, messages, live ministry, and videos in one focused experience.'}
