@@ -1,16 +1,18 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Linking, Modal, TextInput, View, useWindowDimensions } from 'react-native';
+import { Linking, TextInput, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+
 import { SettingsScaffold } from '../../components/layout/SettingsScaffold';
 import { CustomText } from '../../components/CustomText';
 import { useAppTheme } from '../../util/colorScheme';
-import { spacing } from '../../styles/designTokens';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { FadeIn } from '../../components/ui/FadeIn';
 import { TVTouchable } from '../../components/ui/TVTouchable';
+import { AppButton } from '../../components/ui/AppButton';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import { APP_ROUTES } from '../../util/appRoutes';
+import { useAppModal } from '../../context/AppModalContext';
 import {
   fetchMePrivacyOverview,
   requestPrivacyDataExport,
@@ -18,1091 +20,258 @@ import {
   resetRecommendationHistory,
 } from '../../services/userFlowService';
 
-const dataPolicies = [
-  {
-    icon: 'person-outline',
-    title: 'Profile details',
-    description: 'Manage your name and email used for sign-in, support, and account recovery.',
-    retention: 'Editable',
-  },
-  {
-    icon: 'history',
-    title: 'Playback history',
-    description: 'Reset watch and listening history to refresh recommendations when needed.',
-    retention: 'Reset anytime',
-  },
-  {
-    icon: 'download',
-    title: 'Offline downloads',
-    description: 'Control downloaded media and remove saved items from this device.',
-    retention: 'Device only',
-  },
-] as const;
-
-const privacyPrinciples = [
-  'We do not sell personal data.',
-  'Security controls are available from inside the app.',
-  'Privacy requests are processed by a human support team.',
-  'Activity-based personalization can be reset by the user.',
-] as const;
-
 export default function Privacy() {
-  const router = useRouter();
   const theme = useAppTheme();
-  const isDark = theme.scheme === 'dark';
-  const { width } = useWindowDimensions();
+  const router = useRouter();
   const { config } = useMobileAppConfig();
-  const [privacyLoading, setPrivacyLoading] = useState(true);
-  const [privacySummary, setPrivacySummary] = useState<{
-    totalRequests: number;
-    latestRequests: { id: string; type: 'export' | 'delete'; status: string; createdAt: string }[];
-    totalPlayEvents: number;
-    totalLiveSubscriptions: number;
-  } | null>(null);
+  const { showModal } = useAppModal();
+  const [loading, setLoading] = useState(true);
+  const [summary, setSummary] = useState<{ totalRequests: number; totalPlayEvents: number; totalLiveSubscriptions: number } | null>(null);
+  const [deleteName, setDeleteName] = useState('');
+  const [deletePhraseInput, setDeletePhraseInput] = useState('');
+  const [submittingDelete, setSubmittingDelete] = useState(false);
 
-  const ui = {
-    heroBg: isDark ? 'rgba(12,9,20,0.9)' : theme.colors.surface,
-    heroBorder: isDark ? 'rgba(255,255,255,0.08)' : theme.colors.border,
-    iconBadgeBg: isDark ? 'rgba(154,107,255,0.14)' : 'rgba(109,40,217,0.08)',
-    iconBadgeBorder: isDark ? 'rgba(216,194,255,0.24)' : 'rgba(109,40,217,0.14)',
-    rowSoft: isDark ? 'rgba(255,255,255,0.02)' : theme.colors.surfaceAlt,
-    rowSoftBorder: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(20,16,33,0.06)',
-  } as const;
+  const contactEmail = config?.privacy?.contactEmail ?? 'privacy@claudygod.org';
+  const deletePhrase = config?.privacy?.deleteConfirmPhrase ?? 'I CONFIRM';
+  const principles = useMemo(() => config?.privacy?.principles ?? [], [config]);
+  const canDelete = deleteName.trim().length >= 3 && deletePhraseInput.trim().toUpperCase() === deletePhrase.trim().toUpperCase();
 
-  type ActionModalKey =
-    | 'password'
-    | 'export'
-    | 'reset'
-    | 'delete'
-    | 'profile'
-    | 'history'
-    | 'downloads'
-    | null;
-
-  const [activeModal, setActiveModal] = useState<ActionModalKey>(null);
-  const [deleteFullName, setDeleteFullName] = useState('');
-  const [deleteConfirmText, setDeleteConfirmText] = useState('');
-  const privacyContactEmail = config?.privacy.contactEmail ?? 'privacy@claudygod.org';
-  const deletePhrase = config?.privacy.deleteConfirmPhrase ?? 'I CONFIRM';
-  const activePrivacyPrinciples = config?.privacy.principles ?? [...privacyPrinciples];
-
-  const refreshPrivacySummary = useCallback(async () => {
-    setPrivacyLoading(true);
+  const refreshPrivacy = useCallback(async () => {
+    setLoading(true);
     try {
       const response = await fetchMePrivacyOverview();
-      setPrivacySummary(response.privacy);
+      setSummary(response.privacy);
     } catch {
-    } finally {
-      setPrivacyLoading(false);
+      setSummary(null);
     }
+    setLoading(false);
   }, []);
 
   useEffect(() => {
-    void refreshPrivacySummary();
-  }, [refreshPrivacySummary]);
+    void refreshPrivacy();
+  }, [refreshPrivacy]);
 
-  const openActionModal = useCallback((key: Exclude<ActionModalKey, null>) => setActiveModal(key), []);
-  const closeActionModal = useCallback(() => {
-    setActiveModal(null);
-    setDeleteFullName('');
-    setDeleteConfirmText('');
-  }, []);
-
-  const canSubmitDelete =
-    deleteFullName.trim().length >= 3 &&
-    deleteConfirmText.trim().toUpperCase() === deletePhrase.trim().toUpperCase();
-
-  const submitDeleteRequest = useCallback(() => {
-    if (!canSubmitDelete) return;
-    void requestPrivacyDeleteAccount({
-      fullName: deleteFullName.trim(),
-      confirmText: deleteConfirmText.trim(),
-    })
-      .then((response) => {
-        closeActionModal();
-        void refreshPrivacySummary();
-        Alert.alert(
-          'Delete request submitted',
-          `Request ${response.request.id.slice(0, 8)} submitted. Our team will review your deletion request.`,
-        );
-      })
-      .catch((error) => {
-        Alert.alert('Delete request failed', error instanceof Error ? error.message : 'Please try again.');
+  const requestExport = async () => {
+    try {
+      const response = await requestPrivacyDataExport();
+      showModal({
+        title: 'Export request submitted',
+        message: `Request ${response.request.id.slice(0, 8)} has been received.`,
+        tone: 'success',
+        primaryAction: { label: 'Done' },
       });
-  }, [canSubmitDelete, closeActionModal, deleteConfirmText, deleteFullName, refreshPrivacySummary]);
-
-  const activeModalConfig = useMemo<ActionModalConfig | null>(() => {
-    switch (activeModal) {
-      case 'password':
-        return {
-          key: 'password',
-          title: 'Password & Sign-in',
-          description:
-            'Use this section to update your password, review active sessions, and recover access if you forget your password.',
-          bullets: [
-            'Use “Forgot Password” on the sign-in screen if you cannot access your account.',
-            'Update your password regularly to protect your account.',
-            'You can review access and sign-in options from your account anytime.',
-          ],
-          primaryActionLabel: 'Open Sign-in',
-          onPrimaryAction: () => {
-            closeActionModal();
-            router.push(APP_ROUTES.auth.signIn);
-          },
-          secondaryActionLabel: 'Close',
-          onSecondaryAction: closeActionModal,
-        };
-      case 'export':
-        return {
-          key: 'export',
-          title: 'Export My Data',
-          description:
-            'Submit a data export request for your profile, library, and activity records. Our team will prepare the export for you.',
-          bullets: [
-            'Exports are usually sent to your account email.',
-            'Large accounts may take longer to prepare.',
-            'You can review request status from this privacy screen.',
-          ],
-          primaryActionLabel: 'Submit Export Request',
-          onPrimaryAction: () => {
-            void requestPrivacyDataExport()
-              .then((response) => {
-                closeActionModal();
-                void refreshPrivacySummary();
-                Alert.alert(
-                  'Export request submitted',
-                  `Request ${response.request.id.slice(0, 8)} has been sent to the privacy team.`,
-                );
-              })
-              .catch((error) => {
-                Alert.alert('Export request failed', error instanceof Error ? error.message : 'Please try again.');
-              });
-          },
-          secondaryActionLabel: 'Close',
-          onSecondaryAction: closeActionModal,
-        };
-      case 'reset':
-        return {
-          key: 'reset',
-          title: 'Reset Recommendations',
-          description:
-            'Resetting recommendations clears personalization signals and rebuilds suggestions from new activity.',
-          bullets: [
-            'Your profile and saved content remain unchanged.',
-            'Video and audio suggestions may look generic until new activity is recorded.',
-            'Playback history events stored for personalization are removed immediately.',
-          ],
-          primaryActionLabel: 'Reset Now',
-          onPrimaryAction: () => {
-            void resetRecommendationHistory()
-              .then((response) => {
-                closeActionModal();
-                void refreshPrivacySummary();
-                Alert.alert('Recommendations reset', `Cleared ${response.clearedPlayEvents} recorded playback event(s).`);
-              })
-              .catch((error) => {
-                Alert.alert('Reset failed', error instanceof Error ? error.message : 'Please try again.');
-              });
-          },
-          secondaryActionLabel: 'Close',
-          onSecondaryAction: closeActionModal,
-        };
-      case 'delete':
-        return {
-          key: 'delete',
-          title: 'Delete Account',
-          description:
-            `This action is permanent. To confirm authorization, enter your full name and type “${deletePhrase}” exactly.`,
-          danger: true,
-          primaryActionLabel: 'Submit Request',
-          onPrimaryAction: submitDeleteRequest,
-          secondaryActionLabel: 'Cancel',
-          onSecondaryAction: closeActionModal,
-          customContent: (
-            <View style={{ marginTop: 12 }}>
-              <DeleteConfirmationFields
-                fullName={deleteFullName}
-                onChangeFullName={setDeleteFullName}
-                confirmText={deleteConfirmText}
-                onChangeConfirmText={setDeleteConfirmText}
-                confirmPhrase={deletePhrase}
-              />
-            </View>
-          ),
-          disablePrimaryAction: !canSubmitDelete,
-        };
-      case 'profile':
-        return {
-          key: 'profile',
-          title: 'Profile Details',
-          description:
-            'Update your name, email, phone number, and other account profile details from your Profile screen.',
-          bullets: [
-            'Profile updates help keep account recovery and notifications accurate.',
-            'Keep your details current so support and security notices always reach you.',
-          ],
-          primaryActionLabel: 'Open Profile',
-          onPrimaryAction: () => {
-            closeActionModal();
-            router.push(APP_ROUTES.profile);
-          },
-          secondaryActionLabel: 'Close',
-          onSecondaryAction: closeActionModal,
-        };
-      case 'history':
-        return {
-          key: 'history',
-          title: 'Playback History',
-          description:
-            'Playback history is used for resume playback and personalized recommendations. You can reset it when connected.',
-          bullets: [
-            'Resetting history removes personalization signals, not your saved playlists.',
-            'Resume positions may be cleared for previously watched content.',
-          ],
-          primaryActionLabel: 'Close',
-          onPrimaryAction: closeActionModal,
-        };
-      case 'downloads':
-        return {
-          key: 'downloads',
-          title: 'Offline Downloads',
-          description:
-            'Manage downloaded videos and audio files from your Library and free up space whenever needed.',
-          bullets: [
-            'Remove offline media to free up space on this device.',
-            'Downloads are device-specific unless cloud sync is enabled.',
-          ],
-          primaryActionLabel: 'Open Library',
-          onPrimaryAction: () => {
-            closeActionModal();
-            router.push(APP_ROUTES.tabs.library);
-          },
-          secondaryActionLabel: 'Close',
-          onSecondaryAction: closeActionModal,
-        };
-      default:
-        return null;
+      void refreshPrivacy();
+    } catch (error) {
+      showModal({
+        title: 'Request failed',
+        message: error instanceof Error ? error.message : 'Please try again.',
+        tone: 'error',
+        primaryAction: { label: 'Try again' },
+      });
     }
-  }, [
-    activeModal,
-    canSubmitDelete,
-    closeActionModal,
-    deleteConfirmText,
-    deleteFullName,
-    deletePhrase,
-    refreshPrivacySummary,
-    router,
-    submitDeleteRequest,
-  ]);
+  };
 
-  const securityActions = [
-    {
-      icon: 'password',
-      title: 'Password & Sign-in',
-      subtitle: 'Update password, sessions, and recovery options',
-      onPress: () => openActionModal('password'),
-      emphasis: 'neutral' as const,
-    },
-    {
-      icon: 'download',
-      title: 'Export my data',
-      subtitle: 'Request account, library, and playback export',
-      onPress: () => openActionModal('export'),
-      emphasis: 'primary' as const,
-    },
-    {
-      icon: 'history-toggle-off',
-      title: 'Reset recommendations',
-      subtitle: 'Clear personalization history and rebuild suggestions',
-      onPress: () => openActionModal('reset'),
-      emphasis: 'neutral' as const,
-    },
-    {
-      icon: 'delete-outline',
-      title: 'Delete account',
-      subtitle: 'Permanent deletion request with data purge workflow',
-      onPress: () => openActionModal('delete'),
-      emphasis: 'danger' as const,
-    },
-  ] as {
-    icon: React.ComponentProps<typeof MaterialIcons>['name'];
-    title: string;
-    subtitle: string;
-    onPress: () => void;
-    emphasis: 'neutral' | 'primary' | 'danger';
-  }[];
+  const performResetHistory = async () => {
+    try {
+      const response = await resetRecommendationHistory();
+      showModal({
+        title: 'Recommendations reset',
+        message: `Cleared ${response.clearedPlayEvents} playback event(s).`,
+        tone: 'success',
+        primaryAction: { label: 'Done' },
+      });
+      void refreshPrivacy();
+    } catch (error) {
+      showModal({
+        title: 'Reset failed',
+        message: error instanceof Error ? error.message : 'Please try again.',
+        tone: 'error',
+        primaryAction: { label: 'Try again' },
+      });
+    }
+  };
 
-  const quickActions = [
-    {
-      icon: 'password' as const,
-      label: 'Password',
-      onPress: () => openActionModal('password'),
-      tone: 'neutral' as const,
-    },
-    {
-      icon: 'download' as const,
-      label: 'Export',
-      onPress: () => openActionModal('export'),
-      tone: 'primary' as const,
-    },
-    {
-      icon: 'email' as const,
-      label: 'Contact',
-      onPress: () => void Linking.openURL(`mailto:${privacyContactEmail}`),
-      tone: 'neutral' as const,
-    },
-    {
-      icon: 'delete-outline' as const,
-      label: 'Delete',
-      onPress: () => openActionModal('delete'),
-      tone: 'danger' as const,
-    },
-  ];
+  const resetHistory = () => {
+    showModal({
+      title: 'Reset recommendations?',
+      message: 'This clears the activity used to shape your recommendations. Your account and saved library stay intact.',
+      tone: 'warning',
+      primaryAction: { label: 'Reset', onPress: () => void performResetHistory() },
+      secondaryAction: { label: 'Cancel', variant: 'secondary' },
+    });
+  };
+
+  const performDeleteRequest = async () => {
+    if (!canDelete) return;
+    setSubmittingDelete(true);
+    try {
+      const response = await requestPrivacyDeleteAccount({ fullName: deleteName.trim(), confirmText: deletePhraseInput.trim() });
+      setDeleteName('');
+      setDeletePhraseInput('');
+      showModal({
+        title: 'Delete request submitted',
+        message: `Request ${response.request.id.slice(0, 8)} has been received.`,
+        tone: 'success',
+        primaryAction: { label: 'Done' },
+      });
+      void refreshPrivacy();
+    } catch (error) {
+      showModal({
+        title: 'Request failed',
+        message: error instanceof Error ? error.message : 'Please try again.',
+        tone: 'error',
+        primaryAction: { label: 'Try again' },
+      });
+    }
+    setSubmittingDelete(false);
+  };
+
+  const submitDeleteRequest = () => {
+    if (!canDelete) return;
+    showModal({
+      title: 'Submit delete request?',
+      message: 'This sends your account deletion request for review. You can still contact privacy support if you need help.',
+      tone: 'danger',
+      primaryAction: { label: 'Submit', onPress: () => void performDeleteRequest() },
+      secondaryAction: { label: 'Cancel', variant: 'secondary' },
+    });
+  };
 
   return (
     <SettingsScaffold
       title="Privacy & Security"
-      subtitle="Controls, policy clarity, and account protection"
+      subtitle="Clear controls for account data, activity, and safety."
       hero={
         <FadeIn>
-          <SurfaceCard style={{ padding: spacing.md, marginBottom: spacing.lg }}>
-            <View
-              style={{
-                borderRadius: 16,
-                borderWidth: 1,
-                borderColor: ui.heroBorder,
-                backgroundColor: ui.heroBg,
-                padding: 14,
-              }}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <View
-                  style={{
-                    width: 42,
-                    height: 42,
-                    borderRadius: 12,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: ui.iconBadgeBg,
-                    borderWidth: 1,
-                    borderColor: ui.iconBadgeBorder,
-                    marginRight: 10,
-                  }}
-                >
-                  <MaterialIcons name="shield" size={20} color={theme.colors.primary} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
-                    Privacy Controls
-                  </CustomText>
-                  <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 3 }}>
-                    Manage sign-in, exports, request history, and account actions.
-                  </CustomText>
-                </View>
-              </View>
-
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -4, marginTop: 10 }}>
-                {quickActions.map((item) => (
-                  <View key={item.label} style={{ width: width >= 768 ? '25%' : '50%', paddingHorizontal: 4, marginBottom: 8 }}>
-                    <QuickActionTile icon={item.icon} label={item.label} onPress={item.onPress} tone={item.tone} />
-                  </View>
-                ))}
-              </View>
-            </View>
+          <SurfaceCard tone="strong" style={{ padding: theme.spacing.xl, marginBottom: theme.spacing.lg }}>
+            <CustomText variant="caption" style={{ color: theme.colors.primary, textTransform: 'uppercase', letterSpacing: 0.9 }}>
+              Privacy controls
+            </CustomText>
+            <CustomText variant="display" style={{ color: theme.colors.text, marginTop: 8 }}>
+              Stay in control of your account.
+            </CustomText>
+            <CustomText variant="body" style={{ color: theme.colors.textSecondary, marginTop: 8 }}>
+              Manage account access, exports, recommendations, and deletion requests from one place.
+            </CustomText>
           </SurfaceCard>
         </FadeIn>
       }
     >
-      <FadeIn delay={80}>
-        <SectionCard
-          title="Security & Account"
-          subtitle="Manage sign-in access, exports, recommendations, and deletion requests."
-        >
-          <View style={{ gap: 8 }}>
-            {securityActions.map((item) => (
-              <SecurityActionRow
-                key={item.title}
-                icon={item.icon}
-                title={item.title}
-                subtitle={item.subtitle}
-                onPress={item.onPress}
-                emphasis={item.emphasis}
-              />
-            ))}
-          </View>
-        </SectionCard>
+      <FadeIn delay={70}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+          <PrivacyStat label="Requests" value={loading ? '—' : `${summary?.totalRequests ?? 0}`} icon="assignment" />
+          <PrivacyStat label="Play events" value={loading ? '—' : `${summary?.totalPlayEvents ?? 0}`} icon="history" />
+          <PrivacyStat label="Live alerts" value={loading ? '—' : `${summary?.totalLiveSubscriptions ?? 0}`} icon="notifications-active" />
+        </View>
       </FadeIn>
 
-      <FadeIn delay={130}>
-        <SectionCard
-          title="Request Status & Activity"
-          subtitle="Your recent privacy requests and activity totals in one place."
-          style={{ marginTop: spacing.sm }}
-        >
-          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
-            <StatusTile
-              label="Requests"
-              value={privacyLoading ? '...' : String(privacySummary?.totalRequests ?? 0)}
-            />
-            <StatusTile
-              label="Play Events"
-              value={privacyLoading ? '...' : String(privacySummary?.totalPlayEvents ?? 0)}
-            />
-            <StatusTile
-              label="Live Alerts"
-              value={privacyLoading ? '...' : String(privacySummary?.totalLiveSubscriptions ?? 0)}
-            />
+      <FadeIn delay={110}>
+        <SurfaceCard tone="subtle" style={{ padding: theme.spacing.lg }}>
+          <CustomText variant="heading" style={{ color: theme.colors.text }}>
+            Account actions
+          </CustomText>
+          <View style={{ gap: 10, marginTop: 14 }}>
+            <PrivacyAction icon="password" title="Password & sign in" description="Update access through the sign-in flow." onPress={() => router.push(APP_ROUTES.auth.forgotPassword)} />
+            <PrivacyAction icon="download" title="Export my data" description="Request a copy of account and activity data." onPress={() => void requestExport()} />
+            <PrivacyAction icon="history-toggle-off" title="Reset recommendations" description="Clear activity used for recommendations." onPress={resetHistory} />
+            <PrivacyAction icon="email" title="Contact privacy team" description={contactEmail} onPress={() => void Linking.openURL(`mailto:${contactEmail}`)} />
           </View>
+        </SurfaceCard>
+      </FadeIn>
 
-          {privacySummary?.latestRequests?.length ? (
-            <View style={{ gap: 8 }}>
-              {privacySummary.latestRequests.slice(0, 3).map((request) => (
-                <View
-                  key={request.id}
-                  style={{
-                    borderRadius: 12,
-                    borderWidth: 1,
-                    borderColor: ui.rowSoftBorder,
-                    backgroundColor: ui.rowSoft,
-                    paddingHorizontal: 10,
-                    paddingVertical: 9,
-                  }}
-                >
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <CustomText variant="label" style={{ color: theme.colors.text }}>
-                      {request.type === 'export' ? 'Data export request' : 'Delete account request'}
-                    </CustomText>
-                    <CustomText variant="caption" style={{ color: theme.colors.primary }}>
-                      {request.status}
-                    </CustomText>
-                  </View>
-                  <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 3 }}>
-                    {new Date(request.createdAt).toLocaleString()}
+      {principles.length ? (
+        <FadeIn delay={150}>
+          <SurfaceCard tone="subtle" style={{ padding: theme.spacing.lg }}>
+            <CustomText variant="heading" style={{ color: theme.colors.text }}>
+              Privacy principles
+            </CustomText>
+            <View style={{ gap: 10, marginTop: 12 }}>
+              {principles.map((principle) => (
+                <View key={principle} style={{ flexDirection: 'row', gap: 10 }}>
+                  <MaterialIcons name="check-circle" size={18} color={theme.colors.primary} />
+                  <CustomText variant="body" style={{ color: theme.colors.textSecondary, flex: 1 }}>
+                    {principle}
                   </CustomText>
                 </View>
               ))}
             </View>
-          ) : (
-            <CustomText variant="caption" style={{ color: theme.colors.textSecondary }}>
-              No privacy requests submitted yet.
-            </CustomText>
-          )}
-        </SectionCard>
-      </FadeIn>
-
-      <FadeIn delay={155}>
-        <SectionCard
-          title="Privacy Preferences"
-          subtitle="Review and manage the areas of your account and activity you can control."
-          style={{ marginTop: spacing.sm }}
-        >
-          <View style={{ gap: 8 }}>
-            {dataPolicies.map((item) => (
-              <DataPolicyRow
-                key={item.title}
-                icon={item.icon}
-                title={item.title}
-                description={item.description}
-                retention={item.retention}
-                ui={ui}
-                onPress={() => {
-                  if (item.title === 'Profile details') return openActionModal('profile');
-                  if (item.title === 'Playback history') return openActionModal('history');
-                  return openActionModal('downloads');
-                }}
-              />
-            ))}
-          </View>
-        </SectionCard>
-      </FadeIn>
-
-      <FadeIn delay={205}>
-        <SectionCard
-          title="Privacy Commitments"
-          subtitle="Simple commitments for security, privacy, and user choice."
-          style={{ marginTop: spacing.sm }}
-        >
-          <View style={{ gap: 8 }}>
-            {activePrivacyPrinciples.map((item) => (
-              <View
-                key={item}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'flex-start',
-                  borderRadius: 12,
-                  borderWidth: 1,
-                  borderColor: ui.rowSoftBorder,
-                  backgroundColor: ui.rowSoft,
-                  paddingHorizontal: 10,
-                  paddingVertical: 9,
-                }}
-              >
-                <MaterialIcons name="check-circle" size={16} color={theme.colors.primary} style={{ marginTop: 1 }} />
-                <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginLeft: 8, flex: 1 }}>
-                  {item}
-                </CustomText>
-              </View>
-            ))}
-          </View>
-        </SectionCard>
-      </FadeIn>
-
-      <FadeIn delay={255}>
-        <TVTouchable
-          onPress={() => void Linking.openURL(`mailto:${privacyContactEmail}`)}
-          showFocusBorder={false}
-          style={{ marginTop: spacing.sm, marginBottom: spacing.xl }}
-        >
-          <SurfaceCard tone="subtle" style={{ padding: spacing.md }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <View
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 12,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: ui.iconBadgeBg,
-                  marginRight: 10,
-                }}
-              >
-                <MaterialIcons name="support-agent" size={20} color={theme.colors.primary} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
-                  Contact Privacy Support
-                </CustomText>
-                <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 4 }}>
-                  Email {privacyContactEmail} for help with exports, corrections, or account requests.
-                </CustomText>
-              </View>
-              <MaterialIcons name="chevron-right" size={18} color={theme.colors.textSecondary} />
-            </View>
           </SurfaceCard>
-        </TVTouchable>
-      </FadeIn>
+        </FadeIn>
+      ) : null}
 
-      <PrivacyActionModal
-        visible={Boolean(activeModalConfig)}
-        config={activeModalConfig}
-        onClose={closeActionModal}
-      />
+      <FadeIn delay={190}>
+        <SurfaceCard tone="subtle" style={{ padding: theme.spacing.lg, borderColor: theme.colors.danger }}>
+          <CustomText variant="heading" style={{ color: theme.colors.text }}>
+            Delete account request
+          </CustomText>
+          <CustomText variant="body" style={{ color: theme.colors.textSecondary, marginTop: 8 }}>
+            This sends a deletion request for review. Type the required phrase to confirm your intent.
+          </CustomText>
+          <TextInput
+            value={deleteName}
+            onChangeText={setDeleteName}
+            placeholder="Full name"
+            placeholderTextColor={theme.colors.textSecondary}
+            style={{ marginTop: 14, borderRadius: 16, borderWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.surface, color: theme.colors.text, paddingHorizontal: 14, paddingVertical: 12 }}
+          />
+          <TextInput
+            value={deletePhraseInput}
+            onChangeText={setDeletePhraseInput}
+            placeholder={`Type ${deletePhrase}`}
+            placeholderTextColor={theme.colors.textSecondary}
+            autoCapitalize="characters"
+            style={{ marginTop: 10, borderRadius: 16, borderWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.surface, color: theme.colors.text, paddingHorizontal: 14, paddingVertical: 12 }}
+          />
+          <AppButton
+            title="Submit delete request"
+            variant="outline"
+            fullWidth
+            disabled={!canDelete || submittingDelete}
+            loading={submittingDelete}
+            loadingLabel="Submitting request"
+            onPress={submitDeleteRequest}
+            textColor={theme.colors.danger}
+            style={{ marginTop: 14, borderColor: theme.colors.danger }}
+          />
+        </SurfaceCard>
+      </FadeIn>
     </SettingsScaffold>
   );
 }
 
-function StatusTile({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
+function PrivacyStat({ label, value, icon }: { label: string; value: string; icon: React.ComponentProps<typeof MaterialIcons>['name'] }) {
   const theme = useAppTheme();
-  const isDark = theme.scheme === 'dark';
-
   return (
-    <View
-      style={{
-        flex: 1,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(20,16,33,0.06)',
-        backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : theme.colors.surfaceAlt,
-        paddingHorizontal: 10,
-        paddingVertical: 9,
-      }}
-    >
+    <SurfaceCard tone="subtle" style={{ flexGrow: 1, minWidth: 130, padding: theme.spacing.md }}>
+      <MaterialIcons name={icon} size={18} color={theme.colors.primary} />
+      <CustomText variant="heading" style={{ color: theme.colors.text, marginTop: 8 }}>
+        {value}
+      </CustomText>
       <CustomText variant="caption" style={{ color: theme.colors.textSecondary }}>
         {label}
       </CustomText>
-      <CustomText variant="label" style={{ color: theme.colors.text, marginTop: 4 }}>
-        {value}
-      </CustomText>
-    </View>
-  );
-}
-
-function SectionCard({
-  title,
-  subtitle,
-  children,
-  style,
-}: {
-  title: string;
-  subtitle: string;
-  children: React.ReactNode;
-  style?: object;
-}) {
-  const theme = useAppTheme();
-
-  return (
-    <SurfaceCard style={[{ padding: spacing.md }, style]}>
-      <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
-        {title}
-      </CustomText>
-      <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 4, marginBottom: 10 }}>
-        {subtitle}
-      </CustomText>
-      {children}
     </SurfaceCard>
   );
 }
 
-function SecurityActionRow({
-  icon,
-  title,
-  subtitle,
-  onPress,
-  emphasis,
-}: {
-  icon: React.ComponentProps<typeof MaterialIcons>['name'];
-  title: string;
-  subtitle: string;
-  onPress: () => void;
-  emphasis: 'neutral' | 'primary' | 'danger';
-}) {
+function PrivacyAction({ icon, title, description, onPress }: { icon: React.ComponentProps<typeof MaterialIcons>['name']; title: string; description: string; onPress: () => void }) {
   const theme = useAppTheme();
-  const isDark = theme.scheme === 'dark';
-
-  const accent =
-    emphasis === 'danger'
-      ? { icon: isDark ? '#FCA5A5' : '#B91C1C', bg: isDark ? 'rgba(248,113,113,0.08)' : 'rgba(220,38,38,0.06)' }
-      : emphasis === 'primary'
-      ? { icon: theme.colors.primary, bg: isDark ? 'rgba(154,107,255,0.1)' : 'rgba(109,40,217,0.06)' }
-      : { icon: theme.colors.primary, bg: isDark ? 'rgba(255,255,255,0.03)' : theme.colors.surfaceAlt };
-
   return (
-    <TVTouchable
-      onPress={onPress}
-      showFocusBorder={false}
-      style={{
-        borderRadius: 14,
-        borderWidth: 1,
-        borderColor: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(20,16,33,0.06)',
-        backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : theme.colors.surface,
-        padding: 10,
-        flexDirection: 'row',
-        alignItems: 'center',
-      }}
-    >
-      <View
-        style={{
-          width: 38,
-          height: 38,
-          borderRadius: 11,
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: accent.bg,
-          marginRight: 10,
-        }}
-      >
-        <MaterialIcons name={icon} size={18} color={accent.icon} />
-      </View>
-      <View style={{ flex: 1 }}>
-        <CustomText variant="label" style={{ color: theme.colors.text }}>
-          {title}
-        </CustomText>
-        <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 3 }}>
-          {subtitle}
-        </CustomText>
-      </View>
-      <MaterialIcons name="chevron-right" size={18} color={theme.colors.textSecondary} />
-    </TVTouchable>
-  );
-}
-
-function DataPolicyRow({
-  icon,
-  title,
-  description,
-  retention,
-  ui,
-  onPress,
-}: {
-  icon: React.ComponentProps<typeof MaterialIcons>['name'];
-  title: string;
-  description: string;
-  retention: string;
-  ui: {
-    rowSoft: string;
-    rowSoftBorder: string;
-    iconBadgeBg: string;
-    iconBadgeBorder: string;
-  };
-  onPress?: () => void;
-}) {
-  const theme = useAppTheme();
-
-  return (
-    <TVTouchable
-      onPress={onPress}
-      disabled={!onPress}
-      showFocusBorder={false}
-      style={{
-        borderRadius: 14,
-        borderWidth: 1,
-        borderColor: ui.rowSoftBorder,
-        backgroundColor: ui.rowSoft,
-        padding: 10,
-      }}
-    >
-      <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-        <View
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: 10,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: ui.iconBadgeBg,
-            borderWidth: 1,
-            borderColor: ui.iconBadgeBorder,
-            marginRight: 10,
-          }}
-        >
-          <MaterialIcons name={icon} size={17} color={theme.colors.primary} />
+    <TVTouchable onPress={onPress} showFocusBorder={false}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 }}>
+        <View style={{ width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: `${theme.colors.primary}1A` }}>
+          <MaterialIcons name={icon} size={18} color={theme.colors.primary} />
         </View>
         <View style={{ flex: 1 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <CustomText variant="label" style={{ color: theme.colors.text, flex: 1, marginRight: 8 }}>
-              {title}
-            </CustomText>
-            <View
-              style={{
-                borderRadius: 999,
-                borderWidth: 1,
-                borderColor: theme.colors.border,
-                backgroundColor: theme.colors.surface,
-                paddingHorizontal: 8,
-                paddingVertical: 4,
-              }}
-            >
-              <CustomText variant="caption" style={{ color: theme.colors.textSecondary }}>
-                {retention}
-              </CustomText>
-            </View>
-          </View>
-          <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 4 }}>
+          <CustomText variant="label" style={{ color: theme.colors.text }}>
+            {title}
+          </CustomText>
+          <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 3 }}>
             {description}
           </CustomText>
-          {onPress ? (
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6 }}>
-              <CustomText variant="caption" style={{ color: theme.colors.primary }}>
-                Manage
-              </CustomText>
-              <MaterialIcons name="chevron-right" size={16} color={theme.colors.primary} style={{ marginLeft: 2 }} />
-            </View>
-          ) : null}
         </View>
+        <MaterialIcons name="chevron-right" size={20} color={theme.colors.textSecondary} />
       </View>
     </TVTouchable>
-  );
-}
-
-function QuickActionTile({
-  icon,
-  label,
-  onPress,
-  tone,
-}: {
-  icon: React.ComponentProps<typeof MaterialIcons>['name'];
-  label: string;
-  onPress: () => void;
-  tone: 'neutral' | 'primary' | 'danger';
-}) {
-  const theme = useAppTheme();
-  const isDark = theme.scheme === 'dark';
-  const palette =
-    tone === 'danger'
-      ? {
-          bg: isDark ? 'rgba(248,113,113,0.08)' : 'rgba(220,38,38,0.05)',
-          border: isDark ? 'rgba(248,113,113,0.18)' : 'rgba(220,38,38,0.1)',
-          icon: isDark ? '#FCA5A5' : '#B91C1C',
-          text: isDark ? '#FDE2E2' : '#991B1B',
-        }
-      : tone === 'primary'
-      ? {
-          bg: isDark ? 'rgba(154,107,255,0.12)' : 'rgba(109,40,217,0.06)',
-          border: isDark ? 'rgba(216,194,255,0.16)' : 'rgba(109,40,217,0.1)',
-          icon: isDark ? '#EDE3FF' : theme.colors.primary,
-          text: isDark ? '#F3ECFF' : '#4C1D95',
-        }
-      : {
-          bg: isDark ? 'rgba(255,255,255,0.02)' : theme.colors.surfaceAlt,
-          border: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(20,16,33,0.06)',
-          icon: theme.colors.primary,
-          text: theme.colors.text,
-        };
-
-  return (
-    <TVTouchable
-      onPress={onPress}
-      showFocusBorder={false}
-      style={{
-        minHeight: 72,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: palette.border,
-        backgroundColor: palette.bg,
-        paddingHorizontal: 10,
-        paddingVertical: 9,
-      }}
-    >
-      <View
-        style={{
-          width: 30,
-          height: 30,
-          borderRadius: 9,
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.7)',
-          borderWidth: 1,
-          borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(20,16,33,0.04)',
-        }}
-      >
-        <MaterialIcons name={icon} size={16} color={palette.icon} />
-      </View>
-      <CustomText variant="caption" style={{ color: palette.text, marginTop: 8 }}>
-        {label}
-      </CustomText>
-    </TVTouchable>
-  );
-}
-
-type ActionModalConfig = {
-  key: string;
-  title: string;
-  description: string;
-  bullets?: string[];
-  customContent?: React.ReactNode;
-  primaryActionLabel: string;
-  onPrimaryAction: () => void;
-  secondaryActionLabel?: string;
-  onSecondaryAction?: () => void;
-  disablePrimaryAction?: boolean;
-  danger?: boolean;
-};
-
-function PrivacyActionModal({
-  visible,
-  config,
-  onClose,
-}: {
-  visible: boolean;
-  config: ActionModalConfig | null;
-  onClose: () => void;
-}) {
-  const theme = useAppTheme();
-  const isDark = theme.scheme === 'dark';
-
-  if (!config) {
-    return null;
-  }
-
-  const ui = {
-    backdrop: 'rgba(5,4,10,0.72)',
-    cardBg: isDark ? 'rgba(14,11,23,0.98)' : '#FFFFFF',
-    cardBorder: isDark ? 'rgba(255,255,255,0.08)' : theme.colors.border,
-    muted: isDark ? 'rgba(190,181,216,0.92)' : theme.colors.textSecondary,
-    softBg: isDark ? 'rgba(255,255,255,0.03)' : theme.colors.surfaceAlt,
-    softBorder: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(20,16,33,0.06)',
-    primaryBg: config.danger ? (isDark ? 'rgba(220,38,38,0.92)' : '#DC2626') : theme.colors.primary,
-    primaryText: '#FFFFFF',
-    secondaryBg: isDark ? 'rgba(255,255,255,0.04)' : theme.colors.surface,
-    secondaryBorder: isDark ? 'rgba(255,255,255,0.1)' : theme.colors.border,
-    secondaryText: theme.colors.text,
-  } as const;
-
-  return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: ui.backdrop,
-          justifyContent: 'center',
-          paddingHorizontal: 18,
-          paddingVertical: 24,
-        }}
-      >
-        <View
-          style={{
-            borderRadius: 20,
-            borderWidth: 1,
-            borderColor: ui.cardBorder,
-            backgroundColor: ui.cardBg,
-            padding: 14,
-          }}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-            <View style={{ flex: 1, paddingRight: 12 }}>
-              <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
-                {config.title}
-              </CustomText>
-              <CustomText variant="caption" style={{ color: ui.muted, marginTop: 5 }}>
-                {config.description}
-              </CustomText>
-            </View>
-            <TVTouchable
-              onPress={onClose}
-              showFocusBorder={false}
-              style={{
-                width: 34,
-                height: 34,
-                borderRadius: 17,
-                borderWidth: 1,
-                borderColor: ui.secondaryBorder,
-                backgroundColor: ui.secondaryBg,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <MaterialIcons name="close" size={18} color={theme.colors.text} />
-            </TVTouchable>
-          </View>
-
-          {config.bullets?.length ? (
-            <View style={{ marginTop: 12, gap: 7 }}>
-              {config.bullets.map((bullet) => (
-                <View
-                  key={bullet}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'flex-start',
-                    borderRadius: 12,
-                    borderWidth: 1,
-                    borderColor: ui.softBorder,
-                    backgroundColor: ui.softBg,
-                    paddingHorizontal: 10,
-                    paddingVertical: 9,
-                  }}
-                >
-                  <MaterialIcons name="check-circle" size={15} color={theme.colors.primary} style={{ marginTop: 1 }} />
-                  <CustomText variant="caption" style={{ color: ui.muted, marginLeft: 8, flex: 1 }}>
-                    {bullet}
-                  </CustomText>
-                </View>
-              ))}
-            </View>
-          ) : null}
-
-          {config.customContent}
-
-          <View style={{ flexDirection: 'row', gap: 8, marginTop: 14 }}>
-            {config.secondaryActionLabel && config.onSecondaryAction ? (
-              <TVTouchable
-                onPress={config.onSecondaryAction}
-                showFocusBorder={false}
-                style={{
-                  flex: 1,
-                  minHeight: 44,
-                  borderRadius: 12,
-                  borderWidth: 1,
-                  borderColor: ui.secondaryBorder,
-                  backgroundColor: ui.secondaryBg,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <CustomText variant="label" style={{ color: ui.secondaryText }}>
-                  {config.secondaryActionLabel}
-                </CustomText>
-              </TVTouchable>
-            ) : null}
-
-            <TVTouchable
-              onPress={config.onPrimaryAction}
-              disabled={config.disablePrimaryAction}
-              hasTVPreferredFocus
-              showFocusBorder={false}
-              style={{
-                flex: 1,
-                minHeight: 44,
-                borderRadius: 12,
-                borderWidth: 1,
-                borderColor: config.disablePrimaryAction ? ui.secondaryBorder : ui.primaryBg,
-                backgroundColor: config.disablePrimaryAction ? ui.secondaryBg : ui.primaryBg,
-                alignItems: 'center',
-                justifyContent: 'center',
-                opacity: config.disablePrimaryAction ? 0.6 : 1,
-              }}
-            >
-              <CustomText variant="label" style={{ color: config.disablePrimaryAction ? ui.secondaryText : ui.primaryText }}>
-                {config.primaryActionLabel}
-              </CustomText>
-            </TVTouchable>
-          </View>
-        </View>
-      </View>
-    </Modal>
-  );
-}
-
-function DeleteConfirmationFields({
-  fullName,
-  onChangeFullName,
-  confirmText,
-  onChangeConfirmText,
-  confirmPhrase,
-}: {
-  fullName: string;
-  onChangeFullName: (_value: string) => void;
-  confirmText: string;
-  onChangeConfirmText: (_value: string) => void;
-  confirmPhrase: string;
-}) {
-  const theme = useAppTheme();
-  const isDark = theme.scheme === 'dark';
-  const border = isDark ? 'rgba(255,255,255,0.1)' : theme.colors.border;
-  const bg = isDark ? 'rgba(255,255,255,0.03)' : theme.colors.surfaceAlt;
-
-  return (
-    <View style={{ gap: 10 }}>
-      <View>
-        <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginBottom: 5 }}>
-          Full name
-        </CustomText>
-        <TextInput
-          value={fullName}
-          onChangeText={onChangeFullName}
-          placeholder="Enter your full name"
-          placeholderTextColor={isDark ? 'rgba(190,181,216,0.7)' : 'rgba(108,99,134,0.8)'}
-          style={{
-            minHeight: 42,
-            borderRadius: 12,
-            borderWidth: 1,
-            borderColor: border,
-            backgroundColor: bg,
-            paddingHorizontal: 12,
-            color: theme.colors.text,
-          }}
-        />
-      </View>
-
-      <View>
-        <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginBottom: 5 }}>
-          Confirmation phrase
-        </CustomText>
-        <TextInput
-          value={confirmText}
-          onChangeText={onChangeConfirmText}
-          autoCapitalize="characters"
-          placeholder={confirmPhrase}
-          placeholderTextColor={isDark ? 'rgba(190,181,216,0.7)' : 'rgba(108,99,134,0.8)'}
-          style={{
-            minHeight: 42,
-            borderRadius: 12,
-            borderWidth: 1,
-            borderColor: border,
-            backgroundColor: bg,
-            paddingHorizontal: 12,
-            color: theme.colors.text,
-          }}
-        />
-        <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 5 }}>
-          Type “{confirmPhrase}” exactly to authorize this request.
-        </CustomText>
-      </View>
-    </View>
   );
 }

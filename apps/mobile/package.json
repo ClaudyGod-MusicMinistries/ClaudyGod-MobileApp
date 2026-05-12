@@ -21,6 +21,7 @@
     "postinstall": "node ./scripts/postinstall.js"
   },
   "dependencies": {
+    "@expo-google-fonts/manrope": "^0.4.2",
     "@expo-google-fonts/sora": "^0.4.2",
     "@expo-google-fonts/space-grotesk": "^0.4.1",
     "@expo-google-fonts/syne": "^0.4.2",

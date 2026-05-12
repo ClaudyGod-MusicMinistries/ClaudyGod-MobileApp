@@ -1,120 +1,106 @@
-/**
- * Support Ministry Card Component
- * Beautiful card for donation/support action
- */
-
 import React from 'react';
-import { View, Pressable, StyleSheet } from 'react-native';
+import { View, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../CustomText';
-import { colors } from '../../constants/color';
-import { spacing, radius } from '../../styles/designTokens';
+import { useAppTheme } from '../../util/colorScheme';
+import { TVTouchable } from './TVTouchable';
 
 interface SupportCardProps {
   onPress: () => void;
 }
 
 export function SupportMinistryCard({ onPress }: SupportCardProps) {
-  const palette = colors.light;
+  const theme = useAppTheme();
+  const { width } = useWindowDimensions();
+  const compact = width < 390;
+
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}>
-      <LinearGradient
-        colors={[palette.primary, palette.accent]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.card}
-      >
-        {/* Icon */}
-        <View style={styles.iconContainer}>
-          <MaterialIcons name="favorite" size={32} color="white" />
+    <LinearGradient
+      colors={theme.colors.gradient.primary as [string, string]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={{
+        minHeight: 104,
+        borderRadius: 22,
+        padding: 15,
+        overflow: 'hidden',
+        justifyContent: 'center',
+        shadowColor: theme.colors.primary,
+        shadowOffset: { width: 0, height: 12 },
+        shadowOpacity: 0.22,
+        shadowRadius: 24,
+        elevation: 10,
+      }}
+    >
+      <View
+        style={{
+          position: 'absolute',
+          right: -22,
+          top: -18,
+          width: 104,
+          height: 104,
+          borderRadius: 52,
+          backgroundColor: 'rgba(255,255,255,0.10)',
+        }}
+      />
+
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <View
+          style={{
+            width: 42,
+            height: 42,
+            borderRadius: 21,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: 'rgba(255,255,255,0.18)',
+            borderWidth: 1,
+            borderColor: 'rgba(255,255,255,0.24)',
+          }}
+        >
+          <MaterialIcons name="volunteer-activism" size={20} color="#FFFFFF" />
         </View>
 
-        {/* Content */}
-        <View style={styles.content}>
-          <CustomText style={styles.badge}>SUPPORT OUR MINISTRY</CustomText>
-          <CustomText style={styles.title}>Help Us Spread The Gospel</CustomText>
-          <CustomText style={styles.description}>
-            Your generosity enables us to reach more people with the message of faith and hope
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <CustomText variant="caption" style={{ color: 'rgba(255,255,255,0.76)', textTransform: 'uppercase', letterSpacing: 0.72 }}>
+            Support
+          </CustomText>
+          <CustomText variant="title" style={{ color: '#FFFFFF', marginTop: 3 }} numberOfLines={1}>
+            Partner with the ministry
+          </CustomText>
+          <CustomText variant="caption" style={{ color: 'rgba(255,255,255,0.78)', marginTop: 5, lineHeight: 17 }} numberOfLines={2}>
+            Help keep worship, messages, and live moments available to more people.
           </CustomText>
         </View>
 
-        {/* CTA Arrow */}
-        <View style={styles.cta}>
-          <View style={styles.ctaButton}>
-            <CustomText style={styles.ctaText}>Click Here</CustomText>
-            <MaterialIcons name="arrow-forward" size={18} color="white" style={{ marginLeft: spacing.xs }} />
-          </View>
-        </View>
-      </LinearGradient>
-    </Pressable>
+        <TVTouchable
+          onPress={onPress}
+          showFocusBorder={false}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            alignSelf: 'center',
+            gap: compact ? 0 : 6,
+            width: compact ? 40 : undefined,
+            minHeight: 38,
+            borderRadius: 999,
+            borderWidth: 1,
+            borderColor: 'rgba(255,255,255,0.34)',
+            backgroundColor: 'rgba(255,255,255,0.16)',
+            paddingHorizontal: compact ? 0 : 12,
+            justifyContent: 'center',
+            flexShrink: 0,
+          }}
+          accessibilityLabel="Give support"
+        >
+          {!compact ? (
+            <CustomText variant="label" style={{ color: '#FFFFFF' }} numberOfLines={1}>
+              Give support
+            </CustomText>
+          ) : null}
+          <MaterialIcons name="arrow-forward" size={16} color="#FFFFFF" />
+        </TVTouchable>
+      </View>
+    </LinearGradient>
   );
 }
-
-const colors_light = colors.light;
-
-const styles = StyleSheet.create({
-  card: {
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    overflow: 'hidden',
-    minHeight: 160,
-    justifyContent: 'space-between',
-    elevation: 8,
-    shadowColor: colors_light.accent,
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-  },
-  iconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.md,
-  },
-  content: {
-    marginBottom: spacing.md,
-  },
-  badge: {
-    color: 'rgba(255, 255, 255, 0.9)',
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 1,
-    marginBottom: spacing.xs,
-    textTransform: 'uppercase',
-  },
-  title: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: spacing.sm,
-  },
-  description: {
-    color: 'rgba(255, 255, 255, 0.85)',
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  cta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-  },
-  ctaButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.35)',
-  },
-  ctaText: {
-    color: 'white',
-    fontSize: 12.5,
-    fontWeight: '700',
-  },
-});

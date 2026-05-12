@@ -68,17 +68,17 @@ export default function PlaySection() {
   };
 
   return (
-    <PremiumPage title="Music" subtitle="A focused player for worship songs, messages, and listening queues." eyebrow="Now playing" refreshing={loading} onRefresh={refresh} rightAction={<AppButton title="Library" variant="secondary" size="sm" onPress={() => router.push(APP_ROUTES.tabs.library)} leftIcon={<MaterialIcons name="library-music" size={16} color={theme.colors.text} />} />}>
+    <PremiumPage title="Music" eyebrow="Listen" refreshing={loading} onRefresh={refresh} rightAction={<AppButton title="" variant="secondary" size="sm" onPress={() => router.push(APP_ROUTES.tabs.library)} leftIcon={<MaterialIcons name="library-music" size={16} color={theme.colors.text} />} style={{ minWidth: 40, paddingHorizontal: 10 }} />}>
       {active && hasInlineAudio && active.mediaUrl ? (
         <AudioPlayer track={{ id: active.id, title: active.title, artist: active.subtitle, uri: active.mediaUrl, duration: active.duration, imageUrl: active.imageUrl }} onPrevious={goPrevious} onNext={goNext} canGoPrevious={canGoPrevious} canGoNext={canGoNext} />
       ) : (
         <PremiumHero item={active} title={active?.title ?? 'Choose something to play'} subtitle={active?.description || 'Select a song, message, or playlist to begin listening.'} primaryLabel={active?.mediaUrl ? 'Open' : 'Browse music'} primaryIcon={active?.mediaUrl ? 'open-in-new' : 'graphic-eq'} onPrimary={() => (active ? void openItem(active, 'music_hero') : undefined)} />
       )}
-      <ContentRail title="Up next" items={queue} compact onPressItem={(item) => void openItem(item, 'music_queue')} />
-      <ContentRail title="Latest music" items={feed.music} onPressItem={(item) => void openItem(item, 'music_latest')} />
-      <ContentRail title="Most played" items={feed.mostPlayed} compact onPressItem={(item) => void openItem(item, 'music_most_played')} />
+      <ContentRail title="Up next" items={queue} compact loading={loading} onPressItem={(item) => void openItem(item, 'music_queue')} />
+      <ContentRail title="Latest music" items={feed.music} loading={loading} onPressItem={(item) => void openItem(item, 'music_latest')} />
+      <ContentRail title="Most played" items={feed.mostPlayed} compact loading={loading} onPressItem={(item) => void openItem(item, 'music_most_played')} />
       <ContentList title="Suggested listening" items={feed.recommendations.length ? feed.recommendations : feed.recent} onPressItem={(item) => void openItem(item, 'music_suggested')} />
-      {!loading && !queue.length ? <EmptyState title="No music available yet" message="New songs and messages will appear here when they are ready." actionLabel="Refresh" onAction={refresh} icon="graphic-eq" /> : null}
+      {!loading && !queue.length ? <EmptyState title="No music in this section right now" message="Try Videos, Live, or Search for another moment." actionLabel="Search" onAction={() => router.push(APP_ROUTES.tabs.search)} icon="graphic-eq" /> : null}
     </PremiumPage>
   );
 }

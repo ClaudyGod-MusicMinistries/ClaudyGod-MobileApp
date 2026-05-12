@@ -1,8 +1,10 @@
-const toneClassMap = {
-  success: 'is-success',
-  warning: 'is-warning',
-  info: 'is-info',
-};
+import '../../app/AdminShell.css';
+
+function toneClass(tone) {
+  if (tone === 'success') return 'is-success';
+  if (tone === 'warning') return 'is-warning';
+  return 'is-info';
+}
 
 export default function OverviewView(props) {
   const {
@@ -22,196 +24,193 @@ export default function OverviewView(props) {
   const requestStatusBoard = Array.isArray(overview?.requestStatusBoard) ? overview.requestStatusBoard : [];
   const requestQueuePreview = Array.isArray(overview?.requestQueuePreview) ? overview.requestQueuePreview : [];
   const latestContent = Array.isArray(overview?.latestContent) ? overview.latestContent : [];
+  const insights = Array.isArray(smartInsights) ? smartInsights : [];
+  const authActivity = Array.isArray(recentAuthActivity) ? recentAuthActivity : [];
   const primaryAction = hero?.primaryAction || null;
   const secondaryAction = hero?.secondaryAction || null;
-  const accessSection = sections?.accessHealth || null;
-  const signalsSection = sections?.signals || null;
-  const recentAccessSection = sections?.recentAccessActivity || null;
-  const requestQueueSection = sections?.requestQueue || null;
-  const latestContentSection = sections?.latestContent || null;
 
   return (
-    <section class="overview-grid portal-overview-grid">
-      <article class="panel glass-panel portal-hero-panel reveal-up" style={{ animationDelay: '140ms' }}>
-        <div class="portal-hero-head">
+    <section class="cg-page">
+      <article class="cg-panel cg-hero">
+        <div class="cg-section-head">
           <div>
-            {hero?.eyebrow ? <p class="eyebrow">{hero.eyebrow}</p> : null}
-            {hero?.title ? <h2>{hero.title}</h2> : null}
-            {hero?.description ? <p class="portal-hero-copy">{hero.description}</p> : null}
+            <p class="cg-kicker">{hero?.eyebrow || 'Dashboard'}</p>
+            <h2 class="cg-page-title">{hero?.title || 'Admin command center'}</h2>
+            <p class="cg-hero-copy">
+              {hero?.description || 'Review the health of content, requests, access activity, and publishing readiness from one clear workspace.'}
+            </p>
           </div>
-          <div class="portal-hero-actions">
+          <div class="cg-button-row">
             {primaryAction?.label && primaryAction?.view ? (
-              <button type="button" class="primary-btn" onClick={() => onSetDashboardView(primaryAction.view)}>
+              <button type="button" class="cg-primary" onClick={() => onSetDashboardView(primaryAction.view)}>
                 {primaryAction.label}
               </button>
             ) : null}
             {secondaryAction?.label && secondaryAction?.view ? (
-              <button type="button" class="ghost-btn compact" onClick={() => onSetDashboardView(secondaryAction.view)}>
+              <button type="button" class="cg-secondary" onClick={() => onSetDashboardView(secondaryAction.view)}>
                 {secondaryAction.label}
               </button>
             ) : null}
           </div>
         </div>
 
-        <section class="metric-grid">
+        <div class="cg-grid-4" style={{ marginTop: '18px' }}>
           {portalCards.map((card) => (
-            <article class="metric-card" key={card.id || card.label}>
+            <article class="cg-stat-card" key={card.id || card.label}>
               <span>{card.label}</span>
               <strong>{card.value}</strong>
               <p>{card.hint}</p>
             </article>
           ))}
-        </section>
+          {!portalCards.length && adminOpsLoading ? <div class="cg-empty cg-full">Loading dashboard metrics...</div> : null}
+        </div>
       </article>
 
-      {accessSection && (accessCards.length > 0 || adminOpsLoading) ? (
-        <article class="panel glass-panel reveal-up" style={{ animationDelay: '170ms' }}>
-          <div class="section-head compact">
+      <section class="cg-grid-2">
+        <article class="cg-panel cg-card">
+          <div class="cg-section-head">
             <div>
-              <h3>{accessSection.title}</h3>
-              <p>{accessSection.description}</p>
+              <h2>{sections?.accessHealth?.title || 'Access health'}</h2>
+              <p class="cg-muted">{sections?.accessHealth?.description || 'Monitor account access and admin activity.'}</p>
             </div>
-            <span class="section-badge">
-              {adminOpsLoading ? accessSection.badgeRefreshingLabel : accessSection.badgeLiveLabel}
+            <span class="cg-chip is-success">
+              {adminOpsLoading ? sections?.accessHealth?.badgeRefreshingLabel || 'Refreshing' : sections?.accessHealth?.badgeLiveLabel || 'Live'}
             </span>
           </div>
 
-          <section class="metric-grid compact-metric-grid">
+          <div class="cg-grid-2">
             {accessCards.map((card) => (
-              <article class="metric-card metric-card-quiet" key={card.id || card.label}>
+              <article class="cg-mini-card" key={card.id || card.label}>
                 <span>{card.label}</span>
                 <strong>{card.value}</strong>
                 <p>{card.hint}</p>
               </article>
             ))}
-          </section>
+          </div>
+          {!accessCards.length ? <div class="cg-empty">No access metrics are available yet.</div> : null}
         </article>
-      ) : null}
 
-      {signalsSection ? (
-        <article class="panel glass-panel reveal-up" style={{ animationDelay: '190ms' }}>
-          <div class="section-head compact">
+        <article class="cg-panel cg-card">
+          <div class="cg-section-head">
             <div>
-              <h3>{signalsSection.title}</h3>
-              <p>{signalsSection.description}</p>
+              <h2>{sections?.signals?.title || 'Smart signals'}</h2>
+              <p class="cg-muted">{sections?.signals?.description || 'Key notices that need attention.'}</p>
             </div>
           </div>
 
-          <div class="signal-stack">
-            {smartInsights.length === 0 ? (
-              <div class="empty-state">{signalsSection.emptyState}</div>
-            ) : smartInsights.slice(0, 4).map((signal) => (
-              <article class={['signal-card', toneClassMap[signal.tone] || 'is-info']} key={signal.id}>
-                <strong>{signal.title}</strong>
+          <div class="cg-list">
+            {insights.slice(0, 4).map((signal) => (
+              <article class="cg-item" key={signal.id}>
+                <div class="cg-item-head">
+                  <h3>{signal.title}</h3>
+                  <span class={['cg-status', toneClass(signal.tone)]}>{signal.tone || 'info'}</span>
+                </div>
                 <p>{signal.detail}</p>
               </article>
             ))}
+            {!insights.length ? <div class="cg-empty">{sections?.signals?.emptyState || 'No critical signals right now.'}</div> : null}
           </div>
         </article>
-      ) : null}
+      </section>
 
-      {recentAccessSection ? (
-        <article class="panel glass-panel reveal-up" style={{ animationDelay: '210ms' }}>
-          <div class="section-head compact">
+      <section class="cg-grid-2">
+        <article class="cg-panel cg-card">
+          <div class="cg-section-head">
             <div>
-              <h3>{recentAccessSection.title}</h3>
-              <p>{recentAccessSection.description}</p>
+              <h2>{sections?.requestQueue?.title || 'Publishing requests'}</h2>
+              <p class="cg-muted">{sections?.requestQueue?.description || 'Review submitted content requests before they become drafts.'}</p>
             </div>
+            <button type="button" class="cg-secondary compact" onClick={() => onSetDashboardView('editor')}>
+              {sections?.requestQueue?.actionLabel || 'Open publishing'}
+            </button>
           </div>
 
-          <div class="activity-feed">
-            {recentAuthActivity.length === 0 ? (
-              <div class="empty-state">{recentAccessSection.emptyState}</div>
-            ) : recentAuthActivity.slice(0, 6).map((item) => (
-              <article class="activity-item" key={item.id}>
-                <div class="activity-item-head">
-                  <strong>{item.user?.displayName || item.email || recentAccessSection.unknownUserLabel}</strong>
-                  <span class={['activity-status', item.status === 'failure' ? 'is-failure' : item.status === 'success' ? 'is-success' : 'is-info']}>
-                    {item.label}
-                  </span>
-                </div>
-                <p>{item.email || item.user?.email || recentAccessSection.emptyEmailLabel}</p>
-                <span class="muted-chip">{formatDateTime(item.createdAt)}</span>
-              </article>
-            ))}
-          </div>
-        </article>
-      ) : null}
-
-      {requestQueueSection ? (
-        <article class="panel glass-panel reveal-up" style={{ animationDelay: '230ms' }}>
-          <div class="section-head compact">
-            <div>
-              <h3>{requestQueueSection.title}</h3>
-              <p>{requestQueueSection.description}</p>
-            </div>
-            {requestQueueSection.actionLabel ? (
-              <button type="button" class="ghost-btn compact" onClick={() => onSetDashboardView('editor')}>
-                {requestQueueSection.actionLabel}
-              </button>
-            ) : null}
-          </div>
-
-          <section class="metric-grid slim-metric-grid">
+          <div class="cg-grid-3" style={{ marginBottom: '14px' }}>
             {requestStatusBoard.map((item) => (
-              <article class="metric-card metric-card-quiet" key={item.id || item.label}>
+              <article class="cg-mini-card" key={item.id || item.label}>
                 <span>{item.label}</span>
                 <strong>{item.value}</strong>
               </article>
             ))}
-          </section>
+          </div>
 
-          <div class="activity-feed">
-            {adminOpsLoading ? <div class="empty-state">{requestQueueSection.loadingMessage}</div> : null}
-            {!adminOpsLoading && requestQueuePreview.length === 0 ? (
-              <div class="empty-state">{requestQueueSection.emptyState}</div>
-            ) : null}
+          <div class="cg-list">
+            {adminOpsLoading ? <div class="cg-empty">{sections?.requestQueue?.loadingMessage || 'Loading requests...'}</div> : null}
             {!adminOpsLoading && requestQueuePreview.map((request) => (
-              <article class="activity-item" key={`overview-request-${request.id}`}>
-                <div class="activity-item-head">
-                  <strong>{request.title}</strong>
-                  <span class="activity-status is-info">{request.status.replace(/_/g, ' ')}</span>
+              <article class="cg-item" key={`overview-request-${request.id}`}>
+                <div class="cg-item-head">
+                  <h3>{request.title}</h3>
+                  <span class="cg-status is-info">{String(request.status || '').replace(/_/g, ' ')}</span>
                 </div>
-                <p>{truncate(request.description, 110)}</p>
-                <span class="muted-chip">{formatDateTime(request.createdAt)}</span>
+                <p>{truncate(request.description, 120)}</p>
+                <div class="cg-chip-row" style={{ marginTop: '10px' }}>
+                  <span class="cg-chip">{formatDateTime(request.createdAt)}</span>
+                </div>
               </article>
             ))}
-          </div>
-        </article>
-      ) : null}
-
-      {latestContentSection ? (
-        <article class="panel glass-panel reveal-up" style={{ animationDelay: '250ms' }}>
-          <div class="section-head compact">
-            <div>
-              <h3>{latestContentSection.title}</h3>
-              <p>{latestContentSection.description}</p>
-            </div>
-            {latestContentSection.actionLabel ? (
-              <button type="button" class="ghost-btn compact" onClick={() => onSetDashboardView('editor')}>
-                {latestContentSection.actionLabel}
-              </button>
+            {!adminOpsLoading && !requestQueuePreview.length ? (
+              <div class="cg-empty">{sections?.requestQueue?.emptyState || 'No pending requests.'}</div>
             ) : null}
           </div>
+        </article>
 
-          <div class="activity-feed">
-            {latestContent.length === 0 ? (
-              <div class="empty-state">{latestContentSection.emptyState}</div>
-            ) : latestContent.map((item) => (
-              <article class="activity-item" key={`overview-item-${item.id}`}>
-                <div class="activity-item-head">
-                  <strong>{item.title}</strong>
-                  <span class={['activity-status', item.visibility === 'published' ? 'is-success' : 'is-info']}>
+        <article class="cg-panel cg-card">
+          <div class="cg-section-head">
+            <div>
+              <h2>{sections?.latestContent?.title || 'Latest content'}</h2>
+              <p class="cg-muted">{sections?.latestContent?.description || 'Recently updated content in the library.'}</p>
+            </div>
+            <button type="button" class="cg-secondary compact" onClick={() => onSetDashboardView('editor')}>
+              {sections?.latestContent?.actionLabel || 'Open library'}
+            </button>
+          </div>
+
+          <div class="cg-list">
+            {latestContent.map((item) => (
+              <article class="cg-item" key={`overview-item-${item.id}`}>
+                <div class="cg-item-head">
+                  <h3>{item.title}</h3>
+                  <span class={['cg-status', item.visibility === 'published' ? 'is-success' : 'is-info']}>
                     {item.visibility}
                   </span>
                 </div>
-                <p>{truncate(item.description, 110)}</p>
-                <span class="muted-chip">{formatDateTime(item.updatedAt)}</span>
+                <p>{truncate(item.description, 120)}</p>
+                <div class="cg-chip-row" style={{ marginTop: '10px' }}>
+                  <span class="cg-chip">{formatDateTime(item.updatedAt)}</span>
+                </div>
               </article>
             ))}
+            {!latestContent.length ? <div class="cg-empty">{sections?.latestContent?.emptyState || 'No content updates yet.'}</div> : null}
           </div>
         </article>
-      ) : null}
+      </section>
+
+      <article class="cg-panel cg-card">
+        <div class="cg-section-head">
+          <div>
+            <h2>{sections?.recentAccessActivity?.title || 'Recent access activity'}</h2>
+            <p class="cg-muted">{sections?.recentAccessActivity?.description || 'Security and session activity for the portal.'}</p>
+          </div>
+        </div>
+
+        <div class="cg-grid-3">
+          {authActivity.slice(0, 6).map((item) => (
+            <article class="cg-item" key={item.id}>
+              <div class="cg-item-head">
+                <h3>{item.user?.displayName || item.email || sections?.recentAccessActivity?.unknownUserLabel || 'Unknown user'}</h3>
+                <span class={['cg-status', item.status === 'failure' ? 'is-danger' : item.status === 'success' ? 'is-success' : 'is-info']}>
+                  {item.label}
+                </span>
+              </div>
+              <p>{item.email || item.user?.email || sections?.recentAccessActivity?.emptyEmailLabel || 'No email recorded'}</p>
+              <div class="cg-chip-row" style={{ marginTop: '10px' }}>
+                <span class="cg-chip">{formatDateTime(item.createdAt)}</span>
+              </div>
+            </article>
+          ))}
+        </div>
+        {!authActivity.length ? <div class="cg-empty">{sections?.recentAccessActivity?.emptyState || 'No recent access activity.'}</div> : null}
+      </article>
     </section>
   );
 }

@@ -25,14 +25,14 @@ export const CustomText: React.FC<CustomTextProps> = ({
 
   const finalStyle = fontsLoaded
     ? variantStyle
-    : { ...variantStyle, fontFamily: undefined }; // system fallback
+    : { ...variantStyle, fontFamily: undefined };
 
   return (
     <Text
       className={className}
       style={[finalStyle, style]}
       allowFontScaling={props.allowFontScaling ?? true}
-      maxFontSizeMultiplier={props.maxFontSizeMultiplier ?? 1.18}
+      maxFontSizeMultiplier={props.maxFontSizeMultiplier ?? 1.08}
       {...props}
     >
       {children}

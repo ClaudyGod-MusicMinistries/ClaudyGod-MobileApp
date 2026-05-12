@@ -63,14 +63,14 @@ export default function LibraryScreen() {
   };
 
   return (
-    <PremiumPage title="Library" subtitle="Saved music, videos, playlists, and moments you want to return to." eyebrow="Saved" refreshing={loading || libraryLoading} onRefresh={() => { refresh(); void loadLibrary(); }} rightAction={<AppButton title={isAuthenticated ? 'Profile' : 'Sign in'} variant="secondary" size="sm" onPress={() => router.push(isAuthenticated ? APP_ROUTES.profile : APP_ROUTES.auth.signIn)} leftIcon={<MaterialIcons name={isAuthenticated ? 'person-outline' : 'login'} size={16} color={theme.colors.text} />} />}>
+    <PremiumPage title="Library" eyebrow="Saved" refreshing={loading || libraryLoading} onRefresh={() => { refresh(); void loadLibrary(); }} rightAction={<AppButton title="" variant="secondary" size="sm" onPress={() => router.push(isAuthenticated ? APP_ROUTES.profile : APP_ROUTES.auth.signIn)} leftIcon={<MaterialIcons name={isAuthenticated ? 'person-outline' : 'login'} size={16} color={theme.colors.text} />} style={{ minWidth: 40, paddingHorizontal: 10 }} />}>
       <PremiumHero item={pickedItem} title={pickedItem?.title ?? (isAuthenticated ? 'Build your library' : 'Your library is waiting')} subtitle={pickedItem?.description || (isAuthenticated ? 'Save songs, videos, and live sessions so they are easy to find again.' : 'Sign in to save favorites and continue across devices.')} eyebrow={pickedItem?.subtitle ?? 'Library'} primaryLabel={pickedItem ? 'Open' : isAuthenticated ? 'Explore music' : 'Sign in'} primaryIcon={pickedItem ? 'play-arrow' : isAuthenticated ? 'graphic-eq' : 'login'} onPrimary={() => (pickedItem ? void openItem(pickedItem, 'library_hero') : router.push(isAuthenticated ? APP_ROUTES.tabs.player : APP_ROUTES.auth.signIn))} />
-      <ContentRail title="Saved" items={liked} onPressItem={(item) => void openItem(item, 'library_saved')} />
-      <ContentRail title="Downloads" items={downloaded} compact onPressItem={(item) => void openItem(item, 'library_downloads')} />
-      <ContentRail title="Playlists" items={playlists} compact onPressItem={(item) => void openItem(item, 'library_playlists')} />
+      <ContentRail title="Saved" items={liked} loading={libraryLoading} onPressItem={(item) => void openItem(item, 'library_saved')} emptyTitle="Save your first favorite" emptyMessage="Start from Music, Videos, or Search and keep the moments you want nearby." />
+      <ContentRail title="Downloads" items={downloaded} compact loading={libraryLoading} onPressItem={(item) => void openItem(item, 'library_downloads')} emptyTitle="No downloads yet" emptyMessage="Downloaded items will stay here for quick access." />
+      <ContentRail title="Playlists" items={playlists} compact loading={libraryLoading} onPressItem={(item) => void openItem(item, 'library_playlists')} emptyTitle="No playlists yet" emptyMessage="Build collections from the moments you return to often." />
       <ContentList title="Recommended for your library" items={fallbackPool} onPressItem={(item) => void openItem(item, 'library_recommended')} />
       {!isAuthenticated ? <EmptyState title="Sign in to keep your favorites" message="Create an account or sign in to save songs, videos, and live sessions." actionLabel="Sign in" onAction={() => router.push(APP_ROUTES.auth.signIn)} icon="library-music" /> : null}
-      {isAuthenticated && !libraryLoading && !fallbackPool.length ? <EmptyState title="Nothing saved yet" message="Explore music and videos, then save the moments you love." actionLabel="Explore music" onAction={() => router.push(APP_ROUTES.tabs.player)} icon="bookmark-border" /> : null}
+      {isAuthenticated && !libraryLoading && !fallbackPool.length ? <EmptyState title="Your library is open" message="Explore music and videos, then save the moments you love." actionLabel="Explore music" onAction={() => router.push(APP_ROUTES.tabs.player)} icon="bookmark-border" /> : null}
     </PremiumPage>
   );
 }
