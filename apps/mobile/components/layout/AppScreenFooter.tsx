@@ -8,7 +8,7 @@ import { TVTouchable } from '../ui/TVTouchable';
 import { useAppTheme } from '../../util/colorScheme';
 import { APP_ROUTES } from '../../util/appRoutes';
 
-type FooterVariant = 'app' | 'landing';
+type FooterVariant = 'app' | 'landing' | 'legal';
 
 const footerLinks = [
   { label: 'Support', icon: 'help-outline' as const, route: APP_ROUTES.settingsPages.help },
@@ -28,75 +28,77 @@ export function AppScreenFooter({
   const year = new Date().getFullYear();
   const isLanding = variant === 'landing';
 
+  if (variant === 'app') {
+    return <View style={{ height: compact ? 10 : 14 }} />;
+  }
+
   return (
     <View
       style={{
-        marginTop: isLanding ? theme.spacing.xl : theme.spacing.md,
+        marginTop: 'auto',
         paddingTop: isLanding ? theme.spacing.lg : theme.spacing.md,
         paddingBottom: compact ? theme.spacing.sm : theme.spacing.md,
         borderTopWidth: 1,
-        borderTopColor: theme.scheme === 'dark' ? 'rgba(255,255,255,0.07)' : 'rgba(19,12,33,0.08)',
+        borderTopColor: 'rgba(185,148,255,0.10)',
       }}
     >
       <View
         style={{
-          flexDirection: isLanding ? 'column' : 'row',
-          alignItems: isLanding ? 'flex-start' : 'center',
+          flexDirection: 'row',
+          alignItems: 'center',
           justifyContent: 'space-between',
-          gap: isLanding ? 14 : 10,
+          gap: 12,
+          flexWrap: 'wrap',
         }}
       >
-        <View style={{ flex: 1, minWidth: 0 }}>
+        <View style={{ flex: 1, minWidth: 210 }}>
           <CustomText
             variant="label"
             style={{
-              color: theme.colors.text,
-              letterSpacing: 0.18,
+              color: '#F4EEFF',
+              letterSpacing: 0.12,
+              fontSize: 11,
+              lineHeight: 14,
             }}
+            numberOfLines={1}
           >
             ClaudyGod Music Ministries
           </CustomText>
           <CustomText
             variant="caption"
             style={{
-              color: theme.colors.textMuted ?? theme.colors.textSecondary,
+              color: 'rgba(184,175,203,0.68)',
               marginTop: 3,
-              maxWidth: isLanding ? 520 : undefined,
+              fontSize: 10,
+              lineHeight: 14,
             }}
+            numberOfLines={2}
           >
             © {year} · Worship, messages, live ministry, and support.
           </CustomText>
         </View>
 
-        <View
-          style={{
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            gap: 8,
-            alignSelf: isLanding ? 'stretch' : 'auto',
-          }}
-        >
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7 }}>
           {footerLinks.map((link) => (
             <TVTouchable
               key={link.label}
               onPress={() => router.push(link.route as never)}
               showFocusBorder={false}
               style={{
-                minHeight: 32,
+                minHeight: 30,
                 borderRadius: theme.radius.pill,
                 borderWidth: 1,
-                borderColor: theme.scheme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(19,12,33,0.10)',
-                backgroundColor: theme.scheme === 'dark' ? 'rgba(255,255,255,0.035)' : 'rgba(255,255,255,0.40)',
+                borderColor: 'rgba(185,148,255,0.13)',
+                backgroundColor: 'rgba(255,255,255,0.035)',
                 paddingHorizontal: 10,
                 alignItems: 'center',
                 justifyContent: 'center',
                 flexDirection: 'row',
-                gap: 6,
-                flexGrow: isLanding ? 1 : 0,
+                gap: 5,
               }}
             >
-              <MaterialIcons name={link.icon} size={13} color={theme.colors.primary} />
-              <CustomText variant="caption" style={{ color: theme.colors.textSecondary }}>
+              <MaterialIcons name={link.icon} size={12} color="#B994FF" />
+              <CustomText variant="caption" style={{ color: 'rgba(244,238,255,0.78)', fontSize: 10, lineHeight: 13 }}>
                 {link.label}
               </CustomText>
             </TVTouchable>
