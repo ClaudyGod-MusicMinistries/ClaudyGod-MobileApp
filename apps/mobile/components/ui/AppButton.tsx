@@ -47,10 +47,10 @@ export function AppButton({
 
   const sizeStyle =
     size === 'sm'
-      ? { minHeight: 38, paddingHorizontal: 15, paddingVertical: 8, fontSize: 12 }
+      ? { minHeight: 34, paddingHorizontal: 12, paddingVertical: 7, fontSize: 11 }
       : size === 'lg'
-        ? { minHeight: 56, paddingHorizontal: 24, paddingVertical: 15, fontSize: 14 }
-        : { minHeight: 46, paddingHorizontal: 18, paddingVertical: 11, fontSize: 13 };
+        ? { minHeight: 48, paddingHorizontal: 20, paddingVertical: 12, fontSize: 12.5 }
+        : { minHeight: 42, paddingHorizontal: 16, paddingVertical: 10, fontSize: 11.8 };
 
   const resolvedTextColor =
     textColor ??
@@ -67,9 +67,9 @@ export function AppButton({
       <ActivityIndicator size="small" color={resolvedTextColor} />
     )
   ) : (
-    <View style={{ flexDirection: 'row', alignItems: 'center', maxWidth: '100%', gap: 8 }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', maxWidth: '100%', gap: 7 }}>
       {resolvedLeftIcon ? (
-        <View style={{ width: 18, alignItems: 'center', justifyContent: 'center' }}>{resolvedLeftIcon}</View>
+        <View style={{ width: 17, alignItems: 'center', justifyContent: 'center' }}>{resolvedLeftIcon}</View>
       ) : null}
       <CustomText
         variant="label"
@@ -78,15 +78,15 @@ export function AppButton({
           textAlign: 'center',
           flexShrink: 1,
           fontSize: sizeStyle.fontSize,
-          lineHeight: (sizeStyle.fontSize as number) * 1.35,
-          letterSpacing: 0.18,
+          lineHeight: (sizeStyle.fontSize as number) * 1.32,
+          letterSpacing: 0.08,
           ...(textStyle || {}),
         }}
         numberOfLines={1}
       >
         {title}
       </CustomText>
-      {rightIcon ? <View style={{ width: 18, alignItems: 'center', justifyContent: 'center' }}>{rightIcon}</View> : null}
+      {rightIcon ? <View style={{ width: 17, alignItems: 'center', justifyContent: 'center' }}>{rightIcon}</View> : null}
     </View>
   );
 
@@ -94,7 +94,7 @@ export function AppButton({
     <TVTouchable
       {...props}
       disabled={loading || props.disabled}
-      activeOpacity={0.82}
+      activeOpacity={0.86}
       style={[
         {
           ...sizeStyle,
@@ -103,25 +103,27 @@ export function AppButton({
             ? theme.colors.primary
             : isSecondary
               ? theme.scheme === 'dark'
-                ? 'rgba(255,255,255,0.08)'
-                : 'rgba(18,10,32,0.06)'
+                ? 'rgba(255,255,255,0.07)'
+                : 'rgba(18,10,32,0.055)'
               : isGhost
                 ? 'transparent'
                 : 'transparent',
-          borderWidth: isOutline || isSecondary ? 1 : 0,
+          borderWidth: isOutline || isSecondary || isGhost ? 1 : 0,
           borderColor: isOutline
             ? theme.colors.borderStrong ?? theme.colors.border
             : isSecondary
               ? theme.colors.border
-              : 'transparent',
+              : isGhost
+                ? 'transparent'
+                : 'transparent',
           opacity: props.disabled ? 0.45 : 1,
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',
           alignSelf: fullWidth ? 'stretch' : 'flex-start',
-          gap: 8,
+          gap: 7,
           overflow: 'hidden',
-          ...(isPrimary ? theme.shadows.glow ?? theme.shadows.soft : {}),
+          ...(isPrimary ? theme.shadows.soft : {}),
         },
         style,
       ]}
