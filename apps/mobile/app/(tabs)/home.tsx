@@ -5,9 +5,12 @@ import { useRouter } from 'expo-router';
 
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { TVTouchable } from '../../components/ui/TVTouchable';
+import { SupportMinistryCard } from '../../components/ui/SupportMinistryCard';
 import { CustomText } from '../../components/CustomText';
+import { useAuth } from '../../context/AuthContext';
 import { useContentFeed } from '../../hooks/useContentFeed';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
+import { useWordOfDay } from '../../hooks/useWordOfDay';
 import { useAppTheme } from '../../util/colorScheme';
 import { APP_ROUTES, TAB_ROUTE_BY_ID } from '../../util/appRoutes';
 import { buildPlayerRoute } from '../../util/playerRoute';
@@ -111,8 +114,10 @@ function CompactHomeRow({
 export default function HomeScreen() {
   const theme = useAppTheme();
   const router = useRouter();
+  const { isAuthenticated } = useAuth();
   const { feed, loading, refresh } = useContentFeed();
   const { config } = useMobileAppConfig();
+  const { word } = useWordOfDay();
 
   const featured = useMemo(
     () =>
@@ -204,7 +209,7 @@ export default function HomeScreen() {
       return { section, items: sectionItems };
     })
     .filter((entry) => entry.items.length > 0)
-    .slice(0, 4);
+    .slice(0, 2);
 
   return (
     <PremiumPage
@@ -215,19 +220,84 @@ export default function HomeScreen() {
     >
       <PremiumHero
         item={featured}
+        title={featured ? undefined : 'Start your worship stream'}
+        subtitle={featured ? undefined : 'Music, videos, and live moments in one focused space.'}
+        eyebrow={featured ? undefined : 'Start here'}
         primaryLabel={
-          featured?.isLive ? 'Watch live' : featured?.type === 'video' ? 'Watch now' : 'Play now'
+          featured?.isLive ? 'Watch live' : featured?.type === 'video' ? 'Watch now' : featured ? 'Play now' : 'Open music'
         }
         primaryIcon={
-          featured?.isLive ? 'live-tv' : featured?.type === 'video' ? 'smart-display' : 'play-arrow'
+          featured?.isLive ? 'live-tv' : featured?.type === 'video' ? 'smart-display' : featured ? 'play-arrow' : 'graphic-eq'
         }
         secondaryLabel="Browse all"
         secondaryIcon="search"
-        onPrimary={featured ? () => void openItem(featured, 'home_hero') : undefined}
+        onPrimary={featured ? () => void openItem(featured, 'home_hero') : () => router.push(APP_ROUTES.tabs.player)}
         onSecondary={() => router.push(APP_ROUTES.tabs.search)}
       />
 
       <QuickActionGrid actions={homeActions} />
+
+      {!isAuthenticated ? (
+        <SurfaceCard tone="subtle" style={{ padding: theme.spacing.md }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <View
+              style={{
+                width: 42,
+                height: 42,
+                borderRadius: 21,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: theme.scheme === 'dark' ? 'rgba(183,148,246,0.12)' : 'rgba(124,58,237,0.08)',
+              }}
+            >
+              <MaterialIcons name="lock-open" size={19} color={theme.colors.primary} />
+            </View>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <CustomText variant="label" style={{ color: theme.colors.text }}>
+                Browsing as guest
+              </CustomText>
+              <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 3, lineHeight: 17 }}>
+                Stream public music and videos now. Sign in for saved library, history, alerts, and playlists.
+              </CustomText>
+            </View>
+            <TVTouchable onPress={() => router.push(APP_ROUTES.auth.signIn)} showFocusBorder={false}>
+              <MaterialIcons name="login" size={22} color={theme.colors.primary} />
+            </TVTouchable>
+          </View>
+        </SurfaceCard>
+      ) : null}
+
+      {word ? (
+        <SurfaceCard tone="subtle" style={{ padding: theme.spacing.md }}>
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
+            <View
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: theme.scheme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(17,10,31,0.05)',
+              }}
+            >
+              <MaterialIcons name="auto-stories" size={19} color={theme.colors.primary} />
+            </View>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <CustomText variant="caption" style={{ color: theme.colors.primary, textTransform: 'uppercase', letterSpacing: 0.72 }}>
+                Word for today
+              </CustomText>
+              <CustomText variant="title" style={{ color: theme.colors.text, marginTop: 3 }} numberOfLines={1}>
+                {word.title || word.passage}
+              </CustomText>
+              <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 5, lineHeight: 17 }} numberOfLines={3}>
+                {word.verse || word.reflection}
+              </CustomText>
+            </View>
+          </View>
+        </SurfaceCard>
+      ) : null}
+
+      <SupportMinistryCard onPress={() => router.push(APP_ROUTES.settingsPages.donate)} />
 
       {continueItems.length ? (
         <SurfaceCard tone="subtle" style={{ padding: theme.spacing.md }}>
