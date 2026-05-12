@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Linking, View, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { SettingsScaffold } from '../../components/layout/SettingsScaffold';
 import { CustomText } from '../../components/CustomText';
@@ -163,37 +164,80 @@ export default function Donate() {
   return (
     <SettingsScaffold
       title="Giving"
-      subtitle="Support worship, live broadcasts, and ministry work."
+      subtitle="Partner with the ministry through a clear, focused giving flow."
       hero={
         <FadeIn>
-          <SurfaceCard tone="strong" style={{ padding: theme.spacing.xl, marginBottom: theme.spacing.lg }}>
-            <View style={{ flexDirection: isTablet ? 'row' : 'column', gap: theme.spacing.lg, alignItems: isTablet ? 'center' : 'flex-start' }}>
+          <SurfaceCard tone="strong" style={{ padding: 0 }}>
+            <LinearGradient
+              colors={theme.colors.gradient.primary as [string, string]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={{ padding: theme.spacing.lg }}
+            >
+              <View style={{ flexDirection: 'row', gap: theme.spacing.md, alignItems: 'center' }}>
+                <View
+                  style={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: 22,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: 'rgba(255,255,255,0.18)',
+                    borderWidth: 1,
+                    borderColor: 'rgba(255,255,255,0.26)',
+                  }}
+                >
+                  <MaterialIcons name="volunteer-activism" size={26} color="#FFFFFF" />
+                </View>
+
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <CustomText variant="caption" style={{ color: 'rgba(255,255,255,0.78)', textTransform: 'uppercase', letterSpacing: 0.72 }}>
+                    Support
+                  </CustomText>
+                  <CustomText variant="heading" style={{ color: '#FFFFFF', marginTop: 4 }}>
+                    Give with clarity and confidence
+                  </CustomText>
+                  <CustomText variant="caption" style={{ color: 'rgba(255,255,255,0.78)', marginTop: 6, lineHeight: 18 }} numberOfLines={2}>
+                    Select an amount, choose a rhythm, then review before payment.
+                  </CustomText>
+                </View>
+              </View>
+
               <View
                 style={{
-                  width: 76,
-                  height: 76,
-                  borderRadius: 26,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: theme.scheme === 'dark' ? 'rgba(183,148,246,0.14)' : 'rgba(124,58,237,0.08)',
-                  borderWidth: 1,
-                  borderColor: theme.colors.border,
+                  flexDirection: isCompact ? 'column' : 'row',
+                  gap: 8,
+                  marginTop: theme.spacing.lg,
                 }}
               >
-                <MaterialIcons name="volunteer-activism" size={34} color={theme.colors.primary} />
+                {[
+                  { label: selectedAmount ? `${selectedCurrency} ${selectedAmount}` : 'Select amount', icon: 'payments' as const },
+                  { label: frequencyLabel(selectedFrequency), icon: 'repeat' as const },
+                  { label: selectedMethod?.label ?? 'Payment method', icon: selectedMethod?.icon ?? ('credit-card' as const) },
+                ].map((item) => (
+                  <View
+                    key={item.label}
+                    style={{
+                      flex: 1,
+                      minHeight: 38,
+                      borderRadius: theme.radius.pill,
+                      borderWidth: 1,
+                      borderColor: 'rgba(255,255,255,0.24)',
+                      backgroundColor: 'rgba(255,255,255,0.13)',
+                      paddingHorizontal: 12,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 7,
+                    }}
+                  >
+                    <MaterialIcons name={item.icon} size={16} color="#FFFFFF" />
+                    <CustomText variant="caption" style={{ color: '#FFFFFF', flex: 1 }} numberOfLines={1}>
+                      {item.label}
+                    </CustomText>
+                  </View>
+                ))}
               </View>
-              <View style={{ flex: 1 }}>
-                <CustomText variant="caption" style={{ color: theme.colors.primary, textTransform: 'uppercase', letterSpacing: 0.9 }}>
-                  Secure giving
-                </CustomText>
-                <CustomText variant="display" style={{ color: theme.colors.text, marginTop: 8 }}>
-                  Give with clarity and confidence
-                </CustomText>
-                <CustomText variant="body" style={{ color: theme.colors.textSecondary, marginTop: 8, maxWidth: 620 }}>
-                  Select an amount and continue to a clean review screen before choosing the final giving route.
-                </CustomText>
-              </View>
-            </View>
+            </LinearGradient>
           </SurfaceCard>
         </FadeIn>
       }
@@ -417,37 +461,59 @@ export default function Donate() {
       {selectedPlan ? (
         <FadeIn delay={210}>
           <SurfaceCard tone="strong" style={{ padding: theme.spacing.lg }}>
-            <CustomText variant="caption" style={{ color: theme.colors.primary, textTransform: 'uppercase', letterSpacing: 0.9 }}>
-              Selected plan
-            </CustomText>
-            <CustomText variant="heading" style={{ color: theme.colors.text, marginTop: 6 }}>
-              {selectedPlan.name}
-            </CustomText>
-            <CustomText variant="body" style={{ color: theme.colors.textSecondary, marginTop: 6 }}>
-              {selectedPlan.note}
-            </CustomText>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <View
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 22,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: `${theme.colors.primary}18`,
+                  borderWidth: 1,
+                  borderColor: theme.colors.border,
+                }}
+              >
+                <MaterialIcons name={selectedPlan.icon} size={20} color={theme.colors.primary} />
+              </View>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <CustomText variant="caption" style={{ color: theme.colors.primary, textTransform: 'uppercase', letterSpacing: 0.72 }}>
+                  Giving summary
+                </CustomText>
+                <CustomText variant="heading" style={{ color: theme.colors.text, marginTop: 4 }} numberOfLines={1}>
+                  {selectedPlan.name}
+                </CustomText>
+                <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 4 }} numberOfLines={2}>
+                  {selectedPlan.note}
+                </CustomText>
+              </View>
+            </View>
           </SurfaceCard>
         </FadeIn>
       ) : null}
 
-      <View style={{ gap: 10 }}>
-        <AppButton
-          title="Review giving"
-          size="lg"
-          fullWidth
-          disabled={!selectedAmount}
-          onPress={continueToReview}
-          leftIcon={<MaterialIcons name="lock-outline" size={18} color={theme.colors.textInverse} />}
-        />
-        <AppButton
-          title="Need help giving?"
-          variant="secondary"
-          size="md"
-          fullWidth
-          onPress={contactGivingSupport}
-          leftIcon={<MaterialIcons name="support-agent" size={18} color={theme.colors.text} />}
-        />
-      </View>
+      <SurfaceCard tone="subtle" style={{ padding: theme.spacing.md }}>
+        <View style={{ flexDirection: isCompact ? 'column' : 'row', gap: 10 }}>
+          <AppButton
+            title="Review giving"
+            size="lg"
+            fullWidth
+            disabled={!selectedAmount}
+            onPress={continueToReview}
+            style={{ flex: 1 }}
+            leftIcon={<MaterialIcons name="lock-outline" size={18} color={theme.colors.textInverse} />}
+          />
+          <AppButton
+            title="Need help?"
+            variant="secondary"
+            size="lg"
+            fullWidth
+            onPress={contactGivingSupport}
+            style={{ flex: 1 }}
+            leftIcon={<MaterialIcons name="support-agent" size={18} color={theme.colors.text} />}
+          />
+        </View>
+      </SurfaceCard>
     </SettingsScaffold>
   );
 }

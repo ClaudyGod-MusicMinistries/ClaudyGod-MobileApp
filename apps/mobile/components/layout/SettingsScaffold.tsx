@@ -97,7 +97,7 @@ export function SettingsScaffold({ title, subtitle, children, hero }: SettingsSc
                 </View>
               </SurfaceCard>
 
-              {hero}
+              {hero ? <View style={{ marginTop: -2 }}>{hero}</View> : null}
               {children}
               <AppScreenFooter />
             </View>
