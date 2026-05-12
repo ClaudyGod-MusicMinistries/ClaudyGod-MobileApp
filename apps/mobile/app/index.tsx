@@ -10,20 +10,33 @@ import { AppScreenFooter } from '../components/layout/AppScreenFooter';
 import { CustomText } from '../components/CustomText';
 import { Screen } from '../components/layout/Screen';
 import { SurfaceCard } from '../components/ui/SurfaceCard';
+import { TVTouchable } from '../components/ui/TVTouchable';
 import { useAppTheme } from '../util/colorScheme';
 import { APP_ROUTES } from '../util/appRoutes';
 import { BRAND_LOGO_ASSET, LANDING_BG_ASSET } from '../util/brandAssets';
 
-const valueCards = [
-  { icon: 'graphic-eq' as const, label: 'Music', text: 'Listen to published worship and audio releases.' },
-  { icon: 'smart-display' as const, label: 'Videos', text: 'Watch sessions, clips, and replays from the ministry.' },
-  { icon: 'live-tv' as const, label: 'Live', text: 'Follow live sessions and upcoming broadcasts.' },
+const experienceCards = [
+  {
+    icon: 'graphic-eq' as const,
+    label: 'Music',
+    text: 'Published worship and audio releases in one clean listening space.',
+  },
+  {
+    icon: 'smart-display' as const,
+    label: 'Videos',
+    text: 'Messages, sessions, clips, and replays arranged for easy viewing.',
+  },
+  {
+    icon: 'live-tv' as const,
+    label: 'Live',
+    text: 'Follow live ministry moments and upcoming broadcasts without confusion.',
+  },
 ];
 
 export default function LandingScreen() {
   const theme = useAppTheme();
   const router = useRouter();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const compact = width < 430;
   const isWide = width >= 820;
 
@@ -32,102 +45,203 @@ export default function LandingScreen() {
       <StatusBar translucent={false} barStyle="light-content" backgroundColor={theme.colors.background} />
       <ImageBackground source={LANDING_BG_ASSET} resizeMode="cover" style={{ flex: 1 }}>
         <LinearGradient
-          colors={['rgba(5,4,10,0.72)', 'rgba(5,4,10,0.88)', theme.colors.background]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
+          colors={
+            theme.scheme === 'dark'
+              ? ['rgba(7,5,12,0.72)', 'rgba(7,5,12,0.92)', theme.colors.background]
+              : ['rgba(25,16,45,0.34)', 'rgba(243,239,248,0.88)', theme.colors.background]
+          }
+          start={{ x: 0.1, y: 0 }}
+          end={{ x: 0.92, y: 1 }}
           style={{ flex: 1 }}
         >
           <SafeAreaView style={{ flex: 1 }} edges={['top']}>
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 34 }}>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{
+                minHeight: height,
+                paddingBottom: 26,
+              }}
+            >
               <Screen>
-                <View style={{ paddingTop: theme.layout.headerVerticalPadding, gap: theme.layout.sectionGap }}>
-                  <SurfaceCard tone="strong" style={{ padding: theme.spacing.md }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
-                        <Image source={BRAND_LOGO_ASSET} style={{ width: 38, height: 38, borderRadius: 14 }} />
-                        <View style={{ flex: 1, minWidth: 0 }}>
-                          <CustomText variant="label" style={{ color: theme.colors.text }} numberOfLines={1}>
-                            ClaudyGod
-                          </CustomText>
-                          <CustomText variant="caption" style={{ color: theme.colors.textSecondary }} numberOfLines={1}>
-                            Music Ministries
-                          </CustomText>
-                        </View>
+                <View style={{ minHeight: height - 34, paddingTop: 12 }}>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 14,
+                      paddingVertical: 8,
+                    }}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
+                      <Image
+                        source={BRAND_LOGO_ASSET}
+                        style={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: 13,
+                          backgroundColor: theme.scheme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.55)',
+                        }}
+                      />
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <CustomText variant="label" style={{ color: '#FFFFFF' }} numberOfLines={1}>
+                          ClaudyGod
+                        </CustomText>
+                        <CustomText variant="caption" style={{ color: 'rgba(255,255,255,0.68)' }} numberOfLines={1}>
+                          Music Ministries
+                        </CustomText>
                       </View>
-                      <AppButton title="Sign in" variant="secondary" size="sm" onPress={() => router.push(APP_ROUTES.auth.signIn)} />
                     </View>
-                  </SurfaceCard>
 
-                  <SurfaceCard tone="strong" style={{ overflow: 'hidden' }}>
-                    <LinearGradient
-                      colors={['rgba(141,99,255,0.26)', 'rgba(10,7,18,0.08)']}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                      style={{ padding: compact ? theme.spacing.lg : theme.spacing.xl }}
-                    >
-                      <View style={{ maxWidth: isWide ? 620 : undefined, gap: 12 }}>
-                        <View
-                          style={{
-                            alignSelf: 'flex-start',
-                            borderRadius: theme.radius.pill,
-                            borderWidth: 1,
-                            borderColor: 'rgba(255,255,255,0.18)',
-                            backgroundColor: 'rgba(255,255,255,0.08)',
-                            paddingHorizontal: 10,
-                            paddingVertical: 6,
-                          }}
-                        >
-                          <CustomText variant="caption" style={{ color: theme.colors.primary, textTransform: 'uppercase', letterSpacing: 0.72 }}>
-                            Worship app
-                          </CustomText>
-                        </View>
-
-                        <CustomText variant="display" style={{ color: '#FFFFFF' }} numberOfLines={3}>
-                          Music, messages, video, and live ministry in one calm space.
-                        </CustomText>
-
-                        <CustomText variant="body" style={{ color: 'rgba(255,255,255,0.76)', maxWidth: 560 }}>
-                          Sign in to save your library, follow live updates, and personalize your ClaudyGod experience.
-                        </CustomText>
-
-                        <View style={{ flexDirection: compact ? 'column' : 'row', flexWrap: 'wrap', gap: 10, marginTop: 4 }}>
-                          <AppButton
-                            title="Create account"
-                            size="md"
-                            onPress={() => router.push(APP_ROUTES.auth.signUp)}
-                            leftIcon={<MaterialIcons name="person-add-alt" size={17} color={theme.colors.textInverse} />}
-                            fullWidth={compact}
-                          />
-                          <AppButton
-                            title="Guest preview"
-                            variant="secondary"
-                            size="md"
-                            onPress={() => router.push('/guest-welcome' as never)}
-                            leftIcon={<MaterialIcons name="visibility" size={17} color={theme.colors.text} />}
-                            fullWidth={compact}
-                          />
-                        </View>
-                      </View>
-                    </LinearGradient>
-                  </SurfaceCard>
-
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-                    {valueCards.map((card) => (
-                      <SurfaceCard key={card.label} tone="subtle" style={{ width: compact ? '100%' : '31.5%', minWidth: compact ? undefined : 190, flexGrow: 1, padding: theme.spacing.md }}>
-                        <View style={{ width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(183,148,246,0.12)' }}>
-                          <MaterialIcons name={card.icon} size={17} color={theme.colors.primary} />
-                        </View>
-                        <CustomText variant="label" style={{ color: theme.colors.text, marginTop: 10 }}>
-                          {card.label}
-                        </CustomText>
-                        <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 3 }}>
-                          {card.text}
-                        </CustomText>
-                      </SurfaceCard>
-                    ))}
+                    <AppButton
+                      title="Sign in"
+                      variant="secondary"
+                      size="sm"
+                      onPress={() => router.push(APP_ROUTES.auth.signIn)}
+                      textColor="#FFFFFF"
+                      style={{
+                        backgroundColor: 'rgba(255,255,255,0.08)',
+                        borderColor: 'rgba(255,255,255,0.14)',
+                      }}
+                    />
                   </View>
 
-                  <AppScreenFooter compact />
+                  <View
+                    style={{
+                      flex: 1,
+                      justifyContent: 'center',
+                      paddingTop: compact ? 26 : 46,
+                      paddingBottom: compact ? 28 : 46,
+                    }}
+                  >
+                    <View
+                      style={{
+                        maxWidth: isWide ? 640 : undefined,
+                        gap: 18,
+                      }}
+                    >
+                      <View
+                        style={{
+                          alignSelf: 'flex-start',
+                          borderRadius: theme.radius.pill,
+                          borderWidth: 1,
+                          borderColor: 'rgba(255,255,255,0.16)',
+                          backgroundColor: 'rgba(255,255,255,0.07)',
+                          paddingHorizontal: 11,
+                          paddingVertical: 7,
+                        }}
+                      >
+                        <CustomText
+                          variant="caption"
+                          style={{ color: theme.colors.primary, textTransform: 'uppercase', letterSpacing: 0.72 }}
+                        >
+                          Worship app
+                        </CustomText>
+                      </View>
+
+                      <CustomText
+                        variant="heading"
+                        style={{
+                          color: '#FFFFFF',
+                          fontSize: compact ? 23 : 27,
+                          lineHeight: compact ? 31 : 35,
+                          letterSpacing: -0.55,
+                          maxWidth: 560,
+                        }}
+                      >
+                        Worship, messages, video, and live ministry in one calm app.
+                      </CustomText>
+
+                      <CustomText
+                        variant="body"
+                        style={{
+                          color: 'rgba(255,255,255,0.74)',
+                          maxWidth: 520,
+                          lineHeight: 20,
+                        }}
+                      >
+                        Sign in to save your library, follow live updates, and personalize your ClaudyGod experience across music, videos, and live sessions.
+                      </CustomText>
+
+                      <View style={{ flexDirection: compact ? 'column' : 'row', gap: 10, marginTop: 4 }}>
+                        <AppButton
+                          title="Create account"
+                          size="md"
+                          onPress={() => router.push(APP_ROUTES.auth.signUp)}
+                          leftIcon={<MaterialIcons name="person-add" size={16} color={theme.colors.textInverse} />}
+                          fullWidth={compact}
+                        />
+                        <AppButton
+                          title="Guest preview"
+                          variant="secondary"
+                          size="md"
+                          onPress={() => router.push('/guest-welcome' as never)}
+                          leftIcon={<MaterialIcons name="visibility" size={16} color="#FFFFFF" />}
+                          textColor="#FFFFFF"
+                          fullWidth={compact}
+                          style={{
+                            backgroundColor: 'rgba(255,255,255,0.07)',
+                            borderColor: 'rgba(255,255,255,0.14)',
+                          }}
+                        />
+                      </View>
+                    </View>
+                  </View>
+
+                  <View style={{ gap: 12 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                      <View style={{ flex: 1 }}>
+                        <CustomText variant="label" style={{ color: '#FFFFFF' }}>
+                          What you can access
+                        </CustomText>
+                        <CustomText variant="caption" style={{ color: 'rgba(255,255,255,0.62)', marginTop: 3 }}>
+                          A clean path into the ministry experience.
+                        </CustomText>
+                      </View>
+                    </View>
+
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+                      {experienceCards.map((card) => (
+                        <TVTouchable
+                          key={card.label}
+                          onPress={() => router.push('/guest-welcome' as never)}
+                          showFocusBorder={false}
+                          style={{ width: compact ? '100%' : '31.5%', minWidth: compact ? undefined : 190, flexGrow: 1 }}
+                        >
+                          <SurfaceCard
+                            tone="subtle"
+                            style={{
+                              minHeight: 124,
+                              padding: theme.spacing.md,
+                              backgroundColor: theme.scheme === 'dark' ? 'rgba(17,11,28,0.78)' : 'rgba(252,250,255,0.74)',
+                              borderColor: theme.scheme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.42)',
+                            }}
+                          >
+                            <View
+                              style={{
+                                width: 34,
+                                height: 34,
+                                borderRadius: 17,
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                backgroundColor: theme.scheme === 'dark' ? 'rgba(183,148,246,0.12)' : 'rgba(124,58,237,0.08)',
+                              }}
+                            >
+                              <MaterialIcons name={card.icon} size={17} color={theme.colors.primary} />
+                            </View>
+                            <CustomText variant="label" style={{ color: theme.colors.text, marginTop: 12 }}>
+                              {card.label}
+                            </CustomText>
+                            <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 4 }}>
+                              {card.text}
+                            </CustomText>
+                          </SurfaceCard>
+                        </TVTouchable>
+                      ))}
+                    </View>
+                  </View>
+
+                  <AppScreenFooter variant="landing" />
                 </View>
               </Screen>
             </ScrollView>
