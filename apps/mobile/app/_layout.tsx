@@ -10,7 +10,6 @@ import { useColorScheme, useThemeContext } from '../util/colorScheme';
 import { colors } from '../constants/color';
 import { FontProvider, FontContext } from '../context/FontContext';
 import { AuthProvider, useAuth } from '../context/AuthContext';
-import { GuestModeProvider } from '../context/GuestModeContext';
 import { FloatingPlayerProvider } from '../context/FloatingPlayerContext';
 import { ToastProvider } from '../context/ToastContext';
 import { ToastViewport } from '../components/ui/ToastViewport';
@@ -71,8 +70,7 @@ function RootLayoutInner() {
 
     const isProtectedRoute =
       firstSegment === 'profile' ||
-      (isSettingsPage && !isGuestAllowedSettingsPage) ||
-      (firstSegment === '(tabs)' && secondSegment === 'settings');
+      (isSettingsPage && !isGuestAllowedSettingsPage);
 
     if (!isAuthenticated && isProtectedRoute) {
       router.replace(APP_ROUTES.auth.signIn);
@@ -149,13 +147,6 @@ function RootLayoutInner() {
           }}
         />
         <Stack.Screen
-          name="guest-welcome"
-          options={{
-            gestureEnabled: false,
-            animation: 'fade_from_bottom',
-          }}
-        />
-        <Stack.Screen
           name="sign-in"
           options={{
             gestureEnabled: false,
@@ -222,11 +213,9 @@ export default function RootLayout() {
         <SafeAreaProvider>
           <ToastProvider>
             <AuthProvider>
-              <GuestModeProvider>
-                <FloatingPlayerProvider>
-                  <RootLayoutInner />
-                </FloatingPlayerProvider>
-              </GuestModeProvider>
+              <FloatingPlayerProvider>
+                <RootLayoutInner />
+              </FloatingPlayerProvider>
             </AuthProvider>
           </ToastProvider>
         </SafeAreaProvider>

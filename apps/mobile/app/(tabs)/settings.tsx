@@ -7,6 +7,7 @@ import { AppButton } from '../../components/ui/AppButton';
 import { CustomText } from '../../components/CustomText';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { TVTouchable } from '../../components/ui/TVTouchable';
+import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useAppTheme, useThemeContext } from '../../util/colorScheme';
 import { fetchMePreferences, updateMePreferences } from '../../services/userFlowService';
@@ -200,6 +201,7 @@ export default function SettingsScreen() {
   const { themePreference, setThemePreference } = useThemeContext();
   const router = useRouter();
   const { showToast } = useToast();
+  const { isAuthenticated } = useAuth();
 
   const [notifications, setNotifications] = useState(true);
   const [autoPlay, setAutoPlay] = useState(true);
@@ -211,6 +213,11 @@ export default function SettingsScreen() {
     let active = true;
 
     const loadPreferences = async () => {
+      if (!isAuthenticated) {
+        setPreferencesLoaded(true);
+        return;
+      }
+
       try {
         const response = await fetchMePreferences();
 
@@ -234,15 +241,15 @@ export default function SettingsScreen() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [isAuthenticated]);
 
   const persistPreferencePatch = useCallback(
     (patch: Partial<Parameters<typeof updateMePreferences>[0]>) => {
-      if (!preferencesLoaded) return;
+      if (!preferencesLoaded || !isAuthenticated) return;
 
       void updateMePreferences(patch).catch(() => undefined);
     },
-    [preferencesLoaded],
+    [isAuthenticated, preferencesLoaded],
   );
 
   const controlSections = useMemo(
@@ -360,14 +367,14 @@ export default function SettingsScreen() {
   return (
     <PremiumPage
       title="Settings"
-      subtitle="Playback, appearance, account shortcuts, support, and alerts in one clean space."
       eyebrow="Your app"
       rightAction={
         <AppButton
-          title="Home"
+          title=""
           variant="secondary"
           size="sm"
           onPress={() => router.push(APP_ROUTES.tabs.home)}
+          style={{ minWidth: 40, paddingHorizontal: 10 }}
           leftIcon={
             <MaterialIcons name="home-filled" size={16} color={theme.colors.text} />
           }
@@ -378,14 +385,14 @@ export default function SettingsScreen() {
         actions={[
           {
             label: 'Profile',
-            hint: 'Account details',
-            icon: 'person-outline',
-            onPress: () => router.push(APP_ROUTES.profile),
+            hint: isAuthenticated ? 'Account details' : 'Sign in required',
+            icon: isAuthenticated ? 'person-outline' : 'lock-outline',
+            onPress: () => router.push(isAuthenticated ? APP_ROUTES.profile : APP_ROUTES.auth.signIn),
           },
           {
             label: 'Library',
-            hint: 'Saved content',
-            icon: 'library-music',
+            hint: isAuthenticated ? 'Saved content' : 'Sign in to save',
+            icon: isAuthenticated ? 'library-music' : 'lock-outline',
             onPress: () => router.push(APP_ROUTES.tabs.library),
           },
           {
@@ -443,7 +450,7 @@ export default function SettingsScreen() {
 
       <SurfaceCard tone="subtle" style={{ padding: theme.spacing.lg }}>
         <CustomText variant="heading" style={{ color: theme.colors.text }}>
-          Account
+          {isAuthenticated ? 'Account' : 'Sign in for personal features'}
         </CustomText>
 
         <CustomText
@@ -453,20 +460,26 @@ export default function SettingsScreen() {
             marginTop: 6,
           }}
         >
-          Sign out safely when you are done using this device.
+          {isAuthenticated
+            ? 'Sign out safely when you are done using this device.'
+            : 'Create an account or sign in to save favorites, sync library, and keep settings across devices.'}
         </CustomText>
 
         <AppButton
-          title="Sign out"
-          variant="outline"
-          onPress={() => void handleLogout()}
+          title={isAuthenticated ? 'Sign out' : 'Sign in'}
+          variant={isAuthenticated ? 'outline' : 'primary'}
+          onPress={() => (isAuthenticated ? void handleLogout() : router.push(APP_ROUTES.auth.signIn))}
           style={{
             marginTop: 14,
-            borderColor: theme.colors.danger,
+            borderColor: isAuthenticated ? theme.colors.danger : theme.colors.primary,
           }}
-          textColor={theme.colors.danger}
+          textColor={isAuthenticated ? theme.colors.danger : theme.colors.textInverse}
           leftIcon={
-            <MaterialIcons name="logout" size={17} color={theme.colors.danger} />
+            <MaterialIcons
+              name={isAuthenticated ? 'logout' : 'login'}
+              size={17}
+              color={isAuthenticated ? theme.colors.danger : theme.colors.textInverse}
+            />
           }
         />
       </SurfaceCard>

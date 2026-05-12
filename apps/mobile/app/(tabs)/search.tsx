@@ -1,9 +1,8 @@
-import React, { useMemo, useState } from 'react';
-import { TextInput, View } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, TextInput, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
-import { AppButton } from '../../components/ui/AppButton';
 import { CustomText } from '../../components/CustomText';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { TVTouchable } from '../../components/ui/TVTouchable';
@@ -13,7 +12,6 @@ import { useContentFeed } from '../../hooks/useContentFeed';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import { fetchSearchResults, type ContentType, type FeedCardItem } from '../../services/contentService';
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
-import { APP_ROUTES } from '../../util/appRoutes';
 import { buildPlayerRoute } from '../../util/playerRoute';
 import {
   ContentList,
@@ -52,6 +50,8 @@ export default function Search() {
   const [activeCategory, setActiveCategory] = useState<SearchCategory>('All');
   const [remoteResults, setRemoteResults] = useState<FeedCardItem[] | null>(null);
   const [isSearching, setIsSearching] = useState(false);
+  const [searchFocused, setSearchFocused] = useState(false);
+  const focusProgress = useRef(new Animated.Value(0)).current;
   const { feed, loading, refresh } = useContentFeed();
 
   const configuredCategories = config?.discovery?.categories;
@@ -129,37 +129,60 @@ export default function Search() {
   };
 
   const hasQuery = query.trim().length > 0;
+  const animatedSearchStyle = {
+    transform: [
+      {
+        scale: focusProgress.interpolate({
+          inputRange: [0, 1],
+          outputRange: [1, 1.012],
+        }),
+      },
+    ],
+    borderColor: focusProgress.interpolate({
+      inputRange: [0, 1],
+      outputRange: [theme.colors.border, theme.scheme === 'dark' ? 'rgba(183,148,246,0.38)' : 'rgba(124,58,237,0.34)'],
+    }),
+    backgroundColor: focusProgress.interpolate({
+      inputRange: [0, 1],
+      outputRange: [
+        theme.scheme === 'dark' ? 'rgba(255,255,255,0.055)' : 'rgba(17,10,31,0.04)',
+        theme.scheme === 'dark' ? 'rgba(255,255,255,0.082)' : 'rgba(17,10,31,0.065)',
+      ],
+    }),
+  };
+
+  useEffect(() => {
+    Animated.timing(focusProgress, {
+      toValue: searchFocused ? 1 : 0,
+      duration: 180,
+      useNativeDriver: false,
+    }).start();
+  }, [focusProgress, searchFocused]);
 
   return (
     <PremiumPage
       title="Search"
-      subtitle="Find music, videos, live sessions, and playlists without a heavy header."
       eyebrow="Discover"
       refreshing={loading || isSearching}
       onRefresh={refresh}
-      rightAction={
-        <AppButton
-          title="Home"
-          variant="secondary"
-          size="sm"
-          onPress={() => router.push(APP_ROUTES.tabs.home)}
-          leftIcon={<MaterialIcons name="home-filled" size={15} color={theme.colors.text} />}
-        />
-      }
     >
       <SurfaceCard tone="strong" style={{ padding: theme.spacing.md }}>
-        <View
-          style={{
-            minHeight: 46,
-            borderRadius: theme.radius.xl,
-            backgroundColor: theme.scheme === 'dark' ? 'rgba(255,255,255,0.065)' : 'rgba(17,10,31,0.05)',
+        <Animated.View
+          style={[{
+            minHeight: 52,
+            borderRadius: 999,
             borderWidth: 1,
-            borderColor: theme.colors.border,
             flexDirection: 'row',
             alignItems: 'center',
-            paddingHorizontal: 12,
+            paddingLeft: 14,
+            paddingRight: 7,
             gap: 9,
-          }}
+            shadowColor: theme.colors.primary,
+            shadowOffset: { width: 0, height: 10 },
+            shadowOpacity: searchFocused ? 0.14 : 0,
+            shadowRadius: 18,
+            elevation: searchFocused ? 8 : 0,
+          }, animatedSearchStyle]}
         >
           <MaterialIcons name="search" size={18} color={theme.colors.textSecondary} />
           <TextInput
@@ -172,10 +195,12 @@ export default function Search() {
             placeholderTextColor={theme.colors.textSecondary}
             autoCapitalize="none"
             returnKeyType="search"
+            onFocus={() => setSearchFocused(true)}
+            onBlur={() => setSearchFocused(false)}
             onSubmitEditing={() => void runSearch()}
             style={{
               flex: 1,
-              minHeight: 44,
+              minHeight: 48,
               color: theme.colors.text,
               fontSize: 13,
             }}
@@ -185,7 +210,22 @@ export default function Search() {
               <MaterialIcons name="close" size={18} color={theme.colors.textSecondary} />
             </TVTouchable>
           ) : null}
-        </View>
+          <TVTouchable
+            onPress={() => void runSearch()}
+            showFocusBorder={false}
+            style={{
+              width: 38,
+              height: 38,
+              borderRadius: 19,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: theme.colors.primary,
+              opacity: isSearching ? 0.72 : 1,
+            }}
+          >
+            <MaterialIcons name={isSearching ? 'hourglass-top' : 'arrow-forward'} size={18} color={theme.colors.textInverse} />
+          </TVTouchable>
+        </Animated.View>
 
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginTop: 11 }}>
           {categories.map((category) => {
@@ -216,16 +256,6 @@ export default function Search() {
             );
           })}
         </View>
-
-        <AppButton
-          title="Search"
-          onPress={() => void runSearch()}
-          loading={isSearching}
-          loadingLabel="Searching"
-          size="md"
-          style={{ marginTop: 12 }}
-          leftIcon={<MaterialIcons name="search" size={16} color={theme.colors.textInverse} />}
-        />
       </SurfaceCard>
 
       {!hasQuery && shortcuts.length ? (
@@ -234,7 +264,7 @@ export default function Search() {
             Suggested discovery
           </CustomText>
           <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 3 }}>
-            Shortcuts configured from the admin portal.
+            Quick starts for common listening paths.
           </CustomText>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
             {shortcuts.map((shortcut) => (
@@ -269,8 +299,24 @@ export default function Search() {
 
       {!hasQuery ? (
         <>
-          <ContentRail title="Popular music" items={feed.music.slice(0, 12)} compact onPressItem={(item) => void openResult(item)} />
-          <ContentRail title="Latest videos" items={feed.videos.slice(0, 12)} compact onPressItem={(item) => void openResult(item)} />
+          <ContentRail
+            title="Popular music"
+            items={feed.music.slice(0, 12)}
+            compact
+            loading={loading}
+            onPressItem={(item) => void openResult(item)}
+            emptyTitle="No music matches yet"
+            emptyMessage="Try a different search or explore videos."
+          />
+          <ContentRail
+            title="Latest videos"
+            items={feed.videos.slice(0, 12)}
+            compact
+            loading={loading}
+            onPressItem={(item) => void openResult(item)}
+            emptyTitle="No videos match yet"
+            emptyMessage="Try a different search or explore music."
+          />
         </>
       ) : null}
 
