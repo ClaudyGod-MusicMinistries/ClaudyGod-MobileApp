@@ -47,10 +47,10 @@ export function AppButton({
 
   const sizeStyle =
     size === 'sm'
-      ? { minHeight: 34, paddingHorizontal: 12, paddingVertical: 7, fontSize: 11 }
+      ? { minHeight: 34, paddingHorizontal: 13, paddingVertical: 7, fontSize: 11 }
       : size === 'lg'
-        ? { minHeight: 48, paddingHorizontal: 20, paddingVertical: 12, fontSize: 12.5 }
-        : { minHeight: 42, paddingHorizontal: 16, paddingVertical: 10, fontSize: 11.8 };
+        ? { minHeight: 50, paddingHorizontal: 21, paddingVertical: 13, fontSize: 13 }
+        : { minHeight: 42, paddingHorizontal: 16, paddingVertical: 10, fontSize: 12 };
 
   const resolvedTextColor =
     textColor ??
@@ -79,7 +79,7 @@ export function AppButton({
           flexShrink: 1,
           fontSize: sizeStyle.fontSize,
           lineHeight: (sizeStyle.fontSize as number) * 1.32,
-          letterSpacing: 0.08,
+          letterSpacing: 0.12,
           ...(textStyle || {}),
         }}
         numberOfLines={1}
@@ -94,7 +94,7 @@ export function AppButton({
     <TVTouchable
       {...props}
       disabled={loading || props.disabled}
-      activeOpacity={0.86}
+      activeOpacity={0.84}
       style={[
         {
           ...sizeStyle,
@@ -102,20 +102,14 @@ export function AppButton({
           backgroundColor: isPrimary
             ? theme.colors.primary
             : isSecondary
-              ? theme.scheme === 'dark'
-                ? 'rgba(255,255,255,0.07)'
-                : 'rgba(18,10,32,0.055)'
-              : isGhost
-                ? 'transparent'
-                : 'transparent',
-          borderWidth: isOutline || isSecondary || isGhost ? 1 : 0,
+              ? 'rgba(255,255,255,0.055)'
+              : 'transparent',
+          borderWidth: isOutline || isSecondary ? 1 : 0,
           borderColor: isOutline
             ? theme.colors.borderStrong ?? theme.colors.border
             : isSecondary
               ? theme.colors.border
-              : isGhost
-                ? 'transparent'
-                : 'transparent',
+              : 'transparent',
           opacity: props.disabled ? 0.45 : 1,
           flexDirection: 'row',
           alignItems: 'center',
@@ -123,7 +117,7 @@ export function AppButton({
           alignSelf: fullWidth ? 'stretch' : 'flex-start',
           gap: 7,
           overflow: 'hidden',
-          ...(isPrimary ? theme.shadows.soft : {}),
+          ...(isPrimary ? theme.shadows.glow ?? theme.shadows.soft : {}),
         },
         style,
       ]}

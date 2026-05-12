@@ -32,7 +32,7 @@ export const CustomText: React.FC<CustomTextProps> = ({
       className={className}
       style={[finalStyle, style]}
       allowFontScaling={props.allowFontScaling ?? true}
-      maxFontSizeMultiplier={props.maxFontSizeMultiplier ?? 1.1}
+      maxFontSizeMultiplier={props.maxFontSizeMultiplier ?? 1.08}
       {...props}
     >
       {children}
