@@ -1,5 +1,5 @@
 import React from 'react';
-import { View } from 'react-native';
+import { View, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../CustomText';
@@ -12,6 +12,8 @@ interface SupportCardProps {
 
 export function SupportMinistryCard({ onPress }: SupportCardProps) {
   const theme = useAppTheme();
+  const { width } = useWindowDimensions();
+  const compact = width < 390;
 
   return (
     <LinearGradient
@@ -78,19 +80,24 @@ export function SupportMinistryCard({ onPress }: SupportCardProps) {
             flexDirection: 'row',
             alignItems: 'center',
             alignSelf: 'center',
-            gap: 6,
+            gap: compact ? 0 : 6,
+            width: compact ? 40 : undefined,
             minHeight: 38,
             borderRadius: 999,
             borderWidth: 1,
             borderColor: 'rgba(255,255,255,0.34)',
             backgroundColor: 'rgba(255,255,255,0.16)',
-            paddingHorizontal: 12,
+            paddingHorizontal: compact ? 0 : 12,
+            justifyContent: 'center',
             flexShrink: 0,
           }}
+          accessibilityLabel="Give support"
         >
-          <CustomText variant="label" style={{ color: '#FFFFFF' }} numberOfLines={1}>
-            Give support
-          </CustomText>
+          {!compact ? (
+            <CustomText variant="label" style={{ color: '#FFFFFF' }} numberOfLines={1}>
+              Give support
+            </CustomText>
+          ) : null}
           <MaterialIcons name="arrow-forward" size={16} color="#FFFFFF" />
         </TVTouchable>
       </View>
