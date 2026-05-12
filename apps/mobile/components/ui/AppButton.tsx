@@ -44,6 +44,7 @@ export function AppButton({
   const isSecondary = variant === 'secondary';
   const isOutline = variant === 'outline';
   const isGhost = variant === 'ghost';
+  const hasTitle = title.trim().length > 0;
 
   const sizeStyle =
     size === 'sm'
@@ -67,25 +68,27 @@ export function AppButton({
       <ActivityIndicator size="small" color={resolvedTextColor} />
     )
   ) : (
-    <View style={{ flexDirection: 'row', alignItems: 'center', maxWidth: '100%', gap: 7 }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', maxWidth: '100%', gap: hasTitle ? 7 : 0 }}>
       {resolvedLeftIcon ? (
         <View style={{ width: 17, alignItems: 'center', justifyContent: 'center' }}>{resolvedLeftIcon}</View>
       ) : null}
-      <CustomText
-        variant="label"
-        style={{
-          color: resolvedTextColor,
-          textAlign: 'center',
-          flexShrink: 1,
-          fontSize: sizeStyle.fontSize,
-          lineHeight: (sizeStyle.fontSize as number) * 1.32,
-          letterSpacing: 0.12,
-          ...(textStyle || {}),
-        }}
-        numberOfLines={1}
-      >
-        {title}
-      </CustomText>
+      {hasTitle ? (
+        <CustomText
+          variant="label"
+          style={{
+            color: resolvedTextColor,
+            textAlign: 'center',
+            flexShrink: 1,
+            fontSize: sizeStyle.fontSize,
+            lineHeight: (sizeStyle.fontSize as number) * 1.32,
+            letterSpacing: 0,
+            ...(textStyle || {}),
+          }}
+          numberOfLines={1}
+        >
+          {title}
+        </CustomText>
+      ) : null}
       {rightIcon ? <View style={{ width: 17, alignItems: 'center', justifyContent: 'center' }}>{rightIcon}</View> : null}
     </View>
   );

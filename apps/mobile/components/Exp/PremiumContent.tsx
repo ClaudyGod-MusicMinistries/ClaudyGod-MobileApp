@@ -143,7 +143,13 @@ export function PremiumPage({
                         borderRadius: 13,
                         alignItems: 'center',
                         justifyContent: 'center',
-                        backgroundColor: showBack ? 'rgba(255,255,255,0.06)' : theme.colors.surfaceAlt,
+                        backgroundColor: showBack
+                          ? theme.scheme === 'dark'
+                            ? 'rgba(255,255,255,0.10)'
+                            : 'rgba(17,10,31,0.08)'
+                          : theme.colors.surfaceAlt,
+                        borderWidth: 1,
+                        borderColor: showBack ? theme.colors.border : 'transparent',
                         overflow: 'hidden',
                       }}
                     >
@@ -261,7 +267,7 @@ export function EmptyState({ title, message, icon = 'auto-awesome', actionLabel,
       </CustomText>
 
       {actionLabel && onAction ? (
-        <AppButton title={actionLabel} onPress={onAction} size="md" style={{ marginTop: 14 }} />
+        <AppButton title={actionLabel} onPress={onAction} size="md" style={{ marginTop: 14, alignSelf: 'center' }} />
       ) : null}
     </SurfaceCard>
   );
@@ -423,7 +429,7 @@ export function PremiumHero({
   const theme = useAppTheme();
   const { width } = useWindowDimensions();
   const isWide = width >= 760;
-  const heroHeight = height ?? (isWide ? 282 : 318);
+  const heroHeight = height ?? (isWide ? 268 : 288);
   const imageUrl = item?.imageUrl || DEFAULT_CONTENT_IMAGE_URI;
   const primaryAction = onPrimary ?? onPrimaryPress;
   const secondaryAction = onSecondary ?? onSecondaryPress;
@@ -440,8 +446,8 @@ export function PremiumHero({
         <LinearGradient
           colors={
             theme.scheme === 'dark'
-              ? ['rgba(5,4,10,0.10)', 'rgba(5,4,10,0.58)', 'rgba(5,4,10,0.94)']
-              : ['rgba(255,255,255,0.10)', 'rgba(255,255,255,0.56)', 'rgba(255,255,255,0.96)']
+              ? ['rgba(5,4,10,0.16)', 'rgba(5,4,10,0.66)', 'rgba(5,4,10,0.96)']
+              : ['rgba(10,7,17,0.08)', 'rgba(255,255,255,0.62)', 'rgba(255,255,255,0.98)']
           }
           start={{ x: 0, y: 0 }}
           end={{ x: isWide ? 1 : 0, y: 1 }}
@@ -460,12 +466,12 @@ export function PremiumHero({
                 marginBottom: 9,
               }}
             >
-              <CustomText variant="caption" style={{ color: '#FFFFFF', textTransform: 'uppercase', letterSpacing: 0.7 }}>
+              <CustomText variant="caption" style={{ color: '#FFFFFF', textTransform: 'uppercase', letterSpacing: 0.4 }}>
                 {item?.isLive ? 'Live now' : eyebrow ?? (item?.type === 'video' ? 'Featured video' : 'Featured')}
               </CustomText>
             </View>
 
-            <CustomText variant="display" style={{ color: '#FFFFFF' }} numberOfLines={2}>
+            <CustomText variant="display" style={{ color: '#FFFFFF', fontSize: isWide ? 23 : 20, lineHeight: isWide ? 29 : 26 }} numberOfLines={2}>
               {item?.title || title || 'Welcome to ClaudyGod'}
             </CustomText>
 
@@ -477,13 +483,14 @@ export function PremiumHero({
               {item?.description || subtitle || 'Worship, messages, live ministry, and videos in one focused experience.'}
             </CustomText>
 
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 9, marginTop: 14 }}>
+            <View style={{ flexDirection: 'row', gap: 9, marginTop: 14 }}>
               {primaryAction ? (
                 <AppButton
                   title={resolvedPrimaryLabel}
                   onPress={primaryAction}
                   size="md"
                   leftIcon={<MaterialIcons name={primaryIcon} size={17} color={theme.colors.textInverse} />}
+                  style={{ flex: 1, alignSelf: 'stretch' }}
                 />
               ) : null}
               {secondaryLabel && secondaryAction ? (
@@ -492,7 +499,14 @@ export function PremiumHero({
                   variant="secondary"
                   size="md"
                   onPress={secondaryAction}
-                  leftIcon={<MaterialIcons name={secondaryIcon} size={17} color={theme.colors.text} />}
+                  textColor="#FFFFFF"
+                  leftIcon={<MaterialIcons name={secondaryIcon} size={17} color="#FFFFFF" />}
+                  style={{
+                    flex: 1,
+                    alignSelf: 'stretch',
+                    backgroundColor: 'rgba(255,255,255,0.16)',
+                    borderColor: 'rgba(255,255,255,0.24)',
+                  }}
                 />
               ) : null}
             </View>

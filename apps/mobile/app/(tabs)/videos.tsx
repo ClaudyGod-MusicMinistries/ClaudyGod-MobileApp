@@ -1,11 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { Linking, useWindowDimensions } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { VideoPlayer } from '../../components/media/VideoPlayer';
-import { AppButton } from '../../components/ui/AppButton';
 import { useToast } from '../../context/ToastContext';
-import { useAppTheme } from '../../util/colorScheme';
 import { useContentFeed } from '../../hooks/useContentFeed';
 import type { FeedCardItem } from '../../services/contentService';
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
@@ -21,7 +18,6 @@ function parseRouteItem(params: { itemId?: string | string[]; title?: string | s
 }
 
 export default function VideosScreen() {
-  const theme = useAppTheme();
   const router = useRouter();
   const { width } = useWindowDimensions();
   const { showToast } = useToast();
@@ -44,7 +40,7 @@ export default function VideosScreen() {
   };
 
   return (
-    <PremiumPage title="Videos" eyebrow="Watch" refreshing={loading} onRefresh={refresh} rightAction={<AppButton title="" variant="secondary" size="sm" onPress={() => router.push(APP_ROUTES.tabs.search)} leftIcon={<MaterialIcons name="search" size={16} color={theme.colors.text} />} style={{ minWidth: 40, paddingHorizontal: 10 }} />}>
+    <PremiumPage title="Videos" eyebrow="Watch" refreshing={loading} onRefresh={refresh}>
       {active && canInlinePlay && active.mediaUrl ? <VideoPlayer title={active.title} sourceUri={active.mediaUrl} height={playerHeight} /> : <PremiumHero item={active} title={active?.title ?? 'Choose a video'} subtitle={active?.description || 'Select a video, live replay, or featured session to watch.'} primaryLabel={active?.mediaUrl ? 'Open video' : 'Browse videos'} primaryIcon={active?.mediaUrl ? 'open-in-new' : 'smart-display'} onPrimary={() => (active?.mediaUrl ? void Linking.openURL(active.mediaUrl) : undefined)} />}
       <ContentRail title="Up next" items={queue} compact loading={loading} onPressItem={(item) => void openItem(item, 'videos_queue')} />
       <ContentRail title="Latest videos" items={feed.videos} loading={loading} onPressItem={(item) => void openItem(item, 'videos_latest')} />

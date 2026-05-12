@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { Platform, View, useWindowDimensions } from 'react-native';
+import React, { useEffect, useMemo, useRef } from 'react';
+import { Animated, Platform, View, useWindowDimensions } from 'react-native';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -46,7 +46,18 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
   const compact = width < 390;
   const isTablet = width >= 768 && !isTV;
   const { config } = useMobileAppConfig();
+  const playPulse = useRef(new Animated.Value(0)).current;
 
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(playPulse, { toValue: 1, duration: 1200, useNativeDriver: true }),
+        Animated.timing(playPulse, { toValue: 0, duration: 1200, useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [playPulse]);
 
   const barMaxWidth = isTV ? 1120 : isTablet ? 720 : width - 22;
   const barBottomInset = isTV ? 20 : Math.max(insets.bottom, 10);
@@ -89,8 +100,8 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
         style={{
           width: '100%',
           maxWidth: barMaxWidth,
-          minHeight: compact ? 62 : 66,
-          borderRadius: 26,
+          minHeight: compact ? 60 : 64,
+          borderRadius: 28,
           overflow: 'visible',
           borderWidth: 1,
           borderColor: colorScheme === 'dark' ? 'rgba(185,148,255,0.15)' : 'rgba(56,42,84,0.16)',
@@ -115,7 +126,7 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
-            paddingHorizontal: compact ? 7 : 9,
+            paddingHorizontal: compact ? 8 : 10,
             paddingVertical: 7,
           }}
         >
@@ -137,7 +148,7 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
                 }}
                 style={{
                   flex: item.center ? 0.9 : 1,
-                  minHeight: compact ? 48 : 52,
+                  minHeight: compact ? 46 : 50,
                   marginHorizontal: 1,
                   borderRadius: item.center ? 999 : 19,
                   alignItems: 'center',
@@ -149,25 +160,43 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
                 showFocusBorder={false}
               >
                 {item.center ? (
-                  <View
-                    style={{
-                      width: compact ? 52 : 56,
-                      height: compact ? 52 : 56,
-                      borderRadius: 999,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      backgroundColor: palette.primary,
-                      borderWidth: 4,
-                      borderColor: colorScheme === 'dark' ? '#06040B' : '#06040B',
-                      shadowColor: palette.primary,
-                      shadowOpacity: 0.26,
-                      shadowRadius: 18,
-                      shadowOffset: { width: 0, height: 9 },
-                      elevation: 12,
-                    }}
-                  >
-                    <MaterialIcons name="play-arrow" size={compact ? 26 : 29} color={palette.textInverse} />
-                  </View>
+                  <>
+                    <View style={{ width: compact ? 56 : 60, height: compact ? 56 : 60, alignItems: 'center', justifyContent: 'center' }}>
+                      <Animated.View
+                        pointerEvents="none"
+                        style={{
+                          position: 'absolute',
+                          width: compact ? 54 : 58,
+                          height: compact ? 54 : 58,
+                          borderRadius: 999,
+                          backgroundColor: palette.primary,
+                          opacity: playPulse.interpolate({ inputRange: [0, 1], outputRange: [0.16, 0.04] }),
+                          transform: [{ scale: playPulse.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1.22] }) }],
+                        }}
+                      />
+                      <LinearGradient
+                        colors={palette.gradient.primary as [string, string]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={{
+                          width: compact ? 48 : 52,
+                          height: compact ? 48 : 52,
+                          borderRadius: 999,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderWidth: 3,
+                          borderColor: '#06040B',
+                          shadowColor: palette.primary,
+                          shadowOpacity: focused ? 0.34 : 0.22,
+                          shadowRadius: focused ? 20 : 14,
+                          shadowOffset: { width: 0, height: 9 },
+                          elevation: 14,
+                        }}
+                      >
+                        <MaterialIcons name="play-arrow" size={compact ? 25 : 28} color={palette.textInverse} />
+                      </LinearGradient>
+                    </View>
+                  </>
                 ) : (
                   <>
                     <View
@@ -187,9 +216,9 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
                         variant="caption"
                         style={{
                           color: labelColor,
-                          fontSize: 9.8,
+                          fontSize: 9.4,
                           lineHeight: 12,
-                          letterSpacing: 0.02,
+                          letterSpacing: 0,
                         }}
                         numberOfLines={1}
                       >
@@ -199,14 +228,15 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
                   </>
                 )}
 
-                {item.center && !compact ? (
+                {item.center ? (
                   <CustomText
                     variant="caption"
                     style={{
                       color: focused ? '#F6F0FF' : palette.textMuted,
-                      fontSize: 9.8,
-                      lineHeight: 12,
-                      marginTop: -9,
+                      fontSize: compact ? 8.8 : 9.2,
+                      lineHeight: 11,
+                      marginTop: compact ? -7 : -8,
+                      letterSpacing: 0,
                     }}
                     numberOfLines={1}
                   >
