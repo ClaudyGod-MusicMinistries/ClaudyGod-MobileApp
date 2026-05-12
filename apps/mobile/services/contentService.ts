@@ -168,7 +168,7 @@ function safeDescription(item: ApiContentItem): string {
   }
   return item.type === 'live'
     ? 'Live session from your subscribed channel.'
-    : 'Published content from your channel feed.';
+    : 'Content from your channel feed.';
 }
 
 function normalize(item: ApiContentItem): FeedCardItem {
@@ -195,7 +195,7 @@ function normalizeFeedItem(item: MobileFeedApiItem): FeedCardItem {
     id: item.id,
     title: item.title,
     subtitle: item.subtitle || item.channelName || 'ClaudyGod Channel',
-    description: item.description || 'Published content from your channel feed.',
+    description: item.description || 'Content from your channel feed.',
     duration: item.duration || '--:--',
     imageUrl: item.imageUrl || FALLBACK_IMAGE,
     mediaUrl: item.mediaUrl,
