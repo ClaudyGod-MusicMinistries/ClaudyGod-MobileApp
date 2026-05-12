@@ -1,116 +1,35 @@
-import { Stack, useRouter, useSegments } from 'expo-router';
-import { ThemeProvider } from '../../context/ThemeProvider';
-import '../../global.css';
-// import '../../global.css';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { useContext, useEffect, useState, type ReactNode } from 'react';
-import { StatusBar, View } from 'react-native';
+import { Tabs } from 'expo-router';
+import { View } from 'react-native';
+
+import TabBar from '../../components/TabBar';
 import { colors } from '../../constants/color';
-import { useColorScheme, useThemeContext  } from '../../util/colorScheme';
-import { FontProvider,  FontContext } from '../../context/FontContext';
-import { AuthProvider, useAuth } from '../../context/AuthContext';
-import { GuestModeProvider } from '../../context/GuestModeContext';
-import { FloatingPlayerProvider } from '../../context/FloatingPlayerContext';
-import { ToastProvider } from '../../context/ToastContext';
-import { ToastViewport } from '../../components/ui/ToastViewport';
-import { MinimizedFloatingPlayer } from '../../components/player/MinimizedFloatingPlayer';
-import { APP_ROUTES } from '../../util/appRoutes';
-import { fetchMePreferences } from '../../services/userFlowService';
-import { AppLoadingScreen } from '../../components/Exp/AppLoading';
+import { useColorScheme } from '../../util/colorScheme';
 
-
-
-function ThemedLayout({ children }: { children: ReactNode }) {
+export default function TabsLayout() {
   const colorScheme = useColorScheme();
   const currentColors = colors[colorScheme] ?? colors.dark;
+
   return (
     <View style={{ flex: 1, backgroundColor: currentColors.background }}>
-      <StatusBar translucent={false} backgroundColor={currentColors.background} barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
-      {children}
+      <Tabs
+        initialRouteName="home"
+        screenOptions={{
+          headerShown: false,
+          sceneStyle: { backgroundColor: currentColors.background },
+        }}
+        tabBar={(props) => <TabBar {...props} />}
+      >
+        <Tabs.Screen name="home" />
+        <Tabs.Screen name="player" />
+        <Tabs.Screen name="videos" />
+        <Tabs.Screen name="library" />
+        <Tabs.Screen name="settings" />
+        <Tabs.Screen name="live" options={{ href: null }} />
+        <Tabs.Screen name="search" options={{ href: null }} />
+        <Tabs.Screen name="dashboard" options={{ href: null }} />
+        <Tabs.Screen name="Favourites" options={{ href: null }} />
+        <Tabs.Screen name="PlaySection" options={{ href: null }} />
+      </Tabs>
     </View>
-  );
-}
-
-function RootLayoutInner() {
-  const { fontsLoaded } = useContext(FontContext);
-  const { initializing, isAuthenticated, user } = useAuth();
-  const { setThemePreference } = useThemeContext();
-  const router = useRouter();
-  const segments = useSegments();
-  const [bootDelayDone, setBootDelayDone] = useState(false);
-  const [themePreferenceHydratedForUserId, setThemePreferenceHydratedForUserId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setBootDelayDone(true), 650);
-    return () => clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
-    if (!fontsLoaded || !bootDelayDone || initializing) return;
-    const firstSegment = segments[0];
-    const secondSegment = Array.from(segments)[1];
-    const isSettingsPage = firstSegment === 'settingsPage';
-    const isGuestAllowedSettingsPage = isSettingsPage && (secondSegment === 'Donate' || secondSegment === 'Support' || secondSegment === 'Payment' || secondSegment === 'Help' || secondSegment === 'Rate');
-    const isProtectedRoute = firstSegment === 'profile' || (isSettingsPage && !isGuestAllowedSettingsPage) || (firstSegment === '(tabs)' && secondSegment === 'settings');
-    if (!isAuthenticated && isProtectedRoute) router.replace(APP_ROUTES.auth.signIn);
-  }, [bootDelayDone, fontsLoaded, initializing, isAuthenticated, router, segments]);
-
-  useEffect(() => {
-    if (!isAuthenticated || !user?.id) {
-      setThemePreferenceHydratedForUserId(null);
-      return;
-    }
-    if (themePreferenceHydratedForUserId === user.id) return;
-    let active = true;
-    void fetchMePreferences()
-      .then((response) => {
-        if (active) setThemePreference(response.preferences.themePreference ?? 'system');
-      })
-      .catch(() => undefined)
-      .finally(() => {
-        if (active) setThemePreferenceHydratedForUserId(user.id);
-      });
-    return () => { active = false; };
-  }, [isAuthenticated, setThemePreference, themePreferenceHydratedForUserId, user?.id]);
-
-  if (!fontsLoaded || !bootDelayDone) return <AppLoadingScreen />;
-
-  return (
-    <ThemedLayout>
-      <ToastViewport />
-      <Stack screenOptions={{ headerShown: false, animation: 'fade_from_bottom', animationDuration: 240 }}>
-        <Stack.Screen name="index" options={{ gestureEnabled: false, animation: 'fade' }} />
-        <Stack.Screen name="guest-welcome" options={{ gestureEnabled: false, animation: 'fade_from_bottom' }} />
-        <Stack.Screen name="sign-in" options={{ gestureEnabled: false, animation: 'slide_from_right' }} />
-        <Stack.Screen name="sign-up" options={{ gestureEnabled: false, animation: 'slide_from_right' }} />
-        <Stack.Screen name="forgot-password" options={{ gestureEnabled: false, animation: 'slide_from_right' }} />
-        <Stack.Screen name="reset-password" options={{ gestureEnabled: false, animation: 'slide_from_right' }} />
-        <Stack.Screen name="verify-email" options={{ gestureEnabled: false, animation: 'slide_from_right' }} />
-        <Stack.Screen name="profile" options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="settingsPage" options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
-      </Stack>
-      <MinimizedFloatingPlayer />
-    </ThemedLayout>
-  );
-}
-
-export default function RootLayout() {
-  return (
-    <ThemeProvider>
-      <FontProvider>
-        <SafeAreaProvider>
-          <ToastProvider>
-            <AuthProvider>
-              <GuestModeProvider>
-                <FloatingPlayerProvider>
-                  <RootLayoutInner />
-                </FloatingPlayerProvider>
-              </GuestModeProvider>
-            </AuthProvider>
-          </ToastProvider>
-        </SafeAreaProvider>
-      </FontProvider>
-    </ThemeProvider>
   );
 }

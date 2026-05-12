@@ -77,13 +77,13 @@ export default function LiveScreen() {
   };
 
   return (
-    <PremiumPage title="Live" subtitle="Join live ministry moments, follow upcoming sessions, and watch replays." eyebrow="Live ministry" refreshing={loading} onRefresh={() => void refresh()} rightAction={<AppButton title="Videos" variant="secondary" size="sm" onPress={() => router.push(APP_ROUTES.tabs.videos)} leftIcon={<MaterialIcons name="smart-display" size={16} color={theme.colors.text} />} />}>
+    <PremiumPage title="Live" eyebrow="Now" refreshing={loading} onRefresh={() => void refresh()} rightAction={<AppButton title="" variant="secondary" size="sm" onPress={() => router.push(APP_ROUTES.tabs.videos)} leftIcon={<MaterialIcons name="smart-display" size={16} color={theme.colors.text} />} style={{ minWidth: 40, paddingHorizontal: 10 }} />}>
       <PremiumHero item={featuredCard} title={featuredCard?.title ?? 'Live sessions'} subtitle={featuredCard?.description || 'Follow upcoming services and rewatch recent ministry moments.'} eyebrow={featuredCard?.isLive ? 'Live now' : featuredCard?.subtitle ?? 'Upcoming'} primaryLabel={featuredCard?.isLive ? 'Watch live' : featuredCard?.mediaUrl ? 'Watch replay' : 'Notify me'} primaryIcon={featuredCard?.isLive || featuredCard?.mediaUrl ? 'live-tv' : 'notifications-active'} onPrimary={() => (featuredCard ? (featuredCard.mediaUrl ? void openSession(featuredCard, 'live_hero') : void followLive(featuredCard)) : undefined)} />
-      <ContentRail title="Live now" items={liveCards} onPressItem={(item) => void openSession(item, 'live_now')} />
-      <ContentRail title="Upcoming" items={upcomingCards} compact onPressItem={(item) => void followLive(item)} />
-      <ContentRail title="Replays" items={replayCards} onPressItem={(item) => void openSession(item, 'live_replays')} />
+      <ContentRail title="Live now" items={liveCards} loading={loading} hideWhenEmpty onPressItem={(item) => void openSession(item, 'live_now')} />
+      <ContentRail title="Upcoming" items={upcomingCards} compact loading={loading} hideWhenEmpty onPressItem={(item) => void followLive(item)} />
+      <ContentRail title="Replays" items={replayCards} loading={loading} hideWhenEmpty onPressItem={(item) => void openSession(item, 'live_replays')} />
       <ContentList title="Watch again" items={replayCards} onPressItem={(item) => void openSession(item, 'live_watch_again')} />
-      {!loading && !liveCards.length && !upcomingCards.length && !replayCards.length ? <EmptyState title="No live sessions yet" message="Live sessions and replays will appear here when they are available." actionLabel="Refresh" onAction={() => void refresh()} icon="live-tv" /> : null}
+      {!loading && !liveCards.length && !upcomingCards.length && !replayCards.length ? <EmptyState title="No live sessions right now" message="Explore videos or music while the live schedule is quiet." actionLabel="Videos" onAction={() => router.push(APP_ROUTES.tabs.videos)} icon="live-tv" /> : null}
     </PremiumPage>
   );
 }

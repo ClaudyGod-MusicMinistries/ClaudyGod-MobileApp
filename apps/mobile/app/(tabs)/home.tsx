@@ -3,7 +3,6 @@ import { Image, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
-import { AppButton } from '../../components/ui/AppButton';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { CustomText } from '../../components/CustomText';
@@ -210,21 +209,9 @@ export default function HomeScreen() {
   return (
     <PremiumPage
       title="ClaudyGod"
-      subtitle="A focused space for worship, music, videos, live moments, and saved inspiration."
-      eyebrow="Welcome"
+      eyebrow="Home"
       refreshing={loading}
       onRefresh={() => void refresh()}
-      rightAction={
-        <AppButton
-          title="Search"
-          variant="secondary"
-          size="sm"
-          onPress={() => router.push(APP_ROUTES.tabs.search)}
-          leftIcon={
-            <MaterialIcons name="search" size={16} color={theme.colors.text} />
-          }
-        />
-      }
     >
       <PremiumHero
         item={featured}
@@ -293,77 +280,54 @@ export default function HomeScreen() {
             onPressItem={(item) => void openItem(item, `home_${section.id}`)}
             actionLabel={section.actionLabel}
             onAction={() => router.push(TAB_ROUTE_BY_ID[section.destinationTab] as never)}
+            loading={loading}
           />
         </View>
       ))}
 
-      <View>
-        <CustomText
-          variant="caption"
-          style={{
-            color: theme.colors.textSecondary,
-            marginBottom: 8,
-          }}
-        >
-          Songs and worship audio ready to play.
-        </CustomText>
+      <ContentRail
+        title="For your moment"
+        subtitle="Songs, worship audio, and messages."
+        items={feed.music.slice(0, 12)}
+        onPressItem={(item) => void openItem(item, 'home_music')}
+        actionLabel="Music"
+        onAction={() => router.push(APP_ROUTES.tabs.player)}
+        loading={loading}
+        emptyTitle="Music is being refreshed"
+        emptyMessage="Browse videos, live moments, or search while this row updates."
+      />
 
-        <ContentRail
-          title="Music for now"
-          items={feed.music.slice(0, 12)}
-          onPressItem={(item) => void openItem(item, 'home_music')}
-          actionLabel="Open music"
-          onAction={() => router.push(APP_ROUTES.tabs.player)}
-        />
-      </View>
+      <ContentRail
+        title="Watch next"
+        subtitle="Messages, sessions, clips, and replays."
+        items={feed.videos.slice(0, 12)}
+        onPressItem={(item) => void openItem(item, 'home_videos')}
+        actionLabel="Videos"
+        onAction={() => router.push(APP_ROUTES.tabs.videos)}
+        loading={loading}
+        emptyTitle="Videos are being refreshed"
+        emptyMessage="Explore music or live moments while this row updates."
+      />
 
-      <View>
-        <CustomText
-          variant="caption"
-          style={{
-            color: theme.colors.textSecondary,
-            marginBottom: 8,
-          }}
-        >
-          Messages, sessions, clips, and replays.
-        </CustomText>
-
-        <ContentRail
-          title="Latest videos"
-          items={feed.videos.slice(0, 12)}
-          onPressItem={(item) => void openItem(item, 'home_videos')}
-          actionLabel="Watch"
-          onAction={() => router.push(APP_ROUTES.tabs.videos)}
-        />
-      </View>
-
-      <View>
-        <CustomText
-          variant="caption"
-          style={{
-            color: theme.colors.textSecondary,
-            marginBottom: 8,
-          }}
-        >
-          Join live ministry or continue from the archive.
-        </CustomText>
-
-        <ContentRail
-          title="Live and replays"
-          items={feed.live.slice(0, 12)}
-          onPressItem={(item) => void openItem(item, 'home_live')}
-          actionLabel="Live hub"
-          onAction={() => router.push(APP_ROUTES.tabs.live)}
-        />
-      </View>
+      <ContentRail
+        title="Live ministry"
+        subtitle="Current sessions, upcoming moments, and replays."
+        items={feed.live.slice(0, 12)}
+        onPressItem={(item) => void openItem(item, 'home_live')}
+        actionLabel="Live"
+        onAction={() => router.push(APP_ROUTES.tabs.live)}
+        loading={loading}
+        emptyTitle="No live sessions right now"
+        emptyMessage="Replays and new sessions will appear here when they are ready."
+      />
 
       {!loading && !allContent.length ? (
         <EmptyState
-          title="Fresh content is coming"
-          message="Published music, videos, and live sessions will appear here as soon as they are available."
+          title="Your experience is ready"
+          message="Use Search, Music, Videos, or Live to start exploring."
           icon="auto-awesome"
-          actionLabel="Refresh"
-          onAction={() => void refresh()}
+          actionLabel="Search"
+          onAction={() => router.push(APP_ROUTES.tabs.search)}
         />
       ) : null}
     </PremiumPage>

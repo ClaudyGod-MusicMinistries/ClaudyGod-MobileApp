@@ -19,8 +19,10 @@ import { AppScreenFooter } from '../layout/AppScreenFooter';
 import { SurfaceCard } from '../ui/SurfaceCard';
 import { TVTouchable } from '../ui/TVTouchable';
 import { FadeIn } from '../ui/FadeIn';
+import { useAuth } from '../../context/AuthContext';
 import { useAppTheme } from '../../util/colorScheme';
-import { BRAND_HERO_ASSET, DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
+import { APP_ROUTES } from '../../util/appRoutes';
+import { BRAND_HERO_ASSET, BRAND_LOGO_ASSET, DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
 import type { FeedCardItem } from '../../services/contentService';
 
 export type QuickAction = {
@@ -69,7 +71,7 @@ export function getFeaturedItem(...groups: (FeedCardItem[] | null | undefined)[]
 export function PremiumPage({
   title,
   subtitle,
-  eyebrow,
+  eyebrow: _eyebrow,
   rightAction,
   children,
   refreshing = false,
@@ -78,9 +80,12 @@ export function PremiumPage({
   showFooter = true,
 }: PremiumPageProps) {
   const theme = useAppTheme();
+  const router = useRouter();
+  const { isAuthenticated } = useAuth();
   const { width } = useWindowDimensions();
+  const compact = width < 430;
   const isWide = width >= 840;
-
+  const showBack = title !== 'ClaudyGod' && router.canGoBack();
   return (
     <TabScreenWrapper backgroundImage={backgroundImage} backgroundHeight={isWide ? 310 : 230}>
       <ScrollView
@@ -97,49 +102,114 @@ export function PremiumPage({
         <Screen>
           <View style={{ paddingTop: theme.layout.headerVerticalPadding, gap: theme.layout.sectionGap }}>
             <FadeIn>
-              <SurfaceCard tone="strong" style={{ paddingVertical: theme.spacing.md, paddingHorizontal: theme.spacing.lg }}>
+              <View
+                style={{
+                  borderRadius: 24,
+                  borderWidth: 1,
+                  borderColor:
+                    theme.scheme === 'dark'
+                      ? 'rgba(255,255,255,0.08)'
+                      : 'rgba(15,23,42,0.08)',
+                  backgroundColor:
+                    theme.scheme === 'dark'
+                      ? 'rgba(7,5,12,0.64)'
+                      : 'rgba(255,255,255,0.82)',
+                  paddingVertical: compact ? 9 : 10,
+                  paddingHorizontal: compact ? 10 : 12,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 12 },
+                  shadowOpacity: theme.scheme === 'dark' ? 0.18 : 0.08,
+                  shadowRadius: 22,
+                  elevation: 8,
+                }}
+              >
                 <View
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    gap: 12,
+                    gap: compact ? 8 : 10,
                   }}
                 >
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    {eyebrow ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
+                    <TVTouchable
+                      onPress={() => (showBack ? router.back() : router.push(APP_ROUTES.tabs.home))}
+                      showFocusBorder={false}
+                      accessibilityRole="button"
+                      accessibilityLabel={showBack ? 'Go back' : 'Go home'}
+                      style={{
+                        width: compact ? 34 : 38,
+                        height: compact ? 34 : 38,
+                        borderRadius: 13,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: showBack ? 'rgba(255,255,255,0.06)' : theme.colors.surfaceAlt,
+                        overflow: 'hidden',
+                      }}
+                    >
+                      {showBack ? (
+                        <MaterialIcons name="arrow-back-ios-new" size={17} color={theme.colors.text} />
+                      ) : (
+                        <Image
+                          source={BRAND_LOGO_ASSET}
+                          resizeMode="cover"
+                          style={{ width: '100%', height: '100%' }}
+                        />
+                      )}
+                    </TVTouchable>
+
+                    <View style={{ flex: 1, minWidth: 0 }}>
                       <CustomText
-                        variant="caption"
+                        variant="heading"
                         style={{
-                          color: theme.colors.primary,
-                          textTransform: 'uppercase',
-                          letterSpacing: 0.72,
-                          marginBottom: 4,
+                          color: theme.colors.text,
+                          fontSize: compact ? 18 : 21,
+                          lineHeight: compact ? 23 : 26,
                         }}
                         numberOfLines={1}
                       >
-                        {eyebrow}
+                        {title}
                       </CustomText>
-                    ) : null}
 
-                    <CustomText variant="heading" style={{ color: theme.colors.text }} numberOfLines={1}>
-                      {title}
-                    </CustomText>
-
-                    {subtitle ? (
-                      <CustomText
-                        variant="caption"
-                        style={{ color: theme.colors.textSecondary, marginTop: 4, maxWidth: 720 }}
-                        numberOfLines={2}
-                      >
-                        {subtitle}
-                      </CustomText>
-                    ) : null}
+                      {subtitle && !compact && title !== 'ClaudyGod' ? (
+                        <CustomText
+                          variant="caption"
+                          style={{ color: theme.colors.textSecondary, marginTop: 3, maxWidth: 720 }}
+                          numberOfLines={1}
+                        >
+                          {subtitle}
+                        </CustomText>
+                      ) : null}
+                    </View>
                   </View>
 
-                  {rightAction ? <View style={{ flexShrink: 0 }}>{rightAction}</View> : null}
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                    {rightAction ? <View>{rightAction}</View> : null}
+                    <AppButton
+                      title=""
+                      variant="secondary"
+                      size="sm"
+                      onPress={() => router.push(APP_ROUTES.tabs.search)}
+                      leftIcon={<MaterialIcons name="search" size={16} color={theme.colors.text} />}
+                      style={{ minWidth: 40, paddingHorizontal: 10 }}
+                    />
+                    <AppButton
+                      title=""
+                      variant={isAuthenticated ? 'secondary' : 'primary'}
+                      size="sm"
+                      onPress={() => router.push(isAuthenticated ? APP_ROUTES.profile : APP_ROUTES.auth.signIn)}
+                      leftIcon={
+                        <MaterialIcons
+                          name={isAuthenticated ? 'person-outline' : 'login'}
+                          size={16}
+                          color={isAuthenticated ? theme.colors.text : theme.colors.textInverse}
+                        />
+                      }
+                      style={{ minWidth: 40, paddingHorizontal: 10 }}
+                    />
+                  </View>
                 </View>
-              </SurfaceCard>
+              </View>
             </FadeIn>
 
             {children}
@@ -197,46 +267,118 @@ export function EmptyState({ title, message, icon = 'auto-awesome', actionLabel,
   );
 }
 
+function InlineEmptyState({
+  title,
+  message,
+  icon = 'auto-awesome',
+}: {
+  title: string;
+  message: string;
+  icon?: React.ComponentProps<typeof MaterialIcons>['name'];
+}) {
+  const theme = useAppTheme();
+
+  return (
+    <View
+      style={{
+        minHeight: 74,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+        backgroundColor: theme.scheme === 'dark' ? 'rgba(255,255,255,0.035)' : 'rgba(17,10,31,0.035)',
+        padding: 13,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 11,
+      }}
+    >
+      <View
+        style={{
+          width: 36,
+          height: 36,
+          borderRadius: 18,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: theme.scheme === 'dark' ? 'rgba(183,148,246,0.10)' : 'rgba(124,58,237,0.08)',
+        }}
+      >
+        <MaterialIcons name={icon} size={17} color={theme.colors.primary} />
+      </View>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <CustomText variant="label" style={{ color: theme.colors.text }} numberOfLines={1}>
+          {title}
+        </CustomText>
+        <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 3 }} numberOfLines={2}>
+          {message}
+        </CustomText>
+      </View>
+    </View>
+  );
+}
+
+function RailSkeleton({ compact }: { compact: boolean }) {
+  const theme = useAppTheme();
+  const width = compact ? 138 : 162;
+  const imageHeight = compact ? 124 : 148;
+
+  return (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 11, paddingRight: 6 }}>
+      {[0, 1, 2].map((item) => (
+        <SurfaceCard key={item} tone="subtle" style={{ width, overflow: 'hidden' }}>
+          <View style={{ height: imageHeight, backgroundColor: theme.colors.surfaceAlt }} />
+          <View style={{ padding: 10, gap: 7 }}>
+            <View style={{ height: 12, width: '82%', borderRadius: 999, backgroundColor: theme.colors.surfaceAlt }} />
+            <View style={{ height: 10, width: '58%', borderRadius: 999, backgroundColor: theme.colors.surfaceAlt }} />
+          </View>
+        </SurfaceCard>
+      ))}
+    </ScrollView>
+  );
+}
+
 export function QuickActionGrid({ actions }: { actions: QuickAction[] }) {
   const theme = useAppTheme();
   const { width } = useWindowDimensions();
   const compact = width < 430;
-  const itemWidth = compact ? '100%' : width >= 900 ? '23.5%' : '48%';
+  const itemWidth = compact ? '48.5%' : width >= 900 ? '23.5%' : '48%';
 
   return (
-    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 9 }}>
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
       {actions.map((action) => (
         <TVTouchable key={action.label} onPress={action.onPress} style={{ width: itemWidth }} showFocusBorder={false}>
           <SurfaceCard
             tone="subtle"
             style={{
-              minHeight: 88,
-              padding: theme.spacing.md,
-              justifyContent: 'space-between',
+              minHeight: compact ? 58 : 64,
+              paddingHorizontal: 11,
+              paddingVertical: 10,
+              justifyContent: 'center',
             }}
           >
-            <View
-              style={{
-                width: 34,
-                height: 34,
-                borderRadius: 17,
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: theme.scheme === 'dark' ? 'rgba(183,148,246,0.12)' : 'rgba(124,58,237,0.08)',
-              }}
-            >
-              <MaterialIcons name={action.icon} size={17} color={theme.colors.primary} />
-            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <View
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 16,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: theme.scheme === 'dark' ? 'rgba(183,148,246,0.12)' : 'rgba(124,58,237,0.08)',
+                }}
+              >
+                <MaterialIcons name={action.icon} size={17} color={theme.colors.primary} />
+              </View>
 
-            <View style={{ marginTop: 10 }}>
-              <CustomText variant="label" style={{ color: theme.colors.text }} numberOfLines={1}>
-                {action.label}
-              </CustomText>
-              {action.hint ? (
-                <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 3 }} numberOfLines={2}>
-                  {action.hint}
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <CustomText variant="label" style={{ color: theme.colors.text }} numberOfLines={1}>
+                  {action.label}
                 </CustomText>
-              ) : null}
+                {action.hint ? (
+                  <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 1 }} numberOfLines={1}>
+                    {action.hint}
+                  </CustomText>
+                ) : null}
+              </View>
             </View>
           </SurfaceCard>
         </TVTouchable>
@@ -422,7 +564,9 @@ type ContentRailProps = {
   onActionPress?: () => void;
   emptyTitle?: string;
   emptyMessage?: string;
+  loading?: boolean;
   compact?: boolean;
+  hideWhenEmpty?: boolean;
 };
 
 export function ContentRail({
@@ -433,9 +577,11 @@ export function ContentRail({
   actionLabel,
   onAction,
   onActionPress,
-  emptyTitle = 'Nothing here yet',
-  emptyMessage = 'New content will appear here when it is published.',
+  emptyTitle = 'No items here right now',
+  emptyMessage = 'Try another section or search for something specific.',
+  loading = false,
   compact,
+  hideWhenEmpty = false,
 }: ContentRailProps) {
   const theme = useAppTheme();
   const { width } = useWindowDimensions();
@@ -465,14 +611,16 @@ export function ContentRail({
         ) : null}
       </View>
 
-      {items.length ? (
+      {loading ? (
+        <RailSkeleton compact={isCompact} />
+      ) : items.length ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 11, paddingRight: 6 }}>
           {items.map((item) => (
             <ContentCard key={`${title}-${item.id}`} item={item} compact={isCompact} onPress={() => onPressItem(item)} />
           ))}
         </ScrollView>
-      ) : (
-        <EmptyState title={emptyTitle} message={emptyMessage} icon="library-music" />
+      ) : hideWhenEmpty ? null : (
+        <InlineEmptyState title={emptyTitle} message={emptyMessage} icon="library-music" />
       )}
     </View>
   );
