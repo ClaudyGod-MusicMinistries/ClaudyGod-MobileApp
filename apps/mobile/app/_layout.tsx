@@ -67,7 +67,8 @@ function RootLayoutInner() {
         secondSegment === 'Payment' ||
         secondSegment === 'help' ||
         secondSegment === 'Help' ||
-        secondSegment === 'Rate');
+        secondSegment === 'Rate' ||
+        secondSegment === 'Word');
 
     const isProtectedRoute =
       firstSegment === 'profile' ||

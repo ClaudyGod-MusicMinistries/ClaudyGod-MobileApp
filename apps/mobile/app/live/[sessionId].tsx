@@ -209,7 +209,7 @@ export default function LiveSessionScreen() {
 
             {loading && !session ? (
               <View style={{ alignItems: 'center', paddingVertical: 60 }}>
-                <BrandLoader label="Opening live session" size="md" />
+                <BrandLoader label="Opening live session" size="md" textColor={theme.colors.text} />
               </View>
             ) : null}
 

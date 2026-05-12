@@ -268,33 +268,36 @@ export default function HomeScreen() {
       ) : null}
 
       {word ? (
-        <SurfaceCard tone="subtle" style={{ padding: theme.spacing.md }}>
-          <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
-            <View
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: theme.scheme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(17,10,31,0.05)',
-              }}
-            >
-              <MaterialIcons name="auto-stories" size={19} color={theme.colors.primary} />
+        <TVTouchable onPress={() => router.push(APP_ROUTES.settingsPages.word)} showFocusBorder={false}>
+          <SurfaceCard tone="subtle" style={{ padding: theme.spacing.md }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <View
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: theme.scheme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(17,10,31,0.05)',
+                }}
+              >
+                <MaterialIcons name="auto-stories" size={19} color={theme.colors.primary} />
+              </View>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <CustomText variant="caption" style={{ color: theme.colors.primary, textTransform: 'uppercase', letterSpacing: 0.72 }}>
+                  Word for today
+                </CustomText>
+                <CustomText variant="title" style={{ color: theme.colors.text, marginTop: 3 }} numberOfLines={1}>
+                  {word.title || word.passage}
+                </CustomText>
+                <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 5, lineHeight: 17 }} numberOfLines={2}>
+                  {word.verse || word.reflection}
+                </CustomText>
+              </View>
+              <MaterialIcons name="chevron-right" size={20} color={theme.colors.textSecondary} />
             </View>
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <CustomText variant="caption" style={{ color: theme.colors.primary, textTransform: 'uppercase', letterSpacing: 0.72 }}>
-                Word for today
-              </CustomText>
-              <CustomText variant="title" style={{ color: theme.colors.text, marginTop: 3 }} numberOfLines={1}>
-                {word.title || word.passage}
-              </CustomText>
-              <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 5, lineHeight: 17 }} numberOfLines={3}>
-                {word.verse || word.reflection}
-              </CustomText>
-            </View>
-          </View>
-        </SurfaceCard>
+          </SurfaceCard>
+        </TVTouchable>
       ) : null}
 
       <SupportMinistryCard onPress={() => router.push(APP_ROUTES.settingsPages.donate)} />
