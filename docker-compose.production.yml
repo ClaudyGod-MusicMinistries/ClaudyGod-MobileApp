@@ -84,7 +84,7 @@ services:
       - "443:443"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./infrastructure/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./ops/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
       - traefik_letsencrypt:/letsencrypt
     healthcheck:
       test: ["CMD", "traefik", "healthcheck", "--ping"]
@@ -128,7 +128,7 @@ services:
 
   postfix-relay:
     build:
-      context: ./infrastructure/postfix
+      context: ./ops/postfix
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
