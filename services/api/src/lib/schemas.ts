@@ -81,10 +81,22 @@ export const forgotPasswordSchema = z.object({
   email: emailSchema,
 });
 
-export const resetPasswordSchema = z.object({
-  token: z.string().min(1, 'Reset token required'),
-  password: passwordSchema,
-});
+export const resetPasswordSchema = z
+  .object({
+    token: z.string().trim().min(1, 'Reset token required'),
+    email: emailSchema.optional(),
+    password: passwordSchema.optional(),
+    newPassword: passwordSchema.optional(),
+  })
+  .transform((value) => ({
+    token: value.token,
+    email: value.email,
+    newPassword: value.newPassword ?? value.password ?? '',
+  }))
+  .refine((value) => value.newPassword.length > 0, {
+    path: ['newPassword'],
+    message: 'New password required',
+  });
 
 export const resendVerificationSchema = z.object({
   email: emailSchema,

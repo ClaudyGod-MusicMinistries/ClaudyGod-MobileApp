@@ -106,6 +106,38 @@ const explicitApiUrl = trimTrailingSlash(getEnv('EXPO_PUBLIC_API_URL', ''));
 const derivedExpoHost = runtimeMode === 'development' ? deriveExpoDevHost() : '';
 const derivedApiUrl = derivedExpoHost ? `http://${derivedExpoHost}:4000` : '';
 const resolvedApiUrl = explicitApiUrl || derivedApiUrl;
+const isPrivateOrLocalUrl = (value: string): boolean => {
+  try {
+    const parsed = new URL(value);
+    const host = parsed.hostname.trim().toLowerCase();
+    return (
+      host === 'localhost' ||
+      host === '127.0.0.1' ||
+      host === '::1' ||
+      host === '0.0.0.0' ||
+      host.endsWith('.local') ||
+      /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(host) ||
+      /^192\.168\.\d{1,3}\.\d{1,3}$/.test(host) ||
+      /^172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(host)
+    );
+  } catch {
+    return true;
+  }
+};
+
+if (runtimeMode === 'production') {
+  if (!resolvedApiUrl || !/^https:\/\//i.test(resolvedApiUrl) || isPrivateOrLocalUrl(resolvedApiUrl)) {
+    throw new Error('Production mobile builds require a public HTTPS API URL.');
+  }
+
+  if (!getEnv('EXPO_PUBLIC_MOBILE_API_KEY', '').trim()) {
+    throw new Error('Production mobile builds require EXPO_PUBLIC_MOBILE_API_KEY.');
+  }
+
+  if (!getEnv('EXPO_PUBLIC_SUPABASE_URL', '').trim() || !getEnv(['EXPO_PUBLIC_SUPABASE_KEY', 'EXPO_PUBLIC_SUPABASE_ANON_KEY'], '').trim()) {
+    throw new Error('Production mobile builds require Supabase public auth configuration.');
+  }
+}
 
 export const ENV = {
   runtimeMode,
