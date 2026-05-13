@@ -70,9 +70,6 @@ x-backend-env: &backend-env
   SEED_ADMIN_ON_BOOT: ${SEED_ADMIN_ON_BOOT:-false}
 
 services:
-  # IMPORTANT:
-  # If you already run shared_traefik on this VPS, do not start this service.
-  # Start only: redis postfix-relay api worker admin-web mobile-web
   traefik:
     image: traefik:v3.6
     restart: unless-stopped
@@ -153,6 +150,28 @@ services:
     networks:
       - internal
 
+  migrate:
+    build:
+      context: ./services/api
+      dockerfile: Dockerfile
+    restart: "no"
+    init: true
+    command: ["npm", "run", "migrate:prod"]
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      <<: *backend-env
+    depends_on:
+      redis:
+        condition: service_healthy
+      postfix-relay:
+        condition: service_healthy
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
+    networks:
+      - internal
+
   api:
     build:
       context: ./services/api
@@ -168,6 +187,8 @@ services:
         condition: service_healthy
       postfix-relay:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     expose:
       - "4000"
     healthcheck:
@@ -221,6 +242,8 @@ services:
         condition: service_healthy
       postfix-relay:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
       api:
         condition: service_healthy
     dns:
