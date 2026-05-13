@@ -15,6 +15,7 @@ ENV NODE_ENV=production
 ENV CLAUDYGOD_ENV=production
 ENV API_PORT=4000
 COPY --chown=node:node --from=build /usr/src/app/dist ./dist
+COPY --chown=node:node --from=build /usr/src/app/src/assets ./assets
 COPY --chown=node:node --from=build /usr/src/app/node_modules ./node_modules
 COPY --chown=node:node package.json ./
 RUN mkdir -p /usr/src/app/logs && chown node:node /usr/src/app/logs

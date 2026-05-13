@@ -11,6 +11,9 @@ CI_YOUTUBE_API_KEY="${CI_YOUTUBE_API_KEY:-AIzaSyCIPlaceholderKeyValue1234567890A
 CI_YOUTUBE_CHANNEL_ID="${CI_YOUTUBE_CHANNEL_ID:-https://www.youtube.com/@YourChannel}"
 CI_POSTFIX_SMTP_USERNAME="${CI_POSTFIX_SMTP_USERNAME:-ci-brevo-username}"
 CI_POSTFIX_SMTP_PASSWORD="${CI_POSTFIX_SMTP_PASSWORD:-ci-brevo-password}"
+CI_REDIS_PASSWORD="${CI_REDIS_PASSWORD:-ci-redis-password-with-at-least-thirty-two-characters}"
+CI_JWT_ACCESS_SECRET="${CI_JWT_ACCESS_SECRET:-ci-access-secret-with-at-least-thirty-two-characters}"
+CI_JWT_REFRESH_SECRET="${CI_JWT_REFRESH_SECRET:-ci-refresh-secret-with-at-least-thirty-two-characters}"
 
 cat > "$ROOT_DIR/.env.development" <<EOF
 # Runtime
@@ -24,8 +27,10 @@ DATABASE_SSL=true
 REDIS_URL=redis://redis:6379
 
 # Security and auth
-JWT_ACCESS_SECRET=ci-development-jwt-secret-with-at-least-thirty-two-characters
+JWT_ACCESS_SECRET=${CI_JWT_ACCESS_SECRET}
+JWT_REFRESH_SECRET=${CI_JWT_REFRESH_SECRET}
 JWT_ACCESS_TTL=1d
+JWT_REFRESH_TTL_DAYS=30
 BCRYPT_ROUNDS=12
 MOBILE_API_KEY=ci-mobile-api-key-with-sufficient-length
 AUTH_PUBLIC_BASE_URL=https://admin.dev.example.com
@@ -104,10 +109,13 @@ TRAEFIK_CERT_RESOLVER=letsencrypt
 DATABASE_URL=${CI_DATABASE_URL}
 DATABASE_SSL=true
 REDIS_URL=redis://redis:6379
+REDIS_PASSWORD=${CI_REDIS_PASSWORD}
 
 # Security and auth
-JWT_ACCESS_SECRET=ci-production-jwt-secret-with-at-least-thirty-two-characters
+JWT_ACCESS_SECRET=${CI_JWT_ACCESS_SECRET}
+JWT_REFRESH_SECRET=${CI_JWT_REFRESH_SECRET}
 JWT_ACCESS_TTL=1d
+JWT_REFRESH_TTL_DAYS=30
 BCRYPT_ROUNDS=12
 MOBILE_API_KEY=ci-production-mobile-api-key-with-sufficient-length
 AUTH_PUBLIC_BASE_URL=https://admin.example.com
