@@ -1,6 +1,9 @@
 import { Platform } from 'react-native';
+import * as Linking from 'expo-linking';
+import * as WebBrowser from 'expo-web-browser';
 import { ApiError, apiFetch } from './apiClient';
 import { authSessionStorage } from '../lib/authSessionStorage';
+import { assertSupabaseConfigured, supabase } from '../lib/supabase';
 
 export interface MobileAuthUser {
   id: string;
@@ -70,6 +73,19 @@ interface ParsedStoredMobileSession extends MobileSessionSnapshot {
 const MOBILE_AUTH_STORAGE_KEY = 'claudygod.mobile-auth-session.v1';
 const authStateListeners = new Set<(_snapshot: MobileSessionSnapshot) => void>();
 const usesBrowserCookieSession = Platform.OS === 'web';
+
+const resolveOAuthRedirectUrl = (): string => {
+  if (Platform.OS !== 'web') {
+    return Linking.createURL('auth/callback');
+  }
+
+  const webLocation =
+    typeof globalThis !== 'undefined' && 'location' in globalThis
+      ? (globalThis as { location?: { origin?: string } }).location
+      : undefined;
+
+  return `${webLocation?.origin ?? ''}/auth/callback`;
+};
 
 const isMobileAuthUser = (value: unknown): value is MobileAuthUser => {
   if (!value || typeof value !== 'object') {
@@ -164,6 +180,23 @@ const fetchCurrentMobileUser = async (): Promise<MobileSessionSnapshot> => {
     user: response.authenticated ? response.user : null,
   };
 };
+
+async function fetchMobileUserWithBearerToken(accessToken: string): Promise<MobileAuthUser> {
+  const response = await apiFetch<{ authenticated: boolean; user: MobileAuthUser | null }>(
+    '/v1/auth/session',
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    },
+  );
+
+  if (!response.authenticated || !response.user) {
+    throw new Error('Secure sign-in completed without a user session');
+  }
+
+  return response.user;
+}
 
 const readStoredMobileSessionRecord = async (): Promise<StoredMobileSession | null> => {
   const storedSession = await authSessionStorage.getItem(MOBILE_AUTH_STORAGE_KEY);
@@ -278,6 +311,76 @@ export async function loginMobileUser(input: {
 
   await persistMobileSession(response);
   return createSessionSnapshot(response);
+}
+
+export async function loginMobileUserWithGoogle(): Promise<MobileAuthResponse> {
+  assertSupabaseConfigured();
+
+  const redirectTo = resolveOAuthRedirectUrl();
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo,
+      skipBrowserRedirect: true,
+      queryParams: {
+        access_type: 'offline',
+        prompt: 'select_account',
+      },
+    },
+  });
+
+  if (error) {
+    throw new Error(error.message || 'Google sign-in is not available right now.');
+  }
+
+  if (!data.url) {
+    throw new Error('Google sign-in is not configured for this application.');
+  }
+
+  const browserResult = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+  if (browserResult.type !== 'success' || !browserResult.url) {
+    throw new Error('Google sign-in was cancelled.');
+  }
+
+  const parsed = new URL(browserResult.url.replace('#', '?'));
+  const code = parsed.searchParams.get('code') ?? '';
+  let accessToken = parsed.searchParams.get('access_token') ?? '';
+  let refreshToken = parsed.searchParams.get('refresh_token') ?? '';
+
+  if (code && (!accessToken || !refreshToken)) {
+    const { data: exchanged, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+    if (exchangeError) {
+      throw new Error(exchangeError.message || 'Unable to finish Google sign-in.');
+    }
+    accessToken = exchanged.session?.access_token ?? '';
+    refreshToken = exchanged.session?.refresh_token ?? '';
+  }
+
+  if (!accessToken || !refreshToken) {
+    throw new Error('Google sign-in did not return a secure session.');
+  }
+
+  const { error: sessionError } = code
+    ? { error: null }
+    : await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      });
+
+  if (sessionError) {
+    throw new Error(sessionError.message || 'Unable to finish Google sign-in.');
+  }
+
+  const user = await fetchMobileUserWithBearerToken(accessToken);
+  const authResponse: MobileAuthResponse = {
+    accessToken,
+    refreshToken,
+    user,
+    requiresEmailVerification: false,
+  };
+
+  await persistMobileSession(authResponse);
+  return createSessionSnapshot(authResponse);
 }
 
 export async function registerMobileUser(input: RegisterMobileUserInput): Promise<MobileAuthResponse> {

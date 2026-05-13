@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { asyncHandler } from '../../lib/asyncHandler';
 import { validateSchema } from '../../lib/validation';
+import { authenticate } from '../../middleware/authenticate';
 import { requireMobileApiKey } from '../../middleware/requireMobileApiKey';
 import { listContentQuerySchema } from '../content/content.schema';
 import { listPublicContent } from '../content/content.service';
@@ -52,7 +53,13 @@ mobileRouter.get(
 mobileRouter.post(
   '/uploads/signed-url',
   requireMobileApiKey,
+  authenticate,
   asyncHandler(async (req, res) => {
+    if (!req.user) {
+      res.status(401).json({ message: 'Sign in required to upload files.' });
+      return;
+    }
+
     const parsed = validateSchema(signedUploadRequestSchema, req.body);
     const payload = {
       ...parsed,
@@ -61,6 +68,7 @@ mobileRouter.post(
     const result = await requestSignedUploadUrl({
       ...payload,
       channel: 'mobile',
+      requestedByUserId: req.user.sub,
     });
 
     res.status(201).json(result);

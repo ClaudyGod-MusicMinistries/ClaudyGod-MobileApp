@@ -3,8 +3,6 @@ import '../../app/AdminShell.css';
 export default function BootScreen({ brandLogoUrl }) {
   return (
     <section class="cg-boot-root">
-      <div class="cg-orb cg-orb-one" />
-      <div class="cg-orb cg-orb-two" />
       <article class="cg-panel cg-boot-card">
         <div class="cg-logo-box" style={{ width: '78px', height: '78px', borderRadius: '28px' }}>
           <img src={brandLogoUrl} alt="ClaudyGod" style={{ width: '50px', height: '50px' }} />

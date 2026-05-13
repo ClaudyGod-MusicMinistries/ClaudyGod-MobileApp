@@ -2381,6 +2381,7 @@ export default defineComponent({
           onSubmit={handleAuthSubmit}
           onReadValue={readValue}
           onResendVerificationCode={resendVerificationCode}
+          onDismissNotice={clearNotice}
         />
       );
 

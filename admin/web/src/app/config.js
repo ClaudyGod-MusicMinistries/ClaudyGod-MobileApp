@@ -105,11 +105,8 @@ export const API_HOST_LABEL = (() => {
 })();
 
 export function readStoredToken() {
-  try {
-    return localStorage.getItem(ACCESS_TOKEN_KEY) || '';
-  } catch {
-    return '';
-  }
+  clearStoredToken();
+  return '';
 }
 
 export function normalizePreviewUrl(value) {
@@ -133,13 +130,15 @@ export function readStoredMobilePreviewUrl() {
 }
 
 export function storeToken(token) {
+  clearStoredToken();
+  return token ? '' : '';
+}
+
+function clearStoredToken() {
   try {
-    if (token) {
-      localStorage.setItem(ACCESS_TOKEN_KEY, token);
-      return;
-    }
     localStorage.removeItem(ACCESS_TOKEN_KEY);
+    sessionStorage.removeItem(ACCESS_TOKEN_KEY);
   } catch {
-    // Storage can be blocked in strict privacy modes; keep runtime functional.
+    // Storage can be blocked in strict privacy modes; cookie sessions still work.
   }
 }

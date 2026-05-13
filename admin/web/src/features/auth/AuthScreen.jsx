@@ -18,6 +18,7 @@ export default function AuthScreen(props) {
     onSubmit,
     onReadValue,
     onResendVerificationCode,
+    onDismissNotice,
   } = props;
 
   const pageTitle = isVerifyMode ? 'Verify your account' : isRegisterMode ? 'Create publisher access' : 'Sign in to Admin Studio';
@@ -29,9 +30,6 @@ export default function AuthScreen(props) {
 
   return (
     <section class="cg-auth-root">
-      <div class="cg-orb cg-orb-one" />
-      <div class="cg-orb cg-orb-two" />
-
       <div class="cg-auth-grid">
         <article class="cg-panel cg-auth-hero">
           <div class="cg-logo-box" style={{ width: '74px', height: '74px', borderRadius: '26px' }}>
@@ -94,7 +92,6 @@ export default function AuthScreen(props) {
           </div>
 
           <div class="cg-stack" style={{ marginTop: '16px' }}>
-            {notice ? <div class={['cg-notice', noticeKind === 'error' ? 'is-error' : '']}>{notice}</div> : null}
             <span class="cg-chip is-success">{publicHealthSummary}</span>
 
             {googleLoginEnabled && !isVerifyMode ? (
@@ -194,6 +191,21 @@ export default function AuthScreen(props) {
           </div>
         </article>
       </div>
+
+      {notice ? (
+        <div class="cg-admin-modal-backdrop" role="presentation" onClick={() => onDismissNotice && onDismissNotice()}>
+          <div class={['cg-admin-modal', noticeKind === 'error' ? 'is-error' : '']} role="dialog" aria-modal="true" aria-live="polite" onClick={(event) => event.stopPropagation()}>
+            <div class="cg-admin-modal-icon">{noticeKind === 'error' ? '!' : 'OK'}</div>
+            <div>
+              <h3>{noticeKind === 'error' ? 'Action needed' : 'Confirmed'}</h3>
+              <p>{notice}</p>
+            </div>
+            <button type="button" class="cg-admin-modal-close" aria-label="Close notice" onClick={() => onDismissNotice && onDismissNotice()}>
+              Close
+            </button>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

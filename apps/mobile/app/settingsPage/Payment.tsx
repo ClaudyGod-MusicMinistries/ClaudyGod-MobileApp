@@ -112,7 +112,7 @@ export default function PaymentScreen() {
             Complete securely
           </CustomText>
           <CustomText variant="body" style={{ color: theme.colors.textSecondary, marginTop: 8 }}>
-            The app will not show a fake payment confirmation. Complete giving through the approved giving route configured for the ministry or contact support for manual assistance.
+            Complete giving through the approved giving route configured for the ministry, or contact support for manual assistance.
           </CustomText>
           <View style={{ gap: 10, marginTop: 16 }}>
             <AppButton title="Contact giving support" onPress={contactGivingTeam} leftIcon={<MaterialIcons name="support-agent" size={18} color={theme.colors.textInverse} />} />
