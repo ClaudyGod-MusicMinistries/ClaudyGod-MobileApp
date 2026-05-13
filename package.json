@@ -22,10 +22,14 @@
     "docker:prod:logs": "docker compose --env-file .env.production -f docker-compose.production.yml logs -f",
     "review:all": "bash ./scripts/review-all.sh",
     "precommit:check": "bash ./scripts/precommit-all-staged.sh",
-    "prepush:check": "bash ./scripts/prepush-all-checks.sh"
+    "prepush:check": "bash ./scripts/prepush-all-checks.sh",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc -p tsconfig.json",
+    "clean": "rm -rf dist"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
-    "@types/node": "^25.3.0"
+    "@types/node": "^25.7.0",
+    "typescript": "^6.0.3"
   }
 }
