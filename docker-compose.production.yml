@@ -3,34 +3,46 @@ name: claudygod-production
 x-backend-env: &backend-env
   NODE_ENV: production
   CLAUDYGOD_ENV: production
+
   API_PORT: 4000
   API_HOST: 0.0.0.0
-  DATABASE_URL: ${DATABASE_URL}
+
+  DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
   DATABASE_SSL: ${DATABASE_SSL:-true}
-  REDIS_URL: redis://redis:6379
-  JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+
+  REDIS_URL: ${REDIS_URL:?REDIS_URL is required}
+
+  JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?JWT_ACCESS_SECRET is required}
+  JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET is required}
   JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-1d}
+  JWT_REFRESH_TTL_DAYS: ${JWT_REFRESH_TTL_DAYS:-30}
+
   BCRYPT_ROUNDS: ${BCRYPT_ROUNDS:-12}
-  CORS_ORIGIN: ${CORS_ORIGIN}
-  MOBILE_API_KEY: ${MOBILE_API_KEY}
-  AUTH_PUBLIC_BASE_URL: ${AUTH_PUBLIC_BASE_URL}
+  CORS_ORIGIN: ${CORS_ORIGIN:?CORS_ORIGIN is required}
+  MOBILE_API_KEY: ${MOBILE_API_KEY:?MOBILE_API_KEY is required}
+
+  AUTH_PUBLIC_BASE_URL: ${AUTH_PUBLIC_BASE_URL:?AUTH_PUBLIC_BASE_URL is required}
   AUTH_VERIFY_EMAIL_PATH: ${AUTH_VERIFY_EMAIL_PATH:-/verify-email}
   AUTH_RESET_PASSWORD_PATH: ${AUTH_RESET_PASSWORD_PATH:-/reset-password}
   AUTH_SIGN_IN_PATH: ${AUTH_SIGN_IN_PATH:-/sign-in}
   AUTH_ACCOUNT_REVIEW_PATH: ${AUTH_ACCOUNT_REVIEW_PATH:-/settings/account}
   AUTH_SESSION_COOKIE_NAME: ${AUTH_SESSION_COOKIE_NAME:-claudygod_session}
+  AUTH_REFRESH_COOKIE_NAME: ${AUTH_REFRESH_COOKIE_NAME:-claudygod_refresh_session}
   AUTH_VERIFICATION_TOKEN_TTL_MINUTES: ${AUTH_VERIFICATION_TOKEN_TTL_MINUTES:-1440}
   AUTH_PASSWORD_RESET_TOKEN_TTL_MINUTES: ${AUTH_PASSWORD_RESET_TOKEN_TTL_MINUTES:-30}
   AUTH_REQUIRE_EMAIL_VERIFICATION: ${AUTH_REQUIRE_EMAIL_VERIFICATION:-true}
-  SUPABASE_URL: ${SUPABASE_URL}
-  SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+
+  SUPABASE_URL: ${SUPABASE_URL:?SUPABASE_URL is required}
+  SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:?SUPABASE_SERVICE_ROLE_KEY is required}
   SUPABASE_STORAGE_BUCKET: ${SUPABASE_STORAGE_BUCKET:-mobile-uploads}
-  MAIL_FROM: ${MAIL_FROM}
-  MAIL_REPLY_TO: ${MAIL_REPLY_TO}
+
+  MAIL_FROM: ${MAIL_FROM:?MAIL_FROM is required}
+  MAIL_REPLY_TO: ${MAIL_REPLY_TO:-}
   EMAIL_BRAND_NAME: ${EMAIL_BRAND_NAME:-ClaudyGod}
   EMAIL_SUPPORT_EMAIL: ${EMAIL_SUPPORT_EMAIL:-}
   EMAIL_SUPPORT_URL: ${EMAIL_SUPPORT_URL:-}
   ADMIN_ALERT_EMAILS: ${ADMIN_ALERT_EMAILS:-}
+
   SMTP_PROVIDER: ${SMTP_PROVIDER:-postfix}
   SMTP_HOST: ${SMTP_HOST:-postfix-relay}
   SMTP_PORT: ${SMTP_PORT:-25}
@@ -46,20 +58,26 @@ x-backend-env: &backend-env
   SMTP_GREETING_TIMEOUT_MS: ${SMTP_GREETING_TIMEOUT_MS:-30000}
   SMTP_REQUIRE_TLS: ${SMTP_REQUIRE_TLS:-false}
   SMTP_TLS_REJECT_UNAUTHORIZED: ${SMTP_TLS_REJECT_UNAUTHORIZED:-true}
+
   YOUTUBE_API_KEY: ${YOUTUBE_API_KEY:-}
   YOUTUBE_CHANNEL_ID: ${YOUTUBE_CHANNEL_ID:-}
   YOUTUBE_MAX_RESULTS: ${YOUTUBE_MAX_RESULTS:-12}
+
   ADMIN_SIGNUP_CODE: ${ADMIN_SIGNUP_CODE:-}
-  SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL}
-  SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD}
+  SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:?SEED_ADMIN_EMAIL is required}
+  SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:?SEED_ADMIN_PASSWORD is required}
   SEED_ADMIN_DISPLAY_NAME: ${SEED_ADMIN_DISPLAY_NAME:-Claudy Admin}
   SEED_ADMIN_ON_BOOT: ${SEED_ADMIN_ON_BOOT:-false}
 
 services:
+  # IMPORTANT:
+  # If you already run shared_traefik on this VPS, do not start this service.
+  # Start only: redis postfix-relay api worker admin-web mobile-web
   traefik:
     image: traefik:v3.6
-    container_name: claudygod-production-traefik-1
     restart: unless-stopped
+    profiles:
+      - standalone-traefik
     security_opt:
       - no-new-privileges:true
     environment:
@@ -69,7 +87,7 @@ services:
       - "443:443"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./ops/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./infrastructure/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
       - traefik_letsencrypt:/letsencrypt
     healthcheck:
       test: ["CMD", "traefik", "healthcheck", "--ping"]
@@ -84,18 +102,27 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: claudygod-production-redis-1
     restart: unless-stopped
-    command: ["redis-server", "--appendonly", "yes", "--save", "60", "1000"]
+    command:
+      - sh
+      - -c
+      - |
+        redis-server \
+          --appendonly yes \
+          --save 60 1000 \
+          --requirepass "$${REDIS_PASSWORD}"
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
     security_opt:
       - no-new-privileges:true
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli -a \"$${REDIS_PASSWORD}\" ping | grep PONG"]
       interval: 10s
       timeout: 5s
       retries: 10
+      start_period: 10s
     dns:
       - 1.1.1.1
       - 8.8.8.8
@@ -104,34 +131,32 @@ services:
 
   postfix-relay:
     build:
-      context: ./ops/postfix
-    container_name: claudygod-production-postfix-relay-1
+      context: ./infrastructure/postfix
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
     environment:
-      POSTFIX_MYHOSTNAME: ${POSTFIX_MYHOSTNAME}
-      POSTFIX_RELAY_HOST: ${POSTFIX_RELAY_HOST}
+      POSTFIX_MYHOSTNAME: ${POSTFIX_MYHOSTNAME:?POSTFIX_MYHOSTNAME is required}
+      POSTFIX_RELAY_HOST: ${POSTFIX_RELAY_HOST:?POSTFIX_RELAY_HOST is required}
       POSTFIX_RELAY_PORT: ${POSTFIX_RELAY_PORT:-587}
-      POSTFIX_SMTP_USERNAME: ${POSTFIX_SMTP_USERNAME}
-      POSTFIX_SMTP_PASSWORD: ${POSTFIX_SMTP_PASSWORD}
+      POSTFIX_SMTP_USERNAME: ${POSTFIX_SMTP_USERNAME:?POSTFIX_SMTP_USERNAME is required}
+      POSTFIX_SMTP_PASSWORD: ${POSTFIX_SMTP_PASSWORD:?POSTFIX_SMTP_PASSWORD is required}
     healthcheck:
       test: ["CMD-SHELL", "postfix status >/dev/null 2>&1"]
       interval: 30s
       timeout: 5s
       retries: 5
+      start_period: 10s
     dns:
       - 1.1.1.1
       - 8.8.8.8
     networks:
       - internal
-      - edge
 
   api:
     build:
       context: ./services/api
       dockerfile: Dockerfile
-    container_name: claudygod-production-api-1
     restart: unless-stopped
     init: true
     security_opt:
@@ -154,7 +179,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 45s
+      start_period: 60s
     dns:
       - 1.1.1.1
       - 8.8.8.8
@@ -164,27 +189,26 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=${TRAEFIK_PUBLIC_NETWORK:-traefik-public}
-      - traefik.http.routers.api.rule=Host(`${API_DOMAIN}`)
-      - traefik.http.routers.api.entrypoints=websecure
-      - traefik.http.routers.api.tls=true
-      - traefik.http.routers.api.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-letsencrypt}
-      - traefik.http.routers.api.middlewares=api-compress,api-headers
-      - traefik.http.middlewares.api-compress.compress=true
-      - traefik.http.middlewares.api-headers.headers.contentTypeNosniff=true
-      - traefik.http.middlewares.api-headers.headers.browserXssFilter=true
-      - traefik.http.middlewares.api-headers.headers.frameDeny=true
-      - traefik.http.middlewares.api-headers.headers.referrerPolicy=strict-origin-when-cross-origin
-      - traefik.http.middlewares.api-headers.headers.permissionsPolicy=camera=(), microphone=(), geolocation=()
-      - traefik.http.middlewares.api-headers.headers.stsSeconds=31536000
-      - traefik.http.middlewares.api-headers.headers.stsIncludeSubdomains=true
-      - traefik.http.middlewares.api-headers.headers.stsPreload=true
-      - traefik.http.services.api.loadbalancer.server.port=4000
+      - traefik.http.routers.claudygod-api.rule=Host(`${API_DOMAIN}`)
+      - traefik.http.routers.claudygod-api.entrypoints=websecure
+      - traefik.http.routers.claudygod-api.tls=true
+      - traefik.http.routers.claudygod-api.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-letsencrypt}
+      - traefik.http.routers.claudygod-api.middlewares=claudygod-api-compress,claudygod-api-headers
+      - traefik.http.middlewares.claudygod-api-compress.compress=true
+      - traefik.http.middlewares.claudygod-api-headers.headers.contentTypeNosniff=true
+      - traefik.http.middlewares.claudygod-api-headers.headers.browserXssFilter=true
+      - traefik.http.middlewares.claudygod-api-headers.headers.frameDeny=true
+      - traefik.http.middlewares.claudygod-api-headers.headers.referrerPolicy=strict-origin-when-cross-origin
+      - traefik.http.middlewares.claudygod-api-headers.headers.permissionsPolicy=camera=(), microphone=(), geolocation=()
+      - traefik.http.middlewares.claudygod-api-headers.headers.stsSeconds=31536000
+      - traefik.http.middlewares.claudygod-api-headers.headers.stsIncludeSubdomains=true
+      - traefik.http.middlewares.claudygod-api-headers.headers.stsPreload=true
+      - traefik.http.services.claudygod-api.loadbalancer.server.port=4000
 
   worker:
     build:
       context: ./services/api
       dockerfile: Dockerfile
-    container_name: claudygod-production-worker-1
     restart: unless-stopped
     command: ["node", "dist/worker.js"]
     init: true
@@ -204,17 +228,15 @@ services:
       - 8.8.8.8
     networks:
       - internal
-      - edge
 
   admin-web:
     build:
-      context: ./admin/web
+      context: ./apps/admin-web
       dockerfile: Dockerfile
       args:
-        VITE_API_URL: ${VITE_API_URL}
+        VITE_API_URL: ${VITE_API_URL:?VITE_API_URL is required}
         VITE_GOOGLE_LOGIN_URL: ${VITE_GOOGLE_LOGIN_URL:-}
         VITE_MOBILE_PREVIEW_URL: ${VITE_MOBILE_PREVIEW_URL:-}
-    container_name: claudygod-production-admin-web-1
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
@@ -225,6 +247,7 @@ services:
       interval: 30s
       timeout: 5s
       retries: 5
+      start_period: 20s
     dns:
       - 1.1.1.1
       - 8.8.8.8
@@ -233,21 +256,21 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=${TRAEFIK_PUBLIC_NETWORK:-traefik-public}
-      - traefik.http.routers.admin.rule=Host(`${ADMIN_DOMAIN}`)
-      - traefik.http.routers.admin.entrypoints=websecure
-      - traefik.http.routers.admin.tls=true
-      - traefik.http.routers.admin.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-letsencrypt}
-      - traefik.http.routers.admin.middlewares=admin-compress,admin-headers
-      - traefik.http.middlewares.admin-compress.compress=true
-      - traefik.http.middlewares.admin-headers.headers.contentTypeNosniff=true
-      - traefik.http.middlewares.admin-headers.headers.browserXssFilter=true
-      - traefik.http.middlewares.admin-headers.headers.frameDeny=true
-      - traefik.http.middlewares.admin-headers.headers.referrerPolicy=strict-origin-when-cross-origin
-      - traefik.http.middlewares.admin-headers.headers.permissionsPolicy=camera=(), microphone=(), geolocation=()
-      - traefik.http.middlewares.admin-headers.headers.stsSeconds=31536000
-      - traefik.http.middlewares.admin-headers.headers.stsIncludeSubdomains=true
-      - traefik.http.middlewares.admin-headers.headers.stsPreload=true
-      - traefik.http.services.admin.loadbalancer.server.port=80
+      - traefik.http.routers.claudygod-admin.rule=Host(`${ADMIN_DOMAIN}`)
+      - traefik.http.routers.claudygod-admin.entrypoints=websecure
+      - traefik.http.routers.claudygod-admin.tls=true
+      - traefik.http.routers.claudygod-admin.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-letsencrypt}
+      - traefik.http.routers.claudygod-admin.middlewares=claudygod-admin-compress,claudygod-admin-headers
+      - traefik.http.middlewares.claudygod-admin-compress.compress=true
+      - traefik.http.middlewares.claudygod-admin-headers.headers.contentTypeNosniff=true
+      - traefik.http.middlewares.claudygod-admin-headers.headers.browserXssFilter=true
+      - traefik.http.middlewares.claudygod-admin-headers.headers.frameDeny=true
+      - traefik.http.middlewares.claudygod-admin-headers.headers.referrerPolicy=strict-origin-when-cross-origin
+      - traefik.http.middlewares.claudygod-admin-headers.headers.permissionsPolicy=camera=(), microphone=(), geolocation=()
+      - traefik.http.middlewares.claudygod-admin-headers.headers.stsSeconds=31536000
+      - traefik.http.middlewares.claudygod-admin-headers.headers.stsIncludeSubdomains=true
+      - traefik.http.middlewares.claudygod-admin-headers.headers.stsPreload=true
+      - traefik.http.services.claudygod-admin.loadbalancer.server.port=80
 
   mobile-web:
     build:
@@ -255,11 +278,10 @@ services:
       dockerfile: Dockerfile.prod
       args:
         CLAUDYGOD_ENV: production
-        EXPO_PUBLIC_API_URL: ${EXPO_PUBLIC_API_URL}
-        EXPO_PUBLIC_SUPABASE_URL: ${EXPO_PUBLIC_SUPABASE_URL}
-        EXPO_PUBLIC_SUPABASE_KEY: ${EXPO_PUBLIC_SUPABASE_KEY}
+        EXPO_PUBLIC_API_URL: ${EXPO_PUBLIC_API_URL:?EXPO_PUBLIC_API_URL is required}
+        EXPO_PUBLIC_SUPABASE_URL: ${EXPO_PUBLIC_SUPABASE_URL:?EXPO_PUBLIC_SUPABASE_URL is required}
+        EXPO_PUBLIC_SUPABASE_KEY: ${EXPO_PUBLIC_SUPABASE_KEY:?EXPO_PUBLIC_SUPABASE_KEY is required}
         EAS_PROJECT_ID: ${EAS_PROJECT_ID:-}
-    container_name: claudygod-production-mobile-web-1
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
@@ -270,6 +292,7 @@ services:
       interval: 30s
       timeout: 5s
       retries: 5
+      start_period: 20s
     dns:
       - 1.1.1.1
       - 8.8.8.8
@@ -278,20 +301,20 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=${TRAEFIK_PUBLIC_NETWORK:-traefik-public}
-      - traefik.http.routers.mobile.rule=Host(`${APP_DOMAIN}`)
-      - traefik.http.routers.mobile.entrypoints=websecure
-      - traefik.http.routers.mobile.tls=true
-      - traefik.http.routers.mobile.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-letsencrypt}
-      - traefik.http.routers.mobile.middlewares=mobile-compress,mobile-headers
-      - traefik.http.middlewares.mobile-compress.compress=true
-      - traefik.http.middlewares.mobile-headers.headers.contentTypeNosniff=true
-      - traefik.http.middlewares.mobile-headers.headers.browserXssFilter=true
-      - traefik.http.middlewares.mobile-headers.headers.referrerPolicy=strict-origin-when-cross-origin
-      - traefik.http.middlewares.mobile-headers.headers.permissionsPolicy=camera=(), microphone=(), geolocation=()
-      - traefik.http.middlewares.mobile-headers.headers.stsSeconds=31536000
-      - traefik.http.middlewares.mobile-headers.headers.stsIncludeSubdomains=true
-      - traefik.http.middlewares.mobile-headers.headers.stsPreload=true
-      - traefik.http.services.mobile.loadbalancer.server.port=80
+      - traefik.http.routers.claudygod-mobile.rule=Host(`${APP_DOMAIN}`)
+      - traefik.http.routers.claudygod-mobile.entrypoints=websecure
+      - traefik.http.routers.claudygod-mobile.tls=true
+      - traefik.http.routers.claudygod-mobile.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-letsencrypt}
+      - traefik.http.routers.claudygod-mobile.middlewares=claudygod-mobile-compress,claudygod-mobile-headers
+      - traefik.http.middlewares.claudygod-mobile-compress.compress=true
+      - traefik.http.middlewares.claudygod-mobile-headers.headers.contentTypeNosniff=true
+      - traefik.http.middlewares.claudygod-mobile-headers.headers.browserXssFilter=true
+      - traefik.http.middlewares.claudygod-mobile-headers.headers.referrerPolicy=strict-origin-when-cross-origin
+      - traefik.http.middlewares.claudygod-mobile-headers.headers.permissionsPolicy=camera=(), microphone=(), geolocation=()
+      - traefik.http.middlewares.claudygod-mobile-headers.headers.stsSeconds=31536000
+      - traefik.http.middlewares.claudygod-mobile-headers.headers.stsIncludeSubdomains=true
+      - traefik.http.middlewares.claudygod-mobile-headers.headers.stsPreload=true
+      - traefik.http.services.claudygod-mobile.loadbalancer.server.port=80
 
 volumes:
   redis_data:

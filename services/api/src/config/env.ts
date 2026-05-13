@@ -7,8 +7,10 @@ const runtimeEnv =
   process.env.CLAUDYGOD_ENV === 'production' || process.env.NODE_ENV === 'production'
     ? 'production'
     : 'development';
+
 const repoRoot = path.resolve(__dirname, '../../../../');
 const envFileName = `.env.${runtimeEnv}`;
+
 const envCandidates = [
   path.resolve(process.cwd(), envFileName),
   path.resolve(process.cwd(), '../..', envFileName),
@@ -24,8 +26,7 @@ for (const candidate of envCandidates) {
 
 const looksLikeJwtToken = (value: string): boolean => {
   const parts = value.split('.');
-  if (parts.length !== 3) return false;
-  return parts.every((part) => /^[A-Za-z0-9_-]+$/.test(part) && part.length > 0);
+  return parts.length === 3 && parts.every((part) => /^[A-Za-z0-9_-]+$/.test(part) && part.length > 0);
 };
 
 const toBoolean = (fallback: boolean) =>
@@ -63,9 +64,8 @@ const optionalUrl = () =>
 
 const isPrivateOrLocalHostname = (hostname: string): boolean => {
   const normalized = hostname.trim().toLowerCase();
-  if (!normalized) {
-    return true;
-  }
+
+  if (!normalized) return true;
 
   if (
     normalized === 'localhost' ||
@@ -78,17 +78,9 @@ const isPrivateOrLocalHostname = (hostname: string): boolean => {
     return true;
   }
 
-  if (normalized.endsWith('.local')) {
-    return true;
-  }
-
-  if (/^192\.168\.\d{1,3}\.\d{1,3}$/.test(normalized)) {
-    return true;
-  }
-
-  if (/^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(normalized)) {
-    return true;
-  }
+  if (normalized.endsWith('.local')) return true;
+  if (/^192\.168\.\d{1,3}\.\d{1,3}$/.test(normalized)) return true;
+  if (/^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(normalized)) return true;
 
   const private172 = normalized.match(/^172\.(\d{1,3})\.\d{1,3}\.\d{1,3}$/);
   if (private172) {
@@ -101,13 +93,9 @@ const isPrivateOrLocalHostname = (hostname: string): boolean => {
 
 const isPlaceholderHostname = (hostname: string): boolean => {
   const normalized = hostname.trim().toLowerCase();
-  if (!normalized) {
-    return true;
-  }
 
-  if (normalized.endsWith('.example')) {
-    return true;
-  }
+  if (!normalized) return true;
+  if (normalized.endsWith('.example')) return true;
 
   return ['example.com', 'your-domain.com'].some(
     (candidate) => normalized === candidate || normalized.endsWith(`.${candidate}`),
@@ -115,17 +103,39 @@ const isPlaceholderHostname = (hostname: string): boolean => {
 };
 
 const isPlaceholderSupabaseHost = (value: string): boolean =>
-  /your-project\.supabase\.co/i.test(value) || /your-project/i.test(value);
+  /your-project/i.test(value) ||
+  /YOUR_PROJECT/i.test(value) ||
+  /YOUR_PROJECT_REF/i.test(value) ||
+  /your-project\.supabase\.co/i.test(value);
 
 const parseDatabaseUrl = (
   value: string,
-): { hostname: string; username: string; searchParams: URLSearchParams } | null => {
+): { protocol: string; hostname: string; username: string; password: string; searchParams: URLSearchParams } | null => {
   try {
     const parsed = new URL(value);
+
     return {
+      protocol: parsed.protocol,
       hostname: parsed.hostname,
       username: decodeURIComponent(parsed.username),
+      password: decodeURIComponent(parsed.password),
       searchParams: parsed.searchParams,
+    };
+  } catch {
+    return null;
+  }
+};
+
+const parseRedisUrl = (
+  value: string,
+): { protocol: string; hostname: string; password: string } | null => {
+  try {
+    const parsed = new URL(value);
+
+    return {
+      protocol: parsed.protocol,
+      hostname: parsed.hostname,
+      password: decodeURIComponent(parsed.password),
     };
   } catch {
     return null;
@@ -135,15 +145,21 @@ const parseDatabaseUrl = (
 const envSchema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+    CLAUDYGOD_ENV: z.enum(['development', 'test', 'production']).optional().default('development'),
+
     API_PORT: z.coerce.number().int().min(1).max(65535).default(4000),
     API_HOST: z.string().trim().min(1).default('0.0.0.0'),
+
     DATABASE_URL: z.string().trim().min(1),
     DATABASE_SSL: toBoolean(false),
+
     REDIS_URL: z.string().trim().min(1),
+
     JWT_ACCESS_SECRET: z.string().min(32, 'JWT_ACCESS_SECRET must contain at least 32 characters'),
     JWT_ACCESS_TTL: z.string().trim().min(1).default('1d'),
-    JWT_REFRESH_SECRET: z.string().trim().default(''),
+    JWT_REFRESH_SECRET: z.string().trim().min(32, 'JWT_REFRESH_SECRET must contain at least 32 characters'),
     JWT_REFRESH_TTL_DAYS: z.coerce.number().int().min(1).max(180).default(30),
+
     BCRYPT_ROUNDS: z.coerce.number().int().min(10).max(15).default(12),
     CORS_ORIGIN: z.string().trim().default(''),
 
@@ -162,7 +178,7 @@ const envSchema = z
     SUPABASE_SERVICE_ROLE_KEY: z.string().optional().default(''),
     SUPABASE_STORAGE_BUCKET: z.string().trim().min(3).max(120).default('mobile-uploads'),
 
-    MOBILE_API_KEY: z.string().min(8).default('dev-mobile-api-key'),
+    MOBILE_API_KEY: z.string().min(16, 'MOBILE_API_KEY must contain at least 16 characters'),
 
     MAIL_FROM: z.string().default('ClaudyGod <noreply@claudygod.example>'),
     MAIL_REPLY_TO: z.string().optional().default(''),
@@ -170,6 +186,7 @@ const envSchema = z
     EMAIL_SUPPORT_EMAIL: z.string().optional().default(''),
     EMAIL_SUPPORT_URL: optionalUrl(),
     ADMIN_ALERT_EMAILS: z.string().default(''),
+
     SMTP_PROVIDER: z.enum(['generic', 'postfix', 'brevo']).default('generic'),
     SMTP_HOST: z.string().optional().default(''),
     SMTP_PORT: z.coerce.number().int().min(1).max(65535).default(587),
@@ -195,12 +212,14 @@ const envSchema = z
       }),
     YOUTUBE_CHANNEL_ID: z.string().optional().default(''),
     YOUTUBE_MAX_RESULTS: z.coerce.number().int().min(1).max(50).default(12),
+
     ADMIN_SIGNUP_CODE: z.string().optional().default(''),
 
-    SEED_ADMIN_EMAIL: z.string().email().default('admin@example.com'),
-    SEED_ADMIN_PASSWORD: z.string().min(8).default('ChangeMe123!'),
+    SEED_ADMIN_EMAIL: z.string().email(),
+    SEED_ADMIN_PASSWORD: z.string().min(12, 'SEED_ADMIN_PASSWORD must contain at least 12 characters'),
     SEED_ADMIN_DISPLAY_NAME: z.string().trim().min(2).max(80).default('Claudy Admin'),
     SEED_ADMIN_ON_BOOT: toBoolean(false),
+
     AI_PROVIDER_NAME: z.string().trim().min(2).max(80).default('Integrated AI'),
     AI_PROVIDER_URL: optionalUrl(),
     AI_PROVIDER_API_KEY: z.string().optional().default(''),
@@ -212,12 +231,23 @@ const envSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['JWT_ACCESS_SECRET'],
-        message:
-          'JWT_ACCESS_SECRET must be a signing secret (random string), not a JWT token string',
+        message: 'JWT_ACCESS_SECRET must be a signing secret, not a JWT token string',
       });
     }
 
-    if (value.ADMIN_SIGNUP_CODE && value.ADMIN_SIGNUP_CODE.trim().length > 0 && value.ADMIN_SIGNUP_CODE.trim().length < 12) {
+    if (looksLikeJwtToken(value.JWT_REFRESH_SECRET)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['JWT_REFRESH_SECRET'],
+        message: 'JWT_REFRESH_SECRET must be a signing secret, not a JWT token string',
+      });
+    }
+
+    if (
+      value.ADMIN_SIGNUP_CODE &&
+      value.ADMIN_SIGNUP_CODE.trim().length > 0 &&
+      value.ADMIN_SIGNUP_CODE.trim().length < 12
+    ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['ADMIN_SIGNUP_CODE'],
@@ -225,224 +255,238 @@ const envSchema = z
       });
     }
 
-    if (value.NODE_ENV === 'production') {
-      const parsedDatabaseUrl = parseDatabaseUrl(value.DATABASE_URL);
-      const publicOrigins = value.CORS_ORIGIN
-        .split(',')
-        .map((item) => item.trim())
-        .filter(Boolean);
+    if (value.NODE_ENV !== 'production') return;
 
-      if (value.DATABASE_URL.includes('replace-with-supabase-db-password')) {
+    const parsedDatabaseUrl = parseDatabaseUrl(value.DATABASE_URL);
+    const parsedRedisUrl = parseRedisUrl(value.REDIS_URL);
+
+    const publicOrigins = value.CORS_ORIGIN
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
+
+    if (!parsedDatabaseUrl) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['DATABASE_URL'],
+        message: 'DATABASE_URL must be a valid Postgres connection string in production',
+      });
+    } else {
+      if (!['postgresql:', 'postgres:'].includes(parsedDatabaseUrl.protocol)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['DATABASE_URL'],
-          message: 'DATABASE_URL must use the real Supabase Postgres password in production',
+          message: 'DATABASE_URL must use postgres:// or postgresql://',
         });
       }
 
-      if (isPlaceholderSupabaseHost(value.DATABASE_URL) || value.DATABASE_URL.includes('ci-password')) {
+      if (!parsedDatabaseUrl.password || parsedDatabaseUrl.password.includes('YOUR-PASSWORD')) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['DATABASE_URL'],
-          message: 'DATABASE_URL must point to your real Supabase Postgres host in production',
+          message: 'DATABASE_URL must include the real database password',
         });
       }
 
-      if (!parsedDatabaseUrl) {
+      if (
+        parsedDatabaseUrl.hostname.includes('.pooler.supabase.com') &&
+        parsedDatabaseUrl.username === 'postgres'
+      ) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['DATABASE_URL'],
-          message: 'DATABASE_URL must be a valid Postgres connection string in production',
+          message:
+            'Supabase pooler connections must use postgres.<project-ref>, not plain postgres',
         });
-      } else {
-        if (
-          parsedDatabaseUrl.hostname.includes('.pooler.supabase.com') &&
-          parsedDatabaseUrl.username === 'postgres'
-        ) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            path: ['DATABASE_URL'],
-            message:
-              'Supabase pooler connections must use the project-scoped username from the Connect dialog, for example postgres.<project-ref>, not plain postgres',
-          });
-        }
-
-        if (
-          parsedDatabaseUrl.hostname.includes('.pooler.supabase.com') &&
-          !parsedDatabaseUrl.searchParams.has('prefer_simple_protocol')
-        ) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            path: ['DATABASE_URL'],
-            message:
-              'Supabase pooler connections should include prefer_simple_protocol=true to avoid prepared statement issues',
-          });
-        }
       }
 
-      if (!value.SUPABASE_URL) {
+      if (
+        parsedDatabaseUrl.hostname.includes('.pooler.supabase.com') &&
+        !parsedDatabaseUrl.searchParams.has('prefer_simple_protocol')
+      ) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          path: ['SUPABASE_URL'],
-          message: 'SUPABASE_URL is required in production',
+          path: ['DATABASE_URL'],
+          message:
+            'Supabase pooler connections should include prefer_simple_protocol=true',
         });
       }
+    }
 
-      if (value.SUPABASE_URL && isPlaceholderSupabaseHost(value.SUPABASE_URL)) {
+    if (
+      value.DATABASE_URL.includes('replace-with') ||
+      value.DATABASE_URL.includes('YOUR_') ||
+      value.DATABASE_URL.includes('[YOUR-PASSWORD]') ||
+      isPlaceholderSupabaseHost(value.DATABASE_URL)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['DATABASE_URL'],
+        message: 'DATABASE_URL must point to the real production database',
+      });
+    }
+
+    if (!parsedRedisUrl) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['REDIS_URL'],
+        message: 'REDIS_URL must be a valid Redis connection string',
+      });
+    } else {
+      if (!['redis:', 'rediss:'].includes(parsedRedisUrl.protocol)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          path: ['SUPABASE_URL'],
-          message: 'SUPABASE_URL must use your real Supabase project URL in production',
+          path: ['REDIS_URL'],
+          message: 'REDIS_URL must use redis:// or rediss://',
         });
       }
 
-      if (!value.SUPABASE_SERVICE_ROLE_KEY) {
+      if (parsedRedisUrl.hostname === 'localhost' || parsedRedisUrl.hostname === '127.0.0.1') {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          path: ['SUPABASE_SERVICE_ROLE_KEY'],
-          message: 'SUPABASE_SERVICE_ROLE_KEY is required in production',
+          path: ['REDIS_URL'],
+          message: 'REDIS_URL must not point to localhost in Docker production',
         });
       }
 
-      if (!value.AUTH_PUBLIC_BASE_URL) {
+      if (!parsedRedisUrl.password) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['REDIS_URL'],
+          message: 'REDIS_URL must include a Redis password in production',
+        });
+      }
+    }
+
+    if (!value.SUPABASE_URL || isPlaceholderSupabaseHost(value.SUPABASE_URL)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['SUPABASE_URL'],
+        message: 'SUPABASE_URL must use your real Supabase project URL in production',
+      });
+    }
+
+    if (!value.SUPABASE_SERVICE_ROLE_KEY || value.SUPABASE_SERVICE_ROLE_KEY.includes('YOUR_')) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['SUPABASE_SERVICE_ROLE_KEY'],
+        message: 'SUPABASE_SERVICE_ROLE_KEY is required in production',
+      });
+    }
+
+    if (!value.AUTH_PUBLIC_BASE_URL || !value.AUTH_PUBLIC_BASE_URL.startsWith('https://')) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['AUTH_PUBLIC_BASE_URL'],
+        message: 'AUTH_PUBLIC_BASE_URL must use https:// in production',
+      });
+    }
+
+    try {
+      const authPublicBaseUrl = new URL(value.AUTH_PUBLIC_BASE_URL);
+      if (
+        isPrivateOrLocalHostname(authPublicBaseUrl.hostname) ||
+        isPlaceholderHostname(authPublicBaseUrl.hostname)
+      ) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['AUTH_PUBLIC_BASE_URL'],
-          message: 'AUTH_PUBLIC_BASE_URL is required in production',
+          message: 'AUTH_PUBLIC_BASE_URL must use your real public app domain',
         });
       }
+    } catch {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['AUTH_PUBLIC_BASE_URL'],
+        message: 'AUTH_PUBLIC_BASE_URL must be a valid public URL',
+      });
+    }
 
-      if (value.AUTH_PUBLIC_BASE_URL && !value.AUTH_PUBLIC_BASE_URL.startsWith('https://')) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ['AUTH_PUBLIC_BASE_URL'],
-          message: 'AUTH_PUBLIC_BASE_URL must use https:// in production',
-        });
-      }
+    if (publicOrigins.length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['CORS_ORIGIN'],
+        message: 'CORS_ORIGIN must include your public admin and app domains',
+      });
+    }
 
-      try {
-        const authPublicBaseUrl = new URL(value.AUTH_PUBLIC_BASE_URL);
-        if (isPrivateOrLocalHostname(authPublicBaseUrl.hostname)) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            path: ['AUTH_PUBLIC_BASE_URL'],
-            message: 'AUTH_PUBLIC_BASE_URL cannot use localhost or a private host in production',
-          });
+    if (
+      publicOrigins.some((origin) => {
+        try {
+          const { hostname } = new URL(origin);
+          return isPrivateOrLocalHostname(hostname) || isPlaceholderHostname(hostname);
+        } catch {
+          return true;
         }
+      })
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['CORS_ORIGIN'],
+        message: 'CORS_ORIGIN cannot include localhost, private hosts, or placeholder domains',
+      });
+    }
 
-        if (isPlaceholderHostname(authPublicBaseUrl.hostname)) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            path: ['AUTH_PUBLIC_BASE_URL'],
-            message: 'AUTH_PUBLIC_BASE_URL must use your real public app domain in production',
-          });
-        }
-      } catch {
-        if (value.AUTH_PUBLIC_BASE_URL) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            path: ['AUTH_PUBLIC_BASE_URL'],
-            message: 'AUTH_PUBLIC_BASE_URL must be a valid public URL in production',
-          });
-        }
-      }
+    if (
+      value.JWT_ACCESS_SECRET.includes('replace') ||
+      value.JWT_ACCESS_SECRET.toLowerCase().includes('changeme')
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['JWT_ACCESS_SECRET'],
+        message: 'JWT_ACCESS_SECRET must be rotated before production',
+      });
+    }
 
-      if (publicOrigins.length === 0) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ['CORS_ORIGIN'],
-          message: 'CORS_ORIGIN must include your public admin and app domains in production',
-        });
-      }
+    if (
+      value.JWT_REFRESH_SECRET.includes('replace') ||
+      value.JWT_REFRESH_SECRET.toLowerCase().includes('changeme') ||
+      value.JWT_REFRESH_SECRET === value.JWT_ACCESS_SECRET
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['JWT_REFRESH_SECRET'],
+        message: 'JWT_REFRESH_SECRET must be unique and rotated before production',
+      });
+    }
 
-      if (
-        publicOrigins.some((origin) => {
-          try {
-            const { hostname } = new URL(origin);
-            return isPrivateOrLocalHostname(hostname) || isPlaceholderHostname(hostname);
-          } catch {
-            return true;
-          }
-        })
-      ) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ['CORS_ORIGIN'],
-          message:
-            'CORS_ORIGIN cannot include localhost, private hosts, or placeholder domains in production',
-        });
-      }
+    if (value.MOBILE_API_KEY === 'dev-mobile-api-key' || value.MOBILE_API_KEY.length < 32) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['MOBILE_API_KEY'],
+        message: 'MOBILE_API_KEY must be a strong non-default secret',
+      });
+    }
 
-      if (
-        value.JWT_ACCESS_SECRET.includes('replace-this') ||
-        value.JWT_ACCESS_SECRET.toLowerCase().includes('changeme')
-      ) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ['JWT_ACCESS_SECRET'],
-          message: 'JWT_ACCESS_SECRET must be rotated before production',
-        });
-      }
+    if (value.AUTH_REQUIRE_EMAIL_VERIFICATION && !value.SMTP_HOST) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['SMTP_HOST'],
+        message: 'SMTP_HOST is required when email verification is enabled',
+      });
+    }
 
-      if (!value.JWT_REFRESH_SECRET || value.JWT_REFRESH_SECRET === value.JWT_ACCESS_SECRET) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ['JWT_REFRESH_SECRET'],
-          message: 'JWT_REFRESH_SECRET must be set separately from JWT_ACCESS_SECRET in production',
-        });
-      }
+    if (
+      value.SMTP_PROVIDER === 'brevo' &&
+      !(
+        (value.SMTP_USER && value.SMTP_PASS) ||
+        (value.POSTFIX_SMTP_USERNAME && value.POSTFIX_SMTP_PASSWORD)
+      )
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['SMTP_USER'],
+        message:
+          'Brevo SMTP requires either SMTP_USER/SMTP_PASS or POSTFIX_SMTP_USERNAME/POSTFIX_SMTP_PASSWORD',
+      });
+    }
 
-      if (
-        value.JWT_REFRESH_SECRET &&
-        (value.JWT_REFRESH_SECRET.includes('replace-this') ||
-          value.JWT_REFRESH_SECRET.toLowerCase().includes('changeme'))
-      ) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ['JWT_REFRESH_SECRET'],
-          message: 'JWT_REFRESH_SECRET must be rotated before production',
-        });
-      }
-
-      if (value.MOBILE_API_KEY === 'dev-mobile-api-key' || value.MOBILE_API_KEY.length < 16) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ['MOBILE_API_KEY'],
-          message: 'MOBILE_API_KEY must be a strong non-default secret in production',
-        });
-      }
-
-      if (value.AUTH_REQUIRE_EMAIL_VERIFICATION && !value.SMTP_HOST) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ['SMTP_HOST'],
-          message:
-            'SMTP_HOST is required in production when AUTH_REQUIRE_EMAIL_VERIFICATION is enabled',
-        });
-      }
-
-      if (
-        value.SMTP_PROVIDER === 'brevo'
-        && !(
-          (value.SMTP_USER && value.SMTP_PASS)
-          || (value.POSTFIX_SMTP_USERNAME && value.POSTFIX_SMTP_PASSWORD)
-        )
-      ) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ['SMTP_USER'],
-          message:
-            'Brevo SMTP requires either SMTP_USER/SMTP_PASS or POSTFIX_SMTP_USERNAME/POSTFIX_SMTP_PASSWORD in production',
-        });
-      }
-
-      if (value.SMTP_PROVIDER === 'postfix' && !value.SMTP_HOST) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ['SMTP_HOST'],
-          message: 'Postfix relay requires SMTP_HOST in production',
-        });
-      }
+    if (value.SMTP_PROVIDER === 'postfix' && !value.SMTP_HOST) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['SMTP_HOST'],
+        message: 'Postfix relay requires SMTP_HOST in production',
+      });
     }
   });
 
@@ -460,19 +504,22 @@ const splitCsv = (value: string): string[] =>
     .filter(Boolean);
 
 const raw = parsedEnv.data;
-const smtpHostConfigured = Boolean(raw.SMTP_HOST || raw.SMTP_PROVIDER === 'brevo');
+
+const smtpHostConfigured = Boolean(raw.SMTP_HOST);
 const smtpAuthConfigured = Boolean(
-  (raw.SMTP_USER && raw.SMTP_PASS)
-    || (raw.SMTP_PROVIDER === 'brevo' && raw.POSTFIX_SMTP_USERNAME && raw.POSTFIX_SMTP_PASSWORD),
+  (raw.SMTP_USER && raw.SMTP_PASS) ||
+    (raw.POSTFIX_SMTP_USERNAME && raw.POSTFIX_SMTP_PASSWORD),
 );
+
 const smtpEnabled =
   raw.SMTP_PROVIDER === 'brevo'
     ? smtpHostConfigured && smtpAuthConfigured
-    : Boolean(raw.SMTP_HOST);
+    : raw.SMTP_PROVIDER === 'postfix'
+      ? Boolean(raw.SMTP_HOST)
+      : Boolean(raw.SMTP_HOST);
 
 export const env = {
   ...raw,
-  JWT_REFRESH_SECRET: raw.JWT_REFRESH_SECRET || raw.JWT_ACCESS_SECRET,
   CORS_ORIGINS: splitCsv(raw.CORS_ORIGIN),
   ADMIN_ALERT_EMAILS_LIST: splitCsv(raw.ADMIN_ALERT_EMAILS),
   SUPABASE_ENABLED: Boolean(raw.SUPABASE_URL && raw.SUPABASE_SERVICE_ROLE_KEY),
