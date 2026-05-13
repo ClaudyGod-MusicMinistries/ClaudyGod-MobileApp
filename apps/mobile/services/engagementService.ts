@@ -1,4 +1,4 @@
-import { apiFetch } from './apiClient';
+import { apiFetchWithMobileSession } from './authService';
 
 export interface EngagementMetrics {
   userId: string;
@@ -65,34 +65,18 @@ export interface CommunityData {
   };
 }
 
-/**
- * Fetch user engagement metrics from the server
- */
-export async function fetchEngagementMetrics(userId?: string): Promise<EngagementMetrics> {
-  const query = userId ? `?userId=${encodeURIComponent(userId)}` : '';
-  return apiFetch<EngagementMetrics>(`/v1/engagement/metrics${query}`);
+export async function fetchEngagementMetrics(): Promise<EngagementMetrics> {
+  return apiFetchWithMobileSession<EngagementMetrics>('/v1/engagement/metrics');
 }
 
-/**
- * Fetch personalized insights from the server
- */
-export async function fetchEngagementInsights(userId?: string): Promise<EngagementInsight[]> {
-  const query = userId ? `?userId=${encodeURIComponent(userId)}` : '';
-  return apiFetch<EngagementInsight[]>(`/v1/engagement/insights${query}`);
+export async function fetchEngagementInsights(): Promise<EngagementInsight[]> {
+  return apiFetchWithMobileSession<EngagementInsight[]>('/v1/engagement/insights');
 }
 
-/**
- * Fetch engagement overview data
- */
-export async function fetchEngagementOverview(userId?: string): Promise<EngagementOverview> {
-  const query = userId ? `?userId=${encodeURIComponent(userId)}` : '';
-  return apiFetch<EngagementOverview>(`/v1/engagement/overview${query}`);
+export async function fetchEngagementOverview(): Promise<EngagementOverview> {
+  return apiFetchWithMobileSession<EngagementOverview>('/v1/engagement/overview');
 }
 
-/**
- * Fetch community data
- */
-export async function fetchCommunityData(userId?: string): Promise<CommunityData> {
-  const query = userId ? `?userId=${encodeURIComponent(userId)}` : '';
-  return apiFetch<CommunityData>(`/v1/engagement/community${query}`);
+export async function fetchCommunityData(): Promise<CommunityData> {
+  return apiFetchWithMobileSession<CommunityData>('/v1/engagement/community');
 }
