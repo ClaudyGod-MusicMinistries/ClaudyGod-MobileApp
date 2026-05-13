@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import nodemailer from 'nodemailer';
 import type SMTPTransport from 'nodemailer/lib/smtp-transport';
 import { env } from '../config/env';
@@ -71,6 +73,20 @@ const transport = env.SMTP_ENABLED && smtpHost
   ? nodemailer.createTransport(smtpOptions)
   : nodemailer.createTransport({ jsonTransport: true });
 
+const LOGO_CID = 'claudygod-logo';
+
+const resolveLogoAssetPath = (): string | null => {
+  const candidates = [
+    path.resolve(process.cwd(), 'assets/ClaudyGoLogo.webp'),
+    path.resolve(process.cwd(), 'src/assets/ClaudyGoLogo.webp'),
+    path.resolve(process.cwd(), '../../apps/mobile/assets/images/ClaudyGoLogo.webp'),
+  ];
+
+  return candidates.find((candidate) => fs.existsSync(candidate)) ?? null;
+};
+
+const logoAssetPath = resolveLogoAssetPath();
+
 export const emailTransportInfo = {
   enabled: env.SMTP_ENABLED && Boolean(smtpHost),
   provider: env.SMTP_PROVIDER,
@@ -113,6 +129,17 @@ export const sendEmail = async (message: EmailMessageInput): Promise<EmailSendRe
     subject: message.subject,
     text: message.text,
     html: message.html,
+    attachments:
+      message.html?.includes(`cid:${LOGO_CID}`) && logoAssetPath
+        ? [
+            {
+              filename: 'ClaudyGoLogo.webp',
+              path: logoAssetPath,
+              cid: LOGO_CID,
+              contentType: 'image/webp',
+            },
+          ]
+        : undefined,
   });
 
   return {

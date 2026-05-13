@@ -2,10 +2,12 @@ import { pool } from '../db/pool';
 import { emailQueue } from '../queues/emailQueue';
 import { env } from '../config/env';
 import {
+  buildGenericEmailTemplate,
   buildPasswordResetTemplate,
   buildProfileUpdatedTemplate,
   buildVerifyEmailTemplate,
   buildWelcomeEmailTemplate,
+  isBrandedEmailHtml,
 } from './emailTemplates';
 
 interface EmailJobInput {
@@ -58,6 +60,16 @@ const buildPublicActionUrl = (
 };
 
 export const queueEmailJob = async (input: EmailJobInput): Promise<void> => {
+  const htmlBody = isBrandedEmailHtml(input.htmlBody)
+    ? input.htmlBody
+    : buildGenericEmailTemplate({
+        subject: input.subject,
+        preview: input.subject,
+        eyebrow: input.templateKey.split('.')[0]?.replace(/-/g, ' ') || 'Notification',
+        title: input.subject,
+        bodyHtml: input.htmlBody,
+      }).html;
+
   const emailInsert = await pool.query<{ id: number }>(
     `INSERT INTO email_jobs (
        provider, template_key, job_type, recipients, subject, text_body, html_body, status, payload
@@ -71,7 +83,7 @@ export const queueEmailJob = async (input: EmailJobInput): Promise<void> => {
       input.recipients,
       input.subject,
       input.textBody,
-      input.htmlBody,
+      htmlBody,
       JSON.stringify(input.payload),
     ],
   );
