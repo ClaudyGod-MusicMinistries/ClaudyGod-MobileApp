@@ -17,15 +17,53 @@ const escapeHtml = (value: string): string =>
 const normalizeUrl = (value: string): string => value.trim();
 
 const brandName = env.EMAIL_BRAND_NAME;
+const brandProductName = `${brandName} Music`;
+const brandedTemplateMarker = 'data-claudygod-email="v2"';
+const logoCid = 'claudygod-logo';
+const logoUrl = typeof env.EMAIL_LOGO_URL === 'string' ? env.EMAIL_LOGO_URL.trim() : '';
 const supportEmail =
   env.EMAIL_SUPPORT_EMAIL ||
   env.ADMIN_ALERT_EMAILS_LIST[0] ||
   env.MAIL_FROM.match(/<([^>]+)>/)?.[1] ||
   '';
+const supportUrl = env.EMAIL_SUPPORT_URL.trim();
 
 const supportFooter = supportEmail
   ? `Need help? Reply to this email or reach us at ${supportEmail}.`
   : 'Need help? Reply to this email and our team will assist you.';
+
+const socialLinks = [
+  { label: 'Facebook', icon: 'f', url: env.EMAIL_FACEBOOK_URL },
+  { label: 'X', icon: 'X', url: env.EMAIL_X_URL },
+  { label: 'Instagram', icon: '◎', url: env.EMAIL_INSTAGRAM_URL },
+  { label: 'YouTube', icon: '▶', url: env.EMAIL_YOUTUBE_URL },
+].filter((item): item is { label: string; icon: string; url: string } => Boolean(item.url?.trim()));
+
+export const isBrandedEmailHtml = (html: string): boolean =>
+  html.includes(brandedTemplateMarker);
+
+const renderLogo = (): string =>
+  `<img src="${escapeHtml(logoUrl ? normalizeUrl(logoUrl) : `cid:${logoCid}`)}" width="54" height="54" alt="${escapeHtml(
+        brandName,
+      )}" style="display:block;width:54px;height:54px;border-radius:999px;object-fit:cover;border:2px solid rgba(255,255,255,0.42);background:#ffffff;" />`;
+
+const renderSocialLinks = (): string => {
+  if (socialLinks.length === 0) {
+    return '';
+  }
+
+  return `<table role="presentation" cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin-top:18px;">
+    <tr>
+      ${socialLinks
+        .map(
+          (item) => `<td style="padding-right:8px;">
+            <a href="${escapeHtml(normalizeUrl(item.url))}" aria-label="${escapeHtml(item.label)}" style="display:inline-block;width:30px;height:30px;border-radius:999px;background:#111827;color:#ffffff;text-align:center;line-height:30px;font-size:13px;font-weight:800;text-decoration:none;">${escapeHtml(item.icon)}</a>
+          </td>`,
+        )
+        .join('')}
+    </tr>
+  </table>`;
+};
 
 const renderShell = (input: {
   preview: string;
@@ -43,7 +81,7 @@ const renderShell = (input: {
       ? `
         <tr>
           <td style="padding: 0 32px 28px 32px;">
-            <a href="${escapeHtml(normalizeUrl(input.ctaUrl))}" style="display: inline-block; border-radius: 10px; background: #2563eb; color: #ffffff; text-decoration: none; font-weight: 600; padding: 12px 22px;">
+            <a href="${escapeHtml(normalizeUrl(input.ctaUrl))}" style="display: inline-block; border-radius: 999px; background: #6d4aff; color: #ffffff; text-decoration: none; font-weight: 700; padding: 13px 24px; box-shadow: 0 10px 24px rgba(109,74,255,0.24);">
               ${escapeHtml(input.ctaLabel)}
             </a>
           </td>
@@ -55,7 +93,7 @@ const renderShell = (input: {
     ? `
         <tr>
           <td style="padding: 0 32px 28px 32px;">
-            <div style="border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px 20px; background: #f8fafc; color: #1f2937;">
+            <div style="border: 1px solid #e5e7eb; border-radius: 14px; padding: 18px 20px; background: #f9fafb; color: #111827;">
               ${input.asideHtml}
             </div>
           </td>
@@ -70,42 +108,63 @@ const renderShell = (input: {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>${escapeHtml(input.title)}</title>
   </head>
-  <body style="margin: 0; padding: 24px 12px; background: #f1f5f9; color: #0f172a; font-family: Arial, Helvetica, sans-serif;">
+  <body style="margin: 0; padding: 28px 12px; background: #f3f4f6; color: #111827; font-family: Arial, Helvetica, sans-serif;">
     <div style="display: none; max-height: 0; overflow: hidden; opacity: 0;">
       ${escapeHtml(input.preview)}
     </div>
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse;">
       <tr>
         <td align="center">
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse; max-width: 640px; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0;">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" ${brandedTemplateMarker} style="border-collapse: collapse; max-width: 660px; background: #ffffff; border-radius: 22px; overflow: hidden; border: 1px solid #e5e7eb; box-shadow: 0 22px 70px rgba(17,24,39,0.12);">
             <tr>
-              <td style="padding: 28px 32px 20px 32px; background: #0f172a; color: #ffffff;">
-                <div style="font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.75;">${escapeHtml(
-                  input.eyebrow,
-                )}</div>
-                <div style="font-size: 28px; line-height: 1.2; font-weight: 700; margin-top: 10px; color: #e2e8f0;">${escapeHtml(
-                  brandName,
-                )}</div>
+              <td style="padding: 28px 34px 0 34px; background: #08040f; color: #ffffff;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse;">
+                  <tr>
+                    <td width="66" style="width:66px;vertical-align:middle;">${renderLogo()}</td>
+                    <td style="vertical-align:middle;">
+                      <div style="font-size: 21px; line-height: 1.15; font-weight: 800; color: #ffffff;">${escapeHtml(
+                        brandProductName,
+                      )}</div>
+                      <div style="font-size: 11px; line-height: 1.4; letter-spacing: 0.17em; text-transform: uppercase; color: rgba(255,255,255,0.68); margin-top: 5px;">${escapeHtml(
+                        input.eyebrow,
+                      )}</div>
+                    </td>
+                  </tr>
+                </table>
+                <div style="height:1px;background:#ffffff;opacity:0.32;margin-top:24px;"></div>
               </td>
             </tr>
             <tr>
-              <td style="padding: 32px 32px 12px 32px;">
-                <div style="font-size: 18px; line-height: 1.6; color: #0f172a;">${escapeHtml(input.greeting)}</div>
-                <h1 style="margin: 14px 0 0 0; font-size: 30px; line-height: 1.2; color: #0f172a;">${escapeHtml(
+              <td style="padding: 32px 34px 12px 34px;">
+                <div style="font-size: 16px; line-height: 1.55; color: #4b5563;">${escapeHtml(input.greeting)}</div>
+                <h1 style="margin: 12px 0 0 0; font-size: 28px; line-height: 1.2; color: #111827; font-weight: 800;">${escapeHtml(
                   input.title,
                 )}</h1>
               </td>
             </tr>
             <tr>
-              <td style="padding: 0 32px 28px 32px; font-size: 16px; line-height: 1.7; color: #334155;">
+              <td style="padding: 0 34px 28px 34px; font-size: 15px; line-height: 1.75; color: #374151;">
                 ${input.bodyHtml}
               </td>
             </tr>
             ${ctaBlock}
             ${asideBlock}
             <tr>
-              <td style="padding: 0 32px 32px 32px; font-size: 13px; line-height: 1.6; color: #64748b;">
-                ${escapeHtml(input.footerNote || supportFooter)}
+              <td style="padding: 0 34px 30px 34px;">
+                <div style="height:1px;background:#e5e7eb;margin-bottom:20px;"></div>
+                <div style="font-size: 13px; line-height: 1.65; color: #6b7280;">
+                  <strong style="color:#111827;">${escapeHtml(brandProductName)}</strong><br />
+                  ${escapeHtml(input.footerNote || supportFooter)}
+                  ${
+                    supportUrl
+                      ? `<br /><a href="${escapeHtml(normalizeUrl(supportUrl))}" style="color:#6d4aff;text-decoration:none;font-weight:700;">Visit support</a>`
+                      : ''
+                  }
+                </div>
+                ${renderSocialLinks()}
+                <div style="font-size: 11px; line-height: 1.55; color: #9ca3af; margin-top: 14px;">
+                  This message was sent by ${escapeHtml(brandProductName)} for account, content, or notification activity. Keep codes private and never share them with anyone.
+                </div>
               </td>
             </tr>
           </table>
@@ -115,6 +174,27 @@ const renderShell = (input: {
   </body>
 </html>`;
 };
+
+export const buildGenericEmailTemplate = (input: {
+  subject: string;
+  preview?: string;
+  eyebrow?: string;
+  title?: string;
+  greeting?: string;
+  bodyHtml: string;
+  footerNote?: string;
+}): RenderedEmailTemplate => ({
+  subject: input.subject,
+  text: '',
+  html: renderShell({
+    preview: input.preview ?? input.subject,
+    eyebrow: input.eyebrow ?? 'Notification',
+    title: input.title ?? input.subject,
+    greeting: input.greeting ?? `Hello,`,
+    bodyHtml: input.bodyHtml,
+    footerNote: input.footerNote,
+  }),
+});
 
 const toTextBlock = (lines: Array<string | undefined>): string =>
   lines.filter((line) => typeof line === 'string' && line.length > 0).join('\n');
