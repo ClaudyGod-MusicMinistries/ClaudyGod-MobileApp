@@ -62,6 +62,8 @@ const resolvedEasProjectId =
   '';
 const resolvedExpoOwner =
   fileEnv.EXPO_ACCOUNT_OWNER || process.env.EXPO_ACCOUNT_OWNER || '';
+const publicMobileApiKey =
+  fileEnv.EXPO_PUBLIC_MOBILE_API_KEY || process.env.EXPO_PUBLIC_MOBILE_API_KEY || '';
 const appIconAssetPath = './assets/icon.png';
 const appSplashAssetPath = './assets/splash-icon.png';
 const appAdaptiveIconAssetPath = './assets/adaptive-icon.png';
@@ -88,6 +90,9 @@ const seedEnv = (key, value) => {
     case 'EXPO_PUBLIC_EAS_PROJECT_ID':
       process.env.EXPO_PUBLIC_EAS_PROJECT_ID = value;
       break;
+    case 'EXPO_PUBLIC_MOBILE_API_KEY':
+      process.env.EXPO_PUBLIC_MOBILE_API_KEY = value;
+      break;
     case 'CLAUDYGOD_ENV':
       process.env.CLAUDYGOD_ENV = value;
       break;
@@ -104,6 +109,7 @@ seedEnv('EXPO_PUBLIC_SUPABASE_URL', fileEnv.EXPO_PUBLIC_SUPABASE_URL);
 seedEnv('EXPO_PUBLIC_SUPABASE_KEY', publicSupabaseKey);
 seedEnv('EXPO_PUBLIC_SUPABASE_ANON_KEY', resolvedSupabaseAnonKey);
 seedEnv('EXPO_PUBLIC_EAS_PROJECT_ID', resolvedEasProjectId);
+seedEnv('EXPO_PUBLIC_MOBILE_API_KEY', publicMobileApiKey);
 seedEnv('CLAUDYGOD_ENV', fileEnv.CLAUDYGOD_ENV);
 seedEnv('NODE_ENV', fileEnv.NODE_ENV);
 
@@ -126,6 +132,9 @@ const getEnv = (keys, fallback = '') => {
         break;
       case 'EXPO_PUBLIC_EAS_PROJECT_ID':
         if (process.env.EXPO_PUBLIC_EAS_PROJECT_ID) return process.env.EXPO_PUBLIC_EAS_PROJECT_ID;
+        break;
+      case 'EXPO_PUBLIC_MOBILE_API_KEY':
+        if (process.env.EXPO_PUBLIC_MOBILE_API_KEY) return process.env.EXPO_PUBLIC_MOBILE_API_KEY;
         break;
       default:
         break;
@@ -191,6 +200,7 @@ module.exports = {
         '',
       ),
       EXPO_PUBLIC_EAS_PROJECT_ID: getEnv('EXPO_PUBLIC_EAS_PROJECT_ID', resolvedEasProjectId),
+      EXPO_PUBLIC_MOBILE_API_KEY: getEnv('EXPO_PUBLIC_MOBILE_API_KEY', publicMobileApiKey),
       ...(resolvedEasProjectId
         ? {
             eas: {
