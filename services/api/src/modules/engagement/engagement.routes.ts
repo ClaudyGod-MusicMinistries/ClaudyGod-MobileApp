@@ -1,188 +1,195 @@
-import { Router } from 'express';
-import type { Request, Response } from 'express';
+import { Router, type Request } from 'express';
 import { asyncHandler } from '../../lib/asyncHandler';
+import { HttpError } from '../../lib/httpError';
+import { validateSchema } from '../../lib/validation';
+import { authenticate } from '../../middleware/authenticate';
+import { engagementListQuerySchema } from '../me/me.schema';
+import {
+  getMeMetrics,
+  getMeMostPlayed,
+  getMeRecentlyPlayed,
+  getMeRecommendations,
+} from '../me/me.service';
 
 const router = Router();
 
-// Endpoint to get user engagement metrics
-router.get('/metrics', asyncHandler(async (req: Request, res: Response) => {
-  try {
-    const userId = req.user?.sub || (req.query.userId as string);
+router.use(authenticate);
 
-    if (!userId) {
-      return res.status(400).json({
-        error: 'USER_ID_REQUIRED',
-        message: 'User ID is required to fetch engagement metrics',
-      });
-    }
-
-    // Mock data - In production, fetch from database
-    const metrics = {
-      userId,
-      date: new Date().toISOString(),
-      totalMinutesListened: Math.floor(Math.random() * 10000),
-      contentCreated: Math.floor(Math.random() * 50),
-      contentViews: Math.floor(Math.random() * 100000),
-      followers: Math.floor(Math.random() * 1000),
-      following: Math.floor(Math.random() * 1000),
-      engagementScore: Math.floor(Math.random() * 100),
-      retentionScore: Math.floor(Math.random() * 100),
-      conversionRiskLevel: ['low', 'medium', 'high'][Math.floor(Math.random() * 3)] as 'low' | 'medium' | 'high',
-      lastActiveTime: Date.now(),
-      joinedDate: Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000,
-    };
-
-    res.json(metrics);
-  } catch (error) {
-    console.error('Error fetching engagement metrics:', error);
-    res.status(500).json({
-      error: 'METRICS_FETCH_ERROR',
-      message: 'Failed to fetch engagement metrics',
-    });
+function requireUser(req: Request) {
+  if (!req.user) {
+    throw new HttpError(401, 'Unauthorized');
   }
-}));
+  return req.user;
+}
 
-// Endpoint to get personalized insights
-router.get('/insights', asyncHandler(async (req: Request, res: Response) => {
-  try {
-    const userId = req.user?.sub || (req.query.userId as string);
+function estimateMinutes(totalPlays: number): number {
+  return totalPlays * 4;
+}
 
-    if (!userId) {
-      return res.status(400).json({
-        error: 'USER_ID_REQUIRED',
-        message: 'User ID is required to fetch insights',
-      });
-    }
+function engagementScore(totalPlays: number, liveSubscriptions: number): number {
+  return Math.min(100, Math.round(totalPlays * 2.4 + liveSubscriptions * 8));
+}
 
-    // Mock insights data
+function retentionScore(totalPlays: number, recommendationCount: number): number {
+  return Math.min(100, Math.round(totalPlays * 1.7 + recommendationCount * 5));
+}
+
+function riskLevel(score: number): 'low' | 'medium' | 'high' {
+  if (score >= 70) return 'low';
+  if (score >= 35) return 'medium';
+  return 'high';
+}
+
+router.get(
+  '/metrics',
+  asyncHandler(async (req, res) => {
+    const user = requireUser(req);
+    const [metrics, recommendations] = await Promise.all([
+      getMeMetrics(user),
+      getMeRecommendations(user, { limit: 12, windowDays: 120 }),
+    ]);
+    const score = engagementScore(metrics.totalPlays, metrics.liveSubscriptions);
+
+    res.status(200).json({
+      userId: user.sub,
+      date: new Date().toISOString(),
+      totalMinutesListened: estimateMinutes(metrics.totalPlays),
+      contentCreated: 0,
+      contentViews: metrics.totalPlays,
+      followers: 0,
+      following: metrics.liveSubscriptions,
+      engagementScore: score,
+      retentionScore: retentionScore(metrics.totalPlays, recommendations.items.length),
+      conversionRiskLevel: riskLevel(score),
+      lastActiveTime: Date.now(),
+      joinedDate: Date.now(),
+    });
+  }),
+);
+
+router.get(
+  '/insights',
+  asyncHandler(async (req, res) => {
+    const user = requireUser(req);
+    const [metrics, recommendations, recentlyPlayed] = await Promise.all([
+      getMeMetrics(user),
+      getMeRecommendations(user, { limit: 6, windowDays: 120 }),
+      getMeRecentlyPlayed(user, { limit: 3, windowDays: 30 }),
+    ]);
+
+    const score = engagementScore(metrics.totalPlays, metrics.liveSubscriptions);
     const insights = [
+      metrics.totalPlays > 0
+        ? {
+            id: 'listening-progress',
+            type: 'achievement' as const,
+            title: 'Listening progress',
+            description: `You have played ${metrics.totalPlays} item${metrics.totalPlays === 1 ? '' : 's'} on this account.`,
+            priority: score >= 70 ? ('high' as const) : ('medium' as const),
+            actionRoute: '/(tabs)/library',
+          }
+        : {
+            id: 'start-listening',
+            type: 'opportunity' as const,
+            title: 'Start your library',
+            description: 'Play music, videos, or live sessions to unlock a more personal experience.',
+            priority: 'high' as const,
+            actionRoute: '/(tabs)/home',
+          },
+      recommendations.items.length > 0
+        ? {
+            id: 'personalized-recommendations',
+            type: 'recommendation' as const,
+            title: 'Recommended for you',
+            description: `${recommendations.items.length} recommendation${recommendations.items.length === 1 ? '' : 's'} are ready from your listening history.`,
+            priority: 'medium' as const,
+            actionRoute: '/(tabs)/search',
+          }
+        : {
+            id: 'build-signal',
+            type: 'opportunity' as const,
+            title: 'Build your recommendations',
+            description: 'Listen to more content so the app can tune recommendations to your account.',
+            priority: 'medium' as const,
+            actionRoute: '/(tabs)/player',
+          },
       {
-        id: 'insight-1',
-        type: 'achievement',
-        title: 'Streaming Milestone!',
-        description: 'You reached 1,000 hours of listening this year!',
-        priority: 'high' as const,
-        actionRoute: '/(tabs)/home',
-      },
-      {
-        id: 'insight-2',
-        type: 'opportunity',
-        title: 'New Content Available',
-        description: 'Check out new worship series based on your interests.',
-        priority: 'medium' as const,
-        actionRoute: '/(tabs)/search',
-      },
-      {
-        id: 'insight-3',
-        type: 'recommendation',
-        title: 'Explore Live Sessions',
-        description: 'Join us for upcoming live ministry broadcasts.',
-        priority: 'medium' as const,
-        actionRoute: '/(tabs)/live',
-      },
-      {
-        id: 'insight-4',
-        type: 'warning',
-        title: 'Premium Features',
-        description: 'Upgrade to access offline listening and ad-free experience.',
+        id: 'recent-activity',
+        type: recentlyPlayed.items.length ? ('achievement' as const) : ('opportunity' as const),
+        title: recentlyPlayed.items.length ? 'Recent activity saved' : 'No recent plays yet',
+        description: recentlyPlayed.items.length
+          ? 'Your recent listening history is synced to your account.'
+          : 'Play a track or video to start syncing your account history.',
         priority: 'low' as const,
-        actionRoute: '/premium',
+        actionRoute: '/(tabs)/library',
       },
     ];
 
-    res.json(insights);
-  } catch (error) {
-    console.error('Error fetching insights:', error);
-    res.status(500).json({
-      error: 'INSIGHTS_FETCH_ERROR',
-      message: 'Failed to fetch insights',
-    });
-  }
-}));
+    res.status(200).json(insights);
+  }),
+);
 
-// Endpoint to get overview data
-router.get('/overview', asyncHandler(async (req: Request, res: Response) => {
-  try {
-    const userId = req.user?.sub || (req.query.userId as string);
+router.get(
+  '/overview',
+  asyncHandler(async (req, res) => {
+    const user = requireUser(req);
+    const query = validateSchema(engagementListQuerySchema, req.query);
+    const [metrics, week, month] = await Promise.all([
+      getMeMetrics(user),
+      getMeRecentlyPlayed(user, { limit: 50, windowDays: 7 }),
+      getMeRecentlyPlayed(user, { limit: 50, windowDays: query.windowDays ?? 30 }),
+    ]);
 
-    if (!userId) {
-      return res.status(400).json({
-        error: 'USER_ID_REQUIRED',
-        message: 'User ID is required to fetch overview data',
-      });
-    }
-
-    const overview = {
-      userId,
+    const score = engagementScore(metrics.totalPlays, metrics.liveSubscriptions);
+    res.status(200).json({
+      userId: user.sub,
       thisWeek: {
-        minutesListened: Math.floor(Math.random() * 1000),
-        itemsPlayed: Math.floor(Math.random() * 100),
-        newFollowers: Math.floor(Math.random() * 50),
+        minutesListened: estimateMinutes(week.items.length),
+        itemsPlayed: week.items.length,
+        newFollowers: 0,
       },
       thisMonth: {
-        minutesListened: Math.floor(Math.random() * 5000),
-        itemsPlayed: Math.floor(Math.random() * 500),
-        newFollowers: Math.floor(Math.random() * 200),
+        minutesListened: estimateMinutes(month.items.length),
+        itemsPlayed: month.items.length,
+        newFollowers: 0,
       },
       trends: {
-        listeningTrend: Math.floor(Math.random() * 101) - 50, // -50 to 50
-        followerTrend: Math.floor(Math.random() * 101) - 50,
-        engagementTrend: Math.floor(Math.random() * 101) - 50,
+        listeningTrend: Math.max(-50, Math.min(50, week.items.length - Math.ceil(month.items.length / 4))),
+        followerTrend: 0,
+        engagementTrend: Math.max(-50, Math.min(50, score - 50)),
       },
-    };
-
-    res.json(overview);
-  } catch (error) {
-    console.error('Error fetching overview data:', error);
-    res.status(500).json({
-      error: 'OVERVIEW_FETCH_ERROR',
-      message: 'Failed to fetch overview data',
     });
-  }
-}));
+  }),
+);
 
-// Endpoint to get community data
-router.get('/community', asyncHandler(async (req: Request, res: Response) => {
-  try {
-    const userId = req.user?.sub || (req.query.userId as string);
+router.get(
+  '/community',
+  asyncHandler(async (req, res) => {
+    const user = requireUser(req);
+    const metrics = await getMeMetrics(user);
 
-    if (!userId) {
-      return res.status(400).json({
-        error: 'USER_ID_REQUIRED',
-        message: 'User ID is required to fetch community data',
-      });
-    }
-
-    const community = {
-      userId,
+    res.status(200).json({
+      userId: user.sub,
       followers: {
-        total: Math.floor(Math.random() * 10000),
-        newThisMonth: Math.floor(Math.random() * 500),
-        topCountries: ['USA', 'Nigeria', 'Kenya', 'Ghana', 'UK'],
+        total: 0,
+        newThisMonth: 0,
+        topCountries: [],
       },
       following: {
-        total: Math.floor(Math.random() * 5000),
+        total: metrics.liveSubscriptions,
         categories: {
-          worship: Math.floor(Math.random() * 100),
-          teaching: Math.floor(Math.random() * 100),
-          music: Math.floor(Math.random() * 100),
-          live: Math.floor(Math.random() * 100),
+          worship: 0,
+          teaching: 0,
+          music: 0,
+          live: metrics.liveSubscriptions,
         },
       },
       engagementRanking: {
-        position: Math.floor(Math.random() * 10000),
-        percentile: Math.floor(Math.random() * 100),
+        position: 0,
+        percentile: engagementScore(metrics.totalPlays, metrics.liveSubscriptions),
       },
-    };
-
-    res.json(community);
-  } catch (error) {
-    console.error('Error fetching community data:', error);
-    res.status(500).json({
-      error: 'COMMUNITY_FETCH_ERROR',
-      message: 'Failed to fetch community data',
     });
-  }
-}));
+  }),
+);
 
 export default router;

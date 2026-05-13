@@ -19,15 +19,12 @@
   --admin-radius-lg: 20px;
   --admin-radius-md: 14px;
   --admin-shadow: 0 24px 80px rgba(0, 0, 0, 0.36);
-  --admin-font: "Inter", "Sora", "Space Grotesk", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --admin-font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 body {
   font-family: var(--admin-font);
-  background:
-    radial-gradient(circle at 14% 8%, rgba(166, 120, 255, 0.18), transparent 32%),
-    radial-gradient(circle at 84% 10%, rgba(214, 196, 255, 0.12), transparent 34%),
-    linear-gradient(180deg, #06030b 0%, #0b0614 48%, #100b1d 100%);
+  background: linear-gradient(180deg, #06030b 0%, #0b0614 48%, #100b1d 100%);
 }
 
 button,
@@ -63,31 +60,6 @@ textarea:disabled {
   width: min(1560px, calc(100% - 28px));
   margin: 0 auto;
   padding: 14px 0 22px;
-}
-
-.cg-orb {
-  position: fixed;
-  border-radius: 999px;
-  pointer-events: none;
-  filter: blur(84px);
-  opacity: 0.22;
-  z-index: 0;
-}
-
-.cg-orb-one {
-  width: 360px;
-  height: 360px;
-  top: -90px;
-  left: -90px;
-  background: rgba(166, 120, 255, 0.48);
-}
-
-.cg-orb-two {
-  width: 420px;
-  height: 420px;
-  bottom: 0;
-  right: -120px;
-  background: rgba(93, 180, 255, 0.20);
 }
 
 .cg-panel {
@@ -423,7 +395,7 @@ textarea:disabled {
 }
 
 .cg-page-title {
-  font-size: clamp(30px, 4vw, 58px);
+  font-size: clamp(26px, 3vw, 42px);
 }
 
 .cg-hero-copy {
@@ -458,7 +430,7 @@ textarea:disabled {
   display: block;
   margin-top: 8px;
   color: var(--admin-text);
-  font-size: 28px;
+  font-size: 22px;
   line-height: 1;
   font-weight: 900;
 }
@@ -748,12 +720,12 @@ textarea:disabled {
 }
 
 .cg-auth-title {
-  font-size: clamp(34px, 5vw, 66px);
+  font-size: clamp(30px, 4vw, 48px);
 }
 
 .cg-auth-form-title {
   margin: 0;
-  font-size: 28px;
+  font-size: 24px;
   letter-spacing: -0.035em;
 }
 
@@ -794,6 +766,74 @@ textarea:disabled {
   border-color: rgba(255, 140, 159, 0.30);
   background: rgba(255, 140, 159, 0.10);
   color: #ffe5ea;
+}
+
+.cg-admin-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(3, 2, 8, 0.58);
+}
+
+.cg-admin-modal {
+  width: min(440px, 100%);
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: flex-start;
+  border: 1px solid rgba(103, 232, 165, 0.26);
+  border-radius: 18px;
+  background: rgba(16, 11, 28, 0.98);
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.46);
+  padding: 16px;
+}
+
+.cg-admin-modal.is-error {
+  border-color: rgba(255, 140, 159, 0.34);
+}
+
+.cg-admin-modal-icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  background: rgba(103, 232, 165, 0.12);
+  color: var(--admin-success);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.cg-admin-modal.is-error .cg-admin-modal-icon {
+  background: rgba(255, 140, 159, 0.13);
+  color: var(--admin-danger);
+}
+
+.cg-admin-modal h3 {
+  margin: 0;
+  font-size: 17px;
+  letter-spacing: -0.02em;
+}
+
+.cg-admin-modal p {
+  margin: 5px 0 0;
+  color: var(--admin-text-soft);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.cg-admin-modal-close {
+  min-height: 34px;
+  border: 1px solid var(--admin-border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.055);
+  color: var(--admin-text);
+  font-size: 12px;
+  font-weight: 850;
+  padding: 7px 10px;
 }
 
 .cg-boot-root {
@@ -920,5 +960,25 @@ textarea:disabled {
 
   .cg-auth-grid {
     grid-template-columns: 1fr;
+    align-items: center;
+  }
+
+  .cg-auth-hero {
+    order: 2;
+  }
+
+  .cg-auth-form {
+    order: 1;
+  }
+
+  .cg-auth-title,
+  .cg-auth-form-title,
+  .cg-auth-form .cg-copy,
+  .cg-auth-form .cg-kicker {
+    text-align: center;
+  }
+
+  .cg-auth-mode {
+    border-radius: 18px;
   }
 }

@@ -226,7 +226,7 @@ export default function DashboardScreen() {
       let userInsights: EngagementInsight[] = [];
 
       try {
-        userMetrics = await fetchEngagementMetrics(user?.id);
+        userMetrics = await fetchEngagementMetrics();
       } catch (error) {
         console.warn('Failed to fetch metrics:', error);
         showToast({
@@ -240,14 +240,14 @@ export default function DashboardScreen() {
 
       if (activeChip === 'overview') {
         try {
-          const overview = await fetchEngagementOverview(user?.id);
+          const overview = await fetchEngagementOverview();
           setOverviewData(overview);
         } catch (error) {
           console.warn('Failed to fetch overview data:', error);
         }
       } else if (activeChip === 'community') {
         try {
-          const community = await fetchCommunityData(user?.id);
+          const community = await fetchCommunityData();
           setCommunityData(community);
         } catch (error) {
           console.warn('Failed to fetch community data:', error);
@@ -255,7 +255,7 @@ export default function DashboardScreen() {
       }
 
       try {
-        userInsights = await fetchEngagementInsights(user?.id);
+        userInsights = await fetchEngagementInsights();
       } catch (error) {
         console.warn('Failed to fetch insights:', error);
         userInsights = [];

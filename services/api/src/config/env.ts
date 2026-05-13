@@ -384,6 +384,14 @@ const envSchema = z
         });
       }
 
+      if (!value.JWT_REFRESH_SECRET || value.JWT_REFRESH_SECRET === value.JWT_ACCESS_SECRET) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['JWT_REFRESH_SECRET'],
+          message: 'JWT_REFRESH_SECRET must be set separately from JWT_ACCESS_SECRET in production',
+        });
+      }
+
       if (
         value.JWT_REFRESH_SECRET &&
         (value.JWT_REFRESH_SECRET.includes('replace-this') ||

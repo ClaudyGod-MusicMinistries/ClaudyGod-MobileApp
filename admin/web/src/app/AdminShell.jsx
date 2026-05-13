@@ -29,8 +29,6 @@ export default function AdminShell(props) {
   if (!currentUser) {
     return (
       <div class="cg-auth-shell">
-        <div class="cg-orb cg-orb-one" />
-        <div class="cg-orb cg-orb-two" />
         {content}
       </div>
     );
@@ -38,9 +36,6 @@ export default function AdminShell(props) {
 
   return (
     <div class="cg-app-root">
-      <div class="cg-orb cg-orb-one" />
-      <div class="cg-orb cg-orb-two" />
-
       <aside class="cg-panel cg-sidebar" aria-label="ClaudyGod admin navigation">
         <div class="cg-brand-block">
           <div class="cg-logo-box">
