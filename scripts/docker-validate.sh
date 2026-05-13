@@ -2,6 +2,8 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PRODUCTION_CHECK_ENV="$(mktemp "${TMPDIR:-/tmp}/claudygod-production-compose.XXXXXX.env")"
+trap 'rm -f "$PRODUCTION_CHECK_ENV"' EXIT
 
 if ! command -v docker >/dev/null 2>&1; then
   echo "Docker is required for compose validation but was not found in PATH." >&2
@@ -23,6 +25,45 @@ validate_compose() {
   return 0
 }
 
+cat >"$PRODUCTION_CHECK_ENV" <<'EOF'
+NODE_ENV=production
+CLAUDYGOD_ENV=production
+DATABASE_URL=postgresql://postgres.validation:validation-password@db.validation.supabase.co:5432/postgres
+DATABASE_SSL=true
+REDIS_URL=redis://:validation-redis-password@redis:6379
+REDIS_PASSWORD=validation-redis-password
+JWT_ACCESS_SECRET=validation-access-secret-with-more-than-thirty-two-characters
+JWT_REFRESH_SECRET=validation-refresh-secret-with-more-than-thirty-two-characters
+JWT_ACCESS_TTL=15m
+JWT_REFRESH_TTL_DAYS=30
+CORS_ORIGIN=https://admin.validation.example,https://app.validation.example
+MOBILE_API_KEY=validation-mobile-api-key
+AUTH_PUBLIC_BASE_URL=https://app.validation.example
+AUTH_SESSION_COOKIE_NAME=claudygod_session
+AUTH_REFRESH_COOKIE_NAME=claudygod_refresh_session
+SUPABASE_URL=https://validation.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=validation-service-role-key
+SUPABASE_STORAGE_BUCKET=mobile-uploads
+MAIL_FROM=ClaudyGod <support@validation.example>
+POSTFIX_MYHOSTNAME=mail.validation.example
+POSTFIX_RELAY_HOST=smtp.validation.example
+POSTFIX_RELAY_PORT=587
+POSTFIX_SMTP_USERNAME=validation-smtp-user
+POSTFIX_SMTP_PASSWORD=validation-smtp-password
+SEED_ADMIN_EMAIL=admin@validation.example
+SEED_ADMIN_PASSWORD=ValidationAdminPassword123
+VITE_API_URL=https://api.validation.example
+VITE_MOBILE_PREVIEW_URL=https://app.validation.example
+EXPO_PUBLIC_API_URL=https://api.validation.example
+EXPO_PUBLIC_SUPABASE_URL=https://validation.supabase.co
+EXPO_PUBLIC_SUPABASE_KEY=validation-supabase-publishable-key
+API_DOMAIN=api.validation.example
+ADMIN_DOMAIN=admin.validation.example
+APP_DOMAIN=app.validation.example
+TRAEFIK_PUBLIC_NETWORK=traefik-public
+TRAEFIK_CERT_RESOLVER=letsencrypt
+EOF
+
 validate_compose "$ROOT_DIR/docker-compose.local.yml" "$ROOT_DIR/.env.development"
 validate_compose "$ROOT_DIR/services/api/docker-compose.dev.yml" "$ROOT_DIR/.env.development"
 
@@ -34,6 +75,6 @@ if ! validate_compose "$ROOT_DIR/admin/docker-compose.dev.yml" "$ROOT_DIR/.env.d
 fi
 
 validate_compose "$ROOT_DIR/apps/mobile/docker-compose.dev.yml" "$ROOT_DIR/.env.development" --profile web --profile native
-validate_compose "$ROOT_DIR/docker-compose.production.yml" "$ROOT_DIR/.env.production"
+validate_compose "$ROOT_DIR/docker-compose.production.yml" "$PRODUCTION_CHECK_ENV"
 
 echo "Docker compose validation passed."
