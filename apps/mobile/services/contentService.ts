@@ -4,7 +4,9 @@ import { DEFAULT_CONTENT_IMAGE_URI } from '../util/brandAssets';
 
 export type ContentType = 'audio' | 'video' | 'playlist' | 'announcement' | 'live' | 'ad';
 
-type ContentStatus = 'draft' | 'published';
+const API_PUBLIC_CONTENT_STATUS = 'published' as const;
+
+type ContentStatus = 'draft' | typeof API_PUBLIC_CONTENT_STATUS;
 
 interface ContentApiResponse {
   items: ApiContentItem[];
@@ -14,15 +16,17 @@ interface MobileYouTubeResponse {
   items: YouTubeVideoItem[];
 }
 
+interface MobileFeedApiRail {
+  id: string;
+  title: string;
+  algorithm: string;
+  items: MobileFeedApiItem[];
+}
+
 interface MobileFeedApiResponse {
   generatedAt: string;
   featured: MobileFeedApiItem | null;
-  rails: {
-    id: string;
-    title: string;
-    algorithm: string;
-    items: MobileFeedApiItem[];
-  }[];
+  rails: MobileFeedApiRail[];
   topCategories: string[];
 }
 
@@ -149,16 +153,42 @@ const DEFAULT_BUNDLE: FeedBundle = {
   topCategories: ['All', 'Music', 'Videos', 'Live', 'Playlists'],
 };
 
+type QueryValue = string | number | boolean | null | undefined;
+
+function buildQueryString(params: Record<string, QueryValue>): string {
+  const pairs: string[] = [];
+
+  Object.keys(params).forEach((key) => {
+    const value = params[key];
+
+    if (value === undefined || value === null || value === '') {
+      return;
+    }
+
+    pairs.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+  });
+
+  return pairs.join('&');
+}
+
+function buildMobileContentPath(params: Record<string, QueryValue>): string {
+  const query = buildQueryString(params);
+  return query ? `/v1/mobile/content?${query}` : '/v1/mobile/content';
+}
+
 function safeSubtitle(item: ApiContentItem): string {
   if (item.channelName && item.channelName.trim().length > 0) {
     return item.channelName;
   }
+
   if (item.author?.displayName) {
     return item.author.displayName;
   }
+
   if (Array.isArray(item.tags) && item.tags.length > 0) {
     return item.tags.slice(0, 2).join(' • ');
   }
+
   return 'ClaudyGod Channel';
 }
 
@@ -166,6 +196,7 @@ function safeDescription(item: ApiContentItem): string {
   if (item.description && item.description.trim().length > 0) {
     return item.description;
   }
+
   return item.type === 'live'
     ? 'Live session from your subscribed channel.'
     : 'Content from your channel feed.';
@@ -181,12 +212,14 @@ function normalize(item: ApiContentItem): FeedCardItem {
     imageUrl: item.thumbnailUrl || FALLBACK_IMAGE,
     mediaUrl: item.mediaUrl || item.externalUrl || item.url,
     type: item.type,
-    isLive: item.isLive || item.type === 'live',
+    isLive: Boolean(item.isLive || item.type === 'live'),
     liveViewerCount: item.liveViewerCount,
     createdAt: item.createdAt || item.updatedAt,
     appSections: Array.isArray(item.appSections) ? item.appSections : [],
     notificationChannelId:
-      typeof item.metadata?.notificationChannelId === 'string' ? item.metadata.notificationChannelId : undefined,
+      typeof item.metadata?.notificationChannelId === 'string'
+        ? item.metadata.notificationChannelId
+        : undefined,
   };
 }
 
@@ -237,14 +270,17 @@ function classifyYouTubeItem(item: FeedCardItem): 'music' | 'video' | 'announcem
   }
 
   const text = `${item.title} ${item.description} ${item.subtitle}`.toLowerCase();
+
   const isMusicLike =
     /(worship|praise|song|music|choir|hymn|album|track|audio|anthem|ministration)/.test(text);
+
   if (isMusicLike) {
     return 'music';
   }
 
   const isAnnouncementLike =
     /(announcement|update|event|service time|conference|schedule|notice|program)/.test(text);
+
   if (isAnnouncementLike) {
     return 'announcement';
   }
@@ -253,11 +289,10 @@ function classifyYouTubeItem(item: FeedCardItem): 'music' | 'video' | 'announcem
 }
 
 function buildQuery(type?: ContentType): string {
-  const params = new URLSearchParams({ status: 'published' });
-  if (type) {
-    params.set('type', type);
-  }
-  return `/v1/mobile/content?${params.toString()}`;
+  return buildMobileContentPath({
+    status: API_PUBLIC_CONTENT_STATUS,
+    type,
+  });
 }
 
 async function fetchByType(type: ContentType): Promise<FeedCardItem[]> {
@@ -269,7 +304,7 @@ async function fetchByType(type: ContentType): Promise<FeedCardItem[]> {
   }
 }
 
-async function fetchAllPublished(): Promise<FeedCardItem[]> {
+async function fetchAllPublicContent(): Promise<FeedCardItem[]> {
   try {
     const response = await apiFetch<ContentApiResponse>(buildQuery());
     return response.items.map(normalize);
@@ -280,19 +315,19 @@ async function fetchAllPublished(): Promise<FeedCardItem[]> {
 
 export async function fetchSearchResults(query: string, type?: ContentType): Promise<FeedCardItem[]> {
   const trimmed = query.trim();
+
   if (!trimmed) {
     return [];
   }
 
   try {
-    const params = new URLSearchParams({
-      status: 'published',
+    const path = buildMobileContentPath({
+      status: API_PUBLIC_CONTENT_STATUS,
       search: trimmed,
+      type,
     });
-    if (type) {
-      params.set('type', type);
-    }
-    const response = await apiFetch<ContentApiResponse>(`/v1/mobile/content?${params.toString()}`);
+
+    const response = await apiFetch<ContentApiResponse>(path);
     return response.items.map(normalize);
   } catch {
     return [];
@@ -309,6 +344,7 @@ async function fetchYouTubeFeed(): Promise<{
   try {
     const response = await apiFetch<MobileYouTubeResponse>('/v1/mobile/youtube/videos?maxResults=20');
     const normalized = response.items.map(normalizeYouTubeVideo);
+
     const music: FeedCardItem[] = [];
     const videos: FeedCardItem[] = [];
     const live: FeedCardItem[] = [];
@@ -316,6 +352,7 @@ async function fetchYouTubeFeed(): Promise<{
 
     for (const item of normalized) {
       const bucket = classifyYouTubeItem(item);
+
       if (bucket === 'live') {
         live.push(item);
       } else if (bucket === 'music') {
@@ -335,7 +372,13 @@ async function fetchYouTubeFeed(): Promise<{
       recent: normalized,
     };
   } catch {
-    return { videos: [], music: [], live: [], announcements: [], recent: [] };
+    return {
+      videos: [],
+      music: [],
+      live: [],
+      announcements: [],
+      recent: [],
+    };
   }
 }
 
@@ -386,10 +429,15 @@ function dedupe(items: FeedCardItem[]): FeedCardItem[] {
   const result: FeedCardItem[] = [];
 
   for (const item of items) {
-    const key = (item.mediaUrl && item.mediaUrl.trim()) ? `media:${item.mediaUrl.trim()}` : `id:${item.id}`;
+    const key =
+      item.mediaUrl && item.mediaUrl.trim()
+        ? `media:${item.mediaUrl.trim()}`
+        : `id:${item.id}`;
+
     if (seen.has(key)) {
       continue;
     }
+
     seen.add(key);
     result.push(item);
   }
@@ -401,27 +449,57 @@ function removeAdItems(items: FeedCardItem[]): FeedCardItem[] {
   return items.filter((item) => item.type !== 'ad');
 }
 
+function getRailItems(
+  railMap: Map<string, FeedCardItem[]>,
+  railId: string,
+): FeedCardItem[] {
+  return railMap.get(railId) || [];
+}
+
+function getSponsoredItems(rails: { id: string; items: FeedCardItem[] }[]): FeedCardItem[] {
+  const sponsoredItems: FeedCardItem[] = [];
+
+  for (const rail of rails) {
+    if (!rail.id || rail.id.indexOf('sponsored-') !== 0) {
+      continue;
+    }
+
+    for (const item of rail.items) {
+      if (item.type === 'ad') {
+        sponsoredItems.push(item);
+      }
+    }
+  }
+
+  return sponsoredItems;
+}
+
 function bundleFromApiFeed(response: MobileFeedApiResponse): FeedBundle {
-  const normalizedRails = (response.rails || []).map((rail) => ({
-    ...rail,
-    items: rail.items.map(normalizeFeedItem),
-  }));
-  const railMap = new Map(normalizedRails.map((rail) => [rail.id, rail.items]));
+  const apiRails: MobileFeedApiRail[] = Array.isArray(response.rails) ? response.rails : [];
+
+  const normalizedRails: { id: string; items: FeedCardItem[] }[] = apiRails.map(
+    (rail: MobileFeedApiRail) => ({
+      id: rail.id,
+      items: rail.items.map((item: MobileFeedApiItem) => normalizeFeedItem(item)),
+    }),
+  );
+
+  const railMap = new Map<string, FeedCardItem[]>();
+
+  for (const rail of normalizedRails) {
+    railMap.set(rail.id, rail.items);
+  }
 
   const featured = response.featured ? normalizeFeedItem(response.featured) : null;
-  const music = dedupe(removeAdItems(railMap.get('worship-music') || []));
-  const videos = dedupe(removeAdItems(railMap.get('video-spotlight') || []));
-  const live = dedupe(removeAdItems(railMap.get('live-now') || []));
-  const playlists = dedupe(removeAdItems(railMap.get('playlists') || []));
-  const announcements = dedupe(removeAdItems(railMap.get('ministry-updates') || []));
-  const mostPlayed = dedupe(removeAdItems(railMap.get('trending-now') || []));
-  const recent = dedupe(removeAdItems(railMap.get('latest-releases') || []));
-  const ads = dedupe(
-    normalizedRails
-      .filter((rail) => rail.id.startsWith('sponsored-'))
-      .flatMap((rail) => rail.items)
-      .filter((item) => item.type === 'ad'),
-  );
+
+  const music = dedupe(removeAdItems(getRailItems(railMap, 'worship-music')));
+  const videos = dedupe(removeAdItems(getRailItems(railMap, 'video-spotlight')));
+  const live = dedupe(removeAdItems(getRailItems(railMap, 'live-now')));
+  const playlists = dedupe(removeAdItems(getRailItems(railMap, 'playlists')));
+  const announcements = dedupe(removeAdItems(getRailItems(railMap, 'ministry-updates')));
+  const mostPlayed = dedupe(removeAdItems(getRailItems(railMap, 'trending-now')));
+  const recent = dedupe(removeAdItems(getRailItems(railMap, 'latest-releases')));
+  const ads = dedupe(getSponsoredItems(normalizedRails));
 
   return {
     ...DEFAULT_BUNDLE,
@@ -444,14 +522,26 @@ function bundleFromApiFeed(response: MobileFeedApiResponse): FeedBundle {
 
 export async function fetchFeedBundle(): Promise<FeedBundle> {
   let baseBundle: FeedBundle | null = null;
+
   try {
     const feed = await apiFetch<MobileFeedApiResponse>('/v1/mobile/feed');
     baseBundle = bundleFromApiFeed(feed);
-  } catch {}
+  } catch {
+    baseBundle = null;
+  }
 
   if (!baseBundle) {
-    const [all, music, videos, playlists, live, announcements, mostPlayed, youtubeFeed] = await Promise.all([
-      fetchAllPublished(),
+    const [
+      all,
+      music,
+      videos,
+      playlists,
+      live,
+      announcements,
+      mostPlayed,
+      youtubeFeed,
+    ] = await Promise.all([
+      fetchAllPublicContent(),
       fetchByType('audio'),
       fetchByType('video'),
       fetchByType('playlist'),
@@ -465,19 +555,26 @@ export async function fetchFeedBundle(): Promise<FeedBundle> {
     const mergedVideos = dedupe(removeAdItems([...videos, ...youtubeFeed.videos]));
     const mergedLive = dedupe(removeAdItems([...live, ...youtubeFeed.live]));
     const mergedAnnouncements = dedupe(removeAdItems([...announcements, ...youtubeFeed.announcements]));
-    const mergedAll = dedupe(removeAdItems([
-      ...all,
-      ...youtubeFeed.recent,
-      ...youtubeFeed.videos,
-      ...youtubeFeed.music,
-      ...youtubeFeed.live,
-      ...youtubeFeed.announcements,
-    ]));
+
+    const mergedAll = dedupe(
+      removeAdItems([
+        ...all,
+        ...youtubeFeed.recent,
+        ...youtubeFeed.videos,
+        ...youtubeFeed.music,
+        ...youtubeFeed.live,
+        ...youtubeFeed.announcements,
+      ]),
+    );
 
     const recent = [...mergedAll].sort((a, b) => {
       const aTs = a.createdAt ? Date.parse(a.createdAt) : 0;
       const bTs = b.createdAt ? Date.parse(b.createdAt) : 0;
-      if (aTs !== bTs) return bTs - aTs;
+
+      if (aTs !== bTs) {
+        return bTs - aTs;
+      }
+
       return a.id < b.id ? 1 : -1;
     });
 
@@ -492,7 +589,7 @@ export async function fetchFeedBundle(): Promise<FeedBundle> {
 
     baseBundle = {
       ...DEFAULT_BUNDLE,
-      featured: pool[0] ?? null,
+      featured: pool[0] || null,
       music: mergedMusic.slice(0, 14),
       videos: mergedVideos.slice(0, 14),
       playlists: dedupe(playlists).slice(0, 12),
@@ -521,5 +618,17 @@ export async function fetchFeedBundle(): Promise<FeedBundle> {
 }
 
 export function emptyFeedBundle(): FeedBundle {
-  return DEFAULT_BUNDLE;
+  return {
+    featured: null,
+    music: [],
+    videos: [],
+    playlists: [],
+    live: [],
+    ads: [],
+    announcements: [],
+    mostPlayed: [],
+    recent: [],
+    recommendations: [],
+    topCategories: [...DEFAULT_BUNDLE.topCategories],
+  };
 }
