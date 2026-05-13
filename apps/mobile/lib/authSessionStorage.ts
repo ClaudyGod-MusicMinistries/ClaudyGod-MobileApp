@@ -55,65 +55,32 @@ const getWebSessionStorage = (): BrowserStorageLike | null => getBrowserWindow()
 
 const getWebLocalStorage = (): BrowserStorageLike | null => getBrowserWindow()?.localStorage ?? null;
 
+const clearBrowserTokenCopies = (key: string): void => {
+  if (!isWeb) {
+    return;
+  }
+
+  try {
+    getWebSessionStorage()?.removeItem(key);
+    getWebLocalStorage()?.removeItem(key);
+  } catch {
+    // Browser storage can be unavailable; auth remains memory-only.
+  }
+};
+
 export const authSessionStorage = {
   async getItem(key: string): Promise<string | null> {
-    const sessionStorage = getWebSessionStorage();
-    if (sessionStorage) {
-      const currentValue = sessionStorage.getItem(key);
-      if (currentValue !== null) {
-        return currentValue;
-      }
-
-      const legacyStorage = getWebLocalStorage();
-      const legacyValue = legacyStorage?.getItem(key) ?? null;
-      if (legacyValue !== null) {
-        sessionStorage.setItem(key, legacyValue);
-        legacyStorage?.removeItem(key);
-        return legacyValue;
-      }
-
-      return null;
-    }
-
-    // Mobile: never persist auth tokens locally.
-    if (!isWeb) {
-      return memoryStorage.getItem(key);
-    }
-
+    clearBrowserTokenCopies(key);
     return memoryStorage.getItem(key);
   },
 
   async setItem(key: string, value: string): Promise<void> {
-    const sessionStorage = getWebSessionStorage();
-    if (sessionStorage) {
-      sessionStorage.setItem(key, value);
-      getWebLocalStorage()?.removeItem(key);
-      return;
-    }
-
-    // Mobile: in-memory only.
-    if (!isWeb) {
-      await memoryStorage.setItem(key, value);
-      return;
-    }
-
+    clearBrowserTokenCopies(key);
     await memoryStorage.setItem(key, value);
   },
 
   async removeItem(key: string): Promise<void> {
-    const sessionStorage = getWebSessionStorage();
-    if (sessionStorage) {
-      sessionStorage.removeItem(key);
-      getWebLocalStorage()?.removeItem(key);
-      return;
-    }
-
-    // Mobile: in-memory only.
-    if (!isWeb) {
-      await memoryStorage.removeItem(key);
-      return;
-    }
-
+    clearBrowserTokenCopies(key);
     await memoryStorage.removeItem(key);
   },
 
@@ -135,14 +102,9 @@ export const authSessionStorage = {
         refreshToken: parsed.refreshToken ?? undefined,
       };
     } catch {
-      // Fallback: try old individual keys if JSON parsing fails
-      const accessToken = await this.getItem('accessToken');
-      const refreshToken = await this.getItem('refreshToken');
-      
-      return {
-        accessToken: accessToken ?? undefined,
-        refreshToken: refreshToken ?? undefined,
-      };
+      await this.removeItem('accessToken');
+      await this.removeItem('refreshToken');
+      return {};
     }
   },
 };
