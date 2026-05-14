@@ -36,7 +36,7 @@ export default function AuthScreen(props) {
             <img src={brandLogoUrl} alt="ClaudyGod" style={{ width: '48px', height: '48px' }} />
           </div>
 
-          <div style={{ marginTop: '28px' }}>
+          <div class="cg-auth-hero-intro">
             <p class="cg-kicker">ClaudyGod Ministries</p>
             <h1 class="cg-auth-title">Client-friendly publishing control.</h1>
             <p class="cg-hero-copy">
@@ -44,7 +44,7 @@ export default function AuthScreen(props) {
             </p>
           </div>
 
-          <div class="cg-progress-steps" style={{ marginTop: '30px' }}>
+          <div class="cg-progress-steps">
             <div class="cg-step">
               <span class="cg-step-pill">01</span>
               <strong>Upload clearly</strong>

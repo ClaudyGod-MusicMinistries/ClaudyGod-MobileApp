@@ -10,6 +10,10 @@ export default function OverviewView(props) {
   const {
     adminOpsLoading,
     overview,
+    summary,
+    emailDelivery,
+    supportInbox,
+    recentAutomation,
     smartInsights,
     recentAuthActivity,
     onSetDashboardView,
@@ -24,14 +28,18 @@ export default function OverviewView(props) {
   const requestStatusBoard = Array.isArray(overview?.requestStatusBoard) ? overview.requestStatusBoard : [];
   const requestQueuePreview = Array.isArray(overview?.requestQueuePreview) ? overview.requestQueuePreview : [];
   const latestContent = Array.isArray(overview?.latestContent) ? overview.latestContent : [];
+  const supportTickets = Array.isArray(supportInbox) ? supportInbox : [];
+  const automationActivity = Array.isArray(recentAutomation) ? recentAutomation : [];
   const insights = Array.isArray(smartInsights) ? smartInsights : [];
   const authActivity = Array.isArray(recentAuthActivity) ? recentAuthActivity : [];
   const primaryAction = hero?.primaryAction || null;
   const secondaryAction = hero?.secondaryAction || null;
+  const delivery = emailDelivery || {};
+  const totals = summary || {};
 
   return (
     <section class="cg-page">
-      <article class="cg-panel cg-hero">
+      <article class="cg-panel cg-hero cg-dashboard-hero">
         <div class="cg-section-head">
           <div>
             <p class="cg-kicker">{hero?.eyebrow || 'Dashboard'}</p>
@@ -66,7 +74,32 @@ export default function OverviewView(props) {
         </div>
       </article>
 
-      <section class="cg-grid-2">
+      <section class="cg-ops-strip">
+        <article class="cg-ops-card">
+          <span>Email notifications</span>
+          <strong>{delivery.failedLast24Hours ? 'Needs review' : 'Healthy'}</strong>
+          <p>
+            {delivery.pendingJobs || 0} pending, {delivery.completedLast24Hours || 0} delivered in 24h
+          </p>
+        </article>
+        <article class="cg-ops-card">
+          <span>Support tickets</span>
+          <strong>{totals.openSupportRequests || 0}</strong>
+          <p>{totals.activePrivacyRequests || 0} privacy request(s) active</p>
+        </article>
+        <article class="cg-ops-card">
+          <span>Publishing records</span>
+          <strong>{requestQueuePreview.length}</strong>
+          <p>Recent upload tickets from the backend queue</p>
+        </article>
+        <article class="cg-ops-card">
+          <span>Audit trail</span>
+          <strong>{automationActivity.length || authActivity.length}</strong>
+          <p>Recent automation and authenticated account events</p>
+        </article>
+      </section>
+
+      <section class="cg-dashboard-board">
         <article class="cg-panel cg-card">
           <div class="cg-section-head">
             <div>
@@ -113,7 +146,7 @@ export default function OverviewView(props) {
         </article>
       </section>
 
-      <section class="cg-grid-2">
+      <section class="cg-dashboard-board">
         <article class="cg-panel cg-card">
           <div class="cg-section-head">
             <div>
@@ -181,6 +214,81 @@ export default function OverviewView(props) {
               </article>
             ))}
             {!latestContent.length ? <div class="cg-empty">{sections?.latestContent?.emptyState || 'No content updates yet.'}</div> : null}
+          </div>
+        </article>
+      </section>
+
+      <section class="cg-dashboard-board">
+        <article class="cg-panel cg-card">
+          <div class="cg-section-head">
+            <div>
+              <h2>Notification Delivery</h2>
+              <p class="cg-muted">Email jobs created by account, publishing, and operational workflows.</p>
+            </div>
+            <span class={['cg-chip', delivery.failedLast24Hours ? 'is-warning' : 'is-success']}>
+              {delivery.providerLabel || delivery.provider || 'Email'}
+            </span>
+          </div>
+
+          <div class="cg-grid-3" style={{ marginBottom: '14px' }}>
+            <article class="cg-mini-card">
+              <span>Pending</span>
+              <strong>{delivery.pendingJobs || 0}</strong>
+            </article>
+            <article class="cg-mini-card">
+              <span>Delivered 24h</span>
+              <strong>{delivery.completedLast24Hours || 0}</strong>
+            </article>
+            <article class="cg-mini-card">
+              <span>Failed 24h</span>
+              <strong>{delivery.failedLast24Hours || 0}</strong>
+            </article>
+          </div>
+
+          <div class="cg-list">
+            {(delivery.recentJobs || []).slice(0, 4).map((job) => (
+              <article class="cg-item" key={`email-job-${job.id}`}>
+                <div class="cg-item-head">
+                  <h3>{job.templateKey || job.jobType}</h3>
+                  <span class={['cg-status', job.status === 'failed' ? 'is-danger' : job.status === 'completed' ? 'is-success' : 'is-info']}>
+                    {job.status}
+                  </span>
+                </div>
+                <p>{(job.recipients || []).join(', ') || 'Recipient recorded in delivery metadata'}</p>
+                <div class="cg-chip-row" style={{ marginTop: '10px' }}>
+                  <span class="cg-chip">{formatDateTime(job.createdAt)}</span>
+                </div>
+              </article>
+            ))}
+            {!(delivery.recentJobs || []).length ? <div class="cg-empty">No email jobs have been recorded yet.</div> : null}
+          </div>
+        </article>
+
+        <article class="cg-panel cg-card">
+          <div class="cg-section-head">
+            <div>
+              <h2>Support And Request Tickets</h2>
+              <p class="cg-muted">User-facing tickets and publishing requests that require accountable follow-up.</p>
+            </div>
+          </div>
+
+          <div class="cg-list">
+            {supportTickets.slice(0, 5).map((ticket) => (
+              <article class="cg-item" key={`support-ticket-${ticket.id}`}>
+                <div class="cg-item-head">
+                  <h3>{ticket.subject}</h3>
+                  <span class={['cg-status', ticket.status === 'resolved' ? 'is-success' : ticket.priority === 'high' ? 'is-warning' : 'is-info']}>
+                    {ticket.status}
+                  </span>
+                </div>
+                <p>{truncate(ticket.message, 120)}</p>
+                <div class="cg-chip-row" style={{ marginTop: '10px' }}>
+                  <span class="cg-chip">{ticket.category}</span>
+                  <span class="cg-chip">{ticket.user?.email || 'No account email'}</span>
+                </div>
+              </article>
+            ))}
+            {!supportTickets.length ? <div class="cg-empty">No support tickets are currently open.</div> : null}
           </div>
         </article>
       </section>

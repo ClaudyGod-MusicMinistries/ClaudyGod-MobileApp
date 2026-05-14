@@ -313,7 +313,12 @@ services:
       - "traefik.http.middlewares.claudygod-mobile-headers.headers.stsIncludeSubdomains=true"
       - "traefik.http.middlewares.claudygod-mobile-headers.headers.stsPreload=true"
       - "traefik.http.services.claudygod-mobile.loadbalancer.server.port=80"
-
+      - "traefik.http.routers.claudygod-root.rule=Host(`claudygod.org`) || Host(`www.claudygod.org`)"
+      - "traefik.http.routers.claudygod-root.entrypoints=websecure"
+      - "traefik.http.routers.claudygod-root.tls=true"
+      - "traefik.http.routers.claudygod-root.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-letsencrypt}"
+      - "traefik.http.routers.claudygod-root.middlewares=claudygod-mobile-compress,claudygod-mobile-headers"
+      - "traefik.http.routers.claudygod-root.service=claudygod-mobile"
 volumes:
   redis_data:
 

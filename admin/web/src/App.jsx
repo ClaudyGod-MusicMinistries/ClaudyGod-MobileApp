@@ -2397,6 +2397,10 @@ export default defineComponent({
             <OverviewView
               adminOpsLoading={adminOpsLoading.value}
               overview={adminOps.value.overview || {}}
+              summary={adminOps.value.summary || {}}
+              emailDelivery={adminOps.value.emailDelivery || {}}
+              supportInbox={adminOps.value.supportInbox || []}
+              recentAutomation={adminOps.value.recentAutomation || []}
               smartInsights={adminOps.value.smartInsights || []}
               recentAuthActivity={adminOps.value.recentAuthActivity || []}
               onSetDashboardView={setDashboardView}
