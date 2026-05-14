@@ -70,33 +70,6 @@ x-backend-env: &backend-env
   SEED_ADMIN_ON_BOOT: ${SEED_ADMIN_ON_BOOT:-false}
 
 services:
-  traefik:
-    image: traefik:v3.6
-    restart: unless-stopped
-    profiles:
-      - standalone-traefik
-    security_opt:
-      - no-new-privileges:true
-    environment:
-      DOCKER_API_VERSION: "1.44"
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./ops/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
-      - traefik_letsencrypt:/letsencrypt
-    healthcheck:
-      test: ["CMD", "traefik", "healthcheck", "--ping"]
-      interval: 30s
-      timeout: 5s
-      retries: 5
-    dns:
-      - 1.1.1.1
-      - 8.8.8.8
-    networks:
-      - edge
-
   redis:
     image: redis:7-alpine
     restart: unless-stopped
@@ -195,7 +168,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "node -e \"fetch('http://127.0.0.1:' + (process.env.API_PORT || 4000) + '/health').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))\"",
+          "node -e \"fetch('http://127.0.0.1:' + (process.env.API_PORT || 4000) + '/health').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))\""
         ]
       interval: 30s
       timeout: 10s
@@ -208,23 +181,23 @@ services:
       - edge
       - internal
     labels:
-      - traefik.enable=true
-      - traefik.docker.network=${TRAEFIK_PUBLIC_NETWORK:-traefik-public}
-      - traefik.http.routers.claudygod-api.rule=Host(`${API_DOMAIN}`)
-      - traefik.http.routers.claudygod-api.entrypoints=websecure
-      - traefik.http.routers.claudygod-api.tls=true
-      - traefik.http.routers.claudygod-api.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-letsencrypt}
-      - traefik.http.routers.claudygod-api.middlewares=claudygod-api-compress,claudygod-api-headers
-      - traefik.http.middlewares.claudygod-api-compress.compress=true
-      - traefik.http.middlewares.claudygod-api-headers.headers.contentTypeNosniff=true
-      - traefik.http.middlewares.claudygod-api-headers.headers.browserXssFilter=true
-      - traefik.http.middlewares.claudygod-api-headers.headers.frameDeny=true
-      - traefik.http.middlewares.claudygod-api-headers.headers.referrerPolicy=strict-origin-when-cross-origin
-      - traefik.http.middlewares.claudygod-api-headers.headers.permissionsPolicy=camera=(), microphone=(), geolocation=()
-      - traefik.http.middlewares.claudygod-api-headers.headers.stsSeconds=31536000
-      - traefik.http.middlewares.claudygod-api-headers.headers.stsIncludeSubdomains=true
-      - traefik.http.middlewares.claudygod-api-headers.headers.stsPreload=true
-      - traefik.http.services.claudygod-api.loadbalancer.server.port=4000
+      - "traefik.enable=true"
+      - "traefik.docker.network=${TRAEFIK_PUBLIC_NETWORK:-traefik-public}"
+      - "traefik.http.routers.claudygod-api.rule=Host(`${API_DOMAIN}`)"
+      - "traefik.http.routers.claudygod-api.entrypoints=websecure"
+      - "traefik.http.routers.claudygod-api.tls=true"
+      - "traefik.http.routers.claudygod-api.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-letsencrypt}"
+      - "traefik.http.routers.claudygod-api.middlewares=claudygod-api-compress,claudygod-api-headers"
+      - "traefik.http.middlewares.claudygod-api-compress.compress=true"
+      - "traefik.http.middlewares.claudygod-api-headers.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.claudygod-api-headers.headers.browserXssFilter=true"
+      - "traefik.http.middlewares.claudygod-api-headers.headers.frameDeny=true"
+      - "traefik.http.middlewares.claudygod-api-headers.headers.referrerPolicy=strict-origin-when-cross-origin"
+      - "traefik.http.middlewares.claudygod-api-headers.headers.permissionsPolicy=camera=(), microphone=(), geolocation=()"
+      - "traefik.http.middlewares.claudygod-api-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.claudygod-api-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.claudygod-api-headers.headers.stsPreload=true"
+      - "traefik.http.services.claudygod-api.loadbalancer.server.port=4000"
 
   worker:
     build:
@@ -246,6 +219,8 @@ services:
         condition: service_completed_successfully
       api:
         condition: service_healthy
+    healthcheck:
+      disable: true
     dns:
       - 1.1.1.1
       - 8.8.8.8
@@ -277,23 +252,23 @@ services:
     networks:
       - edge
     labels:
-      - traefik.enable=true
-      - traefik.docker.network=${TRAEFIK_PUBLIC_NETWORK:-traefik-public}
-      - traefik.http.routers.claudygod-admin.rule=Host(`${ADMIN_DOMAIN}`)
-      - traefik.http.routers.claudygod-admin.entrypoints=websecure
-      - traefik.http.routers.claudygod-admin.tls=true
-      - traefik.http.routers.claudygod-admin.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-letsencrypt}
-      - traefik.http.routers.claudygod-admin.middlewares=claudygod-admin-compress,claudygod-admin-headers
-      - traefik.http.middlewares.claudygod-admin-compress.compress=true
-      - traefik.http.middlewares.claudygod-admin-headers.headers.contentTypeNosniff=true
-      - traefik.http.middlewares.claudygod-admin-headers.headers.browserXssFilter=true
-      - traefik.http.middlewares.claudygod-admin-headers.headers.frameDeny=true
-      - traefik.http.middlewares.claudygod-admin-headers.headers.referrerPolicy=strict-origin-when-cross-origin
-      - traefik.http.middlewares.claudygod-admin-headers.headers.permissionsPolicy=camera=(), microphone=(), geolocation=()
-      - traefik.http.middlewares.claudygod-admin-headers.headers.stsSeconds=31536000
-      - traefik.http.middlewares.claudygod-admin-headers.headers.stsIncludeSubdomains=true
-      - traefik.http.middlewares.claudygod-admin-headers.headers.stsPreload=true
-      - traefik.http.services.claudygod-admin.loadbalancer.server.port=80
+      - "traefik.enable=true"
+      - "traefik.docker.network=${TRAEFIK_PUBLIC_NETWORK:-traefik-public}"
+      - "traefik.http.routers.claudygod-admin.rule=Host(`${ADMIN_DOMAIN}`)"
+      - "traefik.http.routers.claudygod-admin.entrypoints=websecure"
+      - "traefik.http.routers.claudygod-admin.tls=true"
+      - "traefik.http.routers.claudygod-admin.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-letsencrypt}"
+      - "traefik.http.routers.claudygod-admin.middlewares=claudygod-admin-compress,claudygod-admin-headers"
+      - "traefik.http.middlewares.claudygod-admin-compress.compress=true"
+      - "traefik.http.middlewares.claudygod-admin-headers.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.claudygod-admin-headers.headers.browserXssFilter=true"
+      - "traefik.http.middlewares.claudygod-admin-headers.headers.frameDeny=true"
+      - "traefik.http.middlewares.claudygod-admin-headers.headers.referrerPolicy=strict-origin-when-cross-origin"
+      - "traefik.http.middlewares.claudygod-admin-headers.headers.permissionsPolicy=camera=(), microphone=(), geolocation=()"
+      - "traefik.http.middlewares.claudygod-admin-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.claudygod-admin-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.claudygod-admin-headers.headers.stsPreload=true"
+      - "traefik.http.services.claudygod-admin.loadbalancer.server.port=80"
 
   mobile-web:
     build:
@@ -322,26 +297,25 @@ services:
     networks:
       - edge
     labels:
-      - traefik.enable=true
-      - traefik.docker.network=${TRAEFIK_PUBLIC_NETWORK:-traefik-public}
-      - traefik.http.routers.claudygod-mobile.rule=Host(`${APP_DOMAIN}`)
-      - traefik.http.routers.claudygod-mobile.entrypoints=websecure
-      - traefik.http.routers.claudygod-mobile.tls=true
-      - traefik.http.routers.claudygod-mobile.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-letsencrypt}
-      - traefik.http.routers.claudygod-mobile.middlewares=claudygod-mobile-compress,claudygod-mobile-headers
-      - traefik.http.middlewares.claudygod-mobile-compress.compress=true
-      - traefik.http.middlewares.claudygod-mobile-headers.headers.contentTypeNosniff=true
-      - traefik.http.middlewares.claudygod-mobile-headers.headers.browserXssFilter=true
-      - traefik.http.middlewares.claudygod-mobile-headers.headers.referrerPolicy=strict-origin-when-cross-origin
-      - traefik.http.middlewares.claudygod-mobile-headers.headers.permissionsPolicy=camera=(), microphone=(), geolocation=()
-      - traefik.http.middlewares.claudygod-mobile-headers.headers.stsSeconds=31536000
-      - traefik.http.middlewares.claudygod-mobile-headers.headers.stsIncludeSubdomains=true
-      - traefik.http.middlewares.claudygod-mobile-headers.headers.stsPreload=true
-      - traefik.http.services.claudygod-mobile.loadbalancer.server.port=80
+      - "traefik.enable=true"
+      - "traefik.docker.network=${TRAEFIK_PUBLIC_NETWORK:-traefik-public}"
+      - "traefik.http.routers.claudygod-mobile.rule=Host(`${APP_DOMAIN}`)"
+      - "traefik.http.routers.claudygod-mobile.entrypoints=websecure"
+      - "traefik.http.routers.claudygod-mobile.tls=true"
+      - "traefik.http.routers.claudygod-mobile.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-letsencrypt}"
+      - "traefik.http.routers.claudygod-mobile.middlewares=claudygod-mobile-compress,claudygod-mobile-headers"
+      - "traefik.http.middlewares.claudygod-mobile-compress.compress=true"
+      - "traefik.http.middlewares.claudygod-mobile-headers.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.claudygod-mobile-headers.headers.browserXssFilter=true"
+      - "traefik.http.middlewares.claudygod-mobile-headers.headers.referrerPolicy=strict-origin-when-cross-origin"
+      - "traefik.http.middlewares.claudygod-mobile-headers.headers.permissionsPolicy=camera=(), microphone=(), geolocation=()"
+      - "traefik.http.middlewares.claudygod-mobile-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.claudygod-mobile-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.claudygod-mobile-headers.headers.stsPreload=true"
+      - "traefik.http.services.claudygod-mobile.loadbalancer.server.port=80"
 
 volumes:
   redis_data:
-  traefik_letsencrypt:
 
 networks:
   edge:
