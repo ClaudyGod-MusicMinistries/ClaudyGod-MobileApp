@@ -213,7 +213,7 @@ export default function HomeScreen() {
 
   return (
     <PremiumPage
-      title="ClaudyGod"
+      title="Home"
       eyebrow="Home"
       refreshing={loading}
       onRefresh={() => void refresh()}
@@ -254,10 +254,10 @@ export default function HomeScreen() {
             </View>
             <View style={{ flex: 1, minWidth: 0 }}>
               <CustomText variant="label" style={{ color: theme.colors.text }}>
-                Browsing as guest
+                Guest mode
               </CustomText>
               <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 3, lineHeight: 17 }}>
-                Stream public music and videos now. Sign in for saved library, history, alerts, and playlists.
+                Public music and videos are available now. Sign in for your profile, saved library, history, alerts, and playlists.
               </CustomText>
             </View>
             <TVTouchable onPress={() => router.push(APP_ROUTES.auth.signIn)} showFocusBorder={false}>

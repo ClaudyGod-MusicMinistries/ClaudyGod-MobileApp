@@ -12,8 +12,7 @@
     "migrate": "ts-node-dev --exit-child --transpile-only src/db/migrate.ts",
     "migrate:prod": "node dist/db/migrate.js",
     "migrate:status": "ts-node-dev --exit-child --transpile-only src/db/migrationStatus.ts",
-    "migrate:status:prod": "node dist/db/migrationStatus.js",
-    "seed:admin": "ts-node-dev --exit-child --transpile-only src/db/seedAdmin.ts"
+    "migrate:status:prod": "node dist/db/migrationStatus.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.56.0",
