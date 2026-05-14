@@ -1,5 +1,52 @@
 import '../../app/AdminShell.css';
 
+const passwordRules = (password) => [
+  { id: 'length', label: '8 or more characters', valid: password.length >= 8 },
+  { id: 'upper', label: 'Uppercase letter', valid: /[A-Z]/.test(password) },
+  { id: 'lower', label: 'Lowercase letter', valid: /[a-z]/.test(password) },
+  { id: 'number', label: 'Number', valid: /\d/.test(password) },
+  { id: 'symbol', label: 'Symbol for extra protection', valid: /[^A-Za-z0-9]/.test(password) },
+];
+
+const getPasswordReport = (password) => {
+  const checks = passwordRules(password);
+  const score = checks.filter((check) => check.valid).length;
+  const label = score >= 5 ? 'Excellent' : score >= 4 ? 'Strong' : score >= 3 ? 'Fair' : 'Needs work';
+  return { checks, label, score, percent: Math.max(12, Math.round((score / checks.length) * 100)) };
+};
+
+const secureIndex = (length) => {
+  if (globalThis.crypto?.getRandomValues) {
+    const values = new Uint32Array(1);
+    globalThis.crypto.getRandomValues(values);
+    return values[0] % length;
+  }
+  return Math.floor(Math.random() * length);
+};
+
+const generatePasswordSuggestion = () => {
+  const words = ['Grace', 'Signal', 'Anchor', 'Crown', 'Harbor', 'Studio', 'Cedar', 'Summit'];
+  const symbols = ['!', '#', '%', '?', '@'];
+  const number = 1000 + secureIndex(9000);
+  return `${words[secureIndex(words.length)]}${words[secureIndex(words.length)]}${symbols[secureIndex(symbols.length)]}${number}`;
+};
+
+function EyeIcon({ hidden }) {
+  return hidden ? (
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none">
+      <path d="M3 3l18 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M10.6 10.7a2.1 2.1 0 0 0 2.8 2.8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M7.4 7.7C5.6 8.7 4.1 10.2 3 12c2.2 3.5 5.2 5.2 9 5.2 1.4 0 2.7-.2 3.8-.7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M10.2 6.9c.6-.1 1.2-.1 1.8-.1 3.8 0 6.8 1.7 9 5.2-.6.9-1.3 1.8-2.1 2.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ) : (
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none">
+      <path d="M3 12c2.2-3.5 5.2-5.2 9-5.2s6.8 1.7 9 5.2c-2.2 3.5-5.2 5.2-9 5.2S5.2 15.5 3 12Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+      <path d="M12 14.4a2.4 2.4 0 1 0 0-4.8 2.4 2.4 0 0 0 0 4.8Z" stroke="currentColor" strokeWidth="1.8" />
+    </svg>
+  );
+}
+
 export default function AuthScreen(props) {
   const {
     brandLogoUrl,
@@ -11,15 +58,32 @@ export default function AuthScreen(props) {
     notice,
     noticeKind,
     googleLoginEnabled,
+    hidePassword,
+    hideConfirmPassword,
     authForm,
     pendingVerificationEmail,
     onSwitchMode,
     onGoogleLogin,
+    onTogglePassword,
+    onToggleConfirmPassword,
     onSubmit,
     onReadValue,
     onResendVerificationCode,
     onDismissNotice,
   } = props;
+  const passwordReport = getPasswordReport(authForm.password || '');
+
+  const applySuggestedPassword = () => {
+    const suggestedPassword = generatePasswordSuggestion();
+    authForm.password = suggestedPassword;
+    authForm.confirmPassword = suggestedPassword;
+    if (hidePassword) {
+      onTogglePassword();
+    }
+    if (hideConfirmPassword) {
+      onToggleConfirmPassword();
+    }
+  };
 
   const pageTitle = isVerifyMode ? 'Verify your account' : isRegisterMode ? 'Create publisher access' : 'Sign in to Admin Studio';
   const pageCopy = isVerifyMode
@@ -140,26 +204,66 @@ export default function AuthScreen(props) {
               ) : (
                 <label>
                   <span>Password</span>
-                  <input
-                    type="password"
-                    value={authForm.password}
-                    onInput={(event) => { authForm.password = onReadValue(event); }}
-                    placeholder={isRegisterMode ? 'Create a secure password' : 'Enter your password'}
-                    autoComplete={isRegisterMode ? 'new-password' : 'current-password'}
-                  />
+                  <div class="cg-password-field">
+                    <input
+                      type={hidePassword ? 'password' : 'text'}
+                      value={authForm.password}
+                      onInput={(event) => { authForm.password = onReadValue(event); }}
+                      placeholder={isRegisterMode ? 'Create a secure password' : 'Enter your password'}
+                      autoComplete={isRegisterMode ? 'new-password' : 'current-password'}
+                    />
+                    <button
+                      type="button"
+                      class="cg-password-toggle"
+                      onClick={onTogglePassword}
+                      aria-label={hidePassword ? 'Show password' : 'Hide password'}
+                    >
+                      <EyeIcon hidden={hidePassword} />
+                    </button>
+                  </div>
+                  {isRegisterMode ? (
+                    <div class="cg-password-strength" aria-live="polite">
+                      <div class="cg-password-strength-head">
+                        <strong>{passwordReport.label} password</strong>
+                        <button type="button" class="cg-inline-action" onClick={applySuggestedPassword}>
+                          Suggest secure password
+                        </button>
+                      </div>
+                      <div class="cg-password-meter" aria-hidden="true">
+                        <span style={{ width: `${passwordReport.percent}%` }} />
+                      </div>
+                      <div class="cg-password-checks">
+                        {passwordReport.checks.map((check) => (
+                          <span key={check.id} class={check.valid ? 'is-valid' : ''}>
+                            {check.valid ? 'OK' : '-'} {check.label}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
                 </label>
               )}
 
               {isRegisterMode ? (
                 <label>
                   <span>Confirm password</span>
-                  <input
-                    type="password"
-                    value={authForm.confirmPassword}
-                    onInput={(event) => { authForm.confirmPassword = onReadValue(event); }}
-                    placeholder="Repeat password"
-                    autoComplete="new-password"
-                  />
+                  <div class="cg-password-field">
+                    <input
+                      type={hideConfirmPassword ? 'password' : 'text'}
+                      value={authForm.confirmPassword}
+                      onInput={(event) => { authForm.confirmPassword = onReadValue(event); }}
+                      placeholder="Repeat password"
+                      autoComplete="new-password"
+                    />
+                    <button
+                      type="button"
+                      class="cg-password-toggle"
+                      onClick={onToggleConfirmPassword}
+                      aria-label={hideConfirmPassword ? 'Show password confirmation' : 'Hide password confirmation'}
+                    >
+                      <EyeIcon hidden={hideConfirmPassword} />
+                    </button>
+                  </div>
                 </label>
               ) : null}
 
