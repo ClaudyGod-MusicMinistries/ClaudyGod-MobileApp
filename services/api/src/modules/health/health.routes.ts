@@ -38,12 +38,23 @@ healthRouter.get('/', (_req, res) => {
 healthRouter.get('/health', async (_req, res, next) => {
   try {
     let postgres: 'up' | 'down' = 'up';
+    let schema: 'ready' | 'missing' | 'unknown' = 'unknown';
     let redisState: 'up' | 'down' = 'up';
 
     try {
       await pool.query('SELECT 1');
+      const schemaResult = await pool.query<{ ready: boolean }>(`
+        SELECT EXISTS (
+          SELECT 1
+          FROM information_schema.tables
+          WHERE table_schema = 'public'
+            AND table_name = 'schema_migrations'
+        ) AS ready
+      `);
+      schema = schemaResult.rows[0]?.ready ? 'ready' : 'missing';
     } catch (_error) {
       postgres = 'down';
+      schema = 'unknown';
     }
 
     try {
@@ -52,7 +63,7 @@ healthRouter.get('/health', async (_req, res, next) => {
       redisState = 'down';
     }
 
-    const status = postgres === 'up' && redisState === 'up' ? 'ok' : 'degraded';
+    const status = postgres === 'up' && schema === 'ready' && redisState === 'up' ? 'ok' : 'degraded';
 
     const smtpStatus = await verifyEmailTransport();
     const smtpHealth = {
@@ -67,6 +78,7 @@ healthRouter.get('/health', async (_req, res, next) => {
       capabilities: capabilities(),
       services: {
         postgres,
+        schema,
         redis: redisState,
       },
       smtp: smtpHealth,
