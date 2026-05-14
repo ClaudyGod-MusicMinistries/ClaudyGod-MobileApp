@@ -229,7 +229,7 @@ services:
 
   admin-web:
     build:
-      context: ./apps/admin-web
+      context: ./admin/web
       dockerfile: Dockerfile
       args:
         VITE_API_URL: ${VITE_API_URL:?VITE_API_URL is required}
