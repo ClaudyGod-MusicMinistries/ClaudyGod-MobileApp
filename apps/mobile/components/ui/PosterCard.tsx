@@ -171,7 +171,7 @@ export function PosterCard({
         >
           <CustomText
             variant="title"
-            style={{ color: '#FFFFFF', fontSize: 14, lineHeight: 19, letterSpacing: -0.18 }}
+            style={{ color: '#FFFFFF', fontSize: 13.2, lineHeight: 18, letterSpacing: 0 }}
             numberOfLines={2}
             ellipsizeMode="tail"
           >
