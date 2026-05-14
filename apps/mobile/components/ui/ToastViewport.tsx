@@ -13,7 +13,7 @@ function ToastCard({
   toast: ToastItem;
   onDismiss: (_id: string) => void;
 }) {
-  const translateY = useRef(new Animated.Value(-14)).current;
+  const translateY = useRef(new Animated.Value(14)).current;
   const opacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -45,19 +45,22 @@ function ToastCard({
       style={{
         opacity,
         transform: [{ translateY }],
-        borderRadius: 18,
+        width: '100%',
+        maxWidth: 420,
+        alignSelf: 'center',
+        borderRadius: 24,
         borderWidth: 1,
         borderColor: palette.border,
         backgroundColor: palette.bg,
-        paddingHorizontal: 14,
-        paddingVertical: 12,
+        paddingHorizontal: 16,
+        paddingVertical: 15,
         flexDirection: 'row',
         alignItems: 'flex-start',
         gap: 10,
         shadowColor: '#000000',
-        shadowOpacity: 0.22,
-        shadowRadius: 18,
-        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.28,
+        shadowRadius: 26,
+        shadowOffset: { width: 0, height: 16 },
       }}
     >
       <MaterialIcons name={palette.icon} size={18} color={palette.accent} style={{ marginTop: 1 }} />
@@ -104,14 +107,20 @@ export function ToastViewport() {
       pointerEvents="box-none"
       style={{
         position: 'absolute',
-        top: Math.max(insets.top, 12),
-        left: 12,
-        right: 12,
+        top: 0,
+        right: 0,
+        bottom: 0,
+        left: 0,
         zIndex: 100,
+        justifyContent: 'center',
+        paddingTop: Math.max(insets.top, 16),
+        paddingBottom: Math.max(insets.bottom, 16),
+        paddingHorizontal: 16,
+        backgroundColor: 'rgba(2,1,6,0.34)',
         gap: 10,
       }}
     >
-      {toasts.map((toast) => (
+      {toasts.slice(-1).map((toast) => (
         <ToastCard key={toast.id} toast={toast} onDismiss={dismissToast} />
       ))}
     </View>
