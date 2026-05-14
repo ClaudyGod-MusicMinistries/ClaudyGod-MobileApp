@@ -8,7 +8,7 @@ import { CustomText } from '../../components/CustomText';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { useAuth } from '../../context/AuthContext';
-import { useToast } from '../../context/ToastContext';
+import { useAppModal } from '../../context/AppModalContext';
 import { useAppTheme, useThemeContext } from '../../util/colorScheme';
 import { fetchMePreferences, updateMePreferences } from '../../services/userFlowService';
 import { clearMobileSession } from '../../services/authService';
@@ -200,7 +200,7 @@ export default function SettingsScreen() {
   const theme = useAppTheme();
   const { themePreference, setThemePreference } = useThemeContext();
   const router = useRouter();
-  const { showToast } = useToast();
+  const { showModal } = useAppModal();
   const { isAuthenticated } = useAuth();
 
   const [notifications, setNotifications] = useState(true);
@@ -265,11 +265,7 @@ export default function SettingsScreen() {
             onToggle: (value: boolean) => {
               setAutoPlay(value);
               persistPreferencePatch({ autoplayEnabled: value });
-              showToast({
-                title: 'Playback updated',
-                message: value ? 'Auto-play is on.' : 'Auto-play is off.',
-                tone: 'info',
-              });
+              showModal({ title: 'Playback updated', message: value ? 'Auto-play is on.' : 'Auto-play is off.', tone: 'info', icon: 'play-circle-outline' });
             },
           },
           {
@@ -280,13 +276,7 @@ export default function SettingsScreen() {
             onToggle: (value: boolean) => {
               setHighQuality(value);
               persistPreferencePatch({ highQualityEnabled: value });
-              showToast({
-                title: 'Audio quality updated',
-                message: value
-                  ? 'Higher quality audio is enabled.'
-                  : 'Standard quality audio is enabled.',
-                tone: 'info',
-              });
+              showModal({ title: 'Audio quality updated', message: value ? 'Higher quality audio is enabled.' : 'Standard quality audio is enabled.', tone: 'info', icon: 'high-quality' });
             },
           },
         ],
@@ -302,11 +292,7 @@ export default function SettingsScreen() {
             onToggle: (value: boolean) => {
               setNotifications(value);
               persistPreferencePatch({ notificationsEnabled: value });
-              showToast({
-                title: 'Notifications updated',
-                message: value ? 'Alerts are on.' : 'Alerts are off.',
-                tone: 'info',
-              });
+              showModal({ title: 'Notifications updated', message: value ? 'Alerts are on.' : 'Alerts are off.', tone: 'info', icon: 'notifications-none' });
             },
           },
           {
@@ -317,11 +303,7 @@ export default function SettingsScreen() {
             onToggle: (value: boolean) => {
               setPersonalization(value);
               persistPreferencePatch({ personalizationEnabled: value });
-              showToast({
-                title: 'Recommendations updated',
-                message: value ? 'Recommendations are personalized.' : 'Personalization is off.',
-                tone: 'info',
-              });
+              showModal({ title: 'Recommendations updated', message: value ? 'Recommendations are personalized.' : 'Personalization is off.', tone: 'info', icon: 'auto-awesome' });
             },
           },
         ],
@@ -333,7 +315,7 @@ export default function SettingsScreen() {
       notifications,
       personalization,
       persistPreferencePatch,
-      showToast,
+      showModal,
     ],
   );
 
@@ -344,10 +326,11 @@ export default function SettingsScreen() {
       // Still move the user out of the protected area if local cleanup partially fails.
     }
 
-    showToast({
+    showModal({
       title: 'Signed out',
       message: 'You can sign in again anytime.',
       tone: 'info',
+      icon: 'logout',
     });
 
     router.replace(APP_ROUTES.landing);
@@ -357,10 +340,11 @@ export default function SettingsScreen() {
     setThemePreference(value);
     persistPreferencePatch({ themePreference: value });
 
-    showToast({
+    showModal({
       title: 'Appearance updated',
       message: value === 'system' ? 'Using your device setting.' : `Using ${value} mode.`,
       tone: 'success',
+      icon: 'palette',
     });
   };
 

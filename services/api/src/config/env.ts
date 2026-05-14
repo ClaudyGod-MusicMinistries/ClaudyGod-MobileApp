@@ -220,11 +220,6 @@ const envSchema = z
 
     ADMIN_SIGNUP_CODE: z.string().optional().default(''),
 
-    SEED_ADMIN_EMAIL: z.string().email(),
-    SEED_ADMIN_PASSWORD: z.string().min(12, 'SEED_ADMIN_PASSWORD must contain at least 12 characters'),
-    SEED_ADMIN_DISPLAY_NAME: z.string().trim().min(2).max(80).default('Claudy Admin'),
-    SEED_ADMIN_ON_BOOT: toBoolean(false),
-
     AI_PROVIDER_NAME: z.string().trim().min(2).max(80).default('Integrated AI'),
     AI_PROVIDER_URL: optionalUrl(),
     AI_PROVIDER_API_KEY: z.string().optional().default(''),

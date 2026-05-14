@@ -89,11 +89,8 @@ YOUTUBE_API_KEY=${CI_YOUTUBE_API_KEY}
 YOUTUBE_CHANNEL_ID=${CI_YOUTUBE_CHANNEL_ID}
 YOUTUBE_MAX_RESULTS=12
 
-# Seed admin
-SEED_ADMIN_EMAIL=admin@example.com
-SEED_ADMIN_PASSWORD=ChangeMe123!
-SEED_ADMIN_DISPLAY_NAME=Claudy Admin
-SEED_ADMIN_ON_BOOT=true
+# Admin access
+ADMIN_SIGNUP_CODE=ci-admin-invitation-code
 EOF
 
 cat > "$ROOT_DIR/.env.production" <<EOF
@@ -175,11 +172,8 @@ YOUTUBE_API_KEY=${CI_YOUTUBE_API_KEY}
 YOUTUBE_CHANNEL_ID=${CI_YOUTUBE_CHANNEL_ID}
 YOUTUBE_MAX_RESULTS=12
 
-# Seed admin
-SEED_ADMIN_EMAIL=admin@example.com
-SEED_ADMIN_PASSWORD=ChangeMe123!
-SEED_ADMIN_DISPLAY_NAME=Claudy Admin
-SEED_ADMIN_ON_BOOT=false
+# Admin access
+ADMIN_SIGNUP_CODE=ci-admin-invitation-code
 EOF
 
 echo "CI environment files created at $ROOT_DIR/.env.development and $ROOT_DIR/.env.production"

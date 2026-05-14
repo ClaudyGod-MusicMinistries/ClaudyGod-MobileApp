@@ -107,24 +107,6 @@ export default function AuthScreen(props) {
               A secure admin workspace for uploading media, assigning mobile app placements, managing live sessions, and reviewing every release before it reaches users.
             </p>
           </div>
-
-          <div class="cg-progress-steps">
-            <div class="cg-step">
-              <span class="cg-step-pill">01</span>
-              <strong>Upload clearly</strong>
-              <p class="cg-muted">Add title, description, media, thumbnail, and target sections in one flow.</p>
-            </div>
-            <div class="cg-step">
-              <span class="cg-step-pill">02</span>
-              <strong>Review safely</strong>
-              <p class="cg-muted">Draft, correct, approve, and publish without confusing hidden steps.</p>
-            </div>
-            <div class="cg-step">
-              <span class="cg-step-pill">03</span>
-              <strong>Preview mobile</strong>
-              <p class="cg-muted">Confirm how published content appears before moving to the next task.</p>
-            </div>
-          </div>
         </article>
 
         <article class="cg-panel cg-auth-form">
@@ -294,6 +276,32 @@ export default function AuthScreen(props) {
             ) : null}
           </div>
         </article>
+
+        <section class="cg-auth-steps-panel" aria-label="Publishing workflow">
+          <div class="cg-progress-steps">
+            <div class="cg-step">
+              <span class="cg-step-icon">U</span>
+              <div>
+                <strong>Upload clearly</strong>
+                <p class="cg-muted">Add title, description, media, thumbnail, and target sections in one flow.</p>
+              </div>
+            </div>
+            <div class="cg-step">
+              <span class="cg-step-icon">R</span>
+              <div>
+                <strong>Review safely</strong>
+                <p class="cg-muted">Draft, correct, approve, and publish without confusing hidden steps.</p>
+              </div>
+            </div>
+            <div class="cg-step">
+              <span class="cg-step-icon">P</span>
+              <div>
+                <strong>Preview mobile</strong>
+                <p class="cg-muted">Confirm how published content appears before moving to the next task.</p>
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
 
       {notice ? (

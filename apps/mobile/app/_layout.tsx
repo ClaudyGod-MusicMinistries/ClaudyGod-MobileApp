@@ -59,6 +59,7 @@ function RootLayoutInner() {
   useEffect(() => {
     if (!fontsLoaded || !bootDelayDone || initializing) return;
 
+    const isTabsRoute = firstSegment === '(tabs)';
     const isSettingsPage = firstSegment === 'settingsPage';
     const isGuestAllowedSettingsPage =
       isSettingsPage &&
@@ -72,10 +73,11 @@ function RootLayoutInner() {
 
     const isProtectedRoute =
       firstSegment === 'profile' ||
+      (isTabsRoute && (secondSegment === 'settings' || secondSegment === 'library')) ||
       (isSettingsPage && !isGuestAllowedSettingsPage);
 
     if (!isAuthenticated && isProtectedRoute) {
-      router.replace(APP_ROUTES.auth.signIn);
+      router.replace(APP_ROUTES.landing);
     }
   }, [
     bootDelayDone,
