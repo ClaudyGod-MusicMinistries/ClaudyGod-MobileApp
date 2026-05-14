@@ -11,6 +11,8 @@
     "start:worker": "node dist/worker.js",
     "migrate": "ts-node-dev --exit-child --transpile-only src/db/migrate.ts",
     "migrate:prod": "node dist/db/migrate.js",
+    "migrate:status": "ts-node-dev --exit-child --transpile-only src/db/migrationStatus.ts",
+    "migrate:status:prod": "node dist/db/migrationStatus.js",
     "seed:admin": "ts-node-dev --exit-child --transpile-only src/db/seedAdmin.ts"
   },
   "dependencies": {

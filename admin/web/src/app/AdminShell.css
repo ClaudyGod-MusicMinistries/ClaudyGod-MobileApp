@@ -544,6 +544,111 @@ textarea:disabled {
   color: rgba(201, 192, 223, 0.45);
 }
 
+.cg-password-field {
+  position: relative;
+  width: 100%;
+}
+
+.cg-password-field input {
+  padding-right: 48px;
+}
+
+.cg-password-toggle {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  width: 34px;
+  height: 34px;
+  transform: translateY(-50%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.075);
+  color: rgba(238, 233, 255, 0.86);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
+}
+
+.cg-password-toggle:hover,
+.cg-password-toggle:focus-visible {
+  border-color: rgba(166, 120, 255, 0.42);
+  background: rgba(166, 120, 255, 0.16);
+  color: var(--admin-text);
+  outline: none;
+}
+
+.cg-password-strength {
+  display: grid;
+  gap: 9px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.cg-password-strength-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.cg-password-strength-head strong {
+  color: var(--admin-text);
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.cg-inline-action {
+  border: 0;
+  background: transparent;
+  color: #d8caff;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 750;
+  padding: 0;
+  text-align: right;
+}
+
+.cg-inline-action:hover,
+.cg-inline-action:focus-visible {
+  color: #ffffff;
+  outline: none;
+}
+
+.cg-password-meter {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.cg-password-meter span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #e8c46a, #8ee6b1);
+  transition: width 0.18s ease;
+}
+
+.cg-password-checks {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px 10px;
+}
+
+.cg-password-checks span {
+  color: var(--admin-text-muted);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.cg-password-checks span.is-valid {
+  color: #8ee6b1;
+}
+
 .cg-note,
 .cg-form small {
   color: var(--admin-text-muted);
