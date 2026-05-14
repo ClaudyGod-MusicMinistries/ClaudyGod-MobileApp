@@ -279,6 +279,7 @@ services:
         EXPO_PUBLIC_API_URL: ${EXPO_PUBLIC_API_URL:?EXPO_PUBLIC_API_URL is required}
         EXPO_PUBLIC_SUPABASE_URL: ${EXPO_PUBLIC_SUPABASE_URL:?EXPO_PUBLIC_SUPABASE_URL is required}
         EXPO_PUBLIC_SUPABASE_KEY: ${EXPO_PUBLIC_SUPABASE_KEY:?EXPO_PUBLIC_SUPABASE_KEY is required}
+        EXPO_PUBLIC_MOBILE_API_KEY: ${EXPO_PUBLIC_MOBILE_API_KEY:?EXPO_PUBLIC_MOBILE_API_KEY is required}
         EAS_PROJECT_ID: ${EAS_PROJECT_ID:-}
     restart: unless-stopped
     security_opt:
@@ -313,7 +314,12 @@ services:
       - "traefik.http.middlewares.claudygod-mobile-headers.headers.stsIncludeSubdomains=true"
       - "traefik.http.middlewares.claudygod-mobile-headers.headers.stsPreload=true"
       - "traefik.http.services.claudygod-mobile.loadbalancer.server.port=80"
-
+      - "traefik.http.routers.claudygod-root.rule=Host(`claudygod.org`) || Host(`www.claudygod.org`)"
+      - "traefik.http.routers.claudygod-root.entrypoints=websecure"
+      - "traefik.http.routers.claudygod-root.tls=true"
+      - "traefik.http.routers.claudygod-root.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-letsencrypt}"
+      - "traefik.http.routers.claudygod-root.middlewares=claudygod-mobile-compress,claudygod-mobile-headers"
+      - "traefik.http.routers.claudygod-root.service=claudygod-mobile"
 volumes:
   redis_data:
 

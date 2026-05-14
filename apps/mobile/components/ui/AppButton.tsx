@@ -48,10 +48,10 @@ export function AppButton({
 
   const sizeStyle =
     size === 'sm'
-      ? { minHeight: 34, paddingHorizontal: 13, paddingVertical: 7, fontSize: 11 }
+      ? { minHeight: 32, paddingHorizontal: 12, paddingVertical: 6, fontSize: 10.6 }
       : size === 'lg'
-        ? { minHeight: 50, paddingHorizontal: 21, paddingVertical: 13, fontSize: 13 }
-        : { minHeight: 42, paddingHorizontal: 16, paddingVertical: 10, fontSize: 12 };
+        ? { minHeight: 46, paddingHorizontal: 18, paddingVertical: 11, fontSize: 12.2 }
+        : { minHeight: 39, paddingHorizontal: 14, paddingVertical: 9, fontSize: 11.2 };
 
   const resolvedTextColor =
     textColor ??

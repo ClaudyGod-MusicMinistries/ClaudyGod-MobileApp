@@ -109,18 +109,18 @@ function MetricCard({
           </View>
 
           <View>
-            <CustomText style={{ color: COLORS.textSecondary, fontSize: 11, marginBottom: spacing.xs }}>
+            <CustomText variant="meta" style={{ color: COLORS.textSecondary, marginBottom: spacing.xs }}>
               {label}
             </CustomText>
             <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm }}>
-              <CustomText style={{ color: COLORS.textPrimary, fontSize: 24, fontWeight: '700' }}>
+              <CustomText variant="display" style={{ color: COLORS.textPrimary }}>
                 {value}
               </CustomText>
               {trend !== undefined && (
                 <CustomText
                   style={{
                     color: trend > 0 ? COLORS.success : COLORS.danger,
-                    fontSize: 11,
+                    fontSize: 10.5,
                     fontWeight: '600',
                   }}
                 >
@@ -332,14 +332,14 @@ export default function DashboardScreen() {
           {/* Header */}
           <FadeIn delay={0}>
             <View style={{ paddingVertical: 16, marginBottom: 8 }}>
-              <CustomText style={{ color: COLORS.textSecondary, fontSize: 12, marginBottom: 4 }}>
+              <CustomText variant="caption" style={{ color: COLORS.textSecondary, marginBottom: 4 }}>
                 Welcome back,
               </CustomText>
-              <CustomText style={{ color: COLORS.textPrimary, fontSize: 28, fontWeight: '800' }}>
+              <CustomText variant="display" style={{ color: COLORS.textPrimary }}>
                 Your Dashboard
               </CustomText>
               {isLoading ? (
-                <CustomText style={{ color: COLORS.accent, fontSize: 11, marginTop: 6 }}>
+                <CustomText variant="caption" style={{ color: COLORS.accent, marginTop: 6 }}>
                   Syncing your latest insights...
                 </CustomText>
               ) : null}
@@ -369,7 +369,7 @@ export default function DashboardScreen() {
           {featuredInsight ? (
             <FadeIn delay={60}>
               <View style={{ marginBottom: 20 }}>
-                <CustomText style={{ color: COLORS.textPrimary, fontSize: 16, fontWeight: '700', marginBottom: 10 }}>
+                <CustomText variant="title" style={{ color: COLORS.textPrimary, marginBottom: 10 }}>
                   Picked for you
                 </CustomText>
                 <Pressable
@@ -403,10 +403,10 @@ export default function DashboardScreen() {
                     <MaterialIcons name="star" size={24} color={COLORS.accent} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <CustomText style={{ color: COLORS.textPrimary, fontSize: 14, fontWeight: '700' }}>
+                    <CustomText variant="title" style={{ color: COLORS.textPrimary }}>
                       {featuredInsight.title}
                     </CustomText>
-                    <CustomText style={{ color: COLORS.textSecondary, fontSize: 12, marginTop: 4 }}>
+                    <CustomText variant="caption" style={{ color: COLORS.textSecondary, marginTop: 4 }}>
                       {featuredInsight.description}
                     </CustomText>
                   </View>
@@ -418,7 +418,7 @@ export default function DashboardScreen() {
           {rotationInsights.length ? (
             <FadeIn delay={80}>
               <View style={{ marginBottom: 20 }}>
-                <CustomText style={{ color: COLORS.textPrimary, fontSize: 16, fontWeight: '700', marginBottom: 10 }}>
+                <CustomText variant="title" style={{ color: COLORS.textPrimary, marginBottom: 10 }}>
                   Your recent rotation
                 </CustomText>
                 {rotationInsights.map((insight, idx) => (
@@ -452,10 +452,10 @@ export default function DashboardScreen() {
                       <MaterialIcons name="insights" size={20} color="#60A5FA" />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <CustomText style={{ color: COLORS.textPrimary, fontSize: 13, fontWeight: '700' }}>
+                      <CustomText variant="subheading" style={{ color: COLORS.textPrimary }}>
                         {insight.title}
                       </CustomText>
-                      <CustomText style={{ color: COLORS.textSecondary, fontSize: 11, marginTop: 2 }} numberOfLines={1}>
+                      <CustomText variant="caption" style={{ color: COLORS.textSecondary, marginTop: 2 }} numberOfLines={1}>
                         {insight.description}
                       </CustomText>
                     </View>
@@ -486,16 +486,16 @@ export default function DashboardScreen() {
                 }}
               >
                 <View style={{ flex: 1 }}>
-                  <CustomText style={{ color: COLORS.textSecondary, fontSize: 12, marginBottom: 8 }}>
+                  <CustomText variant="meta" style={{ color: COLORS.textSecondary, marginBottom: 8 }}>
                     ENGAGEMENT SCORE
                   </CustomText>
-                  <CustomText style={{ color: COLORS.textPrimary, fontSize: 36, fontWeight: '800', marginBottom: 8 }}>
+                  <CustomText variant="display" style={{ color: COLORS.textPrimary, marginBottom: 8 }}>
                     {metrics.engagementScore}/100
                   </CustomText>
-                  <CustomText style={{ color: COLORS.textSecondary, fontSize: 12, lineHeight: 18 }}>
+                  <CustomText variant="caption" style={{ color: COLORS.textSecondary }}>
                     {metrics.engagementScore > 70
-                      ? '🔥 Great job! Keep it up!'
-                      : '⚡ Keep streaming to boost your score'}
+                      ? 'Great job. Keep it up.'
+                      : 'Keep streaming to boost your score.'}
                   </CustomText>
                 </View>
                 <View
@@ -511,7 +511,7 @@ export default function DashboardScreen() {
                     alignSelf: isCompactLayout ? 'flex-start' : 'auto',
                   }}
                 >
-                  <CustomText style={{ color: COLORS.accent, fontSize: 28, fontWeight: '700' }}>
+                  <CustomText variant="heading" style={{ color: COLORS.accent }}>
                     {Math.round((metrics.engagementScore / 100) * 100)}%
                   </CustomText>
                 </View>
@@ -523,7 +523,7 @@ export default function DashboardScreen() {
           {activeChip === 'overview' && overviewData && (
             <FadeIn delay={120}>
               <View style={{ marginBottom: 24 }}>
-                <CustomText style={{ color: COLORS.textPrimary, fontSize: 16, fontWeight: '700', marginBottom: 12 }}>
+                <CustomText variant="title" style={{ color: COLORS.textPrimary, marginBottom: 12 }}>
                   This Week
                 </CustomText>
                 <View style={{ gap: 12 }}>

@@ -30,6 +30,10 @@ export default function AdminShell(props) {
     return (
       <div class="cg-auth-shell">
         {content}
+        <footer class="cg-admin-footer cg-admin-footer-auth">
+          <span>ClaudyGod Music Admin Studio</span>
+          <span>Secure publishing, review, and mobile delivery.</span>
+        </footer>
       </div>
     );
   }
@@ -104,6 +108,11 @@ export default function AdminShell(props) {
         <main class="cg-content-shell">
           {content}
         </main>
+
+        <footer class="cg-admin-footer">
+          <span>ClaudyGod Music Admin Studio</span>
+          <span>Every release is tracked through authenticated requests and review records.</span>
+        </footer>
       </section>
     </div>
   );

@@ -57,6 +57,7 @@ VITE_MOBILE_PREVIEW_URL=https://app.validation.example
 EXPO_PUBLIC_API_URL=https://api.validation.example
 EXPO_PUBLIC_SUPABASE_URL=https://validation.supabase.co
 EXPO_PUBLIC_SUPABASE_KEY=validation-supabase-publishable-key
+EXPO_PUBLIC_MOBILE_API_KEY=validation-mobile-api-key
 API_DOMAIN=api.validation.example
 ADMIN_DOMAIN=admin.validation.example
 APP_DOMAIN=app.validation.example

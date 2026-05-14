@@ -166,6 +166,8 @@ export default defineComponent({
     const mobilePreviewUrl = ref(readStoredMobilePreviewUrl());
     const mobilePreviewDraft = ref(mobilePreviewUrl.value);
     const mobilePreviewFrameKey = ref(0);
+    const hideAuthPassword = ref(true);
+    const hideAuthConfirmPassword = ref(true);
     const notice = ref('');
     const noticeKind = ref('success');
 
@@ -1849,6 +1851,15 @@ export default defineComponent({
           setNotice('Please enter your username.', 'error');
           return;
         }
+        const strongPassword =
+          authForm.password.length >= 8 &&
+          /[A-Z]/.test(authForm.password) &&
+          /[a-z]/.test(authForm.password) &&
+          /\d/.test(authForm.password);
+        if (!strongPassword) {
+          setNotice('Use at least 8 characters with uppercase, lowercase, and a number.', 'error');
+          return;
+        }
         if (authForm.password !== authForm.confirmPassword) {
           setNotice('Passwords do not match.', 'error');
           return;
@@ -1914,6 +1925,8 @@ export default defineComponent({
 
     function switchAuthMode(mode) {
       authMode.value = mode;
+      hideAuthPassword.value = true;
+      hideAuthConfirmPassword.value = true;
       closeHeaderMenu();
       clearNotice();
       if (mode !== 'verify') {
@@ -2374,10 +2387,14 @@ export default defineComponent({
           notice={notice.value}
           noticeKind={noticeKind.value}
           googleLoginEnabled={googleLoginEnabled.value}
+          hidePassword={hideAuthPassword.value}
+          hideConfirmPassword={hideAuthConfirmPassword.value}
           authForm={authForm}
           pendingVerificationEmail={pendingVerificationEmail.value}
           onSwitchMode={switchAuthMode}
           onGoogleLogin={startGoogleLogin}
+          onTogglePassword={() => { hideAuthPassword.value = !hideAuthPassword.value; }}
+          onToggleConfirmPassword={() => { hideAuthConfirmPassword.value = !hideAuthConfirmPassword.value; }}
           onSubmit={handleAuthSubmit}
           onReadValue={readValue}
           onResendVerificationCode={resendVerificationCode}
@@ -2397,6 +2414,10 @@ export default defineComponent({
             <OverviewView
               adminOpsLoading={adminOpsLoading.value}
               overview={adminOps.value.overview || {}}
+              summary={adminOps.value.summary || {}}
+              emailDelivery={adminOps.value.emailDelivery || {}}
+              supportInbox={adminOps.value.supportInbox || []}
+              recentAutomation={adminOps.value.recentAutomation || []}
               smartInsights={adminOps.value.smartInsights || []}
               recentAuthActivity={adminOps.value.recentAuthActivity || []}
               onSetDashboardView={setDashboardView}

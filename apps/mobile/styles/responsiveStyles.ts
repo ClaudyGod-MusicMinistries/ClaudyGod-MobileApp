@@ -16,29 +16,29 @@ const responsiveStyles = StyleSheet.create({
 
   // Text styles with responsive font sizes
   h1: {
-    fontSize: responsive.scaleFont(32),
-    lineHeight: responsive.scaleHeight(40),
-    fontFamily: 'Sora_600SemiBold',
+    fontSize: responsive.scaleFont(22),
+    lineHeight: responsive.scaleHeight(29),
+    fontFamily: 'Manrope_600SemiBold',
   },
   h2: {
-    fontSize: responsive.scaleFont(26),
-    lineHeight: responsive.scaleHeight(34),
-    fontFamily: 'Sora_600SemiBold',
+    fontSize: responsive.scaleFont(18),
+    lineHeight: responsive.scaleHeight(24),
+    fontFamily: 'Manrope_600SemiBold',
   },
   h3: {
-    fontSize: responsive.scaleFont(20),
-    lineHeight: responsive.scaleHeight(28),
-    fontFamily: 'SpaceGrotesk_500Medium',
+    fontSize: responsive.scaleFont(15),
+    lineHeight: responsive.scaleHeight(21),
+    fontFamily: 'Manrope_600SemiBold',
   },
   body: {
-    fontSize: responsive.scaleFont(16),
-    lineHeight: responsive.scaleHeight(24),
-    fontFamily: 'Sora_400Regular',
+    fontSize: responsive.scaleFont(12.5),
+    lineHeight: responsive.scaleHeight(18),
+    fontFamily: 'Manrope_400Regular',
   },
   caption: {
-    fontSize: responsive.scaleFont(14),
-    lineHeight: responsive.scaleHeight(20),
-    fontFamily: 'Sora_400Regular',
+    fontSize: responsive.scaleFont(10.5),
+    lineHeight: responsive.scaleHeight(14.5),
+    fontFamily: 'Manrope_400Regular',
   },
 
   // Spacing utilities

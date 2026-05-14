@@ -1,6 +1,8 @@
+import { createHash } from 'node:crypto';
+import type { PoolClient } from 'pg';
 import { closePool, pool } from './pool';
 
-const migrations = [
+const migrationStatements = [
   `CREATE EXTENSION IF NOT EXISTS "pgcrypto"`,
   `CREATE TABLE IF NOT EXISTS app_users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -650,18 +652,94 @@ const migrations = [
 ];
 
 const MIGRATION_LOCK_ID = 7_246_130_001;
+const MIGRATION_LEDGER_TABLE = 'schema_migrations';
+
+type MigrationStep = {
+  id: string;
+  name: string;
+  statement: string;
+  checksum: string;
+};
+
+const summarizeStatement = (statement: string): string => {
+  const normalized = statement.replace(/\s+/g, ' ').trim();
+  const match =
+    normalized.match(/^(CREATE|ALTER|DROP)\s+(TABLE|INDEX|EXTENSION|FUNCTION|TRIGGER|UNIQUE INDEX)\s+(?:IF\s+(?:NOT\s+)?EXISTS\s+)?("?[\w.:-]+"?)/i) ??
+    normalized.match(/^DO\s+\$\$/i);
+
+  if (!match) {
+    return normalized.slice(0, 64);
+  }
+
+  if (match[0].toUpperCase().startsWith('DO $$')) {
+    return 'trigger-maintenance-block';
+  }
+
+  return `${match[1].toLowerCase()}-${match[2].toLowerCase().replace(/\s+/g, '-')}-${match[3].replace(/"/g, '')}`;
+};
+
+const migrations: MigrationStep[] = migrationStatements.map((statement, index) => ({
+  id: String(index + 1).padStart(4, '0'),
+  name: summarizeStatement(statement),
+  statement,
+  checksum: createHash('sha256').update(statement).digest('hex'),
+}));
+
+const ensureMigrationLedger = async (client: PoolClient): Promise<void> => {
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS ${MIGRATION_LEDGER_TABLE} (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      checksum TEXT NOT NULL,
+      executed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+};
 
 export const runMigrations = async (): Promise<void> => {
   const client = await pool.connect();
+  let transactionOpen = false;
   try {
     await client.query('SELECT pg_advisory_lock($1)', [MIGRATION_LOCK_ID]);
-    await client.query('BEGIN');
-    for (const statement of migrations) {
-      await client.query(statement);
+    await ensureMigrationLedger(client);
+
+    const appliedResult = await client.query<{ id: string; checksum: string }>(
+      `SELECT id, checksum FROM ${MIGRATION_LEDGER_TABLE}`,
+    );
+    const applied = new Map(appliedResult.rows.map((row) => [row.id, row.checksum]));
+    let appliedCount = 0;
+
+    for (const migration of migrations) {
+      const existingChecksum = applied.get(migration.id);
+
+      if (existingChecksum) {
+        if (existingChecksum !== migration.checksum) {
+          throw new Error(
+            `Migration checksum mismatch for ${migration.id} (${migration.name}). Refusing to continue because an applied migration changed.`,
+          );
+        }
+        continue;
+      }
+
+      await client.query('BEGIN');
+      transactionOpen = true;
+      await client.query(migration.statement);
+      await client.query(
+        `INSERT INTO ${MIGRATION_LEDGER_TABLE} (id, name, checksum) VALUES ($1, $2, $3)`,
+        [migration.id, migration.name, migration.checksum],
+      );
+      await client.query('COMMIT');
+      transactionOpen = false;
+      appliedCount += 1;
     }
-    await client.query('COMMIT');
+
+    console.log(
+      `Database migrations completed. ${appliedCount} applied, ${migrations.length - appliedCount} already current.`,
+    );
   } catch (error) {
-    await client.query('ROLLBACK');
+    if (transactionOpen) {
+      await client.query('ROLLBACK').catch(() => undefined);
+    }
     throw error;
   } finally {
     await client.query('SELECT pg_advisory_unlock($1)', [MIGRATION_LOCK_ID]).catch(() => undefined);

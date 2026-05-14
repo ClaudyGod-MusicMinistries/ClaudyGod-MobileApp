@@ -24,7 +24,7 @@ export const shadows = {
   },
 };
 export const blur = { glass: 10 };
-export const typography = { hero: 23, headline: 19, title: 15.5, body: 12.5, label: 11.5, caption: 10.5 };
+export const typography = { hero: 21, headline: 17.5, title: 14.5, body: 12.5, label: 11.2, caption: 10.2 };
 export const tv = {
   hitSlop: { top: 12, bottom: 12, left: 12, right: 12 },
   focusScale: 1.035,
