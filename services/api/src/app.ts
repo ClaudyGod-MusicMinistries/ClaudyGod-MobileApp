@@ -32,7 +32,17 @@ const parseCorsOrigin = (): true | string[] => {
     return true;
   }
 
-  return origins;
+  return [
+    ...new Set(
+      origins.map((origin) => {
+        try {
+          return new URL(origin).origin;
+        } catch {
+          return origin.replace(/\/+$/, '');
+        }
+      }),
+    ),
+  ];
 };
 
 const isPrivateNetworkOrigin = (origin: string): boolean => {
@@ -104,6 +114,10 @@ const buildCorsOrigin = (): CorsOptions['origin'] => {
 
 export const createApp = () => {
   const app = express();
+  const corsOptions: CorsOptions = {
+    origin: buildCorsOrigin(),
+    credentials: true,
+  };
 
   // Trust proxy (important for X-Forwarded-For in production)
   app.set('trust proxy', 1);
@@ -115,12 +129,8 @@ export const createApp = () => {
   app.use(helmet());
 
   // CORS
-  app.use(
-    cors({
-      origin: buildCorsOrigin(),
-      credentials: true,
-    }),
-  );
+  app.options('*', cors(corsOptions));
+  app.use(cors(corsOptions));
 
   // Request tracking - MUST be before other middleware
   app.use(requestTrackingMiddleware);
