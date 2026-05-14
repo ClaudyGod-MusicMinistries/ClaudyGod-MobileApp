@@ -83,8 +83,8 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
             <View style={{ marginBottom: 24 }}>
               <Text
                 style={{
-                  fontSize: 24,
-                  fontWeight: '700',
+                  fontSize: 18,
+                  fontWeight: '600',
                   color: darkPalette.text,
                   marginBottom: 8,
                 }}
@@ -93,7 +93,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
               </Text>
               <Text
                 style={{
-                  fontSize: 14,
+                  fontSize: 12.5,
                   color: darkPalette.textSecondary,
                   lineHeight: 20,
                 }}
