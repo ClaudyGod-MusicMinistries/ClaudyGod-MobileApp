@@ -66,9 +66,9 @@ export function AuthTextField({
     }).start();
   }, [isActive, translateY, useNativeAnimations, value]);
 
-  const minHeight = compact ? 48 : spacious ? 54 : 50;
-  const inputFontSize = compact ? 12.8 : spacious ? 14.2 : 13.4;
-  const inputLineHeight = compact ? 18 : spacious ? 20 : 19;
+  const minHeight = compact ? 44 : spacious ? 50 : 46;
+  const inputFontSize = compact ? 12.2 : spacious ? 13.2 : 12.6;
+  const inputLineHeight = compact ? 17 : spacious ? 19 : 18;
 
   return (
     <View>
@@ -80,7 +80,7 @@ export function AuthTextField({
             marginBottom: 7,
             textTransform: 'uppercase',
             letterSpacing: 0.58,
-            fontSize: compact ? 10 : 10.6,
+            fontSize: compact ? 9.8 : 10.3,
             lineHeight: compact ? 12 : 13,
           }}
         >
@@ -98,7 +98,7 @@ export function AuthTextField({
           onHoverIn={() => setIsHovered(true)}
           onHoverOut={() => setIsHovered(false)}
           style={{
-            borderRadius: 18,
+            borderRadius: 15,
             borderWidth: 0,
             borderColor: 'transparent',
             backgroundColor: isActive ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.03)',
@@ -139,8 +139,8 @@ export function AuthTextField({
               color: '#F8F7FC',
               fontSize: inputFontSize,
               lineHeight: inputLineHeight,
-              fontFamily: 'Sora_400Regular',
-              paddingVertical: compact ? 13 : 14,
+              fontFamily: 'Manrope_400Regular',
+              paddingVertical: compact ? 11 : 12,
             }}
           />
 
@@ -159,7 +159,7 @@ export function AuthTextField({
                 : hintTone === 'success'
                   ? '#D7FFE6'
                   : 'rgba(202,196,220,0.66)',
-            fontSize: compact ? 10.6 : 11,
+            fontSize: compact ? 10.2 : 10.6,
             lineHeight: compact ? 14 : 15,
           }}
         >

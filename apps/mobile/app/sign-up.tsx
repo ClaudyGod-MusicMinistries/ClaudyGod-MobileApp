@@ -16,6 +16,23 @@ import { useToast } from '../context/ToastContext';
 import { useAppModal } from '../context/AppModalContext';
 import { APP_ROUTES } from '../util/appRoutes';
 
+const secureIndex = (length: number): number => {
+  const cryptoApi = globalThis.crypto;
+  if (cryptoApi?.getRandomValues) {
+    const values = new Uint32Array(1);
+    cryptoApi.getRandomValues(values);
+    return values[0] % length;
+  }
+  return Math.floor(Math.random() * length);
+};
+
+const generatePasswordSuggestion = (): string => {
+  const words = ['Grace', 'Signal', 'Anchor', 'Crown', 'Harbor', 'Studio', 'Cedar', 'Summit'];
+  const symbols = ['!', '#', '%', '?', '@'];
+  const number = 1000 + secureIndex(9000);
+  return `${words[secureIndex(words.length)]}${words[secureIndex(words.length)]}${symbols[secureIndex(symbols.length)]}${number}`;
+};
+
 export default function SignUpScreen() {
   const router = useRouter();
   const { showToast } = useToast();
@@ -71,12 +88,21 @@ export default function SignUpScreen() {
     }
   };
 
+  const handleSuggestPassword = () => {
+    const suggestion = generatePasswordSuggestion();
+    setPassword(suggestion);
+    setConfirmPassword(suggestion);
+    setHidePassword(false);
+    showToast({ title: 'Secure password suggested', message: 'Review it before creating your account.', tone: 'success' });
+  };
+
   return (
     <AuthScreenFrame backPath={APP_ROUTES.landing} salutation="Create your space" description="Save favorites, follow live sessions, and continue your worship experience across devices." title="Create account" subtitle="Continue with Google or create a protected email account.">
       <View style={{ gap: 12 }}>
         <AuthTextField label="Full name" value={name} onChangeText={setName} autoCapitalize="words" autoComplete="name" textContentType="name" placeholder="Your full name" hint={nameHint} hintTone={name.trim() ? (nameIsValid ? 'success' : 'error') : 'default'} />
         <AuthTextField label="Email address" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" autoComplete="email" textContentType="emailAddress" placeholder="name@example.com" hint={emailHint} hintTone={normalizedEmail ? (emailIsValid ? 'success' : 'error') : 'default'} />
         <AuthTextField label="Password" value={password} onChangeText={setPassword} secureTextEntry={hidePassword} autoCapitalize="none" autoComplete="new-password" textContentType="newPassword" placeholder="Create a secure password" trailing={<TVTouchable onPress={() => setHidePassword((prev) => !prev)} showFocusBorder={false}><MaterialIcons name={hidePassword ? 'visibility' : 'visibility-off'} size={20} color="rgba(226,218,247,0.9)" /></TVTouchable>} hint={password.trim() ? `${passwordReport.label} password` : 'Use a mix of letters and numbers.'} hintTone={password.trim() ? (passwordIsCompliant ? 'success' : 'error') : 'default'} />
+        <AppButton title="Suggest secure password" variant="secondary" size="sm" onPress={handleSuggestPassword} disabled={submitting} leftIcon={<MaterialIcons name="auto-fix-high" size={16} color="rgba(226,218,247,0.9)" />} style={{ alignSelf: 'flex-start' }} />
         {password.trim() ? <PasswordStrengthPanel password={password} /> : null}
         <AuthTextField label="Confirm password" value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry={hidePassword} autoCapitalize="none" autoComplete="new-password" textContentType="newPassword" placeholder="Confirm your password" hint={confirmHint} hintTone={confirmPassword.trim() ? (passwordsMatch ? 'success' : 'error') : 'default'} />
       </View>

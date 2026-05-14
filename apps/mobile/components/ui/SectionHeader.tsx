@@ -44,7 +44,7 @@ export function SectionHeader({ title, actionLabel, onAction, eyebrow }: Section
           variant="heading"
           style={{
             color: theme.colors.text,
-            letterSpacing: -0.25,
+            letterSpacing: 0,
           }}
           numberOfLines={1}
         >

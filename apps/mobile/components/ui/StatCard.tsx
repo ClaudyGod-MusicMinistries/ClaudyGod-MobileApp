@@ -67,7 +67,6 @@ export const StatCard: React.FC<StatCardProps> = ({
             },
           ]}
         >
-          {/* Overlay for opacity */}
           <View
             style={[
               styles.card,
@@ -130,10 +129,10 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   label: {
-    fontSize: 13,
+    fontSize: 10.8,
     fontWeight: '600',
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.2,
   },
   content: {
     flexDirection: 'row',
@@ -141,9 +140,9 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   value: {
-    fontSize: 32,
-    fontWeight: '800',
-    letterSpacing: -0.5,
+    fontSize: 20,
+    fontWeight: '600',
+    letterSpacing: 0,
   },
   trend: {
     paddingVertical: spacing.xs,
@@ -152,7 +151,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
   },
   trendValue: {
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: 10.8,
+    fontWeight: '600',
   },
 });

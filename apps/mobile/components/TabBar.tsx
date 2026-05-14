@@ -27,8 +27,8 @@ const FOOTER_ORDER: TabRouteName[] = ['home', 'player', 'videos', 'library', 'se
 
 const FOOTER_CONFIG: Record<TabRouteName, Omit<FooterItem, 'routeName' | 'key'>> = {
   home: { icon: 'home' as const, label: 'Home' },
-  player: { icon: 'graphic-eq' as const, label: 'Music' },
-  videos: { icon: 'play-arrow' as const, label: 'Play', center: true },
+  player: { icon: 'headphones' as const, label: 'Music' },
+  videos: { icon: 'play-circle-filled' as const, label: 'Play', center: true },
   library: { icon: 'library-music' as const, label: 'Library' },
   settings: { icon: 'settings' as const, label: 'Settings' },
 };
@@ -100,8 +100,8 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
         style={{
           width: '100%',
           maxWidth: barMaxWidth,
-          minHeight: compact ? 60 : 64,
-          borderRadius: 28,
+          minHeight: compact ? 58 : 62,
+          borderRadius: 24,
           overflow: 'visible',
           borderWidth: 1,
           borderColor: colorScheme === 'dark' ? 'rgba(185,148,255,0.15)' : 'rgba(56,42,84,0.16)',
@@ -126,8 +126,8 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
-            paddingHorizontal: compact ? 8 : 10,
-            paddingVertical: 7,
+            paddingHorizontal: compact ? 7 : 9,
+            paddingVertical: 6,
           }}
         >
           {footerItems.map((item) => {
@@ -148,9 +148,9 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
                 }}
                 style={{
                   flex: item.center ? 0.9 : 1,
-                  minHeight: compact ? 46 : 50,
+                  minHeight: compact ? 44 : 48,
                   marginHorizontal: 1,
-                  borderRadius: item.center ? 999 : 19,
+                  borderRadius: item.center ? 999 : 16,
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: compact ? 2 : 3,
@@ -161,13 +161,13 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
               >
                 {item.center ? (
                   <>
-                    <View style={{ width: compact ? 56 : 60, height: compact ? 56 : 60, alignItems: 'center', justifyContent: 'center' }}>
+                    <View style={{ width: compact ? 52 : 56, height: compact ? 52 : 56, alignItems: 'center', justifyContent: 'center' }}>
                       <Animated.View
                         pointerEvents="none"
                         style={{
                           position: 'absolute',
-                          width: compact ? 54 : 58,
-                          height: compact ? 54 : 58,
+                          width: compact ? 50 : 54,
+                          height: compact ? 50 : 54,
                           borderRadius: 999,
                           backgroundColor: palette.primary,
                           opacity: playPulse.interpolate({ inputRange: [0, 1], outputRange: [0.16, 0.04] }),
@@ -179,8 +179,8 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
                         style={{
-                          width: compact ? 48 : 52,
-                          height: compact ? 48 : 52,
+                          width: compact ? 44 : 48,
+                          height: compact ? 44 : 48,
                           borderRadius: 999,
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -193,7 +193,7 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
                           elevation: 14,
                         }}
                       >
-                        <MaterialIcons name="play-arrow" size={compact ? 25 : 28} color={palette.textInverse} />
+                        <MaterialIcons name="play-arrow" size={compact ? 23 : 26} color={palette.textInverse} />
                       </LinearGradient>
                     </View>
                   </>
@@ -201,22 +201,22 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
                   <>
                     <View
                       style={{
-                        width: focused ? 30 : 26,
-                        height: focused ? 30 : 26,
-                        borderRadius: 15,
+                        width: focused ? 29 : 25,
+                        height: focused ? 29 : 25,
+                        borderRadius: 14,
                         alignItems: 'center',
                         justifyContent: 'center',
                         backgroundColor: focused ? 'rgba(185,148,255,0.16)' : 'transparent',
                       }}
                     >
-                      <MaterialIcons name={item.icon} size={focused ? 20 : 19} color={focused ? palette.primary : palette.textMuted} />
+                      <MaterialIcons name={item.icon} size={focused ? 19 : 18} color={focused ? palette.primary : palette.textMuted} />
                     </View>
                     {!compact ? (
                       <CustomText
                         variant="caption"
                         style={{
                           color: labelColor,
-                          fontSize: 9.4,
+                          fontSize: 9.1,
                           lineHeight: 12,
                           letterSpacing: 0,
                         }}
@@ -233,7 +233,7 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
                     variant="caption"
                     style={{
                       color: focused ? '#F6F0FF' : palette.textMuted,
-                      fontSize: compact ? 8.8 : 9.2,
+                      fontSize: compact ? 8.6 : 9,
                       lineHeight: 11,
                       marginTop: compact ? -7 : -8,
                       letterSpacing: 0,

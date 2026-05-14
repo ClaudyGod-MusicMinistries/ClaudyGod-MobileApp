@@ -132,7 +132,7 @@ export function MinimalPosterCard({
         >
           <CustomText
             variant="label"
-            style={{ color: '#FFFFFF', fontSize: 12, lineHeight: 16, letterSpacing: -0.08 }}
+            style={{ color: '#FFFFFF', fontSize: 11.4, lineHeight: 15.5, letterSpacing: 0 }}
             numberOfLines={2}
           >
             {title}

@@ -20,11 +20,10 @@ module.exports = {
         muted: '#1F2937',        // Muted surfaces/borders
         'muted-foreground': '#9CA3AF',
       },
-      // Add custom font families if needed
       fontFamily: {
-        'clash-display': ['ClashDisplay_700Bold', 'sans-serif'],
-        'space-grotesk': ['SpaceGrotesk_400Regular', 'sans-serif'],
-        'sora': ['Sora_500Medium', 'sans-serif'],
+        'app': ['Manrope_400Regular', 'sans-serif'],
+        'app-medium': ['Manrope_500Medium', 'sans-serif'],
+        'app-semibold': ['Manrope_600SemiBold', 'sans-serif'],
       },
     },
   },
