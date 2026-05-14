@@ -1,12 +1,8 @@
 // components/ui/Header.tsx
-/**
- * Modern Header Component
- * Beautiful, flexible header with animated transitions
- */
-
 import React from 'react';
 import { View, StyleSheet, Animated, SafeAreaView, type StyleProp, type ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useAppTheme } from '../../util/colorScheme';
 import { CustomText } from '../CustomText';
 
@@ -46,36 +42,32 @@ export const Header: React.FC<HeaderProps> = ({
     >
       <SafeAreaView>
         <View style={styles.header}>
-          {/* Left Action */}
           <View style={styles.actionContainer}>
             {leftAction}
           </View>
 
-          {/* Title Section */}
           <TitleContainer
             style={[
               styles.titleContainer,
               animated ? styles.animatedTitleContainer : null,
             ]}
           >
-            <CustomText style={[styles.title, { color: theme.colors.textInverse }]}>
+            <CustomText variant="heading" style={[styles.title, { color: theme.colors.textInverse }]}>
               {title}
             </CustomText>
             {subtitle && (
-              <CustomText style={[styles.subtitle, { color: 'rgba(255,255,255,0.8)' }]}>
+              <CustomText variant="caption" style={[styles.subtitle, { color: 'rgba(255,255,255,0.78)' }]}>
                 {subtitle}
               </CustomText>
             )}
           </TitleContainer>
 
-          {/* Right Action */}
-          <View style={styles.actionContainer}>
-            {rightAction}
+          <View style={[styles.actionContainer, styles.rightActionContainer]}>
+            {rightAction ?? <MaterialIcons name="keyboard-arrow-down" size={20} color="rgba(255,255,255,0.82)" />}
           </View>
         </View>
       </SafeAreaView>
 
-      {/* Bottom Accent Line */}
       <View
         style={[
           styles.accentLine,
@@ -88,18 +80,21 @@ export const Header: React.FC<HeaderProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    paddingBottom: 16,
+    paddingBottom: 10,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 10,
   },
   actionContainer: {
     flex: 0.5,
     alignItems: 'flex-start',
+  },
+  rightActionContainer: {
+    alignItems: 'flex-end',
   },
   titleContainer: {
     flex: 2,
@@ -109,14 +104,15 @@ const styles = StyleSheet.create({
     opacity: 1,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '800',
-    letterSpacing: -0.5,
+    fontSize: 16,
+    lineHeight: 21,
+    fontWeight: '600',
+    letterSpacing: 0,
   },
   subtitle: {
-    fontSize: 12,
-    fontWeight: '500',
-    marginTop: 4,
+    fontSize: 10.5,
+    fontWeight: '400',
+    marginTop: 3,
   },
   accentLine: {
     height: 1,

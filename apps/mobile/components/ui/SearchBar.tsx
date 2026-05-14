@@ -22,9 +22,9 @@ export function SearchBar({ placeholder, value, onChangeText, onSubmit }: Search
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: theme.colors.surface,
-        borderRadius: theme.radius.lg,
-        paddingHorizontal: theme.spacing.md,
-        minHeight: 50,
+        borderRadius: 16,
+        paddingHorizontal: theme.spacing.sm,
+        minHeight: 44,
         borderWidth: 1,
         borderColor: focused ? theme.colors.primary : theme.colors.border,
       }}
@@ -43,9 +43,9 @@ export function SearchBar({ placeholder, value, onChangeText, onSubmit }: Search
           paddingVertical: theme.spacing.sm,
           paddingHorizontal: theme.spacing.sm,
           color: theme.colors.text,
-          fontSize: 14,
-          lineHeight: 19,
-          fontFamily: 'Sora_400Regular',
+          fontSize: 12.5,
+          lineHeight: 17,
+          fontFamily: 'Manrope_400Regular',
         }}
       />
       {value.length > 0 ? (
@@ -60,9 +60,9 @@ export function SearchBar({ placeholder, value, onChangeText, onSubmit }: Search
             backgroundColor: theme.colors.surfaceAlt,
             borderWidth: 1,
             borderColor: theme.colors.border,
-            paddingHorizontal: 10,
-            paddingVertical: 8,
-            borderRadius: theme.radius.md,
+            paddingHorizontal: 9,
+            paddingVertical: 7,
+            borderRadius: 12,
           }}
           showFocusBorder={false}
         >

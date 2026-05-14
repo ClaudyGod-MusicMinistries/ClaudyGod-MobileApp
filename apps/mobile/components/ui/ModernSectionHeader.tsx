@@ -1,8 +1,3 @@
-/**
- * Beautiful Modern Section Header
- * Displays section titles with optional action button
- */
-
 import React from 'react';
 import { View, Pressable } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -39,10 +34,11 @@ export function ModernSectionHeader({
     >
       <View style={{ flex: 1 }}>
         <CustomText
+          variant="title"
           style={{
             color: COLORS.textPrimary,
-            fontSize: 18,
-            fontWeight: '700',
+            fontSize: 14.5,
+            fontWeight: '600',
             marginBottom: subtitle ? 4 : 0,
           }}
         >
@@ -50,9 +46,10 @@ export function ModernSectionHeader({
         </CustomText>
         {subtitle && (
           <CustomText
+            variant="caption"
             style={{
               color: COLORS.textSecondary,
-              fontSize: 12,
+              fontSize: 10.5,
             }}
           >
             {subtitle}
@@ -64,25 +61,26 @@ export function ModernSectionHeader({
         <Pressable
           onPress={onActionPress}
           style={({ pressed }) => ({
-            paddingHorizontal: 12,
-            paddingVertical: 8,
-            borderRadius: 8,
+            paddingHorizontal: 10,
+            paddingVertical: 7,
+            borderRadius: 999,
             flexDirection: 'row',
             alignItems: 'center',
-            gap: 6,
+            gap: 4,
             opacity: pressed ? 0.7 : 1,
           })}
         >
           <CustomText
+            variant="meta"
             style={{
               color: COLORS.accent,
-              fontSize: 12,
-              fontWeight: '600',
+              fontSize: 10.6,
+              fontWeight: '500',
             }}
           >
             {actionLabel}
           </CustomText>
-          <MaterialIcons name="arrow-forward" size={14} color={COLORS.accent} />
+          <MaterialIcons name="chevron-right" size={15} color={COLORS.accent} />
         </Pressable>
       )}
     </View>
