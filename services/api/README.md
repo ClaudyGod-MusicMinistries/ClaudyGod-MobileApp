@@ -62,8 +62,8 @@ SMTP notes:
 
 Startup note:
 - The API auto-runs migrations on boot.
-- In development, `SEED_ADMIN_ON_BOOT=true` ensures the configured admin account exists automatically.
-- You can still run `npm run migrate` and `npm run seed:admin` manually if you want explicit one-off control.
+- Create admin accounts through the approved admin registration flow using `ADMIN_SIGNUP_CODE`.
+- Run `npm run migrate` before starting the API so the database schema is ready.
 
 Production note:
 - The repo now includes `docker-compose.production.yml` with Traefik at the edge, Redis for queues, the API and worker behind the proxy, the admin and mobile web apps as static nginx-served builds, and a Postfix relay container for transactional email delivery through Brevo.
