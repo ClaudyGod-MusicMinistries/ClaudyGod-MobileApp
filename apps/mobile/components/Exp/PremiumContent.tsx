@@ -104,7 +104,7 @@ export function PremiumPage({
             <FadeIn>
               <View
                 style={{
-                  borderRadius: 24,
+                  borderRadius: 18,
                   borderWidth: 1,
                   borderColor:
                     theme.scheme === 'dark'
@@ -114,7 +114,7 @@ export function PremiumPage({
                     theme.scheme === 'dark'
                       ? 'rgba(7,5,12,0.64)'
                       : 'rgba(255,255,255,0.82)',
-                  paddingVertical: compact ? 9 : 10,
+                  paddingVertical: compact ? 8 : 9,
                   paddingHorizontal: compact ? 10 : 12,
                   shadowColor: '#000',
                   shadowOffset: { width: 0, height: 12 },
@@ -138,9 +138,9 @@ export function PremiumPage({
                       accessibilityRole="button"
                       accessibilityLabel={showBack ? 'Go back' : 'Go home'}
                       style={{
-                        width: compact ? 34 : 38,
-                        height: compact ? 34 : 38,
-                        borderRadius: 13,
+                        width: compact ? 32 : 36,
+                        height: compact ? 32 : 36,
+                        borderRadius: 12,
                         alignItems: 'center',
                         justifyContent: 'center',
                         backgroundColor: showBack
@@ -169,8 +169,8 @@ export function PremiumPage({
                         variant="heading"
                         style={{
                           color: theme.colors.text,
-                          fontSize: compact ? 18 : 21,
-                          lineHeight: compact ? 23 : 26,
+                          fontSize: compact ? 15.5 : 17,
+                          lineHeight: compact ? 21 : 22,
                         }}
                         numberOfLines={1}
                       >
@@ -212,6 +212,14 @@ export function PremiumPage({
                         />
                       }
                       style={{ minWidth: 40, paddingHorizontal: 10 }}
+                    />
+                    <AppButton
+                      title=""
+                      variant="secondary"
+                      size="sm"
+                      onPress={() => router.push(APP_ROUTES.tabs.settings)}
+                      leftIcon={<MaterialIcons name="keyboard-arrow-down" size={18} color={theme.colors.text} />}
+                      style={{ minWidth: 38, paddingHorizontal: 9 }}
                     />
                   </View>
                 </View>
@@ -447,7 +455,7 @@ export function PremiumHero({
   const theme = useAppTheme();
   const { width } = useWindowDimensions();
   const isWide = width >= 760;
-  const heroHeight = height ?? (isWide ? 268 : 288);
+  const heroHeight = height ?? (isWide ? 248 : 264);
   const imageUrl = item?.imageUrl || DEFAULT_CONTENT_IMAGE_URI;
   const primaryAction = onPrimary ?? onPrimaryPress;
   const secondaryAction = onSecondary ?? onSecondaryPress;
@@ -469,7 +477,7 @@ export function PremiumHero({
           }
           start={{ x: 0, y: 0 }}
           end={{ x: isWide ? 1 : 0, y: 1 }}
-          style={{ flex: 1, justifyContent: 'flex-end', padding: theme.spacing.lg }}
+          style={{ flex: 1, justifyContent: 'flex-end', padding: isWide ? theme.spacing.lg : theme.spacing.md }}
         >
           <View style={{ maxWidth: isWide ? 560 : undefined }}>
             <View
@@ -484,29 +492,29 @@ export function PremiumHero({
                 marginBottom: 9,
               }}
             >
-              <CustomText variant="caption" style={{ color: '#FFFFFF', textTransform: 'uppercase', letterSpacing: 0.4 }}>
+              <CustomText variant="meta" style={{ color: '#FFFFFF', textTransform: 'uppercase', letterSpacing: 0.2 }}>
                 {item?.isLive ? 'Live now' : eyebrow ?? (item?.type === 'video' ? 'Featured video' : 'Featured')}
               </CustomText>
             </View>
 
-            <CustomText variant="display" style={{ color: '#FFFFFF', fontSize: isWide ? 23 : 20, lineHeight: isWide ? 29 : 26, textShadowColor: 'rgba(0,0,0,0.36)', textShadowRadius: 10 }} numberOfLines={2}>
+            <CustomText variant="display" style={{ color: '#FFFFFF', fontSize: isWide ? 20 : 18, lineHeight: isWide ? 26 : 24, textShadowColor: 'rgba(0,0,0,0.36)', textShadowRadius: 10 }} numberOfLines={2}>
               {item?.title || title || 'Welcome to ClaudyGod'}
             </CustomText>
 
             <CustomText
-              variant="caption"
-              style={{ color: 'rgba(255,255,255,0.88)', marginTop: 7, maxWidth: 520 }}
+              variant="subtitle"
+              style={{ color: 'rgba(255,255,255,0.84)', marginTop: 6, maxWidth: 520 }}
               numberOfLines={3}
             >
               {item?.description || subtitle || 'Worship, messages, live ministry, and videos in one focused experience.'}
             </CustomText>
 
-            <View style={{ flexDirection: 'row', gap: 9, marginTop: 14 }}>
+            <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
               {primaryAction ? (
                 <AppButton
                   title={resolvedPrimaryLabel}
                   onPress={primaryAction}
-                  size="md"
+                  size="sm"
                   leftIcon={<MaterialIcons name={primaryIcon} size={17} color={theme.colors.textInverse} />}
                   style={{ flex: 1, alignSelf: 'stretch' }}
                 />
@@ -515,7 +523,7 @@ export function PremiumHero({
                 <AppButton
                   title={secondaryLabel}
                   variant="secondary"
-                  size="md"
+                  size="sm"
                   onPress={secondaryAction}
                   textColor="#FFFFFF"
                   leftIcon={<MaterialIcons name={secondaryIcon} size={17} color="#FFFFFF" />}
@@ -543,8 +551,8 @@ type ContentCardProps = {
 
 export function ContentCard({ item, onPress, compact = false }: ContentCardProps) {
   const theme = useAppTheme();
-  const width = compact ? 138 : 162;
-  const imageHeight = compact ? 124 : 148;
+  const width = compact ? 132 : 152;
+  const imageHeight = compact ? 114 : 136;
 
   return (
     <TVTouchable onPress={onPress} style={{ width }} showFocusBorder={false}>
@@ -560,15 +568,15 @@ export function ContentCard({ item, onPress, compact = false }: ContentCardProps
               position: 'absolute',
               right: 9,
               bottom: 9,
-              width: 30,
-              height: 30,
-              borderRadius: 15,
+              width: 28,
+              height: 28,
+              borderRadius: 14,
               alignItems: 'center',
               justifyContent: 'center',
               backgroundColor: theme.colors.primary,
             }}
           >
-            <MaterialIcons name={item.type === 'video' || item.type === 'live' ? 'smart-display' : 'play-arrow'} size={15} color={theme.colors.textInverse} />
+            <MaterialIcons name={item.type === 'video' || item.type === 'live' ? 'smart-display' : 'play-arrow'} size={14} color={theme.colors.textInverse} />
           </View>
         </View>
 
@@ -635,10 +643,25 @@ export function ContentRail({
         </View>
 
         {actionLabel && resolvedAction ? (
-          <TVTouchable onPress={resolvedAction} showFocusBorder={false}>
-            <CustomText variant="label" style={{ color: theme.colors.primary }}>
+          <TVTouchable
+            onPress={resolvedAction}
+            showFocusBorder={false}
+            style={{
+              minHeight: 30,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 3,
+              paddingHorizontal: 9,
+              borderRadius: theme.radius.pill,
+              backgroundColor: theme.scheme === 'dark' ? 'rgba(255,255,255,0.055)' : 'rgba(17,10,31,0.05)',
+              borderWidth: 1,
+              borderColor: theme.colors.border,
+            }}
+          >
+            <CustomText variant="meta" style={{ color: theme.colors.primary }} numberOfLines={1}>
               {actionLabel}
             </CustomText>
+            <MaterialIcons name="chevron-right" size={15} color={theme.colors.primary} />
           </TVTouchable>
         ) : null}
       </View>
