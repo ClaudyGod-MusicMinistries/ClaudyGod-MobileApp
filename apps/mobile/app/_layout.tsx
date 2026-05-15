@@ -3,7 +3,7 @@ import '../global.css';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { StatusBar, View } from 'react-native';
+import { AppState, StatusBar, View } from 'react-native';
 
 import { ThemeProvider } from '../context/ThemeProvider';
 import { useColorScheme, useThemeContext } from '../util/colorScheme';
@@ -11,13 +11,16 @@ import { colors } from '../constants/color';
 import { FontProvider, FontContext } from '../context/FontContext';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import { FloatingPlayerProvider } from '../context/FloatingPlayerContext';
-import { ToastProvider } from '../context/ToastContext';
+import { ToastProvider , useToast } from '../context/ToastContext';
 import { AppModalProvider } from '../context/AppModalContext';
 import { ToastViewport } from '../components/ui/ToastViewport';
 import { MinimizedFloatingPlayer } from '../components/player/MinimizedFloatingPlayer';
 import { APP_ROUTES } from '../util/appRoutes';
 import { fetchMePreferences } from '../services/userFlowService';
 import { AppLoadingScreen } from '../components/Exp/AppLoading';
+import { clearMobileSession } from '../services/authService';
+
+const MOBILE_INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000;
 
 function ThemedLayout({ children }: { children: ReactNode }) {
   const colorScheme = useColorScheme();
@@ -39,10 +42,12 @@ function RootLayoutInner() {
   const { fontsLoaded } = useContext(FontContext);
   const { initializing, isAuthenticated, user } = useAuth();
   const { setThemePreference } = useThemeContext();
+  const { showToast } = useToast();
   const router = useRouter();
   const segments = useSegments();
 
   const [bootDelayDone, setBootDelayDone] = useState(false);
+  const [lastActivityAt, setLastActivityAt] = useState(Date.now());
   const [themePreferenceHydratedForUserId, setThemePreferenceHydratedForUserId] =
     useState<string | null>(null);
 
@@ -57,9 +62,43 @@ function RootLayoutInner() {
   }, []);
 
   useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const timer = setTimeout(() => {
+      void clearMobileSession();
+      showToast({
+        title: 'Session closed',
+        message: 'You were signed out after 5 minutes of inactivity.',
+        tone: 'info',
+      });
+      router.replace(APP_ROUTES.auth.signIn);
+    }, MOBILE_INACTIVITY_TIMEOUT_MS);
+
+    return () => clearTimeout(timer);
+  }, [isAuthenticated, lastActivityAt, router, showToast]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') {
+        setLastActivityAt(Date.now());
+      }
+    });
+
+    return () => subscription.remove();
+  }, [isAuthenticated]);
+
+  useEffect(() => {
     if (!fontsLoaded || !bootDelayDone || initializing) return;
 
     const isTabsRoute = firstSegment === '(tabs)';
+    const isAuthEntryRoute =
+      !firstSegment ||
+      firstSegment === 'sign-in' ||
+      firstSegment === 'sign-up' ||
+      firstSegment === 'forgot-password' ||
+      firstSegment === 'verify-email';
     const isSettingsPage = firstSegment === 'settingsPage';
     const isGuestAllowedSettingsPage =
       isSettingsPage &&
@@ -75,6 +114,11 @@ function RootLayoutInner() {
       firstSegment === 'profile' ||
       (isTabsRoute && (secondSegment === 'settings' || secondSegment === 'library')) ||
       (isSettingsPage && !isGuestAllowedSettingsPage);
+
+    if (isAuthenticated && isAuthEntryRoute) {
+      router.replace(APP_ROUTES.tabs.home);
+      return;
+    }
 
     if (!isAuthenticated && isProtectedRoute) {
       router.replace(APP_ROUTES.landing);
@@ -133,6 +177,12 @@ function RootLayoutInner() {
   }
 
   return (
+    <View
+      style={{ flex: 1 }}
+      onTouchStart={() => {
+        if (isAuthenticated) setLastActivityAt(Date.now());
+      }}
+    >
     <ThemedLayout>
       <ToastViewport />
 
@@ -192,6 +242,12 @@ function RootLayoutInner() {
           }}
         />
         <Stack.Screen
+          name="account-security"
+          options={{
+            animation: 'slide_from_right',
+          }}
+        />
+        <Stack.Screen
           name="(tabs)"
           options={{
             animation: 'fade',
@@ -201,6 +257,7 @@ function RootLayoutInner() {
 
       <MinimizedFloatingPlayer />
     </ThemedLayout>
+    </View>
   );
 }
 

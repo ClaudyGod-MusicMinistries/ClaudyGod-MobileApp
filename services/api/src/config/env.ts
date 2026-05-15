@@ -156,7 +156,7 @@ const envSchema = z
     REDIS_URL: z.string().trim().min(1),
 
     JWT_ACCESS_SECRET: z.string().min(32, 'JWT_ACCESS_SECRET must contain at least 32 characters'),
-    JWT_ACCESS_TTL: z.string().trim().min(1).default('1d'),
+    JWT_ACCESS_TTL: z.string().trim().min(1).default('5m'),
     JWT_REFRESH_SECRET: z.string().trim().min(32, 'JWT_REFRESH_SECRET must contain at least 32 characters'),
     JWT_REFRESH_TTL_DAYS: z.coerce.number().int().min(1).max(180).default(30),
 
@@ -167,7 +167,7 @@ const envSchema = z
     AUTH_VERIFY_EMAIL_PATH: pathSegment('AUTH_VERIFY_EMAIL_PATH', '/verify-email'),
     AUTH_RESET_PASSWORD_PATH: pathSegment('AUTH_RESET_PASSWORD_PATH', '/reset-password'),
     AUTH_SIGN_IN_PATH: pathSegment('AUTH_SIGN_IN_PATH', '/sign-in'),
-    AUTH_ACCOUNT_REVIEW_PATH: pathSegment('AUTH_ACCOUNT_REVIEW_PATH', '/settings/account'),
+    AUTH_ACCOUNT_REVIEW_PATH: pathSegment('AUTH_ACCOUNT_REVIEW_PATH', '/account-security'),
     AUTH_SESSION_COOKIE_NAME: z.string().trim().min(3).max(80).default('claudygod_session'),
     AUTH_REFRESH_COOKIE_NAME: z.string().trim().min(3).max(80).default('claudygod_refresh_session'),
     AUTH_VERIFICATION_TOKEN_TTL_MINUTES: z.coerce.number().int().min(10).max(10080).default(1440),

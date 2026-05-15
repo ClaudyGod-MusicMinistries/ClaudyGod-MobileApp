@@ -1,11 +1,15 @@
+import crypto from 'node:crypto';
 import type { JwtClaims } from '../../utils/jwt';
 import { pool } from '../../db/pool';
 import { env } from '../../config/env';
-import { queueProfileUpdatedEmail } from '../../infra/transactionalEmails';
+import { queueAccountEmailChangeEmail, queueProfileUpdatedEmail } from '../../infra/transactionalEmails';
 import { HttpError } from '../../lib/httpError';
 import { isDatabaseConnectivityError, isMissingDatabaseStructureError } from '../../lib/postgres';
+import { verifyPassword } from '../../utils/password';
 import { listMostPlayedContent } from '../analytics/analytics.service';
 import { getMobileAppConfig } from '../appConfig/appConfig.service';
+import { requestPasswordReset } from '../auth/auth.service';
+import { revokeAllUserSessions } from '../auth/authSession.service';
 
 type MeContentType = 'audio' | 'video' | 'playlist' | 'announcement' | 'live' | 'ad';
 type ThemePreference = 'system' | 'light' | 'dark';
@@ -37,6 +41,14 @@ interface MePreferencesRow {
 
 interface CountRow {
   count: string;
+}
+
+interface AccountCredentialRow {
+  id: string;
+  email: string;
+  display_name: string;
+  password_hash: string | null;
+  auth_provider: string;
 }
 
 interface PrivacyRequestRow {
@@ -81,6 +93,14 @@ interface MeEngagementRow {
 }
 
 const toIso = (value: string | Date): string => new Date(value).toISOString();
+const ACCOUNT_ACTION_TOKEN_BYTES = 32;
+const ACCOUNT_EMAIL_CHANGE_TTL_MINUTES = 30;
+
+const tokenHash = (token: string): string =>
+  crypto.createHash('sha256').update(token).digest('hex');
+
+const createRawToken = (): string =>
+  crypto.randomBytes(ACCOUNT_ACTION_TOKEN_BYTES).toString('hex');
 
 const normalizeTextList = (items?: string[] | null): string[] =>
   [...new Set((items ?? []).map((item) => item.trim()).filter(Boolean))];
@@ -230,6 +250,74 @@ const readPreferences = async (userId: string): Promise<MePreferencesRow> => {
     throw new HttpError(404, 'User preferences not found');
   }
   return result.rows[0]!;
+};
+
+const readAccountCredentials = async (userId: string): Promise<AccountCredentialRow> => {
+  const result = await pool.query<AccountCredentialRow>(
+    `SELECT id, email, display_name, password_hash, auth_provider
+     FROM app_users
+     WHERE id = $1
+       AND is_active = TRUE
+     LIMIT 1`,
+    [userId],
+  );
+
+  if (result.rowCount === 0) {
+    throw new HttpError(404, 'Account not found');
+  }
+
+  return result.rows[0]!;
+};
+
+const assertCurrentPassword = async (userId: string, currentPassword: string): Promise<AccountCredentialRow> => {
+  const account = await readAccountCredentials(userId);
+
+  if (!account.password_hash) {
+    throw new HttpError(
+      400,
+      'This account is managed by an external sign-in provider. Use that provider to change security credentials.',
+      { reason: 'external_auth_provider', provider: account.auth_provider },
+      'ACCOUNT_EXTERNAL_AUTH_PROVIDER',
+      'currentPassword',
+    );
+  }
+
+  const passwordMatches = await verifyPassword(currentPassword, account.password_hash);
+  if (!passwordMatches) {
+    throw new HttpError(
+      403,
+      'Current password is incorrect.',
+      { reason: 'invalid_current_password' },
+      'ACCOUNT_INVALID_CURRENT_PASSWORD',
+      'currentPassword',
+    );
+  }
+
+  return account;
+};
+
+const recordAccountActivity = async (input: {
+  userId: string;
+  email: string;
+  eventKey: string;
+  status?: 'success' | 'failure' | 'info';
+  requestIp?: string;
+  userAgent?: string;
+  metadata?: Record<string, unknown>;
+}) => {
+  await pool.query(
+    `INSERT INTO auth_activity_events (user_id, email, event_key, status, ip_address, user_agent, metadata)
+     VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb)`,
+    [
+      input.userId,
+      input.email,
+      input.eventKey,
+      input.status ?? 'info',
+      input.requestIp ?? null,
+      input.userAgent ?? null,
+      JSON.stringify(input.metadata ?? {}),
+    ],
+  );
 };
 
 export const getMeProfile = async (user: JwtClaims): Promise<{
@@ -382,6 +470,197 @@ export const updateMeProfile = async (
       createdAt: toIso(nextProfile.created_at),
       updatedAt: toIso(nextProfile.updated_at),
     },
+  };
+};
+
+export const requestMeEmailChange = async (
+  user: JwtClaims,
+  input: { newEmail: string; currentPassword: string },
+  context: { requestIp?: string; userAgent?: string } = {},
+): Promise<{ message: string; expiresInMinutes: number }> => {
+  const account = await assertCurrentPassword(user.sub, input.currentPassword);
+  const newEmail = input.newEmail.trim().toLowerCase();
+
+  if (newEmail === account.email.toLowerCase()) {
+    throw new HttpError(400, 'Enter a different email address.', { reason: 'same_email' }, 'ACCOUNT_SAME_EMAIL', 'newEmail');
+  }
+
+  const existingEmail = await pool.query<{ id: string }>(
+    `SELECT id FROM app_users WHERE email = $1 AND id <> $2 LIMIT 1`,
+    [newEmail, user.sub],
+  );
+  if ((existingEmail.rowCount ?? 0) > 0) {
+    throw new HttpError(409, 'That email address is already in use.', { reason: 'email_in_use' }, 'ACCOUNT_EMAIL_IN_USE', 'newEmail');
+  }
+
+  const rawToken = createRawToken();
+  const expiresAt = new Date(Date.now() + ACCOUNT_EMAIL_CHANGE_TTL_MINUTES * 60 * 1000);
+
+  await pool.query(
+    `UPDATE account_change_requests
+     SET status = 'cancelled', updated_at = NOW()
+     WHERE user_id = $1
+       AND request_type = 'email_change'
+       AND status = 'pending'`,
+    [user.sub],
+  );
+
+  await pool.query(
+    `INSERT INTO account_change_requests (
+       user_id, request_type, token_hash, current_email, new_email, expires_at, requested_ip, metadata
+     )
+     VALUES ($1, 'email_change', $2, $3, $4, $5, $6, $7::jsonb)`,
+    [
+      user.sub,
+      tokenHash(rawToken),
+      account.email,
+      newEmail,
+      expiresAt.toISOString(),
+      context.requestIp ?? null,
+      JSON.stringify({ userAgent: context.userAgent ?? null }),
+    ],
+  );
+
+  await queueAccountEmailChangeEmail({
+    user: {
+      id: account.id,
+      email: account.email,
+      displayName: account.display_name,
+    },
+    newEmail,
+    rawToken,
+    expiresInMinutes: ACCOUNT_EMAIL_CHANGE_TTL_MINUTES,
+  });
+
+  await recordAccountActivity({
+    userId: user.sub,
+    email: account.email,
+    eventKey: 'email_change_requested',
+    status: 'info',
+    requestIp: context.requestIp,
+    userAgent: context.userAgent,
+    metadata: { newEmail },
+  });
+
+  return {
+    message: 'We sent a secure confirmation link to your current email address.',
+    expiresInMinutes: ACCOUNT_EMAIL_CHANGE_TTL_MINUTES,
+  };
+};
+
+export const confirmMeEmailChange = async (
+  user: JwtClaims,
+  input: { token: string },
+  context: { requestIp?: string; userAgent?: string } = {},
+): Promise<{ message: string; email: string }> => {
+  const requestResult = await pool.query<{
+    id: string;
+    user_id: string;
+    current_email: string;
+    new_email: string;
+  }>(
+    `SELECT id, user_id, current_email, new_email
+     FROM account_change_requests
+     WHERE token_hash = $1
+       AND request_type = 'email_change'
+       AND status = 'pending'
+       AND used_at IS NULL
+       AND expires_at > NOW()
+     LIMIT 1`,
+    [tokenHash(input.token)],
+  );
+
+  if (requestResult.rowCount === 0) {
+    throw new HttpError(400, 'This email change link is invalid or has expired.', { reason: 'invalid_token' }, 'ACCOUNT_INVALID_EMAIL_CHANGE_TOKEN', 'token');
+  }
+
+  const request = requestResult.rows[0]!;
+  if (request.user_id !== user.sub) {
+    throw new HttpError(403, 'Sign in to the account that requested this email change.', { reason: 'wrong_account' }, 'ACCOUNT_EMAIL_CHANGE_WRONG_ACCOUNT');
+  }
+
+  const existingEmail = await pool.query<{ id: string }>(
+    `SELECT id FROM app_users WHERE email = $1 AND id <> $2 LIMIT 1`,
+    [request.new_email, user.sub],
+  );
+  if ((existingEmail.rowCount ?? 0) > 0) {
+    throw new HttpError(409, 'That email address is already in use.', { reason: 'email_in_use' }, 'ACCOUNT_EMAIL_IN_USE', 'newEmail');
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query(
+      `UPDATE app_users
+       SET email = $2,
+           email_verified_at = NOW()
+       WHERE id = $1`,
+      [user.sub, request.new_email],
+    );
+    await client.query(
+      `UPDATE user_profiles
+       SET email = $2
+       WHERE user_id = $1`,
+      [user.sub, request.new_email],
+    );
+    await client.query(
+      `UPDATE account_change_requests
+       SET status = 'completed',
+           used_at = NOW()
+       WHERE id = $1`,
+      [request.id],
+    );
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+
+  await revokeAllUserSessions(user.sub);
+  await recordAccountActivity({
+    userId: user.sub,
+    email: request.new_email,
+    eventKey: 'email_change_completed',
+    status: 'success',
+    requestIp: context.requestIp,
+    userAgent: context.userAgent,
+    metadata: { previousEmail: request.current_email },
+  });
+
+  return {
+    message: 'Your email address has been updated. Sign in again with the new email.',
+    email: request.new_email,
+  };
+};
+
+export const requestMePasswordChange = async (
+  user: JwtClaims,
+  input: { currentPassword: string },
+  context: { requestIp?: string; userAgent?: string } = {},
+): Promise<{ message: string }> => {
+  const account = await assertCurrentPassword(user.sub, input.currentPassword);
+
+  await requestPasswordReset(
+    { email: account.email },
+    {
+      requestIp: context.requestIp,
+      userAgent: context.userAgent,
+    },
+  );
+
+  await recordAccountActivity({
+    userId: user.sub,
+    email: account.email,
+    eventKey: 'password_change_requested',
+    status: 'info',
+    requestIp: context.requestIp,
+    userAgent: context.userAgent,
+  });
+
+  return {
+    message: 'We sent a secure password change link to your email address.',
   };
 };
 
