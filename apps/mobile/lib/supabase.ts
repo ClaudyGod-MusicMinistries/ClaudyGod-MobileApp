@@ -25,7 +25,7 @@ export const supabase = createClient(
       autoRefreshToken: true,
       // Web email confirmation and recovery links arrive with auth state in the URL.
       detectSessionInUrl: Platform.OS === 'web',
-      lock: processLock,
+      lock: Platform.OS === 'web' ? undefined : processLock,
     },
   },
 );

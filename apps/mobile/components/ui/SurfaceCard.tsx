@@ -16,8 +16,8 @@ export function SurfaceCard({ tone = 'default', style, children, ...props }: Sur
   const shadowStyle =
     Platform.OS === 'web'
       ? isStrong
-        ? ({ boxShadow: '0px 18px 42px rgba(0,0,0,0.26)' } as object)
-        : ({ boxShadow: '0px 10px 24px rgba(0,0,0,0.14)' } as object)
+        ? ({ boxShadow: '0px 10px 24px rgba(0,0,0,0.16)' } as object)
+        : ({ boxShadow: '0px 6px 14px rgba(0,0,0,0.08)' } as object)
       : isStrong
         ? theme.shadows.card
         : theme.shadows.soft;

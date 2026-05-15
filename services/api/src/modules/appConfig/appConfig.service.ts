@@ -39,6 +39,8 @@ function normalizeNavigationTabs(
 
 function mergeWithDefaults(value: unknown): MobileAppConfig {
   const input = value && typeof value === 'object' ? (value as Partial<MobileAppConfig>) : {};
+  const nonEmptyArray = <T>(items: T[] | undefined, fallback: T[]): T[] =>
+    Array.isArray(items) && items.length > 0 ? items : fallback;
 
   return mobileAppConfigSchema.parse({
     ...DEFAULT_MOBILE_APP_CONFIG,
@@ -66,6 +68,10 @@ function mergeWithDefaults(value: unknown): MobileAppConfig {
     layout: {
       ...DEFAULT_MOBILE_APP_CONFIG.layout,
       ...(input.layout ?? {}),
+      homeSections: nonEmptyArray(input.layout?.homeSections, DEFAULT_MOBILE_APP_CONFIG.layout.homeSections),
+      videoSections: nonEmptyArray(input.layout?.videoSections, DEFAULT_MOBILE_APP_CONFIG.layout.videoSections),
+      playerSections: nonEmptyArray(input.layout?.playerSections, DEFAULT_MOBILE_APP_CONFIG.layout.playerSections),
+      librarySections: nonEmptyArray(input.layout?.librarySections, DEFAULT_MOBILE_APP_CONFIG.layout.librarySections),
     },
     navigation: {
       ...DEFAULT_MOBILE_APP_CONFIG.navigation,
@@ -75,10 +81,13 @@ function mergeWithDefaults(value: unknown): MobileAppConfig {
     discovery: {
       ...DEFAULT_MOBILE_APP_CONFIG.discovery,
       ...(input.discovery ?? {}),
+      categories: nonEmptyArray(input.discovery?.categories, DEFAULT_MOBILE_APP_CONFIG.discovery.categories),
+      shortcuts: nonEmptyArray(input.discovery?.shortcuts, DEFAULT_MOBILE_APP_CONFIG.discovery.shortcuts),
     },
     settingsHub: {
       ...DEFAULT_MOBILE_APP_CONFIG.settingsHub,
       ...(input.settingsHub ?? {}),
+      sections: nonEmptyArray(input.settingsHub?.sections, DEFAULT_MOBILE_APP_CONFIG.settingsHub.sections),
     },
     monetization: {
       ...DEFAULT_MOBILE_APP_CONFIG.monetization,

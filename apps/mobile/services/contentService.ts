@@ -1,5 +1,5 @@
 import { apiFetch } from './apiClient';
-import { apiFetchWithMobileSession } from './authService';
+import { apiFetchWithMobileSession, getStoredMobileSession } from './authService';
 import { DEFAULT_CONTENT_IMAGE_URI } from '../util/brandAssets';
 
 export type ContentType = 'audio' | 'video' | 'playlist' | 'announcement' | 'live' | 'ad';
@@ -603,11 +603,14 @@ export async function fetchFeedBundle(): Promise<FeedBundle> {
     };
   }
 
-  const [recentlyPlayed, personalizedMostPlayed, recommendations] = await Promise.all([
-    fetchMeRecentlyPlayed(),
-    fetchMeMostPlayed(),
-    fetchMeRecommendations(),
-  ]);
+  const storedSession = await getStoredMobileSession();
+  const [recentlyPlayed, personalizedMostPlayed, recommendations] = storedSession.user
+    ? await Promise.all([
+        fetchMeRecentlyPlayed(),
+        fetchMeMostPlayed(),
+        fetchMeRecommendations(),
+      ])
+    : [[], [], []];
 
   return {
     ...baseBundle,

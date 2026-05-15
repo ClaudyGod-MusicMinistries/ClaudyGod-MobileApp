@@ -54,9 +54,9 @@ export function TVTouchable({
           opacity: 0.98,
           transform: [{ translateY: -1 }],
           shadowColor: '#000000',
-          shadowOpacity: 0.18,
-          shadowRadius: 14,
-          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: 0.08,
+          shadowRadius: 8,
+          shadowOffset: { width: 0, height: 4 },
         }
       : null;
 

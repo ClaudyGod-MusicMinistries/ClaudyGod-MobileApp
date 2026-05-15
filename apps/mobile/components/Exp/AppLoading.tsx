@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Image, ImageBackground, StatusBar, Text, View, useWindowDimensions } from 'react-native';
+import { Animated, Image, ImageBackground, Platform, StatusBar, Text, View, useWindowDimensions } from 'react-native';
 // Choose a modern background image from assets
 import landingBg from '../../assets/images/landing4.jpg';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -11,15 +11,16 @@ export function AppLoadingScreen() {
   const compact = width < 390;
   const spin = useRef(new Animated.Value(0)).current;
   const pulse = useRef(new Animated.Value(0.97)).current;
+  const useNativeAnimations = Platform.OS !== 'web';
 
   useEffect(() => {
     const spinLoop = Animated.loop(
-      Animated.timing(spin, { toValue: 1, duration: 2100, useNativeDriver: true }),
+      Animated.timing(spin, { toValue: 1, duration: 2100, useNativeDriver: useNativeAnimations }),
     );
     const pulseLoop = Animated.loop(
       Animated.sequence([
-        Animated.timing(pulse, { toValue: 1.015, duration: 980, useNativeDriver: true }),
-        Animated.timing(pulse, { toValue: 0.97, duration: 980, useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 1.015, duration: 980, useNativeDriver: useNativeAnimations }),
+        Animated.timing(pulse, { toValue: 0.97, duration: 980, useNativeDriver: useNativeAnimations }),
       ]),
     );
     spinLoop.start();
@@ -28,7 +29,7 @@ export function AppLoadingScreen() {
       spinLoop.stop();
       pulseLoop.stop();
     };
-  }, [pulse, spin]);
+  }, [pulse, spin, useNativeAnimations]);
 
   const size = compact ? 62 : 72;
   const rotate = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
