@@ -143,6 +143,14 @@ export default function Profile() {
             leftIcon={<MaterialIcons name="settings" size={17} color={theme.colors.text} />}
             style={{ flexGrow: 1 }}
           />
+          <AppButton
+            title="Account security"
+            variant="secondary"
+            size="md"
+            onPress={() => router.push(APP_ROUTES.accountSecurity)}
+            leftIcon={<MaterialIcons name="verified-user" size={17} color={theme.colors.text} />}
+            style={{ flexGrow: 1 }}
+          />
         </View>
       </FadeIn>
 

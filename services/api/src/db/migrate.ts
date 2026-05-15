@@ -649,6 +649,36 @@ const migrationStatements = [
         EXECUTE FUNCTION set_updated_at();
       END IF;
     END $$`,
+  `CREATE TABLE IF NOT EXISTS account_change_requests (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,
+    request_type TEXT NOT NULL CHECK (request_type IN ('email_change')),
+    token_hash TEXT NOT NULL UNIQUE,
+    current_email TEXT NOT NULL,
+    new_email TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'completed', 'expired', 'cancelled')),
+    expires_at TIMESTAMPTZ NOT NULL,
+    used_at TIMESTAMPTZ,
+    requested_ip TEXT,
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_account_change_requests_user_status_created_at
+    ON account_change_requests (user_id, status, created_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_account_change_requests_token_hash
+    ON account_change_requests (token_hash)`,
+  `CREATE INDEX IF NOT EXISTS idx_account_change_requests_expires_at
+    ON account_change_requests (expires_at DESC)`,
+  `DO $$
+    BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'set_account_change_requests_updated_at') THEN
+        CREATE TRIGGER set_account_change_requests_updated_at
+        BEFORE UPDATE ON account_change_requests
+        FOR EACH ROW
+        EXECUTE FUNCTION set_updated_at();
+      END IF;
+    END $$`,
 ];
 
 const MIGRATION_LOCK_ID = 7_246_130_001;

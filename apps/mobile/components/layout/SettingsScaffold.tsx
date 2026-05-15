@@ -12,15 +12,17 @@ import { CustomText } from '../CustomText';
 import { TVTouchable } from '../ui/TVTouchable';
 import { AppScreenFooter } from './AppScreenFooter';
 import { BRAND_HERO_ASSET } from '../../util/brandAssets';
+import { APP_ROUTES } from '../../util/appRoutes';
 
 interface SettingsScaffoldProps {
   title: string;
   subtitle?: string;
   children: React.ReactNode;
   hero?: React.ReactNode;
+  backRoute?: string;
 }
 
-export function SettingsScaffold({ title, subtitle, children, hero }: SettingsScaffoldProps) {
+export function SettingsScaffold({ title, subtitle, children, hero, backRoute = APP_ROUTES.tabs.home }: SettingsScaffoldProps) {
   const theme = useAppTheme();
   const router = useRouter();
   const { width } = useWindowDimensions();
@@ -64,21 +66,21 @@ export function SettingsScaffold({ title, subtitle, children, hero }: SettingsSc
               <SurfaceCard tone="strong" style={{ paddingVertical: theme.spacing.md, paddingHorizontal: theme.spacing.md }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                   <TVTouchable
-                    onPress={() => router.back()}
+                    onPress={() => router.replace(backRoute as never)}
                     showFocusBorder={false}
                     style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: 18,
+                      width: 38,
+                      height: 38,
+                      borderRadius: 19,
                       alignItems: 'center',
                       justifyContent: 'center',
-                      backgroundColor: theme.scheme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(20,16,33,0.04)',
+                      backgroundColor: theme.scheme === 'dark' ? 'rgba(255,255,255,0.08)' : theme.colors.surfaceAlt,
                       borderWidth: 1,
                       borderColor: theme.colors.border,
                     }}
                     accessibilityLabel="Go back"
                   >
-                    <MaterialIcons name="arrow-back" size={19} color={theme.colors.text} />
+                    <MaterialIcons name="chevron-left" size={23} color={theme.colors.text} />
                   </TVTouchable>
 
                   <View style={{ flex: 1, minWidth: 0 }}>

@@ -20,6 +20,7 @@ export const APP_ROUTES = {
     library: '/(tabs)/library',
   },
   profile: '/profile',
+  accountSecurity: '/account-security',
   settingsPages: {
     privacy: '/settingsPage/Privacy',
     donate: '/settingsPage/Donate',

@@ -9,10 +9,13 @@ import {
   createPrivacyExportRequestSchema,
   createRatingSchema,
   createSupportRequestSchema,
+  confirmMeEmailChangeSchema,
   engagementListQuerySchema,
   liveSubscriptionSchema,
   pushTokenSchema,
   removeLibraryItemSchema,
+  requestMeEmailChangeSchema,
+  requestMePasswordChangeSchema,
   saveLibraryItemSchema,
   trackPlayEventSchema,
   updateMePreferencesSchema,
@@ -33,6 +36,9 @@ import {
   getMeProfile,
   getMeRecentlyPlayed,
   getMeRecommendations,
+  confirmMeEmailChange,
+  requestMeEmailChange,
+  requestMePasswordChange,
   removeMePushToken,
   recordMePlayEvent,
   removeMeLibraryItem,
@@ -77,6 +83,42 @@ meRouter.patch(
     const payload = validateSchema(updateMeProfileSchema, req.body);
     const result = await updateMeProfile(requireUser(req), payload);
     res.status(200).json(result);
+  }),
+);
+
+meRouter.post(
+  '/account/email-change/request',
+  asyncHandler(async (req, res) => {
+    const payload = validateSchema(requestMeEmailChangeSchema, req.body);
+    const result = await requestMeEmailChange(requireUser(req), payload, {
+      requestIp: req.ip,
+      userAgent: req.header('user-agent') || undefined,
+    });
+    res.status(202).json(result);
+  }),
+);
+
+meRouter.post(
+  '/account/email-change/confirm',
+  asyncHandler(async (req, res) => {
+    const payload = validateSchema(confirmMeEmailChangeSchema, req.body);
+    const result = await confirmMeEmailChange(requireUser(req), payload, {
+      requestIp: req.ip,
+      userAgent: req.header('user-agent') || undefined,
+    });
+    res.status(200).json(result);
+  }),
+);
+
+meRouter.post(
+  '/account/password-change/request',
+  asyncHandler(async (req, res) => {
+    const payload = validateSchema(requestMePasswordChangeSchema, req.body);
+    const result = await requestMePasswordChange(requireUser(req), payload, {
+      requestIp: req.ip,
+      userAgent: req.header('user-agent') || undefined,
+    });
+    res.status(202).json(result);
   }),
 );
 

@@ -2,6 +2,7 @@ import { pool } from '../db/pool';
 import { emailQueue } from '../queues/emailQueue';
 import { env } from '../config/env';
 import {
+  buildAccountEmailChangeTemplate,
   buildGenericEmailTemplate,
   buildPasswordResetTemplate,
   buildProfileUpdatedTemplate,
@@ -225,6 +226,41 @@ export const queueProfileUpdatedEmail = async (input: {
       actionUrl: reviewUrl,
       changedFields: input.changedFields,
       type: 'profile_updated',
+    },
+  });
+};
+
+export const queueAccountEmailChangeEmail = async (input: {
+  user: AppEmailUser;
+  newEmail: string;
+  rawToken: string;
+  expiresInMinutes: number;
+}): Promise<void> => {
+  const confirmUrl = buildPublicActionUrl(env.AUTH_ACCOUNT_REVIEW_PATH, {
+    action: 'confirm-email-change',
+    token: input.rawToken,
+  });
+  const template = buildAccountEmailChangeTemplate({
+    displayName: input.user.displayName,
+    currentEmail: input.user.email,
+    newEmail: input.newEmail,
+    confirmUrl,
+    expiresInMinutes: input.expiresInMinutes,
+  });
+
+  await queueEmailJob({
+    recipients: [input.user.email],
+    subject: template.subject,
+    textBody: template.text,
+    htmlBody: template.html,
+    jobType: 'account_email_change',
+    templateKey: 'account.email-change',
+    payload: {
+      userId: input.user.id,
+      actionUrl: confirmUrl,
+      currentEmail: input.user.email,
+      newEmail: input.newEmail,
+      type: 'email_change',
     },
   });
 };
