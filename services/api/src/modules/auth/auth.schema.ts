@@ -50,10 +50,15 @@ export const resetPasswordSchema = z
 
 export const verifyEmailSchema = z
   .object({
-    token: z.string().trim().min(1).max(256), // Allow OTP codes (6 digits) and full tokens
+    code: z.string().trim().min(1).max(256).optional(),
+    token: z.string().trim().min(1).max(256).optional(), // Allow OTP codes (6 digits) and full tokens
     email: emailSchema.optional(),
   })
-  .strict();
+  .strict()
+  .refine((value) => Boolean(value.code || value.token), {
+    path: ['code'],
+    message: 'Verification code or token is required',
+  });
 
 export const resendVerificationEmailSchema = z
   .object({
