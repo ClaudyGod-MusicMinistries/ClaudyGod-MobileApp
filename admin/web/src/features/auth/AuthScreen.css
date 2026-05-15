@@ -1,199 +1,187 @@
-.cg-auth-shell {
-  min-height: 100vh;
-  background:
-    radial-gradient(circle at 16% 10%, rgba(125, 211, 252, 0.12), transparent 32%),
-    radial-gradient(circle at 92% 8%, rgba(166, 120, 255, 0.14), transparent 34%),
-    linear-gradient(180deg, #05070b 0%, #080c13 48%, #0c1118 100%);
-}
-
-.cg-auth-root {
-  width: 100%;
-  min-height: calc(100vh - 60px);
-  display: grid;
-  place-items: center;
-  padding: clamp(18px, 4vw, 42px);
+.cg-auth-root-polished {
+  min-height: 100dvh;
+  padding: clamp(16px, 3.6vw, 42px);
   overflow-x: hidden;
+  background:
+    radial-gradient(circle at 14% 12%, rgba(125, 211, 252, 0.16), transparent 32%),
+    radial-gradient(circle at 86% 4%, rgba(166, 120, 255, 0.16), transparent 32%),
+    linear-gradient(180deg, #07090d 0%, #0b1018 58%, #101722 100%);
 }
 
-.cg-auth-grid,
-.cg-auth-grid-form,
-.cg-auth-grid-home {
+.cg-auth-grid-polished {
+  width: min(1180px, 100%);
+}
+
+.cg-auth-grid-form.cg-auth-grid-polished {
   width: min(1120px, 100%);
-  gap: clamp(14px, 2vw, 22px);
-}
-
-.cg-auth-grid-form {
-  grid-template-columns: minmax(0, 560px) minmax(300px, 1fr);
+  grid-template-columns: minmax(0, 580px) minmax(300px, 1fr);
   align-items: stretch;
 }
 
-.cg-auth-grid-home {
-  grid-template-columns: minmax(0, 1fr);
+.cg-auth-grid-form .cg-auth-steps-panel-polished {
+  grid-column: auto;
 }
 
-.cg-auth-form,
-.cg-auth-home-panel {
+.cg-auth-form-polished {
+  min-width: 0;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.32);
+}
+
+.cg-auth-home-polished {
+  min-height: clamp(380px, 48vh, 560px);
   overflow: hidden;
-  border-color: rgba(170, 184, 204, 0.22);
-  background:
-    linear-gradient(180deg, rgba(22, 27, 38, 0.96), rgba(11, 15, 23, 0.94)),
-    radial-gradient(circle at 20% 0%, rgba(125, 211, 252, 0.14), transparent 38%);
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.36);
 }
 
-.cg-auth-form::before,
-.cg-auth-home-panel::before {
+.cg-auth-home-polished::before {
   content: '';
   position: absolute;
   inset: 0;
-  pointer-events: none;
   background:
-    linear-gradient(135deg, rgba(255,255,255,0.07), transparent 36%),
-    radial-gradient(circle at 100% 0%, rgba(125, 211, 252, 0.12), transparent 30%);
+    radial-gradient(circle at 80% 18%, rgba(125, 211, 252, 0.16), transparent 34%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.075), transparent 44%);
+  pointer-events: none;
 }
 
-.cg-auth-form > *,
-.cg-auth-home-panel > * {
-  position: relative;
-  z-index: 1;
+.cg-auth-logo-large {
+  width: 76px !important;
+  height: 76px !important;
+  border-radius: 26px !important;
+}
+
+.cg-auth-logo-large img {
+  width: 50px !important;
+  height: 50px !important;
+  border-radius: 16px !important;
 }
 
 .cg-auth-form-nav {
-  justify-content: flex-start;
+  justify-content: space-between;
   margin-bottom: 14px;
 }
 
-.cg-icon-btn svg,
-.cg-step-icon svg {
-  display: block;
+.cg-icon-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.cg-auth-mode {
-  border-radius: 18px;
-  padding: 6px;
+.cg-google-button {
+  width: 100%;
+  min-height: 44px;
 }
 
-.cg-auth-mode button {
-  min-height: 40px;
-  letter-spacing: 0;
-}
-
-.cg-auth-clean-form {
-  gap: 15px;
-}
-
-.cg-autofill-decoy {
-  position: absolute !important;
-  left: -9999px !important;
-  top: -9999px !important;
-  width: 1px !important;
-  height: 1px !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-}
-
-.cg-auth-root .cg-form input {
-  min-height: 48px;
-  border-radius: 16px;
-  border-color: rgba(170, 184, 204, 0.24);
+.cg-auth-clean-form input {
+  min-height: 46px;
+  border-color: rgba(190, 204, 226, 0.24);
   background: rgba(255, 255, 255, 0.07);
   color: #ffffff;
+  font-weight: 650;
+  letter-spacing: 0.01em;
 }
 
-.cg-auth-root .cg-form input:-webkit-autofill,
-.cg-auth-root .cg-form input:-webkit-autofill:hover,
-.cg-auth-root .cg-form input:-webkit-autofill:focus {
+.cg-auth-clean-form input:-webkit-autofill,
+.cg-auth-clean-form input:-webkit-autofill:hover,
+.cg-auth-clean-form input:-webkit-autofill:focus {
   -webkit-text-fill-color: #ffffff;
-  box-shadow: 0 0 0 1000px rgba(18, 24, 34, 0.98) inset;
-  transition: background-color 9999s ease-out;
+  caret-color: #ffffff;
+  transition: background-color 999999s ease-in-out 0s;
+  box-shadow: 0 0 0 1000px rgba(16, 20, 27, 0.96) inset;
 }
 
-.cg-auth-root .cg-form small,
-.cg-auth-root .cg-note {
-  color: rgba(231, 238, 248, 0.70);
+.cg-auth-clean-form input::placeholder {
+  color: rgba(221, 230, 246, 0.52);
+  font-weight: 600;
+}
+
+.cg-auth-clean-form label > span:first-child {
+  color: rgba(247, 249, 252, 0.94);
+  letter-spacing: 0.01em;
 }
 
 .cg-password-strength {
-  border-color: rgba(170, 184, 204, 0.18);
-  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(190, 204, 226, 0.16);
+  background: rgba(255, 255, 255, 0.055);
 }
 
 .cg-password-strength-head {
-  align-items: center;
+  align-items: flex-start;
 }
 
 .cg-inline-action {
-  color: #d6eefb;
+  color: #e9ddff;
+  min-height: 30px;
+  padding: 0;
 }
 
-.cg-inline-action:hover,
-.cg-inline-action:focus-visible {
-  color: #ffffff;
+.cg-password-checks span {
+  color: rgba(199, 208, 221, 0.78);
 }
 
-.cg-auth-progress-steps {
+.cg-password-checks span.is-valid {
+  color: #a9f7c9;
+}
+
+.cg-progress-steps-polished {
   grid-template-columns: 1fr;
   height: 100%;
   align-content: stretch;
 }
 
-.cg-auth-root .cg-step {
+.cg-step-polished {
   min-height: 118px;
-  border-color: rgba(170, 184, 204, 0.20);
-  background:
-    linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.032));
-  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.14);
+  padding: 16px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.058), rgba(255, 255, 255, 0.03));
 }
 
-.cg-auth-root .cg-step-icon {
-  color: #d6eefb;
-  border-color: rgba(125, 211, 252, 0.28);
-  background: rgba(125, 211, 252, 0.10);
+.cg-step-polished .cg-step-icon {
+  color: #e6f8ff;
 }
 
-.cg-auth-root .cg-step strong {
+.cg-step-polished strong {
   font-size: 14px;
 }
 
-.cg-auth-root .cg-muted {
-  color: rgba(231, 238, 248, 0.68);
+.cg-step-polished p {
+  margin-top: 5px;
+  font-size: 12.5px;
 }
 
-.cg-auth-home-panel {
-  min-height: 380px;
-  padding: clamp(24px, 4vw, 40px);
+.cg-auth-grid-home .cg-progress-steps-polished {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.cg-auth-home-actions .cg-primary,
-.cg-auth-home-actions .cg-secondary {
-  min-width: 150px;
-}
-
-@media (max-width: 960px) {
-  .cg-auth-grid-form,
-  .cg-auth-grid-home {
-    grid-template-columns: 1fr;
-    width: min(640px, 100%);
+@media (max-width: 980px) {
+  .cg-auth-root-polished {
+    place-items: start center;
+    padding: 18px;
   }
 
-  .cg-auth-progress-steps {
+  .cg-auth-grid-form.cg-auth-grid-polished,
+  .cg-auth-grid-home.cg-auth-grid-polished {
     grid-template-columns: 1fr;
   }
 
-  .cg-auth-root .cg-step {
+  .cg-auth-grid-form .cg-auth-steps-panel-polished {
+    grid-column: 1 / -1;
+  }
+
+  .cg-auth-grid-home .cg-progress-steps-polished,
+  .cg-progress-steps-polished {
+    grid-template-columns: 1fr;
+  }
+
+  .cg-step-polished {
     min-height: auto;
   }
 }
 
-@media (max-width: 560px) {
-  .cg-auth-root {
-    min-height: calc(100vh - 56px);
-    padding: 16px;
-    place-items: start center;
+@media (max-width: 620px) {
+  .cg-auth-root-polished {
+    padding: 12px;
   }
 
   .cg-auth-form,
-  .cg-auth-home-panel {
+  .cg-auth-hero {
     padding: 18px;
     border-radius: 18px;
   }
@@ -203,26 +191,33 @@
   }
 
   .cg-auth-form-title {
-    font-size: 18px;
+    font-size: 20px;
+  }
+
+  .cg-auth-mode {
+    border-radius: 18px;
+  }
+
+  .cg-auth-mode button {
+    min-height: 42px;
   }
 
   .cg-password-strength-head {
-    align-items: flex-start;
-    flex-direction: column;
+    display: grid;
+    gap: 8px;
   }
 
   .cg-password-checks {
     grid-template-columns: 1fr;
   }
 
-  .cg-auth-home-actions {
+  .cg-primary,
+  .cg-secondary,
+  .cg-ghost {
     width: 100%;
-    display: grid;
-    grid-template-columns: 1fr;
   }
 
-  .cg-auth-home-actions .cg-primary,
-  .cg-auth-home-actions .cg-secondary {
-    width: 100%;
+  .cg-auth-form-nav .cg-ghost {
+    width: auto;
   }
 }

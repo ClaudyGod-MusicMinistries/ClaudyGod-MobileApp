@@ -1,12 +1,5 @@
 import React from 'react';
-import {
-  ImageBackground,
-  Platform,
-  ScrollView,
-  StatusBar,
-  View,
-  useWindowDimensions,
-} from 'react-native';
+import { ImageBackground, ScrollView, StatusBar, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -17,6 +10,7 @@ import { FadeIn } from '../ui/FadeIn';
 import { TVTouchable } from '../ui/TVTouchable';
 import { AuthBrandPanel } from './AuthBrandPanel';
 import { LANDING_BG_ASSET } from '../../util/brandAssets';
+import { useDeviceClass } from '../../util/deviceClassConfig';
 
 interface AuthScreenFrameProps {
   backPath: string;
@@ -29,26 +23,22 @@ interface AuthScreenFrameProps {
 
 export function AuthScreenFrame({ backPath, salutation, description, title, subtitle, children }: AuthScreenFrameProps) {
   const router = useRouter();
-  const { width, height } = useWindowDimensions();
-  const isTV = Platform.isTV;
-  const isWeb = Platform.OS === 'web';
-  const isTablet = width >= 768 && !isTV;
-  const isDesktop = width >= 1120 && !isTV;
-  const isPhone = !isTablet && !isTV;
-  const compactViewport = height < 760;
-  const shellWidth = isDesktop ? 1180 : isTablet ? 760 : 500;
-  const formWidth = isDesktop ? 520 : shellWidth;
+  const device = useDeviceClass();
+  const isPhone = device.isPhone;
+  const showBrandPanel = device.prefersTwoPane;
+  const shellWidth = device.isTV ? 1380 : device.isLargeDesktop ? 1220 : device.isDesktop ? 1140 : device.isTablet ? 760 : 500;
+  const formWidth = device.isTV ? 560 : device.isDesktop ? 520 : shellWidth;
 
   return (
     <View style={{ flex: 1, backgroundColor: '#08050F' }}>
       <ImageBackground
         source={LANDING_BG_ASSET}
         resizeMode="cover"
-        imageStyle={{ opacity: isDesktop ? 0.28 : 0.20 }}
+        imageStyle={{ opacity: showBrandPanel ? 0.26 : 0.18 }}
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
       >
         <LinearGradient
-          colors={['rgba(8,5,15,0.58)', 'rgba(8,5,15,0.88)', '#08050F']}
+          colors={['rgba(8,5,15,0.56)', 'rgba(8,5,15,0.88)', '#08050F']}
           start={{ x: 0.1, y: 0 }}
           end={{ x: 0.9, y: 1 }}
           style={{ flex: 1 }}
@@ -62,14 +52,13 @@ export function AuthScreenFrame({ backPath, salutation, description, title, subt
           contentContainerStyle={{
             flexGrow: 1,
             justifyContent: 'center',
-            paddingTop: isDesktop ? 28 : 10,
-            paddingBottom: isWeb ? (compactViewport ? 18 : 0) : 20,
+            paddingTop: device.isTV ? 34 : isPhone ? 12 : 24,
+            paddingBottom: device.isTV ? 34 : isPhone ? 18 : 28,
           }}
           showsVerticalScrollIndicator={false}
           bounces={false}
           alwaysBounceVertical={false}
           overScrollMode="never"
-          scrollEnabled
           keyboardShouldPersistTaps="handled"
         >
           <Screen
@@ -81,36 +70,36 @@ export function AuthScreenFrame({ backPath, salutation, description, title, subt
             }}
           >
             <FadeIn>
-              <View style={{ paddingTop: 6 }}>
+              <View>
                 <TVTouchable
                   onPress={() => router.replace(backPath)}
                   style={{
-                    width: 42,
-                    height: 42,
-                    borderRadius: 21,
+                    width: device.isTV ? 54 : 42,
+                    height: device.isTV ? 54 : 42,
+                    borderRadius: device.isTV ? 27 : 21,
                     borderWidth: 1,
-                    borderColor: 'rgba(255,255,255,0.14)',
+                    borderColor: 'rgba(255,255,255,0.15)',
                     backgroundColor: 'rgba(255,255,255,0.08)',
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
                   showFocusBorder={false}
                 >
-                  <MaterialIcons name="arrow-back" size={21} color="#FFFFFF" />
+                  <MaterialIcons name="arrow-back" size={device.isTV ? 26 : 21} color="#FFFFFF" />
                 </TVTouchable>
 
                 <View
                   style={{
-                    marginTop: isDesktop ? 22 : 16,
+                    marginTop: showBrandPanel ? 24 : 16,
                     width: '100%',
                     maxWidth: shellWidth,
                     alignSelf: 'center',
-                    flexDirection: isDesktop ? 'row' : 'column',
-                    alignItems: isDesktop ? 'stretch' : 'center',
-                    gap: isDesktop ? 26 : isPhone ? 14 : 18,
+                    flexDirection: showBrandPanel ? 'row' : 'column',
+                    alignItems: showBrandPanel ? 'stretch' : 'center',
+                    gap: showBrandPanel ? 28 : 18,
                   }}
                 >
-                  {isDesktop ? (
+                  {showBrandPanel ? (
                     <View style={{ flex: 1, minWidth: 0 }}>
                       <AuthBrandPanel salutation={salutation} description={description} />
                     </View>
@@ -120,21 +109,21 @@ export function AuthScreenFrame({ backPath, salutation, description, title, subt
                     style={{
                       width: '100%',
                       maxWidth: formWidth,
-                      flex: isDesktop ? 0.82 : undefined,
-                      borderRadius: isPhone ? 22 : 28,
+                      flex: showBrandPanel ? 0.82 : undefined,
+                      borderRadius: isPhone ? 22 : 30,
                       borderWidth: 1,
-                      borderColor: 'rgba(255,255,255,0.13)',
-                      backgroundColor: 'rgba(16,11,28,0.94)',
-                      paddingHorizontal: isPhone ? 18 : 26,
-                      paddingVertical: isPhone ? 20 : 26,
+                      borderColor: 'rgba(255,255,255,0.14)',
+                      backgroundColor: 'rgba(16,11,28,0.95)',
+                      paddingHorizontal: isPhone ? 18 : device.isTV ? 32 : 26,
+                      paddingVertical: isPhone ? 20 : device.isTV ? 32 : 26,
                       shadowColor: '#000',
                       shadowOffset: { width: 0, height: 18 },
-                      shadowOpacity: 0.28,
+                      shadowOpacity: 0.26,
                       shadowRadius: 34,
                       elevation: 12,
                     }}
                   >
-                    {!isDesktop ? <AuthBrandPanel salutation={salutation} description={description} compact /> : null}
+                    {!showBrandPanel ? <AuthBrandPanel salutation={salutation} description={description} compact /> : null}
 
                     <View
                       style={{
@@ -142,14 +131,14 @@ export function AuthScreenFrame({ backPath, salutation, description, title, subt
                         borderRadius: 999,
                         borderWidth: 1,
                         borderColor: 'rgba(255,255,255,0.14)',
-                        backgroundColor: 'rgba(255,255,255,0.07)',
+                        backgroundColor: 'rgba(255,255,255,0.075)',
                         paddingHorizontal: 10,
                         paddingVertical: 6,
                       }}
                     >
                       <CustomText
                         variant="caption"
-                        style={{ color: 'rgba(255,255,255,0.74)', textTransform: 'uppercase', letterSpacing: 0.72 }}
+                        style={{ color: 'rgba(255,255,255,0.76)', textTransform: 'uppercase', letterSpacing: 0.72 }}
                       >
                         Secure access
                       </CustomText>
@@ -161,8 +150,8 @@ export function AuthScreenFrame({ backPath, salutation, description, title, subt
                         color: '#FFFFFF',
                         marginTop: 14,
                         textAlign: isPhone ? 'center' : 'left',
-                        fontSize: isDesktop ? 32 : undefined,
-                        lineHeight: isDesktop ? 38 : undefined,
+                        fontSize: device.isTV ? 38 : device.isDesktop ? 32 : undefined,
+                        lineHeight: device.isTV ? 45 : device.isDesktop ? 38 : undefined,
                       }}
                     >
                       {title}
@@ -171,12 +160,13 @@ export function AuthScreenFrame({ backPath, salutation, description, title, subt
                     <CustomText
                       variant="body"
                       style={{
-                        color: 'rgba(255,255,255,0.72)',
+                        color: 'rgba(255,255,255,0.76)',
                         marginTop: 8,
-                        maxWidth: 440,
+                        maxWidth: 460,
                         textAlign: isPhone ? 'center' : 'left',
-                        alignSelf: isPhone ? 'center' : 'auto',
-                        lineHeight: 21,
+                        alignSelf: isPhone ? 'center' : undefined,
+                        lineHeight: device.isTV ? 24 : 21,
+                        fontSize: device.isTV ? 15.5 : undefined,
                       }}
                     >
                       {subtitle}

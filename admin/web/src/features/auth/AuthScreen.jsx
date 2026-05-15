@@ -48,71 +48,42 @@ function EyeIcon({ hidden }) {
   );
 }
 
-function AuthIcon({ name }) {
-  if (name === 'home') {
-    return (
-      <svg width="17" height="17" viewBox="0 0 24 24" aria-hidden="true" fill="none">
-        <path d="M4 10.8 12 4l8 6.8v8.4a1.8 1.8 0 0 1-1.8 1.8H5.8A1.8 1.8 0 0 1 4 19.2v-8.4Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
-        <path d="M9.4 21v-6.2h5.2V21" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-      </svg>
-    );
-  }
-
-  if (name === 'upload') {
-    return (
-      <svg width="19" height="19" viewBox="0 0 24 24" aria-hidden="true" fill="none">
-        <path d="M12 15V4" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
-        <path d="m7.5 8.5 4.5-4.5 4.5 4.5" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M5 15v3.2A1.8 1.8 0 0 0 6.8 20h10.4a1.8 1.8 0 0 0 1.8-1.8V15" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
-      </svg>
-    );
-  }
-
-  if (name === 'review') {
-    return (
-      <svg width="19" height="19" viewBox="0 0 24 24" aria-hidden="true" fill="none">
-        <path d="M7 12.2 10.2 15 17 8" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M5.8 4h12.4A1.8 1.8 0 0 1 20 5.8v12.4a1.8 1.8 0 0 1-1.8 1.8H5.8A1.8 1.8 0 0 1 4 18.2V5.8A1.8 1.8 0 0 1 5.8 4Z" stroke="currentColor" strokeWidth="1.8" />
-      </svg>
-    );
-  }
-
+function HomeIcon() {
   return (
-    <svg width="19" height="19" viewBox="0 0 24 24" aria-hidden="true" fill="none">
-      <path d="M8 4h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M9.5 8h5M9.5 12h5M9.5 16h3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    <svg width="17" height="17" viewBox="0 0 24 24" aria-hidden="true" fill="none">
+      <path d="M4 10.8 12 4l8 6.8v8.4a1.8 1.8 0 0 1-1.8 1.8H5.8A1.8 1.8 0 0 1 4 19.2v-8.4Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+      <path d="M9.4 21v-6.2h5.2V21" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
 
-function WorkflowSteps() {
+function GoogleIcon() {
   return (
-    <section class="cg-auth-steps-panel" aria-label="Publishing workflow">
-      <div class="cg-progress-steps cg-auth-progress-steps">
-        <div class="cg-step">
-          <span class="cg-step-icon"><AuthIcon name="upload" /></span>
-          <div>
-            <strong>Upload clearly</strong>
-            <p class="cg-muted">Add title, description, media, thumbnail, and target sections in one controlled flow.</p>
-          </div>
-        </div>
-        <div class="cg-step">
-          <span class="cg-step-icon"><AuthIcon name="review" /></span>
-          <div>
-            <strong>Review safely</strong>
-            <p class="cg-muted">Draft, correct, approve, and publish without hidden or confusing steps.</p>
-          </div>
-        </div>
-        <div class="cg-step">
-          <span class="cg-step-icon"><AuthIcon name="preview" /></span>
-          <div>
-            <strong>Preview mobile</strong>
-            <p class="cg-muted">Confirm how published content appears before users see the next release.</p>
-          </div>
-        </div>
-      </div>
-    </section>
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="currentColor" d="M21.6 12.23c0-.74-.07-1.28-.2-1.85H12v3.36h5.52c-.11.84-.71 2.1-2.04 2.95l-.02.12 2.96 2.08.2.02c1.84-1.55 2.98-3.84 2.98-6.66Z" />
+      <path fill="currentColor" d="M12 21c2.63 0 4.84-.79 6.45-2.15l-3.07-2.16c-.82.52-1.92.88-3.38.88-2.57 0-4.75-1.55-5.52-3.7l-.12.01-3.08 2.17-.04.1C4.84 19.02 8.14 21 12 21Z" opacity="0.78" />
+      <path fill="currentColor" d="M6.48 13.87A5.18 5.18 0 0 1 6.2 12c0-.65.1-1.28.27-1.87l-.01-.13-3.12-2.2-.1.04A8.25 8.25 0 0 0 2.4 12c0 1.5.39 2.9 1.08 4.1l3-2.23Z" opacity="0.56" />
+      <path fill="currentColor" d="M12 6.43c1.83 0 3.06.72 3.76 1.32l2.75-2.44C16.82 3.88 14.63 3 12 3 8.14 3 4.84 4.98 3.24 7.84l3.24 2.29c.77-2.15 2.95-3.7 5.52-3.7Z" opacity="0.9" />
+    </svg>
   );
+}
+
+function WorkflowIcon({ type }) {
+  const paths = {
+    upload: 'M12 16V4m0 0 4.4 4.4M12 4 7.6 8.4M5 16.5V19a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5',
+    review: 'M5 12.3 9.2 16.5 19 6.8M4.5 5.5h9M4.5 19.5h15',
+    preview: 'M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v7A2.5 2.5 0 0 1 17.5 16h-11A2.5 2.5 0 0 1 4 13.5v-7ZM9 20h6m-3-4v4',
+  };
+
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none">
+      <path d={paths[type]} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function unlockAutofillGuard(event) {
+  event.currentTarget.removeAttribute('readonly');
 }
 
 export default function AuthScreen(props) {
@@ -148,12 +119,8 @@ export default function AuthScreen(props) {
     const suggestedPassword = generatePasswordSuggestion();
     authForm.password = suggestedPassword;
     authForm.confirmPassword = suggestedPassword;
-    if (hidePassword) {
-      onTogglePassword();
-    }
-    if (hideConfirmPassword) {
-      onToggleConfirmPassword();
-    }
+    if (hidePassword) onTogglePassword();
+    if (hideConfirmPassword) onToggleConfirmPassword();
   };
 
   const pageTitle = isVerifyMode ? 'Verify your account' : isRegisterMode ? 'Create publisher access' : 'Sign in to Admin Studio';
@@ -163,22 +130,26 @@ export default function AuthScreen(props) {
       ? 'Create a secure publisher profile for uploading, correcting, and releasing content.'
       : 'Use your approved account to manage content, mobile app structure, live sessions, and publishing.';
 
-  const formAutocompleteMode = isRegisterMode || isVerifyMode ? 'off' : 'new-password';
+  const workflowSteps = [
+    { id: 'upload', title: 'Upload clearly', copy: 'Add title, description, media, thumbnail, and target sections in one guided flow.' },
+    { id: 'review', title: 'Review safely', copy: 'Draft, correct, approve, and publish with clear status and audit history.' },
+    { id: 'preview', title: 'Preview mobile', copy: 'Confirm how content appears before it reaches mobile, tablet, TV, and web users.' },
+  ];
 
   if (showPublicHome) {
     return (
-      <section class="cg-auth-root">
-        <div class="cg-auth-grid cg-auth-grid-home">
-          <article class="cg-panel cg-auth-hero cg-auth-home-panel">
-            <div class="cg-logo-box" style={{ width: '70px', height: '70px', borderRadius: '24px' }}>
-              <img src={brandLogoUrl} alt="ClaudyGod" style={{ width: '46px', height: '46px' }} />
+      <section class="cg-auth-root cg-auth-root-polished">
+        <div class="cg-auth-grid cg-auth-grid-home cg-auth-grid-polished">
+          <article class="cg-panel cg-auth-hero cg-auth-home-panel cg-auth-home-polished">
+            <div class="cg-logo-box cg-auth-logo-large">
+              <img src={brandLogoUrl} alt="ClaudyGod" />
             </div>
 
             <div class="cg-auth-hero-intro">
               <p class="cg-kicker">ClaudyGod Ministries</p>
               <h1 class="cg-auth-title">Professional publishing control for every release.</h1>
               <p class="cg-hero-copy">
-                Manage music, videos, live sessions, mobile placements, and publishing reviews from one secure studio built for clear client handoff.
+                Upload, review, publish, and monitor the mobile app experience from one secure admin studio built for production operations.
               </p>
             </div>
 
@@ -188,19 +159,31 @@ export default function AuthScreen(props) {
             </div>
           </article>
 
-          <WorkflowSteps />
+          <section class="cg-auth-steps-panel cg-auth-steps-panel-polished" aria-label="Publishing workflow">
+            <div class="cg-progress-steps cg-progress-steps-polished">
+              {workflowSteps.map((step) => (
+                <div class="cg-step cg-step-polished" key={step.id}>
+                  <span class="cg-step-icon"><WorkflowIcon type={step.id} /></span>
+                  <div>
+                    <strong>{step.title}</strong>
+                    <p class="cg-muted">{step.copy}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
         </div>
       </section>
     );
   }
 
   return (
-    <section class="cg-auth-root">
-      <div class="cg-auth-grid cg-auth-grid-form">
-        <article class="cg-panel cg-auth-form">
+    <section class="cg-auth-root cg-auth-root-polished">
+      <div class="cg-auth-grid cg-auth-grid-form cg-auth-grid-polished">
+        <article class="cg-panel cg-auth-form cg-auth-form-polished">
           <div class="cg-auth-form-nav">
-            <button type="button" class="cg-ghost compact cg-icon-btn" onClick={onShowPublicHome}>
-              <AuthIcon name="home" />
+            <button type="button" class="cg-ghost compact cg-icon-button" onClick={onShowPublicHome}>
+              <HomeIcon />
               <span>Home</span>
             </button>
           </div>
@@ -214,47 +197,33 @@ export default function AuthScreen(props) {
           </div>
 
           <div class="cg-auth-mode" role="tablist" aria-label="Authentication mode">
-            <button
-              type="button"
-              class={authMode === 'login' ? 'is-active' : ''}
-              onClick={() => onSwitchMode('login')}
-              disabled={authLoading}
-            >
-              Sign in
-            </button>
-            <button
-              type="button"
-              class={isRegisterMode || isVerifyMode ? 'is-active' : ''}
-              onClick={() => onSwitchMode('register')}
-              disabled={authLoading}
-            >
-              Create account
-            </button>
+            <button type="button" class={authMode === 'login' ? 'is-active' : ''} onClick={() => onSwitchMode('login')} disabled={authLoading}>Sign in</button>
+            <button type="button" class={isRegisterMode || isVerifyMode ? 'is-active' : ''} onClick={() => onSwitchMode('register')} disabled={authLoading}>Create account</button>
           </div>
 
           <div class="cg-stack" style={{ marginTop: '16px' }}>
             <span class="cg-chip is-success">{publicHealthSummary}</span>
 
             {googleLoginEnabled && !isVerifyMode ? (
-              <button type="button" class="cg-secondary" onClick={onGoogleLogin} disabled={authLoading}>
-                Continue with Google
+              <button type="button" class="cg-secondary cg-icon-button cg-google-button" onClick={onGoogleLogin} disabled={authLoading}>
+                <GoogleIcon />
+                <span>Continue with Google</span>
               </button>
             ) : null}
 
-            <form class="cg-form cg-auth-clean-form" autoComplete="off" onSubmit={(event) => void onSubmit(event)}>
-              <input class="cg-autofill-decoy" type="text" name="cg_admin_decoy_email" autoComplete="username" tabIndex={-1} aria-hidden="true" />
-              <input class="cg-autofill-decoy" type="password" name="cg_admin_decoy_password" autoComplete="new-password" tabIndex={-1} aria-hidden="true" />
-
+            <form class="cg-form cg-auth-clean-form" onSubmit={(event) => void onSubmit(event)} autoComplete="off">
               {isRegisterMode ? (
                 <label>
                   <span>Username</span>
                   <input
-                    value={authForm.username || ''}
+                    value={authForm.username}
                     onInput={(event) => { authForm.username = onReadValue(event); }}
                     placeholder="publisher_name"
-                    name="cg_admin_publisher_name"
                     autoComplete="off"
+                    name="cg_admin_new_publisher_name"
                     spellCheck="false"
+                    data-lpignore="true"
+                    data-1p-ignore="true"
                   />
                   <small>This name appears in internal publishing activity and content ownership.</small>
                 </label>
@@ -264,13 +233,18 @@ export default function AuthScreen(props) {
                 <span>Email address</span>
                 <input
                   type="email"
-                  value={authForm.email || ''}
+                  value={authForm.email}
                   onInput={(event) => { authForm.email = onReadValue(event); }}
                   placeholder={isVerifyMode ? 'Email used during signup' : 'name@example.com'}
-                  name={`cg_admin_email_${authMode}`}
                   autoComplete="off"
-                  autoCorrect="off"
+                  name={isVerifyMode ? 'cg_admin_verify_email' : 'cg_admin_user_identifier'}
+                  inputMode="email"
                   spellCheck="false"
+                  autoCorrect="off"
+                  readOnly
+                  onFocus={unlockAutofillGuard}
+                  data-lpignore="true"
+                  data-1p-ignore="true"
                 />
               </label>
 
@@ -278,12 +252,12 @@ export default function AuthScreen(props) {
                 <label>
                   <span>Verification code</span>
                   <input
-                    value={authForm.verificationCode || ''}
+                    value={authForm.verificationCode}
                     onInput={(event) => { authForm.verificationCode = onReadValue(event).replace(/\D/g, '').slice(0, 6); }}
                     placeholder="123456"
                     inputMode="numeric"
-                    name="cg_admin_verification_code"
                     autoComplete="one-time-code"
+                    name="cg_admin_verification_code"
                   />
                   <small>{pendingVerificationEmail ? `Code destination: ${pendingVerificationEmail}` : 'Use the newest 6-digit code sent to your email.'}</small>
                 </label>
@@ -293,20 +267,17 @@ export default function AuthScreen(props) {
                   <div class="cg-password-field">
                     <input
                       type={hidePassword ? 'password' : 'text'}
-                      value={authForm.password || ''}
+                      value={authForm.password}
                       onInput={(event) => { authForm.password = onReadValue(event); }}
                       placeholder={isRegisterMode ? 'Create a secure password' : 'Enter your password'}
-                      name={`cg_admin_password_${authMode}`}
-                      autoComplete={formAutocompleteMode}
-                      autoCorrect="off"
-                      spellCheck="false"
+                      autoComplete="off"
+                      name={isRegisterMode ? 'cg_admin_new_secret' : 'cg_admin_access_phrase'}
+                      readOnly
+                      onFocus={unlockAutofillGuard}
+                      data-lpignore="true"
+                      data-1p-ignore="true"
                     />
-                    <button
-                      type="button"
-                      class="cg-password-toggle"
-                      onClick={onTogglePassword}
-                      aria-label={hidePassword ? 'Show password' : 'Hide password'}
-                    >
+                    <button type="button" class="cg-password-toggle" onClick={onTogglePassword} aria-label={hidePassword ? 'Show password' : 'Hide password'}>
                       <EyeIcon hidden={hidePassword} />
                     </button>
                   </div>
@@ -314,18 +285,12 @@ export default function AuthScreen(props) {
                     <div class="cg-password-strength" aria-live="polite">
                       <div class="cg-password-strength-head">
                         <strong>{passwordReport.label} password</strong>
-                        <button type="button" class="cg-inline-action" onClick={applySuggestedPassword}>
-                          Suggest secure password
-                        </button>
+                        <button type="button" class="cg-inline-action" onClick={applySuggestedPassword}>Suggest secure password</button>
                       </div>
-                      <div class="cg-password-meter" aria-hidden="true">
-                        <span style={{ width: `${passwordReport.percent}%` }} />
-                      </div>
+                      <div class="cg-password-meter" aria-hidden="true"><span style={{ width: `${passwordReport.percent}%` }} /></div>
                       <div class="cg-password-checks">
                         {passwordReport.checks.map((check) => (
-                          <span key={check.id} class={check.valid ? 'is-valid' : ''}>
-                            {check.valid ? 'OK' : '-'} {check.label}
-                          </span>
+                          <span key={check.id} class={check.valid ? 'is-valid' : ''}>{check.valid ? '✓' : '•'} {check.label}</span>
                         ))}
                       </div>
                     </div>
@@ -339,20 +304,17 @@ export default function AuthScreen(props) {
                   <div class="cg-password-field">
                     <input
                       type={hideConfirmPassword ? 'password' : 'text'}
-                      value={authForm.confirmPassword || ''}
+                      value={authForm.confirmPassword}
                       onInput={(event) => { authForm.confirmPassword = onReadValue(event); }}
                       placeholder="Repeat password"
-                      name="cg_admin_confirm_password"
-                      autoComplete="new-password"
-                      autoCorrect="off"
-                      spellCheck="false"
+                      autoComplete="off"
+                      name="cg_admin_confirm_secret"
+                      readOnly
+                      onFocus={unlockAutofillGuard}
+                      data-lpignore="true"
+                      data-1p-ignore="true"
                     />
-                    <button
-                      type="button"
-                      class="cg-password-toggle"
-                      onClick={onToggleConfirmPassword}
-                      aria-label={hideConfirmPassword ? 'Show password confirmation' : 'Hide password confirmation'}
-                    >
+                    <button type="button" class="cg-password-toggle" onClick={onToggleConfirmPassword} aria-label={hideConfirmPassword ? 'Show password confirmation' : 'Hide password confirmation'}>
                       <EyeIcon hidden={hideConfirmPassword} />
                     </button>
                   </div>
@@ -376,18 +338,26 @@ export default function AuthScreen(props) {
 
             {isVerifyMode ? (
               <div class="cg-button-row">
-                <button type="button" class="cg-secondary compact" onClick={() => void onResendVerificationCode()} disabled={authLoading}>
-                  Resend code
-                </button>
-                <button type="button" class="cg-ghost compact" onClick={() => onSwitchMode('login')} disabled={authLoading}>
-                  Back to sign in
-                </button>
+                <button type="button" class="cg-secondary compact" onClick={() => void onResendVerificationCode()} disabled={authLoading}>Resend code</button>
+                <button type="button" class="cg-ghost compact" onClick={() => onSwitchMode('login')} disabled={authLoading}>Back to sign in</button>
               </div>
             ) : null}
           </div>
         </article>
 
-        <WorkflowSteps />
+        <section class="cg-auth-steps-panel cg-auth-steps-panel-polished" aria-label="Publishing workflow">
+          <div class="cg-progress-steps cg-progress-steps-polished">
+            {workflowSteps.map((step) => (
+              <div class="cg-step cg-step-polished" key={step.id}>
+                <span class="cg-step-icon"><WorkflowIcon type={step.id} /></span>
+                <div>
+                  <strong>{step.title}</strong>
+                  <p class="cg-muted">{step.copy}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
       </div>
 
       {notice ? (
@@ -398,9 +368,7 @@ export default function AuthScreen(props) {
               <h3>{noticeKind === 'error' ? 'Action needed' : 'Confirmed'}</h3>
               <p>{notice}</p>
             </div>
-            <button type="button" class="cg-admin-modal-close" aria-label="Close notice" onClick={() => onDismissNotice && onDismissNotice()}>
-              Close
-            </button>
+            <button type="button" class="cg-admin-modal-close" aria-label="Close notice" onClick={() => onDismissNotice && onDismissNotice()}>Close</button>
           </div>
         </div>
       ) : null}
