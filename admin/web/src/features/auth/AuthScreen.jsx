@@ -66,6 +66,9 @@ export default function AuthScreen(props) {
     onGoogleLogin,
     onTogglePassword,
     onToggleConfirmPassword,
+    showPublicHome,
+    onShowPublicHome,
+    onShowAuth,
     onSubmit,
     onReadValue,
     onResendVerificationCode,
@@ -92,24 +95,53 @@ export default function AuthScreen(props) {
       ? 'Create a secure publisher profile for uploading, correcting, and releasing content.'
       : 'Use your approved account to manage content, mobile app structure, live sessions, and publishing.';
 
+  if (showPublicHome) {
+    return (
+      <section class="cg-auth-root">
+        <div class="cg-auth-grid cg-auth-grid-home">
+          <article class="cg-panel cg-auth-hero cg-auth-home-panel">
+            <div class="cg-logo-box" style={{ width: '70px', height: '70px', borderRadius: '24px' }}>
+              <img src={brandLogoUrl} alt="ClaudyGod" style={{ width: '46px', height: '46px' }} />
+            </div>
+
+            <div class="cg-auth-hero-intro">
+              <p class="cg-kicker">ClaudyGod Ministries</p>
+              <h1 class="cg-auth-title">Client-friendly publishing control.</h1>
+              <p class="cg-hero-copy">
+                A secure admin workspace for uploading media, assigning mobile app placements, managing live sessions, and reviewing every release before it reaches users.
+              </p>
+            </div>
+
+            <div class="cg-auth-home-actions">
+              <button type="button" class="cg-primary" onClick={onShowAuth}>Sign in</button>
+              <button type="button" class="cg-secondary" onClick={() => { onSwitchMode('register'); onShowAuth(); }}>Create account</button>
+            </div>
+          </article>
+
+          <section class="cg-auth-steps-panel" aria-label="Publishing workflow">
+            <div class="cg-progress-steps">
+              <div class="cg-step"><span class="cg-step-icon">U</span><div><strong>Upload clearly</strong><p class="cg-muted">Add title, description, media, thumbnail, and target sections in one flow.</p></div></div>
+              <div class="cg-step"><span class="cg-step-icon">R</span><div><strong>Review safely</strong><p class="cg-muted">Draft, correct, approve, and publish without confusing hidden steps.</p></div></div>
+              <div class="cg-step"><span class="cg-step-icon">P</span><div><strong>Preview mobile</strong><p class="cg-muted">Confirm how published content appears before moving to the next task.</p></div></div>
+            </div>
+          </section>
+        </div>
+        <footer class="cg-admin-footer cg-admin-footer-auth">
+          <span>ClaudyGod Music Ministries</span>
+          <span>Secure publishing workspace</span>
+          <span>{new Date().getFullYear()}</span>
+        </footer>
+      </section>
+    );
+  }
+
   return (
     <section class="cg-auth-root">
-      <div class="cg-auth-grid">
-        <article class="cg-panel cg-auth-hero">
-          <div class="cg-logo-box" style={{ width: '74px', height: '74px', borderRadius: '26px' }}>
-            <img src={brandLogoUrl} alt="ClaudyGod" style={{ width: '48px', height: '48px' }} />
-          </div>
-
-          <div class="cg-auth-hero-intro">
-            <p class="cg-kicker">ClaudyGod Ministries</p>
-            <h1 class="cg-auth-title">Client-friendly publishing control.</h1>
-            <p class="cg-hero-copy">
-              A secure admin workspace for uploading media, assigning mobile app placements, managing live sessions, and reviewing every release before it reaches users.
-            </p>
-          </div>
-        </article>
-
+      <div class="cg-auth-grid cg-auth-grid-form">
         <article class="cg-panel cg-auth-form">
+          <div class="cg-auth-form-nav">
+            <button type="button" class="cg-ghost compact" onClick={onShowPublicHome}>Home</button>
+          </div>
           <div class="cg-section-head">
             <div>
               <p class="cg-kicker">Admin Access</p>

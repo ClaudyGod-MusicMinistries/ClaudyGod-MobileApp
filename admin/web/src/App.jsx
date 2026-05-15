@@ -168,6 +168,7 @@ export default defineComponent({
     const mobilePreviewFrameKey = ref(0);
     const hideAuthPassword = ref(true);
     const hideAuthConfirmPassword = ref(true);
+    const showPublicAuthHome = ref(false);
     const notice = ref('');
     const noticeKind = ref('success');
 
@@ -2387,6 +2388,7 @@ export default defineComponent({
           notice={notice.value}
           noticeKind={noticeKind.value}
           googleLoginEnabled={googleLoginEnabled.value}
+          showPublicHome={showPublicAuthHome.value}
           hidePassword={hideAuthPassword.value}
           hideConfirmPassword={hideAuthConfirmPassword.value}
           authForm={authForm}
@@ -2395,6 +2397,8 @@ export default defineComponent({
           onGoogleLogin={startGoogleLogin}
           onTogglePassword={() => { hideAuthPassword.value = !hideAuthPassword.value; }}
           onToggleConfirmPassword={() => { hideAuthConfirmPassword.value = !hideAuthConfirmPassword.value; }}
+          onShowPublicHome={() => { showPublicAuthHome.value = true; }}
+          onShowAuth={() => { showPublicAuthHome.value = false; }}
           onSubmit={handleAuthSubmit}
           onReadValue={readValue}
           onResendVerificationCode={resendVerificationCode}
