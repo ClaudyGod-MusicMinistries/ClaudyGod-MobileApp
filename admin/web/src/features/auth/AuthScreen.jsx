@@ -1,4 +1,5 @@
 import '../../app/AdminShell.css';
+import './AuthScreen.css';
 
 const passwordRules = (password) => [
   { id: 'length', label: '8 or more characters', valid: password.length >= 8 },
@@ -44,6 +45,73 @@ function EyeIcon({ hidden }) {
       <path d="M3 12c2.2-3.5 5.2-5.2 9-5.2s6.8 1.7 9 5.2c-2.2 3.5-5.2 5.2-9 5.2S5.2 15.5 3 12Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
       <path d="M12 14.4a2.4 2.4 0 1 0 0-4.8 2.4 2.4 0 0 0 0 4.8Z" stroke="currentColor" strokeWidth="1.8" />
     </svg>
+  );
+}
+
+function AuthIcon({ name }) {
+  if (name === 'home') {
+    return (
+      <svg width="17" height="17" viewBox="0 0 24 24" aria-hidden="true" fill="none">
+        <path d="M4 10.8 12 4l8 6.8v8.4a1.8 1.8 0 0 1-1.8 1.8H5.8A1.8 1.8 0 0 1 4 19.2v-8.4Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+        <path d="M9.4 21v-6.2h5.2V21" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      </svg>
+    );
+  }
+
+  if (name === 'upload') {
+    return (
+      <svg width="19" height="19" viewBox="0 0 24 24" aria-hidden="true" fill="none">
+        <path d="M12 15V4" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+        <path d="m7.5 8.5 4.5-4.5 4.5 4.5" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M5 15v3.2A1.8 1.8 0 0 0 6.8 20h10.4a1.8 1.8 0 0 0 1.8-1.8V15" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+      </svg>
+    );
+  }
+
+  if (name === 'review') {
+    return (
+      <svg width="19" height="19" viewBox="0 0 24 24" aria-hidden="true" fill="none">
+        <path d="M7 12.2 10.2 15 17 8" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M5.8 4h12.4A1.8 1.8 0 0 1 20 5.8v12.4a1.8 1.8 0 0 1-1.8 1.8H5.8A1.8 1.8 0 0 1 4 18.2V5.8A1.8 1.8 0 0 1 5.8 4Z" stroke="currentColor" strokeWidth="1.8" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg width="19" height="19" viewBox="0 0 24 24" aria-hidden="true" fill="none">
+      <path d="M8 4h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M9.5 8h5M9.5 12h5M9.5 16h3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function WorkflowSteps() {
+  return (
+    <section class="cg-auth-steps-panel" aria-label="Publishing workflow">
+      <div class="cg-progress-steps cg-auth-progress-steps">
+        <div class="cg-step">
+          <span class="cg-step-icon"><AuthIcon name="upload" /></span>
+          <div>
+            <strong>Upload clearly</strong>
+            <p class="cg-muted">Add title, description, media, thumbnail, and target sections in one controlled flow.</p>
+          </div>
+        </div>
+        <div class="cg-step">
+          <span class="cg-step-icon"><AuthIcon name="review" /></span>
+          <div>
+            <strong>Review safely</strong>
+            <p class="cg-muted">Draft, correct, approve, and publish without hidden or confusing steps.</p>
+          </div>
+        </div>
+        <div class="cg-step">
+          <span class="cg-step-icon"><AuthIcon name="preview" /></span>
+          <div>
+            <strong>Preview mobile</strong>
+            <p class="cg-muted">Confirm how published content appears before users see the next release.</p>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -95,6 +163,8 @@ export default function AuthScreen(props) {
       ? 'Create a secure publisher profile for uploading, correcting, and releasing content.'
       : 'Use your approved account to manage content, mobile app structure, live sessions, and publishing.';
 
+  const formAutocompleteMode = isRegisterMode || isVerifyMode ? 'off' : 'new-password';
+
   if (showPublicHome) {
     return (
       <section class="cg-auth-root">
@@ -106,9 +176,9 @@ export default function AuthScreen(props) {
 
             <div class="cg-auth-hero-intro">
               <p class="cg-kicker">ClaudyGod Ministries</p>
-              <h1 class="cg-auth-title">Client-friendly publishing control.</h1>
+              <h1 class="cg-auth-title">Professional publishing control for every release.</h1>
               <p class="cg-hero-copy">
-                A secure admin workspace for uploading media, assigning mobile app placements, managing live sessions, and reviewing every release before it reaches users.
+                Manage music, videos, live sessions, mobile placements, and publishing reviews from one secure studio built for clear client handoff.
               </p>
             </div>
 
@@ -118,19 +188,8 @@ export default function AuthScreen(props) {
             </div>
           </article>
 
-          <section class="cg-auth-steps-panel" aria-label="Publishing workflow">
-            <div class="cg-progress-steps">
-              <div class="cg-step"><span class="cg-step-icon">U</span><div><strong>Upload clearly</strong><p class="cg-muted">Add title, description, media, thumbnail, and target sections in one flow.</p></div></div>
-              <div class="cg-step"><span class="cg-step-icon">R</span><div><strong>Review safely</strong><p class="cg-muted">Draft, correct, approve, and publish without confusing hidden steps.</p></div></div>
-              <div class="cg-step"><span class="cg-step-icon">P</span><div><strong>Preview mobile</strong><p class="cg-muted">Confirm how published content appears before moving to the next task.</p></div></div>
-            </div>
-          </section>
+          <WorkflowSteps />
         </div>
-        <footer class="cg-admin-footer cg-admin-footer-auth">
-          <span>ClaudyGod Music Ministries</span>
-          <span>Secure publishing workspace</span>
-          <span>{new Date().getFullYear()}</span>
-        </footer>
       </section>
     );
   }
@@ -140,8 +199,12 @@ export default function AuthScreen(props) {
       <div class="cg-auth-grid cg-auth-grid-form">
         <article class="cg-panel cg-auth-form">
           <div class="cg-auth-form-nav">
-            <button type="button" class="cg-ghost compact" onClick={onShowPublicHome}>Home</button>
+            <button type="button" class="cg-ghost compact cg-icon-btn" onClick={onShowPublicHome}>
+              <AuthIcon name="home" />
+              <span>Home</span>
+            </button>
           </div>
+
           <div class="cg-section-head">
             <div>
               <p class="cg-kicker">Admin Access</p>
@@ -178,15 +241,20 @@ export default function AuthScreen(props) {
               </button>
             ) : null}
 
-            <form class="cg-form" onSubmit={(event) => void onSubmit(event)}>
+            <form class="cg-form cg-auth-clean-form" autoComplete="off" onSubmit={(event) => void onSubmit(event)}>
+              <input class="cg-autofill-decoy" type="text" name="cg_admin_decoy_email" autoComplete="username" tabIndex={-1} aria-hidden="true" />
+              <input class="cg-autofill-decoy" type="password" name="cg_admin_decoy_password" autoComplete="new-password" tabIndex={-1} aria-hidden="true" />
+
               {isRegisterMode ? (
                 <label>
                   <span>Username</span>
                   <input
-                    value={authForm.username}
+                    value={authForm.username || ''}
                     onInput={(event) => { authForm.username = onReadValue(event); }}
                     placeholder="publisher_name"
-                    autoComplete="nickname"
+                    name="cg_admin_publisher_name"
+                    autoComplete="off"
+                    spellCheck="false"
                   />
                   <small>This name appears in internal publishing activity and content ownership.</small>
                 </label>
@@ -196,10 +264,13 @@ export default function AuthScreen(props) {
                 <span>Email address</span>
                 <input
                   type="email"
-                  value={authForm.email}
+                  value={authForm.email || ''}
                   onInput={(event) => { authForm.email = onReadValue(event); }}
                   placeholder={isVerifyMode ? 'Email used during signup' : 'name@example.com'}
-                  autoComplete="email"
+                  name={`cg_admin_email_${authMode}`}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck="false"
                 />
               </label>
 
@@ -207,10 +278,11 @@ export default function AuthScreen(props) {
                 <label>
                   <span>Verification code</span>
                   <input
-                    value={authForm.verificationCode}
+                    value={authForm.verificationCode || ''}
                     onInput={(event) => { authForm.verificationCode = onReadValue(event).replace(/\D/g, '').slice(0, 6); }}
                     placeholder="123456"
                     inputMode="numeric"
+                    name="cg_admin_verification_code"
                     autoComplete="one-time-code"
                   />
                   <small>{pendingVerificationEmail ? `Code destination: ${pendingVerificationEmail}` : 'Use the newest 6-digit code sent to your email.'}</small>
@@ -221,10 +293,13 @@ export default function AuthScreen(props) {
                   <div class="cg-password-field">
                     <input
                       type={hidePassword ? 'password' : 'text'}
-                      value={authForm.password}
+                      value={authForm.password || ''}
                       onInput={(event) => { authForm.password = onReadValue(event); }}
                       placeholder={isRegisterMode ? 'Create a secure password' : 'Enter your password'}
-                      autoComplete={isRegisterMode ? 'new-password' : 'current-password'}
+                      name={`cg_admin_password_${authMode}`}
+                      autoComplete={formAutocompleteMode}
+                      autoCorrect="off"
+                      spellCheck="false"
                     />
                     <button
                       type="button"
@@ -264,10 +339,13 @@ export default function AuthScreen(props) {
                   <div class="cg-password-field">
                     <input
                       type={hideConfirmPassword ? 'password' : 'text'}
-                      value={authForm.confirmPassword}
+                      value={authForm.confirmPassword || ''}
                       onInput={(event) => { authForm.confirmPassword = onReadValue(event); }}
                       placeholder="Repeat password"
+                      name="cg_admin_confirm_password"
                       autoComplete="new-password"
+                      autoCorrect="off"
+                      spellCheck="false"
                     />
                     <button
                       type="button"
@@ -309,31 +387,7 @@ export default function AuthScreen(props) {
           </div>
         </article>
 
-        <section class="cg-auth-steps-panel" aria-label="Publishing workflow">
-          <div class="cg-progress-steps">
-            <div class="cg-step">
-              <span class="cg-step-icon">U</span>
-              <div>
-                <strong>Upload clearly</strong>
-                <p class="cg-muted">Add title, description, media, thumbnail, and target sections in one flow.</p>
-              </div>
-            </div>
-            <div class="cg-step">
-              <span class="cg-step-icon">R</span>
-              <div>
-                <strong>Review safely</strong>
-                <p class="cg-muted">Draft, correct, approve, and publish without confusing hidden steps.</p>
-              </div>
-            </div>
-            <div class="cg-step">
-              <span class="cg-step-icon">P</span>
-              <div>
-                <strong>Preview mobile</strong>
-                <p class="cg-muted">Confirm how published content appears before moving to the next task.</p>
-              </div>
-            </div>
-          </div>
-        </section>
+        <WorkflowSteps />
       </div>
 
       {notice ? (
