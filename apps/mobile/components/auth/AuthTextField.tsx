@@ -1,16 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { KeyboardTypeOptions, TextInputProps } from 'react-native';
-import {
-  Animated,
-  Easing,
-  Platform,
-  Pressable,
-  TextInput,
-  View,
-  useWindowDimensions,
-} from 'react-native';
+import { Animated, Easing, Platform, Pressable, TextInput, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../CustomText';
+import { useDeviceClass } from '../../util/deviceClassConfig';
 
 interface AuthTextFieldProps {
   label?: string;
@@ -58,12 +51,12 @@ export function AuthTextField({
   const inputRef = useRef<TextInput | null>(null);
   const [isFocused, setIsFocused] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-  const { width } = useWindowDimensions();
+  const device = useDeviceClass();
 
   const isWeb = Platform.OS === 'web';
   const isActive = isFocused || isHovered;
-  const compact = width < 390;
-  const spacious = width >= 1024;
+  const compact = device.isCompactPhone;
+  const spacious = device.isDesktop || device.isTV;
   const showClearButton = clearable && editable && !trailing && value.length > 0;
 
   const translateY = useRef(new Animated.Value(0)).current;
@@ -78,15 +71,21 @@ export function AuthTextField({
     }).start();
   }, [isActive, translateY, useNativeAnimations, value]);
 
-  const minHeight = compact ? 48 : spacious ? 56 : 52;
-  const inputFontSize = compact ? 13 : spacious ? 14.2 : 13.6;
-  const inputLineHeight = compact ? 18 : spacious ? 20 : 19;
+  const minHeight = device.isTV ? 62 : compact ? 50 : spacious ? 58 : 54;
+  const inputFontSize = device.isTV ? 16 : compact ? 13.2 : spacious ? 14.4 : 13.8;
+  const inputLineHeight = device.isTV ? 22 : compact ? 18 : spacious ? 20 : 19;
   const borderColor = isFocused
-    ? 'rgba(197,167,255,0.82)'
+    ? 'rgba(214,190,255,0.88)'
     : isHovered
-      ? 'rgba(255,255,255,0.26)'
-      : 'rgba(255,255,255,0.14)';
-  const backgroundColor = isFocused ? 'rgba(255,255,255,0.085)' : 'rgba(255,255,255,0.055)';
+      ? 'rgba(255,255,255,0.32)'
+      : 'rgba(255,255,255,0.17)';
+  const backgroundColor = isFocused ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.065)';
+  const hintColor =
+    hintTone === 'error'
+      ? '#FFD7D7'
+      : hintTone === 'success'
+        ? '#D7FFE6'
+        : 'rgba(235,229,250,0.74)';
 
   return (
     <View>
@@ -94,12 +93,12 @@ export function AuthTextField({
         <CustomText
           variant="caption"
           style={{
-            color: 'rgba(226,219,242,0.82)',
+            color: 'rgba(238,233,255,0.86)',
             marginBottom: 8,
             textTransform: 'uppercase',
             letterSpacing: 0.58,
-            fontSize: compact ? 10.2 : 10.8,
-            lineHeight: compact ? 13 : 14,
+            fontSize: device.isTV ? 12 : compact ? 10.4 : 10.9,
+            lineHeight: device.isTV ? 15 : compact ? 13 : 14,
           }}
         >
           {label}
@@ -113,7 +112,7 @@ export function AuthTextField({
           onHoverOut={() => setIsHovered(false)}
           style={{
             minHeight,
-            borderRadius: 17,
+            borderRadius: device.isTV ? 20 : 17,
             borderWidth: 1,
             borderColor,
             backgroundColor,
@@ -152,14 +151,14 @@ export function AuthTextField({
             maxLength={maxLength}
             autoCorrect={autoCorrect ?? false}
             placeholder={placeholder}
-            placeholderTextColor="rgba(226,219,242,0.48)"
-            selectionColor="rgba(197,167,255,0.78)"
+            placeholderTextColor="rgba(235,229,250,0.56)"
+            selectionColor="rgba(214,190,255,0.82)"
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
             style={{
               flex: 1,
               minHeight,
-              color: '#F8F7FC',
+              color: '#FFFFFF',
               fontSize: inputFontSize,
               lineHeight: inputLineHeight,
               fontFamily: 'Manrope_400Regular',
@@ -184,16 +183,16 @@ export function AuthTextField({
               accessibilityLabel={`Clear ${label ?? placeholder}`}
               hitSlop={10}
               style={{
-                width: 30,
-                height: 30,
-                borderRadius: 15,
+                width: device.isTV ? 36 : 30,
+                height: device.isTV ? 36 : 30,
+                borderRadius: device.isTV ? 18 : 15,
                 alignItems: 'center',
                 justifyContent: 'center',
-                backgroundColor: 'rgba(255,255,255,0.08)',
+                backgroundColor: 'rgba(255,255,255,0.10)',
                 marginLeft: 8,
               }}
             >
-              <MaterialIcons name="close" size={16} color="rgba(255,255,255,0.76)" />
+              <MaterialIcons name="close" size={device.isTV ? 18 : 16} color="rgba(255,255,255,0.82)" />
             </Pressable>
           ) : null}
 
@@ -205,15 +204,10 @@ export function AuthTextField({
         <CustomText
           variant="caption"
           style={{
-            marginTop: 7,
-            color:
-              hintTone === 'error'
-                ? '#FFCECE'
-                : hintTone === 'success'
-                  ? '#D7FFE6'
-                  : 'rgba(226,219,242,0.68)',
-            fontSize: compact ? 10.4 : 10.8,
-            lineHeight: compact ? 14 : 15,
+            marginTop: 8,
+            color: hintColor,
+            fontSize: device.isTV ? 12.2 : compact ? 10.8 : 11.2,
+            lineHeight: device.isTV ? 17 : compact ? 15 : 16,
           }}
         >
           {hint}

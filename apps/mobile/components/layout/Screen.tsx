@@ -1,7 +1,8 @@
 // components/layout/Screen.tsx
 import React from 'react';
-import { Platform, StyleProp, View, ViewStyle, useWindowDimensions } from 'react-native';
-import { layout } from '../../styles/designTokens';
+import { StyleProp, View, ViewStyle } from 'react-native';
+import { useDeviceClass } from '../../util/deviceClassConfig';
+
 
 interface ScreenProps {
   children: React.ReactNode;
@@ -10,41 +11,15 @@ interface ScreenProps {
 }
 
 export function Screen({ children, style, contentStyle }: ScreenProps) {
-  const { width } = useWindowDimensions();
-  const isTV = Platform.isTV;
-  const isTablet = width >= 768 && !isTV;
-  const isDesktop = width >= 1024 && !isTV;
-  const isLargeDesktop = width >= 1440 && !isTV;
-
-  const paddingX = isTV
-    ? 56
-    : isLargeDesktop
-      ? 56
-      : isDesktop
-        ? 48
-        : isTablet
-          ? layout.tabletGutter
-          : width >= 390
-            ? layout.phoneGutter
-            : layout.compactPhoneGutter;
-
-  const maxContentWidth = isTV
-    ? 1360
-    : isLargeDesktop
-      ? 1280
-      : isDesktop
-        ? 1180
-        : isTablet
-          ? 960
-          : Math.min(540, width - paddingX * 2);
+  const device = useDeviceClass();
 
   return (
-    <View style={[{ width: '100%', paddingHorizontal: paddingX }, style]}>
+    <View style={[{ width: '100%', paddingHorizontal: device.contentGutter }, style]}>
       <View
         style={[
           {
             width: '100%',
-            maxWidth: maxContentWidth,
+            maxWidth: device.maxContentWidth,
             alignSelf: 'center',
           },
           contentStyle,
