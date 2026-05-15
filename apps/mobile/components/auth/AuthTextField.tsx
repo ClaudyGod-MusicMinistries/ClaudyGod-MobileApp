@@ -78,15 +78,21 @@ export function AuthTextField({
     }).start();
   }, [isActive, translateY, useNativeAnimations, value]);
 
-  const minHeight = compact ? 48 : spacious ? 56 : 52;
-  const inputFontSize = compact ? 13 : spacious ? 14.2 : 13.6;
-  const inputLineHeight = compact ? 18 : spacious ? 20 : 19;
+  const minHeight = compact ? 50 : spacious ? 58 : 54;
+  const inputFontSize = compact ? 13.2 : spacious ? 14.4 : 13.8;
+  const inputLineHeight = compact ? 19 : spacious ? 21 : 20;
   const borderColor = isFocused
-    ? 'rgba(197,167,255,0.82)'
+    ? 'rgba(210,184,255,0.90)'
     : isHovered
-      ? 'rgba(255,255,255,0.26)'
-      : 'rgba(255,255,255,0.14)';
-  const backgroundColor = isFocused ? 'rgba(255,255,255,0.085)' : 'rgba(255,255,255,0.055)';
+      ? 'rgba(255,255,255,0.32)'
+      : 'rgba(255,255,255,0.18)';
+  const backgroundColor = isFocused ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.065)';
+  const hintColor =
+    hintTone === 'error'
+      ? '#FFD3D3'
+      : hintTone === 'success'
+        ? '#D9FFE8'
+        : 'rgba(255,255,255,0.76)';
 
   return (
     <View>
@@ -94,11 +100,11 @@ export function AuthTextField({
         <CustomText
           variant="caption"
           style={{
-            color: 'rgba(226,219,242,0.82)',
+            color: 'rgba(244,239,255,0.86)',
             marginBottom: 8,
             textTransform: 'uppercase',
             letterSpacing: 0.58,
-            fontSize: compact ? 10.2 : 10.8,
+            fontSize: compact ? 10.4 : 10.9,
             lineHeight: compact ? 13 : 14,
           }}
         >
@@ -113,7 +119,7 @@ export function AuthTextField({
           onHoverOut={() => setIsHovered(false)}
           style={{
             minHeight,
-            borderRadius: 17,
+            borderRadius: 18,
             borderWidth: 1,
             borderColor,
             backgroundColor,
@@ -152,14 +158,14 @@ export function AuthTextField({
             maxLength={maxLength}
             autoCorrect={autoCorrect ?? false}
             placeholder={placeholder}
-            placeholderTextColor="rgba(226,219,242,0.48)"
-            selectionColor="rgba(197,167,255,0.78)"
+            placeholderTextColor="rgba(244,239,255,0.54)"
+            selectionColor="rgba(210,184,255,0.82)"
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
             style={{
               flex: 1,
               minHeight,
-              color: '#F8F7FC',
+              color: '#FFFFFF',
               fontSize: inputFontSize,
               lineHeight: inputLineHeight,
               fontFamily: 'Manrope_400Regular',
@@ -189,11 +195,11 @@ export function AuthTextField({
                 borderRadius: 15,
                 alignItems: 'center',
                 justifyContent: 'center',
-                backgroundColor: 'rgba(255,255,255,0.08)',
+                backgroundColor: 'rgba(255,255,255,0.10)',
                 marginLeft: 8,
               }}
             >
-              <MaterialIcons name="close" size={16} color="rgba(255,255,255,0.76)" />
+              <MaterialIcons name="close" size={16} color="rgba(255,255,255,0.82)" />
             </Pressable>
           ) : null}
 
@@ -205,15 +211,10 @@ export function AuthTextField({
         <CustomText
           variant="caption"
           style={{
-            marginTop: 7,
-            color:
-              hintTone === 'error'
-                ? '#FFCECE'
-                : hintTone === 'success'
-                  ? '#D7FFE6'
-                  : 'rgba(226,219,242,0.68)',
-            fontSize: compact ? 10.4 : 10.8,
-            lineHeight: compact ? 14 : 15,
+            marginTop: 8,
+            color: hintColor,
+            fontSize: compact ? 11.1 : 11.4,
+            lineHeight: compact ? 15 : 16,
           }}
         >
           {hint}
