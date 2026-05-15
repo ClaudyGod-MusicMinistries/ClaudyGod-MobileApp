@@ -1,5 +1,11 @@
 import React from 'react';
-import { ImageBackground, type ImageSourcePropType, StatusBar, View } from 'react-native';
+import {
+  ImageBackground,
+  StatusBar,
+  View,
+  useWindowDimensions,
+  type ImageSourcePropType,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorScheme } from '../../util/colorScheme';
@@ -23,10 +29,13 @@ export function TabScreenWrapper({
   const colorScheme = useColorScheme();
   const currentColors = colors[colorScheme] ?? colors.dark;
   const isDark = colorScheme === 'dark';
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 1024;
+  const resolvedBackgroundHeight = isDesktop ? Math.max(backgroundHeight, 380) : backgroundHeight;
   const overlayColors: GradientColorStops =
     backgroundOverlayColors ??
     (isDark
-      ? ['rgba(8,7,14,0.12)', 'rgba(8,7,14,0.62)', currentColors.background]
+      ? ['rgba(8,7,14,0.10)', 'rgba(8,7,14,0.66)', currentColors.background]
       : ['rgba(76,29,149,0.08)', 'rgba(249,247,254,0.56)', currentColors.background]);
 
   return (
@@ -40,12 +49,13 @@ export function TabScreenWrapper({
         <ImageBackground
           source={backgroundImage}
           resizeMode="cover"
+          imageStyle={{ opacity: isDesktop ? 0.86 : 1 }}
           style={{
             position: 'absolute',
             top: 0,
             left: 0,
             right: 0,
-            height: backgroundHeight,
+            height: resolvedBackgroundHeight,
           }}
         >
           <LinearGradient
@@ -56,6 +66,7 @@ export function TabScreenWrapper({
           />
         </ImageBackground>
       ) : null}
+
       <LinearGradient
         colors={['rgba(141,99,255,0.14)', 'rgba(141,99,255,0)']}
         start={{ x: 0.1, y: 0 }}
@@ -65,7 +76,7 @@ export function TabScreenWrapper({
           top: 0,
           left: 0,
           right: 0,
-          height: 200,
+          height: isDesktop ? 260 : 200,
           pointerEvents: 'none',
         }}
       />
@@ -77,9 +88,9 @@ export function TabScreenWrapper({
           position: 'absolute',
           top: 30,
           right: -70,
-          width: 220,
-          height: 220,
-          borderRadius: 220,
+          width: isDesktop ? 320 : 220,
+          height: isDesktop ? 320 : 220,
+          borderRadius: isDesktop ? 320 : 220,
           pointerEvents: 'none',
         }}
       />

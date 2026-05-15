@@ -163,8 +163,14 @@ function AppearanceModePicker({
                 minHeight: 58,
                 borderRadius: theme.radius.xl,
                 borderWidth: 1,
-                borderColor: active ? theme.colors.primary : theme.colors.border,
-                backgroundColor: active ? theme.colors.surface : 'transparent',
+                borderColor: active ? theme.colors.primary : theme.colors.borderStrong,
+                backgroundColor: active
+                  ? theme.scheme === 'dark'
+                    ? 'rgba(183,148,246,0.18)'
+                    : 'rgba(124,58,237,0.10)'
+                  : theme.scheme === 'dark'
+                    ? 'rgba(255,255,255,0.055)'
+                    : 'rgba(19,12,33,0.035)',
                 paddingHorizontal: 12,
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -177,13 +183,13 @@ function AppearanceModePicker({
               <MaterialIcons
                 name={option.icon}
                 size={19}
-                color={active ? theme.colors.primary : theme.colors.textSecondary}
+                color={active ? theme.colors.primary : theme.colors.text}
               />
 
               <CustomText
                 variant="label"
                 style={{
-                  color: active ? theme.colors.text : theme.colors.textSecondary,
+                  color: theme.colors.text,
                 }}
               >
                 {option.label}

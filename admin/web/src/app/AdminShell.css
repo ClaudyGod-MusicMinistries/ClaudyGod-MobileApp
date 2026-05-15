@@ -885,8 +885,41 @@ textarea:disabled {
   align-items: stretch;
 }
 
+.cg-auth-grid-form {
+  width: min(620px, 100%);
+  grid-template-columns: 1fr;
+}
+
+.cg-auth-grid-home {
+  grid-template-columns: 1fr;
+}
+
 .cg-auth-steps-panel {
   grid-column: 1 / -1;
+}
+
+.cg-auth-home-panel {
+  min-height: 360px;
+  display: grid;
+  align-content: center;
+  justify-items: start;
+}
+
+.cg-auth-home-actions,
+.cg-auth-form-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.cg-auth-home-actions {
+  margin-top: 22px;
+}
+
+.cg-auth-form-nav {
+  justify-content: flex-end;
+  margin-bottom: 12px;
 }
 
 .cg-auth-hero,

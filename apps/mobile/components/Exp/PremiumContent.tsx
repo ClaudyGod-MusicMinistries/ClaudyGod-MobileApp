@@ -57,7 +57,16 @@ export function dedupeFeedItems(items: FeedCardItem[]): FeedCardItem[] {
 }
 
 export function formatFeedMeta(item: FeedCardItem) {
-  return [item.subtitle, item.duration].filter((value) => Boolean(value)).join(' · ');
+  return [cleanFeedText(item.subtitle), item.duration].filter((value) => Boolean(value)).join(' · ');
+}
+
+function cleanFeedText(value?: string | null): string {
+  return String(value ?? '')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+    .trim();
 }
 
 export function getFeaturedItem(...groups: (FeedCardItem[] | null | undefined)[]) {
@@ -551,44 +560,60 @@ type ContentCardProps = {
 
 export function ContentCard({ item, onPress, compact = false }: ContentCardProps) {
   const theme = useAppTheme();
-  const width = compact ? 132 : 152;
-  const imageHeight = compact ? 114 : 136;
+  const { width: screenWidth } = useWindowDimensions();
+  const width = compact ? Math.min(252, Math.max(218, screenWidth * 0.68)) : Math.min(286, Math.max(246, screenWidth * 0.32));
+  const imageHeight = Math.round(width * 0.5625);
+  const title = cleanFeedText(item.title);
 
   return (
     <TVTouchable onPress={onPress} style={{ width }} showFocusBorder={false}>
-      <SurfaceCard tone="subtle" style={{ overflow: 'hidden' }}>
-        <View style={{ height: imageHeight, backgroundColor: theme.colors.surfaceAlt }}>
+      <View style={{ gap: 8 }}>
+        <View
+          style={{
+            height: imageHeight,
+            borderRadius: 16,
+            overflow: 'hidden',
+            backgroundColor: theme.colors.surfaceAlt,
+            borderWidth: 1,
+            borderColor: theme.colors.border,
+          }}
+        >
           <Image source={{ uri: item.imageUrl || DEFAULT_CONTENT_IMAGE_URI }} resizeMode="cover" style={{ width: '100%', height: '100%' }} />
           <LinearGradient
-            colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.58)']}
-            style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 70 }}
+            colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.72)']}
+            style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 74 }}
           />
-          <View
-            style={{
-              position: 'absolute',
-              right: 9,
-              bottom: 9,
-              width: 28,
-              height: 28,
-              borderRadius: 14,
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: theme.colors.primary,
-            }}
-          >
-            <MaterialIcons name={item.type === 'video' || item.type === 'live' ? 'smart-display' : 'play-arrow'} size={14} color={theme.colors.textInverse} />
+          {item.duration ? (
+            <View
+              style={{
+                position: 'absolute',
+                right: 8,
+                bottom: 8,
+                borderRadius: 7,
+                backgroundColor: 'rgba(0,0,0,0.78)',
+                paddingHorizontal: 7,
+                paddingVertical: 3,
+              }}
+            >
+              <CustomText variant="meta" style={{ color: '#FFFFFF', fontSize: 10 }}>
+                {item.duration}
+              </CustomText>
+            </View>
+          ) : null}
+          <View style={{ position: 'absolute', left: 8, bottom: 8 }}>
+            <MaterialIcons name={item.type === 'video' || item.type === 'live' ? 'smart-display' : 'play-arrow'} size={19} color="#FFFFFF" />
           </View>
         </View>
 
-        <View style={{ padding: 10 }}>
-          <CustomText variant="label" style={{ color: theme.colors.text }} numberOfLines={2}>
-            {item.title}
+        <View style={{ paddingHorizontal: 2 }}>
+          <CustomText variant="label" style={{ color: theme.colors.text, lineHeight: 18 }} numberOfLines={2}>
+            {title}
           </CustomText>
-          <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 3 }} numberOfLines={1}>
-            {formatFeedMeta(item)}
+          <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 4 }} numberOfLines={1}>
+            {cleanFeedText(item.subtitle)}
           </CustomText>
         </View>
-      </SurfaceCard>
+      </View>
     </TVTouchable>
   );
 }
@@ -669,7 +694,7 @@ export function ContentRail({
       {loading ? (
         <RailSkeleton compact={isCompact} />
       ) : items.length ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 11, paddingRight: 6 }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 16, paddingRight: 8 }}>
           {items.map((item) => (
             <ContentCard key={`${title}-${item.id}`} item={item} compact={isCompact} onPress={() => onPressItem(item)} />
           ))}
@@ -700,25 +725,29 @@ export function ContentList({
         <CustomText variant="title" style={{ color: theme.colors.text, marginBottom: 9 }}>
           {title}
         </CustomText>
-        <SurfaceCard tone="subtle" style={{ paddingHorizontal: 10, paddingVertical: 3 }}>
-          {items.slice(0, 10).map((item, index) => (
+        <View style={{ gap: 12 }}>
+          {items.slice(0, 10).map((item) => (
             <TVTouchable
               key={`${title}-${item.id}`}
               onPress={() => onPressItem(item)}
               style={{
                 flexDirection: 'row',
-                alignItems: 'center',
-                gap: 10,
-                paddingVertical: 9,
-                borderTopWidth: index === 0 ? 0 : 1,
-                borderTopColor: theme.colors.border,
+                alignItems: 'flex-start',
+                gap: 12,
               }}
               showFocusBorder={false}
             >
-              <Image source={{ uri: item.imageUrl || DEFAULT_CONTENT_IMAGE_URI }} style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: theme.colors.surface }} />
-              <View style={{ flex: 1 }}>
-                <CustomText variant="label" style={{ color: theme.colors.text }} numberOfLines={1}>{item.title}</CustomText>
-                <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 2 }} numberOfLines={1}>{formatFeedMeta(item)}</CustomText>
+              <View style={{ width: 124, height: 70, borderRadius: 13, overflow: 'hidden', backgroundColor: theme.colors.surfaceAlt }}>
+                <Image source={{ uri: item.imageUrl || DEFAULT_CONTENT_IMAGE_URI }} resizeMode="cover" style={{ width: '100%', height: '100%' }} />
+                {item.duration ? (
+                  <View style={{ position: 'absolute', right: 6, bottom: 6, borderRadius: 6, backgroundColor: 'rgba(0,0,0,0.78)', paddingHorizontal: 6, paddingVertical: 2 }}>
+                    <CustomText variant="meta" style={{ color: '#FFFFFF', fontSize: 9 }}>{item.duration}</CustomText>
+                  </View>
+                ) : null}
+              </View>
+              <View style={{ flex: 1, minWidth: 0, paddingTop: 1 }}>
+                <CustomText variant="label" style={{ color: theme.colors.text, lineHeight: 18 }} numberOfLines={2}>{cleanFeedText(item.title)}</CustomText>
+                <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 5 }} numberOfLines={2}>{cleanFeedText(item.subtitle)}</CustomText>
               </View>
               {onMorePress ? (
                 <TVTouchable onPress={() => onMorePress(item)} showFocusBorder={false}>
@@ -729,7 +758,7 @@ export function ContentList({
               )}
             </TVTouchable>
           ))}
-        </SurfaceCard>
+        </View>
       </View>
     </FadeIn>
   );

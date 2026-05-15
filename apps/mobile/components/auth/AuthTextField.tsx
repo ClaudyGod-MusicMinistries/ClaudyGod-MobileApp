@@ -1,6 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { KeyboardTypeOptions, TextInputProps } from 'react-native';
-import { Animated, Easing, Platform, Pressable, TextInput, View, useWindowDimensions } from 'react-native';
+import {
+  Animated,
+  Easing,
+  Platform,
+  Pressable,
+  TextInput,
+  View,
+  useWindowDimensions,
+} from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../CustomText';
 
 interface AuthTextFieldProps {
@@ -22,6 +31,7 @@ interface AuthTextFieldProps {
   editable?: boolean;
   hint?: string;
   hintTone?: 'default' | 'error' | 'success';
+  clearable?: boolean;
 }
 
 export function AuthTextField({
@@ -43,6 +53,7 @@ export function AuthTextField({
   editable = true,
   hint,
   hintTone = 'default',
+  clearable = true,
 }: AuthTextFieldProps) {
   const inputRef = useRef<TextInput | null>(null);
   const [isFocused, setIsFocused] = useState(false);
@@ -53,6 +64,7 @@ export function AuthTextField({
   const isActive = isFocused || isHovered;
   const compact = width < 390;
   const spacious = width >= 1024;
+  const showClearButton = clearable && editable && !trailing && value.length > 0;
 
   const translateY = useRef(new Animated.Value(0)).current;
   const useNativeAnimations = Platform.OS !== 'web';
@@ -66,9 +78,15 @@ export function AuthTextField({
     }).start();
   }, [isActive, translateY, useNativeAnimations, value]);
 
-  const minHeight = compact ? 44 : spacious ? 50 : 46;
-  const inputFontSize = compact ? 12.2 : spacious ? 13.2 : 12.6;
-  const inputLineHeight = compact ? 17 : spacious ? 19 : 18;
+  const minHeight = compact ? 48 : spacious ? 56 : 52;
+  const inputFontSize = compact ? 13 : spacious ? 14.2 : 13.6;
+  const inputLineHeight = compact ? 18 : spacious ? 20 : 19;
+  const borderColor = isFocused
+    ? 'rgba(197,167,255,0.82)'
+    : isHovered
+      ? 'rgba(255,255,255,0.26)'
+      : 'rgba(255,255,255,0.14)';
+  const backgroundColor = isFocused ? 'rgba(255,255,255,0.085)' : 'rgba(255,255,255,0.055)';
 
   return (
     <View>
@@ -76,40 +94,44 @@ export function AuthTextField({
         <CustomText
           variant="caption"
           style={{
-            color: 'rgba(226,219,242,0.76)',
-            marginBottom: 7,
+            color: 'rgba(226,219,242,0.82)',
+            marginBottom: 8,
             textTransform: 'uppercase',
             letterSpacing: 0.58,
-            fontSize: compact ? 9.8 : 10.3,
-            lineHeight: compact ? 12 : 13,
+            fontSize: compact ? 10.2 : 10.8,
+            lineHeight: compact ? 13 : 14,
           }}
         >
           {label}
         </CustomText>
       ) : null}
 
-      <Animated.View
-        style={{
-          transform: [{ translateY }],
-        }}
-      >
+      <Animated.View style={{ transform: [{ translateY }] }}>
         <Pressable
           onPress={() => inputRef.current?.focus()}
           onHoverIn={() => setIsHovered(true)}
           onHoverOut={() => setIsHovered(false)}
           style={{
-            borderRadius: 15,
-            borderWidth: 0,
-            borderColor: 'transparent',
-            backgroundColor: isActive ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.03)',
-            paddingHorizontal: compact ? 13 : 14,
+            minHeight,
+            borderRadius: 17,
+            borderWidth: 1,
+            borderColor,
+            backgroundColor,
+            paddingHorizontal: compact ? 13 : 15,
             paddingVertical: 0,
             overflow: 'hidden',
             flexDirection: 'row',
             alignItems: 'center',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 10 },
+            shadowOpacity: isFocused ? 0.20 : 0.10,
+            shadowRadius: isFocused ? 18 : 10,
+            elevation: isFocused ? 5 : 2,
             ...(isWeb
               ? ({
                   cursor: editable ? 'text' : 'default',
+                  transitionDuration: '160ms',
+                  transitionProperty: 'border-color, background-color, box-shadow, transform',
                 } as object)
               : null),
           }}
@@ -130,7 +152,8 @@ export function AuthTextField({
             maxLength={maxLength}
             autoCorrect={autoCorrect ?? false}
             placeholder={placeholder}
-            placeholderTextColor="rgba(202,196,220,0.50)"
+            placeholderTextColor="rgba(226,219,242,0.48)"
+            selectionColor="rgba(197,167,255,0.78)"
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
             style={{
@@ -140,9 +163,39 @@ export function AuthTextField({
               fontSize: inputFontSize,
               lineHeight: inputLineHeight,
               fontFamily: 'Manrope_400Regular',
-              paddingVertical: compact ? 11 : 12,
+              paddingVertical: compact ? 12 : 13,
+              paddingHorizontal: 0,
+              ...(isWeb
+                ? ({
+                    outlineStyle: 'none',
+                    outlineWidth: 0,
+                  } as object)
+                : null),
             }}
           />
+
+          {showClearButton ? (
+            <Pressable
+              onPress={() => {
+                onChangeText('');
+                inputRef.current?.focus();
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={`Clear ${label ?? placeholder}`}
+              hitSlop={10}
+              style={{
+                width: 30,
+                height: 30,
+                borderRadius: 15,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: 'rgba(255,255,255,0.08)',
+                marginLeft: 8,
+              }}
+            >
+              <MaterialIcons name="close" size={16} color="rgba(255,255,255,0.76)" />
+            </Pressable>
+          ) : null}
 
           {trailing ? <View style={{ marginLeft: 10 }}>{trailing}</View> : null}
         </Pressable>
@@ -158,8 +211,8 @@ export function AuthTextField({
                 ? '#FFCECE'
                 : hintTone === 'success'
                   ? '#D7FFE6'
-                  : 'rgba(202,196,220,0.66)',
-            fontSize: compact ? 10.2 : 10.6,
+                  : 'rgba(226,219,242,0.68)',
+            fontSize: compact ? 10.4 : 10.8,
             lineHeight: compact ? 14 : 15,
           }}
         >

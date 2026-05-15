@@ -10,6 +10,7 @@ import {
   ScrollView,
   RefreshControl,
   Animated,
+  Platform,
   Pressable,
   useWindowDimensions,
 } from 'react-native';
@@ -63,15 +64,16 @@ function MetricCard({
 }) {
   const [pressed, setPressed] = useState(false);
   const scaleAnim = useRef(new Animated.Value(1)).current;
+  const useNativeAnimations = Platform.OS !== 'web';
 
   const handlePressIn = () => {
     setPressed(true);
-    Animated.spring(scaleAnim, { toValue: 0.95, useNativeDriver: true }).start();
+    Animated.spring(scaleAnim, { toValue: 0.95, useNativeDriver: useNativeAnimations }).start();
   };
 
   const handlePressOut = () => {
     setPressed(false);
-    Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true }).start();
+    Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: useNativeAnimations }).start();
   };
 
   return (
