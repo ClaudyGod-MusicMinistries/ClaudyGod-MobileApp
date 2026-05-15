@@ -1015,7 +1015,7 @@ export default defineComponent({
       if (!hasSession.value) return;
       setSessionTransportState('none');
       clearSessionData();
-      setNotice('You were signed out after 30 minutes of inactivity.', 'error');
+      setNotice('You were signed out after 5 minutes of inactivity.', 'error');
     }
 
     function scheduleInactivityTimeout() {

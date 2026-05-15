@@ -17,6 +17,7 @@ const optionalHttpUrl = z.preprocess(
 ) as unknown as z.ZodType<string | undefined>;
 
 const contentTypeSchema = z.enum(['audio', 'video', 'playlist', 'announcement', 'live', 'ad']);
+const currentPasswordSchema = z.string().min(8).max(72);
 
 export const updateMeProfileSchema = z
   .object({
@@ -52,6 +53,25 @@ export const updateMePreferencesSchema = z
   .refine((value) => Object.keys(value).length > 0, {
     message: 'At least one preference field is required',
   });
+
+export const requestMeEmailChangeSchema = z
+  .object({
+    newEmail: z.string().trim().toLowerCase().email(),
+    currentPassword: currentPasswordSchema,
+  })
+  .strict();
+
+export const confirmMeEmailChangeSchema = z
+  .object({
+    token: z.string().trim().min(32).max(256),
+  })
+  .strict();
+
+export const requestMePasswordChangeSchema = z
+  .object({
+    currentPassword: currentPasswordSchema,
+  })
+  .strict();
 
 export const trackPlayEventSchema = z
   .object({
