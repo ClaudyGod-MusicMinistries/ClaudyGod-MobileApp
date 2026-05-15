@@ -105,14 +105,20 @@ export function AppButton({
           backgroundColor: isPrimary
             ? theme.colors.primary
             : isSecondary
-              ? 'rgba(255,255,255,0.055)'
+              ? theme.scheme === 'dark'
+                ? 'rgba(255,255,255,0.105)'
+                : 'rgba(19,12,33,0.055)'
               : 'transparent',
-          borderWidth: isOutline || isSecondary ? 1 : 0,
+          borderWidth: isPrimary || isOutline || isSecondary ? 1 : 0,
           borderColor: isOutline
             ? theme.colors.borderStrong ?? theme.colors.border
             : isSecondary
-              ? theme.colors.border
-              : 'transparent',
+              ? theme.colors.borderStrong ?? theme.colors.border
+              : isPrimary
+                ? theme.scheme === 'dark'
+                  ? 'rgba(255,255,255,0.18)'
+                  : 'rgba(19,12,33,0.08)'
+                : 'transparent',
           opacity: props.disabled ? 0.45 : 1,
           flexDirection: 'row',
           alignItems: 'center',

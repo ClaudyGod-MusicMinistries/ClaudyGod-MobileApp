@@ -47,17 +47,18 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
   const isTablet = width >= 768 && !isTV;
   const { config } = useMobileAppConfig();
   const playPulse = useRef(new Animated.Value(0)).current;
+  const useNativeAnimations = Platform.OS !== 'web';
 
   useEffect(() => {
     const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(playPulse, { toValue: 1, duration: 1200, useNativeDriver: true }),
-        Animated.timing(playPulse, { toValue: 0, duration: 1200, useNativeDriver: true }),
+        Animated.timing(playPulse, { toValue: 1, duration: 1200, useNativeDriver: useNativeAnimations }),
+        Animated.timing(playPulse, { toValue: 0, duration: 1200, useNativeDriver: useNativeAnimations }),
       ]),
     );
     loop.start();
     return () => loop.stop();
-  }, [playPulse]);
+  }, [playPulse, useNativeAnimations]);
 
   const barMaxWidth = isTV ? 1120 : isTablet ? 720 : width - 22;
   const barBottomInset = isTV ? 20 : Math.max(insets.bottom, 10);

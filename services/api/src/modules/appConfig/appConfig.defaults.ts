@@ -177,10 +177,50 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
     feedbackRoute: '/settingsPage/help',
   },
   layout: {
-    homeSections: [],
-    videoSections: [],
-    playerSections: [],
-    librarySections: [],
+    homeSections: [
+      {
+        id: 'home-featured',
+        title: 'For You',
+        subtitle: 'Fresh music, videos, live sessions, and recommendations.',
+        contentTypes: ['audio', 'video', 'live', 'playlist'],
+        actionLabel: 'Open',
+        destinationTab: 'home',
+        maxItems: 12,
+      },
+    ],
+    videoSections: [
+      {
+        id: 'video-featured',
+        title: 'More to watch',
+        subtitle: 'Published sessions, teaching, and replays.',
+        contentTypes: ['video', 'live'],
+        actionLabel: 'Watch',
+        destinationTab: 'videos',
+        maxItems: 12,
+      },
+    ],
+    playerSections: [
+      {
+        id: 'music-featured',
+        title: 'Up next',
+        subtitle: 'Music, playlists, and audio-first releases.',
+        contentTypes: ['audio', 'playlist'],
+        actionLabel: 'Listen',
+        destinationTab: 'player',
+        maxItems: 12,
+      },
+    ],
+    librarySections: [
+      {
+        id: 'library-saved',
+        title: 'Your library',
+        subtitle: 'Saved songs, videos, and playlists.',
+        contentTypes: ['audio', 'video', 'playlist', 'live'],
+        actionLabel: 'Open',
+        destinationTab: 'library',
+        maxItems: 12,
+      },
+    ],
   },
   navigation: {
     tabs: [
@@ -192,11 +232,33 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
     ],
   },
   discovery: {
-    categories: [],
-    shortcuts: [],
+    categories: ['All', 'audio', 'video', 'playlist', 'live', 'announcement'],
+    shortcuts: [
+      { id: 'worship', icon: 'graphic-eq', label: 'Worship', query: 'worship', category: 'audio' },
+      { id: 'messages', icon: 'smart-display', label: 'Messages', query: 'message', category: 'video' },
+      { id: 'live', icon: 'live-tv', label: 'Live', query: 'live', category: 'live' },
+    ],
   },
   settingsHub: {
-    sections: [],
+    sections: [
+      {
+        id: 'account',
+        title: 'Account',
+        items: [
+          { id: 'profile', icon: 'person-outline', label: 'Profile', hint: 'Manage your account details.', destination: 'profile' },
+          { id: 'library', icon: 'library-music', label: 'Library', hint: 'Open saved songs and videos.', destination: 'tabs.library' },
+        ],
+      },
+      {
+        id: 'support',
+        title: 'Support',
+        items: [
+          { id: 'privacy', icon: 'security', label: 'Privacy', hint: 'Review privacy and security controls.', destination: 'settings.privacy' },
+          { id: 'help', icon: 'help-outline', label: 'Help', hint: 'Contact the support team.', destination: 'settings.help' },
+          { id: 'donate', icon: 'volunteer-activism', label: 'Give', hint: 'Support the ministry.', destination: 'settings.donate' },
+        ],
+      },
+    ],
   },
   monetization: {
     adsEnabled: true,
