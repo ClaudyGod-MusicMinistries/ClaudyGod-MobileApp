@@ -366,3 +366,44 @@ export const buildProfileUpdatedTemplate = (input: {
   });
   return { subject, text, html };
 };
+
+export const buildAccountEmailChangeTemplate = (input: {
+  displayName: string;
+  currentEmail: string;
+  newEmail: string;
+  confirmUrl: string;
+  expiresInMinutes: number;
+}): RenderedEmailTemplate => {
+  const subject = `Confirm your ${brandName} email change`;
+  const text = toTextBlock([
+    `Hi ${input.displayName},`,
+    '',
+    `We received a request to change your account email from ${input.currentEmail} to ${input.newEmail}.`,
+    `Confirm the change: ${input.confirmUrl}`,
+    '',
+    `This secure confirmation expires in ${input.expiresInMinutes} minutes.`,
+    'If you did not request this, ignore this email and update your password immediately.',
+    supportFooter,
+  ]);
+  const html = renderShell({
+    preview: `Confirm your ${brandName} email change.`,
+    eyebrow: 'Account Security',
+    title: 'Confirm your email change',
+    greeting: `Hi ${input.displayName},`,
+    bodyHtml: `<p style="margin: 0 0 14px 0;">We received a request to change the email address on your ${escapeHtml(
+      brandName,
+    )} account.</p>
+    <div style="border:1px solid #e5e7eb;border-radius:14px;padding:14px 16px;background:#f9fafb;margin:0 0 16px 0;">
+      <div style="font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#64748b;margin-bottom:8px;">Requested change</div>
+      <div style="font-size:14px;color:#111827;line-height:1.7;">Current email: <strong>${escapeHtml(
+        input.currentEmail,
+      )}</strong><br />New email: <strong>${escapeHtml(input.newEmail)}</strong></div>
+    </div>
+    <p style="margin: 0;">Confirm only if you started this request. This link expires in ${escapeHtml(String(
+      input.expiresInMinutes,
+    ))} minutes. If you did not request it, ignore this email and reset your password.</p>`,
+    ctaLabel: 'Confirm email change',
+    ctaUrl: input.confirmUrl,
+  });
+  return { subject, text, html };
+};
