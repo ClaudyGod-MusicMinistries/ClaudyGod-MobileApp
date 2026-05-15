@@ -13,15 +13,30 @@ export function Screen({ children, style, contentStyle }: ScreenProps) {
   const { width } = useWindowDimensions();
   const isTV = Platform.isTV;
   const isTablet = width >= 768 && !isTV;
+  const isDesktop = width >= 1024 && !isTV;
+  const isLargeDesktop = width >= 1440 && !isTV;
 
   const paddingX = isTV
-    ? layout.desktopGutter
-    : isTablet
-      ? layout.tabletGutter
-      : width >= 390
-        ? layout.phoneGutter
-        : layout.compactPhoneGutter;
-  const maxContentWidth = isTV ? 1280 : isTablet ? 960 : Math.min(540, width - paddingX * 2);
+    ? 56
+    : isLargeDesktop
+      ? 56
+      : isDesktop
+        ? 48
+        : isTablet
+          ? layout.tabletGutter
+          : width >= 390
+            ? layout.phoneGutter
+            : layout.compactPhoneGutter;
+
+  const maxContentWidth = isTV
+    ? 1360
+    : isLargeDesktop
+      ? 1280
+      : isDesktop
+        ? 1180
+        : isTablet
+          ? 960
+          : Math.min(540, width - paddingX * 2);
 
   return (
     <View style={[{ width: '100%', paddingHorizontal: paddingX }, style]}>
@@ -29,7 +44,7 @@ export function Screen({ children, style, contentStyle }: ScreenProps) {
         style={[
           {
             width: '100%',
-            maxWidth: Math.min(maxContentWidth, layout.maxContentWidth),
+            maxWidth: maxContentWidth,
             alignSelf: 'center',
           },
           contentStyle,
