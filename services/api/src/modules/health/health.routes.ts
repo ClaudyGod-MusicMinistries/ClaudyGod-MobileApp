@@ -17,6 +17,23 @@ const capabilities = () => ({
   mobileApiKeyConfigured: Boolean(env.MOBILE_API_KEY && env.MOBILE_API_KEY !== 'dev-mobile-api-key'),
 });
 
+const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number, timeoutMessage: string): Promise<T> => {
+  let timeout: NodeJS.Timeout | undefined;
+
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_resolve, reject) => {
+        timeout = setTimeout(() => reject(new Error(timeoutMessage)), timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timeout) {
+      clearTimeout(timeout);
+    }
+  }
+};
+
 healthRouter.get('/', (_req, res) => {
   res.status(200).json({
     name: 'ClaudyGod Admin API',
@@ -42,15 +59,15 @@ healthRouter.get('/health', async (_req, res, next) => {
     let redisState: 'up' | 'down' = 'up';
 
     try {
-      await pool.query('SELECT 1');
-      const schemaResult = await pool.query<{ ready: boolean }>(`
+      await withTimeout(pool.query('SELECT 1'), 2_000, 'Postgres health check timed out');
+      const schemaResult = await withTimeout(pool.query<{ ready: boolean }>(`
         SELECT EXISTS (
           SELECT 1
           FROM information_schema.tables
           WHERE table_schema = 'public'
             AND table_name = 'schema_migrations'
         ) AS ready
-      `);
+      `), 2_000, 'Schema health check timed out');
       schema = schemaResult.rows[0]?.ready ? 'ready' : 'missing';
     } catch (_error) {
       postgres = 'down';
@@ -58,14 +75,22 @@ healthRouter.get('/health', async (_req, res, next) => {
     }
 
     try {
-      await redis.ping();
+      await withTimeout(redis.ping(), 1_500, 'Redis health check timed out');
     } catch (_error) {
       redisState = 'down';
     }
 
     const status = postgres === 'up' && schema === 'ready' && redisState === 'up' ? 'ok' : 'degraded';
 
-    const smtpStatus = await verifyEmailTransport();
+    const smtpStatus = await withTimeout(
+      verifyEmailTransport(),
+      1_500,
+      'SMTP health check timed out',
+    ).catch((error) => ({
+      enabled: env.SMTP_ENABLED,
+      reachable: false,
+      reason: error instanceof Error ? error.message : 'SMTP health check failed',
+    }));
     const smtpHealth = {
       enabled: smtpStatus.enabled,
       reachable: smtpStatus.reachable,
