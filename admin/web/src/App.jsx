@@ -1723,7 +1723,7 @@ export default defineComponent({
 
       try {
         const response = await http.get('/health', {
-          timeout: 4000,
+          timeout: 7000,
         });
         publicHealth.value = response.data || null;
         return publicHealth.value;
@@ -1751,12 +1751,7 @@ export default defineComponent({
     async function ensureAuthInfrastructureReady() {
       const health = await fetchPublicHealth();
 
-      if (!health || health.status === 'offline') {
-        setNotice('The portal is temporarily unavailable. Please try again shortly.', 'error');
-        return false;
-      }
-
-      if (health.services?.postgres === 'down') {
+      if (health?.services?.postgres === 'down' || health?.services?.schema === 'missing') {
         setNotice('The portal is not ready right now. Please try again shortly.', 'error');
         return false;
       }
