@@ -192,12 +192,6 @@ function RootLayoutInner() {
           }}
         />
         <Stack.Screen
-          name="settingsPage"
-          options={{
-            animation: 'slide_from_right',
-          }}
-        />
-        <Stack.Screen
           name="(tabs)"
           options={{
             animation: 'fade',
