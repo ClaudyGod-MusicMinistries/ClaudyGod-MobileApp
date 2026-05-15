@@ -15,14 +15,34 @@ import { loginMobileUserWithGoogle, registerMobileUser } from '../services/authS
 import { useToast } from '../context/ToastContext';
 import { useAppModal } from '../context/AppModalContext';
 import { APP_ROUTES } from '../util/appRoutes';
+import { useDeviceClass } from '../util/deviceClassConfig';
+
+type WebCryptoLike = {
+  getRandomValues?: <T extends ArrayBufferView | null>(_array: T) => T;
+};
+
+const getRuntimeCrypto = (): WebCryptoLike | null => {
+  const runtimeGlobal = globalThis as unknown as {
+    crypto?: WebCryptoLike;
+    msCrypto?: WebCryptoLike;
+  };
+
+  return runtimeGlobal.crypto ?? runtimeGlobal.msCrypto ?? null;
+};
 
 const secureIndex = (length: number): number => {
-  const cryptoApi = globalThis.crypto;
-  if (cryptoApi?.getRandomValues) {
+  if (!Number.isFinite(length) || length <= 0) {
+    return 0;
+  }
+
+  const cryptoApi = getRuntimeCrypto();
+
+  if (typeof cryptoApi?.getRandomValues === 'function') {
     const values = new Uint32Array(1);
     cryptoApi.getRandomValues(values);
     return values[0] % length;
   }
+
   return Math.floor(Math.random() * length);
 };
 
@@ -35,6 +55,7 @@ const generatePasswordSuggestion = (): string => {
 
 export default function SignUpScreen() {
   const router = useRouter();
+  const device = useDeviceClass();
   const { showToast } = useToast();
   const { showModal } = useAppModal();
   const [name, setName] = useState('');
@@ -98,20 +119,20 @@ export default function SignUpScreen() {
 
   return (
     <AuthScreenFrame backPath={APP_ROUTES.landing} salutation="Create your space" description="Save favorites, follow live sessions, and continue your worship experience across devices." title="Create account" subtitle="Continue with Google or create a protected email account.">
-      <View style={{ gap: 12 }}>
+      <View style={{ gap: device.isTV ? 15 : 12 }}>
         <AuthTextField label="Full name" value={name} onChangeText={setName} autoCapitalize="words" autoComplete="name" textContentType="name" placeholder="Your full name" hint={nameHint} hintTone={name.trim() ? (nameIsValid ? 'success' : 'error') : 'default'} />
         <AuthTextField label="Email address" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" autoComplete="email" textContentType="emailAddress" placeholder="name@example.com" hint={emailHint} hintTone={normalizedEmail ? (emailIsValid ? 'success' : 'error') : 'default'} />
-        <AuthTextField label="Password" value={password} onChangeText={setPassword} secureTextEntry={hidePassword} autoCapitalize="none" autoComplete="new-password" textContentType="newPassword" placeholder="Create a secure password" trailing={<TVTouchable onPress={() => setHidePassword((prev) => !prev)} showFocusBorder={false}><MaterialIcons name={hidePassword ? 'visibility' : 'visibility-off'} size={20} color="rgba(226,218,247,0.9)" /></TVTouchable>} hint={password.trim() ? `${passwordReport.label} password` : 'Use a mix of letters and numbers.'} hintTone={password.trim() ? (passwordIsCompliant ? 'success' : 'error') : 'default'} />
-        <AppButton title="Suggest secure password" variant="secondary" size="sm" onPress={handleSuggestPassword} disabled={submitting} leftIcon={<MaterialIcons name="auto-fix-high" size={16} color="rgba(226,218,247,0.9)" />} style={{ alignSelf: 'flex-start' }} />
+        <AuthTextField label="Password" value={password} onChangeText={setPassword} secureTextEntry={hidePassword} autoCapitalize="none" autoComplete="new-password" textContentType="newPassword" placeholder="Create a secure password" trailing={<TVTouchable onPress={() => setHidePassword((prev) => !prev)} showFocusBorder={false}><MaterialIcons name={hidePassword ? 'visibility' : 'visibility-off'} size={device.isTV ? 24 : 20} color="rgba(238,233,255,0.96)" /></TVTouchable>} hint={password.trim() ? `${passwordReport.label} password` : 'Use a mix of uppercase letters, lowercase letters, and numbers.'} hintTone={password.trim() ? (passwordIsCompliant ? 'success' : 'error') : 'default'} />
+        <AppButton title="Suggest secure password" variant="secondary" size={device.isTV ? 'lg' : 'sm'} onPress={handleSuggestPassword} disabled={submitting} textColor="#FFFFFF" leftIcon={<MaterialIcons name="auto-fix-high" size={16} color="#FFFFFF" />} style={{ alignSelf: device.isPhone ? 'stretch' : 'flex-start', backgroundColor: 'rgba(255,255,255,0.105)', borderColor: 'rgba(255,255,255,0.18)' }} />
         {password.trim() ? <PasswordStrengthPanel password={password} /> : null}
-        <AuthTextField label="Confirm password" value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry={hidePassword} autoCapitalize="none" autoComplete="new-password" textContentType="newPassword" placeholder="Confirm your password" hint={confirmHint} hintTone={confirmPassword.trim() ? (passwordsMatch ? 'success' : 'error') : 'default'} />
+        <AuthTextField label="Confirm password" value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry={hidePassword} autoCapitalize="none" autoComplete="new-password" textContentType="newPassword" placeholder="Confirm your password" hint={confirmHint || 'Repeat the same password exactly.'} hintTone={confirmPassword.trim() ? (passwordsMatch ? 'success' : 'error') : 'default'} />
       </View>
       {errorMessage ? <AuthFeedbackBanner message={errorMessage} tone="error" /> : null}
       {isSupabaseConfigured ? (
-        <AppButton title="Continue with Google" variant="secondary" size="lg" fullWidth onPress={() => void handleGoogleSignUp()} disabled={submitting} style={{ marginTop: 16 }} />
+        <AppButton title="Continue with Google" variant="secondary" size="lg" fullWidth onPress={() => void handleGoogleSignUp()} disabled={submitting} textColor="#FFFFFF" style={{ marginTop: 16, backgroundColor: 'rgba(255,255,255,0.105)', borderColor: 'rgba(255,255,255,0.18)' }} />
       ) : null}
       <AppButton title="Create account" size="lg" fullWidth loading={submitting} loadingLabel="Creating account" loadingVariant="brand" onPress={() => void handleSignUp()} disabled={!canSubmit || submitting} style={{ marginTop: isSupabaseConfigured ? 10 : 16 }} />
-      <View style={{ alignItems: 'center', marginTop: 16 }}><CustomText variant="body" style={{ color: 'rgba(255,255,255,0.68)', textAlign: 'center' }}>Already have an account?</CustomText><TVTouchable onPress={() => router.push(APP_ROUTES.auth.signIn)} style={{ marginTop: 7 }} showFocusBorder={false}><CustomText variant="label" style={{ color: '#D8CAFF' }}>Sign in instead</CustomText></TVTouchable></View>
+      <View style={{ alignItems: 'center', marginTop: 16 }}><CustomText variant="body" style={{ color: 'rgba(255,255,255,0.72)', textAlign: 'center' }}>Already have an account?</CustomText><TVTouchable onPress={() => router.push(APP_ROUTES.auth.signIn)} style={{ marginTop: 7 }} showFocusBorder={false}><CustomText variant="label" style={{ color: '#E7DCFF' }}>Sign in instead</CustomText></TVTouchable></View>
     </AuthScreenFrame>
   );
 }
