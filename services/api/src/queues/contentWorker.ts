@@ -1,6 +1,7 @@
 import { Worker } from 'bullmq';
 import { pool } from '../db/pool';
 import { redis } from '../infra/redis';
+import { logger } from '../lib/logger';
 import { CONTENT_QUEUE_NAME, type ContentQueuePayload } from './contentQueue';
 
 const markAsFailed = async (jobRecordId: number, reason: string): Promise<void> => {
@@ -50,11 +51,11 @@ export const startContentWorker = (): Worker<ContentQueuePayload> => {
   );
 
   worker.on('completed', (job) => {
-    console.log(`[worker] Completed job ${job?.id}`);
+    logger.info('Content job completed', { jobId: job?.id });
   });
 
   worker.on('failed', (job, error) => {
-    console.error(`[worker] Failed job ${job?.id}: ${error.message}`);
+    logger.error('Content job failed', { jobId: job?.id, error: error.message });
   });
 
   return worker;

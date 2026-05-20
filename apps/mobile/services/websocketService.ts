@@ -56,7 +56,6 @@ class WebSocketService {
           // Flush queued messages
           this.flushQueue();
 
-          console.log('✅ WebSocket connected');
           resolve();
         };
 
@@ -64,13 +63,12 @@ class WebSocketService {
           try {
             const message: WebSocketMessage = JSON.parse(event.data);
             this.handleMessage(message);
-          } catch (error) {
-            console.error('Failed to parse WebSocket message:', error);
+          } catch {
+            // Malformed server frame — ignore silently
           }
         };
 
         this.ws.onerror = (error) => {
-          console.error('WebSocket error:', error);
           this.isConnecting = false;
           if (!this.isConnected) {
             reject(error);
@@ -153,11 +151,8 @@ class WebSocketService {
       this.reconnectAttempts++;
       const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts - 1), 30000);
 
-      console.log(`Reconnecting WebSocket (attempt ${this.reconnectAttempts})...`);
       setTimeout(() => {
-        this.connect(userId, authToken).catch((error) => {
-          console.error('Reconnection failed:', error);
-        });
+        this.connect(userId, authToken).catch(() => undefined);
       }, delay);
     }
   }
