@@ -117,7 +117,7 @@ export default function EditorView(props) {
               <p class="cg-muted">
                 {directPublishMode
                   ? 'Create a draft or publish directly after all required details are ready.'
-                  : 'Send a clean request to the review queue so admins can approve and publish it.'}
+                  : 'Fill in the details and submit for review before it goes to the app.'}
               </p>
             </div>
             <span class="cg-chip">{completeChecks}/{checks.length} ready</span>
