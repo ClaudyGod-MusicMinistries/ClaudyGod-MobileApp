@@ -2026,7 +2026,7 @@ export default defineComponent({
 
         resetCreateForm();
         await Promise.all([fetchContentRequests(), fetchManagedContent()]);
-        setNotice('Submission ticket created. The request is now in the review queue.', 'success');
+        setNotice('Submission received. It will be reviewed and published once approved.', 'success');
       } catch (error) {
         setNotice(toErrorMessage(error, 'Unable to submit this request right now.'), 'error');
       } finally {
@@ -2420,6 +2420,7 @@ export default defineComponent({
               smartInsights={adminOps.value.smartInsights || []}
               recentAuthActivity={adminOps.value.recentAuthActivity || []}
               onSetDashboardView={setDashboardView}
+              humanizeToken={humanizeToken}
               formatDateTime={formatDateTime}
               truncate={truncate}
             />

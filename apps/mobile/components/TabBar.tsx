@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useRef } from 'react';
-import { Animated, Platform, View, useWindowDimensions } from 'react-native';
+import React, { useMemo } from 'react';
+import { Platform, View, useWindowDimensions } from 'react-native';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -26,11 +26,11 @@ type FooterItem = {
 const FOOTER_ORDER: TabRouteName[] = ['home', 'player', 'videos', 'library', 'settings'];
 
 const FOOTER_CONFIG: Record<TabRouteName, Omit<FooterItem, 'routeName' | 'key'>> = {
-  home: { icon: 'home' as const, label: 'Home' },
-  player: { icon: 'headphones' as const, label: 'Music' },
-  videos: { icon: 'play-circle-filled' as const, label: 'Play', center: true },
-  library: { icon: 'library-music' as const, label: 'Library' },
-  settings: { icon: 'settings' as const, label: 'Settings' },
+  home:     { icon: 'home'              as const, label: 'Home' },
+  player:   { icon: 'headphones'        as const, label: 'Music' },
+  videos:   { icon: 'play-circle-filled' as const, label: 'Videos', center: true },
+  library:  { icon: 'library-music'     as const, label: 'Library' },
+  settings: { icon: 'tune'              as const, label: 'Settings' },
 };
 
 function routeExists(routes: BottomTabBarProps['state']['routes'], routeName: string) {
@@ -46,23 +46,13 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
   const compact = width < 390;
   const isTablet = width >= 768 && !isTV;
   const { config } = useMobileAppConfig();
-  const playPulse = useRef(new Animated.Value(0)).current;
-  const useNativeAnimations = Platform.OS !== 'web';
 
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(playPulse, { toValue: 1, duration: 1200, useNativeDriver: useNativeAnimations }),
-        Animated.timing(playPulse, { toValue: 0, duration: 1200, useNativeDriver: useNativeAnimations }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [playPulse, useNativeAnimations]);
-
-  const barMaxWidth = isTV ? 1120 : isTablet ? 720 : width - 22;
-  const barBottomInset = isTV ? 20 : Math.max(insets.bottom, 10);
+  const isDesktopWide = width >= 1024 && !isTV;
+  const barMaxWidth = isTV ? 1120 : isDesktopWide ? Math.min(960, width - 64) : isTablet ? 680 : width - 32;
+  const barBottomInset = isTV ? 24 : Math.max(insets.bottom, 12);
   const currentRouteName = state.routes[state.index]?.name;
+
+  const isDark = colorScheme === 'dark';
 
   const footerItems = useMemo(() => {
     const configuredTabs = config?.navigation?.tabs ?? [];
@@ -71,14 +61,15 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
       const dynamic = configuredTabs.find((entry) => entry.id === routeName);
       const fallback = FOOTER_CONFIG[routeName];
       const shouldRender = Boolean(existing) || routeName === 'settings';
-
       if (!shouldRender) return null;
 
       return {
         routeName,
         key: existing?.key ?? `synthetic-${routeName}`,
-        label: fallback.center ? fallback.label : dynamic?.label ?? fallback.label,
-        icon: fallback.center ? fallback.icon : (dynamic?.icon as React.ComponentProps<typeof MaterialIcons>['name']) || fallback.icon,
+        label: fallback.center ? fallback.label : (dynamic?.label ?? fallback.label),
+        icon: fallback.center
+          ? fallback.icon
+          : ((dynamic?.icon as React.ComponentProps<typeof MaterialIcons>['name']) || fallback.icon),
         center: fallback.center,
       } satisfies FooterItem;
     }).filter(Boolean) as FooterItem[];
@@ -86,57 +77,127 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
 
   return (
     <View
-      pointerEvents="box-none"
       style={{
         position: 'absolute',
         left: 0,
         right: 0,
         bottom: 0,
         paddingBottom: barBottomInset,
-        paddingHorizontal: 11,
+        paddingHorizontal: 16,
         alignItems: 'center',
+        pointerEvents: 'box-none',
       }}
     >
+      {/* Tab bar pill */}
       <View
         style={{
           width: '100%',
           maxWidth: barMaxWidth,
-          minHeight: compact ? 58 : 62,
-          borderRadius: 24,
-          overflow: 'visible',
+          borderRadius: 26,
+          overflow: 'hidden',
           borderWidth: 1,
-          borderColor: colorScheme === 'dark' ? 'rgba(185,148,255,0.15)' : 'rgba(56,42,84,0.16)',
-          backgroundColor: colorScheme === 'dark' ? 'rgba(6,4,11,0.96)' : 'rgba(10,7,17,0.96)',
+          borderColor: isDark ? 'rgba(183,148,246,0.13)' : 'rgba(56,42,84,0.14)',
+          backgroundColor: isDark ? 'rgba(8,5,14,0.97)' : 'rgba(12,8,20,0.97)',
           shadowColor: '#000',
-          shadowOffset: { width: 0, height: 16 },
-          shadowOpacity: 0.42,
-          shadowRadius: 28,
-          elevation: 22,
+          shadowOffset: { width: 0, height: 18 },
+          shadowOpacity: 0.46,
+          shadowRadius: 32,
+          elevation: 24,
         }}
       >
+        {/* Subtle top-edge highlight */}
         <LinearGradient
-          pointerEvents="none"
-          colors={['rgba(255,255,255,0.055)', 'rgba(255,255,255,0.012)']}
+          colors={['rgba(255,255,255,0.06)', 'rgba(255,255,255,0.01)']}
           start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 26 }}
+          end={{ x: 0, y: 1 }}
+          style={{
+            position: 'absolute',
+            pointerEvents: 'none',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 1,
+            borderRadius: 26,
+          }}
         />
 
         <View
           style={{
             flexDirection: 'row',
             alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingHorizontal: compact ? 7 : 9,
-            paddingVertical: 6,
+            paddingHorizontal: compact ? 4 : 6,
+            paddingVertical: compact ? 8 : 10,
           }}
         >
           {footerItems.map((item) => {
             const routeIndex = state.routes.findIndex((entry) => entry.name === item.routeName);
             const focused = currentRouteName === item.routeName;
-            const canNavigate = routeExists(state.routes, item.routeName) || item.routeName === 'settings';
-            const labelColor = focused ? '#F6F0FF' : palette.textMuted;
+            const canNavigate =
+              routeExists(state.routes, item.routeName) || item.routeName === 'settings';
 
+            if (item.center) {
+              // ── Centre play button ───────────────────────────────────────
+              return (
+                <TVTouchable
+                  key={item.key}
+                  accessibilityRole="button"
+                  accessibilityLabel={item.label}
+                  accessibilityState={{ selected: focused }}
+                  hasTVPreferredFocus={routeIndex === 0}
+                  onPress={() => {
+                    if (canNavigate) navigation.navigate(item.routeName as never);
+                  }}
+                  style={{
+                    flex: 1.1,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: compact ? 3 : 4,
+                    paddingVertical: 2,
+                  }}
+                  showFocusBorder={false}
+                >
+                  {/* Gradient pill button */}
+                  <LinearGradient
+                    colors={palette.gradient.primary as [string, string]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={{
+                      width: compact ? 44 : 50,
+                      height: compact ? 44 : 50,
+                      borderRadius: 999,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      shadowColor: palette.primary,
+                      shadowOpacity: focused ? 0.42 : 0.26,
+                      shadowRadius: focused ? 18 : 12,
+                      shadowOffset: { width: 0, height: 6 },
+                      elevation: 10,
+                    }}
+                  >
+                    <MaterialIcons
+                      name="play-arrow"
+                      size={compact ? 24 : 27}
+                      color={palette.textInverse}
+                    />
+                  </LinearGradient>
+
+                  <CustomText
+                    variant="caption"
+                    style={{
+                      color: focused ? '#F6F0FF' : palette.textMuted,
+                      fontSize: compact ? 9 : 9.5,
+                      lineHeight: 12,
+                      letterSpacing: 0,
+                    }}
+                    numberOfLines={1}
+                  >
+                    {item.label}
+                  </CustomText>
+                </TVTouchable>
+              );
+            }
+
+            // ── Regular tab item ────────────────────────────────────────────
             return (
               <TVTouchable
                 key={item.key}
@@ -148,102 +209,51 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
                   if (canNavigate) navigation.navigate(item.routeName as never);
                 }}
                 style={{
-                  flex: item.center ? 0.9 : 1,
-                  minHeight: compact ? 44 : 48,
-                  marginHorizontal: 1,
-                  borderRadius: item.center ? 999 : 16,
+                  flex: 1,
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: compact ? 2 : 3,
-                  transform: item.center ? [{ translateY: -13 }] : undefined,
+                  paddingVertical: 4,
+                  gap: compact ? 3 : 4,
                 }}
-                focusStyle={{ transform: [{ scale: isTV ? 1.06 : 1.01 }] }}
+                focusStyle={{ transform: [{ scale: isTV ? 1.06 : 1 }] }}
                 showFocusBorder={false}
               >
-                {item.center ? (
-                  <>
-                    <View style={{ width: compact ? 52 : 56, height: compact ? 52 : 56, alignItems: 'center', justifyContent: 'center' }}>
-                      <Animated.View
-                        pointerEvents="none"
-                        style={{
-                          position: 'absolute',
-                          width: compact ? 50 : 54,
-                          height: compact ? 50 : 54,
-                          borderRadius: 999,
-                          backgroundColor: palette.primary,
-                          opacity: playPulse.interpolate({ inputRange: [0, 1], outputRange: [0.16, 0.04] }),
-                          transform: [{ scale: playPulse.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1.22] }) }],
-                        }}
-                      />
-                      <LinearGradient
-                        colors={palette.gradient.primary as [string, string]}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                        style={{
-                          width: compact ? 44 : 48,
-                          height: compact ? 44 : 48,
-                          borderRadius: 999,
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          borderWidth: 3,
-                          borderColor: '#06040B',
-                          shadowColor: palette.primary,
-                          shadowOpacity: focused ? 0.34 : 0.22,
-                          shadowRadius: focused ? 20 : 14,
-                          shadowOffset: { width: 0, height: 9 },
-                          elevation: 14,
-                        }}
-                      >
-                        <MaterialIcons name="play-arrow" size={compact ? 23 : 26} color={palette.textInverse} />
-                      </LinearGradient>
-                    </View>
-                  </>
-                ) : (
-                  <>
-                    <View
-                      style={{
-                        width: focused ? 29 : 25,
-                        height: focused ? 29 : 25,
-                        borderRadius: 14,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        backgroundColor: focused ? 'rgba(185,148,255,0.16)' : 'transparent',
-                      }}
-                    >
-                      <MaterialIcons name={item.icon} size={focused ? 19 : 18} color={focused ? palette.primary : palette.textMuted} />
-                    </View>
-                    {!compact ? (
-                      <CustomText
-                        variant="caption"
-                        style={{
-                          color: labelColor,
-                          fontSize: 9.1,
-                          lineHeight: 12,
-                          letterSpacing: 0,
-                        }}
-                        numberOfLines={1}
-                      >
-                        {item.label}
-                      </CustomText>
-                    ) : null}
-                  </>
-                )}
+                {/* Icon with active background pill */}
+                <View
+                  style={{
+                    width: compact ? 36 : 40,
+                    height: compact ? 28 : 30,
+                    borderRadius: 999,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: focused
+                      ? isDark
+                        ? 'rgba(183,148,246,0.18)'
+                        : 'rgba(124,58,237,0.14)'
+                      : 'transparent',
+                  }}
+                >
+                  <MaterialIcons
+                    name={item.icon}
+                    size={focused ? (compact ? 20 : 22) : (compact ? 19 : 21)}
+                    color={focused ? palette.primary : palette.textMuted}
+                  />
+                </View>
 
-                {item.center ? (
-                  <CustomText
-                    variant="caption"
-                    style={{
-                      color: focused ? '#F6F0FF' : palette.textMuted,
-                      fontSize: compact ? 8.6 : 9,
-                      lineHeight: 11,
-                      marginTop: compact ? -7 : -8,
-                      letterSpacing: 0,
-                    }}
-                    numberOfLines={1}
-                  >
-                    {item.label}
-                  </CustomText>
-                ) : null}
+                {/* Label — always visible */}
+                <CustomText
+                  variant="caption"
+                  style={{
+                    color: focused ? '#F6F0FF' : palette.textMuted,
+                    fontSize: compact ? 9 : 9.5,
+                    lineHeight: 12,
+                    letterSpacing: 0,
+                    fontWeight: focused ? '600' : '400',
+                  }}
+                  numberOfLines={1}
+                >
+                  {item.label}
+                </CustomText>
               </TVTouchable>
             );
           })}

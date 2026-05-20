@@ -1,5 +1,13 @@
 import React from 'react';
-import { Image, ImageBackground, Platform, View } from 'react-native';
+import {
+  Image,
+  ImageBackground,
+  Platform,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -7,256 +15,259 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppButton } from '../components/ui/AppButton';
 import { CustomText } from '../components/CustomText';
-import { SurfaceCard } from '../components/ui/SurfaceCard';
 import { APP_ROUTES } from '../util/appRoutes';
 import { BRAND_LOGO_ASSET, LANDING_BG_ASSET } from '../util/brandAssets';
-import { useAppTheme } from '../util/colorScheme';
 import { useDeviceClass } from '../util/deviceClassConfig';
 
-function LandingLogo({ large = false }: { large?: boolean }) {
-  const size = large ? 76 : 58;
-  const logoSize = large ? 48 : 38;
+// ─── Brand mark ────────────────────────────────────────────────────────────────
 
+function BrandMark({ size = 56 }: { size?: number }) {
   return (
     <View
       style={{
         width: size,
         height: size,
-        borderRadius: large ? 26 : 20,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: 'rgba(255,255,255,0.12)',
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.22)',
+        borderRadius: Math.round(size * 0.24),
+        overflow: 'hidden',
+        shadowColor: '#B794F6',
+        shadowOpacity: 0.24,
+        shadowRadius: 20,
+        shadowOffset: { width: 0, height: 6 },
+        elevation: 10,
       }}
     >
-      <Image source={BRAND_LOGO_ASSET} resizeMode="cover" style={{ width: logoSize, height: logoSize, borderRadius: large ? 16 : 13 }} />
+      <Image source={BRAND_LOGO_ASSET} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
     </View>
   );
 }
 
+// ─── Action buttons ─────────────────────────────────────────────────────────────
+
 function LandingActions({ compact }: { compact: boolean }) {
   const router = useRouter();
-  const theme = useAppTheme();
 
   return (
-    <SurfaceCard
-      tone="strong"
-      style={{
-        padding: compact ? 12 : 15,
-        gap: 10,
-        backgroundColor: 'rgba(10,9,18,0.90)',
-        borderColor: 'rgba(255,255,255,0.14)',
-        width: '100%',
-      }}
-    >
+    <View style={{ gap: compact ? 10 : 12 }}>
       <AppButton
-        title="Continue as guest"
+        title="Start Listening"
         size="lg"
         fullWidth
         onPress={() => router.replace(APP_ROUTES.tabs.home)}
-        leftIcon={<MaterialIcons name="person-outline" size={18} color={theme.colors.textInverse} />}
+        leftIcon={<MaterialIcons name="headphones" size={19} color="#120A20" />}
       />
 
-      <View style={{ flexDirection: compact ? 'column' : 'row', gap: 10 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.12)' }} />
+        <Text style={{ color: 'rgba(255,255,255,0.36)', fontSize: 11, letterSpacing: 0.3 }}>
+          or
+        </Text>
+        <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.12)' }} />
+      </View>
+
+      <View style={{ flexDirection: 'row', gap: 10 }}>
         <AppButton
-          title="Sign in"
+          title="Sign In"
           variant="secondary"
           size="lg"
           fullWidth
           onPress={() => router.push(APP_ROUTES.auth.signIn)}
-          leftIcon={<MaterialIcons name="login" size={18} color="#FFFFFF" />}
           textColor="#FFFFFF"
-          style={{ flex: compact ? undefined : 1, backgroundColor: 'rgba(255,255,255,0.10)', borderColor: 'rgba(255,255,255,0.18)' }}
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(255,255,255,0.08)',
+            borderColor: 'rgba(255,255,255,0.20)',
+          }}
         />
         <AppButton
-          title="Create account"
+          title="Create Account"
           variant="secondary"
           size="lg"
           fullWidth
           onPress={() => router.push(APP_ROUTES.auth.signUp)}
-          leftIcon={<MaterialIcons name="person-add-alt" size={18} color="#FFFFFF" />}
           textColor="#FFFFFF"
-          style={{ flex: compact ? undefined : 1, backgroundColor: 'rgba(255,255,255,0.10)', borderColor: 'rgba(255,255,255,0.18)' }}
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(255,255,255,0.08)',
+            borderColor: 'rgba(255,255,255,0.20)',
+          }}
         />
       </View>
 
-      <CustomText
-        variant="caption"
+      <Text
         style={{
-          color: 'rgba(255,255,255,0.66)',
+          color: 'rgba(255,255,255,0.32)',
           textAlign: 'center',
-          lineHeight: 17,
+          fontSize: 10.5,
+          lineHeight: 16,
         }}
       >
-        Guest mode gives public access. Sign in for saved library, history, alerts, and profile sync.
-      </CustomText>
-    </SurfaceCard>
+        Free to explore. Sign in to unlock your full experience.
+      </Text>
+    </View>
   );
 }
 
-function LandingVisualPanel() {
-  return (
-    <SurfaceCard
-      tone="strong"
-      style={{
-        flex: 1,
-        minHeight: 520,
-        borderRadius: 36,
-        overflow: 'hidden',
-        backgroundColor: 'rgba(255,255,255,0.055)',
-        borderColor: 'rgba(255,255,255,0.15)',
-      }}
-    >
-      <LinearGradient
-        colors={['rgba(183,148,246,0.18)', 'rgba(255,255,255,0.045)', 'rgba(8,5,15,0.72)']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-      />
-
-      <Image
-        source={LANDING_BG_ASSET}
-        resizeMode="contain"
-        style={{
-          width: '100%',
-          height: '100%',
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          opacity: 0.96,
-        }}
-      />
-
-      <LinearGradient
-        colors={['rgba(8,5,15,0)', 'rgba(8,5,15,0.18)', 'rgba(8,5,15,0.82)']}
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'flex-end', padding: 26 }}
-      >
-        <View style={{ gap: 12, maxWidth: 460 }}>
-          <View
-            style={{
-              alignSelf: 'flex-start',
-              borderRadius: 999,
-              backgroundColor: 'rgba(0,0,0,0.54)',
-              borderWidth: 1,
-              borderColor: 'rgba(255,255,255,0.24)',
-              paddingHorizontal: 12,
-              paddingVertical: 7,
-            }}
-          >
-            <CustomText variant="caption" style={{ color: '#FFFFFF', textTransform: 'uppercase', letterSpacing: 0.72 }}>
-              ClaudyGod worship experience
-            </CustomText>
-          </View>
-          <CustomText variant="body" style={{ color: 'rgba(255,255,255,0.76)', lineHeight: 22 }}>
-            A focused worship app for music, videos, live ministry, personal library, and ministry updates across mobile, tablet, TV, and web.
-          </CustomText>
-        </View>
-      </LinearGradient>
-    </SurfaceCard>
-  );
-}
+// ─── Phone layout ───────────────────────────────────────────────────────────────
+// Uses fixed flex layout — no scrollable content, fits the viewport exactly.
 
 function PhoneLanding() {
   const device = useDeviceClass();
-  const compact = device.isCompactPhone || device.isShortViewport;
+  const { height } = useWindowDimensions();
+  const compact = device.isCompactPhone || height < 680;
+  const gutter = compact ? 20 : 24;
+  const headlineSize = compact ? 34 : 40;
 
   return (
-    <ImageBackground source={LANDING_BG_ASSET} resizeMode="cover" imageStyle={{ opacity: 0.52 }} style={{ flex: 1, backgroundColor: '#08050F' }}>
+    <View style={StyleSheet.absoluteFillObject}>
+      <ImageBackground
+        source={LANDING_BG_ASSET}
+        resizeMode="cover"
+        style={StyleSheet.absoluteFillObject}
+      />
+
+      {/* Multi-stop gradient — image shows at top, blacks out below 60% */}
       <LinearGradient
-        pointerEvents="none"
-        colors={['rgba(8,5,15,0.30)', 'rgba(8,5,15,0.74)', 'rgba(8,5,15,0.98)']}
-        start={{ x: 0.18, y: 0 }}
-        end={{ x: 0.8, y: 1 }}
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+        colors={[
+          'rgba(7,5,12,0.06)',
+          'rgba(7,5,12,0.36)',
+          'rgba(7,5,12,0.82)',
+          'rgba(7,5,12,0.98)',
+        ]}
+        locations={[0, 0.32, 0.64, 1]}
+        style={StyleSheet.absoluteFillObject}
       />
 
       <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
         <View
           style={{
             flex: 1,
+            paddingHorizontal: gutter,
+            paddingTop: compact ? 16 : 22,
+            paddingBottom: compact ? 16 : 22,
             justifyContent: 'space-between',
-            paddingHorizontal: device.contentGutter,
-            paddingTop: compact ? 14 : 22,
-            paddingBottom: compact ? 10 : 16,
           }}
         >
+          {/* ── Logo row ── */}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <LandingLogo />
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <CustomText variant="caption" style={{ color: 'rgba(255,255,255,0.66)', textTransform: 'uppercase', letterSpacing: 0.78 }}>
+            <BrandMark size={compact ? 42 : 48} />
+            <View>
+              <Text
+                style={{
+                  color: 'rgba(255,255,255,0.48)',
+                  fontSize: 9,
+                  letterSpacing: 2.4,
+                  textTransform: 'uppercase',
+                }}
+              >
                 ClaudyGod
-              </CustomText>
-              <CustomText variant="label" style={{ color: '#FFFFFF', marginTop: 3 }} numberOfLines={1}>
-                Music, ministry, and worship
-              </CustomText>
+              </Text>
+              <Text
+                style={{
+                  color: 'rgba(255,255,255,0.88)',
+                  fontSize: compact ? 12.5 : 13.5,
+                  fontWeight: '600',
+                  marginTop: 2,
+                  letterSpacing: -0.1,
+                }}
+              >
+                Music · Ministry · Worship
+              </Text>
             </View>
           </View>
 
-          <View style={{ gap: compact ? 14 : 18 }}>
-            <View style={{ gap: 9 }}>
+          {/* ── Headline + CTA ── */}
+          <View style={{ gap: compact ? 18 : 24 }}>
+            <View style={{ gap: compact ? 10 : 12 }}>
+              {/* Accent badge */}
+              <View
+                style={{
+                  alignSelf: 'flex-start',
+                  borderRadius: 999,
+                  backgroundColor: 'rgba(183,148,246,0.14)',
+                  borderWidth: 1,
+                  borderColor: 'rgba(183,148,246,0.28)',
+                  paddingHorizontal: 12,
+                  paddingVertical: 5,
+                }}
+              >
+                <Text
+                  style={{
+                    color: 'rgba(183,148,246,0.9)',
+                    fontSize: 10,
+                    fontWeight: '600',
+                    letterSpacing: 1.4,
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  Now streaming
+                </Text>
+              </View>
+
               <CustomText
                 variant="display"
                 style={{
                   color: '#FFFFFF',
-                  fontSize: compact ? 30 : 34,
-                  lineHeight: compact ? 35 : 40,
-                  letterSpacing: -0.7,
+                  fontSize: headlineSize,
+                  lineHeight: headlineSize * 1.08,
+                  letterSpacing: -1.2,
+                  fontWeight: '800',
                 }}
               >
-                Music, videos, and live worship in one place.
+                Worship{'\n'}without limits.
               </CustomText>
+
               <CustomText
                 variant="body"
                 style={{
-                  color: 'rgba(255,255,255,0.78)',
+                  color: 'rgba(255,255,255,0.64)',
+                  fontSize: compact ? 13.5 : 15,
                   lineHeight: compact ? 20 : 22,
-                  maxWidth: 420,
+                  maxWidth: 360,
                 }}
               >
-                Browse public releases as a guest, or sign in to keep your library, history, alerts, and profile synced.
+                Music, videos & live sessions from ClaudyGod — whenever, wherever.
               </CustomText>
             </View>
 
-            <LandingActions compact={device.isCompactPhone} />
+            <LandingActions compact={compact} />
           </View>
         </View>
       </SafeAreaView>
-    </ImageBackground>
+    </View>
   );
 }
 
-export default function LandingScreen() {
+// ─── Wide layout (tablet / desktop / TV) ─────────────────────────────────────────
+
+function WideLanding() {
   const device = useDeviceClass();
-  const theme = useAppTheme();
+  const { width: viewportWidth } = useWindowDimensions();
 
-  if (device.isPhone && !Platform.isTV) {
-    return <PhoneLanding />;
-  }
-
-  const showVisualPanel = device.prefersTwoPane;
-  const titleSize = device.isTV ? 64 : device.isLargeDesktop ? 56 : device.isDesktop ? 52 : 42;
-  const titleLineHeight = device.isTV ? 72 : device.isLargeDesktop ? 62 : device.isDesktop ? 58 : 48;
+  const titleSize =
+    device.isTV ? 68 :
+    device.isLargeDesktop ? 58 :
+    device.isDesktop ? 52 : 44;
+  const gutter = device.contentGutter ?? 48;
 
   return (
-    <ImageBackground
-      source={LANDING_BG_ASSET}
-      resizeMode="cover"
-      imageStyle={{ opacity: device.isTV ? 0.28 : device.isDesktop ? 0.30 : 0.38 }}
-      style={{ flex: 1, backgroundColor: '#08050F' }}
-    >
+    <View style={StyleSheet.absoluteFillObject}>
+      <ImageBackground
+        source={LANDING_BG_ASSET}
+        resizeMode="cover"
+        style={StyleSheet.absoluteFillObject}
+      />
+
       <LinearGradient
-        pointerEvents="none"
-        colors={
-          theme.scheme === 'dark'
-            ? ['rgba(8,5,15,0.48)', 'rgba(8,5,15,0.84)', 'rgba(8,5,15,0.98)']
-            : ['rgba(9,7,20,0.42)', 'rgba(9,7,20,0.80)', 'rgba(9,7,20,0.96)']
-        }
-        start={{ x: 0.12, y: 0 }}
-        end={{ x: 0.9, y: 1 }}
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+        colors={[
+          'rgba(7,5,12,0.08)',
+          'rgba(7,5,12,0.52)',
+          'rgba(7,5,12,0.90)',
+          'rgba(7,5,12,0.98)',
+        ]}
+        locations={[0, 0.28, 0.68, 1]}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={StyleSheet.absoluteFillObject}
       />
 
       <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
@@ -264,59 +275,121 @@ export default function LandingScreen() {
           style={{
             flex: 1,
             justifyContent: 'center',
-            paddingHorizontal: device.contentGutter,
-            paddingVertical: device.isTV ? 54 : 40,
+            paddingHorizontal: gutter,
+            paddingVertical: device.isTV ? 64 : 48,
           }}
         >
           <View
             style={{
               width: '100%',
-              maxWidth: device.maxContentWidth,
+              maxWidth: Math.min(device.maxContentWidth ?? 1140, viewportWidth - gutter * 2),
               alignSelf: 'center',
-              flexDirection: showVisualPanel ? 'row' : 'column',
-              alignItems: 'stretch',
-              gap: device.isTV ? 46 : 34,
             }}
           >
-            <View style={{ flex: showVisualPanel ? 0.9 : undefined, justifyContent: 'center', minWidth: 0 }}>
-              <View style={{ gap: device.isTV ? 28 : 22, maxWidth: showVisualPanel ? 540 : 640, alignSelf: showVisualPanel ? 'flex-start' : 'center', width: '100%' }}>
-                <LandingLogo large={device.isDesktop || device.isTV} />
-
-                <View style={{ gap: 12 }}>
-                  <CustomText
-                    variant="display"
-                    style={{
-                      color: '#FFFFFF',
-                      fontSize: titleSize,
-                      lineHeight: titleLineHeight,
-                      letterSpacing: device.isTV ? -1.4 : -1.6,
-                      textAlign: showVisualPanel ? 'left' : 'center',
-                    }}
-                  >
-                    Music, videos, and live worship in one place.
-                  </CustomText>
-                  <CustomText
-                    variant="body"
-                    style={{
-                      color: 'rgba(255,255,255,0.80)',
-                      lineHeight: device.isTV ? 30 : 24,
-                      fontSize: device.isTV ? 19 : device.isDesktop ? 15 : 14,
-                      maxWidth: 560,
-                      textAlign: showVisualPanel ? 'left' : 'center',
-                    }}
-                  >
-                    Browse public releases as a guest, or sign in to keep your library, history, alerts, and profile synced.
-                  </CustomText>
-                </View>
-
-                <LandingActions compact={false} />
+            {/* Brand row */}
+            <View
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 32 }}
+            >
+              <BrandMark size={device.isTV ? 70 : device.isDesktop ? 60 : 52} />
+              <View>
+                <Text
+                  style={{
+                    color: 'rgba(255,255,255,0.44)',
+                    fontSize: device.isTV ? 11 : 10,
+                    letterSpacing: 2.4,
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  ClaudyGod
+                </Text>
+                <Text
+                  style={{
+                    color: 'rgba(255,255,255,0.88)',
+                    fontSize: device.isTV ? 20 : 16,
+                    fontWeight: '600',
+                    marginTop: 4,
+                    letterSpacing: -0.2,
+                  }}
+                >
+                  Music · Ministry · Worship
+                </Text>
               </View>
             </View>
 
-            {showVisualPanel ? <LandingVisualPanel /> : null}
+            {/* Headline + actions — max width to avoid overly wide text */}
+            <View
+              style={{
+                maxWidth: device.isTV ? 760 : device.isDesktop ? 680 : 580,
+                gap: device.isTV ? 32 : 26,
+              }}
+            >
+              {/* Accent badge */}
+              <View
+                style={{
+                  alignSelf: 'flex-start',
+                  borderRadius: 999,
+                  backgroundColor: 'rgba(183,148,246,0.14)',
+                  borderWidth: 1,
+                  borderColor: 'rgba(183,148,246,0.28)',
+                  paddingHorizontal: 14,
+                  paddingVertical: 6,
+                }}
+              >
+                <Text
+                  style={{
+                    color: 'rgba(183,148,246,0.9)',
+                    fontSize: 11,
+                    fontWeight: '600',
+                    letterSpacing: 1.4,
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  Now streaming
+                </Text>
+              </View>
+
+              <CustomText
+                variant="display"
+                style={{
+                  color: '#FFFFFF',
+                  fontSize: titleSize,
+                  lineHeight: titleSize * 1.06,
+                  letterSpacing: device.isTV ? -2.2 : -1.4,
+                  fontWeight: '800',
+                }}
+              >
+                Worship{'\n'}without limits.
+              </CustomText>
+
+              <CustomText
+                variant="body"
+                style={{
+                  color: 'rgba(255,255,255,0.64)',
+                  fontSize: device.isTV ? 20 : device.isDesktop ? 17 : 15.5,
+                  lineHeight: device.isTV ? 32 : 26,
+                  maxWidth: 520,
+                }}
+              >
+                Music, videos & live sessions from ClaudyGod — whenever, wherever.
+              </CustomText>
+
+              <LandingActions compact={false} />
+            </View>
           </View>
         </View>
       </SafeAreaView>
-    </ImageBackground>
+    </View>
   );
+}
+
+// ─── Root export ─────────────────────────────────────────────────────────────────
+
+export default function LandingScreen() {
+  const device = useDeviceClass();
+
+  if (device.isPhone && !Platform.isTV) {
+    return <PhoneLanding />;
+  }
+
+  return <WideLanding />;
 }

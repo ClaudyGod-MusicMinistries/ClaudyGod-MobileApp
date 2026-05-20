@@ -187,7 +187,6 @@ export function AudioPlayer({
       }}
     >
       <View
-        pointerEvents="none"
         style={{
           position: 'absolute',
           top: -90,
@@ -196,11 +195,11 @@ export function AudioPlayer({
           height: 220,
           borderRadius: 220,
           backgroundColor: 'rgba(183,148,246,0.20)',
+          pointerEvents: 'none',
         }}
       />
 
       <View
-        pointerEvents="none"
         style={{
           position: 'absolute',
           bottom: -100,
@@ -208,6 +207,7 @@ export function AudioPlayer({
           width: 240,
           height: 240,
           borderRadius: 240,
+          pointerEvents: 'none',
           backgroundColor: 'rgba(255,255,255,0.06)',
         }}
       />

@@ -66,7 +66,7 @@ export default function AdsAiView(props) {
       <main class="cg-main-grid">
         <aside class="cg-panel cg-card">
           <div class="cg-section-head">
-            <div><h2>Campaign library</h2><p class="cg-muted">Real campaigns from the admin API.</p></div>
+            <div><h2>Campaign library</h2><p class="cg-muted">All scheduled and active placements.</p></div>
             <span class="cg-chip">{campaignItems.length} campaigns</span>
           </div>
 

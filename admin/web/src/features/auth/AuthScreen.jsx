@@ -225,7 +225,7 @@ export default function AuthScreen(props) {
                     data-lpignore="true"
                     data-1p-ignore="true"
                   />
-                  <small>This name appears in internal publishing activity and content ownership.</small>
+                  <small>This name appears on published content and in ownership records.</small>
                 </label>
               ) : null}
 
