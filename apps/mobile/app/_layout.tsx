@@ -3,7 +3,7 @@ import '../global.css';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { AppState, StatusBar, View } from 'react-native';
+import { AppState, Platform, StatusBar, View } from 'react-native';
 
 import { ThemeProvider } from '../context/ThemeProvider';
 import { useColorScheme, useThemeContext } from '../util/colorScheme';
@@ -62,7 +62,9 @@ function RootLayoutInner() {
   }, []);
 
   useEffect(() => {
-    if (!isAuthenticated) return;
+    // Web sessions use long-lived browser tokens — no inactivity lockout.
+    // Touch events (onTouchStart) also don't fire for mouse input on desktop web.
+    if (!isAuthenticated || Platform.OS === 'web') return;
 
     const timer = setTimeout(() => {
       void clearMobileSession();

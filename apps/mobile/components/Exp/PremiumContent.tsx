@@ -495,7 +495,6 @@ export function QuickActionGrid({ actions }: { actions: QuickAction[] }) {
   const theme = useAppTheme();
   const { width } = useWindowDimensions();
   const compact = width < 430;
-  const isLarge = width >= 900;
 
   if (compact) {
     return (
@@ -541,8 +540,10 @@ export function QuickActionGrid({ actions }: { actions: QuickAction[] }) {
     );
   }
 
+  // Wide layout: always flex: 1 per item so they fill the row evenly.
+  // (flex: undefined on large screens caused the flex: 1 child View to collapse to 0 width)
   return (
-    <View style={{ flexDirection: 'row', gap: 10, flexWrap: isLarge ? 'wrap' : undefined }}>
+    <View style={{ flexDirection: 'row', gap: 10 }}>
       {actions.map((action) => {
         const accent = ACTION_COLORS[action.icon] ?? theme.colors.primary;
         return (
@@ -550,7 +551,7 @@ export function QuickActionGrid({ actions }: { actions: QuickAction[] }) {
             key={action.label}
             onPress={action.onPress}
             showFocusBorder={false}
-            style={{ flex: isLarge ? undefined : 1 }}
+            style={{ flex: 1 }}
           >
             <View
               style={{
@@ -619,9 +620,12 @@ type ContentCardProps = {
 export function ContentCard({ item, onPress, compact = false }: ContentCardProps) {
   const theme = useAppTheme();
   const { width: screenWidth } = useWindowDimensions();
+  const isDesktop = screenWidth >= 1024;
   const cardWidth = compact
     ? Math.min(154, Math.max(132, screenWidth * 0.38))
-    : Math.min(192, Math.max(160, screenWidth * 0.42));
+    : isDesktop
+      ? Math.min(228, Math.max(192, screenWidth * 0.17))
+      : Math.min(192, Math.max(160, screenWidth * 0.42));
   const title = cleanFeedText(item.title);
 
   return (
@@ -744,7 +748,8 @@ function RailSkeleton() {
   const theme = useAppTheme();
   const { width } = useWindowDimensions();
   const compact = width < 430;
-  const cardWidth = compact ? 140 : 172;
+  const isDesktop = width >= 1024;
+  const cardWidth = compact ? 140 : isDesktop ? 210 : 172;
 
   return (
     <ScrollView
