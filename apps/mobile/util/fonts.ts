@@ -3,30 +3,32 @@ import {
   Manrope_400Regular,
   Manrope_500Medium,
   Manrope_600SemiBold,
+  Manrope_700Bold,
+  Manrope_800ExtraBold,
 } from '@expo-google-fonts/manrope';
 import * as Font from 'expo-font';
 
 export const fontConfig = {
   hero: {
-    fontFamily: 'Manrope_600SemiBold',
-    fontSize: 19.5,
-    lineHeight: 26,
-    fontWeight: '600' as const,
-    letterSpacing: 0,
+    fontFamily: 'Manrope_800ExtraBold',
+    fontSize: 22,
+    lineHeight: 29,
+    fontWeight: '800' as const,
+    letterSpacing: -0.4,
   },
   display: {
-    fontFamily: 'Manrope_600SemiBold',
-    fontSize: 17,
-    lineHeight: 23,
-    fontWeight: '600' as const,
-    letterSpacing: 0,
+    fontFamily: 'Manrope_700Bold',
+    fontSize: 18.5,
+    lineHeight: 25,
+    fontWeight: '700' as const,
+    letterSpacing: -0.2,
   },
   heading: {
-    fontFamily: 'Manrope_600SemiBold',
-    fontSize: 15,
-    lineHeight: 21,
-    fontWeight: '600' as const,
-    letterSpacing: 0,
+    fontFamily: 'Manrope_700Bold',
+    fontSize: 16,
+    lineHeight: 22,
+    fontWeight: '700' as const,
+    letterSpacing: -0.1,
   },
   title: {
     fontFamily: 'Manrope_600SemiBold',
@@ -113,6 +115,8 @@ export const loadFonts = async () => {
     Manrope_400Regular,
     Manrope_500Medium,
     Manrope_600SemiBold,
+    Manrope_700Bold,
+    Manrope_800ExtraBold,
   });
 };
 
@@ -121,5 +125,6 @@ export const fontWeights = {
   regular: 'Manrope_400Regular',
   medium: 'Manrope_500Medium',
   semiBold: 'Manrope_600SemiBold',
-  bold: 'Manrope_600SemiBold',
+  bold: 'Manrope_700Bold',
+  extraBold: 'Manrope_800ExtraBold',
 };
