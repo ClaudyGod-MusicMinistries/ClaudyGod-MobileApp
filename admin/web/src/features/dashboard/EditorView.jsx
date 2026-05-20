@@ -373,7 +373,7 @@ export default function EditorView(props) {
           <div>
             <p class="cg-kicker">Content library</p>
             <h2>Correct, place, publish, or remove existing content</h2>
-            <p class="cg-muted">Every item below comes from the real managed content library.</p>
+            <p class="cg-muted">Published and draft items available for correction, placement, and visibility changes.</p>
           </div>
           <span class="cg-chip">{paginationTotal} total items</span>
         </div>
