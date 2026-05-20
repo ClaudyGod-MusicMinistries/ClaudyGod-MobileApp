@@ -2,6 +2,7 @@ import type { ErrorRequestHandler } from 'express';
 import { ZodError } from 'zod';
 import { env } from '../config/env';
 import { HttpError } from '../lib/httpError';
+import { logger } from '../lib/logger';
 
 export const errorHandler: ErrorRequestHandler = (error, _req, res, _next) => {
   let statusCode = 500;
@@ -27,7 +28,11 @@ export const errorHandler: ErrorRequestHandler = (error, _req, res, _next) => {
   }
 
   if (statusCode >= 500) {
-    console.error(error);
+    logger.error('Unhandled server error', {
+      statusCode,
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
   }
 
   res.status(statusCode).json({

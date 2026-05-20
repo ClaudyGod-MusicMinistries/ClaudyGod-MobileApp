@@ -1,7 +1,8 @@
 import { Worker } from 'bullmq';
 import { pool } from '../db/pool';
-import { sendEmail, emailTransportInfo } from '../infra/email';
+import { sendEmail } from '../infra/email';
 import { redis } from '../infra/redis';
+import { logger } from '../lib/logger';
 import { EMAIL_QUEUE_NAME, type EmailQueuePayload } from './emailQueue';
 
 interface EmailJobRow {
@@ -19,11 +20,6 @@ const markEmailJobFailed = async (emailJobId: number, reason: string): Promise<v
      WHERE id = $1`,
     [emailJobId, reason],
   );
-};
-
-const logEmailStatus = (message: string): void => {
-  const timestamp = new Date().toISOString();
-  console.log(`[${timestamp}] [email-worker] ${message}`);
 };
 
 export const startEmailWorker = (): Worker<EmailQueuePayload> => {
@@ -60,7 +56,7 @@ export const startEmailWorker = (): Worker<EmailQueuePayload> => {
               .map((item) => item.trim())
               .filter(Boolean);
 
-        logEmailStatus(`Sending email to ${recipients.join(', ')} (Job #${emailJobId})`);
+        logger.info('Sending email', { emailJobId, recipients });
 
         const delivery = await sendEmail({
           to: recipients,
@@ -69,7 +65,7 @@ export const startEmailWorker = (): Worker<EmailQueuePayload> => {
           html: row.html_body ?? undefined,
         });
 
-        logEmailStatus(`✓ Email delivered (Job #${emailJobId}, Message ID: ${delivery.messageId})`);
+        logger.info('Email delivered', { emailJobId, messageId: delivery.messageId });
 
         await pool.query(
           `UPDATE email_jobs
@@ -81,7 +77,7 @@ export const startEmailWorker = (): Worker<EmailQueuePayload> => {
         return { success: true };
       } catch (error) {
         const reason = error instanceof Error ? error.message : 'Unknown email worker error';
-        logEmailStatus(`✗ Email delivery failed (Job #${emailJobId}): ${reason}`);
+        logger.error('Email delivery failed', { emailJobId, reason });
         await markEmailJobFailed(emailJobId, reason);
         throw error;
       }
@@ -93,11 +89,11 @@ export const startEmailWorker = (): Worker<EmailQueuePayload> => {
   );
 
   worker.on('completed', (job) => {
-    logEmailStatus(`Completed job ${job?.id}`);
+    logger.info('Email job completed', { jobId: job?.id });
   });
 
   worker.on('failed', (job, error) => {
-    logEmailStatus(`Failed job ${job?.id}: ${error.message}`);
+    logger.error('Email job failed', { jobId: job?.id, error: error.message });
   });
 
   return worker;
