@@ -1,8 +1,5 @@
 // lib/emailValidator.ts
-/**
- * Email Domain Validation Service
- * Validates email postfix (domain) with configurable allowed/blocked domains
- */
+import dns from 'node:dns/promises';
 
 export interface EmailValidationConfig {
   // Whitelist of allowed domains (if empty, all are allowed except blacklisted)
@@ -212,9 +209,12 @@ export class EmailValidator {
    * Could integrate with WHOIS API or DNS checking service
    */
   static async verifyDomainExists(domain: string): Promise<boolean> {
-    // TODO: Implement DNS MX record checking
-    // This would verify the domain actually has mail servers configured
-    return true; // Placeholder
+    try {
+      const records = await dns.resolveMx(domain);
+      return records.length > 0;
+    } catch {
+      return false;
+    }
   }
 }
 
