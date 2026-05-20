@@ -117,7 +117,7 @@ export default function EditorView(props) {
               <p class="cg-muted">
                 {directPublishMode
                   ? 'Create a draft or publish directly after all required details are ready.'
-                  : 'Send a clean request to the review queue so admins can approve and publish it.'}
+                  : 'Fill in the details and submit for review before it goes to the app.'}
               </p>
             </div>
             <span class="cg-chip">{completeChecks}/{checks.length} ready</span>
@@ -373,7 +373,7 @@ export default function EditorView(props) {
           <div>
             <p class="cg-kicker">Content library</p>
             <h2>Correct, place, publish, or remove existing content</h2>
-            <p class="cg-muted">Every item below comes from the real managed content library.</p>
+            <p class="cg-muted">Published and draft items available for correction, placement, and visibility changes.</p>
           </div>
           <span class="cg-chip">{paginationTotal} total items</span>
         </div>

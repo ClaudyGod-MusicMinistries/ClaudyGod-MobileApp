@@ -84,8 +84,8 @@ export function AuthBrandPanel({ salutation, description, compact = false }: Aut
         end={{ x: 0.15, y: 1 }}
         style={{ flex: 1, padding: device.isTV ? 36 : 28, justifyContent: 'space-between' }}
       >
-        <View pointerEvents="none" style={{ position: 'absolute', top: -90, right: -90, width: 240, height: 240, borderRadius: 240, backgroundColor: 'rgba(183,148,246,0.24)' }} />
-        <View pointerEvents="none" style={{ position: 'absolute', bottom: -110, left: -80, width: 240, height: 240, borderRadius: 240, backgroundColor: 'rgba(255,255,255,0.08)' }} />
+        <View style={{ position: 'absolute', top: -90, right: -90, width: 240, height: 240, borderRadius: 240, backgroundColor: 'rgba(183,148,246,0.24)', pointerEvents: 'none' }} />
+        <View style={{ position: 'absolute', bottom: -110, left: -80, width: 240, height: 240, borderRadius: 240, backgroundColor: 'rgba(255,255,255,0.08)', pointerEvents: 'none' }} />
 
         <View style={{ maxWidth: device.isTV ? 540 : 430 }}>
           <View

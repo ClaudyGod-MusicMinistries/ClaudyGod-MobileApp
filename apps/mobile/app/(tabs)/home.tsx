@@ -215,6 +215,7 @@ export default function HomeScreen() {
     <PremiumPage
       title="Home"
       eyebrow="Home"
+      noBack
       refreshing={loading}
       onRefresh={() => void refresh()}
     >

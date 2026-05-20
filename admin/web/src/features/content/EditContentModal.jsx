@@ -1,3 +1,5 @@
+import '../../app/AdminShell.css';
+
 export default function EditContentModal(props) {
   const {
     editContentSaving,
@@ -12,71 +14,73 @@ export default function EditContentModal(props) {
 
   return (
     <div
-      class="modal-backdrop"
+      class="cg-admin-modal-backdrop"
       onClick={(event) => {
         if (event.target === event.currentTarget && !editContentSaving) {
           onClose();
         }
       }}
     >
-      <section class="modal-card glass-panel" role="dialog" aria-modal="true" aria-labelledby="edit-content-title">
-        <div class="section-head split">
+      <section
+        class="cg-edit-modal cg-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="edit-content-title"
+      >
+        <div class="cg-section-head">
           <div>
-            <h2 id="edit-content-title">Edit Content</h2>
-            <p>Update title, description, media links, tags, and mobile app placement for this item.</p>
+            <p class="cg-kicker">Content editor</p>
+            <h2 id="edit-content-title">Edit content</h2>
+            <p class="cg-muted">Update title, description, media links, placement, and visibility.</p>
           </div>
-          <div class="button-row">
-            <button
-              type="button"
-              class="ghost-btn compact"
-              onClick={onClose}
-              disabled={editContentSaving}
-            >
-              Close
-            </button>
-          </div>
+          <button
+            type="button"
+            class="cg-secondary compact"
+            onClick={onClose}
+            disabled={editContentSaving}
+          >
+            Close
+          </button>
         </div>
 
-        <form class="stack-form" onSubmit={(event) => void onSubmit(event)}>
-          <div class="field-cluster">
-            <label>
-              Title
-              <input
-                value={editForm.title}
-                onInput={(event) => { editForm.title = onReadValue(event); }}
-                placeholder="Content title"
-              />
-            </label>
-          </div>
+        <form class="cg-form" onSubmit={(event) => void onSubmit(event)}>
+          <label>
+            <span>Title</span>
+            <input
+              value={editForm.title}
+              onInput={(event) => { editForm.title = onReadValue(event); }}
+              placeholder="Content title"
+            />
+          </label>
 
           <label>
-            Description
+            <span>Description</span>
             <textarea
-              rows={5}
+              rows={4}
               value={editForm.description}
               onInput={(event) => { editForm.description = onReadValue(event); }}
               placeholder="Short description shown to users."
             />
           </label>
 
-          <div class="grid-2">
+          <div class="cg-grid-2">
             <label>
-              Content type
+              <span>Content type</span>
               <select value={editForm.type} onChange={(event) => { editForm.type = onReadValue(event); }}>
                 {contentTypes.map((type) => <option value={type} key={`edit-${type}`}>{type}</option>)}
               </select>
             </label>
             <label>
-              Status
+              <span>Visibility</span>
               <select value={editForm.visibility} onChange={(event) => { editForm.visibility = onReadValue(event); }}>
-                {visibilityOptions.map((visibility) => <option value={visibility} key={`edit-v-${visibility}`}>{visibility}</option>)}
+                {visibilityOptions.map((v) => <option value={v} key={`edit-v-${v}`}>{v}</option>)}
               </select>
             </label>
           </div>
 
-          <div class="grid-2">
+          <div class="cg-grid-2">
             <label>
-              Media URL
+              <span>Media URL</span>
               <input
                 value={editForm.url}
                 onInput={(event) => { editForm.url = onReadValue(event); }}
@@ -84,18 +88,18 @@ export default function EditContentModal(props) {
               />
             </label>
             <label>
-              Thumbnail URL
+              <span>Thumbnail URL</span>
               <input
                 value={editForm.thumbnailUrl}
                 onInput={(event) => { editForm.thumbnailUrl = onReadValue(event); }}
-                placeholder="https://... (required for audio/video)"
+                placeholder="https://..."
               />
             </label>
           </div>
 
-          <div class="grid-2">
+          <div class="cg-grid-2">
             <label>
-              Channel / Artist Name (optional)
+              <span>Artist or channel</span>
               <input
                 value={editForm.channelName}
                 onInput={(event) => { editForm.channelName = onReadValue(event); }}
@@ -103,7 +107,7 @@ export default function EditContentModal(props) {
               />
             </label>
             <label>
-              Duration label (optional)
+              <span>Duration</span>
               <input
                 value={editForm.duration}
                 onInput={(event) => { editForm.duration = onReadValue(event); }}
@@ -112,9 +116,9 @@ export default function EditContentModal(props) {
             </label>
           </div>
 
-          <div class="grid-2">
+          <div class="cg-grid-2">
             <label>
-              Tags (comma-separated)
+              <span>Tags</span>
               <input
                 value={editForm.tagsCsv}
                 onInput={(event) => { editForm.tagsCsv = onReadValue(event); }}
@@ -122,34 +126,28 @@ export default function EditContentModal(props) {
               />
             </label>
             <label>
-              App sections (comma-separated)
+              <span>App sections</span>
               <input
                 value={editForm.appSectionsCsv}
                 onInput={(event) => { editForm.appSectionsCsv = onReadValue(event); }}
-                placeholder="Choose placements below or enter section ids manually"
+                placeholder="Select sections below or enter IDs"
               />
             </label>
           </div>
+
           {renderSectionSelector(editForm.appSectionsCsv, (nextValue) => { editForm.appSectionsCsv = nextValue; })}
 
-          <div class="helper-card">
-            <strong>Validation rules</strong>
-            <p>
-              Audio and video items require both a media URL and a thumbnail URL. URLs must start with `http://` or `https://`. Tags and sections are deduplicated before save.
-            </p>
-          </div>
-
-          <div class="button-row modal-actions">
+          <div class="cg-button-row" style={{ justifyContent: 'flex-end', marginTop: '8px' }}>
             <button
               type="button"
-              class="ghost-btn compact"
+              class="cg-secondary compact"
               onClick={onClose}
               disabled={editContentSaving}
             >
               Cancel
             </button>
-            <button type="submit" class="primary-btn" disabled={editContentSaving}>
-              {editContentSaving ? 'Saving changes...' : 'Save Changes'}
+            <button type="submit" class="cg-primary compact" disabled={editContentSaving}>
+              {editContentSaving ? 'Saving...' : 'Save changes'}
             </button>
           </div>
         </form>

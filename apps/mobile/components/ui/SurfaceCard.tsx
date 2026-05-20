@@ -39,11 +39,10 @@ export function SurfaceCard({ tone = 'default', style, children, ...props }: Sur
     >
       {isStrong ? (
         <LinearGradient
-          pointerEvents="none"
           colors={['rgba(255,255,255,0.035)', 'rgba(255,255,255,0.00)']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 90 }}
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 90, pointerEvents: 'none' }}
         />
       ) : null}
       {children}
