@@ -4,6 +4,9 @@
   min-height: 100dvh;
   padding: clamp(10px, 2vw, 22px);
   overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   background:
     radial-gradient(ellipse at 18% 0%, rgba(167, 139, 250, 0.16) 0%, transparent 46%),
     radial-gradient(ellipse at 84% 6%, rgba(124, 58, 237, 0.10) 0%, transparent 38%),
