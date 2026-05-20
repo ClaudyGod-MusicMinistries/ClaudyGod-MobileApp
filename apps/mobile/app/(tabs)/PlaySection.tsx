@@ -68,7 +68,7 @@ export default function PlaySection() {
   };
 
   return (
-    <PremiumPage title="Music" eyebrow="Listen" refreshing={loading} onRefresh={refresh} rightAction={<AppButton title="" variant="secondary" size="sm" onPress={() => router.push(APP_ROUTES.tabs.library)} leftIcon={<MaterialIcons name="library-music" size={16} color={theme.colors.text} />} style={{ minWidth: 40, paddingHorizontal: 10 }} />}>
+    <PremiumPage title="Music" eyebrow="Listen" noBack refreshing={loading} onRefresh={refresh} rightAction={<AppButton title="" variant="secondary" size="sm" onPress={() => router.push(APP_ROUTES.tabs.library)} leftIcon={<MaterialIcons name="library-music" size={16} color={theme.colors.text} />} style={{ minWidth: 40, paddingHorizontal: 10 }} />}>
       {active && hasInlineAudio && active.mediaUrl ? (
         <AudioPlayer track={{ id: active.id, title: active.title, artist: active.subtitle, uri: active.mediaUrl, duration: active.duration, imageUrl: active.imageUrl }} onPrevious={goPrevious} onNext={goNext} canGoPrevious={canGoPrevious} canGoNext={canGoNext} />
       ) : (

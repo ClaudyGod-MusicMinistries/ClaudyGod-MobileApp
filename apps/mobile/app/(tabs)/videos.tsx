@@ -40,7 +40,7 @@ export default function VideosScreen() {
   };
 
   return (
-    <PremiumPage title="Videos" eyebrow="Watch" refreshing={loading} onRefresh={refresh}>
+    <PremiumPage title="Videos" eyebrow="Watch" noBack refreshing={loading} onRefresh={refresh}>
       {active && canInlinePlay && active.mediaUrl ? <VideoPlayer title={active.title} sourceUri={active.mediaUrl} height={playerHeight} /> : <PremiumHero item={active} title={active?.title ?? 'Choose a video'} subtitle={active?.description || 'Select a video, live replay, or featured session to watch.'} primaryLabel={active?.mediaUrl ? 'Open video' : 'Browse videos'} primaryIcon={active?.mediaUrl ? 'open-in-new' : 'smart-display'} onPrimary={() => (active?.mediaUrl ? void Linking.openURL(active.mediaUrl) : undefined)} />}
       <ContentRail title="Up next" items={queue} compact loading={loading} onPressItem={(item) => void openItem(item, 'videos_queue')} />
       <ContentRail title="Latest videos" items={feed.videos} loading={loading} onPressItem={(item) => void openItem(item, 'videos_latest')} />

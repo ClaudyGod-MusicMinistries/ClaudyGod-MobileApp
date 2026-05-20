@@ -83,6 +83,7 @@ type PremiumPageProps = {
   onRefresh?: () => void;
   backgroundImage?: ImageSourcePropType;
   showFooter?: boolean;
+  noBack?: boolean;
 };
 
 export function PremiumPage({
@@ -95,13 +96,14 @@ export function PremiumPage({
   onRefresh,
   backgroundImage,
   showFooter = true,
+  noBack = false,
 }: PremiumPageProps) {
   const theme = useAppTheme();
   const router = useRouter();
   const { isAuthenticated } = useAuth();
   const { width } = useWindowDimensions();
   const compact = width < 430;
-  const showBack = title !== 'ClaudyGod' && router.canGoBack();
+  const showBack = !noBack && title !== 'ClaudyGod' && router.canGoBack();
 
   return (
     <TabScreenWrapper backgroundImage={backgroundImage} backgroundHeight={compact ? 240 : 320}>
@@ -600,7 +602,6 @@ export function QuickActionGrid({ actions }: { actions: QuickAction[] }) {
                   </CustomText>
                 ) : null}
               </View>
-              <MaterialIcons name="chevron-right" size={16} color={theme.colors.textMuted} />
             </View>
           </TVTouchable>
         );
