@@ -358,6 +358,7 @@ export default function SettingsScreen() {
     <PremiumPage
       title="Settings"
       eyebrow="Your app"
+      noBack
       rightAction={
         <AppButton
           title=""
