@@ -22,16 +22,15 @@ body,
 }
 
 body {
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior-y: none;
+  overflow: hidden;
+  overscroll-behavior: none;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: geometricPrecision;
 }
 
 #root {
-  min-height: 100vh;
+  height: 100%;
   isolation: isolate;
 }
 

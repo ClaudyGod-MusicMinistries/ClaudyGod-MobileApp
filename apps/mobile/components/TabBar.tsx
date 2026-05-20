@@ -47,7 +47,8 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
   const isTablet = width >= 768 && !isTV;
   const { config } = useMobileAppConfig();
 
-  const barMaxWidth = isTV ? 1120 : isTablet ? 680 : width - 32;
+  const isDesktopWide = width >= 1024 && !isTV;
+  const barMaxWidth = isTV ? 1120 : isDesktopWide ? Math.min(960, width - 64) : isTablet ? 680 : width - 32;
   const barBottomInset = isTV ? 24 : Math.max(insets.bottom, 12);
   const currentRouteName = state.routes[state.index]?.name;
 
