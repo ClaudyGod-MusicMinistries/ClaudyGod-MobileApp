@@ -59,7 +59,7 @@ export default function MobilePreviewView(props) {
             </div>
             <div class="cg-checklist">
               <div class="cg-check-row"><span class="cg-check-dot">1</span><div><strong>Publish or save placement</strong><p class="cg-muted">Make the content update inside Publishing Studio.</p></div></div>
-              <div class="cg-check-row"><span class="cg-check-dot">2</span><div><strong>Reload preview</strong><p class="cg-muted">Refresh the embedded app after the API has updated.</p></div></div>
+              <div class="cg-check-row"><span class="cg-check-dot">2</span><div><strong>Reload preview</strong><p class="cg-muted">Refresh the embedded app after saving your changes.</p></div></div>
               <div class="cg-check-row"><span class="cg-check-dot">3</span><div><strong>Confirm section</strong><p class="cg-muted">Check title, thumbnail, action, and content type.</p></div></div>
             </div>
           </article>
@@ -68,7 +68,7 @@ export default function MobilePreviewView(props) {
             <div class="cg-section-head">
               <div>
                 <h2>Mobile section guide</h2>
-                <p class="cg-muted">These are configured app rails from the real mobile config.</p>
+                <p class="cg-muted">Section IDs from the active mobile app configuration.</p>
               </div>
               <span class="cg-chip">{sections.length} sections</span>
             </div>
