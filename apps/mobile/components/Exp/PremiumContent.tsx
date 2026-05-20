@@ -20,6 +20,7 @@ import { AppButton } from '../ui/AppButton';
 import { AppScreenFooter } from '../layout/AppScreenFooter';
 import { TVTouchable } from '../ui/TVTouchable';
 import { FadeIn } from '../ui/FadeIn';
+import { SkeletonLoader } from '../ui/SkeletonLoader';
 import { useAuth } from '../../context/AuthContext';
 import { useAppTheme } from '../../util/colorScheme';
 import { APP_ROUTES } from '../../util/appRoutes';
@@ -347,6 +348,7 @@ export function PremiumHero({
   const isLiveItem = item?.isLive;
 
   return (
+    <FadeIn delay={30} duration={500}>
     <View
       style={{
         height: heroHeight,
@@ -479,6 +481,7 @@ export function PremiumHero({
         </View>
       </View>
     </View>
+    </FadeIn>
   );
 }
 
@@ -500,6 +503,7 @@ export function QuickActionGrid({ actions }: { actions: QuickAction[] }) {
 
   if (compact) {
     return (
+      <FadeIn delay={80}>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -539,12 +543,14 @@ export function QuickActionGrid({ actions }: { actions: QuickAction[] }) {
           );
         })}
       </ScrollView>
+      </FadeIn>
     );
   }
 
   // Wide layout: always flex: 1 per item so they fill the row evenly.
   // (flex: undefined on large screens caused the flex: 1 child View to collapse to 0 width)
   return (
+    <FadeIn delay={80}>
     <View style={{ flexDirection: 'row', gap: 10 }}>
       {actions.map((action) => {
         const accent = ACTION_COLORS[action.icon] ?? theme.colors.primary;
@@ -607,6 +613,7 @@ export function QuickActionGrid({ actions }: { actions: QuickAction[] }) {
         );
       })}
     </View>
+    </FadeIn>
   );
 }
 
@@ -746,7 +753,6 @@ type ContentRailProps = {
 };
 
 function RailSkeleton() {
-  const theme = useAppTheme();
   const { width } = useWindowDimensions();
   const compact = width < 430;
   const isDesktop = width >= 1024;
@@ -760,31 +766,10 @@ function RailSkeleton() {
     >
       {[0, 1, 2, 3].map((i) => (
         <View key={i} style={{ width: cardWidth, gap: 8 }}>
-          <View
-            style={{
-              width: cardWidth,
-              height: cardWidth,
-              borderRadius: 14,
-              backgroundColor: theme.colors.surfaceAlt,
-            }}
-          />
+          <SkeletonLoader width={cardWidth} height={cardWidth} borderRadius={14} />
           <View style={{ gap: 6, paddingHorizontal: 2 }}>
-            <View
-              style={{
-                height: 12,
-                width: '76%',
-                borderRadius: 999,
-                backgroundColor: theme.colors.surfaceAlt,
-              }}
-            />
-            <View
-              style={{
-                height: 10,
-                width: '50%',
-                borderRadius: 999,
-                backgroundColor: theme.colors.surfaceAlt,
-              }}
-            />
+            <SkeletonLoader width="76%" height={12} borderRadius={999} />
+            <SkeletonLoader width="50%" height={10} borderRadius={999} />
           </View>
         </View>
       ))}
@@ -1121,6 +1106,7 @@ export function EmptyState({
 }: EmptyStateProps) {
   const theme = useAppTheme();
   return (
+    <FadeIn delay={60}>
     <View
       style={{
         alignItems: 'center',
@@ -1171,6 +1157,7 @@ export function EmptyState({
         <AppButton title={actionLabel} onPress={onAction} size="md" style={{ marginTop: 20 }} />
       ) : null}
     </View>
+    </FadeIn>
   );
 }
 
