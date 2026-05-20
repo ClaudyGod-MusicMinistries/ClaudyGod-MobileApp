@@ -1,113 +1,149 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Image, ImageBackground, Platform, StatusBar, Text, View, useWindowDimensions } from 'react-native';
-// Choose a modern background image from assets
-import landingBg from '../../assets/images/landing4.jpg';
+import { Animated, Image, Platform, StatusBar, Text, View, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { BRAND_LOGO_ASSET } from '../../util/brandAssets';
+import { BRAND_LOGO_ASSET, LANDING_BG_ASSET } from '../../util/brandAssets';
+
+// Stable constant — safe to omit from effect deps
+const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
 export function AppLoadingScreen() {
-  const { width } = useWindowDimensions();
-  const compact = width < 390;
-  const spin = useRef(new Animated.Value(0)).current;
-  const pulse = useRef(new Animated.Value(0.97)).current;
-  const useNativeAnimations = Platform.OS !== 'web';
+  const { width, height } = useWindowDimensions();
+
+  const logoOpacity = useRef(new Animated.Value(0)).current;
+  const logoScale = useRef(new Animated.Value(0.82)).current;
+  const contentOpacity = useRef(new Animated.Value(0)).current;
+  const progressAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    const spinLoop = Animated.loop(
-      Animated.timing(spin, { toValue: 1, duration: 2100, useNativeDriver: useNativeAnimations }),
-    );
-    const pulseLoop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulse, { toValue: 1.015, duration: 980, useNativeDriver: useNativeAnimations }),
-        Animated.timing(pulse, { toValue: 0.97, duration: 980, useNativeDriver: useNativeAnimations }),
+    Animated.sequence([
+      Animated.parallel([
+        Animated.timing(logoOpacity, { toValue: 1, duration: 540, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.spring(logoScale, { toValue: 1, tension: 48, friction: 9, useNativeDriver: USE_NATIVE_DRIVER }),
       ]),
-    );
-    spinLoop.start();
-    pulseLoop.start();
-    return () => {
-      spinLoop.stop();
-      pulseLoop.stop();
-    };
-  }, [pulse, spin, useNativeAnimations]);
+      Animated.timing(contentOpacity, { toValue: 1, duration: 360, useNativeDriver: USE_NATIVE_DRIVER }),
+    ]).start();
 
-  const size = compact ? 62 : 72;
-  const rotate = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
+    Animated.timing(progressAnim, { toValue: 0.82, duration: 2800, useNativeDriver: false }).start();
+
+    return () => {
+      logoOpacity.stopAnimation();
+      logoScale.stopAnimation();
+      contentOpacity.stopAnimation();
+      progressAnim.stopAnimation();
+    };
+    // useRef values are stable — safe to omit from deps
+  }, [logoOpacity, logoScale, contentOpacity, progressAnim]);
+
+  const isCompact = width < 390;
+  const logoSize = isCompact ? 78 : 92;
+  const logoRadius = Math.round(logoSize * 0.25);
 
   return (
-    <ImageBackground
-      source={landingBg}
-      resizeMode="cover"
-      style={{ flex: 1, width: '100%', height: '100%' }}
-      imageStyle={{ opacity: 0.93 }}
-    >
-      <View style={{ flex: 1, backgroundColor: 'rgba(2,1,6,0.55)' }}>
-        <StatusBar translucent={false} barStyle="light-content" backgroundColor="#020106" />
-        <LinearGradient
-          colors={['#020106', '#06020B', '#020106']}
-          start={{ x: 0.05, y: 0 }}
-          end={{ x: 0.95, y: 1 }}
-          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-        />
-        <LinearGradient
-          colors={['rgba(124,58,237,0.12)', 'rgba(124,58,237,0)']}
-          start={{ x: 0.1, y: 0 }}
-          end={{ x: 0.8, y: 1 }}
-          style={{ position: 'absolute', top: -90, left: -80, width: 280, height: 280, borderRadius: 280 }}
-        />
+    <View style={{ flex: 1, backgroundColor: '#03020A' }}>
+      <StatusBar translucent barStyle="light-content" backgroundColor="transparent" />
 
-        <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
-          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
-            <View
+      {/* Background image — very subtle */}
+      <Image
+        source={LANDING_BG_ASSET}
+        resizeMode="cover"
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0.14 }}
+      />
+
+      {/* Dark gradient */}
+      <LinearGradient
+        colors={['#03020A', 'rgba(5,3,14,0.95)', '#07050C']}
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+      />
+
+      {/* Purple ambient glow behind logo */}
+      <View
+        style={{
+          position: 'absolute',
+          top: height * 0.26 - 120,
+          left: width * 0.5 - 120,
+          width: 240,
+          height: 240,
+          borderRadius: 120,
+          backgroundColor: 'rgba(183,148,246,0.07)',
+        }}
+      />
+
+      <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 }}>
+          {/* Logo mark */}
+          <Animated.View
+            style={{
+              width: logoSize,
+              height: logoSize,
+              borderRadius: logoRadius,
+              overflow: 'hidden',
+              opacity: logoOpacity,
+              transform: [{ scale: logoScale }],
+              shadowColor: '#B794F6',
+              shadowOpacity: 0.28,
+              shadowRadius: 28,
+              shadowOffset: { width: 0, height: 10 },
+              elevation: 14,
+            }}
+          >
+            <Image
+              source={BRAND_LOGO_ASSET}
+              style={{ width: '100%', height: '100%' }}
+              resizeMode="cover"
+            />
+          </Animated.View>
+
+          {/* Brand name + tagline */}
+          <Animated.View
+            style={{ alignItems: 'center', marginTop: 24, gap: 8, opacity: contentOpacity }}
+          >
+            <Text
               style={{
-                width: '100%',
-                maxWidth: 292,
-                alignItems: 'center',
-                borderRadius: 26,
-                borderWidth: 1,
-                borderColor: 'rgba(185,148,255,0.10)',
-                backgroundColor: 'rgba(9,5,16,0.72)',
-                paddingHorizontal: 22,
-                paddingVertical: 24,
+                color: '#F7F2FF',
+                fontSize: isCompact ? 23 : 27,
+                fontWeight: '700',
+                letterSpacing: -0.6,
+                textAlign: 'center',
               }}
             >
-              <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
-                <Animated.View
-                  style={{
-                    position: 'absolute',
-                    width: size,
-                    height: size,
-                    borderRadius: size / 2,
-                    borderWidth: 1.7,
-                    borderColor: 'rgba(185,148,255,0.11)',
-                    borderTopColor: 'rgba(185,148,255,0.82)',
-                    transform: [{ rotate }],
-                  }}
-                />
-                <Animated.View
-                  style={{
-                    width: size - 20,
-                    height: size - 20,
-                    borderRadius: (size - 20) / 2,
-                    backgroundColor: 'rgba(255,255,255,0.045)',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    transform: [{ scale: pulse }],
-                  }}
-                >
-                  <Image source={BRAND_LOGO_ASSET} style={{ width: compact ? 27 : 30, height: compact ? 27 : 30, borderRadius: 10 }} />
-                </Animated.View>
-              </View>
-              <Text style={{ marginTop: 15, color: '#F4EEFF', fontSize: compact ? 15 : 16, fontWeight: '700', textAlign: 'center' }}>
-                ClaudyGod
-              </Text>
-              <Text style={{ marginTop: 6, color: 'rgba(184,175,203,0.72)', fontSize: 11.5, textAlign: 'center', lineHeight: 16 }}>
-                Preparing your worship space
-              </Text>
-            </View>
+              ClaudyGod
+            </Text>
+            <Text
+              style={{
+                color: 'rgba(183,148,246,0.65)',
+                fontSize: 10.5,
+                letterSpacing: 2.6,
+                textTransform: 'uppercase',
+                textAlign: 'center',
+              }}
+            >
+              Worship · Music · Ministry
+            </Text>
+          </Animated.View>
+        </View>
+
+        {/* Thin progress bar — bottom of screen */}
+        <View style={{ paddingHorizontal: 52, paddingBottom: 46 }}>
+          <View
+            style={{
+              height: 2,
+              backgroundColor: 'rgba(255,255,255,0.07)',
+              borderRadius: 999,
+              overflow: 'hidden',
+            }}
+          >
+            <Animated.View
+              style={{
+                height: '100%',
+                backgroundColor: '#B794F6',
+                borderRadius: 999,
+                width: progressAnim.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }),
+              }}
+            />
           </View>
-        </SafeAreaView>
-      </View>
-    </ImageBackground>
+        </View>
+      </SafeAreaView>
+    </View>
   );
 }
