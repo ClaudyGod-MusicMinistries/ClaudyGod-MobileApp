@@ -2420,6 +2420,7 @@ export default defineComponent({
               smartInsights={adminOps.value.smartInsights || []}
               recentAuthActivity={adminOps.value.recentAuthActivity || []}
               onSetDashboardView={setDashboardView}
+              humanizeToken={humanizeToken}
               formatDateTime={formatDateTime}
               truncate={truncate}
             />

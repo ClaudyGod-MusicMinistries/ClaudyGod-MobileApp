@@ -17,6 +17,7 @@ export default function OverviewView(props) {
     smartInsights,
     recentAuthActivity,
     onSetDashboardView,
+    humanizeToken,
     formatDateTime,
     truncate,
   } = props;
@@ -70,7 +71,7 @@ export default function OverviewView(props) {
               <p>{card.hint}</p>
             </article>
           ))}
-          {!portalCards.length && adminOpsLoading ? <div class="cg-empty cg-full">Loading dashboard metrics...</div> : null}
+          {!portalCards.length && adminOpsLoading ? <div class="cg-empty cg-full">Preparing your dashboard...</div> : null}
         </div>
       </article>
 
@@ -90,7 +91,7 @@ export default function OverviewView(props) {
         <article class="cg-ops-card">
           <span>Publishing records</span>
           <strong>{requestQueuePreview.length}</strong>
-          <p>Recent upload tickets from the backend queue</p>
+          <p>Submissions pending review and approval</p>
         </article>
         <article class="cg-ops-card">
           <span>Audit trail</span>
@@ -173,7 +174,7 @@ export default function OverviewView(props) {
               <article class="cg-item" key={`overview-request-${request.id}`}>
                 <div class="cg-item-head">
                   <h3>{request.title}</h3>
-                  <span class="cg-status is-info">{String(request.status || '').replace(/_/g, ' ')}</span>
+                  <span class="cg-status is-info">{humanizeToken(request.status)}</span>
                 </div>
                 <p>{truncate(request.description, 120)}</p>
                 <div class="cg-chip-row" style={{ marginTop: '10px' }}>
@@ -249,12 +250,12 @@ export default function OverviewView(props) {
             {(delivery.recentJobs || []).slice(0, 4).map((job) => (
               <article class="cg-item" key={`email-job-${job.id}`}>
                 <div class="cg-item-head">
-                  <h3>{job.templateKey || job.jobType}</h3>
+                  <h3>{job.label || humanizeToken(job.templateKey || job.jobType || 'Email notification')}</h3>
                   <span class={['cg-status', job.status === 'failed' ? 'is-danger' : job.status === 'completed' ? 'is-success' : 'is-info']}>
-                    {job.status}
+                    {humanizeToken(job.status)}
                   </span>
                 </div>
-                <p>{(job.recipients || []).join(', ') || 'Recipient recorded in delivery metadata'}</p>
+                <p>{(job.recipients || []).join(', ') || 'Private recipient'}</p>
                 <div class="cg-chip-row" style={{ marginTop: '10px' }}>
                   <span class="cg-chip">{formatDateTime(job.createdAt)}</span>
                 </div>
@@ -278,13 +279,13 @@ export default function OverviewView(props) {
                 <div class="cg-item-head">
                   <h3>{ticket.subject}</h3>
                   <span class={['cg-status', ticket.status === 'resolved' ? 'is-success' : ticket.priority === 'high' ? 'is-warning' : 'is-info']}>
-                    {ticket.status}
+                    {humanizeToken(ticket.status)}
                   </span>
                 </div>
                 <p>{truncate(ticket.message, 120)}</p>
                 <div class="cg-chip-row" style={{ marginTop: '10px' }}>
-                  <span class="cg-chip">{ticket.category}</span>
-                  <span class="cg-chip">{ticket.user?.email || 'No account email'}</span>
+                  <span class="cg-chip">{humanizeToken(ticket.category)}</span>
+                  <span class="cg-chip">{ticket.user?.email || 'Anonymous'}</span>
                 </div>
               </article>
             ))}
