@@ -163,6 +163,7 @@ export default function Search() {
     <PremiumPage
       title="Search"
       eyebrow="Discover"
+      noBack
       refreshing={loading || isSearching}
       onRefresh={refresh}
     >
