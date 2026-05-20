@@ -198,11 +198,11 @@ export function AuthOtpInput({
           </CustomText>
 
           <Animated.View
-            pointerEvents="none"
             style={{
               position: 'absolute',
               left: 14,
               right: 14,
+              pointerEvents: 'none',
               bottom: 0,
               height: 2,
               borderRadius: 999,
