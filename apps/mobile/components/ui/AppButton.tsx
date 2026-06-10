@@ -1,5 +1,11 @@
-import React, { ReactNode } from 'react';
-import { ActivityIndicator, TextStyle, TouchableOpacityProps, View } from 'react-native';
+import React, { ReactNode, useState, useRef, useCallback } from 'react';
+import {
+  ActivityIndicator,
+  TextStyle,
+  TouchableOpacityProps,
+  View,
+  Animated,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BrandLoader } from '../branding/BrandLoader';
 import { CustomText } from '../CustomText';
@@ -19,6 +25,11 @@ interface AppButtonProps extends TouchableOpacityProps {
   loadingVariant?: 'spinner' | 'brand';
   textColor?: string;
   textStyle?: TextStyle;
+  onPress?: () => void;
+  style?: any;
+  disabled?: boolean;
+  accessibilityLabel?: string;
+  testID?: string;
 }
 
 export function AppButton({
@@ -35,125 +46,231 @@ export function AppButton({
   textColor,
   textStyle,
   style,
+  accessibilityLabel,
+  testID,
+  disabled,
   ...props
 }: AppButtonProps) {
   const theme = useAppTheme();
+
+  // Use useRef to persist Animated values (prevents recreation & memory leaks)
+  const scaleValueRef = useRef(new Animated.Value(1)).current;
+  const [isPressed, setIsPressed] = useState(false);
+
   const resolvedLeftIcon = leftIcon ?? icon;
   const isPrimary = variant === 'primary';
   const isSecondary = variant === 'secondary';
   const isOutline = variant === 'outline';
-  const hasTitle = title.trim().length > 0;
+  const isGhost = variant === 'ghost';
+  const isDisabled = loading || disabled;
+  const hasTitle = title && title.trim().length > 0;
 
-  // Size tokens — slightly larger than before for better tap targets
+  // Memoized press handlers
+  const handlePressIn = useCallback(() => {
+    setIsPressed(true);
+    Animated.timing(scaleValueRef, {
+      toValue: 0.98,
+      duration: 100,
+      useNativeDriver: true,
+    }).start();
+  }, [scaleValueRef]);
+
+  const handlePressOut = useCallback(() => {
+    setIsPressed(false);
+    Animated.timing(scaleValueRef, {
+      toValue: 1,
+      duration: 150,
+      useNativeDriver: true,
+    }).start();
+  }, [scaleValueRef]);
+
+  // WCAG compliant sizing with 48px minimum touch targets
   const sizeStyle =
     size === 'sm'
-      ? { minHeight: 34, paddingHorizontal: 13, paddingVertical: 7,  fontSize: 11   }
+      ? {
+          minHeight: 36,
+          paddingHorizontal: 8,
+          paddingVertical: 4,
+          fontSize: 12,
+        }
       : size === 'lg'
-        ? { minHeight: 50, paddingHorizontal: 20, paddingVertical: 13, fontSize: 13.5 }
-        : { minHeight: 42, paddingHorizontal: 16, paddingVertical: 10, fontSize: 12   };
+        ? {
+            minHeight: 52,
+            paddingHorizontal: 16,
+            paddingVertical: 12,
+            fontSize: 14,
+          }
+        : {
+            minHeight: 48,
+            paddingHorizontal: 12,
+            paddingVertical: 8,
+            fontSize: 13,
+          };
 
   const resolvedTextColor =
     textColor ??
     (isPrimary
-      ? theme.colors.textInverse
-      : theme.colors.text);
+      ? theme.colors.textInverse || '#FFFFFF'
+      : isGhost || isOutline || isSecondary
+        ? theme.colors.text
+        : theme.colors.text);
 
-  const content = loading ? (
-    loadingVariant === 'brand' ? (
-      <BrandLoader label={loadingLabel ?? title} size="sm" textColor={resolvedTextColor} />
-    ) : (
-      <ActivityIndicator size="small" color={resolvedTextColor} />
-    )
-  ) : (
-    <View style={{ flexDirection: 'row', alignItems: 'center', maxWidth: '100%', gap: hasTitle ? 7 : 0 }}>
-      {resolvedLeftIcon ? (
-        <View style={{ width: 18, alignItems: 'center', justifyContent: 'center' }}>
-          {resolvedLeftIcon}
-        </View>
-      ) : null}
-      {hasTitle ? (
-        <CustomText
-          variant="label"
-          style={{
-            color: resolvedTextColor,
-            textAlign: 'center',
-            flexShrink: 1,
-            fontSize: sizeStyle.fontSize,
-            lineHeight: (sizeStyle.fontSize as number) * 1.3,
-            letterSpacing: 0.1,
-            fontWeight: '600',
-            ...(textStyle || {}),
-          }}
-          numberOfLines={1}
-        >
-          {title}
-        </CustomText>
-      ) : null}
-      {rightIcon ? (
-        <View style={{ width: 18, alignItems: 'center', justifyContent: 'center' }}>
-          {rightIcon}
-        </View>
-      ) : null}
-    </View>
-  );
+  // Render content with proper error handling
+  const content = (() => {
+    if (loading) {
+      return loadingVariant === 'brand' ? (
+        <BrandLoader label={loadingLabel || title} size="sm" textColor={resolvedTextColor} />
+      ) : (
+        <ActivityIndicator size="small" color={resolvedTextColor} />
+      );
+    }
 
-  return (
-    <TVTouchable
-      {...props}
-      disabled={loading || props.disabled}
-      activeOpacity={0.80}
-      style={[
-        {
-          ...sizeStyle,
-          borderRadius: theme.radius.pill,
-          backgroundColor: isPrimary
-            ? theme.colors.primary
-            : isSecondary
-              ? theme.scheme === 'dark'
-                ? 'rgba(255,255,255,0.09)'
-                : 'rgba(19,12,33,0.06)'
-              : 'transparent',
-          borderWidth: isPrimary || isOutline || isSecondary ? 1 : 0,
-          borderColor: isOutline
-            ? theme.colors.borderStrong ?? theme.colors.border
-            : isSecondary
-              ? theme.colors.borderStrong ?? theme.colors.border
-              : isPrimary
-                ? theme.scheme === 'dark'
-                  ? 'rgba(255,255,255,0.16)'
-                  : 'rgba(19,12,33,0.08)'
-                : 'transparent',
-          opacity: props.disabled ? 0.42 : 1,
+    return (
+      <View
+        style={{
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',
-          alignSelf: fullWidth ? 'stretch' : 'flex-start',
-          gap: 7,
-          overflow: 'hidden',
-          // Primary glow
-          ...(isPrimary
-            ? {
-                shadowColor: '#A78BFA',
-                shadowOpacity: 0.28,
-                shadowRadius: 14,
-                shadowOffset: { width: 0, height: 6 },
-                elevation: 5,
-              }
-            : {}),
-        },
-        style,
-      ]}
-      showFocusBorder={false}
-    >
-      {isPrimary ? (
-        <LinearGradient
-          colors={theme.colors.gradient.primary as [string, string]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none' }}
-        />
-      ) : null}
-      {content}
-    </TVTouchable>
+          maxWidth: '100%',
+          gap: hasTitle && (resolvedLeftIcon || rightIcon) ? 8 : 0,
+        }}
+      >
+        {resolvedLeftIcon ? (
+          <View
+            style={{
+              width: 20,
+              height: 20,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            {resolvedLeftIcon}
+          </View>
+        ) : null}
+
+        {hasTitle ? (
+          <CustomText
+            variant="label"
+            allowFontScaling={false}
+            style={{
+              color: resolvedTextColor,
+              textAlign: 'center',
+              flexShrink: 1,
+              fontSize: sizeStyle.fontSize,
+              lineHeight: (sizeStyle.fontSize as number) * 1.4,
+              letterSpacing: 0.3,
+              fontWeight: '600',
+              ...(textStyle || {}),
+            }}
+            numberOfLines={1}
+          >
+            {title}
+          </CustomText>
+        ) : null}
+
+        {rightIcon ? (
+          <View
+            style={{
+              width: 20,
+              height: 20,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            {rightIcon}
+          </View>
+        ) : null}
+      </View>
+    );
+  })();
+
+  const animatedStyle = {
+    transform: [{ scale: scaleValueRef }],
+  };
+
+  const accessibilityProps = {
+    accessible: true,
+    accessibilityRole: 'button' as const,
+    accessibilityLabel: accessibilityLabel || title,
+    accessibilityState: {
+      disabled: isDisabled,
+      busy: loading,
+    },
+    testID: testID,
+  };
+
+  return (
+    <Animated.View style={animatedStyle}>
+      <TVTouchable
+        {...props}
+        {...accessibilityProps}
+        disabled={isDisabled}
+        activeOpacity={0.9}
+        onPressIn={(e: any) => {
+          if (!isDisabled) {
+            handlePressIn();
+            (props as any).onPressIn?.(e);
+          }
+        }}
+        onPressOut={(e: any) => {
+          if (!isDisabled) {
+            handlePressOut();
+            (props as any).onPressOut?.(e);
+          }
+        }}
+        style={[
+          {
+            ...sizeStyle,
+            minWidth: size === 'sm' ? 60 : size === 'lg' ? 80 : 70,
+            borderRadius: theme.radius.pill,
+            backgroundColor: isPrimary
+              ? theme.colors.primary
+              : isSecondary
+                ? theme.scheme === 'dark'
+                  ? 'rgba(255,255,255,0.1)'
+                  : 'rgba(124,58,237,0.12)'
+                : 'transparent',
+            borderWidth: (isPrimary || isOutline || isSecondary) ? 1 : 0,
+            borderColor:
+              isOutline
+                ? theme.colors.borderStrong ?? theme.colors.border
+                : isSecondary
+                  ? theme.colors.borderStrong ?? theme.colors.border
+                  : isPrimary
+                    ? 'rgba(255,255,255,0.2)'
+                    : 'transparent',
+            opacity: isDisabled ? 0.5 : 1,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            alignSelf: fullWidth ? 'stretch' : 'flex-start',
+            gap: 8,
+            overflow: 'hidden',
+            ...(isPrimary
+              ? {
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: isPressed ? 6 : 3 },
+                  shadowOpacity: isPressed ? 0.3 : 0.15,
+                  shadowRadius: isPressed ? 10 : 6,
+                  elevation: isPressed ? 6 : 3,
+                }
+              : {}),
+          },
+          style as any,
+        ]}
+        showFocusBorder={false}
+      >
+        {isPrimary ? (
+          <LinearGradient
+            pointerEvents="none"
+            colors={theme.colors.gradient.primary as [string, string]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+          />
+        ) : null}
+        {content}
+      </TVTouchable>
+    </Animated.View>
   );
 }
