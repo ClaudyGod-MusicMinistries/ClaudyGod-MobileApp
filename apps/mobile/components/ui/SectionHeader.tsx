@@ -1,10 +1,11 @@
 // components/ui/SectionHeader.tsx
-import React from 'react';
-import { View } from 'react-native';
+import React, { useState } from 'react';
+import { View, Animated } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../CustomText';
 import { useAppTheme } from '../../util/colorScheme';
 import { TVTouchable } from './TVTouchable';
+import { designSystem } from '../../theme/designSystem';
 
 interface SectionHeaderProps {
   title: string;
@@ -15,6 +16,26 @@ interface SectionHeaderProps {
 
 export function SectionHeader({ title, actionLabel, onAction, eyebrow }: SectionHeaderProps) {
   const theme = useAppTheme();
+  const [actionPressed, setActionPressed] = useState(false);
+  const scaleValue = React.useRef(new Animated.Value(1)).current;
+
+  const handleActionPressIn = () => {
+    setActionPressed(true);
+    Animated.timing(scaleValue, {
+      toValue: 0.95,
+      duration: 100,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handleActionPressOut = () => {
+    setActionPressed(false);
+    Animated.timing(scaleValue, {
+      toValue: 1,
+      duration: 150,
+      useNativeDriver: true,
+    }).start();
+  };
 
   return (
     <View
@@ -22,18 +43,20 @@ export function SectionHeader({ title, actionLabel, onAction, eyebrow }: Section
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'flex-end',
-        marginBottom: theme.spacing.sm,
+        marginBottom: theme.spacing.md,
         gap: theme.spacing.md,
       }}
     >
-      <View style={{ flex: 1, gap: eyebrow ? 2 : 0 }}>
+      <View style={{ flex: 1, gap: eyebrow ? 4 : 0 }}>
         {eyebrow ? (
           <CustomText
             variant="caption"
             style={{
               color: theme.colors.textMuted ?? theme.colors.textSecondary,
               textTransform: 'uppercase',
-              letterSpacing: 0.9,
+              letterSpacing: 1.2,
+              fontSize: 11,
+              fontWeight: '600',
             }}
             numberOfLines={1}
           >
@@ -44,7 +67,9 @@ export function SectionHeader({ title, actionLabel, onAction, eyebrow }: Section
           variant="heading"
           style={{
             color: theme.colors.text,
-            letterSpacing: 0,
+            letterSpacing: -0.3,
+            fontSize: 24,
+            fontWeight: '700',
           }}
           numberOfLines={1}
         >
@@ -53,35 +78,53 @@ export function SectionHeader({ title, actionLabel, onAction, eyebrow }: Section
       </View>
 
       {actionLabel ? (
-        <TVTouchable
-          onPress={onAction}
-          style={{
-            minHeight: 34,
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 3,
-            paddingHorizontal: 11,
-            paddingVertical: 7,
-            borderRadius: theme.radius.pill,
-            backgroundColor: theme.scheme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(124,58,237,0.08)',
-            borderWidth: 1,
-            borderColor: theme.colors.border,
-          }}
-          activeOpacity={0.78}
-          showFocusBorder={false}
-        >
-          <CustomText
-            variant="caption"
+        <Animated.View style={{ transform: [{ scale: scaleValue }] }}>
+          <TVTouchable
+            onPress={onAction}
+            onPressIn={handleActionPressIn}
+            onPressOut={handleActionPressOut}
             style={{
-              color: theme.colors.text,
-              letterSpacing: 0.08,
+              minHeight: 36,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6,
+              paddingHorizontal: 14,
+              paddingVertical: 8,
+              borderRadius: designSystem.radius.full,
+              backgroundColor: theme.scheme === 'dark'
+                ? 'rgba(255,255,255,0.08)'
+                : 'rgba(124,58,237,0.1)',
+              borderWidth: 1,
+              borderColor: theme.scheme === 'dark'
+                ? 'rgba(255,255,255,0.12)'
+                : 'rgba(124,58,237,0.2)',
+              shadowColor: '#000',
+              shadowOpacity: actionPressed ? 0.15 : 0.08,
+              shadowRadius: 4,
+              elevation: 2,
             }}
-            numberOfLines={1}
+            activeOpacity={0.9}
+            showFocusBorder={false}
           >
-            {actionLabel}
-          </CustomText>
-          <MaterialIcons name="chevron-right" size={16} color={theme.colors.textSecondary} />
-        </TVTouchable>
+            <CustomText
+              variant="label"
+              style={{
+                color: theme.colors.text,
+                letterSpacing: 0.3,
+                fontSize: 12,
+                fontWeight: '600',
+              }}
+              numberOfLines={1}
+            >
+              {actionLabel}
+            </CustomText>
+            <MaterialIcons
+              name="chevron-right"
+              size={16}
+              color={theme.colors.textSecondary}
+            />
+          </TVTouchable>
+        </Animated.View>
       ) : null}
     </View>
   );

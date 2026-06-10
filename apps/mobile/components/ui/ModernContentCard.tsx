@@ -1,7 +1,7 @@
 /**
  * Modern Content Card Component
  * Beautiful, reusable card for displaying content with smooth interactions
- * Uses design tokens for consistent spacing and responsive sizing
+ * Enhanced with design system tokens and premium animations
  */
 
 import React, { useState, useRef } from 'react';
@@ -11,6 +11,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../CustomText';
 import { colors_light } from '../../constants/color';
 import { spacing, radius } from '../../styles/designTokens';
+import { designSystem } from '../../theme/designSystem';
 
 interface ModernContentCardProps {
   id: string;
@@ -56,31 +57,64 @@ export function ModernContentCard({
 }: ModernContentCardProps) {
   const [pressed, setPressed] = useState(false);
   const scaleAnim = useRef(new Animated.Value(1)).current;
+  const shadowOpacityAnim = useRef(new Animated.Value(0.1)).current;
 
   const handlePressIn = () => {
     setPressed(true);
-    Animated.spring(scaleAnim, { toValue: 0.95, useNativeDriver: true }).start();
+    Animated.parallel([
+      Animated.timing(scaleAnim, {
+        toValue: designSystem.interaction.pressScale,
+        duration: designSystem.timing.fast,
+        useNativeDriver: true,
+      }),
+      Animated.timing(shadowOpacityAnim, {
+        toValue: 0.25,
+        duration: designSystem.timing.fast,
+        useNativeDriver: true,
+      }),
+    ]).start();
   };
 
   const handlePressOut = () => {
     setPressed(false);
-    Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true }).start();
+    Animated.parallel([
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: designSystem.timing.moderate,
+        useNativeDriver: true,
+      }),
+      Animated.timing(shadowOpacityAnim, {
+        toValue: 0.1,
+        duration: designSystem.timing.moderate,
+        useNativeDriver: true,
+      }),
+    ]).start();
   };
 
   const dims = getCardDimensions(size);
 
   return (
-    <Animated.View style={{ transform: [{ scale: scaleAnim }], borderRadius: radius.sm }}>
+    <Animated.View
+      style={{
+        transform: [{ scale: scaleAnim }],
+        borderRadius: designSystem.radius.md,
+        shadowColor: '#000',
+        shadowOpacity: shadowOpacityAnim,
+        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 4 },
+        elevation: 4,
+      }}
+    >
       <Pressable
         onPress={onPress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         style={{
-          borderRadius: radius.sm,
+          borderRadius: designSystem.radius.md,
           overflow: 'hidden',
           backgroundColor: colors_light.surface,
           borderWidth: 1,
-          borderColor: pressed ? colors_light.accent : colors_light.border,
+          borderColor: pressed ? colors_light.accent : 'rgba(221, 211, 238, 0.3)',
         }}
       >
         {/* Image Container */}
@@ -146,7 +180,7 @@ export function ModernContentCard({
             </View>
           )}
 
-          {/* Play Button - clean and centered */}
+          {/* Play Button - premium and centered */}
           {onPlayPress && (
             <Pressable
               onPress={onPlayPress}
@@ -155,16 +189,24 @@ export function ModernContentCard({
                 width: spacing.xxl,
                 height: spacing.xxl,
                 borderRadius: spacing.xxl / 2,
-                backgroundColor: pressed ? colors_light.accent : `rgba(${colors_light.accentRgba ?? '167,139,250'},0.85)`,
+                backgroundColor: pressed ? colors_light.accent : colors_light.accent,
                 alignItems: 'center',
                 justifyContent: 'center',
                 top: '50%',
                 left: '50%',
                 marginTop: -(spacing.xxl / 2),
                 marginLeft: -(spacing.xxl / 2),
+                shadowColor: colors_light.accent,
+                shadowOpacity: 0.4,
+                shadowRadius: 8,
+                elevation: 3,
               }}
             >
-              <MaterialIcons name={isPlaying ? 'pause' : 'play-arrow'} size={dims.fontSize} color={colors_light.text} />
+              <MaterialIcons
+                name={isPlaying ? 'pause' : 'play-arrow'}
+                size={dims.fontSize}
+                color="white"
+              />
             </Pressable>
           )}
         </View>
