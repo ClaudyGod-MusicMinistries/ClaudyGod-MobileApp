@@ -17,6 +17,11 @@
     "lint:fix": "eslint . --fix",
     "lint-staged": "lint-staged",
     "typecheck": "tsc --noEmit",
+    "check": "node ./scripts/check-all.js",
+    "check:deps": "node ./scripts/check-dependencies.js",
+    "check:pre-commit": "node ./scripts/check-dependencies.js && lint-staged",
+    "check:pre-push": "node ./scripts/check-all.js",
+    "test": "jest --passWithNoTests",
     "hooks:install": "lefthook install",
     "postinstall": "node ./scripts/postinstall.js"
   },
