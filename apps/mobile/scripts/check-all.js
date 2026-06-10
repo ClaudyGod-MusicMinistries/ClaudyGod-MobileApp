@@ -68,7 +68,7 @@ class CheckRunner {
 
     if (!fs.existsSync(nodeModulesPath)) {
       this.log('❌ node_modules not found', 'red');
-      this.log('   Run: npm install\n', 'yellow');
+      this.log('   Run: yarn install\n', 'yellow');
       return false;
     }
 
@@ -83,17 +83,17 @@ class CheckRunner {
 
   checkTypeScript() {
     this.header('2️⃣  TYPESCRIPT CHECK');
-    return this.runCheck('TypeScript compilation', 'npm run typecheck');
+    return this.runCheck('TypeScript compilation', 'yarn typecheck');
   }
 
   checkLinting() {
     this.header('3️⃣  LINTING CHECK');
-    return this.runCheck('ESLint', 'npm run lint');
+    return this.runCheck('ESLint', 'yarn lint');
   }
 
   checkTests() {
     this.header('4️⃣  TESTS CHECK');
-    return this.runCheck('Test suite', 'npm test -- --passWithNoTests', true);
+    return this.runCheck('Test suite', 'yarn test --passWithNoTests', true);
   }
 
   summary() {

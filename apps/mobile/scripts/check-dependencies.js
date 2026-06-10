@@ -27,7 +27,7 @@ function checkNodeModules() {
 
   if (!fs.existsSync(nodeModulesPath)) {
     log('\n❌ FAILED: node_modules not found', 'red');
-    log('   Run: npm install', 'yellow');
+    log('   Run: yarn install', 'yellow');
     return false;
   }
 
@@ -89,7 +89,7 @@ function checkRequiredModules() {
       `\n⚠️  Missing modules: ${missingModules.join(', ')}`,
       'yellow'
     );
-    log('   Run: npm install', 'yellow');
+    log('   Run: yarn install', 'yellow');
     return false;
   }
 
@@ -138,7 +138,7 @@ function runChecks() {
   }
 
   log('\n❌ Dependency checks failed!', 'red');
-  log('   Please run: npm install', 'yellow');
+  log('   Please run: yarn install', 'yellow');
   log('   Then try again.\n', 'yellow');
   return 1;
 }
