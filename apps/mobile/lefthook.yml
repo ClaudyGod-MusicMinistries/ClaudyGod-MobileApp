@@ -1,13 +1,29 @@
 pre-commit:
   parallel: false
   commands:
+    check-deps:
+      run: node ./scripts/check-dependencies.js
+      stage_fixed: true
+
     staged-lint:
       run: yarn lint-staged
+      stage_fixed: true
 
 pre-push:
   parallel: false
   commands:
+    check-deps-push:
+      run: node ./scripts/check-dependencies.js
+      skip: merge
+
     typecheck:
       run: yarn typecheck
+      skip: merge
+
     lint:
       run: yarn lint
+      skip: merge
+
+    test:
+      run: yarn test --passWithNoTests
+      skip: merge
