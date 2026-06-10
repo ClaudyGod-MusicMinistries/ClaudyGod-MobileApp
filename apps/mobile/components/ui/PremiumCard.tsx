@@ -1,11 +1,8 @@
 import React, { useState } from 'react';
 import {
-  View,
   Animated,
   Pressable,
   ViewStyle,
-  StyleSheet,
-  useWindowDimensions,
 } from 'react-native';
 import { designSystem, type ThemeVariant } from '../../theme/designSystem';
 
@@ -38,7 +35,6 @@ export function PremiumCard({
 }: PremiumCardProps) {
   const [scaleValue] = useState(new Animated.Value(1));
   const [opacityValue] = useState(new Animated.Value(1));
-  const { width } = useWindowDimensions();
 
   const handlePressIn = () => {
     if (!animated || !onPress) return;
@@ -83,20 +79,22 @@ export function PremiumCard({
   const baseStyle: ViewStyle = {
     borderRadius: designSystem.radius.lg,
     padding: paddingMap[padding],
-    ...(variant === 'default' || variant === 'elevated' ? {
-      backgroundColor: themeConfig.backgroundColor,
-      borderColor: themeConfig.borderColor,
-      borderWidth: themeConfig.borderWidth,
-      shadowColor: themeConfig.shadowColor,
-      shadowOffset: themeConfig.shadowOffset,
-      shadowOpacity: themeConfig.shadowOpacity,
-      shadowRadius: themeConfig.shadowRadius,
-      elevation: themeConfig.elevation,
-    } : {
-      backgroundColor: themeConfig.backgroundColor as unknown as string,
-      borderColor: themeConfig.borderColor as unknown as string,
-      borderWidth: themeConfig.borderWidth,
-    }),
+    ...(variant === 'default' || variant === 'elevated'
+      ? {
+          backgroundColor: themeConfig.backgroundColor,
+          borderColor: themeConfig.borderColor,
+          borderWidth: themeConfig.borderWidth,
+          shadowColor: (themeConfig as any).shadowColor,
+          shadowOffset: (themeConfig as any).shadowOffset,
+          shadowOpacity: (themeConfig as any).shadowOpacity,
+          shadowRadius: (themeConfig as any).shadowRadius,
+          elevation: (themeConfig as any).elevation,
+        }
+      : {
+          backgroundColor: themeConfig.backgroundColor as unknown as string,
+          borderColor: themeConfig.borderColor as unknown as string,
+          borderWidth: themeConfig.borderWidth,
+        }),
   };
 
   const content = (
