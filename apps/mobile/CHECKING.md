@@ -6,24 +6,24 @@ This project has a comprehensive code quality checking system with automated git
 
 ### Before Committing
 ```bash
-npm run check:pre-commit
+yarn check:pre-commit
 ```
 
 ### Before Pushing
 ```bash
-npm run check:pre-push
+yarn check:pre-push
 ```
 
 ### Full Check Anytime
 ```bash
-npm run check
+yarn check
 ```
 
 ---
 
 ## Available Commands
 
-### `npm run check`
+### `yarn check`
 **Comprehensive code check** - Runs all checks in this order:
 1. ✅ Dependency verification
 2. ✅ TypeScript compilation
@@ -32,32 +32,32 @@ npm run check
 
 **Use when:** You want to verify your code is production-ready before pushing
 
-### `npm run check:deps`
+### `yarn check:deps`
 **Dependency verification only** - Checks that all required dependencies are installed
 
 **Use when:** You're getting "Cannot find module" errors
 
-### `npm run check:pre-commit`
+### `yarn check:pre-commit`
 **Pre-commit hook** - Runs dependencies check + lints staged files only
 
 **Automatically runs:** Before every `git commit`
 
-### `npm run check:pre-push`
+### `yarn check:pre-push`
 **Pre-push hook** - Runs all comprehensive checks
 
 **Automatically runs:** Before every `git push`
 
-### `npm run typecheck`
+### `yarn typecheck`
 **TypeScript type checking only**
 
 **Use when:** You want to quickly verify types without linting
 
-### `npm run lint`
+### `yarn lint`
 **ESLint linting only**
 
 **Use when:** You want to check code style
 
-### `npm run lint:fix`
+### `yarn lint:fix`
 **Auto-fix linting issues**
 
 **Use when:** You have ESLint errors and want to auto-fix them
@@ -119,19 +119,19 @@ The check succeeded. Good to go!
 
 ### "Cannot find module 'react'"
 ```bash
-npm install
+yarn install
 ```
 Dependencies not installed. Run install command.
 
 ### TypeScript Compilation Error
 ```bash
-npm run typecheck
+yarn typecheck
 ```
 See full error message and fix the type issue.
 
 ### ESLint Error
 ```bash
-npm run lint:fix
+yarn lint:fix
 ```
 Try auto-fixing first. If it doesn't fix everything, manually edit the file.
 
@@ -164,7 +164,7 @@ pre-push:
 ### Reinstall Hooks
 If hooks aren't running:
 ```bash
-npm run hooks:install
+yarn hooks:install
 ```
 
 ---
@@ -175,7 +175,7 @@ The checking system works in CI/CD pipelines:
 
 ```bash
 # In CI/CD pipeline
-npm run check
+yarn check
 ```
 
 This command:
@@ -210,29 +210,29 @@ Typical check times:
 
 ### Before Starting Work
 ```bash
-npm install        # Ensure dependencies installed
-npm run lint:fix   # Fix any existing lint issues
+yarn install        # Ensure dependencies installed
+yarn lint:fix       # Fix any existing lint issues
 ```
 
 ### During Development
 ```bash
-npm run typecheck  # Frequently check types
-npm run lint       # Check style before committing
+yarn typecheck      # Frequently check types
+yarn lint           # Check style before committing
 ```
 
 ### Before Committing
 ```bash
-npm run check:pre-commit  # Pre-commit checks
+yarn check:pre-commit  # Pre-commit checks
 ```
 
 ### Before Pushing
 ```bash
-npm run check:pre-push    # Pre-push checks
+yarn check:pre-push    # Pre-push checks
 ```
 
 ### Final Verification
 ```bash
-npm run check   # Full comprehensive check
+yarn check   # Full comprehensive check
 ```
 
 ---
