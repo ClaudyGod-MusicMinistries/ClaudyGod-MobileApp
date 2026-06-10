@@ -5,12 +5,12 @@
  */
 
 import React, { useState } from 'react';
-import { Image, Pressable, View, Animated, ViewStyle } from 'react-native';
+import { Image, Pressable, View, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../CustomText';
 import { colors_light } from '../../constants/color';
-import { spacing, radius, shadows } from '../../styles/designTokens';
+import { spacing} from '../../styles/designTokens';
 import { designSystem } from '../../theme/designSystem';
 
 interface FeaturedCardProps {
