@@ -170,7 +170,7 @@ const enqueueContentEvent = async ({
   );
 
   const jobRecordId = insertedJob.rows[0]!.id;
-  const queueJob = await contentQueue.add(eventType, {
+  const queueJob = await contentQueue.add('content-event', {
     jobRecordId,
     contentId,
     authorId,

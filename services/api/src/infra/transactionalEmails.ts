@@ -92,7 +92,7 @@ export const queueEmailJob = async (input: EmailJobInput): Promise<void> => {
   const emailJobId = emailInsert.rows[0]!.id;
 
   try {
-    const queueJob = await emailQueue.add(`email.${input.jobType}`, { emailJobId });
+    const queueJob = await emailQueue.add('email-job', { emailJobId });
 
     await pool.query(
       `UPDATE email_jobs
