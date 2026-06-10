@@ -1,5 +1,5 @@
 import { Queue } from 'bullmq';
-import { redis } from '../infra/redis';
+import { env } from '../config/env';
 
 export const EMAIL_QUEUE_NAME = 'email-events';
 
@@ -8,7 +8,11 @@ export interface EmailQueuePayload {
 }
 
 export const emailQueue = new Queue<EmailQueuePayload>(EMAIL_QUEUE_NAME, {
-  connection: redis,
+  connection: {
+    url: env.REDIS_URL,
+    maxRetriesPerRequest: null,
+    enableAutoPipelining: true,
+  },
   defaultJobOptions: {
     attempts: 3,
     backoff: {
