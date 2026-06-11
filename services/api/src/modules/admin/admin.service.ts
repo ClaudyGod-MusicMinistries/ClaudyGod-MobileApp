@@ -3,7 +3,7 @@ import { env } from '../../config/env';
 import { pool } from '../../db/pool';
 import { emailTransportInfo, verifyEmailTransport } from '../../infra/email';
 import { queueEmailJob } from '../../infra/transactionalEmails';
-import { HttpError } from '../../lib/httpError';
+import { BadRequestError, NotFoundError } from '../../lib/errors';
 import { isMissingDatabaseStructureError } from '../../lib/postgres';
 import type { UserRole } from '../auth/auth.types';
 import type { ContentRequestStatus, ContentVisibility } from '../content/content.types';
@@ -1303,7 +1303,7 @@ export const updateAdminUserRole = async (input: {
   actor: JwtClaims;
 }) => {
   if (input.userId === input.actor.sub) {
-    throw new HttpError(400, 'You cannot change your own role from the dashboard');
+    throw new BadRequestError('You cannot change your own role from the dashboard', 'ADMIN_SELF_ROLE_CHANGE');
   }
 
   const existingResult = await pool.query<RecentUserRow>(
@@ -1323,7 +1323,7 @@ export const updateAdminUserRole = async (input: {
   );
 
   if (existingResult.rowCount === 0) {
-    throw new HttpError(404, 'User not found');
+    throw new NotFoundError('User not found', 'USER_NOT_FOUND');
   }
 
   const existing = existingResult.rows[0]!;
@@ -1343,7 +1343,7 @@ export const updateAdminUserRole = async (input: {
     );
 
     if (Number(adminCountResult.rows[0]?.count || 0) <= 1) {
-      throw new HttpError(400, 'At least one admin user must remain assigned');
+      throw new BadRequestError('At least one admin user must remain assigned', 'ADMIN_LAST_ADMIN');
     }
   }
 
@@ -1383,7 +1383,7 @@ export const updateAdminSupportRequestStatus = async (input: {
   );
 
   if ((result.rowCount ?? 0) === 0) {
-    throw new HttpError(404, 'Support request not found');
+    throw new NotFoundError('Support request not found', 'SUPPORT_REQUEST_NOT_FOUND');
   }
 
   return { updated: true, id: input.requestId, status: input.status };
@@ -1500,7 +1500,7 @@ export const getAdminContentSectionSuggestions = async (contentId: string) => {
   );
 
   if (contentResult.rowCount === 0) {
-    throw new HttpError(404, 'Content not found');
+    throw new NotFoundError('Content not found', 'CONTENT_NOT_FOUND');
   }
 
   const content = contentResult.rows[0]!;

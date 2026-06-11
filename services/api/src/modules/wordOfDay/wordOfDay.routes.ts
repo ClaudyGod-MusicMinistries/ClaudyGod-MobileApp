@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { asyncHandler } from '../../lib/asyncHandler';
-import { HttpError } from '../../lib/httpError';
+import { ForbiddenError } from '../../lib/errors';
 import { validateSchema } from '../../lib/validation';
 import { authenticate } from '../../middleware/authenticate';
 import { getAdminWordOfDayDashboard, getMobileWordOfDay, upsertWordOfDayEntry } from './wordOfDay.service';
@@ -22,7 +22,7 @@ adminWordOfDayRouter.get(
   authenticate,
   asyncHandler(async (req, res) => {
     if (!req.user || req.user.role !== 'ADMIN') {
-      throw new HttpError(403, 'Admin role required');
+      throw new ForbiddenError('Admin role required', 'ADMIN_REQUIRED');
     }
 
     const query = validateSchema(wordOfDayListQuerySchema, req.query);
@@ -36,7 +36,7 @@ adminWordOfDayRouter.put(
   authenticate,
   asyncHandler(async (req, res) => {
     if (!req.user || req.user.role !== 'ADMIN') {
-      throw new HttpError(403, 'Admin role required');
+      throw new ForbiddenError('Admin role required', 'ADMIN_REQUIRED');
     }
 
     const payload = validateSchema(upsertWordOfDaySchema, req.body);

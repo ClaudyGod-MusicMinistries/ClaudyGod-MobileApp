@@ -1,7 +1,7 @@
 import type { RequestHandler } from 'express';
 import type { ZodSchema } from 'zod';
 import { ZodError } from 'zod';
-import { HttpError } from '../lib/httpError';
+import { HttpError } from './errors';
 
 export const validateBody = (schema: ZodSchema): RequestHandler => {
   return async (req, res, next) => {
