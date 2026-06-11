@@ -2,7 +2,7 @@ import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { pool } from '../../db/pool';
 import { env } from '../../config/env';
-import { HttpError } from '../../lib/httpError';
+import { BadRequestError, HttpError } from '../../lib/errors';
 import { supabaseAdmin } from '../../infra/supabase';
 import { uploadPolicies } from './uploads.schema';
 
@@ -168,7 +168,7 @@ export const requestSignedUploadUrl = async ({
   }
 
   if (!mimeType.includes('/')) {
-    throw new HttpError(400, 'Invalid mimeType');
+    throw new BadRequestError('Invalid mimeType', 'UPLOAD_INVALID_MIME_TYPE', 'mimeType');
   }
 
   const effectiveAssetKind = validateRequestedUpload({
@@ -220,6 +220,9 @@ export const requestSignedUploadUrl = async ({
   );
 
   const session = sessionInsert.rows[0];
+  if (!session) {
+    throw new HttpError(500, 'Failed to create upload session record');
+  }
 
   return {
     upload: {

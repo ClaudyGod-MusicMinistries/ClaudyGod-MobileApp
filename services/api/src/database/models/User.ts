@@ -35,7 +35,7 @@ export interface User {
   loginCount: number;
   
   // Preferences
-  preferences: Record<string, any>;
+  preferences: Record<string, unknown>;
   language: string;
   theme: 'light' | 'dark' | 'auto';
   

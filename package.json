@@ -1,12 +1,17 @@
 {
   "private": true,
+  "workspaces": [
+    "apps/*",
+    "services/*",
+    "admin/*"
+  ],
   "scripts": {
     "lefthook": "node ./apps/mobile/node_modules/lefthook/bin/index.js",
     "hooks:install": "yarn lefthook install",
-    "api:build": "bash -lc 'cd ./services/api && ./node_modules/.bin/tsc'",
-    "api:migrate": "npm --prefix ./services/api run migrate",
-    "api:setup:local": "npm --prefix ./services/api run migrate",
-    "admin:build": "bash -lc 'cd ./admin/web && ./node_modules/.bin/vite build'",
+    "api:build": "yarn --cwd ./services/api build",
+    "api:migrate": "yarn --cwd ./services/api migrate",
+    "api:setup:local": "yarn --cwd ./services/api migrate",
+    "admin:build": "yarn --cwd ./admin/web build",
     "mobile:lint": "yarn --cwd ./apps/mobile lint",
     "mobile:typecheck": "yarn --cwd ./apps/mobile typecheck",
     "docker:config": "bash ./scripts/docker-validate.sh",

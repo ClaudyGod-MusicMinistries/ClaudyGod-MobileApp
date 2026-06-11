@@ -1,4 +1,5 @@
-import crypto from 'crypto';
+import { createHash, randomBytes, randomInt } from 'crypto';
+import type { UserTier } from './auth.types';
 import type { PoolClient } from 'pg';
 import { pool } from '../../db/pool';
 import { env } from '../../config/env';
@@ -7,12 +8,28 @@ import {
   queueVerificationEmail,
   queueWelcomeEmail,
 } from '../../infra/transactionalEmails';
-import { logger } from '../../lib/logger';
-import { HttpError } from '../../lib/httpError';
+import { createLogger } from '../../lib/logger';
+import {
+  BadRequestError,
+  ConflictError,
+  ForbiddenError,
+  NotFoundError,
+  UnauthorizedError,
+} from '../../lib/errors';
+import { ensureUserScaffold } from '../../lib/userScaffold';
+
+const log = createLogger('auth');
 import { isMissingDatabaseStructureError } from '../../lib/postgres';
 import { hashPassword, verifyPassword } from '../../utils/password';
 import { signAccessToken } from '../../utils/jwt';
 import { revokeAllUserSessions } from './authSession.service';
+import {
+  checkAccountLocked,
+  clearFailedLogins,
+  recordFailedLogin,
+  recordSecurityEvent,
+} from './accountSecurity.service';
+import { validateMfaCode } from './mfa.service';
 import type {
   AuthActionResponse,
   AuthResponse,
@@ -39,6 +56,8 @@ interface UserRow {
   password_hash: string;
   display_name: string;
   role: UserRole;
+  tier: string;
+  mfa_enabled: boolean;
   is_active: boolean;
   created_at: string | Date;
   email_verified_at: string | Date | null;
@@ -49,6 +68,8 @@ interface PublicUserRow {
   email: string;
   display_name: string;
   role: UserRole;
+  tier: string;
+  mfa_enabled: boolean;
   created_at: string | Date;
   email_verified_at: string | Date | null;
 }
@@ -93,38 +114,20 @@ const toSafeUser = (row: PublicUserRow): SafeUser => ({
   email: row.email,
   displayName: row.display_name,
   role: row.role,
+  tier: (row.tier ?? 'free') as UserTier,
+  mfaEnabled: row.mfa_enabled ?? false,
   createdAt: toIsoDate(row.created_at),
   emailVerifiedAt: toIsoDateOrNull(row.email_verified_at),
 });
 
-const ensureUserScaffold = async (user: SafeUser, runner: QueryRunner = pool): Promise<void> => {
-  await Promise.all([
-    runner.query(
-      `INSERT INTO user_profiles (user_id, display_name, email)
-       VALUES ($1, $2, $3)
-       ON CONFLICT (user_id) DO UPDATE
-       SET display_name = EXCLUDED.display_name,
-           email = EXCLUDED.email,
-           updated_at = NOW()`,
-      [user.id, user.displayName, user.email],
-    ),
-    runner.query(
-      `INSERT INTO user_preferences (user_id)
-       VALUES ($1)
-       ON CONFLICT (user_id) DO NOTHING`,
-      [user.id],
-    ),
-  ]);
-};
-
 const tokenHash = (token: string): string =>
-  crypto.createHash('sha256').update(token).digest('hex');
+  createHash('sha256').update(token).digest('hex');
 
 const createRawToken = (): string =>
-  crypto.randomBytes(ACTION_TOKEN_BYTES).toString('hex');
+  randomBytes(ACTION_TOKEN_BYTES).toString('hex');
 
 const createVerificationCode = (): string =>
-  crypto.randomInt(0, 10 ** EMAIL_VERIFICATION_CODE_LENGTH)
+  randomInt(0, 10 ** EMAIL_VERIFICATION_CODE_LENGTH)
     .toString()
     .padStart(EMAIL_VERIFICATION_CODE_LENGTH, '0');
 
@@ -137,6 +140,8 @@ const buildAccessToken = (user: SafeUser): string =>
     email: user.email,
     role: user.role,
     displayName: user.displayName,
+    tier: user.tier,
+    mfaEnabled: user.mfaEnabled,
   });
 
 const buildPendingRegisterResponse = (email: string, message = PENDING_VERIFICATION_MESSAGE): RegisterResponse => ({
@@ -233,13 +238,7 @@ const consumeAuthActionToken = async ({
   );
 
   if (result.rowCount === 0) {
-    throw new HttpError(
-      400,
-      'Invalid or expired token',
-      { reason: 'token_invalid' },
-      'AUTH_TOKEN_INVALID',
-      'token',
-    );
+    throw new BadRequestError('Invalid or expired token', 'AUTH_TOKEN_INVALID', 'token');
   }
 
   return result.rows[0]!;
@@ -268,7 +267,7 @@ const createLocalUser = async ({
   );
 
   const user = toSafeUser(result.rows[0]!);
-  await ensureUserScaffold(user, runner);
+  await ensureUserScaffold(user.id, user.displayName, user.email, runner);
   return user;
 };
 
@@ -370,13 +369,7 @@ const completePendingSignup = async ({
     );
 
     if (pendingResult.rowCount === 0) {
-      throw new HttpError(
-        400,
-        'Invalid or expired verification code',
-        { reason: 'invalid_code' },
-        'AUTH_INVALID_OTP',
-        'token',
-      );
+      throw new BadRequestError('Invalid or expired verification code', 'AUTH_INVALID_OTP', 'token');
     }
 
     const pendingSignup = pendingResult.rows[0]!;
@@ -423,7 +416,7 @@ const completePendingSignup = async ({
     }
 
     const safeUser = toSafeUser(userRow);
-    await ensureUserScaffold(safeUser, client);
+    await ensureUserScaffold(safeUser.id, safeUser.displayName, safeUser.email, client);
 
     await client.query('COMMIT');
     return safeUser;
@@ -459,13 +452,7 @@ const completePendingPasswordReset = async ({
     );
 
     if (pendingResult.rowCount === 0) {
-      throw new HttpError(
-        400,
-        'Invalid or expired reset code',
-        { reason: 'invalid_code' },
-        'AUTH_INVALID_RESET',
-        'token',
-      );
+      throw new BadRequestError('Invalid or expired reset code', 'AUTH_INVALID_RESET', 'token');
     }
 
     const pendingReset = pendingResult.rows[0]!;
@@ -524,22 +511,10 @@ export const registerUser = async (
   if (requestedRole === 'ADMIN') {
     const providedCode = input.adminSignupCode?.trim();
     if (!env.ADMIN_SIGNUP_CODE) {
-      throw new HttpError(
-        403,
-        'Admin signup is disabled',
-        { reason: 'admin_signup_disabled' },
-        'AUTH_ADMIN_DISABLED',
-        'adminSignupCode',
-      );
+      throw new ForbiddenError('Admin signup is disabled', 'AUTH_ADMIN_DISABLED');
     }
     if (!providedCode || providedCode !== env.ADMIN_SIGNUP_CODE) {
-      throw new HttpError(
-        403,
-        'Invalid admin signup code',
-        { reason: 'invalid_admin_code' },
-        'AUTH_ADMIN_CODE_INVALID',
-        'adminSignupCode',
-      );
+      throw new ForbiddenError('Invalid admin signup code', 'AUTH_ADMIN_CODE_INVALID');
     }
   }
 
@@ -582,13 +557,7 @@ export const registerUser = async (
       metadata: { requestedRole },
     });
 
-    throw new HttpError(
-      409,
-      'Email is already registered',
-      { reason: 'email_registered' },
-      'AUTH_EMAIL_TAKEN',
-      'email',
-    );
+    throw new ConflictError('Email is already registered', 'AUTH_EMAIL_TAKEN', 'email');
   }
 
   const passwordHash = await hashPassword(input.password);
@@ -659,7 +628,10 @@ export const loginUser = async (input: LoginInput, context: AuthRequestContext =
   const email = input.email.trim().toLowerCase();
 
   const result = await pool.query<UserRow>(
-    `SELECT id, email, password_hash, display_name, role, is_active, created_at, email_verified_at
+    `SELECT id, email, password_hash, display_name, role,
+            COALESCE(tier, 'free') AS tier,
+            COALESCE(mfa_enabled, FALSE) AS mfa_enabled,
+            is_active, created_at, email_verified_at
      FROM app_users
      WHERE email = $1
      LIMIT 1`,
@@ -668,88 +640,62 @@ export const loginUser = async (input: LoginInput, context: AuthRequestContext =
 
   if (result.rowCount === 0) {
     const pending = await pool.query<{ email: string }>(
-      `SELECT email
-       FROM pending_signups
-       WHERE email = $1
-         AND expires_at > NOW()
-       LIMIT 1`,
+      `SELECT email FROM pending_signups WHERE email = $1 AND expires_at > NOW() LIMIT 1`,
       [email],
     );
 
     if ((pending.rowCount ?? 0) > 0) {
       await recordAuthActivity({
-        email,
-        eventKey: 'login_unverified',
-        status: 'failure',
-        requestIp: context.requestIp,
-        userAgent: context.userAgent,
+        email, eventKey: 'login_unverified', status: 'failure',
+        requestIp: context.requestIp, userAgent: context.userAgent,
       });
-      throw new HttpError(
-        403,
+      throw new ForbiddenError(
         'Email is not verified. Enter the 6-digit code sent to your email to finish creating your account.',
-        { reason: 'email_not_verified' },
         'AUTH_EMAIL_NOT_VERIFIED',
-        'email',
       );
     }
 
     await recordAuthActivity({
-      email,
-      eventKey: 'login_failed',
-      status: 'failure',
-      requestIp: context.requestIp,
-      userAgent: context.userAgent,
+      email, eventKey: 'login_failed', status: 'failure',
+      requestIp: context.requestIp, userAgent: context.userAgent,
       metadata: { reason: 'user_not_found' },
     });
-    throw new HttpError(
-      401,
-      'Invalid credentials',
-      { reason: 'invalid_credentials' },
-      'AUTH_INVALID_CREDENTIALS',
-      'password',
-    );
+    throw new UnauthorizedError('Invalid credentials', 'AUTH_INVALID_CREDENTIALS');
   }
 
   const userRow = result.rows[0]!;
 
   if (!userRow.is_active) {
     await recordAuthActivity({
-      userId: userRow.id,
-      email,
-      eventKey: 'login_failed',
-      status: 'failure',
-      requestIp: context.requestIp,
-      userAgent: context.userAgent,
+      userId: userRow.id, email, eventKey: 'login_failed', status: 'failure',
+      requestIp: context.requestIp, userAgent: context.userAgent,
       metadata: { reason: 'inactive' },
     });
-    throw new HttpError(
-      403,
-      'Account is inactive',
-      { reason: 'account_inactive' },
-      'AUTH_INACTIVE',
-      'account',
-    );
+    throw new ForbiddenError('Account is inactive', 'AUTH_INACTIVE');
   }
+
+  await checkAccountLocked(userRow.id);
 
   const isValidPassword = await verifyPassword(input.password, userRow.password_hash);
 
   if (!isValidPassword) {
-    await recordAuthActivity({
-      userId: userRow.id,
-      email,
-      eventKey: 'login_failed',
-      status: 'failure',
-      requestIp: context.requestIp,
-      userAgent: context.userAgent,
-      metadata: { reason: 'invalid_password' },
-    });
-    throw new HttpError(
-      401,
-      'Invalid credentials',
-      { reason: 'invalid_credentials' },
-      'AUTH_INVALID_CREDENTIALS',
-      'password',
+    const { isLocked } = await recordFailedLogin(
+      userRow.id,
+      context.requestIp ?? null,
+      context.userAgent ?? null,
     );
+    await recordAuthActivity({
+      userId: userRow.id, email, eventKey: 'login_failed', status: 'failure',
+      requestIp: context.requestIp, userAgent: context.userAgent,
+      metadata: { reason: 'invalid_password', locked: isLocked },
+    });
+    if (isLocked) {
+      throw new UnauthorizedError(
+        `Too many failed attempts. Account temporarily locked for ${env.ACCOUNT_LOCKOUT_DURATION_MINUTES} minutes.`,
+        'ACCOUNT_LOCKED',
+      );
+    }
+    throw new UnauthorizedError('Invalid credentials', 'AUTH_INVALID_CREDENTIALS');
   }
 
   const safeUser = toSafeUser(userRow);
@@ -760,32 +706,53 @@ export const loginUser = async (input: LoginInput, context: AuthRequestContext =
     !safeUser.emailVerifiedAt
   ) {
     await recordAuthActivity({
-      userId: safeUser.id,
-      email: safeUser.email,
-      eventKey: 'login_unverified',
-      status: 'failure',
-      requestIp: context.requestIp,
-      userAgent: context.userAgent,
+      userId: safeUser.id, email: safeUser.email,
+      eventKey: 'login_unverified', status: 'failure',
+      requestIp: context.requestIp, userAgent: context.userAgent,
     });
-    throw new HttpError(
-      403,
+    throw new ForbiddenError(
       'Email is not verified. Enter the 6-digit code sent to your email or request a new verification email.',
-      { reason: 'email_not_verified' },
       'AUTH_EMAIL_NOT_VERIFIED',
-      'email',
     );
   }
 
+  if (safeUser.mfaEnabled) {
+    if (!input.mfaCode) {
+      const mfaToken = randomBytes(32).toString('hex');
+      await pool.query(
+        `INSERT INTO auth_action_tokens (user_id, token_hash, token_type, expires_at)
+         VALUES ($1, $2, 'mfa_step_up', NOW() + INTERVAL '10 minutes')`,
+        [safeUser.id, tokenHash(mfaToken)],
+      );
+      return {
+        accessToken: '',
+        user: safeUser,
+        mfaRequired: true,
+        mfaToken,
+        message: 'MFA verification required',
+      };
+    }
+
+    const isMfaValid = await validateMfaCode(safeUser.id, input.mfaCode);
+    if (!isMfaValid) {
+      await recordSecurityEvent(safeUser.id, 'login_mfa_failed', {
+        ip: context.requestIp, userAgent: context.userAgent,
+      });
+      throw new UnauthorizedError('Invalid MFA code', 'MFA_INVALID_CODE');
+    }
+  }
+
   await Promise.all([
-    ensureUserScaffold(safeUser),
+    clearFailedLogins(userRow.id),
+    ensureUserScaffold(safeUser.id, safeUser.displayName, safeUser.email),
     pool.query(`UPDATE app_users SET last_login_at = NOW() WHERE id = $1`, [safeUser.id]),
     recordAuthActivity({
-      userId: safeUser.id,
-      email: safeUser.email,
-      eventKey: 'login_success',
-      status: 'success',
-      requestIp: context.requestIp,
-      userAgent: context.userAgent,
+      userId: safeUser.id, email: safeUser.email,
+      eventKey: 'login_success', status: 'success',
+      requestIp: context.requestIp, userAgent: context.userAgent,
+    }),
+    recordSecurityEvent(safeUser.id, 'login_success', {
+      ip: context.requestIp, userAgent: context.userAgent,
     }),
   ]);
 
@@ -798,13 +765,7 @@ export const loginUser = async (input: LoginInput, context: AuthRequestContext =
 export const verifyEmail = async (input: VerifyEmailInput, context: AuthRequestContext = {}): Promise<AuthResponse> => {
   const submittedToken = (input.code ?? input.token ?? '').trim();
   if (!submittedToken) {
-    throw new HttpError(
-      400,
-      'Verification code or token is required',
-      { reason: 'missing_code' },
-      'AUTH_MISSING_OTP',
-      'code',
-    );
+    throw new BadRequestError('Verification code or token is required', 'AUTH_MISSING_OTP', 'code');
   }
 
   if (isOtpCode(submittedToken)) {
@@ -827,13 +788,7 @@ export const verifyEmail = async (input: VerifyEmailInput, context: AuthRequestC
           userAgent: context.userAgent,
           metadata: { method: 'otp_lookup', reason: 'invalid_code' },
         });
-        throw new HttpError(
-          400,
-          'Invalid or expired verification code',
-          { reason: 'invalid_code' },
-          'AUTH_INVALID_OTP',
-          'token',
-        );
+        throw new BadRequestError('Invalid or expired verification code', 'AUTH_INVALID_OTP', 'token');
       }
       email = pendingLookup.rows[0]!.email;
       await recordAuthActivity({
@@ -858,7 +813,7 @@ export const verifyEmail = async (input: VerifyEmailInput, context: AuthRequestC
         displayName: user.displayName,
       });
     } catch (error) {
-      logger.error('Welcome email enqueue failed', {
+      log.error('Welcome email enqueue failed', {
         error: error instanceof Error ? error.message : String(error),
         userId: user.id,
         email: user.email,
@@ -896,11 +851,11 @@ export const verifyEmail = async (input: VerifyEmailInput, context: AuthRequestC
   );
 
   if (userUpdate.rowCount === 0) {
-    throw new HttpError(404, 'User not found', { reason: 'user_not_found' }, 'AUTH_USER_NOT_FOUND', 'user');
+    throw new NotFoundError('User not found', 'AUTH_USER_NOT_FOUND');
   }
 
   const user = toSafeUser(userUpdate.rows[0]!);
-  await ensureUserScaffold(user);
+  await ensureUserScaffold(user.id, user.displayName, user.email);
   try {
     await queueWelcomeEmail({
       id: user.id,
@@ -908,7 +863,7 @@ export const verifyEmail = async (input: VerifyEmailInput, context: AuthRequestC
       displayName: user.displayName,
     });
   } catch (error) {
-    logger.error('Welcome email enqueue failed', {
+    log.error('Welcome email enqueue failed', {
       error: error instanceof Error ? error.message : String(error),
       userId: user.id,
       email: user.email,
@@ -1074,13 +1029,7 @@ export const resetPassword = async (input: ResetPasswordInput, context: AuthRequ
   if (isOtpCode(submittedToken)) {
     const email = input.email?.trim().toLowerCase();
     if (!email) {
-      throw new HttpError(
-        400,
-        'Email is required when resetting with a code',
-        { reason: 'email_required' },
-        'AUTH_EMAIL_REQUIRED',
-        'email',
-      );
+      throw new BadRequestError('Email is required when resetting with a code', 'AUTH_EMAIL_REQUIRED', 'email');
     }
 
     await completePendingPasswordReset({
@@ -1148,7 +1097,7 @@ export const getUserById = async (userId: string): Promise<SafeUser> => {
   );
 
   if (result.rowCount === 0) {
-    throw new HttpError(404, 'User not found', { reason: 'user_not_found' }, 'AUTH_USER_NOT_FOUND', 'user');
+    throw new NotFoundError('User not found', 'AUTH_USER_NOT_FOUND');
   }
 
   return toSafeUser(result.rows[0]!);

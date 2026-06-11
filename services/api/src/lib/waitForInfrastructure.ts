@@ -1,6 +1,9 @@
 import { runMigrations } from '../db/migrate';
 import { pool } from '../db/pool';
 import { redis } from '../infra/redis';
+import { createLogger } from './logger';
+
+const log = createLogger('waitForInfrastructure');
 
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -35,12 +38,12 @@ export const waitForInfrastructure = async (
       await pool.query('SELECT 1');
       await redis.ping();
       if (attempt > 1) {
-        console.log(`${label}: infrastructure became ready on attempt ${attempt}/${maxAttempts}`);
+        log.info(`${label}: infrastructure became ready on attempt ${attempt}/${maxAttempts}`);
       }
       return;
     } catch (error) {
       lastError = error;
-      console.warn(
+      log.warn(
         `${label}: infrastructure not ready (${attempt}/${maxAttempts}) - ${
           error instanceof Error ? error.message : 'unknown error'
         }`,

@@ -225,6 +225,25 @@ const envSchema = z
     AI_PROVIDER_API_KEY: z.string().optional().default(''),
     AI_MODEL: z.string().trim().max(120).default(''),
     AI_TIMEOUT_MS: z.coerce.number().int().min(1000).max(120000).default(15000),
+
+    DATA_ENCRYPTION_KEY: z.string().min(32, 'DATA_ENCRYPTION_KEY must be at least 32 characters').default('change-me-in-production-must-be-32-chars-min'),
+
+    METRICS_TOKEN: z.string().optional().default(''),
+    OTEL_EXPORTER_OTLP_ENDPOINT: z.string().optional().default(''),
+
+    GOOGLE_CLIENT_ID: z.string().optional().default(''),
+    GOOGLE_CLIENT_SECRET: z.string().optional().default(''),
+
+    APPLE_CLIENT_ID: z.string().optional().default(''),
+    APPLE_TEAM_ID: z.string().optional().default(''),
+    APPLE_KEY_ID: z.string().optional().default(''),
+    APPLE_PRIVATE_KEY: z.string().optional().default(''),
+
+    MFA_ISSUER: z.string().trim().min(1).max(80).default('ClaudyGod'),
+    MFA_BACKUP_CODES_COUNT: z.coerce.number().int().min(6).max(20).default(10),
+
+    ACCOUNT_LOCKOUT_ATTEMPTS: z.coerce.number().int().min(3).max(20).default(5),
+    ACCOUNT_LOCKOUT_DURATION_MINUTES: z.coerce.number().int().min(5).max(1440).default(30),
   })
   .superRefine((value, ctx) => {
     if (looksLikeJwtToken(value.JWT_ACCESS_SECRET)) {
@@ -428,6 +447,17 @@ const envSchema = z
     }
 
     if (
+      value.DATA_ENCRYPTION_KEY.includes('change-me') ||
+      value.DATA_ENCRYPTION_KEY.toLowerCase().includes('changeme')
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['DATA_ENCRYPTION_KEY'],
+        message: 'DATA_ENCRYPTION_KEY must be rotated before production',
+      });
+    }
+
+    if (
       value.JWT_ACCESS_SECRET.includes('replace') ||
       value.JWT_ACCESS_SECRET.toLowerCase().includes('changeme')
     ) {
@@ -493,7 +523,7 @@ const envSchema = z
 const parsedEnv = envSchema.safeParse(process.env);
 
 if (!parsedEnv.success) {
-  console.error('Invalid environment configuration:', parsedEnv.error.flatten().fieldErrors);
+  process.stderr.write(`Invalid environment configuration: ${JSON.stringify(parsedEnv.error.flatten().fieldErrors)}\n`);
   throw new Error('Environment validation failed');
 }
 

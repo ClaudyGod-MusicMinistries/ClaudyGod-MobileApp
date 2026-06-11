@@ -49,8 +49,8 @@ const transports: winston.transport[] = [
   new winston.transports.Console({
     format: winston.format.combine(
       winston.format.colorize(),
-      winston.format.printf((info: any) => {
-        const { level, message, timestamp, requestId, ...meta } = info;
+      winston.format.printf((info: winston.Logform.TransformableInfo) => {
+        const { level, message, timestamp, requestId, ...meta } = info as winston.Logform.TransformableInfo & { requestId?: string; timestamp?: string };
         const requestIdStr = requestId ? ` [${requestId}]` : '';
         const metaStr = Object.keys(meta).length ? ` ${JSON.stringify(meta)}` : '';
         return `${timestamp} [${level}]${requestIdStr}: ${message}${metaStr}`;
@@ -108,3 +108,5 @@ process.on('uncaughtException', (error) => {
 });
 
 export type Logger = typeof logger;
+
+export const createLogger = (module: string) => logger.child({ module });

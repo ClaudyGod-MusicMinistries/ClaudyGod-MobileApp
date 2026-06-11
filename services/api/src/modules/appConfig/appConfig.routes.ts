@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { asyncHandler } from '../../lib/asyncHandler';
-import { HttpError } from '../../lib/httpError';
+import { ForbiddenError, NotFoundError } from '../../lib/errors';
 import { validateSchema } from '../../lib/validation';
 import { authenticate } from '../../middleware/authenticate';
 import { updateMobileAppConfigSchema } from './appConfig.schema';
@@ -37,7 +37,7 @@ mobileAppConfigRouter.get(
     const screen = String(req.params.screen || '').trim() as MobileScreenKey;
     const allowed: MobileScreenKey[] = ['landing', 'home', 'videos', 'player', 'live', 'library', 'search', 'settings'];
     if (!allowed.includes(screen)) {
-      throw new HttpError(404, 'Mobile screen layout not found');
+      throw new NotFoundError('Mobile screen layout not found', 'SCREEN_LAYOUT_NOT_FOUND');
     }
 
     const result = await getMobileScreenLayout(screen);
@@ -50,7 +50,7 @@ adminAppConfigRouter.get(
   authenticate,
   asyncHandler(async (req, res) => {
     if (!req.user || req.user.role !== 'ADMIN') {
-      throw new HttpError(403, 'Admin role required');
+      throw new ForbiddenError('Admin role required', 'ADMIN_REQUIRED');
     }
     const result = await getMobileAppConfig();
     res.status(200).json(result);
@@ -62,7 +62,7 @@ adminAppConfigRouter.put(
   authenticate,
   asyncHandler(async (req, res) => {
     if (!req.user || req.user.role !== 'ADMIN') {
-      throw new HttpError(403, 'Admin role required');
+      throw new ForbiddenError('Admin role required', 'ADMIN_REQUIRED');
     }
 
     const payload = validateSchema(updateMobileAppConfigSchema, req.body);

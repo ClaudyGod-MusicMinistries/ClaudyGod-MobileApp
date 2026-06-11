@@ -1,6 +1,6 @@
 import { Router, type Request } from 'express';
 import { asyncHandler } from '../../lib/asyncHandler';
-import { HttpError } from '../../lib/httpError';
+import { ForbiddenError, UnauthorizedError } from '../../lib/errors';
 import { validateSchema } from '../../lib/validation';
 import { authenticate } from '../../middleware/authenticate';
 import {
@@ -28,17 +28,17 @@ adminRouter.use(authenticate);
 
 function requireAdmin(req: Request) {
   if (!req.user) {
-    throw new HttpError(401, 'Unauthorized');
+    throw new UnauthorizedError('Unauthorized', 'AUTH_REQUIRED');
   }
   if (req.user.role !== 'ADMIN') {
-    throw new HttpError(403, 'Admin access required');
+    throw new ForbiddenError('Admin access required', 'ADMIN_REQUIRED');
   }
   return req.user;
 }
 
 function requireAuthenticated(req: Request) {
   if (!req.user) {
-    throw new HttpError(401, 'Unauthorized');
+    throw new UnauthorizedError('Unauthorized', 'AUTH_REQUIRED');
   }
   return req.user;
 }

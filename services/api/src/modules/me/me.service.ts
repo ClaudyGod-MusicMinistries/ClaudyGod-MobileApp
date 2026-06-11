@@ -1,15 +1,19 @@
-import crypto from 'node:crypto';
+import { createHash, randomBytes } from 'crypto';
 import type { JwtClaims } from '../../utils/jwt';
 import { pool } from '../../db/pool';
 import { env } from '../../config/env';
 import { queueAccountEmailChangeEmail, queueProfileUpdatedEmail } from '../../infra/transactionalEmails';
-import { HttpError } from '../../lib/httpError';
+import { BadRequestError, ConflictError, ForbiddenError, NotFoundError } from '../../lib/errors';
+import { ensureUserScaffold } from '../../lib/userScaffold';
+import { createLogger } from '../../lib/logger';
 import { isDatabaseConnectivityError, isMissingDatabaseStructureError } from '../../lib/postgres';
 import { verifyPassword } from '../../utils/password';
 import { listMostPlayedContent } from '../analytics/analytics.service';
 import { getMobileAppConfig } from '../appConfig/appConfig.service';
 import { requestPasswordReset } from '../auth/auth.service';
 import { revokeAllUserSessions } from '../auth/authSession.service';
+
+const log = createLogger('me');
 
 type MeContentType = 'audio' | 'video' | 'playlist' | 'announcement' | 'live' | 'ad';
 type ThemePreference = 'system' | 'light' | 'dark';
@@ -97,10 +101,10 @@ const ACCOUNT_ACTION_TOKEN_BYTES = 32;
 const ACCOUNT_EMAIL_CHANGE_TTL_MINUTES = 30;
 
 const tokenHash = (token: string): string =>
-  crypto.createHash('sha256').update(token).digest('hex');
+  createHash('sha256').update(token).digest('hex');
 
 const createRawToken = (): string =>
-  crypto.randomBytes(ACCOUNT_ACTION_TOKEN_BYTES).toString('hex');
+  randomBytes(ACCOUNT_ACTION_TOKEN_BYTES).toString('hex');
 
 const normalizeTextList = (items?: string[] | null): string[] =>
   [...new Set((items ?? []).map((item) => item.trim()).filter(Boolean))];
@@ -182,26 +186,6 @@ const profileFieldLabels: Record<
   bio: 'Bio',
 };
 
-const ensureMeScaffold = async (user: JwtClaims): Promise<void> => {
-  await Promise.all([
-    pool.query(
-      `INSERT INTO user_profiles (user_id, display_name, email)
-       VALUES ($1, $2, $3)
-       ON CONFLICT (user_id) DO UPDATE
-       SET display_name = EXCLUDED.display_name,
-           email = EXCLUDED.email,
-           updated_at = NOW()`,
-      [user.sub, user.displayName, user.email],
-    ),
-    pool.query(
-      `INSERT INTO user_preferences (user_id)
-       VALUES ($1)
-       ON CONFLICT (user_id) DO NOTHING`,
-      [user.sub],
-    ),
-  ]);
-};
-
 const readProfile = async (userId: string): Promise<MeProfileRow> => {
   const result = await pool.query<MeProfileRow>(
     `SELECT
@@ -225,7 +209,7 @@ const readProfile = async (userId: string): Promise<MeProfileRow> => {
   );
 
   if (result.rowCount === 0) {
-    throw new HttpError(404, 'User profile not found');
+    throw new NotFoundError('User profile not found');
   }
   return result.rows[0]!;
 };
@@ -247,7 +231,7 @@ const readPreferences = async (userId: string): Promise<MePreferencesRow> => {
   );
 
   if (result.rowCount === 0) {
-    throw new HttpError(404, 'User preferences not found');
+    throw new NotFoundError('User preferences not found');
   }
   return result.rows[0]!;
 };
@@ -263,7 +247,7 @@ const readAccountCredentials = async (userId: string): Promise<AccountCredential
   );
 
   if (result.rowCount === 0) {
-    throw new HttpError(404, 'Account not found');
+    throw new NotFoundError('Account not found');
   }
 
   return result.rows[0]!;
@@ -273,10 +257,8 @@ const assertCurrentPassword = async (userId: string, currentPassword: string): P
   const account = await readAccountCredentials(userId);
 
   if (!account.password_hash) {
-    throw new HttpError(
-      400,
+    throw new BadRequestError(
       'This account is managed by an external sign-in provider. Use that provider to change security credentials.',
-      { reason: 'external_auth_provider', provider: account.auth_provider },
       'ACCOUNT_EXTERNAL_AUTH_PROVIDER',
       'currentPassword',
     );
@@ -284,13 +266,7 @@ const assertCurrentPassword = async (userId: string, currentPassword: string): P
 
   const passwordMatches = await verifyPassword(currentPassword, account.password_hash);
   if (!passwordMatches) {
-    throw new HttpError(
-      403,
-      'Current password is incorrect.',
-      { reason: 'invalid_current_password' },
-      'ACCOUNT_INVALID_CURRENT_PASSWORD',
-      'currentPassword',
-    );
+    throw new ForbiddenError('Current password is incorrect.', 'ACCOUNT_INVALID_CURRENT_PASSWORD');
   }
 
   return account;
@@ -336,7 +312,7 @@ export const getMeProfile = async (user: JwtClaims): Promise<{
     updatedAt: string;
   };
 }> => {
-  await ensureMeScaffold(user);
+  await ensureUserScaffold(user.sub, user.displayName, user.email);
   const row = await readProfile(user.sub);
   return {
     user: {
@@ -370,7 +346,7 @@ export const updateMeProfile = async (
 ): Promise<{
   user: Awaited<ReturnType<typeof getMeProfile>>['user'];
 }> => {
-  await ensureMeScaffold(user);
+  await ensureUserScaffold(user.sub, user.displayName, user.email);
   const previousProfile = await readProfile(user.sub);
 
   const client = await pool.connect();
@@ -482,7 +458,7 @@ export const requestMeEmailChange = async (
   const newEmail = input.newEmail.trim().toLowerCase();
 
   if (newEmail === account.email.toLowerCase()) {
-    throw new HttpError(400, 'Enter a different email address.', { reason: 'same_email' }, 'ACCOUNT_SAME_EMAIL', 'newEmail');
+    throw new BadRequestError('Enter a different email address.', 'ACCOUNT_SAME_EMAIL', 'newEmail');
   }
 
   const existingEmail = await pool.query<{ id: string }>(
@@ -490,7 +466,7 @@ export const requestMeEmailChange = async (
     [newEmail, user.sub],
   );
   if ((existingEmail.rowCount ?? 0) > 0) {
-    throw new HttpError(409, 'That email address is already in use.', { reason: 'email_in_use' }, 'ACCOUNT_EMAIL_IN_USE', 'newEmail');
+    throw new ConflictError('That email address is already in use.', 'ACCOUNT_EMAIL_IN_USE', 'newEmail');
   }
 
   const rawToken = createRawToken();
@@ -571,12 +547,12 @@ export const confirmMeEmailChange = async (
   );
 
   if (requestResult.rowCount === 0) {
-    throw new HttpError(400, 'This email change link is invalid or has expired.', { reason: 'invalid_token' }, 'ACCOUNT_INVALID_EMAIL_CHANGE_TOKEN', 'token');
+    throw new BadRequestError('This email change link is invalid or has expired.', 'ACCOUNT_INVALID_EMAIL_CHANGE_TOKEN', 'token');
   }
 
   const request = requestResult.rows[0]!;
   if (request.user_id !== user.sub) {
-    throw new HttpError(403, 'Sign in to the account that requested this email change.', { reason: 'wrong_account' }, 'ACCOUNT_EMAIL_CHANGE_WRONG_ACCOUNT');
+    throw new ForbiddenError('Sign in to the account that requested this email change.', 'ACCOUNT_EMAIL_CHANGE_WRONG_ACCOUNT');
   }
 
   const existingEmail = await pool.query<{ id: string }>(
@@ -584,7 +560,7 @@ export const confirmMeEmailChange = async (
     [request.new_email, user.sub],
   );
   if ((existingEmail.rowCount ?? 0) > 0) {
-    throw new HttpError(409, 'That email address is already in use.', { reason: 'email_in_use' }, 'ACCOUNT_EMAIL_IN_USE', 'newEmail');
+    throw new ConflictError('That email address is already in use.', 'ACCOUNT_EMAIL_IN_USE', 'newEmail');
   }
 
   const client = await pool.connect();
@@ -675,7 +651,7 @@ export const getMePreferences = async (user: JwtClaims): Promise<{
     updatedAt: string;
   };
 }> => {
-  await ensureMeScaffold(user);
+  await ensureUserScaffold(user.sub, user.displayName, user.email);
   const row = await readPreferences(user.sub);
   return {
     preferences: {
@@ -701,7 +677,7 @@ export const updateMePreferences = async (
     themePreference?: ThemePreference;
   },
 ) => {
-  await ensureMeScaffold(user);
+  await ensureUserScaffold(user.sub, user.displayName, user.email);
 
   await pool.query(
     `UPDATE user_preferences
@@ -733,7 +709,7 @@ export const getMeMetrics = async (user: JwtClaims): Promise<{
   totalPlays: number;
   liveSubscriptions: number;
 }> => {
-  await ensureMeScaffold(user);
+  await ensureUserScaffold(user.sub, user.displayName, user.email);
   const [profile, playsCount, liveCount] = await Promise.all([
     readProfile(user.sub),
     pool.query<CountRow>(`SELECT COUNT(*)::text AS count FROM user_play_events WHERE user_id = $1`, [user.sub]),
@@ -827,6 +803,7 @@ export const getMeRecentlyPlayed = async (
     );
   } catch (error) {
     if (isMissingDatabaseStructureError(error) || isDatabaseConnectivityError(error)) {
+      log.warn('getMeRecentlyPlayed: infra degraded, returning empty', { error: String(error) });
       return { items: [] };
     }
     throw error;
@@ -887,6 +864,7 @@ export const getMeMostPlayed = async (
     );
   } catch (error) {
     if (isMissingDatabaseStructureError(error) || isDatabaseConnectivityError(error)) {
+      log.warn('getMeMostPlayed: infra degraded, returning empty', { error: String(error) });
       return { items: [] };
     }
     throw error;
@@ -1005,6 +983,7 @@ export const getMeRecommendations = async (
     return { items: recResult.rows.map(toEngagementItem) };
   } catch (error) {
     if (isMissingDatabaseStructureError(error) || isDatabaseConnectivityError(error)) {
+      log.warn('getMeRecommendations: infra degraded, returning empty', { error: String(error) });
       return { items: [] };
     }
     throw error;
@@ -1037,7 +1016,7 @@ export const saveMePushToken = async (
   user: JwtClaims,
   input: { expoPushToken: string; deviceType?: string },
 ): Promise<{ saved: true }> => {
-  await ensureMeScaffold(user);
+  await ensureUserScaffold(user.sub, user.displayName, user.email);
 
   await pool.query(
     `INSERT INTO user_push_tokens (user_id, expo_push_token, device_type)
@@ -1249,11 +1228,11 @@ export const createMePrivacyDeleteRequest = async (
   const expectedPhrase = config.privacy.deleteConfirmPhrase.trim().toUpperCase();
 
   if (input.confirmText.trim().toUpperCase() !== expectedPhrase) {
-    throw new HttpError(400, 'Invalid delete confirmation phrase');
+    throw new BadRequestError('Invalid delete confirmation phrase', 'ACCOUNT_DELETE_INVALID_PHRASE');
   }
 
   if (profile.display_name.trim().toLowerCase() !== input.fullName.trim().toLowerCase()) {
-    throw new HttpError(400, 'Full name does not match account profile');
+    throw new BadRequestError('Full name does not match account profile', 'ACCOUNT_DELETE_NAME_MISMATCH');
   }
 
   const result = await pool.query<{ id: string; status: string; created_at: string | Date }>(
@@ -1330,15 +1309,15 @@ export const createMeRating = async (
 const parseAmountToCents = (amount: string): number => {
   const normalized = amount.replace(/[$,\s]/g, '');
   if (!/^\d+(\.\d{1,2})?$/.test(normalized)) {
-    throw new HttpError(400, 'Invalid amount format');
+    throw new BadRequestError('Invalid amount format', 'PAYMENT_INVALID_AMOUNT_FORMAT');
   }
 
   const cents = Math.round(Number(normalized) * 100);
   if (!Number.isFinite(cents) || cents <= 0) {
-    throw new HttpError(400, 'Amount must be greater than zero');
+    throw new BadRequestError('Amount must be greater than zero', 'PAYMENT_AMOUNT_TOO_SMALL');
   }
   if (cents > 10_000_000_00) {
-    throw new HttpError(400, 'Amount exceeds maximum supported range');
+    throw new BadRequestError('Amount exceeds maximum supported range', 'PAYMENT_AMOUNT_TOO_LARGE');
   }
 
   return cents;
@@ -1448,6 +1427,60 @@ export const createPublicDonationIntent = async (input: {
   planId?: string;
   metadata?: Record<string, unknown>;
 }) => createDonationIntentCore(null, input);
+
+export const startPlaybackSession = async (
+  user: JwtClaims,
+  input: { contentId: string; deviceId?: string; source?: string; durationMs?: number },
+): Promise<{ sessionId: string }> => {
+  const result = await pool.query<{ id: string }>(
+    `INSERT INTO user_playback_sessions
+       (user_id, content_id, device_id, source, duration_ms, started_at, last_heartbeat)
+     VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+     RETURNING id`,
+    [
+      user.sub,
+      input.contentId,
+      input.deviceId ?? null,
+      input.source ?? 'direct',
+      input.durationMs ?? null,
+    ],
+  );
+  const row = result.rows[0];
+  if (!row) throw new Error('Failed to create playback session');
+  return { sessionId: row.id };
+};
+
+export const heartbeatPlaybackSession = async (
+  user: JwtClaims,
+  sessionId: string,
+  positionMs: number,
+): Promise<void> => {
+  await pool.query(
+    `UPDATE user_playback_sessions
+     SET last_heartbeat = NOW(),
+         position_ms    = $3
+     WHERE id = $1
+       AND user_id = $2
+       AND ended_at IS NULL`,
+    [sessionId, user.sub, positionMs],
+  );
+};
+
+export const endPlaybackSession = async (
+  user: JwtClaims,
+  sessionId: string,
+  input: { positionMs: number; completed: boolean },
+): Promise<void> => {
+  await pool.query(
+    `UPDATE user_playback_sessions
+     SET ended_at    = NOW(),
+         position_ms = $3
+     WHERE id = $1
+       AND user_id = $2
+       AND ended_at IS NULL`,
+    [sessionId, user.sub, input.positionMs],
+  );
+};
 
 export const getMeBootstrap = async (user: JwtClaims) => {
   const [profile, preferences, metrics, privacy, library] = await Promise.all([

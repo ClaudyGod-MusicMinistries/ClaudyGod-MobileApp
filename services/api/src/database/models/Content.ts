@@ -39,7 +39,7 @@ export interface Content {
   visibility: 'public' | 'private' | 'friends' | 'followers';
 
   // Content metadata
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
 
   // Timestamps
   createdAt: Date;

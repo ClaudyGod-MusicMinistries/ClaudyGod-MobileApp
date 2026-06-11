@@ -3,6 +3,11 @@ import { env } from '../../config/env';
 import { pool } from '../../db/pool';
 import { redis } from '../../infra/redis';
 import { verifyEmailTransport } from '../../infra/email';
+import { getWsServer } from '../../infra/websocket';
+import { contentQueue } from '../../queues/contentQueue';
+import { emailQueue } from '../../queues/emailQueue';
+import { statsQueue } from '../../queues/statsQueue';
+import { trendingQueue } from '../../queues/trendingQueue';
 
 export const healthRouter = Router();
 
@@ -24,7 +29,7 @@ const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number, timeoutMes
     return await Promise.race([
       promise,
       new Promise<T>((_resolve, reject) => {
-        timeout = setTimeout(() => reject(new Error(timeoutMessage)), timeoutMs);
+        timeout = setTimeout(() => reject(new Error(timeoutMessage)), timeoutMs) as unknown as NodeJS.Timeout;
       }),
     ]);
   } finally {
@@ -98,6 +103,22 @@ healthRouter.get('/health', async (_req, res, next) => {
       provider: env.SMTP_PROVIDER_LABEL,
     };
 
+    const [contentCounts, emailCounts, statsCounts, trendingCounts] = await Promise.allSettled([
+      contentQueue.getJobCounts(),
+      emailQueue.getJobCounts(),
+      statsQueue.getJobCounts(),
+      trendingQueue.getJobCounts(),
+    ]);
+
+    const queueDepths = {
+      content: contentCounts.status === 'fulfilled' ? contentCounts.value : null,
+      email: emailCounts.status === 'fulfilled' ? emailCounts.value : null,
+      stats: statsCounts.status === 'fulfilled' ? statsCounts.value : null,
+      trending: trendingCounts.status === 'fulfilled' ? trendingCounts.value : null,
+    };
+
+    const wss = getWsServer();
+
     res.status(status === 'ok' ? 200 : 503).json({
       status,
       capabilities: capabilities(),
@@ -107,6 +128,12 @@ healthRouter.get('/health', async (_req, res, next) => {
         redis: redisState,
       },
       smtp: smtpHealth,
+      queues: queueDepths,
+      websocket: { connections: wss?.clientCount ?? 0 },
+      process: {
+        uptimeSeconds: Math.floor(process.uptime()),
+        memoryMb: Math.round(process.memoryUsage().rss / 1024 / 1024),
+      },
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
