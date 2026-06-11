@@ -832,7 +832,7 @@ export const verifyEmail = async (input: VerifyEmailInput, context: AuthRequestC
   );
 
   if (userUpdate.rowCount === 0) {
-    throw new HttpError(404, 'User not found', { reason: 'user_not_found' }, 'AUTH_USER_NOT_FOUND', 'user');
+    throw new NotFoundError('User not found', 'AUTH_USER_NOT_FOUND');
   }
 
   const user = toSafeUser(userUpdate.rows[0]!);
@@ -1010,13 +1010,7 @@ export const resetPassword = async (input: ResetPasswordInput, context: AuthRequ
   if (isOtpCode(submittedToken)) {
     const email = input.email?.trim().toLowerCase();
     if (!email) {
-      throw new HttpError(
-        400,
-        'Email is required when resetting with a code',
-        { reason: 'email_required' },
-        'AUTH_EMAIL_REQUIRED',
-        'email',
-      );
+      throw new BadRequestError('Email is required when resetting with a code', 'AUTH_EMAIL_REQUIRED', 'email');
     }
 
     await completePendingPasswordReset({
@@ -1084,7 +1078,7 @@ export const getUserById = async (userId: string): Promise<SafeUser> => {
   );
 
   if (result.rowCount === 0) {
-    throw new HttpError(404, 'User not found', { reason: 'user_not_found' }, 'AUTH_USER_NOT_FOUND', 'user');
+    throw new NotFoundError('User not found', 'AUTH_USER_NOT_FOUND');
   }
 
   return toSafeUser(result.rows[0]!);
