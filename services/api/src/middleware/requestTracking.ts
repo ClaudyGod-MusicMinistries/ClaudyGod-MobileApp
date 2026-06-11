@@ -1,11 +1,11 @@
-import crypto from 'crypto';
+import { randomUUID } from 'crypto';
 import type { RequestHandler } from 'express';
 import { logger } from '../lib/logger';
 import type { JwtClaims } from '../utils/jwt';
 
 export const requestTrackingMiddleware: RequestHandler = (req, res, next) => {
   // Generate or use provided request ID
-  const requestId = req.header('x-request-id') || crypto.randomUUID();
+  const requestId = req.header('x-request-id') || randomUUID();
   req.id = requestId;
 
   // Add to response headers

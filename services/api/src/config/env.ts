@@ -225,6 +225,9 @@ const envSchema = z
     AI_PROVIDER_API_KEY: z.string().optional().default(''),
     AI_MODEL: z.string().trim().max(120).default(''),
     AI_TIMEOUT_MS: z.coerce.number().int().min(1000).max(120000).default(15000),
+
+    METRICS_TOKEN: z.string().optional().default(''),
+    OTEL_EXPORTER_OTLP_ENDPOINT: z.string().optional().default(''),
   })
   .superRefine((value, ctx) => {
     if (looksLikeJwtToken(value.JWT_ACCESS_SECRET)) {

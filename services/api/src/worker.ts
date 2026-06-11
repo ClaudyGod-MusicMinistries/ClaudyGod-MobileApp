@@ -6,6 +6,9 @@ import { createLogger } from './lib/logger';
 import { waitForInfrastructure } from './lib/waitForInfrastructure';
 import { startContentWorker } from './queues/contentWorker';
 import { startEmailWorker } from './queues/emailWorker';
+import { startStatsWorker } from './queues/statsWorker';
+import { startTrendingWorker } from './queues/trendingWorker';
+import { scheduleTrendingJobs } from './queues/trendingQueue';
 
 const log = createLogger('worker');
 
@@ -53,8 +56,12 @@ const bootWorker = async (): Promise<void> => {
 
   const contentWorker = startContentWorker();
   const emailWorker = startEmailWorker();
+  const statsWorker = startStatsWorker();
+  const trendingWorker = startTrendingWorker();
 
-  log.info('Workers ready', { workers: ['content', 'email'], bootMs: Date.now() - bootStart });
+  await scheduleTrendingJobs();
+
+  log.info('Workers ready', { workers: ['content', 'email', 'stats', 'trending'], bootMs: Date.now() - bootStart });
 
   const shutdown = async (signal: string, error?: unknown): Promise<void> => {
     if (error) {
@@ -67,7 +74,7 @@ const bootWorker = async (): Promise<void> => {
       log.info('Worker shutdown initiated', { signal });
     }
 
-    await Promise.allSettled([contentWorker.close(), emailWorker.close()]);
+    await Promise.allSettled([contentWorker.close(), emailWorker.close(), statsWorker.close(), trendingWorker.close()]);
     await Promise.allSettled([closeRedis(), closePool()]);
     log.info('Worker shutdown complete');
     process.exit(error ? 1 : 0);

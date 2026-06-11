@@ -679,6 +679,107 @@ const migrationStatements = [
         EXECUTE FUNCTION set_updated_at();
       END IF;
     END $$`,
+
+  /* ── Phase 3: Enhanced play events ──────────────────────────────────────── */
+  `ALTER TABLE user_play_events
+     ADD COLUMN IF NOT EXISTS duration_ms    INTEGER,
+     ADD COLUMN IF NOT EXISTS position_ms    INTEGER     DEFAULT 0,
+     ADD COLUMN IF NOT EXISTS skip_count     SMALLINT    DEFAULT 0,
+     ADD COLUMN IF NOT EXISTS source         TEXT        DEFAULT 'direct'
+       CHECK (source IN ('feed','search','recommendation','direct','playlist','autoplay')),
+     ADD COLUMN IF NOT EXISTS session_id     UUID`,
+
+  `CREATE TABLE IF NOT EXISTS content_item_stats (
+     content_id       UUID         PRIMARY KEY REFERENCES content_items(id) ON DELETE CASCADE,
+     play_count       BIGINT       NOT NULL DEFAULT 0,
+     unique_listeners BIGINT       NOT NULL DEFAULT 0,
+     like_count       BIGINT       NOT NULL DEFAULT 0,
+     share_count      BIGINT       NOT NULL DEFAULT 0,
+     skip_rate        NUMERIC(5,4) NOT NULL DEFAULT 0,
+     avg_completion   NUMERIC(5,2) NOT NULL DEFAULT 0,
+     trending_score   NUMERIC(12,4) NOT NULL DEFAULT 0,
+     last_played_at   TIMESTAMPTZ,
+     updated_at       TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+   )`,
+  `CREATE INDEX IF NOT EXISTS idx_content_item_stats_trending_score
+     ON content_item_stats (trending_score DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_content_item_stats_play_count
+     ON content_item_stats (play_count DESC)`,
+
+  `CREATE TABLE IF NOT EXISTS user_playback_sessions (
+     id             UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+     user_id        UUID         NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,
+     content_id     UUID         NOT NULL REFERENCES content_items(id) ON DELETE CASCADE,
+     device_id      UUID,
+     started_at     TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+     last_heartbeat TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+     ended_at       TIMESTAMPTZ,
+     position_ms    INTEGER      NOT NULL DEFAULT 0,
+     duration_ms    INTEGER,
+     source         TEXT         DEFAULT 'direct',
+     created_at     TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+   )`,
+  `CREATE INDEX IF NOT EXISTS idx_user_playback_sessions_user_active
+     ON user_playback_sessions (user_id, ended_at)
+     WHERE ended_at IS NULL`,
+  `CREATE INDEX IF NOT EXISTS idx_user_playback_sessions_content_started
+     ON user_playback_sessions (content_id, started_at DESC)`,
+
+  /* ── Phase 4: Trending snapshots ────────────────────────────────────────── */
+  `CREATE TABLE IF NOT EXISTS trending_snapshots (
+     id            UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+     content_id    UUID         NOT NULL REFERENCES content_items(id) ON DELETE CASCADE,
+     period        TEXT         NOT NULL CHECK (period IN ('hourly','daily','weekly')),
+     score         NUMERIC(12,4) NOT NULL DEFAULT 0,
+     rank          INTEGER,
+     calculated_at TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+     UNIQUE (content_id, period, calculated_at)
+   )`,
+  `CREATE INDEX IF NOT EXISTS idx_trending_snapshots_period_score
+     ON trending_snapshots (period, score DESC, calculated_at DESC)`,
+
+  /* ── Phase 5: Full-text search ───────────────────────────────────────────── */
+  `ALTER TABLE content_items
+     ADD COLUMN IF NOT EXISTS search_vector tsvector
+       GENERATED ALWAYS AS (
+         setweight(to_tsvector('english', coalesce(title, '')), 'A') ||
+         setweight(to_tsvector('english', coalesce(description, '')), 'B') ||
+         setweight(to_tsvector('english', coalesce(array_to_string(tags, ' '), '')), 'C')
+       ) STORED`,
+  `CREATE INDEX IF NOT EXISTS idx_content_items_search_vector
+     ON content_items USING GIN (search_vector)`,
+
+  `CREATE TABLE IF NOT EXISTS user_search_events (
+     id            UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+     user_id       UUID         REFERENCES app_users(id) ON DELETE SET NULL,
+     query         TEXT         NOT NULL,
+     results_count INTEGER      NOT NULL DEFAULT 0,
+     clicked_id    UUID         REFERENCES content_items(id) ON DELETE SET NULL,
+     searched_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+   )`,
+  `CREATE INDEX IF NOT EXISTS idx_user_search_events_user_searched_at
+     ON user_search_events (user_id, searched_at DESC)`,
+
+  /* ── Phase 6: User devices ───────────────────────────────────────────────── */
+  `CREATE TABLE IF NOT EXISTS user_devices (
+     id                 UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+     user_id            UUID        NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,
+     device_fingerprint TEXT        NOT NULL,
+     device_name        TEXT,
+     device_type        TEXT        NOT NULL DEFAULT 'mobile'
+       CHECK (device_type IN ('mobile','tablet','tv','web','desktop')),
+     platform           TEXT,
+     app_version        TEXT,
+     push_token         TEXT,
+     is_trusted         BOOLEAN     NOT NULL DEFAULT false,
+     last_seen_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+     registered_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+     revoked_at         TIMESTAMPTZ,
+     UNIQUE (user_id, device_fingerprint)
+   )`,
+  `CREATE INDEX IF NOT EXISTS idx_user_devices_user_active
+     ON user_devices (user_id)
+     WHERE revoked_at IS NULL`,
 ];
 
 const MIGRATION_LOCK_ID = 7_246_130_001;

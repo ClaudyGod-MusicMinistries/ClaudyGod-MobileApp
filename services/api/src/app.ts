@@ -24,6 +24,9 @@ import { uploadsRouter } from './modules/uploads/uploads.routes';
 import { youtubeRouter } from './modules/youtube/youtube.routes';
 import { adminWordOfDayRouter, mobileWordOfDayRouter } from './modules/wordOfDay/wordOfDay.routes';
 import engagementRouter from './modules/engagement/engagement.routes';
+import { searchRouter } from './modules/search/search.routes';
+import { devicesRouter } from './modules/devices/devices.routes';
+import { getMetricsOutput, metricsContentType } from './lib/metrics';
 
 const parseCorsOrigin = (): true | string[] => {
   const origins = env.CORS_ORIGINS;
@@ -169,6 +172,23 @@ export const createApp = () => {
   app.use('/v1/admin/app-config', adminAppConfigRouter);
   app.use('/v1/admin/word-of-day', adminWordOfDayRouter);
   app.use('/v1/youtube', youtubeRouter);
+  app.use('/v1/search', searchRouter);
+  app.use('/v1/me/devices', devicesRouter);
+
+  // Prometheus metrics (protected by token in production)
+  app.get('/metrics', async (req: import('express').Request, res: import('express').Response) => {
+    const token = env.METRICS_TOKEN;
+    if (token) {
+      const auth = req.header('authorization');
+      if (auth !== `Bearer ${token}`) {
+        res.status(403).json({ error: 'Forbidden' });
+        return;
+      }
+    }
+    const output = await getMetricsOutput();
+    res.setHeader('Content-Type', metricsContentType);
+    res.status(200).send(output);
+  });
 
   // Error handlers (MUST be last)
   app.use(notFoundHandler);

@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 import type { PoolClient } from 'pg';
 import { env } from '../../config/env';
 import { pool } from '../../db/pool';
@@ -48,7 +48,7 @@ const toSafeUser = (row: SessionUserRow): SafeUser => ({
 });
 
 const tokenHash = (token: string): string =>
-  crypto.createHash('sha256').update(token).digest('hex');
+  createHash('sha256').update(token).digest('hex');
 
 const getRefreshExpiryDate = (): Date =>
   new Date(Date.now() + env.JWT_REFRESH_TTL_DAYS * 24 * 60 * 60 * 1000);
@@ -100,8 +100,8 @@ const insertRefreshSession = async ({
   rotatedFromSessionId?: string | null;
   runner?: QueryRunner;
 }): Promise<AuthResponse> => {
-  const nextSessionId = sessionId ?? crypto.randomUUID();
-  const nextFamilyId = sessionFamilyId ?? crypto.randomUUID();
+  const nextSessionId = sessionId ?? randomUUID();
+  const nextFamilyId = sessionFamilyId ?? randomUUID();
   const refreshToken = signRefreshToken({
     sub: user.id,
     sessionId: nextSessionId,

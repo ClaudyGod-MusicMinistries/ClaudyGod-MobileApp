@@ -33,10 +33,14 @@ else
 fi
 
 if has_match '^services/api/.*\.(ts|tsx|js|json)$|^services/api/Dockerfile(\.dev)?$|^services/api/docker-compose.*\.ya?ml$'; then
-  echo "Building backend (services/api) because backend files are staged..."
+  echo "Typechecking API..."
+  yarn --cwd ./services/api typecheck
+  echo "Linting API staged files..."
+  yarn --cwd ./services/api lint
+  echo "Building API..."
   yarn --cwd ./services/api build
 else
-  echo "No staged backend files requiring build check."
+  echo "No staged backend files requiring checks."
 fi
 
 if has_match '^admin/web/.*\.(js|jsx|ts|tsx|vue|json|css)$|^admin/web/Dockerfile(\.dev)?$|^admin/docker-compose.*\.ya?ml$'; then
