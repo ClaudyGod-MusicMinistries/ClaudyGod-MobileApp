@@ -7,6 +7,7 @@ import {
   Animated,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Haptics from 'expo-haptics';
 import { BrandLoader } from '../branding/BrandLoader';
 import { CustomText } from '../CustomText';
 import { useAppTheme } from '../../util/colorScheme';
@@ -68,12 +69,15 @@ export function AppButton({
   // Memoized press handlers
   const handlePressIn = useCallback(() => {
     setIsPressed(true);
+    void Haptics.impactAsync(
+      isPrimary ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light,
+    );
     Animated.timing(scaleValueRef, {
       toValue: 0.98,
       duration: 100,
       useNativeDriver: true,
     }).start();
-  }, [scaleValueRef]);
+  }, [isPrimary, scaleValueRef]);
 
   const handlePressOut = useCallback(() => {
     setIsPressed(false);

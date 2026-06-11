@@ -4,6 +4,7 @@ import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Haptics from 'expo-haptics';
 import { useColorScheme } from '../util/colorScheme';
 import { colors } from '../constants/color';
 import { layout } from '../styles/designTokens';
@@ -145,6 +146,7 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
                   accessibilityState={{ selected: focused }}
                   hasTVPreferredFocus={routeIndex === 0}
                   onPress={() => {
+                    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     if (canNavigate) navigation.navigate(item.routeName as never);
                   }}
                   style={{
