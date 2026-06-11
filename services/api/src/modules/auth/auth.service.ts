@@ -7,8 +7,16 @@ import {
   queueVerificationEmail,
   queueWelcomeEmail,
 } from '../../infra/transactionalEmails';
-import { logger } from '../../lib/logger';
-import { HttpError } from '../../lib/httpError';
+import { createLogger } from '../../lib/logger';
+import {
+  BadRequestError,
+  ConflictError,
+  ForbiddenError,
+  NotFoundError,
+  UnauthorizedError,
+} from '../../lib/errors';
+
+const log = createLogger('auth');
 import { isMissingDatabaseStructureError } from '../../lib/postgres';
 import { hashPassword, verifyPassword } from '../../utils/password';
 import { signAccessToken } from '../../utils/jwt';
@@ -233,13 +241,7 @@ const consumeAuthActionToken = async ({
   );
 
   if (result.rowCount === 0) {
-    throw new HttpError(
-      400,
-      'Invalid or expired token',
-      { reason: 'token_invalid' },
-      'AUTH_TOKEN_INVALID',
-      'token',
-    );
+    throw new BadRequestError('Invalid or expired token', 'AUTH_TOKEN_INVALID', 'token');
   }
 
   return result.rows[0]!;
@@ -370,13 +372,7 @@ const completePendingSignup = async ({
     );
 
     if (pendingResult.rowCount === 0) {
-      throw new HttpError(
-        400,
-        'Invalid or expired verification code',
-        { reason: 'invalid_code' },
-        'AUTH_INVALID_OTP',
-        'token',
-      );
+      throw new BadRequestError('Invalid or expired verification code', 'AUTH_INVALID_OTP', 'token');
     }
 
     const pendingSignup = pendingResult.rows[0]!;
@@ -459,13 +455,7 @@ const completePendingPasswordReset = async ({
     );
 
     if (pendingResult.rowCount === 0) {
-      throw new HttpError(
-        400,
-        'Invalid or expired reset code',
-        { reason: 'invalid_code' },
-        'AUTH_INVALID_RESET',
-        'token',
-      );
+      throw new BadRequestError('Invalid or expired reset code', 'AUTH_INVALID_RESET', 'token');
     }
 
     const pendingReset = pendingResult.rows[0]!;
@@ -524,22 +514,10 @@ export const registerUser = async (
   if (requestedRole === 'ADMIN') {
     const providedCode = input.adminSignupCode?.trim();
     if (!env.ADMIN_SIGNUP_CODE) {
-      throw new HttpError(
-        403,
-        'Admin signup is disabled',
-        { reason: 'admin_signup_disabled' },
-        'AUTH_ADMIN_DISABLED',
-        'adminSignupCode',
-      );
+      throw new ForbiddenError('Admin signup is disabled', 'AUTH_ADMIN_DISABLED');
     }
     if (!providedCode || providedCode !== env.ADMIN_SIGNUP_CODE) {
-      throw new HttpError(
-        403,
-        'Invalid admin signup code',
-        { reason: 'invalid_admin_code' },
-        'AUTH_ADMIN_CODE_INVALID',
-        'adminSignupCode',
-      );
+      throw new ForbiddenError('Invalid admin signup code', 'AUTH_ADMIN_CODE_INVALID');
     }
   }
 
@@ -582,13 +560,7 @@ export const registerUser = async (
       metadata: { requestedRole },
     });
 
-    throw new HttpError(
-      409,
-      'Email is already registered',
-      { reason: 'email_registered' },
-      'AUTH_EMAIL_TAKEN',
-      'email',
-    );
+    throw new ConflictError('Email is already registered', 'AUTH_EMAIL_TAKEN', 'email');
   }
 
   const passwordHash = await hashPassword(input.password);
@@ -684,12 +656,9 @@ export const loginUser = async (input: LoginInput, context: AuthRequestContext =
         requestIp: context.requestIp,
         userAgent: context.userAgent,
       });
-      throw new HttpError(
-        403,
+      throw new ForbiddenError(
         'Email is not verified. Enter the 6-digit code sent to your email to finish creating your account.',
-        { reason: 'email_not_verified' },
         'AUTH_EMAIL_NOT_VERIFIED',
-        'email',
       );
     }
 
@@ -701,13 +670,7 @@ export const loginUser = async (input: LoginInput, context: AuthRequestContext =
       userAgent: context.userAgent,
       metadata: { reason: 'user_not_found' },
     });
-    throw new HttpError(
-      401,
-      'Invalid credentials',
-      { reason: 'invalid_credentials' },
-      'AUTH_INVALID_CREDENTIALS',
-      'password',
-    );
+    throw new UnauthorizedError('Invalid credentials', 'AUTH_INVALID_CREDENTIALS');
   }
 
   const userRow = result.rows[0]!;
@@ -722,13 +685,7 @@ export const loginUser = async (input: LoginInput, context: AuthRequestContext =
       userAgent: context.userAgent,
       metadata: { reason: 'inactive' },
     });
-    throw new HttpError(
-      403,
-      'Account is inactive',
-      { reason: 'account_inactive' },
-      'AUTH_INACTIVE',
-      'account',
-    );
+    throw new ForbiddenError('Account is inactive', 'AUTH_INACTIVE');
   }
 
   const isValidPassword = await verifyPassword(input.password, userRow.password_hash);
@@ -743,13 +700,7 @@ export const loginUser = async (input: LoginInput, context: AuthRequestContext =
       userAgent: context.userAgent,
       metadata: { reason: 'invalid_password' },
     });
-    throw new HttpError(
-      401,
-      'Invalid credentials',
-      { reason: 'invalid_credentials' },
-      'AUTH_INVALID_CREDENTIALS',
-      'password',
-    );
+    throw new UnauthorizedError('Invalid credentials', 'AUTH_INVALID_CREDENTIALS');
   }
 
   const safeUser = toSafeUser(userRow);
@@ -767,12 +718,9 @@ export const loginUser = async (input: LoginInput, context: AuthRequestContext =
       requestIp: context.requestIp,
       userAgent: context.userAgent,
     });
-    throw new HttpError(
-      403,
+    throw new ForbiddenError(
       'Email is not verified. Enter the 6-digit code sent to your email or request a new verification email.',
-      { reason: 'email_not_verified' },
       'AUTH_EMAIL_NOT_VERIFIED',
-      'email',
     );
   }
 
@@ -798,13 +746,7 @@ export const loginUser = async (input: LoginInput, context: AuthRequestContext =
 export const verifyEmail = async (input: VerifyEmailInput, context: AuthRequestContext = {}): Promise<AuthResponse> => {
   const submittedToken = (input.code ?? input.token ?? '').trim();
   if (!submittedToken) {
-    throw new HttpError(
-      400,
-      'Verification code or token is required',
-      { reason: 'missing_code' },
-      'AUTH_MISSING_OTP',
-      'code',
-    );
+    throw new BadRequestError('Verification code or token is required', 'AUTH_MISSING_OTP', 'code');
   }
 
   if (isOtpCode(submittedToken)) {
@@ -827,13 +769,7 @@ export const verifyEmail = async (input: VerifyEmailInput, context: AuthRequestC
           userAgent: context.userAgent,
           metadata: { method: 'otp_lookup', reason: 'invalid_code' },
         });
-        throw new HttpError(
-          400,
-          'Invalid or expired verification code',
-          { reason: 'invalid_code' },
-          'AUTH_INVALID_OTP',
-          'token',
-        );
+        throw new BadRequestError('Invalid or expired verification code', 'AUTH_INVALID_OTP', 'token');
       }
       email = pendingLookup.rows[0]!.email;
       await recordAuthActivity({
@@ -858,7 +794,7 @@ export const verifyEmail = async (input: VerifyEmailInput, context: AuthRequestC
         displayName: user.displayName,
       });
     } catch (error) {
-      logger.error('Welcome email enqueue failed', {
+      log.error('Welcome email enqueue failed', {
         error: error instanceof Error ? error.message : String(error),
         userId: user.id,
         email: user.email,
