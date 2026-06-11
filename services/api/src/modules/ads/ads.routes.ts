@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { asyncHandler } from '../../lib/asyncHandler';
-import { HttpError } from '../../lib/httpError';
+import { ForbiddenError } from '../../lib/errors';
 import { validateSchema } from '../../lib/validation';
 import { authenticate } from '../../middleware/authenticate';
 import { createAdCampaignSchema, listAdCampaignsQuerySchema, updateAdCampaignSchema } from './ads.schema';
@@ -14,7 +14,7 @@ adminAdsRouter.get(
   '/',
   asyncHandler(async (req, res) => {
     if (!req.user || req.user.role !== 'ADMIN') {
-      throw new HttpError(403, 'Admin role required');
+      throw new ForbiddenError('Admin role required', 'ADMIN_REQUIRED');
     }
 
     const query = validateSchema(listAdCampaignsQuerySchema, req.query);
@@ -27,7 +27,7 @@ adminAdsRouter.post(
   '/',
   asyncHandler(async (req, res) => {
     if (!req.user || req.user.role !== 'ADMIN') {
-      throw new HttpError(403, 'Admin role required');
+      throw new ForbiddenError('Admin role required', 'ADMIN_REQUIRED');
     }
 
     const input = validateSchema(createAdCampaignSchema, req.body);
@@ -40,7 +40,7 @@ adminAdsRouter.patch(
   '/:id',
   asyncHandler(async (req, res) => {
     if (!req.user || req.user.role !== 'ADMIN') {
-      throw new HttpError(403, 'Admin role required');
+      throw new ForbiddenError('Admin role required', 'ADMIN_REQUIRED');
     }
 
     const input = validateSchema(updateAdCampaignSchema, req.body);

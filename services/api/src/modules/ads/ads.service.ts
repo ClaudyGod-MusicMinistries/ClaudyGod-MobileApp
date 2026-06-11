@@ -1,6 +1,6 @@
 import type { Pool, PoolClient } from 'pg';
 import { pool } from '../../db/pool';
-import { HttpError } from '../../lib/httpError';
+import { NotFoundError } from '../../lib/errors';
 import { isMissingDatabaseStructureError } from '../../lib/postgres';
 import type { JwtClaims } from '../../utils/jwt';
 import type { AdPlacementScreen } from '../appConfig/appConfig.schema';
@@ -173,7 +173,7 @@ export async function createAdCampaign(actor: JwtClaims, input: CreateAdCampaign
 export async function updateAdCampaign(actor: JwtClaims, id: string, input: UpdateAdCampaignInput): Promise<AdCampaign> {
   const existing = await loadAdCampaignRow(pool, id);
   if (!existing) {
-    throw new HttpError(404, 'Ad campaign not found');
+    throw new NotFoundError('Ad campaign not found', 'AD_CAMPAIGN_NOT_FOUND');
   }
 
   const updates: string[] = [];

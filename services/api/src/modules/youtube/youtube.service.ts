@@ -1,7 +1,10 @@
 import { env } from '../../config/env';
 import { pool } from '../../db/pool';
-import { HttpError } from '../../lib/httpError';
+import { BadRequestError, HttpError, NotFoundError } from '../../lib/errors';
+import { createLogger } from '../../lib/logger';
 import type { ContentVisibility } from '../content/content.types';
+
+const log = createLogger('youtube.service');
 
 export interface YouTubeVideoItem {
   youtubeVideoId: string;
@@ -171,7 +174,7 @@ async function recordAutomationRun(input: {
       [input.runType, input.actorUserId, input.status, JSON.stringify(input.summary), input.notes ?? null],
     );
   } catch (error) {
-    console.warn('automation run logging skipped:', error);
+    log.warn('automation run logging skipped', { error });
   }
 }
 
@@ -226,7 +229,7 @@ async function resolveChannelId(channelIdentifier: string): Promise<string> {
   }
 
   if (!extracted.handle) {
-    throw new HttpError(400, 'Invalid YouTube channel identifier');
+    throw new BadRequestError('Invalid YouTube channel identifier', 'YOUTUBE_INVALID_CHANNEL_ID');
   }
 
   const channelsParams = new URLSearchParams({
@@ -241,7 +244,7 @@ async function resolveChannelId(channelIdentifier: string): Promise<string> {
 
   const id = channels.items?.[0]?.id;
   if (!id) {
-    throw new HttpError(404, `Unable to resolve YouTube channel handle @${extracted.handle}`);
+    throw new NotFoundError(`Unable to resolve YouTube channel handle @${extracted.handle}`, 'YOUTUBE_CHANNEL_NOT_FOUND');
   }
 
   return id;

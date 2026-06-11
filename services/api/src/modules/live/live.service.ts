@@ -1,7 +1,7 @@
 import type { JwtClaims } from '../../utils/jwt';
 import { pool } from '../../db/pool';
 import { env } from '../../config/env';
-import { HttpError } from '../../lib/httpError';
+import { BadRequestError, ForbiddenError, NotFoundError } from '../../lib/errors';
 import { sendLiveStartPushNotifications } from '../../infra/push';
 import { queueEmailJob } from '../../infra/transactionalEmails';
 import type { UserRole } from '../auth/auth.types';
@@ -256,7 +256,7 @@ const notifySubscribersThatSessionIsLive = async (session: LiveSession): Promise
 
 const assertAdmin = (actor: JwtClaims) => {
   if (actor.role !== 'ADMIN') {
-    throw new HttpError(403, 'Admin access required');
+    throw new ForbiddenError('Admin access required', 'ADMIN_REQUIRED');
   }
 };
 
@@ -270,7 +270,7 @@ const getLiveSessionRowById = async (sessionId: string): Promise<LiveSessionRow>
   );
 
   if (result.rowCount === 0) {
-    throw new HttpError(404, 'Live session not found');
+    throw new NotFoundError('Live session not found', 'LIVE_SESSION_NOT_FOUND');
   }
 
   return result.rows[0]!;
@@ -396,7 +396,7 @@ export const getPublicLiveSessionDetail = async (sessionId: string): Promise<Liv
   ]);
 
   if (sessionRow.status === 'cancelled') {
-    throw new HttpError(404, 'Live session not found');
+    throw new NotFoundError('Live session not found', 'LIVE_SESSION_NOT_FOUND');
   }
 
   return {
@@ -578,7 +578,7 @@ export const createLiveSessionMessage = async (
 ): Promise<LiveMessage> => {
   const session = await getLiveSessionRowById(sessionId);
   if (session.status === 'cancelled') {
-    throw new HttpError(400, 'This live session is no longer available');
+    throw new BadRequestError('This live session is no longer available', 'LIVE_SESSION_UNAVAILABLE');
   }
 
   const inserted = await pool.query<LiveMessageRow>(

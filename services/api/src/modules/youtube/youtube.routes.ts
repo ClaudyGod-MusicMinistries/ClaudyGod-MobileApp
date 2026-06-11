@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { asyncHandler } from '../../lib/asyncHandler';
-import { HttpError } from '../../lib/httpError';
+import { UnauthorizedError } from '../../lib/errors';
 import { validateSchema } from '../../lib/validation';
 import { authenticate } from '../../middleware/authenticate';
 import { youtubeImportSchema, youtubeListQuerySchema, youtubeSyncSchema } from './youtube.schema';
@@ -13,7 +13,7 @@ youtubeRouter.get(
   authenticate,
   asyncHandler(async (req, res) => {
     if (!req.user) {
-      throw new HttpError(401, 'Unauthorized');
+      throw new UnauthorizedError('Unauthorized', 'AUTH_REQUIRED');
     }
 
     const query = validateSchema(youtubeListQuerySchema, req.query);
@@ -27,7 +27,7 @@ youtubeRouter.post(
   authenticate,
   asyncHandler(async (req, res) => {
     if (!req.user) {
-      throw new HttpError(401, 'Unauthorized');
+      throw new UnauthorizedError('Unauthorized', 'AUTH_REQUIRED');
     }
 
     const payload = validateSchema(youtubeSyncSchema, req.body);
@@ -48,7 +48,7 @@ youtubeRouter.post(
   authenticate,
   asyncHandler(async (req, res) => {
     if (!req.user) {
-      throw new HttpError(401, 'Unauthorized');
+      throw new UnauthorizedError('Unauthorized', 'AUTH_REQUIRED');
     }
 
     const payload = validateSchema(youtubeImportSchema, req.body);

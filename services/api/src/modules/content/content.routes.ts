@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import { asyncHandler } from '../../lib/asyncHandler';
-import { HttpError } from '../../lib/httpError';
-import { JwtClaims } from '../../utils/jwt';
+import { ForbiddenError, UnauthorizedError } from '../../lib/errors';
+import type { JwtClaims } from '../../utils/jwt';
+import { hasMinRole } from '../../middleware/rbac';
 import { validateSchema } from '../../lib/validation';
 import { authenticate } from '../../middleware/authenticate';
 import {
@@ -28,19 +29,21 @@ import {
   updateContentRequestStatus,
   updateContentVisibility,
 } from './content.service';
+import { pool } from '../../db/pool';
+import { CacheService, CacheTTL } from '../../lib/cache';
 
 export const contentRouter = Router();
 
 function requireAdmin(user: unknown): JwtClaims {
   if (!user || typeof user !== 'object') {
-    throw new HttpError(401, 'Unauthorized');
+    throw new UnauthorizedError('Unauthorized', 'AUTH_REQUIRED');
   }
   const candidate = user as JwtClaims;
-  if (candidate.role !== 'ADMIN') {
-    throw new HttpError(403, 'Admin access required');
-  }
   if (!candidate.sub || !candidate.email || !candidate.displayName) {
-    throw new HttpError(401, 'Unauthorized');
+    throw new UnauthorizedError('Unauthorized', 'AUTH_REQUIRED');
+  }
+  if (!hasMinRole(candidate.role, 'ADMIN')) {
+    throw new ForbiddenError('Admin access required', 'ADMIN_REQUIRED');
   }
   return candidate;
 }
@@ -68,7 +71,7 @@ contentRouter.get(
   authenticate,
   asyncHandler(async (req, res) => {
     if (!req.user) {
-      throw new HttpError(401, 'Unauthorized');
+      throw new UnauthorizedError('Unauthorized', 'AUTH_REQUIRED');
     }
 
     const parsed = validateSchema(listContentQuerySchema, req.query);
@@ -102,7 +105,7 @@ contentRouter.post(
   authenticate,
   asyncHandler(async (req, res) => {
     if (!req.user) {
-      throw new HttpError(401, 'Unauthorized');
+      throw new UnauthorizedError('Unauthorized', 'AUTH_REQUIRED');
     }
 
     const payload = validateSchema(createContentRequestSchema, req.body);
@@ -207,6 +210,45 @@ contentRouter.patch(
       requester: actor,
     });
     res.status(200).json(item);
+  }),
+);
+
+contentRouter.get(
+  '/trending',
+  asyncHandler(async (req, res) => {
+    const period = (req.query.period as string) || 'daily';
+    const limit = Math.min(Number(req.query.limit) || 20, 50);
+
+    if (!['hourly', 'daily', 'weekly'].includes(period)) {
+      res.status(400).json({ message: 'Invalid period. Use hourly, daily, or weekly.' });
+      return;
+    }
+
+    const cacheKey = `trending:${period}:${limit}`;
+    const cached = await CacheService.get<unknown[]>('feed', cacheKey);
+    if (cached) {
+      res.status(200).json({ items: cached, period });
+      return;
+    }
+
+    const result = await pool.query(
+      `SELECT DISTINCT ON (ts.content_id)
+         ci.id, ci.title, ci.description, ci.content_type, ci.media_url,
+         ci.thumbnail_url, ci.channel_name, ci.duration_label, ci.tags,
+         ci.app_sections, ci.created_at, ci.updated_at,
+         ts.score AS trending_score, ts.rank
+       FROM trending_snapshots ts
+       INNER JOIN content_items ci ON ci.id = ts.content_id
+       WHERE ts.period = $1
+         AND ci.visibility = 'published'
+       ORDER BY ts.content_id, ts.calculated_at DESC, ts.score DESC
+       LIMIT $2`,
+      [period, limit],
+    );
+
+    const items = result.rows;
+    await CacheService.set('feed', cacheKey, items, CacheTTL.TRENDING);
+    res.status(200).json({ items, period });
   }),
 );
 

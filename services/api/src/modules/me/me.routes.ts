@@ -1,6 +1,6 @@
 import { Router, type Request } from 'express';
 import { asyncHandler } from '../../lib/asyncHandler';
-import { HttpError } from '../../lib/httpError';
+import { UnauthorizedError } from '../../lib/errors';
 import { validateSchema } from '../../lib/validation';
 import { authenticate } from '../../middleware/authenticate';
 import {
@@ -20,6 +20,9 @@ import {
   trackPlayEventSchema,
   updateMePreferencesSchema,
   updateMeProfileSchema,
+  startPlaybackSessionSchema,
+  heartbeatPlaybackSchema,
+  endPlaybackSessionSchema,
 } from './me.schema';
 import {
   createMeDonationIntent,
@@ -45,6 +48,9 @@ import {
   resetMeRecommendationSignals,
   saveMePushToken,
   saveMeLibraryItem,
+  startPlaybackSession,
+  heartbeatPlaybackSession,
+  endPlaybackSession,
   updateMePreferences,
   updateMeProfile,
   upsertMeLiveSubscription,
@@ -56,7 +62,7 @@ meRouter.use(authenticate);
 
 function requireUser(req: Request) {
   if (!req.user) {
-    throw new HttpError(401, 'Unauthorized');
+    throw new UnauthorizedError('Unauthorized', 'AUTH_REQUIRED');
   }
   return req.user;
 }
@@ -303,5 +309,32 @@ meRouter.post(
     const payload = validateSchema(createDonationIntentSchema, req.body);
     const result = await createMeDonationIntent(requireUser(req), payload);
     res.status(201).json(result);
+  }),
+);
+
+meRouter.post(
+  '/playback/start',
+  asyncHandler(async (req, res) => {
+    const payload = validateSchema(startPlaybackSessionSchema, req.body);
+    const result = await startPlaybackSession(requireUser(req), payload);
+    res.status(201).json(result);
+  }),
+);
+
+meRouter.post(
+  '/playback/:sessionId/heartbeat',
+  asyncHandler(async (req, res) => {
+    const payload = validateSchema(heartbeatPlaybackSchema, req.body);
+    await heartbeatPlaybackSession(requireUser(req), req.params.sessionId!, payload.positionMs);
+    res.status(204).send();
+  }),
+);
+
+meRouter.post(
+  '/playback/:sessionId/end',
+  asyncHandler(async (req, res) => {
+    const payload = validateSchema(endPlaybackSessionSchema, req.body);
+    await endPlaybackSession(requireUser(req), req.params.sessionId!, payload);
+    res.status(204).send();
   }),
 );

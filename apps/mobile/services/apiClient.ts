@@ -15,7 +15,12 @@ export class ApiError extends Error {
   }
 }
 
-const DEFAULT_TIMEOUT = 30000; // 30 seconds
+const DEFAULT_TIMEOUT = 30000;
+
+const generateRequestId = (): string =>
+  typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+    ? crypto.randomUUID()
+    : `${Math.random().toString(36).slice(2)}${Math.random().toString(36).slice(2)}`;
 
 async function fetchWithTimeout(
   url: string,
@@ -62,6 +67,7 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
         'Content-Type': 'application/json',
         'X-Claudy-Client-Platform': Platform.OS,
         'X-Claudy-Client-Version': '1.0.0',
+        'x-request-id': generateRequestId(),
         ...(ENV.mobileApiKey ? { 'x-mobile-api-key': ENV.mobileApiKey } : {}),
         ...(init?.headers ?? {}),
       },
@@ -118,8 +124,6 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
       throw error;
     }
 
-    // Unknown error
-    console.error('[apiFetch] Unexpected error:', error);
     throw new ApiError(
       500,
       'An unexpected error occurred. Please try again.',

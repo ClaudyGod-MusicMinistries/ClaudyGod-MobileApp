@@ -26,7 +26,7 @@ export const signUpSchema = z
     password: passwordSchema,
     username: displayNameSchema.optional(),
     displayName: displayNameSchema.optional(),
-    role: z.enum(['CLIENT', 'ADMIN']).optional(),
+    role: z.enum(['CLIENT', 'CREATOR', 'MODERATOR', 'ADMIN', 'SUPER_ADMIN']).optional(),
     adminSignupCode: z.string().trim().min(8).max(128).optional(),
   })
   .transform((value) => ({

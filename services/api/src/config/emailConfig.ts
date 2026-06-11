@@ -138,7 +138,7 @@ export function getEmailConfig(): EmailConfig {
   const errors = validateEmailConfig();
   
   if (errors.length > 0) {
-    console.error('Email configuration errors:', errors);
+    process.stderr.write(`Email configuration errors: ${errors.join(', ')}\n`);
     throw new Error(
       `Invalid email configuration:\n${errors.join('\n')}\n\n` +
       'Please ensure all required environment variables are set in .env or your deployment configuration.'

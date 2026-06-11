@@ -1,6 +1,9 @@
 import { createHash } from 'node:crypto';
 import type { PoolClient } from 'pg';
 import { closePool, pool } from './pool';
+import { createLogger } from '../lib/logger';
+
+const log = createLogger('db.migrate');
 
 const migrationStatements = [
   `CREATE EXTENSION IF NOT EXISTS "pgcrypto"`,
@@ -679,6 +682,232 @@ const migrationStatements = [
         EXECUTE FUNCTION set_updated_at();
       END IF;
     END $$`,
+
+  /* ── Phase 3: Enhanced play events ──────────────────────────────────────── */
+  `ALTER TABLE user_play_events
+     ADD COLUMN IF NOT EXISTS duration_ms    INTEGER,
+     ADD COLUMN IF NOT EXISTS position_ms    INTEGER     DEFAULT 0,
+     ADD COLUMN IF NOT EXISTS skip_count     SMALLINT    DEFAULT 0,
+     ADD COLUMN IF NOT EXISTS source         TEXT        DEFAULT 'direct'
+       CHECK (source IN ('feed','search','recommendation','direct','playlist','autoplay')),
+     ADD COLUMN IF NOT EXISTS session_id     UUID`,
+
+  `CREATE TABLE IF NOT EXISTS content_item_stats (
+     content_id       UUID         PRIMARY KEY REFERENCES content_items(id) ON DELETE CASCADE,
+     play_count       BIGINT       NOT NULL DEFAULT 0,
+     unique_listeners BIGINT       NOT NULL DEFAULT 0,
+     like_count       BIGINT       NOT NULL DEFAULT 0,
+     share_count      BIGINT       NOT NULL DEFAULT 0,
+     skip_rate        NUMERIC(5,4) NOT NULL DEFAULT 0,
+     avg_completion   NUMERIC(5,2) NOT NULL DEFAULT 0,
+     trending_score   NUMERIC(12,4) NOT NULL DEFAULT 0,
+     last_played_at   TIMESTAMPTZ,
+     updated_at       TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+   )`,
+  `CREATE INDEX IF NOT EXISTS idx_content_item_stats_trending_score
+     ON content_item_stats (trending_score DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_content_item_stats_play_count
+     ON content_item_stats (play_count DESC)`,
+
+  `CREATE TABLE IF NOT EXISTS user_playback_sessions (
+     id             UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+     user_id        UUID         NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,
+     content_id     UUID         NOT NULL REFERENCES content_items(id) ON DELETE CASCADE,
+     device_id      UUID,
+     started_at     TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+     last_heartbeat TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+     ended_at       TIMESTAMPTZ,
+     position_ms    INTEGER      NOT NULL DEFAULT 0,
+     duration_ms    INTEGER,
+     source         TEXT         DEFAULT 'direct',
+     created_at     TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+   )`,
+  `CREATE INDEX IF NOT EXISTS idx_user_playback_sessions_user_active
+     ON user_playback_sessions (user_id, ended_at)
+     WHERE ended_at IS NULL`,
+  `CREATE INDEX IF NOT EXISTS idx_user_playback_sessions_content_started
+     ON user_playback_sessions (content_id, started_at DESC)`,
+
+  /* ── Phase 4: Trending snapshots ────────────────────────────────────────── */
+  `CREATE TABLE IF NOT EXISTS trending_snapshots (
+     id            UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+     content_id    UUID         NOT NULL REFERENCES content_items(id) ON DELETE CASCADE,
+     period        TEXT         NOT NULL CHECK (period IN ('hourly','daily','weekly')),
+     score         NUMERIC(12,4) NOT NULL DEFAULT 0,
+     rank          INTEGER,
+     calculated_at TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+     UNIQUE (content_id, period, calculated_at)
+   )`,
+  `CREATE INDEX IF NOT EXISTS idx_trending_snapshots_period_score
+     ON trending_snapshots (period, score DESC, calculated_at DESC)`,
+
+  /* ── Phase 5: Full-text search ───────────────────────────────────────────── */
+  `ALTER TABLE content_items
+     ADD COLUMN IF NOT EXISTS search_vector tsvector
+       GENERATED ALWAYS AS (
+         setweight(to_tsvector('english', coalesce(title, '')), 'A') ||
+         setweight(to_tsvector('english', coalesce(description, '')), 'B') ||
+         setweight(to_tsvector('english', coalesce(array_to_string(tags, ' '), '')), 'C')
+       ) STORED`,
+  `CREATE INDEX IF NOT EXISTS idx_content_items_search_vector
+     ON content_items USING GIN (search_vector)`,
+
+  `CREATE TABLE IF NOT EXISTS user_search_events (
+     id            UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+     user_id       UUID         REFERENCES app_users(id) ON DELETE SET NULL,
+     query         TEXT         NOT NULL,
+     results_count INTEGER      NOT NULL DEFAULT 0,
+     clicked_id    UUID         REFERENCES content_items(id) ON DELETE SET NULL,
+     searched_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+   )`,
+  `CREATE INDEX IF NOT EXISTS idx_user_search_events_user_searched_at
+     ON user_search_events (user_id, searched_at DESC)`,
+
+  /* ── Phase 6: User devices ───────────────────────────────────────────────── */
+  `CREATE TABLE IF NOT EXISTS user_devices (
+     id                 UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+     user_id            UUID        NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,
+     device_fingerprint TEXT        NOT NULL,
+     device_name        TEXT,
+     device_type        TEXT        NOT NULL DEFAULT 'mobile'
+       CHECK (device_type IN ('mobile','tablet','tv','web','desktop')),
+     platform           TEXT,
+     app_version        TEXT,
+     push_token         TEXT,
+     is_trusted         BOOLEAN     NOT NULL DEFAULT false,
+     last_seen_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+     registered_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+     revoked_at         TIMESTAMPTZ,
+     UNIQUE (user_id, device_fingerprint)
+   )`,
+  `CREATE INDEX IF NOT EXISTS idx_user_devices_user_active
+     ON user_devices (user_id)
+     WHERE revoked_at IS NULL`,
+
+  /* ── RBAC: Expand role constraint + add tier + mfa_enabled ──────────────── */
+  `ALTER TABLE app_users
+     ADD COLUMN IF NOT EXISTS tier TEXT NOT NULL DEFAULT 'free'
+       CHECK (tier IN ('free','premium','vip'))`,
+  `ALTER TABLE app_users
+     ADD COLUMN IF NOT EXISTS mfa_enabled BOOLEAN NOT NULL DEFAULT FALSE`,
+  `ALTER TABLE app_users DROP CONSTRAINT IF EXISTS app_users_role_check`,
+  `ALTER TABLE app_users ADD CONSTRAINT app_users_role_check
+     CHECK (role IN ('CLIENT','CREATOR','MODERATOR','ADMIN','SUPER_ADMIN'))`,
+
+  /* ── MFA: TOTP factors + backup codes ───────────────────────────────────── */
+  `CREATE TABLE IF NOT EXISTS user_mfa_factors (
+     id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+     user_id      UUID        NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,
+     factor_type  TEXT        NOT NULL DEFAULT 'totp' CHECK (factor_type IN ('totp')),
+     secret       TEXT        NOT NULL,
+     is_verified  BOOLEAN     NOT NULL DEFAULT FALSE,
+     is_active    BOOLEAN     NOT NULL DEFAULT TRUE,
+     created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+     updated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+     UNIQUE (user_id, factor_type)
+   )`,
+  `CREATE INDEX IF NOT EXISTS idx_user_mfa_factors_user_active
+     ON user_mfa_factors (user_id) WHERE is_active = TRUE`,
+
+  `CREATE TABLE IF NOT EXISTS user_backup_codes (
+     id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+     user_id     UUID        NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,
+     code_hash   TEXT        NOT NULL,
+     used_at     TIMESTAMPTZ,
+     created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+   )`,
+  `CREATE INDEX IF NOT EXISTS idx_user_backup_codes_user_unused
+     ON user_backup_codes (user_id) WHERE used_at IS NULL`,
+
+  /* ── OAuth identities ───────────────────────────────────────────────────── */
+  `CREATE TABLE IF NOT EXISTS user_oauth_identities (
+     id               UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+     user_id          UUID        NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,
+     provider         TEXT        NOT NULL CHECK (provider IN ('google','apple')),
+     provider_user_id TEXT        NOT NULL,
+     email            TEXT,
+     avatar_url       TEXT,
+     last_used_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+     created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+     UNIQUE (provider, provider_user_id)
+   )`,
+  `CREATE INDEX IF NOT EXISTS idx_user_oauth_identities_user
+     ON user_oauth_identities (user_id)`,
+
+  /* ── Biometric credentials + challenges ─────────────────────────────────── */
+  `CREATE TABLE IF NOT EXISTS user_biometric_credentials (
+     id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+     user_id      UUID        NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,
+     device_id    TEXT        NOT NULL,
+     public_key   TEXT        NOT NULL,
+     key_hash     TEXT        NOT NULL,
+     algorithm    TEXT        NOT NULL DEFAULT 'EC',
+     device_label TEXT,
+     last_used_at TIMESTAMPTZ,
+     revoked_at   TIMESTAMPTZ,
+     created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+     updated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+     UNIQUE (user_id, device_id)
+   )`,
+  `CREATE INDEX IF NOT EXISTS idx_user_biometric_credentials_user_active
+     ON user_biometric_credentials (user_id) WHERE revoked_at IS NULL`,
+
+  `CREATE TABLE IF NOT EXISTS biometric_challenges (
+     id         TEXT        PRIMARY KEY,
+     user_id    UUID        NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,
+     device_id  TEXT        NOT NULL,
+     challenge  TEXT        NOT NULL,
+     expires_at TIMESTAMPTZ NOT NULL,
+     used_at    TIMESTAMPTZ,
+     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+   )`,
+  `CREATE INDEX IF NOT EXISTS idx_biometric_challenges_user_device
+     ON biometric_challenges (user_id, device_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_biometric_challenges_expires_at
+     ON biometric_challenges (expires_at)`,
+
+  /* ── Account security: lockout + audit log ──────────────────────────────── */
+  `CREATE TABLE IF NOT EXISTS user_account_security (
+     user_id                UUID        PRIMARY KEY REFERENCES app_users(id) ON DELETE CASCADE,
+     failed_login_attempts  INTEGER     NOT NULL DEFAULT 0,
+     locked_until           TIMESTAMPTZ,
+     last_failed_at         TIMESTAMPTZ,
+     last_password_change_at TIMESTAMPTZ,
+     updated_at             TIMESTAMPTZ NOT NULL DEFAULT NOW()
+   )`,
+
+  `CREATE TABLE IF NOT EXISTS security_audit_log (
+     id          BIGSERIAL   PRIMARY KEY,
+     user_id     UUID        REFERENCES app_users(id) ON DELETE SET NULL,
+     event       TEXT        NOT NULL,
+     ip_address  TEXT,
+     user_agent  TEXT,
+     metadata    JSONB       NOT NULL DEFAULT '{}'::jsonb,
+     created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+   )`,
+  `CREATE INDEX IF NOT EXISTS idx_security_audit_log_user_created
+     ON security_audit_log (user_id, created_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_security_audit_log_event_created
+     ON security_audit_log (event, created_at DESC)`,
+
+  /* ── auth_sessions (canonical active-session store for OAuth/biometric) ─── */
+  `CREATE TABLE IF NOT EXISTS auth_sessions (
+     id                 UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+     user_id            UUID        NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,
+     session_id         TEXT        NOT NULL UNIQUE,
+     session_family_id  TEXT        NOT NULL,
+     refresh_token_hash TEXT        NOT NULL,
+     ip_address         TEXT,
+     user_agent         TEXT,
+     expires_at         TIMESTAMPTZ NOT NULL,
+     revoked_at         TIMESTAMPTZ,
+     created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW()
+   )`,
+  `CREATE INDEX IF NOT EXISTS idx_auth_sessions_user_active
+     ON auth_sessions (user_id, expires_at)
+     WHERE revoked_at IS NULL`,
+  `CREATE INDEX IF NOT EXISTS idx_auth_sessions_session_id
+     ON auth_sessions (session_id)`,
 ];
 
 const MIGRATION_LOCK_ID = 7_246_130_001;
@@ -763,9 +992,7 @@ export const runMigrations = async (): Promise<void> => {
       appliedCount += 1;
     }
 
-    console.log(
-      `Database migrations completed. ${appliedCount} applied, ${migrations.length - appliedCount} already current.`,
-    );
+    log.info(`Database migrations completed. ${appliedCount} applied, ${migrations.length - appliedCount} already current.`);
   } catch (error) {
     if (transactionOpen) {
       await client.query('ROLLBACK').catch(() => undefined);
@@ -781,11 +1008,11 @@ const run = async (): Promise<void> => {
   try {
     await runMigrations();
     await closePool();
-    console.log('Database migrations completed successfully.');
+    log.info('Database migrations completed successfully.');
     process.exit(0);
   } catch (error) {
     await closePool();
-    console.error('Database migrations failed:', error);
+    log.error('Database migrations failed', { error });
     process.exit(1);
   }
 };

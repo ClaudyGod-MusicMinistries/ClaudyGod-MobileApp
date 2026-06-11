@@ -1,5 +1,6 @@
 import cors from 'cors';
 import type { CorsOptions } from 'cors';
+import type { Request, Response } from 'express';
 import express from 'express';
 import helmet from 'helmet';
 import morgan from 'morgan';
@@ -8,13 +9,16 @@ import { errorHandler } from './middleware/errorHandler';
 import { notFoundHandler } from './middleware/notFoundHandler';
 import { requestTrackingMiddleware } from './middleware/requestTracking';
 import { apiLimiter } from './middleware/rateLimiter';
-import { logger } from './lib/logger';
 import { analyticsRouter } from './modules/analytics/analytics.routes';
 import { adminRouter } from './modules/admin/admin.routes';
 import { adminAiRouter } from './modules/ai/ai.routes';
 import { adminAdsRouter } from './modules/ads/ads.routes';
 import { adminAppConfigRouter, mobileAppConfigRouter } from './modules/appConfig/appConfig.routes';
 import { authRouter } from './modules/auth/auth.routes';
+import { mfaRouter } from './modules/auth/mfa.routes';
+import { oauthRouter } from './modules/auth/oauth.routes';
+import { biometricRouter } from './modules/auth/biometric.routes';
+import { accountSecurityRouter } from './modules/auth/accountSecurity.routes';
 import { contentRouter } from './modules/content/content.routes';
 import { healthRouter } from './modules/health/health.routes';
 import { liveRouter } from './modules/live/live.routes';
@@ -24,6 +28,9 @@ import { uploadsRouter } from './modules/uploads/uploads.routes';
 import { youtubeRouter } from './modules/youtube/youtube.routes';
 import { adminWordOfDayRouter, mobileWordOfDayRouter } from './modules/wordOfDay/wordOfDay.routes';
 import engagementRouter from './modules/engagement/engagement.routes';
+import { searchRouter } from './modules/search/search.routes';
+import { devicesRouter } from './modules/devices/devices.routes';
+import { getMetricsOutput, metricsContentType } from './lib/metrics';
 
 const parseCorsOrigin = (): true | string[] => {
   const origins = env.CORS_ORIGINS;
@@ -153,6 +160,18 @@ export const createApp = () => {
   // Auth routes (have their own rate limiting)
   app.use('/v1/auth', authRouter);
 
+  // OAuth sign-in (Google + Apple)
+  app.use('/v1/auth/oauth', oauthRouter);
+
+  // MFA / TOTP management
+  app.use('/v1/auth/mfa', mfaRouter);
+
+  // Biometric registration + verification
+  app.use('/v1/auth/biometric', biometricRouter);
+
+  // Account security dashboard
+  app.use('/v1/me/security', accountSecurityRouter);
+
   // Protected routes
   app.use('/v1/me', meRouter);
   app.use('/v1/live', liveRouter);
@@ -169,6 +188,23 @@ export const createApp = () => {
   app.use('/v1/admin/app-config', adminAppConfigRouter);
   app.use('/v1/admin/word-of-day', adminWordOfDayRouter);
   app.use('/v1/youtube', youtubeRouter);
+  app.use('/v1/search', searchRouter);
+  app.use('/v1/me/devices', devicesRouter);
+
+  // Prometheus metrics (protected by token in production)
+  app.get('/metrics', async (req: Request, res: Response) => {
+    const token = env.METRICS_TOKEN;
+    if (token) {
+      const auth = req.header('authorization');
+      if (auth !== `Bearer ${token}`) {
+        res.status(403).json({ error: 'Forbidden' });
+        return;
+      }
+    }
+    const output = await getMetricsOutput();
+    res.setHeader('Content-Type', metricsContentType);
+    res.status(200).send(output);
+  });
 
   // Error handlers (MUST be last)
   app.use(notFoundHandler);

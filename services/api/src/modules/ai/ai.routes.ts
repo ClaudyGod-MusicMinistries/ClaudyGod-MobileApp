@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { asyncHandler } from '../../lib/asyncHandler';
-import { HttpError } from '../../lib/httpError';
+import { ForbiddenError } from '../../lib/errors';
 import { validateSchema } from '../../lib/validation';
 import { authenticate } from '../../middleware/authenticate';
 import { generateAdCopySchema } from './ai.schema';
@@ -14,7 +14,7 @@ adminAiRouter.post(
   '/ad-copy',
   asyncHandler(async (req, res) => {
     if (!req.user || req.user.role !== 'ADMIN') {
-      throw new HttpError(403, 'Admin role required');
+      throw new ForbiddenError('Admin role required', 'ADMIN_REQUIRED');
     }
 
     const input = validateSchema(generateAdCopySchema, req.body);

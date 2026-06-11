@@ -8,6 +8,8 @@ export interface JwtClaims {
   email: string;
   role: UserRole;
   displayName: string;
+  tier?: 'free' | 'premium' | 'vip';
+  mfaEnabled?: boolean;
 }
 
 export interface RefreshJwtClaims {
@@ -21,8 +23,10 @@ const decodedJwtClaimsSchema = z
   .object({
     sub: z.union([z.string(), z.number()]).transform((value) => String(value)).pipe(z.string().min(1)),
     email: z.string().email(),
-    role: z.enum(['CLIENT', 'ADMIN']),
+    role: z.enum(['CLIENT', 'CREATOR', 'MODERATOR', 'ADMIN', 'SUPER_ADMIN']),
     displayName: z.string().trim().min(1).max(120),
+    tier: z.enum(['free', 'premium', 'vip']).optional().default('free'),
+    mfaEnabled: z.boolean().optional().default(false),
   })
   .passthrough();
 

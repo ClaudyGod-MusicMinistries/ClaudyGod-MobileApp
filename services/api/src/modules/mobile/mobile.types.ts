@@ -6,7 +6,7 @@ export interface MobileFeedItem {
   description: string;
   subtitle: string;
   type: ContentType | 'live' | 'ad';
-  imageUrl: string;
+  imageUrl: string | null;
   mediaUrl?: string;
   duration?: string;
   channelName?: string;

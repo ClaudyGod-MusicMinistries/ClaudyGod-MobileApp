@@ -1,7 +1,7 @@
 import type { Pool, PoolClient } from 'pg';
 import type { JwtClaims } from '../../utils/jwt';
 import { pool } from '../../db/pool';
-import { HttpError } from '../../lib/httpError';
+import { BadRequestError, ForbiddenError, InternalError, NotFoundError } from '../../lib/errors';
 import { isDatabaseConnectivityError, isMissingDatabaseStructureError } from '../../lib/postgres';
 import { contentQueue, type ContentEventType } from '../../queues/contentQueue';
 import { env } from '../../config/env';
@@ -232,30 +232,24 @@ const ensurePublishableContent = (params: {
   appSections: string[];
 }) => {
   if (!params.appSections.length) {
-    throw new HttpError(
-      400,
+    throw new BadRequestError(
       'Published content must include at least one app section',
-      { reason: 'missing_app_sections' },
       'CONTENT_PUBLISH_MISSING_APP_SECTIONS',
       'appSections',
     );
   }
 
   if ((params.type === 'audio' || params.type === 'video') && !params.mediaUrl) {
-    throw new HttpError(
-      400,
+    throw new BadRequestError(
       `Published ${params.type} content requires a media URL`,
-      { reason: 'missing_media_url' },
       'CONTENT_PUBLISH_MISSING_MEDIA_URL',
       'url',
     );
   }
 
   if ((params.type === 'audio' || params.type === 'video') && !params.thumbnailUrl) {
-    throw new HttpError(
-      400,
+    throw new BadRequestError(
       `Published ${params.type} content requires a thumbnail`,
-      { reason: 'missing_thumbnail' },
       'CONTENT_PUBLISH_MISSING_THUMBNAIL',
       'thumbnailUrl',
     );
@@ -293,27 +287,27 @@ const loadValidatedUploadSession = async ({
   );
 
   if (result.rowCount === 0) {
-    throw new HttpError(400, 'Referenced upload session was not found');
+    throw new BadRequestError('Referenced upload session was not found');
   }
 
   const session = result.rows[0]!;
   if (session.channel !== 'admin') {
-    throw new HttpError(400, 'Referenced upload session is not valid for admin content');
+    throw new BadRequestError('Referenced upload session is not valid for admin content');
   }
   if (requester.role !== 'ADMIN' && session.requested_by !== requester.sub) {
-    throw new HttpError(403, 'You can only attach files uploaded from your own session');
+    throw new ForbiddenError('You can only attach files uploaded from your own session');
   }
   if (session.status === 'failed') {
-    throw new HttpError(400, 'Referenced upload session failed and cannot be attached');
+    throw new BadRequestError('Referenced upload session failed and cannot be attached');
   }
   if (expectedMimePrefix && !session.mime_type.toLowerCase().startsWith(`${expectedMimePrefix}/`)) {
-    throw new HttpError(400, `Referenced upload session is not a valid ${expectedMimePrefix} asset`);
+    throw new BadRequestError(`Referenced upload session is not a valid ${expectedMimePrefix} asset`);
   }
 
   const publicUrl = buildStoragePublicUrl(session.storage_bucket, session.storage_path);
   const normalizedProvidedUrl = normalizeComparableUrl(providedUrl);
   if (normalizedProvidedUrl && normalizedProvidedUrl !== publicUrl) {
-    throw new HttpError(400, 'Provided media URL does not match the uploaded asset session');
+    throw new BadRequestError('Provided media URL does not match the uploaded asset session');
   }
 
   return {
@@ -765,10 +759,10 @@ export const createContentRequest = async (
       input.sourceKind ?? (mediaUpload || thumbnailUpload ? 'upload' : resolvedUrl ? 'external' : 'upload');
 
     if ((input.type === 'audio' || input.type === 'video') && !resolvedUrl) {
-      throw new HttpError(400, `A media URL is required for ${input.type} requests`);
+      throw new BadRequestError(`A media URL is required for ${input.type} requests`);
     }
     if ((input.type === 'audio' || input.type === 'video') && !resolvedThumbnailUrl) {
-      throw new HttpError(400, 'A thumbnail is required for audio and video requests');
+      throw new BadRequestError('A thumbnail is required for audio and video requests');
     }
 
     const insertResult = await client.query<{ id: string }>(
@@ -821,7 +815,7 @@ export const createContentRequest = async (
 
     const createdRow = await loadContentRequestRowById(client, insertResult.rows[0]!.id);
     if (!createdRow) {
-      throw new HttpError(500, 'Content request was created but could not be loaded');
+      throw new InternalError('Content request was created but could not be loaded');
     }
 
     request = toContentSubmissionRequest(createdRow);
@@ -846,15 +840,15 @@ export const updateContentRequestStatus = async ({
   requester: JwtClaims;
 }): Promise<ContentSubmissionRequest> => {
   if (requester.role !== 'ADMIN') {
-    throw new HttpError(403, 'Admin access required to update content requests');
+    throw new ForbiddenError('Admin access required to update content requests');
   }
 
   const existing = await loadContentRequestRowById(pool, requestId);
   if (!existing) {
-    throw new HttpError(404, 'Content request not found');
+    throw new NotFoundError('Content request not found');
   }
   if (existing.created_content_id && status !== 'fulfilled') {
-    throw new HttpError(400, 'This request already created a content draft and must remain fulfilled');
+    throw new BadRequestError('This request already created a content draft and must remain fulfilled');
   }
 
   await pool.query(
@@ -867,7 +861,7 @@ export const updateContentRequestStatus = async ({
 
   const updated = await loadContentRequestRowById(pool, requestId);
   if (!updated) {
-    throw new HttpError(404, 'Content request not found');
+    throw new NotFoundError('Content request not found');
   }
 
   return toContentSubmissionRequest(updated);
@@ -881,7 +875,7 @@ export const createDraftFromContentRequest = async ({
   requester: JwtClaims;
 }): Promise<{ request: ContentSubmissionRequest; content: ContentItem }> => {
   if (requester.role !== 'ADMIN') {
-    throw new HttpError(403, 'Admin access required to create content drafts from requests');
+    throw new ForbiddenError('Admin access required to create content drafts from requests');
   }
 
   const client = await pool.connect();
@@ -893,13 +887,13 @@ export const createDraftFromContentRequest = async ({
 
     const existing = await loadContentRequestRowById(client, requestId);
     if (!existing) {
-      throw new HttpError(404, 'Content request not found');
+      throw new NotFoundError('Content request not found');
     }
     if (existing.created_content_id) {
-      throw new HttpError(400, 'A draft has already been created from this request');
+      throw new BadRequestError('A draft has already been created from this request');
     }
     if (existing.request_status === 'rejected') {
-      throw new HttpError(400, 'Rejected requests cannot create a draft');
+      throw new BadRequestError('Rejected requests cannot create a draft');
     }
 
     const insertResult = await client.query<{ id: string }>(
@@ -956,7 +950,7 @@ export const createDraftFromContentRequest = async ({
     const createdContentRow = await loadContentRowById(client, insertResult.rows[0]!.id);
     const updatedRequestRow = await loadContentRequestRowById(client, requestId);
     if (!createdContentRow || !updatedRequestRow) {
-      throw new HttpError(500, 'The draft was created but the final records could not be loaded');
+      throw new InternalError('The draft was created but the final records could not be loaded');
     }
 
     item = toContentItem(createdContentRow);
@@ -1015,7 +1009,7 @@ export const createContent = async (requester: JwtClaims, input: CreateContentIn
       input.sourceKind ?? (mediaUpload || thumbnailUpload ? 'upload' : resolvedUrl ? 'external' : 'upload');
 
     if ((input.type === 'audio' || input.type === 'video') && !resolvedUrl) {
-      throw new HttpError(400, `A media URL is required for ${input.type} content`);
+      throw new BadRequestError(`A media URL is required for ${input.type} content`);
     }
 
     const normalizedSections = normalizeTextList(input.appSections);
@@ -1067,7 +1061,7 @@ export const createContent = async (requester: JwtClaims, input: CreateContentIn
 
     const createdRow = await loadContentRowById(client, insertResult.rows[0]!.id);
     if (!createdRow) {
-      throw new HttpError(500, 'Content was created but could not be loaded');
+      throw new InternalError('Content was created but could not be loaded');
     }
 
     item = toContentItem(createdRow);
@@ -1111,11 +1105,11 @@ export const updateContent = async ({
 }): Promise<ContentItem> => {
   const existing = await loadContentRowById(pool, contentId);
   if (!existing) {
-    throw new HttpError(404, 'Content not found');
+    throw new NotFoundError('Content not found');
   }
 
   if (requester.role !== 'ADMIN' && existing.author_id !== requester.sub) {
-    throw new HttpError(403, 'You can only update your own content');
+    throw new ForbiddenError('You can only update your own content');
   }
   const client = await pool.connect();
   let item: ContentItem;
@@ -1151,7 +1145,7 @@ export const updateContent = async ({
       : existing.thumbnail_url;
 
     if ((nextType === 'audio' || nextType === 'video') && !nextUrl) {
-      throw new HttpError(400, `A media URL is required for ${nextType} content`);
+      throw new BadRequestError(`A media URL is required for ${nextType} content`);
     }
 
     const nextVisibility = input.visibility ?? existing.visibility;
@@ -1217,7 +1211,7 @@ export const updateContent = async ({
 
     const updatedRow = await loadContentRowById(client, contentId);
     if (!updatedRow) {
-      throw new HttpError(404, 'Content not found');
+      throw new NotFoundError('Content not found');
     }
 
     item = toContentItem(updatedRow);
@@ -1276,12 +1270,12 @@ export const updateContentVisibility = async ({
 }): Promise<ContentItem> => {
   const existing = await loadContentRowById(pool, contentId);
   if (!existing) {
-    throw new HttpError(404, 'Content not found');
+    throw new NotFoundError('Content not found');
   }
 
   if (requester.role !== 'ADMIN') {
     if (existing.author_id !== requester.sub) {
-      throw new HttpError(403, 'You can only update visibility for your own content');
+      throw new ForbiddenError('You can only update visibility for your own content');
     }
   }
 
@@ -1328,7 +1322,7 @@ export const updateContentVisibility = async ({
   );
 
   if (updated.rowCount === 0) {
-    throw new HttpError(404, 'Content not found');
+    throw new NotFoundError('Content not found');
   }
 
   const item = toContentItem(updated.rows[0]!);
@@ -1361,12 +1355,12 @@ export const deleteContent = async ({
 }): Promise<{ deleted: true; id: string }> => {
   const existing = await pool.query<ContentRow>(selectContentByIdSql, [contentId]);
   if (existing.rowCount === 0) {
-    throw new HttpError(404, 'Content not found');
+    throw new NotFoundError('Content not found');
   }
 
   const existingRow = existing.rows[0]!;
   if (requester.role !== 'ADMIN' && existingRow.author_id !== requester.sub) {
-    throw new HttpError(403, 'You can only delete your own content');
+    throw new ForbiddenError('You can only delete your own content');
   }
 
   await pool.query(`DELETE FROM content_items WHERE id = $1`, [contentId]);

@@ -76,3 +76,5 @@ export const layout = {
   headerVerticalPadding: 8,
   tabBarContentPadding:  130,
 };
+
+export * from '../theme/designSystem';

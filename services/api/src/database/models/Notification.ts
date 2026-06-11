@@ -27,7 +27,7 @@ export interface Notification {
 
   // Notification action
   actionUrl?: string;
-  data: Record<string, any>;
+  data: Record<string, unknown>;
 
   // Notification delivery channels
   inAppNotification: boolean;
