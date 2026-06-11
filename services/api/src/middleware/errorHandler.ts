@@ -4,7 +4,7 @@ import { env } from '../config/env';
 import { HttpError } from '../lib/httpError';
 import { logger } from '../lib/logger';
 
-export const errorHandler: ErrorRequestHandler = (error, _req, res, _next) => {
+export const errorHandler: ErrorRequestHandler = (error, req, res, _next) => {
   let statusCode = 500;
   let message = 'Internal server error';
   let details: unknown = undefined;
@@ -41,5 +41,6 @@ export const errorHandler: ErrorRequestHandler = (error, _req, res, _next) => {
     code: code || (statusCode >= 500 ? 'INTERNAL_ERROR' : 'REQUEST_ERROR'),
     field,
     details,
+    requestId: req.id,
   });
 };

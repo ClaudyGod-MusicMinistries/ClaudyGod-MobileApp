@@ -108,3 +108,5 @@ process.on('uncaughtException', (error) => {
 });
 
 export type Logger = typeof logger;
+
+export const createLogger = (module: string) => logger.child({ module });
