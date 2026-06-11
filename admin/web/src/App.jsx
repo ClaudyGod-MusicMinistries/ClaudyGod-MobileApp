@@ -2416,10 +2416,14 @@ export default defineComponent({
               summary={adminOps.value.summary || {}}
               emailDelivery={adminOps.value.emailDelivery || {}}
               supportInbox={adminOps.value.supportInbox || []}
+              recentUsers={adminOps.value.recentUsers || []}
+              userRoleUpdatingId={userRoleUpdatingId.value}
               recentAutomation={adminOps.value.recentAutomation || []}
               smartInsights={adminOps.value.smartInsights || []}
               recentAuthActivity={adminOps.value.recentAuthActivity || []}
+              isAdmin={isAdmin.value}
               onSetDashboardView={setDashboardView}
+              onUpdateUserRole={updateUserRole}
               humanizeToken={humanizeToken}
               formatDateTime={formatDateTime}
               truncate={truncate}
