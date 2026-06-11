@@ -194,7 +194,8 @@ export function PremiumPage({
                       variant="heading"
                       style={{
                         color: theme.colors.text,
-                        fontSize: compact ? 15 : 16.5,
+                        fontSize: compact ? 15.5 : 17,
+                        fontWeight: '700',
                         letterSpacing: -0.2,
                       }}
                       numberOfLines={1}
@@ -430,15 +431,22 @@ export function PremiumHero({
             variant="display"
             style={{
               color: '#FFFFFF',
-              fontSize: isLarge ? 28 : isWide ? 23 : 20,
-              lineHeight: isLarge ? 36 : isWide ? 30 : 27,
+              fontSize: isLarge ? 30 : isWide ? 25 : 21,
+              lineHeight: isLarge ? 38 : isWide ? 32 : 28,
               fontWeight: '800',
-              letterSpacing: -0.4,
+              letterSpacing: -0.5,
             }}
             numberOfLines={2}
           >
             {item?.title || title || 'Welcome to ClaudyGod'}
           </CustomText>
+
+          {/* Meta line */}
+          {item ? (
+            <Text style={{ color: 'rgba(255,255,255,0.52)', fontSize: 11, marginTop: 5, letterSpacing: 0.2 }}>
+              {[item.subtitle, item.duration].filter(Boolean).join(' · ')}
+            </Text>
+          ) : null}
 
           {/* Subtitle */}
           <CustomText
@@ -661,6 +669,24 @@ export function ContentCard({ item, onPress, compact = false }: ContentCardProps
             style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: cardWidth * 0.5 }}
           />
 
+          {/* Play overlay — centre */}
+          <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}>
+            <View
+              style={{
+                width: compact ? 34 : 40,
+                height: compact ? 34 : 40,
+                borderRadius: compact ? 17 : 20,
+                backgroundColor: 'rgba(0,0,0,0.52)',
+                borderWidth: 1.5,
+                borderColor: 'rgba(255,255,255,0.38)',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <MaterialIcons name="play-arrow" size={compact ? 18 : 22} color="#FFFFFF" />
+            </View>
+          </View>
+
           {/* Type pill — bottom-left */}
           <View
             style={{
@@ -866,9 +892,9 @@ export function ContentRail({
             variant="title"
             style={{
               color: theme.colors.text,
-              fontSize: isCompact ? 15 : 16.5,
-              fontWeight: '700',
-              letterSpacing: -0.2,
+              fontSize: isCompact ? 16 : 18,
+              fontWeight: '800',
+              letterSpacing: -0.4,
             }}
           >
             {title}
@@ -1174,5 +1200,260 @@ export function BackToHomeButton() {
       onPress={() => router.push('/(tabs)/home' as never)}
       leftIcon={<MaterialIcons name="home-filled" size={15} color={theme.colors.text} />}
     />
+  );
+}
+
+// ─── TrendingList ─────────────────────────────────────────────────────────────────
+
+type TrendingListProps = {
+  title: string;
+  items: FeedCardItem[];
+  onPressItem: (_item: FeedCardItem) => void;
+  actionLabel?: string;
+  onAction?: () => void;
+};
+
+export function TrendingList({ title, items, onPressItem, actionLabel, onAction }: TrendingListProps) {
+  const theme = useAppTheme();
+  if (!items.length) return null;
+
+  return (
+    <FadeIn delay={100}>
+      <View style={{ gap: 12 }}>
+        {/* Header */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <CustomText
+            variant="title"
+            style={{ color: theme.colors.text, fontSize: 18, fontWeight: '800', letterSpacing: -0.4 }}
+          >
+            {title}
+          </CustomText>
+          {actionLabel && onAction ? (
+            <TVTouchable
+              onPress={onAction}
+              showFocusBorder={false}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 3,
+                paddingHorizontal: 10,
+                paddingVertical: 5,
+                borderRadius: 999,
+                backgroundColor: theme.scheme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(17,10,31,0.05)',
+                borderWidth: 1,
+                borderColor: theme.colors.border,
+              }}
+            >
+              <CustomText variant="caption" style={{ color: theme.colors.primary, fontSize: 11.5, fontWeight: '600' }}>
+                {actionLabel}
+              </CustomText>
+              <MaterialIcons name="chevron-right" size={14} color={theme.colors.primary} />
+            </TVTouchable>
+          ) : null}
+        </View>
+
+        {/* Numbered list */}
+        <View>
+          {items.slice(0, 10).map((item, index) => {
+            const rank = index + 1;
+            const isTop3 = rank <= 3;
+            return (
+              <TVTouchable
+                key={`trending-${item.id}`}
+                onPress={() => onPressItem(item)}
+                showFocusBorder={false}
+              >
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 12,
+                    paddingVertical: 10,
+                    borderTopWidth: index === 0 ? 0 : 1,
+                    borderTopColor: theme.colors.border,
+                  }}
+                >
+                  {/* Rank */}
+                  <CustomText
+                    variant="display"
+                    style={{
+                      width: 28,
+                      color: isTop3 ? '#B794F6' : theme.colors.textMuted,
+                      fontSize: isTop3 ? 20 : 17,
+                      fontWeight: '800',
+                      textAlign: 'center',
+                    }}
+                  >
+                    {rank}
+                  </CustomText>
+
+                  {/* Artwork */}
+                  <View
+                    style={{
+                      width: 52,
+                      height: 52,
+                      borderRadius: 10,
+                      overflow: 'hidden',
+                      backgroundColor: theme.colors.surfaceAlt,
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Image
+                      source={{ uri: item.imageUrl || DEFAULT_CONTENT_IMAGE_URI }}
+                      resizeMode="cover"
+                      style={{ width: '100%', height: '100%' }}
+                    />
+                  </View>
+
+                  {/* Info */}
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <CustomText
+                      variant="label"
+                      style={{ color: theme.colors.text, fontWeight: '600' }}
+                      numberOfLines={1}
+                    >
+                      {cleanFeedText(item.title)}
+                    </CustomText>
+                    <CustomText
+                      variant="caption"
+                      style={{ color: theme.colors.textSecondary, marginTop: 3 }}
+                      numberOfLines={1}
+                    >
+                      {[cleanFeedText(item.subtitle), item.duration].filter(Boolean).join(' · ')}
+                    </CustomText>
+                  </View>
+
+                  {/* Play icon */}
+                  <View
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 16,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: theme.scheme === 'dark' ? 'rgba(183,148,246,0.14)' : 'rgba(124,58,237,0.10)',
+                      borderWidth: 1,
+                      borderColor: theme.scheme === 'dark' ? 'rgba(183,148,246,0.24)' : 'rgba(124,58,237,0.18)',
+                    }}
+                  >
+                    <MaterialIcons name="play-arrow" size={18} color={theme.colors.primary} />
+                  </View>
+                </View>
+              </TVTouchable>
+            );
+          })}
+        </View>
+      </View>
+    </FadeIn>
+  );
+}
+
+// ─── StreamingBanner ──────────────────────────────────────────────────────────────
+
+type StreamingBannerProps = {
+  item?: FeedCardItem | null;
+  badge?: string;
+  title?: string;
+  subtitle?: string;
+  ctaLabel?: string;
+  onPress?: () => void;
+};
+
+export function StreamingBanner({ item, badge = 'Featured', title, subtitle, ctaLabel = 'Play now', onPress }: StreamingBannerProps) {
+  const theme = useAppTheme();
+  const { width } = useWindowDimensions();
+  const compact = width < 430;
+  const artSize = compact ? 96 : 110;
+  const displayTitle = title ?? cleanFeedText(item?.title) ?? 'Now Streaming';
+  const displaySubtitle = subtitle ?? item?.description ?? 'Worship music, messages & live ministry';
+
+  return (
+    <FadeIn delay={60}>
+      <TVTouchable onPress={onPress} showFocusBorder={false}>
+        <View
+          style={{
+            borderRadius: 18,
+            overflow: 'hidden',
+            backgroundColor: theme.scheme === 'dark' ? 'rgba(183,148,246,0.07)' : 'rgba(124,58,237,0.06)',
+            borderWidth: 1,
+            borderColor: theme.scheme === 'dark' ? 'rgba(183,148,246,0.18)' : 'rgba(124,58,237,0.16)',
+          }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'stretch' }}>
+            {/* Left — text content */}
+            <View style={{ flex: 1, padding: compact ? 14 : 18, justifyContent: 'center', gap: 6 }}>
+              {/* Badge */}
+              <View
+                style={{
+                  alignSelf: 'flex-start',
+                  borderRadius: 999,
+                  backgroundColor: 'rgba(183,148,246,0.18)',
+                  borderWidth: 1,
+                  borderColor: 'rgba(183,148,246,0.32)',
+                  paddingHorizontal: 9,
+                  paddingVertical: 3,
+                }}
+              >
+                <Text style={{ color: '#B794F6', fontSize: 9.5, fontWeight: '700', letterSpacing: 1 }}>
+                  {badge.toUpperCase()}
+                </Text>
+              </View>
+
+              <CustomText
+                variant="title"
+                style={{ color: theme.colors.text, fontSize: compact ? 15 : 16.5, fontWeight: '800', letterSpacing: -0.3 }}
+                numberOfLines={2}
+              >
+                {displayTitle}
+              </CustomText>
+
+              <CustomText
+                variant="caption"
+                style={{ color: theme.colors.textSecondary, lineHeight: 17 }}
+                numberOfLines={2}
+              >
+                {displaySubtitle}
+              </CustomText>
+
+              {/* CTA row */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 5,
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                    borderRadius: 999,
+                    backgroundColor: theme.colors.primary,
+                  }}
+                >
+                  <MaterialIcons name="play-arrow" size={15} color="#120A20" />
+                  <Text style={{ color: '#120A20', fontSize: 12, fontWeight: '700' }}>{ctaLabel}</Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Right — artwork with gradient fade */}
+            <View style={{ width: artSize, position: 'relative', flexShrink: 0 }}>
+              <Image
+                source={{ uri: item?.imageUrl || DEFAULT_CONTENT_IMAGE_URI }}
+                resizeMode="cover"
+                style={{ width: artSize, height: '100%' }}
+              />
+              <LinearGradient
+                colors={[
+                  theme.scheme === 'dark' ? 'rgba(183,148,246,0.07)' : 'rgba(124,58,237,0.06)',
+                  'rgba(0,0,0,0)',
+                ]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: artSize * 0.6 }}
+              />
+            </View>
+          </View>
+        </View>
+      </TVTouchable>
+    </FadeIn>
   );
 }

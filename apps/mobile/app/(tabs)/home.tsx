@@ -23,6 +23,8 @@ import {
   PremiumHero,
   PremiumPage,
   QuickActionGrid,
+  StreamingBanner,
+  TrendingList,
 } from '../../components/Exp/PremiumContent';
 
 type SectionContentType = Exclude<ContentType, 'ad'>;
@@ -364,11 +366,25 @@ export default function HomeScreen() {
         subtitle="Songs, worship audio, and messages."
         items={feed.music.slice(0, 12)}
         onPressItem={(item) => void openItem(item, 'home_music')}
-        actionLabel="Music"
+        actionLabel="See all"
         onAction={() => router.push(APP_ROUTES.tabs.player)}
         loading={loading}
         emptyTitle="Music is being refreshed"
         emptyMessage="Browse videos, live moments, or search while this row updates."
+      />
+
+      <StreamingBanner
+        item={feed.music[0] ?? feed.videos[0] ?? null}
+        badge="Featured"
+        onPress={feed.music[0] ? () => void openItem(feed.music[0]!, 'home_banner') : undefined}
+      />
+
+      <TrendingList
+        title="Most played"
+        items={feed.mostPlayed.slice(0, 10)}
+        onPressItem={(item) => void openItem(item, 'home_trending')}
+        actionLabel="See all"
+        onAction={() => router.push(APP_ROUTES.tabs.player)}
       />
 
       <ContentRail
@@ -376,7 +392,7 @@ export default function HomeScreen() {
         subtitle="Messages, sessions, clips, and replays."
         items={feed.videos.slice(0, 12)}
         onPressItem={(item) => void openItem(item, 'home_videos')}
-        actionLabel="Videos"
+        actionLabel="See all"
         onAction={() => router.push(APP_ROUTES.tabs.videos)}
         loading={loading}
         emptyTitle="Videos are being refreshed"
@@ -388,7 +404,7 @@ export default function HomeScreen() {
         subtitle="Current sessions, upcoming moments, and replays."
         items={feed.live.slice(0, 12)}
         onPressItem={(item) => void openItem(item, 'home_live')}
-        actionLabel="Live"
+        actionLabel="See all"
         onAction={() => router.push(APP_ROUTES.tabs.live)}
         loading={loading}
         emptyTitle="No live sessions right now"
