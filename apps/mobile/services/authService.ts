@@ -5,6 +5,34 @@ import { ApiError, apiFetch } from './apiClient';
 import { authSessionStorage } from '../lib/authSessionStorage';
 import { assertSupabaseConfigured, supabase } from '../lib/supabase';
 
+let sessionDeviceFingerprint: string | null = null;
+
+function getDeviceFingerprint(): string {
+  if (!sessionDeviceFingerprint) {
+    const id = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : `${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`;
+    sessionDeviceFingerprint = `${Platform.OS}:${String(Platform.Version ?? 'unknown')}:${id}`;
+  }
+  return sessionDeviceFingerprint;
+}
+
+function registerDeviceFireAndForget(accessToken: string): void {
+  const fingerprint = getDeviceFingerprint();
+  apiFetch<unknown>('/v1/me/devices/register', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify({
+      deviceFingerprint: fingerprint,
+      deviceType: Platform.OS === 'web' ? 'web' : 'mobile',
+      platform: Platform.OS,
+      appVersion: '1.0.0',
+    }),
+  }).catch(() => {
+    // Fire-and-forget — device registration failure must never block auth.
+  });
+}
+
 export interface MobileAuthUser {
   id: string;
   email: string;
@@ -149,6 +177,9 @@ const persistMobileSession = async (
 
   await authSessionStorage.setItem(MOBILE_AUTH_STORAGE_KEY, JSON.stringify(nextSession));
   notifyAuthStateListeners(nextSession);
+  if (nextSession.accessToken) {
+    registerDeviceFireAndForget(nextSession.accessToken);
+  }
 };
 
 const createSessionSnapshot = (

@@ -6,6 +6,8 @@ function toneClass(tone) {
   return 'is-info';
 }
 
+const ROLE_OPTIONS = ['CLIENT', 'CREATOR', 'MODERATOR', 'ADMIN'];
+
 export default function OverviewView(props) {
   const {
     adminOpsLoading,
@@ -13,10 +15,14 @@ export default function OverviewView(props) {
     summary,
     emailDelivery,
     supportInbox,
+    recentUsers,
+    userRoleUpdatingId,
     recentAutomation,
     smartInsights,
     recentAuthActivity,
+    isAdmin,
     onSetDashboardView,
+    onUpdateUserRole,
     humanizeToken,
     formatDateTime,
     truncate,
@@ -30,6 +36,7 @@ export default function OverviewView(props) {
   const requestQueuePreview = Array.isArray(overview?.requestQueuePreview) ? overview.requestQueuePreview : [];
   const latestContent = Array.isArray(overview?.latestContent) ? overview.latestContent : [];
   const supportTickets = Array.isArray(supportInbox) ? supportInbox : [];
+  const users = Array.isArray(recentUsers) ? recentUsers : [];
   const automationActivity = Array.isArray(recentAutomation) ? recentAutomation : [];
   const insights = Array.isArray(smartInsights) ? smartInsights : [];
   const authActivity = Array.isArray(recentAuthActivity) ? recentAuthActivity : [];
@@ -292,6 +299,44 @@ export default function OverviewView(props) {
             {!supportTickets.length ? <div class="cg-empty">No support tickets are currently open.</div> : null}
           </div>
         </article>
+
+        {isAdmin ? (
+          <article class="cg-panel cg-card">
+            <div class="cg-section-head">
+              <div>
+                <h2>User Management</h2>
+                <p class="cg-muted">Review and update roles for recently active accounts.</p>
+              </div>
+              <span class="cg-chip">{users.length} accounts</span>
+            </div>
+            <div class="cg-list">
+              {users.slice(0, 20).map((user) => (
+                <article class="cg-item" key={`user-row-${user.id}`}>
+                  <div class="cg-item-head">
+                    <div>
+                      <h3>{user.displayName || user.email}</h3>
+                      <p class="cg-muted">{user.email}</p>
+                    </div>
+                    <div class="cg-button-row">
+                      <span class="cg-chip">{humanizeToken(user.authProvider || 'local')}</span>
+                      <select
+                        class="cg-select"
+                        value={user.role}
+                        disabled={userRoleUpdatingId === user.id}
+                        onChange={(event) => void onUpdateUserRole(user.id, event.target.value)}
+                      >
+                        {ROLE_OPTIONS.map((role) => (
+                          <option value={role} key={`role-${user.id}-${role}`}>{humanizeToken(role)}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </article>
+              ))}
+              {!users.length ? <div class="cg-empty">No user accounts found.</div> : null}
+            </div>
+          </article>
+        ) : null}
       </section>
 
       <article class="cg-panel cg-card">
