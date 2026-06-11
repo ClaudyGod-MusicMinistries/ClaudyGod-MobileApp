@@ -1,7 +1,10 @@
 import { env } from '../../config/env';
 import { pool } from '../../db/pool';
 import { BadRequestError, HttpError, NotFoundError } from '../../lib/errors';
+import { createLogger } from '../../lib/logger';
 import type { ContentVisibility } from '../content/content.types';
+
+const log = createLogger('youtube.service');
 
 export interface YouTubeVideoItem {
   youtubeVideoId: string;
@@ -171,7 +174,7 @@ async function recordAutomationRun(input: {
       [input.runType, input.actorUserId, input.status, JSON.stringify(input.summary), input.notes ?? null],
     );
   } catch (error) {
-    console.warn('automation run logging skipped:', error);
+    log.warn('automation run logging skipped', { error });
   }
 }
 

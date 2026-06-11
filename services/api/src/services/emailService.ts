@@ -20,7 +20,7 @@ export interface EmailOptions {
 }
 
 export interface TemplateContext {
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 class EmailService {

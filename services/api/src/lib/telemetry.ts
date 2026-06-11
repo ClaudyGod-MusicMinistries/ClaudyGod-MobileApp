@@ -15,11 +15,27 @@ export async function initTelemetry(): Promise<void> {
   if (sdkStarted) return;
 
   try {
-    const { NodeSDK } = await import('@opentelemetry/sdk-node');
-    const { getNodeAutoInstrumentations } = await import('@opentelemetry/auto-instrumentations-node');
-    const { OTLPTraceExporter } = await import('@opentelemetry/exporter-trace-otlp-http');
-    const { Resource } = await import('@opentelemetry/resources');
-    const { SEMRESATTRS_SERVICE_NAME } = await import('@opentelemetry/semantic-conventions');
+    const load = (mod: string) => import(/* webpackIgnore: true */ mod);
+
+    const [sdkMod, instrMod, exporterMod, resourceMod, semconvMod] = await Promise.all([
+      load('@opentelemetry/sdk-node'),
+      load('@opentelemetry/auto-instrumentations-node'),
+      load('@opentelemetry/exporter-trace-otlp-http'),
+      load('@opentelemetry/resources'),
+      load('@opentelemetry/semantic-conventions'),
+    ]) as [
+      { NodeSDK: new (o: Record<string, unknown>) => { start(): void; shutdown(): Promise<void> } },
+      { getNodeAutoInstrumentations(o?: Record<string, unknown>): unknown[] },
+      { OTLPTraceExporter: new (o?: Record<string, unknown>) => unknown },
+      { Resource: new (o: Record<string, unknown>) => unknown },
+      { SEMRESATTRS_SERVICE_NAME: string },
+    ];
+
+    const { NodeSDK } = sdkMod;
+    const { getNodeAutoInstrumentations } = instrMod;
+    const { OTLPTraceExporter } = exporterMod;
+    const { Resource } = resourceMod;
+    const { SEMRESATTRS_SERVICE_NAME } = semconvMod;
 
     const sdk = new NodeSDK({
       resource: new Resource({ [SEMRESATTRS_SERVICE_NAME]: 'claudygod-api' }),

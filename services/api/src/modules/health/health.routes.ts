@@ -29,7 +29,7 @@ const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number, timeoutMes
     return await Promise.race([
       promise,
       new Promise<T>((_resolve, reject) => {
-        timeout = setTimeout(() => reject(new Error(timeoutMessage)), timeoutMs);
+        timeout = setTimeout(() => reject(new Error(timeoutMessage)), timeoutMs) as unknown as NodeJS.Timeout;
       }),
     ]);
   } finally {

@@ -1,5 +1,6 @@
 import cors from 'cors';
 import type { CorsOptions } from 'cors';
+import type { Request, Response } from 'express';
 import express from 'express';
 import helmet from 'helmet';
 import morgan from 'morgan';
@@ -8,13 +9,16 @@ import { errorHandler } from './middleware/errorHandler';
 import { notFoundHandler } from './middleware/notFoundHandler';
 import { requestTrackingMiddleware } from './middleware/requestTracking';
 import { apiLimiter } from './middleware/rateLimiter';
-import { logger } from './lib/logger';
 import { analyticsRouter } from './modules/analytics/analytics.routes';
 import { adminRouter } from './modules/admin/admin.routes';
 import { adminAiRouter } from './modules/ai/ai.routes';
 import { adminAdsRouter } from './modules/ads/ads.routes';
 import { adminAppConfigRouter, mobileAppConfigRouter } from './modules/appConfig/appConfig.routes';
 import { authRouter } from './modules/auth/auth.routes';
+import { mfaRouter } from './modules/auth/mfa.routes';
+import { oauthRouter } from './modules/auth/oauth.routes';
+import { biometricRouter } from './modules/auth/biometric.routes';
+import { accountSecurityRouter } from './modules/auth/accountSecurity.routes';
 import { contentRouter } from './modules/content/content.routes';
 import { healthRouter } from './modules/health/health.routes';
 import { liveRouter } from './modules/live/live.routes';
@@ -156,6 +160,18 @@ export const createApp = () => {
   // Auth routes (have their own rate limiting)
   app.use('/v1/auth', authRouter);
 
+  // OAuth sign-in (Google + Apple)
+  app.use('/v1/auth/oauth', oauthRouter);
+
+  // MFA / TOTP management
+  app.use('/v1/auth/mfa', mfaRouter);
+
+  // Biometric registration + verification
+  app.use('/v1/auth/biometric', biometricRouter);
+
+  // Account security dashboard
+  app.use('/v1/me/security', accountSecurityRouter);
+
   // Protected routes
   app.use('/v1/me', meRouter);
   app.use('/v1/live', liveRouter);
@@ -176,7 +192,7 @@ export const createApp = () => {
   app.use('/v1/me/devices', devicesRouter);
 
   // Prometheus metrics (protected by token in production)
-  app.get('/metrics', async (req: import('express').Request, res: import('express').Response) => {
+  app.get('/metrics', async (req: Request, res: Response) => {
     const token = env.METRICS_TOKEN;
     if (token) {
       const auth = req.header('authorization');

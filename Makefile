@@ -19,6 +19,7 @@ NC     := \033[0m
 
 .PHONY: help \
 	install ci-install setup env-setup hooks-install \
+	review review-logs \
 	dev dev-api dev-worker dev-admin dev-ios dev-android \
 	build build-api build-admin build-mobile-web \
 	lint lint-api lint-admin lint-mobile lint-fix lint-fix-api lint-fix-mobile \
@@ -38,6 +39,10 @@ help:
 	@printf "$(BOLD)$(BLUE)╔══════════════════════════════════════════════╗$(NC)\n"
 	@printf "$(BOLD)$(BLUE)║        ClaudyGod Monorepo Commands           ║$(NC)\n"
 	@printf "$(BOLD)$(BLUE)╚══════════════════════════════════════════════╝$(NC)\n"
+	@printf "\n"
+	@printf "$(CYAN)$(BOLD)Quality Gates$(NC)\n"
+	@printf "  $(GREEN)%-30s$(NC) %s\n" "make review"              "Full repo review — same as pre-push gate"
+	@printf "  $(GREEN)%-30s$(NC) %s\n" "make review-logs"         "List recent hook log files"
 	@printf "\n"
 	@printf "$(CYAN)$(BOLD)Setup$(NC)\n"
 	@printf "  $(GREEN)%-30s$(NC) %s\n" "make install"             "Install all workspace dependencies"
@@ -131,6 +136,14 @@ hooks-install:
 	@printf "$(BLUE)Installing lefthook git hooks...$(NC)\n"
 	yarn hooks:install
 	@printf "$(GREEN)✓ Git hooks installed$(NC)\n"
+
+review:
+	@printf "$(BOLD)$(BLUE)Running full repo review (same gate as pre-push)...$(NC)\n"
+	bash ./scripts/review-all.sh
+
+review-logs:
+	@printf "$(CYAN)Recent hook logs:$(NC)\n"
+	@ls -lt logs/git-hooks/ 2>/dev/null | head -10 || printf "$(YELLOW)No logs yet$(NC)\n"
 
 # ─── Development ─────────────────────────────────────────────────────────────
 
