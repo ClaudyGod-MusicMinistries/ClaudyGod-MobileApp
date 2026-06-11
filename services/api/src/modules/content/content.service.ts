@@ -2,9 +2,6 @@ import type { Pool, PoolClient } from 'pg';
 import type { JwtClaims } from '../../utils/jwt';
 import { pool } from '../../db/pool';
 import { BadRequestError, ForbiddenError, InternalError, NotFoundError } from '../../lib/errors';
-import { createLogger } from '../../lib/logger';
-
-const log = createLogger('content');
 import { isDatabaseConnectivityError, isMissingDatabaseStructureError } from '../../lib/postgres';
 import { contentQueue, type ContentEventType } from '../../queues/contentQueue';
 import { env } from '../../config/env';

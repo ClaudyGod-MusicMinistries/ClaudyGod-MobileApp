@@ -4,7 +4,7 @@ import { env } from '../../config/env';
 import { pool } from '../../db/pool';
 import { ForbiddenError, UnauthorizedError } from '../../lib/errors';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../../utils/jwt';
-import type { AuthResponse, SafeUser, UserRole } from './auth.types';
+import type { AuthResponse, SafeUser, UserRole, UserTier } from './auth.types';
 
 interface QueryRunner {
   query: PoolClient['query'];
@@ -15,6 +15,8 @@ interface SessionUserRow {
   email: string;
   display_name: string;
   role: UserRole;
+  tier: string;
+  mfa_enabled: boolean;
   is_active: boolean;
   created_at: string | Date;
   email_verified_at: string | Date | null;
@@ -43,6 +45,8 @@ const toSafeUser = (row: SessionUserRow): SafeUser => ({
   email: row.email,
   displayName: row.display_name,
   role: row.role,
+  tier: (row.tier ?? 'free') as UserTier,
+  mfaEnabled: row.mfa_enabled ?? false,
   createdAt: toIsoDate(row.created_at),
   emailVerifiedAt: toIsoDateOrNull(row.email_verified_at),
 });
@@ -58,7 +62,10 @@ const loadSessionUser = async (
   runner: QueryRunner = pool,
 ): Promise<SafeUser> => {
   const result = await runner.query<SessionUserRow>(
-    `SELECT id, email, display_name, role, is_active, created_at, email_verified_at
+    `SELECT id, email, display_name, role,
+            COALESCE(tier, 'free') AS tier,
+            COALESCE(mfa_enabled, FALSE) AS mfa_enabled,
+            is_active, created_at, email_verified_at
      FROM app_users
      WHERE id = $1
      LIMIT 1`,
@@ -83,6 +90,8 @@ const buildAccessToken = (user: SafeUser): string =>
     email: user.email,
     role: user.role,
     displayName: user.displayName,
+    tier: user.tier,
+    mfaEnabled: user.mfaEnabled,
   });
 
 const insertRefreshSession = async ({

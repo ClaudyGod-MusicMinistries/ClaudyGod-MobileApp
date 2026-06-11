@@ -1,21 +1,27 @@
 {
-  "extends": "expo/tsconfig.base",
   "compilerOptions": {
+    "target": "ESNext",
+    "lib": ["DOM", "ESNext"],
+    "allowJs": true,
+    "jsx": "react-native",
     "strict": true,
+    "noEmit": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "jsx": "react-native",
-    "lib": ["ES6"],
+    "module": "ESNext",
     "moduleResolution": "bundler",
+    "moduleDetection": "force",
     "customConditions": ["react-native"],
     "resolveJsonModule": true,
-    "noEmit": true,
-    "isolatedModules": true
+    "isolatedModules": true,
+    "forceConsistentCasingInFileNames": true
   },
   "include": ["**/*.ts", "**/*.tsx", "**/*.d.ts", "nativewind-env.d.ts"],
   "exclude": [
     "node_modules",
+    "android",
+    "ios",
     "babel.config.js",
     "metro.config.js",
     "jest.config.js"

@@ -28,7 +28,7 @@ export class WsServer {
   constructor(httpServer: Server) {
     this.wss = new WebSocketServer({ server: httpServer, path: '/ws' });
     this.wss.on('connection', (socket, request) => this.onConnection(socket as AuthenticatedClient, request));
-    this.pingInterval = setInterval(() => this.heartbeat(), PING_INTERVAL_MS);
+    this.pingInterval = setInterval(() => this.heartbeat(), PING_INTERVAL_MS) as unknown as NodeJS.Timeout;
     log.info('WebSocket server initialized');
   }
 

@@ -15,9 +15,9 @@ export const errorHandler: ErrorRequestHandler = (error, req, res, _next) => {
     statusCode = error.statusCode;
     message = error.message;
     details = error.details;
-    code = error.code || (typeof error.details === 'object' && error.details ? (error.details as any).code : undefined);
+    code = error.code || (typeof error.details === 'object' && error.details ? (error.details as Record<string, unknown>)['code'] as string | undefined : undefined);
     field =
-      error.field || (typeof error.details === 'object' && error.details ? (error.details as any).field : undefined);
+      error.field || (typeof error.details === 'object' && error.details ? (error.details as Record<string, unknown>)['field'] as string | undefined : undefined);
   } else if (error instanceof ZodError) {
     statusCode = 400;
     message = 'Validation failed';

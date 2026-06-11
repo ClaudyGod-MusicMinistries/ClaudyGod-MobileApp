@@ -6,7 +6,6 @@ import { authenticate } from '../../middleware/authenticate';
 import { engagementListQuerySchema } from '../me/me.schema';
 import {
   getMeMetrics,
-  getMeMostPlayed,
   getMeRecentlyPlayed,
   getMeRecommendations,
 } from '../me/me.service';

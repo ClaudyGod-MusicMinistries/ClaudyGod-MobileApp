@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import { asyncHandler } from '../../lib/asyncHandler';
 import { ForbiddenError, UnauthorizedError } from '../../lib/errors';
-import { JwtClaims } from '../../utils/jwt';
+import type { JwtClaims } from '../../utils/jwt';
+import { hasMinRole } from '../../middleware/rbac';
 import { validateSchema } from '../../lib/validation';
 import { authenticate } from '../../middleware/authenticate';
 import {
@@ -38,11 +39,11 @@ function requireAdmin(user: unknown): JwtClaims {
     throw new UnauthorizedError('Unauthorized', 'AUTH_REQUIRED');
   }
   const candidate = user as JwtClaims;
-  if (candidate.role !== 'ADMIN') {
-    throw new ForbiddenError('Admin access required', 'ADMIN_REQUIRED');
-  }
   if (!candidate.sub || !candidate.email || !candidate.displayName) {
     throw new UnauthorizedError('Unauthorized', 'AUTH_REQUIRED');
+  }
+  if (!hasMinRole(candidate.role, 'ADMIN')) {
+    throw new ForbiddenError('Admin access required', 'ADMIN_REQUIRED');
   }
   return candidate;
 }

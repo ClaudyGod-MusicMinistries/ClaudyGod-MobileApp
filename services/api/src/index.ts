@@ -48,10 +48,11 @@ const boot = async (): Promise<void> => {
     });
 
     // Force-kill if graceful shutdown stalls beyond 10 seconds.
-    setTimeout(() => {
+    const killTimer = setTimeout(() => {
       log.error('Shutdown timed out — forcing exit');
       process.exit(1);
-    }, 10_000).unref();
+    }, 10_000);
+    (killTimer as unknown as NodeJS.Timeout).unref();
   };
 
   process.on('SIGINT', () => { void shutdown('SIGINT'); });

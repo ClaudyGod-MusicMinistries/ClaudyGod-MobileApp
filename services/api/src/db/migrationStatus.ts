@@ -1,4 +1,7 @@
 import { closePool, pool } from './pool';
+import { createLogger } from '../lib/logger';
+
+const log = createLogger('db.migrationStatus');
 
 type MigrationRow = {
   id: string;
@@ -22,8 +25,8 @@ const run = async (): Promise<void> => {
     `);
 
     if (!ledgerExists.rows[0]?.exists) {
-      console.log('Migration ledger: missing');
-      console.log('Run npm run migrate:prod before starting the production API.');
+      log.info('Migration ledger: missing');
+      log.info('Run yarn migrate:prod before starting the production API.');
       return;
     }
 
@@ -42,12 +45,12 @@ const run = async (): Promise<void> => {
     `);
 
     const latestMigration = migrations.rows.at(-1);
-    console.log(`Migration ledger: ${migrations.rowCount} applied`);
+    log.info(`Migration ledger: ${migrations.rowCount} applied`);
     if (latestMigration) {
-      console.log(`Latest migration: ${latestMigration.id} ${latestMigration.name} at ${latestMigration.executed_at}`);
+      log.info(`Latest migration: ${latestMigration.id} ${latestMigration.name} at ${latestMigration.executed_at}`);
     }
-    console.log(`Public tables: ${tables.rowCount}`);
-    console.log(tables.rows.map((row) => `- ${row.table_name}`).join('\n'));
+    log.info(`Public tables: ${tables.rowCount}`);
+    log.info(tables.rows.map((row) => `- ${row.table_name}`).join('\n'));
   } finally {
     await closePool();
   }
@@ -56,7 +59,7 @@ const run = async (): Promise<void> => {
 if (require.main === module) {
   run().catch(async (error) => {
     await closePool();
-    console.error('Migration status check failed:', error);
+    log.error('Migration status check failed', { error });
     process.exit(1);
   });
 }

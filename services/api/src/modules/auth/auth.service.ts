@@ -1,4 +1,5 @@
-import crypto from 'crypto';
+import { createHash, randomBytes, randomInt } from 'crypto';
+import type { UserTier } from './auth.types';
 import type { PoolClient } from 'pg';
 import { pool } from '../../db/pool';
 import { env } from '../../config/env';
@@ -21,6 +22,13 @@ import { isMissingDatabaseStructureError } from '../../lib/postgres';
 import { hashPassword, verifyPassword } from '../../utils/password';
 import { signAccessToken } from '../../utils/jwt';
 import { revokeAllUserSessions } from './authSession.service';
+import {
+  checkAccountLocked,
+  clearFailedLogins,
+  recordFailedLogin,
+  recordSecurityEvent,
+} from './accountSecurity.service';
+import { validateMfaCode } from './mfa.service';
 import type {
   AuthActionResponse,
   AuthResponse,
@@ -47,6 +55,8 @@ interface UserRow {
   password_hash: string;
   display_name: string;
   role: UserRole;
+  tier: string;
+  mfa_enabled: boolean;
   is_active: boolean;
   created_at: string | Date;
   email_verified_at: string | Date | null;
@@ -57,6 +67,8 @@ interface PublicUserRow {
   email: string;
   display_name: string;
   role: UserRole;
+  tier: string;
+  mfa_enabled: boolean;
   created_at: string | Date;
   email_verified_at: string | Date | null;
 }
@@ -101,6 +113,8 @@ const toSafeUser = (row: PublicUserRow): SafeUser => ({
   email: row.email,
   displayName: row.display_name,
   role: row.role,
+  tier: (row.tier ?? 'free') as UserTier,
+  mfaEnabled: row.mfa_enabled ?? false,
   createdAt: toIsoDate(row.created_at),
   emailVerifiedAt: toIsoDateOrNull(row.email_verified_at),
 });
@@ -126,13 +140,13 @@ const ensureUserScaffold = async (user: SafeUser, runner: QueryRunner = pool): P
 };
 
 const tokenHash = (token: string): string =>
-  crypto.createHash('sha256').update(token).digest('hex');
+  createHash('sha256').update(token).digest('hex');
 
 const createRawToken = (): string =>
-  crypto.randomBytes(ACTION_TOKEN_BYTES).toString('hex');
+  randomBytes(ACTION_TOKEN_BYTES).toString('hex');
 
 const createVerificationCode = (): string =>
-  crypto.randomInt(0, 10 ** EMAIL_VERIFICATION_CODE_LENGTH)
+  randomInt(0, 10 ** EMAIL_VERIFICATION_CODE_LENGTH)
     .toString()
     .padStart(EMAIL_VERIFICATION_CODE_LENGTH, '0');
 
@@ -145,6 +159,8 @@ const buildAccessToken = (user: SafeUser): string =>
     email: user.email,
     role: user.role,
     displayName: user.displayName,
+    tier: user.tier,
+    mfaEnabled: user.mfaEnabled,
   });
 
 const buildPendingRegisterResponse = (email: string, message = PENDING_VERIFICATION_MESSAGE): RegisterResponse => ({
@@ -631,7 +647,10 @@ export const loginUser = async (input: LoginInput, context: AuthRequestContext =
   const email = input.email.trim().toLowerCase();
 
   const result = await pool.query<UserRow>(
-    `SELECT id, email, password_hash, display_name, role, is_active, created_at, email_verified_at
+    `SELECT id, email, password_hash, display_name, role,
+            COALESCE(tier, 'free') AS tier,
+            COALESCE(mfa_enabled, FALSE) AS mfa_enabled,
+            is_active, created_at, email_verified_at
      FROM app_users
      WHERE email = $1
      LIMIT 1`,
@@ -640,21 +659,14 @@ export const loginUser = async (input: LoginInput, context: AuthRequestContext =
 
   if (result.rowCount === 0) {
     const pending = await pool.query<{ email: string }>(
-      `SELECT email
-       FROM pending_signups
-       WHERE email = $1
-         AND expires_at > NOW()
-       LIMIT 1`,
+      `SELECT email FROM pending_signups WHERE email = $1 AND expires_at > NOW() LIMIT 1`,
       [email],
     );
 
     if ((pending.rowCount ?? 0) > 0) {
       await recordAuthActivity({
-        email,
-        eventKey: 'login_unverified',
-        status: 'failure',
-        requestIp: context.requestIp,
-        userAgent: context.userAgent,
+        email, eventKey: 'login_unverified', status: 'failure',
+        requestIp: context.requestIp, userAgent: context.userAgent,
       });
       throw new ForbiddenError(
         'Email is not verified. Enter the 6-digit code sent to your email to finish creating your account.',
@@ -663,11 +675,8 @@ export const loginUser = async (input: LoginInput, context: AuthRequestContext =
     }
 
     await recordAuthActivity({
-      email,
-      eventKey: 'login_failed',
-      status: 'failure',
-      requestIp: context.requestIp,
-      userAgent: context.userAgent,
+      email, eventKey: 'login_failed', status: 'failure',
+      requestIp: context.requestIp, userAgent: context.userAgent,
       metadata: { reason: 'user_not_found' },
     });
     throw new UnauthorizedError('Invalid credentials', 'AUTH_INVALID_CREDENTIALS');
@@ -677,29 +686,34 @@ export const loginUser = async (input: LoginInput, context: AuthRequestContext =
 
   if (!userRow.is_active) {
     await recordAuthActivity({
-      userId: userRow.id,
-      email,
-      eventKey: 'login_failed',
-      status: 'failure',
-      requestIp: context.requestIp,
-      userAgent: context.userAgent,
+      userId: userRow.id, email, eventKey: 'login_failed', status: 'failure',
+      requestIp: context.requestIp, userAgent: context.userAgent,
       metadata: { reason: 'inactive' },
     });
     throw new ForbiddenError('Account is inactive', 'AUTH_INACTIVE');
   }
 
+  await checkAccountLocked(userRow.id);
+
   const isValidPassword = await verifyPassword(input.password, userRow.password_hash);
 
   if (!isValidPassword) {
+    const { isLocked } = await recordFailedLogin(
+      userRow.id,
+      context.requestIp ?? null,
+      context.userAgent ?? null,
+    );
     await recordAuthActivity({
-      userId: userRow.id,
-      email,
-      eventKey: 'login_failed',
-      status: 'failure',
-      requestIp: context.requestIp,
-      userAgent: context.userAgent,
-      metadata: { reason: 'invalid_password' },
+      userId: userRow.id, email, eventKey: 'login_failed', status: 'failure',
+      requestIp: context.requestIp, userAgent: context.userAgent,
+      metadata: { reason: 'invalid_password', locked: isLocked },
     });
+    if (isLocked) {
+      throw new UnauthorizedError(
+        `Too many failed attempts. Account temporarily locked for ${env.ACCOUNT_LOCKOUT_DURATION_MINUTES} minutes.`,
+        'ACCOUNT_LOCKED',
+      );
+    }
     throw new UnauthorizedError('Invalid credentials', 'AUTH_INVALID_CREDENTIALS');
   }
 
@@ -711,12 +725,9 @@ export const loginUser = async (input: LoginInput, context: AuthRequestContext =
     !safeUser.emailVerifiedAt
   ) {
     await recordAuthActivity({
-      userId: safeUser.id,
-      email: safeUser.email,
-      eventKey: 'login_unverified',
-      status: 'failure',
-      requestIp: context.requestIp,
-      userAgent: context.userAgent,
+      userId: safeUser.id, email: safeUser.email,
+      eventKey: 'login_unverified', status: 'failure',
+      requestIp: context.requestIp, userAgent: context.userAgent,
     });
     throw new ForbiddenError(
       'Email is not verified. Enter the 6-digit code sent to your email or request a new verification email.',
@@ -724,16 +735,43 @@ export const loginUser = async (input: LoginInput, context: AuthRequestContext =
     );
   }
 
+  if (safeUser.mfaEnabled) {
+    if (!input.mfaCode) {
+      const mfaToken = randomBytes(32).toString('hex');
+      await pool.query(
+        `INSERT INTO auth_action_tokens (user_id, token_hash, token_type, expires_at)
+         VALUES ($1, $2, 'mfa_step_up', NOW() + INTERVAL '10 minutes')`,
+        [safeUser.id, tokenHash(mfaToken)],
+      );
+      return {
+        accessToken: '',
+        user: safeUser,
+        mfaRequired: true,
+        mfaToken,
+        message: 'MFA verification required',
+      };
+    }
+
+    const isMfaValid = await validateMfaCode(safeUser.id, input.mfaCode);
+    if (!isMfaValid) {
+      await recordSecurityEvent(safeUser.id, 'login_mfa_failed', {
+        ip: context.requestIp, userAgent: context.userAgent,
+      });
+      throw new UnauthorizedError('Invalid MFA code', 'MFA_INVALID_CODE');
+    }
+  }
+
   await Promise.all([
+    clearFailedLogins(userRow.id),
     ensureUserScaffold(safeUser),
     pool.query(`UPDATE app_users SET last_login_at = NOW() WHERE id = $1`, [safeUser.id]),
     recordAuthActivity({
-      userId: safeUser.id,
-      email: safeUser.email,
-      eventKey: 'login_success',
-      status: 'success',
-      requestIp: context.requestIp,
-      userAgent: context.userAgent,
+      userId: safeUser.id, email: safeUser.email,
+      eventKey: 'login_success', status: 'success',
+      requestIp: context.requestIp, userAgent: context.userAgent,
+    }),
+    recordSecurityEvent(safeUser.id, 'login_success', {
+      ip: context.requestIp, userAgent: context.userAgent,
     }),
   ]);
 
@@ -844,7 +882,7 @@ export const verifyEmail = async (input: VerifyEmailInput, context: AuthRequestC
       displayName: user.displayName,
     });
   } catch (error) {
-    logger.error('Welcome email enqueue failed', {
+    log.error('Welcome email enqueue failed', {
       error: error instanceof Error ? error.message : String(error),
       userId: user.id,
       email: user.email,

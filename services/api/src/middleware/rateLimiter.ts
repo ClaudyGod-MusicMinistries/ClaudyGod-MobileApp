@@ -1,5 +1,5 @@
 import rateLimit from 'express-rate-limit';
-import { Request } from 'express';
+import type { Request } from 'express';
 
 // General API rate limiter
 export const apiLimiter = rateLimit({
@@ -8,7 +8,7 @@ export const apiLimiter = rateLimit({
   message: 'Too many requests from this IP, please try again later',
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (req: Request) => process.env.NODE_ENV === 'development',
+  skip: (_req: Request) => process.env.NODE_ENV === 'development',
 });
 
 // Strict rate limiter for auth attempts
@@ -18,10 +18,12 @@ export const authLimiter = rateLimit({
   message: 'Too many login attempts, please try again later',
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (req: Request) => process.env.NODE_ENV === 'development',
+  skip: (_req: Request) => process.env.NODE_ENV === 'development',
   keyGenerator: (req: Request) => {
     // Rate limit by IP + email combination
-    return `${req.ip}-${((req.body as any)?.email || 'unknown').toLowerCase()}`;
+    const body = req.body as Record<string, unknown>;
+    const email = typeof body?.email === 'string' ? body.email : 'unknown';
+    return `${req.ip}-${email.toLowerCase()}`;
   },
 });
 
@@ -32,7 +34,7 @@ export const passwordResetLimiter = rateLimit({
   message: 'Too many password reset attempts, please try again later',
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (req: Request) => process.env.NODE_ENV === 'development',
+  skip: (_req: Request) => process.env.NODE_ENV === 'development',
 });
 
 // Email verification limiter
@@ -42,7 +44,7 @@ export const emailVerificationLimiter = rateLimit({
   message: 'Too many verification attempts, please try again later',
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (req: Request) => process.env.NODE_ENV === 'development',
+  skip: (_req: Request) => process.env.NODE_ENV === 'development',
 });
 
 // Alias for backward compatibility

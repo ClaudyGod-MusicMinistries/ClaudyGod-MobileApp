@@ -2,6 +2,16 @@ import { pool } from '../db/pool';
 import { emailQueue } from '../queues/emailQueue';
 import { emailTransportInfo } from './email';
 
+interface EmailJobRow {
+  id: number;
+  recipients: string | string[];
+  subject: string;
+  status: string;
+  error: string | null;
+  processed_at: Date | null;
+  last_attempt_at: Date | null;
+}
+
 export interface EmailQueueStatus {
   smtpConfigured: boolean;
   smtpProvider: string;
@@ -39,7 +49,7 @@ export const getEmailQueueStatus = async (): Promise<EmailQueueStatus> => {
      LIMIT 20`,
   );
 
-  const recentJobs = recentJobsResult.rows.map((row: any) => ({
+  const recentJobs = recentJobsResult.rows.map((row: EmailJobRow) => ({
     id: row.id,
     recipients: Array.isArray(row.recipients) ? row.recipients : String(row.recipients).split(',').map((e: string) => e.trim()),
     subject: row.subject,
