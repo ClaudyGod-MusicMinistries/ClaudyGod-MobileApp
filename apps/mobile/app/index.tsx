@@ -20,8 +20,6 @@ import { APP_ROUTES } from '../util/appRoutes';
 import { BRAND_LOGO_ASSET, LANDING_BG_ASSET } from '../util/brandAssets';
 import { useDeviceClass } from '../util/deviceClassConfig';
 
-// ─── Brand mark ────────────────────────────────────────────────────────────────
-
 function BrandMark({ size = 56 }: { size?: number }) {
   return (
     <View
@@ -42,7 +40,40 @@ function BrandMark({ size = 56 }: { size?: number }) {
   );
 }
 
-// ─── Action buttons ─────────────────────────────────────────────────────────────
+const FEATURE_PILLS = [
+  { label: 'Music', icon: 'graphic-eq' as const, color: '#B794F6' },
+  { label: 'Videos', icon: 'smart-display' as const, color: '#60A5FA' },
+  { label: 'Live', icon: 'live-tv' as const, color: '#F87171' },
+  { label: 'Word', icon: 'auto-stories' as const, color: '#FCD34D' },
+] as const;
+
+function FeatureHighlights() {
+  return (
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+      {FEATURE_PILLS.map((pill) => (
+        <View
+          key={pill.label}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 6,
+            paddingHorizontal: 12,
+            paddingVertical: 7,
+            borderRadius: 999,
+            backgroundColor: 'rgba(255,255,255,0.07)',
+            borderWidth: 1,
+            borderColor: 'rgba(255,255,255,0.12)',
+          }}
+        >
+          <MaterialIcons name={pill.icon} size={14} color={pill.color} />
+          <Text style={{ color: 'rgba(255,255,255,0.78)', fontSize: 12, fontWeight: '500' }}>
+            {pill.label}
+          </Text>
+        </View>
+      ))}
+    </View>
+  );
+}
 
 function LandingActions({ compact }: { compact: boolean }) {
   const router = useRouter();
@@ -60,7 +91,7 @@ function LandingActions({ compact }: { compact: boolean }) {
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
         <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.12)' }} />
         <Text style={{ color: 'rgba(255,255,255,0.36)', fontSize: 11, letterSpacing: 0.3 }}>
-          or
+          or continue with account
         </Text>
         <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.12)' }} />
       </View>
@@ -88,8 +119,8 @@ function LandingActions({ compact }: { compact: boolean }) {
           textColor="#FFFFFF"
           style={{
             flex: 1,
-            backgroundColor: 'rgba(255,255,255,0.08)',
-            borderColor: 'rgba(255,255,255,0.20)',
+            backgroundColor: 'rgba(183,148,246,0.14)',
+            borderColor: 'rgba(183,148,246,0.32)',
           }}
         />
       </View>
@@ -102,14 +133,11 @@ function LandingActions({ compact }: { compact: boolean }) {
           lineHeight: 16,
         }}
       >
-        Free to explore. Sign in to unlock your full experience.
+        Free to explore · No account required to listen
       </Text>
     </View>
   );
 }
-
-// ─── Phone layout ───────────────────────────────────────────────────────────────
-// Uses fixed flex layout — no scrollable content, fits the viewport exactly.
 
 function PhoneLanding() {
   const device = useDeviceClass();
@@ -126,7 +154,6 @@ function PhoneLanding() {
         style={StyleSheet.absoluteFillObject}
       />
 
-      {/* Multi-stop gradient — image shows at top, blacks out below 60% */}
       <LinearGradient
         colors={[
           'rgba(7,5,12,0.06)',
@@ -139,106 +166,110 @@ function PhoneLanding() {
       />
 
       <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
-        <View
-          style={{
-            flex: 1,
-            paddingHorizontal: gutter,
-            paddingTop: compact ? 16 : 22,
-            paddingBottom: compact ? 16 : 22,
-            justifyContent: 'space-between',
-          }}
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1 }}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
-          {/* ── Logo row ── */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <BrandMark size={compact ? 42 : 48} />
-            <View>
-              <Text
-                style={{
-                  color: 'rgba(255,255,255,0.48)',
-                  fontSize: 9,
-                  letterSpacing: 2.4,
-                  textTransform: 'uppercase',
-                }}
-              >
-                ClaudyGod
-              </Text>
-              <Text
-                style={{
-                  color: 'rgba(255,255,255,0.88)',
-                  fontSize: compact ? 12.5 : 13.5,
-                  fontWeight: '600',
-                  marginTop: 2,
-                  letterSpacing: -0.1,
-                }}
-              >
-                Music · Ministry · Worship
-              </Text>
-            </View>
-          </View>
-
-          {/* ── Headline + CTA ── */}
-          <View style={{ gap: compact ? 18 : 24 }}>
-            <View style={{ gap: compact ? 10 : 12 }}>
-              {/* Accent badge */}
-              <View
-                style={{
-                  alignSelf: 'flex-start',
-                  borderRadius: 999,
-                  backgroundColor: 'rgba(183,148,246,0.14)',
-                  borderWidth: 1,
-                  borderColor: 'rgba(183,148,246,0.28)',
-                  paddingHorizontal: 12,
-                  paddingVertical: 5,
-                }}
-              >
+          <View
+            style={{
+              flex: 1,
+              minHeight: height,
+              paddingHorizontal: gutter,
+              paddingTop: compact ? 16 : 22,
+              paddingBottom: compact ? 16 : 22,
+              justifyContent: 'space-between',
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <BrandMark size={compact ? 42 : 48} />
+              <View>
                 <Text
                   style={{
-                    color: 'rgba(183,148,246,0.9)',
-                    fontSize: 10,
-                    fontWeight: '600',
-                    letterSpacing: 1.4,
+                    color: 'rgba(255,255,255,0.48)',
+                    fontSize: 9,
+                    letterSpacing: 2.4,
                     textTransform: 'uppercase',
                   }}
                 >
-                  Now streaming
+                  ClaudyGod
+                </Text>
+                <Text
+                  style={{
+                    color: 'rgba(255,255,255,0.88)',
+                    fontSize: compact ? 12.5 : 13.5,
+                    fontWeight: '600',
+                    marginTop: 2,
+                    letterSpacing: -0.1,
+                  }}
+                >
+                  Music · Ministry · Worship
                 </Text>
               </View>
-
-              <CustomText
-                variant="display"
-                style={{
-                  color: '#FFFFFF',
-                  fontSize: headlineSize,
-                  lineHeight: headlineSize * 1.08,
-                  letterSpacing: -1.2,
-                  fontWeight: '800',
-                }}
-              >
-                Worship{'\n'}without limits.
-              </CustomText>
-
-              <CustomText
-                variant="body"
-                style={{
-                  color: 'rgba(255,255,255,0.64)',
-                  fontSize: compact ? 13.5 : 15,
-                  lineHeight: compact ? 20 : 22,
-                  maxWidth: 360,
-                }}
-              >
-                Music, videos & live sessions from ClaudyGod — whenever, wherever.
-              </CustomText>
             </View>
 
-            <LandingActions compact={compact} />
+            <View style={{ gap: compact ? 18 : 24 }}>
+              <View style={{ gap: compact ? 10 : 12 }}>
+                <View
+                  style={{
+                    alignSelf: 'flex-start',
+                    borderRadius: 999,
+                    backgroundColor: 'rgba(183,148,246,0.14)',
+                    borderWidth: 1,
+                    borderColor: 'rgba(183,148,246,0.28)',
+                    paddingHorizontal: 12,
+                    paddingVertical: 5,
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: 'rgba(183,148,246,0.9)',
+                      fontSize: 10,
+                      fontWeight: '600',
+                      letterSpacing: 1.4,
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    Now streaming
+                  </Text>
+                </View>
+
+                <CustomText
+                  variant="display"
+                  style={{
+                    color: '#FFFFFF',
+                    fontSize: headlineSize,
+                    lineHeight: headlineSize * 1.08,
+                    letterSpacing: -1.2,
+                    fontWeight: '800',
+                  }}
+                >
+                  Worship{'\n'}without limits.
+                </CustomText>
+
+                <CustomText
+                  variant="body"
+                  style={{
+                    color: 'rgba(255,255,255,0.64)',
+                    fontSize: compact ? 13.5 : 15,
+                    lineHeight: compact ? 20 : 22,
+                    maxWidth: 360,
+                  }}
+                >
+                  Music, videos & live sessions from ClaudyGod — whenever, wherever.
+                </CustomText>
+
+                <FeatureHighlights />
+              </View>
+
+              <LandingActions compact={compact} />
+            </View>
           </View>
-        </View>
+        </ScrollView>
       </SafeAreaView>
     </View>
   );
 }
-
-// ─── Wide layout (tablet / desktop / TV) ─────────────────────────────────────────
 
 function WideLanding() {
   const device = useDeviceClass();
@@ -272,118 +303,118 @@ function WideLanding() {
       />
 
       <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
-        <View
-          style={{
-            flex: 1,
-            justifyContent: 'center',
-            paddingHorizontal: gutter,
-            paddingVertical: device.isTV ? 64 : 48,
-          }}
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
+          showsVerticalScrollIndicator={false}
         >
           <View
             style={{
-              width: '100%',
-              maxWidth: Math.min(device.maxContentWidth ?? 1140, viewportWidth - gutter * 2),
-              alignSelf: 'center',
+              paddingHorizontal: gutter,
+              paddingVertical: device.isTV ? 64 : 48,
             }}
           >
-            {/* Brand row */}
-            <View
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 32 }}
-            >
-              <BrandMark size={device.isTV ? 70 : device.isDesktop ? 60 : 52} />
-              <View>
-                <Text
-                  style={{
-                    color: 'rgba(255,255,255,0.44)',
-                    fontSize: device.isTV ? 11 : 10,
-                    letterSpacing: 2.4,
-                    textTransform: 'uppercase',
-                  }}
-                >
-                  ClaudyGod
-                </Text>
-                <Text
-                  style={{
-                    color: 'rgba(255,255,255,0.88)',
-                    fontSize: device.isTV ? 20 : 16,
-                    fontWeight: '600',
-                    marginTop: 4,
-                    letterSpacing: -0.2,
-                  }}
-                >
-                  Music · Ministry · Worship
-                </Text>
-              </View>
-            </View>
-
-            {/* Headline + actions — max width to avoid overly wide text */}
             <View
               style={{
-                maxWidth: device.isTV ? 760 : device.isDesktop ? 680 : 580,
-                gap: device.isTV ? 32 : 26,
+                width: '100%',
+                maxWidth: Math.min(device.maxContentWidth ?? 1140, viewportWidth - gutter * 2),
+                alignSelf: 'center',
               }}
             >
-              {/* Accent badge */}
               <View
-                style={{
-                  alignSelf: 'flex-start',
-                  borderRadius: 999,
-                  backgroundColor: 'rgba(183,148,246,0.14)',
-                  borderWidth: 1,
-                  borderColor: 'rgba(183,148,246,0.28)',
-                  paddingHorizontal: 14,
-                  paddingVertical: 6,
-                }}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 32 }}
               >
-                <Text
-                  style={{
-                    color: 'rgba(183,148,246,0.9)',
-                    fontSize: 11,
-                    fontWeight: '600',
-                    letterSpacing: 1.4,
-                    textTransform: 'uppercase',
-                  }}
-                >
-                  Now streaming
-                </Text>
+                <BrandMark size={device.isTV ? 70 : device.isDesktop ? 60 : 52} />
+                <View>
+                  <Text
+                    style={{
+                      color: 'rgba(255,255,255,0.44)',
+                      fontSize: device.isTV ? 11 : 10,
+                      letterSpacing: 2.4,
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    ClaudyGod
+                  </Text>
+                  <Text
+                    style={{
+                      color: 'rgba(255,255,255,0.88)',
+                      fontSize: device.isTV ? 20 : 16,
+                      fontWeight: '600',
+                      marginTop: 4,
+                      letterSpacing: -0.2,
+                    }}
+                  >
+                    Music · Ministry · Worship
+                  </Text>
+                </View>
               </View>
 
-              <CustomText
-                variant="display"
+              <View
                 style={{
-                  color: '#FFFFFF',
-                  fontSize: titleSize,
-                  lineHeight: titleSize * 1.06,
-                  letterSpacing: device.isTV ? -2.2 : -1.4,
-                  fontWeight: '800',
+                  maxWidth: device.isTV ? 760 : device.isDesktop ? 680 : 580,
+                  gap: device.isTV ? 32 : 26,
                 }}
               >
-                Worship{'\n'}without limits.
-              </CustomText>
+                <View
+                  style={{
+                    alignSelf: 'flex-start',
+                    borderRadius: 999,
+                    backgroundColor: 'rgba(183,148,246,0.14)',
+                    borderWidth: 1,
+                    borderColor: 'rgba(183,148,246,0.28)',
+                    paddingHorizontal: 14,
+                    paddingVertical: 6,
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: 'rgba(183,148,246,0.9)',
+                      fontSize: 11,
+                      fontWeight: '600',
+                      letterSpacing: 1.4,
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    Now streaming
+                  </Text>
+                </View>
 
-              <CustomText
-                variant="body"
-                style={{
-                  color: 'rgba(255,255,255,0.64)',
-                  fontSize: device.isTV ? 20 : device.isDesktop ? 17 : 15.5,
-                  lineHeight: device.isTV ? 32 : 26,
-                  maxWidth: 520,
-                }}
-              >
-                Music, videos & live sessions from ClaudyGod — whenever, wherever.
-              </CustomText>
+                <CustomText
+                  variant="display"
+                  style={{
+                    color: '#FFFFFF',
+                    fontSize: titleSize,
+                    lineHeight: titleSize * 1.06,
+                    letterSpacing: device.isTV ? -2.2 : -1.4,
+                    fontWeight: '800',
+                  }}
+                >
+                  Worship{'\n'}without limits.
+                </CustomText>
 
-              <LandingActions compact={false} />
+                <CustomText
+                  variant="body"
+                  style={{
+                    color: 'rgba(255,255,255,0.64)',
+                    fontSize: device.isTV ? 20 : device.isDesktop ? 17 : 15.5,
+                    lineHeight: device.isTV ? 32 : 26,
+                    maxWidth: 520,
+                  }}
+                >
+                  Music, videos & live sessions from ClaudyGod — whenever, wherever.
+                </CustomText>
+
+                <FeatureHighlights />
+
+                <LandingActions compact={false} />
+              </View>
             </View>
           </View>
-        </View>
+        </ScrollView>
       </SafeAreaView>
     </View>
   );
 }
-
-// ─── Root export ─────────────────────────────────────────────────────────────────
 
 export default function LandingScreen() {
   const device = useDeviceClass();
