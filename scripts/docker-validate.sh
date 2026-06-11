@@ -63,17 +63,29 @@ TRAEFIK_PUBLIC_NETWORK=traefik-public
 TRAEFIK_CERT_RESOLVER=letsencrypt
 EOF
 
-validate_compose "$ROOT_DIR/docker-compose.local.yml" "$ROOT_DIR/.env.development"
-validate_compose "$ROOT_DIR/services/api/docker-compose.dev.yml" "$ROOT_DIR/.env.development"
+# Use .env.development if it exists; fall back to .env.development.example for CI/hook environments.
+DEV_ENV_FILE="$ROOT_DIR/.env.development"
+if [ ! -f "$DEV_ENV_FILE" ]; then
+  if [ -f "$ROOT_DIR/.env.development.example" ]; then
+    DEV_ENV_FILE="$ROOT_DIR/.env.development.example"
+    echo "Note: .env.development not found — using .env.development.example for compose validation."
+  else
+    echo ".env.development and .env.development.example are both missing." >&2
+    exit 1
+  fi
+fi
+
+validate_compose "$ROOT_DIR/docker-compose.local.yml" "$DEV_ENV_FILE"
+validate_compose "$ROOT_DIR/services/api/docker-compose.dev.yml" "$DEV_ENV_FILE"
 
 # Admin compose may live in admin/ or admin/web depending on branch structure.
-if ! validate_compose "$ROOT_DIR/admin/docker-compose.dev.yml" "$ROOT_DIR/.env.development"; then
-  if ! validate_compose "$ROOT_DIR/admin/web/docker-compose.dev.yml" "$ROOT_DIR/.env.development"; then
+if ! validate_compose "$ROOT_DIR/admin/docker-compose.dev.yml" "$DEV_ENV_FILE"; then
+  if ! validate_compose "$ROOT_DIR/admin/web/docker-compose.dev.yml" "$DEV_ENV_FILE"; then
     echo "Skipping missing admin dev compose file (checked admin/ and admin/web)."
   fi
 fi
 
-validate_compose "$ROOT_DIR/apps/mobile/docker-compose.dev.yml" "$ROOT_DIR/.env.development" --profile web --profile native
+validate_compose "$ROOT_DIR/apps/mobile/docker-compose.dev.yml" "$DEV_ENV_FILE" --profile web --profile native
 validate_compose "$ROOT_DIR/docker-compose.production.yml" "$PRODUCTION_CHECK_ENV"
 
 echo "Docker compose validation passed."
