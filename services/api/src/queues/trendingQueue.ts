@@ -37,4 +37,10 @@ export const scheduleTrendingJobs = async (): Promise<void> => {
     { every: 60 * 60 * 1000 },
     { name: 'trending-daily', data: { period: 'daily' } },
   );
+
+  await trendingQueue.upsertJobScheduler(
+    'trending-weekly',
+    { every: 6 * 60 * 60 * 1000 },
+    { name: 'trending-weekly', data: { period: 'weekly' } },
+  );
 };

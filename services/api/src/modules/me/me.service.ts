@@ -4,6 +4,7 @@ import { pool } from '../../db/pool';
 import { env } from '../../config/env';
 import { queueAccountEmailChangeEmail, queueProfileUpdatedEmail } from '../../infra/transactionalEmails';
 import { BadRequestError, ConflictError, ForbiddenError, NotFoundError } from '../../lib/errors';
+import { ensureUserScaffold } from '../../lib/userScaffold';
 import { createLogger } from '../../lib/logger';
 import { isDatabaseConnectivityError, isMissingDatabaseStructureError } from '../../lib/postgres';
 import { verifyPassword } from '../../utils/password';
@@ -185,26 +186,6 @@ const profileFieldLabels: Record<
   bio: 'Bio',
 };
 
-const ensureMeScaffold = async (user: JwtClaims): Promise<void> => {
-  await Promise.all([
-    pool.query(
-      `INSERT INTO user_profiles (user_id, display_name, email)
-       VALUES ($1, $2, $3)
-       ON CONFLICT (user_id) DO UPDATE
-       SET display_name = EXCLUDED.display_name,
-           email = EXCLUDED.email,
-           updated_at = NOW()`,
-      [user.sub, user.displayName, user.email],
-    ),
-    pool.query(
-      `INSERT INTO user_preferences (user_id)
-       VALUES ($1)
-       ON CONFLICT (user_id) DO NOTHING`,
-      [user.sub],
-    ),
-  ]);
-};
-
 const readProfile = async (userId: string): Promise<MeProfileRow> => {
   const result = await pool.query<MeProfileRow>(
     `SELECT
@@ -331,7 +312,7 @@ export const getMeProfile = async (user: JwtClaims): Promise<{
     updatedAt: string;
   };
 }> => {
-  await ensureMeScaffold(user);
+  await ensureUserScaffold(user.sub, user.displayName, user.email);
   const row = await readProfile(user.sub);
   return {
     user: {
@@ -365,7 +346,7 @@ export const updateMeProfile = async (
 ): Promise<{
   user: Awaited<ReturnType<typeof getMeProfile>>['user'];
 }> => {
-  await ensureMeScaffold(user);
+  await ensureUserScaffold(user.sub, user.displayName, user.email);
   const previousProfile = await readProfile(user.sub);
 
   const client = await pool.connect();
@@ -670,7 +651,7 @@ export const getMePreferences = async (user: JwtClaims): Promise<{
     updatedAt: string;
   };
 }> => {
-  await ensureMeScaffold(user);
+  await ensureUserScaffold(user.sub, user.displayName, user.email);
   const row = await readPreferences(user.sub);
   return {
     preferences: {
@@ -696,7 +677,7 @@ export const updateMePreferences = async (
     themePreference?: ThemePreference;
   },
 ) => {
-  await ensureMeScaffold(user);
+  await ensureUserScaffold(user.sub, user.displayName, user.email);
 
   await pool.query(
     `UPDATE user_preferences
@@ -728,7 +709,7 @@ export const getMeMetrics = async (user: JwtClaims): Promise<{
   totalPlays: number;
   liveSubscriptions: number;
 }> => {
-  await ensureMeScaffold(user);
+  await ensureUserScaffold(user.sub, user.displayName, user.email);
   const [profile, playsCount, liveCount] = await Promise.all([
     readProfile(user.sub),
     pool.query<CountRow>(`SELECT COUNT(*)::text AS count FROM user_play_events WHERE user_id = $1`, [user.sub]),
@@ -1035,7 +1016,7 @@ export const saveMePushToken = async (
   user: JwtClaims,
   input: { expoPushToken: string; deviceType?: string },
 ): Promise<{ saved: true }> => {
-  await ensureMeScaffold(user);
+  await ensureUserScaffold(user.sub, user.displayName, user.email);
 
   await pool.query(
     `INSERT INTO user_push_tokens (user_id, expo_push_token, device_type)

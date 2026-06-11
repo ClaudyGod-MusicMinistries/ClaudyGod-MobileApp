@@ -1,4 +1,3 @@
-import type { PoolClient } from 'pg';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { env } from '../../config/env';
 import { pool } from '../../db/pool';
@@ -6,6 +5,7 @@ import { supabaseAdmin } from '../../infra/supabase';
 import type { JwtClaims } from '../../utils/jwt';
 import { verifyAccessToken } from '../../utils/jwt';
 import type { UserRole } from './auth.types';
+import { ensureUserScaffold } from '../../lib/userScaffold';
 
 interface AppUserRow {
   id: string;
@@ -31,31 +31,6 @@ const inferDisplayName = (user: SupabaseUser): string => {
   }
 
   return 'ClaudyGod User';
-};
-
-const ensureUserScaffold = async (
-  client: PoolClient,
-  userId: string,
-  displayName: string,
-  email: string,
-): Promise<void> => {
-  await Promise.all([
-    client.query(
-      `INSERT INTO user_profiles (user_id, display_name, email)
-       VALUES ($1, $2, $3)
-       ON CONFLICT (user_id) DO UPDATE
-       SET display_name = EXCLUDED.display_name,
-           email = EXCLUDED.email,
-           updated_at = NOW()`,
-      [userId, displayName, email],
-    ),
-    client.query(
-      `INSERT INTO user_preferences (user_id)
-       VALUES ($1)
-       ON CONFLICT (user_id) DO NOTHING`,
-      [userId],
-    ),
-  ]);
 };
 
 const syncSupabaseUser = async (user: SupabaseUser): Promise<JwtClaims> => {
@@ -116,7 +91,7 @@ const syncSupabaseUser = async (user: SupabaseUser): Promise<JwtClaims> => {
       appUser = inserted.rows[0]!;
     }
 
-    await ensureUserScaffold(client, appUser.id, appUser.display_name, appUser.email);
+    await ensureUserScaffold(appUser.id, appUser.display_name, appUser.email, client);
     await client.query('COMMIT');
 
     return {

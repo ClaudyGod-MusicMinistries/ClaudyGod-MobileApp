@@ -16,6 +16,7 @@ import {
   NotFoundError,
   UnauthorizedError,
 } from '../../lib/errors';
+import { ensureUserScaffold } from '../../lib/userScaffold';
 
 const log = createLogger('auth');
 import { isMissingDatabaseStructureError } from '../../lib/postgres';
@@ -118,26 +119,6 @@ const toSafeUser = (row: PublicUserRow): SafeUser => ({
   createdAt: toIsoDate(row.created_at),
   emailVerifiedAt: toIsoDateOrNull(row.email_verified_at),
 });
-
-const ensureUserScaffold = async (user: SafeUser, runner: QueryRunner = pool): Promise<void> => {
-  await Promise.all([
-    runner.query(
-      `INSERT INTO user_profiles (user_id, display_name, email)
-       VALUES ($1, $2, $3)
-       ON CONFLICT (user_id) DO UPDATE
-       SET display_name = EXCLUDED.display_name,
-           email = EXCLUDED.email,
-           updated_at = NOW()`,
-      [user.id, user.displayName, user.email],
-    ),
-    runner.query(
-      `INSERT INTO user_preferences (user_id)
-       VALUES ($1)
-       ON CONFLICT (user_id) DO NOTHING`,
-      [user.id],
-    ),
-  ]);
-};
 
 const tokenHash = (token: string): string =>
   createHash('sha256').update(token).digest('hex');
@@ -286,7 +267,7 @@ const createLocalUser = async ({
   );
 
   const user = toSafeUser(result.rows[0]!);
-  await ensureUserScaffold(user, runner);
+  await ensureUserScaffold(user.id, user.displayName, user.email, runner);
   return user;
 };
 
@@ -435,7 +416,7 @@ const completePendingSignup = async ({
     }
 
     const safeUser = toSafeUser(userRow);
-    await ensureUserScaffold(safeUser, client);
+    await ensureUserScaffold(safeUser.id, safeUser.displayName, safeUser.email, client);
 
     await client.query('COMMIT');
     return safeUser;
@@ -763,7 +744,7 @@ export const loginUser = async (input: LoginInput, context: AuthRequestContext =
 
   await Promise.all([
     clearFailedLogins(userRow.id),
-    ensureUserScaffold(safeUser),
+    ensureUserScaffold(safeUser.id, safeUser.displayName, safeUser.email),
     pool.query(`UPDATE app_users SET last_login_at = NOW() WHERE id = $1`, [safeUser.id]),
     recordAuthActivity({
       userId: safeUser.id, email: safeUser.email,
@@ -874,7 +855,7 @@ export const verifyEmail = async (input: VerifyEmailInput, context: AuthRequestC
   }
 
   const user = toSafeUser(userUpdate.rows[0]!);
-  await ensureUserScaffold(user);
+  await ensureUserScaffold(user.id, user.displayName, user.email);
   try {
     await queueWelcomeEmail({
       id: user.id,

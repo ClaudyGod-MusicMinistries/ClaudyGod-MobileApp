@@ -1,7 +1,10 @@
 import { env } from '../../config/env';
 import { pool } from '../../db/pool';
 import { isMissingDatabaseStructureError } from '../../lib/postgres';
+import { createLogger } from '../../lib/logger';
 import type { JwtClaims } from '../../utils/jwt';
+
+const log = createLogger('ai.service');
 
 interface AdCopySuggestionInput {
   sponsorName: string;
@@ -132,6 +135,11 @@ async function tryRemoteSuggestion(input: AdCopySuggestionInput): Promise<AdCopy
     });
 
     if (!response.ok) {
+      log.warn('AI provider returned non-OK response, falling back to heuristic', {
+        status: response.status,
+        provider: env.AI_PROVIDER_URL,
+        model: env.AI_MODEL,
+      });
       return null;
     }
 
@@ -140,7 +148,12 @@ async function tryRemoteSuggestion(input: AdCopySuggestionInput): Promise<AdCopy
     };
     const content = String(payload?.choices?.[0]?.message?.content || '');
     return extractJsonObject(content);
-  } catch {
+  } catch (error) {
+    log.warn('AI provider request failed, falling back to heuristic', {
+      provider: env.AI_PROVIDER_URL,
+      model: env.AI_MODEL,
+      error: error instanceof Error ? error.message : String(error),
+    });
     return null;
   } finally {
     clearTimeout(timeout);

@@ -35,7 +35,7 @@ const boot = async (): Promise<void> => {
 
     server.close(async () => {
       log.info('HTTP server closed — draining queues and connections');
-      await Promise.allSettled([
+      const results = await Promise.allSettled([
         contentQueue.close(),
         emailQueue.close(),
         statsQueue.close(),
@@ -43,6 +43,11 @@ const boot = async (): Promise<void> => {
         closeRedis(),
         closePool(),
       ]);
+      for (const result of results) {
+        if (result.status === 'rejected') {
+          log.error('Shutdown step failed', { reason: result.reason instanceof Error ? result.reason.message : String(result.reason) });
+        }
+      }
       log.info('Shutdown complete');
       process.exit(0);
     });

@@ -69,7 +69,7 @@ export const startStatsWorker = (): Worker<StatsQueuePayload> => {
           await handleShareRecorded(contentId);
           break;
         default:
-          log.warn('Unknown stats event type', { eventType });
+          throw new Error(`Unknown stats event type: ${eventType as string}`);
       }
     },
     {

@@ -74,8 +74,13 @@ const bootWorker = async (): Promise<void> => {
       log.info('Worker shutdown initiated', { signal });
     }
 
-    await Promise.allSettled([contentWorker.close(), emailWorker.close(), statsWorker.close(), trendingWorker.close()]);
-    await Promise.allSettled([closeRedis(), closePool()]);
+    const workerResults = await Promise.allSettled([contentWorker.close(), emailWorker.close(), statsWorker.close(), trendingWorker.close()]);
+    const infraResults = await Promise.allSettled([closeRedis(), closePool()]);
+    for (const result of [...workerResults, ...infraResults]) {
+      if (result.status === 'rejected') {
+        log.error('Shutdown step failed', { reason: result.reason instanceof Error ? result.reason.message : String(result.reason) });
+      }
+    }
     log.info('Worker shutdown complete');
     process.exit(error ? 1 : 0);
   };
