@@ -1,6 +1,6 @@
 import { Router, type Request } from 'express';
 import { asyncHandler } from '../../lib/asyncHandler';
-import { HttpError } from '../../lib/httpError';
+import { UnauthorizedError } from '../../lib/errors';
 import { validateSchema } from '../../lib/validation';
 import { authenticate } from '../../middleware/authenticate';
 import { engagementListQuerySchema } from '../me/me.schema';
@@ -17,7 +17,7 @@ router.use(authenticate);
 
 function requireUser(req: Request) {
   if (!req.user) {
-    throw new HttpError(401, 'Unauthorized');
+    throw new UnauthorizedError('Unauthorized', 'AUTH_REQUIRED');
   }
   return req.user;
 }

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { asyncHandler } from '../../lib/asyncHandler';
-import { HttpError } from '../../lib/httpError';
+import { ForbiddenError, UnauthorizedError } from '../../lib/errors';
 import { JwtClaims } from '../../utils/jwt';
 import { validateSchema } from '../../lib/validation';
 import { authenticate } from '../../middleware/authenticate';
@@ -33,14 +33,14 @@ export const contentRouter = Router();
 
 function requireAdmin(user: unknown): JwtClaims {
   if (!user || typeof user !== 'object') {
-    throw new HttpError(401, 'Unauthorized');
+    throw new UnauthorizedError('Unauthorized', 'AUTH_REQUIRED');
   }
   const candidate = user as JwtClaims;
   if (candidate.role !== 'ADMIN') {
-    throw new HttpError(403, 'Admin access required');
+    throw new ForbiddenError('Admin access required', 'ADMIN_REQUIRED');
   }
   if (!candidate.sub || !candidate.email || !candidate.displayName) {
-    throw new HttpError(401, 'Unauthorized');
+    throw new UnauthorizedError('Unauthorized', 'AUTH_REQUIRED');
   }
   return candidate;
 }
@@ -68,7 +68,7 @@ contentRouter.get(
   authenticate,
   asyncHandler(async (req, res) => {
     if (!req.user) {
-      throw new HttpError(401, 'Unauthorized');
+      throw new UnauthorizedError('Unauthorized', 'AUTH_REQUIRED');
     }
 
     const parsed = validateSchema(listContentQuerySchema, req.query);
@@ -102,7 +102,7 @@ contentRouter.post(
   authenticate,
   asyncHandler(async (req, res) => {
     if (!req.user) {
-      throw new HttpError(401, 'Unauthorized');
+      throw new UnauthorizedError('Unauthorized', 'AUTH_REQUIRED');
     }
 
     const payload = validateSchema(createContentRequestSchema, req.body);

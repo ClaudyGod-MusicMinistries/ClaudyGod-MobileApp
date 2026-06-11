@@ -3,13 +3,16 @@ import type { JwtClaims } from '../../utils/jwt';
 import { pool } from '../../db/pool';
 import { env } from '../../config/env';
 import { queueAccountEmailChangeEmail, queueProfileUpdatedEmail } from '../../infra/transactionalEmails';
-import { HttpError } from '../../lib/httpError';
+import { BadRequestError, ConflictError, ForbiddenError, NotFoundError } from '../../lib/errors';
+import { createLogger } from '../../lib/logger';
 import { isDatabaseConnectivityError, isMissingDatabaseStructureError } from '../../lib/postgres';
 import { verifyPassword } from '../../utils/password';
 import { listMostPlayedContent } from '../analytics/analytics.service';
 import { getMobileAppConfig } from '../appConfig/appConfig.service';
 import { requestPasswordReset } from '../auth/auth.service';
 import { revokeAllUserSessions } from '../auth/authSession.service';
+
+const log = createLogger('me');
 
 type MeContentType = 'audio' | 'video' | 'playlist' | 'announcement' | 'live' | 'ad';
 type ThemePreference = 'system' | 'light' | 'dark';
@@ -225,7 +228,7 @@ const readProfile = async (userId: string): Promise<MeProfileRow> => {
   );
 
   if (result.rowCount === 0) {
-    throw new HttpError(404, 'User profile not found');
+    throw new NotFoundError('User profile not found');
   }
   return result.rows[0]!;
 };
@@ -247,7 +250,7 @@ const readPreferences = async (userId: string): Promise<MePreferencesRow> => {
   );
 
   if (result.rowCount === 0) {
-    throw new HttpError(404, 'User preferences not found');
+    throw new NotFoundError('User preferences not found');
   }
   return result.rows[0]!;
 };
@@ -263,7 +266,7 @@ const readAccountCredentials = async (userId: string): Promise<AccountCredential
   );
 
   if (result.rowCount === 0) {
-    throw new HttpError(404, 'Account not found');
+    throw new NotFoundError('Account not found');
   }
 
   return result.rows[0]!;
@@ -273,10 +276,8 @@ const assertCurrentPassword = async (userId: string, currentPassword: string): P
   const account = await readAccountCredentials(userId);
 
   if (!account.password_hash) {
-    throw new HttpError(
-      400,
+    throw new BadRequestError(
       'This account is managed by an external sign-in provider. Use that provider to change security credentials.',
-      { reason: 'external_auth_provider', provider: account.auth_provider },
       'ACCOUNT_EXTERNAL_AUTH_PROVIDER',
       'currentPassword',
     );
@@ -284,13 +285,7 @@ const assertCurrentPassword = async (userId: string, currentPassword: string): P
 
   const passwordMatches = await verifyPassword(currentPassword, account.password_hash);
   if (!passwordMatches) {
-    throw new HttpError(
-      403,
-      'Current password is incorrect.',
-      { reason: 'invalid_current_password' },
-      'ACCOUNT_INVALID_CURRENT_PASSWORD',
-      'currentPassword',
-    );
+    throw new ForbiddenError('Current password is incorrect.', 'ACCOUNT_INVALID_CURRENT_PASSWORD');
   }
 
   return account;
@@ -482,7 +477,7 @@ export const requestMeEmailChange = async (
   const newEmail = input.newEmail.trim().toLowerCase();
 
   if (newEmail === account.email.toLowerCase()) {
-    throw new HttpError(400, 'Enter a different email address.', { reason: 'same_email' }, 'ACCOUNT_SAME_EMAIL', 'newEmail');
+    throw new BadRequestError('Enter a different email address.', 'ACCOUNT_SAME_EMAIL', 'newEmail');
   }
 
   const existingEmail = await pool.query<{ id: string }>(
@@ -490,7 +485,7 @@ export const requestMeEmailChange = async (
     [newEmail, user.sub],
   );
   if ((existingEmail.rowCount ?? 0) > 0) {
-    throw new HttpError(409, 'That email address is already in use.', { reason: 'email_in_use' }, 'ACCOUNT_EMAIL_IN_USE', 'newEmail');
+    throw new ConflictError('That email address is already in use.', 'ACCOUNT_EMAIL_IN_USE', 'newEmail');
   }
 
   const rawToken = createRawToken();
@@ -571,12 +566,12 @@ export const confirmMeEmailChange = async (
   );
 
   if (requestResult.rowCount === 0) {
-    throw new HttpError(400, 'This email change link is invalid or has expired.', { reason: 'invalid_token' }, 'ACCOUNT_INVALID_EMAIL_CHANGE_TOKEN', 'token');
+    throw new BadRequestError('This email change link is invalid or has expired.', 'ACCOUNT_INVALID_EMAIL_CHANGE_TOKEN', 'token');
   }
 
   const request = requestResult.rows[0]!;
   if (request.user_id !== user.sub) {
-    throw new HttpError(403, 'Sign in to the account that requested this email change.', { reason: 'wrong_account' }, 'ACCOUNT_EMAIL_CHANGE_WRONG_ACCOUNT');
+    throw new ForbiddenError('Sign in to the account that requested this email change.', 'ACCOUNT_EMAIL_CHANGE_WRONG_ACCOUNT');
   }
 
   const existingEmail = await pool.query<{ id: string }>(
@@ -584,7 +579,7 @@ export const confirmMeEmailChange = async (
     [request.new_email, user.sub],
   );
   if ((existingEmail.rowCount ?? 0) > 0) {
-    throw new HttpError(409, 'That email address is already in use.', { reason: 'email_in_use' }, 'ACCOUNT_EMAIL_IN_USE', 'newEmail');
+    throw new ConflictError('That email address is already in use.', 'ACCOUNT_EMAIL_IN_USE', 'newEmail');
   }
 
   const client = await pool.connect();
@@ -827,6 +822,7 @@ export const getMeRecentlyPlayed = async (
     );
   } catch (error) {
     if (isMissingDatabaseStructureError(error) || isDatabaseConnectivityError(error)) {
+      log.warn('getMeRecentlyPlayed: infra degraded, returning empty', { error: String(error) });
       return { items: [] };
     }
     throw error;
@@ -887,6 +883,7 @@ export const getMeMostPlayed = async (
     );
   } catch (error) {
     if (isMissingDatabaseStructureError(error) || isDatabaseConnectivityError(error)) {
+      log.warn('getMeMostPlayed: infra degraded, returning empty', { error: String(error) });
       return { items: [] };
     }
     throw error;
@@ -1005,6 +1002,7 @@ export const getMeRecommendations = async (
     return { items: recResult.rows.map(toEngagementItem) };
   } catch (error) {
     if (isMissingDatabaseStructureError(error) || isDatabaseConnectivityError(error)) {
+      log.warn('getMeRecommendations: infra degraded, returning empty', { error: String(error) });
       return { items: [] };
     }
     throw error;
@@ -1249,11 +1247,11 @@ export const createMePrivacyDeleteRequest = async (
   const expectedPhrase = config.privacy.deleteConfirmPhrase.trim().toUpperCase();
 
   if (input.confirmText.trim().toUpperCase() !== expectedPhrase) {
-    throw new HttpError(400, 'Invalid delete confirmation phrase');
+    throw new BadRequestError('Invalid delete confirmation phrase', 'ACCOUNT_DELETE_INVALID_PHRASE');
   }
 
   if (profile.display_name.trim().toLowerCase() !== input.fullName.trim().toLowerCase()) {
-    throw new HttpError(400, 'Full name does not match account profile');
+    throw new BadRequestError('Full name does not match account profile', 'ACCOUNT_DELETE_NAME_MISMATCH');
   }
 
   const result = await pool.query<{ id: string; status: string; created_at: string | Date }>(
@@ -1330,15 +1328,15 @@ export const createMeRating = async (
 const parseAmountToCents = (amount: string): number => {
   const normalized = amount.replace(/[$,\s]/g, '');
   if (!/^\d+(\.\d{1,2})?$/.test(normalized)) {
-    throw new HttpError(400, 'Invalid amount format');
+    throw new BadRequestError('Invalid amount format', 'PAYMENT_INVALID_AMOUNT_FORMAT');
   }
 
   const cents = Math.round(Number(normalized) * 100);
   if (!Number.isFinite(cents) || cents <= 0) {
-    throw new HttpError(400, 'Amount must be greater than zero');
+    throw new BadRequestError('Amount must be greater than zero', 'PAYMENT_AMOUNT_TOO_SMALL');
   }
   if (cents > 10_000_000_00) {
-    throw new HttpError(400, 'Amount exceeds maximum supported range');
+    throw new BadRequestError('Amount exceeds maximum supported range', 'PAYMENT_AMOUNT_TOO_LARGE');
   }
 
   return cents;

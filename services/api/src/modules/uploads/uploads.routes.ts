@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { asyncHandler } from '../../lib/asyncHandler';
-import { HttpError } from '../../lib/httpError';
+import { ForbiddenError, UnauthorizedError } from '../../lib/errors';
 import { validateSchema } from '../../lib/validation';
 import { authenticate } from '../../middleware/authenticate';
 import { adminSignedUploadRequestSchema, uploadPoliciesResponse } from './uploads.schema';
@@ -10,11 +10,11 @@ export const uploadsRouter = Router();
 
 function requireAdmin(req: { user?: { role: string } }) {
   if (!req.user) {
-    throw new HttpError(401, 'Unauthorized');
+    throw new UnauthorizedError('Unauthorized', 'AUTH_REQUIRED');
   }
 
   if (req.user.role !== 'ADMIN') {
-    throw new HttpError(403, 'Only admin accounts can issue admin upload URLs');
+    throw new ForbiddenError('Only admin accounts can issue admin upload URLs', 'ADMIN_REQUIRED');
   }
 }
 

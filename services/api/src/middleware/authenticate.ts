@@ -1,5 +1,5 @@
 import type { RequestHandler } from 'express';
-import { HttpError } from '../lib/httpError';
+import { UnauthorizedError } from '../lib/errors';
 import {
   applyAuthSessionCookies,
   getAuthTokenFromRequest,
@@ -19,7 +19,7 @@ export const authenticate: RequestHandler = async (req, _res, next) => {
 
   if (!token) {
     if (!refreshToken) {
-      next(new HttpError(401, 'Missing authentication session'));
+      next(new UnauthorizedError('Missing authentication session', 'AUTH_SESSION_MISSING'));
       return;
     }
 
@@ -37,7 +37,7 @@ export const authenticate: RequestHandler = async (req, _res, next) => {
       };
       next();
     } catch {
-      next(new HttpError(401, 'Missing authentication session'));
+      next(new UnauthorizedError('Missing authentication session', 'AUTH_SESSION_MISSING'));
     }
     return;
   }
@@ -47,7 +47,7 @@ export const authenticate: RequestHandler = async (req, _res, next) => {
     next();
   } catch {
     if (!refreshToken) {
-      next(new HttpError(401, 'Invalid or expired token'));
+      next(new UnauthorizedError('Invalid or expired token', 'AUTH_TOKEN_INVALID'));
       return;
     }
 
@@ -65,7 +65,7 @@ export const authenticate: RequestHandler = async (req, _res, next) => {
       };
       next();
     } catch {
-      next(new HttpError(401, 'Invalid or expired token'));
+      next(new UnauthorizedError('Invalid or expired token', 'AUTH_TOKEN_INVALID'));
     }
   }
 };

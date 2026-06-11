@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import type { PoolClient } from 'pg';
 import { env } from '../../config/env';
 import { pool } from '../../db/pool';
-import { HttpError } from '../../lib/httpError';
+import { ForbiddenError, UnauthorizedError } from '../../lib/errors';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../../utils/jwt';
 import type { AuthResponse, SafeUser, UserRole } from './auth.types';
 
@@ -66,12 +66,12 @@ const loadSessionUser = async (
   );
 
   if (result.rowCount === 0) {
-    throw new HttpError(401, 'Session expired. Sign in again.');
+    throw new UnauthorizedError('Session expired. Sign in again.', 'AUTH_SESSION_EXPIRED');
   }
 
   const user = result.rows[0]!;
   if (!user.is_active) {
-    throw new HttpError(403, 'Account is inactive');
+    throw new ForbiddenError('Account is inactive', 'ACCOUNT_INACTIVE');
   }
 
   return toSafeUser(user);
@@ -176,7 +176,7 @@ export const refreshAuthSession = async (
   try {
     claims = verifyRefreshToken(rawRefreshToken);
   } catch {
-    throw new HttpError(401, 'Session expired. Sign in again.');
+    throw new UnauthorizedError('Session expired. Sign in again.', 'AUTH_SESSION_EXPIRED');
   }
 
   const client = await pool.connect();
@@ -194,7 +194,7 @@ export const refreshAuthSession = async (
     );
 
     if (sessionResult.rowCount === 0) {
-      throw new HttpError(401, 'Session expired. Sign in again.');
+      throw new UnauthorizedError('Session expired. Sign in again.', 'AUTH_SESSION_EXPIRED');
     }
 
     const session = sessionResult.rows[0]!;
@@ -205,7 +205,7 @@ export const refreshAuthSession = async (
 
     if (isExpired || isRevoked || hashMismatch) {
       await revokeRefreshSessionFamily(session.session_family_id, client);
-      throw new HttpError(401, 'Session expired. Sign in again.');
+      throw new UnauthorizedError('Session expired. Sign in again.', 'AUTH_SESSION_EXPIRED');
     }
 
     const user = await loadSessionUser(session.user_id, client);
