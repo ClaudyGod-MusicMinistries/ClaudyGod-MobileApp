@@ -1,4 +1,4 @@
-import crypto from 'node:crypto';
+import { createHash, randomBytes } from 'crypto';
 import type { JwtClaims } from '../../utils/jwt';
 import { pool } from '../../db/pool';
 import { env } from '../../config/env';
@@ -100,10 +100,10 @@ const ACCOUNT_ACTION_TOKEN_BYTES = 32;
 const ACCOUNT_EMAIL_CHANGE_TTL_MINUTES = 30;
 
 const tokenHash = (token: string): string =>
-  crypto.createHash('sha256').update(token).digest('hex');
+  createHash('sha256').update(token).digest('hex');
 
 const createRawToken = (): string =>
-  crypto.randomBytes(ACCOUNT_ACTION_TOKEN_BYTES).toString('hex');
+  randomBytes(ACCOUNT_ACTION_TOKEN_BYTES).toString('hex');
 
 const normalizeTextList = (items?: string[] | null): string[] =>
   [...new Set((items ?? []).map((item) => item.trim()).filter(Boolean))];
@@ -1446,6 +1446,60 @@ export const createPublicDonationIntent = async (input: {
   planId?: string;
   metadata?: Record<string, unknown>;
 }) => createDonationIntentCore(null, input);
+
+export const startPlaybackSession = async (
+  user: JwtClaims,
+  input: { contentId: string; deviceId?: string; source?: string; durationMs?: number },
+): Promise<{ sessionId: string }> => {
+  const result = await pool.query<{ id: string }>(
+    `INSERT INTO user_playback_sessions
+       (user_id, content_id, device_id, source, duration_ms, started_at, last_heartbeat)
+     VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+     RETURNING id`,
+    [
+      user.sub,
+      input.contentId,
+      input.deviceId ?? null,
+      input.source ?? 'direct',
+      input.durationMs ?? null,
+    ],
+  );
+  const row = result.rows[0];
+  if (!row) throw new Error('Failed to create playback session');
+  return { sessionId: row.id };
+};
+
+export const heartbeatPlaybackSession = async (
+  user: JwtClaims,
+  sessionId: string,
+  positionMs: number,
+): Promise<void> => {
+  await pool.query(
+    `UPDATE user_playback_sessions
+     SET last_heartbeat = NOW(),
+         position_ms    = $3
+     WHERE id = $1
+       AND user_id = $2
+       AND ended_at IS NULL`,
+    [sessionId, user.sub, positionMs],
+  );
+};
+
+export const endPlaybackSession = async (
+  user: JwtClaims,
+  sessionId: string,
+  input: { positionMs: number; completed: boolean },
+): Promise<void> => {
+  await pool.query(
+    `UPDATE user_playback_sessions
+     SET ended_at    = NOW(),
+         position_ms = $3
+     WHERE id = $1
+       AND user_id = $2
+       AND ended_at IS NULL`,
+    [sessionId, user.sub, input.positionMs],
+  );
+};
 
 export const getMeBootstrap = async (user: JwtClaims) => {
   const [profile, preferences, metrics, privacy, library] = await Promise.all([

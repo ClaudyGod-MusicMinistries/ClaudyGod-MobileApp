@@ -28,6 +28,8 @@ import {
   updateContentRequestStatus,
   updateContentVisibility,
 } from './content.service';
+import { pool } from '../../db/pool';
+import { CacheService, CacheTTL } from '../../lib/cache';
 
 export const contentRouter = Router();
 
@@ -207,6 +209,45 @@ contentRouter.patch(
       requester: actor,
     });
     res.status(200).json(item);
+  }),
+);
+
+contentRouter.get(
+  '/trending',
+  asyncHandler(async (req, res) => {
+    const period = (req.query.period as string) || 'daily';
+    const limit = Math.min(Number(req.query.limit) || 20, 50);
+
+    if (!['hourly', 'daily', 'weekly'].includes(period)) {
+      res.status(400).json({ message: 'Invalid period. Use hourly, daily, or weekly.' });
+      return;
+    }
+
+    const cacheKey = `trending:${period}:${limit}`;
+    const cached = await CacheService.get<unknown[]>('feed', cacheKey);
+    if (cached) {
+      res.status(200).json({ items: cached, period });
+      return;
+    }
+
+    const result = await pool.query(
+      `SELECT DISTINCT ON (ts.content_id)
+         ci.id, ci.title, ci.description, ci.content_type, ci.media_url,
+         ci.thumbnail_url, ci.channel_name, ci.duration_label, ci.tags,
+         ci.app_sections, ci.created_at, ci.updated_at,
+         ts.score AS trending_score, ts.rank
+       FROM trending_snapshots ts
+       INNER JOIN content_items ci ON ci.id = ts.content_id
+       WHERE ts.period = $1
+         AND ci.visibility = 'published'
+       ORDER BY ts.content_id, ts.calculated_at DESC, ts.score DESC
+       LIMIT $2`,
+      [period, limit],
+    );
+
+    const items = result.rows;
+    await CacheService.set('feed', cacheKey, items, CacheTTL.TRENDING);
+    res.status(200).json({ items, period });
   }),
 );
 

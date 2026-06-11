@@ -180,3 +180,19 @@ export const engagementListQuerySchema = z
     windowDays: z.coerce.number().int().min(1).max(365).optional(),
   })
   .strict();
+
+export const startPlaybackSessionSchema = z.object({
+  contentId: z.string().uuid(),
+  deviceId: z.string().uuid().optional(),
+  source: z.enum(['feed', 'search', 'recommendation', 'direct', 'playlist', 'autoplay']).default('direct'),
+  durationMs: z.coerce.number().int().min(0).optional(),
+});
+
+export const heartbeatPlaybackSchema = z.object({
+  positionMs: z.coerce.number().int().min(0),
+});
+
+export const endPlaybackSessionSchema = z.object({
+  positionMs: z.coerce.number().int().min(0),
+  completed: z.boolean().default(false),
+});
