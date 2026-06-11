@@ -220,6 +220,9 @@ export const requestSignedUploadUrl = async ({
   );
 
   const session = sessionInsert.rows[0];
+  if (!session) {
+    throw new HttpError(500, 'Failed to create upload session record');
+  }
 
   return {
     upload: {

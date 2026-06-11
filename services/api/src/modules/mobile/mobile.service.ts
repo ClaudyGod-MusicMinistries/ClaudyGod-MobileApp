@@ -47,7 +47,7 @@ interface LiveSessionFeedRow {
   host_display_name: string | null;
 }
 
-const FALLBACK_IMAGE = '';
+const FALLBACK_IMAGE = null;
 
 const toIso = (value: string | Date): string => new Date(value).toISOString();
 

@@ -1,8 +1,11 @@
 import { Worker } from 'bullmq';
 import { pool } from '../db/pool';
 import { env } from '../config/env';
-import { logger } from '../lib/logger';
-import { CONTENT_QUEUE_NAME, type ContentQueuePayload } from './contentQueue';
+import { createLogger } from '../lib/logger';
+import { CacheService } from '../lib/cache';
+import { CONTENT_QUEUE_NAME, type ContentQueuePayload, type ContentEventType } from './contentQueue';
+
+const log = createLogger('contentWorker');
 
 const markAsFailed = async (jobRecordId: number, reason: string): Promise<void> => {
   await pool.query(
@@ -15,11 +18,25 @@ const markAsFailed = async (jobRecordId: number, reason: string): Promise<void> 
   );
 };
 
+const handleContentEvent = async (eventType: ContentEventType, contentId: string): Promise<void> => {
+  await CacheService.invalidateContentCache(contentId);
+
+  if (eventType === 'content.deleted') {
+    await Promise.all([
+      pool.query(`DELETE FROM trending_snapshots WHERE content_id = $1::uuid`, [contentId]),
+      pool.query(`DELETE FROM content_item_stats WHERE content_id = $1::uuid`, [contentId]),
+    ]);
+    log.info('Content removed from trending and stats on delete', { contentId });
+  }
+
+  log.info('Content event handled', { eventType, contentId });
+};
+
 export const startContentWorker = (): Worker<ContentQueuePayload> => {
   const worker = new Worker<ContentQueuePayload>(
     CONTENT_QUEUE_NAME,
     async (job) => {
-      const { jobRecordId } = job.data;
+      const { jobRecordId, contentId, eventType } = job.data;
 
       await pool.query(
         `UPDATE content_jobs
@@ -29,6 +46,8 @@ export const startContentWorker = (): Worker<ContentQueuePayload> => {
       );
 
       try {
+        await handleContentEvent(eventType, contentId);
+
         await pool.query(
           `UPDATE content_jobs
            SET status = 'completed',
@@ -55,11 +74,11 @@ export const startContentWorker = (): Worker<ContentQueuePayload> => {
   );
 
   worker.on('completed', (job) => {
-    logger.info('Content job completed', { jobId: job?.id });
+    log.info('Content job completed', { jobId: job?.id, eventType: job?.data.eventType });
   });
 
   worker.on('failed', (job, error) => {
-    logger.error('Content job failed', { jobId: job?.id, error: error.message });
+    log.error('Content job failed', { jobId: job?.id, error: error.message });
   });
 
   return worker;
