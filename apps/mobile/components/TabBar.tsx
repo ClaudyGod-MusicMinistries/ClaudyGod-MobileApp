@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+﻿import React, { useMemo } from 'react';
 import { Platform, View, useWindowDimensions } from 'react-native';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -30,7 +30,7 @@ const FOOTER_CONFIG: Record<TabRouteName, Omit<FooterItem, 'routeName' | 'key'>>
   player:   { icon: 'headphones'        as const, label: 'Music' },
   videos:   { icon: 'play-circle-filled' as const, label: 'Videos', center: true },
   library:  { icon: 'library-music'     as const, label: 'Library' },
-  settings: { icon: 'tune'              as const, label: 'Settings' },
+  settings: { icon: 'tune'             as const, label: 'Settings' },
 };
 
 function routeExists(routes: BottomTabBarProps['state']['routes'], routeName: string) {
@@ -96,8 +96,8 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
           borderRadius: 26,
           overflow: 'hidden',
           borderWidth: 1,
-          borderColor: isDark ? 'rgba(183,148,246,0.13)' : 'rgba(56,42,84,0.14)',
-          backgroundColor: isDark ? 'rgba(8,5,14,0.97)' : 'rgba(12,8,20,0.97)',
+          borderColor: isDark ? 'rgba(183,148,246,0.18)' : 'rgba(56,42,84,0.18)',
+          backgroundColor: isDark ? 'rgba(8,5,14,0.98)' : 'rgba(10,6,18,0.98)',
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 18 },
           shadowOpacity: 0.46,
@@ -107,7 +107,7 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
       >
         {/* Subtle top-edge highlight */}
         <LinearGradient
-          colors={['rgba(255,255,255,0.06)', 'rgba(255,255,255,0.01)']}
+          colors={['rgba(255,255,255,0.07)', 'rgba(255,255,255,0.01)']}
           start={{ x: 0, y: 0 }}
           end={{ x: 0, y: 1 }}
           style={{
@@ -162,21 +162,21 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={{
-                      width: compact ? 44 : 50,
-                      height: compact ? 44 : 50,
+                      width: compact ? 46 : 52,
+                      height: compact ? 46 : 52,
                       borderRadius: 999,
                       alignItems: 'center',
                       justifyContent: 'center',
                       shadowColor: palette.primary,
-                      shadowOpacity: focused ? 0.42 : 0.26,
-                      shadowRadius: focused ? 18 : 12,
+                      shadowOpacity: focused ? 0.48 : 0.28,
+                      shadowRadius: focused ? 20 : 14,
                       shadowOffset: { width: 0, height: 6 },
-                      elevation: 10,
+                      elevation: 12,
                     }}
                   >
                     <MaterialIcons
                       name="play-arrow"
-                      size={compact ? 24 : 27}
+                      size={compact ? 26 : 29}
                       color={palette.textInverse}
                     />
                   </LinearGradient>
@@ -188,11 +188,24 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
                       fontSize: compact ? 9 : 9.5,
                       lineHeight: 12,
                       letterSpacing: 0,
+                      fontWeight: focused ? '700' : '400',
                     }}
                     numberOfLines={1}
                   >
                     {item.label}
                   </CustomText>
+
+                  {/* Active dot indicator */}
+                  <View
+                    style={{
+                      width: focused ? 14 : 4,
+                      height: 3,
+                      borderRadius: 999,
+                      backgroundColor: focused ? '#F6F0FF' : 'transparent',
+                      marginTop: 1,
+                      opacity: focused ? 0.8 : 0,
+                    }}
+                  />
                 </TVTouchable>
               );
             }
@@ -235,12 +248,12 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
                 >
                   <MaterialIcons
                     name={item.icon}
-                    size={focused ? (compact ? 20 : 22) : (compact ? 19 : 21)}
+                    size={focused ? (compact ? 21 : 23) : (compact ? 19 : 21)}
                     color={focused ? palette.primary : palette.textMuted}
                   />
                 </View>
 
-                {/* Label — always visible */}
+                {/* Label */}
                 <CustomText
                   variant="caption"
                   style={{
@@ -248,12 +261,24 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
                     fontSize: compact ? 9 : 9.5,
                     lineHeight: 12,
                     letterSpacing: 0,
-                    fontWeight: focused ? '600' : '400',
+                    fontWeight: focused ? '700' : '400',
                   }}
                   numberOfLines={1}
                 >
                   {item.label}
                 </CustomText>
+
+                {/* Active dot indicator */}
+                <View
+                  style={{
+                    width: focused ? 14 : 4,
+                    height: 3,
+                    borderRadius: 999,
+                    backgroundColor: focused ? palette.primary : 'transparent',
+                    marginTop: 1,
+                    opacity: focused ? 0.9 : 0,
+                  }}
+                />
               </TVTouchable>
             );
           })}
