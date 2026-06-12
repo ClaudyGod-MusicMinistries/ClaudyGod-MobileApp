@@ -2,7 +2,7 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 COPY package.json yarn.lock* ./
-RUN yarn install --frozen-lockfile --non-interactive
+RUN yarn install --non-interactive
 COPY . .
 
 ARG VITE_API_URL
