@@ -1,4 +1,4 @@
-﻿import { Platform, useWindowDimensions } from 'react-native';
+import { Platform, useWindowDimensions } from 'react-native';
 
 export const SIDEBAR_BREAKPOINT = 1024;
 
