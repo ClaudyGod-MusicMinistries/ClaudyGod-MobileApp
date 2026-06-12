@@ -20,19 +20,21 @@
     <AppCard class="p-4">
       <div class="flex flex-wrap gap-3 items-end">
         <div class="flex-1 min-w-48">
-          <SearchInput v-model="store.filters.search" placeholder="Search content…" />
+          <SearchInput :model-value="store.filters.search ?? ''" placeholder="Search content…" @update:model-value="store.filters.search = $event || undefined" />
         </div>
         <AppSelect
-          v-model="store.filters.type"
+          :model-value="store.filters.type ?? ''"
           :options="typeOptions"
           placeholder="All types"
           class="w-36"
+          @update:model-value="store.filters.type = $event || undefined"
         />
         <AppSelect
-          v-model="store.filters.status"
+          :model-value="store.filters.status ?? ''"
           :options="statusOptions"
           placeholder="All statuses"
           class="w-36"
+          @update:model-value="store.filters.status = $event || undefined"
         />
         <AppButton variant="secondary" size="sm" @click="resetFilters">Reset</AppButton>
       </div>

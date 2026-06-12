@@ -66,19 +66,19 @@
           <template v-else>
             <tr
               v-for="(row, idx) in rows"
-              :key="row.id ?? idx"
+              :key="rowKey(row, idx)"
               :class="[
                 'border-b border-border/50 transition-colors duration-100',
                 'hover:bg-primary-muted/20',
-                selected.has(row.id ?? idx) ? 'bg-primary-muted/30' : '',
+                selected.has(rowKey(row, idx)) ? 'bg-primary-muted/30' : '',
               ]"
             >
               <td v-if="selectable" class="px-4 py-3">
                 <input
                   type="checkbox"
                   class="rounded border-border accent-primary"
-                  :checked="selected.has(row.id ?? idx)"
-                  @change="toggleRow(row.id ?? idx)"
+                  :checked="selected.has(rowKey(row, idx))"
+                  @change="toggleRow(rowKey(row, idx))"
                 />
               </td>
               <td
@@ -131,8 +131,15 @@ const emit = defineEmits<{
 const selected = ref(new Set<string | number>());
 
 const totalCols = computed(() => props.columns.length + (props.selectable ? 1 : 0) + 1);
-const allSelected = computed(() => props.rows.length > 0 && props.rows.every((r) => selected.value.has(r.id as string ?? '')));
-const someSelected = computed(() => props.rows.some((r) => selected.value.has(r.id as string ?? '')));
+
+function rowKey(row: Record<string, unknown>, idx: number): string | number {
+  const id = row.id;
+  if (typeof id === 'string' || typeof id === 'number') return id;
+  return idx;
+}
+
+const allSelected = computed(() => props.rows.length > 0 && props.rows.every((r, i) => selected.value.has(rowKey(r, i))));
+const someSelected = computed(() => props.rows.some((r, i) => selected.value.has(rowKey(r, i))));
 
 function toggleRow(id: string | number): void {
   if (selected.value.has(id)) selected.value.delete(id);
@@ -144,7 +151,7 @@ function toggleAll(): void {
   if (allSelected.value) {
     selected.value.clear();
   } else {
-    props.rows.forEach((r) => selected.value.add(r.id as string ?? ''));
+    props.rows.forEach((r, i) => selected.value.add(rowKey(r, i)));
   }
   emit('select', [...selected.value]);
 }
