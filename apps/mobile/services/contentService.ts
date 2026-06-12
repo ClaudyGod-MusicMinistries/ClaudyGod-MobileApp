@@ -313,6 +313,40 @@ async function fetchAllPublicContent(): Promise<FeedCardItem[]> {
   }
 }
 
+interface SearchApiItem {
+  id: string;
+  title: string;
+  description: string;
+  contentType: ContentType;
+  mediaUrl: string | null;
+  thumbnailUrl: string | null;
+  channelName: string | null;
+  durationLabel: string | null;
+  tags: string[];
+  createdAt: string;
+}
+
+interface SearchApiResponse {
+  items: SearchApiItem[];
+  hasMore: boolean;
+}
+
+function normalizeSearchItem(item: SearchApiItem): FeedCardItem {
+  return {
+    id: item.id,
+    title: item.title,
+    subtitle: item.channelName || 'ClaudyGod Channel',
+    description: item.description || 'Content from your channel feed.',
+    duration: item.durationLabel || '--:--',
+    imageUrl: item.thumbnailUrl || FALLBACK_IMAGE,
+    mediaUrl: item.mediaUrl ?? undefined,
+    type: item.contentType,
+    isLive: item.contentType === 'live',
+    createdAt: item.createdAt,
+    appSections: [],
+  };
+}
+
 export async function fetchSearchResults(query: string, type?: ContentType): Promise<FeedCardItem[]> {
   const trimmed = query.trim();
 
@@ -321,14 +355,13 @@ export async function fetchSearchResults(query: string, type?: ContentType): Pro
   }
 
   try {
-    const path = buildMobileContentPath({
-      status: API_PUBLIC_CONTENT_STATUS,
-      search: trimmed,
-      type,
-    });
-
-    const response = await apiFetch<ContentApiResponse>(path);
-    return response.items.map(normalize);
+    const params: Record<string, QueryValue> = { q: trimmed, limit: 30 };
+    if (type) {
+      params.type = type;
+    }
+    const qs = buildQueryString(params);
+    const response = await apiFetch<SearchApiResponse>(`/v1/search?${qs}`);
+    return response.items.map(normalizeSearchItem);
   } catch {
     return [];
   }

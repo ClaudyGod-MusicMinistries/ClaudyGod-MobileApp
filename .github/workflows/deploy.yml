@@ -5,11 +5,10 @@ on:
   pull_request:
     branches:
       - main
-      
+
   push:
     branches:
       - main
-     
 
 concurrency:
   group: deploy-${{ github.workflow }}-${{ github.ref }}
@@ -42,14 +41,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: |
-            services/api/package-lock.json
-            admin/web/package-lock.json
+      - name: Set up Node.js 20
+        run: |
+          . "$HOME/.nvm/nvm.sh"
+          nvm install 20
+          nvm use 20
+          echo "$(nvm which 20 | xargs dirname)" >> "$GITHUB_PATH"
 
       - name: Enable Corepack
         run: corepack enable
@@ -98,14 +95,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: |
-            services/api/package-lock.json
-            admin/web/package-lock.json
+      - name: Set up Node.js 20
+        run: |
+          . "$HOME/.nvm/nvm.sh"
+          nvm install 20
+          nvm use 20
+          echo "$(nvm which 20 | xargs dirname)" >> "$GITHUB_PATH"
 
       - name: Enable Corepack
         run: corepack enable

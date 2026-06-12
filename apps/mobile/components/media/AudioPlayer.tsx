@@ -3,6 +3,7 @@ import { Image, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { MaterialIcons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { CustomText } from '../CustomText';
 import { useAppTheme } from '../../util/colorScheme';
 import { TVTouchable } from '../ui/TVTouchable';
@@ -121,6 +122,8 @@ export function AudioPlayer({
 
   const togglePlay = () => {
     if (!status.isLoaded) return;
+
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     if (status.playing) {
       player.pause();
