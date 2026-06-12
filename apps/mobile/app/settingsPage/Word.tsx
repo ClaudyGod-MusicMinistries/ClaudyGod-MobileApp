@@ -147,7 +147,7 @@ export default function WordForTodayScreen() {
                   Reflection unavailable
                 </CustomText>
                 <CustomText variant="body" style={{ color: theme.colors.textSecondary, marginTop: 6 }}>
-                  Continue with music, videos, or live ministry while today's reflection is prepared.
+                  Continue with music, videos, or live ministry while today&apos;s reflection is prepared.
                 </CustomText>
               </View>
             </View>
