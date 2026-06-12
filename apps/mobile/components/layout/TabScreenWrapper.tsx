@@ -10,6 +10,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorScheme } from '../../util/colorScheme';
 import { colors } from '../../constants/color';
+import { getSidebarWidth } from '../../util/sidebarConfig';
 
 type GradientColorStops = readonly [string, string, ...string[]];
 
@@ -37,6 +38,8 @@ export function TabScreenWrapper({
     (isDark
       ? ['rgba(8,7,14,0.10)', 'rgba(8,7,14,0.66)', currentColors.background]
       : ['rgba(76,29,149,0.08)', 'rgba(249,247,254,0.56)', currentColors.background]);
+
+  const sidebarWidth = getSidebarWidth(width);
 
   return (
     <View style={{ flex: 1, backgroundColor: currentColors.background }}>
@@ -95,7 +98,7 @@ export function TabScreenWrapper({
         }}
       />
       <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top']}>
-        <View style={{ flex: 1 }}>{children}</View>
+        <View style={{ flex: 1, paddingLeft: sidebarWidth }}>{children}</View>
       </SafeAreaView>
     </View>
   );
