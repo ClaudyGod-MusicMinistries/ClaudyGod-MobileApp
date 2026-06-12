@@ -2,24 +2,22 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
-import vueJsx from '@vitejs/plugin-vue-jsx';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '../..');
 
 export default defineConfig({
   envDir: repoRoot,
-  plugins: [vue(), vueJsx()],
+  plugins: [vue()],
   define: {
-    __VUE_OPTIONS_API__: true,
+    __VUE_OPTIONS_API__: false,
     __VUE_PROD_DEVTOOLS__: false,
     __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: false,
   },
-  // Fallback for .jsx sources if they are handled by esbuild before Vue JSX.
-  esbuild: {
-    jsxFactory: 'h',
-    jsxFragment: 'Fragment',
-    jsxInject: `import { h, Fragment } from 'vue'`,
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, 'src'),
+    },
   },
   server: {
     port: parseInt(process.env.WEB_PORT || '5173', 10),

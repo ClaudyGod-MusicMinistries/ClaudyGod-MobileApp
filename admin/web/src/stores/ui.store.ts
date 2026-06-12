@@ -1,0 +1,68 @@
+import { defineStore } from 'pinia';
+import { ref } from 'vue';
+
+export type ToastTone = 'success' | 'error' | 'warning' | 'info';
+
+export interface Toast {
+  id: string;
+  title: string;
+  message?: string;
+  tone: ToastTone;
+  duration?: number;
+}
+
+export interface ConfirmOptions {
+  title: string;
+  message: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  tone?: 'danger' | 'primary';
+}
+
+export const useUiStore = defineStore('ui', () => {
+  const toasts = ref<Toast[]>([]);
+  const sidebarOpen = ref(true);
+  const confirmOptions = ref<ConfirmOptions | null>(null);
+  let _confirmResolve: ((ok: boolean) => void) | null = null;
+
+  function addToast(toast: Omit<Toast, 'id'>): void {
+    const id = Math.random().toString(36).slice(2);
+    toasts.value.push({ ...toast, id });
+    const duration = toast.duration ?? 4000;
+    if (duration > 0) {
+      setTimeout(() => removeToast(id), duration);
+    }
+  }
+
+  function removeToast(id: string): void {
+    toasts.value = toasts.value.filter((t) => t.id !== id);
+  }
+
+  function toggleSidebar(): void {
+    sidebarOpen.value = !sidebarOpen.value;
+  }
+
+  function confirm(options: ConfirmOptions): Promise<boolean> {
+    confirmOptions.value = options;
+    return new Promise((resolve) => {
+      _confirmResolve = resolve;
+    });
+  }
+
+  function resolveConfirm(ok: boolean): void {
+    confirmOptions.value = null;
+    _confirmResolve?.(ok);
+    _confirmResolve = null;
+  }
+
+  return {
+    toasts,
+    sidebarOpen,
+    confirmOptions,
+    addToast,
+    removeToast,
+    toggleSidebar,
+    confirm,
+    resolveConfirm,
+  };
+});
