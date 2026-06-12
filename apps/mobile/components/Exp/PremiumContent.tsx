@@ -865,6 +865,61 @@ function InlineEmpty({
   );
 }
 
+// ─── ContentRailInner — horizontal scroll (phone/tablet) vs grid (desktop/TV) ─
+
+function ContentRailInner({
+  items,
+  title,
+  onPressItem,
+  isCompact,
+}: {
+  items: FeedCardItem[];
+  title: string;
+  onPressItem: (_item: FeedCardItem) => void;
+  isCompact: boolean;
+}) {
+  const device = useDeviceClass();
+  const sidebarWidth = getSidebarWidth(device.width);
+
+  if (device.isDesktop || device.isTV) {
+    const numCols = device.isTV ? 6 : device.isLargeDesktop ? 5 : 4;
+    const availableWidth = Math.min(device.maxContentWidth, device.width - device.contentGutter * 2 - sidebarWidth);
+    const gap = 14;
+    const cardWidth = Math.floor((availableWidth - (numCols - 1) * gap) / numCols);
+
+    return (
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap }}>
+        {items.map((item) => (
+          <ContentCard
+            key={`${title}-${item.id}`}
+            item={item}
+            compact={false}
+            fixedWidth={cardWidth}
+            onPress={() => onPressItem(item)}
+          />
+        ))}
+      </View>
+    );
+  }
+
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={{ gap: 12, paddingRight: 8 }}
+    >
+      {items.map((item) => (
+        <ContentCard
+          key={`${title}-${item.id}`}
+          item={item}
+          compact={isCompact}
+          onPress={() => onPressItem(item)}
+        />
+      ))}
+    </ScrollView>
+  );
+}
+
 export function ContentRail({
   title,
   subtitle,
@@ -972,7 +1027,12 @@ export function ContentList({
   onMorePress?: (_item: FeedCardItem) => void;
 }) {
   const theme = useAppTheme();
+  const device = useDeviceClass();
   if (!items.length) return null;
+
+  const useGrid = device.isDesktop || device.isTV;
+  const numCols = device.isTV ? 3 : 2;
+  const maxItems = useGrid ? 12 : 10;
 
   return (
     <FadeIn delay={120}>
@@ -983,27 +1043,33 @@ export function ContentList({
         >
           {title}
         </CustomText>
-        <View style={{ gap: 0 }}>
-          {items.slice(0, 10).map((item, index) => (
+        <View style={useGrid ? { flexDirection: 'row', flexWrap: 'wrap', gap: 10 } : { gap: 0 }}>
+          {items.slice(0, maxItems).map((item, index) => (
             <TVTouchable
               key={`${title}-${item.id}`}
               onPress={() => onPressItem(item)}
               showFocusBorder={false}
+              style={useGrid ? { width: `${Math.floor(100 / numCols) - 1}%` } : undefined}
             >
               <View
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
                   gap: 12,
-                  paddingVertical: 9,
-                  borderTopWidth: index === 0 ? 0 : 1,
+                  paddingVertical: useGrid ? 10 : 9,
+                  borderTopWidth: useGrid ? 0 : (index === 0 ? 0 : 1),
                   borderTopColor: theme.colors.border,
+                  borderRadius: useGrid ? 12 : 0,
+                  backgroundColor: useGrid
+                    ? (theme.scheme === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)')
+                    : 'transparent',
+                  paddingHorizontal: useGrid ? 10 : 0,
                 }}
               >
                 <View
                   style={{
-                    width: 118,
-                    height: 66,
+                    width: useGrid ? 96 : 118,
+                    height: useGrid ? 54 : 66,
                     borderRadius: 11,
                     overflow: 'hidden',
                     backgroundColor: theme.colors.surfaceAlt,
