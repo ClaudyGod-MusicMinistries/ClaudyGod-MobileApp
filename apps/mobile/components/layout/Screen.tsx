@@ -1,8 +1,6 @@
-// components/layout/Screen.tsx
 import React from 'react';
 import { StyleProp, View, ViewStyle } from 'react-native';
 import { useDeviceClass } from '../../util/deviceClassConfig';
-
 
 interface ScreenProps {
   children: React.ReactNode;
