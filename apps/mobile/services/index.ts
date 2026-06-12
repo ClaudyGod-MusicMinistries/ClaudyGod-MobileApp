@@ -2,6 +2,7 @@ export * from './accountSecurityService';
 export * from './api';
 export * from './apiClient';
 export * from './authService';
+export * from './playbackService';
 export * from './config';
 export * from './contentService';
 export * from './engagementAnalytics';
