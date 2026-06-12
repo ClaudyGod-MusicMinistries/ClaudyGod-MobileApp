@@ -28,7 +28,7 @@
           <AppBadge tone="neutral">{{ value }}</AppBadge>
         </template>
         <template #cell-requestedBy="{ value }">
-          <span class="text-xs text-ink-soft">{{ (value as { email: string }).email }}</span>
+          <span class="text-xs text-ink-soft">{{ getEmail(value) }}</span>
         </template>
         <template #cell-createdAt="{ value }">
           <span class="text-xs text-ink-muted">{{ formatDate(String(value)) }}</span>
@@ -150,5 +150,9 @@ async function confirmReject(): Promise<void> {
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+function getEmail(v: unknown): string {
+  return ((v as Record<string, string>).email) ?? '';
 }
 </script>

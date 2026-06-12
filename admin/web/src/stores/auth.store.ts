@@ -12,6 +12,11 @@ import {
 import { Role, INACTIVITY_TIMEOUT_MS } from '@/utils/constants';
 import type { AdminUser, LoginResponse } from '@/api/types';
 
+function _extractMessage(e: unknown): string {
+  if (e instanceof Error) return e.message;
+  return 'Something went wrong';
+}
+
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<AdminUser | null>(null);
   const isLoading = ref(false);

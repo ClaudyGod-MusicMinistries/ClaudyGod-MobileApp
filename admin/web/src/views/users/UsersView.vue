@@ -56,7 +56,7 @@
       <AppCard>
         <AppTable :columns="supportCols" :rows="store.supportRequests as Record<string, unknown>[]" :loading="store.supportLoading">
           <template #cell-user="{ value }">
-            <span class="text-xs text-ink-soft">{{ (value as { email: string }).email }}</span>
+            <span class="text-xs text-ink-soft">{{ getEmail(value) }}</span>
           </template>
           <template #cell-status="{ value }">
             <StatusBadge :status="String(value)" />
@@ -145,5 +145,9 @@ async function confirmRoleChange(row: Record<string, unknown>, role: number): Pr
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function getEmail(v: unknown): string {
+  return ((v as Record<string, string>).email) ?? '';
 }
 </script>

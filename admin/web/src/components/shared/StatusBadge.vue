@@ -5,8 +5,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import AppBadge from '@/components/ui/AppBadge.vue';
-import type { ToastTone } from '@/stores/ui.store';
-
 type BadgeTone = 'primary' | 'success' | 'danger' | 'warning' | 'info' | 'neutral';
 
 const props = defineProps<{ status: string }>();
