@@ -1457,3 +1457,259 @@ export function StreamingBanner({ item, badge = 'Featured', title, subtitle, cta
     </FadeIn>
   );
 }
+
+// ─── GreetingBanner ───────────────────────────────────────────────────────────────
+
+export function GreetingBanner({ name, newCount }: { name?: string | null; newCount?: number }) {
+  const theme = useAppTheme();
+  const hour = new Date().getHours();
+  const greeting =
+    hour < 5 ? 'Still up' :
+    hour < 12 ? 'Good morning' :
+    hour < 17 ? 'Good afternoon' :
+    'Good evening';
+  const firstName = name ? name.split(' ')[0] : null;
+  const dateStr = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+
+  return (
+    <FadeIn>
+      <View style={{ gap: 4, paddingVertical: 2 }}>
+        <CustomText
+          variant="display"
+          style={{ color: theme.colors.text, fontSize: 27, fontWeight: '800', letterSpacing: -0.8 }}
+        >
+          {greeting}{firstName ? `, ${firstName}` : ''}
+        </CustomText>
+        {newCount ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: theme.colors.primary }} />
+            <CustomText variant="caption" style={{ color: theme.colors.primary, fontWeight: '600' }}>
+              {newCount} new {newCount === 1 ? 'track' : 'tracks'} available
+            </CustomText>
+          </View>
+        ) : (
+          <CustomText variant="caption" style={{ color: theme.colors.textMuted }}>
+            {dateStr}
+          </CustomText>
+        )}
+      </View>
+    </FadeIn>
+  );
+}
+
+// ─── ContentShortcuts ─────────────────────────────────────────────────────────────
+
+export type ContentShortcut = {
+  id: string;
+  label: string;
+  icon: React.ComponentProps<typeof MaterialIcons>['name'];
+  color: string;
+  onPress: () => void;
+};
+
+export function ContentShortcuts({ shortcuts }: { shortcuts: ContentShortcut[] }) {
+  const theme = useAppTheme();
+
+  return (
+    <FadeIn delay={60}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ gap: 8, paddingVertical: 2 }}
+      >
+        {shortcuts.map((item) => (
+          <TVTouchable key={item.id} onPress={item.onPress} showFocusBorder={false}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 8,
+                paddingHorizontal: 16,
+                paddingVertical: 11,
+                borderRadius: 999,
+                backgroundColor: theme.scheme === 'dark' ? 'rgba(255,255,255,0.07)' : 'rgba(17,10,31,0.06)',
+                borderWidth: 1,
+                borderColor: theme.scheme === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(17,10,31,0.09)',
+              }}
+            >
+              <View
+                style={{
+                  width: 26, height: 26, borderRadius: 13,
+                  alignItems: 'center', justifyContent: 'center',
+                  backgroundColor: `${item.color}22`,
+                }}
+              >
+                <MaterialIcons name={item.icon} size={14} color={item.color} />
+              </View>
+              <CustomText variant="label" style={{ color: theme.colors.text, fontSize: 13.5, fontWeight: '600' }}>
+                {item.label}
+              </CustomText>
+            </View>
+          </TVTouchable>
+        ))}
+      </ScrollView>
+    </FadeIn>
+  );
+}
+
+// ─── LiveNowBanner ────────────────────────────────────────────────────────────────
+
+export function LiveNowBanner({ item, onPress }: { item: FeedCardItem; onPress: () => void }) {
+  const theme = useAppTheme();
+  const { width } = useWindowDimensions();
+  const compact = width < 430;
+
+  return (
+    <FadeIn delay={40}>
+      <TVTouchable onPress={onPress} showFocusBorder={false}>
+        <View style={{ borderRadius: 18, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(244,63,94,0.36)' }}>
+          <Image
+            source={{ uri: item.imageUrl || DEFAULT_CONTENT_IMAGE_URI }}
+            resizeMode="cover"
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0.15 }}
+          />
+          <LinearGradient
+            colors={['rgba(244,63,94,0.24)', 'rgba(7,5,12,0.88)']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+          />
+          <View style={{ flexDirection: 'row', alignItems: 'center', padding: compact ? 14 : 18, gap: 14 }}>
+            <View
+              style={{
+                width: 38, height: 38, borderRadius: 19,
+                alignItems: 'center', justifyContent: 'center',
+                backgroundColor: 'rgba(244,63,94,0.20)',
+                borderWidth: 1, borderColor: 'rgba(244,63,94,0.38)',
+              }}
+            >
+              <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#F43F5E' }} />
+            </View>
+
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={{ color: '#F87171', fontSize: 9.5, fontWeight: '700', letterSpacing: 1.4, textTransform: 'uppercase', marginBottom: 4 }}>
+                Live now
+              </Text>
+              <CustomText variant="title" style={{ color: '#FFFFFF', fontWeight: '700', fontSize: compact ? 15 : 17 }} numberOfLines={1}>
+                {item.title}
+              </CustomText>
+              {item.subtitle ? (
+                <CustomText variant="caption" style={{ color: 'rgba(255,255,255,0.58)', marginTop: 3 }} numberOfLines={1}>
+                  {item.subtitle}
+                </CustomText>
+              ) : null}
+            </View>
+
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 999, backgroundColor: '#F43F5E' }}>
+              <MaterialIcons name="live-tv" size={14} color="#FFFFFF" />
+              <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '700' }}>Join</Text>
+            </View>
+          </View>
+        </View>
+      </TVTouchable>
+    </FadeIn>
+  );
+}
+
+// ─── WordOfDayCard ────────────────────────────────────────────────────────────────
+
+type WordOfDayData = {
+  title?: string | null;
+  passage?: string | null;
+  verse?: string | null;
+  reflection?: string | null;
+};
+
+export function WordOfDayCard({ word, onPress }: { word: WordOfDayData; onPress: () => void }) {
+  const theme = useAppTheme();
+
+  return (
+    <FadeIn delay={80}>
+      <TVTouchable onPress={onPress} showFocusBorder={false}>
+        <View
+          style={{
+            borderRadius: 20, overflow: 'hidden', borderWidth: 1,
+            borderColor: theme.scheme === 'dark' ? 'rgba(251,191,36,0.18)' : 'rgba(180,83,9,0.14)',
+            backgroundColor: theme.scheme === 'dark' ? 'rgba(251,191,36,0.05)' : 'rgba(251,191,36,0.04)',
+          }}
+        >
+          <View style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, backgroundColor: '#FBBF24' }} />
+          <View style={{ padding: 18, paddingLeft: 20 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 10 }}>
+              <MaterialIcons name="auto-stories" size={14} color="#FBBF24" />
+              <CustomText variant="caption" style={{ color: '#FBBF24', fontWeight: '700', letterSpacing: 0.9, textTransform: 'uppercase', fontSize: 10 }}>
+                Word for today
+              </CustomText>
+            </View>
+            <CustomText variant="title" style={{ color: theme.colors.text, fontWeight: '700', fontSize: 16, lineHeight: 23 }} numberOfLines={2}>
+              {word.title ?? word.passage}
+            </CustomText>
+            {(word.verse ?? word.reflection) ? (
+              <CustomText variant="body" style={{ color: theme.colors.textSecondary, marginTop: 8, lineHeight: 19, fontSize: 13 }} numberOfLines={3}>
+                {word.verse ?? word.reflection}
+              </CustomText>
+            ) : null}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 12 }}>
+              <CustomText variant="caption" style={{ color: theme.colors.primary, fontWeight: '600' }}>
+                Read full message
+              </CustomText>
+              <MaterialIcons name="arrow-forward" size={13} color={theme.colors.primary} />
+            </View>
+          </View>
+        </View>
+      </TVTouchable>
+    </FadeIn>
+  );
+}
+
+// ─── SectionLabel ─────────────────────────────────────────────────────────────────
+
+export function SectionLabel({
+  title,
+  accent,
+  subtitle,
+  actionLabel,
+  onAction,
+}: {
+  title: string;
+  accent?: string;
+  subtitle?: string;
+  actionLabel?: string;
+  onAction?: () => void;
+}) {
+  const theme = useAppTheme();
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 10 }}>
+      <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
+        {accent ? (
+          <CustomText variant="caption" style={{ color: accent, fontWeight: '700', letterSpacing: 0.7, textTransform: 'uppercase', fontSize: 10 }}>
+            {accent}
+          </CustomText>
+        ) : null}
+        <CustomText variant="title" style={{ color: theme.colors.text, fontSize: 19, fontWeight: '800', letterSpacing: -0.4 }}>
+          {title}
+        </CustomText>
+        {subtitle ? (
+          <CustomText variant="caption" style={{ color: theme.colors.textMuted, marginTop: 1 }} numberOfLines={1}>
+            {subtitle}
+          </CustomText>
+        ) : null}
+      </View>
+      {actionLabel && onAction ? (
+        <TVTouchable onPress={onAction} showFocusBorder={false}
+          style={{
+            flexDirection: 'row', alignItems: 'center', gap: 3,
+            paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999,
+            backgroundColor: theme.scheme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(17,10,31,0.05)',
+            borderWidth: 1, borderColor: theme.colors.border,
+          }}
+        >
+          <CustomText variant="caption" style={{ color: theme.colors.primary, fontSize: 11.5, fontWeight: '600' }}>
+            {actionLabel}
+          </CustomText>
+          <MaterialIcons name="chevron-right" size={14} color={theme.colors.primary} />
+        </TVTouchable>
+      ) : null}
+    </View>
+  );
+}
