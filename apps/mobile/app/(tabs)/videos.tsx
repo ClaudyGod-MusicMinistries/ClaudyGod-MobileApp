@@ -1,34 +1,128 @@
-import React, { useMemo, useState } from 'react';
-import { Linking, useWindowDimensions } from 'react-native';
+﻿import React, { useMemo, useState } from 'react';
+import { Linking, ScrollView, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { VideoPlayer } from '../../components/media/VideoPlayer';
 import { useToast } from '../../context/ToastContext';
+import { useAppTheme } from '../../util/colorScheme';
 import { useContentFeed } from '../../hooks/useContentFeed';
 import type { FeedCardItem } from '../../services/contentService';
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
 import { APP_ROUTES } from '../../util/appRoutes';
 import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
 import { isDirectPlayableVideoUrl, isHostedVideoUrl, routeParamToString, shouldOpenVideoScreen } from '../../util/playerRoute';
-import { ContentList, ContentRail, EmptyState, PremiumHero, PremiumPage, dedupeFeedItems } from '../../components/Exp/PremiumContent';
+import {
+  CompactContentRow,
+  ContentList,
+  ContentRail,
+  EmptyState,
+  LiveNowBanner,
+  PremiumHero,
+  PremiumPage,
+  SectionLabel,
+  dedupeFeedItems,
+} from '../../components/Exp/PremiumContent';
 
-function parseRouteItem(params: { itemId?: string | string[]; title?: string | string[]; subtitle?: string | string[]; imageUrl?: string | string[]; duration?: string | string[]; mediaUrl?: string | string[] }): FeedCardItem | null {
+type VideoFilter = 'all' | 'sessions' | 'live' | 'shorts';
+
+function parseRouteItem(params: {
+  itemId?: string | string[];
+  title?: string | string[];
+  subtitle?: string | string[];
+  imageUrl?: string | string[];
+  duration?: string | string[];
+  mediaUrl?: string | string[];
+}): FeedCardItem | null {
   const itemId = routeParamToString(params.itemId);
   if (!itemId) return null;
-  return { id: itemId, type: 'video', title: routeParamToString(params.title) ?? 'Untitled', subtitle: routeParamToString(params.subtitle) ?? 'ClaudyGod', description: '', duration: routeParamToString(params.duration) ?? '--:--', imageUrl: routeParamToString(params.imageUrl) ?? DEFAULT_CONTENT_IMAGE_URI, mediaUrl: routeParamToString(params.mediaUrl) };
+  return {
+    id: itemId, type: 'video',
+    title: routeParamToString(params.title) ?? 'Untitled',
+    subtitle: routeParamToString(params.subtitle) ?? 'ClaudyGod',
+    description: '', duration: routeParamToString(params.duration) ?? '--:--',
+    imageUrl: routeParamToString(params.imageUrl) ?? DEFAULT_CONTENT_IMAGE_URI,
+    mediaUrl: routeParamToString(params.mediaUrl),
+  };
+}
+
+const FILTERS: { id: VideoFilter; label: string; icon: React.ComponentProps<typeof MaterialIcons>['name'] }[] = [
+  { id: 'all',      label: 'All',      icon: 'apps' },
+  { id: 'sessions', label: 'Sessions', icon: 'church' },
+  { id: 'live',     label: 'Live',     icon: 'live-tv' },
+  { id: 'shorts',   label: 'Shorts',   icon: 'video-library' },
+];
+
+function FilterChips({ active, onChange }: { active: VideoFilter; onChange: (f: VideoFilter) => void }) {
+  const theme = useAppTheme();
+  return (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 2 }}>
+      {FILTERS.map((f) => {
+        const isActive = f.id === active;
+        return (
+          <TouchableOpacity
+            key={f.id}
+            onPress={() => onChange(f.id)}
+            style={{
+              flexDirection: 'row', alignItems: 'center', gap: 6,
+              paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999,
+              backgroundColor: isActive ? '#60A5FA' : (theme.scheme === 'dark' ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)'),
+              borderWidth: 1,
+              borderColor: isActive ? 'transparent' : (theme.scheme === 'dark' ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.08)'),
+            }}
+          >
+            <MaterialIcons name={f.icon} size={13} color={isActive ? '#FFFFFF' : theme.colors.textSecondary} />
+            <Text style={{ color: isActive ? '#FFFFFF' : theme.colors.textSecondary, fontSize: 12.5, fontWeight: isActive ? '700' : '500' }}>
+              {f.label}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
+    </ScrollView>
+  );
 }
 
 export default function VideosScreen() {
+  const theme = useAppTheme();
   const router = useRouter();
-  const { width } = useWindowDimensions();
   const { showToast } = useToast();
-  const params = useLocalSearchParams<{ itemId?: string | string[]; title?: string | string[]; subtitle?: string | string[]; imageUrl?: string | string[]; duration?: string | string[]; mediaUrl?: string | string[] }>();
+  const { width } = useWindowDimensions();
+  const params = useLocalSearchParams<{
+    itemId?: string | string[];
+    title?: string | string[];
+    subtitle?: string | string[];
+    imageUrl?: string | string[];
+    duration?: string | string[];
+    mediaUrl?: string | string[];
+  }>();
   const { feed, loading, refresh } = useContentFeed();
+  const [filter, setFilter] = useState<VideoFilter>('all');
+
   const routeItem = useMemo(() => parseRouteItem(params), [params]);
-  const queue = useMemo(() => dedupeFeedItems([...(routeItem ? [routeItem] : []), ...feed.videos, ...feed.live, ...feed.recent]).filter((item) => shouldOpenVideoScreen(item)), [feed, routeItem]);
-  const [activeId, setActiveId] = useState(routeItem?.id ?? queue[0]?.id ?? '');
-  const active = queue.find((item) => item.id === activeId) ?? routeItem ?? queue[0] ?? null;
+  const allQueue = useMemo(
+    () => dedupeFeedItems([...(routeItem ? [routeItem] : []), ...feed.videos, ...feed.live, ...feed.recent])
+      .filter((item) => shouldOpenVideoScreen(item)),
+    [feed, routeItem],
+  );
+
+  const filteredItems = useMemo(() => {
+    if (filter === 'all')      return allQueue;
+    if (filter === 'sessions') return allQueue.filter((item) => !item.isLive);
+    if (filter === 'live')     return allQueue.filter((item) => item.isLive);
+    if (filter === 'shorts')   return allQueue.filter((item) => {
+      const mins = parseInt(item.duration?.split(':')[0] ?? '99', 10);
+      return mins < 5;
+    });
+    return allQueue;
+  }, [allQueue, filter]);
+
+  const [activeId, setActiveId] = useState(routeItem?.id ?? allQueue[0]?.id ?? '');
+  const active = allQueue.find((item) => item.id === activeId) ?? routeItem ?? allQueue[0] ?? null;
   const canInlinePlay = Boolean(active?.mediaUrl && (isDirectPlayableVideoUrl(active.mediaUrl) || isHostedVideoUrl(active.mediaUrl)));
-  const playerHeight = width >= 768 ? 430 : width < 380 ? 230 : 260;
+  const playerHeight = width >= 768 ? 430 : width < 380 ? 220 : 260;
+
+  const liveSessions = useMemo(() => feed.live.filter((item) => item.isLive), [feed.live]);
+
+  const upNext = allQueue.filter((item) => item.id !== active?.id).slice(0, 5);
 
   const openItem = async (item: FeedCardItem, source: string) => {
     if (!item.mediaUrl) {
@@ -41,12 +135,94 @@ export default function VideosScreen() {
 
   return (
     <PremiumPage title="Videos" eyebrow="Watch" noBack refreshing={loading} onRefresh={refresh}>
-      {active && canInlinePlay && active.mediaUrl ? <VideoPlayer title={active.title} sourceUri={active.mediaUrl} height={playerHeight} /> : <PremiumHero item={active} title={active?.title ?? 'Choose a video'} subtitle={active?.description || 'Select a video, live replay, or featured session to watch.'} primaryLabel={active?.mediaUrl ? 'Open video' : 'Browse videos'} primaryIcon={active?.mediaUrl ? 'open-in-new' : 'smart-display'} onPrimary={() => (active?.mediaUrl ? void Linking.openURL(active.mediaUrl) : undefined)} />}
-      <ContentRail title="Up next" items={queue} compact loading={loading} onPressItem={(item) => void openItem(item, 'videos_queue')} />
-      <ContentRail title="Latest videos" items={feed.videos} loading={loading} onPressItem={(item) => void openItem(item, 'videos_latest')} />
-      <ContentRail title="Live & replays" items={feed.live} compact loading={loading} onPressItem={(item) => void openItem(item, 'videos_live')} />
-      <ContentList title="More to watch" items={dedupeFeedItems([...feed.recent, ...feed.videos])} onPressItem={(item) => void openItem(item, 'videos_more')} />
-      {!loading && !queue.length ? <EmptyState title="No videos in this section right now" message="Try Music, Live, or Search for more to watch." actionLabel="Search" onAction={() => router.push(APP_ROUTES.tabs.search)} icon="smart-display" /> : null}
+      {/* Player or Hero */}
+      {active && canInlinePlay && active.mediaUrl ? (
+        <VideoPlayer title={active.title} sourceUri={active.mediaUrl} height={playerHeight} />
+      ) : (
+        <PremiumHero
+          item={active}
+          title={active?.title ?? 'Choose a video'}
+          subtitle={active?.description || 'Select a video, live replay, or featured session to watch.'}
+          primaryLabel={active?.mediaUrl ? 'Open video' : 'Browse videos'}
+          primaryIcon={active?.mediaUrl ? 'open-in-new' : 'smart-display'}
+          onPrimary={() => (active?.mediaUrl ? void Linking.openURL(active.mediaUrl) : undefined)}
+        />
+      )}
+
+      {/* Filter chips */}
+      <FilterChips active={filter} onChange={setFilter} />
+
+      {/* Live banner */}
+      {liveSessions[0] ? (
+        <LiveNowBanner item={liveSessions[0]} onPress={() => void openItem(liveSessions[0]!, 'videos_live_banner')} />
+      ) : null}
+
+      {/* Up next */}
+      {upNext.length > 0 ? (
+        <View style={{ gap: 10 }}>
+          <SectionLabel title="Up next" accent={`${upNext.length} videos`} />
+          <View style={{ gap: 4 }}>
+            {upNext.map((item) => (
+              <CompactContentRow key={item.id} item={item} onPress={() => void openItem(item, 'videos_queue')} />
+            ))}
+          </View>
+        </View>
+      ) : null}
+
+      {/* Videos rail */}
+      <View style={{ gap: 12 }}>
+        <SectionLabel
+          title="Latest videos"
+          accent="Watch"
+          subtitle="Messages, sessions, clips, and replays"
+          actionLabel="See all"
+          onAction={() => {}}
+        />
+        <ContentRail
+          title=""
+          items={filteredItems.slice(0, 14)}
+          loading={loading}
+          onPressItem={(item) => void openItem(item, 'videos_rail')}
+          emptyTitle="No videos match this filter"
+          emptyMessage="Try a different filter or pull down to refresh."
+        />
+      </View>
+
+      {/* Live & replays */}
+      {feed.live.length > 0 ? (
+        <View style={{ gap: 12 }}>
+          <SectionLabel
+            title="Live & replays"
+            accent="Ministry"
+            actionLabel="See all"
+            onAction={() => {}}
+          />
+          <ContentRail
+            title=""
+            items={feed.live.slice(0, 10)}
+            compact
+            loading={loading}
+            onPressItem={(item) => void openItem(item, 'videos_live')}
+          />
+        </View>
+      ) : null}
+
+      {/* More to watch */}
+      <ContentList
+        title="More to watch"
+        items={dedupeFeedItems([...feed.recent, ...feed.videos])}
+        onPressItem={(item) => void openItem(item, 'videos_more')}
+      />
+
+      {!loading && !allQueue.length ? (
+        <EmptyState
+          title="No videos right now"
+          message="Try Music, Live, or Search for more content."
+          actionLabel="Search"
+          onAction={() => router.push(APP_ROUTES.tabs.search)}
+          icon="smart-display"
+        />
+      ) : null}
     </PremiumPage>
   );
 }

@@ -16,6 +16,8 @@ import { useRouter } from 'expo-router';
 import { CustomText } from '../CustomText';
 import { Screen } from '../layout/Screen';
 import { TabScreenWrapper } from '../layout/TabScreenWrapper';
+import { useDeviceClass } from '../../util/deviceClassConfig';
+import { getSidebarWidth } from '../../util/sidebarConfig';
 import { AppButton } from '../ui/AppButton';
 import { AppScreenFooter } from '../layout/AppScreenFooter';
 import { TVTouchable } from '../ui/TVTouchable';
@@ -104,7 +106,9 @@ export function PremiumPage({
   const { isAuthenticated } = useAuth();
   const { width } = useWindowDimensions();
   const compact = width < 430;
+  const isSidebarMode = getSidebarWidth(width) > 0;
   const showBack = !noBack && title !== 'ClaudyGod' && router.canGoBack();
+  const bottomPadding = isSidebarMode ? 40 : theme.layout.tabBarContentPadding;
 
   return (
     <TabScreenWrapper backgroundImage={backgroundImage} backgroundHeight={compact ? 240 : 320}>
@@ -121,7 +125,7 @@ export function PremiumPage({
             />
           ) : undefined
         }
-        contentContainerStyle={{ paddingBottom: theme.layout.tabBarContentPadding }}
+        contentContainerStyle={{ paddingBottom: bottomPadding }}
       >
         <Screen>
           <View style={{ paddingTop: theme.layout.headerVerticalPadding, gap: theme.layout.sectionGap }}>
@@ -338,10 +342,10 @@ export function PremiumHero({
   height,
 }: PremiumHeroProps) {
   const theme = useAppTheme();
-  const { width } = useWindowDimensions();
-  const isWide = width >= 760;
-  const isLarge = width >= 1024;
-  const heroHeight = height ?? (isLarge ? 380 : isWide ? 320 : 290);
+  const device = useDeviceClass();
+  const isWide = device.width >= 760;
+  const isLarge = device.isDesktop || device.isTV;
+  const heroHeight = height ?? (device.isTV ? 540 : device.isLargeDesktop ? 480 : isLarge ? 420 : isWide ? 340 : 290);
   const imageUrl = item?.imageUrl || DEFAULT_CONTENT_IMAGE_URI;
   const primaryAction = onPrimary ?? onPrimaryPress;
   const secondaryAction = onSecondary ?? onSecondaryPress;
@@ -431,8 +435,8 @@ export function PremiumHero({
             variant="display"
             style={{
               color: '#FFFFFF',
-              fontSize: isLarge ? 30 : isWide ? 25 : 21,
-              lineHeight: isLarge ? 38 : isWide ? 32 : 28,
+              fontSize: device.isTV ? 42 : device.isLargeDesktop ? 36 : isLarge ? 30 : isWide ? 25 : 21,
+              lineHeight: device.isTV ? 52 : device.isLargeDesktop ? 44 : isLarge ? 38 : isWide ? 32 : 28,
               fontWeight: '800',
               letterSpacing: -0.5,
             }}
@@ -633,15 +637,19 @@ type ContentCardProps = {
   compact?: boolean;
 };
 
-export function ContentCard({ item, onPress, compact = false }: ContentCardProps) {
+export function ContentCard({ item, onPress, compact = false, fixedWidth }: ContentCardProps & { fixedWidth?: number }) {
   const theme = useAppTheme();
-  const { width: screenWidth } = useWindowDimensions();
-  const isDesktop = screenWidth >= 1024;
-  const cardWidth = compact
-    ? Math.min(154, Math.max(132, screenWidth * 0.38))
-    : isDesktop
-      ? Math.min(228, Math.max(192, screenWidth * 0.17))
-      : Math.min(192, Math.max(160, screenWidth * 0.42));
+  const device = useDeviceClass();
+  const screenWidth = device.width;
+  const cardWidth = fixedWidth ?? (compact
+    ? Math.min(154, Math.max(130, screenWidth * 0.38))
+    : device.isTV
+      ? Math.min(320, Math.max(240, screenWidth * 0.15))
+      : device.isLargeDesktop
+        ? Math.min(280, Math.max(220, screenWidth * 0.16))
+        : device.isDesktop
+          ? Math.min(240, Math.max(192, screenWidth * 0.18))
+          : Math.min(192, Math.max(158, screenWidth * 0.42)));
   const title = cleanFeedText(item.title);
 
   return (
@@ -942,20 +950,7 @@ export function ContentRail({
       {loading ? (
         <RailSkeleton />
       ) : items.length > 0 ? (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: 12, paddingRight: 8 }}
-        >
-          {items.map((item) => (
-            <ContentCard
-              key={`${title}-${item.id}`}
-              item={item}
-              compact={isCompact}
-              onPress={() => onPressItem(item)}
-            />
-          ))}
-        </ScrollView>
+        <ContentRailInner items={items} title={title} onPressItem={onPressItem} isCompact={isCompact} />
       ) : hideWhenEmpty ? null : (
         <InlineEmpty title={emptyTitle} message={emptyMessage} />
       )}
