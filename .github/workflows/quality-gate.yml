@@ -67,7 +67,6 @@ jobs:
     name: Docker Build Check
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    if: github.event_name == 'push'
 
     steps:
       - uses: actions/checkout@v4
