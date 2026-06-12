@@ -1,8 +1,10 @@
 # ── Stage 1: install all deps (including dev) for building ────────────────────
+# --frozen-lockfile is omitted: yarn still reads yarn.lock for version pinning
+# but can update it if package.json has changed since the last `yarn install`.
 FROM node:20-alpine AS deps
 WORKDIR /usr/src/app
 COPY package.json yarn.lock* ./
-RUN yarn install --frozen-lockfile --non-interactive
+RUN yarn install --non-interactive
 
 # ── Stage 2: compile TypeScript ───────────────────────────────────────────────
 FROM node:20-alpine AS build
