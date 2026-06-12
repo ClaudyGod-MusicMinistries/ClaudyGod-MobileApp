@@ -1,7 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import nodemailer from 'nodemailer';
-import type SMTPTransport from 'nodemailer/lib/smtp-transport';
 import { env } from '../config/env';
 
 export interface EmailMessageInput {
@@ -20,12 +19,6 @@ export interface EmailTransportVerification {
   reachable: boolean;
   reason?: string;
 }
-
-type PooledSmtpOptions = SMTPTransport.Options & {
-  pool?: boolean;
-  maxConnections?: number;
-  maxMessages?: number;
-};
 
 const resolveSmtpHost = (): string => {
   if (env.SMTP_HOST) {
@@ -53,7 +46,7 @@ const smtpAuth =
         }
       : undefined;
 
-const smtpOptions: PooledSmtpOptions = {
+const smtpOptions = {
   host: smtpHost,
   port: env.SMTP_PORT,
   secure: env.SMTP_SECURE,
