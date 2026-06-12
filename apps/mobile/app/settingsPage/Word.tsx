@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
