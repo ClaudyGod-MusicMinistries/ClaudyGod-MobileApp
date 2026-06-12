@@ -12,10 +12,12 @@ COPY . .
 RUN yarn build
 
 # ── Stage 3: production-only deps (no devDependencies) ───────────────────────
+# --frozen-lockfile is intentionally omitted: Yarn 1 needs to write a
+# production-only subset of the lockfile, which --frozen-lockfile blocks.
 FROM node:20-alpine AS prod-deps
 WORKDIR /usr/src/app
 COPY package.json yarn.lock* ./
-RUN yarn install --frozen-lockfile --non-interactive --production
+RUN yarn install --non-interactive --production
 
 # ── Stage 4: lean runtime image ───────────────────────────────────────────────
 FROM node:20-alpine
