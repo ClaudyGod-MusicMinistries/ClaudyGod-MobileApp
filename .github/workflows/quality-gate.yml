@@ -3,110 +3,102 @@ name: Quality Gate
 on:
   workflow_dispatch:
   pull_request:
-    branches:
-      - main
+    branches: [main, develop]
   push:
-    branches:
-      - main
+    branches: [main, develop]
 
 concurrency:
-  group: quality-gate-${{ github.workflow }}-${{ github.ref }}
+  group: quality-gate-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
   contents: read
 
 env:
-  CI: true
-  CI_DATABASE_URL: ${{ secrets.CI_DATABASE_URL }}
-  CI_SUPABASE_URL: ${{ secrets.CI_SUPABASE_URL }}
-  CI_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.CI_SUPABASE_PUBLISHABLE_KEY }}
-  CI_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.CI_SUPABASE_SERVICE_ROLE_KEY }}
-  CI_YOUTUBE_API_KEY: ${{ secrets.CI_YOUTUBE_API_KEY }}
-  CI_YOUTUBE_CHANNEL_ID: ${{ secrets.CI_YOUTUBE_CHANNEL_ID }}
-  CI_POSTFIX_SMTP_USERNAME: ${{ secrets.CI_POSTFIX_SMTP_USERNAME }}
-  CI_POSTFIX_SMTP_PASSWORD: ${{ secrets.CI_POSTFIX_SMTP_PASSWORD }}
+  CI: 'true'
+  CI_DATABASE_URL:               ${{ secrets.CI_DATABASE_URL }}
+  CI_SUPABASE_URL:               ${{ secrets.CI_SUPABASE_URL }}
+  CI_SUPABASE_PUBLISHABLE_KEY:   ${{ secrets.CI_SUPABASE_PUBLISHABLE_KEY }}
+  CI_SUPABASE_SERVICE_ROLE_KEY:  ${{ secrets.CI_SUPABASE_SERVICE_ROLE_KEY }}
+  CI_YOUTUBE_API_KEY:            ${{ secrets.CI_YOUTUBE_API_KEY }}
+  CI_YOUTUBE_CHANNEL_ID:         ${{ secrets.CI_YOUTUBE_CHANNEL_ID }}
+  CI_POSTFIX_SMTP_USERNAME:      ${{ secrets.CI_POSTFIX_SMTP_USERNAME }}
+  CI_POSTFIX_SMTP_PASSWORD:      ${{ secrets.CI_POSTFIX_SMTP_PASSWORD }}
 
 jobs:
-  review-all:
-    name: Review All
+  # ── Code quality: lint, typecheck, tests ────────────────────────────────────
+  quality:
+    name: Code Quality
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Node.js 20
-        run: |
-          . "$HOME/.nvm/nvm.sh"
-          nvm install 20
-          nvm use 20
-          echo "$(nvm which 20 | xargs dirname)" >> "$GITHUB_PATH"
-
-      - name: Enable Corepack
-        run: corepack enable
-
-      - name: Activate Yarn Classic
-        run: corepack prepare yarn@1.22.22 --activate
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+          cache-dependency-path: |
+            services/api/yarn.lock
+            admin/web/yarn.lock
+            apps/mobile/yarn.lock
 
       - name: Create CI environment files
         run: bash ./scripts/setup-ci-env.sh
 
-      - name: Install backend dependencies
-        run: npm ci --prefix ./services/api
-
-      - name: Install admin dependencies
-        run: npm ci --prefix ./admin/web
-
-      - name: Install mobile dependencies
-        run: yarn --cwd ./apps/mobile install --frozen-lockfile
+      - name: Install dependencies (all workspaces)
+        run: |
+          yarn --cwd ./services/api install --frozen-lockfile
+          yarn --cwd ./admin/web      install --frozen-lockfile
+          yarn --cwd ./apps/mobile    install --frozen-lockfile
 
       - name: Run full repository review
-        run: npm run review:all
+        run: bash ./scripts/review-all.sh
 
-  production-docker-dry-run:
-    name: Production Docker Dry Run
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs:
-      - review-all
+  # ── Docker config validation (only on push, not PRs) ────────────────────────
+  docker-dry-run:
+    name: Docker Build Check
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 30
+    if: github.event_name == 'push'
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Create CI environment files
         run: bash ./scripts/setup-ci-env.sh
 
-      - name: Render production compose
-        run: docker compose --env-file .env.production -f docker-compose.production.yml config >/dev/null
+      - name: Validate production compose config
+        run: |
+          docker compose \
+            --env-file .env.production \
+            -f docker-compose.production.yml \
+            config >/dev/null
 
-      - name: Build API production image
-        run: docker build -t claudygod-api:ci ./services/api
+      - name: Build API image
+        run: docker build --platform linux/amd64 -t claudygod-api:ci ./services/api
 
       - name: Build Postfix relay image
-        run: docker build -t claudygod-postfix:ci ./ops/postfix
+        run: docker build --platform linux/amd64 -t claudygod-postfix:ci ./ops/postfix
 
-      - name: Build admin web production image
-        run: >
-          docker build
-          --build-arg VITE_API_URL=https://api.example.com
-          --build-arg VITE_GOOGLE_LOGIN_URL=https://api.example.com/v1/auth/google/start
-          --build-arg VITE_MOBILE_PREVIEW_URL=https://app.example.com
-          -t claudygod-admin-web:ci
-          ./admin/web
+      - name: Build admin-web image
+        run: |
+          docker build --platform linux/amd64 \
+            --build-arg VITE_API_URL=https://apimobile.claudygod.org \
+            --build-arg VITE_GOOGLE_LOGIN_URL=https://apimobile.claudygod.org/v1/auth/google/start \
+            --build-arg VITE_MOBILE_PREVIEW_URL=https://mobileapp.claudygod.org \
+            -t claudygod-admin:ci \
+            ./admin/web
 
-      - name: Build mobile web production image
-        run: >
-          docker build
-          --file ./apps/mobile/Dockerfile.prod
-          --build-arg CLAUDYGOD_ENV=production
-          --build-arg EXPO_PUBLIC_API_URL=https://api.example.com
-          --build-arg EXPO_PUBLIC_SUPABASE_URL=https://gejadzonjvxurxiaxdfj.supabase.co
-          --build-arg EXPO_PUBLIC_SUPABASE_KEY=sb_publishable__ci_placeholder_key
-          --build-arg EXPO_PUBLIC_MOBILE_API_KEY=ci-production-mobile-api-key-with-sufficient-length
-          --build-arg EAS_PROJECT_ID=00000000-0000-0000-0000-000000000000
-          -t claudygod-mobile-web:ci
-          ./apps/mobile
+      - name: Build mobile-web image
+        run: |
+          docker build --platform linux/amd64 \
+            --file ./apps/mobile/Dockerfile.prod \
+            --build-arg EXPO_PUBLIC_API_URL=https://apimobile.claudygod.org \
+            --build-arg EXPO_PUBLIC_SUPABASE_URL=https://gjqqajeavzucvafersio.supabase.co \
+            --build-arg EXPO_PUBLIC_SUPABASE_KEY=sb_publishable_ci_placeholder \
+            --build-arg EXPO_PUBLIC_MOBILE_API_KEY=ci-mobile-api-key-placeholder-minimum-length \
+            --build-arg EAS_PROJECT_ID=00000000-0000-0000-0000-000000000000 \
+            -t claudygod-mobile:ci \
+            ./apps/mobile

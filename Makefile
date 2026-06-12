@@ -7,6 +7,19 @@ MOBILE_DIR  := apps/mobile
 API_DIR     := services/api
 ADMIN_DIR   := admin/web
 
+# ── GHCR / CI-CD config ───────────────────────────────────────────────────────
+GHCR_OWNER   ?= peter4tech
+REGISTRY     := ghcr.io/$(GHCR_OWNER)
+GIT_SHA      := $(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
+IMAGE_TAG    ?= latest
+
+API_IMAGE    := $(REGISTRY)/claudygod-api
+ADMIN_IMAGE  := $(REGISTRY)/claudygod-admin
+MOBILE_IMAGE := $(REGISTRY)/claudygod-mobile
+POSTFIX_IMAGE := $(REGISTRY)/claudygod-postfix
+
+COMPOSE_PROD := docker compose -f docker-compose.production.yml --env-file .env.production
+
 BLUE   := \033[0;34m
 GREEN  := \033[0;32m
 YELLOW := \033[0;33m
@@ -31,7 +44,12 @@ NC     := \033[0m
 	docker-prod-up docker-prod-down docker-prod-logs docker-validate \
 	eas-build-android eas-build-ios eas-update \
 	clean clean-all \
-	status pull push
+	status pull push \
+	ghcr-login \
+	docker-build docker-build-api docker-build-admin docker-build-mobile docker-build-postfix \
+	docker-push release \
+	deploy deploy-pull deploy-migrate deploy-up deploy-down \
+	deploy-logs deploy-status rollback update
 
 # ─── Help ────────────────────────────────────────────────────────────────────
 
@@ -103,6 +121,21 @@ help:
 	@printf "  $(GREEN)%-30s$(NC) %s\n" "make status"              "git status"
 	@printf "  $(GREEN)%-30s$(NC) %s\n" "make pull"                "git pull origin main"
 	@printf "  $(GREEN)%-30s$(NC) %s\n" "make push"                "git push origin main"
+	@printf "\n"
+	@printf "$(CYAN)$(BOLD)GHCR / CI-CD  (GHCR_OWNER=$(GHCR_OWNER), IMAGE_TAG=$(IMAGE_TAG))$(NC)\n"
+	@printf "  $(GREEN)%-30s$(NC) %s\n" "make ghcr-login"          "docker login ghcr.io (needs GITHUB_TOKEN env var)"
+	@printf "  $(GREEN)%-30s$(NC) %s\n" "make docker-build"        "Build all images locally (also tags :SHA)"
+	@printf "  $(GREEN)%-30s$(NC) %s\n" "make docker-push"         "Push all images to GHCR"
+	@printf "  $(GREEN)%-30s$(NC) %s\n" "make release"             "Build + push all images (full CI step)"
+	@printf "  $(GREEN)%-30s$(NC) %s\n" "make deploy"              "SERVER: pull latest + migrate + up"
+	@printf "  $(GREEN)%-30s$(NC) %s\n" "make deploy-pull"         "SERVER: pull latest GHCR images"
+	@printf "  $(GREEN)%-30s$(NC) %s\n" "make deploy-migrate"      "SERVER: run pending DB migrations"
+	@printf "  $(GREEN)%-30s$(NC) %s\n" "make deploy-up"           "SERVER: docker compose up -d"
+	@printf "  $(GREEN)%-30s$(NC) %s\n" "make deploy-down"         "SERVER: docker compose down"
+	@printf "  $(GREEN)%-30s$(NC) %s\n" "make deploy-logs"         "SERVER: tail live logs"
+	@printf "  $(GREEN)%-30s$(NC) %s\n" "make deploy-status"       "SERVER: show container health"
+	@printf "  $(GREEN)%-30s$(NC) %s\n" "make rollback SHA=abc123"  "SERVER: redeploy a specific git SHA"
+	@printf "  $(GREEN)%-30s$(NC) %s\n" "make update"              "SERVER: git pull + full deploy"
 
 # ─── Setup ───────────────────────────────────────────────────────────────────
 
@@ -352,3 +385,130 @@ pull:
 push:
 	@printf "$(BLUE)Pushing to origin/main...$(NC)\n"
 	git push origin main
+
+# ─── GHCR login ──────────────────────────────────────────────────────────────
+# Requires GITHUB_TOKEN env var:
+#   export GITHUB_TOKEN=ghp_...
+#   make ghcr-login
+
+ghcr-login:
+	@printf "$(BLUE)Logging in to ghcr.io as $(GHCR_OWNER)...$(NC)\n"
+	@printf "$$GITHUB_TOKEN" | docker login ghcr.io -u $(GHCR_OWNER) --password-stdin
+	@printf "$(GREEN)✓ GHCR login OK$(NC)\n"
+
+# ─── Docker build (developer / CI machine) ───────────────────────────────────
+# Builds all images and tags each with both :latest and :GIT_SHA.
+# Pass IMAGE_TAG=<tag> to override the named tag (default: latest).
+# Pass GHCR_OWNER=<org> to target a different registry owner.
+#
+# Build args for admin and mobile come from the shell environment.
+# Easiest on a developer machine:
+#   set -a && source .env.production && set +d && make docker-build
+
+docker-build: docker-build-api docker-build-admin docker-build-mobile docker-build-postfix
+	@printf "$(BOLD)$(GREEN)✓ All images built — $(REGISTRY)/*:$(IMAGE_TAG) + :$(GIT_SHA)$(NC)\n"
+
+docker-build-api:
+	@printf "$(BLUE)Building API image...$(NC)\n"
+	docker build --platform linux/amd64 \
+		-t $(API_IMAGE):$(IMAGE_TAG) \
+		-t $(API_IMAGE):$(GIT_SHA) \
+		-f $(API_DIR)/Dockerfile \
+		$(API_DIR)
+	@printf "$(GREEN)✓ API image built$(NC)\n"
+
+docker-build-admin:
+	@printf "$(BLUE)Building admin-web image (VITE_API_URL=$(VITE_API_URL))...$(NC)\n"
+	docker build --platform linux/amd64 \
+		--build-arg VITE_API_URL="$(VITE_API_URL)" \
+		--build-arg VITE_GOOGLE_LOGIN_URL="$(VITE_GOOGLE_LOGIN_URL)" \
+		--build-arg VITE_MOBILE_PREVIEW_URL="$(VITE_MOBILE_PREVIEW_URL)" \
+		-t $(ADMIN_IMAGE):$(IMAGE_TAG) \
+		-t $(ADMIN_IMAGE):$(GIT_SHA) \
+		-f $(ADMIN_DIR)/Dockerfile \
+		$(ADMIN_DIR)
+	@printf "$(GREEN)✓ Admin image built$(NC)\n"
+
+docker-build-mobile:
+	@printf "$(BLUE)Building mobile-web image (EXPO_PUBLIC_API_URL=$(EXPO_PUBLIC_API_URL))...$(NC)\n"
+	docker build --platform linux/amd64 \
+		--build-arg EXPO_PUBLIC_API_URL="$(EXPO_PUBLIC_API_URL)" \
+		--build-arg EXPO_PUBLIC_SUPABASE_URL="$(EXPO_PUBLIC_SUPABASE_URL)" \
+		--build-arg EXPO_PUBLIC_SUPABASE_KEY="$(EXPO_PUBLIC_SUPABASE_KEY)" \
+		--build-arg EXPO_PUBLIC_MOBILE_API_KEY="$(EXPO_PUBLIC_MOBILE_API_KEY)" \
+		-t $(MOBILE_IMAGE):$(IMAGE_TAG) \
+		-t $(MOBILE_IMAGE):$(GIT_SHA) \
+		-f $(MOBILE_DIR)/Dockerfile.prod \
+		$(MOBILE_DIR)
+	@printf "$(GREEN)✓ Mobile image built$(NC)\n"
+
+docker-build-postfix:
+	@printf "$(BLUE)Building postfix-relay image...$(NC)\n"
+	docker build --platform linux/amd64 \
+		-t $(POSTFIX_IMAGE):$(IMAGE_TAG) \
+		-t $(POSTFIX_IMAGE):$(GIT_SHA) \
+		ops/postfix
+	@printf "$(GREEN)✓ Postfix image built$(NC)\n"
+
+# ─── Docker push to GHCR ─────────────────────────────────────────────────────
+
+docker-push:
+	@printf "$(BLUE)Pushing images to $(REGISTRY)...$(NC)\n"
+	docker push $(API_IMAGE):$(IMAGE_TAG)
+	docker push $(API_IMAGE):$(GIT_SHA)
+	docker push $(ADMIN_IMAGE):$(IMAGE_TAG)
+	docker push $(ADMIN_IMAGE):$(GIT_SHA)
+	docker push $(MOBILE_IMAGE):$(IMAGE_TAG)
+	docker push $(MOBILE_IMAGE):$(GIT_SHA)
+	docker push $(POSTFIX_IMAGE):$(IMAGE_TAG)
+	docker push $(POSTFIX_IMAGE):$(GIT_SHA)
+	@printf "$(BOLD)$(GREEN)✓ All images pushed to $(REGISTRY)$(NC)\n"
+
+# Build + push in one step (use this in CI)
+release: docker-build docker-push
+	@printf "$(BOLD)$(GREEN)✓ Release complete — SHA: $(GIT_SHA)  tag: $(IMAGE_TAG)$(NC)\n"
+
+# ─── Server deploy (run these ON the server) ─────────────────────────────────
+# Full deploy: pull latest images → run migrations → restart containers
+deploy: deploy-pull deploy-migrate deploy-up
+	@printf "$(BOLD)$(GREEN)✓ Deploy complete$(NC)\n"
+
+# Pull latest images from GHCR (does NOT restart running containers yet)
+deploy-pull:
+	@printf "$(BLUE)Pulling latest images from GHCR...$(NC)\n"
+	$(COMPOSE_PROD) pull --ignore-pull-failures api worker admin-web mobile-web postfix-relay
+
+# Run any pending database migrations
+deploy-migrate:
+	@printf "$(BLUE)Running database migrations...$(NC)\n"
+	$(COMPOSE_PROD) run --rm migrate
+
+# Start / restart containers with the newly pulled images
+deploy-up:
+	@printf "$(BLUE)Starting production stack (detached)...$(NC)\n"
+	$(COMPOSE_PROD) up -d --remove-orphans --wait
+
+# Stop all containers
+deploy-down:
+	@printf "$(YELLOW)Stopping production stack...$(NC)\n"
+	$(COMPOSE_PROD) down
+
+# Tail live logs across all containers
+deploy-logs:
+	@$(COMPOSE_PROD) logs -f --tail=100
+
+# Show container status and health
+deploy-status:
+	@$(COMPOSE_PROD) ps
+
+# Roll back to a specific SHA:  make rollback SHA=abc1234
+rollback:
+	@[ -n "$(SHA)" ] || (printf "$(RED)Usage: make rollback SHA=<git-sha>$(NC)\n" && exit 1)
+	@printf "$(YELLOW)Rolling back all services to SHA=$(SHA)...$(NC)\n"
+	IMAGE_TAG=$(SHA) $(COMPOSE_PROD) pull --ignore-pull-failures api worker admin-web mobile-web postfix-relay
+	IMAGE_TAG=$(SHA) $(COMPOSE_PROD) up -d --remove-orphans --wait
+	@printf "$(GREEN)✓ Rolled back to $(SHA)$(NC)\n"
+
+# git pull + full deploy — one command to update the server
+update: pull deploy
+	@printf "$(BOLD)$(GREEN)✓ Server fully updated$(NC)\n"

@@ -1,8 +1,15 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+
 import { AppButton } from '../../components/ui/AppButton';
+import { SurfaceCard } from '../../components/ui/SurfaceCard';
+import { TVTouchable } from '../../components/ui/TVTouchable';
+import { FadeIn } from '../../components/ui/FadeIn';
+import { CustomText } from '../../components/CustomText';
 import { useAppTheme } from '../../util/colorScheme';
+import { useDeviceClass } from '../../util/deviceClassConfig';
 import { useContentFeed } from '../../hooks/useContentFeed';
 import { APP_ROUTES } from '../../util/appRoutes';
 import { buildPlayerRoute } from '../../util/playerRoute';
@@ -11,13 +18,26 @@ import { fetchLiveSessions, type LiveSessionSummary } from '../../services/liveS
 import type { FeedCardItem } from '../../services/contentService';
 import { useToast } from '../../context/ToastContext';
 import { subscribeToLiveAlertsBackend } from '../../services/userFlowService';
-import { ContentList, ContentRail, EmptyState, PremiumHero, PremiumPage, dedupeFeedItems } from '../../components/Exp/PremiumContent';
+import {
+  ContentList,
+  ContentRail,
+  EmptyState,
+  PremiumHero,
+  PremiumPage,
+  SectionLabel,
+  dedupeFeedItems,
+} from '../../components/Exp/PremiumContent';
 
 function toFeedCard(session: LiveSessionSummary): FeedCardItem {
   return {
     id: session.id,
     title: session.title,
-    subtitle: session.status === 'live' ? `${session.viewerCount || 0} watching now` : session.status === 'scheduled' && session.scheduledFor ? `Starts ${new Date(session.scheduledFor).toLocaleString()}` : 'Replay available',
+    subtitle:
+      session.status === 'live'
+        ? `${session.viewerCount || 0} watching now`
+        : session.status === 'scheduled' && session.scheduledFor
+          ? `Starts ${new Date(session.scheduledFor).toLocaleString()}`
+          : 'Replay available',
     description: session.description,
     duration: session.status === 'live' ? 'LIVE' : '--:--',
     imageUrl: session.coverImageUrl || '',
@@ -31,9 +51,85 @@ function toFeedCard(session: LiveSessionSummary): FeedCardItem {
   };
 }
 
+function LivePulse({ viewerCount }: { viewerCount: number }) {
+  const theme = useAppTheme();
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+      <View
+        style={{
+          flexDirection: 'row', alignItems: 'center', gap: 6,
+          backgroundColor: 'rgba(239,68,68,0.12)', borderRadius: 999,
+          borderWidth: 1, borderColor: 'rgba(239,68,68,0.30)',
+          paddingHorizontal: 12, paddingVertical: 6,
+        }}
+      >
+        <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: '#EF4444' }} />
+        <CustomText variant="caption" style={{ color: '#EF4444', fontWeight: '700', letterSpacing: 0.6 }}>
+          LIVE NOW
+        </CustomText>
+      </View>
+      {viewerCount > 0 ? (
+        <View
+          style={{
+            flexDirection: 'row', alignItems: 'center', gap: 5,
+            backgroundColor: `${theme.colors.primary}12`, borderRadius: 999,
+            borderWidth: 1, borderColor: `${theme.colors.primary}28`,
+            paddingHorizontal: 12, paddingVertical: 6,
+          }}
+        >
+          <MaterialIcons name="people" size={13} color={theme.colors.primary} />
+          <CustomText variant="caption" style={{ color: theme.colors.primary, fontWeight: '600' }}>
+            {viewerCount >= 1000 ? `${(viewerCount / 1000).toFixed(1)}K` : viewerCount} watching
+          </CustomText>
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+function ScheduleCard({ item, onNotify }: { item: FeedCardItem; onNotify: () => void }) {
+  const theme = useAppTheme();
+  return (
+    <SurfaceCard tone="subtle" style={{ padding: theme.spacing.md, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+      <View
+        style={{
+          width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center',
+          backgroundColor: `${theme.colors.primary}12`, borderWidth: 1, borderColor: `${theme.colors.primary}28`,
+        }}
+      >
+        <MaterialIcons name="event" size={22} color={theme.colors.primary} />
+      </View>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <CustomText variant="label" style={{ color: theme.colors.text }} numberOfLines={1}>
+          {item.title}
+        </CustomText>
+        <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 3 }} numberOfLines={1}>
+          {item.subtitle}
+        </CustomText>
+      </View>
+      <TVTouchable
+        onPress={onNotify}
+        showFocusBorder={false}
+        style={{
+          flexDirection: 'row', alignItems: 'center', gap: 6,
+          backgroundColor: `${theme.colors.primary}12`, borderRadius: 999,
+          borderWidth: 1, borderColor: `${theme.colors.primary}28`,
+          paddingHorizontal: 12, paddingVertical: 7,
+        }}
+      >
+        <MaterialIcons name="notifications-active" size={14} color={theme.colors.primary} />
+        <CustomText variant="caption" style={{ color: theme.colors.primary, fontWeight: '600' }}>
+          Notify me
+        </CustomText>
+      </TVTouchable>
+    </SurfaceCard>
+  );
+}
+
 export default function LiveScreen() {
   const theme = useAppTheme();
   const router = useRouter();
+  const device = useDeviceClass();
   const { showToast } = useToast();
   const { feed } = useContentFeed();
   const [sessions, setSessions] = useState<LiveSessionSummary[]>([]);
@@ -55,8 +151,18 @@ export default function LiveScreen() {
 
   const liveCards = useMemo(() => sessions.filter((s) => s.status === 'live').map(toFeedCard), [sessions]);
   const upcomingCards = useMemo(() => sessions.filter((s) => s.status === 'scheduled').map(toFeedCard), [sessions]);
-  const replayCards = useMemo(() => dedupeFeedItems([...sessions.filter((s) => s.status === 'ended').map(toFeedCard), ...feed.live.filter((item) => !item.isLive), ...feed.videos.slice(0, 10)]).slice(0, 12), [sessions, feed.live, feed.videos]);
+  const replayCards = useMemo(
+    () => dedupeFeedItems([
+      ...sessions.filter((s) => s.status === 'ended').map(toFeedCard),
+      ...feed.live.filter((item) => !item.isLive),
+      ...feed.videos.slice(0, 10),
+    ]).slice(0, 12),
+    [sessions, feed.live, feed.videos],
+  );
+
   const featuredCard = liveCards[0] ?? upcomingCards[0] ?? replayCards[0] ?? null;
+  const totalViewers = liveCards.reduce((sum, c) => sum + (c.liveViewerCount ?? 0), 0);
+  const upcomingLimit = device.isTV ? 6 : device.isDesktop ? 5 : 3;
 
   const openSession = async (item: FeedCardItem, source: string) => {
     if (!item.mediaUrl && !item.isLive) {
@@ -77,13 +183,125 @@ export default function LiveScreen() {
   };
 
   return (
-    <PremiumPage title="Live" eyebrow="Now" noBack refreshing={loading} onRefresh={() => void refresh()} rightAction={<AppButton title="" variant="secondary" size="sm" onPress={() => router.push(APP_ROUTES.tabs.videos)} leftIcon={<MaterialIcons name="smart-display" size={16} color={theme.colors.text} />} style={{ minWidth: 40, paddingHorizontal: 10 }} />}>
-      <PremiumHero item={featuredCard} title={featuredCard?.title ?? 'Live sessions'} subtitle={featuredCard?.description || 'Follow upcoming services and rewatch recent ministry moments.'} eyebrow={featuredCard?.isLive ? 'Live now' : featuredCard?.subtitle ?? 'Upcoming'} primaryLabel={featuredCard?.isLive ? 'Watch live' : featuredCard?.mediaUrl ? 'Watch replay' : 'Notify me'} primaryIcon={featuredCard?.isLive || featuredCard?.mediaUrl ? 'live-tv' : 'notifications-active'} onPrimary={() => (featuredCard ? (featuredCard.mediaUrl ? void openSession(featuredCard, 'live_hero') : void followLive(featuredCard)) : undefined)} />
-      <ContentRail title="Live now" items={liveCards} loading={loading} hideWhenEmpty onPressItem={(item) => void openSession(item, 'live_now')} />
-      <ContentRail title="Upcoming" items={upcomingCards} compact loading={loading} hideWhenEmpty onPressItem={(item) => void followLive(item)} />
-      <ContentRail title="Replays" items={replayCards} loading={loading} hideWhenEmpty onPressItem={(item) => void openSession(item, 'live_replays')} />
-      <ContentList title="Watch again" items={replayCards} onPressItem={(item) => void openSession(item, 'live_watch_again')} />
-      {!loading && !liveCards.length && !upcomingCards.length && !replayCards.length ? <EmptyState title="No live sessions right now" message="Explore videos or music while the live schedule is quiet." actionLabel="Videos" onAction={() => router.push(APP_ROUTES.tabs.videos)} icon="live-tv" /> : null}
+    <PremiumPage
+      title="Live"
+      eyebrow="Now"
+      noBack
+      refreshing={loading}
+      onRefresh={() => void refresh()}
+      rightAction={
+        <AppButton
+          title=""
+          variant="secondary"
+          size="sm"
+          onPress={() => router.push(APP_ROUTES.tabs.videos)}
+          leftIcon={<MaterialIcons name="smart-display" size={16} color={theme.colors.text} />}
+          style={{ minWidth: 40, paddingHorizontal: 10 }}
+        />
+      }
+    >
+      {/* Status bar: live now */}
+      {liveCards.length > 0 ? (
+        <FadeIn>
+          <SurfaceCard tone="strong" style={{ padding: theme.spacing.md }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+              <LivePulse viewerCount={totalViewers} />
+              <CustomText variant="caption" style={{ color: theme.colors.textSecondary }}>
+                {liveCards.length} session{liveCards.length !== 1 ? 's' : ''} live
+              </CustomText>
+            </View>
+          </SurfaceCard>
+        </FadeIn>
+      ) : null}
+
+      {/* Featured hero */}
+      <PremiumHero
+        item={featuredCard}
+        title={featuredCard?.title ?? 'Live sessions'}
+        subtitle={featuredCard?.description || 'Follow upcoming services and rewatch recent ministry moments.'}
+        eyebrow={featuredCard?.isLive ? 'Live now' : featuredCard ? 'Upcoming' : 'Ministry'}
+        primaryLabel={featuredCard?.isLive ? 'Watch live' : featuredCard?.mediaUrl ? 'Watch replay' : 'Notify me'}
+        primaryIcon={featuredCard?.isLive || featuredCard?.mediaUrl ? 'live-tv' : 'notifications-active'}
+        onPrimary={() => (featuredCard ? (featuredCard.mediaUrl ? void openSession(featuredCard, 'live_hero') : void followLive(featuredCard)) : undefined)}
+      />
+
+      {/* Live now */}
+      {liveCards.length > 0 ? (
+        <FadeIn delay={80}>
+          <View style={{ gap: 12 }}>
+            <SectionLabel
+              title="Live now"
+              accent={`${liveCards.length} active`}
+              subtitle="Happening right now across the ministry"
+            />
+            <ContentRail
+              title=""
+              items={liveCards}
+              loading={loading}
+              onPressItem={(item) => void openSession(item, 'live_now')}
+            />
+          </View>
+        </FadeIn>
+      ) : null}
+
+      {/* Upcoming schedule */}
+      {upcomingCards.length > 0 ? (
+        <FadeIn delay={130}>
+          <View style={{ gap: 12 }}>
+            <SectionLabel
+              title="Coming up"
+              accent={`${upcomingCards.length} scheduled`}
+              subtitle="Get notified before these sessions start"
+            />
+            <View style={{ gap: 8 }}>
+              {upcomingCards.slice(0, upcomingLimit).map((item) => (
+                <ScheduleCard key={item.id} item={item} onNotify={() => void followLive(item)} />
+              ))}
+            </View>
+          </View>
+        </FadeIn>
+      ) : null}
+
+      {/* Replay rail */}
+      {replayCards.length > 0 ? (
+        <FadeIn delay={180}>
+          <View style={{ gap: 12 }}>
+            <SectionLabel
+              title="Replays"
+              accent="Watch again"
+              subtitle="Past sessions and ministry moments"
+              actionLabel="See all"
+              onAction={() => router.push(APP_ROUTES.tabs.videos)}
+            />
+            <ContentRail
+              title=""
+              items={replayCards}
+              loading={loading}
+              onPressItem={(item) => void openSession(item, 'live_replays')}
+            />
+          </View>
+        </FadeIn>
+      ) : null}
+
+      {/* Extended list */}
+      {replayCards.length > 4 ? (
+        <ContentList
+          title="Watch again"
+          items={replayCards}
+          onPressItem={(item) => void openSession(item, 'live_watch_again')}
+        />
+      ) : null}
+
+      {/* Empty state */}
+      {!loading && !liveCards.length && !upcomingCards.length && !replayCards.length ? (
+        <EmptyState
+          title="No live sessions right now"
+          message="Explore videos or music while the live schedule is quiet."
+          actionLabel="Browse videos"
+          onAction={() => router.push(APP_ROUTES.tabs.videos)}
+          icon="live-tv"
+        />
+      ) : null}
     </PremiumPage>
   );
 }

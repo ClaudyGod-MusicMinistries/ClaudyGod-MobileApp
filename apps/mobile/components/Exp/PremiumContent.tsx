@@ -16,6 +16,8 @@ import { useRouter } from 'expo-router';
 import { CustomText } from '../CustomText';
 import { Screen } from '../layout/Screen';
 import { TabScreenWrapper } from '../layout/TabScreenWrapper';
+import { useDeviceClass } from '../../util/deviceClassConfig';
+import { getSidebarWidth } from '../../util/sidebarConfig';
 import { AppButton } from '../ui/AppButton';
 import { AppScreenFooter } from '../layout/AppScreenFooter';
 import { TVTouchable } from '../ui/TVTouchable';
@@ -104,7 +106,9 @@ export function PremiumPage({
   const { isAuthenticated } = useAuth();
   const { width } = useWindowDimensions();
   const compact = width < 430;
+  const isSidebarMode = getSidebarWidth(width) > 0;
   const showBack = !noBack && title !== 'ClaudyGod' && router.canGoBack();
+  const bottomPadding = isSidebarMode ? 40 : theme.layout.tabBarContentPadding;
 
   return (
     <TabScreenWrapper backgroundImage={backgroundImage} backgroundHeight={compact ? 240 : 320}>
@@ -121,7 +125,7 @@ export function PremiumPage({
             />
           ) : undefined
         }
-        contentContainerStyle={{ paddingBottom: theme.layout.tabBarContentPadding }}
+        contentContainerStyle={{ paddingBottom: bottomPadding }}
       >
         <Screen>
           <View style={{ paddingTop: theme.layout.headerVerticalPadding, gap: theme.layout.sectionGap }}>
@@ -338,10 +342,10 @@ export function PremiumHero({
   height,
 }: PremiumHeroProps) {
   const theme = useAppTheme();
-  const { width } = useWindowDimensions();
-  const isWide = width >= 760;
-  const isLarge = width >= 1024;
-  const heroHeight = height ?? (isLarge ? 380 : isWide ? 320 : 290);
+  const device = useDeviceClass();
+  const isWide = device.width >= 760;
+  const isLarge = device.isDesktop || device.isTV;
+  const heroHeight = height ?? (device.isTV ? 540 : device.isLargeDesktop ? 480 : isLarge ? 420 : isWide ? 340 : 290);
   const imageUrl = item?.imageUrl || DEFAULT_CONTENT_IMAGE_URI;
   const primaryAction = onPrimary ?? onPrimaryPress;
   const secondaryAction = onSecondary ?? onSecondaryPress;
@@ -431,8 +435,8 @@ export function PremiumHero({
             variant="display"
             style={{
               color: '#FFFFFF',
-              fontSize: isLarge ? 30 : isWide ? 25 : 21,
-              lineHeight: isLarge ? 38 : isWide ? 32 : 28,
+              fontSize: device.isTV ? 42 : device.isLargeDesktop ? 36 : isLarge ? 30 : isWide ? 25 : 21,
+              lineHeight: device.isTV ? 52 : device.isLargeDesktop ? 44 : isLarge ? 38 : isWide ? 32 : 28,
               fontWeight: '800',
               letterSpacing: -0.5,
             }}
@@ -633,15 +637,19 @@ type ContentCardProps = {
   compact?: boolean;
 };
 
-export function ContentCard({ item, onPress, compact = false }: ContentCardProps) {
+export function ContentCard({ item, onPress, compact = false, fixedWidth }: ContentCardProps & { fixedWidth?: number }) {
   const theme = useAppTheme();
-  const { width: screenWidth } = useWindowDimensions();
-  const isDesktop = screenWidth >= 1024;
-  const cardWidth = compact
-    ? Math.min(154, Math.max(132, screenWidth * 0.38))
-    : isDesktop
-      ? Math.min(228, Math.max(192, screenWidth * 0.17))
-      : Math.min(192, Math.max(160, screenWidth * 0.42));
+  const device = useDeviceClass();
+  const screenWidth = device.width;
+  const cardWidth = fixedWidth ?? (compact
+    ? Math.min(154, Math.max(130, screenWidth * 0.38))
+    : device.isTV
+      ? Math.min(320, Math.max(240, screenWidth * 0.15))
+      : device.isLargeDesktop
+        ? Math.min(280, Math.max(220, screenWidth * 0.16))
+        : device.isDesktop
+          ? Math.min(240, Math.max(192, screenWidth * 0.18))
+          : Math.min(192, Math.max(158, screenWidth * 0.42)));
   const title = cleanFeedText(item.title);
 
   return (
@@ -857,6 +865,61 @@ function InlineEmpty({
   );
 }
 
+// ─── ContentRailInner — horizontal scroll (phone/tablet) vs grid (desktop/TV) ─
+
+function ContentRailInner({
+  items,
+  title,
+  onPressItem,
+  isCompact,
+}: {
+  items: FeedCardItem[];
+  title: string;
+  onPressItem: (_item: FeedCardItem) => void;
+  isCompact: boolean;
+}) {
+  const device = useDeviceClass();
+  const sidebarWidth = getSidebarWidth(device.width);
+
+  if (device.isDesktop || device.isTV) {
+    const numCols = device.isTV ? 6 : device.isLargeDesktop ? 5 : 4;
+    const availableWidth = Math.min(device.maxContentWidth, device.width - device.contentGutter * 2 - sidebarWidth);
+    const gap = 14;
+    const cardWidth = Math.floor((availableWidth - (numCols - 1) * gap) / numCols);
+
+    return (
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap }}>
+        {items.map((item) => (
+          <ContentCard
+            key={`${title}-${item.id}`}
+            item={item}
+            compact={false}
+            fixedWidth={cardWidth}
+            onPress={() => onPressItem(item)}
+          />
+        ))}
+      </View>
+    );
+  }
+
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={{ gap: 12, paddingRight: 8 }}
+    >
+      {items.map((item) => (
+        <ContentCard
+          key={`${title}-${item.id}`}
+          item={item}
+          compact={isCompact}
+          onPress={() => onPressItem(item)}
+        />
+      ))}
+    </ScrollView>
+  );
+}
+
 export function ContentRail({
   title,
   subtitle,
@@ -942,20 +1005,7 @@ export function ContentRail({
       {loading ? (
         <RailSkeleton />
       ) : items.length > 0 ? (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: 12, paddingRight: 8 }}
-        >
-          {items.map((item) => (
-            <ContentCard
-              key={`${title}-${item.id}`}
-              item={item}
-              compact={isCompact}
-              onPress={() => onPressItem(item)}
-            />
-          ))}
-        </ScrollView>
+        <ContentRailInner items={items} title={title} onPressItem={onPressItem} isCompact={isCompact} />
       ) : hideWhenEmpty ? null : (
         <InlineEmpty title={emptyTitle} message={emptyMessage} />
       )}
@@ -977,7 +1027,12 @@ export function ContentList({
   onMorePress?: (_item: FeedCardItem) => void;
 }) {
   const theme = useAppTheme();
+  const device = useDeviceClass();
   if (!items.length) return null;
+
+  const useGrid = device.isDesktop || device.isTV;
+  const numCols = device.isTV ? 3 : 2;
+  const maxItems = useGrid ? 12 : 10;
 
   return (
     <FadeIn delay={120}>
@@ -988,27 +1043,33 @@ export function ContentList({
         >
           {title}
         </CustomText>
-        <View style={{ gap: 0 }}>
-          {items.slice(0, 10).map((item, index) => (
+        <View style={useGrid ? { flexDirection: 'row', flexWrap: 'wrap', gap: 10 } : { gap: 0 }}>
+          {items.slice(0, maxItems).map((item, index) => (
             <TVTouchable
               key={`${title}-${item.id}`}
               onPress={() => onPressItem(item)}
               showFocusBorder={false}
+              style={useGrid ? { width: `${Math.floor(100 / numCols) - 1}%` } : undefined}
             >
               <View
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
                   gap: 12,
-                  paddingVertical: 9,
-                  borderTopWidth: index === 0 ? 0 : 1,
+                  paddingVertical: useGrid ? 10 : 9,
+                  borderTopWidth: useGrid ? 0 : (index === 0 ? 0 : 1),
                   borderTopColor: theme.colors.border,
+                  borderRadius: useGrid ? 12 : 0,
+                  backgroundColor: useGrid
+                    ? (theme.scheme === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)')
+                    : 'transparent',
+                  paddingHorizontal: useGrid ? 10 : 0,
                 }}
               >
                 <View
                   style={{
-                    width: 118,
-                    height: 66,
+                    width: useGrid ? 96 : 118,
+                    height: useGrid ? 54 : 66,
                     borderRadius: 11,
                     overflow: 'hidden',
                     backgroundColor: theme.colors.surfaceAlt,

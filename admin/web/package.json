@@ -1,20 +1,28 @@
 {
   "name": "claudy-admin-web",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite --host --port ${WEB_PORT:-5173}",
-    "build": "vite build",
-    "preview": "vite preview --host --port 4173"
+    "build": "vue-tsc --noEmit && vite build",
+    "preview": "vite preview --host --port 4173",
+    "typecheck": "vue-tsc --noEmit"
   },
   "dependencies": {
     "axios": "^1.7.7",
-    "vue": "^3.5.13"
+    "vue": "^3.5.13",
+    "vue-router": "^4.4.5",
+    "pinia": "^2.2.6",
+    "@vueuse/core": "^11.3.0"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.2.1",
-    "@vitejs/plugin-vue-jsx": "^4.1.1",
+    "tailwindcss": "^3.4.17",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "typescript": "^5.7.2",
+    "vue-tsc": "^2.1.10",
     "source-map-js": "^1.2.1",
     "vite": "^6.0.1"
   }

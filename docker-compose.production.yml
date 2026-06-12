@@ -43,7 +43,9 @@ x-backend-env: &backend-env
   EMAIL_SUPPORT_URL: ${EMAIL_SUPPORT_URL:-}
   ADMIN_ALERT_EMAILS: ${ADMIN_ALERT_EMAILS:-}
 
+  SMTP_ENABLED: ${SMTP_ENABLED:-true}
   SMTP_PROVIDER: ${SMTP_PROVIDER:-postfix}
+  SMTP_PROVIDER_LABEL: ${SMTP_PROVIDER_LABEL:-Brevo via Postfix}
   SMTP_HOST: ${SMTP_HOST:-postfix-relay}
   SMTP_PORT: ${SMTP_PORT:-25}
   SMTP_SECURE: ${SMTP_SECURE:-false}
@@ -95,6 +97,7 @@ services:
       - internal
 
   postfix-relay:
+    image: ghcr.io/${GHCR_OWNER:-peter4tech}/claudygod-postfix:${IMAGE_TAG:-latest}
     build:
       context: ./ops/postfix
     restart: unless-stopped
@@ -119,12 +122,13 @@ services:
       - internal
 
   migrate:
+    image: ghcr.io/${GHCR_OWNER:-peter4tech}/claudygod-api:${IMAGE_TAG:-latest}
     build:
       context: ./services/api
       dockerfile: Dockerfile
     restart: "no"
     init: true
-    command: ["npm", "run", "migrate:prod"]
+    command: ["node", "dist/db/migrate.js"]
     security_opt:
       - no-new-privileges:true
     environment:
@@ -141,6 +145,7 @@ services:
       - internal
 
   api:
+    image: ghcr.io/${GHCR_OWNER:-peter4tech}/claudygod-api:${IMAGE_TAG:-latest}
     build:
       context: ./services/api
       dockerfile: Dockerfile
@@ -195,6 +200,7 @@ services:
       - "traefik.http.services.claudygod-api.loadbalancer.server.port=4000"
 
   worker:
+    image: ghcr.io/${GHCR_OWNER:-peter4tech}/claudygod-api:${IMAGE_TAG:-latest}
     build:
       context: ./services/api
       dockerfile: Dockerfile
@@ -223,6 +229,7 @@ services:
       - internal
 
   admin-web:
+    image: ghcr.io/${GHCR_OWNER:-peter4tech}/claudygod-admin:${IMAGE_TAG:-latest}
     build:
       context: ./admin/web
       dockerfile: Dockerfile
@@ -266,6 +273,7 @@ services:
       - "traefik.http.services.claudygod-admin.loadbalancer.server.port=80"
 
   mobile-web:
+    image: ghcr.io/${GHCR_OWNER:-peter4tech}/claudygod-mobile:${IMAGE_TAG:-latest}
     build:
       context: ./apps/mobile
       dockerfile: Dockerfile.prod
