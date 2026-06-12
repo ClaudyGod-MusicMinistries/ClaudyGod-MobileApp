@@ -97,7 +97,7 @@ services:
       - internal
 
   postfix-relay:
-    image: ghcr.io/${GHCR_OWNER:-peter4tech}/claudygod-postfix:${IMAGE_TAG:-latest}
+    image: ghcr.io/${GHCR_OWNER:-claudygod-musicministries}/claudygod-postfix:${IMAGE_TAG:-latest}
     build:
       context: ./ops/postfix
     restart: unless-stopped
@@ -122,7 +122,7 @@ services:
       - internal
 
   migrate:
-    image: ghcr.io/${GHCR_OWNER:-peter4tech}/claudygod-api:${IMAGE_TAG:-latest}
+    image: ghcr.io/${GHCR_OWNER:-claudygod-musicministries}/claudygod-api:${IMAGE_TAG:-latest}
     build:
       context: ./services/api
       dockerfile: Dockerfile
@@ -145,7 +145,7 @@ services:
       - internal
 
   api:
-    image: ghcr.io/${GHCR_OWNER:-peter4tech}/claudygod-api:${IMAGE_TAG:-latest}
+    image: ghcr.io/${GHCR_OWNER:-claudygod-musicministries}/claudygod-api:${IMAGE_TAG:-latest}
     build:
       context: ./services/api
       dockerfile: Dockerfile
@@ -200,7 +200,7 @@ services:
       - "traefik.http.services.claudygod-api.loadbalancer.server.port=4000"
 
   worker:
-    image: ghcr.io/${GHCR_OWNER:-peter4tech}/claudygod-api:${IMAGE_TAG:-latest}
+    image: ghcr.io/${GHCR_OWNER:-claudygod-musicministries}/claudygod-api:${IMAGE_TAG:-latest}
     build:
       context: ./services/api
       dockerfile: Dockerfile
@@ -229,7 +229,7 @@ services:
       - internal
 
   admin-web:
-    image: ghcr.io/${GHCR_OWNER:-peter4tech}/claudygod-admin:${IMAGE_TAG:-latest}
+    image: ghcr.io/${GHCR_OWNER:-claudygod-musicministries}/claudygod-admin:${IMAGE_TAG:-latest}
     build:
       context: ./admin/web
       dockerfile: Dockerfile
@@ -273,7 +273,7 @@ services:
       - "traefik.http.services.claudygod-admin.loadbalancer.server.port=80"
 
   mobile-web:
-    image: ghcr.io/${GHCR_OWNER:-peter4tech}/claudygod-mobile:${IMAGE_TAG:-latest}
+    image: ghcr.io/${GHCR_OWNER:-claudygod-musicministries}/claudygod-mobile:${IMAGE_TAG:-latest}
     build:
       context: ./apps/mobile
       dockerfile: Dockerfile.prod
