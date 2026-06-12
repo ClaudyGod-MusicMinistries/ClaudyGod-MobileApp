@@ -26,7 +26,7 @@ env:
   CI_POSTFIX_SMTP_PASSWORD:      ${{ secrets.CI_POSTFIX_SMTP_PASSWORD }}
 
 jobs:
-  # ── Code quality: lint, typecheck, tests ────────────────────────────────────
+  # ── Code quality: lint, typecheck, review ───────────────────────────────────
   quality:
     name: Code Quality
     runs-on: ubuntu-latest
@@ -35,33 +35,38 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'yarn'
-          cache-dependency-path: |
-            services/api/yarn.lock
-            admin/web/yarn.lock
-            apps/mobile/yarn.lock
+      - name: Set up Node.js 20 via nvm
+        run: |
+          . "$HOME/.nvm/nvm.sh"
+          nvm install 20
+          nvm use 20
+          echo "$(nvm which 20 | xargs dirname)" >> "$GITHUB_PATH"
+
+      - name: Enable Corepack and activate Yarn Classic
+        run: |
+          corepack enable
+          corepack prepare yarn@1.22.22 --activate
 
       - name: Create CI environment files
         run: bash ./scripts/setup-ci-env.sh
 
-      - name: Install dependencies (all workspaces)
-        run: |
-          yarn --cwd ./services/api install --frozen-lockfile
-          yarn --cwd ./admin/web      install --frozen-lockfile
-          yarn --cwd ./apps/mobile    install --frozen-lockfile
+      - name: Install API dependencies
+        run: yarn --cwd ./services/api install --frozen-lockfile
+
+      - name: Install admin dependencies
+        run: yarn --cwd ./admin/web install --frozen-lockfile
+
+      - name: Install mobile dependencies
+        run: yarn --cwd ./apps/mobile install --frozen-lockfile
 
       - name: Run full repository review
         run: bash ./scripts/review-all.sh
 
-  # ── Docker config validation (only on push, not PRs) ────────────────────────
+  # ── Docker config + image build check (push events only) ────────────────────
   docker-dry-run:
     name: Docker Build Check
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    if: github.event_name == 'push'
 
     steps:
       - uses: actions/checkout@v4
