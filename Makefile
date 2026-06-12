@@ -8,7 +8,7 @@ API_DIR     := services/api
 ADMIN_DIR   := admin/web
 
 # ── GHCR / CI-CD config ───────────────────────────────────────────────────────
-GHCR_OWNER   ?= peter4tech
+GHCR_OWNER   ?= claudygod-musicministries
 REGISTRY     := ghcr.io/$(GHCR_OWNER)
 GIT_SHA      := $(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
 IMAGE_TAG    ?= latest
