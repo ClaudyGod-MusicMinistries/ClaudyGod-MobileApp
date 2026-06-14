@@ -164,13 +164,13 @@ jobs:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
         env:
-          GHCR_DEPLOY_TOKEN: ${{ secrets.GH_PAT }}
+          GHCR_DEPLOY_TOKEN: ${{ secrets.GHCR_DEPLOY_TOKEN }}
           DEPLOY_SHA:        ${{ github.sha }}
         with:
           host:     ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key:      ${{ secrets.VPS_SSH_KEY }}
-          port:     22
+          port:     ${{ secrets.VPS_PORT }}
           envs:     GHCR_DEPLOY_TOKEN,DEPLOY_SHA
           script: |
             set -euo pipefail
