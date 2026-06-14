@@ -167,6 +167,10 @@ jobs:
         run: |
           printf '%s\n' "$SSH_PRIVATE_KEY" > /tmp/deploy_key
           chmod 600 /tmp/deploy_key
+          echo "=== Key fingerprint (for verification) ==="
+          ssh-keygen -l -f /tmp/deploy_key
+          echo "=== Public key ==="
+          ssh-keygen -y -f /tmp/deploy_key
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
