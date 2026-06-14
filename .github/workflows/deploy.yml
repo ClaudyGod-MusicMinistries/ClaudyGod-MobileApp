@@ -152,41 +152,9 @@ jobs:
           cache-from: type=gha,scope=mobile
           cache-to:   type=gha,scope=mobile,mode=max
 
-  # ── 3. SSH into the production server and deploy ─────────────────────────────
-  deploy:
-    name: Deploy to Server
-    runs-on: ubuntu-latest
-    needs: build-push
-    timeout-minutes: 15
-    environment: production
-
-    steps:
-      - name: Write SSH key
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_KEY }}
-        run: |
-          printf '%s\n' "$SSH_PRIVATE_KEY" > /tmp/deploy_key
-          chmod 600 /tmp/deploy_key
-          echo "=== Key fingerprint (for verification) ==="
-          ssh-keygen -l -f /tmp/deploy_key
-          echo "=== Public key ==="
-          ssh-keygen -y -f /tmp/deploy_key
-
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1
-        env:
-          GHCR_DEPLOY_TOKEN: ${{ secrets.GHCR_DEPLOY_TOKEN }}
-          DEPLOY_SHA:        ${{ github.sha }}
-        with:
-          host:     ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key_path: /tmp/deploy_key
-          port:     ${{ secrets.VPS_PORT }}
-          envs:     GHCR_DEPLOY_TOKEN,DEPLOY_SHA
-          script: |
-            set -euo pipefail
-            cd ${{ secrets.VPS_DEPLOY_PATH }}
-            git pull origin main
-            echo "$GHCR_DEPLOY_TOKEN" | docker login ghcr.io -u peter4tech --password-stdin
-            IMAGE_TAG="$DEPLOY_SHA" make deploy
-            docker image prune -f
+  # ── 3. Deploy — temporarily disabled; re-enable when SSH credentials are ready ─
+  # deploy:
+  #   name: Deploy to Server
+  #   runs-on: ubuntu-latest
+  #   needs: build-push
+  #   ...uncomment this job when VPS SSH is sorted
