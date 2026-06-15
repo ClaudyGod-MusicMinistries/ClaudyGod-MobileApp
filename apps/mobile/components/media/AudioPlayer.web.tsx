@@ -1,6 +1,5 @@
 import React from 'react';
 import { Image, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../CustomText';
 import { useAppTheme } from '../../util/colorScheme';
@@ -34,18 +33,14 @@ export function AudioPlayer({
   const artworkSize = isCompact ? 144 : 212;
 
   return (
-    <LinearGradient
-      colors={
-        theme.scheme === 'dark'
-          ? ['rgba(18,13,31,0.98)', 'rgba(7,6,12,0.98)']
-          : ['rgba(249,247,255,0.98)', 'rgba(238,234,248,0.98)']
-      }
+    <View
       style={{
         borderRadius: theme.radius.xl,
         padding: isCompact ? theme.spacing.lg : theme.spacing.xl,
         borderWidth: 1,
         borderColor: theme.colors.border,
         overflow: 'hidden',
+        backgroundColor: theme.colors.surface,
       }}
     >
       <View style={{ gap: isCompact ? 18 : 22 }}>
@@ -169,7 +164,7 @@ export function AudioPlayer({
           },
         })}
       </View>
-    </LinearGradient>
+    </View>
   );
 }
 
