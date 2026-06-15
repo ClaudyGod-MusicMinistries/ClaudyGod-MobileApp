@@ -1102,3 +1102,208 @@ export const getUserById = async (userId: string): Promise<SafeUser> => {
 
   return toSafeUser(result.rows[0]!);
 };
+
+// ── Admin Invite Token ──────────────────────────────────────────────────────
+
+interface AdminInvitationRow {
+  id: string;
+  email: string;
+  role: string;
+  invited_by: string | null;
+  token_hash: string;
+  expires_at: string;
+  accepted_at: string | null;
+  revoked_at: string | null;
+  created_at: string;
+  inviter_name: string | null;
+}
+
+export interface AdminInviteDetails {
+  id: string;
+  email: string;
+  role: string;
+  inviterName: string | null;
+  expiresAt: string;
+}
+
+export interface AdminInviteListItem {
+  id: string;
+  email: string;
+  role: string;
+  inviterName: string | null;
+  expiresAt: string;
+  createdAt: string;
+}
+
+export const createAdminInviteToken = async (input: {
+  email: string;
+  role: string;
+  invitedBy: string;
+}): Promise<{ rawToken: string; id: string; expiresAt: Date }> => {
+  const email = input.email.trim().toLowerCase();
+  const rawToken = randomBytes(32).toString('hex');
+  const tokenHash = createHash('sha256').update(rawToken).digest('hex');
+  const ttlHours = env.ADMIN_INVITE_TTL_HOURS;
+  const expiresAt = new Date(Date.now() + ttlHours * 60 * 60 * 1000);
+
+  const existing = await pool.query<{ id: string }>(
+    `SELECT id FROM admin_invitations
+     WHERE email = $1 AND accepted_at IS NULL AND revoked_at IS NULL AND expires_at > NOW()
+     LIMIT 1`,
+    [email],
+  );
+  if ((existing.rowCount ?? 0) > 0) {
+    await pool.query(
+      `UPDATE admin_invitations SET revoked_at = NOW() WHERE id = $1`,
+      [existing.rows[0]!.id],
+    );
+  }
+
+  const result = await pool.query<{ id: string }>(
+    `INSERT INTO admin_invitations (email, role, invited_by, token_hash, expires_at)
+     VALUES ($1, $2, $3, $4, $5)
+     RETURNING id`,
+    [email, input.role, input.invitedBy, tokenHash, expiresAt.toISOString()],
+  );
+
+  return { rawToken, id: result.rows[0]!.id, expiresAt };
+};
+
+export const validateAdminInviteToken = async (rawToken: string): Promise<AdminInviteDetails> => {
+  const tokenHash = createHash('sha256').update(rawToken.trim()).digest('hex');
+
+  const result = await pool.query<AdminInvitationRow>(
+    `SELECT ai.id, ai.email, ai.role, ai.invited_by, ai.expires_at,
+            ai.accepted_at, ai.revoked_at, ai.created_at,
+            u.display_name AS inviter_name
+     FROM admin_invitations ai
+     LEFT JOIN app_users u ON u.id = ai.invited_by
+     WHERE ai.token_hash = $1
+     LIMIT 1`,
+    [tokenHash],
+  );
+
+  if ((result.rowCount ?? 0) === 0) throw new NotFoundError('Invitation not found or already used', 'INVITE_NOT_FOUND');
+  const row = result.rows[0]!;
+  if (row.accepted_at) throw new BadRequestError('This invitation has already been used', 'INVITE_USED');
+  if (row.revoked_at) throw new BadRequestError('This invitation has been revoked', 'INVITE_REVOKED');
+  if (new Date(row.expires_at) < new Date()) throw new BadRequestError('This invitation has expired', 'INVITE_EXPIRED');
+
+  return {
+    id: row.id,
+    email: row.email,
+    role: row.role,
+    inviterName: row.inviter_name,
+    expiresAt: row.expires_at,
+  };
+};
+
+export const acceptAdminInvite = async (
+  input: { token: string; name: string; displayName: string; password: string },
+  context: AuthRequestContext = {},
+): Promise<AuthResponse> => {
+  const rawToken = input.token.trim();
+  const tokenHash = createHash('sha256').update(rawToken).digest('hex');
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const inviteResult = await client.query<AdminInvitationRow>(
+      `SELECT id, email, role, expires_at, accepted_at, revoked_at
+       FROM admin_invitations
+       WHERE token_hash = $1
+       FOR UPDATE`,
+      [tokenHash],
+    );
+
+    if ((inviteResult.rowCount ?? 0) === 0) throw new NotFoundError('Invitation not found', 'INVITE_NOT_FOUND');
+    const inv = inviteResult.rows[0]!;
+    if (inv.accepted_at) throw new BadRequestError('Invitation already used', 'INVITE_USED');
+    if (inv.revoked_at) throw new BadRequestError('Invitation was revoked', 'INVITE_REVOKED');
+    if (new Date(inv.expires_at) < new Date()) throw new BadRequestError('Invitation has expired', 'INVITE_EXPIRED');
+
+    const email = inv.email;
+    const existingUser = await client.query<{ id: string }>(
+      `SELECT id FROM app_users WHERE email = $1 LIMIT 1`,
+      [email],
+    );
+    if ((existingUser.rowCount ?? 0) > 0) throw new ConflictError('This email is already registered', 'AUTH_EMAIL_TAKEN', 'email');
+
+    const passwordHash = await hashPassword(input.password);
+    const displayName = (input.displayName.trim() || input.name.trim()) || email.split('@')[0]!;
+
+    const userResult = await client.query<{ id: string }>(
+      `INSERT INTO app_users (email, password_hash, display_name, role, email_verified_at)
+       VALUES ($1, $2, $3, $4, NOW())
+       RETURNING id`,
+      [email, passwordHash, displayName, inv.role],
+    );
+    const userId = userResult.rows[0]!.id;
+
+    await client.query(
+      `UPDATE admin_invitations SET accepted_at = NOW() WHERE id = $1`,
+      [inv.id],
+    );
+
+    await client.query('COMMIT');
+
+    const userRow = await pool.query<PublicUserRow>(
+      `SELECT id, email, display_name, role, created_at, email_verified_at
+       FROM app_users WHERE id = $1 LIMIT 1`,
+      [userId],
+    );
+    const safeUser = toSafeUser(userRow.rows[0]!);
+
+    await ensureUserScaffold(safeUser.id, safeUser.displayName, safeUser.email).catch(() => undefined);
+    await queueWelcomeEmail({ id: safeUser.id, email: safeUser.email, displayName: safeUser.displayName });
+
+    await recordAuthActivity({
+      userId: safeUser.id,
+      email: safeUser.email,
+      eventKey: 'register_completed',
+      status: 'success',
+      requestIp: context.requestIp,
+      userAgent: context.userAgent,
+      metadata: { method: 'invite', role: inv.role },
+    });
+
+    return { accessToken: buildAccessToken(safeUser), user: safeUser, requiresEmailVerification: false };
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => undefined);
+    throw err;
+  } finally {
+    client.release();
+  }
+};
+
+export const listAdminInvitations = async (): Promise<AdminInviteListItem[]> => {
+  const result = await pool.query<AdminInvitationRow>(
+    `SELECT ai.id, ai.email, ai.role, ai.expires_at, ai.created_at,
+            u.display_name AS inviter_name
+     FROM admin_invitations ai
+     LEFT JOIN app_users u ON u.id = ai.invited_by
+     WHERE ai.accepted_at IS NULL AND ai.revoked_at IS NULL AND ai.expires_at > NOW()
+     ORDER BY ai.created_at DESC`,
+  );
+  return result.rows.map((r) => ({
+    id: r.id,
+    email: r.email,
+    role: r.role,
+    inviterName: r.inviter_name,
+    expiresAt: r.expires_at,
+    createdAt: r.created_at,
+  }));
+};
+
+export const revokeAdminInvitation = async (inviteId: string): Promise<void> => {
+  const result = await pool.query(
+    `UPDATE admin_invitations
+     SET revoked_at = NOW()
+     WHERE id = $1 AND accepted_at IS NULL AND revoked_at IS NULL`,
+    [inviteId],
+  );
+  if ((result.rowCount ?? 0) === 0) {
+    throw new NotFoundError('Invitation not found or already resolved', 'INVITE_NOT_FOUND');
+  }
+};

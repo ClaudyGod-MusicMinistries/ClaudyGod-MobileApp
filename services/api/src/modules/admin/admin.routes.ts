@@ -7,6 +7,8 @@ import {
   adminContentIdParamsSchema,
   adminUnassignedContentQuerySchema,
   adminUserIdParamsSchema,
+  createInvitationSchema,
+  invitationIdParamsSchema,
   sendAdminTestEmailSchema,
   supportRequestIdParamsSchema,
   updateAdminUserRoleSchema,
@@ -21,6 +23,13 @@ import {
   updateAdminUserRole,
   updateAdminSupportRequestStatus,
 } from './admin.service';
+import {
+  createAdminInviteToken,
+  listAdminInvitations,
+  revokeAdminInvitation,
+} from '../auth/auth.service';
+import { queueAdminInviteEmail } from '../../infra/transactionalEmails';
+import { env } from '../../config/env';
 
 export const adminRouter = Router();
 
@@ -30,7 +39,7 @@ function requireAdmin(req: Request) {
   if (!req.user) {
     throw new UnauthorizedError('Unauthorized', 'AUTH_REQUIRED');
   }
-  if (req.user.role !== 'ADMIN') {
+  if (req.user.role !== 'ADMIN' && req.user.role !== 'SUPER_ADMIN') {
     throw new ForbiddenError('Admin access required', 'ADMIN_REQUIRED');
   }
   return req.user;
@@ -123,5 +132,54 @@ adminRouter.patch(
       status: payload.status,
     });
     res.status(200).json(result);
+  }),
+);
+
+
+// ── Admin Invitations ────────────────────────────────────────────────────────
+
+adminRouter.post(
+  '/invitations',
+  asyncHandler(async (req, res) => {
+    const actor = requireAdmin(req);
+    const payload = validateSchema(createInvitationSchema, req.body);
+    const invite = await createAdminInviteToken({
+      email: payload.email,
+      role: payload.role,
+      invitedBy: actor.sub,
+    });
+    await queueAdminInviteEmail({
+      toEmail: payload.email,
+      inviterName: actor.displayName || actor.email,
+      role: payload.role,
+      rawToken: invite.rawToken,
+      expiresInHours: env.ADMIN_INVITE_TTL_HOURS,
+    });
+    res.status(201).json({
+      id: invite.id,
+      email: payload.email,
+      role: payload.role,
+      expiresAt: invite.expiresAt.toISOString(),
+      message: `Invitation sent to ${payload.email}`,
+    });
+  }),
+);
+
+adminRouter.get(
+  '/invitations',
+  asyncHandler(async (req, res) => {
+    requireAdmin(req);
+    const invitations = await listAdminInvitations();
+    res.status(200).json({ invitations });
+  }),
+);
+
+adminRouter.delete(
+  '/invitations/:id',
+  asyncHandler(async (req, res) => {
+    requireAdmin(req);
+    const params = validateSchema(invitationIdParamsSchema, req.params);
+    await revokeAdminInvitation(params.id);
+    res.status(200).json({ message: 'Invitation revoked' });
   }),
 );

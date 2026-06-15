@@ -117,6 +117,10 @@ export const useAuthStore = defineStore('auth', () => {
     void import('@/router').then(({ router }) => { void router.push('/login'); });
   }
 
+  function applyExternalSession(res: LoginResponse): void {
+    _applySession(res);
+  }
+
   return {
     user,
     isLoading,
@@ -128,5 +132,6 @@ export const useAuthStore = defineStore('auth', () => {
     completeMfa,
     restoreSession,
     logout,
+    applyExternalSession,
   };
 });
