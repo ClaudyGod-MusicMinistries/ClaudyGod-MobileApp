@@ -68,8 +68,8 @@ export function PremiumCard({
     ]).start();
   };
 
-  const containerConfig = designSystem.containers[`card${variant.charAt(0).toUpperCase() + variant.slice(1)}` as keyof typeof designSystem.containers];
-  const themeConfig = containerConfig[theme];
+  const containerKey = variant === 'elevated' ? 'cardElevated' : 'card';
+  const themeConfig = designSystem.containers[containerKey][theme];
 
   const animatedStyle = {
     transform: [{ scale: scaleValue }],
@@ -79,22 +79,7 @@ export function PremiumCard({
   const baseStyle: ViewStyle = {
     borderRadius: designSystem.radius.lg,
     padding: paddingMap[padding],
-    ...(variant === 'default' || variant === 'elevated'
-      ? {
-          backgroundColor: themeConfig.backgroundColor,
-          borderColor: themeConfig.borderColor,
-          borderWidth: themeConfig.borderWidth,
-          shadowColor: (themeConfig as any).shadowColor,
-          shadowOffset: (themeConfig as any).shadowOffset,
-          shadowOpacity: (themeConfig as any).shadowOpacity,
-          shadowRadius: (themeConfig as any).shadowRadius,
-          elevation: (themeConfig as any).elevation,
-        }
-      : {
-          backgroundColor: themeConfig.backgroundColor as unknown as string,
-          borderColor: themeConfig.borderColor as unknown as string,
-          borderWidth: themeConfig.borderWidth,
-        }),
+    backgroundColor: themeConfig.backgroundColor,
   };
 
   const content = (

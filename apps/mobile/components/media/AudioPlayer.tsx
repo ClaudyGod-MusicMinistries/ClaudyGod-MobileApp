@@ -32,10 +32,6 @@ interface AudioPlayerProps {
   canGoNext?: boolean;
 }
 
-type GradientWithPlayer = {
-  player?: [string, string, string];
-};
-
 type RadiusWithXXL = {
   xxl?: number;
 };
@@ -63,10 +59,9 @@ export function AudioPlayer({
   const isCompact = Boolean(compact);
 
   const playerGradient =
-    (theme.colors.gradient as unknown as GradientWithPlayer).player ??
-    (theme.scheme === 'dark'
+    theme.scheme === 'dark'
       ? (['rgba(30,22,52,0.98)', 'rgba(12,8,22,0.99)', 'rgba(5,4,10,1)'] as [string, string, string])
-      : (['#FFFFFF', '#F3EFFD', '#EDE7FB'] as [string, string, string]));
+      : (['#FFFFFF', '#F3EFFD', '#EDE7FB'] as [string, string, string]);
 
   const cardRadius = (theme.radius as typeof theme.radius & RadiusWithXXL).xxl ?? theme.radius.xl;
   const glowShadow = (theme.shadows as typeof theme.shadows & ShadowsWithGlow).glow ?? theme.shadows.card;
