@@ -1012,7 +1012,18 @@ const run = async (): Promise<void> => {
     process.exit(0);
   } catch (error) {
     await closePool();
-    log.error('Database migrations failed', { error });
+    const e = error as Record<string, unknown>;
+    log.error('Database migrations failed', {
+      error: {
+        message: e?.message ?? String(error),
+        stack:   e?.stack,
+        code:    e?.code,
+        severity: e?.severity,
+        detail:  e?.detail,
+        hint:    e?.hint,
+        where:   e?.where,
+      },
+    });
     process.exit(1);
   }
 };
