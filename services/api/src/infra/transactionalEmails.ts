@@ -3,6 +3,7 @@ import { emailQueue } from '../queues/emailQueue';
 import { env } from '../config/env';
 import {
   buildAccountEmailChangeTemplate,
+  buildAdminInviteTemplate,
   buildGenericEmailTemplate,
   buildPasswordResetTemplate,
   buildProfileUpdatedTemplate,
@@ -261,6 +262,40 @@ export const queueAccountEmailChangeEmail = async (input: {
       currentEmail: input.user.email,
       newEmail: input.newEmail,
       type: 'email_change',
+    },
+  });
+};
+
+export const queueAdminInviteEmail = async (input: {
+  toEmail: string;
+  inviterName: string;
+  role: string;
+  rawToken: string;
+  expiresInHours: number;
+}): Promise<void> => {
+  const adminWebUrl = env.ADMIN_WEB_URL.trim().replace(/\/+$/, '');
+  const acceptUrl = adminWebUrl
+    ? `${adminWebUrl}/register?token=${encodeURIComponent(input.rawToken)}`
+    : `/register?token=${encodeURIComponent(input.rawToken)}`;
+
+  const template = buildAdminInviteTemplate({
+    inviterName: input.inviterName,
+    role: input.role,
+    acceptUrl,
+    expiresInHours: input.expiresInHours,
+  });
+
+  await queueEmailJob({
+    recipients: [input.toEmail],
+    subject: template.subject,
+    textBody: template.text,
+    htmlBody: template.html,
+    jobType: 'admin_invite',
+    templateKey: 'admin.invite',
+    payload: {
+      actionUrl: acceptUrl,
+      email: input.toEmail,
+      type: 'admin_invite',
     },
   });
 };
