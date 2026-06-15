@@ -1,10 +1,4 @@
-/**
- * Design System - Global styling tokens for professional, world-class UI
- * Inspired by Spotify, YouTube, and premium streaming platforms
- */
-
 export const designSystem = {
-  // Shadows (elevated, modern, premium)
   shadows: {
     none: {
       shadowColor: '#000',
@@ -50,7 +44,6 @@ export const designSystem = {
     },
   },
 
-  // Spacing scale (8px base unit)
   spacing: {
     0: 0,
     2: 2,
@@ -68,18 +61,16 @@ export const designSystem = {
     48: 48,
   },
 
-  // Border radius (modern, consistent)
   radius: {
     xs: 4,
     sm: 8,
     md: 12,
-    lg: 16,
+    lg: 14,
     xl: 20,
     '2xl': 24,
     full: 999,
   },
 
-  // Opacity scale
   opacity: {
     0: 0,
     5: 0.05,
@@ -97,103 +88,76 @@ export const designSystem = {
     100: 1,
   },
 
-  // Gradients (premium, music/video streaming inspired)
-  gradients: {
-    // Hero/featured
-    hero: {
-      default: ['#B794F6', '#7C3AED'],
-      warm: ['#F59E0B', '#DC2626'],
-      cool: ['#06B6D4', '#3B82F6'],
-      vibrant: ['#EC4899', '#8B5CF6'],
-    },
-    // Card backgrounds
-    card: {
-      subtle: ['rgba(183, 148, 246, 0.05)', 'rgba(124, 58, 237, 0.03)'],
-      soft: ['rgba(183, 148, 246, 0.08)', 'rgba(124, 58, 237, 0.06)'],
-      medium: ['rgba(183, 148, 246, 0.12)', 'rgba(124, 58, 237, 0.08)'],
-    },
-    // Overlay effects
-    overlay: {
-      light: ['rgba(255, 255, 255, 0.15)', 'transparent'],
-      dark: ['transparent', 'rgba(0, 0, 0, 0.3)'],
-    },
-  },
-
-  // Typography scale
+  // Mobile-first typography scale (px)
   typography: {
-    // Display/Hero headlines
     display: {
-      fontSize: 48,
+      fontSize: 22,
       fontWeight: '700',
-      lineHeight: 56,
-      letterSpacing: -0.5,
-    },
-    h1: {
-      fontSize: 36,
-      fontWeight: '700',
-      lineHeight: 44,
+      lineHeight: 28,
       letterSpacing: -0.3,
     },
-    h2: {
-      fontSize: 28,
+    h1: {
+      fontSize: 19,
       fontWeight: '700',
-      lineHeight: 36,
+      lineHeight: 25,
       letterSpacing: -0.2,
     },
+    h2: {
+      fontSize: 17,
+      fontWeight: '700',
+      lineHeight: 22,
+      letterSpacing: -0.1,
+    },
     h3: {
-      fontSize: 24,
+      fontSize: 15,
       fontWeight: '600',
-      lineHeight: 32,
+      lineHeight: 20,
       letterSpacing: 0,
     },
-    // Body text
     body: {
-      fontSize: 16,
+      fontSize: 13,
       fontWeight: '400',
-      lineHeight: 24,
+      lineHeight: 19,
       letterSpacing: 0,
     },
     bodyMedium: {
-      fontSize: 16,
+      fontSize: 13,
       fontWeight: '500',
-      lineHeight: 24,
+      lineHeight: 19,
       letterSpacing: 0,
     },
     bodySemibold: {
-      fontSize: 16,
+      fontSize: 13,
       fontWeight: '600',
-      lineHeight: 24,
+      lineHeight: 19,
       letterSpacing: 0,
     },
-    // Labels
     label: {
-      fontSize: 14,
-      fontWeight: '500',
-      lineHeight: 20,
+      fontSize: 11,
+      fontWeight: '600',
+      lineHeight: 15,
       letterSpacing: 0.1,
     },
     labelSmall: {
-      fontSize: 12,
-      fontWeight: '500',
-      lineHeight: 16,
+      fontSize: 10,
+      fontWeight: '600',
+      lineHeight: 13,
       letterSpacing: 0.2,
     },
-    // Captions
     caption: {
-      fontSize: 13,
+      fontSize: 10,
       fontWeight: '400',
-      lineHeight: 18,
+      lineHeight: 14,
       letterSpacing: 0.1,
     },
     captionSmall: {
-      fontSize: 12,
+      fontSize: 9,
       fontWeight: '400',
-      lineHeight: 16,
+      lineHeight: 12,
       letterSpacing: 0.2,
     },
   },
 
-  // Animation timing functions (smooth, premium feel)
   timing: {
     fast: 150,
     base: 250,
@@ -201,7 +165,6 @@ export const designSystem = {
     slow: 500,
   },
 
-  // Touch/interaction feedback
   interaction: {
     pressScale: 0.98,
     hoverOpacity: 0.8,
@@ -209,76 +172,29 @@ export const designSystem = {
     disabledOpacity: 0.5,
   },
 
-  // Container styles
   containers: {
     card: {
       light: {
-        padding: 16,
-        borderRadius: 16,
-        backgroundColor: '#FCFAFF',
-        borderColor: '#DDD3EE',
-        borderWidth: 1,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 4,
-        elevation: 2,
+        padding: 14,
+        borderRadius: 14,
+        backgroundColor: '#EEE8F7',
       },
       dark: {
-        padding: 16,
-        borderRadius: 16,
-        backgroundColor: '#171124',
-        borderColor: '#2B223D',
-        borderWidth: 1,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 4,
-        elevation: 2,
+        padding: 14,
+        borderRadius: 14,
+        backgroundColor: '#18132A',
       },
     },
     cardElevated: {
       light: {
-        padding: 16,
-        borderRadius: 16,
+        padding: 14,
+        borderRadius: 14,
         backgroundColor: '#FFFFFF',
-        borderColor: '#DDD3EE',
-        borderWidth: 1,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.12,
-        shadowRadius: 8,
-        elevation: 4,
       },
       dark: {
-        padding: 16,
-        borderRadius: 16,
+        padding: 14,
+        borderRadius: 14,
         backgroundColor: '#1B132A',
-        borderColor: '#403253',
-        borderWidth: 1,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.25,
-        shadowRadius: 8,
-        elevation: 4,
-      },
-    },
-    cardGlass: {
-      light: {
-        padding: 16,
-        borderRadius: 16,
-        backgroundColor: 'rgba(252, 250, 255, 0.7)',
-        borderColor: 'rgba(221, 211, 238, 0.4)',
-        borderWidth: 1,
-        backdropFilter: 'blur(8px)',
-      },
-      dark: {
-        padding: 16,
-        borderRadius: 16,
-        backgroundColor: 'rgba(23, 17, 36, 0.5)',
-        borderColor: 'rgba(43, 34, 61, 0.4)',
-        borderWidth: 1,
-        backdropFilter: 'blur(8px)',
       },
     },
   },
