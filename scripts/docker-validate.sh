@@ -38,6 +38,7 @@ JWT_ACCESS_TTL=15m
 JWT_REFRESH_TTL_DAYS=30
 CORS_ORIGIN=https://admin.validation.example,https://app.validation.example
 MOBILE_API_KEY=validation-mobile-api-key
+DATA_ENCRYPTION_KEY=0000000000000000000000000000000000000000000000000000000000000000
 AUTH_PUBLIC_BASE_URL=https://app.validation.example
 AUTH_SESSION_COOKIE_NAME=claudygod_session
 AUTH_REFRESH_COOKIE_NAME=claudygod_refresh_session
