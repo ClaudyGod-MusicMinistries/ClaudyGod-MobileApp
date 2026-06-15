@@ -1,12 +1,10 @@
 // components/ui/Header.tsx
 import React from 'react';
 import { View, StyleSheet, Animated, SafeAreaView, type StyleProp, type ViewStyle } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+
 import { MaterialIcons } from '@expo/vector-icons';
 import { useAppTheme } from '../../util/colorScheme';
 import { CustomText } from '../CustomText';
-
-type GradientColors = readonly [string, string, ...string[]];
 
 interface HeaderProps {
   title: string;
@@ -14,7 +12,6 @@ interface HeaderProps {
   leftAction?: React.ReactNode;
   rightAction?: React.ReactNode;
   style?: StyleProp<ViewStyle>;
-  gradient?: GradientColors;
   animated?: boolean;
   onScroll?: (_offset: number) => void;
 }
@@ -25,20 +22,15 @@ export const Header: React.FC<HeaderProps> = ({
   leftAction,
   rightAction,
   style,
-  gradient,
   animated = true,
   onScroll: _onScroll,
 }) => {
   const theme = useAppTheme();
-  const gradientColors: GradientColors = gradient ?? [theme.colors.primary, theme.colors.accent];
   const TitleContainer = animated ? Animated.View : View;
 
   return (
-    <LinearGradient
-      colors={gradientColors}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={[styles.container, style]}
+    <View
+      style={[styles.container, { backgroundColor: theme.colors.surface }, style]}
     >
       <SafeAreaView>
         <View style={styles.header}>
@@ -74,7 +66,7 @@ export const Header: React.FC<HeaderProps> = ({
           { backgroundColor: 'rgba(255,255,255,0.2)' },
         ]}
       />
-    </LinearGradient>
+    </View>
   );
 };
 
