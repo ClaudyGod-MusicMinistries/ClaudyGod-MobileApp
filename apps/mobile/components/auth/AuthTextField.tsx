@@ -121,16 +121,11 @@ export function AuthTextField({
             overflow: 'hidden',
             flexDirection: 'row',
             alignItems: 'center',
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 10 },
-            shadowOpacity: isFocused ? 0.20 : 0.10,
-            shadowRadius: isFocused ? 18 : 10,
-            elevation: isFocused ? 5 : 2,
             ...(isWeb
               ? ({
                   cursor: editable ? 'text' : 'default',
                   transitionDuration: '160ms',
-                  transitionProperty: 'border-color, background-color, box-shadow, transform',
+                  transitionProperty: 'border-color, background-color',
                 } as object)
               : null),
           }}

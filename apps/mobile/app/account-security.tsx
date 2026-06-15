@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { TextInput, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
+
 
 import { SettingsScaffold } from '../components/layout/SettingsScaffold';
 import { SurfaceCard } from '../components/ui/SurfaceCard';
@@ -185,12 +185,6 @@ export default function AccountSecurity() {
       hero={
         <FadeIn>
           <SurfaceCard tone="strong" style={{ padding: theme.spacing.xl, marginBottom: theme.spacing.lg, overflow: 'hidden' }}>
-            <LinearGradient
-              colors={['rgba(251,191,36,0.10)', 'rgba(251,191,36,0)']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 120, pointerEvents: 'none' }}
-            />
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
               <View style={{ width: 54, height: 54, borderRadius: 27, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(251,191,36,0.14)', borderWidth: 1, borderColor: 'rgba(251,191,36,0.28)' }}>
                 <MaterialIcons name="shield" size={26} color="#F59E0B" />
