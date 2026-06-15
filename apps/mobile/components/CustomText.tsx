@@ -4,6 +4,19 @@ import { Platform, Text, TextProps, useWindowDimensions } from 'react-native';
 import { getResponsiveFontStyle, type FontVariantKey } from '../util/fonts';
 import { FontContext } from '../context/FontContext';
 
+const variantLineDefaults: Partial<Record<FontVariantKey, number>> = {
+  hero: 2,
+  display: 2,
+  heading: 1,
+  title: 1,
+  subheading: 2,
+  subtitle: 2,
+  body: 3,
+  label: 1,
+  meta: 1,
+  caption: 1,
+};
+
 interface CustomTextProps extends TextProps {
   variant?: FontVariantKey;
   className?: string;
@@ -14,6 +27,8 @@ export const CustomText: React.FC<CustomTextProps> = ({
   className,
   children,
   style,
+  numberOfLines: numberOfLinesProp,
+  ellipsizeMode: ellipsizeModeProp,
   ...props
 }) => {
   const { fontsLoaded } = useContext(FontContext);
@@ -31,6 +46,8 @@ export const CustomText: React.FC<CustomTextProps> = ({
     <Text
       className={className}
       style={[finalStyle, style]}
+      numberOfLines={numberOfLinesProp ?? variantLineDefaults[variant]}
+      ellipsizeMode={ellipsizeModeProp ?? 'tail'}
       allowFontScaling={props.allowFontScaling ?? true}
       maxFontSizeMultiplier={props.maxFontSizeMultiplier ?? 1.08}
       {...props}

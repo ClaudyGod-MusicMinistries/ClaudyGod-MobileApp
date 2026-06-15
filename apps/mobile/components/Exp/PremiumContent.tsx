@@ -1495,21 +1495,12 @@ export function StreamingBanner({ item, badge = 'Featured', title, subtitle, cta
               </View>
             </View>
 
-            {/* Right — artwork with gradient fade */}
+            {/* Right — artwork */}
             <View style={{ width: artSize, position: 'relative', flexShrink: 0 }}>
               <Image
                 source={item?.imageUrl ? { uri: item.imageUrl } : BRAND_MUSIC_ASSET}
                 resizeMode="cover"
                 style={{ width: artSize, height: '100%' }}
-              />
-              <LinearGradient
-                colors={[
-                  theme.scheme === 'dark' ? 'rgba(183,148,246,0.07)' : 'rgba(124,58,237,0.06)',
-                  'rgba(0,0,0,0)',
-                ]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: artSize * 0.6 }}
               />
             </View>
           </View>
@@ -1656,17 +1647,11 @@ export function LiveNowBanner({ item, onPress }: { item: FeedCardItem; onPress: 
   return (
     <FadeIn delay={40}>
       <TVTouchable onPress={onPress} showFocusBorder={false}>
-        <View style={{ borderRadius: 18, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(244,63,94,0.36)' }}>
+        <View style={{ borderRadius: 18, overflow: 'hidden', backgroundColor: '#18132A' }}>
           <Image
             source={{ uri: item.imageUrl || DEFAULT_CONTENT_IMAGE_URI }}
             resizeMode="cover"
-            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0.15 }}
-          />
-          <LinearGradient
-            colors={['rgba(244,63,94,0.24)', 'rgba(7,5,12,0.88)']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0.10 }}
           />
           <View style={{ flexDirection: 'row', alignItems: 'center', padding: compact ? 14 : 18, gap: 14 }}>
             <View
