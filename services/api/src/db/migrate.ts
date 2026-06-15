@@ -742,13 +742,34 @@ const migrationStatements = [
      ON trending_snapshots (period, score DESC, calculated_at DESC)`,
 
   /* ── Phase 5: Full-text search ───────────────────────────────────────────── */
+  /* search_vector is maintained by trigger — Supabase rejects to_tsvector     */
+  /* inside GENERATED ALWAYS AS even with explicit ::regconfig cast.            */
   `ALTER TABLE content_items
-     ADD COLUMN IF NOT EXISTS search_vector tsvector
-       GENERATED ALWAYS AS (
-         setweight(to_tsvector('english'::regconfig, coalesce(title, '')), 'A') ||
-         setweight(to_tsvector('english'::regconfig, coalesce(description, '')), 'B') ||
-         setweight(to_tsvector('english'::regconfig, coalesce(array_to_string(tags, ' '), '')), 'C')
-       ) STORED`,
+     ADD COLUMN IF NOT EXISTS search_vector tsvector`,
+  `CREATE OR REPLACE FUNCTION set_content_items_search_vector()
+     RETURNS trigger AS $$
+     BEGIN
+       NEW.search_vector :=
+         setweight(to_tsvector('english'::regconfig, coalesce(NEW.title, '')), 'A') ||
+         setweight(to_tsvector('english'::regconfig, coalesce(NEW.description, '')), 'B') ||
+         setweight(to_tsvector('english'::regconfig, coalesce(array_to_string(NEW.tags, ' '), '')), 'C');
+       RETURN NEW;
+     END;
+     $$ LANGUAGE plpgsql`,
+  `DO $$
+     BEGIN
+       IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'trg_content_items_search_vector') THEN
+         CREATE TRIGGER trg_content_items_search_vector
+         BEFORE INSERT OR UPDATE OF title, description, tags ON content_items
+         FOR EACH ROW EXECUTE FUNCTION set_content_items_search_vector();
+       END IF;
+     END $$`,
+  `UPDATE content_items
+     SET search_vector =
+       setweight(to_tsvector('english'::regconfig, coalesce(title, '')), 'A') ||
+       setweight(to_tsvector('english'::regconfig, coalesce(description, '')), 'B') ||
+       setweight(to_tsvector('english'::regconfig, coalesce(array_to_string(tags, ' '), '')), 'C')
+     WHERE search_vector IS NULL`,
   `CREATE INDEX IF NOT EXISTS idx_content_items_search_vector
      ON content_items USING GIN (search_vector)`,
 
