@@ -36,7 +36,7 @@ export function AuthScreenFrame({ backPath, salutation, description, title, subt
         width: device.isTV ? 52 : 40,
         height: device.isTV ? 52 : 40,
         borderRadius: device.isTV ? 26 : 20,
-        backgroundColor: 'rgba(183,148,246,0.10)',
+        backgroundColor: 'rgba(255,255,255,0.08)',
         alignItems: 'center',
         justifyContent: 'center',
       }}
@@ -51,7 +51,7 @@ export function AuthScreenFrame({ backPath, salutation, description, title, subt
     const maxFormWidth = Math.min(screenWidth, 400);
 
     return (
-      <View style={{ flex: 1, backgroundColor: '#07050C' }}>
+      <View style={{ flex: 1, backgroundColor: '#0A0A0A' }}>
         <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
 
         <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
@@ -71,7 +71,7 @@ export function AuthScreenFrame({ backPath, salutation, description, title, subt
                 width: 28,
                 height: 28,
                 borderRadius: 9,
-                backgroundColor: 'rgba(183,148,246,0.14)',
+                backgroundColor: '#1A1A1A',
                 alignItems: 'center',
                 justifyContent: 'center',
               }}>
@@ -112,7 +112,7 @@ export function AuthScreenFrame({ backPath, salutation, description, title, subt
               {/* Form card */}
               <View
                 style={{
-                  backgroundColor: '#111018',
+                  backgroundColor: '#111111',
                   borderRadius: 20,
                   padding: 20,
                 }}
@@ -128,7 +128,7 @@ export function AuthScreenFrame({ backPath, salutation, description, title, subt
 
   // ── Tablet / Desktop / TV: two-pane or centered card ──────────────────────
   return (
-    <View style={{ flex: 1, backgroundColor: '#07050C' }}>
+    <View style={{ flex: 1, backgroundColor: '#0A0A0A' }}>
       <StatusBar translucent={false} backgroundColor="#07050C" barStyle="light-content" />
       <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
         <ScrollView
@@ -174,7 +174,7 @@ export function AuthScreenFrame({ backPath, salutation, description, title, subt
                       maxWidth: formWidth,
                       flex: showBrandPanel ? 0.82 : undefined,
                       borderRadius: device.isTablet ? 24 : 28,
-                      backgroundColor: '#111018',
+                      backgroundColor: '#111111',
                       paddingHorizontal: device.isTV ? 32 : 26,
                       paddingVertical: device.isTV ? 32 : 26,
                     }}
