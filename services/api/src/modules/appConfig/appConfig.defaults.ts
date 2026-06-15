@@ -173,7 +173,7 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
   },
   rate: {
     iosStoreUrl: 'https://apps.apple.com/app/idYOUR_APP_ID',
-    androidStoreUrl: 'https://play.google.com/store/apps/details?id=com.claudygod.mobile',
+    androidStoreUrl: 'https://play.google.com/store/apps/details?id=com.claudygod.app',
     feedbackRoute: '/settingsPage/help',
   },
   layout: {

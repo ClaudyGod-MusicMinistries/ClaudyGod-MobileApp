@@ -69,6 +69,26 @@ const appSplashAssetPath = './assets/splash-icon.png';
 const appAdaptiveIconAssetPath = './assets/adaptive-icon.png';
 const appFaviconAssetPath = './assets/favicon.png';
 
+const getFileOrEnv = (key, fallback = '') =>
+  fileEnv[key] || process.env[key] || fallback;
+
+const appName = getFileOrEnv('EXPO_APP_NAME', 'ClaudyGod');
+const appSlug = getFileOrEnv('EXPO_APP_SLUG', 'claudygod');
+const appScheme = getFileOrEnv('EXPO_APP_SCHEME', 'claudygod');
+const appVersion = getFileOrEnv('EXPO_APP_VERSION', '1.0.0');
+const appDescription = getFileOrEnv(
+  'EXPO_APP_DESCRIPTION',
+  'ClaudyGod worship, ministry updates, and secure account access across mobile and web.',
+);
+const uiStyle = getFileOrEnv('EXPO_USER_INTERFACE_STYLE', 'dark');
+const splashBgColor = getFileOrEnv('EXPO_SPLASH_BG_COLOR', '#06040D');
+const iosBundleId = getFileOrEnv('EXPO_IOS_BUNDLE_ID', 'com.claudygod.app');
+const iosBuildNumber = getFileOrEnv('EXPO_IOS_BUILD_NUMBER', '1');
+const iosSupportsTablet = getFileOrEnv('EXPO_IOS_SUPPORTS_TABLET', 'true') !== 'false';
+const androidPackage = getFileOrEnv('EXPO_ANDROID_PACKAGE', 'com.claudygod.app');
+const androidVersionCode = parseInt(getFileOrEnv('EXPO_ANDROID_VERSION_CODE', '1'), 10);
+const androidEdgeToEdge = getFileOrEnv('EXPO_ANDROID_EDGE_TO_EDGE', 'true') !== 'false';
+
 const seedEnv = (key, value) => {
   if (typeof value !== 'string' || value.length === 0 || key in process.env) {
     return;
@@ -146,39 +166,39 @@ const getEnv = (keys, fallback = '') => {
 
 module.exports = {
   expo: {
-    name: 'ClaudyGod',
-    slug: 'claudygod',
+    name: appName,
+    slug: appSlug,
     ...(resolvedExpoOwner ? { owner: resolvedExpoOwner } : {}),
-    scheme: 'claudygod',
-    version: '1.0.0',
+    scheme: appScheme,
+    version: appVersion,
     orientation: 'default',
     icon: appIconAssetPath,
-    userInterfaceStyle: 'dark',
+    userInterfaceStyle: uiStyle,
     newArchEnabled: true,
-    description: 'ClaudyGod worship, ministry updates, and secure account access across mobile and web.',
+    description: appDescription,
     runtimeVersion: {
       policy: 'appVersion',
     },
     splash: {
       image: appSplashAssetPath,
       resizeMode: 'contain',
-      backgroundColor: '#06040D',
+      backgroundColor: splashBgColor,
     },
     ios: {
-      supportsTablet: true,
-      bundleIdentifier: 'com.claudygod.app',
-      buildNumber: '1',
+      supportsTablet: iosSupportsTablet,
+      bundleIdentifier: iosBundleId,
+      buildNumber: iosBuildNumber,
       icon: appIconAssetPath,
     },
     android: {
-      package: 'com.claudygod.app',
+      package: androidPackage,
       icon: appIconAssetPath,
       adaptiveIcon: {
         foregroundImage: appAdaptiveIconAssetPath,
-        backgroundColor: '#06040D',
+        backgroundColor: splashBgColor,
       },
-      edgeToEdgeEnabled: true,
-      versionCode: 1,
+      edgeToEdgeEnabled: androidEdgeToEdge,
+      versionCode: androidVersionCode,
     },
     web: {
       favicon: appFaviconAssetPath,
