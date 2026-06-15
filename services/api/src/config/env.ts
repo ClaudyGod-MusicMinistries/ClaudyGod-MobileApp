@@ -219,6 +219,8 @@ const envSchema = z
     YOUTUBE_MAX_RESULTS: z.coerce.number().int().min(1).max(50).default(12),
 
     ADMIN_SIGNUP_CODE: z.string().optional().default(''),
+    ADMIN_WEB_URL: z.string().optional().default(''),
+    ADMIN_INVITE_TTL_HOURS: z.coerce.number().int().min(1).max(168).default(72),
 
     AI_PROVIDER_NAME: z.string().trim().min(2).max(80).default('Integrated AI'),
     AI_PROVIDER_URL: optionalUrl(),
@@ -562,6 +564,8 @@ export const env = {
         : 'Generic SMTP',
   YOUTUBE_ENABLED: Boolean(raw.YOUTUBE_API_KEY && raw.YOUTUBE_CHANNEL_ID),
   ADMIN_SIGNUP_ENABLED: Boolean(raw.ADMIN_SIGNUP_CODE),
+  ADMIN_WEB_URL: raw.ADMIN_WEB_URL?.trim() || '',
+  ADMIN_INVITE_TTL_HOURS: Number(raw.ADMIN_INVITE_TTL_HOURS ?? 72),
 };
 
 export type Env = typeof env;

@@ -2,6 +2,20 @@ import { z } from 'zod';
 
 export const supportRequestStatusSchema = z.enum(['open', 'in_progress', 'resolved', 'closed']);
 export const adminUserRoleSchema = z.enum(['CLIENT', 'ADMIN']);
+export const invitableRoleSchema = z.enum(['CREATOR', 'MODERATOR', 'ADMIN']);
+
+export const createInvitationSchema = z
+  .object({
+    email: z.string().trim().toLowerCase().email('Must be a valid email address'),
+    role: invitableRoleSchema,
+  })
+  .strict();
+
+export const invitationIdParamsSchema = z
+  .object({
+    id: z.string().uuid(),
+  })
+  .strict();
 
 export const supportRequestIdParamsSchema = z
   .object({
