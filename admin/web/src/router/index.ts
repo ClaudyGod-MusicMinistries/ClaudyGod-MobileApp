@@ -21,6 +21,12 @@ const router = createRouter({
       component: () => import('@/views/auth/LoginView.vue'),
       meta: { public: true, title: 'Sign in' },
     },
+    {
+      path: '/register',
+      name: 'register',
+      component: () => import('@/views/auth/RegisterView.vue'),
+      meta: { public: true, title: 'Create account' },
+    },
 
     // ─── Authenticated routes (wrapped in AdminShell) ────────────────────────
     {
