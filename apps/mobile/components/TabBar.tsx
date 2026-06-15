@@ -2,7 +2,6 @@ import React, { useMemo } from 'react';
 import { Image, Platform, Text, View, useWindowDimensions } from 'react-native';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { MaterialIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { useColorScheme } from '../util/colorScheme';
@@ -92,13 +91,6 @@ function SidebarTabBar({
         justifyContent: 'space-between',
       }}
     >
-      {/* Subtle gradient highlight on right edge */}
-      <LinearGradient
-        colors={['rgba(183,148,246,0.06)', 'rgba(183,148,246,0)']}
-        start={{ x: 1, y: 0 }}
-        end={{ x: 0, y: 0 }}
-        style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: 32, pointerEvents: 'none' }}
-      />
 
       <View style={{ gap: 0 }}>
         {/* Logo */}
@@ -320,12 +312,6 @@ function BottomPillTabBar({
           elevation: 24,
         }}
       >
-        <LinearGradient
-          colors={['rgba(255,255,255,0.07)', 'rgba(255,255,255,0.01)']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0, y: 1 }}
-          style={{ position: 'absolute', pointerEvents: 'none', top: 0, left: 0, right: 0, height: 1, borderRadius: 26 }}
-        />
 
         <View
           style={{

@@ -1,7 +1,6 @@
 import React from 'react';
 import { Image, View, TouchableOpacity } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useFloatingPlayer } from '../../context/FloatingPlayerContext';
 import { useAppTheme } from '../../util/colorScheme';
@@ -47,10 +46,7 @@ export function MinimizedFloatingPlayer() {
         elevation: 18,
       }}
     >
-      <LinearGradient
-        colors={theme.scheme === 'dark' ? ['rgba(34,25,48,0.98)', 'rgba(13,8,20,0.98)'] : ['rgba(255,255,255,0.98)', 'rgba(244,238,253,0.98)']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+      <View
         style={{
           flex: 1,
           flexDirection: 'row',
@@ -58,6 +54,7 @@ export function MinimizedFloatingPlayer() {
           paddingHorizontal: 10,
           paddingVertical: 9,
           gap: 10,
+          backgroundColor: theme.colors.surface,
         }}
       >
         <View
@@ -136,7 +133,7 @@ export function MinimizedFloatingPlayer() {
             <MaterialIcons name="close" size={18} color={theme.colors.textSecondary} />
           </TouchableOpacity>
         </View>
-      </LinearGradient>
+      </View>
     </View>
   );
 }
