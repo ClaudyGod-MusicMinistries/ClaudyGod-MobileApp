@@ -140,17 +140,26 @@ const isPrivateOrLocalUrl = (value: string): boolean => {
   }
 };
 
+// True in a browser (web build); false in native iOS/Android bundles.
+const isWebBrowser = typeof window !== 'undefined' && typeof document !== 'undefined';
+
 if (runtimeMode === 'production') {
+  // API URL is always required — derivedWebProductionApiUrl handles the web case.
   if (!resolvedApiUrl || !/^https:\/\//i.test(resolvedApiUrl) || isPrivateOrLocalUrl(resolvedApiUrl)) {
     throw new Error('Production mobile builds require a public HTTPS API URL.');
   }
 
-  if (!getEnv('EXPO_PUBLIC_MOBILE_API_KEY', '').trim()) {
-    throw new Error('Production mobile builds require EXPO_PUBLIC_MOBILE_API_KEY.');
-  }
+  // On web the bundle is served by nginx; env vars must be baked in at `expo export` time.
+  // If they are missing the app still loads and shows public content — auth features will
+  // degrade gracefully rather than crashing with a blank screen.
+  if (!isWebBrowser) {
+    if (!getEnv('EXPO_PUBLIC_MOBILE_API_KEY', '').trim()) {
+      throw new Error('Production mobile builds require EXPO_PUBLIC_MOBILE_API_KEY.');
+    }
 
-  if (!getEnv('EXPO_PUBLIC_SUPABASE_URL', '').trim() || !getEnv(['EXPO_PUBLIC_SUPABASE_KEY', 'EXPO_PUBLIC_SUPABASE_ANON_KEY'], '').trim()) {
-    throw new Error('Production mobile builds require Supabase public auth configuration.');
+    if (!getEnv('EXPO_PUBLIC_SUPABASE_URL', '').trim() || !getEnv(['EXPO_PUBLIC_SUPABASE_KEY', 'EXPO_PUBLIC_SUPABASE_ANON_KEY'], '').trim()) {
+      throw new Error('Production mobile builds require Supabase public auth configuration.');
+    }
   }
 }
 
