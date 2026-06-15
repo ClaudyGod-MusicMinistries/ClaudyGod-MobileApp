@@ -1,6 +1,5 @@
 import React from 'react';
 import { View, useWindowDimensions } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../CustomText';
 import { useAppTheme } from '../../util/colorScheme';
@@ -16,21 +15,14 @@ export function SupportMinistryCard({ onPress }: SupportCardProps) {
   const compact = width < 390;
 
   return (
-    <LinearGradient
-      colors={theme.colors.gradient.primary as [string, string]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
+    <View
       style={{
         minHeight: 104,
         borderRadius: 22,
         padding: 15,
         overflow: 'hidden',
         justifyContent: 'center',
-        shadowColor: theme.colors.primary,
-        shadowOffset: { width: 0, height: 12 },
-        shadowOpacity: 0.22,
-        shadowRadius: 24,
-        elevation: 10,
+        backgroundColor: theme.colors.primary,
       }}
     >
       <View
@@ -101,6 +93,6 @@ export function SupportMinistryCard({ onPress }: SupportCardProps) {
           <MaterialIcons name="arrow-forward" size={16} color="#FFFFFF" />
         </TVTouchable>
       </View>
-    </LinearGradient>
+    </View>
   );
 }

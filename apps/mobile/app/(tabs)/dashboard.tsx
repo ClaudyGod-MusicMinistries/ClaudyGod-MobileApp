@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
@@ -202,11 +201,8 @@ export default function DashboardScreen() {
                 </CustomText>
 
                 <View style={{ height: 10, borderRadius: 999, backgroundColor: theme.scheme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(17,10,31,0.06)', overflow: 'hidden' }}>
-                  <LinearGradient
-                    colors={theme.colors.gradient.primary as [string, string]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={{ height: '100%', width: `${Math.min(100, metrics.engagementScore)}%` }}
+                  <View
+                    style={{ height: '100%', width: `${Math.min(100, metrics.engagementScore)}%`, backgroundColor: theme.colors.primary }}
                   />
                 </View>
               </SurfaceCard>

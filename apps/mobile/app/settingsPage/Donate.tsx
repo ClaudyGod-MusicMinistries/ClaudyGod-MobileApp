@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Linking, View, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 
 import { SettingsScaffold } from '../../components/layout/SettingsScaffold';
 import { CustomText } from '../../components/CustomText';
@@ -168,12 +167,7 @@ export default function Donate() {
       hero={
         <FadeIn>
           <SurfaceCard tone="strong" style={{ padding: 0 }}>
-            <LinearGradient
-              colors={theme.colors.gradient.primary as [string, string]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={{ padding: theme.spacing.lg }}
-            >
+            <View style={{ padding: theme.spacing.lg, backgroundColor: theme.colors.primary, borderRadius: 14 }}>
               <View style={{ flexDirection: 'row', gap: theme.spacing.md, alignItems: 'center' }}>
                 <View
                   style={{
@@ -237,7 +231,7 @@ export default function Donate() {
                   </View>
                 ))}
               </View>
-            </LinearGradient>
+            </View>
           </SurfaceCard>
         </FadeIn>
       }
