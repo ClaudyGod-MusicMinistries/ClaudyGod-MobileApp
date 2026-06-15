@@ -37,7 +37,7 @@ function FeaturePills() {
             paddingHorizontal: 12,
             paddingVertical: 6,
             borderRadius: 999,
-            backgroundColor: '#18132A',
+            backgroundColor: '#1A1A1A',
           }}
         >
           <MaterialIcons name={pill.icon} size={13} color={pill.color} />
@@ -66,7 +66,7 @@ export default function LandingScreen() {
   const maxWidth = isPhone ? Math.min(width - gutter * 2, 380) : Math.min(500, width - gutter * 2);
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#07050C' }}>
+    <View style={{ flex: 1, backgroundColor: '#0A0A0A' }}>
       <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
         <ScrollView
           contentContainerStyle={{
@@ -88,7 +88,7 @@ export default function LandingScreen() {
                   width: logoSize,
                   height: logoSize,
                   borderRadius: Math.round(logoSize * 0.26),
-                  backgroundColor: 'rgba(183,148,246,0.12)',
+                  backgroundColor: '#1A1A1A',
                   alignItems: 'center',
                   justifyContent: 'center',
                   overflow: 'hidden',
