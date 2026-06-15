@@ -113,8 +113,16 @@ const derivedWebProductionApiUrl = ((): string => {
     const { hostname } = window.location;
     const parts = hostname.split('.');
     if (parts.length >= 2) {
-      parts[0] = 'api';
-      return `https://${parts.join('.')}`;
+      const first = parts[0] ?? '';
+      // Map known app subdomains to their API counterpart.
+      // mobileapp.* → apimobile.*   (ClaudyGod naming convention)
+      // app.*        → api.*         (generic fallback)
+      // anything else → api.*
+      const apiSubdomain =
+        first === 'mobileapp' ? 'apimobile' :
+        first === 'mobile'    ? 'apimobile' :
+        'api';
+      return `https://${[apiSubdomain, ...parts.slice(1)].join('.')}`;
     }
   } catch { /* ignore */ }
   return '';
