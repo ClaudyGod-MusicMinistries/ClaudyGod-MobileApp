@@ -177,31 +177,6 @@ export function AudioPlayer({
         backgroundColor: theme.colors.surface,
       }}
     >
-      <View
-        style={{
-          position: 'absolute',
-          top: -90,
-          right: -70,
-          width: 220,
-          height: 220,
-          borderRadius: 220,
-          backgroundColor: 'rgba(183,148,246,0.20)',
-          pointerEvents: 'none',
-        }}
-      />
-
-      <View
-        style={{
-          position: 'absolute',
-          bottom: -100,
-          left: -90,
-          width: 240,
-          height: 240,
-          borderRadius: 240,
-          pointerEvents: 'none',
-          backgroundColor: 'rgba(255,255,255,0.06)',
-        }}
-      />
 
       <View style={{ gap: isCompact ? 22 : 26 }}>
         <View

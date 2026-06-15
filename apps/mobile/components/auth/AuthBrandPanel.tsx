@@ -22,7 +22,7 @@ export function AuthBrandPanel({ salutation, description, compact = false }: Aut
             width: 44,
             height: 44,
             borderRadius: 14,
-            backgroundColor: 'rgba(183,148,246,0.12)',
+            backgroundColor: '#1A1A1A',
             alignItems: 'center',
             justifyContent: 'center',
           }}
@@ -87,7 +87,7 @@ export function AuthBrandPanel({ salutation, description, compact = false }: Aut
             width: device.isTV ? 64 : 54,
             height: device.isTV ? 64 : 54,
             borderRadius: device.isTV ? 22 : 18,
-            backgroundColor: 'rgba(183,148,246,0.14)',
+            backgroundColor: '#1A1A1A',
             alignItems: 'center',
             justifyContent: 'center',
           }}
@@ -110,7 +110,7 @@ export function AuthBrandPanel({ salutation, description, compact = false }: Aut
                 key={label}
                 style={{
                   borderRadius: 999,
-                  backgroundColor: 'rgba(183,148,246,0.12)',
+                  backgroundColor: 'rgba(255,255,255,0.07)',
                   paddingHorizontal: 12,
                   paddingVertical: 5,
                 }}

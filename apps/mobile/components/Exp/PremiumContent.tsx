@@ -1647,7 +1647,7 @@ export function LiveNowBanner({ item, onPress }: { item: FeedCardItem; onPress: 
   return (
     <FadeIn delay={40}>
       <TVTouchable onPress={onPress} showFocusBorder={false}>
-        <View style={{ borderRadius: 18, overflow: 'hidden', backgroundColor: '#18132A' }}>
+        <View style={{ borderRadius: 18, overflow: 'hidden', backgroundColor: '#1A1A1A' }}>
           <Image
             source={{ uri: item.imageUrl || DEFAULT_CONTENT_IMAGE_URI }}
             resizeMode="cover"
