@@ -32,9 +32,13 @@ export async function getMe(): Promise<AdminUser> {
   return data;
 }
 
-export async function register(input: RegisterInput): Promise<RegisterResponse> {
-  const { data } = await client.post<RegisterResponse>('/v1/auth/register', input);
+export async function register(input: RegisterInput): Promise<RegisterResponse & { requiresEmailVerification?: boolean }> {
+  const { data } = await client.post<RegisterResponse & { requiresEmailVerification?: boolean }>('/v1/auth/register', input);
   return data;
+}
+
+export async function verifyEmail(code: string, email: string): Promise<void> {
+  await client.post('/v1/auth/email/verify', { code, email });
 }
 
 export const GOOGLE_LOGIN_URL = import.meta.env.VITE_GOOGLE_LOGIN_URL || '';
