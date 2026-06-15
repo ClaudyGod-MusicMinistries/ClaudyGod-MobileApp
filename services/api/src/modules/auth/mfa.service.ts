@@ -1,13 +1,5 @@
 import { randomBytes, createHash } from 'crypto';
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { authenticator } = require('otplib') as {
-  authenticator: {
-    options: Record<string, unknown>;
-    generateSecret(): string;
-    keyuri(account: string, service: string, secret: string): string;
-    verify(opts: { token: string; secret: string }): boolean;
-  }
-};
+import { generateSecret, generateURI, verifySync } from 'otplib';
 import { pool } from '../../db/pool.js';
 import { env } from '../../config/env.js';
 import { createLogger } from '../../lib/logger.js';
@@ -16,10 +8,9 @@ import type { JwtClaims } from '../../utils/jwt.js';
 
 const logger = createLogger('mfa.service');
 
-authenticator.options = {
-  issuer: env.MFA_ISSUER,
-  window: 1,
-};
+// otplib v13 uses functional API — no singleton, options passed per-call.
+// epochTolerance: 30 == ±1 TOTP time step (30 s), same as the old window: 1.
+const VERIFY_OPTS = { epochTolerance: 30 } as const;
 
 interface MfaSetupResult {
   secret: string;
@@ -48,8 +39,8 @@ export async function setupMfa(user: JwtClaims): Promise<MfaSetupResult> {
     throw new BadRequestError('MFA is already enabled and verified', 'MFA_ALREADY_ENABLED');
   }
 
-  const secret = authenticator.generateSecret();
-  const otpauthUrl = authenticator.keyuri(user.email, env.MFA_ISSUER, secret);
+  const secret = generateSecret();
+  const otpauthUrl = generateURI({ label: user.email, issuer: env.MFA_ISSUER, secret });
 
   let qrDataUrl = '';
   try {
@@ -82,7 +73,7 @@ export async function verifyMfaSetup(user: JwtClaims, code: string): Promise<Bac
   }
 
   const { id, secret } = row.rows[0];
-  const isValid = authenticator.verify({ token: code, secret });
+  const isValid = verifySync({ token: code, secret, ...VERIFY_OPTS }).valid;
 
   if (!isValid) {
     throw new BadRequestError('Invalid TOTP code', 'MFA_INVALID_CODE');
@@ -137,7 +128,7 @@ export async function disableMfa(user: JwtClaims, code: string): Promise<void> {
   }
 
   const { id, secret } = row.rows[0];
-  const isValid = authenticator.verify({ token: code, secret });
+  const isValid = verifySync({ token: code, secret, ...VERIFY_OPTS }).valid;
 
   if (!isValid) {
     throw new BadRequestError('Invalid TOTP code', 'MFA_INVALID_CODE');
@@ -166,7 +157,7 @@ export async function validateMfaCode(userId: string, code: string): Promise<boo
 
   if (!row.rows[0]) return false;
 
-  const isTotp = authenticator.verify({ token: code, secret: row.rows[0].secret });
+  const isTotp = verifySync({ token: code, secret: row.rows[0].secret, ...VERIFY_OPTS }).valid;
   if (isTotp) return true;
 
   const codeHash = createHash('sha256').update(code.toUpperCase()).digest('hex');
