@@ -28,6 +28,8 @@ import {
   loginUser,
   registerUser,
   resendVerificationEmail,
+  validateAdminInviteToken,
+  acceptAdminInvite,
   requestPasswordReset,
   resetPassword,
   verifyEmail,
@@ -289,5 +291,38 @@ authRouter.get(
       clearAuthSessionCookie(res);
       res.status(200).json({ authenticated: false, user: null });
     }
+  }),
+);
+
+
+// ── Admin invite: validate + accept (public, no auth required) ───────────────
+
+authRouter.get(
+  '/invitations/validate',
+  asyncHandler(async (req, res) => {
+    const token = String(req.query.token ?? '').trim();
+    if (!token || token.length < 32) {
+      res.status(400).json({ message: 'Invalid invitation token', code: 'INVITE_INVALID' });
+      return;
+    }
+    const details = await validateAdminInviteToken(token);
+    res.status(200).json(details);
+  }),
+);
+
+authRouter.post(
+  '/invitations/accept',
+  asyncHandler(async (req, res) => {
+    const { token, name, displayName, password } = req.body;
+    if (!token || !password || (!name && !displayName)) {
+      res.status(400).json({ message: 'token, password, and name are required', code: 'VALIDATION_ERROR' });
+      return;
+    }
+    const result = await acceptAdminInvite(
+      { token, name: name ?? displayName, displayName: displayName ?? name, password },
+      getAuthRequestContext(req),
+    );
+    const session = await buildSessionPayload(result, req);
+    respondWithAuthSession(req, res, session, 201);
   }),
 );

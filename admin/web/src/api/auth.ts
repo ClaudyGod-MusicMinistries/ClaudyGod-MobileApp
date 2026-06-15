@@ -1,16 +1,21 @@
 import client from './client';
 import type { LoginResponse, AdminUser } from './types';
 
-export interface RegisterInput {
+export interface InviteValidation {
+  id: string;
   email: string;
-  password: string;
-  username: string;
-  adminSignupCode: string;
-  role: 'ADMIN';
+  role: string;
+  inviterName: string | null;
+  expiresAt: string;
 }
 
-export interface RegisterResponse {
-  message: string;
+export interface AdminInviteListItem {
+  id: string;
+  email: string;
+  role: string;
+  inviterName: string | null;
+  expiresAt: string;
+  createdAt: string;
 }
 
 export async function login(email: string, password: string): Promise<LoginResponse> {
@@ -32,13 +37,39 @@ export async function getMe(): Promise<AdminUser> {
   return data;
 }
 
-export async function register(input: RegisterInput): Promise<RegisterResponse & { requiresEmailVerification?: boolean }> {
-  const { data } = await client.post<RegisterResponse & { requiresEmailVerification?: boolean }>('/v1/auth/register', input);
+export async function verifyEmail(code: string, email: string): Promise<void> {
+  await client.post('/v1/auth/email/verify', { code, email });
+}
+
+export async function validateInvite(token: string): Promise<InviteValidation> {
+  const { data } = await client.get<InviteValidation>('/v1/auth/invitations/validate', {
+    params: { token },
+  });
   return data;
 }
 
-export async function verifyEmail(code: string, email: string): Promise<void> {
-  await client.post('/v1/auth/email/verify', { code, email });
+export async function acceptInvite(input: {
+  token: string;
+  name: string;
+  displayName: string;
+  password: string;
+}): Promise<LoginResponse> {
+  const { data } = await client.post<LoginResponse>('/v1/auth/invitations/accept', input);
+  return data;
+}
+
+export async function sendAdminInvite(email: string, role: string): Promise<{ id: string; expiresAt: string }> {
+  const { data } = await client.post<{ id: string; expiresAt: string }>('/v1/admin/invitations', { email, role });
+  return data;
+}
+
+export async function listAdminInvites(): Promise<{ invitations: AdminInviteListItem[] }> {
+  const { data } = await client.get<{ invitations: AdminInviteListItem[] }>('/v1/admin/invitations');
+  return data;
+}
+
+export async function revokeAdminInvite(id: string): Promise<void> {
+  await client.delete(`/v1/admin/invitations/${id}`);
 }
 
 export const GOOGLE_LOGIN_URL = import.meta.env.VITE_GOOGLE_LOGIN_URL || '';
