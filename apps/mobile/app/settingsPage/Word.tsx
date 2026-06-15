@@ -2,7 +2,7 @@ import React from 'react';
 import { View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
+
 
 import { SettingsScaffold } from '../../components/layout/SettingsScaffold';
 import { CustomText } from '../../components/CustomText';
@@ -28,12 +28,6 @@ export default function WordForTodayScreen() {
       hero={
         <FadeIn>
           <SurfaceCard tone="strong" style={{ padding: theme.spacing.xl, marginBottom: theme.spacing.lg, overflow: 'hidden' }}>
-            <LinearGradient
-              colors={['rgba(183,148,246,0.14)', 'rgba(183,148,246,0)']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 120, pointerEvents: 'none' }}
-            />
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
               <View
                 style={{

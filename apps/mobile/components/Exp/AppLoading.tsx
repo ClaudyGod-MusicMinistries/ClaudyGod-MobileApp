@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, Image, Platform, StatusBar, Text, View, useWindowDimensions } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BRAND_LOGO_ASSET, LANDING_BG_ASSET } from '../../util/brandAssets';
 
@@ -48,12 +48,6 @@ export function AppLoadingScreen() {
         source={LANDING_BG_ASSET}
         resizeMode="cover"
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0.14 }}
-      />
-
-      {/* Dark gradient */}
-      <LinearGradient
-        colors={['#03020A', 'rgba(5,3,14,0.95)', '#07050C']}
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
       />
 
       {/* Purple ambient glow behind logo */}

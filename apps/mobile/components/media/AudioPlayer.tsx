@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo } from 'react';
 import { Image, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+
 import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -57,11 +57,6 @@ export function AudioPlayer({
   const player = useAudioPlayer(track.uri, { updateInterval: 350 });
   const status = useAudioPlayerStatus(player);
   const isCompact = Boolean(compact);
-
-  const playerGradient =
-    theme.scheme === 'dark'
-      ? (['rgba(30,22,52,0.98)', 'rgba(12,8,22,0.99)', 'rgba(5,4,10,1)'] as [string, string, string])
-      : (['#FFFFFF', '#F3EFFD', '#EDE7FB'] as [string, string, string]);
 
   const cardRadius = (theme.radius as typeof theme.radius & RadiusWithXXL).xxl ?? theme.radius.xl;
   const glowShadow = (theme.shadows as typeof theme.shadows & ShadowsWithGlow).glow ?? theme.shadows.card;
@@ -171,17 +166,15 @@ export function AudioPlayer({
   const artworkUrl = track.imageUrl || DEFAULT_CONTENT_IMAGE_URI;
 
   return (
-    <LinearGradient
-      colors={playerGradient}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
+    <View
       style={{
         borderRadius: cardRadius,
         paddingHorizontal: isCompact ? theme.spacing.lg : theme.spacing.xl,
         paddingVertical: isCompact ? theme.spacing.xl : theme.spacing.xxl,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.12)',
+        borderColor: theme.colors.border,
         overflow: 'hidden',
+        backgroundColor: theme.colors.surface,
       }}
     >
       <View
@@ -377,7 +370,7 @@ export function AudioPlayer({
           ) : null}
         </View>
       </View>
-    </LinearGradient>
+    </View>
   );
 }
 
