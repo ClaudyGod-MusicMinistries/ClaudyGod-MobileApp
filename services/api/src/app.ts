@@ -124,6 +124,18 @@ export const createApp = () => {
   const corsOptions: CorsOptions = {
     origin: buildCorsOrigin(),
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: [
+      'Authorization',
+      'Content-Type',
+      'X-Requested-With',
+      'X-Mobile-Api-Key',
+      'X-Claudy-Client-Platform',
+      'X-Claudy-Client-Version',
+      'X-Request-ID',
+    ],
+    exposedHeaders: ['X-Request-ID', 'X-Correlation-ID'],
+    maxAge: 86400,
   };
 
   // Trust proxy (important for X-Forwarded-For in production)
