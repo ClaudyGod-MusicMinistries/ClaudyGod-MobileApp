@@ -6,12 +6,9 @@
 
 import React from 'react';
 import { View, StyleSheet, Animated } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useAppTheme } from '../../util/colorScheme';
 import { CustomText } from '../CustomText';
 import { spacing, radius, shadows } from '../../styles/designTokens';
-
-type GradientColors = readonly [string, string, ...string[]];
 
 interface StatCardProps {
   label: string;
@@ -21,7 +18,7 @@ interface StatCardProps {
   trendValue?: string;
   backgroundColor?: string;
   delay?: number;
-  gradient?: GradientColors;
+  gradient?: readonly [string, string, ...string[]];
 }
 
 export const StatCard: React.FC<StatCardProps> = ({
@@ -32,78 +29,39 @@ export const StatCard: React.FC<StatCardProps> = ({
   trendValue,
   backgroundColor,
   delay = 0,
-  gradient,
 }) => {
   const theme = useAppTheme();
   const scaleAnim = React.useRef(new Animated.Value(0.9)).current;
 
   React.useEffect(() => {
-    Animated.spring(scaleAnim, {
-      toValue: 1,
-      useNativeDriver: true,
-      delay,
-    }).start();
+    Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true, delay }).start();
   }, [scaleAnim, delay]);
 
   const trendColor = trend === 'up' ? theme.colors.success : theme.colors.danger;
-  const gradientColors: GradientColors = gradient ?? [theme.colors.primary, theme.colors.accent];
 
   return (
-    <Animated.View
-      style={{
-        transform: [{ scale: scaleAnim }],
-        marginBottom: spacing.md,
-      }}
-    >
-      <View style={styles.cardContainer}>
-        <LinearGradient
-          colors={gradientColors}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={[
-            styles.card,
-            {
-              backgroundColor: backgroundColor || theme.colors.surface,
-            },
-          ]}
-        >
-          <View
-            style={[
-              styles.card,
-              {
-                backgroundColor: backgroundColor ? 'transparent' : 'rgba(255,255,255,0.05)',
-              },
-            ]}
-          >
-            <View style={styles.header}>
-              {icon && <View style={{ marginRight: spacing.sm }}>{icon}</View>}
-              <CustomText
-                style={[styles.label, { color: theme.colors.textSecondary }]}
-              >
-                {label}
+    <Animated.View style={{ transform: [{ scale: scaleAnim }], marginBottom: spacing.md }}>
+      <View style={[styles.cardContainer, { backgroundColor: backgroundColor || theme.colors.card }]}>
+        <View style={styles.header}>
+          {icon && <View style={{ marginRight: spacing.sm }}>{icon}</View>}
+          <CustomText style={[styles.label, { color: theme.colors.textSecondary }]}>
+            {label}
+          </CustomText>
+        </View>
+
+        <View style={styles.content}>
+          <CustomText style={[styles.value, { color: theme.colors.text }]}>
+            {value}
+          </CustomText>
+
+          {trend && trendValue && (
+            <View style={styles.trend}>
+              <CustomText style={[styles.trendValue, { color: trendColor }]}>
+                {trend === 'up' ? '↑' : '↓'} {trendValue}
               </CustomText>
             </View>
-
-            <View style={styles.content}>
-              <CustomText style={[styles.value, { color: theme.colors.text }]}>
-                {value}
-              </CustomText>
-
-              {trend && trendValue && (
-                <View style={styles.trend}>
-                  <CustomText
-                    style={[
-                      styles.trendValue,
-                      { color: trendColor },
-                    ]}
-                  >
-                    {trend === 'up' ? '↑' : '↓'} {trendValue}
-                  </CustomText>
-                </View>
-              )}
-            </View>
-          </View>
-        </LinearGradient>
+          )}
+        </View>
       </View>
     </Animated.View>
   );
@@ -113,14 +71,6 @@ const styles = StyleSheet.create({
   cardContainer: {
     borderRadius: radius.lg,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOpacity: shadows.card.shadowOpacity,
-    shadowRadius: shadows.card.shadowRadius,
-    shadowOffset: shadows.card.shadowOffset,
-    elevation: 8,
-  },
-  card: {
-    borderRadius: radius.lg,
     padding: spacing.lg,
   },
   header: {

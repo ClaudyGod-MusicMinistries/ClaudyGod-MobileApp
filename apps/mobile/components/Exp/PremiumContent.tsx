@@ -1780,7 +1780,7 @@ export function SectionLabel({
             {accent}
           </CustomText>
         ) : null}
-        <CustomText variant="title" style={{ color: theme.colors.text, fontSize: 19, fontWeight: '800', letterSpacing: -0.4 }}>
+        <CustomText variant="title" style={{ color: theme.colors.text, fontSize: 15, fontWeight: '700', letterSpacing: -0.2 }}>
           {title}
         </CustomText>
         {subtitle ? (

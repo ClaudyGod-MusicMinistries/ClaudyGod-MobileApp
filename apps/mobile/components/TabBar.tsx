@@ -169,14 +169,9 @@ function SidebarTabBar({
                   }}
                 >
                   {item.center ? (
-                    <LinearGradient
-                      colors={palette.gradient.primary as [string, string]}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                      style={{ width: '100%', height: '100%', borderRadius: 10, alignItems: 'center', justifyContent: 'center' }}
-                    >
+                    <View style={{ width: '100%', height: '100%', borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.primary }}>
                       <MaterialIcons name="play-arrow" size={isTV ? 20 : 17} color="#FFFFFF" />
-                    </LinearGradient>
+                    </View>
                   ) : (
                     <MaterialIcons
                       name={item.icon}
@@ -356,19 +351,15 @@ function BottomPillTabBar({
                   style={{ flex: 1.1, alignItems: 'center', justifyContent: 'center', gap: compact ? 3 : 4, paddingVertical: 2 }}
                   showFocusBorder={false}
                 >
-                  <LinearGradient
-                    colors={palette.gradient.primary as [string, string]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
+                  <View
                     style={{
                       width: compact ? 46 : 52, height: compact ? 46 : 52, borderRadius: 999,
                       alignItems: 'center', justifyContent: 'center',
-                      shadowColor: palette.primary, shadowOpacity: focused ? 0.48 : 0.28,
-                      shadowRadius: focused ? 20 : 14, shadowOffset: { width: 0, height: 6 }, elevation: 12,
+                      backgroundColor: palette.primary,
                     }}
                   >
                     <MaterialIcons name="play-arrow" size={compact ? 26 : 29} color={palette.textInverse} />
-                  </LinearGradient>
+                  </View>
                   <CustomText variant="caption" style={{ color: focused ? '#F6F0FF' : palette.textMuted, fontSize: compact ? 9 : 9.5, lineHeight: 12, fontWeight: focused ? '700' : '400' }} numberOfLines={1}>
                     {item.label}
                   </CustomText>
