@@ -105,7 +105,22 @@ const deriveExpoDevHost = (): string => {
 const explicitApiUrl = trimTrailingSlash(getEnv('EXPO_PUBLIC_API_URL', ''));
 const derivedExpoHost = runtimeMode === 'development' ? deriveExpoDevHost() : '';
 const derivedApiUrl = derivedExpoHost ? `http://${derivedExpoHost}:4000` : '';
-const resolvedApiUrl = explicitApiUrl || derivedApiUrl;
+
+const derivedWebProductionApiUrl = ((): string => {
+  if (runtimeMode !== 'production') return '';
+  if (typeof window === 'undefined') return '';
+  try {
+    const { hostname } = window.location;
+    const parts = hostname.split('.');
+    if (parts.length >= 2) {
+      parts[0] = 'api';
+      return `https://${parts.join('.')}`;
+    }
+  } catch { /* ignore */ }
+  return '';
+})();
+
+const resolvedApiUrl = explicitApiUrl || derivedWebProductionApiUrl || derivedApiUrl;
 const isPrivateOrLocalUrl = (value: string): boolean => {
   try {
     const parsed = new URL(value);

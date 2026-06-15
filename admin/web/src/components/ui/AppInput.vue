@@ -1,10 +1,19 @@
 <template>
   <div class="flex flex-col gap-1.5">
-    <label v-if="label" :for="id" class="text-xs font-semibold text-ink-soft uppercase tracking-wide">
+    <label
+      v-if="label"
+      :for="id"
+      :class="light
+        ? 'text-xs font-semibold text-gray-500 uppercase tracking-wide'
+        : 'text-xs font-semibold text-ink-soft uppercase tracking-wide'"
+    >
       {{ label }}<span v-if="required" class="text-danger ml-0.5">*</span>
     </label>
     <div class="relative flex items-center">
-      <span v-if="$slots['prefix']" class="absolute left-3 flex items-center text-ink-muted">
+      <span
+        v-if="$slots['prefix']"
+        :class="['absolute left-3 flex items-center', light ? 'text-gray-400' : 'text-ink-muted']"
+      >
         <slot name="prefix" />
       </span>
       <input
@@ -16,24 +25,31 @@
         :disabled="disabled"
         :required="required"
         :class="[
-          'w-full bg-bg-1 border rounded-xl text-ink placeholder:text-ink-muted text-sm transition-all duration-150',
-          'focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/25',
-          'disabled:opacity-50 disabled:cursor-not-allowed',
-          $slots['prefix'] ? 'pl-9' : 'pl-3.5',
-          $slots['suffix'] ? 'pr-9' : 'pr-3.5',
-          'py-2.5',
-          error ? 'border-danger/60' : 'border-border',
+          'w-full border rounded-2xl text-sm transition-all duration-150',
+          'focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed',
+          $slots['prefix'] ? 'pl-9' : 'pl-4',
+          $slots['suffix'] ? 'pr-9' : 'pr-4',
+          'py-3',
+          light
+            ? 'bg-gray-50 border-gray-200 text-gray-900 placeholder:text-gray-400 focus:border-primary/50 focus:ring-primary/15 focus:bg-white'
+            : 'bg-bg-1 border-border text-ink placeholder:text-ink-muted focus:border-primary/60 focus:ring-primary/25',
+          error
+            ? 'border-danger/60 focus:ring-danger/20'
+            : '',
           sizeClass,
         ]"
         @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
         @blur="$emit('blur', $event)"
       />
-      <span v-if="$slots['suffix']" class="absolute right-3 flex items-center text-ink-muted">
+      <span
+        v-if="$slots['suffix']"
+        :class="['absolute right-3 flex items-center', light ? 'text-gray-400' : 'text-ink-muted']"
+      >
         <slot name="suffix" />
       </span>
     </div>
-    <p v-if="error" class="text-xs text-danger">{{ error }}</p>
-    <p v-else-if="hint" class="text-xs text-ink-muted">{{ hint }}</p>
+    <p v-if="error" class="text-xs text-danger font-medium">{{ error }}</p>
+    <p v-else-if="hint" :class="['text-xs', light ? 'text-gray-400' : 'text-ink-muted']">{{ hint }}</p>
   </div>
 </template>
 
@@ -51,7 +67,8 @@ const props = withDefaults(defineProps<{
   hint?: string;
   size?: 'sm' | 'md';
   id?: string;
-}>(), { type: 'text', size: 'md' });
+  light?: boolean;
+}>(), { type: 'text', size: 'md', light: false });
 
 defineEmits<{
   (e: 'update:modelValue', value: string): void;
