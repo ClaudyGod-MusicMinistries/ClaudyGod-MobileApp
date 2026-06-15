@@ -929,6 +929,27 @@ const migrationStatements = [
      WHERE revoked_at IS NULL`,
   `CREATE INDEX IF NOT EXISTS idx_auth_sessions_session_id
      ON auth_sessions (session_id)`,
+
+  /* ── Admin invitations (invite-only admin onboarding) ───────────────────── */
+  `CREATE TABLE IF NOT EXISTS admin_invitations (
+     id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+     email        TEXT        NOT NULL,
+     role         TEXT        NOT NULL DEFAULT 'MODERATOR'
+                  CHECK (role IN ('CLIENT','CREATOR','MODERATOR','ADMIN','SUPER_ADMIN')),
+     invited_by   UUID        REFERENCES app_users(id) ON DELETE SET NULL,
+     token_hash   TEXT        NOT NULL UNIQUE,
+     expires_at   TIMESTAMPTZ NOT NULL,
+     accepted_at  TIMESTAMPTZ,
+     revoked_at   TIMESTAMPTZ,
+     created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+   )`,
+  `CREATE INDEX IF NOT EXISTS idx_admin_invitations_email
+     ON admin_invitations (email)`,
+  `CREATE INDEX IF NOT EXISTS idx_admin_invitations_token_hash
+     ON admin_invitations (token_hash)`,
+  `CREATE INDEX IF NOT EXISTS idx_admin_invitations_pending
+     ON admin_invitations (expires_at)
+     WHERE accepted_at IS NULL AND revoked_at IS NULL`,
 ];
 
 const MIGRATION_LOCK_ID = 7_246_130_001;

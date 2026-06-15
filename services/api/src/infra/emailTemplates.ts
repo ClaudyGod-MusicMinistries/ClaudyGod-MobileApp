@@ -407,3 +407,45 @@ export const buildAccountEmailChangeTemplate = (input: {
   });
   return { subject, text, html };
 };
+
+export const buildAdminInviteTemplate = (input: {
+  inviterName: string;
+  role: string;
+  acceptUrl: string;
+  expiresInHours: number;
+}): RenderedEmailTemplate => {
+  const roleLabel = input.role === 'SUPER_ADMIN' ? 'Super Admin'
+    : input.role === 'ADMIN' ? 'Administrator'
+    : input.role === 'MODERATOR' ? 'Moderator'
+    : input.role === 'CREATOR' ? 'Creator'
+    : input.role;
+  const subject = `You're invited to join ${brandName} Admin`;
+  const text = toTextBlock([
+    `You have been invited by ${input.inviterName} to join the ${brandName} Admin team as ${roleLabel}.`,
+    '',
+    `Accept your invitation: ${input.acceptUrl}`,
+    '',
+    `This invitation expires in ${input.expiresInHours} hours.`,
+    'If you were not expecting this invitation, you can safely ignore this email.',
+    supportFooter,
+  ]);
+  const html = renderShell({
+    preview: `${input.inviterName} invited you to join ${brandName} Admin.`,
+    eyebrow: 'Team Invitation',
+    title: `You're invited to ${brandName} Admin`,
+    greeting: `Hello,`,
+    bodyHtml: `<p style="margin: 0 0 14px 0;"><strong>${escapeHtml(input.inviterName)}</strong> has invited you to join the
+    ${escapeHtml(brandName)} admin team.</p>
+    <div style="border:1px solid #e5e7eb;border-radius:14px;padding:14px 16px;background:#f9fafb;margin:0 0 16px 0;">
+      <div style="font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#64748b;margin-bottom:8px;">Your role</div>
+      <div style="font-size:15px;color:#111827;font-weight:600;">${escapeHtml(roleLabel)}</div>
+    </div>
+    <p style="margin: 0 0 6px 0;">Click the button below to set up your account. This invitation expires in <strong>${escapeHtml(
+      String(input.expiresInHours),
+    )} hours</strong>.</p>
+    <p style="margin: 0;">If you were not expecting this, you can safely ignore this email.</p>`,
+    ctaLabel: 'Accept Invitation',
+    ctaUrl: input.acceptUrl,
+  });
+  return { subject, text, html };
+};
