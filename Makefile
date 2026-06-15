@@ -481,7 +481,7 @@ deploy-pull:
 # Run any pending database migrations
 deploy-migrate:
 	@printf "$(BLUE)Running database migrations...$(NC)\n"
-	$(COMPOSE_PROD) run --rm migrate
+	$(COMPOSE_PROD) run --rm --remove-orphans migrate
 
 # Start / restart containers with the newly pulled images
 deploy-up:
