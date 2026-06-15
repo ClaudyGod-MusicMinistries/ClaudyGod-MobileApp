@@ -108,7 +108,7 @@ export function PosterCard({
               backgroundColor: theme.colors.primary,
               alignItems: 'center',
               justifyContent: 'center',
-              ...theme.shadows.sm,
+              ...theme.shadows.card,
             }}
           >
             <MaterialIcons name="play-arrow" size={26} color={theme.colors.textInverse} />
