@@ -58,6 +58,13 @@
         </template>
         Continue with Google
       </AppButton>
+
+      <p class="text-center text-sm text-ink-muted pt-1">
+        Need an account?
+        <RouterLink to="/register" class="text-primary font-semibold hover:text-primary-soft transition-colors">
+          Create one
+        </RouterLink>
+      </p>
     </form>
 
     <!-- Step 2: MFA -->
@@ -101,7 +108,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, RouterLink } from 'vue-router';
 import { useAuthStore } from '@/stores/auth.store';
 import { GOOGLE_LOGIN_URL } from '@/api/auth';
 import AuthLayout from '@/components/layout/AuthLayout.vue';
