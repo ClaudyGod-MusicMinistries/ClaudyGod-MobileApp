@@ -72,4 +72,15 @@ export async function revokeAdminInvite(id: string): Promise<void> {
   await client.delete(`/v1/admin/invitations/${id}`);
 }
 
+export async function registerWithCode(input: {
+  email: string;
+  password: string;
+  username: string;
+  role: 'ADMIN' | 'MODERATOR' | 'CREATOR';
+  adminSignupCode: string;
+}): Promise<LoginResponse> {
+  const { data } = await client.post<LoginResponse>('/v1/auth/register', input);
+  return data;
+}
+
 export const GOOGLE_LOGIN_URL = import.meta.env.VITE_GOOGLE_LOGIN_URL || '';
