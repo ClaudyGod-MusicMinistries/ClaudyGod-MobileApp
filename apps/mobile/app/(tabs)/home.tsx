@@ -200,7 +200,7 @@ export default function HomeScreen() {
     [feed.live, feed.mostPlayed, feed.music, feed.recent, feed.recommendations, feed.videos],
   );
 
-  const configuredTabs = config?.navigation?.tabs ?? [];
+  const configuredTabs = useMemo(() => config?.navigation?.tabs ?? [], [config?.navigation?.tabs]);
   const configuredSections = config?.layout?.homeSections ?? [];
 
   const configuredRails = configuredSections
