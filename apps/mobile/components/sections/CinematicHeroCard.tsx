@@ -2,6 +2,7 @@ import React from 'react';
 import {
   Image,
   type ImageSourcePropType,
+  StyleSheet,
   View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -61,7 +62,7 @@ export function CinematicHeroCard({
       <Image
         source={imageSource ?? { uri: imageUrl }}
         resizeMode="cover"
-        style={{ width: '100%', height: '100%' }}
+        style={StyleSheet.absoluteFillObject}
       />
 
       <LinearGradient

@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import {
+  Animated,
   Image,
   Platform,
   RefreshControl,
   ScrollView,
+  StyleSheet,
   Text,
   View,
   useWindowDimensions,
@@ -110,12 +112,24 @@ export function PremiumPage({
   const showBack = !noBack && title !== 'ClaudyGod' && router.canGoBack();
   const bottomPadding = isSidebarMode ? 40 : theme.layout.tabBarContentPadding;
 
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const headerBg = scrollY.interpolate({
+    inputRange: [0, 60],
+    outputRange: ['rgba(7,5,12,0)', 'rgba(7,5,12,0.95)'],
+    extrapolate: 'clamp',
+  });
+
   return (
     <TabScreenWrapper backgroundImage={backgroundImage} backgroundHeight={compact ? 240 : 320}>
-      <ScrollView
+      <Animated.ScrollView
         style={{ flex: 1, backgroundColor: 'transparent' }}
         showsVerticalScrollIndicator={false}
         bounces={Boolean(onRefresh)}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: false },
+        )}
+        scrollEventThrottle={16}
         refreshControl={
           onRefresh ? (
             <RefreshControl
@@ -129,31 +143,18 @@ export function PremiumPage({
       >
         <Screen>
           <View style={{ paddingTop: theme.layout.headerVerticalPadding, gap: theme.layout.sectionGap }}>
-            {/* ── Top navigation bar ── */}
+            {/* ── Top navigation bar — transparent, fades to dark on scroll ── */}
             <FadeIn>
-              <View
+              <Animated.View
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   gap: compact ? 8 : 10,
-                  paddingVertical: compact ? 7 : 8,
-                  paddingHorizontal: compact ? 10 : 12,
-                  borderRadius: 20,
-                  borderWidth: 1,
-                  borderColor:
-                    theme.scheme === 'dark'
-                      ? 'rgba(255,255,255,0.07)'
-                      : 'rgba(15,23,42,0.07)',
-                  backgroundColor:
-                    theme.scheme === 'dark'
-                      ? 'rgba(7,5,12,0.72)'
-                      : 'rgba(255,255,255,0.86)',
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 8 },
-                  shadowOpacity: theme.scheme === 'dark' ? 0.22 : 0.07,
-                  shadowRadius: 18,
-                  elevation: 6,
+                  paddingVertical: compact ? 8 : 10,
+                  paddingHorizontal: compact ? 12 : 14,
+                  borderRadius: 16,
+                  backgroundColor: headerBg,
                 }}
               >
                 {/* Left — back/logo + title */}
@@ -172,12 +173,8 @@ export function PremiumPage({
                       alignItems: 'center',
                       justifyContent: 'center',
                       backgroundColor: showBack
-                        ? theme.scheme === 'dark'
-                          ? 'rgba(255,255,255,0.09)'
-                          : 'rgba(17,10,31,0.07)'
-                        : theme.colors.surfaceAlt,
-                      borderWidth: 1,
-                      borderColor: showBack ? theme.colors.border : 'transparent',
+                        ? 'rgba(255,255,255,0.08)'
+                        : 'rgba(255,255,255,0.06)',
                       overflow: 'hidden',
                       flexShrink: 0,
                     }}
@@ -246,14 +243,14 @@ export function PremiumPage({
                     accentColor={theme.colors.primary}
                   />
                 </View>
-              </View>
+              </Animated.View>
             </FadeIn>
 
             {children}
             {showFooter ? <AppScreenFooter /> : null}
           </View>
         </Screen>
-      </ScrollView>
+      </Animated.ScrollView>
     </TabScreenWrapper>
   );
 }
@@ -631,36 +628,54 @@ export function QuickActionGrid({ actions }: { actions: QuickAction[] }) {
 
 // ─── ContentCard ─────────────────────────────────────────────────────────────────
 
+type CardVariant = 'portrait' | 'landscape' | 'square';
+
 type ContentCardProps = {
   item: FeedCardItem;
   onPress: () => void;
   compact?: boolean;
+  variant?: CardVariant;
+  fixedWidth?: number;
 };
 
-export function ContentCard({ item, onPress, compact = false, fixedWidth }: ContentCardProps & { fixedWidth?: number }) {
+export function ContentCard({
+  item,
+  onPress,
+  compact = false,
+  variant = 'portrait',
+  fixedWidth,
+}: ContentCardProps) {
   const theme = useAppTheme();
   const device = useDeviceClass();
-  const screenWidth = device.width;
-  const cardWidth = fixedWidth ?? (compact
-    ? Math.min(154, Math.max(130, screenWidth * 0.38))
-    : device.isTV
-      ? Math.min(320, Math.max(240, screenWidth * 0.15))
-      : device.isLargeDesktop
-        ? Math.min(280, Math.max(220, screenWidth * 0.16))
-        : device.isDesktop
-          ? Math.min(240, Math.max(192, screenWidth * 0.18))
-          : Math.min(192, Math.max(158, screenWidth * 0.42)));
+
+  const cardWidth = fixedWidth ?? (
+    compact ? 148
+    : device.isTV ? 260
+    : device.isDesktop ? 210
+    : 172
+  );
+
+  const cardHeight =
+    variant === 'portrait'  ? Math.round(cardWidth * 1.33) :
+    variant === 'landscape' ? Math.round(cardWidth * 0.60) :
+    cardWidth;
+
+  const scrimHeight =
+    variant === 'portrait'  ? Math.round(cardHeight * 0.55) :
+    variant === 'landscape' ? Math.round(cardHeight * 0.60) :
+    Math.round(cardHeight * 0.50);
+
   const title = cleanFeedText(item.title);
 
   return (
     <TVTouchable onPress={onPress} showFocusBorder={false} style={{ width: cardWidth }}>
-      <View style={{ gap: 8 }}>
-        {/* Square artwork */}
+      <View style={{ gap: 7 }}>
+        {/* Artwork container */}
         <View
           style={{
             width: cardWidth,
-            height: cardWidth,
-            borderRadius: 14,
+            height: cardHeight,
+            borderRadius: 10,
             overflow: 'hidden',
             backgroundColor: theme.colors.surfaceAlt,
           }}
@@ -668,100 +683,64 @@ export function ContentCard({ item, onPress, compact = false, fixedWidth }: Cont
           <Image
             source={{ uri: item.imageUrl || DEFAULT_CONTENT_IMAGE_URI }}
             resizeMode="cover"
-            style={{ width: '100%', height: '100%' }}
+            style={StyleSheet.absoluteFillObject}
           />
 
-          {/* Bottom scrim */}
+          {/* Bottom scrim — allowed on image containers */}
           <LinearGradient
-            colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.72)']}
-            style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: cardWidth * 0.5 }}
+            colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.68)']}
+            style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: scrimHeight }}
           />
 
-          {/* Play overlay — centre */}
-          <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}>
+          {/* LIVE badge — top-left */}
+          {item.isLive ? (
             <View
               style={{
-                width: compact ? 34 : 40,
-                height: compact ? 34 : 40,
-                borderRadius: compact ? 17 : 20,
-                backgroundColor: 'rgba(0,0,0,0.52)',
-                borderWidth: 1.5,
-                borderColor: 'rgba(255,255,255,0.38)',
-                alignItems: 'center',
-                justifyContent: 'center',
+                position: 'absolute', top: 7, left: 7,
+                borderRadius: 999,
+                backgroundColor: 'rgba(239,68,68,0.92)',
+                paddingHorizontal: 7, paddingVertical: 3,
+                flexDirection: 'row', alignItems: 'center', gap: 4,
               }}
             >
-              <MaterialIcons name="play-arrow" size={compact ? 18 : 22} color="#FFFFFF" />
+              <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#FFFFFF' }} />
+              <Text style={{ color: '#FFFFFF', fontSize: 9, fontWeight: '700', letterSpacing: 0.5 }}>LIVE</Text>
             </View>
-          </View>
+          ) : null}
 
-          {/* Type pill — bottom-left */}
-          <View
-            style={{
-              position: 'absolute',
-              left: 8,
-              bottom: 8,
-              borderRadius: 999,
-              backgroundColor: 'rgba(0,0,0,0.62)',
-              paddingHorizontal: 7,
-              paddingVertical: 3,
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 4,
-            }}
-          >
-            <MaterialIcons
-              name={
-                item.type === 'video' || item.type === 'live' ? 'smart-display' : 'graphic-eq'
-              }
-              size={11}
-              color="rgba(255,255,255,0.9)"
-            />
-            {item.isLive ? (
-              <Text
-                style={{ color: '#F87171', fontSize: 9, fontWeight: '700', letterSpacing: 0.6 }}
-              >
-                LIVE
-              </Text>
-            ) : null}
-          </View>
-
-          {/* Duration — bottom-right */}
+          {/* Duration pill — bottom-right */}
           {item.duration && !item.isLive ? (
             <View
               style={{
-                position: 'absolute',
-                right: 8,
-                bottom: 8,
-                borderRadius: 6,
-                backgroundColor: 'rgba(0,0,0,0.70)',
-                paddingHorizontal: 6,
-                paddingVertical: 2,
+                position: 'absolute', right: 7, bottom: 7,
+                borderRadius: 5,
+                backgroundColor: 'rgba(0,0,0,0.72)',
+                paddingHorizontal: 5, paddingVertical: 2,
               }}
             >
-              <Text style={{ color: '#FFFFFF', fontSize: 9.5, fontWeight: '500' }}>
-                {item.duration}
-              </Text>
+              <Text style={{ color: '#FFFFFF', fontSize: 9, fontWeight: '500' }}>{item.duration}</Text>
             </View>
           ) : null}
         </View>
 
-        {/* Info below artwork */}
-        <View style={{ gap: 3, paddingHorizontal: 2 }}>
+        {/* Text below artwork */}
+        <View style={{ gap: 2, paddingHorizontal: 1 }}>
           <CustomText
             variant="label"
-            style={{ color: theme.colors.text, lineHeight: 18, fontWeight: '600' }}
+            style={{ color: '#F7F2FF', fontSize: 12, lineHeight: 16, fontWeight: '600' }}
             numberOfLines={2}
           >
             {title}
           </CustomText>
-          <CustomText
-            variant="caption"
-            style={{ color: theme.colors.textSecondary }}
-            numberOfLines={1}
-          >
-            {cleanFeedText(item.subtitle)}
-          </CustomText>
+          {item.subtitle ? (
+            <CustomText
+              variant="caption"
+              style={{ color: 'rgba(247,242,255,0.45)', fontSize: 10 }}
+              numberOfLines={1}
+            >
+              {cleanFeedText(item.subtitle)}
+            </CustomText>
+          ) : null}
         </View>
       </View>
     </TVTouchable>
@@ -784,6 +763,7 @@ type ContentRailProps = {
   loading?: boolean;
   compact?: boolean;
   hideWhenEmpty?: boolean;
+  cardVariant?: CardVariant;
 };
 
 function RailSkeleton() {
@@ -824,12 +804,9 @@ function InlineEmpty({
   return (
     <View
       style={{
-        minHeight: 72,
+        minHeight: 96,
         borderRadius: 16,
-        borderWidth: 1,
-        borderColor: theme.colors.border,
-        backgroundColor:
-          theme.scheme === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(17,10,31,0.03)',
+        backgroundColor: 'rgba(255,255,255,0.03)',
         padding: 14,
         flexDirection: 'row',
         alignItems: 'center',
@@ -872,11 +849,13 @@ function ContentRailInner({
   title,
   onPressItem,
   isCompact,
+  cardVariant = 'portrait',
 }: {
   items: FeedCardItem[];
   title: string;
   onPressItem: (_item: FeedCardItem) => void;
   isCompact: boolean;
+  cardVariant?: CardVariant;
 }) {
   const device = useDeviceClass();
   const sidebarWidth = getSidebarWidth(device.width);
@@ -895,6 +874,7 @@ function ContentRailInner({
             item={item}
             compact={false}
             fixedWidth={cardWidth}
+            variant={cardVariant}
             onPress={() => onPressItem(item)}
           />
         ))}
@@ -906,13 +886,14 @@ function ContentRailInner({
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{ gap: 12, paddingRight: 8 }}
+      contentContainerStyle={{ gap: 12, paddingLeft: 20, paddingRight: 20 }}
     >
       {items.map((item) => (
         <ContentCard
           key={`${title}-${item.id}`}
           item={item}
           compact={isCompact}
+          variant={cardVariant}
           onPress={() => onPressItem(item)}
         />
       ))}
@@ -933,6 +914,7 @@ export function ContentRail({
   loading = false,
   compact,
   hideWhenEmpty = false,
+  cardVariant = 'portrait',
 }: ContentRailProps) {
   const theme = useAppTheme();
   const { width } = useWindowDimensions();
@@ -940,72 +922,59 @@ export function ContentRail({
   const resolvedAction = onAction ?? onActionPress;
 
   return (
-    <View style={{ gap: 12 }}>
+    <View style={{ gap: 10 }}>
       {/* Section header */}
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'flex-end',
-          justifyContent: 'space-between',
-          gap: 12,
-        }}
-      >
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <CustomText
-            variant="title"
-            style={{
-              color: theme.colors.text,
-              fontSize: isCompact ? 16 : 18,
-              fontWeight: '800',
-              letterSpacing: -0.4,
-            }}
-          >
-            {title}
-          </CustomText>
-          {subtitle ? (
+      {title ? (
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingHorizontal: 20,
+          }}
+        >
+          <View style={{ flex: 1, minWidth: 0 }}>
             <CustomText
-              variant="caption"
-              style={{ color: theme.colors.textMuted, marginTop: 3 }}
+              variant="title"
+              style={{
+                color: '#F7F2FF',
+                fontSize: 15,
+                fontWeight: '700',
+                letterSpacing: -0.2,
+              }}
               numberOfLines={1}
             >
-              {subtitle}
+              {title}
             </CustomText>
+            {subtitle ? (
+              <CustomText
+                variant="caption"
+                style={{ color: 'rgba(247,242,255,0.45)', marginTop: 2 }}
+                numberOfLines={1}
+              >
+                {subtitle}
+              </CustomText>
+            ) : null}
+          </View>
+
+          {actionLabel && resolvedAction ? (
+            <TVTouchable onPress={resolvedAction} showFocusBorder={false} style={{ paddingVertical: 4, paddingLeft: 10 }}>
+              <CustomText
+                variant="caption"
+                style={{ color: 'rgba(247,242,255,0.40)', fontSize: 12, fontWeight: '400' }}
+              >
+                {actionLabel}
+              </CustomText>
+            </TVTouchable>
           ) : null}
         </View>
-
-        {actionLabel && resolvedAction ? (
-          <TVTouchable
-            onPress={resolvedAction}
-            showFocusBorder={false}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 3,
-              paddingHorizontal: 10,
-              paddingVertical: 5,
-              borderRadius: 999,
-              backgroundColor:
-                theme.scheme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(17,10,31,0.05)',
-              borderWidth: 1,
-              borderColor: theme.colors.border,
-            }}
-          >
-            <CustomText
-              variant="caption"
-              style={{ color: theme.colors.primary, fontSize: 11.5, fontWeight: '600' }}
-            >
-              {actionLabel}
-            </CustomText>
-            <MaterialIcons name="chevron-right" size={14} color={theme.colors.primary} />
-          </TVTouchable>
-        ) : null}
-      </View>
+      ) : null}
 
       {/* Content area */}
       {loading ? (
         <RailSkeleton />
       ) : items.length > 0 ? (
-        <ContentRailInner items={items} title={title} onPressItem={onPressItem} isCompact={isCompact} />
+        <ContentRailInner items={items} title={title} onPressItem={onPressItem} isCompact={isCompact} cardVariant={cardVariant} />
       ) : hideWhenEmpty ? null : (
         <InlineEmpty title={emptyTitle} message={emptyMessage} />
       )}
@@ -1675,15 +1644,14 @@ export function SectionLabel({
   actionLabel?: string;
   onAction?: () => void;
 }) {
-  const theme = useAppTheme();
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <CustomText variant="title" style={{ color: theme.colors.text, fontSize: 14, fontWeight: '600', letterSpacing: -0.2 }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20 }}>
+      <CustomText variant="title" style={{ color: '#F7F2FF', fontSize: 15, fontWeight: '700', letterSpacing: -0.2 }} numberOfLines={1}>
         {title}
       </CustomText>
       {actionLabel && onAction ? (
-        <TVTouchable onPress={onAction} showFocusBorder={false} style={{ paddingVertical: 4, paddingHorizontal: 2 }}>
-          <CustomText variant="caption" style={{ color: theme.colors.textMuted, fontSize: 12 }}>
+        <TVTouchable onPress={onAction} showFocusBorder={false} style={{ paddingVertical: 4, paddingLeft: 10 }}>
+          <CustomText variant="caption" style={{ color: 'rgba(247,242,255,0.40)', fontSize: 12, fontWeight: '400' }}>
             {actionLabel}
           </CustomText>
         </TVTouchable>

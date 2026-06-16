@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { Image, Pressable, View, Animated } from 'react-native';
+import { Image, Pressable, StyleSheet, View, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../CustomText';
@@ -76,9 +76,7 @@ export function ContentGridCard({
         style={{
           borderRadius: 14,
           overflow: 'hidden',
-          backgroundColor: pressed ? COLORS.border : COLORS.surface,
-          borderWidth: 1,
-          borderColor: pressed ? COLORS.accent : COLORS.border,
+          backgroundColor: COLORS.surface,
         }}
       >
         {/* Image Section */}
@@ -94,12 +92,12 @@ export function ContentGridCard({
         >
           {imageUrl ? (
             <>
-              <Image source={{ uri: imageUrl }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+              <Image source={{ uri: imageUrl }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
               <LinearGradient
                 colors={['transparent', 'rgba(10,6,18,0.6)']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 0, y: 1 }}
-                style={{ position: 'absolute', width: '100%', height: '100%' }}
+                style={StyleSheet.absoluteFillObject}
               />
             </>
           ) : (
