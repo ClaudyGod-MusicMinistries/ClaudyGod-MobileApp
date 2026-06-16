@@ -12,7 +12,7 @@ import { useWordOfDay } from '../../hooks/useWordOfDay';
 import { useAppTheme } from '../../util/colorScheme';
 import { APP_ROUTES, TAB_ROUTE_BY_ID } from '../../util/appRoutes';
 import { buildPlayerRoute } from '../../util/playerRoute';
-import type { ContentType, FeedCardItem } from '../../services/contentService';
+import type { ContentType, FeedBundle, FeedCardItem } from '../../services/contentService';
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
 import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
 import {
@@ -45,7 +45,20 @@ function dedupe(items: FeedCardItem[]): FeedCardItem[] {
   return out;
 }
 
-// ─── Continue Listening Row ───────────────────────────────────────────────────
+// Checks appSections tag first; falls back to type filtering so sections always have content
+function filterBySection(
+  feed: FeedBundle,
+  sectionId: string,
+  fallbackTypes: ContentType[],
+  limit = 12,
+): FeedCardItem[] {
+  const pool = dedupe([...feed.music, ...feed.videos, ...feed.playlists, ...feed.live]);
+  const tagged = pool.filter((item) => item.appSections?.includes(sectionId));
+  const result = tagged.length >= 2 ? tagged : pool.filter((item) => (fallbackTypes as string[]).includes(item.type));
+  return result.slice(0, limit);
+}
+
+// ─── Continue Row ─────────────────────────────────────────────────────────────
 
 function ContinueRow({ items, onPress }: { items: FeedCardItem[]; onPress: (_item: FeedCardItem) => void }) {
   const theme = useAppTheme();
@@ -53,37 +66,29 @@ function ContinueRow({ items, onPress }: { items: FeedCardItem[]; onPress: (_ite
 
   return (
     <View style={{ gap: 12 }}>
-      <SectionLabel title="Continue listening" />
+      <SectionLabel title="Pick up where you left off" />
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ gap: 12, paddingVertical: 2 }}
+        contentContainerStyle={{ gap: 12, paddingLeft: 20, paddingRight: 20, paddingVertical: 2 }}
       >
         {items.slice(0, 8).map((item) => (
           <TVTouchable key={item.id} onPress={() => onPress(item)} showFocusBorder={false}>
-            <View style={{ alignItems: 'center', gap: 8, width: 72 }}>
+            <View style={{ alignItems: 'center', gap: 7, width: 68 }}>
               <View
                 style={{
-                  width: 64, height: 64, borderRadius: 16, overflow: 'hidden',
+                  width: 60, height: 60, borderRadius: 14, overflow: 'hidden',
                   backgroundColor: theme.colors.surfaceAlt,
                 }}
               >
-                <Image source={{ uri: item.imageUrl || DEFAULT_CONTENT_IMAGE_URI }} resizeMode="cover" style={{ width: 64, height: 64 }} />
-                <View
-                  style={{
-                    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-                    alignItems: 'center', justifyContent: 'center',
-                  }}
-                >
-                  <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' }}>
-                    <MaterialIcons name="play-arrow" size={16} color="#FFFFFF" />
+                <Image source={{ uri: item.imageUrl || DEFAULT_CONTENT_IMAGE_URI }} resizeMode="cover" style={{ width: 60, height: 60 }} />
+                <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}>
+                  <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: 'rgba(0,0,0,0.52)', alignItems: 'center', justifyContent: 'center' }}>
+                    <MaterialIcons name="play-arrow" size={14} color="#FFFFFF" />
                   </View>
                 </View>
               </View>
-              <Text
-                style={{ color: theme.colors.textSecondary, fontSize: 10.5, textAlign: 'center', fontWeight: '500', lineHeight: 14 }}
-                numberOfLines={2}
-              >
+              <Text style={{ color: theme.colors.textSecondary, fontSize: 10, textAlign: 'center', fontWeight: '500', lineHeight: 13 }} numberOfLines={2}>
                 {item.title}
               </Text>
             </View>
@@ -97,34 +102,21 @@ function ContinueRow({ items, onPress }: { items: FeedCardItem[]; onPress: (_ite
 // ─── Guest Callout ────────────────────────────────────────────────────────────
 
 function GuestCallout({ onSignIn }: { onSignIn: () => void }) {
-  const theme = useAppTheme();
   return (
     <TVTouchable onPress={onSignIn} showFocusBorder={false}>
       <View
         style={{
-          flexDirection: 'row', alignItems: 'center', gap: 12,
-          padding: 14, borderRadius: 16, borderWidth: 1,
-          borderColor: theme.colors.border,
-          backgroundColor: theme.colors.surface,
+          flexDirection: 'row', alignItems: 'center', gap: 10,
+          paddingVertical: 14, paddingHorizontal: 16,
+          borderRadius: 12,
+          backgroundColor: 'rgba(139,92,246,0.10)',
         }}
       >
-        <View
-          style={{
-            width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center',
-            backgroundColor: theme.colors.card,
-          }}
-        >
-          <MaterialIcons name="person-outline" size={18} color={theme.colors.primary} />
-        </View>
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={{ color: theme.colors.text, fontSize: 13, fontWeight: '500' }}>
-            Sign in for the full experience
-          </Text>
-          <Text style={{ color: theme.colors.textMuted, fontSize: 11.5, marginTop: 2 }}>
-            Save your favorites and sync history.
-          </Text>
-        </View>
-        <MaterialIcons name="chevron-right" size={18} color={theme.colors.primary} />
+        <MaterialIcons name="person-outline" size={18} color="#8B5CF6" />
+        <Text style={{ color: '#F7F2FF', fontSize: 13, fontWeight: '500', flex: 1 }}>
+          Sign in for full access
+        </Text>
+        <MaterialIcons name="chevron-right" size={18} color="rgba(247,242,255,0.40)" />
       </View>
     </TVTouchable>
   );
@@ -139,33 +131,27 @@ function AnnouncementCard({ item, onPress }: { item: FeedCardItem; onPress: () =
       <View
         style={{
           flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14,
-          borderRadius: 16, borderWidth: 1,
-          borderColor: theme.colors.border,
+          borderRadius: 14,
           backgroundColor: theme.colors.surface,
         }}
       >
-        <View
-          style={{
-            width: 38, height: 38, borderRadius: 10, overflow: 'hidden',
-            backgroundColor: theme.colors.surfaceAlt, flexShrink: 0,
-          }}
-        >
+        <View style={{ width: 40, height: 40, borderRadius: 10, overflow: 'hidden', backgroundColor: theme.colors.surfaceAlt, flexShrink: 0 }}>
           <Image source={{ uri: item.imageUrl || DEFAULT_CONTENT_IMAGE_URI }} resizeMode="cover" style={StyleSheet.absoluteFillObject} />
         </View>
         <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={{ color: theme.colors.textMuted, fontSize: 9.5, fontWeight: '500', letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 2 }}>
+          <Text style={{ color: 'rgba(247,242,255,0.45)', fontSize: 9.5, fontWeight: '600', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 2 }}>
             Announcement
           </Text>
-          <Text style={{ color: theme.colors.text, fontSize: 13, fontWeight: '500' }} numberOfLines={1}>
+          <Text style={{ color: '#F7F2FF', fontSize: 13, fontWeight: '500' }} numberOfLines={1}>
             {item.title}
           </Text>
           {item.subtitle ? (
-            <Text style={{ color: theme.colors.textMuted, fontSize: 11.5, marginTop: 2 }} numberOfLines={1}>
+            <Text style={{ color: 'rgba(247,242,255,0.45)', fontSize: 11.5, marginTop: 2 }} numberOfLines={1}>
               {item.subtitle}
             </Text>
           ) : null}
         </View>
-        <MaterialIcons name="chevron-right" size={18} color={theme.colors.textMuted} />
+        <MaterialIcons name="chevron-right" size={18} color="rgba(247,242,255,0.35)" />
       </View>
     </TVTouchable>
   );
@@ -199,10 +185,16 @@ export default function HomeScreen() {
     [feed.live, feed.mostPlayed, feed.music, feed.recent, feed.recommendations, feed.videos],
   );
 
+  // 4 ClaudyGod-branded sections
+  const musicItems = useMemo(() => filterBySection(feed, 'music', ['audio']), [feed]);
+  const nuggetsItems = useMemo(() => filterBySection(feed, 'nuggets-of-truth', ['video']), [feed]);
+  const teachingsItems = useMemo(() => filterBySection(feed, 'teachings', ['video', 'playlist']), [feed]);
+  const speaksItems = useMemo(() => filterBySection(feed, 'speaks', ['audio', 'playlist']), [feed]);
+
   const configuredTabs = useMemo(() => config?.navigation?.tabs ?? [], [config?.navigation?.tabs]);
   const configuredSections = config?.layout?.homeSections ?? [];
 
-  const configuredRails = configuredSections
+  const configuredRails = useMemo(() => configuredSections
     .map((section) => {
       const sectionItems = allContent
         .filter((item) => isSectionContentType(item.type) && section.contentTypes.indexOf(item.type) >= 0)
@@ -210,7 +202,8 @@ export default function HomeScreen() {
       return { section, items: sectionItems };
     })
     .filter((entry) => entry.items.length > 0)
-    .slice(0, 2);
+    .slice(0, 2),
+  [allContent, configuredSections]);
 
   const openItem = async (item: FeedCardItem, source: string) => {
     await trackPlayEvent({ contentId: item.id, contentType: item.type, title: item.title, source });
@@ -282,22 +275,97 @@ export default function HomeScreen() {
         onSecondary={() => router.push(APP_ROUTES.tabs.search)}
       />
 
-      {/* Content shortcuts */}
+      {/* Quick nav shortcuts */}
       <ContentShortcuts shortcuts={shortcuts} />
 
-      {/* Live session banner (if any live now) */}
+      {/* Live banner */}
       {liveSessions[0] ? (
         <LiveNowBanner item={liveSessions[0]} onPress={() => void openItem(liveSessions[0]!, 'home_live_banner')} />
       ) : null}
 
       {/* Continue listening */}
-      {continueItems.length > 0 ? (
-        <ContinueRow items={continueItems} onPress={(item) => void openItem(item, 'home_continue')} />
-      ) : null}
+      <ContinueRow items={continueItems} onPress={(item) => void openItem(item, 'home_continue')} />
 
-      {/* Backend-configured rails */}
+      {/* ── 4 ClaudyGod Content Sections ─────────────────────────────────── */}
+      <View style={{ gap: 28 }}>
+
+        {/* ClaudyGod Music */}
+        <View style={{ gap: 14 }}>
+          <SectionLabel
+            title="ClaudyGod Music"
+            actionLabel="See all"
+            onAction={() => router.push(APP_ROUTES.tabs.player)}
+          />
+          <ContentRail
+            title=""
+            items={musicItems}
+            onPressItem={(item) => void openItem(item, 'home_music')}
+            loading={loading}
+            cardVariant="portrait"
+            emptyTitle="Music coming soon"
+            emptyMessage="Worship tracks and albums from ClaudyGod will appear here."
+          />
+        </View>
+
+        {/* ClaudyGod Nuggets of Truth */}
+        <View style={{ gap: 14 }}>
+          <SectionLabel
+            title="Nuggets of Truth"
+            actionLabel="See all"
+            onAction={() => router.push(APP_ROUTES.tabs.videos)}
+          />
+          <ContentRail
+            title=""
+            items={nuggetsItems}
+            onPressItem={(item) => void openItem(item, 'home_nuggets')}
+            loading={loading}
+            cardVariant="landscape"
+            emptyTitle="Nuggets of Truth coming soon"
+            emptyMessage="Short devotional moments from ClaudyGod will appear here."
+          />
+        </View>
+
+        {/* ClaudyGod Teachings */}
+        <View style={{ gap: 14 }}>
+          <SectionLabel
+            title="ClaudyGod Teachings"
+            actionLabel="See all"
+            onAction={() => router.push(APP_ROUTES.tabs.videos)}
+          />
+          <ContentRail
+            title=""
+            items={teachingsItems}
+            onPressItem={(item) => void openItem(item, 'home_teachings')}
+            loading={loading}
+            cardVariant="landscape"
+            emptyTitle="Teachings coming soon"
+            emptyMessage="In-depth messages and sermons from ClaudyGod will appear here."
+          />
+        </View>
+
+        {/* ClaudyGod Speaks */}
+        <View style={{ gap: 14 }}>
+          <SectionLabel
+            title="ClaudyGod Speaks"
+            actionLabel="See all"
+            onAction={() => router.push(APP_ROUTES.tabs.player)}
+          />
+          <ContentRail
+            title=""
+            items={speaksItems}
+            onPressItem={(item) => void openItem(item, 'home_speaks')}
+            loading={loading}
+            cardVariant="portrait"
+            emptyTitle="ClaudyGod Speaks coming soon"
+            emptyMessage="Spoken word and podcast content from ClaudyGod will appear here."
+          />
+        </View>
+
+      </View>
+
+      {/* Admin-configured rails (rendered after branded sections) */}
       {configuredRails.map(({ section, items }) => (
-        <View key={section.id} style={{ gap: 12 }}>
+        <View key={section.id} style={{ gap: 14 }}>
           <SectionLabel
             title={section.title}
             subtitle={section.subtitle}
@@ -313,24 +381,7 @@ export default function HomeScreen() {
         </View>
       ))}
 
-      {/* Music */}
-      <View style={{ gap: 12 }}>
-        <SectionLabel
-          title="For your moment"
-          actionLabel="See all"
-          onAction={() => router.push(APP_ROUTES.tabs.player)}
-        />
-        <ContentRail
-          title=""
-          items={feed.music.slice(0, 12)}
-          onPressItem={(item) => void openItem(item, 'home_music')}
-          loading={loading}
-          emptyTitle="Music is being refreshed"
-          emptyMessage="Browse videos, live moments, or search while this row updates."
-        />
-      </View>
-
-      {/* Trending chart */}
+      {/* Most played chart */}
       {feed.mostPlayed.length > 0 ? (
         <TrendingList
           title="Most played"
@@ -349,28 +400,11 @@ export default function HomeScreen() {
         />
       ) : null}
 
-      {/* Videos */}
-      <View style={{ gap: 12 }}>
-        <SectionLabel
-          title="Watch next"
-          actionLabel="See all"
-          onAction={() => router.push(APP_ROUTES.tabs.videos)}
-        />
-        <ContentRail
-          title=""
-          items={feed.videos.slice(0, 12)}
-          onPressItem={(item) => void openItem(item, 'home_videos')}
-          loading={loading}
-          emptyTitle="Videos are being refreshed"
-          emptyMessage="Explore music or live moments while this row updates."
-        />
-      </View>
-
-      {/* Live replays (if no live now) */}
+      {/* ClaudyGod Live replays (when no active live) */}
       {!liveSessions.length && feed.live.length > 0 ? (
-        <View style={{ gap: 12 }}>
+        <View style={{ gap: 14 }}>
           <SectionLabel
-            title="Live & replays"
+            title="ClaudyGod Live"
             actionLabel="See all"
             onAction={() => router.push(APP_ROUTES.tabs.live)}
           />
@@ -379,6 +413,7 @@ export default function HomeScreen() {
             items={feed.live.slice(0, 10)}
             onPressItem={(item) => void openItem(item, 'home_live')}
             loading={loading}
+            cardVariant="landscape"
             compact={compact}
           />
         </View>
@@ -389,7 +424,7 @@ export default function HomeScreen() {
         <WordOfDayCard word={word} onPress={() => router.push(APP_ROUTES.settingsPages.word)} />
       ) : null}
 
-      {/* Guest callout */}
+      {/* Guest sign-in prompt */}
       {!isAuthenticated ? (
         <GuestCallout onSignIn={() => router.push(APP_ROUTES.auth.signIn)} />
       ) : null}
@@ -397,7 +432,7 @@ export default function HomeScreen() {
       {/* Support */}
       <SupportMinistryCard onPress={() => router.push(APP_ROUTES.settingsPages.donate)} />
 
-      {/* Empty state */}
+      {/* Full empty state */}
       {!loading && !allContent.length ? (
         <EmptyState
           title="Your experience is ready"
