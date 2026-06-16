@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useRef } from 'react';
-import { View, Image, Pressable, Animated } from 'react-native';
+import { View, Image, Pressable, StyleSheet, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../CustomText';
@@ -112,9 +112,7 @@ export function ModernContentCard({
         style={{
           borderRadius: designSystem.radius.md,
           overflow: 'hidden',
-          backgroundColor: colors_light.surface,
-          borderWidth: 1,
-          borderColor: pressed ? colors_light.accent : 'rgba(221, 211, 238, 0.3)',
+          backgroundColor: '#111111',
         }}
       >
         {/* Image Container */}
@@ -122,7 +120,7 @@ export function ModernContentCard({
           {imageUrl ? (
             <Image
               source={{ uri: imageUrl }}
-              style={{ width: '100%', height: '100%' }}
+              style={StyleSheet.absoluteFillObject}
               resizeMode="cover"
             />
           ) : (

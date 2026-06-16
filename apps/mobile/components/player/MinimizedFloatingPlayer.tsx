@@ -82,7 +82,7 @@ export function MinimizedFloatingPlayer() {
           }}
         >
           {player.content.imageUrl ? (
-            <Image source={{ uri: player.content.imageUrl }} style={{ width: '100%', height: '100%' }} />
+            <Image source={{ uri: player.content.imageUrl }} style={{ width: 46, height: 46 }} resizeMode="cover" />
           ) : (
             <MaterialIcons name={isAudio ? 'graphic-eq' : 'play-circle'} size={22} color={theme.colors.primary} />
           )}

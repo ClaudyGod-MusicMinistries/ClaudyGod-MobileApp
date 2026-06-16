@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Image, Text, TextInput, View } from 'react-native';
+import { Animated, Image, StyleSheet, Text, TextInput, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
@@ -73,7 +73,7 @@ function DiscoveryItem({ item, onPress }: { item: FeedCardItem; onPress: () => v
           aspectRatio: 16 / 9,
         }}
       >
-        <Image source={{ uri: item.imageUrl || DEFAULT_CONTENT_IMAGE_URI }} resizeMode="cover" style={{ width: '100%', height: '100%' }} />
+        <Image source={{ uri: item.imageUrl || DEFAULT_CONTENT_IMAGE_URI }} resizeMode="cover" style={StyleSheet.absoluteFillObject} />
         <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: 10 }}>
           <View style={{ borderRadius: 999, backgroundColor: 'rgba(0,0,0,0.62)', alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 3 }}>
             <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: '600' }} numberOfLines={1}>

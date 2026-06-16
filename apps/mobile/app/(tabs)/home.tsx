@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Image, ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
@@ -68,7 +68,7 @@ function ContinueRow({ items, onPress }: { items: FeedCardItem[]; onPress: (_ite
                   backgroundColor: theme.colors.surfaceAlt,
                 }}
               >
-                <Image source={{ uri: item.imageUrl || DEFAULT_CONTENT_IMAGE_URI }} resizeMode="cover" style={{ width: '100%', height: '100%' }} />
+                <Image source={{ uri: item.imageUrl || DEFAULT_CONTENT_IMAGE_URI }} resizeMode="cover" style={{ width: 64, height: 64 }} />
                 <View
                   style={{
                     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
@@ -150,7 +150,7 @@ function AnnouncementCard({ item, onPress }: { item: FeedCardItem; onPress: () =
             backgroundColor: theme.colors.surfaceAlt, flexShrink: 0,
           }}
         >
-          <Image source={{ uri: item.imageUrl || DEFAULT_CONTENT_IMAGE_URI }} resizeMode="cover" style={{ width: '100%', height: '100%' }} />
+          <Image source={{ uri: item.imageUrl || DEFAULT_CONTENT_IMAGE_URI }} resizeMode="cover" style={StyleSheet.absoluteFillObject} />
         </View>
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={{ color: theme.colors.textMuted, fontSize: 9.5, fontWeight: '500', letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 2 }}>
