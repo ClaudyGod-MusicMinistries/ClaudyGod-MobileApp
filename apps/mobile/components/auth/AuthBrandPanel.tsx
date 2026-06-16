@@ -22,7 +22,7 @@ export function AuthBrandPanel({ salutation, description, compact = false }: Aut
             width: 44,
             height: 44,
             borderRadius: 14,
-            backgroundColor: 'rgba(183,148,246,0.12)',
+            backgroundColor: '#1A1A1A',
             alignItems: 'center',
             justifyContent: 'center',
           }}
@@ -33,7 +33,7 @@ export function AuthBrandPanel({ salutation, description, compact = false }: Aut
           <CustomText variant="caption" style={{ color: 'rgba(183,148,246,0.90)', textTransform: 'uppercase', letterSpacing: 1.1, fontSize: 10 }}>
             ClaudyGod
           </CustomText>
-          <CustomText variant="label" style={{ color: '#F7F2FF', marginTop: 2, fontSize: 13, fontWeight: '600' }} numberOfLines={1}>
+          <CustomText variant="label" style={{ color: '#7A7288', marginTop: 2, fontSize: 12, fontWeight: '400' }} numberOfLines={1}>
             Music · Worship · Live Ministry
           </CustomText>
         </View>
@@ -87,7 +87,7 @@ export function AuthBrandPanel({ salutation, description, compact = false }: Aut
             width: device.isTV ? 64 : 54,
             height: device.isTV ? 64 : 54,
             borderRadius: device.isTV ? 22 : 18,
-            backgroundColor: 'rgba(183,148,246,0.14)',
+            backgroundColor: '#1A1A1A',
             alignItems: 'center',
             justifyContent: 'center',
           }}
@@ -110,12 +110,12 @@ export function AuthBrandPanel({ salutation, description, compact = false }: Aut
                 key={label}
                 style={{
                   borderRadius: 999,
-                  backgroundColor: 'rgba(183,148,246,0.12)',
+                  backgroundColor: 'rgba(255,255,255,0.07)',
                   paddingHorizontal: 12,
                   paddingVertical: 5,
                 }}
               >
-                <CustomText variant="caption" style={{ color: 'rgba(199,168,255,0.90)', fontSize: 11, fontWeight: '600' }}>
+                <CustomText variant="caption" style={{ color: '#7A7288', fontSize: 11, fontWeight: '400' }}>
                   {label}
                 </CustomText>
               </View>
