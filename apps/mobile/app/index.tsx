@@ -2,18 +2,20 @@ import React from 'react';
 import {
   Image,
   Platform,
-  ScrollView,
+  StyleSheet,
   View,
   useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import { MaterialIcons } from '@expo/vector-icons';
 
 import { AppButton } from '../components/ui/AppButton';
 import { CustomText } from '../components/CustomText';
 import { TVTouchable } from '../components/ui/TVTouchable';
 import { APP_ROUTES } from '../util/appRoutes';
-import { BRAND_LOGO_ASSET } from '../util/brandAssets';
+import { BRAND_LOGO_ASSET, BRAND_WORSHIP_ASSET } from '../util/brandAssets';
 import { useDeviceClass } from '../util/deviceClassConfig';
 
 export default function LandingScreen() {
@@ -23,26 +25,37 @@ export default function LandingScreen() {
   const isPhone = device.isPhone && !Platform.isTV;
   const compact = height < 680;
 
-  const logoSize = isPhone ? (compact ? 56 : 68) : device.isTV ? 88 : 76;
-  const titleSize = isPhone ? (compact ? 28 : 32) : device.isTV ? 44 : 38;
+  const logoSize = isPhone ? (compact ? 52 : 64) : device.isTV ? 88 : 72;
+  const titleSize = isPhone ? (compact ? 26 : 32) : device.isTV ? 44 : 38;
   const gutter = isPhone ? 28 : device.isTV ? 64 : 48;
   const maxWidth = isPhone ? Math.min(width - gutter * 2, 360) : Math.min(480, width - gutter * 2);
 
   return (
     <View style={{ flex: 1, backgroundColor: '#0A0A0A' }}>
+      {/* Full-screen worship background */}
+      <Image
+        source={BRAND_WORSHIP_ASSET}
+        style={StyleSheet.absoluteFillObject}
+        resizeMode="cover"
+      />
+      {/* Gradient scrim — transparent top → dark bottom for text readability */}
+      <LinearGradient
+        colors={['rgba(0,0,0,0.05)', 'rgba(0,0,0,0.60)', 'rgba(10,10,10,0.96)']}
+        locations={[0, 0.45, 1]}
+        style={StyleSheet.absoluteFillObject}
+      />
+
       <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
-        <ScrollView
-          contentContainerStyle={{
-            flexGrow: 1,
-            justifyContent: 'center',
+        <View
+          style={{
+            flex: 1,
+            justifyContent: 'flex-end',
             alignItems: 'center',
             paddingHorizontal: gutter,
-            paddingVertical: compact ? 28 : 44,
+            paddingBottom: compact ? 24 : 40,
           }}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
         >
-          <View style={{ width: '100%', maxWidth, gap: isPhone ? 32 : 40 }}>
+          <View style={{ width: '100%', maxWidth, gap: isPhone ? 28 : 36 }}>
 
             {/* Logo */}
             <View style={{ alignItems: isPhone ? 'center' : 'flex-start' }}>
@@ -55,12 +68,16 @@ export default function LandingScreen() {
                   backgroundColor: '#141414',
                 }}
               >
-                <Image source={BRAND_LOGO_ASSET} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                <Image
+                  source={BRAND_LOGO_ASSET}
+                  style={{ width: '100%', height: '100%' }}
+                  resizeMode="cover"
+                />
               </View>
             </View>
 
-            {/* Headline + subtitle + features */}
-            <View style={{ gap: isPhone ? 10 : 12 }}>
+            {/* Headline + subtitle */}
+            <View style={{ gap: isPhone ? 8 : 10 }}>
               <CustomText
                 variant="display"
                 numberOfLines={2}
@@ -80,7 +97,7 @@ export default function LandingScreen() {
                 variant="body"
                 numberOfLines={2}
                 style={{
-                  color: '#7A7288',
+                  color: 'rgba(245,245,245,0.72)',
                   fontSize: 14,
                   lineHeight: 21,
                   fontWeight: '400',
@@ -88,22 +105,6 @@ export default function LandingScreen() {
                 }}
               >
                 Music, videos &amp; live sessions from ClaudyGod — whenever, wherever.
-              </CustomText>
-
-              {/* Features — clean dot-separated */}
-              <CustomText
-                variant="caption"
-                numberOfLines={1}
-                style={{
-                  color: '#4A4558',
-                  fontSize: 12,
-                  fontWeight: '400',
-                  letterSpacing: 0.3,
-                  textAlign: isPhone ? 'center' : 'left',
-                  marginTop: 2,
-                }}
-              >
-                Music  ·  Videos  ·  Live  ·  Daily Word
               </CustomText>
             </View>
 
@@ -114,6 +115,7 @@ export default function LandingScreen() {
                 size="lg"
                 fullWidth
                 onPress={() => router.push(APP_ROUTES.auth.signUp)}
+                leftIcon={<MaterialIcons name="person-add" size={18} color="#FFFFFF" />}
               />
               <AppButton
                 title="Sign in"
@@ -121,6 +123,7 @@ export default function LandingScreen() {
                 size="lg"
                 fullWidth
                 onPress={() => router.push(APP_ROUTES.auth.signIn)}
+                leftIcon={<MaterialIcons name="login" size={18} color="#8B5CF6" />}
               />
               <TVTouchable
                 onPress={() => router.replace(APP_ROUTES.tabs.home)}
@@ -129,7 +132,7 @@ export default function LandingScreen() {
               >
                 <CustomText
                   variant="label"
-                  style={{ color: '#4A4558', fontSize: 13, fontWeight: '400' }}
+                  style={{ color: 'rgba(245,245,245,0.40)', fontSize: 13, fontWeight: '400' }}
                   numberOfLines={1}
                 >
                   Continue without account
@@ -138,7 +141,7 @@ export default function LandingScreen() {
             </View>
 
           </View>
-        </ScrollView>
+        </View>
       </SafeAreaView>
     </View>
   );
