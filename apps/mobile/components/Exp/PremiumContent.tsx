@@ -647,6 +647,7 @@ export function ContentCard({
 }: ContentCardProps) {
   const theme = useAppTheme();
   const device = useDeviceClass();
+  const pressScale = useRef(new Animated.Value(1)).current;
 
   const cardWidth = fixedWidth ?? (
     compact ? 148
@@ -667,9 +668,22 @@ export function ContentCard({
 
   const title = cleanFeedText(item.title);
 
+  const handlePressIn = () => {
+    Animated.spring(pressScale, { toValue: 0.94, useNativeDriver: true, friction: 10, tension: 120 }).start();
+  };
+  const handlePressOut = () => {
+    Animated.spring(pressScale, { toValue: 1, useNativeDriver: true, friction: 7, tension: 70 }).start();
+  };
+
   return (
-    <TVTouchable onPress={onPress} showFocusBorder={false} style={{ width: cardWidth }}>
-      <View style={{ gap: 7 }}>
+    <TVTouchable
+      onPress={onPress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      showFocusBorder={false}
+      style={{ width: cardWidth }}
+    >
+      <Animated.View style={{ gap: 7, transform: [{ scale: pressScale }] }}>
         {/* Artwork container */}
         <View
           style={{
@@ -742,7 +756,7 @@ export function ContentCard({
             </CustomText>
           ) : null}
         </View>
-      </View>
+      </Animated.View>
     </TVTouchable>
   );
 }
