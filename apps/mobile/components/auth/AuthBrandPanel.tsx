@@ -33,7 +33,7 @@ export function AuthBrandPanel({ salutation, description, compact = false }: Aut
           <CustomText variant="caption" style={{ color: 'rgba(183,148,246,0.90)', textTransform: 'uppercase', letterSpacing: 1.1, fontSize: 10 }}>
             ClaudyGod
           </CustomText>
-          <CustomText variant="label" style={{ color: '#F7F2FF', marginTop: 2, fontSize: 13, fontWeight: '600' }} numberOfLines={1}>
+          <CustomText variant="label" style={{ color: '#7A7288', marginTop: 2, fontSize: 12, fontWeight: '400' }} numberOfLines={1}>
             Music · Worship · Live Ministry
           </CustomText>
         </View>
@@ -115,7 +115,7 @@ export function AuthBrandPanel({ salutation, description, compact = false }: Aut
                   paddingVertical: 5,
                 }}
               >
-                <CustomText variant="caption" style={{ color: 'rgba(199,168,255,0.90)', fontSize: 11, fontWeight: '600' }}>
+                <CustomText variant="caption" style={{ color: '#7A7288', fontSize: 11, fontWeight: '400' }}>
                   {label}
                 </CustomText>
               </View>

@@ -46,7 +46,7 @@ export function AuthScreenFrame({ backPath, salutation, description, title, subt
     </TVTouchable>
   );
 
-  // ── Phone: clean dark screen with scrollable form ──────────────────────────
+  // ── Phone: clean dark screen with vertically-centered form ──────────────────
   if (isPhone) {
     const maxFormWidth = Math.min(screenWidth, 400);
 
@@ -55,41 +55,18 @@ export function AuthScreenFrame({ backPath, salutation, description, title, subt
         <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
 
         <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
-          {/* Top bar: back + logo */}
-          <View style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingHorizontal: 20,
-            paddingTop: 8,
-            paddingBottom: 4,
-          }}>
+          {/* Floating back button */}
+          <View style={{ paddingHorizontal: 20, paddingTop: 8 }}>
             {BackButton}
-
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <View style={{
-                width: 28,
-                height: 28,
-                borderRadius: 9,
-                backgroundColor: '#1A1A1A',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}>
-                <Image source={BRAND_LOGO_ASSET} resizeMode="cover" style={{ width: 18, height: 18, borderRadius: 5 }} />
-              </View>
-              <CustomText variant="label" style={{ color: '#F7F2FF', fontSize: 13, fontWeight: '700', letterSpacing: -0.1 }}>
-                ClaudyGod
-              </CustomText>
-            </View>
           </View>
 
           <ScrollView
             style={{ flex: 1 }}
             contentContainerStyle={{
               flexGrow: 1,
-              paddingHorizontal: 20,
-              paddingTop: 20,
-              paddingBottom: 28,
+              justifyContent: 'center',
+              paddingHorizontal: 24,
+              paddingVertical: 28,
               maxWidth: maxFormWidth,
               width: '100%',
               alignSelf: 'center',
@@ -98,27 +75,27 @@ export function AuthScreenFrame({ backPath, salutation, description, title, subt
             keyboardShouldPersistTaps="handled"
             bounces={false}
           >
-            <FadeIn delay={80} duration={320}>
-              {/* Title */}
-              <View style={{ marginBottom: 24 }}>
-                <CustomText variant="display" style={{ color: '#F7F2FF', fontSize: 22, fontWeight: '700', letterSpacing: -0.5, lineHeight: 28 }}>
+            <FadeIn delay={60} duration={300}>
+              {/* Logo + title */}
+              <View style={{ marginBottom: 28 }}>
+                <View style={{
+                  width: 36, height: 36, borderRadius: 11,
+                  backgroundColor: '#1A1A1A',
+                  alignItems: 'center', justifyContent: 'center',
+                  marginBottom: 20,
+                }}>
+                  <Image source={BRAND_LOGO_ASSET} resizeMode="cover" style={{ width: 24, height: 24, borderRadius: 7 }} />
+                </View>
+                <CustomText variant="display" style={{ color: '#FFFFFF', fontSize: 26, fontWeight: '700', letterSpacing: -0.6, lineHeight: 32 }}>
                   {title}
                 </CustomText>
-                <CustomText variant="body" style={{ color: '#9287AD', marginTop: 6, lineHeight: 19, fontSize: 13 }}>
+                <CustomText variant="body" style={{ color: '#7A7288', marginTop: 8, lineHeight: 20, fontSize: 14, fontWeight: '400' }}>
                   {subtitle}
                 </CustomText>
               </View>
 
-              {/* Form card */}
-              <View
-                style={{
-                  backgroundColor: '#111111',
-                  borderRadius: 20,
-                  padding: 20,
-                }}
-              >
-                {children}
-              </View>
+              {/* Form content — no card wrapper */}
+              {children}
             </FadeIn>
           </ScrollView>
         </SafeAreaView>
@@ -200,11 +177,12 @@ export function AuthScreenFrame({ backPath, salutation, description, title, subt
                     <CustomText
                       variant="body"
                       style={{
-                        color: '#9287AD',
-                        marginTop: 6,
+                        color: '#7A7288',
+                        marginTop: 8,
                         maxWidth: 460,
-                        lineHeight: device.isTV ? 22 : 19,
-                        fontSize: 13,
+                        lineHeight: device.isTV ? 22 : 20,
+                        fontSize: 14,
+                        fontWeight: '400',
                       }}
                     >
                       {subtitle}
