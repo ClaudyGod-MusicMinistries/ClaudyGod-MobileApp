@@ -49,7 +49,8 @@ NC     := \033[0m
 	docker-build docker-build-api docker-build-admin docker-build-mobile docker-build-postfix \
 	docker-push release \
 	deploy deploy-pull deploy-migrate deploy-up deploy-down \
-	deploy-logs deploy-status rollback update
+	deploy-logs deploy-status rollback update \
+	logs clean-legacy
 
 # ─── Help ────────────────────────────────────────────────────────────────────
 
@@ -133,9 +134,11 @@ help:
 	@printf "  $(GREEN)%-30s$(NC) %s\n" "make deploy-up"           "SERVER: docker compose up -d"
 	@printf "  $(GREEN)%-30s$(NC) %s\n" "make deploy-down"         "SERVER: docker compose down"
 	@printf "  $(GREEN)%-30s$(NC) %s\n" "make deploy-logs"         "SERVER: tail live logs"
+	@printf "  $(GREEN)%-30s$(NC) %s\n" "make logs"                "SERVER: tail live logs (shorthand)"
 	@printf "  $(GREEN)%-30s$(NC) %s\n" "make deploy-status"       "SERVER: show container health"
 	@printf "  $(GREEN)%-30s$(NC) %s\n" "make rollback SHA=abc123"  "SERVER: redeploy a specific git SHA"
 	@printf "  $(GREEN)%-30s$(NC) %s\n" "make update"              "SERVER: git pull + full deploy"
+	@printf "  $(GREEN)%-30s$(NC) %s\n" "make clean-legacy"        "SERVER: remove old claudygod_* containers + restart API"
 
 # ─── Setup ───────────────────────────────────────────────────────────────────
 
@@ -512,3 +515,19 @@ rollback:
 # git pull + full deploy — one command to update the server
 update: pull deploy
 	@printf "$(BOLD)$(GREEN)✓ Server fully updated$(NC)\n"
+
+# ── Live log tailing (shorthand for deploy-logs) ─────────────────────────────
+logs:
+	@$(COMPOSE_PROD) logs -f --tail=100
+
+# ── Legacy container cleanup ──────────────────────────────────────────────────
+# Removes old claudygod_* containers that predate the current production stack.
+# Safe to run — will not touch wisdom_*, shared_*, or claudygod-production-* containers.
+clean-legacy:
+	@printf "$(YELLOW)Stopping legacy ClaudyGod containers...$(NC)\n"
+	@docker stop claudygod_api claudygod_web claudygod_redis claudygod_grafana 2>/dev/null || true
+	@docker rm   claudygod_api claudygod_web claudygod_redis claudygod_grafana 2>/dev/null || true
+	@printf "$(GREEN)✓ Legacy containers removed$(NC)\n"
+	@printf "$(BLUE)Restarting production API so Traefik refreshes routing...$(NC)\n"
+	@$(COMPOSE_PROD) restart api worker
+	@printf "$(GREEN)✓ Production API restarted — routing is clean$(NC)\n"
