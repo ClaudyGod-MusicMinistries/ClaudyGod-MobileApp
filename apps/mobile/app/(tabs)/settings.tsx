@@ -102,9 +102,7 @@ function AppearanceCard({ value, onChange }: { value: ThemePreference; onChange:
                 flex: 1, minHeight: device.isTV ? 88 : 68,
                 borderRadius: theme.radius.xl, borderWidth: 1.5,
                 borderColor: active ? theme.colors.primary : theme.colors.borderStrong,
-                backgroundColor: active
-                  ? (theme.scheme === 'dark' ? 'rgba(183,148,246,0.16)' : 'rgba(124,58,237,0.08)')
-                  : (theme.scheme === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(19,12,33,0.03)'),
+                backgroundColor: active ? theme.colors.card : 'transparent',
                 alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 8,
               }}
               showFocusBorder={false}
@@ -115,9 +113,7 @@ function AppearanceCard({ value, onChange }: { value: ThemePreference; onChange:
                 style={{
                   width: device.isTV ? 40 : 32, height: device.isTV ? 40 : 32,
                   borderRadius: 10, alignItems: 'center', justifyContent: 'center',
-                  backgroundColor: active
-                    ? (theme.scheme === 'dark' ? 'rgba(183,148,246,0.22)' : 'rgba(124,58,237,0.12)')
-                    : 'transparent',
+                  backgroundColor: active ? theme.colors.elevated : 'transparent',
                 }}
               >
                 <MaterialIcons name={option.icon} size={device.isTV ? 22 : 18} color={active ? theme.colors.primary : theme.colors.textMuted} />
@@ -280,9 +276,9 @@ export default function SettingsScreen() {
             style={{
               width: device.isTV ? 72 : 56, height: device.isTV ? 72 : 56,
               borderRadius: device.isTV ? 22 : 18, alignItems: 'center', justifyContent: 'center',
-              backgroundColor: isAuthenticated ? 'rgba(183,148,246,0.18)' : 'rgba(255,255,255,0.07)',
+              backgroundColor: isAuthenticated ? theme.colors.card : 'rgba(255,255,255,0.06)',
               borderWidth: 2,
-              borderColor: isAuthenticated ? 'rgba(183,148,246,0.40)' : 'rgba(255,255,255,0.12)',
+              borderColor: isAuthenticated ? theme.colors.borderStrong : 'rgba(255,255,255,0.10)',
             }}
           >
             {isAuthenticated && user ? (
