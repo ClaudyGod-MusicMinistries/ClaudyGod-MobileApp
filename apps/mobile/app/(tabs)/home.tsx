@@ -54,7 +54,7 @@ function ContinueRow({ items, onPress }: { items: FeedCardItem[]; onPress: (item
 
   return (
     <View style={{ gap: 12 }}>
-      <SectionLabel title="Continue listening" accent="Recently played" />
+      <SectionLabel title="Continue listening" />
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -67,8 +67,6 @@ function ContinueRow({ items, onPress }: { items: FeedCardItem[]; onPress: (item
                 style={{
                   width: 64, height: 64, borderRadius: 16, overflow: 'hidden',
                   backgroundColor: theme.colors.surfaceAlt,
-                  shadowColor: '#000', shadowOpacity: 0.22, shadowRadius: 10, shadowOffset: { width: 0, height: 4 },
-                  elevation: 5,
                 }}
               >
                 <Image source={{ uri: item.imageUrl || DEFAULT_CONTENT_IMAGE_URI }} resizeMode="cover" style={{ width: '100%', height: '100%' }} />
@@ -226,7 +224,7 @@ export default function HomeScreen() {
       id: 'music',
       label: configuredTabs.find((t) => t.id === 'player')?.label ?? 'Music',
       icon: 'graphic-eq',
-      color: '#B794F6',
+      color: '#8B5CF6',
       onPress: () => router.push(APP_ROUTES.tabs.player),
     },
     {
@@ -262,7 +260,7 @@ export default function HomeScreen() {
   return (
     <PremiumPage title="Home" eyebrow="Home" noBack refreshing={loading} onRefresh={() => void refresh()}>
       {/* Greeting */}
-      <GreetingBanner name={user?.displayName} newCount={feed.music.length > 0 ? feed.music.length : undefined} />
+      <GreetingBanner name={user?.displayName} />
 
       {/* Featured Hero */}
       <PremiumHero
@@ -321,8 +319,6 @@ export default function HomeScreen() {
       <View style={{ gap: 12 }}>
         <SectionLabel
           title="For your moment"
-          accent="Music"
-          subtitle="Songs, worship audio, and messages"
           actionLabel="See all"
           onAction={() => router.push(APP_ROUTES.tabs.player)}
         />
@@ -335,13 +331,6 @@ export default function HomeScreen() {
           emptyMessage="Browse videos, live moments, or search while this row updates."
         />
       </View>
-
-      {/* Editorial banner */}
-      <StreamingBanner
-        item={feed.music[0] ?? feed.videos[0] ?? null}
-        badge="Featured"
-        onPress={feed.music[0] ? () => void openItem(feed.music[0]!, 'home_banner') : undefined}
-      />
 
       {/* Trending chart */}
       {feed.mostPlayed.length > 0 ? (
@@ -366,8 +355,6 @@ export default function HomeScreen() {
       <View style={{ gap: 12 }}>
         <SectionLabel
           title="Watch next"
-          accent="Videos"
-          subtitle="Messages, sessions, clips, and replays"
           actionLabel="See all"
           onAction={() => router.push(APP_ROUTES.tabs.videos)}
         />

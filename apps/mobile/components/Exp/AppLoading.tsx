@@ -86,7 +86,7 @@ export function AppLoadingScreen() {
             </Animated.Text>
             <Animated.Text
               style={{
-                color: '#B794F6',
+                color: '#8B5CF6',
                 fontSize: 10,
                 letterSpacing: 3.4,
                 textTransform: 'uppercase',

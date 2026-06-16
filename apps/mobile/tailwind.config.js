@@ -11,9 +11,9 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary: '#B794F6',
-        secondary: '#C4B5FD',
-        accent: '#A78BFA',
+        primary: '#8B5CF6',
+        secondary: '#A78BFA',
+        accent: '#7C3AED',
         background: '#0A0A0A',
         surface: '#111111',
         card: '#1A1A1A',

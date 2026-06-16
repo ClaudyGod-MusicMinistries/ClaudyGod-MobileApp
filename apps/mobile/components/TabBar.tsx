@@ -36,7 +36,7 @@ const FOOTER_CONFIG: Record<TabRouteName, Omit<FooterItem, 'routeName' | 'key'>>
 };
 
 const ICON_ACCENT: Partial<Record<TabRouteName, string>> = {
-  videos: '#B794F6',
+  videos: '#8B5CF6',
 };
 
 function routeExists(routes: BottomTabBarProps['state']['routes'], routeName: string) {
@@ -84,7 +84,7 @@ function SidebarTabBar({
         zIndex: 100,
         backgroundColor: isDark ? 'rgba(7,5,12,0.98)' : 'rgba(10,6,20,0.97)',
         borderRightWidth: 1,
-        borderRightColor: isDark ? 'rgba(183,148,246,0.12)' : 'rgba(56,42,84,0.14)',
+        borderRightColor: isDark ? 'rgba(139,92,246,0.12)' : 'rgba(56,42,84,0.14)',
         paddingTop: insets.top + (isTV ? 24 : 16),
         paddingBottom: insets.bottom + (isTV ? 24 : 16),
         paddingHorizontal: isTV ? 16 : 12,
@@ -103,7 +103,7 @@ function SidebarTabBar({
               overflow: 'hidden',
               backgroundColor: palette.surface,
               borderWidth: 1,
-              borderColor: 'rgba(183,148,246,0.22)',
+              borderColor: 'rgba(139,92,246,0.22)',
             }}
           >
             <Image source={BRAND_LOGO_ASSET} resizeMode="cover" style={{ width: '100%', height: '100%' }} />
@@ -142,10 +142,10 @@ function SidebarTabBar({
                   paddingHorizontal: isTV ? 14 : 12,
                   borderRadius: 14,
                   backgroundColor: focused
-                    ? isDark ? 'rgba(183,148,246,0.14)' : 'rgba(124,58,237,0.10)'
+                    ? isDark ? 'rgba(139,92,246,0.14)' : 'rgba(124,58,237,0.10)'
                     : 'transparent',
                   borderWidth: focused ? 1 : 0,
-                  borderColor: focused ? 'rgba(183,148,246,0.24)' : 'transparent',
+                  borderColor: focused ? 'rgba(139,92,246,0.24)' : 'transparent',
                 }}
               >
                 <View
@@ -156,7 +156,7 @@ function SidebarTabBar({
                     alignItems: 'center',
                     justifyContent: 'center',
                     backgroundColor: focused
-                      ? isDark ? 'rgba(183,148,246,0.20)' : 'rgba(124,58,237,0.14)'
+                      ? isDark ? 'rgba(139,92,246,0.20)' : 'rgba(124,58,237,0.14)'
                       : isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)',
                   }}
                 >
@@ -216,7 +216,7 @@ function SidebarTabBar({
               paddingHorizontal: isTV ? 14 : 12,
               borderRadius: 14,
               backgroundColor: currentRouteName === 'settings'
-                ? isDark ? 'rgba(183,148,246,0.12)' : 'rgba(124,58,237,0.08)'
+                ? isDark ? 'rgba(139,92,246,0.12)' : 'rgba(124,58,237,0.08)'
                 : 'transparent',
             }}
           >
@@ -303,7 +303,7 @@ function BottomPillTabBar({
           borderRadius: 26,
           overflow: 'hidden',
           borderWidth: 1,
-          borderColor: isDark ? 'rgba(183,148,246,0.18)' : 'rgba(56,42,84,0.18)',
+          borderColor: isDark ? 'rgba(139,92,246,0.18)' : 'rgba(56,42,84,0.18)',
           backgroundColor: isDark ? 'rgba(8,5,14,0.98)' : 'rgba(10,6,18,0.98)',
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 18 },
@@ -370,7 +370,7 @@ function BottomPillTabBar({
                   style={{
                     width: compact ? 36 : 40, height: compact ? 28 : 30, borderRadius: 999,
                     alignItems: 'center', justifyContent: 'center',
-                    backgroundColor: focused ? (isDark ? 'rgba(183,148,246,0.18)' : 'rgba(124,58,237,0.14)') : 'transparent',
+                    backgroundColor: focused ? (isDark ? 'rgba(139,92,246,0.18)' : 'rgba(124,58,237,0.14)') : 'transparent',
                   }}
                 >
                   <MaterialIcons name={item.icon} size={focused ? (compact ? 21 : 23) : (compact ? 19 : 21)} color={focused ? palette.primary : palette.textMuted} />
