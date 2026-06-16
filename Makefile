@@ -159,8 +159,8 @@ setup: install build-api
 env-setup:
 	@printf "$(BLUE)Setting up development environment file...$(NC)\n"
 	@if [ ! -f .env.development ]; then \
-		cp .env.development.example .env.development; \
-		printf "$(GREEN)✓ .env.development created from example$(NC)\n"; \
+		cp .env.example .env.development; \
+		printf "$(GREEN)✓ .env.development created from .env.example — fill in your real values$(NC)\n"; \
 	else \
 		printf "$(YELLOW)⚠ .env.development already exists — skipping$(NC)\n"; \
 	fi
