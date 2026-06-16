@@ -188,8 +188,8 @@ export default function HomeScreen() {
   // 4 ClaudyGod-branded sections
   const musicItems = useMemo(() => filterBySection(feed, 'music', ['audio']), [feed]);
   const nuggetsItems = useMemo(() => filterBySection(feed, 'nuggets-of-truth', ['video']), [feed]);
-  const teachingsItems = useMemo(() => filterBySection(feed, 'teachings', ['video', 'playlist']), [feed]);
-  const speaksItems = useMemo(() => filterBySection(feed, 'speaks', ['audio', 'playlist']), [feed]);
+  const teensItems = useMemo(() => filterBySection(feed, 'teens', ['video', 'playlist']), [feed]);
+  const audioItems = useMemo(() => filterBySection(feed, 'audio', ['audio', 'playlist']), [feed]);
 
   const configuredTabs = useMemo(() => config?.navigation?.tabs ?? [], [config?.navigation?.tabs]);
   const configuredSections = config?.layout?.homeSections ?? [];
@@ -325,39 +325,39 @@ export default function HomeScreen() {
           />
         </View>
 
-        {/* ClaudyGod Teachings */}
+        {/* ClaudyGod Teens */}
         <View style={{ gap: 14 }}>
           <SectionLabel
-            title="ClaudyGod Teachings"
+            title="ClaudyGod Teens"
             actionLabel="See all"
             onAction={() => router.push(APP_ROUTES.tabs.videos)}
           />
           <ContentRail
             title=""
-            items={teachingsItems}
-            onPressItem={(item) => void openItem(item, 'home_teachings')}
+            items={teensItems}
+            onPressItem={(item) => void openItem(item, 'home_teens')}
             loading={loading}
             cardVariant="landscape"
-            emptyTitle="Teachings coming soon"
-            emptyMessage="In-depth messages and sermons from ClaudyGod will appear here."
+            emptyTitle="ClaudyGod Teens coming soon"
+            emptyMessage="Youth-focused content from ClaudyGod will appear here."
           />
         </View>
 
-        {/* ClaudyGod Speaks */}
+        {/* ClaudyGod Audio */}
         <View style={{ gap: 14 }}>
           <SectionLabel
-            title="ClaudyGod Speaks"
+            title="ClaudyGod Audio"
             actionLabel="See all"
             onAction={() => router.push(APP_ROUTES.tabs.player)}
           />
           <ContentRail
             title=""
-            items={speaksItems}
-            onPressItem={(item) => void openItem(item, 'home_speaks')}
+            items={audioItems}
+            onPressItem={(item) => void openItem(item, 'home_audio')}
             loading={loading}
             cardVariant="portrait"
-            emptyTitle="ClaudyGod Speaks coming soon"
-            emptyMessage="Spoken word and podcast content from ClaudyGod will appear here."
+            emptyTitle="ClaudyGod Audio coming soon"
+            emptyMessage="Spoken word and audio teachings from ClaudyGod will appear here."
           />
         </View>
 
