@@ -93,12 +93,11 @@ export function AuthTextField({
         <CustomText
           variant="caption"
           style={{
-            color: 'rgba(238,233,255,0.86)',
-            marginBottom: 8,
-            textTransform: 'uppercase',
-            letterSpacing: 0.58,
-            fontSize: device.isTV ? 12 : compact ? 10.4 : 10.9,
-            lineHeight: device.isTV ? 15 : compact ? 13 : 14,
+            color: '#7A7288',
+            marginBottom: 6,
+            fontSize: device.isTV ? 12 : compact ? 11 : 11.5,
+            fontWeight: '400',
+            lineHeight: device.isTV ? 15 : 15,
           }}
         >
           {label}
