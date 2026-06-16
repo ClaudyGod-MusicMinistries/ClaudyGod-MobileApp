@@ -50,7 +50,7 @@ NC     := \033[0m
 	docker-push release \
 	deploy deploy-pull deploy-migrate deploy-up deploy-down \
 	deploy-logs deploy-status rollback update \
-	logs clean-legacy
+	logs clean-legacy setup-admin
 
 # ─── Help ────────────────────────────────────────────────────────────────────
 
@@ -519,6 +519,34 @@ update: pull deploy
 # ── Live log tailing (shorthand for deploy-logs) ─────────────────────────────
 logs:
 	@$(COMPOSE_PROD) logs -f --tail=100
+
+# ── First SUPER_ADMIN bootstrap ───────────────────────────────────────────────
+# Creates the first super-admin account directly in the database.
+# Only use this once, before any admin user exists.
+# Usage: make setup-admin EMAIL=you@example.com NAME="Your Name" PASSWORD=yourpassword
+setup-admin:
+	@if [ -z "$(EMAIL)" ] || [ -z "$(NAME)" ] || [ -z "$(PASSWORD)" ]; then \
+	  printf "$(RED)Usage: make setup-admin EMAIL=you@example.com NAME=\"Your Name\" PASSWORD=yourpass$(NC)\n"; \
+	  exit 1; \
+	fi
+	@printf "$(BLUE)Creating SUPER_ADMIN: $(EMAIL)...$(NC)\n"
+	@$(COMPOSE_PROD) exec api node -e " \
+	  const { Pool } = require('pg'); \
+	  const bcrypt = require('bcryptjs'); \
+	  (async () => { \
+	    const pool = new Pool({ connectionString: process.env.DATABASE_URL }); \
+	    const existing = await pool.query(\"SELECT id FROM app_users WHERE role = 'SUPER_ADMIN' LIMIT 1\"); \
+	    if (existing.rowCount > 0) { console.error('A SUPER_ADMIN already exists. Use the invite flow for additional admins.'); process.exit(1); } \
+	    const hash = await bcrypt.hash('$(PASSWORD)', 12); \
+	    await pool.query( \
+	      \"INSERT INTO app_users (email, password_hash, display_name, role, email_verified_at, is_active) VALUES (\\\$$1,\\\$$2,\\\$$3,'SUPER_ADMIN',NOW(),true)\", \
+	      ['$(EMAIL)', hash, '$(NAME)'] \
+	    ); \
+	    console.log('SUPER_ADMIN created successfully.'); \
+	    await pool.end(); \
+	  })().catch(e => { console.error(e.message); process.exit(1); }); \
+	"
+	@printf "$(GREEN)✓ SUPER_ADMIN '$(EMAIL)' created. Sign in at your admin panel.$(NC)\n"
 
 # ── Legacy container cleanup ──────────────────────────────────────────────────
 # Removes old claudygod_* containers that predate the current production stack.
