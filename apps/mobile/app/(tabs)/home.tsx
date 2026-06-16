@@ -107,14 +107,14 @@ function GuestCallout({ onSignIn }: { onSignIn: () => void }) {
         style={{
           flexDirection: 'row', alignItems: 'center', gap: 12,
           padding: 14, borderRadius: 16, borderWidth: 1,
-          borderColor: theme.scheme === 'dark' ? 'rgba(183,148,246,0.16)' : 'rgba(124,58,237,0.12)',
-          backgroundColor: theme.scheme === 'dark' ? 'rgba(183,148,246,0.05)' : 'rgba(124,58,237,0.04)',
+          borderColor: theme.colors.border,
+          backgroundColor: theme.colors.surface,
         }}
       >
         <View
           style={{
             width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center',
-            backgroundColor: theme.scheme === 'dark' ? 'rgba(183,148,246,0.14)' : 'rgba(124,58,237,0.10)',
+            backgroundColor: theme.colors.card,
           }}
         >
           <MaterialIcons name="person-outline" size={18} color={theme.colors.primary} />

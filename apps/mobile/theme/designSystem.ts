@@ -182,7 +182,7 @@ export const designSystem = {
       dark: {
         padding: 14,
         borderRadius: 14,
-        backgroundColor: '#18132A',
+        backgroundColor: '#1A1A1A',
       },
     },
     cardElevated: {
@@ -194,7 +194,7 @@ export const designSystem = {
       dark: {
         padding: 14,
         borderRadius: 14,
-        backgroundColor: '#1B132A',
+        backgroundColor: '#1E1E1E',
       },
     },
   },

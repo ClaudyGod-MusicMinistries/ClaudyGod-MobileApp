@@ -155,8 +155,8 @@ export default function Profile() {
                     width: isTwoPane ? 110 : 96, height: isTwoPane ? 110 : 96,
                     borderRadius: isTwoPane ? 34 : 28,
                     alignItems: 'center', justifyContent: 'center',
-                    borderWidth: 2, borderColor: 'rgba(183,148,246,0.34)',
-                    backgroundColor: 'rgba(183,148,246,0.14)',
+                    borderWidth: 2, borderColor: 'rgba(255,255,255,0.12)',
+                    backgroundColor: '#1A1A1A',
                     overflow: 'hidden',
                   }}
                 >
