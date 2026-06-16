@@ -71,7 +71,7 @@ function deriveSiblingOrigin(sub: string): string {
 export function resolveApiUrl(): string {
   const explicit = (import.meta.env.VITE_API_URL || '').trim();
   if (explicit) return explicit.replace(/\/+$/, '');
-  return deriveSiblingOrigin('api');
+  return deriveSiblingOrigin('apimobile');
 }
 
 export function normalizePublicUrl(value: string): string {

@@ -85,7 +85,10 @@ SECRET_PATTERNS=(
 )
 SECRET_FOUND=0
 for f in "${STAGED[@]}"; do
-  if [[ ! -f "$f" ]] || [[ "$f" == *.env.example ]] || [[ "$f" == *.example ]]; then
+  # Skip non-files, example templates, and UI source files (vue/tsx components
+  # legitimately contain form field names like password= which are not secrets)
+  if [[ ! -f "$f" ]] || [[ "$f" == *.env.example ]] || [[ "$f" == *.example ]] || \
+     [[ "$f" =~ \.(vue|tsx|jsx)$ && "$f" =~ ^(admin|apps)/ ]]; then
     continue
   fi
   for pat in "${SECRET_PATTERNS[@]}"; do
