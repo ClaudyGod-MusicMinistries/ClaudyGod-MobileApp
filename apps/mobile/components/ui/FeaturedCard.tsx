@@ -5,7 +5,7 @@
  */
 
 import React, { useState } from 'react';
-import { Image, Pressable, View, Animated } from 'react-native';
+import { Image, Pressable, StyleSheet, View, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../CustomText';
@@ -100,9 +100,9 @@ export function FeaturedCard({
         style={{ flex: 1 }}
       >
         {imageUrl ? (
-          <Image source={{ uri: imageUrl }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+          <Image source={{ uri: imageUrl }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
         ) : (
-          <View style={{ width: '100%', height: '100%', backgroundColor: `rgba(${colors_light.accentRgba ?? '167,139,250'},0.1)` }} />
+          <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(139,92,246,0.1)' }]} />
         )}
 
         {/* Enhanced Gradient Overlay - more dramatic */}
@@ -149,19 +149,15 @@ export function FeaturedCard({
         >
           <View
             style={{
-              width: 64,
-              height: 64,
-              borderRadius: 32,
-              backgroundColor: 'rgba(30, 215, 96, 0.9)',
+              width: 56,
+              height: 56,
+              borderRadius: 28,
+              backgroundColor: '#8B5CF6',
               alignItems: 'center',
               justifyContent: 'center',
-              shadowColor: '#1ED760',
-              shadowOpacity: 0.4,
-              shadowRadius: 12,
-              elevation: 5,
             }}
           >
-            <MaterialIcons name="play-arrow" size={32} color="white" />
+            <MaterialIcons name="play-arrow" size={28} color="#FFFFFF" />
           </View>
         </Animated.View>
 
