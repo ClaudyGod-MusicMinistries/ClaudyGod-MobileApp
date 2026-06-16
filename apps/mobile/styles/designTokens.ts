@@ -50,7 +50,7 @@ export const tv = {
   hitSlop: { top: 14, bottom: 14, left: 14, right: 14 },
   focusScale: 1.04,
   focusShadow: {
-    shadowColor: '#B794F6',
+    shadowColor: '#8B5CF6',
     shadowOpacity: 0.18,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 5 },

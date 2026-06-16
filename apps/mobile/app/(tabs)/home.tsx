@@ -25,7 +25,6 @@ import {
   PremiumHero,
   PremiumPage,
   SectionLabel,
-  StreamingBanner,
   TrendingList,
   WordOfDayCard,
 } from '../../components/Exp/PremiumContent';
@@ -54,7 +53,7 @@ function ContinueRow({ items, onPress }: { items: FeedCardItem[]; onPress: (item
 
   return (
     <View style={{ gap: 12 }}>
-      <SectionLabel title="Continue listening" accent="Recently played" />
+      <SectionLabel title="Continue listening" />
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -67,8 +66,6 @@ function ContinueRow({ items, onPress }: { items: FeedCardItem[]; onPress: (item
                 style={{
                   width: 64, height: 64, borderRadius: 16, overflow: 'hidden',
                   backgroundColor: theme.colors.surfaceAlt,
-                  shadowColor: '#000', shadowOpacity: 0.22, shadowRadius: 10, shadowOffset: { width: 0, height: 4 },
-                  elevation: 5,
                 }}
               >
                 <Image source={{ uri: item.imageUrl || DEFAULT_CONTENT_IMAGE_URI }} resizeMode="cover" style={{ width: '100%', height: '100%' }} />
@@ -120,11 +117,11 @@ function GuestCallout({ onSignIn }: { onSignIn: () => void }) {
           <MaterialIcons name="person-outline" size={18} color={theme.colors.primary} />
         </View>
         <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={{ color: theme.colors.text, fontSize: 13, fontWeight: '600' }}>
+          <Text style={{ color: theme.colors.text, fontSize: 13, fontWeight: '500' }}>
             Sign in for the full experience
           </Text>
-          <Text style={{ color: theme.colors.textSecondary, fontSize: 11.5, marginTop: 2 }}>
-            Save favorites, sync history, and unlock personalized feeds.
+          <Text style={{ color: theme.colors.textMuted, fontSize: 11.5, marginTop: 2 }}>
+            Save your favorites and sync history.
           </Text>
         </View>
         <MaterialIcons name="chevron-right" size={18} color={theme.colors.primary} />
@@ -143,8 +140,8 @@ function AnnouncementCard({ item, onPress }: { item: FeedCardItem; onPress: () =
         style={{
           flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14,
           borderRadius: 16, borderWidth: 1,
-          borderColor: theme.scheme === 'dark' ? 'rgba(96,165,250,0.18)' : 'rgba(37,99,235,0.14)',
-          backgroundColor: theme.scheme === 'dark' ? 'rgba(96,165,250,0.06)' : 'rgba(96,165,250,0.04)',
+          borderColor: theme.colors.border,
+          backgroundColor: theme.colors.surface,
         }}
       >
         <View
@@ -156,14 +153,14 @@ function AnnouncementCard({ item, onPress }: { item: FeedCardItem; onPress: () =
           <Image source={{ uri: item.imageUrl || DEFAULT_CONTENT_IMAGE_URI }} resizeMode="cover" style={{ width: '100%', height: '100%' }} />
         </View>
         <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={{ color: '#60A5FA', fontSize: 9.5, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 2 }}>
-            Ministry update
+          <Text style={{ color: theme.colors.textMuted, fontSize: 9.5, fontWeight: '500', letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 2 }}>
+            Announcement
           </Text>
-          <Text style={{ color: theme.colors.text, fontSize: 13, fontWeight: '600' }} numberOfLines={1}>
+          <Text style={{ color: theme.colors.text, fontSize: 13, fontWeight: '500' }} numberOfLines={1}>
             {item.title}
           </Text>
           {item.subtitle ? (
-            <Text style={{ color: theme.colors.textSecondary, fontSize: 11.5, marginTop: 2 }} numberOfLines={1}>
+            <Text style={{ color: theme.colors.textMuted, fontSize: 11.5, marginTop: 2 }} numberOfLines={1}>
               {item.subtitle}
             </Text>
           ) : null}
@@ -226,7 +223,7 @@ export default function HomeScreen() {
       id: 'music',
       label: configuredTabs.find((t) => t.id === 'player')?.label ?? 'Music',
       icon: 'graphic-eq',
-      color: '#B794F6',
+      color: '#8B5CF6',
       onPress: () => router.push(APP_ROUTES.tabs.player),
     },
     {
@@ -262,7 +259,7 @@ export default function HomeScreen() {
   return (
     <PremiumPage title="Home" eyebrow="Home" noBack refreshing={loading} onRefresh={() => void refresh()}>
       {/* Greeting */}
-      <GreetingBanner name={user?.displayName} newCount={feed.music.length > 0 ? feed.music.length : undefined} />
+      <GreetingBanner name={user?.displayName} />
 
       {/* Featured Hero */}
       <PremiumHero
@@ -321,8 +318,6 @@ export default function HomeScreen() {
       <View style={{ gap: 12 }}>
         <SectionLabel
           title="For your moment"
-          accent="Music"
-          subtitle="Songs, worship audio, and messages"
           actionLabel="See all"
           onAction={() => router.push(APP_ROUTES.tabs.player)}
         />
@@ -335,13 +330,6 @@ export default function HomeScreen() {
           emptyMessage="Browse videos, live moments, or search while this row updates."
         />
       </View>
-
-      {/* Editorial banner */}
-      <StreamingBanner
-        item={feed.music[0] ?? feed.videos[0] ?? null}
-        badge="Featured"
-        onPress={feed.music[0] ? () => void openItem(feed.music[0]!, 'home_banner') : undefined}
-      />
 
       {/* Trending chart */}
       {feed.mostPlayed.length > 0 ? (
@@ -366,8 +354,6 @@ export default function HomeScreen() {
       <View style={{ gap: 12 }}>
         <SectionLabel
           title="Watch next"
-          accent="Videos"
-          subtitle="Messages, sessions, clips, and replays"
           actionLabel="See all"
           onAction={() => router.push(APP_ROUTES.tabs.videos)}
         />
@@ -386,8 +372,6 @@ export default function HomeScreen() {
         <View style={{ gap: 12 }}>
           <SectionLabel
             title="Live & replays"
-            accent="Ministry"
-            subtitle="Sessions and replay moments"
             actionLabel="See all"
             onAction={() => router.push(APP_ROUTES.tabs.live)}
           />

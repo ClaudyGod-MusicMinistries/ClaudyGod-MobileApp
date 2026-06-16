@@ -250,7 +250,7 @@ export default function AccountSecurity() {
               icon="lock-reset"
               title="Change password"
               description="Verify your current password first. A secure reset link will be emailed to your account."
-              color="#B794F6"
+              color="#8B5CF6"
             />
             <SecureField label="Current password" value={currentPassword} onChangeText={setCurrentPassword} secureTextEntry placeholder="Your current password" />
             <AppButton
