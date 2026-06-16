@@ -30,7 +30,7 @@ export function AuthBrandPanel({ salutation, description, compact = false }: Aut
           <Image source={BRAND_LOGO_ASSET} resizeMode="cover" style={{ width: 28, height: 28, borderRadius: 8 }} />
         </View>
         <View style={{ flex: 1, minWidth: 0 }}>
-          <CustomText variant="caption" style={{ color: 'rgba(183,148,246,0.90)', textTransform: 'uppercase', letterSpacing: 1.1, fontSize: 10 }}>
+          <CustomText variant="caption" style={{ color: 'rgba(139,92,246,0.90)', textTransform: 'uppercase', letterSpacing: 1.1, fontSize: 10 }}>
             ClaudyGod
           </CustomText>
           <CustomText variant="label" style={{ color: '#7A7288', marginTop: 2, fontSize: 12, fontWeight: '400' }} numberOfLines={1}>

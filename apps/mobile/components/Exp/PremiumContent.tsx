@@ -500,11 +500,11 @@ export function PremiumHero({
 // ─── QuickActionGrid ─────────────────────────────────────────────────────────────
 
 const ACTION_COLORS: Record<string, string> = {
-  'graphic-eq':   '#B794F6',
+  'graphic-eq':   '#8B5CF6',
   'smart-display': '#60A5FA',
   'live-tv':      '#F43F5E',
   search:         '#34D399',
-  headphones:     '#B794F6',
+  headphones:     '#8B5CF6',
   library:        '#FBBF24',
 };
 
@@ -844,7 +844,7 @@ function InlineEmpty({
           alignItems: 'center',
           justifyContent: 'center',
           backgroundColor:
-            theme.scheme === 'dark' ? 'rgba(183,148,246,0.10)' : 'rgba(124,58,237,0.08)',
+            theme.scheme === 'dark' ? 'rgba(139,92,246,0.10)' : 'rgba(124,58,237,0.08)',
         }}
       >
         <MaterialIcons name={icon} size={17} color={theme.colors.primary} />
@@ -1187,63 +1187,30 @@ type EmptyStateProps = {
 export function EmptyState({
   title,
   message,
-  icon = 'auto-awesome',
+  icon: _icon = 'auto-awesome',
   actionLabel,
   onAction,
 }: EmptyStateProps) {
   const theme = useAppTheme();
   return (
     <FadeIn delay={60}>
-    <View
-      style={{
-        alignItems: 'center',
-        paddingVertical: 44,
-        paddingHorizontal: 24,
-        borderRadius: 20,
-        borderWidth: 1,
-        borderColor: theme.colors.border,
-        backgroundColor:
-          theme.scheme === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(17,10,31,0.03)',
-      }}
-    >
-      <View
-        style={{
-          width: 52,
-          height: 52,
-          borderRadius: 26,
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor:
-            theme.scheme === 'dark' ? 'rgba(183,148,246,0.12)' : 'rgba(124,58,237,0.08)',
-          borderWidth: 1,
-          borderColor:
-            theme.scheme === 'dark' ? 'rgba(183,148,246,0.22)' : 'rgba(124,58,237,0.14)',
-          marginBottom: 16,
-        }}
-      >
-        <MaterialIcons name={icon} size={22} color={theme.colors.primary} />
+      <View style={{ alignItems: 'center', paddingVertical: 28, paddingHorizontal: 24 }}>
+        <CustomText
+          variant="body"
+          style={{ color: theme.colors.textMuted, textAlign: 'center', fontSize: 14, fontWeight: '400' }}
+        >
+          {title}
+        </CustomText>
+        <CustomText
+          variant="caption"
+          style={{ color: theme.colors.textMuted, textAlign: 'center', marginTop: 6, lineHeight: 18, opacity: 0.7 }}
+        >
+          {message}
+        </CustomText>
+        {actionLabel && onAction ? (
+          <AppButton title={actionLabel} onPress={onAction} size="sm" style={{ marginTop: 16 }} />
+        ) : null}
       </View>
-      <CustomText
-        variant="title"
-        style={{ color: theme.colors.text, textAlign: 'center', fontWeight: '700', marginBottom: 8 }}
-      >
-        {title}
-      </CustomText>
-      <CustomText
-        variant="caption"
-        style={{
-          color: theme.colors.textSecondary,
-          textAlign: 'center',
-          maxWidth: 340,
-          lineHeight: 18,
-        }}
-      >
-        {message}
-      </CustomText>
-      {actionLabel && onAction ? (
-        <AppButton title={actionLabel} onPress={onAction} size="md" style={{ marginTop: 20 }} />
-      ) : null}
-    </View>
     </FadeIn>
   );
 }
@@ -1339,7 +1306,7 @@ export function TrendingList({ title, items, onPressItem, actionLabel, onAction 
                     variant="display"
                     style={{
                       width: 28,
-                      color: isTop3 ? '#B794F6' : theme.colors.textMuted,
+                      color: isTop3 ? '#8B5CF6' : theme.colors.textMuted,
                       fontSize: isTop3 ? 20 : 17,
                       fontWeight: '800',
                       textAlign: 'center',
@@ -1392,9 +1359,9 @@ export function TrendingList({ title, items, onPressItem, actionLabel, onAction 
                       borderRadius: 16,
                       alignItems: 'center',
                       justifyContent: 'center',
-                      backgroundColor: theme.scheme === 'dark' ? 'rgba(183,148,246,0.14)' : 'rgba(124,58,237,0.10)',
+                      backgroundColor: theme.scheme === 'dark' ? 'rgba(139,92,246,0.14)' : 'rgba(124,58,237,0.10)',
                       borderWidth: 1,
-                      borderColor: theme.scheme === 'dark' ? 'rgba(183,148,246,0.24)' : 'rgba(124,58,237,0.18)',
+                      borderColor: theme.scheme === 'dark' ? 'rgba(139,92,246,0.24)' : 'rgba(124,58,237,0.18)',
                     }}
                   >
                     <MaterialIcons name="play-arrow" size={18} color={theme.colors.primary} />
@@ -1435,9 +1402,9 @@ export function StreamingBanner({ item, badge = 'Featured', title, subtitle, cta
           style={{
             borderRadius: 18,
             overflow: 'hidden',
-            backgroundColor: theme.scheme === 'dark' ? 'rgba(183,148,246,0.07)' : 'rgba(124,58,237,0.06)',
+            backgroundColor: theme.colors.surface,
             borderWidth: 1,
-            borderColor: theme.scheme === 'dark' ? 'rgba(183,148,246,0.18)' : 'rgba(124,58,237,0.16)',
+            borderColor: theme.colors.border,
           }}
         >
           <View style={{ flexDirection: 'row', alignItems: 'stretch' }}>
@@ -1448,14 +1415,14 @@ export function StreamingBanner({ item, badge = 'Featured', title, subtitle, cta
                 style={{
                   alignSelf: 'flex-start',
                   borderRadius: 999,
-                  backgroundColor: 'rgba(183,148,246,0.18)',
+                  backgroundColor: 'rgba(139,92,246,0.14)',
                   borderWidth: 1,
-                  borderColor: 'rgba(183,148,246,0.32)',
+                  borderColor: 'rgba(139,92,246,0.28)',
                   paddingHorizontal: 9,
                   paddingVertical: 3,
                 }}
               >
-                <Text style={{ color: '#B794F6', fontSize: 9.5, fontWeight: '700', letterSpacing: 1 }}>
+                <Text style={{ color: '#8B5CF6', fontSize: 9.5, fontWeight: '700', letterSpacing: 1 }}>
                   {badge.toUpperCase()}
                 </Text>
               </View>
@@ -1512,10 +1479,8 @@ export function StreamingBanner({ item, badge = 'Featured', title, subtitle, cta
 
 // ─── GreetingBanner ───────────────────────────────────────────────────────────────
 
-export function GreetingBanner({ name, newCount }: { name?: string | null; newCount?: number }) {
+export function GreetingBanner({ name }: { name?: string | null; newCount?: number }) {
   const theme = useAppTheme();
-  const { width } = useWindowDimensions();
-  const compact = width < 430;
   const hour = new Date().getHours();
   const greeting =
     hour < 5 ? 'Still up' :
@@ -1523,48 +1488,25 @@ export function GreetingBanner({ name, newCount }: { name?: string | null; newCo
     hour < 17 ? 'Good afternoon' :
     'Good evening';
   const firstName = name ? name.split(' ')[0] : null;
-  const dateStr = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  const dateStr = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
 
   return (
     <FadeIn>
-      <View style={{ gap: compact ? 5 : 6 }}>
+      <View style={{ gap: 3 }}>
         <CustomText
-          variant="display"
+          variant="title"
           style={{
             color: theme.colors.text,
-            fontSize: compact ? 26 : 30,
-            fontWeight: '800',
-            letterSpacing: -0.9,
-            lineHeight: compact ? 32 : 37,
+            fontSize: 18,
+            fontWeight: '600',
+            letterSpacing: -0.3,
           }}
         >
-          {greeting}{firstName ? `,` : ''}{'\n'}{firstName ?? 'Welcome'}
+          {greeting}{firstName ? `, ${firstName}` : ''}
         </CustomText>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          {newCount ? (
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 5,
-                paddingHorizontal: 10,
-                paddingVertical: 4,
-                borderRadius: 999,
-                backgroundColor: theme.scheme === 'dark' ? 'rgba(183,148,246,0.12)' : 'rgba(124,58,237,0.08)',
-                borderWidth: 1,
-                borderColor: theme.scheme === 'dark' ? 'rgba(183,148,246,0.24)' : 'rgba(124,58,237,0.16)',
-              }}
-            >
-              <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: theme.colors.primary }} />
-              <CustomText variant="caption" style={{ color: theme.colors.primary, fontWeight: '700', fontSize: 11 }}>
-                {newCount} new {newCount === 1 ? 'track' : 'tracks'}
-              </CustomText>
-            </View>
-          ) : null}
-          <CustomText variant="caption" style={{ color: theme.colors.textMuted, fontSize: 12 }}>
-            {dateStr}
-          </CustomText>
-        </View>
+        <CustomText variant="caption" style={{ color: theme.colors.textMuted, fontSize: 12 }}>
+          {dateStr}
+        </CustomText>
       </View>
     </FadeIn>
   );
@@ -1582,56 +1524,34 @@ export type ContentShortcut = {
 
 export function ContentShortcuts({ shortcuts }: { shortcuts: ContentShortcut[] }) {
   const theme = useAppTheme();
-  const { width } = useWindowDimensions();
-  const compact = width < 430;
 
   return (
-    <FadeIn delay={60}>
+    <FadeIn delay={40}>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ gap: compact ? 8 : 10, paddingVertical: 3, paddingRight: 2 }}
+        contentContainerStyle={{ gap: 8, paddingVertical: 2, paddingRight: 2 }}
       >
-        {shortcuts.map((item) => {
-          const hexToRgb = (hex: string) => {
-            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-            return result ? `${parseInt(result[1], 16)},${parseInt(result[2], 16)},${parseInt(result[3], 16)}` : '183,148,246';
-          };
-          const rgb = hexToRgb(item.color);
-          return (
-            <TVTouchable key={item.id} onPress={item.onPress} showFocusBorder={false}>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: compact ? 7 : 9,
-                  paddingHorizontal: compact ? 14 : 18,
-                  paddingVertical: compact ? 10 : 12,
-                  borderRadius: 999,
-                  backgroundColor: theme.scheme === 'dark' ? `rgba(${rgb},0.12)` : `rgba(${rgb},0.10)`,
-                  borderWidth: 1,
-                  borderColor: theme.scheme === 'dark' ? `rgba(${rgb},0.28)` : `rgba(${rgb},0.22)`,
-                }}
-              >
-                <View
-                  style={{
-                    width: compact ? 26 : 28,
-                    height: compact ? 26 : 28,
-                    borderRadius: compact ? 13 : 14,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: `rgba(${rgb},0.22)`,
-                  }}
-                >
-                  <MaterialIcons name={item.icon} size={compact ? 14 : 15} color={item.color} />
-                </View>
-                <CustomText variant="label" style={{ color: theme.colors.text, fontSize: compact ? 13 : 14, fontWeight: '600' }}>
-                  {item.label}
-                </CustomText>
-              </View>
-            </TVTouchable>
-          );
-        })}
+        {shortcuts.map((item) => (
+          <TVTouchable key={item.id} onPress={item.onPress} showFocusBorder={false}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 6,
+                paddingHorizontal: 14,
+                paddingVertical: 8,
+                borderRadius: 999,
+                backgroundColor: 'rgba(255,255,255,0.07)',
+              }}
+            >
+              <MaterialIcons name={item.icon} size={13} color={theme.colors.textSecondary} />
+              <CustomText variant="label" style={{ color: theme.colors.text, fontSize: 12.5, fontWeight: '500' }}>
+                {item.label}
+              </CustomText>
+            </View>
+          </TVTouchable>
+        ))}
       </ScrollView>
     </FadeIn>
   );
@@ -1745,8 +1665,8 @@ export function WordOfDayCard({ word, onPress }: { word: WordOfDayData; onPress:
 
 export function SectionLabel({
   title,
-  accent,
-  subtitle,
+  accent: _accent,
+  subtitle: _subtitle,
   actionLabel,
   onAction,
 }: {
@@ -1758,35 +1678,15 @@ export function SectionLabel({
 }) {
   const theme = useAppTheme();
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 10 }}>
-      <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
-        {accent ? (
-          <CustomText variant="caption" style={{ color: accent, fontWeight: '700', letterSpacing: 0.7, textTransform: 'uppercase', fontSize: 10 }}>
-            {accent}
-          </CustomText>
-        ) : null}
-        <CustomText variant="title" style={{ color: theme.colors.text, fontSize: 15, fontWeight: '700', letterSpacing: -0.2 }}>
-          {title}
-        </CustomText>
-        {subtitle ? (
-          <CustomText variant="caption" style={{ color: theme.colors.textMuted, marginTop: 1 }} numberOfLines={1}>
-            {subtitle}
-          </CustomText>
-        ) : null}
-      </View>
+    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <CustomText variant="title" style={{ color: theme.colors.text, fontSize: 14, fontWeight: '600', letterSpacing: -0.2 }}>
+        {title}
+      </CustomText>
       {actionLabel && onAction ? (
-        <TVTouchable onPress={onAction} showFocusBorder={false}
-          style={{
-            flexDirection: 'row', alignItems: 'center', gap: 3,
-            paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999,
-            backgroundColor: theme.scheme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(17,10,31,0.05)',
-            borderWidth: 1, borderColor: theme.colors.border,
-          }}
-        >
-          <CustomText variant="caption" style={{ color: theme.colors.primary, fontSize: 11.5, fontWeight: '600' }}>
+        <TVTouchable onPress={onAction} showFocusBorder={false} style={{ paddingVertical: 4, paddingHorizontal: 2 }}>
+          <CustomText variant="caption" style={{ color: theme.colors.textMuted, fontSize: 12 }}>
             {actionLabel}
           </CustomText>
-          <MaterialIcons name="chevron-right" size={14} color={theme.colors.primary} />
         </TVTouchable>
       ) : null}
     </View>
