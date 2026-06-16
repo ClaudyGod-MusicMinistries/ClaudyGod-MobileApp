@@ -52,7 +52,7 @@ const FILTERS: { id: VideoFilter; label: string; icon: React.ComponentProps<type
   { id: 'shorts',   label: 'Shorts',   icon: 'video-library' },
 ];
 
-function FilterChips({ active, onChange }: { active: VideoFilter; onChange: (f: VideoFilter) => void }) {
+function FilterChips({ active, onChange }: { active: VideoFilter; onChange: (_f: VideoFilter) => void }) {
   const theme = useAppTheme();
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 2 }}>
@@ -82,7 +82,6 @@ function FilterChips({ active, onChange }: { active: VideoFilter; onChange: (f: 
 }
 
 export default function VideosScreen() {
-  const theme = useAppTheme();
   const router = useRouter();
   const { showToast } = useToast();
   const { width } = useWindowDimensions();

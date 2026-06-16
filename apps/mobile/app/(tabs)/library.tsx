@@ -50,7 +50,7 @@ const TABS: { id: LibTab; label: string; icon: React.ComponentProps<typeof Mater
   { id: 'playlists', label: 'Playlists', icon: 'queue-music' },
 ];
 
-function LibTabs({ active, onChange, counts }: { active: LibTab; onChange: (t: LibTab) => void; counts: Record<LibTab, number> }) {
+function LibTabs({ active, onChange, counts }: { active: LibTab; onChange: (_t: LibTab) => void; counts: Record<LibTab, number> }) {
   const theme = useAppTheme();
   return (
     <View
