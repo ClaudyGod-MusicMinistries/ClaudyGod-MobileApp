@@ -98,7 +98,7 @@ function LibTabs({ active, onChange, counts }: { active: LibTab; onChange: (t: L
               <View
                 style={{
                   minWidth: 16, height: 16, borderRadius: 8, paddingHorizontal: 4,
-                  backgroundColor: isActive ? theme.colors.primary : 'rgba(183,148,246,0.2)',
+                  backgroundColor: isActive ? theme.colors.primary : 'rgba(255,255,255,0.10)',
                   alignItems: 'center', justifyContent: 'center',
                 }}
               >
@@ -172,14 +172,14 @@ export default function LibraryScreen() {
           style={{
             flexDirection: 'row', alignItems: 'center', gap: 12,
             padding: 14, borderRadius: 16, borderWidth: 1,
-            borderColor: theme.scheme === 'dark' ? 'rgba(183,148,246,0.14)' : 'rgba(124,58,237,0.10)',
-            backgroundColor: theme.scheme === 'dark' ? 'rgba(183,148,246,0.04)' : 'rgba(124,58,237,0.03)',
+            borderColor: theme.colors.border,
+            backgroundColor: theme.colors.surface,
           }}
         >
           <View
             style={{
               width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center',
-              backgroundColor: theme.scheme === 'dark' ? 'rgba(183,148,246,0.18)' : 'rgba(124,58,237,0.12)',
+              backgroundColor: theme.colors.card,
             }}
           >
             <Text style={{ color: theme.colors.primary, fontSize: 16, fontWeight: '700' }}>
