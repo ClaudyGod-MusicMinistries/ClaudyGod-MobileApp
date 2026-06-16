@@ -24,7 +24,7 @@ const NAV_GROUPS = [
   {
     title: 'Your space',
     items: [
-      { icon: 'library-music' as const, label: 'Library', hint: 'Saved songs, videos, and playlists',      href: APP_ROUTES.tabs.library, color: '#B794F6' },
+      { icon: 'library-music' as const, label: 'Library', hint: 'Saved songs, videos, and playlists',      href: APP_ROUTES.tabs.library, color: '#8B5CF6' },
       { icon: 'graphic-eq'    as const, label: 'Music',   hint: 'Open the audio player and worship queue', href: APP_ROUTES.tabs.player,  color: '#A78BFA' },
       { icon: 'smart-display' as const, label: 'Videos',  hint: 'Watch sessions and ministry replays',     href: APP_ROUTES.tabs.videos,  color: '#60A5FA' },
       { icon: 'live-tv'       as const, label: 'Live',    hint: 'Tune in to live ministry sessions',       href: APP_ROUTES.tabs.live,    color: '#EF4444' },
@@ -33,7 +33,7 @@ const NAV_GROUPS = [
   {
     title: 'Account care',
     items: [
-      { icon: 'settings'      as const, label: 'Settings',         hint: 'Playback, appearance, and alerts',     href: APP_ROUTES.tabs.settings,            color: '#B794F6' },
+      { icon: 'settings'      as const, label: 'Settings',         hint: 'Playback, appearance, and alerts',     href: APP_ROUTES.tabs.settings,            color: '#8B5CF6' },
       { icon: 'privacy-tip'   as const, label: 'Privacy',          hint: 'Review privacy and security controls', href: APP_ROUTES.settingsPages.privacy,     color: '#34D399' },
       { icon: 'verified-user' as const, label: 'Account security', hint: 'Email, password, and secure access',   href: APP_ROUTES.accountSecurity,           color: '#FBBF24' },
       { icon: 'help-outline'  as const, label: 'Help',             hint: 'Get support when you need it',         href: APP_ROUTES.settingsPages.help,        color: '#60A5FA' },

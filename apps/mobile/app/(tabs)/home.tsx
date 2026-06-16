@@ -25,7 +25,6 @@ import {
   PremiumHero,
   PremiumPage,
   SectionLabel,
-  StreamingBanner,
   TrendingList,
   WordOfDayCard,
 } from '../../components/Exp/PremiumContent';
@@ -118,11 +117,11 @@ function GuestCallout({ onSignIn }: { onSignIn: () => void }) {
           <MaterialIcons name="person-outline" size={18} color={theme.colors.primary} />
         </View>
         <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={{ color: theme.colors.text, fontSize: 13, fontWeight: '600' }}>
+          <Text style={{ color: theme.colors.text, fontSize: 13, fontWeight: '500' }}>
             Sign in for the full experience
           </Text>
-          <Text style={{ color: theme.colors.textSecondary, fontSize: 11.5, marginTop: 2 }}>
-            Save favorites, sync history, and unlock personalized feeds.
+          <Text style={{ color: theme.colors.textMuted, fontSize: 11.5, marginTop: 2 }}>
+            Save your favorites and sync history.
           </Text>
         </View>
         <MaterialIcons name="chevron-right" size={18} color={theme.colors.primary} />
@@ -141,8 +140,8 @@ function AnnouncementCard({ item, onPress }: { item: FeedCardItem; onPress: () =
         style={{
           flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14,
           borderRadius: 16, borderWidth: 1,
-          borderColor: theme.scheme === 'dark' ? 'rgba(96,165,250,0.18)' : 'rgba(37,99,235,0.14)',
-          backgroundColor: theme.scheme === 'dark' ? 'rgba(96,165,250,0.06)' : 'rgba(96,165,250,0.04)',
+          borderColor: theme.colors.border,
+          backgroundColor: theme.colors.surface,
         }}
       >
         <View
@@ -154,14 +153,14 @@ function AnnouncementCard({ item, onPress }: { item: FeedCardItem; onPress: () =
           <Image source={{ uri: item.imageUrl || DEFAULT_CONTENT_IMAGE_URI }} resizeMode="cover" style={{ width: '100%', height: '100%' }} />
         </View>
         <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={{ color: '#60A5FA', fontSize: 9.5, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 2 }}>
-            Ministry update
+          <Text style={{ color: theme.colors.textMuted, fontSize: 9.5, fontWeight: '500', letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 2 }}>
+            Announcement
           </Text>
-          <Text style={{ color: theme.colors.text, fontSize: 13, fontWeight: '600' }} numberOfLines={1}>
+          <Text style={{ color: theme.colors.text, fontSize: 13, fontWeight: '500' }} numberOfLines={1}>
             {item.title}
           </Text>
           {item.subtitle ? (
-            <Text style={{ color: theme.colors.textSecondary, fontSize: 11.5, marginTop: 2 }} numberOfLines={1}>
+            <Text style={{ color: theme.colors.textMuted, fontSize: 11.5, marginTop: 2 }} numberOfLines={1}>
               {item.subtitle}
             </Text>
           ) : null}
@@ -373,8 +372,6 @@ export default function HomeScreen() {
         <View style={{ gap: 12 }}>
           <SectionLabel
             title="Live & replays"
-            accent="Ministry"
-            subtitle="Sessions and replay moments"
             actionLabel="See all"
             onAction={() => router.push(APP_ROUTES.tabs.live)}
           />
