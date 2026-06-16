@@ -64,14 +64,14 @@ TRAEFIK_PUBLIC_NETWORK=traefik-public
 TRAEFIK_CERT_RESOLVER=letsencrypt
 EOF
 
-# Use .env.development if it exists; fall back to .env.development.example for CI/hook environments.
+# Use .env.development if it exists; fall back to .env.example for CI/hook environments.
 DEV_ENV_FILE="$ROOT_DIR/.env.development"
 if [ ! -f "$DEV_ENV_FILE" ]; then
-  if [ -f "$ROOT_DIR/.env.development.example" ]; then
-    DEV_ENV_FILE="$ROOT_DIR/.env.development.example"
-    echo "Note: .env.development not found — using .env.development.example for compose validation."
+  if [ -f "$ROOT_DIR/.env.example" ]; then
+    DEV_ENV_FILE="$ROOT_DIR/.env.example"
+    echo "Note: .env.development not found — using .env.example for compose validation."
   else
-    echo ".env.development and .env.development.example are both missing." >&2
+    echo ".env.development and .env.example are both missing." >&2
     exit 1
   fi
 fi

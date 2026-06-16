@@ -55,7 +55,7 @@ const FILTERS: { id: AudioFilter; label: string; icon: React.ComponentProps<type
   { id: 'playlists',label: 'Playlists', icon: 'queue-music' },
 ];
 
-function FilterChips({ active, onChange }: { active: AudioFilter; onChange: (f: AudioFilter) => void }) {
+function FilterChips({ active, onChange }: { active: AudioFilter; onChange: (_f: AudioFilter) => void }) {
   const theme = useAppTheme();
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 2 }}>

@@ -91,7 +91,7 @@ warn_step() {
 step_start "Forbidden files check (.env, secrets)"
 FORBIDDEN_FILES=()
 for f in $(git diff --name-only HEAD origin/"$BRANCH" 2>/dev/null || git diff --name-only HEAD~1 HEAD 2>/dev/null || true); do
-  if [[ "$f" =~ (^|/)\.env(\.[^.]+)?$ ]] || \
+  if ([[ "$f" =~ (^|/)\.env(\.[^.]+)?$ ]] && [[ ! "$f" =~ \.example$ ]]) || \
      [[ "$f" =~ (^|/)credentials\.(json|yml|yaml)$ ]] || \
      [[ "$f" =~ (^|/)\.aws/credentials$ ]] || \
      [[ "$f" =~ (^|/)secrets\.(json|yml|yaml)$ ]]; then

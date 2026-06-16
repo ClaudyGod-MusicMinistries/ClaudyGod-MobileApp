@@ -47,7 +47,7 @@ function dedupe(items: FeedCardItem[]): FeedCardItem[] {
 
 // ─── Continue Listening Row ───────────────────────────────────────────────────
 
-function ContinueRow({ items, onPress }: { items: FeedCardItem[]; onPress: (item: FeedCardItem) => void }) {
+function ContinueRow({ items, onPress }: { items: FeedCardItem[]; onPress: (_item: FeedCardItem) => void }) {
   const theme = useAppTheme();
   if (!items.length) return null;
 
@@ -174,7 +174,6 @@ function AnnouncementCard({ item, onPress }: { item: FeedCardItem; onPress: () =
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 
 export default function HomeScreen() {
-  const theme = useAppTheme();
   const router = useRouter();
   const { width } = useWindowDimensions();
   const { isAuthenticated, user } = useAuth();
