@@ -9,7 +9,6 @@ import { SurfaceCard } from '../components/ui/SurfaceCard';
 import { AppButton } from '../components/ui/AppButton';
 import { ActionSheet } from '../components/ui/ActionSheet';
 import { FadeIn } from '../components/ui/FadeIn';
-import { TVTouchable } from '../components/ui/TVTouchable';
 import { CustomText } from '../components/CustomText';
 import { useAppTheme } from '../util/colorScheme';
 import { useDeviceClass } from '../util/deviceClassConfig';

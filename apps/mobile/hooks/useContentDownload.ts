@@ -12,10 +12,10 @@ interface UseContentDownloadReturn {
   state: DownloadState;
   progress: DownloadProgress | null;
   localUri: string | null;
-  download: (remoteUrl: string, filename: string, persist?: boolean) => Promise<string | null>;
+  download: (_remoteUrl: string, _filename: string, _persist?: boolean) => Promise<string | null>;
   cancel: () => void;
-  remove: (filename: string) => Promise<void>;
-  isDownloaded: (filename: string) => boolean;
+  remove: (_filename: string) => Promise<void>;
+  isDownloaded: (_filename: string) => boolean;
 }
 
 function getDir(persist: boolean): Directory {

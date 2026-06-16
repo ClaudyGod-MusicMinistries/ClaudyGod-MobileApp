@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Image, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import { Animated, Image, Text, TextInput, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
@@ -92,7 +92,7 @@ function DiscoveryItem({ item, onPress }: { item: FeedCardItem; onPress: () => v
   );
 }
 
-function DiscoveryGrid({ items, onPress }: { items: FeedCardItem[]; onPress: (item: FeedCardItem) => void }) {
+function DiscoveryGrid({ items, onPress }: { items: FeedCardItem[]; onPress: (_item: FeedCardItem) => void }) {
   const device = useDeviceClass();
   const numCols = device.isTV ? 4 : device.isDesktop ? 3 : 2;
 
