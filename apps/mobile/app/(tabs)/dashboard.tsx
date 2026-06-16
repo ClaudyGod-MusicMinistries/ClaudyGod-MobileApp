@@ -26,7 +26,7 @@ const INSIGHT_COLORS = {
   warning:     '#EF4444',
   achievement: '#F59E0B',
   opportunity: '#34D399',
-  info:        '#B794F6',
+  info:        '#8B5CF6',
 } as const;
 
 const INSIGHT_ICONS: Record<string, React.ComponentProps<typeof MaterialIcons>['name']> = {
@@ -217,7 +217,7 @@ export default function DashboardScreen() {
                 {numMetricCols <= 2 ? (
                   <>
                     <View style={{ flex: 1, flexDirection: 'column', gap: 10 }}>
-                      <MetricCard icon="headphones"     label="Hours listened" value={hoursListened}           accent="#B794F6" />
+                      <MetricCard icon="headphones"     label="Hours listened" value={hoursListened}           accent="#8B5CF6" />
                       <MetricCard icon="people"         label="Followers"      value={metrics?.followers ?? '--'} accent="#60A5FA" />
                     </View>
                     <View style={{ flex: 1, flexDirection: 'column', gap: 10 }}>
@@ -227,7 +227,7 @@ export default function DashboardScreen() {
                   </>
                 ) : (
                   <>
-                    <MetricCard icon="headphones"    label="Hours listened" value={hoursListened}              accent="#B794F6" />
+                    <MetricCard icon="headphones"    label="Hours listened" value={hoursListened}              accent="#8B5CF6" />
                     <MetricCard icon="visibility"    label="Content views"  value={contentViews}               accent="#34D399" />
                     <MetricCard icon="people"        label="Followers"      value={metrics?.followers ?? '--'}  accent="#60A5FA" />
                     <MetricCard icon="library-music" label="Saved content"  value={metrics?.contentCreated ?? '--'} accent="#FBBF24" />

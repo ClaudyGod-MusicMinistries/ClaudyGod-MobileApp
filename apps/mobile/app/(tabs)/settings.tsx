@@ -218,7 +218,7 @@ export default function SettingsScreen() {
       label: 'Auto-play',
       hint: 'Continue to the next song or message automatically.',
       value: autoPlay,
-      accent: '#B794F6',
+      accent: '#8B5CF6',
       onToggle: (v) => { setAutoPlay(v); persist({ autoplayEnabled: v }); showModal({ title: 'Playback updated', message: v ? 'Auto-play is on.' : 'Auto-play is off.', tone: 'info', icon: 'play-circle-outline' }); },
     },
     {
@@ -318,7 +318,7 @@ export default function SettingsScreen() {
           <View style={isWideLayout ? { flex: 1, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: theme.colors.border } : {}}>
             <SurfaceCard tone="subtle" style={{ paddingHorizontal: theme.spacing.md, paddingVertical: 0 }}>
               {[
-                { icon: 'library-music' as const, label: 'Library',  hint: isAuthenticated ? 'Saved content' : 'Sign in to save', color: '#B794F6', onPress: () => router.push(APP_ROUTES.tabs.library) },
+                { icon: 'library-music' as const, label: 'Library',  hint: isAuthenticated ? 'Saved content' : 'Sign in to save', color: '#8B5CF6', onPress: () => router.push(APP_ROUTES.tabs.library) },
                 { icon: 'search'        as const, label: 'Search',   hint: 'Find songs, videos, and live',              color: '#34D399', onPress: () => router.push(APP_ROUTES.tabs.search) },
               ].map((link, idx) => (
                 <View key={link.label} style={{ borderTopWidth: idx === 0 ? 0 : 1, borderTopColor: theme.colors.border }}>

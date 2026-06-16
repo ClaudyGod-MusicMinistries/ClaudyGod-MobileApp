@@ -52,8 +52,8 @@ const CATEGORY_ICONS: Partial<Record<SearchCategory, React.ComponentProps<typeof
 };
 
 const CATEGORY_COLORS: Partial<Record<SearchCategory, string>> = {
-  All: '#B794F6',
-  audio: '#B794F6',
+  All: '#8B5CF6',
+  audio: '#8B5CF6',
   video: '#60A5FA',
   live: '#F87171',
   playlist: '#FBBF24',
