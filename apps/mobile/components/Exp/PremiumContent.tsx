@@ -26,7 +26,7 @@ import { SkeletonLoader } from '../ui/SkeletonLoader';
 import { useAuth } from '../../context/AuthContext';
 import { useAppTheme } from '../../util/colorScheme';
 import { APP_ROUTES } from '../../util/appRoutes';
-import { BRAND_HERO_ASSET, BRAND_LOGO_ASSET, BRAND_MUSIC_ASSET, BRAND_WORSHIP_ASSET, DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
+import { BRAND_LOGO_ASSET, BRAND_MUSIC_ASSET, BRAND_WORSHIP_ASSET, DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
 import type { FeedCardItem } from '../../services/contentService';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────────
@@ -1560,7 +1560,6 @@ export function ContentShortcuts({ shortcuts }: { shortcuts: ContentShortcut[] }
 // ─── LiveNowBanner ────────────────────────────────────────────────────────────────
 
 export function LiveNowBanner({ item, onPress }: { item: FeedCardItem; onPress: () => void }) {
-  const theme = useAppTheme();
   const { width } = useWindowDimensions();
   const compact = width < 430;
 

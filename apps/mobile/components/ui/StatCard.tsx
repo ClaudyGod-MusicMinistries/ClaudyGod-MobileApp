@@ -8,7 +8,7 @@ import React from 'react';
 import { View, StyleSheet, Animated } from 'react-native';
 import { useAppTheme } from '../../util/colorScheme';
 import { CustomText } from '../CustomText';
-import { spacing, radius, shadows } from '../../styles/designTokens';
+import { spacing, radius } from '../../styles/designTokens';
 
 interface StatCardProps {
   label: string;

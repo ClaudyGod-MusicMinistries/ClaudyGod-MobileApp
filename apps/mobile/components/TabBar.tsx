@@ -393,7 +393,6 @@ function BottomPillTabBar({
 const TabBar = ({ state, navigation }: BottomTabBarProps) => {
   const colorScheme = useColorScheme();
   const palette = colors[colorScheme] ?? colors.dark;
-  const isTV = Platform.isTV;
   const { width } = useWindowDimensions();
   const compact = width < 390;
   const { config } = useMobileAppConfig();
