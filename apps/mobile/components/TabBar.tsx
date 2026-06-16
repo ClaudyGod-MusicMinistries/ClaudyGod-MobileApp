@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Image, Platform, Text, View, useWindowDimensions } from 'react-native';
+import { Image, Platform, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -106,7 +106,7 @@ function SidebarTabBar({
               borderColor: 'rgba(139,92,246,0.22)',
             }}
           >
-            <Image source={BRAND_LOGO_ASSET} resizeMode="cover" style={{ width: '100%', height: '100%' }} />
+            <Image source={BRAND_LOGO_ASSET} resizeMode="cover" style={StyleSheet.absoluteFillObject} />
           </View>
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={{ color: '#FFFFFF', fontSize: isTV ? 16 : 14, fontWeight: '800', letterSpacing: -0.3 }} numberOfLines={1}>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Image, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { CustomText } from '../CustomText';
 import { BRAND_LOGO_ASSET, BRAND_WORSHIP_ASSET } from '../../util/brandAssets';
@@ -54,20 +54,11 @@ export function AuthBrandPanel({ salutation, description, compact = false }: Aut
         backgroundColor: '#0D0919',
       }}
     >
-      {/* Worship image */}
+      {/* Worship image — absoluteFillObject resolves to positioned ancestor, safe on web */}
       <Image
         source={BRAND_WORSHIP_ASSET}
         resizeMode="cover"
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          width: '100%',
-          height: '100%',
-          opacity: 0.55,
-        }}
+        style={[StyleSheet.absoluteFillObject, { opacity: 0.55 }]}
       />
 
       {/* Bottom scrim for text readability — allowed on image containers */}

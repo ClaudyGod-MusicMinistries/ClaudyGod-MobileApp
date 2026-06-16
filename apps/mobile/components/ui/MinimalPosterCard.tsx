@@ -1,6 +1,6 @@
 // components/ui/MinimalPosterCard.tsx
 import React from 'react';
-import { View, Image, Pressable, useWindowDimensions } from 'react-native';
+import { View, Image, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../CustomText';
@@ -68,7 +68,7 @@ export function MinimalPosterCard({
           ...theme.shadows.soft,
         }}
       >
-        <Image source={{ uri: imageUrl }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+        <Image source={{ uri: imageUrl }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
 
         <LinearGradient
           colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.22)', 'rgba(0,0,0,0.88)']}
