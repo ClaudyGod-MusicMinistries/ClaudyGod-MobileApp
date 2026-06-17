@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Switch, Text, View } from 'react-native';
+import { Switch, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
@@ -58,13 +58,13 @@ function SettingRow({ item }: { item: SettingItem }) {
         <MaterialIcons name={item.icon} size={device.isTV ? 22 : 19} color={item.value ? accentColor : theme.colors.textMuted} />
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={{ color: theme.colors.text, fontSize: device.isTV ? 15 : 13.5, fontWeight: '600' }}>
+        <CustomText style={{ color: theme.colors.text, fontSize: device.isTV ? 15 : 13.5, fontWeight: '600' }}>
           {item.label}
-        </Text>
+        </CustomText>
         {item.hint ? (
-          <Text style={{ color: theme.colors.textSecondary, fontSize: device.isTV ? 12.5 : 11.5, marginTop: 3, lineHeight: 16 }}>
+          <CustomText style={{ color: theme.colors.textSecondary, fontSize: device.isTV ? 12.5 : 11.5, marginTop: 3, lineHeight: 16 }}>
             {item.hint}
-          </Text>
+          </CustomText>
         ) : null}
       </View>
       <Switch
@@ -118,12 +118,12 @@ function AppearanceCard({ value, onChange }: { value: ThemePreference; onChange:
               >
                 <MaterialIcons name={option.icon} size={device.isTV ? 22 : 18} color={active ? theme.colors.primary : theme.colors.textMuted} />
               </View>
-              <Text style={{ color: active ? theme.colors.text : theme.colors.textSecondary, fontSize: device.isTV ? 14 : 12, fontWeight: active ? '700' : '500' }}>
+              <CustomText style={{ color: active ? theme.colors.text : theme.colors.textSecondary, fontSize: device.isTV ? 14 : 12, fontWeight: active ? '700' : '500' }}>
                 {option.label}
-              </Text>
-              <Text style={{ color: theme.colors.textMuted, fontSize: device.isTV ? 11 : 10, textAlign: 'center' }}>
+              </CustomText>
+              <CustomText style={{ color: theme.colors.textMuted, fontSize: device.isTV ? 11 : 10, textAlign: 'center' }}>
                 {option.hint}
-              </Text>
+              </CustomText>
             </TVTouchable>
           );
         })}
