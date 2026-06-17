@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Image, Platform, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Image, Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -109,19 +109,19 @@ function SidebarTabBar({
             <Image source={BRAND_LOGO_ASSET} resizeMode="cover" style={StyleSheet.absoluteFillObject} />
           </View>
           <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={{ color: '#FFFFFF', fontSize: isTV ? 16 : 14, fontWeight: '800', letterSpacing: -0.3 }} numberOfLines={1}>
+            <CustomText style={{ color: '#FFFFFF', fontSize: isTV ? 16 : 14, fontWeight: '700', letterSpacing: -0.3 }} numberOfLines={1}>
               ClaudyGod
-            </Text>
-            <Text style={{ color: palette.textMuted, fontSize: isTV ? 11 : 10, marginTop: 1 }} numberOfLines={1}>
+            </CustomText>
+            <CustomText style={{ color: palette.textMuted, fontSize: isTV ? 11 : 10, marginTop: 1 }} numberOfLines={1}>
               Worship & Ministry
-            </Text>
+            </CustomText>
           </View>
         </View>
 
         {/* Section label */}
-        <Text style={{ color: palette.textMuted, fontSize: 9.5, fontWeight: '700', letterSpacing: 1.1, textTransform: 'uppercase', paddingHorizontal: 10, marginBottom: 8 }}>
+        <CustomText style={{ color: palette.textMuted, fontSize: 9.5, fontWeight: '700', letterSpacing: 1.1, textTransform: 'uppercase', paddingHorizontal: 10, marginBottom: 8 }}>
           Navigate
-        </Text>
+        </CustomText>
 
         {/* Main nav items */}
         <View style={{ gap: 2 }}>
@@ -173,7 +173,7 @@ function SidebarTabBar({
                   )}
                 </View>
 
-                <Text
+                <CustomText
                   style={{
                     color: focused ? '#F7F2FF' : palette.textMuted,
                     fontSize: isTV ? 15 : 13.5,
@@ -182,7 +182,7 @@ function SidebarTabBar({
                   }}
                 >
                   {item.label}
-                </Text>
+                </CustomText>
 
                 {focused ? (
                   <View
@@ -236,7 +236,7 @@ function SidebarTabBar({
                 color={currentRouteName === 'settings' ? palette.primary : palette.textMuted}
               />
             </View>
-            <Text
+            <CustomText
               style={{
                 color: currentRouteName === 'settings' ? '#F7F2FF' : palette.textMuted,
                 fontSize: isTV ? 14 : 13,
@@ -244,7 +244,7 @@ function SidebarTabBar({
               }}
             >
               Settings
-            </Text>
+            </CustomText>
           </TVTouchable>
         </View>
       ) : null}

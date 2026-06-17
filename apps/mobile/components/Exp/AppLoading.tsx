@@ -78,7 +78,7 @@ export function AppLoadingScreen() {
                 fontSize: isCompact ? 24 : 28,
                 fontWeight: '700',
                 letterSpacing: -0.6,
-                fontFamily: 'Manrope_700Bold',
+                fontFamily: 'PlusJakartaSans_700Bold',
                 textAlign: 'center',
               }}
             >
@@ -90,7 +90,7 @@ export function AppLoadingScreen() {
                 fontSize: 10,
                 letterSpacing: 3.4,
                 textTransform: 'uppercase',
-                fontFamily: 'Manrope_400Regular',
+                fontFamily: 'PlusJakartaSans_400Regular',
                 textAlign: 'center',
                 marginTop: 10,
                 opacity: shimmer,

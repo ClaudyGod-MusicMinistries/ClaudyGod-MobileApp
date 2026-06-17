@@ -1,75 +1,75 @@
 import {
-  Manrope_400Regular,
-  Manrope_600SemiBold,
-  Manrope_700Bold,
-} from '@expo-google-fonts/manrope';
+  PlusJakartaSans_400Regular,
+  PlusJakartaSans_600SemiBold,
+  PlusJakartaSans_700Bold,
+} from '@expo-google-fonts/plus-jakarta-sans';
 import * as Font from 'expo-font';
 
 export const fontConfig = {
   hero: {
-    fontFamily: 'Manrope_700Bold',
+    fontFamily: 'PlusJakartaSans_700Bold',
     fontSize: 22,
     lineHeight: 29,
     fontWeight: '700' as const,
     letterSpacing: -0.4,
   },
   display: {
-    fontFamily: 'Manrope_700Bold',
+    fontFamily: 'PlusJakartaSans_700Bold',
     fontSize: 19,
     lineHeight: 25,
     fontWeight: '700' as const,
     letterSpacing: -0.2,
   },
   heading: {
-    fontFamily: 'Manrope_700Bold',
+    fontFamily: 'PlusJakartaSans_700Bold',
     fontSize: 17,
     lineHeight: 22,
     fontWeight: '700' as const,
     letterSpacing: -0.1,
   },
   title: {
-    fontFamily: 'Manrope_600SemiBold',
+    fontFamily: 'PlusJakartaSans_600SemiBold',
     fontSize: 14,
     lineHeight: 19,
     fontWeight: '600' as const,
     letterSpacing: 0,
   },
   subheading: {
-    fontFamily: 'Manrope_400Regular',
+    fontFamily: 'PlusJakartaSans_400Regular',
     fontSize: 13,
     lineHeight: 18,
     fontWeight: '400' as const,
     letterSpacing: 0,
   },
   subtitle: {
-    fontFamily: 'Manrope_400Regular',
+    fontFamily: 'PlusJakartaSans_400Regular',
     fontSize: 12,
     lineHeight: 17,
     fontWeight: '400' as const,
     letterSpacing: 0,
   },
   body: {
-    fontFamily: 'Manrope_400Regular',
+    fontFamily: 'PlusJakartaSans_400Regular',
     fontSize: 13,
     lineHeight: 19,
     fontWeight: '400' as const,
   },
   label: {
-    fontFamily: 'Manrope_600SemiBold',
+    fontFamily: 'PlusJakartaSans_600SemiBold',
     fontSize: 11,
     lineHeight: 15,
     fontWeight: '600' as const,
     letterSpacing: 0,
   },
   meta: {
-    fontFamily: 'Manrope_400Regular',
+    fontFamily: 'PlusJakartaSans_400Regular',
     fontSize: 10,
     lineHeight: 14,
     fontWeight: '400' as const,
     letterSpacing: 0,
   },
   caption: {
-    fontFamily: 'Manrope_400Regular',
+    fontFamily: 'PlusJakartaSans_400Regular',
     fontSize: 10,
     lineHeight: 14,
     fontWeight: '400' as const,
@@ -108,17 +108,17 @@ export function getResponsiveFontStyle(variant: FontVariantKey, width: number, i
 
 export const loadFonts = async () => {
   await Font.loadAsync({
-    Manrope_400Regular,
-    Manrope_600SemiBold,
-    Manrope_700Bold,
+    PlusJakartaSans_400Regular,
+    PlusJakartaSans_600SemiBold,
+    PlusJakartaSans_700Bold,
   });
 };
 
 export const fontWeights = {
-  light: 'Manrope_400Regular',
-  regular: 'Manrope_400Regular',
-  medium: 'Manrope_400Regular',
-  semiBold: 'Manrope_600SemiBold',
-  bold: 'Manrope_700Bold',
-  extraBold: 'Manrope_700Bold',
+  light: 'PlusJakartaSans_400Regular',
+  regular: 'PlusJakartaSans_400Regular',
+  medium: 'PlusJakartaSans_400Regular',
+  semiBold: 'PlusJakartaSans_600SemiBold',
+  bold: 'PlusJakartaSans_700Bold',
+  extraBold: 'PlusJakartaSans_700Bold',
 };
