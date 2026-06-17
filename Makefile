@@ -549,10 +549,13 @@ setup-admin:
 	@printf "$(GREEN)✓ SUPER_ADMIN '$(EMAIL)' created. Sign in at your admin panel.$(NC)\n"
 
 # ── Legacy container cleanup ──────────────────────────────────────────────────
-# Removes old claudygod_* containers that predate the current production stack.
-# Safe to run — will not touch wisdom_*, shared_*, or claudygod-production-* containers.
+# Removes old containers that predate the current claudygod-mobile-* stack.
+# Safe to run — will not touch wisdom_*, shared_*, or claudygod-mobile-* containers.
 clean-legacy:
-	@printf "$(YELLOW)Stopping legacy ClaudyGod containers...$(NC)\n"
+	@printf "$(YELLOW)Stopping legacy claudygod-production-* containers...$(NC)\n"
+	@docker stop claudygod-production-api-1 claudygod-production-worker-1 claudygod-production-redis-1 claudygod-production-migrate-1 claudygod-production-admin-web-1 claudygod-production-mobile-web-1 claudygod-production-postfix-relay-1 2>/dev/null || true
+	@docker rm   claudygod-production-api-1 claudygod-production-worker-1 claudygod-production-redis-1 claudygod-production-migrate-1 claudygod-production-admin-web-1 claudygod-production-mobile-web-1 claudygod-production-postfix-relay-1 2>/dev/null || true
+	@printf "$(YELLOW)Stopping legacy claudygod_* containers...$(NC)\n"
 	@docker stop claudygod_api claudygod_web claudygod_redis claudygod_grafana 2>/dev/null || true
 	@docker rm   claudygod_api claudygod_web claudygod_redis claudygod_grafana 2>/dev/null || true
 	@printf "$(GREEN)✓ Legacy containers removed$(NC)\n"
