@@ -6,7 +6,6 @@ import { useRouter } from 'expo-router';
 import { SettingsScaffold } from '../../components/layout/SettingsScaffold';
 import { CustomText } from '../../components/CustomText';
 import { useAppTheme } from '../../util/colorScheme';
-import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { AppButton } from '../../components/ui/AppButton';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { FadeIn } from '../../components/ui/FadeIn';
@@ -45,6 +44,21 @@ function frequencyLabel(value: DonateFrequency) {
   return 'Monthly';
 }
 
+function Section({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
+  const theme = useAppTheme();
+  return (
+    <View style={{ backgroundColor: '#110E1A', borderRadius: 16, padding: 20, gap: 14 }}>
+      <View style={{ gap: 4 }}>
+        <CustomText style={{ color: '#F7F2FF', fontSize: 15, fontWeight: '700' }}>{title}</CustomText>
+        {subtitle ? (
+          <CustomText style={{ color: 'rgba(247,242,255,0.40)', fontSize: 13 }}>{subtitle}</CustomText>
+        ) : null}
+      </View>
+      {children}
+    </View>
+  );
+}
+
 export default function Donate() {
   const theme = useAppTheme();
   const router = useRouter();
@@ -55,10 +69,7 @@ export default function Donate() {
   const donateConfig = config?.donate;
 
   const quickAmounts = useMemo(() => donateConfig?.quickAmounts ?? [], [donateConfig]);
-  const quickAmountsByCurrency = useMemo(
-    () => donateConfig?.quickAmountsByCurrency ?? {},
-    [donateConfig],
-  );
+  const quickAmountsByCurrency = useMemo(() => donateConfig?.quickAmountsByCurrency ?? {}, [donateConfig]);
   const currencyOptions = useMemo(() => donateConfig?.currencyOptions ?? [], [donateConfig]);
   const methods = useMemo<DonateMethod[]>(
     () =>
@@ -137,10 +148,7 @@ export default function Donate() {
   const supportEmail = config?.privacy?.contactEmail ?? 'support@claudygod.org';
 
   const continueToReview = () => {
-    if (!selectedAmount) {
-      return;
-    }
-
+    if (!selectedAmount) return;
     router.push({
       pathname: APP_ROUTES.settingsPages.payment,
       params: {
@@ -166,98 +174,90 @@ export default function Donate() {
       subtitle="Partner with the ministry through a clear, focused giving flow."
       hero={
         <FadeIn>
-          <SurfaceCard tone="strong" style={{ padding: 0 }}>
-            <View style={{ padding: theme.spacing.lg, backgroundColor: theme.colors.primary, borderRadius: 14 }}>
-              <View style={{ flexDirection: 'row', gap: theme.spacing.md, alignItems: 'center' }}>
-                <View
-                  style={{
-                    width: 56,
-                    height: 56,
-                    borderRadius: 22,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: 'rgba(255,255,255,0.18)',
-                    borderWidth: 1,
-                    borderColor: 'rgba(255,255,255,0.26)',
-                  }}
-                >
-                  <MaterialIcons name="volunteer-activism" size={26} color="#FFFFFF" />
-                </View>
-
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <CustomText variant="caption" style={{ color: 'rgba(255,255,255,0.78)', textTransform: 'uppercase', letterSpacing: 0.72 }}>
-                    Support
-                  </CustomText>
-                  <CustomText variant="heading" style={{ color: '#FFFFFF', marginTop: 4 }}>
-                    Give with clarity and confidence
-                  </CustomText>
-                  <CustomText variant="caption" style={{ color: 'rgba(255,255,255,0.78)', marginTop: 6, lineHeight: 18 }} numberOfLines={2}>
-                    Select an amount, choose a rhythm, then review before payment.
-                  </CustomText>
-                </View>
-              </View>
-
+          {/* Hero banner */}
+          <View
+            style={{
+              backgroundColor: '#8B5CF6',
+              borderRadius: 18,
+              padding: 20,
+            }}
+          >
+            <View style={{ flexDirection: 'row', gap: 14, alignItems: 'center' }}>
               <View
                 style={{
-                  flexDirection: isCompact ? 'column' : 'row',
-                  gap: 8,
-                  marginTop: theme.spacing.lg,
+                  width: 54,
+                  height: 54,
+                  borderRadius: 20,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: 'rgba(255,255,255,0.15)',
                 }}
               >
-                {[
-                  { label: selectedAmount ? `${selectedCurrency} ${selectedAmount}` : 'Select amount', icon: 'payments' as const },
-                  { label: frequencyLabel(selectedFrequency), icon: 'repeat' as const },
-                  { label: selectedMethod?.label ?? 'Payment method', icon: selectedMethod?.icon ?? ('credit-card' as const) },
-                ].map((item) => (
-                  <View
-                    key={item.label}
-                    style={{
-                      flex: 1,
-                      minHeight: 38,
-                      borderRadius: theme.radius.pill,
-                      borderWidth: 1,
-                      borderColor: 'rgba(255,255,255,0.24)',
-                      backgroundColor: 'rgba(255,255,255,0.13)',
-                      paddingHorizontal: 12,
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 7,
-                    }}
-                  >
-                    <MaterialIcons name={item.icon} size={16} color="#FFFFFF" />
-                    <CustomText variant="caption" style={{ color: '#FFFFFF', flex: 1 }} numberOfLines={1}>
-                      {item.label}
-                    </CustomText>
-                  </View>
-                ))}
+                <MaterialIcons name="volunteer-activism" size={26} color="#FFFFFF" />
+              </View>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <CustomText style={{ color: 'rgba(255,255,255,0.72)', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8 }}>
+                  Support the ministry
+                </CustomText>
+                <CustomText style={{ color: '#FFFFFF', fontSize: 17, fontWeight: '700', marginTop: 4 }}>
+                  Give with clarity and confidence
+                </CustomText>
+                <CustomText style={{ color: 'rgba(255,255,255,0.72)', fontSize: 13, marginTop: 5, lineHeight: 18 }} numberOfLines={2}>
+                  Select an amount, choose a rhythm, then review before payment.
+                </CustomText>
               </View>
             </View>
-          </SurfaceCard>
+
+            {/* Progress pills */}
+            <View style={{ flexDirection: isCompact ? 'column' : 'row', gap: 8, marginTop: 18 }}>
+              {[
+                { label: selectedAmount ? `${selectedCurrency} ${selectedAmount}` : 'Select amount', icon: 'payments' as const },
+                { label: frequencyLabel(selectedFrequency), icon: 'repeat' as const },
+                { label: selectedMethod?.label ?? 'Payment method', icon: selectedMethod?.icon ?? ('credit-card' as const) },
+              ].map((item) => (
+                <View
+                  key={item.label}
+                  style={{
+                    flex: 1,
+                    minHeight: 38,
+                    borderRadius: 999,
+                    backgroundColor: 'rgba(255,255,255,0.15)',
+                    paddingHorizontal: 12,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 7,
+                  }}
+                >
+                  <MaterialIcons name={item.icon} size={15} color="#FFFFFF" />
+                  <CustomText style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '600', flex: 1 }} numberOfLines={1}>
+                    {item.label}
+                  </CustomText>
+                </View>
+              ))}
+            </View>
+          </View>
         </FadeIn>
       }
     >
       {!hasGivingConfiguration ? (
-        <SurfaceCard tone="subtle" style={{ padding: theme.spacing.xl }}>
-          <CustomText variant="heading" style={{ color: theme.colors.text }}>
+        <View style={{ backgroundColor: '#110E1A', borderRadius: 16, padding: 24, gap: 12 }}>
+          <CustomText style={{ color: '#F7F2FF', fontSize: 17, fontWeight: '700' }}>
             Giving options are being prepared
           </CustomText>
-          <CustomText variant="body" style={{ color: theme.colors.textSecondary, marginTop: 8 }}>
+          <CustomText style={{ color: 'rgba(247,242,255,0.45)', fontSize: 13, lineHeight: 20 }}>
             The giving flow is not available in the app right now. Contact support for available giving instructions.
           </CustomText>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 18 }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 6 }}>
             <AppButton title="Contact support" onPress={contactGivingSupport} />
             <AppButton title="Help center" variant="secondary" onPress={() => router.push(APP_ROUTES.settingsPages.help)} />
           </View>
-        </SurfaceCard>
+        </View>
       ) : null}
 
       {currencyOptions.length ? (
         <FadeIn delay={60}>
-          <SurfaceCard tone="subtle" style={{ padding: theme.spacing.lg }}>
-            <CustomText variant="heading" style={{ color: theme.colors.text }}>
-              Choose currency
-            </CustomText>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
+          <Section title="Currency">
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
               {currencyOptions.map((option) => {
                 const active = selectedCurrency === option.code;
                 return (
@@ -265,36 +265,28 @@ export default function Donate() {
                     key={option.code}
                     onPress={() => setSelectedCurrency(option.code)}
                     style={{
-                      borderRadius: theme.radius.pill,
-                      borderWidth: 1,
-                      borderColor: active ? theme.colors.primary : theme.colors.border,
-                      backgroundColor: active ? `${theme.colors.primary}1A` : theme.colors.surface,
-                      paddingHorizontal: 13,
-                      paddingVertical: 9,
+                      borderRadius: 999,
+                      backgroundColor: active ? '#8B5CF6' : 'rgba(255,255,255,0.07)',
+                      paddingHorizontal: 14,
+                      paddingVertical: 10,
                     }}
                     showFocusBorder={false}
                   >
-                    <CustomText variant="label" style={{ color: active ? theme.colors.primary : theme.colors.text }}>
-                      {option.code} {option.symbol ? `· ${option.symbol}` : ''}
+                    <CustomText style={{ color: active ? '#FFFFFF' : 'rgba(247,242,255,0.55)', fontSize: 13, fontWeight: '600' }}>
+                      {option.code}{option.symbol ? ` · ${option.symbol}` : ''}
                     </CustomText>
                   </TVTouchable>
                 );
               })}
             </View>
-          </SurfaceCard>
+          </Section>
         </FadeIn>
       ) : null}
 
       {activeQuickAmounts.length ? (
         <FadeIn delay={90}>
-          <SurfaceCard tone="subtle" style={{ padding: theme.spacing.lg }}>
-            <CustomText variant="heading" style={{ color: theme.colors.text }}>
-              Select amount
-            </CustomText>
-            <CustomText variant="body" style={{ color: theme.colors.textSecondary, marginTop: 6 }}>
-              Choose the giving amount you want to review.
-            </CustomText>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 14 }}>
+          <Section title="Select amount" subtitle="Choose the giving amount you want to review.">
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
               {activeQuickAmounts.map((amount) => {
                 const active = selectedAmount === amount;
                 return (
@@ -303,36 +295,32 @@ export default function Donate() {
                     onPress={() => setSelectedAmount(amount)}
                     style={{
                       width: isCompact ? '47%' : isTablet ? '23.5%' : '30.8%',
-                      minHeight: 58,
-                      borderRadius: theme.radius.xl,
-                      borderWidth: 1,
-                      borderColor: active ? theme.colors.primary : theme.colors.border,
-                      backgroundColor: active ? `${theme.colors.primary}1A` : theme.colors.surface,
+                      minHeight: 60,
+                      borderRadius: 14,
+                      backgroundColor: active ? '#8B5CF6' : 'rgba(255,255,255,0.07)',
                       alignItems: 'center',
                       justifyContent: 'center',
+                      gap: 3,
                     }}
                     showFocusBorder={false}
                   >
-                    <CustomText variant="heading" style={{ color: active ? theme.colors.primary : theme.colors.text }}>
+                    <CustomText style={{ color: active ? '#FFFFFF' : '#F7F2FF', fontSize: 18, fontWeight: '700' }}>
                       {amount}
                     </CustomText>
-                    <CustomText variant="caption" style={{ color: theme.colors.textSecondary }}>
+                    <CustomText style={{ color: active ? 'rgba(255,255,255,0.75)' : 'rgba(247,242,255,0.40)', fontSize: 11 }}>
                       {selectedCurrency}
                     </CustomText>
                   </TVTouchable>
                 );
               })}
             </View>
-          </SurfaceCard>
+          </Section>
         </FadeIn>
       ) : null}
 
       <FadeIn delay={120}>
-        <SurfaceCard tone="subtle" style={{ padding: theme.spacing.lg }}>
-          <CustomText variant="heading" style={{ color: theme.colors.text }}>
-            Giving rhythm
-          </CustomText>
-          <View style={{ flexDirection: isCompact ? 'column' : 'row', gap: 10, marginTop: 14 }}>
+        <Section title="Giving rhythm">
+          <View style={{ flexDirection: isCompact ? 'column' : 'row', gap: 10 }}>
             {(['daily', 'weekly', 'monthly'] as DonateFrequency[]).map((frequency) => {
               const active = selectedFrequency === frequency;
               return (
@@ -341,33 +329,28 @@ export default function Donate() {
                   onPress={() => setSelectedFrequency(frequency)}
                   style={{
                     flex: 1,
-                    minHeight: 58,
-                    borderRadius: theme.radius.xl,
-                    borderWidth: 1,
-                    borderColor: active ? theme.colors.primary : theme.colors.border,
-                    backgroundColor: active ? `${theme.colors.primary}1A` : theme.colors.surface,
+                    minHeight: 54,
+                    borderRadius: 14,
+                    backgroundColor: active ? '#8B5CF6' : 'rgba(255,255,255,0.07)',
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
                   showFocusBorder={false}
                 >
-                  <CustomText variant="label" style={{ color: active ? theme.colors.primary : theme.colors.text }}>
+                  <CustomText style={{ color: active ? '#FFFFFF' : 'rgba(247,242,255,0.55)', fontSize: 14, fontWeight: '600' }}>
                     {frequencyLabel(frequency)}
                   </CustomText>
                 </TVTouchable>
               );
             })}
           </View>
-        </SurfaceCard>
+        </Section>
       </FadeIn>
 
       {methods.length ? (
         <FadeIn delay={150}>
-          <SurfaceCard tone="subtle" style={{ padding: theme.spacing.lg }}>
-            <CustomText variant="heading" style={{ color: theme.colors.text }}>
-              Preferred method
-            </CustomText>
-            <View style={{ gap: 10, marginTop: 14 }}>
+          <Section title="Preferred method">
+            <View style={{ gap: 8 }}>
               {methods.map((method) => {
                 const active = selectedMethod?.id === method.id;
                 return (
@@ -377,12 +360,10 @@ export default function Donate() {
                     style={{
                       flexDirection: 'row',
                       alignItems: 'center',
-                      gap: 12,
-                      borderRadius: theme.radius.xl,
-                      borderWidth: 1,
-                      borderColor: active ? theme.colors.primary : theme.colors.border,
-                      backgroundColor: active ? `${theme.colors.primary}14` : theme.colors.surface,
-                      padding: theme.spacing.md,
+                      gap: 14,
+                      borderRadius: 14,
+                      backgroundColor: active ? 'rgba(139,92,246,0.18)' : 'rgba(255,255,255,0.05)',
+                      padding: 14,
                     }}
                     showFocusBorder={false}
                   >
@@ -393,69 +374,68 @@ export default function Donate() {
                         borderRadius: 21,
                         alignItems: 'center',
                         justifyContent: 'center',
-                        backgroundColor: `${theme.colors.primary}1A`,
+                        backgroundColor: active ? 'rgba(139,92,246,0.25)' : 'rgba(255,255,255,0.08)',
                       }}
                     >
-                      <MaterialIcons name={method.icon} size={19} color={theme.colors.primary} />
+                      <MaterialIcons name={method.icon} size={19} color={active ? '#A78BFA' : 'rgba(247,242,255,0.55)'} />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <CustomText variant="label" style={{ color: theme.colors.text }}>
+                      <CustomText style={{ color: '#F7F2FF', fontSize: 14, fontWeight: '600' }}>
                         {method.label}
                       </CustomText>
-                      <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 3 }}>
+                      <CustomText style={{ color: 'rgba(247,242,255,0.40)', fontSize: 12, marginTop: 2 }}>
                         {method.subtitle}
                       </CustomText>
                     </View>
                     {method.badge ? (
-                      <CustomText variant="caption" style={{ color: theme.colors.primary }}>
+                      <CustomText style={{ color: '#A78BFA', fontSize: 12, fontWeight: '600' }}>
                         {method.badge}
                       </CustomText>
+                    ) : null}
+                    {active ? (
+                      <MaterialIcons name="check-circle" size={18} color="#8B5CF6" />
                     ) : null}
                   </TVTouchable>
                 );
               })}
             </View>
-          </SurfaceCard>
+          </Section>
         </FadeIn>
       ) : null}
 
       {impactBreakdown.length ? (
         <FadeIn delay={180}>
-          <SurfaceCard tone="subtle" style={{ padding: theme.spacing.lg }}>
-            <CustomText variant="heading" style={{ color: theme.colors.text }}>
-              Ministry impact
-            </CustomText>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 14 }}>
+          <Section title="Ministry impact">
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
               {impactBreakdown.slice(0, 4).map((impact) => (
                 <View
                   key={impact.label}
                   style={{
                     width: isCompact ? '100%' : isTablet ? '23.5%' : '47%',
-                    borderRadius: theme.radius.lg,
-                    borderWidth: 1,
-                    borderColor: theme.colors.border,
-                    backgroundColor: theme.colors.surface,
-                    padding: theme.spacing.md,
+                    borderRadius: 14,
+                    backgroundColor: 'rgba(255,255,255,0.05)',
+                    padding: 16,
+                    gap: 8,
                   }}
                 >
-                  <MaterialIcons name={impact.icon} size={18} color={theme.colors.primary} />
-                  <CustomText variant="heading" style={{ color: theme.colors.text, marginTop: 8 }}>
+                  <MaterialIcons name={impact.icon} size={18} color="#8B5CF6" />
+                  <CustomText style={{ color: '#F7F2FF', fontSize: 20, fontWeight: '700' }}>
                     {impact.value}%
                   </CustomText>
-                  <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 3 }}>
+                  <CustomText style={{ color: 'rgba(247,242,255,0.40)', fontSize: 12 }}>
                     {impact.label}
                   </CustomText>
                 </View>
               ))}
             </View>
-          </SurfaceCard>
+          </Section>
         </FadeIn>
       ) : null}
 
       {selectedPlan ? (
         <FadeIn delay={210}>
-          <SurfaceCard tone="strong" style={{ padding: theme.spacing.lg }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <View style={{ backgroundColor: '#110E1A', borderRadius: 16, padding: 16 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
               <View
                 style={{
                   width: 44,
@@ -463,51 +443,45 @@ export default function Donate() {
                   borderRadius: 22,
                   alignItems: 'center',
                   justifyContent: 'center',
-                  backgroundColor: `${theme.colors.primary}18`,
-                  borderWidth: 1,
-                  borderColor: theme.colors.border,
+                  backgroundColor: 'rgba(139,92,246,0.15)',
                 }}
               >
-                <MaterialIcons name={selectedPlan.icon} size={20} color={theme.colors.primary} />
+                <MaterialIcons name={selectedPlan.icon} size={20} color="#8B5CF6" />
               </View>
               <View style={{ flex: 1, minWidth: 0 }}>
-                <CustomText variant="caption" style={{ color: theme.colors.primary, textTransform: 'uppercase', letterSpacing: 0.72 }}>
+                <CustomText style={{ color: '#8B5CF6', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8 }}>
                   Giving summary
                 </CustomText>
-                <CustomText variant="heading" style={{ color: theme.colors.text, marginTop: 4 }} numberOfLines={1}>
+                <CustomText style={{ color: '#F7F2FF', fontSize: 15, fontWeight: '700', marginTop: 4 }} numberOfLines={1}>
                   {selectedPlan.name}
                 </CustomText>
-                <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 4 }} numberOfLines={2}>
+                <CustomText style={{ color: 'rgba(247,242,255,0.40)', fontSize: 12, marginTop: 3 }} numberOfLines={2}>
                   {selectedPlan.note}
                 </CustomText>
               </View>
             </View>
-          </SurfaceCard>
+          </View>
         </FadeIn>
       ) : null}
 
-      <SurfaceCard tone="subtle" style={{ padding: theme.spacing.md }}>
-        <View style={{ flexDirection: isCompact ? 'column' : 'row', gap: 10 }}>
-          <AppButton
-            title="Review giving"
-            size="lg"
-            fullWidth
-            disabled={!selectedAmount}
-            onPress={continueToReview}
-            style={{ flex: 1 }}
-            leftIcon={<MaterialIcons name="lock-outline" size={18} color={theme.colors.textInverse} />}
-          />
-          <AppButton
-            title="Need help?"
-            variant="secondary"
-            size="lg"
-            fullWidth
-            onPress={contactGivingSupport}
-            style={{ flex: 1 }}
-            leftIcon={<MaterialIcons name="support-agent" size={18} color={theme.colors.text} />}
-          />
-        </View>
-      </SurfaceCard>
+      <View style={{ gap: 10 }}>
+        <AppButton
+          title="Review giving"
+          size="lg"
+          fullWidth
+          disabled={!selectedAmount}
+          onPress={continueToReview}
+          leftIcon={<MaterialIcons name="lock-outline" size={18} color={theme.colors.textInverse} />}
+        />
+        <AppButton
+          title="Need help?"
+          variant="secondary"
+          size="lg"
+          fullWidth
+          onPress={contactGivingSupport}
+          leftIcon={<MaterialIcons name="support-agent" size={18} color={theme.colors.text} />}
+        />
+      </View>
     </SettingsScaffold>
   );
 }
