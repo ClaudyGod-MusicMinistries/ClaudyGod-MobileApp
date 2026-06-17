@@ -155,7 +155,7 @@ export function AuthTextField({
               color: '#FFFFFF',
               fontSize: inputFontSize,
               lineHeight: inputLineHeight,
-              fontFamily: 'Manrope_400Regular',
+              fontFamily: 'PlusJakartaSans_400Regular',
               paddingVertical: compact ? 12 : 13,
               paddingHorizontal: 0,
               ...(isWeb
