@@ -5,7 +5,9 @@
  */
 
 import React, { useState, useRef } from 'react';
-import { View, Image, Pressable, StyleSheet, Animated } from 'react-native';
+import { View, Image, Platform, Pressable, StyleSheet, Animated } from 'react-native';
+
+const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../CustomText';
@@ -65,12 +67,12 @@ export function ModernContentCard({
       Animated.timing(scaleAnim, {
         toValue: designSystem.interaction.pressScale,
         duration: designSystem.timing.fast,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
       Animated.timing(shadowOpacityAnim, {
         toValue: 0.25,
         duration: designSystem.timing.fast,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
     ]).start();
   };
@@ -81,12 +83,12 @@ export function ModernContentCard({
       Animated.timing(scaleAnim, {
         toValue: 1,
         duration: designSystem.timing.moderate,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
       Animated.timing(shadowOpacityAnim, {
         toValue: 0.1,
         duration: designSystem.timing.moderate,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
     ]).start();
   };

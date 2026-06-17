@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
+  Platform,
   View,
   StatusBar,
 } from 'react-native';

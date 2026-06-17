@@ -10,10 +10,13 @@ import {
   TextInput,
   StyleSheet,
   Animated,
+  Platform,
   type StyleProp,
   type ViewStyle,
   TextInputProps as RNTextInputProps,
 } from 'react-native';
+
+const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 import { useAppTheme } from '../../util/colorScheme';
 import { CustomText } from '../CustomText';
 
@@ -47,7 +50,7 @@ export const ModernInput: React.FC<ModernInputProps> = ({
       }),
       Animated.spring(scaleAnim, {
         toValue: 1.02,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
     ]).start();
   };
@@ -62,7 +65,7 @@ export const ModernInput: React.FC<ModernInputProps> = ({
         }),
         Animated.spring(scaleAnim, {
           toValue: 1,
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
       ]).start();
     }

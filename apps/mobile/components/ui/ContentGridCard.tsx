@@ -4,7 +4,9 @@
  */
 
 import React, { useState } from 'react';
-import { Image, Pressable, StyleSheet, View, Animated } from 'react-native';
+import { Image, Platform, Pressable, StyleSheet, View, Animated } from 'react-native';
+
+const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../CustomText';
@@ -41,7 +43,7 @@ export function ContentGridCard({
     setPressed(true);
     Animated.spring(scaleAnim, {
       toValue: 0.95,
-      useNativeDriver: true,
+      useNativeDriver: USE_NATIVE_DRIVER,
     }).start();
   };
 
@@ -49,7 +51,7 @@ export function ContentGridCard({
     setPressed(false);
     Animated.spring(scaleAnim, {
       toValue: 1,
-      useNativeDriver: true,
+      useNativeDriver: USE_NATIVE_DRIVER,
     }).start();
   };
 
