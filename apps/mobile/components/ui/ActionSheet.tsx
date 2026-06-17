@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import {
   Animated,
   Modal,
+  Platform,
   Pressable,
   StyleSheet,
   View,
@@ -10,6 +11,8 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../CustomText';
 import { TVTouchable } from './TVTouchable';
 import { useAppTheme } from '../../util/colorScheme';
+
+const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
 type ActionTone = 'default' | 'destructive' | 'accent';
 
@@ -52,12 +55,12 @@ export function ActionSheet({
       Animated.timing(translateY, {
         toValue: 0,
         duration: 220,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
       Animated.timing(opacity, {
         toValue: 1,
         duration: 220,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
     ]).start();
   }, [opacity, translateY, visible]);
