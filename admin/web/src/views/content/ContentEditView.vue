@@ -47,7 +47,28 @@
           <h3 class="text-sm font-bold text-ink">Publishing</h3>
           <AppSelect v-model="form.status" label="Status" :options="statusOptions" />
           <AppInput v-model="form.publishedAt" label="Publish date" type="datetime-local" />
-          <AppInput v-model="form.section" label="Section" placeholder="e.g. worship" />
+
+          <!-- App sections multi-select -->
+          <div class="space-y-2">
+            <p class="text-xs font-medium text-ink-muted">App sections</p>
+            <p class="text-[11px] text-ink-muted">Controls which section of the app this content appears in.</p>
+            <div class="flex flex-wrap gap-2 pt-1">
+              <button
+                v-for="s in SECTION_OPTIONS"
+                :key="s.value"
+                type="button"
+                :class="[
+                  'px-3 py-1.5 rounded-full text-xs font-medium border transition-colors',
+                  form.appSections.includes(s.value)
+                    ? 'bg-primary/20 border-primary/40 text-primary-soft'
+                    : 'bg-white/4 border-border text-ink-muted hover:border-primary/30 hover:text-ink',
+                ]"
+                @click="toggleSection(s.value)"
+              >
+                {{ s.label }}
+              </button>
+            </div>
+          </div>
         </AppCard>
 
         <div class="sticky bottom-6 space-y-2">
@@ -83,6 +104,16 @@ const ui = useUiStore();
 const isNew = computed(() => route.name === 'content-new');
 const id = computed(() => isNew.value ? null : route.params.id as string);
 
+const SECTION_OPTIONS = [
+  { value: 'music',           label: 'Music' },
+  { value: 'audio',           label: 'Audio' },
+  { value: 'nuggets-of-truth', label: 'Nuggets of Truth' },
+  { value: 'teachings',       label: 'Teachings' },
+  { value: 'teens',           label: 'Teens' },
+  { value: 'speaks',          label: 'Speaks' },
+  { value: 'live',            label: 'Live' },
+];
+
 const form = ref({
   title: '',
   description: '',
@@ -92,9 +123,18 @@ const form = ref({
   artworkUrl: '',
   mediaUrl: '',
   tags: '',
-  section: '',
+  appSections: [] as string[],
   publishedAt: '',
 });
+
+function toggleSection(value: string): void {
+  const idx = form.value.appSections.indexOf(value);
+  if (idx === -1) {
+    form.value.appSections.push(value);
+  } else {
+    form.value.appSections.splice(idx, 1);
+  }
+}
 
 onMounted(async () => {
   if (!isNew.value && id.value) {
@@ -110,7 +150,7 @@ onMounted(async () => {
         artworkUrl: c.artworkUrl ?? '',
         mediaUrl: c.mediaUrl ?? '',
         tags: c.tags.join(', '),
-        section: c.section ?? '',
+        appSections: (c as unknown as { appSections?: string[] }).appSections ?? [],
         publishedAt: c.publishedAt ?? '',
       };
     }
@@ -135,7 +175,18 @@ const visibilityOptions = [
 async function onSave(overrideStatus?: string): Promise<void> {
   const tags = form.value.tags.split(',').map((t) => t.trim()).filter(Boolean);
   const status = (overrideStatus ?? form.value.status) as 'draft' | 'published';
-  const base = { title: form.value.title, description: form.value.description, type: form.value.type as ContentCreateInput['type'], visibility: form.value.visibility, artworkUrl: form.value.artworkUrl, mediaUrl: form.value.mediaUrl, section: form.value.section, publishedAt: form.value.publishedAt || undefined, tags, status };
+  const base = {
+    title: form.value.title,
+    description: form.value.description,
+    type: form.value.type as ContentCreateInput['type'],
+    visibility: form.value.visibility,
+    artworkUrl: form.value.artworkUrl,
+    mediaUrl: form.value.mediaUrl,
+    appSections: form.value.appSections,
+    publishedAt: form.value.publishedAt || undefined,
+    tags,
+    status,
+  };
   if (id.value) {
     const input: ContentUpdateInput = { ...base, id: id.value };
     await store.save(input);
