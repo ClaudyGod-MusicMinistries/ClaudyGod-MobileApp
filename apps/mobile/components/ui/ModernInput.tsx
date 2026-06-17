@@ -127,6 +127,7 @@ export const ModernInput: React.FC<ModernInputProps> = ({
             {
               color: theme.colors.text,
               paddingLeft: icon ? 12 : 0,
+              fontFamily: 'PlusJakartaSans_400Regular',
             },
           ]}
           placeholderTextColor={theme.colors.textSecondary}
