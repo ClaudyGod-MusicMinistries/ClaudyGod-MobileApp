@@ -2,12 +2,15 @@ import React, { useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   Animated,
   Image,
+  Platform,
   Pressable,
   StyleSheet,
   View,
   type LayoutChangeEvent,
   useWindowDimensions,
 } from 'react-native';
+
+const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
 import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -69,12 +72,12 @@ export function AudioPlayer({
   useEffect(() => {
     Animated.sequence([
       Animated.parallel([
-        Animated.timing(artOpacity, { toValue: 0.3, duration: 140, useNativeDriver: true }),
-        Animated.spring(artScale, { toValue: 0.91, useNativeDriver: true, friction: 8, tension: 120 }),
+        Animated.timing(artOpacity, { toValue: 0.3, duration: 140, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.spring(artScale, { toValue: 0.91, useNativeDriver: USE_NATIVE_DRIVER, friction: 8, tension: 120 }),
       ]),
       Animated.parallel([
-        Animated.timing(artOpacity, { toValue: 1, duration: 220, useNativeDriver: true }),
-        Animated.spring(artScale, { toValue: 1, useNativeDriver: true, friction: 6, tension: 60 }),
+        Animated.timing(artOpacity, { toValue: 1, duration: 220, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.spring(artScale, { toValue: 1, useNativeDriver: USE_NATIVE_DRIVER, friction: 6, tension: 60 }),
       ]),
     ]).start();
     // eslint-disable-next-line react-hooks/exhaustive-deps

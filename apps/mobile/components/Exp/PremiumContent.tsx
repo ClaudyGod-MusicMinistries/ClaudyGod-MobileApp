@@ -11,6 +11,9 @@ import {
   useWindowDimensions,
   type ImageSourcePropType,
 } from 'react-native';
+
+const USE_NATIVE_DRIVER = Platform.OS !== 'web';
+
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -669,10 +672,10 @@ export function ContentCard({
   const title = cleanFeedText(item.title);
 
   const handlePressIn = () => {
-    Animated.spring(pressScale, { toValue: 0.94, useNativeDriver: true, friction: 10, tension: 120 }).start();
+    Animated.spring(pressScale, { toValue: 0.94, useNativeDriver: USE_NATIVE_DRIVER, friction: 10, tension: 120 }).start();
   };
   const handlePressOut = () => {
-    Animated.spring(pressScale, { toValue: 1, useNativeDriver: true, friction: 7, tension: 70 }).start();
+    Animated.spring(pressScale, { toValue: 1, useNativeDriver: USE_NATIVE_DRIVER, friction: 7, tension: 70 }).start();
   };
 
   return (
