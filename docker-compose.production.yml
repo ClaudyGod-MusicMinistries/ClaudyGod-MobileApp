@@ -1,5 +1,6 @@
-name: claudygod-production
+name: claudygod-mobile
 
+# ─── Shared backend environment ──────────────────────────────────────────────
 x-backend-env: &backend-env
   NODE_ENV: production
   CLAUDYGOD_ENV: production
@@ -67,10 +68,16 @@ x-backend-env: &backend-env
   YOUTUBE_MAX_RESULTS: ${YOUTUBE_MAX_RESULTS:-12}
 
   ADMIN_SIGNUP_CODE: ${ADMIN_SIGNUP_CODE:-}
+
+# ─── Services ─────────────────────────────────────────────────────────────────
 services:
+
+  # ── Redis (internal only — never exposed via Traefik) ──────────────────────
   redis:
     image: redis:7-alpine
     restart: unless-stopped
+    labels:
+      - "traefik.enable=false"
     command:
       - sh
       - -c
@@ -97,11 +104,14 @@ services:
     networks:
       - internal
 
+  # ── Postfix relay (internal only — never exposed via Traefik) ──────────────
   postfix-relay:
     image: ghcr.io/${GHCR_OWNER:-claudygod-musicministries}/claudygod-postfix:${IMAGE_TAG:-latest}
     build:
       context: ./ops/postfix
     restart: unless-stopped
+    labels:
+      - "traefik.enable=false"
     security_opt:
       - no-new-privileges:true
     environment:
@@ -122,6 +132,7 @@ services:
     networks:
       - internal
 
+  # ── Database migrations (one-shot — never exposed via Traefik) ────────────
   migrate:
     image: ghcr.io/${GHCR_OWNER:-claudygod-musicministries}/claudygod-api:${IMAGE_TAG:-latest}
     build:
@@ -129,6 +140,8 @@ services:
       dockerfile: Dockerfile
     restart: "no"
     init: true
+    labels:
+      - "traefik.enable=false"
     command: ["node", "dist/db/migrate.js"]
     security_opt:
       - no-new-privileges:true
@@ -145,6 +158,7 @@ services:
     networks:
       - internal
 
+  # ── API (HTTP — exposed via Traefik as cgm-api) ───────────────────────────
   api:
     image: ghcr.io/${GHCR_OWNER:-claudygod-musicministries}/claudygod-api:${IMAGE_TAG:-latest}
     build:
@@ -169,7 +183,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "node -e \"fetch('http://127.0.0.1:' + (process.env.API_PORT || 4000) + '/health').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))\""
+          "node -e \"fetch('http://127.0.0.1:' + (process.env.API_PORT || 4000) + '/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""
         ]
       interval: 30s
       timeout: 10s
@@ -184,22 +198,26 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=${TRAEFIK_PUBLIC_NETWORK:-traefik-public}"
-      - "traefik.http.routers.claudygod-api.rule=Host(`${API_DOMAIN}`)"
-      - "traefik.http.routers.claudygod-api.entrypoints=websecure"
-      - "traefik.http.routers.claudygod-api.tls=true"
-      - "traefik.http.routers.claudygod-api.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-letsencrypt}"
-      - "traefik.http.routers.claudygod-api.middlewares=claudygod-api-compress,claudygod-api-headers"
-      - "traefik.http.middlewares.claudygod-api-compress.compress=true"
-      - "traefik.http.middlewares.claudygod-api-headers.headers.contentTypeNosniff=true"
-      - "traefik.http.middlewares.claudygod-api-headers.headers.browserXssFilter=true"
-      - "traefik.http.middlewares.claudygod-api-headers.headers.frameDeny=true"
-      - "traefik.http.middlewares.claudygod-api-headers.headers.referrerPolicy=strict-origin-when-cross-origin"
-      - "traefik.http.middlewares.claudygod-api-headers.headers.permissionsPolicy=camera=(), microphone=(), geolocation=()"
-      - "traefik.http.middlewares.claudygod-api-headers.headers.stsSeconds=31536000"
-      - "traefik.http.middlewares.claudygod-api-headers.headers.stsIncludeSubdomains=true"
-      - "traefik.http.middlewares.claudygod-api-headers.headers.stsPreload=true"
-      - "traefik.http.services.claudygod-api.loadbalancer.server.port=4000"
+      # Router
+      - "traefik.http.routers.cgm-api.rule=Host(`${API_DOMAIN}`)"
+      - "traefik.http.routers.cgm-api.entrypoints=websecure"
+      - "traefik.http.routers.cgm-api.tls=true"
+      - "traefik.http.routers.cgm-api.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-letsencrypt}"
+      - "traefik.http.routers.cgm-api.middlewares=cgm-api-compress,cgm-api-headers"
+      # Middlewares
+      - "traefik.http.middlewares.cgm-api-compress.compress=true"
+      - "traefik.http.middlewares.cgm-api-headers.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.cgm-api-headers.headers.browserXssFilter=true"
+      - "traefik.http.middlewares.cgm-api-headers.headers.frameDeny=true"
+      - "traefik.http.middlewares.cgm-api-headers.headers.referrerPolicy=strict-origin-when-cross-origin"
+      - "traefik.http.middlewares.cgm-api-headers.headers.permissionsPolicy=camera=(), microphone=(), geolocation=()"
+      - "traefik.http.middlewares.cgm-api-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.cgm-api-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.cgm-api-headers.headers.stsPreload=true"
+      # Service
+      - "traefik.http.services.cgm-api.loadbalancer.server.port=4000"
 
+  # ── Background worker (internal only — never exposed via Traefik) ──────────
   worker:
     image: ghcr.io/${GHCR_OWNER:-claudygod-musicministries}/claudygod-api:${IMAGE_TAG:-latest}
     build:
@@ -208,6 +226,8 @@ services:
     restart: unless-stopped
     command: ["node", "dist/worker.js"]
     init: true
+    labels:
+      - "traefik.enable=false"
     security_opt:
       - no-new-privileges:true
     environment:
@@ -229,6 +249,7 @@ services:
     networks:
       - internal
 
+  # ── Admin web (HTTP — exposed via Traefik as cgm-admin) ───────────────────
   admin-web:
     image: ghcr.io/${GHCR_OWNER:-claudygod-musicministries}/claudygod-admin:${IMAGE_TAG:-latest}
     build:
@@ -257,22 +278,26 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=${TRAEFIK_PUBLIC_NETWORK:-traefik-public}"
-      - "traefik.http.routers.claudygod-admin.rule=Host(`${ADMIN_DOMAIN}`)"
-      - "traefik.http.routers.claudygod-admin.entrypoints=websecure"
-      - "traefik.http.routers.claudygod-admin.tls=true"
-      - "traefik.http.routers.claudygod-admin.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-letsencrypt}"
-      - "traefik.http.routers.claudygod-admin.middlewares=claudygod-admin-compress,claudygod-admin-headers"
-      - "traefik.http.middlewares.claudygod-admin-compress.compress=true"
-      - "traefik.http.middlewares.claudygod-admin-headers.headers.contentTypeNosniff=true"
-      - "traefik.http.middlewares.claudygod-admin-headers.headers.browserXssFilter=true"
-      - "traefik.http.middlewares.claudygod-admin-headers.headers.frameDeny=true"
-      - "traefik.http.middlewares.claudygod-admin-headers.headers.referrerPolicy=strict-origin-when-cross-origin"
-      - "traefik.http.middlewares.claudygod-admin-headers.headers.permissionsPolicy=camera=(), microphone=(), geolocation=()"
-      - "traefik.http.middlewares.claudygod-admin-headers.headers.stsSeconds=31536000"
-      - "traefik.http.middlewares.claudygod-admin-headers.headers.stsIncludeSubdomains=true"
-      - "traefik.http.middlewares.claudygod-admin-headers.headers.stsPreload=true"
-      - "traefik.http.services.claudygod-admin.loadbalancer.server.port=80"
+      # Router
+      - "traefik.http.routers.cgm-admin.rule=Host(`${ADMIN_DOMAIN}`)"
+      - "traefik.http.routers.cgm-admin.entrypoints=websecure"
+      - "traefik.http.routers.cgm-admin.tls=true"
+      - "traefik.http.routers.cgm-admin.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-letsencrypt}"
+      - "traefik.http.routers.cgm-admin.middlewares=cgm-admin-compress,cgm-admin-headers"
+      # Middlewares
+      - "traefik.http.middlewares.cgm-admin-compress.compress=true"
+      - "traefik.http.middlewares.cgm-admin-headers.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.cgm-admin-headers.headers.browserXssFilter=true"
+      - "traefik.http.middlewares.cgm-admin-headers.headers.frameDeny=true"
+      - "traefik.http.middlewares.cgm-admin-headers.headers.referrerPolicy=strict-origin-when-cross-origin"
+      - "traefik.http.middlewares.cgm-admin-headers.headers.permissionsPolicy=camera=(), microphone=(), geolocation=()"
+      - "traefik.http.middlewares.cgm-admin-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.cgm-admin-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.cgm-admin-headers.headers.stsPreload=true"
+      # Service
+      - "traefik.http.services.cgm-admin.loadbalancer.server.port=80"
 
+  # ── Mobile web app (HTTP — exposed via Traefik as cgm-mobile) ─────────────
   mobile-web:
     image: ghcr.io/${GHCR_OWNER:-claudygod-musicministries}/claudygod-mobile:${IMAGE_TAG:-latest}
     build:
@@ -304,23 +329,29 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=${TRAEFIK_PUBLIC_NETWORK:-traefik-public}"
-      - "traefik.http.routers.claudygod-mobile.rule=Host(`${APP_DOMAIN}`)"
-      - "traefik.http.routers.claudygod-mobile.entrypoints=websecure"
-      - "traefik.http.routers.claudygod-mobile.tls=true"
-      - "traefik.http.routers.claudygod-mobile.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-letsencrypt}"
-      - "traefik.http.routers.claudygod-mobile.middlewares=claudygod-mobile-compress,claudygod-mobile-headers"
-      - "traefik.http.middlewares.claudygod-mobile-compress.compress=true"
-      - "traefik.http.middlewares.claudygod-mobile-headers.headers.contentTypeNosniff=true"
-      - "traefik.http.middlewares.claudygod-mobile-headers.headers.browserXssFilter=true"
-      - "traefik.http.middlewares.claudygod-mobile-headers.headers.referrerPolicy=strict-origin-when-cross-origin"
-      - "traefik.http.middlewares.claudygod-mobile-headers.headers.permissionsPolicy=camera=(), microphone=(), geolocation=()"
-      - "traefik.http.middlewares.claudygod-mobile-headers.headers.stsSeconds=31536000"
-      - "traefik.http.middlewares.claudygod-mobile-headers.headers.stsIncludeSubdomains=true"
-      - "traefik.http.middlewares.claudygod-mobile-headers.headers.stsPreload=true"
-      - "traefik.http.services.claudygod-mobile.loadbalancer.server.port=80"
+      # Router
+      - "traefik.http.routers.cgm-mobile.rule=Host(`${APP_DOMAIN}`)"
+      - "traefik.http.routers.cgm-mobile.entrypoints=websecure"
+      - "traefik.http.routers.cgm-mobile.tls=true"
+      - "traefik.http.routers.cgm-mobile.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-letsencrypt}"
+      - "traefik.http.routers.cgm-mobile.middlewares=cgm-mobile-compress,cgm-mobile-headers"
+      # Middlewares
+      - "traefik.http.middlewares.cgm-mobile-compress.compress=true"
+      - "traefik.http.middlewares.cgm-mobile-headers.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.cgm-mobile-headers.headers.browserXssFilter=true"
+      - "traefik.http.middlewares.cgm-mobile-headers.headers.referrerPolicy=strict-origin-when-cross-origin"
+      - "traefik.http.middlewares.cgm-mobile-headers.headers.permissionsPolicy=camera=(), microphone=(), geolocation=()"
+      - "traefik.http.middlewares.cgm-mobile-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.cgm-mobile-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.cgm-mobile-headers.headers.stsPreload=true"
+      # Service
+      - "traefik.http.services.cgm-mobile.loadbalancer.server.port=80"
+
+# ─── Volumes ──────────────────────────────────────────────────────────────────
 volumes:
   redis_data:
 
+# ─── Networks ─────────────────────────────────────────────────────────────────
 networks:
   edge:
     external: true
