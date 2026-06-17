@@ -15,10 +15,10 @@ import {
   type ViewStyle,
   TextInputProps as RNTextInputProps,
 } from 'react-native';
-
-const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 import { useAppTheme } from '../../util/colorScheme';
 import { CustomText } from '../CustomText';
+
+const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
 interface ModernInputProps extends RNTextInputProps {
   label?: string;

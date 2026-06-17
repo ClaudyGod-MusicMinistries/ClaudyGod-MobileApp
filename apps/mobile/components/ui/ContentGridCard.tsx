@@ -5,11 +5,11 @@
 
 import React, { useState } from 'react';
 import { Image, Platform, Pressable, StyleSheet, View, Animated } from 'react-native';
-
-const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../CustomText';
+
+const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
 interface ContentGridCardProps {
   id: string;
