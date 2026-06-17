@@ -1,11 +1,13 @@
 // components/ui/SectionHeader.tsx
 import React, { useState } from 'react';
-import { View, Animated } from 'react-native';
+import { View, Animated, Platform } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../CustomText';
 import { useAppTheme } from '../../util/colorScheme';
 import { TVTouchable } from './TVTouchable';
 import { designSystem } from '../../theme/designSystem';
+
+const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
 interface SectionHeaderProps {
   title: string;
@@ -24,7 +26,7 @@ export function SectionHeader({ title, actionLabel, onAction, eyebrow }: Section
     Animated.timing(scaleValue, {
       toValue: 0.95,
       duration: 100,
-      useNativeDriver: true,
+      useNativeDriver: USE_NATIVE_DRIVER,
     }).start();
   };
 
@@ -33,7 +35,7 @@ export function SectionHeader({ title, actionLabel, onAction, eyebrow }: Section
     Animated.timing(scaleValue, {
       toValue: 1,
       duration: 150,
-      useNativeDriver: true,
+      useNativeDriver: USE_NATIVE_DRIVER,
     }).start();
   };
 
