@@ -5,7 +5,9 @@
  */
 
 import React, { useState } from 'react';
-import { Image, Pressable, StyleSheet, View, Animated } from 'react-native';
+import { Image, Platform, Pressable, StyleSheet, View, Animated } from 'react-native';
+
+const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../CustomText';
@@ -41,17 +43,17 @@ export function FeaturedCard({
       Animated.timing(scaleAnim, {
         toValue: 0.98,
         duration: designSystem.timing.fast,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
       Animated.timing(opacityAnim, {
         toValue: 0.9,
         duration: designSystem.timing.fast,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
       Animated.timing(playButtonScaleAnim, {
         toValue: 1.1,
         duration: designSystem.timing.fast,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
     ]).start();
   };
@@ -62,17 +64,17 @@ export function FeaturedCard({
       Animated.timing(scaleAnim, {
         toValue: 1,
         duration: designSystem.timing.moderate,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
       Animated.timing(opacityAnim, {
         toValue: 1,
         duration: designSystem.timing.moderate,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
       Animated.timing(playButtonScaleAnim, {
         toValue: 1,
         duration: designSystem.timing.moderate,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
     ]).start();
   };
