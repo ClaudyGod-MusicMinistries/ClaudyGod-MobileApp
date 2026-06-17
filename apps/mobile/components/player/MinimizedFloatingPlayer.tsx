@@ -31,19 +31,17 @@ export function MinimizedFloatingPlayer() {
       style={{
         position: 'absolute',
         bottom: 94,
-        left: 14,
-        right: 14,
+        left: 12,
+        right: 12,
         minHeight: 64,
-        borderRadius: 24,
+        borderRadius: 20,
         overflow: 'hidden',
-        borderWidth: 1,
-        borderColor: theme.colors.borderStrong ?? theme.colors.border,
         zIndex: 100,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 16 },
-        shadowOpacity: 0.32,
-        shadowRadius: 26,
-        elevation: 18,
+        shadowOffset: { width: 0, height: 20 },
+        shadowOpacity: 0.44,
+        shadowRadius: 32,
+        elevation: 24,
       }}
     >
       <View
@@ -54,7 +52,7 @@ export function MinimizedFloatingPlayer() {
           paddingHorizontal: 10,
           paddingVertical: 9,
           gap: 10,
-          backgroundColor: theme.colors.surface,
+          backgroundColor: 'rgba(16,10,28,0.96)',
         }}
       >
         <View
@@ -62,9 +60,19 @@ export function MinimizedFloatingPlayer() {
             position: 'absolute',
             bottom: 0,
             left: 0,
-            height: 3,
+            right: 0,
+            height: 2,
+            backgroundColor: 'rgba(247,242,255,0.08)',
+          }}
+        />
+        <View
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            height: 2,
             width: `${progressPercentage}%`,
-            backgroundColor: theme.colors.primary,
+            backgroundColor: '#8B5CF6',
           }}
         />
 

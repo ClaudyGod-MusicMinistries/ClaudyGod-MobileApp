@@ -1,16 +1,19 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Animated,
   Image,
   Platform,
+  Pressable,
   RefreshControl,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   View,
   useWindowDimensions,
   type ImageSourcePropType,
 } from 'react-native';
+
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -23,6 +26,8 @@ import { getSidebarWidth } from '../../util/sidebarConfig';
 import { AppButton } from '../ui/AppButton';
 import { AppScreenFooter } from '../layout/AppScreenFooter';
 import { TVTouchable } from '../ui/TVTouchable';
+import { ActionSheet } from '../ui/ActionSheet';
+import type { ActionSheetAction } from '../ui/ActionSheet';
 import { FadeIn } from '../ui/FadeIn';
 import { SkeletonLoader } from '../ui/SkeletonLoader';
 import { useAuth } from '../../context/AuthContext';
@@ -30,6 +35,8 @@ import { useAppTheme } from '../../util/colorScheme';
 import { APP_ROUTES } from '../../util/appRoutes';
 import { BRAND_LOGO_ASSET, BRAND_MUSIC_ASSET, BRAND_WORSHIP_ASSET, DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
 import type { FeedCardItem } from '../../services/contentService';
+
+const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -647,6 +654,39 @@ export function ContentCard({
 }: ContentCardProps) {
   const theme = useAppTheme();
   const device = useDeviceClass();
+  const pressScale = useRef(new Animated.Value(1)).current;
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const menuActions: ActionSheetAction[] = [
+    {
+      key: 'play',
+      label: item.type === 'video' ? 'Watch now' : 'Play now',
+      icon: item.type === 'video' ? 'play-circle-filled' : 'play-arrow',
+      tone: 'accent',
+      onPress: () => { setMenuOpen(false); onPress(); },
+    },
+    {
+      key: 'queue',
+      label: 'Add to queue',
+      icon: 'queue-music',
+      onPress: () => setMenuOpen(false),
+    },
+    {
+      key: 'share',
+      label: 'Share',
+      icon: 'share',
+      onPress: () => {
+        setMenuOpen(false);
+        void Share.share({ title: item.title, message: item.subtitle ? `${item.title} — ${item.subtitle}` : item.title });
+      },
+    },
+    {
+      key: 'details',
+      label: 'View details',
+      icon: 'info-outline',
+      onPress: () => setMenuOpen(false),
+    },
+  ];
 
   const cardWidth = fixedWidth ?? (
     compact ? 148
@@ -667,9 +707,22 @@ export function ContentCard({
 
   const title = cleanFeedText(item.title);
 
+  const handlePressIn = () => {
+    Animated.spring(pressScale, { toValue: 0.94, useNativeDriver: USE_NATIVE_DRIVER, friction: 10, tension: 120 }).start();
+  };
+  const handlePressOut = () => {
+    Animated.spring(pressScale, { toValue: 1, useNativeDriver: USE_NATIVE_DRIVER, friction: 7, tension: 70 }).start();
+  };
+
   return (
-    <TVTouchable onPress={onPress} showFocusBorder={false} style={{ width: cardWidth }}>
-      <View style={{ gap: 7 }}>
+    <TVTouchable
+      onPress={onPress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      showFocusBorder={false}
+      style={{ width: cardWidth }}
+    >
+      <Animated.View style={{ gap: 7, transform: [{ scale: pressScale }] }}>
         {/* Artwork container */}
         <View
           style={{
@@ -724,14 +777,23 @@ export function ContentCard({
         </View>
 
         {/* Text below artwork */}
-        <View style={{ gap: 2, paddingHorizontal: 1 }}>
-          <CustomText
-            variant="label"
-            style={{ color: '#F7F2FF', fontSize: 12, lineHeight: 16, fontWeight: '600' }}
-            numberOfLines={2}
-          >
-            {title}
-          </CustomText>
+        <View style={{ gap: 2 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 4 }}>
+            <CustomText
+              variant="label"
+              style={{ color: '#F7F2FF', fontSize: 12, lineHeight: 16, fontWeight: '600', flex: 1 }}
+              numberOfLines={2}
+            >
+              {title}
+            </CustomText>
+            <Pressable
+              onPress={(e) => { e.stopPropagation?.(); setMenuOpen(true); }}
+              hitSlop={{ top: 8, right: 8, bottom: 8, left: 4 }}
+              style={{ paddingTop: 1 }}
+            >
+              <MaterialIcons name="more-vert" size={15} color="rgba(247,242,255,0.40)" />
+            </Pressable>
+          </View>
           {item.subtitle ? (
             <CustomText
               variant="caption"
@@ -742,7 +804,15 @@ export function ContentCard({
             </CustomText>
           ) : null}
         </View>
-      </View>
+      </Animated.View>
+
+      <ActionSheet
+        visible={menuOpen}
+        title={title}
+        description={item.subtitle ? cleanFeedText(item.subtitle) : undefined}
+        actions={menuActions}
+        onClose={() => setMenuOpen(false)}
+      />
     </TVTouchable>
   );
 }
