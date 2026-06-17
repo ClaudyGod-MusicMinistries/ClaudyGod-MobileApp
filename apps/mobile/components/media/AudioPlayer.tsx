@@ -1,5 +1,14 @@
-import React, { useEffect, useMemo } from 'react';
-import { Image, View } from 'react-native';
+import React, { useEffect, useRef, useMemo, useCallback } from 'react';
+import {
+  Animated,
+  Image,
+  Platform,
+  Pressable,
+  StyleSheet,
+  View,
+  type LayoutChangeEvent,
+  useWindowDimensions,
+} from 'react-native';
 
 import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -8,6 +17,8 @@ import { CustomText } from '../CustomText';
 import { useAppTheme } from '../../util/colorScheme';
 import { TVTouchable } from '../ui/TVTouchable';
 import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
+
+const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
 export interface AudioTrack {
   id: string;
@@ -32,14 +43,6 @@ interface AudioPlayerProps {
   canGoNext?: boolean;
 }
 
-type RadiusWithXXL = {
-  xxl?: number;
-};
-
-type ShadowsWithGlow = {
-  glow?: object;
-};
-
 export function AudioPlayer({
   track,
   autoPlay = true,
@@ -54,12 +57,31 @@ export function AudioPlayer({
   canGoNext = false,
 }: AudioPlayerProps) {
   const theme = useAppTheme();
+  const { width } = useWindowDimensions();
   const player = useAudioPlayer(track.uri, { updateInterval: 350 });
   const status = useAudioPlayerStatus(player);
   const isCompact = Boolean(compact);
 
-  const cardRadius = (theme.radius as typeof theme.radius & RadiusWithXXL).xxl ?? theme.radius.xl;
-  const glowShadow = (theme.shadows as typeof theme.shadows & ShadowsWithGlow).glow ?? theme.shadows.card;
+  const artScale = useRef(new Animated.Value(1)).current;
+  const artOpacity = useRef(new Animated.Value(1)).current;
+  const progressBarWidth = useRef(0);
+
+  const artworkSize = isCompact ? 160 : Math.min(Math.round(width * 0.64), 290);
+
+  // Animate artwork when track changes
+  useEffect(() => {
+    Animated.sequence([
+      Animated.parallel([
+        Animated.timing(artOpacity, { toValue: 0.3, duration: 140, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.spring(artScale, { toValue: 0.91, useNativeDriver: USE_NATIVE_DRIVER, friction: 8, tension: 120 }),
+      ]),
+      Animated.parallel([
+        Animated.timing(artOpacity, { toValue: 1, duration: 220, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.spring(artScale, { toValue: 1, useNativeDriver: USE_NATIVE_DRIVER, friction: 6, tension: 60 }),
+      ]),
+    ]).start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [track.id]);
 
   useEffect(() => {
     void setAudioModeAsync({
@@ -72,294 +94,202 @@ export function AudioPlayer({
 
   useEffect(() => {
     if (!status.isLoaded) return;
-
-    if (autoPlay) {
-      player.play();
-      return;
-    }
-
+    if (autoPlay) { player.play(); return; }
     player.pause();
     void player.seekTo(0);
   }, [autoPlay, player, status.isLoaded, track.uri]);
 
   useEffect(() => {
     if (!status.isLoaded) return;
-
     onPlayStateChange?.(status.playing);
     onProgress?.(status.currentTime, status.duration ?? 0);
-  }, [
-    onPlayStateChange,
-    onProgress,
-    status.currentTime,
-    status.duration,
-    status.isLoaded,
-    status.playing,
-  ]);
+  }, [onPlayStateChange, onProgress, status.currentTime, status.duration, status.isLoaded, status.playing]);
 
   useEffect(() => {
     if (!status.isLoaded) return;
-
-    onRegisterControls?.({
-      pause: () => player.pause(),
-      resume: () => player.play(),
-    });
-
-    return () => {
-      onRegisterControls?.(undefined);
-      player.pause();
-    };
+    onRegisterControls?.({ pause: () => player.pause(), resume: () => player.play() });
+    return () => { onRegisterControls?.(undefined); player.pause(); };
   }, [onRegisterControls, player, status.isLoaded]);
 
-  const togglePlay = () => {
+  const togglePlay = useCallback(() => {
     if (!status.isLoaded) return;
-
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-
-    if (status.playing) {
-      player.pause();
-      return;
-    }
-
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (status.playing) { player.pause(); return; }
     player.play();
-  };
+  }, [player, status.isLoaded, status.playing]);
 
-  const seekBySeconds = (delta: number) => {
+  const seekBySeconds = useCallback((delta: number) => {
     if (!status.isLoaded) return;
-
     const duration = Math.max(0, status.duration ?? 0);
-    const currentTime = Math.max(0, status.currentTime ?? 0);
-    const nextTime = Math.max(0, Math.min(duration || Number.MAX_SAFE_INTEGER, currentTime + delta));
+    const current = Math.max(0, status.currentTime ?? 0);
+    void player.seekTo(Math.max(0, Math.min(duration || Number.MAX_SAFE_INTEGER, current + delta)));
+  }, [player, status.currentTime, status.duration, status.isLoaded]);
 
-    void player.seekTo(nextTime);
-  };
+  const seekToFraction = useCallback((fraction: number) => {
+    if (!status.isLoaded) return;
+    const duration = Math.max(0, status.duration ?? 0);
+    if (!duration) return;
+    void Haptics.selectionAsync();
+    void player.seekTo(Math.max(0, Math.min(duration, duration * fraction)));
+  }, [player, status.duration, status.isLoaded]);
 
   const { progress, positionLabel, durationLabel, isPlaying } = useMemo(() => {
     if (!status.isLoaded) {
-      return {
-        progress: 0,
-        positionLabel: '0:00',
-        durationLabel: track.duration ?? '--:--',
-        isPlaying: false,
-      };
+      return { progress: 0, positionLabel: '0:00', durationLabel: track.duration ?? '--:--', isPlaying: false };
     }
-
     const position = Math.max(0, Math.round((status.currentTime ?? 0) * 1000));
     const duration = Math.max(0, Math.round((status.duration ?? 0) * 1000));
     const safeDuration = duration > 0 ? duration : 1;
-    const progressValue = Math.min(1, position / safeDuration);
-
     return {
-      progress: progressValue,
+      progress: Math.min(1, position / safeDuration),
       positionLabel: formatMillis(position),
       durationLabel: duration ? formatMillis(duration) : track.duration ?? '--:--',
       isPlaying: status.playing,
     };
-  }, [
-    status.currentTime,
-    status.duration,
-    status.isLoaded,
-    status.playing,
-    track.duration,
-  ]);
+  }, [status.currentTime, status.duration, status.isLoaded, status.playing, track.duration]);
 
-  const artworkSize = isCompact ? 196 : 252;
-  const artworkUrl = track.imageUrl || DEFAULT_CONTENT_IMAGE_URI;
+  const onProgressBarLayout = useCallback((e: LayoutChangeEvent) => {
+    progressBarWidth.current = e.nativeEvent.layout.width;
+  }, []);
 
   return (
-    <View
-      style={{
-        borderRadius: cardRadius,
-        paddingHorizontal: isCompact ? theme.spacing.lg : theme.spacing.xl,
-        paddingVertical: isCompact ? theme.spacing.xl : theme.spacing.xxl,
-        borderWidth: 1,
-        borderColor: theme.colors.border,
-        overflow: 'hidden',
-        backgroundColor: theme.colors.surface,
-      }}
-    >
+    <View style={{ gap: isCompact ? 18 : 28 }}>
 
-      <View style={{ gap: isCompact ? 22 : 26 }}>
-        <View
+      {/* Close / header row (optional) */}
+      {onClose ? (
+        <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
+          <TVTouchable
+            onPress={onClose}
+            style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.07)' }}
+            showFocusBorder={false}
+          >
+            <CustomText variant="caption" style={{ color: 'rgba(247,242,255,0.80)' }}>Close</CustomText>
+          </TVTouchable>
+        </View>
+      ) : null}
+
+      {/* Artwork */}
+      <View style={{ alignItems: 'center' }}>
+        <Animated.View
           style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 12,
+            width: artworkSize,
+            height: artworkSize,
+            borderRadius: isCompact ? 18 : 24,
+            overflow: 'hidden',
+            opacity: artOpacity,
+            transform: [{ scale: artScale }],
+            shadowColor: '#000',
+            shadowOpacity: 0.55,
+            shadowRadius: 44,
+            shadowOffset: { width: 0, height: 28 },
+            elevation: 22,
           }}
         >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <PillMeta label="Music" />
-            <PillMeta label={isPlaying ? 'Playing' : 'Paused'} />
-          </View>
+          <Image
+            source={{ uri: track.imageUrl || DEFAULT_CONTENT_IMAGE_URI }}
+            resizeMode="cover"
+            style={StyleSheet.absoluteFillObject}
+          />
+        </Animated.View>
+      </View>
 
-          {onClose ? (
-            <TVTouchable
-              onPress={onClose}
-              style={{
-                minHeight: 36,
-                paddingHorizontal: 14,
-                borderRadius: theme.radius.pill,
-                borderWidth: 1,
-                borderColor: 'rgba(255,255,255,0.14)',
-                backgroundColor: 'rgba(255,255,255,0.06)',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-              showFocusBorder={false}
-            >
-              <CustomText variant="caption" style={{ color: '#FFFFFF' }}>
-                Close
-              </CustomText>
-            </TVTouchable>
-          ) : null}
-        </View>
+      {/* Title & artist */}
+      <View style={{ gap: 5, alignItems: 'center', paddingHorizontal: 20 }}>
+        <CustomText
+          variant="hero"
+          style={{ color: '#F7F2FF', textAlign: 'center', fontSize: isCompact ? 17 : 20, fontWeight: '700' }}
+          numberOfLines={2}
+        >
+          {track.title}
+        </CustomText>
+        <CustomText
+          variant="subtitle"
+          style={{ color: 'rgba(247,242,255,0.50)', textAlign: 'center', fontSize: 13 }}
+          numberOfLines={1}
+        >
+          {track.artist || 'ClaudyGod'}
+        </CustomText>
+      </View>
 
-        <View style={{ alignItems: 'center', gap: 18 }}>
-          <View
-            style={{
-              width: artworkSize,
-              height: artworkSize,
-              borderRadius: isCompact ? 28 : 34,
-              overflow: 'hidden',
-              borderWidth: 1,
-              borderColor: 'rgba(255,255,255,0.16)',
-              backgroundColor: 'rgba(255,255,255,0.05)',
-              shadowColor: '#000',
-              shadowOpacity: 0.44,
-              shadowRadius: 34,
-              shadowOffset: { width: 0, height: 22 },
-              elevation: 16,
-            }}
-          >
-            <Image
-              source={{ uri: artworkUrl }}
-              resizeMode="cover"
-              style={{ width: '100%', height: '100%' }}
-            />
-          </View>
-
-          <View style={{ width: '100%', gap: 7, alignItems: 'center' }}>
-            <CustomText
-              variant="hero"
-              style={{
-                color: '#FFFFFF',
-                textAlign: 'center',
-                maxWidth: 360,
-              }}
-              numberOfLines={2}
-            >
-              {track.title}
-            </CustomText>
-
-            <CustomText
-              variant="subtitle"
-              style={{
-                color: 'rgba(255,255,255,0.70)',
-                textAlign: 'center',
-                maxWidth: 320,
-              }}
-              numberOfLines={2}
-            >
-              {track.artist || 'ClaudyGod'}
-            </CustomText>
-          </View>
-        </View>
-
-        <View style={{ gap: 8 }}>
-          <View
-            style={{
-              height: 8,
-              borderRadius: 999,
-              backgroundColor: 'rgba(255,255,255,0.12)',
-              overflow: 'hidden',
-            }}
-          >
+      {/* Progress bar — interactive */}
+      <View style={{ gap: 6, paddingHorizontal: 2 }}>
+        <Pressable
+          onLayout={onProgressBarLayout}
+          onPress={(e) => {
+            const barW = progressBarWidth.current;
+            if (!barW) return;
+            const fraction = Math.max(0, Math.min(1, e.nativeEvent.locationX / barW));
+            seekToFraction(fraction);
+          }}
+          style={{ paddingVertical: 10 }}
+        >
+          <View style={{ height: 4, borderRadius: 2, backgroundColor: 'rgba(247,242,255,0.12)', overflow: 'hidden' }}>
             <View
               style={{
                 width: `${Math.round(progress * 100)}%`,
-                height: 8,
-                borderRadius: 999,
+                height: 4,
+                borderRadius: 2,
                 backgroundColor: theme.colors.primary,
               }}
             />
           </View>
-
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-            <CustomText variant="caption" style={{ color: 'rgba(255,255,255,0.62)' }}>
-              {positionLabel}
-            </CustomText>
-
-            <CustomText variant="caption" style={{ color: 'rgba(255,255,255,0.62)' }}>
-              {durationLabel}
-            </CustomText>
-          </View>
+        </Pressable>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 2 }}>
+          <CustomText variant="caption" style={{ color: 'rgba(247,242,255,0.38)', fontSize: 10 }}>{positionLabel}</CustomText>
+          <CustomText variant="caption" style={{ color: 'rgba(247,242,255,0.38)', fontSize: 10 }}>{durationLabel}</CustomText>
         </View>
+      </View>
 
-        <View
+      {/* Playback controls */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: isCompact ? 8 : 14 }}>
+        {onPrevious ? (
+          <ControlButton icon="skip-previous" onPress={onPrevious} disabled={!canGoPrevious} size={isCompact ? 22 : 26} />
+        ) : null}
+
+        <ControlButton icon="replay-10" onPress={() => seekBySeconds(-10)} size={isCompact ? 22 : 24} />
+
+        {/* Play/pause — primary CTA */}
+        <TVTouchable
+          onPress={togglePlay}
           style={{
-            flexDirection: 'row',
+            width: isCompact ? 68 : 80,
+            height: isCompact ? 68 : 80,
+            borderRadius: isCompact ? 34 : 40,
+            backgroundColor: theme.colors.primary,
             alignItems: 'center',
             justifyContent: 'center',
-            gap: isCompact ? 10 : 14,
           }}
+          showFocusBorder={false}
+          accessibilityLabel={isPlaying ? 'Pause' : 'Play'}
         >
-          {onPrevious ? (
-            <PlayerControlButton
-              icon="skip-previous"
-              onPress={onPrevious}
-              disabled={!canGoPrevious}
-            />
-          ) : null}
+          <MaterialIcons
+            name={isPlaying ? 'pause' : 'play-arrow'}
+            size={isCompact ? 32 : 38}
+            color="#FFFFFF"
+          />
+        </TVTouchable>
 
-          <PlayerControlButton icon="replay-10" onPress={() => seekBySeconds(-10)} />
+        <ControlButton icon="forward-10" onPress={() => seekBySeconds(10)} size={isCompact ? 22 : 24} />
 
-          <TVTouchable
-            onPress={togglePlay}
-            style={{
-              width: isCompact ? 78 : 88,
-              height: isCompact ? 78 : 88,
-              borderRadius: isCompact ? 39 : 44,
-              backgroundColor: theme.colors.primary,
-              alignItems: 'center',
-              justifyContent: 'center',
-              ...(glowShadow as object),
-            }}
-            showFocusBorder={false}
-            accessibilityLabel={isPlaying ? 'Pause' : 'Play'}
-          >
-            <MaterialIcons
-              name={isPlaying ? 'pause' : 'play-arrow'}
-              size={isCompact ? 34 : 40}
-              color={theme.colors.textInverse}
-            />
-          </TVTouchable>
-
-          <PlayerControlButton icon="forward-10" onPress={() => seekBySeconds(10)} />
-
-          {onNext ? (
-            <PlayerControlButton
-              icon="skip-next"
-              onPress={onNext}
-              disabled={!canGoNext}
-            />
-          ) : null}
-        </View>
+        {onNext ? (
+          <ControlButton icon="skip-next" onPress={onNext} disabled={!canGoNext} size={isCompact ? 22 : 26} />
+        ) : null}
       </View>
     </View>
   );
 }
 
-function PlayerControlButton({
+function ControlButton({
   icon,
   onPress,
   disabled,
+  size = 24,
 }: {
   icon: React.ComponentProps<typeof MaterialIcons>['name'];
   onPress: () => void;
   disabled?: boolean;
+  size?: number;
 }) {
-  const theme = useAppTheme();
-
   return (
     <TVTouchable
       onPress={onPress}
@@ -368,43 +298,14 @@ function PlayerControlButton({
         width: 48,
         height: 48,
         borderRadius: 24,
-        backgroundColor: 'rgba(255,255,255,0.08)',
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.12)',
         alignItems: 'center',
         justifyContent: 'center',
-        opacity: disabled ? 0.42 : 1,
+        opacity: disabled ? 0.32 : 1,
       }}
       showFocusBorder={false}
     >
-      <MaterialIcons
-        name={icon}
-        size={22}
-        color={theme.scheme === 'dark' ? '#FFFFFF' : theme.colors.text}
-      />
+      <MaterialIcons name={icon} size={size} color="rgba(247,242,255,0.78)" />
     </TVTouchable>
-  );
-}
-
-function PillMeta({ label }: { label: string }) {
-  return (
-    <View
-      style={{
-        borderRadius: 999,
-        paddingHorizontal: 11,
-        paddingVertical: 6,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.14)',
-        backgroundColor: 'rgba(255,255,255,0.07)',
-      }}
-    >
-      <CustomText
-        variant="caption"
-        style={{ color: 'rgba(255,255,255,0.72)', letterSpacing: 0.22 }}
-      >
-        {label}
-      </CustomText>
-    </View>
   );
 }
 
@@ -412,10 +313,5 @@ function formatMillis(value: number) {
   const totalSeconds = Math.floor(value / 1000);
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
-
-  return `${minutes}:${formatTwoDigits(seconds)}`;
-}
-
-function formatTwoDigits(value: number) {
-  return value < 10 ? `0${value}` : `${value}`;
+  return `${minutes}:${seconds < 10 ? `0${seconds}` : String(seconds)}`;
 }

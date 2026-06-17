@@ -7,7 +7,7 @@ import { AppButton } from '../../components/ui/AppButton';
 import { useToast } from '../../context/ToastContext';
 import { useAppTheme } from '../../util/colorScheme';
 import { useContentFeed } from '../../hooks/useContentFeed';
-import type { FeedCardItem } from '../../services/contentService';
+import type { ContentType, FeedBundle, FeedCardItem } from '../../services/contentService';
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
 import { APP_ROUTES } from '../../util/appRoutes';
 import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
@@ -23,6 +23,23 @@ import {
   TrendingList,
   dedupeFeedItems,
 } from '../../components/Exp/PremiumContent';
+
+function dedupeItems(items: FeedCardItem[]): FeedCardItem[] {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    const key = item.mediaUrl?.trim() ? `media:${item.mediaUrl.trim()}` : `id:${item.id}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function filterBySection(feed: FeedBundle, sectionId: string, fallbackTypes: ContentType[], limit = 12): FeedCardItem[] {
+  const pool = dedupeItems([...feed.music, ...feed.videos, ...feed.playlists, ...feed.live]);
+  const tagged = pool.filter((item) => item.appSections?.includes(sectionId));
+  const result = tagged.length >= 2 ? tagged : pool.filter((item) => (fallbackTypes as string[]).includes(item.type));
+  return result.slice(0, limit);
+}
 
 type AudioFilter = 'all' | 'songs' | 'messages' | 'playlists';
 
@@ -99,6 +116,11 @@ export default function PlaySection() {
   }>();
   const { feed, loading, refresh } = useContentFeed();
   const [filter, setFilter] = useState<AudioFilter>('all');
+
+  const musicItems = useMemo(() => filterBySection(feed, 'music', ['audio']), [feed]);
+  const audioItems = useMemo(() => filterBySection(feed, 'audio', ['audio', 'playlist']), [feed]);
+  const nuggetsItems = useMemo(() => filterBySection(feed, 'nuggets-of-truth', ['video']), [feed]);
+  const teensItems = useMemo(() => filterBySection(feed, 'teens', ['video', 'playlist']), [feed]);
 
   const routeItem = useMemo(() => parseRouteItem(params), [params]);
   const allQueue = useMemo(
@@ -194,25 +216,64 @@ export default function PlaySection() {
         </View>
       ) : null}
 
-      {/* Latest music */}
-      <View style={{ gap: 12 }}>
-        <SectionLabel
-          title="Latest releases"
-          accent="New"
-          actionLabel="See all"
-          onAction={() => {}}
-        />
-        <ContentRail
-          title=""
-          items={filteredQueue.slice(0, 14)}
-          loading={loading}
-          onPressItem={(item) => void openItem(item, 'music_latest')}
-          emptyTitle="No tracks match this filter"
-          emptyMessage="Try a different filter or pull down to refresh."
-        />
+      {/* 4 ClaudyGod-branded sections */}
+      <View style={{ gap: 28 }}>
+
+        <View style={{ gap: 10 }}>
+          <SectionLabel title="ClaudyGod Music" actionLabel="See all" onAction={() => {}} />
+          <ContentRail
+            title=""
+            items={musicItems.length ? musicItems : filteredQueue.filter(i => i.type === 'audio').slice(0, 12)}
+            loading={loading}
+            onPressItem={(item) => void openItem(item, 'player_music')}
+            cardVariant="portrait"
+            emptyTitle="Music coming soon"
+            emptyMessage="Worship tracks from ClaudyGod will appear here."
+          />
+        </View>
+
+        <View style={{ gap: 10 }}>
+          <SectionLabel title="ClaudyGod Audio" actionLabel="See all" onAction={() => {}} />
+          <ContentRail
+            title=""
+            items={audioItems.length ? audioItems : filteredQueue.filter(i => i.type === 'playlist').slice(0, 12)}
+            loading={loading}
+            onPressItem={(item) => void openItem(item, 'player_audio')}
+            cardVariant="portrait"
+            emptyTitle="Audio content coming soon"
+            emptyMessage="Spoken word and audio teachings will appear here."
+          />
+        </View>
+
+        <View style={{ gap: 10 }}>
+          <SectionLabel title="Nuggets of Truth" actionLabel="See all" onAction={() => router.push(APP_ROUTES.tabs.videos)} />
+          <ContentRail
+            title=""
+            items={nuggetsItems}
+            loading={loading}
+            onPressItem={(item) => void openItem(item, 'player_nuggets')}
+            cardVariant="landscape"
+            emptyTitle="Nuggets of Truth coming soon"
+            emptyMessage="Short devotional moments will appear here."
+          />
+        </View>
+
+        <View style={{ gap: 10 }}>
+          <SectionLabel title="ClaudyGod Teens" actionLabel="See all" onAction={() => router.push(APP_ROUTES.tabs.videos)} />
+          <ContentRail
+            title=""
+            items={teensItems}
+            loading={loading}
+            onPressItem={(item) => void openItem(item, 'player_teens')}
+            cardVariant="landscape"
+            emptyTitle="ClaudyGod Teens coming soon"
+            emptyMessage="Youth-focused content from ClaudyGod will appear here."
+          />
+        </View>
+
       </View>
 
-      {/* Trending */}
+      {/* Most played chart */}
       {feed.mostPlayed.length > 0 ? (
         <TrendingList
           title="Most played"
@@ -222,13 +283,6 @@ export default function PlaySection() {
           onAction={() => {}}
         />
       ) : null}
-
-      {/* Suggestions */}
-      <ContentList
-        title="Suggested listening"
-        items={feed.recommendations.length ? feed.recommendations : feed.recent}
-        onPressItem={(item) => void openItem(item, 'music_suggested')}
-      />
 
       {!loading && !allQueue.length ? (
         <EmptyState
