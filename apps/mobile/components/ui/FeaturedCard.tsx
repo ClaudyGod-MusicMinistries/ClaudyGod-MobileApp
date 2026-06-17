@@ -6,14 +6,14 @@
 
 import React, { useState } from 'react';
 import { Image, Platform, Pressable, StyleSheet, View, Animated } from 'react-native';
-
-const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../CustomText';
 import { colors_light } from '../../constants/color';
 import { spacing} from '../../styles/designTokens';
 import { designSystem } from '../../theme/designSystem';
+
+const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
 interface FeaturedCardProps {
   imageUrl?: string;

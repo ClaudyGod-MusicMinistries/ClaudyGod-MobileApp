@@ -45,17 +45,30 @@ function dedupe(items: FeedCardItem[]): FeedCardItem[] {
   return out;
 }
 
-// Checks appSections tag first; falls back to type filtering so sections always have content
-function filterBySection(
-  feed: FeedBundle,
-  sectionId: string,
-  fallbackTypes: ContentType[],
-  limit = 12,
-): FeedCardItem[] {
+// Builds all 4 sections at once with a shared exclusion set so each item only appears once.
+// Priority per section: appSections tag → type fallback.
+function buildSections(feed: FeedBundle, limit = 12) {
   const pool = dedupe([...feed.music, ...feed.videos, ...feed.playlists, ...feed.live]);
-  const tagged = pool.filter((item) => item.appSections?.includes(sectionId));
-  const result = tagged.length >= 2 ? tagged : pool.filter((item) => (fallbackTypes as string[]).includes(item.type));
-  return result.slice(0, limit);
+  const used = new Set<string>();
+
+  function take(sectionId: string, fallbackTypes: ContentType[]): FeedCardItem[] {
+    const available = pool.filter((item) => !used.has(item.id));
+    const tagged = available.filter((item) => item.appSections?.includes(sectionId));
+    const result =
+      tagged.length >= 2
+        ? tagged
+        : available.filter((item) => (fallbackTypes as string[]).includes(item.type));
+    const sliced = result.slice(0, limit);
+    sliced.forEach((item) => used.add(item.id));
+    return sliced;
+  }
+
+  return {
+    music:   take('music', ['audio']),
+    nuggets: take('nuggets-of-truth', ['video']),
+    teens:   take('teens', ['video', 'playlist']),
+    audio:   take('audio', ['audio', 'playlist']),
+  };
 }
 
 // ─── Continue Row ─────────────────────────────────────────────────────────────
@@ -185,11 +198,9 @@ export default function HomeScreen() {
     [feed.live, feed.mostPlayed, feed.music, feed.recent, feed.recommendations, feed.videos],
   );
 
-  // 4 ClaudyGod-branded sections
-  const musicItems = useMemo(() => filterBySection(feed, 'music', ['audio']), [feed]);
-  const nuggetsItems = useMemo(() => filterBySection(feed, 'nuggets-of-truth', ['video']), [feed]);
-  const teensItems = useMemo(() => filterBySection(feed, 'teens', ['video', 'playlist']), [feed]);
-  const audioItems = useMemo(() => filterBySection(feed, 'audio', ['audio', 'playlist']), [feed]);
+  // 4 ClaudyGod-branded sections — computed together so items don't repeat across rails
+  const { music: musicItems, nuggets: nuggetsItems, teens: teensItems, audio: audioItems } =
+    useMemo(() => buildSections(feed), [feed]);
 
   const configuredTabs = useMemo(() => config?.navigation?.tabs ?? [], [config?.navigation?.tabs]);
   const configuredSections = config?.layout?.homeSections ?? [];
@@ -290,76 +301,76 @@ export default function HomeScreen() {
       <View style={{ gap: 28 }}>
 
         {/* ClaudyGod Music */}
-        <View style={{ gap: 14 }}>
-          <SectionLabel
-            title="ClaudyGod Music"
-            actionLabel="See all"
-            onAction={() => router.push(APP_ROUTES.tabs.player)}
-          />
-          <ContentRail
-            title=""
-            items={musicItems}
-            onPressItem={(item) => void openItem(item, 'home_music')}
-            loading={loading}
-            cardVariant="portrait"
-            emptyTitle="Music coming soon"
-            emptyMessage="Worship tracks and albums from ClaudyGod will appear here."
-          />
-        </View>
+        {(loading || musicItems.length > 0) ? (
+          <View style={{ gap: 14 }}>
+            <SectionLabel
+              title="ClaudyGod Music"
+              actionLabel="See all"
+              onAction={() => router.push(APP_ROUTES.tabs.player)}
+            />
+            <ContentRail
+              title=""
+              items={musicItems}
+              onPressItem={(item) => void openItem(item, 'home_music')}
+              loading={loading}
+              cardVariant="portrait"
+            />
+          </View>
+        ) : null}
 
         {/* ClaudyGod Nuggets of Truth */}
-        <View style={{ gap: 14 }}>
-          <SectionLabel
-            title="Nuggets of Truth"
-            actionLabel="See all"
-            onAction={() => router.push(APP_ROUTES.tabs.videos)}
-          />
-          <ContentRail
-            title=""
-            items={nuggetsItems}
-            onPressItem={(item) => void openItem(item, 'home_nuggets')}
-            loading={loading}
-            cardVariant="landscape"
-            emptyTitle="Nuggets of Truth coming soon"
-            emptyMessage="Short devotional moments from ClaudyGod will appear here."
-          />
-        </View>
+        {(loading || nuggetsItems.length > 0) ? (
+          <View style={{ gap: 14 }}>
+            <SectionLabel
+              title="Nuggets of Truth"
+              actionLabel="See all"
+              onAction={() => router.push(APP_ROUTES.tabs.videos)}
+            />
+            <ContentRail
+              title=""
+              items={nuggetsItems}
+              onPressItem={(item) => void openItem(item, 'home_nuggets')}
+              loading={loading}
+              cardVariant="landscape"
+            />
+          </View>
+        ) : null}
 
         {/* ClaudyGod Teens */}
-        <View style={{ gap: 14 }}>
-          <SectionLabel
-            title="ClaudyGod Teens"
-            actionLabel="See all"
-            onAction={() => router.push(APP_ROUTES.tabs.videos)}
-          />
-          <ContentRail
-            title=""
-            items={teensItems}
-            onPressItem={(item) => void openItem(item, 'home_teens')}
-            loading={loading}
-            cardVariant="landscape"
-            emptyTitle="ClaudyGod Teens coming soon"
-            emptyMessage="Youth-focused content from ClaudyGod will appear here."
-          />
-        </View>
+        {(loading || teensItems.length > 0) ? (
+          <View style={{ gap: 14 }}>
+            <SectionLabel
+              title="ClaudyGod Teens"
+              actionLabel="See all"
+              onAction={() => router.push(APP_ROUTES.tabs.videos)}
+            />
+            <ContentRail
+              title=""
+              items={teensItems}
+              onPressItem={(item) => void openItem(item, 'home_teens')}
+              loading={loading}
+              cardVariant="landscape"
+            />
+          </View>
+        ) : null}
 
         {/* ClaudyGod Audio */}
-        <View style={{ gap: 14 }}>
-          <SectionLabel
-            title="ClaudyGod Audio"
-            actionLabel="See all"
-            onAction={() => router.push(APP_ROUTES.tabs.player)}
-          />
-          <ContentRail
-            title=""
-            items={audioItems}
-            onPressItem={(item) => void openItem(item, 'home_audio')}
-            loading={loading}
-            cardVariant="portrait"
-            emptyTitle="ClaudyGod Audio coming soon"
-            emptyMessage="Spoken word and audio teachings from ClaudyGod will appear here."
-          />
-        </View>
+        {(loading || audioItems.length > 0) ? (
+          <View style={{ gap: 14 }}>
+            <SectionLabel
+              title="ClaudyGod Audio"
+              actionLabel="See all"
+              onAction={() => router.push(APP_ROUTES.tabs.player)}
+            />
+            <ContentRail
+              title=""
+              items={audioItems}
+              onPressItem={(item) => void openItem(item, 'home_audio')}
+              loading={loading}
+              cardVariant="portrait"
+            />
+          </View>
+        ) : null}
 
       </View>
 

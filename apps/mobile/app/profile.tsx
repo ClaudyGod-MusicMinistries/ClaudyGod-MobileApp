@@ -10,7 +10,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
 import { CustomText } from '../components/CustomText';
-import { useAppTheme } from '../util/colorScheme';
 import { useDeviceClass } from '../util/deviceClassConfig';
 import { FadeIn } from '../components/ui/FadeIn';
 import { TVTouchable } from '../components/ui/TVTouchable';
@@ -20,6 +19,8 @@ import { clearMobileSession } from '../services/authService';
 import { useRequireMobileSession } from '../hooks/useRequireMobileSession';
 import { APP_ROUTES } from '../util/appRoutes';
 import { useToast } from '../context/ToastContext';
+
+const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
 const NAV_GROUPS = [
   {
@@ -107,7 +108,6 @@ function NavSection({ group }: { group: (typeof NAV_GROUPS)[0] }) {
 }
 
 export default function Profile() {
-  const theme = useAppTheme();
   const router = useRouter();
   const device = useDeviceClass();
   const { showToast } = useToast();
@@ -189,7 +189,7 @@ export default function Profile() {
           scrollEventThrottle={16}
           onScroll={Animated.event(
             [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-            { useNativeDriver: true },
+            { useNativeDriver: USE_NATIVE_DRIVER },
           )}
           contentContainerStyle={{ paddingBottom: 120 }}
         >
