@@ -10,8 +10,6 @@ import {
   useWindowDimensions,
 } from 'react-native';
 
-const USE_NATIVE_DRIVER = Platform.OS !== 'web';
-
 import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -19,6 +17,8 @@ import { CustomText } from '../CustomText';
 import { useAppTheme } from '../../util/colorScheme';
 import { TVTouchable } from '../ui/TVTouchable';
 import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
+
+const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
 export interface AudioTrack {
   id: string;
