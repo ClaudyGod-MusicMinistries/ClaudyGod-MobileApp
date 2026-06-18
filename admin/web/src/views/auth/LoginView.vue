@@ -82,8 +82,8 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
           </svg>
         </div>
-        <h2 class="text-xl font-black text-gray-900 tracking-tight">Two-factor verification</h2>
-        <p class="text-sm text-gray-500 mt-1">Enter the 6-digit code from your authenticator app</p>
+        <h2 class="text-xl font-black text-gray-900 tracking-tight">Verification code</h2>
+        <p class="text-sm text-gray-500 mt-1">Enter the 6-digit security code from your authenticator app.</p>
       </div>
 
       <div v-if="auth.error"
@@ -94,9 +94,9 @@
 
       <AppInput
         v-model="mfaCode"
-        label="Authentication code"
+        label="Security code"
         type="text"
-        placeholder="000000"
+        placeholder="· · · · · ·"
         required
         maxlength="6"
         autocomplete="one-time-code"

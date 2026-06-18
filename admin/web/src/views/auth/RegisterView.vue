@@ -86,13 +86,11 @@
               <svg class="w-3.5 h-3.5 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
-              <span class="text-violet-300 text-xs font-medium">Invitation from {{ invite?.inviterName || 'your admin' }}</span>
-              <span class="text-violet-500/50 text-xs">·</span>
-              <span class="text-violet-300/70 text-xs">{{ roleLabel }}</span>
+              <span class="text-violet-300 text-xs font-medium">Invited by {{ invite?.inviterName || 'your admin' }}</span>
             </div>
             <div>
               <h2 class="text-white text-2xl font-black tracking-tight mb-1">Set up your account</h2>
-              <p class="text-white/45 text-sm">Invited as <span class="text-violet-400 font-medium">{{ invite?.email }}</span>. Choose a name and password.</p>
+              <p class="text-white/45 text-sm">Create your password to complete your account setup.</p>
             </div>
             <form @submit.prevent="submitInvite" novalidate class="space-y-4">
               <FieldGroup label="Full name" :error="inviteErrors.name">
@@ -122,7 +120,7 @@
 
               <!-- Account details -->
               <div class="space-y-3">
-                <p class="text-[10px] font-bold text-white/25 uppercase tracking-widest">Account details</p>
+                <p class="text-[10px] font-bold text-white/25 uppercase tracking-widest">Your details</p>
                 <FieldGroup label="Email address" :error="codeErrors.email">
                   <FormInput v-model="codeForm.email" type="email" placeholder="you@example.com" autocomplete="email" :hasError="!!codeErrors.email">
                     <template #icon>
@@ -141,7 +139,7 @@
 
               <!-- Role picker -->
               <div class="space-y-3">
-                <p class="text-[10px] font-bold text-white/25 uppercase tracking-widest">Your role</p>
+                <p class="text-[10px] font-bold text-white/25 uppercase tracking-widest">Access level</p>
                 <div class="grid grid-cols-3 gap-2">
                   <button
                     v-for="r in ROLE_OPTIONS"
@@ -164,13 +162,13 @@
 
               <!-- Password -->
               <div class="space-y-3">
-                <p class="text-[10px] font-bold text-white/25 uppercase tracking-widest">Security</p>
+                <p class="text-[10px] font-bold text-white/25 uppercase tracking-widest">Password</p>
                 <PasswordFields v-model:password="codeForm.password" v-model:confirm="codeForm.confirmPassword" :errors="codeErrors" />
               </div>
 
               <!-- Access code -->
               <div class="space-y-3">
-                <p class="text-[10px] font-bold text-white/25 uppercase tracking-widest">Access code</p>
+                <p class="text-[10px] font-bold text-white/25 uppercase tracking-widest">Admin code</p>
                 <FieldGroup label="Admin access code" hint="provided by your administrator" :error="codeErrors.adminSignupCode">
                   <div class="relative">
                     <div class="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/25 pointer-events-none">
@@ -253,13 +251,13 @@ type Phase = 'loading' | 'invalid' | 'invite-form' | 'code-form' | 'success' | '
 const FEATURES = [
   { label: 'Content management', desc: 'Upload music, sermons, and videos. Assign to sections instantly.', icon: '<svg class="w-3.5 h-3.5 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>' },
   { label: 'YouTube import', desc: 'Browse your channel and import videos directly to the app.', icon: '<svg class="w-3.5 h-3.5 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>' },
-  { label: 'Audience analytics', desc: 'See who's listening, what's trending, and when they tune in.', icon: '<svg class="w-3.5 h-3.5 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>' },
+  { label: 'Audience analytics', desc: "See who's listening, what's trending, and when they tune in.", icon: '<svg class="w-3.5 h-3.5 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>' },
 ];
 
 const ROLE_OPTIONS = [
-  { value: 'ADMIN' as const,     label: 'Admin',     emoji: '🛡️', desc: 'Full access' },
-  { value: 'MODERATOR' as const, label: 'Moderator', emoji: '👁️', desc: 'Review & approve' },
-  { value: 'CREATOR' as const,   label: 'Creator',   emoji: '✏️', desc: 'Upload content' },
+  { value: 'ADMIN' as const,     label: 'Admin',     emoji: '🛡️', desc: 'Full platform access' },
+  { value: 'MODERATOR' as const, label: 'Moderator', emoji: '👁️', desc: 'Review content' },
+  { value: 'CREATOR' as const,   label: 'Creator',   emoji: '✏️', desc: 'Create & upload' },
 ];
 
 // ── Shared sub-components ─────────────────────────────────────────────────────
@@ -383,11 +381,6 @@ const codeErrors = ref<Record<string,string>>({});
 const submitError = ref('');
 const isSubmitting = ref(false);
 
-const roleLabel = computed(() => {
-  const r = invite.value?.role ?? '';
-  const map: Record<string,string> = { SUPER_ADMIN:'Super Admin', ADMIN:'Administrator', MODERATOR:'Moderator', CREATOR:'Creator' };
-  return map[r] ?? (r || 'Team member');
-});
 
 function validateInviteForm(): boolean {
   inviteErrors.value = {};

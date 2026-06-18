@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Image, Platform, StatusBar, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Animated, Image, Platform, StatusBar, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { BRAND_LOGO_ASSET, BRAND_WORSHIP_ASSET } from '../../util/brandAssets';
+import { BRAND_LOGO_ASSET } from '../../util/brandAssets';
 
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
@@ -39,22 +39,12 @@ export function AppLoadingScreen() {
   }, [logoOpacity, logoScale, contentOpacity, shimmer]);
 
   const isCompact = width < 390;
-  const logoSize = isCompact ? 80 : 96;
-  const logoRadius = Math.round(logoSize * 0.22);
+  const logoSize = isCompact ? 112 : 128;
+  const logoRadius = 28;
 
   return (
-    <View style={{ width, height, backgroundColor: '#0A0A0A' }}>
+    <View style={{ width, height, backgroundColor: '#07050C' }}>
       <StatusBar translucent barStyle="light-content" backgroundColor="transparent" />
-
-      {/* Full-bleed background — explicit px dimensions fix web image fill */}
-      <Image
-        source={BRAND_WORSHIP_ASSET}
-        resizeMode="cover"
-        style={{ position: 'absolute', top: 0, left: 0, width, height }}
-      />
-
-      {/* Dark overlay for readability */}
-      <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.70)' }]} />
 
       <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
@@ -66,16 +56,21 @@ export function AppLoadingScreen() {
               overflow: 'hidden',
               opacity: logoOpacity,
               transform: [{ scale: logoScale }],
+              shadowColor: '#8B5CF6',
+              shadowOffset: { width: 0, height: 0 },
+              shadowRadius: 32,
+              shadowOpacity: 0.22,
+              elevation: 12,
             }}
           >
             <Image source={BRAND_LOGO_ASSET} style={{ width: logoSize, height: logoSize }} resizeMode="cover" />
           </Animated.View>
 
-          <Animated.View style={{ alignItems: 'center', marginTop: 22, opacity: contentOpacity }}>
+          <Animated.View style={{ alignItems: 'center', marginTop: 24, opacity: contentOpacity }}>
             <Animated.Text
               style={{
                 color: '#FFFFFF',
-                fontSize: isCompact ? 24 : 28,
+                fontSize: isCompact ? 26 : 30,
                 fontWeight: '700',
                 letterSpacing: -0.6,
                 fontFamily: 'PlusJakartaSans_700Bold',

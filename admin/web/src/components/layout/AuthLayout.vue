@@ -51,13 +51,13 @@
           <div class="max-w-[360px]">
             <p class="text-[11px] font-bold uppercase tracking-[0.2em] mb-5" style="color:#a78bfa">Admin workspace</p>
             <h1 class="font-black leading-[1.07] mb-6" style="font-size:clamp(2.2rem,3.5vw,3rem);color:#f5f3ff">
-              Worship.<br/>
+              Ministry management,<br/>
               <span style="background:linear-gradient(92deg,#c4b5fd 0%,#818cf8 55%,#8b5cf6 100%);-webkit-background-clip:text;background-clip:text;color:transparent">
-                Without limits.
+                simplified.
               </span>
             </h1>
             <p class="text-sm leading-relaxed mb-10" style="color:#9ca3af">
-              The complete platform for ministry content, live operations, and audience engagement — purpose-built for ClaudyGod.
+              Publish content, run live sessions, and grow your community — all from one place.
             </p>
 
             <ul class="space-y-3.5">
@@ -108,7 +108,7 @@
       </div>
 
       <p class="mt-6 text-[11px] text-gray-400 text-center tracking-wide">
-        Encrypted · Role-gated · MFA-ready
+        Secure access · Role-based permissions · End-to-end encrypted
       </p>
     </div>
 
@@ -128,7 +128,7 @@ const features = [
 
 const stats = [
   { value: '256-bit', label: 'Encryption' },
-  { value: 'MFA', label: 'Optional 2FA' },
+  { value: '2-Step', label: 'Verification' },
   { value: '24 / 7', label: 'Uptime target' },
 ];
 </script>
