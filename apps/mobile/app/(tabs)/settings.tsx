@@ -330,8 +330,9 @@ export default function SettingsScreen() {
           <View style={isWideLayout ? { flex: 1, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: theme.colors.border } : {}}>
             <SurfaceCard tone="subtle" style={{ paddingHorizontal: theme.spacing.md, paddingVertical: 0 }}>
               {[
-                { icon: 'help-outline'        as const, label: 'Help',    hint: 'Get support',      color: '#60A5FA', onPress: () => router.push(APP_ROUTES.settingsPages.help) },
-                { icon: 'volunteer-activism'  as const, label: 'Support', hint: 'Give or donate',   color: '#F87171', onPress: () => router.push(APP_ROUTES.settingsPages.donate) },
+                { icon: 'card-giftcard'       as const, label: 'Invite friends', hint: 'Earn rewards together', color: '#8B5CF6', onPress: () => router.push(APP_ROUTES.settingsPages.referral) },
+                { icon: 'help-outline'        as const, label: 'Help',           hint: 'Get support',           color: '#60A5FA', onPress: () => router.push(APP_ROUTES.settingsPages.help) },
+                { icon: 'volunteer-activism'  as const, label: 'Support',        hint: 'Give or donate',        color: '#F87171', onPress: () => router.push(APP_ROUTES.settingsPages.donate) },
               ].map((link, idx) => (
                 <View key={link.label} style={{ borderTopWidth: idx === 0 ? 0 : 1, borderTopColor: theme.colors.border }}>
                   <QuickLinkRow {...link} />

@@ -30,6 +30,7 @@ export const APP_ROUTES = {
     about: '/settingsPage/About',
     rate: '/settingsPage/Rate',
     word: '/settingsPage/Word',
+    referral: '/settingsPage/Referral',
   },
 } as const;
 
@@ -49,7 +50,8 @@ export type AppRouteId =
   | 'settings.help'
   | 'settings.about'
   | 'settings.rate'
-  | 'settings.word';
+  | 'settings.word'
+  | 'settings.referral';
 
 export const TAB_ROUTE_BY_ID: Record<MobileTabId, string> = {
   home: APP_ROUTES.tabs.home,
@@ -76,6 +78,7 @@ export const APP_ROUTE_BY_ID: Record<AppRouteId, string> = {
   'settings.about': APP_ROUTES.settingsPages.about,
   'settings.rate': APP_ROUTES.settingsPages.rate,
   'settings.word': APP_ROUTES.settingsPages.word,
+  'settings.referral': APP_ROUTES.settingsPages.referral,
 };
 
 export type PlayerRoutePath =
