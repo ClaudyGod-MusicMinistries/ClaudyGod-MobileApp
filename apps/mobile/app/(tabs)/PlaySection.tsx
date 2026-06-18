@@ -300,7 +300,7 @@ export default function PlaySection() {
         />
       ) : null}
 
-      {!loading && !allQueue.length ? (
+      {!loading && !allQueue.length && !musicItems.length && !audioItems.length && !nuggetsItems.length && !teensItems.length ? (
         <EmptyState
           title="No music right now"
           message="Try Videos, Live, or Search for something to play."

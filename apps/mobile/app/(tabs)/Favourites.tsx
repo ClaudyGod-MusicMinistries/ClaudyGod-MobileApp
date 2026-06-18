@@ -14,6 +14,7 @@ import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { AppButton } from '../../components/ui/AppButton';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { FadeIn } from '../../components/ui/FadeIn';
+import { ConfirmModal } from '../../components/ui/ConfirmModal';
 import {
   PremiumHero,
   PremiumPage,
@@ -133,6 +134,8 @@ export default function FavouritesScreen() {
   const [items, setItems] = useState<FeedCardItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [removeTarget, setRemoveTarget] = useState<FeedCardItem | null>(null);
+  const [isRemoving, setIsRemoving] = useState(false);
 
   const loadFavourites = useCallback(async () => {
     if (!isAuthenticated) {
@@ -170,7 +173,14 @@ export default function FavouritesScreen() {
     }
   };
 
-  const removeItem = async (item: FeedCardItem) => {
+  const confirmRemove = (item: FeedCardItem) => {
+    setRemoveTarget(item);
+  };
+
+  const removeItem = async () => {
+    if (!removeTarget) return;
+    const item = removeTarget;
+    setIsRemoving(true);
     setRemovingId(item.id);
     try {
       await removeMeLibraryItem({ bucket: 'liked', contentId: item.id });
@@ -179,10 +189,13 @@ export default function FavouritesScreen() {
     } catch {
       showToast({ title: 'Could not remove item', message: 'Please try again.', tone: 'warning' });
     }
+    setIsRemoving(false);
     setRemovingId(null);
+    setRemoveTarget(null);
   };
 
   return (
+    <>
     <PremiumPage
       title="Favourites"
       eyebrow="Saved by you"
@@ -278,7 +291,7 @@ export default function FavouritesScreen() {
                   item={item}
                   onPlay={() => void openItem(item)}
                   onShare={() => void shareItem(item)}
-                  onRemove={() => void removeItem(item)}
+                  onRemove={() => confirmRemove(item)}
                   removing={removingId === item.id}
                 />
               </View>
@@ -287,5 +300,19 @@ export default function FavouritesScreen() {
         </FadeIn>
       ) : null}
     </PremiumPage>
+
+    <ConfirmModal
+      visible={Boolean(removeTarget)}
+      icon="favorite"
+      title="Remove from favourites?"
+      body={removeTarget ? `"${removeTarget.title}" will be removed from your saved items.` : undefined}
+      primaryLabel="Remove"
+      primaryTone="danger"
+      secondaryLabel="Keep it"
+      loading={isRemoving}
+      onPrimary={() => { void removeItem(); }}
+      onDismiss={() => { if (!isRemoving) setRemoveTarget(null); }}
+    />
+    </>
   );
 }

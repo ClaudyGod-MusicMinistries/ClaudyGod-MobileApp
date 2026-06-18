@@ -145,7 +145,8 @@ export function ActionSheet({
                         alignItems: 'center',
                         gap: 12,
                         paddingHorizontal: theme.spacing.md,
-                        paddingVertical: theme.spacing.md,
+                        paddingVertical: 10,
+                        minHeight: 56,
                         borderTopWidth: index === 0 ? 0 : 1,
                         borderTopColor: theme.colors.border,
                         backgroundColor: 'transparent',
@@ -192,9 +193,6 @@ export function ActionSheet({
                 style={{
                   minHeight: 48,
                   borderRadius: theme.radius.lg,
-                  borderWidth: 1,
-                  borderColor: theme.colors.border,
-                  backgroundColor: theme.colors.surface,
                   alignItems: 'center',
                   justifyContent: 'center',
                   flexDirection: 'row',
@@ -202,14 +200,10 @@ export function ActionSheet({
                 }}
                 showFocusBorder={false}
               >
-                <MaterialIcons name="close" size={16} color={theme.colors.textSecondary} />
+                <MaterialIcons name="close" size={15} color={theme.colors.textSecondary} />
                 <CustomText
                   variant="label"
-                  style={{
-                    color: theme.colors.text,
-                    textTransform: 'uppercase',
-                    letterSpacing: 0.2,
-                  }}
+                  style={{ color: theme.colors.textSecondary }}
                 >
                   Cancel
                 </CustomText>
