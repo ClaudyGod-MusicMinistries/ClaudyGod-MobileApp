@@ -46,12 +46,12 @@ export function AuthScreenFrame({ backPath, salutation, description, title, subt
     </TVTouchable>
   );
 
-  // ── Phone: clean dark screen with vertically-centered form ──────────────────
+  // ── Phone: centered logo, centered title/subtitle ──────────────────────────
   if (isPhone) {
     const maxFormWidth = Math.min(screenWidth, 400);
 
     return (
-      <View style={{ flex: 1, backgroundColor: '#0A0A0A' }}>
+      <View style={{ flex: 1, backgroundColor: '#07050C' }}>
         <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
 
         <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
@@ -76,26 +76,49 @@ export function AuthScreenFrame({ backPath, salutation, description, title, subt
             bounces={false}
           >
             <FadeIn delay={60} duration={300}>
-              {/* Logo + title */}
-              <View style={{ marginBottom: 28 }}>
+              {/* Centered logo + app name + title + subtitle */}
+              <View style={{ alignItems: 'center', marginBottom: 28 }}>
                 <View style={{
-                  width: 36, height: 36, borderRadius: 11,
-                  backgroundColor: '#1A1A1A',
+                  width: 60, height: 60, borderRadius: 18,
+                  backgroundColor: '#18132A',
                   alignItems: 'center', justifyContent: 'center',
-                  marginBottom: 20,
+                  overflow: 'hidden',
                 }}>
-                  <Image source={BRAND_LOGO_ASSET} resizeMode="cover" style={{ width: 24, height: 24, borderRadius: 7 }} />
+                  <Image source={BRAND_LOGO_ASSET} resizeMode="cover" style={{ width: 60, height: 60 }} />
                 </View>
-                <CustomText variant="display" style={{ color: '#FFFFFF', fontSize: 26, fontWeight: '700', letterSpacing: -0.6, lineHeight: 32 }}>
+
+                <CustomText
+                  variant="caption"
+                  style={{
+                    color: 'rgba(247,242,255,0.40)',
+                    fontSize: 10,
+                    textTransform: 'uppercase',
+                    letterSpacing: 1.4,
+                    marginTop: 8,
+                    fontWeight: '600',
+                  }}
+                >
+                  ClaudyGod
+                </CustomText>
+
+                <CustomText
+                  variant="display"
+                  style={{ color: '#FFFFFF', fontSize: 26, fontWeight: '700', letterSpacing: -0.6, lineHeight: 32, marginTop: 20, textAlign: 'center' }}
+                >
                   {title}
                 </CustomText>
-                <CustomText variant="body" style={{ color: '#7A7288', marginTop: 8, lineHeight: 20, fontSize: 14, fontWeight: '400' }}>
+                <CustomText
+                  variant="body"
+                  style={{ color: '#7A7288', marginTop: 6, lineHeight: 20, fontSize: 13, fontWeight: '400', textAlign: 'center' }}
+                >
                   {subtitle}
                 </CustomText>
               </View>
 
-              {/* Form content — no card wrapper */}
-              {children}
+              {/* Form content */}
+              <View style={{ marginTop: 28 }}>
+                {children}
+              </View>
             </FadeIn>
           </ScrollView>
         </SafeAreaView>

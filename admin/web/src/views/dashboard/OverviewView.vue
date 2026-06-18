@@ -1,5 +1,11 @@
 <template>
   <div class="space-y-6">
+    <!-- Greeting -->
+    <div class="mb-2">
+      <h1 class="text-2xl font-black text-ink tracking-tight">{{ greeting }}, {{ auth.user?.displayName || 'there' }}.</h1>
+      <p class="text-sm text-ink-muted mt-1">Here's what's happening across your ministry today.</p>
+    </div>
+
     <!-- Stat cards -->
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
       <AppStatCard label="Total users" :value="summary.totalUsers" icon-bg="bg-primary/15">
@@ -59,7 +65,7 @@
       <div class="space-y-4">
         <!-- Request status board -->
         <div>
-          <h2 class="text-sm font-bold text-ink mb-3">Request pipeline</h2>
+          <h2 class="text-sm font-bold text-ink mb-3">Content review</h2>
           <AppCard class="p-4 space-y-2">
             <div
               v-for="item in requestBoard"
@@ -75,21 +81,19 @@
           </AppCard>
         </div>
 
-        <!-- System health -->
+        <!-- Pending review callout -->
         <div>
-          <div class="flex items-center justify-between mb-3">
-            <h2 class="text-sm font-bold text-ink">Last refreshed</h2>
+          <AppCard class="p-4 flex items-center justify-between gap-4">
+            <div>
+              <p class="text-[11px] font-bold text-ink-muted uppercase tracking-wider">Pending review</p>
+              <p class="text-2xl font-black text-ink tabular-nums mt-1">{{ summary.pendingRequests }}</p>
+              <p class="text-xs text-ink-muted mt-0.5">
+                {{ dashboard.lastFetchedAt ? `Updated ${formatDate(dashboard.lastFetchedAt.toISOString())}` : 'Loading…' }}
+              </p>
+            </div>
             <AppButton variant="ghost" size="xs" @click="dashboard.fetchDashboard()">
               Refresh
             </AppButton>
-          </div>
-          <AppCard class="p-4">
-            <p class="text-xs text-ink-muted">
-              {{ dashboard.lastFetchedAt ? formatDate(dashboard.lastFetchedAt.toISOString()) : 'Loading…' }}
-            </p>
-            <p class="text-xs text-ink-muted mt-1">
-              {{ summary.pendingRequests }} pending request{{ summary.pendingRequests !== 1 ? 's' : '' }}
-            </p>
           </AppCard>
         </div>
       </div>
@@ -100,6 +104,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue';
 import { useDashboardStore } from '@/stores/dashboard.store';
+import { useAuthStore } from '@/stores/auth.store';
 import AppCard from '@/components/ui/AppCard.vue';
 import AppTable from '@/components/ui/AppTable.vue';
 import AppBadge from '@/components/ui/AppBadge.vue';
@@ -109,6 +114,14 @@ import AppEmptyState from '@/components/ui/AppEmptyState.vue';
 import StatusBadge from '@/components/shared/StatusBadge.vue';
 
 const dashboard = useDashboardStore();
+const auth = useAuthStore();
+
+const greeting = computed(() => {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good morning';
+  if (h < 17) return 'Good afternoon';
+  return 'Good evening';
+});
 
 onMounted(() => { void dashboard.fetchDashboard(); });
 
@@ -124,7 +137,7 @@ const contentCols = [
   { key: 'title', label: 'Title' },
   { key: 'type', label: 'Type' },
   { key: 'status', label: 'Status' },
-  { key: 'createdAt', label: 'Created', align: 'right' as const },
+  { key: 'createdAt', label: 'Added', align: 'right' as const },
 ];
 
 function formatDate(iso: string): string {

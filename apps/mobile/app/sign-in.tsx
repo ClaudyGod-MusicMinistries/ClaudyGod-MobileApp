@@ -64,18 +64,89 @@ export default function SignInScreen() {
   };
 
   return (
-    <AuthScreenFrame backPath={APP_ROUTES.landing} salutation="Welcome back" description="Pick up your music, videos, live sessions, and saved favorites." title="Sign in" subtitle="Use Google or your email and password to continue.">
+    <AuthScreenFrame
+      backPath={APP_ROUTES.landing}
+      salutation="Welcome back"
+      description="Pick up your music, videos, live sessions, and saved favorites."
+      title="Welcome back"
+      subtitle="Sign in to continue your worship experience."
+    >
       <View style={{ gap: 12 }}>
-        <AuthTextField label="Email address" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" autoComplete="email" textContentType="emailAddress" placeholder="name@example.com" hint={normalizedEmail ? emailHint : ''} hintTone={normalizedEmail ? (emailIsValid ? 'success' : 'error') : 'default'} />
-        <AuthTextField label="Password" value={password} onChangeText={setPassword} secureTextEntry={hidePassword} autoCapitalize="none" autoComplete="password" textContentType="password" placeholder="Enter your password" trailing={<TVTouchable onPress={() => setHidePassword((prev) => !prev)} showFocusBorder={false}><MaterialIcons name={hidePassword ? 'visibility' : 'visibility-off'} size={20} color="rgba(226,218,247,0.9)" /></TVTouchable>} />
+        <AuthTextField
+          label="Email address"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoComplete="email"
+          textContentType="emailAddress"
+          placeholder="name@example.com"
+          hint={normalizedEmail ? emailHint : ''}
+          hintTone={normalizedEmail ? (emailIsValid ? 'success' : 'error') : 'default'}
+          leading={<MaterialIcons name="mail-outline" size={18} color="rgba(214,190,255,0.55)" />}
+        />
+        <AuthTextField
+          label="Password"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry={hidePassword}
+          autoCapitalize="none"
+          autoComplete="password"
+          textContentType="password"
+          placeholder="Enter your password"
+          leading={<MaterialIcons name="lock-outline" size={18} color="rgba(214,190,255,0.55)" />}
+          trailing={
+            <TVTouchable onPress={() => setHidePassword((prev) => !prev)} showFocusBorder={false}>
+              <MaterialIcons name={hidePassword ? 'visibility' : 'visibility-off'} size={20} color="rgba(226,218,247,0.9)" />
+            </TVTouchable>
+          }
+        />
       </View>
-      <TVTouchable onPress={() => router.push(APP_ROUTES.auth.forgotPassword)} style={{ alignSelf: 'flex-end', marginTop: 12 }} showFocusBorder={false}><CustomText variant="label" style={{ color: '#D8CAFF' }}>Forgot password?</CustomText></TVTouchable>
+
+      <TVTouchable onPress={() => router.push(APP_ROUTES.auth.forgotPassword)} style={{ alignSelf: 'flex-end', marginTop: 12 }} showFocusBorder={false}>
+        <CustomText variant="label" style={{ color: '#D8CAFF', fontSize: 12 }}>Forgot password?</CustomText>
+      </TVTouchable>
+
       {errorMessage ? <AuthFeedbackBanner message={errorMessage} tone="error" /> : null}
+
+      <AppButton
+        title="Sign in"
+        size="lg"
+        fullWidth
+        loading={submitting}
+        loadingLabel="Signing in"
+        loadingVariant="brand"
+        onPress={() => void handleSignIn()}
+        disabled={submitting}
+        style={{ marginTop: 16 }}
+      />
+
       {isSupabaseConfigured ? (
-        <AppButton title="Continue with Google" variant="secondary" size="lg" fullWidth onPress={() => void handleGoogleSignIn()} disabled={submitting} style={{ marginTop: 16 }} />
+        <>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginVertical: 4, marginTop: 16 }}>
+            <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(247,242,255,0.10)' }} />
+            <CustomText style={{ color: 'rgba(247,242,255,0.35)', fontSize: 11 }}>or continue with</CustomText>
+            <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(247,242,255,0.10)' }} />
+          </View>
+          <AppButton
+            title="Continue with Google"
+            variant="secondary"
+            size="lg"
+            fullWidth
+            onPress={() => void handleGoogleSignIn()}
+            disabled={submitting}
+          />
+        </>
       ) : null}
-      <AppButton title="Sign in" size="lg" fullWidth loading={submitting} loadingLabel="Signing in" loadingVariant="brand" onPress={() => void handleSignIn()} disabled={submitting} style={{ marginTop: isSupabaseConfigured ? 10 : 16 }} />
-      <View style={{ alignItems: 'center', marginTop: 16 }}><CustomText variant="body" style={{ color: 'rgba(255,255,255,0.68)', textAlign: 'center' }}>New to ClaudyGod?</CustomText><TVTouchable onPress={() => router.push(APP_ROUTES.auth.signUp)} style={{ marginTop: 7 }} showFocusBorder={false}><CustomText variant="label" style={{ color: '#D8CAFF' }}>Create your account</CustomText></TVTouchable></View>
+
+      <View style={{ alignItems: 'center', marginTop: 20 }}>
+        <CustomText variant="body" style={{ color: 'rgba(255,255,255,0.55)', textAlign: 'center', fontSize: 13 }}>
+          New to ClaudyGod?{' '}
+          <TVTouchable onPress={() => router.push(APP_ROUTES.auth.signUp)} showFocusBorder={false} style={{ display: 'inline' as never }}>
+            <CustomText variant="label" style={{ color: '#D8CAFF', fontSize: 13 }}>Sign up</CustomText>
+          </TVTouchable>
+        </CustomText>
+      </View>
     </AuthScreenFrame>
   );
 }

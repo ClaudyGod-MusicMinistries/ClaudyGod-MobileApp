@@ -15,6 +15,7 @@ interface AuthTextFieldProps {
   autoComplete?: TextInputProps['autoComplete'];
   textContentType?: TextInputProps['textContentType'];
   secureTextEntry?: boolean;
+  leading?: React.ReactNode;
   trailing?: React.ReactNode;
   returnKeyType?: TextInputProps['returnKeyType'];
   onSubmitEditing?: TextInputProps['onSubmitEditing'];
@@ -37,6 +38,7 @@ export function AuthTextField({
   autoComplete,
   textContentType,
   secureTextEntry,
+  leading,
   trailing,
   returnKeyType,
   onSubmitEditing,
@@ -129,6 +131,8 @@ export function AuthTextField({
               : null),
           }}
         >
+          {leading ? <View style={{ marginRight: 10, justifyContent: 'center' }}>{leading}</View> : null}
+
           <TextInput
             ref={inputRef}
             value={value}
