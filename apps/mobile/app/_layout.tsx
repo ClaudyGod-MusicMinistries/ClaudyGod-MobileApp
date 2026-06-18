@@ -53,7 +53,7 @@ function RootLayoutInner() {
   const [themePreferenceHydratedForUserId, setThemePreferenceHydratedForUserId] =
     useState<string | null>(null);
   const [wordModalVisible, setWordModalVisible] = useState(false);
-  const { word } = useWordOfDay();
+  const { bibleVerse, adminWord } = useWordOfDay();
 
   const firstSegment = segments[0];
   const secondSegment = useMemo(() => Array.from(segments)[1], [segments]);
@@ -65,8 +65,9 @@ function RootLayoutInner() {
   }, []);
 
   // Show the Word for Today modal once per day, 2 s after the app finishes booting.
+  // Requires at least the Bible verse to be loaded before triggering.
   useEffect(() => {
-    if (!bootDelayDone || !word) return;
+    if (!bootDelayDone || !bibleVerse) return;
     let cancelled = false;
     const timer = setTimeout(async () => {
       if (cancelled) return;
@@ -80,7 +81,7 @@ function RootLayoutInner() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [bootDelayDone, word]);
+  }, [bootDelayDone, bibleVerse]);
 
   useEffect(() => {
     // Web sessions use long-lived browser tokens — no inactivity lockout.
@@ -283,7 +284,8 @@ function RootLayoutInner() {
 
       <WordOfDayModal
         visible={wordModalVisible}
-        word={word ?? null}
+        bibleVerse={bibleVerse}
+        adminWord={adminWord}
         onClose={() => setWordModalVisible(false)}
         onReadMore={() => {
           setWordModalVisible(false);

@@ -2,52 +2,52 @@ import { useEffect, useState } from 'react';
 import { fetchWordOfDay, type WordOfDayItem } from '../services/wordOfDayService';
 import { fetchBibleDailyVerse } from '../services/bibleApiService';
 
-export type WordSource = 'admin' | 'bible-api' | null;
+export interface WordOfDayState {
+  /** Live scripture from bible-api.com — rotates daily, always attempted. */
+  bibleVerse: WordOfDayItem | null;
+  /** Admin-authored word for today from the backend — null when not configured. */
+  adminWord: WordOfDayItem | null;
+  loading: boolean;
+  /** True when at least one source returned content. */
+  hasContent: boolean;
+}
 
-export function useWordOfDay() {
-  const [word, setWord] = useState<WordOfDayItem | null>(null);
+export function useWordOfDay(): WordOfDayState {
+  const [bibleVerse, setBibleVerse] = useState<WordOfDayItem | null>(null);
+  const [adminWord, setAdminWord] = useState<WordOfDayItem | null>(null);
   const [loading, setLoading] = useState(true);
-  const [source, setSource] = useState<WordSource>(null);
 
   useEffect(() => {
     let active = true;
 
     const load = async () => {
-      try {
-        // Admin-configured word takes precedence
-        const adminResponse = await fetchWordOfDay();
-        if (!active) return;
+      // Fetch both sources concurrently — neither blocks the other.
+      const [bibleResult, adminResult] = await Promise.allSettled([
+        fetchBibleDailyVerse(),
+        fetchWordOfDay(),
+      ]);
 
-        if (adminResponse.word) {
-          setWord(adminResponse.word);
-          setSource('admin');
-          return;
-        }
+      if (!active) return;
 
-        // No admin content — fall back to Bible API (cached daily)
-        const bibleWord = await fetchBibleDailyVerse();
-        if (!active) return;
-        setWord(bibleWord);
-        setSource('bible-api');
-      } catch {
-        // On any failure still try Bible API
-        if (!active) return;
-        try {
-          const bibleWord = await fetchBibleDailyVerse();
-          if (!active) return;
-          setWord(bibleWord);
-          setSource('bible-api');
-        } catch {
-          // Fully offline — leave word as null
-        }
-      } finally {
-        if (active) setLoading(false);
+      if (bibleResult.status === 'fulfilled') {
+        setBibleVerse(bibleResult.value);
       }
+
+      if (adminResult.status === 'fulfilled' && adminResult.value.word) {
+        setAdminWord(adminResult.value.word);
+      }
+
+      setLoading(false);
     };
 
     void load();
     return () => { active = false; };
   }, []);
 
-  return { word, loading, source };
+  return {
+    bibleVerse,
+    adminWord,
+    loading,
+    hasContent: bibleVerse !== null || adminWord !== null,
+  };
 }
