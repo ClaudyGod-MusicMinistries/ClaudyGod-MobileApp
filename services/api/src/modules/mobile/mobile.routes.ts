@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import { asyncHandler } from '../../lib/asyncHandler';
 import { validateSchema } from '../../lib/validation';
 import { authenticate } from '../../middleware/authenticate';
@@ -6,12 +7,27 @@ import { requireMobileApiKey } from '../../middleware/requireMobileApiKey';
 import { listContentQuerySchema } from '../content/content.schema';
 import { listPublicContent } from '../content/content.service';
 import { createDonationIntentSchema } from '../me/me.schema';
-import { createPublicDonationIntent } from '../me/me.service';
+import { createPublicDonationIntent, saveMeLibraryItem } from '../me/me.service';
 import { signedUploadRequestSchema, uploadPoliciesResponse } from '../uploads/uploads.schema';
 import { requestSignedUploadUrl } from '../uploads/uploads.service';
 import { youtubeListQuerySchema } from '../youtube/youtube.schema';
 import { fetchYouTubeVideos } from '../youtube/youtube.service';
 import { buildMobileFeed } from './mobile.service';
+
+const guestFavoriteItemSchema = z.object({
+  id:       z.string().min(1),
+  title:    z.string().min(1),
+  subtitle: z.string().optional(),
+  type:     z.enum(['audio', 'video', 'live', 'playlist']),
+  imageUrl: z.string().optional(),
+  mediaUrl: z.string().optional(),
+  duration: z.string().optional(),
+});
+
+const guestSyncSchema = z.object({
+  favorites:  z.array(guestFavoriteItemSchema).max(200).default([]),
+  historyIds: z.array(z.string()).max(100).default([]),
+});
 
 export const mobileRouter = Router();
 
@@ -90,5 +106,37 @@ mobileRouter.get(
   requireMobileApiKey,
   asyncHandler(async (_req, res) => {
     res.status(200).json(uploadPoliciesResponse);
+  }),
+);
+
+// Syncs guest-session favourites to a newly signed-in account.
+mobileRouter.post(
+  '/guest-sync',
+  requireMobileApiKey,
+  authenticate,
+  asyncHandler(async (req, res) => {
+    if (!req.user) {
+      res.status(401).json({ message: 'Sign in required.' });
+      return;
+    }
+
+    const { favorites } = validateSchema(guestSyncSchema, req.body);
+
+    await Promise.allSettled(
+      favorites.map((item) =>
+        saveMeLibraryItem(req.user!, {
+          bucket: 'liked',
+          contentId: item.id,
+          contentType: item.type as 'audio' | 'video' | 'live' | 'playlist',
+          title: item.title,
+          subtitle: item.subtitle,
+          imageUrl: item.imageUrl,
+          mediaUrl: item.mediaUrl,
+          duration: item.duration,
+        }),
+      ),
+    );
+
+    res.status(200).json({ synced: favorites.length });
   }),
 );

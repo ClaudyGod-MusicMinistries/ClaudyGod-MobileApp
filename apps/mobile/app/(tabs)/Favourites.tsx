@@ -28,6 +28,7 @@ import {
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
 import { buildPlayerRoute } from '../../util/playerRoute';
 import type { FeedCardItem } from '../../services/contentService';
+import { useGuestSession } from '../../hooks/useGuestSession';
 
 function toFeedItem(item: MeLibraryItem): FeedCardItem {
   return {
@@ -131,6 +132,7 @@ export default function FavouritesScreen() {
   const device = useDeviceClass();
   const { showToast } = useToast();
   const { isAuthenticated } = useAuth();
+  const { guestFavorites, removeFavorite: removeGuestFav, loaded: guestLoaded } = useGuestSession();
   const [items, setItems] = useState<FeedCardItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [removingId, setRemovingId] = useState<string | null>(null);
@@ -183,8 +185,12 @@ export default function FavouritesScreen() {
     setIsRemoving(true);
     setRemovingId(item.id);
     try {
-      await removeMeLibraryItem({ bucket: 'liked', contentId: item.id });
-      setItems((current) => current.filter((entry) => entry.id !== item.id));
+      if (isAuthenticated) {
+        await removeMeLibraryItem({ bucket: 'liked', contentId: item.id });
+        setItems((current) => current.filter((entry) => entry.id !== item.id));
+      } else {
+        await removeGuestFav(item.id);
+      }
       showToast({ title: 'Removed from favourites', message: item.title, tone: 'info' });
     } catch {
       showToast({ title: 'Could not remove item', message: 'Please try again.', tone: 'warning' });
@@ -203,30 +209,81 @@ export default function FavouritesScreen() {
       refreshing={loading}
       onRefresh={() => void loadFavourites()}
     >
-      {/* Guest empty state */}
-      {!loading && !isAuthenticated ? (
-        <SurfaceCard tone="strong" style={{ padding: theme.spacing.xl, alignItems: 'center', gap: 18 }}>
-          <View
+      {/* Guest: sync banner + local favourites */}
+      {!isAuthenticated && guestLoaded ? (
+        <>
+          {/* Sign-in sync strip */}
+          <TVTouchable
+            onPress={() => router.push(APP_ROUTES.auth.signIn)}
+            showFocusBorder={false}
             style={{
-              width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center',
-              backgroundColor: `${theme.colors.primary}14`, borderWidth: 1, borderColor: theme.colors.border,
+              flexDirection: 'row', alignItems: 'center', gap: 12,
+              backgroundColor: `${theme.colors.primary}14`,
+              borderWidth: 1, borderColor: `${theme.colors.primary}30`,
+              borderRadius: theme.radius.lg,
+              paddingHorizontal: theme.spacing.md,
+              paddingVertical: 12,
             }}
           >
-            <MaterialIcons name="favorite-border" size={34} color={theme.colors.primary} />
-          </View>
-          <View style={{ alignItems: 'center', gap: 8 }}>
-            <CustomText variant="heading" style={{ color: theme.colors.text, textAlign: 'center' }}>
-              Sign in to save favourites
-            </CustomText>
-            <CustomText variant="body" style={{ color: theme.colors.textSecondary, textAlign: 'center', maxWidth: 360 }}>
-              Create an account or sign in to keep your favourite worship, videos, and messages synced across devices.
-            </CustomText>
-          </View>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center' }}>
-            <AppButton title="Sign in" size="md" onPress={() => router.push(APP_ROUTES.auth.signIn)} leftIcon={<MaterialIcons name="login" size={17} color={theme.colors.textInverse} />} />
-            <AppButton title="Browse music" size="md" variant="secondary" onPress={() => router.push(APP_ROUTES.tabs.player)} leftIcon={<MaterialIcons name="graphic-eq" size={17} color={theme.colors.text} />} />
-          </View>
-        </SurfaceCard>
+            <View style={{ width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: `${theme.colors.primary}20` }}>
+              <MaterialIcons name="sync" size={16} color={theme.colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <CustomText variant="label" style={{ color: theme.colors.text }}>
+                Sign in to sync across devices
+              </CustomText>
+              <CustomText variant="caption" style={{ color: theme.colors.textSecondary }}>
+                Your saved items will transfer automatically when you sign in.
+              </CustomText>
+            </View>
+            <MaterialIcons name="chevron-right" size={18} color={theme.colors.primary} />
+          </TVTouchable>
+
+          {/* Guest has no local favourites yet */}
+          {guestFavorites.length === 0 ? (
+            <SurfaceCard tone="strong" style={{ padding: theme.spacing.xl, alignItems: 'center', gap: 18 }}>
+              <View style={{ width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center', backgroundColor: `${theme.colors.primary}14`, borderWidth: 1, borderColor: theme.colors.border }}>
+                <MaterialIcons name="favorite-border" size={34} color={theme.colors.primary} />
+              </View>
+              <View style={{ alignItems: 'center', gap: 8 }}>
+                <CustomText variant="heading" style={{ color: theme.colors.text, textAlign: 'center' }}>
+                  No favourites yet
+                </CustomText>
+                <CustomText variant="body" style={{ color: theme.colors.textSecondary, textAlign: 'center', maxWidth: 360 }}>
+                  Tap the heart on songs, videos, and sessions to save them here even without an account.
+                </CustomText>
+              </View>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center' }}>
+                <AppButton title="Discover content" size="md" onPress={() => router.push(APP_ROUTES.tabs.search)} leftIcon={<MaterialIcons name="search" size={17} color={theme.colors.textInverse} />} />
+                <AppButton title="Browse music" size="md" variant="secondary" onPress={() => router.push(APP_ROUTES.tabs.player)} leftIcon={<MaterialIcons name="graphic-eq" size={17} color={theme.colors.text} />} />
+              </View>
+            </SurfaceCard>
+          ) : null}
+
+          {/* Guest grid using local storage */}
+          {guestFavorites.length > 0 ? (
+            <FadeIn>
+              <SectionLabel
+                title="Saved locally"
+                accent={`${guestFavorites.length} items`}
+                subtitle="Syncs to your account when you sign in"
+              />
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 10 }}>
+                {guestFavorites.map((item) => (
+                  <View key={item.id} style={{ width: colPercent, minWidth: 130 }}>
+                    <FavCard
+                      item={item}
+                      onPlay={() => void openItem(item)}
+                      onShare={() => void shareItem(item)}
+                      onRemove={() => confirmRemove(item)}
+                      removing={removingId === item.id}
+                    />
+                  </View>
+                ))}
+              </View>
+            </FadeIn>
+          ) : null}
+        </>
       ) : null}
 
       {/* Authenticated empty state */}
