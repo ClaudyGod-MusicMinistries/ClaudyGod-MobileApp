@@ -11,12 +11,16 @@ export interface PickedMedia {
   duration?: number;
 }
 
-function assetToPickedMedia(asset: ImagePicker.ImagePickerAsset): PickedMedia {
-  const ext = asset.uri.split('.').pop()?.toLowerCase() ?? 'jpg';
-  const mime =
-    asset.type === 'video'
-      ? `video/${ext === 'mov' ? 'quicktime' : ext}`
-      : `image/${ext === 'jpg' ? 'jpeg' : ext}`;
+function assetToPickedMedia(asset: ImagePicker.ImagePickerAsset, forceAudio = false): PickedMedia {
+  const ext = asset.uri.split('?')[0]?.split('.').pop()?.toLowerCase() ?? 'jpg';
+  let mime: string;
+  if (forceAudio) {
+    mime = `audio/${ext === 'mp3' ? 'mpeg' : ext}`;
+  } else if (asset.type === 'video') {
+    mime = `video/${ext === 'mov' ? 'quicktime' : ext}`;
+  } else {
+    mime = `image/${ext === 'jpg' ? 'jpeg' : ext}`;
+  }
   return {
     uri: asset.uri,
     mimeType: mime,
@@ -59,16 +63,11 @@ export function useMediaPicker() {
   const pickFromGallery = useCallback(
     async (type: 'image' | 'video'): Promise<PickedMedia | null> => {
       if (!(await requestGalleryPermission())) return null;
-
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes:
-          type === 'image'
-            ? ImagePicker.MediaType.Images
-            : ImagePicker.MediaType.Videos,
+        mediaTypes: type === 'image' ? 'images' : 'videos',
         allowsEditing: type === 'image',
         quality: 0.85,
       });
-
       if (result.canceled || !result.assets[0]) return null;
       return assetToPickedMedia(result.assets[0]);
     },
@@ -78,17 +77,12 @@ export function useMediaPicker() {
   const captureFromCamera = useCallback(
     async (type: 'image' | 'video'): Promise<PickedMedia | null> => {
       if (!(await requestCameraPermission())) return null;
-
       const result = await ImagePicker.launchCameraAsync({
-        mediaTypes:
-          type === 'image'
-            ? ImagePicker.MediaType.Images
-            : ImagePicker.MediaType.Videos,
+        mediaTypes: type === 'image' ? 'images' : 'videos',
         allowsEditing: type === 'image',
         quality: 0.85,
         videoMaxDuration: 300,
       });
-
       if (result.canceled || !result.assets[0]) return null;
       return assetToPickedMedia(result.assets[0]);
     },
@@ -97,21 +91,13 @@ export function useMediaPicker() {
 
   const pickAudioFile = useCallback(async (): Promise<PickedMedia | null> => {
     if (!(await requestGalleryPermission())) return null;
-
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaType.Videos,
+      mediaTypes: 'videos',
       allowsEditing: false,
       quality: 1,
     });
-
     if (result.canceled || !result.assets[0]) return null;
-    const asset = result.assets[0];
-    return {
-      uri: asset.uri,
-      mimeType: 'audio/mpeg',
-      fileName: asset.fileName ?? `audio_${Date.now()}.mp3`,
-      duration: asset.duration ?? undefined,
-    };
+    return assetToPickedMedia(result.assets[0], true);
   }, [requestGalleryPermission]);
 
   return { pickFromGallery, captureFromCamera, pickAudioFile };
