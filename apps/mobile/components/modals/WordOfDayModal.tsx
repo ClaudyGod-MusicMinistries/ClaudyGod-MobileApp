@@ -118,7 +118,7 @@ function VerseBlock({ word, label, icon }: {
           borderRadius: 12, padding: 12,
         }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 6 }}>
-            <MaterialIcons name=”lightbulb-outline” size={12} color={primary} />
+            <MaterialIcons name="lightbulb-outline" size={12} color={primary} />
             <CustomText style={{ color: primary, fontSize: 9, fontWeight: '800', letterSpacing: 1.4, textTransform: 'uppercase' }}>
               Reflection
             </CustomText>

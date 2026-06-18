@@ -57,20 +57,43 @@ const syncSupabaseUser = async (user: SupabaseUser): Promise<JwtClaims> => {
 
     let appUser: AppUserRow;
     if (existing.rowCount && existing.rows[0]) {
-      const updated = await client.query<AppUserRow>(
-        `UPDATE app_users
-         SET
-           email = $2,
-           display_name = $3,
-           email_verified_at = COALESCE($4, email_verified_at),
-           auth_provider = 'supabase',
-           supabase_user_id = COALESCE(supabase_user_id, $5),
-           last_login_at = NOW(),
-           updated_at = NOW()
-         WHERE id = $1
-         RETURNING id, email, display_name, role`,
-        [existing.rows[0].id, email, displayName, emailVerifiedAt, user.id],
-      );
+      let updated: { rows: AppUserRow[] };
+      try {
+        updated = await client.query<AppUserRow>(
+          `UPDATE app_users
+           SET
+             email = $2,
+             display_name = $3,
+             email_verified_at = COALESCE($4, email_verified_at),
+             auth_provider = 'supabase',
+             supabase_user_id = COALESCE(supabase_user_id, $5),
+             last_login_at = NOW(),
+             updated_at = NOW()
+           WHERE id = $1
+           RETURNING id, email, display_name, role`,
+          [existing.rows[0].id, email, displayName, emailVerifiedAt, user.id],
+        );
+      } catch (updateError: unknown) {
+        const pgCode = (updateError as { code?: string }).code;
+        if (pgCode === '23505') {
+          // Email already taken by a different row — update without changing email
+          updated = await client.query<AppUserRow>(
+            `UPDATE app_users
+             SET
+               display_name = $2,
+               email_verified_at = COALESCE($3, email_verified_at),
+               auth_provider = 'supabase',
+               supabase_user_id = COALESCE(supabase_user_id, $4),
+               last_login_at = NOW(),
+               updated_at = NOW()
+             WHERE id = $1
+             RETURNING id, email, display_name, role`,
+            [existing.rows[0].id, displayName, emailVerifiedAt, user.id],
+          );
+        } else {
+          throw updateError;
+        }
+      }
       appUser = updated.rows[0]!;
     } else {
       const inserted = await client.query<AppUserRow>(

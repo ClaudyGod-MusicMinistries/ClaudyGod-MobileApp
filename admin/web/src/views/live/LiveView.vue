@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="space-y-5">
     <div class="flex items-center justify-between gap-4">
       <div>
@@ -153,6 +153,8 @@ async function deleteSession(row: Record<string, unknown>): Promise<void> {
 }
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '--';
+  return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 </script>

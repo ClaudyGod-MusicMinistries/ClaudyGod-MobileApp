@@ -1,3 +1,4 @@
+import compression from 'compression';
 import cors from 'cors';
 import type { CorsOptions } from 'cors';
 import type { Request, Response } from 'express';
@@ -140,6 +141,10 @@ export const createApp = () => {
 
   // Trust proxy (important for X-Forwarded-For in production)
   app.set('trust proxy', 1);
+
+  // Response compression (gzip/brotli)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  app.use(compression() as any);
 
   // Disable server signature
   app.disable('x-powered-by');

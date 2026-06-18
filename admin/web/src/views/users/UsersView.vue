@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="space-y-5">
     <h2 class="text-base font-bold text-ink">User management</h2>
 
@@ -157,7 +157,9 @@ async function confirmRoleChange(row: Record<string, unknown>, role: number): Pr
 }
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '--';
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 function getEmail(v: unknown): string {

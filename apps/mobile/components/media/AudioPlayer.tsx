@@ -106,10 +106,11 @@ export function AudioPlayer({
   }, [onPlayStateChange, onProgress, status.currentTime, status.duration, status.isLoaded, status.playing]);
 
   useEffect(() => {
-    if (!status.error) return;
-    console.warn('[AudioPlayer] Playback error:', status.error);
+    const err = (status as unknown as { error?: string }).error;
+    if (!err) return;
+    console.warn('[AudioPlayer] Playback error:', err);
     onPlayStateChange?.(false);
-  }, [status.error, onPlayStateChange]);
+  }, [(status as unknown as { error?: string }).error, onPlayStateChange]);
 
   useEffect(() => {
     if (!status.isLoaded) return;
@@ -249,10 +250,10 @@ export function AudioPlayer({
       {/* Playback controls */}
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: isCompact ? 8 : 14 }}>
         {onPrevious ? (
-          <ControlButton icon="skip-previous" onPress={onPrevious} disabled={!canGoPrevious} size={isCompact ? 22 : 26} />
+          <ControlButton icon="skip-previous" onPress={onPrevious} disabled={!canGoPrevious} size={isCompact ? 22 : 26} accessibilityLabel="Previous track" />
         ) : null}
 
-        <ControlButton icon="replay-10" onPress={() => seekBySeconds(-10)} size={isCompact ? 22 : 24} />
+        <ControlButton icon="replay-10" onPress={() => seekBySeconds(-10)} size={isCompact ? 22 : 24} accessibilityLabel="Rewind 10 seconds" />
 
         {/* Play/pause — primary CTA */}
         <TVTouchable
@@ -267,6 +268,7 @@ export function AudioPlayer({
           }}
           showFocusBorder={false}
           accessibilityLabel={isPlaying ? 'Pause' : 'Play'}
+          accessibilityRole="button"
         >
           <MaterialIcons
             name={isPlaying ? 'pause' : 'play-arrow'}
@@ -275,10 +277,10 @@ export function AudioPlayer({
           />
         </TVTouchable>
 
-        <ControlButton icon="forward-10" onPress={() => seekBySeconds(10)} size={isCompact ? 22 : 24} />
+        <ControlButton icon="forward-10" onPress={() => seekBySeconds(10)} size={isCompact ? 22 : 24} accessibilityLabel="Skip forward 10 seconds" />
 
         {onNext ? (
-          <ControlButton icon="skip-next" onPress={onNext} disabled={!canGoNext} size={isCompact ? 22 : 26} />
+          <ControlButton icon="skip-next" onPress={onNext} disabled={!canGoNext} size={isCompact ? 22 : 26} accessibilityLabel="Next track" />
         ) : null}
       </View>
     </View>
@@ -290,16 +292,20 @@ function ControlButton({
   onPress,
   disabled,
   size = 24,
+  accessibilityLabel,
 }: {
   icon: React.ComponentProps<typeof MaterialIcons>['name'];
   onPress: () => void;
   disabled?: boolean;
   size?: number;
+  accessibilityLabel?: string;
 }) {
   return (
     <TVTouchable
       onPress={onPress}
       disabled={disabled}
+      accessibilityLabel={accessibilityLabel}
+      accessibilityRole="button"
       style={{
         width: 48,
         height: 48,

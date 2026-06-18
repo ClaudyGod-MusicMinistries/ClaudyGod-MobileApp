@@ -38,7 +38,8 @@ const props = withDefaults(defineProps<{
   label: string;
   accept?: string;
   folder?: string;
-}>(), { accept: '*', folder: 'content' });
+  maxMb?: number;
+}>(), { accept: '*', folder: 'content', maxMb: 50 });
 
 const emit = defineEmits<{ (e: 'uploaded', url: string): void }>();
 
@@ -48,6 +49,11 @@ const progress = ref(0);
 const uploadError = ref('');
 
 async function handleFile(file: File): Promise<void> {
+  const maxBytes = props.maxMb * 1024 * 1024;
+  if (file.size > maxBytes) {
+    uploadError.value = `File too large — maximum is ${props.maxMb} MB`;
+    return;
+  }
   isUploading.value = true;
   uploadError.value = '';
   progress.value = 0;
