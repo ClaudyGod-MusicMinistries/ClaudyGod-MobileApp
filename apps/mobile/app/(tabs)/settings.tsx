@@ -149,10 +149,10 @@ function QuickLinkRow({ icon, label, hint, color, onPress }: { icon: React.Compo
           <MaterialIcons name={icon} size={device.isTV ? 22 : 19} color={color} />
         </View>
         <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={{ color: theme.colors.text, fontSize: device.isTV ? 15 : 13.5, fontWeight: '600' }}>
+          <CustomText style={{ color: theme.colors.text, fontSize: device.isTV ? 15 : 13.5, fontWeight: '600' }}>
             {label}
-          </Text>
-          {hint ? <Text style={{ color: theme.colors.textSecondary, fontSize: device.isTV ? 12 : 11, marginTop: 2 }}>{hint}</Text> : null}
+          </CustomText>
+          {hint ? <CustomText style={{ color: theme.colors.textSecondary, fontSize: device.isTV ? 12 : 11, marginTop: 2 }}>{hint}</CustomText> : null}
         </View>
         <MaterialIcons name="chevron-right" size={18} color={theme.colors.textMuted} />
       </View>
@@ -282,9 +282,9 @@ export default function SettingsScreen() {
             }}
           >
             {isAuthenticated && user ? (
-              <Text style={{ color: theme.colors.primary, fontSize: device.isTV ? 28 : 22, fontWeight: '800' }}>
+              <CustomText style={{ color: theme.colors.primary, fontSize: device.isTV ? 28 : 22, fontWeight: '700' }}>
                 {(user.displayName ?? user.email ?? 'U')[0]?.toUpperCase()}
-              </Text>
+              </CustomText>
             ) : (
               <MaterialIcons name="person-outline" size={device.isTV ? 34 : 26} color={theme.colors.textMuted} />
             )}
@@ -292,12 +292,12 @@ export default function SettingsScreen() {
 
           {/* Info */}
           <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={{ color: theme.colors.text, fontSize: device.isTV ? 20 : 16, fontWeight: '800', letterSpacing: -0.3 }}>
+            <CustomText style={{ color: theme.colors.text, fontSize: device.isTV ? 20 : 16, fontWeight: '700', letterSpacing: -0.3 }}>
               {isAuthenticated && user ? (user.displayName ?? user.email ?? 'Account') : 'Guest user'}
-            </Text>
-            <Text style={{ color: theme.colors.textSecondary, fontSize: device.isTV ? 13 : 12, marginTop: 3 }}>
+            </CustomText>
+            <CustomText style={{ color: theme.colors.textSecondary, fontSize: device.isTV ? 13 : 12, marginTop: 3 }}>
               {isAuthenticated ? (user?.email ?? 'Signed in') : 'Sign in for a personalized experience'}
-            </Text>
+            </CustomText>
           </View>
 
           {/* Action */}
@@ -349,9 +349,9 @@ export default function SettingsScreen() {
       <View style={{ flexDirection: isWideLayout ? 'row' : 'column', gap: 12, alignItems: 'flex-start' }}>
         <SurfaceCard tone="subtle" style={{ flex: 1, paddingHorizontal: theme.spacing.md, paddingVertical: 0 }}>
           <View style={{ paddingTop: 14, paddingBottom: 6 }}>
-            <Text style={{ color: theme.colors.primary, fontSize: 10, fontWeight: '700', letterSpacing: 1.0, textTransform: 'uppercase' }}>
+            <CustomText style={{ color: theme.colors.primary, fontSize: 10, fontWeight: '700', letterSpacing: 1.0, textTransform: 'uppercase' }}>
               Playback
-            </Text>
+            </CustomText>
           </View>
           {playbackSettings.map((item, index) => (
             <View key={item.label} style={{ borderTopWidth: index === 0 ? 0 : 1, borderTopColor: theme.colors.border }}>
@@ -362,9 +362,9 @@ export default function SettingsScreen() {
 
         <SurfaceCard tone="subtle" style={{ flex: 1, paddingHorizontal: theme.spacing.md, paddingVertical: 0 }}>
           <View style={{ paddingTop: 14, paddingBottom: 6 }}>
-            <Text style={{ color: theme.colors.primary, fontSize: 10, fontWeight: '700', letterSpacing: 1.0, textTransform: 'uppercase' }}>
+            <CustomText style={{ color: theme.colors.primary, fontSize: 10, fontWeight: '700', letterSpacing: 1.0, textTransform: 'uppercase' }}>
               Experience
-            </Text>
+            </CustomText>
           </View>
           {experienceSettings.map((item, index) => (
             <View key={item.label} style={{ borderTopWidth: index === 0 ? 0 : 1, borderTopColor: theme.colors.border }}>
