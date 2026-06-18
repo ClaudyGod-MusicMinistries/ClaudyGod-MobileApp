@@ -132,6 +132,11 @@ onMounted(() => {
 });
 
 async function confirmRoleChange(row: Record<string, unknown>, role: number): Promise<void> {
+  const id = row.id as string;
+  if (!id) {
+    ui.addToast({ tone: 'error', title: 'Invalid user ID' });
+    return;
+  }
   const label = ROLE_LABELS[role as Role] ?? `Role ${role}`;
   const ok = await ui.confirm({
     title: 'Change role',
@@ -139,8 +144,16 @@ async function confirmRoleChange(row: Record<string, unknown>, role: number): Pr
     confirmLabel: 'Change role',
   });
   if (!ok) return;
-  await store.changeRole(row.id as string, role);
-  ui.addToast({ tone: 'success', title: 'Role updated' });
+  try {
+    await store.changeRole(id, role);
+    ui.addToast({ tone: 'success', title: 'Role updated' });
+  } catch (e) {
+    ui.addToast({
+      tone: 'error',
+      title: 'Role update failed',
+      message: e instanceof Error ? e.message : 'Please try again',
+    });
+  }
 }
 
 function formatDate(iso: string): string {

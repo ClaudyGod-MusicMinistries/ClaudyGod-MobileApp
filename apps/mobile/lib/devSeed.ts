@@ -65,9 +65,9 @@ export async function loadDevFeedItems(): Promise<FeedCardItem[]> {
       items.push({
         id: track.id,
         type: 'audio',
-        title: track.title,
+        title: `[DEV] ${track.title}`,
         subtitle: track.subtitle,
-        description: 'Local dev asset — replace with S3-backed content in production.',
+        description: '[DEV] Local test asset — will not appear in production builds.',
         duration: track.duration,
         imageUrl: '',
         mediaUrl: uri,

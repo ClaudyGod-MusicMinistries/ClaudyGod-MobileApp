@@ -10,12 +10,13 @@ import { useColorScheme, useThemeContext } from '../util/colorScheme';
 import { colors } from '../constants/color';
 import { FontProvider, FontContext } from '../context/FontContext';
 import { AuthProvider, useAuth } from '../context/AuthContext';
-import { FloatingPlayerProvider } from '../context/FloatingPlayerContext';
+import { FloatingPlayerProvider, useFloatingPlayer } from '../context/FloatingPlayerContext';
 import { ToastProvider , useToast } from '../context/ToastContext';
 import { AppModalProvider } from '../context/AppModalContext';
 import { ToastViewport } from '../components/ui/ToastViewport';
 import { MinimizedFloatingPlayer } from '../components/player/MinimizedFloatingPlayer';
 import { WordOfDayModal, shouldShowWordModal, markWordModalShown } from '../components/modals/WordOfDayModal';
+import { WordOfDayProvider } from '../context/WordOfDayContext';
 import { APP_ROUTES } from '../util/appRoutes';
 import { fetchMePreferences } from '../services/userFlowService';
 import { AppLoadingScreen } from '../components/Exp/AppLoading';
@@ -83,10 +84,13 @@ function RootLayoutInner() {
     };
   }, [bootDelayDone, bibleVerse]);
 
+  const { isPlaying } = useFloatingPlayer().player;
+
   useEffect(() => {
     // Web sessions use long-lived browser tokens — no inactivity lockout.
     // Touch events (onTouchStart) also don't fire for mouse input on desktop web.
-    if (!isAuthenticated || Platform.OS === 'web') return;
+    // Audio playback keeps the session alive so users aren't signed out mid-sermon.
+    if (!isAuthenticated || Platform.OS === 'web' || isPlaying) return;
 
     const timer = setTimeout(() => {
       void clearMobileSession();
@@ -99,7 +103,7 @@ function RootLayoutInner() {
     }, MOBILE_INACTIVITY_TIMEOUT_MS);
 
     return () => clearTimeout(timer);
-  }, [isAuthenticated, lastActivityAt, router, showToast]);
+  }, [isAuthenticated, isPlaying, lastActivityAt, router, showToast]);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -278,6 +282,12 @@ function RootLayoutInner() {
             animation: 'fade',
           }}
         />
+        <Stack.Screen
+          name="settingsPage"
+          options={{
+            animation: 'slide_from_right',
+          }}
+        />
       </Stack>
 
       <MinimizedFloatingPlayer />
@@ -305,9 +315,11 @@ export default function RootLayout() {
           <ToastProvider>
             <AuthProvider>
               <FloatingPlayerProvider>
-                <AppModalProvider>
-                  <RootLayoutInner />
-                </AppModalProvider>
+                <WordOfDayProvider>
+                  <AppModalProvider>
+                    <RootLayoutInner />
+                  </AppModalProvider>
+                </WordOfDayProvider>
               </FloatingPlayerProvider>
             </AuthProvider>
           </ToastProvider>

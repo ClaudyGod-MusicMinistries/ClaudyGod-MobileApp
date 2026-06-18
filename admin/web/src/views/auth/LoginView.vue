@@ -146,19 +146,27 @@ const mfaToken = ref('');
 const googleLoginUrl = GOOGLE_LOGIN_URL || null;
 
 async function onLogin(): Promise<void> {
-  const res = await auth.login(email.value, password.value);
-  if (res.requiresMfa && res.mfaToken) {
-    mfaToken.value = res.mfaToken;
-    mfaRequired.value = true;
-    return;
-  }
-  if (!res.requiresMfa) {
-    await router.push('/dashboard');
+  try {
+    const res = await auth.login(email.value, password.value);
+    if (res.requiresMfa && res.mfaToken) {
+      mfaToken.value = res.mfaToken;
+      mfaRequired.value = true;
+      return;
+    }
+    if (!res.requiresMfa) {
+      await router.push('/dashboard');
+    }
+  } catch {
+    // auth.error is set by the store — the template already displays it
   }
 }
 
 async function onMfa(): Promise<void> {
-  await auth.completeMfa(mfaToken.value, mfaCode.value);
-  await router.push('/dashboard');
+  try {
+    await auth.completeMfa(mfaToken.value, mfaCode.value);
+    await router.push('/dashboard');
+  } catch {
+    // auth.error is set by the store — the template already displays it
+  }
 }
 </script>

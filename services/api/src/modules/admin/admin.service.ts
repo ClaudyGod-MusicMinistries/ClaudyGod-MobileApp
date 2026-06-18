@@ -1297,11 +1297,17 @@ export const sendAdminTestEmail = async (input: {
   };
 };
 
+const VALID_USER_ROLES: UserRole[] = ['CLIENT', 'CREATOR', 'MODERATOR', 'ADMIN', 'SUPER_ADMIN'];
+
 export const updateAdminUserRole = async (input: {
   userId: string;
   role: UserRole;
   actor: JwtClaims;
 }) => {
+  if (!VALID_USER_ROLES.includes(input.role)) {
+    throw new BadRequestError(`Invalid role: ${String(input.role)}`, 'INVALID_ROLE');
+  }
+
   if (input.userId === input.actor.sub) {
     throw new BadRequestError('You cannot change your own role from the dashboard', 'ADMIN_SELF_ROLE_CHANGE');
   }

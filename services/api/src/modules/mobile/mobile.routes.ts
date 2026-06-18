@@ -33,6 +33,7 @@ export const mobileRouter = Router();
 
 mobileRouter.get(
   '/feed',
+  requireMobileApiKey,
   asyncHandler(async (_req, res) => {
     const data = await buildMobileFeed();
     res.status(200).json(data);
@@ -41,6 +42,7 @@ mobileRouter.get(
 
 mobileRouter.get(
   '/content',
+  requireMobileApiKey,
   asyncHandler(async (req, res) => {
     const parsed = validateSchema(listContentQuerySchema, req.query);
     const query = {
@@ -59,6 +61,7 @@ mobileRouter.get(
 
 mobileRouter.get(
   '/youtube/videos',
+  requireMobileApiKey,
   asyncHandler(async (req, res) => {
     const query = validateSchema(youtubeListQuerySchema, req.query);
     const data = await fetchYouTubeVideos(query);
@@ -122,7 +125,7 @@ mobileRouter.post(
 
     const { favorites } = validateSchema(guestSyncSchema, req.body);
 
-    await Promise.allSettled(
+    const results = await Promise.allSettled(
       favorites.map((item) =>
         saveMeLibraryItem(req.user!, {
           bucket: 'liked',
@@ -137,6 +140,9 @@ mobileRouter.post(
       ),
     );
 
-    res.status(200).json({ synced: favorites.length });
+    const synced = results.filter((r) => r.status === 'fulfilled').length;
+    const failed = results.length - synced;
+
+    res.status(200).json({ synced, failed, total: favorites.length });
   }),
 );

@@ -1,8 +1,9 @@
 import { Router } from 'express';
 import { asyncHandler } from '../../lib/asyncHandler';
-import { ForbiddenError, NotFoundError } from '../../lib/errors';
+import { NotFoundError } from '../../lib/errors';
 import { validateSchema } from '../../lib/validation';
 import { authenticate } from '../../middleware/authenticate';
+import { requireRole } from '../../middleware/rbac';
 import { updateMobileAppConfigSchema } from './appConfig.schema';
 import {
   getMobileAppConfig,
@@ -48,10 +49,8 @@ mobileAppConfigRouter.get(
 adminAppConfigRouter.get(
   '/',
   authenticate,
-  asyncHandler(async (req, res) => {
-    if (!req.user || req.user.role !== 'ADMIN') {
-      throw new ForbiddenError('Admin role required', 'ADMIN_REQUIRED');
-    }
+  requireRole('ADMIN'),
+  asyncHandler(async (_req, res) => {
     const result = await getMobileAppConfig();
     res.status(200).json(result);
   }),
@@ -60,15 +59,12 @@ adminAppConfigRouter.get(
 adminAppConfigRouter.put(
   '/',
   authenticate,
+  requireRole('ADMIN'),
   asyncHandler(async (req, res) => {
-    if (!req.user || req.user.role !== 'ADMIN') {
-      throw new ForbiddenError('Admin role required', 'ADMIN_REQUIRED');
-    }
-
     const payload = validateSchema(updateMobileAppConfigSchema, req.body);
     const result = await updateMobileAppConfig({
       config: payload.config,
-      updatedByUserId: req.user.sub,
+      updatedByUserId: req.user!.sub,
     });
     res.status(200).json(result);
   }),

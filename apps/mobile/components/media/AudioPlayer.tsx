@@ -106,6 +106,12 @@ export function AudioPlayer({
   }, [onPlayStateChange, onProgress, status.currentTime, status.duration, status.isLoaded, status.playing]);
 
   useEffect(() => {
+    if (!status.error) return;
+    console.warn('[AudioPlayer] Playback error:', status.error);
+    onPlayStateChange?.(false);
+  }, [status.error, onPlayStateChange]);
+
+  useEffect(() => {
     if (!status.isLoaded) return;
     onRegisterControls?.({ pause: () => player.pause(), resume: () => player.play() });
     return () => { onRegisterControls?.(undefined); player.pause(); };

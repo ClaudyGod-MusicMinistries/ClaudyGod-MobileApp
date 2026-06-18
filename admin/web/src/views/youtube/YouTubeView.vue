@@ -278,7 +278,11 @@ async function importSelected(): Promise<void> {
     const { imported } = await importVideos(selections);
     ui.addToast({ tone: 'success', title: `${imported} video${imported !== 1 ? 's' : ''} imported to content` });
     selected.value = new Set();
-    importQueue.value = await listImportQueue();
+    try {
+      importQueue.value = await listImportQueue();
+    } catch {
+      // Queue refresh is non-fatal — content was already imported successfully
+    }
   } catch (e) {
     ui.addToast({ tone: 'error', title: 'Import failed', message: e instanceof Error ? e.message : undefined });
   } finally {

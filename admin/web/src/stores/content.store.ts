@@ -97,8 +97,13 @@ export const useContentStore = defineStore('content', () => {
   }
 
   async function bulkAction(ids: string[], patch: Partial<ContentUpdateInput>): Promise<void> {
-    await bulkUpdateContent(ids, patch);
-    await fetchContent();
+    try {
+      await bulkUpdateContent(ids, patch);
+      await fetchContent();
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : 'Bulk operation failed';
+      throw e;
+    }
   }
 
   async function fetchRequests(params?: RequestListParams): Promise<void> {
