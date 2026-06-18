@@ -1,5 +1,5 @@
 import client from './client';
-import type { YouTubeSyncStatus, YouTubeImportItem, YouTubeVideoItem, YouTubeVideosResponse } from './types';
+import type { YouTubeSyncStatus, YouTubeImportItem, YouTubeVideosResponse } from './types';
 
 export async function getSyncStatus(): Promise<YouTubeSyncStatus> {
   const { data } = await client.get<YouTubeSyncStatus>('/v1/youtube/status');
