@@ -197,9 +197,12 @@ export function ActionSheet({
                   backgroundColor: theme.colors.surface,
                   alignItems: 'center',
                   justifyContent: 'center',
+                  flexDirection: 'row',
+                  gap: 6,
                 }}
                 showFocusBorder={false}
               >
+                <MaterialIcons name="close" size={16} color={theme.colors.textSecondary} />
                 <CustomText
                   variant="label"
                   style={{

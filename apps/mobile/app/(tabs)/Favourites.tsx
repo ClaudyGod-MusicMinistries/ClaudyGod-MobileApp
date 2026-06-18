@@ -96,7 +96,7 @@ function FavCard({
         </CustomText>
       </View>
       <View style={{ flexDirection: 'row', gap: 7, marginTop: 10 }}>
-        <AppButton title="Play" size="sm" onPress={onPlay} style={{ flex: 1 }} />
+        <AppButton title="Play" size="sm" onPress={onPlay} style={{ flex: 1 }} leftIcon={<MaterialIcons name="play-arrow" size={16} color="#FFFFFF" />} />
         <TVTouchable
           onPress={onShare}
           showFocusBorder={false}

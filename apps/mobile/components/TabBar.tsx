@@ -118,11 +118,6 @@ function SidebarTabBar({
           </View>
         </View>
 
-        {/* Section label */}
-        <CustomText style={{ color: palette.textMuted, fontSize: 9.5, fontWeight: '700', letterSpacing: 1.1, textTransform: 'uppercase', paddingHorizontal: 10, marginBottom: 8 }}>
-          Navigate
-        </CustomText>
-
         {/* Main nav items */}
         <View style={{ gap: 2 }}>
           {mainItems.map((item) => {
@@ -334,22 +329,24 @@ function BottomPillTabBar({
                   accessibilityState={{ selected: focused }}
                   hasTVPreferredFocus={routeIndex === 0}
                   onPress={() => navigateTo(item)}
-                  style={{ flex: 1.1, alignItems: 'center', justifyContent: 'center', gap: compact ? 3 : 4, paddingVertical: 2 }}
+                  style={{ flex: 1.1, alignItems: 'center', justifyContent: 'center', gap: 3, paddingVertical: 2 }}
                   showFocusBorder={false}
                 >
                   <View
                     style={{
                       width: compact ? 46 : 52, height: compact ? 46 : 52, borderRadius: 999,
                       alignItems: 'center', justifyContent: 'center',
-                      backgroundColor: palette.primary,
+                      backgroundColor: focused ? palette.primary : `${palette.primary}99`,
                     }}
                   >
                     <MaterialIcons name="play-arrow" size={compact ? 26 : 29} color={palette.textInverse} />
                   </View>
-                  <CustomText variant="caption" style={{ color: focused ? '#F6F0FF' : palette.textMuted, fontSize: compact ? 9 : 9.5, lineHeight: 12, fontWeight: focused ? '700' : '400' }} numberOfLines={1}>
-                    {item.label}
-                  </CustomText>
-                  <View style={{ width: focused ? 14 : 4, height: 3, borderRadius: 999, backgroundColor: focused ? '#F6F0FF' : 'transparent', marginTop: 1, opacity: focused ? 0.8 : 0 }} />
+                  {focused ? (
+                    <CustomText variant="caption" style={{ color: '#F6F0FF', fontSize: compact ? 9 : 9.5, lineHeight: 12, fontWeight: '700' }} numberOfLines={1}>
+                      {item.label}
+                    </CustomText>
+                  ) : null}
+                  <View style={{ width: focused ? 14 : 4, height: 3, borderRadius: 999, backgroundColor: focused ? '#F6F0FF' : 'transparent', marginTop: focused ? 1 : 0, opacity: focused ? 0.8 : 0 }} />
                 </TVTouchable>
               );
             }
@@ -362,23 +359,27 @@ function BottomPillTabBar({
                 accessibilityState={{ selected: focused }}
                 hasTVPreferredFocus={routeIndex === 0}
                 onPress={() => navigateTo(item)}
-                style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 4, gap: compact ? 3 : 4 }}
+                style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: focused ? 4 : 6, gap: 3 }}
                 focusStyle={{ transform: [{ scale: isTV ? 1.06 : 1 }] }}
                 showFocusBorder={false}
               >
                 <View
                   style={{
-                    width: compact ? 36 : 40, height: compact ? 28 : 30, borderRadius: 999,
+                    width: focused ? (compact ? 44 : 48) : (compact ? 36 : 40),
+                    height: compact ? 28 : 30,
+                    borderRadius: 999,
                     alignItems: 'center', justifyContent: 'center',
                     backgroundColor: focused ? (isDark ? 'rgba(139,92,246,0.18)' : 'rgba(124,58,237,0.14)') : 'transparent',
                   }}
                 >
                   <MaterialIcons name={item.icon} size={focused ? (compact ? 21 : 23) : (compact ? 19 : 21)} color={focused ? palette.primary : palette.textMuted} />
                 </View>
-                <CustomText variant="caption" style={{ color: focused ? '#F6F0FF' : palette.textMuted, fontSize: compact ? 9 : 9.5, lineHeight: 12, fontWeight: focused ? '700' : '400' }} numberOfLines={1}>
-                  {item.label}
-                </CustomText>
-                <View style={{ width: focused ? 14 : 4, height: 3, borderRadius: 999, backgroundColor: focused ? palette.primary : 'transparent', marginTop: 1, opacity: focused ? 0.9 : 0 }} />
+                {focused ? (
+                  <CustomText variant="caption" style={{ color: '#F6F0FF', fontSize: compact ? 9 : 9.5, lineHeight: 12, fontWeight: '700' }} numberOfLines={1}>
+                    {item.label}
+                  </CustomText>
+                ) : null}
+                <View style={{ width: focused ? 14 : 4, height: 3, borderRadius: 999, backgroundColor: focused ? palette.primary : 'transparent', marginTop: focused ? 1 : 0, opacity: focused ? 0.9 : 0 }} />
               </TVTouchable>
             );
           })}
