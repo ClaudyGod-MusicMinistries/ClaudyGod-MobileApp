@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import type { FeedCardItem } from '../services/contentService';
 import { getGuestDownloads, saveGuestDownload, removeGuestDownload } from '../lib/guestStorage';
 
