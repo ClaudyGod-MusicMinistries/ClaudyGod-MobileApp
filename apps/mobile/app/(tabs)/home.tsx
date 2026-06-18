@@ -204,7 +204,7 @@ export default function HomeScreen() {
     useMemo(() => buildSections(feed), [feed]);
 
   const configuredTabs = useMemo(() => config?.navigation?.tabs ?? [], [config?.navigation?.tabs]);
-  const configuredSections = config?.layout?.homeSections ?? [];
+  const configuredSections = useMemo(() => config?.layout?.homeSections ?? [], [config?.layout?.homeSections]);
 
   const configuredRails = useMemo(() => configuredSections
     .map((section) => {
