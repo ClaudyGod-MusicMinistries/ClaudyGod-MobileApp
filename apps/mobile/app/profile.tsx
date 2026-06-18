@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
+  Image,
   Platform,
+  StyleSheet,
   View,
   StatusBar,
 } from 'react-native';
@@ -13,10 +15,13 @@ import { CustomText } from '../components/CustomText';
 import { useDeviceClass } from '../util/deviceClassConfig';
 import { FadeIn } from '../components/ui/FadeIn';
 import { TVTouchable } from '../components/ui/TVTouchable';
+import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { ActionSheet } from '../components/ui/ActionSheet';
 import { fetchUserProfileMetrics } from '../services/supabaseAnalytics';
 import { clearMobileSession } from '../services/authService';
 import { useRequireMobileSession } from '../hooks/useRequireMobileSession';
+import { useMediaPicker } from '../hooks/useMediaPicker';
+import { useContentUpload } from '../hooks/useContentUpload';
 import { APP_ROUTES } from '../util/appRoutes';
 import { useToast } from '../context/ToastContext';
 
@@ -119,6 +124,11 @@ export default function Profile() {
     liveSubscriptions: 0,
   });
   const [isLogoutSheetVisible, setIsLogoutSheetVisible] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  const [isAvatarSheetVisible, setIsAvatarSheetVisible] = useState(false);
+  const [avatarUri, setAvatarUri] = useState<string | null>(null);
+  const { pickFromGallery, captureFromCamera } = useMediaPicker();
+  const { upload: uploadAvatar, status: avatarUploadStatus } = useContentUpload();
 
   const scrollY = useRef(new Animated.Value(0)).current;
   const headerOpacity = scrollY.interpolate({
@@ -149,9 +159,28 @@ export default function Profile() {
   const initial = displayName.charAt(0).toUpperCase();
 
   const signOut = async () => {
+    setIsSigningOut(true);
     try { await clearMobileSession(); } catch { /* continue */ }
+    setIsSigningOut(false);
+    setIsLogoutSheetVisible(false);
     showToast({ title: 'Signed out', message: 'Your session has been closed.', tone: 'info' });
     router.replace(APP_ROUTES.auth.signIn);
+  };
+
+  const pickAvatar = async (source: 'gallery' | 'camera') => {
+    setIsAvatarSheetVisible(false);
+    const picked = source === 'gallery'
+      ? await pickFromGallery('image')
+      : await captureFromCamera('image');
+    if (!picked) return;
+    setAvatarUri(picked.uri);
+    const result = await uploadAvatar(picked);
+    if (result) {
+      showToast({ title: 'Avatar updated', tone: 'info' });
+    } else {
+      setAvatarUri(null);
+      showToast({ title: 'Upload failed', message: 'Could not update your avatar.', tone: 'warning' });
+    }
   };
 
   return (
@@ -245,26 +274,42 @@ export default function Profile() {
                 paddingBottom: 36,
               }}
             >
-              {/* Avatar circle */}
-              <View
-                style={{
-                  width: 96,
-                  height: 96,
-                  borderRadius: 48,
-                  backgroundColor: '#2D1B69',
-                  borderWidth: 2.5,
-                  borderColor: '#8B5CF6',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: 16,
-                }}
+              {/* Avatar circle — tappable to change photo */}
+              <TVTouchable
+                onPress={() => setIsAvatarSheetVisible(true)}
+                showFocusBorder={false}
+                style={{ marginBottom: 16 }}
               >
-                <CustomText
-                  style={{ color: '#F7F2FF', fontSize: 38, fontWeight: '700', lineHeight: 46 }}
+                <View
+                  style={{
+                    width: 96,
+                    height: 96,
+                    borderRadius: 48,
+                    backgroundColor: '#2D1B69',
+                    borderWidth: 2.5,
+                    borderColor: '#8B5CF6',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    overflow: 'hidden',
+                  }}
                 >
-                  {initial}
-                </CustomText>
-              </View>
+                  {avatarUri ? (
+                    <Image source={{ uri: avatarUri }} style={{ width: 96, height: 96 }} resizeMode="cover" />
+                  ) : (
+                    <CustomText style={{ color: '#F7F2FF', fontSize: 38, fontWeight: '700', lineHeight: 46 }}>
+                      {initial}
+                    </CustomText>
+                  )}
+                  {avatarUploadStatus === 'uploading' ? (
+                    <View style={{ ...StyleSheet.absoluteFillObject as object, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center' }}>
+                      <MaterialIcons name="cloud-upload" size={24} color="#FFFFFF" />
+                    </View>
+                  ) : null}
+                </View>
+                <View style={{ position: 'absolute', bottom: 0, right: 0, width: 28, height: 28, borderRadius: 14, backgroundColor: '#8B5CF6', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#07050C' }}>
+                  <MaterialIcons name="camera-alt" size={14} color="#FFFFFF" />
+                </View>
+              </TVTouchable>
 
               <CustomText
                 style={{
@@ -381,20 +426,38 @@ export default function Profile() {
       </SafeAreaView>
 
       <ActionSheet
-        visible={isLogoutSheetVisible}
-        title="Sign out?"
-        description="You can sign back in anytime to restore your saved content on this device."
+        visible={isAvatarSheetVisible}
+        title="Change profile photo"
         actions={[
           {
-            key: 'sign-out',
-            label: 'Sign out',
-            detail: 'Close your session on this device.',
-            icon: 'logout',
-            tone: 'destructive',
-            onPress: () => { void signOut(); },
+            key: 'gallery',
+            label: 'Choose from library',
+            icon: 'photo-library',
+            tone: 'accent',
+            onPress: () => { void pickAvatar('gallery'); },
+          },
+          {
+            key: 'camera',
+            label: 'Take a photo',
+            icon: 'camera-alt',
+            tone: 'default',
+            onPress: () => { void pickAvatar('camera'); },
           },
         ]}
-        onClose={() => setIsLogoutSheetVisible(false)}
+        onClose={() => setIsAvatarSheetVisible(false)}
+      />
+
+      <ConfirmModal
+        visible={isLogoutSheetVisible}
+        icon="logout"
+        title="Sign out?"
+        body="You can sign back in anytime to restore your saved content on this device."
+        primaryLabel="Sign out"
+        primaryTone="danger"
+        secondaryLabel="Stay signed in"
+        loading={isSigningOut}
+        onPrimary={() => { void signOut(); }}
+        onDismiss={() => { if (!isSigningOut) setIsLogoutSheetVisible(false); }}
       />
     </View>
   );

@@ -295,8 +295,10 @@ export default function HomeScreen() {
         <LiveNowBanner item={liveSessions[0]} onPress={() => void openItem(liveSessions[0]!, 'home_live_banner')} />
       ) : null}
 
-      {/* Continue listening */}
-      <ContinueRow items={continueItems} onPress={(item) => void openItem(item, 'home_continue')} />
+      {/* Continue listening — only for authenticated users with real history */}
+      {isAuthenticated && feed.recent.length > 0 ? (
+        <ContinueRow items={continueItems} onPress={(item) => void openItem(item, 'home_continue')} />
+      ) : null}
 
       {/* ── 4 ClaudyGod Content Sections ─────────────────────────────────── */}
       <View style={{ gap: 28 }}>

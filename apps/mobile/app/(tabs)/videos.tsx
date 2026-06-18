@@ -122,7 +122,7 @@ export default function VideosScreen() {
 
   const liveSessions = useMemo(() => feed.live.filter((item) => item.isLive), [feed.live]);
 
-  const upNext = allQueue.filter((item) => item.id !== active?.id).slice(0, 5);
+  const upNext = allQueue.filter((item) => item.id !== active?.id && Boolean(item.mediaUrl)).slice(0, 5);
 
   const openItem = async (item: FeedCardItem, source: string) => {
     if (!item.mediaUrl) {
@@ -207,12 +207,14 @@ export default function VideosScreen() {
         </View>
       ) : null}
 
-      {/* More to watch */}
-      <ContentList
-        title="More to watch"
-        items={dedupeFeedItems([...feed.recent, ...feed.videos])}
-        onPressItem={(item) => void openItem(item, 'videos_more')}
-      />
+      {/* More to watch — overflow beyond the rail's 14-item limit */}
+      {filteredItems.length > 14 ? (
+        <ContentList
+          title="More to watch"
+          items={filteredItems.slice(14)}
+          onPressItem={(item) => void openItem(item, 'videos_more')}
+        />
+      ) : null}
 
       {!loading && !allQueue.length ? (
         <EmptyState

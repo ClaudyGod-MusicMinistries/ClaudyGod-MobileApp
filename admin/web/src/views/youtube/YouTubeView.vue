@@ -189,13 +189,16 @@ type Tab = typeof TABS[number]['id'];
 const activeTab = ref<Tab>('browse');
 
 const SECTION_OPTIONS = [
+  { value: 'video',            label: 'Videos' },
   { value: 'music',            label: 'Music' },
   { value: 'audio',            label: 'Audio' },
+  { value: 'live',             label: 'Live' },
   { value: 'nuggets-of-truth', label: 'Nuggets of Truth' },
   { value: 'teachings',        label: 'Teachings' },
   { value: 'teens',            label: 'Teens' },
   { value: 'speaks',           label: 'Speaks' },
-  { value: 'live',             label: 'Live' },
+  { value: 'playlist',         label: 'Playlists' },
+  { value: 'announcement',     label: 'Announcements' },
 ];
 
 const syncStatus   = ref<YouTubeSyncStatus | null>(null);

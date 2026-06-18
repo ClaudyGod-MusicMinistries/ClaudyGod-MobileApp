@@ -6,6 +6,61 @@
       <p class="text-sm text-ink-muted mt-1">Here's what's happening across your ministry today.</p>
     </div>
 
+    <!-- Quick actions -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <RouterLink
+        to="/content/new"
+        class="flex items-center gap-3 p-4 rounded-2xl bg-primary/10 border border-primary/20 hover:bg-primary/15 transition-colors group"
+      >
+        <div class="w-9 h-9 rounded-xl bg-primary/20 flex items-center justify-center shrink-0">
+          <Plus class="w-5 h-5 text-primary" />
+        </div>
+        <div class="min-w-0">
+          <p class="text-sm font-bold text-ink leading-none mb-0.5">Add content</p>
+          <p class="text-[11px] text-ink-muted truncate">Upload audio or video</p>
+        </div>
+      </RouterLink>
+
+      <RouterLink
+        to="/youtube"
+        class="flex items-center gap-3 p-4 rounded-2xl bg-danger/10 border border-danger/20 hover:bg-danger/15 transition-colors group"
+      >
+        <div class="w-9 h-9 rounded-xl bg-danger/20 flex items-center justify-center shrink-0">
+          <Youtube class="w-5 h-5 text-danger" />
+        </div>
+        <div class="min-w-0">
+          <p class="text-sm font-bold text-ink leading-none mb-0.5">YouTube import</p>
+          <p class="text-[11px] text-ink-muted truncate">Assign videos to sections</p>
+        </div>
+      </RouterLink>
+
+      <RouterLink
+        to="/config"
+        class="flex items-center gap-3 p-4 rounded-2xl bg-info/10 border border-info/20 hover:bg-info/15 transition-colors group"
+      >
+        <div class="w-9 h-9 rounded-xl bg-info/20 flex items-center justify-center shrink-0">
+          <Smartphone class="w-5 h-5 text-info" />
+        </div>
+        <div class="min-w-0">
+          <p class="text-sm font-bold text-ink leading-none mb-0.5">Mobile config</p>
+          <p class="text-[11px] text-ink-muted truncate">Sections, giving, nav</p>
+        </div>
+      </RouterLink>
+
+      <RouterLink
+        to="/users"
+        class="flex items-center gap-3 p-4 rounded-2xl bg-success/10 border border-success/20 hover:bg-success/15 transition-colors group"
+      >
+        <div class="w-9 h-9 rounded-xl bg-success/20 flex items-center justify-center shrink-0">
+          <Users2 class="w-5 h-5 text-success" />
+        </div>
+        <div class="min-w-0">
+          <p class="text-sm font-bold text-ink leading-none mb-0.5">Manage users</p>
+          <p class="text-[11px] text-ink-muted truncate">Roles & permissions</p>
+        </div>
+      </RouterLink>
+    </div>
+
     <!-- Stat cards -->
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
       <AppStatCard label="Total users" :value="summary.totalUsers" icon-bg="bg-primary/15">
@@ -93,7 +148,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted } from 'vue';
-import { BadgeCheck, FileText, Radio, TrendingUp, Users } from 'lucide-vue-next';
+import { BadgeCheck, FileText, Plus, Radio, Smartphone, TrendingUp, Users, Users2, Youtube } from 'lucide-vue-next';
 import { useDashboardStore } from '@/stores/dashboard.store';
 import { useAuthStore } from '@/stores/auth.store';
 import AppCard from '@/components/ui/AppCard.vue';

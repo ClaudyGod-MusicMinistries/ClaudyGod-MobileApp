@@ -414,6 +414,71 @@ export async function loginMobileUserWithGoogle(): Promise<MobileAuthResponse> {
   return createSessionSnapshot(authResponse);
 }
 
+export async function loginMobileUserWithFacebook(): Promise<MobileAuthResponse> {
+  assertSupabaseConfigured();
+
+  const redirectTo = resolveOAuthRedirectUrl();
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'facebook',
+    options: {
+      redirectTo,
+      skipBrowserRedirect: true,
+      scopes: 'email,public_profile',
+    },
+  });
+
+  if (error) {
+    throw new Error(error.message || 'Facebook sign-in is not available right now.');
+  }
+
+  if (!data.url) {
+    throw new Error('Facebook sign-in is not configured for this application.');
+  }
+
+  const browserResult = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+  if (browserResult.type !== 'success' || !browserResult.url) {
+    throw new Error('Facebook sign-in was cancelled.');
+  }
+
+  const parsed = new URL(browserResult.url.replace('#', '?'));
+  const code = parsed.searchParams.get('code') ?? '';
+  let accessToken = parsed.searchParams.get('access_token') ?? '';
+  let refreshToken = parsed.searchParams.get('refresh_token') ?? '';
+
+  if (code && (!accessToken || !refreshToken)) {
+    const { data: exchanged, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+    if (exchangeError) {
+      throw new Error(exchangeError.message || 'Unable to finish Facebook sign-in.');
+    }
+    accessToken = exchanged.session?.access_token ?? '';
+    refreshToken = exchanged.session?.refresh_token ?? '';
+  }
+
+  if (!accessToken || !refreshToken) {
+    throw new Error('Facebook sign-in did not return a secure session.');
+  }
+
+  const { error: sessionError } = code
+    ? { error: null }
+    : await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+
+  if (sessionError) {
+    throw new Error(sessionError.message || 'Unable to finish Facebook sign-in.');
+  }
+
+  const user = await fetchMobileUserWithBearerToken(accessToken);
+  const authResponse: MobileAuthResponse = {
+    accessToken,
+    refreshToken,
+    user,
+    requiresEmailVerification: false,
+  };
+
+  await persistMobileSession(authResponse);
+  registerDeviceFireAndForget(accessToken);
+  return createSessionSnapshot(authResponse);
+}
+
 export async function registerMobileUser(input: RegisterMobileUserInput): Promise<MobileAuthResponse> {
   const response = await apiFetch<RegisterMobileResponse>('/v1/auth/register', {
     method: 'POST',

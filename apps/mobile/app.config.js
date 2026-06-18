@@ -189,6 +189,11 @@ module.exports = {
       bundleIdentifier: iosBundleId,
       buildNumber: iosBuildNumber,
       icon: appIconAssetPath,
+      infoPlist: {
+        NSCameraUsageDescription: 'ClaudyGod uses your camera to update your profile photo.',
+        NSMicrophoneUsageDescription: 'ClaudyGod uses your microphone to record audio messages.',
+        NSPhotoLibraryUsageDescription: 'ClaudyGod accesses your photo library to let you choose a profile photo or upload content.',
+      },
     },
     android: {
       package: androidPackage,
@@ -229,6 +234,26 @@ module.exports = {
           }
         : {}),
     },
-    plugins: ['expo-font', 'expo-router', 'expo-web-browser', 'expo-notifications', 'expo-updates'],
+    plugins: [
+      'expo-font',
+      'expo-router',
+      'expo-web-browser',
+      'expo-notifications',
+      'expo-updates',
+      [
+        'expo-camera',
+        {
+          cameraPermission: 'ClaudyGod uses your camera to update your profile photo.',
+          microphonePermission: 'ClaudyGod uses your microphone to record audio messages.',
+          recordAudioAndroid: true,
+        },
+      ],
+      [
+        'expo-image-picker',
+        {
+          photosPermission: 'ClaudyGod accesses your photo library to let you choose a profile photo or upload content.',
+        },
+      ],
+    ],
   },
 };
