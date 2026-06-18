@@ -55,8 +55,14 @@ function cleanFeedText(value?: string | null): string {
     .trim();
 }
 
+function isValidDuration(d: string | null | undefined): boolean {
+  if (!d) return false;
+  const trimmed = d.trim();
+  return trimmed.length > 0 && trimmed !== '--:--' && trimmed !== '0:00' && trimmed !== '00:00';
+}
+
 export function formatFeedMeta(item: FeedCardItem) {
-  return [cleanFeedText(item.subtitle), item.duration].filter(Boolean).join(' · ');
+  return [cleanFeedText(item.subtitle), isValidDuration(item.duration) ? item.duration : null].filter(Boolean).join(' · ');
 }
 
 export function dedupeFeedItems(items: FeedCardItem[]): FeedCardItem[] {
@@ -451,7 +457,7 @@ export function PremiumHero({
           {/* Meta line */}
           {item ? (
             <CustomText style={{ color: 'rgba(255,255,255,0.52)', fontSize: 11, marginTop: 5, letterSpacing: 0.2 }}>
-              {[item.subtitle, item.duration].filter(Boolean).join(' · ')}
+              {[item.subtitle, isValidDuration(item.duration) ? item.duration : null].filter(Boolean).join(' · ')}
             </CustomText>
           ) : null}
 
@@ -761,7 +767,7 @@ export function ContentCard({
           ) : null}
 
           {/* Duration pill — bottom-right */}
-          {item.duration && !item.isLive ? (
+          {isValidDuration(item.duration) && !item.isLive ? (
             <View
               style={{
                 position: 'absolute', right: 7, bottom: 7,
@@ -1119,7 +1125,7 @@ export function ContentList({
                     resizeMode="cover"
                     style={{ width: '100%', height: '100%' }}
                   />
-                  {item.duration ? (
+                  {isValidDuration(item.duration) ? (
                     <View
                       style={{
                         position: 'absolute',
@@ -1385,7 +1391,7 @@ export function TrendingList({ title, items, onPressItem, actionLabel, onAction 
                       style={{ color: theme.colors.textSecondary, marginTop: 3 }}
                       numberOfLines={1}
                     >
-                      {[cleanFeedText(item.subtitle), item.duration].filter(Boolean).join(' · ')}
+                      {[cleanFeedText(item.subtitle), isValidDuration(item.duration) ? item.duration : null].filter(Boolean).join(' · ')}
                     </CustomText>
                   </View>
 
