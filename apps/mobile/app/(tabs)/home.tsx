@@ -1,8 +1,9 @@
 import React, { useMemo } from 'react';
-import { Image, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Image, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
+import { CustomText } from '../../components/CustomText';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { SupportMinistryCard } from '../../components/ui/SupportMinistryCard';
 import { useAuth } from '../../context/AuthContext';
@@ -101,9 +102,9 @@ function ContinueRow({ items, onPress }: { items: FeedCardItem[]; onPress: (_ite
                   </View>
                 </View>
               </View>
-              <Text style={{ color: theme.colors.textSecondary, fontSize: 10, textAlign: 'center', fontWeight: '500', lineHeight: 13 }} numberOfLines={2}>
+              <CustomText style={{ color: theme.colors.textSecondary, fontSize: 10, textAlign: 'center', fontWeight: '500', lineHeight: 13 }} numberOfLines={2}>
                 {item.title}
-              </Text>
+              </CustomText>
             </View>
           </TVTouchable>
         ))}
@@ -126,9 +127,9 @@ function GuestCallout({ onSignIn }: { onSignIn: () => void }) {
         }}
       >
         <MaterialIcons name="person-outline" size={18} color="#8B5CF6" />
-        <Text style={{ color: '#F7F2FF', fontSize: 13, fontWeight: '500', flex: 1 }}>
+        <CustomText style={{ color: '#F7F2FF', fontSize: 13, fontWeight: '500', flex: 1 }}>
           Sign in for full access
-        </Text>
+        </CustomText>
         <MaterialIcons name="chevron-right" size={18} color="rgba(247,242,255,0.40)" />
       </View>
     </TVTouchable>
@@ -152,16 +153,16 @@ function AnnouncementCard({ item, onPress }: { item: FeedCardItem; onPress: () =
           <Image source={{ uri: item.imageUrl || DEFAULT_CONTENT_IMAGE_URI }} resizeMode="cover" style={StyleSheet.absoluteFillObject} />
         </View>
         <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={{ color: 'rgba(247,242,255,0.45)', fontSize: 9.5, fontWeight: '600', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 2 }}>
+          <CustomText style={{ color: 'rgba(247,242,255,0.45)', fontSize: 9.5, fontWeight: '600', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 2 }}>
             Announcement
-          </Text>
-          <Text style={{ color: '#F7F2FF', fontSize: 13, fontWeight: '500' }} numberOfLines={1}>
+          </CustomText>
+          <CustomText style={{ color: '#F7F2FF', fontSize: 13, fontWeight: '500' }} numberOfLines={1}>
             {item.title}
-          </Text>
+          </CustomText>
           {item.subtitle ? (
-            <Text style={{ color: 'rgba(247,242,255,0.45)', fontSize: 11.5, marginTop: 2 }} numberOfLines={1}>
+            <CustomText style={{ color: 'rgba(247,242,255,0.45)', fontSize: 11.5, marginTop: 2 }} numberOfLines={1}>
               {item.subtitle}
-            </Text>
+            </CustomText>
           ) : null}
         </View>
         <MaterialIcons name="chevron-right" size={18} color="rgba(247,242,255,0.35)" />
