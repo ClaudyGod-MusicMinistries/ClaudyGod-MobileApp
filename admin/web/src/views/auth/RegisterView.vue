@@ -23,11 +23,31 @@
         </p>
 
         <div class="space-y-4">
-          <div v-for="feature in FEATURES" :key="feature.label" class="flex items-start gap-3">
-            <div class="w-7 h-7 rounded-lg bg-violet-500/15 border border-violet-500/20 flex items-center justify-center flex-shrink-0 mt-0.5" v-html="feature.icon" />
+          <div class="flex items-start gap-3">
+            <div class="w-7 h-7 rounded-lg bg-violet-500/15 border border-violet-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <FileText class="w-3.5 h-3.5 text-violet-400" />
+            </div>
             <div>
-              <p class="text-white/90 text-xs font-semibold">{{ feature.label }}</p>
-              <p class="text-white/35 text-xs leading-snug mt-0.5">{{ feature.desc }}</p>
+              <p class="text-white/90 text-xs font-semibold">Content management</p>
+              <p class="text-white/35 text-xs leading-snug mt-0.5">Upload music, sermons, and videos. Assign to sections instantly.</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3">
+            <div class="w-7 h-7 rounded-lg bg-violet-500/15 border border-violet-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <PlayCircle class="w-3.5 h-3.5 text-violet-400" />
+            </div>
+            <div>
+              <p class="text-white/90 text-xs font-semibold">YouTube import</p>
+              <p class="text-white/35 text-xs leading-snug mt-0.5">Browse your channel and import videos directly to the app.</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3">
+            <div class="w-7 h-7 rounded-lg bg-violet-500/15 border border-violet-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <BarChart2 class="w-3.5 h-3.5 text-violet-400" />
+            </div>
+            <div>
+              <p class="text-white/90 text-xs font-semibold">Audience analytics</p>
+              <p class="text-white/35 text-xs leading-snug mt-0.5">See who's listening, what's trending, and when they tune in.</p>
             </div>
           </div>
         </div>
@@ -60,9 +80,7 @@
           <!-- INVALID INVITE -->
           <div v-else-if="phase === 'invalid'" key="invalid" class="space-y-6">
             <div class="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto">
-              <svg class="w-8 h-8 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-              </svg>
+              <AlertTriangle class="w-8 h-8 text-red-400" />
             </div>
             <div class="text-center">
               <h2 class="text-white text-xl font-bold mb-2">
@@ -75,7 +93,7 @@
               </p>
             </div>
             <RouterLink to="/login" class="flex items-center justify-center gap-2 text-violet-400 hover:text-violet-300 text-sm font-medium transition-colors">
-              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+              <ArrowLeft class="w-4 h-4" />
               Back to sign in
             </RouterLink>
           </div>
@@ -83,9 +101,7 @@
           <!-- INVITE FORM -->
           <div v-else-if="phase === 'invite-form'" key="invite-form" class="space-y-6">
             <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-violet-500/10 border border-violet-500/20">
-              <svg class="w-3.5 h-3.5 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
+              <Mail class="w-3.5 h-3.5 text-violet-400" />
               <span class="text-violet-300 text-xs font-medium">Invited by {{ invite?.inviterName || 'your admin' }}</span>
             </div>
             <div>
@@ -123,16 +139,12 @@
                 <p class="text-[10px] font-bold text-white/25 uppercase tracking-widest">Your details</p>
                 <FieldGroup label="Email address" :error="codeErrors.email">
                   <FormInput v-model="codeForm.email" type="email" placeholder="you@example.com" autocomplete="email" :hasError="!!codeErrors.email">
-                    <template #icon>
-                      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-                    </template>
+                    <template #icon><Mail class="w-4 h-4" /></template>
                   </FormInput>
                 </FieldGroup>
                 <FieldGroup label="Display name" hint="visible in sidebar" :error="codeErrors.username">
                   <FormInput v-model="codeForm.username" type="text" placeholder="e.g. john_admin" autocomplete="username" :hasError="!!codeErrors.username">
-                    <template #icon>
-                      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-                    </template>
+                    <template #icon><User class="w-4 h-4" /></template>
                   </FormInput>
                 </FieldGroup>
               </div>
@@ -153,8 +165,8 @@
                     ]"
                     @click="codeForm.role = r.value"
                   >
-                    <span class="text-base leading-none">{{ r.emoji }}</span>
-                    <span class="text-[11px] font-semibold leading-none mt-0.5">{{ r.label }}</span>
+                    <component :is="r.icon" class="w-4 h-4" />
+                    <span class="text-[11px] font-semibold leading-none mt-1">{{ r.label }}</span>
                     <span class="text-[9px] text-white/30 leading-none mt-0.5">{{ r.desc }}</span>
                   </button>
                 </div>
@@ -172,7 +184,7 @@
                 <FieldGroup label="Admin access code" hint="provided by your administrator" :error="codeErrors.adminSignupCode">
                   <div class="relative">
                     <div class="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/25 pointer-events-none">
-                      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
+                      <KeyRound class="w-4 h-4" />
                     </div>
                     <input
                       v-model="codeForm.adminSignupCode"
@@ -201,9 +213,7 @@
           <!-- SUCCESS -->
           <div v-else-if="phase === 'success'" key="success" class="text-center py-10 space-y-5">
             <div class="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto">
-              <svg class="w-8 h-8 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+              <CheckCircle2 class="w-8 h-8 text-emerald-400" />
             </div>
             <div>
               <h2 class="text-white text-xl font-bold mb-1">Welcome to the team!</h2>
@@ -215,9 +225,7 @@
           <!-- VERIFY EMAIL -->
           <div v-else-if="phase === 'verify-email'" key="verify-email" class="text-center py-10 space-y-5">
             <div class="w-16 h-16 rounded-2xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center mx-auto">
-              <svg class="w-8 h-8 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
-              </svg>
+              <MailOpen class="w-8 h-8 text-violet-400" />
             </div>
             <div>
               <h2 class="text-white text-xl font-bold mb-1">Check your inbox</h2>
@@ -227,7 +235,7 @@
               </p>
             </div>
             <RouterLink to="/login" class="inline-flex items-center gap-2 text-violet-400 hover:text-violet-300 text-sm font-medium transition-colors">
-              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+              <ArrowLeft class="w-4 h-4" />
               Back to sign in
             </RouterLink>
           </div>
@@ -241,6 +249,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, defineComponent, h } from 'vue';
 import { useRoute, useRouter, RouterLink } from 'vue-router';
+import {
+  AlertTriangle, ArrowLeft, BarChart2, CheckCircle2,
+  FileText, KeyRound, Mail, MailOpen, PlayCircle,
+  Shield, User, Eye, Pencil,
+} from 'lucide-vue-next';
 import { validateInvite, acceptInvite, registerWithCode } from '@/api/auth';
 import type { InviteValidation } from '@/api/auth';
 import { useAuthStore } from '@/stores/auth.store';
@@ -248,16 +261,10 @@ import { BRAND_LOGO_URL } from '@/utils/constants';
 
 type Phase = 'loading' | 'invalid' | 'invite-form' | 'code-form' | 'success' | 'verify-email';
 
-const FEATURES = [
-  { label: 'Content management', desc: 'Upload music, sermons, and videos. Assign to sections instantly.', icon: '<svg class="w-3.5 h-3.5 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>' },
-  { label: 'YouTube import', desc: 'Browse your channel and import videos directly to the app.', icon: '<svg class="w-3.5 h-3.5 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>' },
-  { label: 'Audience analytics', desc: "See who's listening, what's trending, and when they tune in.", icon: '<svg class="w-3.5 h-3.5 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>' },
-];
-
 const ROLE_OPTIONS = [
-  { value: 'ADMIN' as const,     label: 'Admin',     emoji: '🛡️', desc: 'Full platform access' },
-  { value: 'MODERATOR' as const, label: 'Moderator', emoji: '👁️', desc: 'Review content' },
-  { value: 'CREATOR' as const,   label: 'Creator',   emoji: '✏️', desc: 'Create & upload' },
+  { value: 'ADMIN' as const,     label: 'Admin',     icon: Shield, desc: 'Full platform access' },
+  { value: 'MODERATOR' as const, label: 'Moderator', icon: Eye,    desc: 'Review content' },
+  { value: 'CREATOR' as const,   label: 'Creator',   icon: Pencil, desc: 'Create & upload' },
 ];
 
 // ── Shared sub-components ─────────────────────────────────────────────────────
