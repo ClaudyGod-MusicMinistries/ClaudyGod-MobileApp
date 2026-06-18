@@ -64,10 +64,7 @@
               <li v-for="feat in features" :key="feat" class="flex items-start gap-3">
                 <span class="mt-0.5 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
                   style="background:rgba(139,92,246,0.2);border:1px solid rgba(139,92,246,0.4)">
-                  <svg class="w-2.5 h-2.5" style="color:#c4b5fd" fill="none" viewBox="0 0 12 12"
-                    stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M2 6.5l2.8 2.8L10 3.5"/>
-                  </svg>
+                  <Check class="w-2.5 h-2.5" style="color:#c4b5fd" />
                 </span>
                 <span class="text-sm" style="color:#9ca3af">{{ feat }}</span>
               </li>
@@ -116,6 +113,7 @@
 </template>
 
 <script setup lang="ts">
+import { Check } from 'lucide-vue-next';
 import { BRAND_LOGO_URL } from '@/utils/constants';
 
 const features = [
