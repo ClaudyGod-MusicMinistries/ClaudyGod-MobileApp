@@ -1719,10 +1719,11 @@ export function SectionLabel({
         {title}
       </CustomText>
       {actionLabel && onAction ? (
-        <TVTouchable onPress={onAction} showFocusBorder={false} style={{ paddingVertical: 4, paddingLeft: 10 }}>
-          <CustomText variant="caption" style={{ color: 'rgba(247,242,255,0.40)', fontSize: 12, fontWeight: '400' }}>
+        <TVTouchable onPress={onAction} showFocusBorder={false} style={{ paddingVertical: 4, paddingLeft: 10, flexDirection: 'row', alignItems: 'center', gap: 1 }}>
+          <CustomText variant="caption" style={{ color: 'rgba(247,242,255,0.38)', fontSize: 11, fontWeight: '400' }}>
             {actionLabel}
           </CustomText>
+          <MaterialIcons name="chevron-right" size={14} color="rgba(247,242,255,0.30)" />
         </TVTouchable>
       ) : null}
     </View>
