@@ -103,11 +103,14 @@ const insightCols = [
 onMounted(async () => {
   isLoading.value = true;
   try {
-    [overview.value, insights.value, community.value] = await Promise.all([
+    const [overviewResult, insightsResult, communityResult] = await Promise.allSettled([
       getEngagementOverview(),
       getContentInsights({ limit: 20 }),
       getCommunityInsights(),
     ]);
+    if (overviewResult.status === 'fulfilled') overview.value = overviewResult.value;
+    if (insightsResult.status === 'fulfilled') insights.value = insightsResult.value;
+    if (communityResult.status === 'fulfilled') community.value = communityResult.value;
   } finally {
     isLoading.value = false;
   }

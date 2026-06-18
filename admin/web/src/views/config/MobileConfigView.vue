@@ -138,8 +138,12 @@ onMounted(async () => {
 
 async function onSave(): Promise<void> {
   if (!config.value) return;
-  await store.saveAppConfig(config.value);
-  ui.addToast({ tone: 'success', title: 'Mobile config saved' });
+  try {
+    await store.saveAppConfig(config.value);
+    ui.addToast({ tone: 'success', title: 'Mobile config saved' });
+  } catch (e) {
+    ui.addToast({ tone: 'danger', title: e instanceof Error ? e.message : 'Save failed' });
+  }
 }
 
 function addSection(): void {

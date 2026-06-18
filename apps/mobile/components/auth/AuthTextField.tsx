@@ -151,6 +151,7 @@ export function AuthTextField({
             placeholder={placeholder}
             placeholderTextColor="rgba(235,229,250,0.56)"
             selectionColor="rgba(214,190,255,0.82)"
+            accessibilityLabel={label ?? placeholder}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
             style={{
