@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Image, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Animated, Image, StyleSheet, TextInput, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
@@ -76,15 +76,15 @@ function DiscoveryItem({ item, onPress }: { item: FeedCardItem; onPress: () => v
         <Image source={{ uri: item.imageUrl || DEFAULT_CONTENT_IMAGE_URI }} resizeMode="cover" style={StyleSheet.absoluteFillObject} />
         <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: 10 }}>
           <View style={{ borderRadius: 999, backgroundColor: 'rgba(0,0,0,0.62)', alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 3 }}>
-            <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: '600' }} numberOfLines={1}>
+            <CustomText style={{ color: '#FFFFFF', fontSize: 10, fontWeight: '600' }} numberOfLines={1}>
               {item.title}
-            </Text>
+            </CustomText>
           </View>
         </View>
         {item.isLive ? (
           <View style={{ position: 'absolute', top: 8, left: 8, borderRadius: 999, backgroundColor: 'rgba(239,68,68,0.88)', paddingHorizontal: 7, paddingVertical: 3, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
             <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#FFFFFF' }} />
-            <Text style={{ color: '#FFFFFF', fontSize: 9, fontWeight: '700' }}>LIVE</Text>
+            <CustomText style={{ color: '#FFFFFF', fontSize: 9, fontWeight: '700' }}>LIVE</CustomText>
           </View>
         ) : null}
       </View>
@@ -311,9 +311,9 @@ export default function Search() {
                 }}
               >
                 <MaterialIcons name={shortcut.icon as React.ComponentProps<typeof MaterialIcons>['name']} size={14} color={theme.colors.primary} />
-                <Text style={{ color: theme.colors.textSecondary, fontSize: 12.5, fontWeight: '500' }}>
+                <CustomText style={{ color: theme.colors.textSecondary, fontSize: 12.5, fontWeight: '500' }}>
                   {shortcut.label}
-                </Text>
+                </CustomText>
               </TVTouchable>
             ))}
           </View>

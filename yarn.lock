@@ -1056,6 +1056,11 @@
   resolved "https://registry.yarnpkg.com/@expo-google-fonts/manrope/-/manrope-0.4.2.tgz#d681e9701eb8df840bcfe893f41008d4d8b00778"
   integrity sha512-BZsKe8d9BJrVnIQIZcTS7/Kac0TbXnqs/+8EBSiQxrmK6GoCO6eTkmr50D1weIk/EoF20pTmAkpWICnovATr/g==
 
+"@expo-google-fonts/plus-jakarta-sans@^0.4.2":
+  version "0.4.2"
+  resolved "https://registry.yarnpkg.com/@expo-google-fonts/plus-jakarta-sans/-/plus-jakarta-sans-0.4.2.tgz#95d6640ecb3aa76c534fb4ef3490ec7b230c3b60"
+  integrity sha512-6LYVmVGwjQvH+uzzWlVc9+oMj4lkNQ41aymVDjO+x8aFk8kCye20wOyLomYMZaMezA++Uf1mZRCw3W3Fy/hxEA==
+
 "@expo/cli@54.0.25":
   version "54.0.25"
   resolved "https://registry.yarnpkg.com/@expo/cli/-/cli-54.0.25.tgz#07fba0b47948efdf44dc8c665d229fbf655c0b8b"
@@ -6815,6 +6820,11 @@ lru-cache@^5.1.1:
   integrity sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w==
   dependencies:
     yallist "^3.0.2"
+
+lucide-vue-next@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/lucide-vue-next/-/lucide-vue-next-1.0.0.tgz#663ad26b7bfa327c7662b75bb0b843ebe749a31b"
+  integrity sha512-V6SPvx1IHTj/UY+FrIYWV5faISsPSb8BnWSFDxAtezWKvWc9ZZ40PDrdu1/Qb5vg4lHWr1hs1BAMGVGm6V1Xdg==
 
 luxon@^3.2.1:
   version "3.7.2"

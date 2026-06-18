@@ -45,7 +45,7 @@ export function SearchBar({ placeholder, value, onChangeText, onSubmit }: Search
           color: theme.colors.text,
           fontSize: 12.5,
           lineHeight: 17,
-          fontFamily: 'Manrope_400Regular',
+          fontFamily: 'PlusJakartaSans_400Regular',
         }}
       />
       {value.length > 0 ? (

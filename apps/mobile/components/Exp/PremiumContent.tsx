@@ -8,7 +8,6 @@ import {
   ScrollView,
   Share,
   StyleSheet,
-  Text,
   View,
   useWindowDimensions,
   type ImageSourcePropType,
@@ -418,7 +417,7 @@ export function PremiumHero({
                   style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#F43F5E' }}
                 />
               ) : null}
-              <Text
+              <CustomText
                 style={{
                   color: isLiveItem ? '#F87171' : 'rgba(255,255,255,0.9)',
                   fontSize: 10,
@@ -430,7 +429,7 @@ export function PremiumHero({
                 {isLiveItem
                   ? 'Live now'
                   : eyebrow ?? (item?.type === 'video' ? 'Featured video' : 'Featured')}
-              </Text>
+              </CustomText>
             </View>
           ) : null}
 
@@ -451,9 +450,9 @@ export function PremiumHero({
 
           {/* Meta line */}
           {item ? (
-            <Text style={{ color: 'rgba(255,255,255,0.52)', fontSize: 11, marginTop: 5, letterSpacing: 0.2 }}>
+            <CustomText style={{ color: 'rgba(255,255,255,0.52)', fontSize: 11, marginTop: 5, letterSpacing: 0.2 }}>
               {[item.subtitle, item.duration].filter(Boolean).join(' · ')}
-            </Text>
+            </CustomText>
           ) : null}
 
           {/* Subtitle */}
@@ -757,7 +756,7 @@ export function ContentCard({
               }}
             >
               <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#FFFFFF' }} />
-              <Text style={{ color: '#FFFFFF', fontSize: 9, fontWeight: '700', letterSpacing: 0.5 }}>LIVE</Text>
+              <CustomText style={{ color: '#FFFFFF', fontSize: 9, fontWeight: '700', letterSpacing: 0.5 }}>LIVE</CustomText>
             </View>
           ) : null}
 
@@ -771,7 +770,7 @@ export function ContentCard({
                 paddingHorizontal: 5, paddingVertical: 2,
               }}
             >
-              <Text style={{ color: '#FFFFFF', fontSize: 9, fontWeight: '500' }}>{item.duration}</Text>
+              <CustomText style={{ color: '#FFFFFF', fontSize: 9, fontWeight: '500' }}>{item.duration}</CustomText>
             </View>
           ) : null}
         </View>
@@ -1132,7 +1131,7 @@ export function ContentList({
                         paddingVertical: 2,
                       }}
                     >
-                      <Text style={{ color: '#FFFFFF', fontSize: 9 }}>{item.duration}</Text>
+                      <CustomText style={{ color: '#FFFFFF', fontSize: 9 }}>{item.duration}</CustomText>
                     </View>
                   ) : null}
                 </View>
@@ -1461,9 +1460,9 @@ export function StreamingBanner({ item, badge = 'Featured', title, subtitle, cta
                   paddingVertical: 3,
                 }}
               >
-                <Text style={{ color: '#8B5CF6', fontSize: 9.5, fontWeight: '700', letterSpacing: 1 }}>
+                <CustomText style={{ color: '#8B5CF6', fontSize: 9.5, fontWeight: '700', letterSpacing: 1 }}>
                   {badge.toUpperCase()}
-                </Text>
+                </CustomText>
               </View>
 
               <CustomText
@@ -1496,7 +1495,7 @@ export function StreamingBanner({ item, badge = 'Featured', title, subtitle, cta
                   }}
                 >
                   <MaterialIcons name="play-arrow" size={15} color="#120A20" />
-                  <Text style={{ color: '#120A20', fontSize: 12, fontWeight: '700' }}>{ctaLabel}</Text>
+                  <CustomText style={{ color: '#120A20', fontSize: 12, fontWeight: '700' }}>{ctaLabel}</CustomText>
                 </View>
               </View>
             </View>
@@ -1624,9 +1623,9 @@ export function LiveNowBanner({ item, onPress }: { item: FeedCardItem; onPress: 
             </View>
 
             <View style={{ flex: 1, minWidth: 0 }}>
-              <Text style={{ color: '#F87171', fontSize: 9.5, fontWeight: '700', letterSpacing: 1.4, textTransform: 'uppercase', marginBottom: 4 }}>
+              <CustomText style={{ color: '#F87171', fontSize: 9.5, fontWeight: '700', letterSpacing: 1.4, textTransform: 'uppercase', marginBottom: 4 }}>
                 Live now
-              </Text>
+              </CustomText>
               <CustomText variant="title" style={{ color: '#FFFFFF', fontWeight: '700', fontSize: compact ? 15 : 17 }} numberOfLines={1}>
                 {item.title}
               </CustomText>
@@ -1639,7 +1638,7 @@ export function LiveNowBanner({ item, onPress }: { item: FeedCardItem; onPress: 
 
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 999, backgroundColor: '#F43F5E' }}>
               <MaterialIcons name="live-tv" size={14} color="#FFFFFF" />
-              <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '700' }}>Join</Text>
+              <CustomText style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '700' }}>Join</CustomText>
             </View>
           </View>
         </View>
@@ -1720,10 +1719,11 @@ export function SectionLabel({
         {title}
       </CustomText>
       {actionLabel && onAction ? (
-        <TVTouchable onPress={onAction} showFocusBorder={false} style={{ paddingVertical: 4, paddingLeft: 10 }}>
-          <CustomText variant="caption" style={{ color: 'rgba(247,242,255,0.40)', fontSize: 12, fontWeight: '400' }}>
+        <TVTouchable onPress={onAction} showFocusBorder={false} style={{ paddingVertical: 4, paddingLeft: 10, flexDirection: 'row', alignItems: 'center', gap: 1 }}>
+          <CustomText variant="caption" style={{ color: 'rgba(247,242,255,0.38)', fontSize: 11, fontWeight: '400' }}>
             {actionLabel}
           </CustomText>
+          <MaterialIcons name="chevron-right" size={14} color="rgba(247,242,255,0.30)" />
         </TVTouchable>
       ) : null}
     </View>

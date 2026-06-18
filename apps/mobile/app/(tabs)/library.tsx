@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { TouchableOpacity, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { AppButton } from '../../components/ui/AppButton';
+import { CustomText } from '../../components/CustomText';
 import { useAppTheme } from '../../util/colorScheme';
 import { useContentFeed } from '../../hooks/useContentFeed';
 import type { FeedCardItem } from '../../services/contentService';
@@ -86,14 +87,14 @@ function LibTabs({ active, onChange, counts }: { active: LibTab; onChange: (_t: 
               size={14}
               color={isActive ? theme.colors.primary : theme.colors.textMuted}
             />
-            <Text
+            <CustomText
               style={{
                 fontSize: 12, fontWeight: isActive ? '700' : '500',
                 color: isActive ? theme.colors.text : theme.colors.textMuted,
               }}
             >
               {tab.label}
-            </Text>
+            </CustomText>
             {counts[tab.id] > 0 ? (
               <View
                 style={{
@@ -102,9 +103,9 @@ function LibTabs({ active, onChange, counts }: { active: LibTab; onChange: (_t: 
                   alignItems: 'center', justifyContent: 'center',
                 }}
               >
-                <Text style={{ fontSize: 9, fontWeight: '700', color: isActive ? '#FFFFFF' : theme.colors.primary }}>
+                <CustomText style={{ fontSize: 9, fontWeight: '700', color: isActive ? '#FFFFFF' : theme.colors.primary }}>
                   {counts[tab.id]}
-                </Text>
+                </CustomText>
               </View>
             ) : null}
           </TouchableOpacity>
@@ -182,17 +183,17 @@ export default function LibraryScreen() {
               backgroundColor: theme.colors.card,
             }}
           >
-            <Text style={{ color: theme.colors.primary, fontSize: 16, fontWeight: '700' }}>
+            <CustomText style={{ color: theme.colors.primary, fontSize: 16, fontWeight: '700' }}>
               {(user.displayName ?? user.email ?? 'U')[0]?.toUpperCase()}
-            </Text>
+            </CustomText>
           </View>
           <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={{ color: theme.colors.text, fontSize: 14, fontWeight: '700' }} numberOfLines={1}>
+            <CustomText style={{ color: theme.colors.text, fontSize: 14, fontWeight: '700' }} numberOfLines={1}>
               {user.displayName ?? 'Your library'}
-            </Text>
-            <Text style={{ color: theme.colors.textSecondary, fontSize: 11.5, marginTop: 1 }} numberOfLines={1}>
+            </CustomText>
+            <CustomText style={{ color: theme.colors.textSecondary, fontSize: 11.5, marginTop: 1 }} numberOfLines={1}>
               {liked.length} saved · {downloaded.length} downloads · {playlists.length} playlists
-            </Text>
+            </CustomText>
           </View>
         </View>
       ) : null}
