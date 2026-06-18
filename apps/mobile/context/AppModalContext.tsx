@@ -6,12 +6,9 @@ import React, {
   useState,
   type ReactNode,
 } from 'react';
-import { Modal, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 
-import { CustomText } from '../components/CustomText';
-import { AppButton } from '../components/ui/AppButton';
-import { TVTouchable } from '../components/ui/TVTouchable';
+import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { useAppTheme } from '../util/colorScheme';
 
 type AppModalTone = 'success' | 'error' | 'info' | 'warning' | 'danger';
@@ -39,12 +36,24 @@ type AppModalContextValue = {
 
 const AppModalContext = createContext<AppModalContextValue | undefined>(undefined);
 
-function getModalPalette(tone: AppModalTone, primary: string, danger: string) {
-  if (tone === 'success') return { icon: 'check-circle' as const, accent: '#56D28E' };
-  if (tone === 'error') return { icon: 'error-outline' as const, accent: '#FF8E8E' };
-  if (tone === 'warning') return { icon: 'priority-high' as const, accent: '#FBBF24' };
-  if (tone === 'danger') return { icon: 'report-gmailerrorred' as const, accent: danger };
-  return { icon: 'info-outline' as const, accent: primary };
+function resolveIcon(
+  tone: AppModalTone,
+  override?: React.ComponentProps<typeof MaterialIcons>['name'],
+): React.ComponentProps<typeof MaterialIcons>['name'] {
+  if (override) return override;
+  if (tone === 'success')  return 'check-circle';
+  if (tone === 'error')    return 'error-outline';
+  if (tone === 'warning')  return 'priority-high';
+  if (tone === 'danger')   return 'report-gmailerrorred';
+  return 'info-outline';
+}
+
+function resolveIconColor(tone: AppModalTone, primary: string, danger: string): string {
+  if (tone === 'success')  return '#56D28E';
+  if (tone === 'error')    return '#FF8E8E';
+  if (tone === 'warning')  return '#FBBF24';
+  if (tone === 'danger')   return danger;
+  return primary;
 }
 
 export function AppModalProvider({ children }: { children: ReactNode }) {
@@ -57,124 +66,45 @@ export function AppModalProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(() => ({ showModal, hideModal }), [hideModal, showModal]);
-  const palette = modal
-    ? getModalPalette(modal.tone ?? 'info', theme.colors.primary, theme.colors.danger)
-    : null;
 
   const runAction = (action?: AppModalAction) => {
     hideModal();
     action?.onPress?.();
   };
 
+  const tone = modal?.tone ?? 'info';
+  const isDanger = tone === 'danger' || tone === 'error';
+
   return (
     <AppModalContext.Provider value={value}>
       {children}
-      <Modal
-        visible={Boolean(modal)}
-        transparent
-        animationType="fade"
-        statusBarTranslucent
-        onRequestClose={() => {
-          if (modal?.dismissible !== false) hideModal();
-        }}
-      >
-        <View
-          style={{
-            flex: 1,
-            justifyContent: 'center',
-            paddingHorizontal: 18,
-            backgroundColor: 'rgba(2,1,6,0.60)',
+      {modal ? (
+        <ConfirmModal
+          visible
+          icon={resolveIcon(tone, modal.icon)}
+          iconColor={resolveIconColor(tone, theme.colors.primary, theme.colors.danger)}
+          title={modal.title}
+          body={modal.message}
+          primaryLabel={modal.primaryAction?.label ?? 'Done'}
+          primaryTone={isDanger ? 'danger' : 'primary'}
+          secondaryLabel={
+            modal.secondaryAction
+              ? modal.secondaryAction.label
+              : modal.dismissible !== false
+                ? 'Cancel'
+                : undefined
+          }
+          onPrimary={() => runAction(modal.primaryAction)}
+          onSecondary={
+            modal.secondaryAction
+              ? () => runAction(modal.secondaryAction)
+              : undefined
+          }
+          onDismiss={() => {
+            if (modal.dismissible !== false) hideModal();
           }}
-        >
-          {modal && palette ? (
-            <View
-              style={{
-                width: '100%',
-                maxWidth: 440,
-                alignSelf: 'center',
-                borderRadius: 28,
-                borderWidth: 1,
-                borderColor: theme.colors.borderStrong,
-                backgroundColor: theme.colors.elevated,
-                padding: theme.spacing.lg,
-                shadowColor: '#000000',
-                shadowOpacity: 0.3,
-                shadowRadius: 28,
-                shadowOffset: { width: 0, height: 18 },
-                elevation: 14,
-              }}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 13 }}>
-                <View
-                  style={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 24,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: `${palette.accent}1F`,
-                    borderWidth: 1,
-                    borderColor: `${palette.accent}45`,
-                  }}
-                >
-                  <MaterialIcons name={modal.icon ?? palette.icon} size={24} color={palette.accent} />
-                </View>
-
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <CustomText variant="heading" style={{ color: theme.colors.text }}>
-                    {modal.title}
-                  </CustomText>
-                  {modal.message ? (
-                    <CustomText variant="body" style={{ color: theme.colors.textSecondary, marginTop: 7, lineHeight: 21 }}>
-                      {modal.message}
-                    </CustomText>
-                  ) : null}
-                </View>
-
-                {modal.dismissible !== false ? (
-                  <TVTouchable
-                    onPress={hideModal}
-                    showFocusBorder={false}
-                    style={{
-                      width: 34,
-                      height: 34,
-                      borderRadius: 17,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      backgroundColor: theme.colors.surfaceAlt,
-                      borderWidth: 1,
-                      borderColor: theme.colors.border,
-                    }}
-                  >
-                    <MaterialIcons name="close" size={18} color={theme.colors.textSecondary} />
-                  </TVTouchable>
-                ) : null}
-              </View>
-
-              <View style={{ flexDirection: 'row', gap: 10, marginTop: theme.spacing.lg }}>
-                {modal.secondaryAction ? (
-                  <AppButton
-                    title={modal.secondaryAction.label}
-                    variant={modal.secondaryAction.variant ?? 'secondary'}
-                    size="lg"
-                    fullWidth
-                    onPress={() => runAction(modal.secondaryAction)}
-                    style={{ flex: 1 }}
-                  />
-                ) : null}
-                <AppButton
-                  title={modal.primaryAction?.label ?? 'Done'}
-                  variant={modal.primaryAction?.variant ?? 'primary'}
-                  size="lg"
-                  fullWidth
-                  onPress={() => runAction(modal.primaryAction)}
-                  style={{ flex: 1 }}
-                />
-              </View>
-            </View>
-          ) : null}
-        </View>
-      </Modal>
+        />
+      ) : null}
     </AppModalContext.Provider>
   );
 }
@@ -184,6 +114,5 @@ export function useAppModal() {
   if (!context) {
     throw new Error('useAppModal must be used inside AppModalProvider');
   }
-
   return context;
 }

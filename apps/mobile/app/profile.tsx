@@ -13,7 +13,7 @@ import { CustomText } from '../components/CustomText';
 import { useDeviceClass } from '../util/deviceClassConfig';
 import { FadeIn } from '../components/ui/FadeIn';
 import { TVTouchable } from '../components/ui/TVTouchable';
-import { ActionSheet } from '../components/ui/ActionSheet';
+import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { fetchUserProfileMetrics } from '../services/supabaseAnalytics';
 import { clearMobileSession } from '../services/authService';
 import { useRequireMobileSession } from '../hooks/useRequireMobileSession';
@@ -119,6 +119,7 @@ export default function Profile() {
     liveSubscriptions: 0,
   });
   const [isLogoutSheetVisible, setIsLogoutSheetVisible] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
   const scrollY = useRef(new Animated.Value(0)).current;
   const headerOpacity = scrollY.interpolate({
@@ -149,7 +150,10 @@ export default function Profile() {
   const initial = displayName.charAt(0).toUpperCase();
 
   const signOut = async () => {
+    setIsSigningOut(true);
     try { await clearMobileSession(); } catch { /* continue */ }
+    setIsSigningOut(false);
+    setIsLogoutSheetVisible(false);
     showToast({ title: 'Signed out', message: 'Your session has been closed.', tone: 'info' });
     router.replace(APP_ROUTES.auth.signIn);
   };
@@ -380,21 +384,17 @@ export default function Profile() {
         </Animated.ScrollView>
       </SafeAreaView>
 
-      <ActionSheet
+      <ConfirmModal
         visible={isLogoutSheetVisible}
+        icon="logout"
         title="Sign out?"
-        description="You can sign back in anytime to restore your saved content on this device."
-        actions={[
-          {
-            key: 'sign-out',
-            label: 'Sign out',
-            detail: 'Close your session on this device.',
-            icon: 'logout',
-            tone: 'destructive',
-            onPress: () => { void signOut(); },
-          },
-        ]}
-        onClose={() => setIsLogoutSheetVisible(false)}
+        body="You can sign back in anytime to restore your saved content on this device."
+        primaryLabel="Sign out"
+        primaryTone="danger"
+        secondaryLabel="Stay signed in"
+        loading={isSigningOut}
+        onPrimary={() => { void signOut(); }}
+        onDismiss={() => { if (!isSigningOut) setIsLogoutSheetVisible(false); }}
       />
     </View>
   );
