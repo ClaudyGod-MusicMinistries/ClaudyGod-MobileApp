@@ -122,7 +122,7 @@ export default function VideosScreen() {
 
   const liveSessions = useMemo(() => feed.live.filter((item) => item.isLive), [feed.live]);
 
-  const upNext = allQueue.filter((item) => item.id !== active?.id).slice(0, 5);
+  const upNext = allQueue.filter((item) => item.id !== active?.id && Boolean(item.mediaUrl)).slice(0, 5);
 
   const openItem = async (item: FeedCardItem, source: string) => {
     if (!item.mediaUrl) {

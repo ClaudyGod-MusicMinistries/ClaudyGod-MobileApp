@@ -24,7 +24,7 @@ export default function UploadScreen() {
   const { showToast } = useToast();
   const isAuthorized = useRequireMobileSession();
 
-  const { pickFromGallery, captureFromCamera } = useMediaPicker();
+  const { pickFromGallery, captureFromCamera, pickAudioFile } = useMediaPicker();
   const recorder = useAudioRecorderSession();
   const { upload, progress, status: uploadStatus } = useContentUpload();
 
