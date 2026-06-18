@@ -110,7 +110,8 @@ function RootLayoutInner() {
         secondSegment === 'help' ||
         secondSegment === 'Help' ||
         secondSegment === 'Rate' ||
-        secondSegment === 'Word');
+        secondSegment === 'Word' ||
+        secondSegment === 'Referral');
 
     const isProtectedRoute =
       firstSegment === 'profile' ||

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { emptyFeedBundle, fetchFeedBundle, type FeedBundle } from '../services/contentService';
 import { getGuestHistory } from '../lib/guestStorage';
+import { loadDevFeedItems } from '../lib/devSeed';
 import { useAuth } from '../context/AuthContext';
 
 export function useContentFeed() {
@@ -22,6 +23,17 @@ export function useContentFeed() {
         const guestHistory = await getGuestHistory();
         if (guestHistory.length > 0) {
           nextFeed.recent = guestHistory;
+        }
+      }
+
+      // In development, when the API returns no music content (S3 not set up yet),
+      // inject local asset tracks so the audio player can be tested immediately.
+      if (__DEV__ && nextFeed.music.length === 0) {
+        const devItems = await loadDevFeedItems();
+        if (devItems.length > 0) {
+          nextFeed.music = devItems;
+          if (nextFeed.recent.length === 0) nextFeed.recent = devItems;
+          if (nextFeed.mostPlayed.length === 0) nextFeed.mostPlayed = devItems;
         }
       }
 
