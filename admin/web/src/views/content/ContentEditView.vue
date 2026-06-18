@@ -105,13 +105,16 @@ const isNew = computed(() => route.name === 'content-new');
 const id = computed(() => isNew.value ? null : route.params.id as string);
 
 const SECTION_OPTIONS = [
-  { value: 'music',           label: 'Music' },
-  { value: 'audio',           label: 'Audio' },
+  { value: 'video',            label: 'Videos' },
+  { value: 'music',            label: 'Music' },
+  { value: 'audio',            label: 'Audio' },
+  { value: 'live',             label: 'Live' },
   { value: 'nuggets-of-truth', label: 'Nuggets of Truth' },
-  { value: 'teachings',       label: 'Teachings' },
-  { value: 'teens',           label: 'Teens' },
-  { value: 'speaks',          label: 'Speaks' },
-  { value: 'live',            label: 'Live' },
+  { value: 'teachings',        label: 'Teachings' },
+  { value: 'teens',            label: 'Teens' },
+  { value: 'speaks',           label: 'Speaks' },
+  { value: 'playlist',         label: 'Playlists' },
+  { value: 'announcement',     label: 'Announcements' },
 ];
 
 const form = ref({
