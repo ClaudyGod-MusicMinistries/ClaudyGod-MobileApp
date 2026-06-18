@@ -208,7 +208,7 @@ export default function ReferralScreen() {
         </SurfaceCard>
       ) : code ? (
         <SurfaceCard tone="strong" style={{ paddingHorizontal: 20, paddingBottom: 20 }}>
-          <CodeDisplay code={code} isCopied={isCopied} onCopy={() => void copyCode()} />
+          <CodeDisplay code={code} isCopied={isCopied} onCopy={copyCode} />
 
           <AppButton
             title="Share your invite link"

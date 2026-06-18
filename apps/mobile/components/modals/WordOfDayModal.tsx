@@ -57,7 +57,9 @@ function VerseBlock({ word, label, icon }: {
   icon: React.ComponentProps<typeof MaterialIcons>['name'];
 }) {
   const theme = useAppTheme();
-  const isDark = theme.scheme === 'dark';
+  const primary = theme.colors.primary;
+  const primaryFaint = 'rgba(139,92,246,0.12)';
+  const primaryLight = 'rgba(139,92,246,0.22)';
 
   return (
     <View style={{ gap: 10 }}>
@@ -66,14 +68,14 @@ function VerseBlock({ word, label, icon }: {
         <View
           style={{
             width: 28, height: 28, borderRadius: 8,
-            backgroundColor: 'rgba(139,92,246,0.12)',
-            borderWidth: 1, borderColor: 'rgba(139,92,246,0.22)',
+            backgroundColor: primaryFaint,
+            borderWidth: 1, borderColor: primaryLight,
             alignItems: 'center', justifyContent: 'center',
           }}
         >
-          <MaterialIcons name={icon} size={14} color="#8B5CF6" />
+          <MaterialIcons name={icon} size={14} color={primary} />
         </View>
-        <CustomText style={{ color: '#8B5CF6', fontSize: 10, fontWeight: '800', letterSpacing: 1.4, textTransform: 'uppercase' }}>
+        <CustomText style={{ color: primary, fontSize: 10, fontWeight: '800', letterSpacing: 1.4, textTransform: 'uppercase' }}>
           {label}
         </CustomText>
       </View>
@@ -81,7 +83,7 @@ function VerseBlock({ word, label, icon }: {
       {/* Title */}
       {word.title ? (
         <CustomText style={{
-          color: isDark ? '#F7F2FF' : '#1A1028',
+          color: theme.colors.text,
           fontSize: 17, fontWeight: '800', letterSpacing: -0.3, lineHeight: 23,
         }}>
           {word.title}
@@ -90,8 +92,8 @@ function VerseBlock({ word, label, icon }: {
 
       {/* Reference pill */}
       {word.passage ? (
-        <View style={{ alignSelf: 'flex-start', paddingVertical: 4, paddingHorizontal: 11, borderRadius: 20, backgroundColor: 'rgba(139,92,246,0.10)', borderWidth: 1, borderColor: 'rgba(139,92,246,0.22)' }}>
-          <CustomText style={{ color: '#8B5CF6', fontSize: 11.5, fontWeight: '700', letterSpacing: 0.3 }}>
+        <View style={{ alignSelf: 'flex-start', paddingVertical: 4, paddingHorizontal: 11, borderRadius: 20, backgroundColor: primaryFaint, borderWidth: 1, borderColor: primaryLight }}>
+          <CustomText style={{ color: primary, fontSize: 11.5, fontWeight: '700', letterSpacing: 0.3 }}>
             {word.passage}
           </CustomText>
         </View>
@@ -99,12 +101,12 @@ function VerseBlock({ word, label, icon }: {
 
       {/* Verse text */}
       {word.verse ? (
-        <View style={{ borderLeftWidth: 3, borderLeftColor: '#8B5CF6', paddingLeft: 12 }}>
+        <View style={{ borderLeftWidth: 3, borderLeftColor: primary, paddingLeft: 12 }}>
           <CustomText style={{
-            color: isDark ? 'rgba(247,242,255,0.90)' : '#2D1E4A',
+            color: theme.colors.text,
             fontSize: 14, lineHeight: 22, fontStyle: 'italic', fontWeight: '500',
           }}>
-            {'“'}{word.verse}{'”'}
+            {'”'}{word.verse}{'”'}
           </CustomText>
         </View>
       ) : null}
@@ -112,17 +114,17 @@ function VerseBlock({ word, label, icon }: {
       {/* Reflection */}
       {word.reflection ? (
         <View style={{
-          backgroundColor: isDark ? 'rgba(139,92,246,0.07)' : 'rgba(139,92,246,0.05)',
+          backgroundColor: primaryFaint,
           borderRadius: 12, padding: 12,
         }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 6 }}>
-            <MaterialIcons name="lightbulb-outline" size={12} color="#8B5CF6" />
-            <CustomText style={{ color: '#8B5CF6', fontSize: 9, fontWeight: '800', letterSpacing: 1.4, textTransform: 'uppercase' }}>
+            <MaterialIcons name=”lightbulb-outline” size={12} color={primary} />
+            <CustomText style={{ color: primary, fontSize: 9, fontWeight: '800', letterSpacing: 1.4, textTransform: 'uppercase' }}>
               Reflection
             </CustomText>
           </View>
           <CustomText style={{
-            color: isDark ? 'rgba(255,255,255,0.62)' : 'rgba(0,0,0,0.55)',
+            color: theme.colors.textSecondary,
             fontSize: 13, lineHeight: 20,
           }}>
             {word.reflection}
@@ -153,27 +155,29 @@ export function WordOfDayModal({
   onReadMore,
 }: WordOfDayModalProps) {
   const theme = useAppTheme();
-  const { width } = useWindowDimensions();
-  const isDark = theme.scheme === 'dark';
+  const { width, height } = useWindowDimensions();
 
   const backdropOpacity = useRef(new Animated.Value(0)).current;
   const cardScale = useRef(new Animated.Value(0.88)).current;
   const cardOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    let anim: Animated.CompositeAnimation;
     if (visible) {
-      Animated.parallel([
+      anim = Animated.parallel([
         Animated.timing(backdropOpacity, { toValue: 1, duration: 240, useNativeDriver: USE_NATIVE_DRIVER }),
         Animated.spring(cardScale, { toValue: 1, friction: 7, tension: 58, useNativeDriver: USE_NATIVE_DRIVER }),
         Animated.timing(cardOpacity, { toValue: 1, duration: 200, useNativeDriver: USE_NATIVE_DRIVER }),
-      ]).start();
+      ]);
     } else {
-      Animated.parallel([
+      cardScale.setValue(0.88);
+      anim = Animated.parallel([
         Animated.timing(backdropOpacity, { toValue: 0, duration: 180, useNativeDriver: USE_NATIVE_DRIVER }),
         Animated.timing(cardOpacity, { toValue: 0, duration: 140, useNativeDriver: USE_NATIVE_DRIVER }),
-      ]).start();
-      cardScale.setValue(0.88);
+      ]);
     }
+    anim.start();
+    return () => anim.stop();
   }, [visible, backdropOpacity, cardOpacity, cardScale]);
 
   const handleReadMore = useCallback(() => {
@@ -206,12 +210,13 @@ export function WordOfDayModal({
         <Animated.View
           style={{
             width: cardWidth,
+            maxHeight: height * 0.85,
             opacity: cardOpacity,
             transform: [{ scale: cardScale }],
-            backgroundColor: isDark ? '#110E1E' : '#FFFFFF',
+            backgroundColor: theme.colors.surface,
             borderRadius: 28,
             borderWidth: 1,
-            borderColor: 'rgba(139,92,246,0.22)',
+            borderColor: theme.colors.border,
             overflow: 'hidden',
             shadowColor: '#000',
             shadowOffset: { width: 0, height: 20 },
@@ -221,7 +226,7 @@ export function WordOfDayModal({
           }}
         >
           {/* Top accent bar */}
-          <View style={{ height: 4, backgroundColor: '#8B5CF6' }} />
+          <View style={{ height: 4, backgroundColor: theme.colors.primary }} />
 
           <ScrollView
             bounces={false}
@@ -237,12 +242,12 @@ export function WordOfDayModal({
                 alignItems: 'center', justifyContent: 'center',
                 marginBottom: 8,
               }}>
-                <MaterialIcons name="auto-stories" size={22} color="#8B5CF6" />
+                <MaterialIcons name="auto-stories" size={22} color={theme.colors.primary} />
               </View>
-              <CustomText style={{ color: '#8B5CF6', fontSize: 10, fontWeight: '800', letterSpacing: 2, textTransform: 'uppercase' }}>
+              <CustomText style={{ color: theme.colors.primary, fontSize: 10, fontWeight: '800', letterSpacing: 2, textTransform: 'uppercase' }}>
                 Word for Today
               </CustomText>
-              <CustomText style={{ color: isDark ? 'rgba(255,255,255,0.36)' : 'rgba(0,0,0,0.38)', fontSize: 12 }}>
+              <CustomText style={{ color: theme.colors.textMuted, fontSize: 12 }}>
                 {formatDate()}
               </CustomText>
             </View>
@@ -259,11 +264,11 @@ export function WordOfDayModal({
             {/* Divider only when both sources present */}
             {hasBoth ? (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <View style={{ flex: 1, height: 1, backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)' }} />
-                <CustomText style={{ color: isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.28)', fontSize: 9.5, letterSpacing: 0.8, textTransform: 'uppercase' }}>
+                <View style={{ flex: 1, height: 1, backgroundColor: theme.colors.border }} />
+                <CustomText style={{ color: theme.colors.textMuted, fontSize: 9.5, letterSpacing: 0.8, textTransform: 'uppercase' }}>
                   Today's Message
                 </CustomText>
-                <View style={{ flex: 1, height: 1, backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)' }} />
+                <View style={{ flex: 1, height: 1, backgroundColor: theme.colors.border }} />
               </View>
             ) : null}
 
@@ -283,16 +288,16 @@ export function WordOfDayModal({
                 showFocusBorder={false}
                 style={{
                   height: 52, borderRadius: 14,
-                  backgroundColor: '#8B5CF6',
+                  backgroundColor: theme.colors.primary,
                   alignItems: 'center', justifyContent: 'center',
                   flexDirection: 'row', gap: 8,
-                  shadowColor: '#8B5CF6',
+                  shadowColor: theme.colors.primary,
                   shadowOffset: { width: 0, height: 4 },
                   shadowOpacity: 0.28, shadowRadius: 10, elevation: 6,
                 }}
               >
-                <MaterialIcons name="menu-book" size={18} color="#FFFFFF" />
-                <CustomText style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '700' }}>
+                <MaterialIcons name="menu-book" size={18} color={theme.colors.textInverse} />
+                <CustomText style={{ color: theme.colors.textInverse, fontSize: 15, fontWeight: '700' }}>
                   Meditate on this
                 </CustomText>
               </TVTouchable>
@@ -303,11 +308,11 @@ export function WordOfDayModal({
                 style={{
                   height: 46, borderRadius: 14,
                   borderWidth: 1,
-                  borderColor: isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.10)',
+                  borderColor: theme.colors.border,
                   alignItems: 'center', justifyContent: 'center',
                 }}
               >
-                <CustomText style={{ color: isDark ? 'rgba(255,255,255,0.42)' : 'rgba(0,0,0,0.42)', fontSize: 14, fontWeight: '600' }}>
+                <CustomText style={{ color: theme.colors.textMuted, fontSize: 14, fontWeight: '600' }}>
                   Read later
                 </CustomText>
               </TVTouchable>

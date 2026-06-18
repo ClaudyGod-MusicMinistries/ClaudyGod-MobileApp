@@ -197,11 +197,21 @@ async function confirmDelete(row: Record<string, unknown>): Promise<void> {
 }
 
 async function bulkAction(status: string): Promise<void> {
+  const count = selectedIds.value.length;
   bulkLoading.value = true;
-  await store.bulkAction(selectedIds.value, { status: status as 'draft' | 'published' });
-  selectedIds.value = [];
-  bulkLoading.value = false;
-  ui.addToast({ tone: 'success', title: `${status === 'published' ? 'Published' : 'Unpublished'} ${selectedIds.value.length} items` });
+  try {
+    await store.bulkAction(selectedIds.value, { status: status as 'draft' | 'published' });
+    selectedIds.value = [];
+    ui.addToast({ tone: 'success', title: `${status === 'published' ? 'Published' : 'Unpublished'} ${count} item${count !== 1 ? 's' : ''}` });
+  } catch (e) {
+    ui.addToast({
+      tone: 'error',
+      title: 'Bulk action failed',
+      message: e instanceof Error ? e.message : 'Please try again',
+    });
+  } finally {
+    bulkLoading.value = false;
+  }
 }
 
 async function bulkDelete(): Promise<void> {

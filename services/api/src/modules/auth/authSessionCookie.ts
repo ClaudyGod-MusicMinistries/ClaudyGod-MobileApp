@@ -87,7 +87,7 @@ export const applyAuthSessionCookie = (response: Response, accessToken: string):
     serializeCookie(getAuthSessionCookieName(), accessToken, {
       httpOnly: true,
       secure: env.NODE_ENV === 'production',
-      sameSite: 'Lax',
+      sameSite: 'Strict',
       path: '/',
     }),
   );
@@ -99,7 +99,7 @@ export const applyAuthRefreshCookie = (response: Response, refreshToken: string)
     serializeCookie(getAuthRefreshCookieName(), refreshToken, {
       httpOnly: true,
       secure: env.NODE_ENV === 'production',
-      sameSite: 'Lax',
+      sameSite: 'Strict',
       path: '/',
       maxAge: env.JWT_REFRESH_TTL_DAYS * 24 * 60 * 60,
     }),
@@ -122,7 +122,7 @@ export const clearAuthSessionCookie = (response: Response): void => {
     serializeCookie(getAuthSessionCookieName(), '', {
       httpOnly: true,
       secure: env.NODE_ENV === 'production',
-      sameSite: 'Lax',
+      sameSite: 'Strict',
       path: '/',
       maxAge: 0,
     }),
@@ -132,7 +132,7 @@ export const clearAuthSessionCookie = (response: Response): void => {
     serializeCookie(getAuthRefreshCookieName(), '', {
       httpOnly: true,
       secure: env.NODE_ENV === 'production',
-      sameSite: 'Lax',
+      sameSite: 'Strict',
       path: '/',
       maxAge: 0,
     }),

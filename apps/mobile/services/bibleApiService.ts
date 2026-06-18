@@ -90,8 +90,9 @@ function getDayOfYear(date: Date): number {
 }
 
 export function getTodaysPlan(date = new Date()): DailyPlanEntry {
+  if (DAILY_PLAN.length === 0) throw new Error('DAILY_PLAN is empty');
   const index = getDayOfYear(date) % DAILY_PLAN.length;
-  return DAILY_PLAN[index] ?? DAILY_PLAN[0]!;
+  return DAILY_PLAN[index] ?? DAILY_PLAN[0] as DailyPlanEntry;
 }
 
 // ─── Cache ───────────────────────────────────────────────────────────────────
@@ -136,13 +137,24 @@ interface BibleApiResponse {
   verses: { book_name: string; chapter: number; verse: number; text: string }[];
 }
 
+const FETCH_TIMEOUT_MS = 15_000;
+
 async function fetchVerseFromApi(ref: string): Promise<string> {
   const encoded = encodeURIComponent(ref);
   const url = `${BIBLE_API_BASE}/${encoded}?translation=${TRANSLATION}`;
-  const res = await fetch(url, { headers: { Accept: "application/json" } });
-  if (!res.ok) throw new Error(`bible-api.com returned ${res.status}`);
-  const json = (await res.json()) as BibleApiResponse;
-  return json.text.trim();
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, {
+      headers: { Accept: "application/json" },
+      signal: controller.signal,
+    });
+    if (!res.ok) throw new Error(`bible-api.com returned ${res.status}`);
+    const json = (await res.json()) as BibleApiResponse;
+    return json.text.trim();
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 // ─── Public API ──────────────────────────────────────────────────────────────

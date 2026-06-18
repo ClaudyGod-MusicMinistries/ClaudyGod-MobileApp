@@ -176,10 +176,19 @@ const visibilityOptions = [
 ];
 
 async function onSave(overrideStatus?: string): Promise<void> {
+  if (!form.value.title?.trim()) {
+    ui.addToast({ tone: 'error', title: 'Title is required' });
+    return;
+  }
+  if (!form.value.type) {
+    ui.addToast({ tone: 'error', title: 'Content type is required' });
+    return;
+  }
+
   const tags = form.value.tags.split(',').map((t) => t.trim()).filter(Boolean);
   const status = (overrideStatus ?? form.value.status) as 'draft' | 'published';
   const base = {
-    title: form.value.title,
+    title: form.value.title.trim(),
     description: form.value.description,
     type: form.value.type as ContentCreateInput['type'],
     visibility: form.value.visibility,
@@ -190,14 +199,23 @@ async function onSave(overrideStatus?: string): Promise<void> {
     tags,
     status,
   };
-  if (id.value) {
-    const input: ContentUpdateInput = { ...base, id: id.value };
-    await store.save(input);
-  } else {
-    const input: ContentCreateInput = base;
-    await store.save(input);
+
+  try {
+    if (id.value) {
+      const input: ContentUpdateInput = { ...base, id: id.value };
+      await store.save(input);
+    } else {
+      const input: ContentCreateInput = base;
+      await store.save(input);
+    }
+    ui.addToast({ tone: 'success', title: isNew.value ? 'Content created' : 'Content saved' });
+    void router.push('/content');
+  } catch (e) {
+    ui.addToast({
+      tone: 'error',
+      title: 'Save failed',
+      message: e instanceof Error ? e.message : 'An unexpected error occurred',
+    });
   }
-  ui.addToast({ tone: 'success', title: isNew.value ? 'Content created' : 'Content saved' });
-  void router.push('/content');
 }
 </script>

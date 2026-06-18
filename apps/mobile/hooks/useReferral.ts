@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Share } from 'react-native';
+import Clipboard from '@react-native-clipboard/clipboard';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../context/AuthContext';
+import { apiFetch } from '../services/apiClient';
 
 const STORAGE_KEY_CODE = 'claudygod.referral.code';
 const STORAGE_KEY_COUNT = 'claudygod.referral.count';
 const SHARE_BASE_URL = 'https://claudygod.com/join';
 
-/** Deterministic 6-char code derived from user ID (uppercase alphanumeric). */
 function deriveCodeFromUserId(userId: string): string {
   const clean = userId.replace(/-/g, '').toUpperCase();
   return `CG${clean.slice(0, 6)}`;
@@ -19,8 +20,17 @@ export interface ReferralState {
   shareUrl: string | null;
   isLoading: boolean;
   share: () => Promise<void>;
-  copyCode: () => Promise<void>;
+  copyCode: () => void;
   isCopied: boolean;
+}
+
+async function fetchReferralCount(): Promise<number> {
+  try {
+    const res = await apiFetch<{ count: number }>('/v1/mobile/referral-count');
+    return res.count ?? 0;
+  } catch {
+    return 0;
+  }
 }
 
 export function useReferral(): ReferralState {
@@ -42,7 +52,6 @@ export function useReferral(): ReferralState {
           return;
         }
 
-        // Derive code from user ID and persist so it's consistent
         const stored = await AsyncStorage.getItem(STORAGE_KEY_CODE);
         const derived = deriveCodeFromUserId(user.id);
         const resolved = stored ?? derived;
@@ -51,14 +60,26 @@ export function useReferral(): ReferralState {
           await AsyncStorage.setItem(STORAGE_KEY_CODE, resolved);
         }
 
-        const countRaw = await AsyncStorage.getItem(STORAGE_KEY_COUNT);
+        // Fetch live count from backend, fall back to cached count
+        const [liveCount, cachedRaw] = await Promise.allSettled([
+          fetchReferralCount(),
+          AsyncStorage.getItem(STORAGE_KEY_COUNT),
+        ]);
+
+        let count = 0;
+        if (liveCount.status === 'fulfilled') {
+          count = liveCount.value;
+          await AsyncStorage.setItem(STORAGE_KEY_COUNT, String(count));
+        } else if (cachedRaw.status === 'fulfilled' && cachedRaw.value) {
+          count = parseInt(cachedRaw.value, 10) || 0;
+        }
 
         if (active) {
           setCode(resolved);
-          setReferralCount(countRaw ? parseInt(countRaw, 10) : 0);
+          setReferralCount(count);
         }
       } catch {
-        // graceful — referral not critical
+        // referral not critical — silent
       } finally {
         if (active) setIsLoading(false);
       }
@@ -84,16 +105,11 @@ export function useReferral(): ReferralState {
     }
   }, [code, shareUrl]);
 
-  const copyCode = useCallback(async () => {
+  const copyCode = useCallback(() => {
     if (!code) return;
-    // Trigger the native share sheet with just the code as a quick "copy" path
-    try {
-      await Share.share({ message: code, title: 'Your ClaudyGod referral code' });
-      setIsCopied(true);
-      setTimeout(() => setIsCopied(false), 2000);
-    } catch {
-      // user cancelled — silent
-    }
+    Clipboard.setString(code);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
   }, [code]);
 
   return { code, referralCount, shareUrl, isLoading, share, copyCode, isCopied };

@@ -5,6 +5,7 @@ import type { JwtClaims } from '../../utils/jwt';
 import { hasMinRole } from '../../middleware/rbac';
 import { validateSchema } from '../../lib/validation';
 import { authenticate } from '../../middleware/authenticate';
+import { contentRequestLimiter } from '../../middleware/rateLimiter';
 import {
   assignContentSectionsSchema,
   contentIdParamsSchema,
@@ -103,6 +104,7 @@ contentRouter.get(
 contentRouter.post(
   '/requests',
   authenticate,
+  contentRequestLimiter,
   asyncHandler(async (req, res) => {
     if (!req.user) {
       throw new UnauthorizedError('Unauthorized', 'AUTH_REQUIRED');

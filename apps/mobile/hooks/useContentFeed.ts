@@ -26,9 +26,11 @@ export function useContentFeed() {
         }
       }
 
-      // In development, when the API returns no music content (S3 not set up yet),
-      // inject local asset tracks so the audio player can be tested immediately.
+      // DEV-ONLY: inject local test tracks when S3 is not yet configured.
+      // Tracks have a [DEV] prefix to make them visually distinct from real content.
+      // __DEV__ is always false in production release builds — this block is dead code there.
       if (__DEV__ && nextFeed.music.length === 0) {
+        console.warn('[DEV] No music from API — injecting local dev seed tracks for player testing');
         const devItems = await loadDevFeedItems();
         if (devItems.length > 0) {
           nextFeed.music = devItems;
