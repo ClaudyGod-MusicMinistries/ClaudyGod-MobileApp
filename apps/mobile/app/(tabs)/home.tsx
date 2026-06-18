@@ -179,7 +179,7 @@ export default function HomeScreen() {
   const { isAuthenticated, user } = useAuth();
   const { feed, loading, refresh } = useContentFeed();
   const { config } = useMobileAppConfig();
-  const { word } = useWordOfDay();
+  const { bibleVerse, adminWord } = useWordOfDay();
   const compact = width < 430;
 
   const featured = useMemo(
@@ -433,9 +433,14 @@ export default function HomeScreen() {
         </View>
       ) : null}
 
-      {/* Word of day */}
-      {word ? (
-        <WordOfDayCard word={word} onPress={() => router.push(APP_ROUTES.settingsPages.word)} />
+      {/* Daily scripture from Bible API */}
+      {bibleVerse ? (
+        <WordOfDayCard word={bibleVerse} onPress={() => router.push(APP_ROUTES.settingsPages.word)} />
+      ) : null}
+
+      {/* Admin-authored word — shown as a separate card when configured */}
+      {adminWord ? (
+        <WordOfDayCard word={adminWord} onPress={() => router.push(APP_ROUTES.settingsPages.word)} />
       ) : null}
 
       {/* Guest sign-in prompt */}
