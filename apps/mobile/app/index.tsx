@@ -15,7 +15,7 @@ import { AppButton } from '../components/ui/AppButton';
 import { CustomText } from '../components/CustomText';
 import { TVTouchable } from '../components/ui/TVTouchable';
 import { APP_ROUTES } from '../util/appRoutes';
-import { BRAND_LOGO_ASSET, BRAND_WORSHIP_ASSET } from '../util/brandAssets';
+import { BRAND_WORSHIP_ASSET } from '../util/brandAssets';
 import { useDeviceClass } from '../util/deviceClassConfig';
 
 export default function LandingScreen() {
@@ -25,7 +25,6 @@ export default function LandingScreen() {
   const isPhone = device.isPhone && !Platform.isTV;
   const compact = height < 680;
 
-  const logoSize = isPhone ? 48 : device.isTV ? 84 : 60;
   const titleSize = isPhone ? (compact ? 30 : 36) : device.isTV ? 52 : 42;
   const gutter = isPhone ? 24 : device.isTV ? 64 : 52;
   const maxWidth = isPhone
@@ -57,26 +56,6 @@ export default function LandingScreen() {
 
       <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom', 'left', 'right']}>
         <View style={{ flex: 1, paddingHorizontal: gutter }}>
-
-          {/* ── Logo — top left ───────────────────────────────────────────── */}
-          <View style={{ paddingTop: compact ? 8 : 16 }}>
-            <View
-              style={{
-                width: logoSize,
-                height: logoSize,
-                borderRadius: Math.round(logoSize * 0.22),
-                overflow: 'hidden',
-                backgroundColor: '#18132A',
-              }}
-            >
-              {/* Explicit px size (not 100%) — fixes web image in overflow container */}
-              <Image
-                source={BRAND_LOGO_ASSET}
-                style={{ width: logoSize, height: logoSize }}
-                resizeMode="cover"
-              />
-            </View>
-          </View>
 
           <View style={{ flex: 1 }} />
 
