@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
+  Animated,
   Image,
   Platform,
   StyleSheet,
@@ -18,6 +19,55 @@ import { APP_ROUTES } from '../util/appRoutes';
 import { BRAND_WORSHIP_ASSET } from '../util/brandAssets';
 import { useDeviceClass } from '../util/deviceClassConfig';
 
+// Features available to every guest — no account needed
+const FREE_FEATURES = [
+  { icon: 'music-note' as const,     label: 'Music'  },
+  { icon: 'play-circle-outline' as const, label: 'Videos' },
+  { icon: 'live-tv' as const,        label: 'Live'   },
+  { icon: 'menu-book' as const,      label: 'Word'   },
+] as const;
+
+// Features unlocked after account creation
+const ACCOUNT_PERKS = [
+  { icon: 'favorite-border' as const, label: 'Save favorites' },
+  { icon: 'sync' as const,            label: 'Sync library'   },
+  { icon: 'download' as const,        label: 'Downloads'      },
+] as const;
+
+function FreeChip({ icon, label }: { icon: React.ComponentProps<typeof MaterialIcons>['name']; label: string }) {
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 5,
+        paddingVertical: 5,
+        paddingHorizontal: 10,
+        borderRadius: 20,
+        backgroundColor: 'rgba(139,92,246,0.14)',
+        borderWidth: 1,
+        borderColor: 'rgba(139,92,246,0.30)',
+      }}
+    >
+      <MaterialIcons name={icon} size={13} color="#C4B5FD" />
+      <CustomText style={{ color: '#C4B5FD', fontSize: 11.5, fontWeight: '600', letterSpacing: 0.2 }}>
+        {label}
+      </CustomText>
+    </View>
+  );
+}
+
+function PerkRow({ icon, label }: { icon: React.ComponentProps<typeof MaterialIcons>['name']; label: string }) {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+      <MaterialIcons name={icon} size={12} color="rgba(255,255,255,0.40)" />
+      <CustomText style={{ color: 'rgba(255,255,255,0.40)', fontSize: 11.5, fontWeight: '500' }}>
+        {label}
+      </CustomText>
+    </View>
+  );
+}
+
 export default function LandingScreen() {
   const router = useRouter();
   const device = useDeviceClass();
@@ -25,32 +75,41 @@ export default function LandingScreen() {
   const isPhone = device.isPhone && !Platform.isTV;
   const compact = height < 680;
 
-  const titleSize = isPhone ? (compact ? 30 : 36) : device.isTV ? 52 : 42;
+  const titleSize = isPhone ? (compact ? 28 : 34) : device.isTV ? 52 : 42;
   const gutter = isPhone ? 24 : device.isTV ? 64 : 52;
   const maxWidth = isPhone
     ? Math.min(width - gutter * 2, 390)
     : Math.min(500, width - gutter * 2);
 
+  // Fade-in animation for content block
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(20)).current;
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 1, duration: 600, delay: 200, useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: 0, duration: 500, delay: 200, useNativeDriver: true }),
+    ]).start();
+  }, [fadeAnim, slideAnim]);
+
   return (
-    // Explicit w/h (not flex:1) guarantees correct full-viewport sizing on web
     <View style={{ width, height, backgroundColor: '#07050C' }}>
 
-      {/* Full-bleed background — explicit pixel dimensions fix web image fill */}
+      {/* Full-bleed background */}
       <Image
         source={BRAND_WORSHIP_ASSET}
         style={{ position: 'absolute', top: 0, left: 0, width, height }}
         resizeMode="cover"
       />
 
-      {/* Scrim: image visible at top, fades to solid brand-dark at bottom */}
+      {/* Scrim: readable text at bottom */}
       <LinearGradient
         colors={[
-          'rgba(7,5,12,0.08)',
-          'rgba(7,5,12,0.40)',
-          'rgba(7,5,12,0.82)',
+          'rgba(7,5,12,0.05)',
+          'rgba(7,5,12,0.35)',
+          'rgba(7,5,12,0.78)',
           'rgba(7,5,12,0.97)',
         ]}
-        locations={[0, 0.38, 0.68, 1]}
+        locations={[0, 0.32, 0.60, 1]}
         style={StyleSheet.absoluteFillObject}
       />
 
@@ -60,12 +119,14 @@ export default function LandingScreen() {
           <View style={{ flex: 1 }} />
 
           {/* ── Bottom content block ─────────────────────────────────────── */}
-          <View
+          <Animated.View
             style={{
               width: '100%',
               maxWidth,
               alignSelf: isPhone ? 'center' : 'flex-start',
               paddingBottom: compact ? 20 : 36,
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
             }}
           >
             {/* Headline */}
@@ -79,7 +140,7 @@ export default function LandingScreen() {
                 fontWeight: '700',
                 letterSpacing: -0.6,
                 textAlign: isPhone ? 'center' : 'left',
-                marginBottom: isPhone ? 10 : 14,
+                marginBottom: 8,
               }}
             >
               {'Worship\nwithout limits.'}
@@ -90,55 +151,121 @@ export default function LandingScreen() {
               variant="body"
               numberOfLines={2}
               style={{
-                color: 'rgba(255,255,255,0.55)',
+                color: 'rgba(255,255,255,0.50)',
                 fontSize: isPhone ? 13 : 15,
                 lineHeight: isPhone ? 20 : 24,
                 fontWeight: '400',
                 textAlign: isPhone ? 'center' : 'left',
-                marginBottom: compact ? 28 : 36,
+                marginBottom: 18,
               }}
             >
-              {'Music, videos & live sessions from ClaudyGod\n— whenever, wherever.'}
+              {'Music, videos & live sessions from ClaudyGod.'}
             </CustomText>
 
-            {/* CTA buttons */}
-            <AppButton
-              title="Create account"
-              size="lg"
-              fullWidth
-              onPress={() => router.push(APP_ROUTES.auth.signUp)}
-              leftIcon={<MaterialIcons name="person-add" size={18} color="#FFFFFF" />}
-              style={{ marginBottom: 10 }}
-            />
-            <AppButton
-              title="Sign in"
-              variant="outline"
-              size="lg"
-              fullWidth
-              onPress={() => router.push(APP_ROUTES.auth.signIn)}
-              leftIcon={<MaterialIcons name="login" size={18} color="#8B5CF6" />}
-            />
-
-            {/* Ghost continue link */}
-            <TVTouchable
-              onPress={() => router.replace(APP_ROUTES.tabs.home)}
-              style={{ alignItems: 'center', paddingVertical: 16 }}
-              showFocusBorder={false}
+            {/* FREE features chips */}
+            <View
+              style={{
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                gap: 7,
+                justifyContent: isPhone ? 'center' : 'flex-start',
+                marginBottom: compact ? 20 : 26,
+              }}
             >
-              <CustomText
-                variant="caption"
-                numberOfLines={1}
+              {FREE_FEATURES.map((f) => (
+                <FreeChip key={f.label} icon={f.icon} label={f.label} />
+              ))}
+              <View
                 style={{
-                  color: 'rgba(255,255,255,0.32)',
-                  fontSize: 12,
-                  fontWeight: '400',
-                  letterSpacing: 0.3,
+                  paddingVertical: 5,
+                  paddingHorizontal: 10,
+                  borderRadius: 20,
+                  backgroundColor: 'rgba(52,211,153,0.10)',
+                  borderWidth: 1,
+                  borderColor: 'rgba(52,211,153,0.22)',
                 }}
               >
-                Continue without account
+                <CustomText style={{ color: '#6EE7B7', fontSize: 10.5, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase' }}>
+                  All FREE
+                </CustomText>
+              </View>
+            </View>
+
+            {/* PRIMARY CTA — Explore without account (retention-first) */}
+            <TVTouchable
+              onPress={() => router.replace(APP_ROUTES.tabs.home)}
+              showFocusBorder={false}
+              style={{
+                width: '100%',
+                height: 56,
+                borderRadius: 16,
+                backgroundColor: '#8B5CF6',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexDirection: 'row',
+                gap: 10,
+                marginBottom: 10,
+                shadowColor: '#8B5CF6',
+                shadowOffset: { width: 0, height: 6 },
+                shadowOpacity: 0.38,
+                shadowRadius: 14,
+                elevation: 10,
+              }}
+            >
+              <MaterialIcons name="explore" size={20} color="#FFFFFF" />
+              <CustomText style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700', letterSpacing: -0.2 }}>
+                Start exploring — it's free
               </CustomText>
             </TVTouchable>
-          </View>
+
+            {/* Perks teaser — what you unlock with account */}
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: isPhone ? 'center' : 'flex-start',
+                gap: 12,
+                marginBottom: compact ? 16 : 22,
+                paddingHorizontal: 4,
+              }}
+            >
+              {ACCOUNT_PERKS.map((p, idx) => (
+                <React.Fragment key={p.label}>
+                  {idx > 0 && (
+                    <View style={{ width: 1, height: 10, backgroundColor: 'rgba(255,255,255,0.14)' }} />
+                  )}
+                  <PerkRow icon={p.icon} label={p.label} />
+                </React.Fragment>
+              ))}
+            </View>
+
+            {/* Divider */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: compact ? 12 : 16 }}>
+              <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.08)' }} />
+              <CustomText style={{ color: 'rgba(255,255,255,0.28)', fontSize: 10.5, letterSpacing: 0.5 }}>
+                UNLOCK ALL FEATURES
+              </CustomText>
+              <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.08)' }} />
+            </View>
+
+            {/* Auth buttons */}
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <AppButton
+                title="Create account"
+                size="md"
+                onPress={() => router.push(APP_ROUTES.auth.signUp)}
+                style={{ flex: 1 }}
+              />
+              <AppButton
+                title="Sign in"
+                variant="outline"
+                size="md"
+                onPress={() => router.push(APP_ROUTES.auth.signIn)}
+                style={{ flex: 1 }}
+              />
+            </View>
+
+          </Animated.View>
 
         </View>
       </SafeAreaView>
