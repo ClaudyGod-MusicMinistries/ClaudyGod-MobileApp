@@ -56,7 +56,7 @@ function RootLayoutInner() {
   const segmentKey = useMemo(() => Array.from(segments).join('/'), [segments]);
 
   useEffect(() => {
-    const timer = setTimeout(() => setBootDelayDone(true), 650);
+    const timer = setTimeout(() => setBootDelayDone(true), 1500);
 
     return () => clearTimeout(timer);
   }, []);
