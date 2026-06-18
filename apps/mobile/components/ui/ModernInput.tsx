@@ -10,12 +10,15 @@ import {
   TextInput,
   StyleSheet,
   Animated,
+  Platform,
   type StyleProp,
   type ViewStyle,
   TextInputProps as RNTextInputProps,
 } from 'react-native';
 import { useAppTheme } from '../../util/colorScheme';
 import { CustomText } from '../CustomText';
+
+const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
 interface ModernInputProps extends RNTextInputProps {
   label?: string;
@@ -47,7 +50,7 @@ export const ModernInput: React.FC<ModernInputProps> = ({
       }),
       Animated.spring(scaleAnim, {
         toValue: 1.02,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
     ]).start();
   };
@@ -62,7 +65,7 @@ export const ModernInput: React.FC<ModernInputProps> = ({
         }),
         Animated.spring(scaleAnim, {
           toValue: 1,
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
       ]).start();
     }
@@ -124,6 +127,7 @@ export const ModernInput: React.FC<ModernInputProps> = ({
             {
               color: theme.colors.text,
               paddingLeft: icon ? 12 : 0,
+              fontFamily: 'PlusJakartaSans_400Regular',
             },
           ]}
           placeholderTextColor={theme.colors.textSecondary}

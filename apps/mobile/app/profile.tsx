@@ -1,134 +1,148 @@
-import React, { useEffect, useState } from 'react';
-import { Image, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  Animated,
+  Platform,
+  View,
+  StatusBar,
+} from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
-
-import { SettingsScaffold } from '../components/layout/SettingsScaffold';
 import { CustomText } from '../components/CustomText';
-import { useAppTheme } from '../util/colorScheme';
 import { useDeviceClass } from '../util/deviceClassConfig';
-import { SurfaceCard } from '../components/ui/SurfaceCard';
 import { FadeIn } from '../components/ui/FadeIn';
 import { TVTouchable } from '../components/ui/TVTouchable';
-import { AppButton } from '../components/ui/AppButton';
 import { ActionSheet } from '../components/ui/ActionSheet';
 import { fetchUserProfileMetrics } from '../services/supabaseAnalytics';
 import { clearMobileSession } from '../services/authService';
 import { useRequireMobileSession } from '../hooks/useRequireMobileSession';
 import { APP_ROUTES } from '../util/appRoutes';
 import { useToast } from '../context/ToastContext';
-import { BRAND_LOGO_ASSET } from '../util/brandAssets';
+
+const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
 const NAV_GROUPS = [
   {
     title: 'Your space',
     items: [
-      { icon: 'library-music' as const, label: 'Library', hint: 'Saved songs, videos, and playlists',      href: APP_ROUTES.tabs.library, color: '#8B5CF6' },
-      { icon: 'graphic-eq'    as const, label: 'Music',   hint: 'Open the audio player and worship queue', href: APP_ROUTES.tabs.player,  color: '#A78BFA' },
-      { icon: 'smart-display' as const, label: 'Videos',  hint: 'Watch sessions and ministry replays',     href: APP_ROUTES.tabs.videos,  color: '#60A5FA' },
-      { icon: 'live-tv'       as const, label: 'Live',    hint: 'Tune in to live ministry sessions',       href: APP_ROUTES.tabs.live,    color: '#EF4444' },
+      { icon: 'library-music' as const, label: 'Library',          hint: 'Saved songs, videos, and playlists',      href: APP_ROUTES.tabs.library,         color: '#8B5CF6' },
+      { icon: 'graphic-eq'    as const, label: 'Music',            hint: 'Open the audio player and worship queue', href: APP_ROUTES.tabs.player,           color: '#A78BFA' },
+      { icon: 'smart-display' as const, label: 'Videos',           hint: 'Watch sessions and ministry replays',     href: APP_ROUTES.tabs.videos,           color: '#60A5FA' },
+      { icon: 'live-tv'       as const, label: 'Live',             hint: 'Tune in to live ministry sessions',       href: APP_ROUTES.tabs.live,             color: '#EF4444' },
     ],
   },
   {
-    title: 'Account care',
+    title: 'Account',
     items: [
-      { icon: 'settings'      as const, label: 'Settings',         hint: 'Playback, appearance, and alerts',     href: APP_ROUTES.tabs.settings,            color: '#8B5CF6' },
-      { icon: 'privacy-tip'   as const, label: 'Privacy',          hint: 'Review privacy and security controls', href: APP_ROUTES.settingsPages.privacy,     color: '#34D399' },
-      { icon: 'verified-user' as const, label: 'Account security', hint: 'Email, password, and secure access',   href: APP_ROUTES.accountSecurity,           color: '#FBBF24' },
-      { icon: 'help-outline'  as const, label: 'Help',             hint: 'Get support when you need it',         href: APP_ROUTES.settingsPages.help,        color: '#60A5FA' },
+      { icon: 'settings'      as const, label: 'Settings',         hint: 'Playback, appearance, and alerts',        href: APP_ROUTES.tabs.settings,        color: '#8B5CF6' },
+      { icon: 'privacy-tip'   as const, label: 'Privacy',          hint: 'Privacy and security controls',           href: APP_ROUTES.settingsPages.privacy, color: '#34D399' },
+      { icon: 'verified-user' as const, label: 'Account security', hint: 'Email, password, and secure access',      href: APP_ROUTES.accountSecurity,       color: '#FBBF24' },
+      { icon: 'help-outline'  as const, label: 'Help',             hint: 'Get support when you need it',            href: APP_ROUTES.settingsPages.help,    color: '#60A5FA' },
     ],
   },
 ];
 
-function NavRow({
-  item,
-  isFirst,
-}: {
-  item: (typeof NAV_GROUPS)[0]['items'][0];
-  isFirst: boolean;
-}) {
-  const theme = useAppTheme();
+function NavSection({ group }: { group: (typeof NAV_GROUPS)[0] }) {
   const router = useRouter();
   return (
-    <TVTouchable
-      onPress={() => router.push(item.href as never)}
-      style={{
-        flexDirection: 'row', alignItems: 'center', gap: 12,
-        paddingVertical: 13,
-        borderTopWidth: isFirst ? 0 : 1,
-        borderTopColor: theme.colors.border,
-      }}
-      showFocusBorder={false}
-    >
-      <View
+    <View>
+      <CustomText
         style={{
-          width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center',
-          backgroundColor: `${item.color}18`,
+          color: 'rgba(247,242,255,0.35)',
+          fontSize: 11,
+          fontWeight: '700',
+          textTransform: 'uppercase',
+          letterSpacing: 1.2,
+          marginBottom: 8,
+          paddingHorizontal: 4,
         }}
       >
-        <MaterialIcons name={item.icon} size={19} color={item.color} />
+        {group.title}
+      </CustomText>
+      <View style={{ borderRadius: 16, backgroundColor: '#110E1A', overflow: 'hidden' }}>
+        {group.items.map((item, index) => (
+          <TVTouchable
+            key={item.label}
+            onPress={() => router.push(item.href as never)}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 14,
+              paddingVertical: 13,
+              paddingHorizontal: 16,
+              borderTopWidth: index === 0 ? 0 : 1,
+              borderTopColor: 'rgba(255,255,255,0.07)',
+            }}
+            showFocusBorder={false}
+          >
+            <View
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 10,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: `${item.color}18`,
+              }}
+            >
+              <MaterialIcons name={item.icon} size={18} color={item.color} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <CustomText style={{ color: '#F7F2FF', fontSize: 14, fontWeight: '600' }}>
+                {item.label}
+              </CustomText>
+              <CustomText
+                style={{ color: 'rgba(247,242,255,0.40)', fontSize: 12, marginTop: 2 }}
+                numberOfLines={1}
+              >
+                {item.hint}
+              </CustomText>
+            </View>
+            <MaterialIcons name="chevron-right" size={20} color="rgba(247,242,255,0.25)" />
+          </TVTouchable>
+        ))}
       </View>
-      <View style={{ flex: 1 }}>
-        <CustomText variant="label" style={{ color: theme.colors.text }}>
-          {item.label}
-        </CustomText>
-        <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 2 }}>
-          {item.hint}
-        </CustomText>
-      </View>
-      <MaterialIcons name="chevron-right" size={20} color={theme.colors.textSecondary} />
-    </TVTouchable>
-  );
-}
-
-function StatPill({ icon, label, value }: { icon: React.ComponentProps<typeof MaterialIcons>['name']; label: string; value: string | number }) {
-  const theme = useAppTheme();
-  return (
-    <View
-      style={{
-        borderRadius: theme.radius.lg, borderWidth: 1, borderColor: theme.colors.border,
-        backgroundColor: theme.scheme === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(17,10,31,0.03)',
-        padding: theme.spacing.md, flex: 1, gap: 6,
-      }}
-    >
-      <View style={{ width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: `${theme.colors.primary}18` }}>
-        <MaterialIcons name={icon} size={16} color={theme.colors.primary} />
-      </View>
-      <CustomText variant="heading" style={{ color: theme.colors.text }}>{value}</CustomText>
-      <CustomText variant="caption" style={{ color: theme.colors.textSecondary }}>{label}</CustomText>
     </View>
   );
 }
 
 export default function Profile() {
-  const theme = useAppTheme();
   const router = useRouter();
   const device = useDeviceClass();
   const { showToast } = useToast();
   const isAuthorized = useRequireMobileSession();
-  const [metrics, setMetrics] = useState({ email: '', displayName: '', totalPlays: 0, liveSubscriptions: 0 });
+  const [metrics, setMetrics] = useState({
+    email: '',
+    displayName: '',
+    totalPlays: 0,
+    liveSubscriptions: 0,
+  });
   const [isLogoutSheetVisible, setIsLogoutSheetVisible] = useState(false);
 
-  const isTwoPane = device.isDesktop || device.isTV;
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const headerOpacity = scrollY.interpolate({
+    inputRange: [80, 140],
+    outputRange: [0, 1],
+    extrapolate: 'clamp',
+  });
+
+  const gutter = device.isTV || device.isDesktop ? 40 : 20;
 
   useEffect(() => {
     if (!isAuthorized) return;
     let active = true;
-    const loadMetrics = async () => {
+    void (async () => {
       try {
-        const nextMetrics = await fetchUserProfileMetrics();
-        if (active) setMetrics(nextMetrics);
-      } catch {
-        // Keep the page usable if metrics cannot load.
-      }
-    };
-    void loadMetrics();
+        const m = await fetchUserProfileMetrics();
+        if (active) setMetrics(m);
+      } catch { /* keep page usable */ }
+    })();
     return () => { active = false; };
   }, [isAuthorized]);
 
   if (!isAuthorized) {
-    return <View style={{ flex: 1, backgroundColor: theme.colors.background }} />;
+    return <View style={{ flex: 1, backgroundColor: '#07050C' }} />;
   }
 
   const displayName = metrics.displayName || metrics.email.split('@')[0] || 'Your profile';
@@ -141,126 +155,230 @@ export default function Profile() {
   };
 
   return (
-    <SettingsScaffold
-      title="Profile"
-      subtitle="Your account, listening activity, and shortcuts."
-      hero={
-        <FadeIn>
-          <SurfaceCard tone="strong" style={{ padding: theme.spacing.xl, marginBottom: theme.spacing.lg, overflow: 'hidden' }}>
-            <View style={{ flexDirection: isTwoPane ? 'row' : 'column', alignItems: isTwoPane ? 'center' : 'flex-start', gap: theme.spacing.xl }}>
-              {/* Avatar */}
-              <View>
-                <View
-                  style={{
-                    width: isTwoPane ? 110 : 96, height: isTwoPane ? 110 : 96,
-                    borderRadius: isTwoPane ? 34 : 28,
-                    alignItems: 'center', justifyContent: 'center',
-                    borderWidth: 2, borderColor: 'rgba(255,255,255,0.12)',
-                    backgroundColor: '#1A1A1A',
-                    overflow: 'hidden',
-                  }}
+    <View style={{ flex: 1, backgroundColor: '#07050C' }}>
+      <StatusBar translucent={false} barStyle="light-content" backgroundColor="#07050C" />
+
+      {/* Floating title that fades in on scroll */}
+      <SafeAreaView
+        edges={['top']}
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 }}
+        pointerEvents="none"
+      >
+        <Animated.View
+          style={{
+            opacity: headerOpacity,
+            backgroundColor: '#07050C',
+            paddingVertical: 12,
+            borderBottomWidth: 1,
+            borderBottomColor: 'rgba(255,255,255,0.06)',
+            alignItems: 'center',
+          }}
+        >
+          <CustomText style={{ color: '#F7F2FF', fontSize: 15, fontWeight: '700' }}>
+            Profile
+          </CustomText>
+        </Animated.View>
+      </SafeAreaView>
+
+      <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+        <Animated.ScrollView
+          style={{ flex: 1 }}
+          showsVerticalScrollIndicator={false}
+          overScrollMode="never"
+          bounces={false}
+          scrollEventThrottle={16}
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+            { useNativeDriver: USE_NATIVE_DRIVER },
+          )}
+          contentContainerStyle={{ paddingBottom: 120 }}
+        >
+          {/* Top action row */}
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingHorizontal: gutter,
+              paddingTop: 12,
+              paddingBottom: 4,
+            }}
+          >
+            <TVTouchable
+              onPress={() => router.back()}
+              showFocusBorder={false}
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: 19,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: 'rgba(255,255,255,0.07)',
+              }}
+            >
+              <MaterialIcons name="chevron-left" size={24} color="#F7F2FF" />
+            </TVTouchable>
+
+            <TVTouchable
+              onPress={() => router.push(APP_ROUTES.tabs.settings)}
+              showFocusBorder={false}
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: 19,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: 'rgba(255,255,255,0.07)',
+              }}
+            >
+              <MaterialIcons name="settings" size={20} color="#F7F2FF" />
+            </TVTouchable>
+          </View>
+
+          {/* Hero */}
+          <FadeIn>
+            <View
+              style={{
+                alignItems: 'center',
+                paddingHorizontal: gutter,
+                paddingTop: 28,
+                paddingBottom: 36,
+              }}
+            >
+              {/* Avatar circle */}
+              <View
+                style={{
+                  width: 96,
+                  height: 96,
+                  borderRadius: 48,
+                  backgroundColor: '#2D1B69',
+                  borderWidth: 2.5,
+                  borderColor: '#8B5CF6',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: 16,
+                }}
+              >
+                <CustomText
+                  style={{ color: '#F7F2FF', fontSize: 38, fontWeight: '700', lineHeight: 46 }}
                 >
-                  <Image source={BRAND_LOGO_ASSET} style={{ width: '80%', height: '80%' }} resizeMode="contain" />
+                  {initial}
+                </CustomText>
+              </View>
+
+              <CustomText
+                style={{
+                  color: '#F7F2FF',
+                  fontSize: 22,
+                  fontWeight: '700',
+                  textAlign: 'center',
+                  letterSpacing: -0.3,
+                }}
+                numberOfLines={2}
+              >
+                {displayName}
+              </CustomText>
+
+              {metrics.email ? (
+                <CustomText
+                  style={{ color: 'rgba(247,242,255,0.40)', fontSize: 13, marginTop: 4, textAlign: 'center' }}
+                  numberOfLines={1}
+                >
+                  {metrics.email}
+                </CustomText>
+              ) : null}
+
+              {/* Stats */}
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  marginTop: 24,
+                  width: '100%',
+                  maxWidth: 280,
+                }}
+              >
+                <View style={{ alignItems: 'center', flex: 1 }}>
+                  <CustomText style={{ color: '#F7F2FF', fontSize: 20, fontWeight: '700' }}>
+                    {metrics.totalPlays}
+                  </CustomText>
+                  <CustomText style={{ color: 'rgba(247,242,255,0.40)', fontSize: 11, marginTop: 3 }}>
+                    Plays
+                  </CustomText>
                 </View>
-                <View
-                  style={{
-                    position: 'absolute', bottom: -4, right: -4,
-                    width: 26, height: 26, borderRadius: 13,
-                    backgroundColor: theme.colors.primary,
-                    alignItems: 'center', justifyContent: 'center',
-                    borderWidth: 2, borderColor: theme.colors.surface,
-                  }}
-                >
-                  <CustomText variant="caption" style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '800' }}>
-                    {initial}
+
+                <View style={{ width: 1, height: 34, backgroundColor: 'rgba(255,255,255,0.10)' }} />
+
+                <View style={{ alignItems: 'center', flex: 1 }}>
+                  <CustomText style={{ color: '#F7F2FF', fontSize: 20, fontWeight: '700' }}>
+                    {metrics.liveSubscriptions}
+                  </CustomText>
+                  <CustomText style={{ color: 'rgba(247,242,255,0.40)', fontSize: 11, marginTop: 3 }}>
+                    Live alerts
+                  </CustomText>
+                </View>
+
+                <View style={{ width: 1, height: 34, backgroundColor: 'rgba(255,255,255,0.10)' }} />
+
+                <View style={{ alignItems: 'center', flex: 1 }}>
+                  <CustomText style={{ color: '#8B5CF6', fontSize: 20, fontWeight: '700' }}>
+                    ✓
+                  </CustomText>
+                  <CustomText style={{ color: 'rgba(247,242,255,0.40)', fontSize: 11, marginTop: 3 }}>
+                    Active
                   </CustomText>
                 </View>
               </View>
+            </View>
+          </FadeIn>
 
-              {/* Details */}
-              <View style={{ flex: 1, gap: 6 }}>
-                <CustomText variant="caption" style={{ color: theme.colors.primary, textTransform: 'uppercase', letterSpacing: 0.9 }}>
-                  Account
-                </CustomText>
-                <CustomText variant="hero" style={{ color: theme.colors.text }} numberOfLines={2}>
-                  {displayName}
-                </CustomText>
-                <CustomText variant="body" style={{ color: theme.colors.textSecondary }} numberOfLines={1}>
-                  {metrics.email || 'Signed in to ClaudyGod'}
-                </CustomText>
-
-                {/* Quick actions */}
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 10 }}>
-                  <AppButton
-                    title="Library"
-                    size="sm"
-                    onPress={() => router.push(APP_ROUTES.tabs.library)}
-                    leftIcon={<MaterialIcons name="library-music" size={15} color={theme.colors.textInverse} />}
-                  />
-                  <AppButton
-                    title="Settings"
-                    variant="secondary"
-                    size="sm"
-                    onPress={() => router.push(APP_ROUTES.tabs.settings)}
-                    leftIcon={<MaterialIcons name="settings" size={15} color={theme.colors.text} />}
-                  />
-                  <AppButton
-                    title="Security"
-                    variant="secondary"
-                    size="sm"
-                    onPress={() => router.push(APP_ROUTES.accountSecurity)}
-                    leftIcon={<MaterialIcons name="verified-user" size={15} color={theme.colors.text} />}
-                  />
+          {/* Navigation groups */}
+          <View style={{ paddingHorizontal: gutter, gap: 24 }}>
+            <FadeIn delay={60}>
+              {NAV_GROUPS.map((group) => (
+                <View key={group.title} style={{ marginBottom: 24 }}>
+                  <NavSection group={group} />
                 </View>
-              </View>
-            </View>
+              ))}
+            </FadeIn>
 
-            {/* Stats row */}
-            <View style={{ flexDirection: 'row', gap: 10, marginTop: theme.spacing.lg }}>
-              <StatPill icon="play-circle-outline" label="Plays" value={metrics.totalPlays} />
-              <StatPill icon="notifications-active" label="Live alerts" value={metrics.liveSubscriptions} />
-              <StatPill icon="star-rate" label="Engagement" value="Active" />
-            </View>
-          </SurfaceCard>
-        </FadeIn>
-      }
-    >
-      {/* Navigation groups — 2-column on desktop/TV */}
-      <FadeIn delay={80}>
-        <View style={{ flexDirection: isTwoPane ? 'row' : 'column', gap: 14, alignItems: 'flex-start' }}>
-          {NAV_GROUPS.map((group, groupIndex) => (
-            <View key={group.title} style={{ flex: isTwoPane ? 1 : undefined, width: isTwoPane ? undefined : '100%', marginBottom: isTwoPane ? 0 : 0 }}>
-              <FadeIn delay={110 + groupIndex * 35}>
-                <SurfaceCard tone="subtle" style={{ padding: theme.spacing.md }}>
-                  <CustomText
-                    variant="caption"
-                    style={{ color: theme.colors.primary, textTransform: 'uppercase', letterSpacing: 0.85, marginBottom: 4 }}
-                  >
-                    {group.title}
-                  </CustomText>
-                  {group.items.map((navItem, index) => (
-                    <NavRow key={navItem.label} item={navItem} isFirst={index === 0} />
-                  ))}
-                </SurfaceCard>
-              </FadeIn>
-            </View>
-          ))}
-        </View>
-      </FadeIn>
-
-      {/* Sign out */}
-      <FadeIn delay={210}>
-        <AppButton
-          title="Sign out"
-          variant="outline"
-          fullWidth
-          size="lg"
-          leftIcon={<MaterialIcons name="logout" size={18} color={theme.colors.danger} />}
-          textColor={theme.colors.danger}
-          onPress={() => setIsLogoutSheetVisible(true)}
-          style={{ marginTop: theme.spacing.sm, borderColor: theme.colors.danger }}
-        />
-      </FadeIn>
+            {/* Sign out */}
+            <FadeIn delay={120}>
+              <TVTouchable
+                onPress={() => setIsLogoutSheetVisible(true)}
+                showFocusBorder={false}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 14,
+                  paddingVertical: 13,
+                  paddingHorizontal: 16,
+                  borderRadius: 16,
+                  backgroundColor: '#110E1A',
+                  marginBottom: 8,
+                }}
+              >
+                <View
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 10,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: 'rgba(239,68,68,0.12)',
+                  }}
+                >
+                  <MaterialIcons name="logout" size={18} color="#EF4444" />
+                </View>
+                <CustomText style={{ color: '#EF4444', fontSize: 14, fontWeight: '600', flex: 1 }}>
+                  Sign out
+                </CustomText>
+                <MaterialIcons name="chevron-right" size={20} color="rgba(239,68,68,0.35)" />
+              </TVTouchable>
+            </FadeIn>
+          </View>
+        </Animated.ScrollView>
+      </SafeAreaView>
 
       <ActionSheet
         visible={isLogoutSheetVisible}
@@ -278,6 +396,6 @@ export default function Profile() {
         ]}
         onClose={() => setIsLogoutSheetVisible(false)}
       />
-    </SettingsScaffold>
+    </View>
   );
 }

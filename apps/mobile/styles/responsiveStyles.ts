@@ -18,27 +18,27 @@ const responsiveStyles = StyleSheet.create({
   h1: {
     fontSize: responsive.scaleFont(22),
     lineHeight: responsive.scaleHeight(29),
-    fontFamily: 'Manrope_600SemiBold',
+    fontFamily: 'PlusJakartaSans_600SemiBold',
   },
   h2: {
     fontSize: responsive.scaleFont(18),
     lineHeight: responsive.scaleHeight(24),
-    fontFamily: 'Manrope_600SemiBold',
+    fontFamily: 'PlusJakartaSans_600SemiBold',
   },
   h3: {
     fontSize: responsive.scaleFont(15),
     lineHeight: responsive.scaleHeight(21),
-    fontFamily: 'Manrope_600SemiBold',
+    fontFamily: 'PlusJakartaSans_600SemiBold',
   },
   body: {
     fontSize: responsive.scaleFont(12.5),
     lineHeight: responsive.scaleHeight(18),
-    fontFamily: 'Manrope_400Regular',
+    fontFamily: 'PlusJakartaSans_400Regular',
   },
   caption: {
     fontSize: responsive.scaleFont(10.5),
     lineHeight: responsive.scaleHeight(14.5),
-    fontFamily: 'Manrope_400Regular',
+    fontFamily: 'PlusJakartaSans_400Regular',
   },
 
   // Spacing utilities

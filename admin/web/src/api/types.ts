@@ -67,7 +67,7 @@ export interface ContentCreateInput {
   artworkUrl?: string;
   mediaUrl?: string;
   tags?: string[];
-  section?: string;
+  appSections?: string[];
   publishedAt?: string;
 }
 
@@ -271,6 +271,26 @@ export interface CommunityInsight {
 }
 
 // ─── YouTube ──────────────────────────────────────────────────────────────────
+
+export interface YouTubeVideoItem {
+  youtubeVideoId: string;
+  title: string;
+  description: string;
+  channelTitle: string;
+  publishedAt: string;
+  thumbnailUrl: string;
+  url: string;
+  duration: string;
+  isLive: boolean;
+  suggestedAppSections: string[];
+  suggestedTags: string[];
+}
+
+export interface YouTubeVideosResponse {
+  channelId: string;
+  fetchedAt: string;
+  items: YouTubeVideoItem[];
+}
 
 export interface YouTubeSyncStatus {
   channelId: string | null;

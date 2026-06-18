@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
-import { Linking, ScrollView, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import { Linking, ScrollView, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { CustomText } from '../../components/CustomText';
 import { VideoPlayer } from '../../components/media/VideoPlayer';
 import { useToast } from '../../context/ToastContext';
 import { useAppTheme } from '../../util/colorScheme';
@@ -71,9 +72,9 @@ function FilterChips({ active, onChange }: { active: VideoFilter; onChange: (_f:
             }}
           >
             <MaterialIcons name={f.icon} size={13} color={isActive ? '#FFFFFF' : theme.colors.textSecondary} />
-            <Text style={{ color: isActive ? '#FFFFFF' : theme.colors.textSecondary, fontSize: 12.5, fontWeight: isActive ? '700' : '500' }}>
+            <CustomText style={{ color: isActive ? '#FFFFFF' : theme.colors.textSecondary, fontSize: 12.5, fontWeight: isActive ? '700' : '500' }}>
               {f.label}
-            </Text>
+            </CustomText>
           </TouchableOpacity>
         );
       })}

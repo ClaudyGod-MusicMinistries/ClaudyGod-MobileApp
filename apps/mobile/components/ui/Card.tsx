@@ -1,6 +1,8 @@
 import React, { ReactNode } from 'react';
-import { View, Animated, Pressable, type StyleProp, type ViewStyle } from 'react-native';
+import { View, Animated, Platform, Pressable, type StyleProp, type ViewStyle } from 'react-native';
 import { useAppTheme } from '../../util/colorScheme';
+
+const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
 interface CardProps {
   children: ReactNode;
@@ -26,13 +28,13 @@ export const Card: React.FC<CardProps> = ({
 
   const handlePressIn = () => {
     if (onPress) {
-      Animated.spring(scaleAnim, { toValue: 0.98, useNativeDriver: true }).start();
+      Animated.spring(scaleAnim, { toValue: 0.98, useNativeDriver: USE_NATIVE_DRIVER }).start();
     }
   };
 
   const handlePressOut = () => {
     if (onPress) {
-      Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true }).start();
+      Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: USE_NATIVE_DRIVER }).start();
     }
   };
 

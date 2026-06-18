@@ -5,10 +5,12 @@
  */
 
 import React from 'react';
-import { View, StyleSheet, Animated } from 'react-native';
+import { View, StyleSheet, Animated, Platform } from 'react-native';
 import { useAppTheme } from '../../util/colorScheme';
 import { CustomText } from '../CustomText';
 import { spacing, radius } from '../../styles/designTokens';
+
+const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
 interface StatCardProps {
   label: string;
@@ -34,7 +36,7 @@ export const StatCard: React.FC<StatCardProps> = ({
   const scaleAnim = React.useRef(new Animated.Value(0.9)).current;
 
   React.useEffect(() => {
-    Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true, delay }).start();
+    Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: USE_NATIVE_DRIVER, delay }).start();
   }, [scaleAnim, delay]);
 
   const trendColor = trend === 'up' ? theme.colors.success : theme.colors.danger;

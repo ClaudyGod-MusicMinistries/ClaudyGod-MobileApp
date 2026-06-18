@@ -51,23 +51,20 @@
           <div class="max-w-[360px]">
             <p class="text-[11px] font-bold uppercase tracking-[0.2em] mb-5" style="color:#a78bfa">Admin workspace</p>
             <h1 class="font-black leading-[1.07] mb-6" style="font-size:clamp(2.2rem,3.5vw,3rem);color:#f5f3ff">
-              Worship.<br/>
+              Ministry management,<br/>
               <span style="background:linear-gradient(92deg,#c4b5fd 0%,#818cf8 55%,#8b5cf6 100%);-webkit-background-clip:text;background-clip:text;color:transparent">
-                Without limits.
+                simplified.
               </span>
             </h1>
             <p class="text-sm leading-relaxed mb-10" style="color:#9ca3af">
-              The complete platform for ministry content, live operations, and audience engagement — purpose-built for ClaudyGod.
+              Publish content, run live sessions, and grow your community — all from one place.
             </p>
 
             <ul class="space-y-3.5">
               <li v-for="feat in features" :key="feat" class="flex items-start gap-3">
                 <span class="mt-0.5 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
                   style="background:rgba(139,92,246,0.2);border:1px solid rgba(139,92,246,0.4)">
-                  <svg class="w-2.5 h-2.5" style="color:#c4b5fd" fill="none" viewBox="0 0 12 12"
-                    stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M2 6.5l2.8 2.8L10 3.5"/>
-                  </svg>
+                  <Check class="w-2.5 h-2.5" style="color:#c4b5fd" />
                 </span>
                 <span class="text-sm" style="color:#9ca3af">{{ feat }}</span>
               </li>
@@ -108,7 +105,7 @@
       </div>
 
       <p class="mt-6 text-[11px] text-gray-400 text-center tracking-wide">
-        Encrypted · Role-gated · MFA-ready
+        Secure access · Role-based permissions · End-to-end encrypted
       </p>
     </div>
 
@@ -116,6 +113,7 @@
 </template>
 
 <script setup lang="ts">
+import { Check } from 'lucide-vue-next';
 import { BRAND_LOGO_URL } from '@/utils/constants';
 
 const features = [
@@ -128,7 +126,7 @@ const features = [
 
 const stats = [
   { value: '256-bit', label: 'Encryption' },
-  { value: 'MFA', label: 'Optional 2FA' },
+  { value: '2-Step', label: 'Verification' },
   { value: '24 / 7', label: 'Uptime target' },
 ];
 </script>

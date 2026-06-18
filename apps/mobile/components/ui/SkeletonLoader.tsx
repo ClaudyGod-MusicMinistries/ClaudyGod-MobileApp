@@ -1,7 +1,9 @@
 // components/ui/SkeletonLoader.tsx
 import React, { useEffect, useRef } from 'react';
-import { Animated, View } from 'react-native';
+import { Animated, Platform, View } from 'react-native';
 import { useAppTheme } from '../../util/colorScheme';
+
+const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
 interface SkeletonLoaderProps {
   width?: number | string;
@@ -25,12 +27,12 @@ function SkeletonLoaderComponent({
         Animated.timing(shimmer, {
           toValue: 1,
           duration: 1500,
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
         Animated.timing(shimmer, {
           toValue: 0,
           duration: 1500,
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
       ]),
     ).start();

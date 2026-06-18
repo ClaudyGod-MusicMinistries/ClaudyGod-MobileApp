@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from 'react';
-import { Linking, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Linking, ScrollView, TouchableOpacity, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { AudioPlayer } from '../../components/media/AudioPlayer';
+import { CustomText } from '../../components/CustomText';
 import { AppButton } from '../../components/ui/AppButton';
 import { useToast } from '../../context/ToastContext';
 import { useAppTheme } from '../../util/colorScheme';
@@ -91,9 +92,9 @@ function FilterChips({ active, onChange }: { active: AudioFilter; onChange: (_f:
             }}
           >
             <MaterialIcons name={f.icon} size={13} color={isActive ? '#FFFFFF' : theme.colors.textSecondary} />
-            <Text style={{ color: isActive ? '#FFFFFF' : theme.colors.textSecondary, fontSize: 12.5, fontWeight: isActive ? '700' : '500' }}>
+            <CustomText style={{ color: isActive ? '#FFFFFF' : theme.colors.textSecondary, fontSize: 12.5, fontWeight: isActive ? '700' : '500' }}>
               {f.label}
-            </Text>
+            </CustomText>
           </TouchableOpacity>
         );
       })}

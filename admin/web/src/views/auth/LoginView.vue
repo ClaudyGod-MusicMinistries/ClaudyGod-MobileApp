@@ -78,12 +78,10 @@
       <div class="text-center mb-6">
         <div class="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3"
           style="background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.2)">
-          <svg class="w-6 h-6" style="color:#7c3aed" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-          </svg>
+          <ShieldCheck class="w-6 h-6" style="color:#7c3aed" />
         </div>
-        <h2 class="text-xl font-black text-gray-900 tracking-tight">Two-factor verification</h2>
-        <p class="text-sm text-gray-500 mt-1">Enter the 6-digit code from your authenticator app</p>
+        <h2 class="text-xl font-black text-gray-900 tracking-tight">Verification code</h2>
+        <p class="text-sm text-gray-500 mt-1">Enter the 6-digit security code from your authenticator app.</p>
       </div>
 
       <div v-if="auth.error"
@@ -94,9 +92,9 @@
 
       <AppInput
         v-model="mfaCode"
-        label="Authentication code"
+        label="Security code"
         type="text"
-        placeholder="000000"
+        placeholder="· · · · · ·"
         required
         maxlength="6"
         autocomplete="one-time-code"
@@ -119,9 +117,10 @@
 
       <button
         type="button"
-        class="w-full py-2 rounded-xl text-sm text-gray-500 hover:text-gray-700 transition-colors"
+        class="w-full py-2 rounded-xl text-sm text-gray-500 hover:text-gray-700 transition-colors flex items-center justify-center gap-1.5"
         @click="mfaRequired = false; mfaToken = ''">
-        ← Back to sign in
+        <ArrowLeft class="w-3.5 h-3.5" />
+        Back to sign in
       </button>
     </form>
   </AuthLayout>
@@ -130,6 +129,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRouter, RouterLink } from 'vue-router';
+import { ArrowLeft, ShieldCheck } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/auth.store';
 import { GOOGLE_LOGIN_URL } from '@/api/auth';
 import AuthLayout from '@/components/layout/AuthLayout.vue';
