@@ -15,10 +15,12 @@ import { ToastProvider , useToast } from '../context/ToastContext';
 import { AppModalProvider } from '../context/AppModalContext';
 import { ToastViewport } from '../components/ui/ToastViewport';
 import { MinimizedFloatingPlayer } from '../components/player/MinimizedFloatingPlayer';
+import { WordOfDayModal, shouldShowWordModal, markWordModalShown } from '../components/modals/WordOfDayModal';
 import { APP_ROUTES } from '../util/appRoutes';
 import { fetchMePreferences } from '../services/userFlowService';
 import { AppLoadingScreen } from '../components/Exp/AppLoading';
 import { clearMobileSession } from '../services/authService';
+import { useWordOfDay } from '../hooks/useWordOfDay';
 
 const MOBILE_INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000;
 
@@ -50,6 +52,8 @@ function RootLayoutInner() {
   const [lastActivityAt, setLastActivityAt] = useState(Date.now());
   const [themePreferenceHydratedForUserId, setThemePreferenceHydratedForUserId] =
     useState<string | null>(null);
+  const [wordModalVisible, setWordModalVisible] = useState(false);
+  const { word } = useWordOfDay();
 
   const firstSegment = segments[0];
   const secondSegment = useMemo(() => Array.from(segments)[1], [segments]);
@@ -57,9 +61,26 @@ function RootLayoutInner() {
 
   useEffect(() => {
     const timer = setTimeout(() => setBootDelayDone(true), 1500);
-
     return () => clearTimeout(timer);
   }, []);
+
+  // Show the Word for Today modal once per day, 2 s after the app finishes booting.
+  useEffect(() => {
+    if (!bootDelayDone || !word) return;
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      if (cancelled) return;
+      const shouldShow = await shouldShowWordModal();
+      if (!cancelled && shouldShow) {
+        setWordModalVisible(true);
+        await markWordModalShown();
+      }
+    }, 2000);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [bootDelayDone, word]);
 
   useEffect(() => {
     // Web sessions use long-lived browser tokens — no inactivity lockout.
@@ -259,6 +280,16 @@ function RootLayoutInner() {
       </Stack>
 
       <MinimizedFloatingPlayer />
+
+      <WordOfDayModal
+        visible={wordModalVisible}
+        word={word ?? null}
+        onClose={() => setWordModalVisible(false)}
+        onReadMore={() => {
+          setWordModalVisible(false);
+          router.push(APP_ROUTES.settingsPages.word);
+        }}
+      />
     </ThemedLayout>
     </View>
   );
