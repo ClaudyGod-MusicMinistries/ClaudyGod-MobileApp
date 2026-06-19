@@ -28,8 +28,7 @@ const MOBILE_INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000;
 // Global unhandled JS error handler — active in production builds only.
 // In development, the default RN error overlay is more useful.
 if (!__DEV__) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const ErrorUtils = (global as unknown as { ErrorUtils?: { setGlobalHandler: (handler: (error: Error, isFatal?: boolean) => void) => void } }).ErrorUtils;
+  const ErrorUtils = (globalThis as unknown as { ErrorUtils?: { setGlobalHandler: (handler: (error: Error, isFatal?: boolean) => void) => void } }).ErrorUtils;
   ErrorUtils?.setGlobalHandler((error, isFatal) => {
     console.error(`[GlobalError] ${isFatal ? 'fatal' : 'non-fatal'}:`, error?.message ?? error);
     // TODO: pipe to Sentry / crash reporting when integrated
@@ -76,10 +75,12 @@ function RootLayoutInner() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Show the Word for Today modal once per day, 2 s after the app finishes booting.
-  // Requires at least the Bible verse to be loaded before triggering.
+  // Show the Word for Today modal once per day, 2 s after the user lands on the
+  // main tabs. Gated on firstSegment === '(tabs)' so it never fires on the landing,
+  // sign-in, or sign-up screens — regardless of auth state.
+  const isOnTabs = firstSegment === '(tabs)';
   useEffect(() => {
-    if (!bootDelayDone || !bibleVerse) return;
+    if (!bootDelayDone || !bibleVerse || !isOnTabs) return;
     let cancelled = false;
     const timer = setTimeout(async () => {
       if (cancelled) return;
@@ -93,7 +94,7 @@ function RootLayoutInner() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [bootDelayDone, bibleVerse]);
+  }, [bootDelayDone, bibleVerse, isOnTabs]);
 
   const { isPlaying } = useFloatingPlayer().player;
 
