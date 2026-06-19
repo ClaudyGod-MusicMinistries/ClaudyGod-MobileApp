@@ -4,7 +4,7 @@ export const BRAND_LOGO_ASSET = require('../assets/images/ClaudyGoLogo.webp');
 export const BRAND_HERO_ASSET = require('../assets/images/FB_IMG_1743103252303.jpg');
 export const BRAND_COVER_ASSET = require('../assets/images/CoverArt.webp');
 export const LANDING_BG_ASSET = require('../assets/images/landing4.jpg');
-export const BRAND_WORSHIP_ASSET = require('../assets/images/manBack.webp');
+export const BRAND_WORSHIP_ASSET = require('../assets/images/dp.jpg');
 export const BRAND_MUSIC_ASSET = require('../assets/images/music4.webp');
 
 function resolveBrandAssetUri(moduleId: number): string {
