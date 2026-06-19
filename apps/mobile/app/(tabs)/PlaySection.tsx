@@ -5,6 +5,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { AudioPlayer } from '../../components/media/AudioPlayer';
 import { CustomText } from '../../components/CustomText';
 import { AppButton } from '../../components/ui/AppButton';
+import { TVTouchable } from '../../components/ui/TVTouchable';
 import { useToast } from '../../context/ToastContext';
 import { useAppTheme } from '../../util/colorScheme';
 import { useContentFeed } from '../../hooks/useContentFeed';
@@ -15,7 +16,6 @@ import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
 import { buildPlayerRoute, isDirectPlayableAudioUrl, routeParamToString, shouldOpenVideoScreen } from '../../util/playerRoute';
 import {
   CompactContentRow,
-  ContentList,
   ContentRail,
   EmptyState,
   PremiumHero,
@@ -35,7 +35,6 @@ function dedupeItems(items: FeedCardItem[]): FeedCardItem[] {
   });
 }
 
-// Builds all 4 music sections with a shared exclusion set so each item only appears once.
 function buildMusicSections(feed: FeedBundle, limit = 12) {
   const pool = dedupeItems([...feed.music, ...feed.videos, ...feed.playlists, ...feed.live]);
   const used = new Set<string>();
@@ -132,6 +131,7 @@ export default function PlaySection() {
   }>();
   const { feed, loading, refresh } = useContentFeed();
   const [filter, setFilter] = useState<AudioFilter>('all');
+  const [isFavorite, setIsFavorite] = useState(false);
 
   const { music: musicItems, audio: audioItems, nuggets: nuggetsItems, teens: teensItems } =
     useMemo(() => buildMusicSections(feed), [feed]);
@@ -169,13 +169,15 @@ export default function PlaySection() {
       return;
     }
     setActiveId(item.id);
+    setIsFavorite(false);
     await trackPlayEvent({ contentId: item.id, contentType: item.type, title: item.title, source });
   };
 
   const goPrevious = () => { const prev = canGoPrevious ? allQueue[activeIndex - 1] : null; if (prev) void openItem(prev, 'music_prev'); };
   const goNext    = () => { const next = canGoNext ? allQueue[activeIndex + 1] : null; if (next) void openItem(next, 'music_next'); };
 
-  const upNext = allQueue.filter((item) => item.id !== active?.id).slice(0, 6);
+  const upNext = filteredQueue.filter((item) => item.id !== active?.id).slice(0, 8);
+  const isDark = theme.scheme === 'dark';
 
   return (
     <PremiumPage
@@ -195,42 +197,116 @@ export default function PlaySection() {
         />
       }
     >
-      {/* Now Playing */}
-      {active && hasInlineAudio && active.mediaUrl ? (
-        <AudioPlayer
-          track={{ id: active.id, title: active.title, artist: active.subtitle, uri: active.mediaUrl, duration: active.duration, imageUrl: active.imageUrl }}
-          onPrevious={goPrevious}
-          onNext={goNext}
-          canGoPrevious={canGoPrevious}
-          canGoNext={canGoNext}
-        />
-      ) : (
-        <PremiumHero
-          item={active}
-          title={active?.title ?? 'Choose something to play'}
-          subtitle={active?.description || 'Select a song, message, or playlist to begin listening.'}
-          primaryLabel={active?.mediaUrl ? 'Open' : 'Browse music'}
-          primaryIcon={active?.mediaUrl ? 'open-in-new' : 'graphic-eq'}
-          onPrimary={() => (active ? void openItem(active, 'music_hero') : undefined)}
-        />
-      )}
 
-      {/* Filter chips */}
+      {/* ── Now Playing card ─────────────────────────────────────────────── */}
+      <View
+        style={{
+          borderRadius: 24,
+          borderWidth: 1,
+          borderColor: isDark ? 'rgba(139,92,246,0.16)' : 'rgba(124,58,237,0.12)',
+          backgroundColor: isDark ? 'rgba(139,92,246,0.05)' : 'rgba(124,58,237,0.03)',
+          paddingHorizontal: 16,
+          paddingTop: 20,
+          paddingBottom: 24,
+          overflow: 'visible',
+        }}
+      >
+        {active && hasInlineAudio && active.mediaUrl ? (
+          <AudioPlayer
+            track={{ id: active.id, title: active.title, artist: active.subtitle, uri: active.mediaUrl, duration: active.duration, imageUrl: active.imageUrl }}
+            onPrevious={goPrevious}
+            onNext={goNext}
+            canGoPrevious={canGoPrevious}
+            canGoNext={canGoNext}
+            isFavorite={isFavorite}
+            onFavoriteToggle={() => setIsFavorite((f) => !f)}
+            currentTrackNumber={activeIndex >= 0 ? activeIndex + 1 : undefined}
+            totalTracks={allQueue.length}
+          />
+        ) : (
+          <PremiumHero
+            item={active}
+            title={active?.title ?? 'Choose something to play'}
+            subtitle={active?.description || 'Select a song, message, or playlist to begin listening.'}
+            primaryLabel={active?.mediaUrl ? 'Open' : 'Browse music'}
+            primaryIcon={active?.mediaUrl ? 'open-in-new' : 'graphic-eq'}
+            onPrimary={() => (active ? void openItem(active, 'music_hero') : undefined)}
+          />
+        )}
+      </View>
+
+      {/* ── Filter chips ─────────────────────────────────────────────────── */}
       <FilterChips active={filter} onChange={setFilter} />
 
-      {/* Up next queue */}
+      {/* ── Up next queue ────────────────────────────────────────────────── */}
       {upNext.length > 0 ? (
-        <View style={{ gap: 10 }}>
-          <SectionLabel title="Up next" accent={`${upNext.length} tracks`} />
-          <View style={{ gap: 4 }}>
-            {upNext.map((item) => (
-              <CompactContentRow key={item.id} item={item} onPress={() => void openItem(item, 'music_queue')} />
-            ))}
+        <View style={{ gap: 2 }}>
+          {/* Queue header */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <View style={{ width: 3, height: 14, borderRadius: 1.5, backgroundColor: '#8B5CF6' }} />
+              <CustomText style={{ color: isDark ? '#F7F2FF' : '#130C21', fontSize: 14, fontWeight: '800', letterSpacing: -0.2 }}>
+                Up next
+              </CustomText>
+              <View style={{
+                paddingHorizontal: 7, paddingVertical: 2, borderRadius: 999,
+                backgroundColor: isDark ? 'rgba(139,92,246,0.15)' : 'rgba(124,58,237,0.10)',
+              }}>
+                <CustomText style={{ color: '#8B5CF6', fontSize: 10, fontWeight: '700' }}>
+                  {upNext.length}
+                </CustomText>
+              </View>
+            </View>
+            <TVTouchable
+              onPress={() => setFilter(filter === 'all' ? 'songs' : 'all')}
+              showFocusBorder={false}
+            >
+              <CustomText style={{ color: '#8B5CF6', fontSize: 12, fontWeight: '600' }}>
+                {filter === 'all' ? 'Filter' : 'Clear filter'}
+              </CustomText>
+            </TVTouchable>
           </View>
+
+          {upNext.map((item, index) => (
+            <View
+              key={item.id}
+              style={{
+                borderRadius: 12,
+                backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+                borderWidth: 0.5,
+                borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+                marginBottom: 2,
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <CustomText style={{
+                  width: 32, textAlign: 'center',
+                  color: 'rgba(139,92,246,0.50)',
+                  fontSize: 11, fontWeight: '700',
+                }}>
+                  {(activeIndex >= 0 ? activeIndex + 1 : 0) + index + 1}
+                </CustomText>
+                <View style={{ flex: 1 }}>
+                  <CompactContentRow item={item} onPress={() => void openItem(item, 'music_queue')} />
+                </View>
+              </View>
+            </View>
+          ))}
         </View>
       ) : null}
 
-      {/* 4 ClaudyGod-branded sections — only render when they have content */}
+      {/* ── Section separator ────────────────────────────────────────────── */}
+      {(musicItems.length > 0 || audioItems.length > 0 || nuggetsItems.length > 0 || teensItems.length > 0) ? (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <View style={{ flex: 1, height: 1, backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' }} />
+          <CustomText style={{ color: isDark ? 'rgba(247,242,255,0.25)' : 'rgba(19,12,33,0.30)', fontSize: 10, fontWeight: '600', letterSpacing: 1.2 }}>
+            BROWSE
+          </CustomText>
+          <View style={{ flex: 1, height: 1, backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' }} />
+        </View>
+      ) : null}
+
+      {/* ── 4 branded content sections ───────────────────────────────────── */}
       {(musicItems.length > 0 || audioItems.length > 0 || nuggetsItems.length > 0 || teensItems.length > 0) ? (
         <View style={{ gap: 28 }}>
 
@@ -289,7 +365,7 @@ export default function PlaySection() {
         </View>
       ) : null}
 
-      {/* Most played chart */}
+      {/* ── Most played trending ─────────────────────────────────────────── */}
       {feed.mostPlayed.length > 0 ? (
         <TrendingList
           title="Most played"
@@ -309,6 +385,7 @@ export default function PlaySection() {
           icon="graphic-eq"
         />
       ) : null}
+
     </PremiumPage>
   );
 }

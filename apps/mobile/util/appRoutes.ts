@@ -6,6 +6,7 @@ export const APP_ROUTES = {
     verifyEmail: '/verify-email',
     forgotPassword: '/forgot-password',
     resetPassword: '/reset-password',
+    emailOtp: '/email-otp',
   },
   live: {
     detail: '/live/[sessionId]',

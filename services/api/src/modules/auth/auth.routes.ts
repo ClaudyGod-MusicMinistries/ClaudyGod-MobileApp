@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { type Request, type Response, Router } from 'express';
+import { pool } from '../../db/pool';
 import { asyncHandler } from '../../lib/asyncHandler';
 import { validateSchema } from '../../lib/validation';
 import { validateBody } from '../../lib/validationMiddleware';
@@ -38,6 +39,13 @@ import {
   verifyEmail,
   createAccessRequest,
 } from './auth.service';
+import { requestEmailOtp, verifyEmailOtp } from './emailOtp.service';
+import {
+  registerTrustedDevice,
+  verifyTrustedDeviceToken,
+  listTrustedDevices,
+  revokeTrustedDevice,
+} from './trustedDevice.service';
 import {
   issueAuthSession,
   refreshAuthSession,
@@ -352,5 +360,147 @@ authRouter.post(
     );
     const session = await buildSessionPayload(result, req);
     respondWithAuthSession(req, res, session, 201);
+  }),
+);
+
+// ── Email OTP (passwordless sign-in) ─────────────────────────────────────────
+
+const otpRequestSchema = z.object({
+  email:   z.string().email('Valid email required'),
+  purpose: z.enum(['sign_in', 'sign_up']).default('sign_in'),
+});
+
+const otpVerifySchema = z.object({
+  email:   z.string().email(),
+  code:    z.string().trim().length(6, 'Code must be 6 digits'),
+  purpose: z.enum(['sign_in', 'sign_up']).default('sign_in'),
+});
+
+authRouter.post(
+  '/otp/request',
+  authLimiter,
+  asyncHandler(async (req, res) => {
+    const { email, purpose } = validateSchema(otpRequestSchema, req.body);
+    await requestEmailOtp(email, purpose);
+    res.status(202).json({ message: 'Verification code sent to your email.' });
+  }),
+);
+
+authRouter.post(
+  '/otp/verify',
+  authLimiter,
+  asyncHandler(async (req, res) => {
+    const { email, code, purpose } = validateSchema(otpVerifySchema, req.body);
+    const { email: resolvedEmail } = await verifyEmailOtp(email, code, purpose);
+
+    const userResult = await pool.query<{
+      id: string; email: string; display_name: string; role: string; tier: string;
+      mfa_enabled: boolean; created_at: string; email_verified_at: string | null;
+    }>(
+      `SELECT id, email, display_name, role, COALESCE(tier,'free') AS tier,
+              COALESCE(mfa_enabled, FALSE) AS mfa_enabled, created_at, email_verified_at
+       FROM app_users WHERE email = $1 LIMIT 1`,
+      [resolvedEmail],
+    );
+
+    if (!userResult.rows[0]) {
+      res.status(404).json({ message: 'Account not found', code: 'USER_NOT_FOUND' });
+      return;
+    }
+
+    const u = userResult.rows[0];
+    const safeUser = {
+      id: u.id, email: u.email, displayName: u.display_name,
+      role: u.role as never, tier: (u.tier ?? 'free') as never,
+      mfaEnabled: u.mfa_enabled, createdAt: u.created_at,
+      emailVerifiedAt: u.email_verified_at,
+    };
+
+    const session = await issueAuthSession(safeUser, getAuthRequestContext(req));
+    respondWithAuthSession(req, res, session, 200);
+  }),
+);
+
+// ── Trusted devices ───────────────────────────────────────────────────────────
+
+const trustedDeviceRegisterSchema = z.object({
+  deviceLabel:       z.string().max(120).optional(),
+  deviceFingerprint: z.string().min(8).max(256),
+  platform:          z.string().max(32).default('mobile'),
+});
+
+const trustedDeviceVerifySchema = z.object({
+  token: z.string().min(32),
+});
+
+authRouter.post(
+  '/trusted-devices/register',
+  asyncHandler(async (req, res) => {
+    const authHeader = req.header('authorization');
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7).trim() : null;
+    if (!token) { res.status(401).json({ message: 'Authentication required' }); return; }
+
+    const identity = await resolveAuthenticatedUser(token);
+    const input = validateSchema(trustedDeviceRegisterSchema, req.body);
+    const result = await registerTrustedDevice({ userId: identity.sub, ...input });
+    res.status(201).json({ token: result.token, expiresAt: result.expiresAt.toISOString() });
+  }),
+);
+
+authRouter.post(
+  '/trusted-devices/verify',
+  asyncHandler(async (req, res) => {
+    const { token } = validateSchema(trustedDeviceVerifySchema, req.body);
+    const userId = await verifyTrustedDeviceToken(token);
+
+    const userResult = await pool.query<{
+      id: string; email: string; display_name: string; role: string; tier: string;
+      mfa_enabled: boolean; created_at: string; email_verified_at: string | null; is_active: boolean;
+    }>(
+      `SELECT id, email, display_name, role, COALESCE(tier,'free') AS tier,
+              COALESCE(mfa_enabled, FALSE) AS mfa_enabled, created_at, email_verified_at, is_active
+       FROM app_users WHERE id = $1 LIMIT 1`,
+      [userId],
+    );
+
+    const u = userResult.rows[0];
+    if (!u || !u.is_active) {
+      res.status(401).json({ message: 'Account not found or inactive', code: 'USER_INACTIVE' });
+      return;
+    }
+
+    const safeUser = {
+      id: u.id, email: u.email, displayName: u.display_name,
+      role: u.role as never, tier: (u.tier ?? 'free') as never,
+      mfaEnabled: u.mfa_enabled, createdAt: u.created_at,
+      emailVerifiedAt: u.email_verified_at,
+    };
+
+    const session = await issueAuthSession(safeUser, getAuthRequestContext(req));
+    respondWithAuthSession(req, res, session, 200);
+  }),
+);
+
+authRouter.get(
+  '/trusted-devices',
+  asyncHandler(async (req, res) => {
+    const authHeader = req.header('authorization');
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7).trim() : null;
+    if (!token) { res.status(401).json({ message: 'Authentication required' }); return; }
+    const identity = await resolveAuthenticatedUser(token);
+    const devices = await listTrustedDevices(identity.sub);
+    res.status(200).json({ devices });
+  }),
+);
+
+authRouter.delete(
+  '/trusted-devices/:id',
+  asyncHandler(async (req, res) => {
+    const authHeader = req.header('authorization');
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7).trim() : null;
+    if (!token) { res.status(401).json({ message: 'Authentication required' }); return; }
+    const identity = await resolveAuthenticatedUser(token);
+    await revokeTrustedDevice(identity.sub, req.params.id!);
+    res.status(204).send();
   }),
 );

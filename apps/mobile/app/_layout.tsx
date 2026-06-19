@@ -277,6 +277,13 @@ function RootLayoutInner() {
           }}
         />
         <Stack.Screen
+          name="email-otp"
+          options={{
+            gestureEnabled: false,
+            animation: 'slide_from_right',
+          }}
+        />
+        <Stack.Screen
           name="profile"
           options={{
             animation: 'slide_from_right',
