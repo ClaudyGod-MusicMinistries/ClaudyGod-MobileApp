@@ -196,9 +196,16 @@ const toRecipients = (recipients: string[] | string): string[] =>
         .map((item) => item.trim())
         .filter(Boolean);
 
-const toAdminRecentUser = (row: RecentUserRow) => ({
+const maskEmail = (email: string | null | undefined): string => {
+  if (!email) return '';
+  const at = email.indexOf('@');
+  if (at <= 0) return email;
+  return `${email[0]}***${email.slice(at)}`;
+};
+
+const toAdminRecentUser = (row: RecentUserRow, redactEmail = false) => ({
   id: row.id,
-  email: row.email,
+  email: redactEmail ? maskEmail(row.email) : row.email,
   displayName: row.display_name,
   role: row.role,
   authProvider: row.auth_provider,
@@ -756,6 +763,7 @@ export const getAdminDashboard = async (requester: JwtClaims) => {
       ),
     ]);
 
+  const redactEmail = requester.role !== 'SUPER_ADMIN';
   const summary = userSummary.rows[0]!;
   const content = contentSummary.rows[0]!;
   const ratings = ratingSummary.rows[0]!;
@@ -1143,7 +1151,7 @@ export const getAdminDashboard = async (requester: JwtClaims) => {
         processedAt: toIsoOrNull(row.processed_at),
       })),
     },
-    recentUsers: recentUsers.rows.map(toAdminRecentUser),
+    recentUsers: recentUsers.rows.map((row) => toAdminRecentUser(row, redactEmail)),
     feedback: feedback.rows.map((row) => ({
       id: row.id,
       rating: row.rating,
@@ -1154,7 +1162,7 @@ export const getAdminDashboard = async (requester: JwtClaims) => {
         ? {
             id: row.user_id,
             displayName: row.display_name ?? 'Unknown user',
-            email: row.email ?? '',
+            email: redactEmail ? maskEmail(row.email) : (row.email ?? ''),
           }
         : null,
     })),
@@ -1170,7 +1178,7 @@ export const getAdminDashboard = async (requester: JwtClaims) => {
         ? {
             id: row.user_id,
             displayName: row.display_name ?? 'Unknown user',
-            email: row.email ?? '',
+            email: redactEmail ? maskEmail(row.email) : (row.email ?? ''),
           }
         : null,
     })),
@@ -1201,7 +1209,7 @@ export const getAdminDashboard = async (requester: JwtClaims) => {
       label: humanizeToken(row.event_key),
       status: row.status,
       createdAt: toIso(row.created_at),
-      email: row.email ?? '',
+      email: redactEmail ? maskEmail(row.email) : (row.email ?? ''),
       ipAddress: row.ip_address ?? '',
       userAgent: row.user_agent ?? '',
       metadata: row.metadata ?? {},
@@ -1209,7 +1217,7 @@ export const getAdminDashboard = async (requester: JwtClaims) => {
         ? {
             id: row.user_id,
             displayName: row.display_name ?? 'Unknown user',
-            email: row.email ?? '',
+            email: redactEmail ? maskEmail(row.email) : (row.email ?? ''),
           }
         : null,
     })),
@@ -1297,11 +1305,17 @@ export const sendAdminTestEmail = async (input: {
   };
 };
 
+const VALID_USER_ROLES: UserRole[] = ['CLIENT', 'CREATOR', 'MODERATOR', 'ADMIN', 'SUPER_ADMIN'];
+
 export const updateAdminUserRole = async (input: {
   userId: string;
   role: UserRole;
   actor: JwtClaims;
 }) => {
+  if (!VALID_USER_ROLES.includes(input.role)) {
+    throw new BadRequestError(`Invalid role: ${String(input.role)}`, 'INVALID_ROLE');
+  }
+
   if (input.userId === input.actor.sub) {
     throw new BadRequestError('You cannot change your own role from the dashboard', 'ADMIN_SELF_ROLE_CHANGE');
   }
@@ -1364,8 +1378,28 @@ export const updateAdminUserRole = async (input: {
     [input.userId, input.role],
   );
 
+  const updated = updatedResult.rows[0]!;
+
+  await pool.query(
+    `INSERT INTO auth_activity_events (user_id, email, event_key, status, metadata)
+     VALUES ($1, $2, 'admin_role_change', 'success', $3)
+     ON CONFLICT DO NOTHING`,
+    [
+      input.userId,
+      updated.email,
+      JSON.stringify({
+        previousRole: existing.role,
+        newRole: input.role,
+        changedByUserId: input.actor.sub,
+        changedByEmail: input.actor.email,
+      }),
+    ],
+  ).catch(() => {
+    // Audit log is non-fatal — table may not exist yet in older migrations
+  });
+
   return {
-    user: toAdminRecentUser(updatedResult.rows[0]!),
+    user: toAdminRecentUser(updated),
     message: `User role updated to ${input.role}.`,
   };
 };

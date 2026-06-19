@@ -35,8 +35,13 @@ export const useUsersStore = defineStore('users', () => {
   }
 
   async function changeRole(userId: string, role: number): Promise<void> {
-    const updated = await updateUserRole(userId, role);
-    users.value = users.value.map((u) => (u.id === userId ? updated : u));
+    try {
+      const updated = await updateUserRole(userId, role);
+      users.value = users.value.map((u) => (u.id === userId ? updated : u));
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : 'Failed to update role';
+      throw e;
+    }
   }
 
   async function fetchSupportRequests(status?: string): Promise<void> {

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="space-y-5">
     <div class="flex items-center justify-between">
       <h2 class="text-base font-bold text-ink">Content requests</h2>
@@ -149,7 +149,9 @@ async function confirmReject(): Promise<void> {
 }
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '--';
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
 function getEmail(v: unknown): string {

@@ -74,6 +74,7 @@ export function TVTouchable({
 
   return (
     <Pressable
+      accessibilityRole="button"
       {...props}
       focusable={focusable ?? true}
       hitSlop={hitSlop ?? (isTV ? theme.tv.hitSlop : undefined)}

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="space-y-5">
     <div class="flex items-center justify-between">
       <h2 class="text-base font-bold text-ink">System health</h2>
@@ -104,6 +104,8 @@ async function refresh(): Promise<void> {
 }
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '--';
+  return d.toLocaleString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 </script>
