@@ -7,6 +7,7 @@ import {
   authLimiter,
   passwordResetLimiter,
   emailVerificationLimiter,
+  inviteLimiter,
 } from '../../middleware/rateLimiter';
 import {
   signUpSchema,
@@ -300,6 +301,7 @@ authRouter.get(
 
 authRouter.get(
   '/invitations/validate',
+  inviteLimiter,
   asyncHandler(async (req, res) => {
     const token = String(req.query.token ?? '').trim();
     if (!token || token.length < 32) {
@@ -320,6 +322,7 @@ const acceptInviteSchema = z.object({
 
 authRouter.post(
   '/invitations/accept',
+  inviteLimiter,
   asyncHandler(async (req, res) => {
     const { token, name, displayName, password } = validateSchema(acceptInviteSchema, req.body);
     const result = await acceptAdminInvite(

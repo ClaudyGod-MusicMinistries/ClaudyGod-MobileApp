@@ -50,6 +50,16 @@ export const emailVerificationLimiter = rateLimit({
 // Alias for backward compatibility
 export const emailVerifyLimiter = emailVerificationLimiter;
 
+// Invite token limiter — prevents brute-force of invite tokens (10 per hour per IP)
+export const inviteLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  message: 'Too many invite attempts, please try again later',
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (_req: Request) => process.env.NODE_ENV === 'development',
+});
+
 // Content request limiter — per authenticated user (5 per hour)
 export const contentRequestLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour

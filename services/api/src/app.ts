@@ -151,6 +151,10 @@ export const createApp = () => {
 
   // Security headers
   app.use(helmet());
+  app.use((_req, res, next) => {
+    res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+    next();
+  });
 
   // CORS
   app.options('*', cors(corsOptions));
