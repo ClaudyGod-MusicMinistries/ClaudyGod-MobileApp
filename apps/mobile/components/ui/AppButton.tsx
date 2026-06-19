@@ -7,6 +7,8 @@ import {
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { CustomText } from '../CustomText';
+import { useAppTheme } from '../../util/colorScheme';
+import { TVTouchable } from './TVTouchable';
 
 function BubblePulse({ color, label }: { color: string; label?: string }) {
   const d0 = useRef(new Animated.Value(0)).current;
@@ -52,8 +54,6 @@ function BubblePulse({ color, label }: { color: string; label?: string }) {
     </View>
   );
 }
-import { useAppTheme } from '../../util/colorScheme';
-import { TVTouchable } from './TVTouchable';
 
 interface AppButtonProps extends TouchableOpacityProps {
   title: string;
