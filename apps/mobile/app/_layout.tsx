@@ -76,10 +76,12 @@ function RootLayoutInner() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Show the Word for Today modal once per day, 2 s after the app finishes booting.
-  // Requires at least the Bible verse to be loaded before triggering.
+  // Show the Word for Today modal once per day, 2 s after the user lands on the
+  // main tabs. Gated on firstSegment === '(tabs)' so it never fires on the landing,
+  // sign-in, or sign-up screens — regardless of auth state.
+  const isOnTabs = firstSegment === '(tabs)';
   useEffect(() => {
-    if (!bootDelayDone || !bibleVerse) return;
+    if (!bootDelayDone || !bibleVerse || !isOnTabs) return;
     let cancelled = false;
     const timer = setTimeout(async () => {
       if (cancelled) return;
@@ -93,7 +95,7 @@ function RootLayoutInner() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [bootDelayDone, bibleVerse]);
+  }, [bootDelayDone, bibleVerse, isOnTabs]);
 
   const { isPlaying } = useFloatingPlayer().player;
 
