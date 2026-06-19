@@ -25,6 +25,17 @@ import { useWordOfDay } from '../hooks/useWordOfDay';
 
 const MOBILE_INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000;
 
+// Global unhandled JS error handler — active in production builds only.
+// In development, the default RN error overlay is more useful.
+if (!__DEV__) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const ErrorUtils = (global as unknown as { ErrorUtils?: { setGlobalHandler: (handler: (error: Error, isFatal?: boolean) => void) => void } }).ErrorUtils;
+  ErrorUtils?.setGlobalHandler((error, isFatal) => {
+    console.error(`[GlobalError] ${isFatal ? 'fatal' : 'non-fatal'}:`, error?.message ?? error);
+    // TODO: pipe to Sentry / crash reporting when integrated
+  });
+}
+
 function ThemedLayout({ children }: { children: ReactNode }) {
   const colorScheme = useColorScheme();
   const currentColors = colors[colorScheme] ?? colors.dark;
