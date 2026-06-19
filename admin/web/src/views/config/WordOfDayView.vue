@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="max-w-2xl mx-auto space-y-5">
     <div class="flex items-center justify-between">
       <h2 class="text-base font-bold text-ink">Word of the day</h2>
@@ -71,10 +71,10 @@ onMounted(async () => {
 
 async function onSave(): Promise<void> {
   const { word, verse, reflection, publishedDate } = form.value;
-  if (!word.trim()) { ui.addToast({ tone: 'danger', title: 'Word is required' }); return; }
-  if (!verse.trim()) { ui.addToast({ tone: 'danger', title: 'Bible verse is required' }); return; }
-  if (!reflection.trim()) { ui.addToast({ tone: 'danger', title: 'Reflection is required' }); return; }
-  if (!publishedDate) { ui.addToast({ tone: 'danger', title: 'Date is required' }); return; }
+  if (!word.trim()) { ui.addToast({ tone: 'error', title: 'Word is required' }); return; }
+  if (!verse.trim()) { ui.addToast({ tone: 'error', title: 'Bible verse is required' }); return; }
+  if (!reflection.trim()) { ui.addToast({ tone: 'error', title: 'Reflection is required' }); return; }
+  if (!publishedDate) { ui.addToast({ tone: 'error', title: 'Date is required' }); return; }
   try {
     await store.saveWordOfDay({
       word: word.trim(),
@@ -85,7 +85,7 @@ async function onSave(): Promise<void> {
     });
     ui.addToast({ tone: 'success', title: 'Word of the day saved' });
   } catch (e) {
-    ui.addToast({ tone: 'danger', title: e instanceof Error ? e.message : 'Save failed' });
+    ui.addToast({ tone: 'error', title: e instanceof Error ? e.message : 'Save failed' });
   }
 }
 </script>
