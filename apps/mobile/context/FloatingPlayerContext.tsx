@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from 'react';
+import { AppState } from 'react-native';
 import type { FeedCardItem } from '../services/contentService';
 
 // Floating player allows users to minimize and keep playing while navigating
@@ -52,6 +53,21 @@ const INITIAL_STATE: FloatingPlayerState = {
 
 export function FloatingPlayerProvider({ children }: { children: ReactNode }) {
   const [player, setPlayer] = useState<FloatingPlayerState>(INITIAL_STATE);
+  const controlsRef = useRef<{ pause: () => void; resume: () => void } | undefined>(undefined);
+
+  useEffect(() => {
+    controlsRef.current = player.controls;
+  }, [player.controls]);
+
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'background' || nextState === 'inactive') {
+        controlsRef.current?.pause();
+        setPlayer((prev) => (prev.isPlaying ? { ...prev, isPlaying: false } : prev));
+      }
+    });
+    return () => sub.remove();
+  }, []);
 
   const startPlaying = useCallback(
     (content: FeedCardItem, type: PlayerType, playlist: FeedCardItem[] = []) => {

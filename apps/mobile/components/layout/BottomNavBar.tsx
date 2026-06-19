@@ -41,6 +41,9 @@ export function BottomNavBar({ items, activeItemId }: BottomNavBarProps) {
           <TouchableOpacity
             key={item.id}
             onPress={item.onPress}
+            accessibilityLabel={item.label}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: !!isActive }}
             style={{
               flex: 1,
               height: 56,

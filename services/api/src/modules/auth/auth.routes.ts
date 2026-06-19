@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { type Request, type Response, Router } from 'express';
 import { asyncHandler } from '../../lib/asyncHandler';
 import { validateSchema } from '../../lib/validation';
@@ -6,6 +7,7 @@ import {
   authLimiter,
   passwordResetLimiter,
   emailVerificationLimiter,
+  inviteLimiter,
 } from '../../middleware/rateLimiter';
 import {
   signUpSchema,
@@ -299,6 +301,7 @@ authRouter.get(
 
 authRouter.get(
   '/invitations/validate',
+  inviteLimiter,
   asyncHandler(async (req, res) => {
     const token = String(req.query.token ?? '').trim();
     if (!token || token.length < 32) {
@@ -310,16 +313,20 @@ authRouter.get(
   }),
 );
 
+const acceptInviteSchema = z.object({
+  token:       z.string().min(32, 'Invalid invitation token'),
+  password:    z.string().min(8, 'Password must be at least 8 characters'),
+  name:        z.string().min(1).optional(),
+  displayName: z.string().min(1).optional(),
+}).refine((d) => d.name ?? d.displayName, { message: 'name or displayName is required' });
+
 authRouter.post(
   '/invitations/accept',
+  inviteLimiter,
   asyncHandler(async (req, res) => {
-    const { token, name, displayName, password } = req.body;
-    if (!token || !password || (!name && !displayName)) {
-      res.status(400).json({ message: 'token, password, and name are required', code: 'VALIDATION_ERROR' });
-      return;
-    }
+    const { token, name, displayName, password } = validateSchema(acceptInviteSchema, req.body);
     const result = await acceptAdminInvite(
-      { token, name: name ?? displayName, displayName: displayName ?? name, password },
+      { token, name: name ?? displayName ?? '', displayName: displayName ?? name ?? '', password },
       getAuthRequestContext(req),
     );
     const session = await buildSessionPayload(result, req);

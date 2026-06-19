@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="space-y-5">
     <div class="flex items-center justify-between">
       <h2 class="text-base font-bold text-ink">Mobile app config</h2>
@@ -138,8 +138,12 @@ onMounted(async () => {
 
 async function onSave(): Promise<void> {
   if (!config.value) return;
-  await store.saveAppConfig(config.value);
-  ui.addToast({ tone: 'success', title: 'Mobile config saved' });
+  try {
+    await store.saveAppConfig(config.value);
+    ui.addToast({ tone: 'success', title: 'Mobile config saved' });
+  } catch (e) {
+    ui.addToast({ tone: 'error', title: e instanceof Error ? e.message : 'Save failed' });
+  }
 }
 
 function addSection(): void {

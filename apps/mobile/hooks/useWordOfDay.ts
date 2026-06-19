@@ -1,27 +1,4 @@
-import { useEffect, useState } from 'react';
-import { fetchWordOfDay, type WordOfDayItem } from '../services/wordOfDayService';
-
-export function useWordOfDay() {
-  const [word, setWord] = useState<WordOfDayItem | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let active = true;
-
-    void fetchWordOfDay()
-      .then((response) => {
-        if (!active) return;
-        setWord(response.word ?? null);
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  return { word, loading };
-}
+// Re-exports the shared context so callers don't need to change import paths.
+// All data fetching is done once in WordOfDayProvider (mounted in _layout.tsx).
+export type { WordOfDayState } from '../context/WordOfDayContext';
+export { useWordOfDayContext as useWordOfDay } from '../context/WordOfDayContext';

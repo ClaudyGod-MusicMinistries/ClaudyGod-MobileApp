@@ -75,6 +75,13 @@ md
 .env.*
 !.env.example
 
+# Local dev audio test assets — large files, never commit to repo.
+# Drop .mp3/.m4a/.aac files here for player testing; production audio comes from S3.
+apps/mobile/assets/audio/*.mp3
+apps/mobile/assets/audio/*.m4a
+apps/mobile/assets/audio/*.aac
+apps/mobile/assets/audio/*.wav
+
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 .parcel-cache

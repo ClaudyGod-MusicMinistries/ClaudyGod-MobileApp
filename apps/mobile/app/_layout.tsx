@@ -10,17 +10,31 @@ import { useColorScheme, useThemeContext } from '../util/colorScheme';
 import { colors } from '../constants/color';
 import { FontProvider, FontContext } from '../context/FontContext';
 import { AuthProvider, useAuth } from '../context/AuthContext';
-import { FloatingPlayerProvider } from '../context/FloatingPlayerContext';
+import { FloatingPlayerProvider, useFloatingPlayer } from '../context/FloatingPlayerContext';
 import { ToastProvider , useToast } from '../context/ToastContext';
 import { AppModalProvider } from '../context/AppModalContext';
 import { ToastViewport } from '../components/ui/ToastViewport';
 import { MinimizedFloatingPlayer } from '../components/player/MinimizedFloatingPlayer';
+import { WordOfDayModal, shouldShowWordModal, markWordModalShown } from '../components/modals/WordOfDayModal';
+import { WordOfDayProvider } from '../context/WordOfDayContext';
 import { APP_ROUTES } from '../util/appRoutes';
 import { fetchMePreferences } from '../services/userFlowService';
 import { AppLoadingScreen } from '../components/Exp/AppLoading';
 import { clearMobileSession } from '../services/authService';
+import { useWordOfDay } from '../hooks/useWordOfDay';
 
 const MOBILE_INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000;
+
+// Global unhandled JS error handler — active in production builds only.
+// In development, the default RN error overlay is more useful.
+if (!__DEV__) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const ErrorUtils = (global as unknown as { ErrorUtils?: { setGlobalHandler: (handler: (error: Error, isFatal?: boolean) => void) => void } }).ErrorUtils;
+  ErrorUtils?.setGlobalHandler((error, isFatal) => {
+    console.error(`[GlobalError] ${isFatal ? 'fatal' : 'non-fatal'}:`, error?.message ?? error);
+    // TODO: pipe to Sentry / crash reporting when integrated
+  });
+}
 
 function ThemedLayout({ children }: { children: ReactNode }) {
   const colorScheme = useColorScheme();
@@ -50,6 +64,8 @@ function RootLayoutInner() {
   const [lastActivityAt, setLastActivityAt] = useState(Date.now());
   const [themePreferenceHydratedForUserId, setThemePreferenceHydratedForUserId] =
     useState<string | null>(null);
+  const [wordModalVisible, setWordModalVisible] = useState(false);
+  const { bibleVerse, adminWord } = useWordOfDay();
 
   const firstSegment = segments[0];
   const secondSegment = useMemo(() => Array.from(segments)[1], [segments]);
@@ -57,14 +73,35 @@ function RootLayoutInner() {
 
   useEffect(() => {
     const timer = setTimeout(() => setBootDelayDone(true), 1500);
-
     return () => clearTimeout(timer);
   }, []);
+
+  // Show the Word for Today modal once per day, 2 s after the app finishes booting.
+  // Requires at least the Bible verse to be loaded before triggering.
+  useEffect(() => {
+    if (!bootDelayDone || !bibleVerse) return;
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      if (cancelled) return;
+      const shouldShow = await shouldShowWordModal();
+      if (!cancelled && shouldShow) {
+        setWordModalVisible(true);
+        await markWordModalShown();
+      }
+    }, 2000);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [bootDelayDone, bibleVerse]);
+
+  const { isPlaying } = useFloatingPlayer().player;
 
   useEffect(() => {
     // Web sessions use long-lived browser tokens — no inactivity lockout.
     // Touch events (onTouchStart) also don't fire for mouse input on desktop web.
-    if (!isAuthenticated || Platform.OS === 'web') return;
+    // Audio playback keeps the session alive so users aren't signed out mid-sermon.
+    if (!isAuthenticated || Platform.OS === 'web' || isPlaying) return;
 
     const timer = setTimeout(() => {
       void clearMobileSession();
@@ -77,7 +114,7 @@ function RootLayoutInner() {
     }, MOBILE_INACTIVITY_TIMEOUT_MS);
 
     return () => clearTimeout(timer);
-  }, [isAuthenticated, lastActivityAt, router, showToast]);
+  }, [isAuthenticated, isPlaying, lastActivityAt, router, showToast]);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -110,7 +147,8 @@ function RootLayoutInner() {
         secondSegment === 'help' ||
         secondSegment === 'Help' ||
         secondSegment === 'Rate' ||
-        secondSegment === 'Word');
+        secondSegment === 'Word' ||
+        secondSegment === 'Referral');
 
     const isProtectedRoute =
       firstSegment === 'profile' ||
@@ -255,9 +293,26 @@ function RootLayoutInner() {
             animation: 'fade',
           }}
         />
+        <Stack.Screen
+          name="settingsPage"
+          options={{
+            animation: 'slide_from_right',
+          }}
+        />
       </Stack>
 
       <MinimizedFloatingPlayer />
+
+      <WordOfDayModal
+        visible={wordModalVisible}
+        bibleVerse={bibleVerse}
+        adminWord={adminWord}
+        onClose={() => setWordModalVisible(false)}
+        onReadMore={() => {
+          setWordModalVisible(false);
+          router.push(APP_ROUTES.settingsPages.word);
+        }}
+      />
     </ThemedLayout>
     </View>
   );
@@ -271,9 +326,11 @@ export default function RootLayout() {
           <ToastProvider>
             <AuthProvider>
               <FloatingPlayerProvider>
-                <AppModalProvider>
-                  <RootLayoutInner />
-                </AppModalProvider>
+                <WordOfDayProvider>
+                  <AppModalProvider>
+                    <RootLayoutInner />
+                  </AppModalProvider>
+                </WordOfDayProvider>
               </FloatingPlayerProvider>
             </AuthProvider>
           </ToastProvider>

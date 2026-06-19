@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="space-y-6">
     <div class="flex items-center justify-between gap-4">
       <h2 class="text-base font-bold text-ink">YouTube</h2>
@@ -278,7 +278,11 @@ async function importSelected(): Promise<void> {
     const { imported } = await importVideos(selections);
     ui.addToast({ tone: 'success', title: `${imported} video${imported !== 1 ? 's' : ''} imported to content` });
     selected.value = new Set();
-    importQueue.value = await listImportQueue();
+    try {
+      importQueue.value = await listImportQueue();
+    } catch {
+      // Queue refresh is non-fatal — content was already imported successfully
+    }
   } catch (e) {
     ui.addToast({ tone: 'error', title: 'Import failed', message: e instanceof Error ? e.message : undefined });
   } finally {
@@ -300,6 +304,8 @@ async function triggerSyncAll(): Promise<void> {
 }
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '--';
+  return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 </script>
