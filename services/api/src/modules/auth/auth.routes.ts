@@ -8,6 +8,7 @@ import {
   passwordResetLimiter,
   emailVerificationLimiter,
   inviteLimiter,
+  accessRequestLimiter,
 } from '../../middleware/rateLimiter';
 import {
   signUpSchema,
@@ -35,6 +36,7 @@ import {
   requestPasswordReset,
   resetPassword,
   verifyEmail,
+  createAccessRequest,
 } from './auth.service';
 import {
   issueAuthSession,
@@ -296,6 +298,25 @@ authRouter.get(
   }),
 );
 
+
+// ── Admin access request (public, rate-limited) ──────────────────────────────
+
+const accessRequestSchema = z.object({
+  name:    z.string().min(1, 'Name is required').max(120),
+  email:   z.string().email('Valid email required'),
+  role:    z.enum(['CREATOR', 'MODERATOR', 'ADMIN']).default('MODERATOR'),
+  message: z.string().max(500).optional(),
+});
+
+authRouter.post(
+  '/access-requests',
+  accessRequestLimiter,
+  asyncHandler(async (req, res) => {
+    const input = validateSchema(accessRequestSchema, req.body);
+    const result = await createAccessRequest(input);
+    res.status(201).json({ id: result.id, message: 'Access request received. You will be contacted if approved.' });
+  }),
+);
 
 // ── Admin invite: validate + accept (public, no auth required) ───────────────
 
