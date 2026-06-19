@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="space-y-5">
     <div class="flex items-center justify-between">
       <h2 class="text-base font-bold text-ink">Mobile app config</h2>
@@ -142,7 +142,7 @@ async function onSave(): Promise<void> {
     await store.saveAppConfig(config.value);
     ui.addToast({ tone: 'success', title: 'Mobile config saved' });
   } catch (e) {
-    ui.addToast({ tone: 'danger', title: e instanceof Error ? e.message : 'Save failed' });
+    ui.addToast({ tone: 'error', title: e instanceof Error ? e.message : 'Save failed' });
   }
 }
 
