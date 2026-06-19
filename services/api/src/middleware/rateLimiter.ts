@@ -60,6 +60,16 @@ export const inviteLimiter = rateLimit({
   skip: (_req: Request) => process.env.NODE_ENV === 'development',
 });
 
+// Access request limiter — 3 requests per hour per IP to prevent spam
+export const accessRequestLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 3,
+  message: 'Too many access requests. Please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (_req: Request) => process.env.NODE_ENV === 'development',
+});
+
 // Content request limiter — per authenticated user (5 per hour)
 export const contentRequestLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour

@@ -1,24 +1,25 @@
 import type { Router } from 'vue-router';
 import { Role } from '@/utils/constants';
 
+const AUTH_ROUTE_NAMES = new Set(['landing', 'login', 'register', 'request-access']);
+
 export function setupGuards(router: Router): void {
   router.beforeEach(async (to, _from) => {
-    // Lazy import to avoid circular dep at module init time.
     const { useAuthStore } = await import('@/stores/auth.store');
     const auth = useAuthStore();
 
-    // Allow public routes (login page).
+    // Public routes — allow access.
     if (to.meta.public) {
-      // If already logged in, redirect to dashboard.
-      if (auth.isAuthenticated && to.name === 'login') {
+      // Already authenticated users should skip auth pages and go straight to dashboard.
+      if (auth.isAuthenticated && AUTH_ROUTE_NAMES.has(to.name as string)) {
         return { name: 'dashboard' };
       }
       return true;
     }
 
-    // Not authenticated → login.
+    // Not authenticated → send to landing.
     if (!auth.isAuthenticated) {
-      return { name: 'login', query: { redirect: to.fullPath } };
+      return { name: 'landing', query: { redirect: to.fullPath } };
     }
 
     // Role check.
@@ -30,7 +31,6 @@ export function setupGuards(router: Router): void {
     return true;
   });
 
-  // Update document title.
   router.afterEach((to) => {
     const title = to.meta.title ? `${to.meta.title} — ClaudyGod Admin` : 'ClaudyGod Admin';
     document.title = title;

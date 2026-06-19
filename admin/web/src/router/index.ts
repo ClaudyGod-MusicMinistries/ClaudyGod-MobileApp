@@ -3,6 +3,13 @@ import { Role } from '@/utils/constants';
 import { setupGuards } from './guards';
 import AdminShell from '@/components/layout/AdminShell.vue';
 
+// Auth views are eagerly imported so they appear instantly without a lazy-load
+// flash on page refresh (the main cause of "scaffolding" visible during route init).
+import LandingView from '@/views/auth/LandingView.vue';
+import LoginView from '@/views/auth/LoginView.vue';
+import RegisterView from '@/views/auth/RegisterView.vue';
+import RequestAccessView from '@/views/auth/RequestAccessView.vue';
+
 declare module 'vue-router' {
   interface RouteMeta {
     public?: boolean;
@@ -14,33 +21,51 @@ declare module 'vue-router' {
 const router = createRouter({
   history: createWebHistory(),
   routes: [
-    // ─── Auth (no shell) ────────────────────────────────────────────────────
+    // ─── Public gateway ─────────────────────────────────────────────────────────
+    {
+      path: '/',
+      name: 'landing',
+      component: LandingView,
+      meta: { public: true, title: 'Welcome' },
+    },
+
+    // ─── Auth (no shell) ────────────────────────────────────────────────────────
     {
       path: '/login',
       name: 'login',
-      component: () => import('@/views/auth/LoginView.vue'),
+      component: LoginView,
       meta: { public: true, title: 'Sign in' },
     },
     {
       path: '/register',
       name: 'register',
-      component: () => import('@/views/auth/RegisterView.vue'),
+      component: RegisterView,
       meta: { public: true, title: 'Create account' },
+    },
+    {
+      path: '/request-access',
+      name: 'request-access',
+      component: RequestAccessView,
+      meta: { public: true, title: 'Request access' },
     },
 
     // ─── Authenticated routes (wrapped in AdminShell) ────────────────────────
     {
-      path: '/',
+      path: '/dashboard',
       component: AdminShell,
-      redirect: '/dashboard',
       children: [
-        // Dashboard
         {
-          path: 'dashboard',
+          path: '',
           name: 'dashboard',
           component: () => import('@/views/dashboard/OverviewView.vue'),
           meta: { minRole: Role.ADMIN, title: 'Overview' },
         },
+      ],
+    },
+    {
+      path: '/',
+      component: AdminShell,
+      children: [
         // Content
         {
           path: 'content',
@@ -99,6 +124,12 @@ const router = createRouter({
           name: 'users',
           component: () => import('@/views/users/UsersView.vue'),
           meta: { minRole: Role.ADMIN, title: 'Users' },
+        },
+        {
+          path: 'access-requests',
+          name: 'access-requests',
+          component: () => import('@/views/users/AccessRequestsView.vue'),
+          meta: { minRole: Role.SUPER_ADMIN, title: 'Access requests' },
         },
         // Analytics
         {

@@ -950,6 +950,25 @@ const migrationStatements = [
   `CREATE INDEX IF NOT EXISTS idx_admin_invitations_pending
      ON admin_invitations (expires_at)
      WHERE accepted_at IS NULL AND revoked_at IS NULL`,
+
+  /* ── Admin access requests (self-service onboarding requests) ────────────── */
+  `CREATE TABLE IF NOT EXISTS admin_access_requests (
+     id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+     name         TEXT        NOT NULL,
+     email        TEXT        NOT NULL,
+     role         TEXT        NOT NULL DEFAULT 'MODERATOR'
+                  CHECK (role IN ('CREATOR','MODERATOR','ADMIN')),
+     message      TEXT,
+     status       TEXT        NOT NULL DEFAULT 'pending'
+                  CHECK (status IN ('pending','approved','rejected')),
+     reviewed_by  UUID        REFERENCES app_users(id) ON DELETE SET NULL,
+     reviewed_at  TIMESTAMPTZ,
+     created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+   )`,
+  `CREATE INDEX IF NOT EXISTS idx_admin_access_requests_status
+     ON admin_access_requests (status, created_at)`,
+  `CREATE INDEX IF NOT EXISTS idx_admin_access_requests_email
+     ON admin_access_requests (email)`,
 ];
 
 const MIGRATION_LOCK_ID = 7_246_130_001;
