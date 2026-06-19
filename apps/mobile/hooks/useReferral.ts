@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Share } from 'react-native';
-import Clipboard from '@react-native-clipboard/clipboard';
+import * as Clipboard from 'expo-clipboard';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../context/AuthContext';
 import { apiFetch } from '../services/apiClient';
@@ -107,7 +107,7 @@ export function useReferral(): ReferralState {
 
   const copyCode = useCallback(() => {
     if (!code) return;
-    Clipboard.setString(code);
+    void Clipboard.setStringAsync(code);
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2000);
   }, [code]);
