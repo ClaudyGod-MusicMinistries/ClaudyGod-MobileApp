@@ -253,6 +253,7 @@ export default function LandingScreen() {
               <AppButton
                 title="Create account"
                 size="md"
+                leftIcon={<MaterialIcons name="person-add" size={16} color="#FFFFFF" />}
                 onPress={() => router.push(APP_ROUTES.auth.signUp)}
                 style={{ flex: 1 }}
               />
@@ -260,6 +261,7 @@ export default function LandingScreen() {
                 title="Sign in"
                 variant="outline"
                 size="md"
+                leftIcon={<MaterialIcons name="login" size={16} color="#8B5CF6" />}
                 onPress={() => router.push(APP_ROUTES.auth.signIn)}
                 style={{ flex: 1 }}
               />

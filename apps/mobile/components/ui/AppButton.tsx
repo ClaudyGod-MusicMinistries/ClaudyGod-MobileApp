@@ -1,15 +1,59 @@
-import React, { ReactNode, useRef, useCallback } from 'react';
+import React, { ReactNode, useRef, useCallback, useEffect } from 'react';
 import {
-  ActivityIndicator,
+  Animated,
   TextStyle,
   TouchableOpacityProps,
   View,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { BrandLoader } from '../branding/BrandLoader';
 import { CustomText } from '../CustomText';
 import { useAppTheme } from '../../util/colorScheme';
 import { TVTouchable } from './TVTouchable';
+
+function BubblePulse({ color, label }: { color: string; label?: string }) {
+  const d0 = useRef(new Animated.Value(0)).current;
+  const d1 = useRef(new Animated.Value(0)).current;
+  const d2 = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const pulse = (d: Animated.Value, delay: number) =>
+      Animated.loop(
+        Animated.sequence([
+          Animated.delay(delay),
+          Animated.timing(d, { toValue: 1, duration: 380, useNativeDriver: true }),
+          Animated.timing(d, { toValue: 0, duration: 380, useNativeDriver: true }),
+          Animated.delay(Math.max(0, 760 - delay)),
+        ]),
+      );
+    const a0 = pulse(d0, 0);
+    const a1 = pulse(d1, 180);
+    const a2 = pulse(d2, 360);
+    a0.start(); a1.start(); a2.start();
+    return () => { a0.stop(); a1.stop(); a2.stop(); };
+  }, [d0, d1, d2]);
+
+  const dot = (d: Animated.Value) => ({
+    width: 7, height: 7, borderRadius: 3.5,
+    backgroundColor: color,
+    transform: [{ scale: d.interpolate({ inputRange: [0, 1], outputRange: [0.55, 1.25] }) }],
+    opacity: d.interpolate({ inputRange: [0, 1], outputRange: [0.3, 1] }),
+  });
+
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+      <View style={{ flexDirection: 'row', gap: 5, alignItems: 'center' }}>
+        <Animated.View style={dot(d0)} />
+        <Animated.View style={dot(d1)} />
+        <Animated.View style={dot(d2)} />
+      </View>
+      {label ? (
+        <CustomText variant="label" numberOfLines={1} style={{ color, fontSize: 13, fontWeight: '600' }}>
+          {label}
+        </CustomText>
+      ) : null}
+    </View>
+  );
+}
 
 interface AppButtonProps extends TouchableOpacityProps {
   title: string;
@@ -87,11 +131,7 @@ export function AppButton({
 
   const content = (() => {
     if (loading) {
-      return loadingVariant === 'brand' ? (
-        <BrandLoader label={loadingLabel || title} size="sm" textColor={resolvedTextColor} />
-      ) : (
-        <ActivityIndicator size="small" color={resolvedTextColor} />
-      );
+      return <BubblePulse color={resolvedTextColor} label={loadingLabel || title} />;
     }
 
     const resolvedLeftIcon = leftIcon ?? icon;
