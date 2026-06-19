@@ -9,7 +9,6 @@ import { AuthTextField } from '../components/auth/AuthTextField';
 import { AppButton } from '../components/ui/AppButton';
 import { TVTouchable } from '../components/ui/TVTouchable';
 import { getEmailValidationMessage, isLikelyValidEmail, normalizeEmail } from '../lib/authValidation';
-import { isSupabaseConfigured } from '../lib/supabase';
 import { loginMobileUser, loginMobileUserWithGoogle, loginMobileUserWithFacebook } from '../services/authService';
 import { useToast } from '../context/ToastContext';
 import { useAppModal } from '../context/AppModalContext';
@@ -225,32 +224,26 @@ export default function SignInScreen() {
         fullWidth
         loading={submitting}
         loadingLabel="Signing in…"
-        loadingVariant="brand"
+        leftIcon={<MaterialIcons name="login" size={17} color="#FFFFFF" />}
         onPress={() => void handleSignIn()}
         disabled={anyLoading}
         style={{ marginTop: 16 }}
       />
 
-      {/* Social auth — only when Supabase is configured */}
-      {isSupabaseConfigured ? (
-        <>
-          <OrDivider label="or continue with" />
-
-          {/* Side-by-side social buttons */}
-          <View style={{ flexDirection: 'row', gap: 12 }}>
-            <SocialButton
-              provider="google"
-              onPress={() => void handleSocialSignIn('google')}
-              disabled={anyLoading}
-            />
-            <SocialButton
-              provider="facebook"
-              onPress={() => void handleSocialSignIn('facebook')}
-              disabled={anyLoading}
-            />
-          </View>
-        </>
-      ) : null}
+      {/* Social auth — always visible */}
+      <OrDivider label="or continue with" />
+      <View style={{ flexDirection: 'row', gap: 12 }}>
+        <SocialButton
+          provider="google"
+          onPress={() => void handleSocialSignIn('google')}
+          disabled={anyLoading}
+        />
+        <SocialButton
+          provider="facebook"
+          onPress={() => void handleSocialSignIn('facebook')}
+          disabled={anyLoading}
+        />
+      </View>
 
       {/* Sign-up row — single line with a divider */}
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 20 }}>

@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { View } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { CustomText } from '../components/CustomText';
 import { AuthFeedbackBanner } from '../components/auth/AuthFeedbackBanner';
@@ -10,12 +10,29 @@ import { PasswordStrengthPanel } from '../components/auth/PasswordStrengthPanel'
 import { AppButton } from '../components/ui/AppButton';
 import { TVTouchable } from '../components/ui/TVTouchable';
 import { getEmailValidationMessage, getNameValidationMessage, getPasswordConfirmationMessage, getPasswordStrengthReport, isLikelyValidEmail, isPasswordCompliant, isValidDisplayName, normalizeEmail } from '../lib/authValidation';
-import { isSupabaseConfigured } from '../lib/supabase';
-import { loginMobileUserWithGoogle, registerMobileUser } from '../services/authService';
+import { loginMobileUserWithGoogle, loginMobileUserWithFacebook, registerMobileUser } from '../services/authService';
 import { useToast } from '../context/ToastContext';
 import { useAppModal } from '../context/AppModalContext';
 import { APP_ROUTES } from '../util/appRoutes';
 import { useDeviceClass } from '../util/deviceClassConfig';
+
+const SUGGEST_UPPER = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+const SUGGEST_LOWER = 'abcdefghjkmnpqrstuvwxyz';
+const SUGGEST_DIGITS = '23456789';
+const SUGGEST_SPECIAL = '!@#$%&*';
+
+function generateSuggestedPassword(): string {
+  const pool = SUGGEST_UPPER + SUGGEST_LOWER + SUGGEST_DIGITS + SUGGEST_SPECIAL;
+  let pwd =
+    SUGGEST_UPPER[Math.floor(Math.random() * SUGGEST_UPPER.length)] +
+    SUGGEST_LOWER[Math.floor(Math.random() * SUGGEST_LOWER.length)] +
+    SUGGEST_DIGITS[Math.floor(Math.random() * SUGGEST_DIGITS.length)] +
+    SUGGEST_SPECIAL[Math.floor(Math.random() * SUGGEST_SPECIAL.length)];
+  for (let i = 4; i < 14; i++) {
+    pwd += pool[Math.floor(Math.random() * pool.length)];
+  }
+  return pwd.split('').sort(() => Math.random() - 0.5).join('');
+}
 
 
 export default function SignUpScreen() {
@@ -29,6 +46,7 @@ export default function SignUpScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [hidePassword, setHidePassword] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [socialLoading, setSocialLoading] = useState<'google' | 'facebook' | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
   const normalizedEmail = useMemo(() => normalizeEmail(email), [email]);
   const nameIsValid = useMemo(() => isValidDisplayName(name), [name]);
@@ -59,19 +77,33 @@ export default function SignUpScreen() {
     } finally { setSubmitting(false); }
   };
 
-  const handleGoogleSignUp = async () => {
+  const anyLoading = submitting || socialLoading !== null;
+
+  const handleSocialSignUp = async (provider: 'google' | 'facebook') => {
     setErrorMessage('');
-    setSubmitting(true);
+    setSocialLoading(provider);
     try {
-      await loginMobileUserWithGoogle();
+      if (provider === 'google') {
+        await loginMobileUserWithGoogle();
+      } else {
+        await loginMobileUserWithFacebook();
+      }
       router.replace(APP_ROUTES.tabs.home);
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to continue with Google right now.';
+      const message = error instanceof Error ? error.message : `Unable to continue with ${provider === 'google' ? 'Google' : 'Facebook'} right now.`;
       setErrorMessage(message);
-      showModal({ title: 'Google sign-in unavailable', message, tone: 'error' });
+      showModal({ title: `${provider === 'google' ? 'Google' : 'Facebook'} sign-up unavailable`, message, tone: 'error' });
     } finally {
-      setSubmitting(false);
+      setSocialLoading(null);
     }
+  };
+
+  const handleSuggestPassword = () => {
+    const suggested = generateSuggestedPassword();
+    setPassword(suggested);
+    setConfirmPassword(suggested);
+    setHidePassword(false);
+    showToast({ title: 'Password suggested', message: 'A strong password has been filled in for you. Save it somewhere safe!', tone: 'info' });
   };
 
   return (
@@ -126,6 +158,16 @@ export default function SignUpScreen() {
           hint={password.trim() ? `${passwordReport.label} password` : 'Use a mix of uppercase letters, lowercase letters, and numbers.'}
           hintTone={password.trim() ? (passwordIsCompliant ? 'success' : 'error') : 'default'}
         />
+        <TVTouchable
+          onPress={handleSuggestPassword}
+          showFocusBorder={false}
+          style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: -4 }}
+        >
+          <MaterialIcons name="auto-fix-high" size={13} color="#A78BFA" />
+          <CustomText style={{ color: '#A78BFA', fontSize: 12, fontWeight: '600' }}>
+            Suggest a strong password
+          </CustomText>
+        </TVTouchable>
         {password.trim() ? <PasswordStrengthPanel password={password} /> : null}
         <AuthTextField
           label="Confirm password"
@@ -149,38 +191,78 @@ export default function SignUpScreen() {
         size="lg"
         fullWidth
         loading={submitting}
-        loadingLabel="Creating account"
-        loadingVariant="brand"
+        loadingLabel="Creating account…"
+        leftIcon={<MaterialIcons name="person-add" size={17} color="#FFFFFF" />}
         onPress={() => void handleSignUp()}
-        disabled={!canSubmit || submitting}
+        disabled={!canSubmit || anyLoading}
         style={{ marginTop: 16 }}
       />
 
-      {isSupabaseConfigured ? (
-        <>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginVertical: 4, marginTop: 16 }}>
-            <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(247,242,255,0.10)' }} />
-            <CustomText style={{ color: 'rgba(247,242,255,0.35)', fontSize: 11 }}>or continue with</CustomText>
-            <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(247,242,255,0.10)' }} />
-          </View>
-          <AppButton
-            title="Continue with Google"
-            variant="secondary"
-            size="lg"
-            fullWidth
-            onPress={() => void handleGoogleSignUp()}
-            disabled={submitting}
-          />
-        </>
-      ) : null}
+      {/* Social auth */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginVertical: 4, marginTop: 16 }}>
+        <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(247,242,255,0.10)' }} />
+        <CustomText style={{ color: 'rgba(247,242,255,0.35)', fontSize: 11 }}>or continue with</CustomText>
+        <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(247,242,255,0.10)' }} />
+      </View>
+      <View style={{ flexDirection: 'row', gap: 12 }}>
+        {/* Google */}
+        <TVTouchable
+          onPress={() => void handleSocialSignUp('google')}
+          disabled={anyLoading}
+          showFocusBorder={false}
+          style={{
+            flex: 1, height: 52, borderRadius: 14,
+            borderWidth: 1, borderColor: 'rgba(214,190,255,0.18)',
+            backgroundColor: 'rgba(255,255,255,0.05)',
+            alignItems: 'center', justifyContent: 'center',
+            flexDirection: 'row', gap: 10,
+            opacity: anyLoading ? 0.5 : 1,
+          }}
+        >
+          {socialLoading === 'google' ? (
+            <View style={{ width: 20, height: 20, alignItems: 'center', justifyContent: 'center' }}>
+              <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: '#4285F4', opacity: 0.8 }} />
+            </View>
+          ) : (
+            <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' }}>
+              <FontAwesome name="google" size={14} color="#4285F4" />
+            </View>
+          )}
+          <CustomText style={{ color: '#F7F2FF', fontSize: 13, fontWeight: '600' }}>Google</CustomText>
+        </TVTouchable>
+        {/* Facebook */}
+        <TVTouchable
+          onPress={() => void handleSocialSignUp('facebook')}
+          disabled={anyLoading}
+          showFocusBorder={false}
+          style={{
+            flex: 1, height: 52, borderRadius: 14,
+            borderWidth: 1, borderColor: 'rgba(214,190,255,0.18)',
+            backgroundColor: 'rgba(255,255,255,0.05)',
+            alignItems: 'center', justifyContent: 'center',
+            flexDirection: 'row', gap: 10,
+            opacity: anyLoading ? 0.5 : 1,
+          }}
+        >
+          {socialLoading === 'facebook' ? (
+            <View style={{ width: 20, height: 20, alignItems: 'center', justifyContent: 'center' }}>
+              <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: '#1877F2', opacity: 0.8 }} />
+            </View>
+          ) : (
+            <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: '#1877F2', alignItems: 'center', justifyContent: 'center' }}>
+              <FontAwesome name="facebook-f" size={14} color="#FFFFFF" />
+            </View>
+          )}
+          <CustomText style={{ color: '#F7F2FF', fontSize: 13, fontWeight: '600' }}>Facebook</CustomText>
+        </TVTouchable>
+      </View>
 
-      <View style={{ alignItems: 'center', marginTop: 20 }}>
-        <CustomText variant="body" style={{ color: 'rgba(255,255,255,0.55)', textAlign: 'center', fontSize: 13 }}>
-          Already have an account?{' '}
-          <TVTouchable onPress={() => router.push(APP_ROUTES.auth.signIn)} showFocusBorder={false} style={{ display: 'inline' as never }}>
-            <CustomText variant="label" style={{ color: '#E7DCFF', fontSize: 13 }}>Sign in</CustomText>
-          </TVTouchable>
-        </CustomText>
+      {/* Already have account — stays on one line */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, marginTop: 20 }}>
+        <CustomText style={{ color: 'rgba(255,255,255,0.55)', fontSize: 13 }}>Already have an account?</CustomText>
+        <TVTouchable onPress={() => router.push(APP_ROUTES.auth.signIn)} showFocusBorder={false}>
+          <CustomText style={{ color: '#E7DCFF', fontSize: 13, fontWeight: '700' }}>Sign in</CustomText>
+        </TVTouchable>
       </View>
     </AuthScreenFrame>
   );

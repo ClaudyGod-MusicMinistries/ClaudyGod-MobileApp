@@ -84,3 +84,4 @@ export async function registerWithCode(input: {
 }
 
 export const GOOGLE_LOGIN_URL = import.meta.env.VITE_GOOGLE_LOGIN_URL || '';
+export const FACEBOOK_LOGIN_URL = import.meta.env.VITE_FACEBOOK_LOGIN_URL || '';
