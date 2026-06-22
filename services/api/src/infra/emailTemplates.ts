@@ -408,6 +408,73 @@ export const buildAccountEmailChangeTemplate = (input: {
   return { subject, text, html };
 };
 
+export const buildOtpTemplate = (input: {
+  code: string;
+  expiresInMinutes: number;
+}): RenderedEmailTemplate => {
+  const subject = `Your ${brandName} sign-in code: ${input.code}`;
+  const text = toTextBlock([
+    `Your ${brandName} sign-in code is: ${input.code}`,
+    '',
+    `This code expires in ${input.expiresInMinutes} minutes.`,
+    'Never share this code with anyone — our team will never ask for it.',
+    supportFooter,
+  ]);
+  const html = renderShell({
+    preview: `Your ${brandName} sign-in code is ${input.code}`,
+    eyebrow: 'Sign-in code',
+    title: 'Your verification code',
+    greeting: 'Hi,',
+    bodyHtml: `<p style="margin: 0 0 20px 0;">Use the code below to sign in to your ${escapeHtml(brandName)} account. It expires in <strong>${escapeHtml(String(input.expiresInMinutes))} minutes</strong>.</p>
+    <div style="background:#f3f0ff;border:1px solid #d4c8ff;border-radius:16px;padding:24px 32px;text-align:center;margin:0 0 20px 0;">
+      <div style="font-size:36px;font-weight:800;letter-spacing:0.25em;color:#6d28d9;font-family:monospace;">${escapeHtml(input.code)}</div>
+    </div>
+    <p style="margin: 0;color:#64748b;font-size:13px;">Never share this code with anyone. ${escapeHtml(brandName)} staff will never ask for it.</p>`,
+  });
+  return { subject, text, html };
+};
+
+export const buildNewSignInTemplate = (input: {
+  displayName: string;
+  device: string;
+  location: string;
+  time: string;
+  supportEmail: string;
+  supportUrl: string;
+}): RenderedEmailTemplate => {
+  const subject = `New sign-in to your ${brandName} account`;
+  const text = toTextBlock([
+    `Hi ${input.displayName},`,
+    '',
+    `A new sign-in was detected on your ${brandName} account.`,
+    '',
+    `Device: ${input.device}`,
+    `Location: ${input.location}`,
+    `Time: ${input.time}`,
+    '',
+    'If this was you, no action is needed.',
+    `If this wasn't you, contact our support team immediately at ${input.supportEmail} or visit ${input.supportUrl}`,
+    supportFooter,
+  ]);
+  const html = renderShell({
+    preview: `New sign-in detected on your ${brandName} account`,
+    eyebrow: 'Security Alert',
+    title: 'New sign-in detected',
+    greeting: `Hi ${escapeHtml(input.displayName)},`,
+    bodyHtml: `<p style="margin: 0 0 16px 0;">We detected a new sign-in to your <strong>${escapeHtml(brandName)}</strong> account.</p>
+    <div style="border:1px solid #e5e7eb;border-radius:14px;padding:16px 18px;background:#fafafa;margin:0 0 18px 0;">
+      <table style="width:100%;border-collapse:collapse;">
+        <tr><td style="font-size:12px;color:#64748b;padding:4px 0;width:80px;">Device</td><td style="font-size:13px;color:#111827;font-weight:500;padding:4px 0;">${escapeHtml(input.device)}</td></tr>
+        <tr><td style="font-size:12px;color:#64748b;padding:4px 0;">Location</td><td style="font-size:13px;color:#111827;font-weight:500;padding:4px 0;">${escapeHtml(input.location)}</td></tr>
+        <tr><td style="font-size:12px;color:#64748b;padding:4px 0;">Time</td><td style="font-size:13px;color:#111827;font-weight:500;padding:4px 0;">${escapeHtml(input.time)}</td></tr>
+      </table>
+    </div>
+    <p style="margin: 0 0 8px 0;color:#374151;">If this was you, no action is needed.</p>
+    <p style="margin: 0;color:#374151;">If this <strong>wasn't you</strong>, please <a href="${escapeHtml(input.supportUrl)}" style="color:#6d28d9;font-weight:600;">contact our support team immediately</a> so we can secure your account.</p>`,
+  });
+  return { subject, text, html };
+};
+
 export const buildAdminInviteTemplate = (input: {
   inviterName: string;
   role: string;

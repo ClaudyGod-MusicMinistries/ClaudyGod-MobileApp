@@ -1307,3 +1307,117 @@ export const revokeAdminInvitation = async (inviteId: string): Promise<void> => 
     throw new NotFoundError('Invitation not found or already resolved', 'INVITE_NOT_FOUND');
   }
 };
+
+// ── Admin Access Requests ────────────────────────────────────────────────────
+
+export interface AdminAccessRequest {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  message: string | null;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: string;
+  reviewedAt: string | null;
+}
+
+export const createAccessRequest = async (input: {
+  name: string;
+  email: string;
+  role: string;
+  message?: string;
+}): Promise<{ id: string }> => {
+  const email = input.email.trim().toLowerCase();
+
+  // Prevent duplicate pending requests from the same email.
+  const existing = await pool.query<{ id: string }>(
+    `SELECT id FROM admin_access_requests
+     WHERE email = $1 AND status = 'pending'
+     LIMIT 1`,
+    [email],
+  );
+  if ((existing.rowCount ?? 0) > 0) {
+    // Return silently — don't expose that a request already exists.
+    return { id: existing.rows[0]!.id };
+  }
+
+  const result = await pool.query<{ id: string }>(
+    `INSERT INTO admin_access_requests (name, email, role, message)
+     VALUES ($1, $2, $3, $4)
+     RETURNING id`,
+    [input.name.trim(), email, input.role, input.message?.trim() || null],
+  );
+  return { id: result.rows[0]!.id };
+};
+
+export const listAdminAccessRequests = async (): Promise<AdminAccessRequest[]> => {
+  const result = await pool.query<{
+    id: string; name: string; email: string; role: string;
+    message: string | null; status: string; created_at: string; reviewed_at: string | null;
+  }>(
+    `SELECT id, name, email, role, message, status, created_at, reviewed_at
+     FROM admin_access_requests
+     ORDER BY
+       CASE status WHEN 'pending' THEN 0 ELSE 1 END,
+       created_at DESC
+     LIMIT 200`,
+  );
+  return result.rows.map(r => ({
+    id: r.id,
+    name: r.name,
+    email: r.email,
+    role: r.role,
+    message: r.message,
+    status: r.status as 'pending' | 'approved' | 'rejected',
+    createdAt: r.created_at,
+    reviewedAt: r.reviewed_at,
+  }));
+};
+
+export const approveAdminAccessRequest = async (
+  requestId: string,
+  reviewer: { id: string; displayName: string; email: string },
+  role: string,
+): Promise<{ rawToken: string; expiresAt: Date; email: string }> => {
+  const req = await pool.query<{ email: string; status: string }>(
+    `SELECT email, status FROM admin_access_requests WHERE id = $1`,
+    [requestId],
+  );
+  if ((req.rowCount ?? 0) === 0) {
+    throw new NotFoundError('Access request not found', 'ACCESS_REQUEST_NOT_FOUND');
+  }
+  const row = req.rows[0]!;
+  if (row.status !== 'pending') {
+    throw new BadRequestError('Request has already been reviewed', 'ACCESS_REQUEST_ALREADY_REVIEWED');
+  }
+
+  const invite = await createAdminInviteToken({
+    email: row.email,
+    role,
+    invitedBy: reviewer.id,
+  });
+
+  await pool.query(
+    `UPDATE admin_access_requests
+     SET status = 'approved', reviewed_by = $1, reviewed_at = NOW()
+     WHERE id = $2`,
+    [reviewer.id, requestId],
+  );
+
+  return { rawToken: invite.rawToken, expiresAt: invite.expiresAt, email: row.email };
+};
+
+export const rejectAdminAccessRequest = async (
+  requestId: string,
+  reviewerId: string,
+): Promise<void> => {
+  const result = await pool.query(
+    `UPDATE admin_access_requests
+     SET status = 'rejected', reviewed_by = $1, reviewed_at = NOW()
+     WHERE id = $2 AND status = 'pending'`,
+    [reviewerId, requestId],
+  );
+  if ((result.rowCount ?? 0) === 0) {
+    throw new NotFoundError('Access request not found or already reviewed', 'ACCESS_REQUEST_NOT_FOUND');
+  }
+};

@@ -27,6 +27,9 @@ import {
   createAdminInviteToken,
   listAdminInvitations,
   revokeAdminInvitation,
+  listAdminAccessRequests,
+  approveAdminAccessRequest,
+  rejectAdminAccessRequest,
 } from '../auth/auth.service';
 import { queueAdminInviteEmail } from '../../infra/transactionalEmails';
 import { env } from '../../config/env';
@@ -181,5 +184,60 @@ adminRouter.delete(
     const params = validateSchema(invitationIdParamsSchema, req.params);
     await revokeAdminInvitation(params.id);
     res.status(200).json({ message: 'Invitation revoked' });
+  }),
+);
+
+// ── Admin Access Requests ────────────────────────────────────────────────────
+
+function requireSuperAdmin(req: Request) {
+  const user = requireAuthenticated(req);
+  if (user.role !== 'SUPER_ADMIN') {
+    throw new ForbiddenError('Super Admin access required', 'SUPER_ADMIN_REQUIRED');
+  }
+  return user;
+}
+
+adminRouter.get(
+  '/access-requests',
+  asyncHandler(async (req, res) => {
+    requireSuperAdmin(req);
+    const requests = await listAdminAccessRequests();
+    res.status(200).json({ requests });
+  }),
+);
+
+adminRouter.post(
+  '/access-requests/:id/approve',
+  asyncHandler(async (req, res) => {
+    const actor = requireSuperAdmin(req);
+    const { id } = req.params as { id: string };
+    const body = req.body as { role?: string };
+    const role = body.role ?? 'MODERATOR';
+
+    const invite = await approveAdminAccessRequest(id, {
+      id: actor.sub,
+      displayName: actor.displayName ?? actor.email,
+      email: actor.email,
+    }, role);
+
+    await queueAdminInviteEmail({
+      toEmail: invite.email,
+      inviterName: actor.displayName || actor.email,
+      role,
+      rawToken: invite.rawToken,
+      expiresInHours: env.ADMIN_INVITE_TTL_HOURS,
+    }).catch(() => { /* best-effort — don't fail the HTTP response if email queuing fails */ });
+
+    res.status(200).json({ message: 'Invitation sent', expiresAt: invite.expiresAt.toISOString() });
+  }),
+);
+
+adminRouter.post(
+  '/access-requests/:id/reject',
+  asyncHandler(async (req, res) => {
+    const actor = requireSuperAdmin(req);
+    const { id } = req.params as { id: string };
+    await rejectAdminAccessRequest(id, actor.sub);
+    res.status(200).json({ message: 'Request dismissed' });
   }),
 );

@@ -950,6 +950,58 @@ const migrationStatements = [
   `CREATE INDEX IF NOT EXISTS idx_admin_invitations_pending
      ON admin_invitations (expires_at)
      WHERE accepted_at IS NULL AND revoked_at IS NULL`,
+
+  /* ── Admin access requests (self-service onboarding requests) ────────────── */
+  `CREATE TABLE IF NOT EXISTS admin_access_requests (
+     id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+     name         TEXT        NOT NULL,
+     email        TEXT        NOT NULL,
+     role         TEXT        NOT NULL DEFAULT 'MODERATOR'
+                  CHECK (role IN ('CREATOR','MODERATOR','ADMIN')),
+     message      TEXT,
+     status       TEXT        NOT NULL DEFAULT 'pending'
+                  CHECK (status IN ('pending','approved','rejected')),
+     reviewed_by  UUID        REFERENCES app_users(id) ON DELETE SET NULL,
+     reviewed_at  TIMESTAMPTZ,
+     created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+   )`,
+  `CREATE INDEX IF NOT EXISTS idx_admin_access_requests_status
+     ON admin_access_requests (status, created_at)`,
+  `CREATE INDEX IF NOT EXISTS idx_admin_access_requests_email
+     ON admin_access_requests (email)`,
+
+  /* ── Email OTP codes (passwordless / magic-code sign-in) ────────────────── */
+  `CREATE TABLE IF NOT EXISTS email_otps (
+     id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+     email        TEXT        NOT NULL,
+     code_hash    TEXT        NOT NULL,
+     purpose      TEXT        NOT NULL DEFAULT 'sign_in'
+                  CHECK (purpose IN ('sign_in', 'sign_up')),
+     expires_at   TIMESTAMPTZ NOT NULL,
+     used_at      TIMESTAMPTZ,
+     created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+   )`,
+  `CREATE INDEX IF NOT EXISTS idx_email_otps_email_purpose
+     ON email_otps (email, purpose)
+     WHERE used_at IS NULL`,
+
+  /* ── Trusted device tokens (long-lived, gate on biometric at client) ─────── */
+  `CREATE TABLE IF NOT EXISTS trusted_device_tokens (
+     id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+     user_id         UUID        NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,
+     device_id       UUID        REFERENCES user_devices(id) ON DELETE CASCADE,
+     token_hash      TEXT        NOT NULL UNIQUE,
+     device_label    TEXT,
+     expires_at      TIMESTAMPTZ NOT NULL,
+     last_used_at    TIMESTAMPTZ,
+     revoked_at      TIMESTAMPTZ,
+     created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+   )`,
+  `CREATE INDEX IF NOT EXISTS idx_trusted_device_tokens_user
+     ON trusted_device_tokens (user_id)
+     WHERE revoked_at IS NULL`,
+  `CREATE INDEX IF NOT EXISTS idx_trusted_device_tokens_hash
+     ON trusted_device_tokens (token_hash)`,
 ];
 
 const MIGRATION_LOCK_ID = 7_246_130_001;

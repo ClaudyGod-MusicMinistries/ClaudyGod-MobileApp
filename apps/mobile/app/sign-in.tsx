@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View } from 'react-native';
 import { MaterialIcons , FontAwesome } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -8,8 +8,19 @@ import { AuthScreenFrame } from '../components/auth/AuthScreenFrame';
 import { AuthTextField } from '../components/auth/AuthTextField';
 import { AppButton } from '../components/ui/AppButton';
 import { TVTouchable } from '../components/ui/TVTouchable';
+import { TrustDeviceSheet } from '../components/auth/TrustDeviceSheet';
 import { getEmailValidationMessage, isLikelyValidEmail, normalizeEmail } from '../lib/authValidation';
-import { loginMobileUser, loginMobileUserWithGoogle, loginMobileUserWithFacebook } from '../services/authService';
+import {
+  loginMobileUser,
+  loginMobileUserWithGoogle,
+  loginMobileUserWithFacebook,
+  signInWithTrustedDeviceToken,
+} from '../services/authService';
+import {
+  getTrustedDeviceToken,
+  getBiometricType,
+  promptBiometric,
+} from '../lib/trustedDevice';
 import { useToast } from '../context/ToastContext';
 import { useAppModal } from '../context/AppModalContext';
 import { APP_ROUTES } from '../util/appRoutes';
@@ -99,10 +110,27 @@ export default function SignInScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [socialLoading, setSocialLoading] = useState<'google' | 'facebook' | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
+  const [trustSheetVisible, setTrustSheetVisible] = useState(false);
+  const [trustSheetAccessToken, setTrustSheetAccessToken] = useState('');
+  const [trustSheetDisplayName, setTrustSheetDisplayName] = useState('');
+  const [biometricType, setBiometricType] = useState<'face' | 'fingerprint' | 'none'>('none');
+  const [hasTrustedToken, setHasTrustedToken] = useState(false);
+  const [biometricLoading, setBiometricLoading] = useState(false);
+
+  useEffect(() => {
+    getBiometricType().then(setBiometricType);
+    getTrustedDeviceToken().then((t) => setHasTrustedToken(t !== null));
+  }, []);
 
   const normalizedEmail = normalizeEmail(email);
   const emailIsValid = !normalizedEmail || isLikelyValidEmail(normalizedEmail);
   const emailHint = getEmailValidationMessage(email);
+
+  const showTrustSheet = (accessToken: string, displayName: string) => {
+    setTrustSheetAccessToken(accessToken);
+    setTrustSheetDisplayName(displayName);
+    setTrustSheetVisible(true);
+  };
 
   const handleSignIn = async () => {
     setErrorMessage('');
@@ -124,7 +152,11 @@ export default function SignInScreen() {
         router.replace({ pathname: APP_ROUTES.auth.verifyEmail, params: { email: normalizedEmail } });
         return;
       }
-      router.replace(APP_ROUTES.tabs.home);
+      if (session.accessToken && biometricType !== 'none' && !hasTrustedToken) {
+        showTrustSheet(session.accessToken, session.user.displayName);
+      } else {
+        router.replace(APP_ROUTES.tabs.home);
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to sign in right now.';
       setErrorMessage(message);
@@ -138,16 +170,37 @@ export default function SignInScreen() {
     }
   };
 
+  const handleBiometricSignIn = async () => {
+    const stored = await getTrustedDeviceToken();
+    if (!stored) { setHasTrustedToken(false); return; }
+
+    const ok = await promptBiometric('Confirm it\'s you to sign in');
+    if (!ok) return;
+
+    setBiometricLoading(true);
+    try {
+      await signInWithTrustedDeviceToken(stored.token);
+      router.replace(APP_ROUTES.tabs.home);
+    } catch {
+      showToast({ title: 'Biometric sign-in failed', message: 'Your trusted session may have expired. Sign in with your password.', tone: 'warning' });
+      setHasTrustedToken(false);
+    } finally {
+      setBiometricLoading(false);
+    }
+  };
+
   const handleSocialSignIn = async (provider: 'google' | 'facebook') => {
     setErrorMessage('');
     setSocialLoading(provider);
     try {
-      if (provider === 'google') {
-        await loginMobileUserWithGoogle();
+      const session = provider === 'google'
+        ? await loginMobileUserWithGoogle()
+        : await loginMobileUserWithFacebook();
+      if (session?.accessToken && biometricType !== 'none' && !hasTrustedToken) {
+        showTrustSheet(session.accessToken, session.user?.displayName ?? '');
       } else {
-        await loginMobileUserWithFacebook();
+        router.replace(APP_ROUTES.tabs.home);
       }
-      router.replace(APP_ROUTES.tabs.home);
     } catch (error) {
       const message = error instanceof Error ? error.message : `Unable to continue with ${provider === 'google' ? 'Google' : 'Facebook'} right now.`;
       setErrorMessage(message);
@@ -161,9 +214,19 @@ export default function SignInScreen() {
     }
   };
 
-  const anyLoading = submitting || socialLoading !== null;
+  const anyLoading = submitting || socialLoading !== null || biometricLoading;
+
+  const biometricIcon = biometricType === 'face' ? 'face' : 'fingerprint';
+  const biometricLabel = biometricType === 'face' ? 'Sign in with Face ID' : 'Sign in with fingerprint';
 
   return (
+    <>
+    <TrustDeviceSheet
+      visible={trustSheetVisible}
+      accessToken={trustSheetAccessToken}
+      displayName={trustSheetDisplayName}
+      onDismiss={() => { setTrustSheetVisible(false); router.replace(APP_ROUTES.tabs.home); }}
+    />
     <AuthScreenFrame
       backPath={APP_ROUTES.landing}
       salutation="Welcome back"
@@ -171,6 +234,32 @@ export default function SignInScreen() {
       title="Welcome back"
       subtitle="Sign in to continue your worship experience."
     >
+      {/* Biometric shortcut — only shown when device has a stored trusted token */}
+      {hasTrustedToken && biometricType !== 'none' && (
+        <TVTouchable
+          onPress={() => void handleBiometricSignIn()}
+          disabled={anyLoading}
+          showFocusBorder={false}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 10,
+            paddingVertical: 14,
+            borderRadius: 14,
+            borderWidth: 1,
+            borderColor: 'rgba(139,92,246,0.35)',
+            backgroundColor: 'rgba(139,92,246,0.08)',
+            opacity: anyLoading ? 0.5 : 1,
+          }}
+        >
+          <MaterialIcons name={biometricIcon} size={22} color="#8B5CF6" />
+          <CustomText style={{ color: '#D8CAFF', fontSize: 14, fontWeight: '700' }}>
+            {biometricLoading ? 'Verifying…' : biometricLabel}
+          </CustomText>
+        </TVTouchable>
+      )}
+
       {/* Email/password fields */}
       <View style={{ gap: 12 }}>
         <AuthTextField
@@ -245,8 +334,32 @@ export default function SignInScreen() {
         />
       </View>
 
+      {/* Sign in with email code (passwordless) */}
+      <TVTouchable
+        onPress={() => router.push(APP_ROUTES.auth.emailOtp)}
+        disabled={anyLoading}
+        showFocusBorder={false}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 8,
+          paddingVertical: 12,
+          borderRadius: 12,
+          borderWidth: 1,
+          borderColor: 'rgba(214,190,255,0.12)',
+          backgroundColor: 'transparent',
+          opacity: anyLoading ? 0.5 : 1,
+        }}
+      >
+        <MaterialIcons name="mail-outline" size={17} color="rgba(214,190,255,0.65)" />
+        <CustomText style={{ color: 'rgba(214,190,255,0.65)', fontSize: 13, fontWeight: '600' }}>
+          Sign in with email code
+        </CustomText>
+      </TVTouchable>
+
       {/* Sign-up row — single line with a divider */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 20 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 4 }}>
         <CustomText style={{ color: 'rgba(255,255,255,0.45)', fontSize: 13 }}>
           New to ClaudyGod?
         </CustomText>
@@ -261,5 +374,6 @@ export default function SignInScreen() {
         </TVTouchable>
       </View>
     </AuthScreenFrame>
+    </>
   );
 }
