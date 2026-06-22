@@ -39,7 +39,7 @@ export function TrustDeviceSheet({ visible, accessToken, displayName, onDismiss 
     if (visible) {
       Animated.spring(slideAnim, {
         toValue: 0,
-        useNativeDriver: true,
+        useNativeDriver: Platform.OS !== 'web',
         tension: 65,
         friction: 11,
       }).start();
@@ -47,7 +47,7 @@ export function TrustDeviceSheet({ visible, accessToken, displayName, onDismiss 
       Animated.timing(slideAnim, {
         toValue: height,
         duration: 260,
-        useNativeDriver: true,
+        useNativeDriver: Platform.OS !== 'web',
       }).start();
     }
   }, [visible, slideAnim]);

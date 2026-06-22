@@ -1,10 +1,13 @@
 import React, { ReactNode, useRef, useCallback, useEffect } from 'react';
 import {
   Animated,
+  Platform,
   TextStyle,
   TouchableOpacityProps,
   View,
 } from 'react-native';
+
+const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 import * as Haptics from 'expo-haptics';
 import { CustomText } from '../CustomText';
 import { useAppTheme } from '../../util/colorScheme';
@@ -20,8 +23,8 @@ function BubblePulse({ color, label }: { color: string; label?: string }) {
       Animated.loop(
         Animated.sequence([
           Animated.delay(delay),
-          Animated.timing(d, { toValue: 1, duration: 380, useNativeDriver: true }),
-          Animated.timing(d, { toValue: 0, duration: 380, useNativeDriver: true }),
+          Animated.timing(d, { toValue: 1, duration: 380, useNativeDriver: USE_NATIVE_DRIVER }),
+          Animated.timing(d, { toValue: 0, duration: 380, useNativeDriver: USE_NATIVE_DRIVER }),
           Animated.delay(Math.max(0, 760 - delay)),
         ]),
       );
