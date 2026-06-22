@@ -120,17 +120,59 @@ function GuestCallout({ onSignIn }: { onSignIn: () => void }) {
     <TVTouchable onPress={onSignIn} showFocusBorder={false}>
       <View
         style={{
-          flexDirection: 'row', alignItems: 'center', gap: 10,
-          paddingVertical: 14, paddingHorizontal: 16,
-          borderRadius: 12,
-          backgroundColor: 'rgba(139,92,246,0.10)',
+          borderRadius: 20,
+          borderWidth: 1,
+          borderColor: 'rgba(139,92,246,0.24)',
+          backgroundColor: 'rgba(139,92,246,0.07)',
+          overflow: 'hidden',
+          padding: 20,
+          gap: 14,
         }}
       >
-        <MaterialIcons name="person-outline" size={18} color="#8B5CF6" />
-        <CustomText style={{ color: '#F7F2FF', fontSize: 13, fontWeight: '500', flex: 1 }}>
-          Sign in for full access
-        </CustomText>
-        <MaterialIcons name="chevron-right" size={18} color="rgba(247,242,255,0.40)" />
+        {/* Icon + heading */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <View
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 22,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: 'rgba(139,92,246,0.18)',
+              borderWidth: 1,
+              borderColor: 'rgba(139,92,246,0.32)',
+            }}
+          >
+            <MaterialIcons name="person-outline" size={22} color="#8B5CF6" />
+          </View>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <CustomText style={{ color: '#F7F2FF', fontSize: 15, fontWeight: '700', letterSpacing: -0.2 }}>
+              Sign in for full access
+            </CustomText>
+            <CustomText style={{ color: 'rgba(247,242,255,0.50)', fontSize: 12.5, marginTop: 3 }}>
+              Save your favourites, history, and live alerts.
+            </CustomText>
+          </View>
+        </View>
+
+        {/* CTA row */}
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          <View
+            style={{
+              flex: 1,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 6,
+              paddingVertical: 11,
+              borderRadius: 12,
+              backgroundColor: '#8B5CF6',
+            }}
+          >
+            <MaterialIcons name="login" size={16} color="#FFFFFF" />
+            <CustomText style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '700' }}>Sign in</CustomText>
+          </View>
+        </View>
       </View>
     </TVTouchable>
   );
