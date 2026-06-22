@@ -690,3 +690,65 @@ export async function apiFetchWithMobileSession<T>(
     throw error;
   }
 }
+
+// ── Email OTP (passwordless) ──────────────────────────────────────────────────
+
+export async function requestEmailOtp(email: string): Promise<void> {
+  await apiFetch('/v1/auth/otp/request', {
+    method: 'POST',
+    body: JSON.stringify({ email: email.trim().toLowerCase(), purpose: 'sign_in' }),
+  });
+}
+
+export async function verifyEmailOtp(email: string, code: string): Promise<MobileAuthResponse> {
+  const response = await apiFetch<MobileAuthResponse>('/v1/auth/otp/verify', {
+    method: 'POST',
+    body: JSON.stringify({
+      email: email.trim().toLowerCase(),
+      code: code.trim(),
+      purpose: 'sign_in',
+    }),
+  });
+  if (!response.user) throw new Error('Sign-in completed without a user session');
+  if (!usesBrowserCookieSession && !response.accessToken) {
+    throw new Error('Sign-in completed without an access token');
+  }
+  await persistMobileSession(response);
+  return createSessionSnapshot(response);
+}
+
+// ── Trusted devices ───────────────────────────────────────────────────────────
+
+export async function registerTrustedDeviceToken(input: {
+  accessToken: string;
+  deviceFingerprint: string;
+  deviceLabel: string;
+  platform: string;
+}): Promise<{ token: string; expiresAt: string }> {
+  const response = await apiFetch<{ token: string; expiresAt: string }>(
+    '/v1/auth/trusted-devices/register',
+    {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${input.accessToken}` },
+      body: JSON.stringify({
+        deviceFingerprint: input.deviceFingerprint,
+        deviceLabel: input.deviceLabel,
+        platform: input.platform,
+      }),
+    },
+  );
+  return response;
+}
+
+export async function signInWithTrustedDeviceToken(token: string): Promise<MobileAuthResponse> {
+  const response = await apiFetch<MobileAuthResponse>('/v1/auth/trusted-devices/verify', {
+    method: 'POST',
+    body: JSON.stringify({ token }),
+  });
+  if (!response.user) throw new Error('Sign-in completed without a user session');
+  if (!usesBrowserCookieSession && !response.accessToken) {
+    throw new Error('Sign-in completed without an access token');
+  }
+  await persistMobileSession(response);
+  return createSessionSnapshot(response);
+}

@@ -171,11 +171,39 @@ const revokeRefreshSessionFamily = async (
 export const issueAuthSession = async (
   user: SafeUser,
   context: AuthSessionContext = {},
-): Promise<AuthResponse> =>
-  insertRefreshSession({
-    user,
-    context,
-  });
+): Promise<AuthResponse> => {
+  const session = await insertRefreshSession({ user, context });
+
+  // Fire-and-forget login notification email on new sign-in.
+  // "New" = this IP or user-agent hasn't been seen for this user in the last 30 days.
+  if (context.requestIp || context.userAgent) {
+    pool.query<{ count: string }>(
+      `SELECT COUNT(*) AS count FROM auth_refresh_sessions
+       WHERE user_id = $1
+         AND (created_ip = $2 OR created_user_agent = $3)
+         AND created_at > NOW() - INTERVAL '30 days'
+         AND id != (
+           SELECT id FROM auth_refresh_sessions
+           WHERE user_id = $1
+           ORDER BY created_at DESC LIMIT 1
+         )`,
+      [user.id, context.requestIp ?? null, context.userAgent ?? null],
+    ).then(async (check) => {
+      const isNewDevice = parseInt(check.rows[0]?.count ?? '0', 10) === 0;
+      if (isNewDevice) {
+        const { queueNewSignInEmail } = await import('../../infra/transactionalEmails.js');
+        await queueNewSignInEmail({
+          toEmail: user.email,
+          displayName: user.displayName || user.email,
+          userAgent: context.userAgent ?? null,
+          ipAddress: context.requestIp ?? null,
+        });
+      }
+    }).catch(() => { /* never block auth for email failures */ });
+  }
+
+  return session;
+};
 
 export const refreshAuthSession = async (
   rawRefreshToken: string,

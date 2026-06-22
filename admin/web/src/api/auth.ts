@@ -85,3 +85,39 @@ export async function registerWithCode(input: {
 
 export const GOOGLE_LOGIN_URL = import.meta.env.VITE_GOOGLE_LOGIN_URL || '';
 export const FACEBOOK_LOGIN_URL = import.meta.env.VITE_FACEBOOK_LOGIN_URL || '';
+
+// ── Admin Access Requests ────────────────────────────────────────────────────
+
+export interface AccessRequest {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  message: string | null;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: string;
+  reviewedAt: string | null;
+}
+
+export async function requestAdminAccess(input: {
+  name: string;
+  email: string;
+  role: string;
+  message?: string;
+}): Promise<{ id: string }> {
+  const { data } = await client.post<{ id: string }>('/v1/auth/access-requests', input);
+  return data;
+}
+
+export async function listAccessRequests(): Promise<{ requests: AccessRequest[] }> {
+  const { data } = await client.get<{ requests: AccessRequest[] }>('/v1/admin/access-requests');
+  return data;
+}
+
+export async function approveAccessRequest(id: string, input: { role: string; invitedBy: string }): Promise<void> {
+  await client.post(`/v1/admin/access-requests/${id}/approve`, input);
+}
+
+export async function rejectAccessRequest(id: string): Promise<void> {
+  await client.post(`/v1/admin/access-requests/${id}/reject`);
+}

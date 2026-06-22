@@ -5,6 +5,8 @@ import {
   buildAccountEmailChangeTemplate,
   buildAdminInviteTemplate,
   buildGenericEmailTemplate,
+  buildNewSignInTemplate,
+  buildOtpTemplate,
   buildPasswordResetTemplate,
   buildProfileUpdatedTemplate,
   buildVerifyEmailTemplate,
@@ -263,6 +265,60 @@ export const queueAccountEmailChangeEmail = async (input: {
       newEmail: input.newEmail,
       type: 'email_change',
     },
+  });
+};
+
+export const queueOtpEmail = async (input: {
+  toEmail: string;
+  code: string;
+  expiresInMinutes: number;
+}): Promise<void> => {
+  const template = buildOtpTemplate({ code: input.code, expiresInMinutes: input.expiresInMinutes });
+  await queueEmailJob({
+    recipients: [input.toEmail],
+    subject: template.subject,
+    textBody: template.text,
+    htmlBody: template.html,
+    jobType: 'otp',
+    templateKey: 'auth.otp',
+    payload: { email: input.toEmail, type: 'otp' },
+  });
+};
+
+export const queueNewSignInEmail = async (input: {
+  toEmail: string;
+  displayName: string;
+  userAgent: string | null;
+  ipAddress: string | null;
+}): Promise<void> => {
+  const device = input.userAgent
+    ? input.userAgent.length > 80 ? input.userAgent.slice(0, 80) + '…' : input.userAgent
+    : 'Unknown device';
+  const location = input.ipAddress ?? 'Unknown location';
+  const time = new Date().toLocaleString('en-US', {
+    dateStyle: 'long', timeStyle: 'short', timeZone: 'UTC',
+  }) + ' UTC';
+
+  const supportEmailAddr = env.EMAIL_SUPPORT_EMAIL || env.MAIL_FROM;
+  const supportUrlStr = env.EMAIL_SUPPORT_URL?.trim() || '';
+
+  const template = buildNewSignInTemplate({
+    displayName: input.displayName,
+    device,
+    location,
+    time,
+    supportEmail: supportEmailAddr,
+    supportUrl: supportUrlStr,
+  });
+
+  await queueEmailJob({
+    recipients: [input.toEmail],
+    subject: template.subject,
+    textBody: template.text,
+    htmlBody: template.html,
+    jobType: 'new_sign_in',
+    templateKey: 'auth.new_sign_in',
+    payload: { email: input.toEmail, type: 'new_sign_in' },
   });
 };
 
