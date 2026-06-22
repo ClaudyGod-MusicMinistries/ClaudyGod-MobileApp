@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Linking, ScrollView, View, useWindowDimensions } from 'react-native';
+import { Animated, Linking, Platform, ScrollView, View, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -77,7 +77,7 @@ function HeroBanner({
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }).start();
+    Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: Platform.OS !== 'web' }).start();
   }, [fadeAnim]);
 
   return (

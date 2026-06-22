@@ -19,6 +19,8 @@ import { APP_ROUTES } from '../util/appRoutes';
 import { BRAND_WORSHIP_ASSET } from '../util/brandAssets';
 import { useDeviceClass } from '../util/deviceClassConfig';
 
+const USE_NATIVE_DRIVER = Platform.OS !== 'web';
+
 // Features available to every guest — no account needed
 const FREE_FEATURES = [
   { icon: 'music-note' as const,     label: 'Music'  },
@@ -86,8 +88,8 @@ export default function LandingScreen() {
   const slideAnim = useRef(new Animated.Value(20)).current;
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(fadeAnim, { toValue: 1, duration: 600, delay: 200, useNativeDriver: true }),
-      Animated.timing(slideAnim, { toValue: 0, duration: 500, delay: 200, useNativeDriver: true }),
+      Animated.timing(fadeAnim, { toValue: 1, duration: 600, delay: 200, useNativeDriver: USE_NATIVE_DRIVER }),
+      Animated.timing(slideAnim, { toValue: 0, duration: 500, delay: 200, useNativeDriver: USE_NATIVE_DRIVER }),
     ]).start();
   }, [fadeAnim, slideAnim]);
 
