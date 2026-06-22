@@ -15,9 +15,9 @@ import * as Haptics from 'expo-haptics';
 import { CustomText } from '../CustomText';
 import { TVTouchable } from '../ui/TVTouchable';
 import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
+import { useAppTheme } from '../../util/colorScheme';
 
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
-const PRIMARY = '#8B5CF6';
 
 export interface AudioTrack {
   id: string;
@@ -63,6 +63,7 @@ export function AudioPlayer({
   currentTrackNumber,
   totalTracks,
 }: AudioPlayerProps) {
+  const theme = useAppTheme();
   const { width } = useWindowDimensions();
   const player = useAudioPlayer(track.uri, { updateInterval: 350 });
   const status = useAudioPlayerStatus(player);
@@ -205,8 +206,8 @@ export function AudioPlayer({
       <View style={{ gap: 16 }}>
         {onClose ? (
           <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
-            <TVTouchable onPress={onClose} style={styles.closeBtn} showFocusBorder={false}>
-              <CustomText variant="caption" style={{ color: 'rgba(247,242,255,0.80)' }}>Close</CustomText>
+            <TVTouchable onPress={onClose} style={[styles.closeBtn, { backgroundColor: theme.colors.surface }]} showFocusBorder={false}>
+              <CustomText variant="caption" style={{ color: theme.colors.textSecondary }}>Close</CustomText>
             </TVTouchable>
           </View>
         ) : null}
@@ -216,8 +217,8 @@ export function AudioPlayer({
           </Animated.View>
         </View>
         <View style={{ gap: 3, alignItems: 'center', paddingHorizontal: 16 }}>
-          <CustomText numberOfLines={1} style={{ color: '#F7F2FF', fontSize: 16, fontWeight: '700', textAlign: 'center' }}>{track.title}</CustomText>
-          <CustomText numberOfLines={1} style={{ color: 'rgba(247,242,255,0.48)', fontSize: 12, textAlign: 'center' }}>{track.artist || 'ClaudyGod'}</CustomText>
+          <CustomText numberOfLines={1} style={{ color: theme.colors.text, fontSize: 16, fontWeight: '700', textAlign: 'center' }}>{track.title}</CustomText>
+          <CustomText numberOfLines={1} style={{ color: theme.colors.textMuted, fontSize: 12, textAlign: 'center' }}>{track.artist || 'ClaudyGod'}</CustomText>
         </View>
         <ProgressSection
           progress={progress}
@@ -232,8 +233,8 @@ export function AudioPlayer({
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
           {onPrevious ? <ControlButton icon="skip-previous" onPress={onPrevious} disabled={!canGoPrevious} size={22} accessibilityLabel="Previous track" /> : null}
           <ControlButton icon="replay-10" onPress={() => seekBySeconds(-10)} size={22} accessibilityLabel="Rewind 10 seconds" />
-          <TVTouchable onPress={togglePlay} style={[styles.playBtnBase, { width: 68, height: 68, borderRadius: 34 }]} showFocusBorder={false} accessibilityLabel={isPlaying ? 'Pause' : 'Play'} accessibilityRole="button">
-            <MaterialIcons name={isPlaying ? 'pause' : 'play-arrow'} size={32} color="#FFFFFF" />
+          <TVTouchable onPress={togglePlay} style={[styles.playBtnBase, { width: 68, height: 68, borderRadius: 34, backgroundColor: theme.colors.primary, shadowColor: theme.colors.primary }]} showFocusBorder={false} accessibilityLabel={isPlaying ? 'Pause' : 'Play'} accessibilityRole="button">
+            <MaterialIcons name={isPlaying ? 'pause' : 'play-arrow'} size={32} color={theme.colors.onPrimary} />
           </TVTouchable>
           <ControlButton icon="forward-10" onPress={() => seekBySeconds(10)} size={22} accessibilityLabel="Skip forward 10 seconds" />
           {onNext ? <ControlButton icon="skip-next" onPress={onNext} disabled={!canGoNext} size={22} accessibilityLabel="Next track" /> : null}
@@ -251,9 +252,9 @@ export function AudioPlayer({
       {/* Track counter badge */}
       {currentTrackNumber != null && totalTracks != null && totalTracks > 1 ? (
         <View style={{ alignItems: 'center', marginBottom: 20 }}>
-          <View style={styles.trackBadge}>
-            <MaterialIcons name="graphic-eq" size={12} color={PRIMARY} />
-            <CustomText style={{ color: PRIMARY, fontSize: 11, fontWeight: '700', letterSpacing: 0.5 }}>
+          <View style={[styles.trackBadge, { backgroundColor: theme.colors.primarySurface, borderColor: theme.colors.primaryBorder }]}>
+            <MaterialIcons name="graphic-eq" size={12} color={theme.colors.primary} />
+            <CustomText style={{ color: theme.colors.primary, fontSize: 11, fontWeight: '700', letterSpacing: 0.5 }}>
               {`${currentTrackNumber} of ${totalTracks}`}
             </CustomText>
           </View>
@@ -272,7 +273,7 @@ export function AudioPlayer({
               right: -GLOW_PAD,
               bottom: -GLOW_PAD,
               borderRadius: artworkSize / 2 + GLOW_PAD,
-              backgroundColor: 'rgba(139,92,246,0.22)',
+              backgroundColor: theme.colors.primaryBorder,
               opacity: glowOpacity,
               transform: [{ scale: glowScale }],
             }}
@@ -311,20 +312,20 @@ export function AudioPlayer({
           <MaterialIcons
             name={isFavorite ? 'favorite' : 'favorite-border'}
             size={24}
-            color={isFavorite ? PRIMARY : 'rgba(247,242,255,0.38)'}
+            color={isFavorite ? theme.colors.primary : theme.colors.textMuted}
           />
         </TVTouchable>
 
         <View style={{ flex: 1, gap: 4 }}>
           <CustomText
             numberOfLines={1}
-            style={styles.trackTitle}
+            style={[styles.trackTitle, { color: theme.colors.text }]}
           >
             {track.title}
           </CustomText>
           <CustomText
             numberOfLines={1}
-            style={styles.trackArtist}
+            style={[styles.trackArtist, { color: theme.colors.textMuted }]}
           >
             {track.artist || 'ClaudyGod'}
           </CustomText>
@@ -336,7 +337,7 @@ export function AudioPlayer({
           accessibilityLabel="More options"
           onPress={() => {}}
         >
-          <MaterialIcons name="more-horiz" size={24} color="rgba(247,242,255,0.38)" />
+          <MaterialIcons name="more-horiz" size={24} color={theme.colors.textMuted} />
         </TVTouchable>
       </View>
 
@@ -356,7 +357,7 @@ export function AudioPlayer({
       <View style={styles.controlsRow}>
         {/* Shuffle — visual placeholder (not yet wired) */}
         <TVTouchable style={[styles.sideBtn, { opacity: 0.28 }]} showFocusBorder={false} onPress={() => {}}>
-          <MaterialIcons name="shuffle" size={20} color="rgba(247,242,255,0.78)" />
+          <MaterialIcons name="shuffle" size={20} color={theme.colors.textSecondary} />
         </TVTouchable>
 
         {onPrevious ? (
@@ -368,12 +369,12 @@ export function AudioPlayer({
         {/* Play / Pause — primary CTA */}
         <TVTouchable
           onPress={togglePlay}
-          style={styles.playBtnFull}
+          style={[styles.playBtnFull, { backgroundColor: theme.colors.primary, shadowColor: theme.colors.primary }]}
           showFocusBorder={false}
           accessibilityLabel={isPlaying ? 'Pause' : 'Play'}
           accessibilityRole="button"
         >
-          <MaterialIcons name={isPlaying ? 'pause' : 'play-arrow'} size={44} color="#FFFFFF" />
+          <MaterialIcons name={isPlaying ? 'pause' : 'play-arrow'} size={44} color={theme.colors.onPrimary} />
         </TVTouchable>
 
         <ControlButton icon="forward-10" onPress={() => seekBySeconds(10)} size={24} accessibilityLabel="Skip forward 10 seconds" />
@@ -384,7 +385,7 @@ export function AudioPlayer({
 
         {/* Repeat — visual placeholder (not yet wired) */}
         <TVTouchable style={[styles.sideBtn, { opacity: 0.28 }]} showFocusBorder={false} onPress={() => {}}>
-          <MaterialIcons name="repeat" size={20} color="rgba(247,242,255,0.78)" />
+          <MaterialIcons name="repeat" size={20} color={theme.colors.textSecondary} />
         </TVTouchable>
       </View>
 
@@ -413,6 +414,7 @@ function ProgressSection({
   showThumb: boolean;
   paddingH: number;
 }) {
+  const theme = useAppTheme();
   const thumbOffset = -(14 - trackHeight) / 2;
   return (
     <View style={{ marginBottom: 6, marginTop: 6, paddingHorizontal: paddingH }}>
@@ -425,15 +427,13 @@ function ProgressSection({
         }}
         style={{ paddingVertical: 13 }}
       >
-        {/* Track background */}
-        <View style={{ height: trackHeight, borderRadius: trackHeight / 2, backgroundColor: 'rgba(247,242,255,0.10)' }}>
-          {/* Filled portion — thumb is anchored to its right edge */}
-          <View style={{ width: `${Math.round(progress * 100)}%`, height: trackHeight, borderRadius: trackHeight / 2, backgroundColor: PRIMARY }}>
+        <View style={{ height: trackHeight, borderRadius: trackHeight / 2, backgroundColor: theme.colors.divider }}>
+          <View style={{ width: `${Math.round(progress * 100)}%`, height: trackHeight, borderRadius: trackHeight / 2, backgroundColor: theme.colors.primary }}>
             {showThumb ? (
               <View
                 style={[
                   styles.progressThumb,
-                  { top: thumbOffset },
+                  { top: thumbOffset, shadowColor: theme.colors.primary },
                 ]}
               />
             ) : null}
@@ -441,8 +441,8 @@ function ProgressSection({
         </View>
       </Pressable>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 1 }}>
-        <CustomText style={styles.timeLabel}>{positionLabel}</CustomText>
-        <CustomText style={styles.timeLabel}>{durationLabel}</CustomText>
+        <CustomText style={[styles.timeLabel, { color: theme.colors.textMuted }]}>{positionLabel}</CustomText>
+        <CustomText style={[styles.timeLabel, { color: theme.colors.textMuted }]}>{durationLabel}</CustomText>
       </View>
     </View>
   );
@@ -461,6 +461,7 @@ function ControlButton({
   size?: number;
   accessibilityLabel?: string;
 }) {
+  const theme = useAppTheme();
   return (
     <TVTouchable
       onPress={onPress}
@@ -470,7 +471,7 @@ function ControlButton({
       style={[styles.controlBtn, { opacity: disabled ? 0.28 : 1 }]}
       showFocusBorder={false}
     >
-      <MaterialIcons name={icon} size={size} color="rgba(247,242,255,0.82)" />
+      <MaterialIcons name={icon} size={size} color={theme.colors.text} />
     </TVTouchable>
   );
 }
@@ -500,9 +501,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderRadius: 999,
-    backgroundColor: 'rgba(139,92,246,0.12)',
     borderWidth: 1,
-    borderColor: 'rgba(139,92,246,0.22)',
   },
   metaRow: {
     flexDirection: 'row',
@@ -519,14 +518,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   trackTitle: {
-    color: '#F7F2FF',
     fontSize: 19,
     fontWeight: '800',
     letterSpacing: -0.4,
     textAlign: 'center',
   },
   trackArtist: {
-    color: 'rgba(247,242,255,0.48)',
     fontSize: 13.5,
     fontWeight: '500',
     textAlign: 'center',
@@ -538,13 +535,11 @@ const styles = StyleSheet.create({
     height: 14,
     borderRadius: 7,
     backgroundColor: '#FFFFFF',
-    shadowColor: PRIMARY,
     shadowOpacity: 0.45,
     shadowRadius: 5,
     elevation: 5,
   },
   timeLabel: {
-    color: 'rgba(247,242,255,0.35)',
     fontSize: 11,
     fontWeight: '500',
   },
@@ -563,10 +558,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   playBtnBase: {
-    backgroundColor: PRIMARY,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: PRIMARY,
     shadowOpacity: 0.50,
     shadowRadius: 24,
     shadowOffset: { width: 0, height: 8 },
@@ -576,10 +569,8 @@ const styles = StyleSheet.create({
     width: 88,
     height: 88,
     borderRadius: 44,
-    backgroundColor: PRIMARY,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: PRIMARY,
     shadowOpacity: 0.55,
     shadowRadius: 28,
     shadowOffset: { width: 0, height: 10 },
@@ -589,6 +580,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.07)',
   },
 });

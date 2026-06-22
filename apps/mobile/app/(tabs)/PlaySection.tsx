@@ -244,15 +244,15 @@ export default function PlaySection() {
           {/* Queue header */}
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <View style={{ width: 3, height: 14, borderRadius: 1.5, backgroundColor: '#8B5CF6' }} />
-              <CustomText style={{ color: isDark ? '#F7F2FF' : '#130C21', fontSize: 14, fontWeight: '800', letterSpacing: -0.2 }}>
+              <View style={{ width: 3, height: 14, borderRadius: 1.5, backgroundColor: theme.colors.primary }} />
+              <CustomText style={{ color: theme.colors.text, fontSize: 14, fontWeight: '800', letterSpacing: -0.2 }}>
                 Up next
               </CustomText>
               <View style={{
                 paddingHorizontal: 7, paddingVertical: 2, borderRadius: 999,
-                backgroundColor: isDark ? 'rgba(139,92,246,0.15)' : 'rgba(124,58,237,0.10)',
+                backgroundColor: theme.colors.primarySurface,
               }}>
-                <CustomText style={{ color: '#8B5CF6', fontSize: 10, fontWeight: '700' }}>
+                <CustomText style={{ color: theme.colors.primary, fontSize: 10, fontWeight: '700' }}>
                   {upNext.length}
                 </CustomText>
               </View>
@@ -261,7 +261,7 @@ export default function PlaySection() {
               onPress={() => setFilter(filter === 'all' ? 'songs' : 'all')}
               showFocusBorder={false}
             >
-              <CustomText style={{ color: '#8B5CF6', fontSize: 12, fontWeight: '600' }}>
+              <CustomText style={{ color: theme.colors.primary, fontSize: 12, fontWeight: '600' }}>
                 {filter === 'all' ? 'Filter' : 'Clear filter'}
               </CustomText>
             </TVTouchable>

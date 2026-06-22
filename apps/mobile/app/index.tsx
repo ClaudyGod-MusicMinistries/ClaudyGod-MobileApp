@@ -15,6 +15,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { AppButton } from '../components/ui/AppButton';
 import { CustomText } from '../components/CustomText';
 import { TVTouchable } from '../components/ui/TVTouchable';
+import { useAppTheme } from '../util/colorScheme';
 import { APP_ROUTES } from '../util/appRoutes';
 import { BRAND_WORSHIP_ASSET } from '../util/brandAssets';
 import { useDeviceClass } from '../util/deviceClassConfig';
@@ -23,10 +24,10 @@ const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
 // Features available to every guest — no account needed
 const FREE_FEATURES = [
-  { icon: 'music-note' as const,     label: 'Music'  },
+  { icon: 'music-note' as const,       label: 'Music'  },
   { icon: 'play-circle-outline' as const, label: 'Videos' },
-  { icon: 'live-tv' as const,        label: 'Live'   },
-  { icon: 'menu-book' as const,      label: 'Word'   },
+  { icon: 'live-tv' as const,          label: 'Live'   },
+  { icon: 'menu-book' as const,        label: 'Word'   },
 ] as const;
 
 // Features unlocked after account creation
@@ -37,6 +38,7 @@ const ACCOUNT_PERKS = [
 ] as const;
 
 function FreeChip({ icon, label }: { icon: React.ComponentProps<typeof MaterialIcons>['name']; label: string }) {
+  const theme = useAppTheme();
   return (
     <View
       style={{
@@ -46,13 +48,13 @@ function FreeChip({ icon, label }: { icon: React.ComponentProps<typeof MaterialI
         paddingVertical: 5,
         paddingHorizontal: 10,
         borderRadius: 20,
-        backgroundColor: 'rgba(139,92,246,0.14)',
+        backgroundColor: theme.colors.primarySurface,
         borderWidth: 1,
-        borderColor: 'rgba(139,92,246,0.30)',
+        borderColor: theme.colors.primaryBorder,
       }}
     >
-      <MaterialIcons name={icon} size={13} color="#C4B5FD" />
-      <CustomText style={{ color: '#C4B5FD', fontSize: 11.5, fontWeight: '600', letterSpacing: 0.2 }}>
+      <MaterialIcons name={icon} size={13} color={theme.colors.secondary} />
+      <CustomText style={{ color: theme.colors.secondary, fontSize: 11.5, fontWeight: '600', letterSpacing: 0.2 }}>
         {label}
       </CustomText>
     </View>
@@ -71,6 +73,7 @@ function PerkRow({ icon, label }: { icon: React.ComponentProps<typeof MaterialIc
 }
 
 export default function LandingScreen() {
+  const theme = useAppTheme();
   const router = useRouter();
   const device = useDeviceClass();
   const { width, height } = useWindowDimensions();
@@ -83,7 +86,6 @@ export default function LandingScreen() {
     ? Math.min(width - gutter * 2, 390)
     : Math.min(500, width - gutter * 2);
 
-  // Fade-in animation for content block
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
   useEffect(() => {
@@ -93,8 +95,10 @@ export default function LandingScreen() {
     ]).start();
   }, [fadeAnim, slideAnim]);
 
+  const bgRgba = theme.colors.backgroundRgba;
+
   return (
-    <View style={{ width, height, backgroundColor: '#07050C' }}>
+    <View style={{ width, height, backgroundColor: theme.colors.background }}>
 
       {/* Full-bleed background */}
       <Image
@@ -103,13 +107,13 @@ export default function LandingScreen() {
         resizeMode="cover"
       />
 
-      {/* Scrim: readable text at bottom */}
+      {/* Scrim: darkens image for text readability */}
       <LinearGradient
         colors={[
-          'rgba(7,5,12,0.05)',
-          'rgba(7,5,12,0.35)',
-          'rgba(7,5,12,0.78)',
-          'rgba(7,5,12,0.97)',
+          `rgba(${bgRgba},0.05)`,
+          `rgba(${bgRgba},0.35)`,
+          `rgba(${bgRgba},0.78)`,
+          `rgba(${bgRgba},0.97)`,
         ]}
         locations={[0, 0.32, 0.60, 1]}
         style={StyleSheet.absoluteFillObject}
@@ -120,7 +124,7 @@ export default function LandingScreen() {
 
           <View style={{ flex: 1 }} />
 
-          {/* ── Bottom content block ─────────────────────────────────────── */}
+          {/* ── Bottom content block ── */}
           <Animated.View
             style={{
               width: '100%',
@@ -131,7 +135,7 @@ export default function LandingScreen() {
               transform: [{ translateY: slideAnim }],
             }}
           >
-            {/* Headline */}
+            {/* Headline — on-image text, always light */}
             <CustomText
               variant="display"
               numberOfLines={3}
@@ -148,7 +152,7 @@ export default function LandingScreen() {
               {'Worship\nwithout limits.'}
             </CustomText>
 
-            {/* Subtitle */}
+            {/* Subtitle — on-image text */}
             <CustomText
               variant="body"
               numberOfLines={2}
@@ -182,18 +186,18 @@ export default function LandingScreen() {
                   paddingVertical: 5,
                   paddingHorizontal: 10,
                   borderRadius: 20,
-                  backgroundColor: 'rgba(52,211,153,0.10)',
+                  backgroundColor: `${theme.colors.success}18`,
                   borderWidth: 1,
-                  borderColor: 'rgba(52,211,153,0.22)',
+                  borderColor: `${theme.colors.success}36`,
                 }}
               >
-                <CustomText style={{ color: '#6EE7B7', fontSize: 10.5, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase' }}>
+                <CustomText style={{ color: theme.colors.success, fontSize: 10.5, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase' }}>
                   All FREE
                 </CustomText>
               </View>
             </View>
 
-            {/* PRIMARY CTA — Explore without account (retention-first) */}
+            {/* PRIMARY CTA — explore without account */}
             <TVTouchable
               onPress={() => router.replace(APP_ROUTES.tabs.home)}
               showFocusBorder={false}
@@ -201,26 +205,26 @@ export default function LandingScreen() {
                 width: '100%',
                 height: 56,
                 borderRadius: 16,
-                backgroundColor: '#8B5CF6',
+                backgroundColor: theme.colors.primary,
                 alignItems: 'center',
                 justifyContent: 'center',
                 flexDirection: 'row',
                 gap: 10,
                 marginBottom: 10,
-                shadowColor: '#8B5CF6',
+                shadowColor: theme.colors.primary,
                 shadowOffset: { width: 0, height: 6 },
                 shadowOpacity: 0.38,
                 shadowRadius: 14,
                 elevation: 10,
               }}
             >
-              <MaterialIcons name="explore" size={20} color="#FFFFFF" />
-              <CustomText style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700', letterSpacing: -0.2 }}>
+              <MaterialIcons name="explore" size={20} color={theme.colors.onPrimary} />
+              <CustomText style={{ color: theme.colors.onPrimary, fontSize: 16, fontWeight: '700', letterSpacing: -0.2 }}>
                 Start exploring — it's free
               </CustomText>
             </TVTouchable>
 
-            {/* Perks teaser — what you unlock with account */}
+            {/* Perks teaser */}
             <View
               style={{
                 flexDirection: 'row',
@@ -255,7 +259,7 @@ export default function LandingScreen() {
               <AppButton
                 title="Create account"
                 size="md"
-                leftIcon={<MaterialIcons name="person-add" size={16} color="#FFFFFF" />}
+                leftIcon={<MaterialIcons name="person-add" size={16} color={theme.colors.onPrimary} />}
                 onPress={() => router.push(APP_ROUTES.auth.signUp)}
                 style={{ flex: 1 }}
               />
@@ -263,7 +267,7 @@ export default function LandingScreen() {
                 title="Sign in"
                 variant="outline"
                 size="md"
-                leftIcon={<MaterialIcons name="login" size={16} color="#8B5CF6" />}
+                leftIcon={<MaterialIcons name="login" size={16} color={theme.colors.primary} />}
                 onPress={() => router.push(APP_ROUTES.auth.signIn)}
                 style={{ flex: 1 }}
               />

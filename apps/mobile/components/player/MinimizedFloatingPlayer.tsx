@@ -72,7 +72,7 @@ export function MinimizedFloatingPlayer() {
             left: 0,
             height: 2,
             width: `${progressPercentage}%`,
-            backgroundColor: '#8B5CF6',
+            backgroundColor: theme.colors.primary,
           }}
         />
 
