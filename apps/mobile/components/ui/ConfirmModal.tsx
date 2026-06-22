@@ -105,7 +105,7 @@ export function ConfirmModal({
                 borderRadius: 24,
                 borderWidth: 1,
                 borderColor: theme.colors.borderStrong,
-                backgroundColor: '#0E0918',
+                backgroundColor: theme.colors.elevated,
                 padding: 24,
                 gap: 20,
                 shadowColor: '#000',

@@ -6,12 +6,12 @@ import {
   TouchableOpacityProps,
   View,
 } from 'react-native';
-
-const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 import * as Haptics from 'expo-haptics';
 import { CustomText } from '../CustomText';
 import { useAppTheme } from '../../util/colorScheme';
 import { TVTouchable } from './TVTouchable';
+
+const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
 function BubblePulse({ color, label }: { color: string; label?: string }) {
   const d0 = useRef(new Animated.Value(0)).current;
@@ -125,7 +125,7 @@ export function AppButton({
   const resolvedTextColor =
     textColor ??
     (isPrimary
-      ? '#FFFFFF'
+      ? theme.colors.onPrimary
       : isOutline
         ? theme.colors.primary
         : isGhost

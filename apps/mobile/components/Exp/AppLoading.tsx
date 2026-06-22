@@ -1,11 +1,13 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, Image, Platform, StatusBar, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAppTheme } from '../../util/colorScheme';
 import { BRAND_LOGO_ASSET } from '../../util/brandAssets';
 
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
 export function AppLoadingScreen() {
+  const theme = useAppTheme();
   const { width, height } = useWindowDimensions();
 
   const logoOpacity = useRef(new Animated.Value(0)).current;
@@ -35,7 +37,6 @@ export function AppLoadingScreen() {
       contentOpacity.stopAnimation();
       shimmer.stopAnimation();
     };
-    // useRef values are stable — safe to omit from deps
   }, [logoOpacity, logoScale, contentOpacity, shimmer]);
 
   const isCompact = width < 390;
@@ -43,7 +44,7 @@ export function AppLoadingScreen() {
   const logoRadius = 28;
 
   return (
-    <View style={{ width, height, backgroundColor: '#07050C' }}>
+    <View style={{ width, height, backgroundColor: theme.colors.background }}>
       <StatusBar translucent barStyle="light-content" backgroundColor="transparent" />
 
       <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
@@ -56,7 +57,7 @@ export function AppLoadingScreen() {
               overflow: 'hidden',
               opacity: logoOpacity,
               transform: [{ scale: logoScale }],
-              shadowColor: '#8B5CF6',
+              shadowColor: theme.colors.primary,
               shadowOffset: { width: 0, height: 0 },
               shadowRadius: 32,
               shadowOpacity: 0.22,
@@ -69,7 +70,7 @@ export function AppLoadingScreen() {
           <Animated.View style={{ alignItems: 'center', marginTop: 24, opacity: contentOpacity }}>
             <Animated.Text
               style={{
-                color: '#FFFFFF',
+                color: theme.colors.text,
                 fontSize: isCompact ? 26 : 30,
                 fontWeight: '700',
                 letterSpacing: -0.6,
@@ -81,7 +82,7 @@ export function AppLoadingScreen() {
             </Animated.Text>
             <Animated.Text
               style={{
-                color: '#8B5CF6',
+                color: theme.colors.primary,
                 fontSize: 10,
                 letterSpacing: 3.4,
                 textTransform: 'uppercase',
