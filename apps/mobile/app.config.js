@@ -176,9 +176,9 @@ module.exports = {
     userInterfaceStyle: uiStyle,
     newArchEnabled: true,
     description: appDescription,
-    runtimeVersion: {
-      policy: 'appVersion',
-    },
+    ...(envMode === 'production'
+      ? { runtimeVersion: { policy: 'appVersion' } }
+      : {}),
     splash: {
       image: appSplashAssetPath,
       resizeMode: 'contain',

@@ -1525,32 +1525,56 @@ export function StreamingBanner({ item, badge = 'Featured', title, subtitle, cta
 
 export function GreetingBanner({ name }: { name?: string | null; newCount?: number }) {
   const theme = useAppTheme();
+  const router = useRouter();
   const hour = new Date().getHours();
   const greeting =
-    hour < 5 ? 'Still up' :
+    hour < 5  ? 'Still up' :
     hour < 12 ? 'Good morning' :
     hour < 17 ? 'Good afternoon' :
-    'Good evening';
+               'Good evening';
   const firstName = name ? name.split(' ')[0] : null;
-  const dateStr = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+  const dateStr = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
   return (
     <FadeIn>
-      <View style={{ gap: 3 }}>
-        <CustomText
-          variant="title"
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 2 }}>
+        <View style={{ gap: 4, flex: 1, minWidth: 0 }}>
+          <CustomText
+            style={{
+              color: theme.colors.text,
+              fontSize: 22,
+              fontWeight: '700',
+              letterSpacing: -0.5,
+              lineHeight: 28,
+            }}
+            numberOfLines={1}
+          >
+            {greeting}{firstName ? `, ${firstName}` : ''}
+          </CustomText>
+          <CustomText style={{ color: theme.colors.textMuted, fontSize: 12.5, fontWeight: '400' }}>
+            {dateStr}
+          </CustomText>
+        </View>
+
+        {/* Notification / Profile shortcut */}
+        <TVTouchable
+          onPress={() => router.push(APP_ROUTES.profile as never)}
+          showFocusBorder={false}
           style={{
-            color: theme.colors.text,
-            fontSize: 18,
-            fontWeight: '600',
-            letterSpacing: -0.3,
+            width: 40,
+            height: 40,
+            borderRadius: 20,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: theme.scheme === 'dark' ? 'rgba(255,255,255,0.07)' : 'rgba(17,10,31,0.06)',
+            borderWidth: 1,
+            borderColor: theme.colors.border,
+            flexShrink: 0,
+            marginLeft: 12,
           }}
         >
-          {greeting}{firstName ? `, ${firstName}` : ''}
-        </CustomText>
-        <CustomText variant="caption" style={{ color: theme.colors.textMuted, fontSize: 12 }}>
-          {dateStr}
-        </CustomText>
+          <MaterialIcons name="notifications-none" size={20} color={theme.colors.text} />
+        </TVTouchable>
       </View>
     </FadeIn>
   );
@@ -1574,23 +1598,42 @@ export function ContentShortcuts({ shortcuts }: { shortcuts: ContentShortcut[] }
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ gap: 8, paddingVertical: 2, paddingRight: 2 }}
+        contentContainerStyle={{ gap: 10, paddingVertical: 2, paddingRight: 4 }}
       >
         {shortcuts.map((item) => (
           <TVTouchable key={item.id} onPress={item.onPress} showFocusBorder={false}>
             <View
               style={{
-                flexDirection: 'row',
                 alignItems: 'center',
-                gap: 6,
-                paddingHorizontal: 14,
-                paddingVertical: 8,
-                borderRadius: 999,
-                backgroundColor: 'rgba(255,255,255,0.07)',
+                gap: 7,
+                paddingHorizontal: 2,
+                minWidth: 66,
               }}
             >
-              <MaterialIcons name={item.icon} size={13} color={theme.colors.textSecondary} />
-              <CustomText variant="label" style={{ color: theme.colors.text, fontSize: 12.5, fontWeight: '500' }}>
+              {/* Coloured icon tile */}
+              <View
+                style={{
+                  width: 54,
+                  height: 54,
+                  borderRadius: 16,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: `${item.color}16`,
+                  borderWidth: 1,
+                  borderColor: `${item.color}30`,
+                }}
+              >
+                <MaterialIcons name={item.icon} size={24} color={item.color} />
+              </View>
+              <CustomText
+                style={{
+                  color: theme.colors.textSecondary,
+                  fontSize: 11,
+                  fontWeight: '500',
+                  textAlign: 'center',
+                }}
+                numberOfLines={1}
+              >
                 {item.label}
               </CustomText>
             </View>
@@ -1721,15 +1764,29 @@ export function SectionLabel({
 }) {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20 }}>
-      <CustomText variant="title" style={{ color: '#F7F2FF', fontSize: 15, fontWeight: '700', letterSpacing: -0.2 }} numberOfLines={1}>
+      <CustomText
+        variant="title"
+        style={{ color: '#F7F2FF', fontSize: 16, fontWeight: '800', letterSpacing: -0.4 }}
+        numberOfLines={1}
+      >
         {title}
       </CustomText>
       {actionLabel && onAction ? (
-        <TVTouchable onPress={onAction} showFocusBorder={false} style={{ paddingVertical: 4, paddingLeft: 10, flexDirection: 'row', alignItems: 'center', gap: 1 }}>
-          <CustomText variant="caption" style={{ color: 'rgba(247,242,255,0.38)', fontSize: 11, fontWeight: '400' }}>
+        <TVTouchable
+          onPress={onAction}
+          showFocusBorder={false}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 2,
+            paddingVertical: 5,
+            paddingLeft: 10,
+          }}
+        >
+          <CustomText style={{ color: '#8B5CF6', fontSize: 12, fontWeight: '600' }}>
             {actionLabel}
           </CustomText>
-          <MaterialIcons name="chevron-right" size={14} color="rgba(247,242,255,0.30)" />
+          <MaterialIcons name="chevron-right" size={14} color="#8B5CF6" />
         </TVTouchable>
       ) : null}
     </View>
