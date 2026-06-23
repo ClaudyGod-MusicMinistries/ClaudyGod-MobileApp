@@ -122,8 +122,10 @@ fi
 # ── 4. Large files (>500 KB) ──────────────────────────────────────────────────
 step_start "Large file check (>500 KB)"
 LARGE_FILES=()
+# Lockfiles are auto-generated and allowed to exceed the size threshold
+LARGE_FILE_EXEMPT_PATTERN='(yarn\.lock|package-lock\.json|pnpm-lock\.yaml|composer\.lock|Gemfile\.lock|Cargo\.lock|poetry\.lock)$'
 for f in "${STAGED[@]}"; do
-  if [[ -f "$f" ]]; then
+  if [[ -f "$f" ]] && ! [[ "$f" =~ $LARGE_FILE_EXEMPT_PATTERN ]]; then
     SIZE=$(stat -c%s "$f" 2>/dev/null || stat -f%z "$f" 2>/dev/null || echo 0)
     if [ "$SIZE" -gt 524288 ]; then
       LARGE_FILES+=("$f ($(( SIZE / 1024 )) KB)")
