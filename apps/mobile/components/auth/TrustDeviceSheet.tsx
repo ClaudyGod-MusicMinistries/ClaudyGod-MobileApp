@@ -10,6 +10,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../CustomText';
 import { AppButton } from '../ui/AppButton';
 import { TVTouchable } from '../ui/TVTouchable';
+import { useAppTheme } from '../../util/colorScheme';
 import {
   getBiometricType,
   storeTrustedDeviceToken,
@@ -27,6 +28,7 @@ interface Props {
 }
 
 export function TrustDeviceSheet({ visible, accessToken, displayName, onDismiss }: Props) {
+  const theme = useAppTheme();
   const [biometricType, setBiometricType] = useState<'face' | 'fingerprint' | 'none'>('none');
   const [saving, setSaving] = useState(false);
   const slideAnim = React.useRef(new Animated.Value(height)).current;
@@ -101,20 +103,20 @@ export function TrustDeviceSheet({ visible, accessToken, displayName, onDismiss 
       <Animated.View
         style={[
           styles.sheet,
-          { transform: [{ translateY: slideAnim }] },
+          { transform: [{ translateY: slideAnim }], backgroundColor: theme.colors.elevated, borderTopColor: theme.colors.primaryBorder },
         ]}
       >
         <View style={styles.handle} />
 
         {/* Icon */}
-        <View style={styles.iconWrap}>
-          <MaterialIcons name={biometricIcon} size={36} color="#8B5CF6" />
+        <View style={[styles.iconWrap, { backgroundColor: theme.colors.primarySurface, borderColor: theme.colors.primaryBorder }]}>
+          <MaterialIcons name={biometricIcon} size={36} color={theme.colors.primary} />
         </View>
 
-        <CustomText variant="heading" style={styles.title}>
+        <CustomText variant="heading" style={[styles.title, { color: theme.colors.text }]}>
           Trust this device?
         </CustomText>
-        <CustomText style={styles.body}>
+        <CustomText style={[styles.body, { color: theme.colors.textMuted }]}>
           Hi {displayName}, enable {biometricLabel} to sign in instantly next time — no password needed.
         </CustomText>
 
@@ -125,11 +127,11 @@ export function TrustDeviceSheet({ visible, accessToken, displayName, onDismiss 
             fullWidth
             loading={saving}
             loadingLabel="Setting up…"
-            leftIcon={<MaterialIcons name={biometricIcon} size={18} color="#FFFFFF" />}
+            leftIcon={<MaterialIcons name={biometricIcon} size={18} color={theme.colors.onPrimary} />}
             onPress={() => void handleTrust()}
           />
           <TVTouchable onPress={onDismiss} showFocusBorder={false} style={styles.skipBtn}>
-            <CustomText style={styles.skipLabel}>Not now</CustomText>
+            <CustomText style={[styles.skipLabel, { color: theme.colors.textMuted }]}>Not now</CustomText>
           </TVTouchable>
         </View>
       </Animated.View>

@@ -186,10 +186,10 @@ export default function AccountSecurity() {
           <SurfaceCard tone="strong" style={{ padding: theme.spacing.xl, marginBottom: theme.spacing.lg, overflow: 'hidden' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
               <View style={{ width: 54, height: 54, borderRadius: 27, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(251,191,36,0.14)', borderWidth: 1, borderColor: 'rgba(251,191,36,0.28)' }}>
-                <MaterialIcons name="shield" size={26} color="#F59E0B" />
+                <MaterialIcons name="shield" size={26} color={theme.colors.warning} />
               </View>
               <View style={{ flex: 1 }}>
-                <CustomText variant="caption" style={{ color: '#F59E0B', textTransform: 'uppercase', letterSpacing: 0.9 }}>
+                <CustomText variant="caption" style={{ color: theme.colors.warning, textTransform: 'uppercase', letterSpacing: 0.9 }}>
                   Protected account
                 </CustomText>
                 <CustomText variant="heading" style={{ color: theme.colors.text, marginTop: 2 }}>

@@ -30,16 +30,16 @@ import type { AppTheme } from '../theme';
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
 // colorToken keys must exist on theme.colors
-const NAV_GROUPS: Array<{
+const NAV_GROUPS: {
   title: string;
-  items: Array<{
+  items: {
     icon: React.ComponentProps<typeof MaterialIcons>['name'];
     label: string;
     hint: string;
     href: string;
     colorToken: keyof AppTheme['colors'];
-  }>;
-}> = [
+  }[];
+}[] = [
   {
     title: 'Your Space',
     items: [
