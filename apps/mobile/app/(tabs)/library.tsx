@@ -73,7 +73,7 @@ function LibTabs({ active, onChange, counts }: { active: LibTab; onChange: (_t: 
               flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
               gap: 5, paddingVertical: 9, paddingHorizontal: 10, borderRadius: 12,
               backgroundColor: isActive
-                ? (theme.scheme === 'dark' ? theme.colors.elevated : '#FFFFFF')
+                ? theme.colors.elevated
                 : 'transparent',
               shadowColor: isActive ? '#000' : 'transparent',
               shadowOpacity: isActive ? 0.10 : 0,
@@ -103,7 +103,7 @@ function LibTabs({ active, onChange, counts }: { active: LibTab; onChange: (_t: 
                   alignItems: 'center', justifyContent: 'center',
                 }}
               >
-                <CustomText style={{ fontSize: 9, fontWeight: '700', color: isActive ? '#FFFFFF' : theme.colors.primary }}>
+                <CustomText style={{ fontSize: 9, fontWeight: '700', color: isActive ? theme.colors.onPrimary : theme.colors.primary }}>
                   {counts[tab.id]}
                 </CustomText>
               </View>
