@@ -55,7 +55,7 @@ export function AppScreenFooter({
           <CustomText
             variant="label"
             style={{
-              color: '#F4EEFF',
+              color: theme.colors.text_accent,
               letterSpacing: 0.12,
               fontSize: 11,
               lineHeight: 14,
@@ -67,7 +67,7 @@ export function AppScreenFooter({
           <CustomText
             variant="caption"
             style={{
-              color: 'rgba(184,175,203,0.68)',
+              color: theme.colors.textMuted,
               marginTop: 3,
               fontSize: 10,
               lineHeight: 14,
@@ -97,8 +97,8 @@ export function AppScreenFooter({
                 gap: 5,
               }}
             >
-              <MaterialIcons name={link.icon} size={12} color="#B994FF" />
-              <CustomText variant="caption" style={{ color: 'rgba(244,238,255,0.78)', fontSize: 10, lineHeight: 13 }}>
+              <MaterialIcons name={link.icon} size={12} color={theme.colors.primary} />
+              <CustomText variant="caption" style={{ color: theme.colors.textMuted, fontSize: 10, lineHeight: 13 }}>
                 {link.label}
               </CustomText>
             </TVTouchable>

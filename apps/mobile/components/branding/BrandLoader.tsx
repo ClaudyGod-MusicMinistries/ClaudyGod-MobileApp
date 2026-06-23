@@ -1,6 +1,7 @@
 import React from 'react';
 import { ActivityIndicator, Image, View } from 'react-native';
 import { CustomText } from '../CustomText';
+import { useAppTheme } from '../../util/colorScheme';
 
 interface BrandLoaderProps {
   label?: string;
@@ -11,8 +12,10 @@ interface BrandLoaderProps {
 export function BrandLoader({
   label,
   size = 'md',
-  textColor = '#F8F7FC',
+  textColor,
 }: BrandLoaderProps) {
+  const theme = useAppTheme();
+  const color = textColor ?? theme.colors.text;
   const logoSize = size === 'sm' ? 18 : 28;
 
   return (
@@ -36,11 +39,11 @@ export function BrandLoader({
       </View>
 
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-        <ActivityIndicator size="small" color={textColor} />
+        <ActivityIndicator size="small" color={color} />
         {label ? (
           <CustomText
             variant={size === 'sm' ? 'label' : 'subtitle'}
-            style={{ color: textColor }}
+            style={{ color }}
             numberOfLines={1}
           >
             {label}

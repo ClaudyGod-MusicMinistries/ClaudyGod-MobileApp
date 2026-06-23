@@ -577,7 +577,7 @@ export function QuickActionGrid({ actions }: { actions: QuickAction[] }) {
     <FadeIn delay={80}>
     <View style={{ flexDirection: 'row', gap: 10 }}>
       {actions.map((action) => {
-        const accent = ACTION_COLORS[action.icon] ?? theme.colors.primary;
+        const accent = getActionAccent(action.icon, theme);
         return (
           <TVTouchable
             key={action.label}

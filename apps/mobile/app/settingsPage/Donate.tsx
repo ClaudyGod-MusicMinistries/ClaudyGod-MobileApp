@@ -29,7 +29,7 @@ type DonatePlan = {
   period: DonateFrequency | 'once';
   note: string;
   featured?: boolean;
-  icon: React.ComponentProps<typeof MaterialIcons>['icon'];
+  icon: React.ComponentProps<typeof MaterialIcons>['name'];
 };
 
 // ─── Defaults (shown when admin config is not yet set) ────────────────────────

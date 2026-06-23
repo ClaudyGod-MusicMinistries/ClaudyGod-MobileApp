@@ -21,11 +21,13 @@ import {
 import { resetMobilePassword } from '../services/authService';
 import { useToast } from '../context/ToastContext';
 import { APP_ROUTES } from '../util/appRoutes';
+import { useAppTheme } from '../util/colorScheme';
 
 const getParam = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] ?? '' : value ?? '');
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
+  const theme = useAppTheme();
   const { showToast } = useToast();
   const params = useLocalSearchParams<{ token?: string | string[]; token_hash?: string | string[]; email?: string | string[]; notice?: string | string[] }>();
 
@@ -173,7 +175,7 @@ export default function ResetPasswordScreen() {
       <AppButton title="Update password" size="lg" fullWidth loading={submitting} loadingLabel="Updating password" loadingVariant="brand" onPress={() => void handleResetPassword()} disabled={!canSubmit || submitting} style={{ marginTop: 16 }} />
 
       <TVTouchable onPress={() => router.push(APP_ROUTES.auth.forgotPassword)} style={{ alignSelf: 'center', marginTop: 12 }} showFocusBorder={false}>
-        <CustomText variant="label" style={{ color: '#CDB9FF' }}>
+        <CustomText variant="label" style={{ color: theme.colors.text_accent }}>
           Need a new code?
         </CustomText>
       </TVTouchable>

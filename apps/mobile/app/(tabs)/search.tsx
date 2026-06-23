@@ -51,14 +51,17 @@ const CATEGORY_ICONS: Partial<Record<SearchCategory, React.ComponentProps<typeof
   announcement: 'campaign',
 };
 
-const CATEGORY_COLORS: Partial<Record<SearchCategory, string>> = {
-  All: '#8B5CF6',
-  audio: '#8B5CF6',
-  video: '#60A5FA',
-  live: '#F87171',
-  playlist: '#FBBF24',
-  announcement: '#34D399',
-};
+function getCategoryColor(category: SearchCategory, theme: ReturnType<typeof useAppTheme>): string {
+  const map: Partial<Record<SearchCategory, string>> = {
+    All:          theme.colors.primary,
+    audio:        theme.colors.primary,
+    video:        theme.colors.info,
+    live:         theme.colors.danger,
+    playlist:     theme.colors.warning,
+    announcement: theme.colors.success,
+  };
+  return map[category] ?? theme.colors.primary;
+}
 
 // ─── Discovery Grid (no query state) ──────────────────────────────────────────
 
@@ -264,7 +267,7 @@ export default function Search() {
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
           {categories.map((category) => {
             const active = category === activeCategory;
-            const color = CATEGORY_COLORS[category] ?? theme.colors.primary;
+            const color = getCategoryColor(category, theme);
             const icon = CATEGORY_ICONS[category] ?? 'label';
             return (
               <TVTouchable

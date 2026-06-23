@@ -8,6 +8,7 @@ import { Image, Platform, Pressable, StyleSheet, View, Animated } from 'react-na
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../CustomText';
+import { useAppTheme } from '../../util/colorScheme';
 
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
@@ -20,13 +21,6 @@ interface ContentGridCardProps {
   size?: 'small' | 'medium';
 }
 
-const COLORS = {
-  accent: '#A78BFA',
-  textPrimary: '#F5F3FF',
-  textSecondary: 'rgba(184,180,212,0.70)',
-  surface: 'rgba(26,20,47,0.50)',
-  border: 'rgba(167,139,250,0.15)',
-};
 
 export function ContentGridCard({
   id: _id,
@@ -36,6 +30,7 @@ export function ContentGridCard({
   onPress,
   size = 'medium',
 }: ContentGridCardProps) {
+  const theme = useAppTheme();
   const [pressed, setPressed] = useState(false);
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
 
@@ -78,7 +73,7 @@ export function ContentGridCard({
         style={{
           borderRadius: 14,
           overflow: 'hidden',
-          backgroundColor: COLORS.surface,
+          backgroundColor: theme.colors.surfaceAlt,
         }}
       >
         {/* Image Section */}
@@ -103,7 +98,7 @@ export function ContentGridCard({
               />
             </>
           ) : (
-            <MaterialIcons name="music-note" size={32} color={COLORS.accent} />
+            <MaterialIcons name="music-note" size={32} color={theme.colors.secondary} />
           )}
 
           {/* Play Button Overlay */}
@@ -119,7 +114,7 @@ export function ContentGridCard({
               opacity: pressed ? 1 : 0.8,
             }}
           >
-            <MaterialIcons name="play-arrow" size={20} color={COLORS.textPrimary} />
+            <MaterialIcons name="play-arrow" size={20} color={theme.colors.text} />
           </View>
         </View>
 
@@ -128,7 +123,7 @@ export function ContentGridCard({
           <CustomText
             numberOfLines={2}
             style={{
-              color: COLORS.textPrimary,
+              color: theme.colors.text,
               fontSize: size === 'small' ? 12 : 13,
               fontWeight: '600',
               marginBottom: subtitle ? 4 : 0,
@@ -142,7 +137,7 @@ export function ContentGridCard({
             <CustomText
               numberOfLines={1}
               style={{
-                color: COLORS.textSecondary,
+                color: theme.colors.textSecondary,
                 fontSize: 11,
               }}
             >

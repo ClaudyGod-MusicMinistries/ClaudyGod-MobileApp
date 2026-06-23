@@ -24,6 +24,7 @@ function formatDuration(ms: number): string {
 }
 
 function MeteringBar({ index, isActive }: { index: number; isActive: boolean }) {
+  const theme = useAppTheme();
   const anim = useRef(new Animated.Value(0.3)).current;
 
   useEffect(() => {
@@ -55,7 +56,7 @@ function MeteringBar({ index, isActive }: { index: number; isActive: boolean }) 
         width: 3,
         borderRadius: 2,
         height: anim.interpolate({ inputRange: [0, 1], outputRange: [4, 28] }),
-        backgroundColor: '#8B5CF6',
+        backgroundColor: theme.colors.primary,
         marginHorizontal: 1.5,
       }}
     />
