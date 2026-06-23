@@ -21,7 +21,7 @@ export async function fetchChannelVideos(params?: { maxResults?: number; channel
   return data;
 }
 
-export async function importVideos(selections: Array<{ youtubeVideoId: string; appSections: string[]; visibility?: string }>): Promise<{ imported: number }> {
+export async function importVideos(selections: Array<{ youtubeVideoId: string; appSections: string[]; visibility?: string; playAsAudio?: boolean }>): Promise<{ imported: number }> {
   const { data } = await client.post<{ imported: number }>('/v1/youtube/import', { selections });
   return data;
 }

@@ -3,6 +3,7 @@ import { Linking, ScrollView, TouchableOpacity, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { AudioPlayer } from '../../components/media/AudioPlayer';
+import { YouTubeAudioPlayer } from '../../components/media/YouTubeAudioPlayer';
 import { CustomText } from '../../components/CustomText';
 import { AppButton } from '../../components/ui/AppButton';
 import { TVTouchable } from '../../components/ui/TVTouchable';
@@ -13,7 +14,7 @@ import type { ContentType, FeedBundle, FeedCardItem } from '../../services/conte
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
 import { APP_ROUTES } from '../../util/appRoutes';
 import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
-import { buildPlayerRoute, isDirectPlayableAudioUrl, routeParamToString, shouldOpenVideoScreen } from '../../util/playerRoute';
+import { buildPlayerRoute, isDirectPlayableAudioUrl, isYouTubeAudioItem, routeParamToString, shouldOpenVideoScreen } from '../../util/playerRoute';
 import {
   CompactContentRow,
   ContentRail,
@@ -139,7 +140,7 @@ export default function PlaySection() {
   const routeItem = useMemo(() => parseRouteItem(params), [params]);
   const allQueue = useMemo(
     () => dedupeFeedItems([...(routeItem ? [routeItem] : []), ...feed.music, ...feed.mostPlayed, ...feed.recommendations, ...feed.playlists, ...feed.recent])
-      .filter((item) => !shouldOpenVideoScreen(item)),
+      .filter((item) => isYouTubeAudioItem(item) || !shouldOpenVideoScreen(item)),
     [feed, routeItem],
   );
 
@@ -156,9 +157,19 @@ export default function PlaySection() {
   const activeIndex = active ? allQueue.findIndex((item) => item.id === active.id) : -1;
   const canGoPrevious = activeIndex > 0;
   const canGoNext = activeIndex >= 0 && activeIndex < allQueue.length - 1;
-  const hasInlineAudio = Boolean(active?.mediaUrl && isDirectPlayableAudioUrl(active.mediaUrl));
+  const hasInlineAudio = Boolean(active && (
+    (active.mediaUrl && isDirectPlayableAudioUrl(active.mediaUrl)) ||
+    isYouTubeAudioItem(active)
+  ));
 
   const openItem = async (item: FeedCardItem, source: string) => {
+    // YouTube audio items play inline — no mediaUrl check needed
+    if (isYouTubeAudioItem(item)) {
+      setActiveId(item.id);
+      setIsFavorite(false);
+      await trackPlayEvent({ contentId: item.id, contentType: item.type, title: item.title, source });
+      return;
+    }
     if (!item.mediaUrl) {
       showToast({ title: 'Playback unavailable', message: 'This item is not ready to play yet.', tone: 'warning' });
       return;
@@ -211,7 +222,19 @@ export default function PlaySection() {
           overflow: 'visible',
         }}
       >
-        {active && hasInlineAudio && active.mediaUrl ? (
+        {active && hasInlineAudio && isYouTubeAudioItem(active) && active.youtubeVideoId ? (
+          <YouTubeAudioPlayer
+            track={{ id: active.id, title: active.title, artist: active.subtitle, youtubeVideoId: active.youtubeVideoId, duration: active.duration, imageUrl: active.imageUrl }}
+            onPrevious={goPrevious}
+            onNext={goNext}
+            canGoPrevious={canGoPrevious}
+            canGoNext={canGoNext}
+            isFavorite={isFavorite}
+            onFavoriteToggle={() => setIsFavorite((f) => !f)}
+            currentTrackNumber={activeIndex >= 0 ? activeIndex + 1 : undefined}
+            totalTracks={allQueue.length}
+          />
+        ) : active && hasInlineAudio && active.mediaUrl ? (
           <AudioPlayer
             track={{ id: active.id, title: active.title, artist: active.subtitle, uri: active.mediaUrl, duration: active.duration, imageUrl: active.imageUrl }}
             onPrevious={goPrevious}

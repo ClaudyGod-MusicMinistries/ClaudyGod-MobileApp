@@ -1,5 +1,5 @@
-import axios from 'axios';
 import client from './client';
+import { uploadMediaFile } from './storage';
 import type { SignedUrlResponse } from './types';
 
 export async function getSignedUrl(params: {
@@ -11,12 +11,23 @@ export async function getSignedUrl(params: {
   return data;
 }
 
-export async function uploadToS3(
-  uploadUrl: string,
+// Route audio/video through the new S3 storage pipeline; images use the legacy path.
+export async function uploadFile(
   file: File,
+  folder = 'content',
   onProgress?: (pct: number) => void,
-): Promise<void> {
-  await axios.put(uploadUrl, file, {
+): Promise<{ key: string; publicUrl: string }> {
+  const isMedia = file.type.startsWith('audio/') || file.type.startsWith('video/');
+
+  if (isMedia) {
+    const result = await uploadMediaFile(file, onProgress);
+    return { key: result.key, publicUrl: result.publicUrl };
+  }
+
+  // Legacy path for images and other small files
+  const signed = await getSignedUrl({ filename: file.name, contentType: file.type, folder });
+  const { default: axios } = await import('axios');
+  await axios.put(signed.uploadUrl, file, {
     headers: { 'Content-Type': file.type },
     onUploadProgress: (evt) => {
       if (onProgress && evt.total) {
@@ -24,14 +35,5 @@ export async function uploadToS3(
       }
     },
   });
-}
-
-export async function uploadFile(
-  file: File,
-  folder = 'content',
-  onProgress?: (pct: number) => void,
-): Promise<{ key: string; publicUrl: string }> {
-  const signed = await getSignedUrl({ filename: file.name, contentType: file.type, folder });
-  await uploadToS3(signed.uploadUrl, file, onProgress);
   return { key: signed.key, publicUrl: signed.publicUrl };
 }
