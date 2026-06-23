@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Pressable } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../CustomText';
+import { useAppTheme } from '../../util/colorScheme';
 
 interface ModernSectionHeaderProps {
   title: string;
@@ -10,18 +11,13 @@ interface ModernSectionHeaderProps {
   onActionPress?: () => void;
 }
 
-const COLORS = {
-  accent: '#A78BFA',
-  textPrimary: '#F5F3FF',
-  textSecondary: 'rgba(184,180,212,0.70)',
-};
-
 export function ModernSectionHeader({
   title,
   subtitle,
   actionLabel,
   onActionPress,
 }: ModernSectionHeaderProps) {
+  const theme = useAppTheme();
   return (
     <View
       style={{
@@ -36,7 +32,7 @@ export function ModernSectionHeader({
         <CustomText
           variant="title"
           style={{
-            color: COLORS.textPrimary,
+            color: theme.colors.text,
             fontSize: 14.5,
             fontWeight: '600',
             marginBottom: subtitle ? 4 : 0,
@@ -48,7 +44,7 @@ export function ModernSectionHeader({
           <CustomText
             variant="caption"
             style={{
-              color: COLORS.textSecondary,
+              color: theme.colors.textSecondary,
               fontSize: 10.5,
             }}
           >
@@ -73,14 +69,14 @@ export function ModernSectionHeader({
           <CustomText
             variant="meta"
             style={{
-              color: COLORS.accent,
+              color: theme.colors.secondary,
               fontSize: 10.6,
               fontWeight: '500',
             }}
           >
             {actionLabel}
           </CustomText>
-          <MaterialIcons name="chevron-right" size={15} color={COLORS.accent} />
+          <MaterialIcons name="chevron-right" size={15} color={theme.colors.secondary} />
         </Pressable>
       )}
     </View>

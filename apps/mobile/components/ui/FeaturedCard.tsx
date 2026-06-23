@@ -12,6 +12,7 @@ import { CustomText } from '../CustomText';
 import { colors_light } from '../../constants/color';
 import { spacing} from '../../styles/designTokens';
 import { designSystem } from '../../theme/designSystem';
+import { useAppTheme } from '../../util/colorScheme';
 
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
@@ -32,6 +33,7 @@ export function FeaturedCard({
   onPress,
   height = 280,
 }: FeaturedCardProps) {
+  const theme = useAppTheme();
   const [pressed, setPressed] = useState(false);
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
   const opacityAnim = React.useRef(new Animated.Value(1)).current;
@@ -154,12 +156,12 @@ export function FeaturedCard({
               width: 56,
               height: 56,
               borderRadius: 28,
-              backgroundColor: '#8B5CF6',
+              backgroundColor: theme.colors.primary,
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <MaterialIcons name="play-arrow" size={28} color="#FFFFFF" />
+            <MaterialIcons name="play-arrow" size={28} color={theme.colors.onPrimary} />
           </View>
         </Animated.View>
 

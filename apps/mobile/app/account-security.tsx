@@ -229,7 +229,7 @@ export default function AccountSecurity() {
               icon="email"
               title="Change email"
               description="Enter your new email and current password. A confirmation link will be sent."
-              color="#60A5FA"
+              color={theme.colors.info}
             />
             <SecureField label="New email address" value={newEmail} onChangeText={setNewEmail} keyboardType="email-address" autoCapitalize="none" placeholder="new@example.com" />
             <SecureField label="Current password" value={currentPassword} onChangeText={setCurrentPassword} secureTextEntry placeholder="Your current password" />
@@ -249,7 +249,7 @@ export default function AccountSecurity() {
               icon="lock-reset"
               title="Change password"
               description="Verify your current password first. A secure reset link will be emailed to your account."
-              color="#8B5CF6"
+              color={theme.colors.primary}
             />
             <SecureField label="Current password" value={currentPassword} onChangeText={setCurrentPassword} secureTextEntry placeholder="Your current password" />
             <AppButton

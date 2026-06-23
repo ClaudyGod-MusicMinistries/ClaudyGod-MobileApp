@@ -92,7 +92,7 @@ function SidebarTabBar({
             <Image source={BRAND_LOGO_ASSET} resizeMode="cover" style={StyleSheet.absoluteFillObject} />
           </View>
           <View style={{ flex: 1, minWidth: 0 }}>
-            <CustomText style={{ color: '#FFFFFF', fontSize: isTV ? 16 : 14, fontWeight: '700', letterSpacing: -0.3 }} numberOfLines={1}>ClaudyGod</CustomText>
+            <CustomText style={{ color: palette.text, fontSize: isTV ? 16 : 14, fontWeight: '700', letterSpacing: -0.3 }} numberOfLines={1}>ClaudyGod</CustomText>
             <CustomText style={{ color: palette.textMuted, fontSize: isTV ? 11 : 10, marginTop: 1 }} numberOfLines={1}>Worship & Ministry</CustomText>
           </View>
         </View>
@@ -131,7 +131,7 @@ function SidebarTabBar({
                     color={item.center ? '#FFFFFF' : (focused ? palette.primary : palette.textMuted)}
                   />
                 </View>
-                <CustomText style={{ color: focused ? '#F7F2FF' : palette.textMuted, fontSize: isTV ? 15 : 13.5, fontWeight: focused ? '700' : '500', flex: 1 }}>
+                <CustomText style={{ color: focused ? palette.text : palette.textMuted, fontSize: isTV ? 15 : 13.5, fontWeight: focused ? '700' : '500', flex: 1 }}>
                   {item.label}
                 </CustomText>
                 {focused ? <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: palette.primary }} /> : null}
@@ -163,7 +163,7 @@ function SidebarTabBar({
             <View style={{ width: isTV ? 36 : 30, height: isTV ? 36 : 30, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)' }}>
               <MaterialIcons name="tune" size={isTV ? 18 : 16} color={currentRouteName === 'settings' ? palette.primary : palette.textMuted} />
             </View>
-            <CustomText style={{ color: currentRouteName === 'settings' ? '#F7F2FF' : palette.textMuted, fontSize: isTV ? 14 : 13, fontWeight: currentRouteName === 'settings' ? '700' : '500' }}>
+            <CustomText style={{ color: currentRouteName === 'settings' ? palette.text : palette.textMuted, fontSize: isTV ? 14 : 13, fontWeight: currentRouteName === 'settings' ? '700' : '500' }}>
               Settings
             </CustomText>
           </TVTouchable>
@@ -215,7 +215,7 @@ function TabItem({
         />
       </View>
       {focused ? (
-        <CustomText style={{ color: '#F6F0FF', fontSize: compact ? 8.5 : 9, lineHeight: 11, fontWeight: '700' }} numberOfLines={1}>
+        <CustomText style={{ color: palette.text_accent, fontSize: compact ? 8.5 : 9, lineHeight: 11, fontWeight: '700' }} numberOfLines={1}>
           {item.label}
         </CustomText>
       ) : null}
@@ -362,7 +362,7 @@ function BottomPillTabBar({
                 ? 'rgba(139,92,246,0.28)'
                 : 'rgba(139,92,246,0.14)',
               // Violet glow shadow
-              shadowColor: '#8B5CF6',
+              shadowColor: palette.primary,
               shadowOffset: { width: 0, height: 8 },
               shadowOpacity: centerFocused ? 0.65 : 0.35,
               shadowRadius: centerFocused ? 22 : 14,
@@ -395,7 +395,7 @@ function BottomPillTabBar({
           {/* Label below */}
           <CustomText
             style={{
-              color: centerFocused ? '#F6F0FF' : 'rgba(246,240,255,0.55)',
+              color: centerFocused ? palette.text_accent : palette.textMuted,
               fontSize: compact ? 8.5 : 9,
               lineHeight: 11,
               fontWeight: '700',

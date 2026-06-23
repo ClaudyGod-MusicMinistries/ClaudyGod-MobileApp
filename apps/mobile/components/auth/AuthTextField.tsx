@@ -4,6 +4,7 @@ import { Animated, Easing, Platform, Pressable, TextInput, View } from 'react-na
 import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../CustomText';
 import { useDeviceClass } from '../../util/deviceClassConfig';
+import { useAppTheme } from '../../util/colorScheme';
 
 interface AuthTextFieldProps {
   label?: string;
@@ -54,6 +55,7 @@ export function AuthTextField({
   const [isFocused, setIsFocused] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const device = useDeviceClass();
+  const theme = useAppTheme();
 
   const isWeb = Platform.OS === 'web';
   const isActive = isFocused || isHovered;
@@ -95,7 +97,7 @@ export function AuthTextField({
         <CustomText
           variant="caption"
           style={{
-            color: '#7A7288',
+            color: theme.colors.textMuted,
             marginBottom: 6,
             fontSize: device.isTV ? 12 : compact ? 11 : 11.5,
             fontWeight: '400',
@@ -157,7 +159,7 @@ export function AuthTextField({
             style={{
               flex: 1,
               minHeight,
-              color: '#FFFFFF',
+              color: theme.colors.text,
               fontSize: inputFontSize,
               lineHeight: inputLineHeight,
               fontFamily: 'PlusJakartaSans_400Regular',

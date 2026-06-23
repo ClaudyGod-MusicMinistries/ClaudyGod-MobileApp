@@ -147,14 +147,14 @@ export function PosterCard({
               width: 38,
               height: 38,
               borderRadius: 19,
-              backgroundColor: 'rgba(239,68,68,0.18)',
+              backgroundColor: `${theme.colors.danger}2E`,
               borderWidth: 1,
-              borderColor: 'rgba(239,68,68,0.75)',
+              borderColor: `${theme.colors.danger}BF`,
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#EF4444' }} />
+            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: theme.colors.danger }} />
           </View>
         ) : null}
 

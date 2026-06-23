@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { TextInputProps } from 'react-native';
 import { Animated, Easing, Platform, Pressable, TextInput, View, useWindowDimensions } from 'react-native';
 import { CustomText } from '../CustomText';
+import { useAppTheme } from '../../util/colorScheme';
 
 interface AuthOtpInputProps {
   label?: string;
@@ -25,6 +26,7 @@ export function AuthOtpInput({
   editable = true,
   onSubmitEditing,
 }: AuthOtpInputProps) {
+  const theme = useAppTheme();
   const inputRef = useRef<TextInput | null>(null);
   const [isFocused, setIsFocused] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
@@ -206,7 +208,7 @@ export function AuthOtpInput({
               bottom: 0,
               height: 2,
               borderRadius: 999,
-              backgroundColor: '#9C7DFF',
+              backgroundColor: theme.colors.secondary,
               opacity: accentOpacity,
             }}
           />

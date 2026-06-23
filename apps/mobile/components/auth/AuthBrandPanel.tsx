@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { CustomText } from '../CustomText';
 import { BRAND_LOGO_ASSET, BRAND_WORSHIP_ASSET } from '../../util/brandAssets';
 import { useDeviceClass } from '../../util/deviceClassConfig';
+import { useAppTheme } from '../../util/colorScheme';
 
 interface AuthBrandPanelProps {
   salutation: string;
@@ -13,6 +14,7 @@ interface AuthBrandPanelProps {
 
 export function AuthBrandPanel({ salutation, description, compact = false }: AuthBrandPanelProps) {
   const device = useDeviceClass();
+  const theme = useAppTheme();
 
   if (compact) {
     return (
@@ -22,7 +24,7 @@ export function AuthBrandPanel({ salutation, description, compact = false }: Aut
             width: 44,
             height: 44,
             borderRadius: 14,
-            backgroundColor: '#1A1A1A',
+            backgroundColor: theme.colors.elevated,
             alignItems: 'center',
             justifyContent: 'center',
           }}
@@ -30,10 +32,10 @@ export function AuthBrandPanel({ salutation, description, compact = false }: Aut
           <Image source={BRAND_LOGO_ASSET} resizeMode="cover" style={{ width: 28, height: 28, borderRadius: 8 }} />
         </View>
         <View style={{ flex: 1, minWidth: 0 }}>
-          <CustomText variant="caption" style={{ color: 'rgba(139,92,246,0.90)', textTransform: 'uppercase', letterSpacing: 1.1, fontSize: 10 }}>
+          <CustomText variant="caption" style={{ color: theme.colors.primary, textTransform: 'uppercase', letterSpacing: 1.1, fontSize: 10 }}>
             ClaudyGod
           </CustomText>
-          <CustomText variant="label" style={{ color: '#7A7288', marginTop: 2, fontSize: 12, fontWeight: '400' }} numberOfLines={1}>
+          <CustomText variant="label" style={{ color: theme.colors.textMuted, marginTop: 2, fontSize: 12, fontWeight: '400' }} numberOfLines={1}>
             Music · Worship · Live Ministry
           </CustomText>
         </View>
@@ -51,7 +53,7 @@ export function AuthBrandPanel({ salutation, description, compact = false }: Aut
         minHeight,
         borderRadius: device.isTV ? 32 : 24,
         overflow: 'hidden',
-        backgroundColor: '#0D0919',
+        backgroundColor: theme.colors.background,
       }}
     >
       {/* Worship image — absoluteFillObject resolves to positioned ancestor, safe on web */}
@@ -78,7 +80,7 @@ export function AuthBrandPanel({ salutation, description, compact = false }: Aut
             width: device.isTV ? 64 : 54,
             height: device.isTV ? 64 : 54,
             borderRadius: device.isTV ? 22 : 18,
-            backgroundColor: '#1A1A1A',
+            backgroundColor: theme.colors.elevated,
             alignItems: 'center',
             justifyContent: 'center',
           }}

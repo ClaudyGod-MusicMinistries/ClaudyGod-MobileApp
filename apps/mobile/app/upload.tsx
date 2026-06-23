@@ -36,7 +36,7 @@ export default function UploadScreen() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
 
-  if (!isAuthorized) return <View style={{ flex: 1, backgroundColor: '#07050C' }} />;
+  if (!isAuthorized) return <View style={{ flex: 1, backgroundColor: theme.colors.background }} />;
 
   const handlePickFile = async () => {
     const mediaKind: 'image' | 'video' = kind === 'audio' ? 'video' : 'video';
@@ -84,7 +84,7 @@ export default function UploadScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#07050C' }} edges={['top', 'bottom']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }} edges={['top', 'bottom']}>
       {/* Header */}
       <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, gap: 12 }}>
         <TVTouchable
@@ -92,9 +92,9 @@ export default function UploadScreen() {
           showFocusBorder={false}
           style={{ width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.07)' }}
         >
-          <MaterialIcons name="close" size={20} color="#F7F2FF" />
+          <MaterialIcons name="close" size={20} color={theme.colors.text} />
         </TVTouchable>
-        <CustomText style={{ color: '#F7F2FF', fontSize: 16, fontWeight: '700', flex: 1 }}>
+        <CustomText style={{ color: theme.colors.text, fontSize: 16, fontWeight: '700', flex: 1 }}>
           Upload content
         </CustomText>
       </View>
@@ -115,7 +115,7 @@ export default function UploadScreen() {
                 style={{
                   flexDirection: 'row', alignItems: 'center', gap: 16,
                   padding: 18, borderRadius: 16,
-                  backgroundColor: '#110E1A',
+                  backgroundColor: theme.colors.surface,
                   borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)',
                 }}
               >
@@ -123,7 +123,7 @@ export default function UploadScreen() {
                   <MaterialIcons name={t === 'audio' ? 'graphic-eq' : 'smart-display'} size={22} color={theme.colors.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <CustomText style={{ color: '#F7F2FF', fontSize: 15, fontWeight: '600' }}>
+                  <CustomText style={{ color: theme.colors.text, fontSize: 15, fontWeight: '600' }}>
                     {t === 'audio' ? 'Audio' : 'Video'}
                   </CustomText>
                   <CustomText style={{ color: 'rgba(247,242,255,0.40)', fontSize: 12, marginTop: 2 }}>
@@ -189,9 +189,9 @@ export default function UploadScreen() {
               Add details
             </CustomText>
             <View style={{ gap: 12 }}>
-              <View style={{ backgroundColor: '#110E1A', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', padding: 14 }}>
+              <View style={{ backgroundColor: theme.colors.surface, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', padding: 14 }}>
                 <CustomText style={{ color: 'rgba(247,242,255,0.40)', fontSize: 11, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.8 }}>Title</CustomText>
-                <CustomText style={{ color: '#F7F2FF', fontSize: 15 }} onPress={() => {}}>
+                <CustomText style={{ color: theme.colors.text, fontSize: 15 }} onPress={() => {}}>
                   {title || <CustomText style={{ color: 'rgba(247,242,255,0.25)' }}>Enter a title…</CustomText>}
                 </CustomText>
               </View>
@@ -209,7 +209,7 @@ export default function UploadScreen() {
             <View style={{ width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center', backgroundColor: `${theme.colors.primary}18` }}>
               <MaterialIcons name="cloud-upload" size={34} color={theme.colors.primary} />
             </View>
-            <CustomText style={{ color: '#F7F2FF', fontSize: 18, fontWeight: '700' }}>
+            <CustomText style={{ color: theme.colors.text, fontSize: 18, fontWeight: '700' }}>
               Uploading…
             </CustomText>
             <View style={{ width: '100%', height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
@@ -224,10 +224,10 @@ export default function UploadScreen() {
         {/* Step 5 — Done */}
         {step === 'done' ? (
           <View style={{ gap: 20, alignItems: 'center', paddingVertical: 40 }}>
-            <View style={{ width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(86,210,142,0.14)' }}>
-              <MaterialIcons name="check-circle" size={34} color="#56D28E" />
+            <View style={{ width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center', backgroundColor: `${theme.colors.success}24` }}>
+              <MaterialIcons name="check-circle" size={34} color={theme.colors.success} />
             </View>
-            <CustomText style={{ color: '#F7F2FF', fontSize: 18, fontWeight: '700', textAlign: 'center' }}>
+            <CustomText style={{ color: theme.colors.text, fontSize: 18, fontWeight: '700', textAlign: 'center' }}>
               Upload complete
             </CustomText>
             <CustomText style={{ color: 'rgba(247,242,255,0.40)', fontSize: 14, textAlign: 'center' }}>
