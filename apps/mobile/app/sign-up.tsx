@@ -127,7 +127,7 @@ export default function SignUpScreen() {
           placeholder="Your full name"
           hint={nameHint}
           hintTone={name.trim() ? (nameIsValid ? 'success' : 'error') : 'default'}
-          leading={<MaterialIcons name="person-outline" size={18} color="rgba(214,190,255,0.55)" />}
+          leading={<MaterialIcons name="person-outline" size={18} color={theme.colors.textMuted} />}
         />
         <AuthTextField
           label="Email address"
@@ -140,7 +140,7 @@ export default function SignUpScreen() {
           placeholder="name@example.com"
           hint={emailHint}
           hintTone={normalizedEmail ? (emailIsValid ? 'success' : 'error') : 'default'}
-          leading={<MaterialIcons name="mail-outline" size={18} color="rgba(214,190,255,0.55)" />}
+          leading={<MaterialIcons name="mail-outline" size={18} color={theme.colors.textMuted} />}
         />
         <AuthTextField
           label="Password"
@@ -151,10 +151,10 @@ export default function SignUpScreen() {
           autoComplete="new-password"
           textContentType="newPassword"
           placeholder="Create a secure password"
-          leading={<MaterialIcons name="lock-outline" size={18} color="rgba(214,190,255,0.55)" />}
+          leading={<MaterialIcons name="lock-outline" size={18} color={theme.colors.textMuted} />}
           trailing={
             <TVTouchable onPress={() => setHidePassword((prev) => !prev)} showFocusBorder={false}>
-              <MaterialIcons name={hidePassword ? 'visibility' : 'visibility-off'} size={device.isTV ? 24 : 20} color="rgba(238,233,255,0.96)" />
+              <MaterialIcons name={hidePassword ? 'visibility' : 'visibility-off'} size={device.isTV ? 24 : 20} color={theme.colors.textSecondary} />
             </TVTouchable>
           }
           hint={password.trim() ? `${passwordReport.label} password` : 'Use a mix of uppercase letters, lowercase letters, and numbers.'}
@@ -180,7 +180,7 @@ export default function SignUpScreen() {
           autoComplete="new-password"
           textContentType="newPassword"
           placeholder="Confirm your password"
-          leading={<MaterialIcons name="lock-outline" size={18} color="rgba(214,190,255,0.55)" />}
+          leading={<MaterialIcons name="lock-outline" size={18} color={theme.colors.textMuted} />}
           hint={confirmHint || 'Repeat the same password exactly.'}
           hintTone={confirmPassword.trim() ? (passwordsMatch ? 'success' : 'error') : 'default'}
         />
@@ -202,9 +202,9 @@ export default function SignUpScreen() {
 
       {/* Social auth */}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginVertical: 4, marginTop: 16 }}>
-        <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(247,242,255,0.10)' }} />
-        <CustomText style={{ color: 'rgba(247,242,255,0.35)', fontSize: 11 }}>or continue with</CustomText>
-        <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(247,242,255,0.10)' }} />
+        <View style={{ flex: 1, height: 1, backgroundColor: theme.colors.divider }} />
+        <CustomText style={{ color: theme.colors.textMuted, fontSize: 11 }}>or continue with</CustomText>
+        <View style={{ flex: 1, height: 1, backgroundColor: theme.colors.divider }} />
       </View>
       <View style={{ flexDirection: 'row', gap: 12 }}>
         {/* Google */}
@@ -214,8 +214,8 @@ export default function SignUpScreen() {
           showFocusBorder={false}
           style={{
             flex: 1, height: 52, borderRadius: 14,
-            borderWidth: 1, borderColor: 'rgba(214,190,255,0.18)',
-            backgroundColor: 'rgba(255,255,255,0.05)',
+            borderWidth: 1, borderColor: theme.colors.border,
+            backgroundColor: theme.colors.surface,
             alignItems: 'center', justifyContent: 'center',
             flexDirection: 'row', gap: 10,
             opacity: anyLoading ? 0.5 : 1,
@@ -239,8 +239,8 @@ export default function SignUpScreen() {
           showFocusBorder={false}
           style={{
             flex: 1, height: 52, borderRadius: 14,
-            borderWidth: 1, borderColor: 'rgba(214,190,255,0.18)',
-            backgroundColor: 'rgba(255,255,255,0.05)',
+            borderWidth: 1, borderColor: theme.colors.border,
+            backgroundColor: theme.colors.surface,
             alignItems: 'center', justifyContent: 'center',
             flexDirection: 'row', gap: 10,
             opacity: anyLoading ? 0.5 : 1,
@@ -261,7 +261,7 @@ export default function SignUpScreen() {
 
       {/* Already have account — stays on one line */}
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, marginTop: 20 }}>
-        <CustomText style={{ color: 'rgba(255,255,255,0.55)', fontSize: 13 }}>Already have an account?</CustomText>
+        <CustomText style={{ color: theme.colors.textSecondary, fontSize: 13 }}>Already have an account?</CustomText>
         <TVTouchable onPress={() => router.push(APP_ROUTES.auth.signIn)} showFocusBorder={false}>
           <CustomText style={{ color: theme.colors.text_accent, fontSize: 13, fontWeight: '700' }}>Sign in</CustomText>
         </TVTouchable>

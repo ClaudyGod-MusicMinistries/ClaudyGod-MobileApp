@@ -152,7 +152,7 @@ export default function EmailOtpScreen() {
             autoComplete="email"
             textContentType="emailAddress"
             placeholder="name@example.com"
-            leading={<MaterialIcons name="mail-outline" size={18} color="rgba(214,190,255,0.55)" />}
+            leading={<MaterialIcons name="mail-outline" size={18} color={theme.colors.textMuted} />}
           />
 
           {error ? <AuthFeedbackBanner message={error} tone="error" /> : null}
@@ -169,7 +169,7 @@ export default function EmailOtpScreen() {
           />
 
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 16 }}>
-            <CustomText style={{ color: 'rgba(255,255,255,0.40)', fontSize: 13 }}>
+            <CustomText style={{ color: theme.colors.textSecondary, fontSize: 13 }}>
               Prefer a password?
             </CustomText>
             <TVTouchable
@@ -199,10 +199,10 @@ export default function EmailOtpScreen() {
                 selectTextOnFocus
                 style={[
                   styles.codeBox,
-                  { color: theme.colors.text },
+                  { color: theme.colors.text, borderColor: theme.colors.border, backgroundColor: theme.colors.inputBg },
                   digits[i] ? styles.codeBoxFilled : null,
                 ]}
-                placeholderTextColor="rgba(255,255,255,0.20)"
+                placeholderTextColor={theme.colors.textMuted}
                 placeholder="·"
               />
             ))}
@@ -222,7 +222,7 @@ export default function EmailOtpScreen() {
           />
 
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 16, gap: 4 }}>
-            <CustomText style={{ color: 'rgba(255,255,255,0.40)', fontSize: 13 }}>
+            <CustomText style={{ color: theme.colors.textSecondary, fontSize: 13 }}>
               {"Didn't get it?"}
             </CustomText>
             <TVTouchable
@@ -233,7 +233,7 @@ export default function EmailOtpScreen() {
               <CustomText style={{
                 fontSize: 13,
                 fontWeight: '700',
-                color: resendCooldown > 0 ? 'rgba(214,190,255,0.35)' : theme.colors.text_accent,
+                color: resendCooldown > 0 ? theme.colors.textMuted : theme.colors.text_accent,
               }}>
                 {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend code'}
               </CustomText>
@@ -245,7 +245,7 @@ export default function EmailOtpScreen() {
             showFocusBorder={false}
             style={{ alignSelf: 'center', marginTop: 8 }}
           >
-            <CustomText style={{ color: 'rgba(214,190,255,0.50)', fontSize: 12 }}>
+            <CustomText style={{ color: theme.colors.textMuted, fontSize: 12 }}>
               Change email address
             </CustomText>
           </TVTouchable>
@@ -267,14 +267,12 @@ const styles = StyleSheet.create({
     height: 56,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: 'rgba(214,190,255,0.20)',
-    backgroundColor: 'rgba(255,255,255,0.05)',
     textAlign: 'center',
     fontSize: 22,
     fontWeight: '700',
   },
   codeBoxFilled: {
-    borderColor: 'rgba(139,92,246,0.60)',
-    backgroundColor: 'rgba(139,92,246,0.10)',
+    borderColor: 'rgba(124,58,237,0.55)',
+    backgroundColor: 'rgba(124,58,237,0.08)',
   },
 });

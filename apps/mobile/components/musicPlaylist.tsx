@@ -81,8 +81,7 @@ export const SongList: React.FC<SongListProps> = ({
               alignItems: 'center',
               paddingVertical: 9,
               borderBottomWidth: index !== songs.length - 1 ? 1 : 0,
-              borderBottomColor:
-                theme.scheme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(17,18,23,0.08)',
+              borderBottomColor: theme.colors.border,
               backgroundColor: active ? `${theme.colors.primary}12` : 'transparent',
               borderRadius: active ? theme.radius.md : 0,
               paddingHorizontal: 6,

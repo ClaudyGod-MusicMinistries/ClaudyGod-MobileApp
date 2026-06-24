@@ -102,7 +102,7 @@ function FilterChips({ active, onChange }: { active: AudioFilter; onChange: (_f:
             style={{
               flexDirection: 'row', alignItems: 'center', gap: 6,
               paddingHorizontal: 16, paddingVertical: 9, borderRadius: 999,
-              backgroundColor: isActive ? theme.colors.primary : (theme.scheme === 'dark' ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)'),
+              backgroundColor: isActive ? theme.colors.primary : theme.colors.subtleFill,
               borderWidth: 1,
               borderColor: isActive ? 'transparent' : theme.colors.border,
             }}
@@ -189,7 +189,6 @@ export default function PlaySection() {
   const goNext    = () => { const next = canGoNext ? allQueue[activeIndex + 1] : null; if (next) void openItem(next, 'music_next'); };
 
   const upNext = filteredQueue.filter((item) => item.id !== active?.id).slice(0, 8);
-  const isDark = theme.scheme === 'dark';
 
   return (
     <PremiumPage
@@ -215,8 +214,8 @@ export default function PlaySection() {
         style={{
           borderRadius: 24,
           borderWidth: 1,
-          borderColor: isDark ? 'rgba(139,92,246,0.16)' : 'rgba(124,58,237,0.12)',
-          backgroundColor: isDark ? 'rgba(139,92,246,0.05)' : 'rgba(124,58,237,0.03)',
+          borderColor: theme.colors.primaryBorder,
+          backgroundColor: theme.colors.primarySurface,
           paddingHorizontal: 16,
           paddingTop: 20,
           paddingBottom: 24,
@@ -295,10 +294,10 @@ export default function PlaySection() {
             <View
               key={item.id}
               style={{
-                borderRadius: 12,
-                backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+                borderRadius: theme.radius.md,
+                backgroundColor: theme.colors.subtleFill,
                 borderWidth: 0.5,
-                borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+                borderColor: theme.colors.border,
                 marginBottom: 2,
               }}
             >
@@ -322,11 +321,11 @@ export default function PlaySection() {
       {/* ── Section separator ────────────────────────────────────────────── */}
       {(musicItems.length > 0 || audioItems.length > 0 || nuggetsItems.length > 0 || teensItems.length > 0) ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <View style={{ flex: 1, height: 1, backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' }} />
-          <CustomText style={{ color: isDark ? 'rgba(247,242,255,0.25)' : 'rgba(19,12,33,0.30)', fontSize: 10, fontWeight: '600', letterSpacing: 1.2 }}>
+          <View style={{ flex: 1, height: 1, backgroundColor: theme.colors.subtleFill }} />
+          <CustomText style={{ color: theme.colors.textMuted, fontSize: 10, fontWeight: '600', letterSpacing: 1.2 }}>
             BROWSE
           </CustomText>
-          <View style={{ flex: 1, height: 1, backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' }} />
+          <View style={{ flex: 1, height: 1, backgroundColor: theme.colors.subtleFill }} />
         </View>
       ) : null}
 

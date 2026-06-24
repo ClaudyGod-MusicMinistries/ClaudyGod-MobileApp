@@ -50,7 +50,7 @@ function MessageBubble({ message }: { message: LiveSessionDetail['messages'][0] 
   const isSuggestion = message.kind === 'suggestion';
   const accentColor = isSuggestion ? theme.colors.warning : theme.colors.primary;
   return (
-    <View style={{ borderRadius: 18, padding: 14, gap: 6, backgroundColor: theme.scheme === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(17,10,31,0.03)', borderWidth: 1, borderColor: theme.colors.border }}>
+    <View style={{ borderRadius: 18, padding: 14, gap: 6, backgroundColor: theme.colors.subtleFill, borderWidth: 1, borderColor: theme.colors.border }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <View style={{ width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: `${accentColor}18` }}>
@@ -142,7 +142,7 @@ export default function LiveSessionScreen() {
           {(['comment', 'suggestion'] as LiveMessageKind[]).map((kind) => {
             const active = messageKind === kind;
             return (
-              <TVTouchable key={kind} onPress={() => setMessageKind(kind)} showFocusBorder={false} style={{ borderRadius: 999, paddingHorizontal: 14, paddingVertical: 9, backgroundColor: active ? theme.colors.primary : (theme.scheme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'), borderWidth: 1, borderColor: active ? 'transparent' : theme.colors.border }}>
+              <TVTouchable key={kind} onPress={() => setMessageKind(kind)} showFocusBorder={false} style={{ borderRadius: 999, paddingHorizontal: 14, paddingVertical: 9, backgroundColor: active ? theme.colors.primary : theme.colors.subtleFill, borderWidth: 1, borderColor: active ? 'transparent' : theme.colors.border }}>
                 <CustomText variant="caption" style={{ color: active ? '#FFFFFF' : theme.colors.textSecondary, fontWeight: active ? '700' : '500' }}>
                   {kind === 'comment' ? 'Comment' : 'Suggestion'}
                 </CustomText>

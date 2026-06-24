@@ -125,9 +125,10 @@ export function PremiumPage({
   const bottomPadding = isSidebarMode ? 40 : theme.layout.tabBarContentPadding;
 
   const scrollY = useRef(new Animated.Value(0)).current;
+  const bgRgba = theme.colors.backgroundRgba;
   const headerBg = scrollY.interpolate({
     inputRange: [0, 60],
-    outputRange: ['rgba(7,5,12,0)', 'rgba(7,5,12,0.95)'],
+    outputRange: [`rgba(${bgRgba},0)`, `rgba(${bgRgba},0.96)`],
     extrapolate: 'clamp',
   });
 
@@ -181,12 +182,12 @@ export function PremiumPage({
                     style={{
                       width: compact ? 36 : 40,
                       height: compact ? 36 : 40,
-                      borderRadius: 12,
+                      borderRadius: theme.radius.md,
                       alignItems: 'center',
                       justifyContent: 'center',
                       backgroundColor: showBack
-                        ? 'rgba(255,255,255,0.10)'
-                        : 'rgba(255,255,255,0.07)',
+                        ? theme.colors.subtleFillMed
+                        : theme.colors.subtleFill,
                       overflow: 'hidden',
                       flexShrink: 0,
                     }}
@@ -236,7 +237,6 @@ export function PremiumPage({
                     label="Search"
                     onPress={() => router.push(APP_ROUTES.tabs.search)}
                     size={compact ? 36 : 40}
-                    scheme={theme.scheme}
                     borderColor={theme.colors.border}
                     iconColor={theme.colors.text}
                   />
@@ -248,7 +248,6 @@ export function PremiumPage({
                       router.push(isAuthenticated ? APP_ROUTES.profile : APP_ROUTES.auth.signIn)
                     }
                     size={compact ? 36 : 40}
-                    scheme={theme.scheme}
                     borderColor={isAuthenticated ? theme.colors.border : 'transparent'}
                     iconColor={isAuthenticated ? theme.colors.primary : theme.colors.textInverse}
                     accent={!isAuthenticated}
@@ -273,7 +272,6 @@ function NavIconButton({
   label,
   onPress,
   size,
-  scheme,
   borderColor,
   iconColor,
   accent = false,
@@ -283,12 +281,12 @@ function NavIconButton({
   label: string;
   onPress: () => void;
   size: number;
-  scheme: string;
   borderColor: string;
   iconColor: string;
   accent?: boolean;
   accentColor?: string;
 }) {
+  const theme = useAppTheme();
   return (
     <TVTouchable
       onPress={onPress}
@@ -298,14 +296,10 @@ function NavIconButton({
       style={{
         width: size,
         height: size,
-        borderRadius: 12,
+        borderRadius: theme.radius.md,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: accent
-          ? accentColor
-          : scheme === 'dark'
-            ? 'rgba(255,255,255,0.08)'
-            : 'rgba(17,10,31,0.06)',
+        backgroundColor: accent ? accentColor : theme.colors.subtleFillMed,
         borderWidth: 1,
         borderColor,
       }}
@@ -366,14 +360,10 @@ export function PremiumHero({
     <View
       style={{
         height: heroHeight,
-        borderRadius: 20,
+        borderRadius: theme.radius.xl,
         overflow: 'hidden',
         backgroundColor: theme.colors.surface,
-        shadowColor: '#000',
-        shadowOpacity: 0.28,
-        shadowRadius: 24,
-        shadowOffset: { width: 0, height: 10 },
-        elevation: 12,
+        ...theme.shadows.xl,
       }}
     >
       <Image
@@ -545,10 +535,7 @@ export function QuickActionGrid({ actions }: { actions: QuickAction[] }) {
                     borderRadius: 29,
                     alignItems: 'center',
                     justifyContent: 'center',
-                    backgroundColor:
-                      theme.scheme === 'dark'
-                        ? 'rgba(255,255,255,0.07)'
-                        : 'rgba(17,10,31,0.06)',
+                    backgroundColor: theme.colors.subtleFill,
                     borderWidth: 1,
                     borderColor: theme.colors.border,
                   }}
@@ -593,13 +580,10 @@ export function QuickActionGrid({ actions }: { actions: QuickAction[] }) {
                 gap: 11,
                 paddingHorizontal: 14,
                 paddingVertical: 13,
-                borderRadius: 16,
+                borderRadius: theme.radius.card,
                 borderWidth: 1,
                 borderColor: theme.colors.border,
-                backgroundColor:
-                  theme.scheme === 'dark'
-                    ? 'rgba(255,255,255,0.04)'
-                    : 'rgba(17,10,31,0.04)',
+                backgroundColor: theme.colors.subtleFill,
               }}
             >
               <View
@@ -1108,10 +1092,8 @@ export function ContentList({
                   paddingVertical: useGrid ? 10 : 9,
                   borderTopWidth: useGrid ? 0 : (index === 0 ? 0 : 1),
                   borderTopColor: theme.colors.border,
-                  borderRadius: useGrid ? 12 : 0,
-                  backgroundColor: useGrid
-                    ? (theme.scheme === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)')
-                    : 'transparent',
+                  borderRadius: useGrid ? theme.radius.md : 0,
+                  backgroundColor: useGrid ? theme.colors.subtleFill : 'transparent',
                   paddingHorizontal: useGrid ? 10 : 0,
                 }}
               >
@@ -1327,8 +1309,8 @@ export function TrendingList({ title, items, onPressItem, actionLabel, onAction 
                 gap: 3,
                 paddingHorizontal: 10,
                 paddingVertical: 5,
-                borderRadius: 999,
-                backgroundColor: theme.scheme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(17,10,31,0.05)',
+                borderRadius: theme.radius.pill,
+                backgroundColor: theme.colors.subtleFill,
                 borderWidth: 1,
                 borderColor: theme.colors.border,
               }}
@@ -1583,7 +1565,7 @@ export function GreetingBanner({ name }: { name?: string | null; newCount?: numb
             borderRadius: 20,
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: theme.scheme === 'dark' ? 'rgba(255,255,255,0.07)' : 'rgba(17,10,31,0.06)',
+            backgroundColor: theme.colors.subtleFill,
             borderWidth: 1,
             borderColor: theme.colors.border,
             flexShrink: 0,
@@ -1682,8 +1664,8 @@ export function LiveNowBanner({ item, onPress }: { item: FeedCardItem; onPress: 
               style={{
                 width: 42, height: 42, borderRadius: 21,
                 alignItems: 'center', justifyContent: 'center',
-                backgroundColor: 'rgba(244,63,94,0.18)',
-                borderWidth: 1, borderColor: 'rgba(244,63,94,0.35)',
+                backgroundColor: theme.colors.dangerSurface,
+                borderWidth: 1, borderColor: theme.colors.dangerBorder,
               }}
             >
               <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: theme.colors.danger }} />
@@ -1731,9 +1713,9 @@ export function WordOfDayCard({ word, onPress }: { word: WordOfDayData; onPress:
       <TVTouchable onPress={onPress} showFocusBorder={false}>
         <View
           style={{
-            borderRadius: 20, overflow: 'hidden', borderWidth: 1,
-            borderColor: theme.scheme === 'dark' ? 'rgba(251,191,36,0.18)' : 'rgba(180,83,9,0.14)',
-            backgroundColor: theme.scheme === 'dark' ? 'rgba(251,191,36,0.05)' : 'rgba(251,191,36,0.04)',
+            borderRadius: theme.radius.xl, overflow: 'hidden', borderWidth: 1,
+            borderColor: theme.colors.warningBorder,
+            backgroundColor: theme.colors.warningSurface,
           }}
         >
           <View style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, backgroundColor: theme.colors.warning }} />
