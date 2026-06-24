@@ -50,7 +50,7 @@ function SettingRow({ item }: { item: SettingItem }) {
           borderRadius: device.isTV ? 14 : 12, alignItems: 'center', justifyContent: 'center',
           backgroundColor: item.value
             ? `${accentColor}18`
-            : (theme.scheme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)'),
+            : theme.colors.subtleFill,
           borderWidth: 1,
           borderColor: item.value ? `${accentColor}30` : theme.colors.border,
         }}

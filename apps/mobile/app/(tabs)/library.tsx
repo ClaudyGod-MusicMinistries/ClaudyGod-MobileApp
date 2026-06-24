@@ -61,7 +61,7 @@ function LibTabs({ active, onChange, counts }: { active: LibTab; onChange: (_t: 
         gap: 6,
         padding: 4,
         borderRadius: 16,
-        backgroundColor: theme.scheme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
+        backgroundColor: theme.colors.subtleFill,
       }}
     >
       {TABS.map((tab) => {

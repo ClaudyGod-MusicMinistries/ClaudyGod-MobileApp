@@ -104,7 +104,7 @@ function FavCard({
           showFocusBorder={false}
           style={{
             width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center',
-            backgroundColor: theme.scheme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+            backgroundColor: theme.colors.subtleFill,
             borderWidth: 1, borderColor: theme.colors.border,
           }}
         >

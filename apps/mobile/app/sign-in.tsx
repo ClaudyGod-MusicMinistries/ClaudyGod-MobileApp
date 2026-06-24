@@ -49,8 +49,8 @@ function SocialButton({
         height: 52,
         borderRadius: 14,
         borderWidth: 1,
-        borderColor: 'rgba(214,190,255,0.18)',
-        backgroundColor: 'rgba(255,255,255,0.05)',
+        borderColor: theme.colors.border,
+        backgroundColor: theme.colors.surface,
         alignItems: 'center',
         justifyContent: 'center',
         flexDirection: 'row',
@@ -91,11 +91,12 @@ function SocialButton({
 // ─── Divider ─────────────────────────────────────────────────────────────────
 
 function OrDivider({ label }: { label: string }) {
+  const theme = useAppTheme();
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-      <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(247,242,255,0.10)' }} />
-      <CustomText style={{ color: 'rgba(247,242,255,0.35)', fontSize: 11 }}>{label}</CustomText>
-      <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(247,242,255,0.10)' }} />
+      <View style={{ flex: 1, height: 1, backgroundColor: theme.colors.divider }} />
+      <CustomText style={{ color: theme.colors.textMuted, fontSize: 11 }}>{label}</CustomText>
+      <View style={{ flex: 1, height: 1, backgroundColor: theme.colors.divider }} />
     </View>
   );
 }
@@ -276,7 +277,7 @@ export default function SignInScreen() {
           placeholder="name@example.com"
           hint={normalizedEmail ? emailHint : ''}
           hintTone={normalizedEmail ? (emailIsValid ? 'success' : 'error') : 'default'}
-          leading={<MaterialIcons name="mail-outline" size={18} color="rgba(214,190,255,0.55)" />}
+          leading={<MaterialIcons name="mail-outline" size={18} color={theme.colors.textMuted} />}
         />
         <AuthTextField
           label="Password"
@@ -287,10 +288,10 @@ export default function SignInScreen() {
           autoComplete="password"
           textContentType="password"
           placeholder="Enter your password"
-          leading={<MaterialIcons name="lock-outline" size={18} color="rgba(214,190,255,0.55)" />}
+          leading={<MaterialIcons name="lock-outline" size={18} color={theme.colors.textMuted} />}
           trailing={
             <TVTouchable onPress={() => setHidePassword((p) => !p)} showFocusBorder={false}>
-              <MaterialIcons name={hidePassword ? 'visibility' : 'visibility-off'} size={20} color="rgba(226,218,247,0.9)" />
+              <MaterialIcons name={hidePassword ? 'visibility' : 'visibility-off'} size={20} color={theme.colors.textSecondary} />
             </TVTouchable>
           }
         />
@@ -350,23 +351,23 @@ export default function SignInScreen() {
           paddingVertical: 12,
           borderRadius: 12,
           borderWidth: 1,
-          borderColor: 'rgba(214,190,255,0.12)',
+          borderColor: theme.colors.border,
           backgroundColor: 'transparent',
           opacity: anyLoading ? 0.5 : 1,
         }}
       >
-        <MaterialIcons name="mail-outline" size={17} color="rgba(214,190,255,0.65)" />
-        <CustomText style={{ color: 'rgba(214,190,255,0.65)', fontSize: 13, fontWeight: '600' }}>
+        <MaterialIcons name="mail-outline" size={17} color={theme.colors.textMuted} />
+        <CustomText style={{ color: theme.colors.textSecondary, fontSize: 13, fontWeight: '600' }}>
           Sign in with email code
         </CustomText>
       </TVTouchable>
 
       {/* Sign-up row — single line with a divider */}
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 4 }}>
-        <CustomText style={{ color: 'rgba(255,255,255,0.45)', fontSize: 13 }}>
+        <CustomText style={{ color: theme.colors.textSecondary, fontSize: 13 }}>
           New to ClaudyGod?
         </CustomText>
-        <View style={{ width: 1, height: 12, backgroundColor: 'rgba(255,255,255,0.18)' }} />
+        <View style={{ width: 1, height: 12, backgroundColor: theme.colors.divider }} />
         <TVTouchable
           onPress={() => router.push(APP_ROUTES.auth.signUp)}
           showFocusBorder={false}

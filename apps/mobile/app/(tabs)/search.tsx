@@ -207,8 +207,8 @@ export default function Search() {
 
   const animatedSearchStyle = {
     transform: [{ scale: focusProgress.interpolate({ inputRange: [0, 1], outputRange: [1, 1.012] }) }],
-    borderColor: focusProgress.interpolate({ inputRange: [0, 1], outputRange: [theme.colors.border, theme.scheme === 'dark' ? 'rgba(183,148,246,0.38)' : 'rgba(124,58,237,0.34)'] }),
-    backgroundColor: focusProgress.interpolate({ inputRange: [0, 1], outputRange: [theme.scheme === 'dark' ? 'rgba(255,255,255,0.055)' : 'rgba(17,10,31,0.04)', theme.scheme === 'dark' ? 'rgba(255,255,255,0.082)' : 'rgba(17,10,31,0.065)'] }),
+    borderColor: focusProgress.interpolate({ inputRange: [0, 1], outputRange: [theme.colors.border, theme.colors.primaryFocusBorder] }),
+    backgroundColor: focusProgress.interpolate({ inputRange: [0, 1], outputRange: [theme.colors.subtleFill, theme.colors.subtleFillMed] }),
   };
 
   return (
@@ -280,7 +280,7 @@ export default function Search() {
                   borderRadius: theme.radius.pill,
                   backgroundColor: active
                     ? `${color}22`
-                    : theme.scheme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+                    : theme.colors.subtleFill,
                   borderWidth: 1,
                   borderColor: active ? color : theme.colors.border,
                 }}
@@ -309,7 +309,7 @@ export default function Search() {
                   flexDirection: 'row', alignItems: 'center', gap: 7,
                   borderRadius: theme.radius.pill, borderWidth: 1,
                   borderColor: theme.colors.border,
-                  backgroundColor: theme.scheme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(20,16,33,0.04)',
+                  backgroundColor: theme.colors.subtleFill,
                   paddingHorizontal: 14, paddingVertical: 8,
                 }}
               >
