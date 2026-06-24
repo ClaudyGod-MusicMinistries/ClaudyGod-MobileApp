@@ -138,7 +138,7 @@ function QuickLinkRow({ icon, label, hint, color, onPress }: { icon: React.Compo
 
   return (
     <TVTouchable onPress={onPress} showFocusBorder={false}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: device.isTV ? 16 : 13 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: device.isTV ? 16 : 14 }}>
         <View
           style={{
             width: device.isTV ? 48 : 42, height: device.isTV ? 48 : 42,
@@ -152,7 +152,7 @@ function QuickLinkRow({ icon, label, hint, color, onPress }: { icon: React.Compo
           <CustomText style={{ color: theme.colors.text, fontSize: device.isTV ? 15 : 13.5, fontWeight: '600' }}>
             {label}
           </CustomText>
-          {hint ? <CustomText style={{ color: theme.colors.textSecondary, fontSize: device.isTV ? 12 : 11, marginTop: 2 }}>{hint}</CustomText> : null}
+          {hint ? <CustomText style={{ color: theme.colors.textSecondary, fontSize: device.isTV ? 12.5 : 11.5, marginTop: 2 }}>{hint}</CustomText> : null}
         </View>
         <MaterialIcons name="chevron-right" size={18} color={theme.colors.textMuted} />
       </View>

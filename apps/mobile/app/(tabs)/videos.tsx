@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { Linking, ScrollView, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import { Linking, ScrollView, useWindowDimensions, View } from 'react-native';
+import { TVTouchable } from '../../components/ui/TVTouchable';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { CustomText } from '../../components/CustomText';
@@ -60,22 +61,25 @@ function FilterChips({ active, onChange }: { active: VideoFilter; onChange: (_f:
       {FILTERS.map((f) => {
         const isActive = f.id === active;
         return (
-          <TouchableOpacity
+          <TVTouchable
             key={f.id}
             onPress={() => onChange(f.id)}
+            showFocusBorder={false}
             style={{
               flexDirection: 'row', alignItems: 'center', gap: 6,
-              paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999,
-              backgroundColor: isActive ? '#60A5FA' : (theme.scheme === 'dark' ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)'),
+              paddingHorizontal: 16, paddingVertical: 9, borderRadius: 999,
+              backgroundColor: isActive
+                ? theme.colors.info
+                : (theme.scheme === 'dark' ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)'),
               borderWidth: 1,
-              borderColor: isActive ? 'transparent' : (theme.scheme === 'dark' ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.08)'),
+              borderColor: isActive ? 'transparent' : theme.colors.border,
             }}
           >
-            <MaterialIcons name={f.icon} size={13} color={isActive ? '#FFFFFF' : theme.colors.textSecondary} />
-            <CustomText style={{ color: isActive ? '#FFFFFF' : theme.colors.textSecondary, fontSize: 12.5, fontWeight: isActive ? '700' : '500' }}>
+            <MaterialIcons name={f.icon} size={14} color={isActive ? '#FFFFFF' : theme.colors.textSecondary} />
+            <CustomText style={{ color: isActive ? '#FFFFFF' : theme.colors.textSecondary, fontSize: 13, fontWeight: isActive ? '700' : '500' }}>
               {f.label}
             </CustomText>
-          </TouchableOpacity>
+          </TVTouchable>
         );
       })}
     </ScrollView>
@@ -159,9 +163,9 @@ export default function VideosScreen() {
 
       {/* Up next */}
       {upNext.length > 0 ? (
-        <View style={{ gap: 10 }}>
-          <SectionLabel title="Up next" accent={`${upNext.length} videos`} />
-          <View style={{ gap: 4 }}>
+        <View style={{ gap: 12 }}>
+          <SectionLabel title="Up next" />
+          <View>
             {upNext.map((item) => (
               <CompactContentRow key={item.id} item={item} onPress={() => void openItem(item, 'videos_queue')} />
             ))}
