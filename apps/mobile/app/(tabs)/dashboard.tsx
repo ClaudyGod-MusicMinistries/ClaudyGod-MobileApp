@@ -63,7 +63,7 @@ function MetricCard({
     >
       <View
         style={{
-          width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center',
+          width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center',
           backgroundColor: `${color}18`,
         }}
       >
@@ -88,13 +88,13 @@ function InsightRow({ insight, onPress, showDivider }: { insight: EngagementInsi
     <TVTouchable onPress={onPress} showFocusBorder={false}>
       <View
         style={{
-          flexDirection: 'row', alignItems: 'center', gap: 12,
-          paddingVertical: 12,
+          flexDirection: 'row', alignItems: 'center', gap: 14,
+          paddingVertical: 13,
           borderTopWidth: showDivider ? 1 : 0,
           borderTopColor: theme.colors.border,
         }}
       >
-        <View style={{ width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: `${color}18` }}>
+        <View style={{ width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center', backgroundColor: `${color}18` }}>
           <MaterialIcons name={iconName} size={18} color={color} />
         </View>
         <View style={{ flex: 1, minWidth: 0 }}>
@@ -214,16 +214,16 @@ export default function DashboardScreen() {
 
           {/* Metric tiles grid */}
           <FadeIn delay={80}>
-            <View style={{ gap: 10 }}>
+            <View style={{ gap: 12 }}>
               <SectionLabel title="Statistics" accent="This month" subtitle="Your listening and engagement metrics" />
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
                 {numMetricCols <= 2 ? (
                   <>
-                    <View style={{ flex: 1, flexDirection: 'column', gap: 10 }}>
+                    <View style={{ flex: 1, flexDirection: 'column', gap: 12 }}>
                       <MetricCard icon="headphones"     label="Hours listened" value={hoursListened}           accent="#8B5CF6" />
                       <MetricCard icon="people"         label="Followers"      value={metrics?.followers ?? '--'} accent="#60A5FA" />
                     </View>
-                    <View style={{ flex: 1, flexDirection: 'column', gap: 10 }}>
+                    <View style={{ flex: 1, flexDirection: 'column', gap: 12 }}>
                       <MetricCard icon="visibility"     label="Content views"  value={contentViews}            accent="#34D399" />
                       <MetricCard icon="library-music"  label="Saved content"  value={metrics?.contentCreated ?? '--'} accent="#FBBF24" />
                     </View>

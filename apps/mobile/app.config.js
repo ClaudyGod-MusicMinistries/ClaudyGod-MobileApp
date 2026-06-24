@@ -72,7 +72,7 @@ const appFaviconAssetPath = './assets/favicon.png';
 const getFileOrEnv = (key, fallback = '') =>
   fileEnv[key] || process.env[key] || fallback;
 
-const appName = getFileOrEnv('EXPO_APP_NAME', 'ClaudyGod');
+const appName = getFileOrEnv('EXPO_APP_NAME', 'CGMMTv');
 const appSlug = getFileOrEnv('EXPO_APP_SLUG', 'claudygod');
 const appScheme = getFileOrEnv('EXPO_APP_SCHEME', 'claudygod');
 const appVersion = getFileOrEnv('EXPO_APP_VERSION', '1.0.0');
@@ -203,7 +203,6 @@ module.exports = {
         backgroundColor: splashBgColor,
       },
       edgeToEdgeEnabled: androidEdgeToEdge,
-      versionCode: androidVersionCode,
     },
     web: {
       favicon: appFaviconAssetPath,

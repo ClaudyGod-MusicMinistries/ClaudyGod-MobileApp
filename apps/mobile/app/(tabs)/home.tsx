@@ -84,14 +84,14 @@ function ContinueRow({ items, onPress }: { items: FeedCardItem[]; onPress: (_ite
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ gap: 12, paddingLeft: 20, paddingRight: 20, paddingVertical: 2 }}
+        contentContainerStyle={{ gap: 14, paddingVertical: 2, paddingRight: 8 }}
       >
         {items.slice(0, 8).map((item) => (
           <TVTouchable key={item.id} onPress={() => onPress(item)} showFocusBorder={false}>
-            <View style={{ alignItems: 'center', gap: 7, width: 68 }}>
+            <View style={{ alignItems: 'center', gap: 8, width: 72 }}>
               <View
                 style={{
-                  width: 60, height: 60, borderRadius: 14, overflow: 'hidden',
+                  width: 64, height: 64, borderRadius: 16, overflow: 'hidden',
                   backgroundColor: theme.colors.surfaceAlt,
                 }}
               >
@@ -345,11 +345,11 @@ export default function HomeScreen() {
       ) : null}
 
       {/* ── 4 ClaudyGod Content Sections ─────────────────────────────────── */}
-      <View style={{ gap: 28 }}>
+      <View style={{ gap: 32 }}>
 
         {/* ClaudyGod Music */}
         {(loading || musicItems.length > 0) ? (
-          <View style={{ gap: 14 }}>
+          <View style={{ gap: 16 }}>
             <SectionLabel
               title="ClaudyGod Music"
               actionLabel="See all"
@@ -367,7 +367,7 @@ export default function HomeScreen() {
 
         {/* ClaudyGod Nuggets of Truth */}
         {(loading || nuggetsItems.length > 0) ? (
-          <View style={{ gap: 14 }}>
+          <View style={{ gap: 16 }}>
             <SectionLabel
               title="Nuggets of Truth"
               actionLabel="See all"
@@ -385,7 +385,7 @@ export default function HomeScreen() {
 
         {/* ClaudyGod Teens */}
         {(loading || teensItems.length > 0) ? (
-          <View style={{ gap: 14 }}>
+          <View style={{ gap: 16 }}>
             <SectionLabel
               title="ClaudyGod Teens"
               actionLabel="See all"
@@ -403,7 +403,7 @@ export default function HomeScreen() {
 
         {/* ClaudyGod Audio */}
         {(loading || audioItems.length > 0) ? (
-          <View style={{ gap: 14 }}>
+          <View style={{ gap: 16 }}>
             <SectionLabel
               title="ClaudyGod Audio"
               actionLabel="See all"
@@ -423,7 +423,7 @@ export default function HomeScreen() {
 
       {/* Admin-configured rails (rendered after branded sections) */}
       {configuredRails.map(({ section, items }) => (
-        <View key={section.id} style={{ gap: 14 }}>
+        <View key={section.id} style={{ gap: 16 }}>
           <SectionLabel
             title={section.title}
             subtitle={section.subtitle}
@@ -460,7 +460,7 @@ export default function HomeScreen() {
 
       {/* ClaudyGod Live replays (when no active live) */}
       {!liveSessions.length && feed.live.length > 0 ? (
-        <View style={{ gap: 14 }}>
+        <View style={{ gap: 16 }}>
           <SectionLabel
             title="ClaudyGod Live"
             actionLabel="See all"
