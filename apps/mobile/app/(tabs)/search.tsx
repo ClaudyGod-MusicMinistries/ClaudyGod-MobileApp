@@ -79,7 +79,7 @@ function DiscoveryItem({ item, onPress }: { item: FeedCardItem; onPress: () => v
         <Image source={{ uri: item.imageUrl || DEFAULT_CONTENT_IMAGE_URI }} resizeMode="cover" style={StyleSheet.absoluteFillObject} />
         <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: 10 }}>
           <View style={{ borderRadius: 999, backgroundColor: 'rgba(0,0,0,0.62)', alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 3 }}>
-            <CustomText style={{ color: '#FFFFFF', fontSize: 10, fontWeight: '600' }} numberOfLines={1}>
+            <CustomText style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '600' }} numberOfLines={1}>
               {item.title}
             </CustomText>
           </View>
@@ -87,7 +87,7 @@ function DiscoveryItem({ item, onPress }: { item: FeedCardItem; onPress: () => v
         {item.isLive ? (
           <View style={{ position: 'absolute', top: 8, left: 8, borderRadius: 999, backgroundColor: 'rgba(239,68,68,0.88)', paddingHorizontal: 7, paddingVertical: 3, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
             <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#FFFFFF' }} />
-            <CustomText style={{ color: '#FFFFFF', fontSize: 9, fontWeight: '700' }}>LIVE</CustomText>
+            <CustomText style={{ color: '#FFFFFF', fontSize: 9.5, fontWeight: '700' }}>LIVE</CustomText>
           </View>
         ) : null}
       </View>
@@ -107,9 +107,9 @@ function DiscoveryGrid({ items, onPress }: { items: FeedCardItem[]; onPress: (_i
   }
 
   return (
-    <View style={{ gap: 10 }}>
+    <View style={{ gap: 12 }}>
       {rows.map((row, rowIdx) => (
-        <View key={rowIdx} style={{ flexDirection: 'row', gap: 10 }}>
+        <View key={rowIdx} style={{ flexDirection: 'row', gap: 12 }}>
           {row.map((item) => (
             <DiscoveryItem key={item.id} item={item} onPress={() => onPress(item)} />
           ))}

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { TouchableOpacity, View } from 'react-native';
+import { View } from 'react-native';
+import { TVTouchable } from '../../components/ui/TVTouchable';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { AppButton } from '../../components/ui/AppButton';
@@ -66,15 +67,14 @@ function LibTabs({ active, onChange, counts }: { active: LibTab; onChange: (_t: 
       {TABS.map((tab) => {
         const isActive = tab.id === active;
         return (
-          <TouchableOpacity
+          <TVTouchable
             key={tab.id}
             onPress={() => onChange(tab.id)}
+            showFocusBorder={false}
             style={{
               flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-              gap: 5, paddingVertical: 9, paddingHorizontal: 10, borderRadius: 12,
-              backgroundColor: isActive
-                ? theme.colors.elevated
-                : 'transparent',
+              gap: 6, paddingVertical: 10, paddingHorizontal: 10, borderRadius: 12,
+              backgroundColor: isActive ? theme.colors.elevated : 'transparent',
               shadowColor: isActive ? '#000' : 'transparent',
               shadowOpacity: isActive ? 0.10 : 0,
               shadowRadius: isActive ? 4 : 0,
@@ -84,12 +84,12 @@ function LibTabs({ active, onChange, counts }: { active: LibTab; onChange: (_t: 
           >
             <MaterialIcons
               name={tab.icon}
-              size={14}
+              size={15}
               color={isActive ? theme.colors.primary : theme.colors.textMuted}
             />
             <CustomText
               style={{
-                fontSize: 12, fontWeight: isActive ? '700' : '500',
+                fontSize: 12.5, fontWeight: isActive ? '700' : '500',
                 color: isActive ? theme.colors.text : theme.colors.textMuted,
               }}
             >
@@ -108,7 +108,7 @@ function LibTabs({ active, onChange, counts }: { active: LibTab; onChange: (_t: 
                 </CustomText>
               </View>
             ) : null}
-          </TouchableOpacity>
+          </TVTouchable>
         );
       })}
     </View>
