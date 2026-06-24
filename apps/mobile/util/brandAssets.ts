@@ -1,6 +1,6 @@
 import { Asset } from 'expo-asset';
 
-export const BRAND_LOGO_ASSET = require('../assets/images/ClaudyGoLogo.webp');
+export const BRAND_LOGO_ASSET = require('../assets/images/logo.webp');
 export const BRAND_HERO_ASSET = require('../assets/images/CoverArt.webp');
 export const BRAND_COVER_ASSET = require('../assets/images/CoverArt.webp');
 export const LANDING_BG_ASSET = require('../assets/images/landing4.jpg');
