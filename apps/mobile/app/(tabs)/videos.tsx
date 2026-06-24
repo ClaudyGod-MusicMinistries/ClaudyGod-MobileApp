@@ -70,7 +70,7 @@ function FilterChips({ active, onChange }: { active: VideoFilter; onChange: (_f:
               paddingHorizontal: 16, paddingVertical: 9, borderRadius: 999,
               backgroundColor: isActive
                 ? theme.colors.info
-                : (theme.scheme === 'dark' ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)'),
+                : theme.colors.subtleFill,
               borderWidth: 1,
               borderColor: isActive ? 'transparent' : theme.colors.border,
             }}

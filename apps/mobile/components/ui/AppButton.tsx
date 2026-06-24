@@ -216,7 +216,7 @@ export function AppButton({
         {
           height: heights[size],
           paddingHorizontal: paddingH[size],
-          borderRadius: 12,
+          borderRadius: theme.radius.md,
           backgroundColor: isPrimary
             ? theme.colors.primary
             : isSecondary

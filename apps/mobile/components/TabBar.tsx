@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { useColorScheme } from '../util/colorScheme';
 import { colors } from '../constants/color';
-import { layout } from '../styles/designTokens';
+import { layout, shadows } from '../styles/designTokens';
 import { useMobileAppConfig } from '../hooks/useMobileAppConfig';
 import { getSidebarWidth } from '../util/sidebarConfig';
 import { TVTouchable } from './ui/TVTouchable';
@@ -76,9 +76,9 @@ function SidebarTabBar({
         left: 0, top: 0, bottom: 0,
         width: sidebarWidth,
         zIndex: 100,
-        backgroundColor: isDark ? 'rgba(7,5,12,0.98)' : 'rgba(10,6,20,0.97)',
+        backgroundColor: palette.tabBarBg,
         borderRightWidth: 1,
-        borderRightColor: isDark ? 'rgba(139,92,246,0.12)' : 'rgba(56,42,84,0.14)',
+        borderRightColor: palette.primaryBorder,
         paddingTop: insets.top + (isTV ? 24 : 16),
         paddingBottom: insets.bottom + (isTV ? 24 : 16),
         paddingHorizontal: isTV ? 16 : 12,
@@ -88,7 +88,7 @@ function SidebarTabBar({
       <View style={{ gap: 0 }}>
         {/* Logo */}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 8, marginBottom: isTV ? 32 : 24 }}>
-          <View style={{ width: isTV ? 44 : 38, height: isTV ? 44 : 38, borderRadius: 12, overflow: 'hidden', backgroundColor: palette.surface, borderWidth: 1, borderColor: 'rgba(139,92,246,0.22)' }}>
+          <View style={{ width: isTV ? 44 : 38, height: isTV ? 44 : 38, borderRadius: 12, overflow: 'hidden', backgroundColor: palette.surface, borderWidth: 1, borderColor: palette.primaryBorder }}>
             <Image source={BRAND_LOGO_ASSET} resizeMode="cover" style={StyleSheet.absoluteFillObject} />
           </View>
           <View style={{ flex: 1, minWidth: 0 }}>
@@ -113,17 +113,17 @@ function SidebarTabBar({
                   paddingVertical: isTV ? 13 : 11,
                   paddingHorizontal: isTV ? 14 : 12,
                   borderRadius: 14,
-                  backgroundColor: focused ? (isDark ? 'rgba(139,92,246,0.14)' : 'rgba(124,58,237,0.10)') : 'transparent',
+                  backgroundColor: focused ? `rgba(${palette.accentRgba},0.12)` : 'transparent',
                   borderWidth: focused ? 1 : 0,
-                  borderColor: focused ? 'rgba(139,92,246,0.24)' : 'transparent',
+                  borderColor: focused ? palette.primaryBorder : 'transparent',
                 }}
               >
                 <View style={{
                   width: isTV ? 36 : 30, height: isTV ? 36 : 30, borderRadius: 10,
                   alignItems: 'center', justifyContent: 'center',
                   backgroundColor: focused
-                    ? (item.center ? palette.primary : (isDark ? 'rgba(139,92,246,0.20)' : 'rgba(124,58,237,0.14)'))
-                    : (isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)'),
+                    ? (item.center ? palette.primary : `rgba(${palette.accentRgba},0.17)`)
+                    : palette.subtleFill,
                 }}>
                   <MaterialIcons
                     name={item.center ? 'play-arrow' : item.icon}
@@ -144,7 +144,7 @@ function SidebarTabBar({
       {/* Bottom: Settings */}
       {settingsItem ? (
         <View style={{ gap: 8 }}>
-          <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.07)', marginHorizontal: 8 }} />
+          <View style={{ height: 1, backgroundColor: palette.border, marginHorizontal: 8 }} />
           <TVTouchable
             key={settingsItem.key}
             onPress={() => navigateTo(settingsItem)}
@@ -156,11 +156,11 @@ function SidebarTabBar({
               paddingHorizontal: isTV ? 14 : 12,
               borderRadius: 14,
               backgroundColor: currentRouteName === 'settings'
-                ? (isDark ? 'rgba(139,92,246,0.12)' : 'rgba(124,58,237,0.08)')
+                ? `rgba(${palette.accentRgba},0.10)`
                 : 'transparent',
             }}
           >
-            <View style={{ width: isTV ? 36 : 30, height: isTV ? 36 : 30, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)' }}>
+            <View style={{ width: isTV ? 36 : 30, height: isTV ? 36 : 30, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.subtleFill }}>
               <MaterialIcons name="tune" size={isTV ? 18 : 16} color={currentRouteName === 'settings' ? palette.primary : palette.textMuted} />
             </View>
             <CustomText style={{ color: currentRouteName === 'settings' ? palette.text : palette.textMuted, fontSize: isTV ? 14 : 13, fontWeight: currentRouteName === 'settings' ? '700' : '500' }}>
@@ -205,7 +205,7 @@ function TabItem({
           borderRadius: 999,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: focused ? 'rgba(139,92,246,0.18)' : 'transparent',
+          backgroundColor: focused ? `rgba(${palette.accentRgba},0.18)` : 'transparent',
         }}
       >
         <MaterialIcons
@@ -293,15 +293,10 @@ function BottomPillTabBar({
           bottom: BOTTOM_INSET,
           height: BAR_HEIGHT,
           borderRadius: BAR_HEIGHT / 2,
-          backgroundColor: isDark ? 'rgba(7,4,13,0.97)' : 'rgba(10,6,18,0.97)',
+          backgroundColor: palette.tabBarBg,
           borderWidth: 1,
-          borderColor: isDark ? 'rgba(139,92,246,0.22)' : 'rgba(100,60,180,0.20)',
-          // Deep drop shadow for the floating effect
-          shadowColor: '#000000',
-          shadowOffset: { width: 0, height: 22 },
-          shadowOpacity: 0.55,
-          shadowRadius: 40,
-          elevation: 30,
+          borderColor: palette.primaryBorder,
+          ...shadows.xxl,
           flexDirection: 'row',
           alignItems: 'center',
           paddingHorizontal: 6,
@@ -359,8 +354,8 @@ function BottomPillTabBar({
               alignItems: 'center',
               justifyContent: 'center',
               backgroundColor: centerFocused
-                ? 'rgba(139,92,246,0.28)'
-                : 'rgba(139,92,246,0.14)',
+                ? `rgba(${palette.accentRgba},0.28)`
+                : `rgba(${palette.accentRgba},0.14)`,
               // Violet glow shadow
               shadowColor: palette.primary,
               shadowOffset: { width: 0, height: 8 },

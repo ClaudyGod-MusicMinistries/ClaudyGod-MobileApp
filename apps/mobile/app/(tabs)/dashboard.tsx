@@ -57,7 +57,7 @@ function MetricCard({
       style={{
         flex: 1, minHeight: 100,
         borderRadius: 18, borderWidth: 1, borderColor: theme.colors.border,
-        backgroundColor: theme.scheme === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(17,10,31,0.03)',
+        backgroundColor: theme.colors.subtleFill,
         padding: 16, gap: 8,
       }}
     >
@@ -203,7 +203,7 @@ export default function DashboardScreen() {
                     : 'Keep streaming to grow your engagement score.'}
                 </CustomText>
 
-                <View style={{ height: 10, borderRadius: 999, backgroundColor: theme.scheme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(17,10,31,0.06)', overflow: 'hidden' }}>
+                <View style={{ height: 10, borderRadius: 999, backgroundColor: theme.colors.subtleFillMed, overflow: 'hidden' }}>
                   <View
                     style={{ height: '100%', width: `${Math.min(100, metrics.engagementScore)}%`, backgroundColor: theme.colors.primary }}
                   />
