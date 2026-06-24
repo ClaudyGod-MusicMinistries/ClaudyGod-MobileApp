@@ -34,14 +34,10 @@ export function MinimizedFloatingPlayer() {
         left: 12,
         right: 12,
         minHeight: 64,
-        borderRadius: 20,
+        borderRadius: theme.radius.xl,
         overflow: 'hidden',
         zIndex: 100,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 20 },
-        shadowOpacity: 0.44,
-        shadowRadius: 32,
-        elevation: 24,
+        ...theme.shadows.xxl,
       }}
     >
       <View
@@ -135,7 +131,7 @@ export function MinimizedFloatingPlayer() {
               borderRadius: 17,
               alignItems: 'center',
               justifyContent: 'center',
-              backgroundColor: theme.scheme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(18,10,32,0.06)',
+              backgroundColor: theme.colors.subtleFill,
             }}
           >
             <MaterialIcons name="close" size={18} color={theme.colors.textSecondary} />

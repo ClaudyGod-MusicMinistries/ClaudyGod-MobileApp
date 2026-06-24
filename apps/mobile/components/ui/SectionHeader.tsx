@@ -93,13 +93,9 @@ export function SectionHeader({ title, actionLabel, onAction, eyebrow }: Section
               paddingHorizontal: 14,
               paddingVertical: 8,
               borderRadius: designSystem.radius.full,
-              backgroundColor: theme.scheme === 'dark'
-                ? 'rgba(255,255,255,0.08)'
-                : 'rgba(124,58,237,0.1)',
+              backgroundColor: theme.colors.primarySurface,
               borderWidth: 1,
-              borderColor: theme.scheme === 'dark'
-                ? 'rgba(255,255,255,0.12)'
-                : 'rgba(124,58,237,0.2)',
+              borderColor: theme.colors.primaryBorder,
               shadowColor: '#000',
               shadowOpacity: actionPressed ? 0.15 : 0.08,
               shadowRadius: 4,

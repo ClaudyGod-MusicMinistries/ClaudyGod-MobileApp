@@ -45,7 +45,6 @@ export function BrandedHeaderCard({
   const theme = useAppTheme();
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const isDark = theme.scheme === 'dark';
   const isTV = width >= 1200;
   const isTablet = width >= 768 && !isTV;
   const isCompact = width < 390;
@@ -59,8 +58,8 @@ export function BrandedHeaderCard({
   const ui = {
     muted: theme.colors.textSecondary,
     subtle: theme.colors.textSecondary,
-    iconBg: isDark ? 'rgba(255,255,255,0.06)' : theme.colors.surfaceAlt,
-    iconBorder: isDark ? 'rgba(255,255,255,0.08)' : theme.colors.border,
+    iconBg: theme.colors.surfaceAlt,
+    iconBorder: theme.colors.border,
     iconColor: theme.colors.text,
     chipBg: theme.colors.surface,
     chipBorder: theme.colors.border,
@@ -105,7 +104,7 @@ export function BrandedHeaderCard({
         paddingVertical: isTablet ? 14 : 12,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: isDark ? 0.18 : 0.08,
+        shadowOpacity: 0.12,
         shadowRadius: 10,
         elevation: 6,
       }}
@@ -131,7 +130,7 @@ export function BrandedHeaderCard({
               borderRadius: theme.radius.md,
               borderWidth: 1,
               borderColor: theme.colors.border,
-              backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : theme.colors.surfaceAlt,
+              backgroundColor: theme.colors.surfaceAlt,
               alignItems: 'center',
               justifyContent: 'center',
               marginRight: 12,

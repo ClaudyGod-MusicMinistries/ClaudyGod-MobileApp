@@ -75,21 +75,24 @@ export function AuthTextField({
     }).start();
   }, [isActive, translateY, useNativeAnimations, value]);
 
+  const isDark = theme.scheme === 'dark';
   const minHeight = device.isTV ? 62 : compact ? 50 : spacious ? 58 : 54;
   const inputFontSize = device.isTV ? 16 : compact ? 13.2 : spacious ? 14.4 : 13.8;
   const inputLineHeight = device.isTV ? 22 : compact ? 18 : spacious ? 20 : 19;
   const borderColor = isFocused
-    ? 'rgba(214,190,255,0.88)'
+    ? isDark ? 'rgba(214,190,255,0.88)' : `rgba(124,58,237,0.65)`
     : isHovered
-      ? 'rgba(255,255,255,0.32)'
-      : 'rgba(255,255,255,0.17)';
-  const backgroundColor = isFocused ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.065)';
+      ? isDark ? 'rgba(255,255,255,0.32)' : theme.colors.borderStrong
+      : isDark ? 'rgba(255,255,255,0.17)' : theme.colors.border;
+  const backgroundColor = isDark
+    ? (isFocused ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.065)')
+    : theme.colors.inputBg;
   const hintColor =
     hintTone === 'error'
-      ? '#FFD7D7'
+      ? isDark ? '#FFD7D7' : theme.colors.danger
       : hintTone === 'success'
-        ? '#D7FFE6'
-        : 'rgba(235,229,250,0.74)';
+        ? isDark ? '#D7FFE6' : theme.colors.success
+        : isDark ? 'rgba(235,229,250,0.74)' : theme.colors.textMuted;
 
   return (
     <View>
@@ -151,8 +154,8 @@ export function AuthTextField({
             maxLength={maxLength}
             autoCorrect={autoCorrect ?? false}
             placeholder={placeholder}
-            placeholderTextColor="rgba(235,229,250,0.56)"
-            selectionColor="rgba(214,190,255,0.82)"
+            placeholderTextColor={isDark ? 'rgba(235,229,250,0.56)' : theme.colors.textMuted}
+            selectionColor={theme.colors.primary}
             accessibilityLabel={label ?? placeholder}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
@@ -189,11 +192,11 @@ export function AuthTextField({
                 borderRadius: device.isTV ? 18 : 15,
                 alignItems: 'center',
                 justifyContent: 'center',
-                backgroundColor: 'rgba(255,255,255,0.10)',
+                backgroundColor: isDark ? 'rgba(255,255,255,0.10)' : theme.colors.surfaceAlt,
                 marginLeft: 8,
               }}
             >
-              <MaterialIcons name="close" size={device.isTV ? 18 : 16} color="rgba(255,255,255,0.82)" />
+              <MaterialIcons name="close" size={device.isTV ? 18 : 16} color={isDark ? 'rgba(255,255,255,0.82)' : theme.colors.textSecondary} />
             </Pressable>
           ) : null}
 

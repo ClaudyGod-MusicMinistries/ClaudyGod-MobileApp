@@ -53,7 +53,7 @@ export default function ResetPasswordScreen() {
 
   const visibilityToggle = (
     <TVTouchable onPress={() => setHidePassword((prev) => !prev)} showFocusBorder={false}>
-      <MaterialIcons name={hidePassword ? 'visibility' : 'visibility-off'} size={20} color="rgba(226,218,247,0.9)" />
+      <MaterialIcons name={hidePassword ? 'visibility' : 'visibility-off'} size={20} color={theme.colors.textSecondary} />
     </TVTouchable>
   );
 
