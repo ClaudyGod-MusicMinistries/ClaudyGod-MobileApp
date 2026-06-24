@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Linking, ScrollView, TouchableOpacity, View } from 'react-native';
+import { Linking, ScrollView, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { AudioPlayer } from '../../components/media/AudioPlayer';
@@ -95,22 +95,23 @@ function FilterChips({ active, onChange }: { active: AudioFilter; onChange: (_f:
       {FILTERS.map((f) => {
         const isActive = f.id === active;
         return (
-          <TouchableOpacity
+          <TVTouchable
             key={f.id}
             onPress={() => onChange(f.id)}
+            showFocusBorder={false}
             style={{
               flexDirection: 'row', alignItems: 'center', gap: 6,
-              paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999,
+              paddingHorizontal: 16, paddingVertical: 9, borderRadius: 999,
               backgroundColor: isActive ? theme.colors.primary : (theme.scheme === 'dark' ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)'),
               borderWidth: 1,
-              borderColor: isActive ? 'transparent' : (theme.scheme === 'dark' ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.08)'),
+              borderColor: isActive ? 'transparent' : theme.colors.border,
             }}
           >
-            <MaterialIcons name={f.icon} size={13} color={isActive ? '#FFFFFF' : theme.colors.textSecondary} />
-            <CustomText style={{ color: isActive ? '#FFFFFF' : theme.colors.textSecondary, fontSize: 12.5, fontWeight: isActive ? '700' : '500' }}>
+            <MaterialIcons name={f.icon} size={14} color={isActive ? '#FFFFFF' : theme.colors.textSecondary} />
+            <CustomText style={{ color: isActive ? '#FFFFFF' : theme.colors.textSecondary, fontSize: 13, fontWeight: isActive ? '700' : '500' }}>
               {f.label}
             </CustomText>
-          </TouchableOpacity>
+          </TVTouchable>
         );
       })}
     </ScrollView>
@@ -334,7 +335,7 @@ export default function PlaySection() {
         <View style={{ gap: 28 }}>
 
           {musicItems.length > 0 ? (
-            <View style={{ gap: 10 }}>
+            <View style={{ gap: 12 }}>
               <SectionLabel title="ClaudyGod Music" actionLabel="See all" onAction={() => router.push(APP_ROUTES.tabs.player)} />
               <ContentRail
                 title=""
@@ -347,7 +348,7 @@ export default function PlaySection() {
           ) : null}
 
           {audioItems.length > 0 ? (
-            <View style={{ gap: 10 }}>
+            <View style={{ gap: 12 }}>
               <SectionLabel title="ClaudyGod Audio" actionLabel="See all" onAction={() => router.push(APP_ROUTES.tabs.player)} />
               <ContentRail
                 title=""
@@ -360,7 +361,7 @@ export default function PlaySection() {
           ) : null}
 
           {nuggetsItems.length > 0 ? (
-            <View style={{ gap: 10 }}>
+            <View style={{ gap: 12 }}>
               <SectionLabel title="Nuggets of Truth" actionLabel="See all" onAction={() => router.push(APP_ROUTES.tabs.videos)} />
               <ContentRail
                 title=""
@@ -373,7 +374,7 @@ export default function PlaySection() {
           ) : null}
 
           {teensItems.length > 0 ? (
-            <View style={{ gap: 10 }}>
+            <View style={{ gap: 12 }}>
               <SectionLabel title="ClaudyGod Teens" actionLabel="See all" onAction={() => router.push(APP_ROUTES.tabs.videos)} />
               <ContentRail
                 title=""
