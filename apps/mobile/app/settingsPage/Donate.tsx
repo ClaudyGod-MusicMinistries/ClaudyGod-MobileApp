@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Linking, ScrollView, View, useWindowDimensions } from 'react-native';
+import { Animated, Linking, Platform, ScrollView, View, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -37,16 +37,16 @@ type DonatePlan = {
 const DEFAULT_AMOUNTS = ['10', '25', '50', '100', '250', '500'];
 
 const DEFAULT_METHODS: DonateMethod[] = [
-  { id: 'bank',    icon: 'account-balance',   label: 'Bank Transfer',   subtitle: 'Direct to ministry account' },
-  { id: 'mobile',  icon: 'phone-android',     label: 'Mobile Money',    subtitle: 'Fast & secure mobile transfer' },
-  { id: 'card',    icon: 'credit-card',        label: 'Card Payment',    subtitle: 'Visa, Mastercard, Verve', badge: 'Secure' },
+  { id: 'bank',   icon: 'account-balance', label: 'Bank Transfer',  subtitle: 'Direct to ministry account' },
+  { id: 'mobile', icon: 'phone-android',   label: 'Mobile Money',   subtitle: 'Fast & secure mobile transfer' },
+  { id: 'card',   icon: 'credit-card',     label: 'Card Payment',   subtitle: 'Visa, Mastercard, Verve', badge: 'Secure' },
 ];
 
 const IMPACT_ITEMS = [
-  { icon: 'church'           as const, label: 'Ministry outreach', pct: 55 },
-  { icon: 'people'           as const, label: 'Community programs', pct: 25 },
-  { icon: 'movie'            as const, label: 'Media & content',   pct: 12 },
-  { icon: 'build'            as const, label: 'Operations',        pct: 8  },
+  { icon: 'church'  as const, label: 'Ministry outreach', pct: 55 },
+  { icon: 'people'  as const, label: 'Community programs', pct: 25 },
+  { icon: 'movie'   as const, label: 'Media & content',   pct: 12 },
+  { icon: 'build'   as const, label: 'Operations',        pct: 8  },
 ];
 
 const SCRIPTURES = [
@@ -74,36 +74,37 @@ function HeroBanner({
   selectedMethod: DonateMethod | null;
   scripture: string;
 }) {
+  const theme = useAppTheme();
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }).start();
+    Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: Platform.OS !== 'web' }).start();
   }, [fadeAnim]);
 
   return (
     <Animated.View style={{ opacity: fadeAnim }}>
       <View
         style={{
-          backgroundColor: '#7C3AED',
+          backgroundColor: theme.colors.accent,
           borderRadius: 28,
           padding: 22,
           overflow: 'hidden',
         }}
       >
-        {/* Decorative circles */}
+        {/* Decorative circles — on-primary overlays, always white-tinted */}
         <View style={{ position: 'absolute', top: -30, right: -30, width: 120, height: 120, borderRadius: 60, backgroundColor: 'rgba(255,255,255,0.07)' }} />
         <View style={{ position: 'absolute', bottom: -40, left: -20, width: 160, height: 160, borderRadius: 80, backgroundColor: 'rgba(255,255,255,0.05)' }} />
 
         {/* Icon + heading */}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 18 }}>
           <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' }}>
-            <MaterialIcons name="volunteer-activism" size={26} color="#FFFFFF" />
+            <MaterialIcons name="volunteer-activism" size={26} color={theme.colors.onPrimary} />
           </View>
           <View style={{ flex: 1 }}>
             <CustomText style={{ color: 'rgba(255,255,255,0.75)', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.9 }}>
               Support the ministry
             </CustomText>
-            <CustomText style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '800', marginTop: 3, letterSpacing: -0.3 }}>
+            <CustomText style={{ color: theme.colors.onPrimary, fontSize: 18, fontWeight: '800', marginTop: 3, letterSpacing: -0.3 }}>
               Give with purpose
             </CustomText>
           </View>
@@ -112,9 +113,9 @@ function HeroBanner({
         {/* Summary pills */}
         <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
           {[
-            { icon: 'payments' as const,     label: selectedAmount ? `${selectedCurrency} ${selectedAmount}` : 'Select amount' },
-            { icon: 'repeat' as const,       label: frequencyLabel(selectedFrequency) },
-            { icon: 'credit-card' as const,  label: selectedMethod?.label ?? 'Payment method' },
+            { icon: 'payments'    as const, label: selectedAmount ? `${selectedCurrency} ${selectedAmount}` : 'Select amount' },
+            { icon: 'repeat'      as const, label: frequencyLabel(selectedFrequency) },
+            { icon: 'credit-card' as const, label: selectedMethod?.label ?? 'Payment method' },
           ].map((pill) => (
             <View
               key={pill.label}
@@ -127,7 +128,7 @@ function HeroBanner({
               }}
             >
               <MaterialIcons name={pill.icon} size={13} color="rgba(255,255,255,0.85)" />
-              <CustomText style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '600', flex: 1 }} numberOfLines={1}>
+              <CustomText style={{ color: theme.colors.onPrimary, fontSize: 11, fontWeight: '600', flex: 1 }} numberOfLines={1}>
                 {pill.label}
               </CustomText>
             </View>
@@ -146,13 +147,14 @@ function HeroBanner({
 }
 
 function SectionCard({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
+  const theme = useAppTheme();
   return (
     <View
       style={{
-        backgroundColor: '#110E1A',
+        backgroundColor: theme.colors.surface,
         borderRadius: 20,
         borderWidth: 1,
-        borderColor: 'rgba(139,92,246,0.12)',
+        borderColor: theme.colors.primaryBorder,
         padding: 18,
         gap: 14,
         shadowColor: '#000',
@@ -163,8 +165,8 @@ function SectionCard({ title, subtitle, children }: { title: string; subtitle?: 
       }}
     >
       <View style={{ gap: 3 }}>
-        <CustomText style={{ color: '#F7F2FF', fontSize: 14, fontWeight: '700' }}>{title}</CustomText>
-        {subtitle ? <CustomText style={{ color: 'rgba(247,242,255,0.40)', fontSize: 12 }}>{subtitle}</CustomText> : null}
+        <CustomText style={{ color: theme.colors.text, fontSize: 14, fontWeight: '700' }}>{title}</CustomText>
+        {subtitle ? <CustomText style={{ color: theme.colors.textMuted, fontSize: 12 }}>{subtitle}</CustomText> : null}
       </View>
       {children}
     </View>
@@ -184,11 +186,10 @@ export default function Donate() {
   const isTablet  = width >= 768;
   const donateConfig = config?.donate;
 
-  // Config-driven OR defaults
-  const quickAmounts      = useMemo(() => donateConfig?.quickAmounts?.length ? donateConfig.quickAmounts : DEFAULT_AMOUNTS, [donateConfig]);
-  const quickByCurrency   = useMemo(() => donateConfig?.quickAmountsByCurrency ?? {}, [donateConfig]);
-  const currencyOptions   = useMemo(() => donateConfig?.currencyOptions ?? [], [donateConfig]);
-  const configMethods     = useMemo<DonateMethod[]>(() =>
+  const quickAmounts    = useMemo(() => donateConfig?.quickAmounts?.length ? donateConfig.quickAmounts : DEFAULT_AMOUNTS, [donateConfig]);
+  const quickByCurrency = useMemo(() => donateConfig?.quickAmountsByCurrency ?? {}, [donateConfig]);
+  const currencyOptions = useMemo(() => donateConfig?.currencyOptions ?? [], [donateConfig]);
+  const configMethods   = useMemo<DonateMethod[]>(() =>
     donateConfig?.methods?.length
       ? donateConfig.methods.map((m) => ({ id: m.id, icon: m.icon as DonateMethod['icon'], label: m.label, subtitle: m.subtitle, badge: m.badge }))
       : DEFAULT_METHODS,
@@ -206,12 +207,12 @@ export default function Donate() {
   );
 
   const defaultCurrency = (donateConfig?.currency ?? 'USD').toUpperCase();
-  const [selectedCurrency, setSelectedCurrency] = useState(defaultCurrency);
+  const [selectedCurrency, setSelectedCurrency]   = useState(defaultCurrency);
   const [selectedFrequency, setSelectedFrequency] = useState<DonateFrequency>('monthly');
-  const [selectedAmount, setSelectedAmount] = useState('');
-  const [selectedMethodId, setSelectedMethodId] = useState('');
+  const [selectedAmount, setSelectedAmount]       = useState('');
+  const [selectedMethodId, setSelectedMethodId]   = useState('');
 
-  const activeAmounts = useMemo(() => quickByCurrency[selectedCurrency] ?? quickAmounts, [quickByCurrency, quickAmounts, selectedCurrency]);
+  const activeAmounts  = useMemo(() => quickByCurrency[selectedCurrency] ?? quickAmounts, [quickByCurrency, quickAmounts, selectedCurrency]);
   const selectedMethod = useMemo(() => configMethods.find((m) => m.id === selectedMethodId) ?? configMethods[0] ?? null, [configMethods, selectedMethodId]);
   const selectedPlan   = useMemo(() => plans.find((p) => p.period === selectedFrequency) ?? plans[0] ?? null, [plans, selectedFrequency]);
 
@@ -256,7 +257,7 @@ export default function Donate() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#07050C' }}>
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       {/* Header */}
       <View
         style={{
@@ -271,13 +272,13 @@ export default function Donate() {
         <TVTouchable
           onPress={() => router.back()}
           showFocusBorder={false}
-          style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.07)' }}
+          style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.surface }}
         >
-          <MaterialIcons name="arrow-back" size={18} color="#F7F2FF" />
+          <MaterialIcons name="arrow-back" size={18} color={theme.colors.text} />
         </TVTouchable>
         <View style={{ flex: 1 }}>
-          <CustomText style={{ color: '#F7F2FF', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 }}>Giving</CustomText>
-          <CustomText style={{ color: 'rgba(247,242,255,0.40)', fontSize: 12, marginTop: 1 }}>Partner with the ministry</CustomText>
+          <CustomText style={{ color: theme.colors.text, fontSize: 17, fontWeight: '800', letterSpacing: -0.3 }}>Giving</CustomText>
+          <CustomText style={{ color: theme.colors.textMuted, fontSize: 12, marginTop: 1 }}>Partner with the ministry</CustomText>
         </View>
       </View>
 
@@ -308,11 +309,11 @@ export default function Donate() {
                     showFocusBorder={false}
                     style={{
                       borderRadius: 999,
-                      backgroundColor: active ? '#8B5CF6' : 'rgba(255,255,255,0.07)',
+                      backgroundColor: active ? theme.colors.primary : theme.colors.surface,
                       paddingHorizontal: 14, paddingVertical: 9,
                     }}
                   >
-                    <CustomText style={{ color: active ? '#FFFFFF' : 'rgba(247,242,255,0.55)', fontSize: 13, fontWeight: '600' }}>
+                    <CustomText style={{ color: active ? theme.colors.onPrimary : theme.colors.textMuted, fontSize: 13, fontWeight: '600' }}>
                       {opt.code}{opt.symbol ? ` · ${opt.symbol}` : ''}
                     </CustomText>
                   </TVTouchable>
@@ -336,23 +337,23 @@ export default function Donate() {
                     width: isCompact ? '47%' : isTablet ? '15%' : '30%',
                     minHeight: 64,
                     borderRadius: 16,
-                    backgroundColor: active ? '#8B5CF6' : 'rgba(255,255,255,0.06)',
+                    backgroundColor: active ? theme.colors.primary : theme.colors.surface,
                     borderWidth: 1,
-                    borderColor: active ? 'transparent' : 'rgba(255,255,255,0.07)',
+                    borderColor: active ? 'transparent' : theme.colors.border,
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: 2,
-                    shadowColor: active ? '#8B5CF6' : 'transparent',
+                    shadowColor: active ? theme.colors.primary : 'transparent',
                     shadowOffset: { width: 0, height: 6 },
                     shadowOpacity: active ? 0.45 : 0,
                     shadowRadius: 14,
                     elevation: active ? 8 : 0,
                   }}
                 >
-                  <CustomText style={{ color: active ? '#FFFFFF' : '#F7F2FF', fontSize: 20, fontWeight: '800' }}>
+                  <CustomText style={{ color: active ? theme.colors.onPrimary : theme.colors.text, fontSize: 20, fontWeight: '800' }}>
                     {amount}
                   </CustomText>
-                  <CustomText style={{ color: active ? 'rgba(255,255,255,0.75)' : 'rgba(247,242,255,0.35)', fontSize: 10, fontWeight: '600' }}>
+                  <CustomText style={{ color: active ? 'rgba(255,255,255,0.75)' : theme.colors.textMuted, fontSize: 10, fontWeight: '600' }}>
                     {selectedCurrency}
                   </CustomText>
                 </TVTouchable>
@@ -374,13 +375,13 @@ export default function Donate() {
                   style={{
                     flex: 1, minHeight: 52,
                     borderRadius: 14,
-                    backgroundColor: active ? '#8B5CF6' : 'rgba(255,255,255,0.06)',
+                    backgroundColor: active ? theme.colors.primary : theme.colors.surface,
                     borderWidth: 1,
-                    borderColor: active ? 'transparent' : 'rgba(255,255,255,0.07)',
+                    borderColor: active ? 'transparent' : theme.colors.border,
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: 3,
-                    shadowColor: active ? '#8B5CF6' : 'transparent',
+                    shadowColor: active ? theme.colors.primary : 'transparent',
                     shadowOffset: { width: 0, height: 4 },
                     shadowOpacity: active ? 0.4 : 0,
                     shadowRadius: 10,
@@ -390,9 +391,9 @@ export default function Donate() {
                   <MaterialIcons
                     name={freq === 'monthly' ? 'event-repeat' : freq === 'weekly' ? 'date-range' : 'today'}
                     size={16}
-                    color={active ? '#FFFFFF' : 'rgba(247,242,255,0.45)'}
+                    color={active ? theme.colors.onPrimary : theme.colors.textMuted}
                   />
-                  <CustomText style={{ color: active ? '#FFFFFF' : 'rgba(247,242,255,0.60)', fontSize: 13, fontWeight: '700' }}>
+                  <CustomText style={{ color: active ? theme.colors.onPrimary : theme.colors.textSecondary, fontSize: 13, fontWeight: '700' }}>
                     {frequencyLabel(freq)}
                   </CustomText>
                 </TVTouchable>
@@ -414,9 +415,9 @@ export default function Donate() {
                   style={{
                     flexDirection: 'row', alignItems: 'center', gap: 14,
                     borderRadius: 14,
-                    backgroundColor: active ? 'rgba(139,92,246,0.16)' : 'rgba(255,255,255,0.04)',
+                    backgroundColor: active ? theme.colors.primarySurface : theme.colors.surface,
                     borderWidth: 1,
-                    borderColor: active ? 'rgba(139,92,246,0.35)' : 'rgba(255,255,255,0.07)',
+                    borderColor: active ? theme.colors.primaryBorder : theme.colors.border,
                     padding: 14,
                   }}
                 >
@@ -424,21 +425,21 @@ export default function Donate() {
                     style={{
                       width: 44, height: 44, borderRadius: 22,
                       alignItems: 'center', justifyContent: 'center',
-                      backgroundColor: active ? 'rgba(139,92,246,0.25)' : 'rgba(255,255,255,0.07)',
+                      backgroundColor: active ? theme.colors.primarySurface : theme.colors.surfaceAlt,
                     }}
                   >
-                    <MaterialIcons name={method.icon} size={20} color={active ? '#A78BFA' : 'rgba(247,242,255,0.50)'} />
+                    <MaterialIcons name={method.icon} size={20} color={active ? theme.colors.secondary : theme.colors.textMuted} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <CustomText style={{ color: '#F7F2FF', fontSize: 14, fontWeight: '600' }}>{method.label}</CustomText>
-                    <CustomText style={{ color: 'rgba(247,242,255,0.40)', fontSize: 12, marginTop: 2 }}>{method.subtitle}</CustomText>
+                    <CustomText style={{ color: theme.colors.text, fontSize: 14, fontWeight: '600' }}>{method.label}</CustomText>
+                    <CustomText style={{ color: theme.colors.textMuted, fontSize: 12, marginTop: 2 }}>{method.subtitle}</CustomText>
                   </View>
                   {method.badge ? (
-                    <View style={{ backgroundColor: 'rgba(139,92,246,0.20)', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 }}>
-                      <CustomText style={{ color: '#A78BFA', fontSize: 10, fontWeight: '700' }}>{method.badge}</CustomText>
+                    <View style={{ backgroundColor: theme.colors.primarySurface, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 }}>
+                      <CustomText style={{ color: theme.colors.secondary, fontSize: 10, fontWeight: '700' }}>{method.badge}</CustomText>
                     </View>
                   ) : null}
-                  {active ? <MaterialIcons name="check-circle" size={18} color="#8B5CF6" /> : null}
+                  {active ? <MaterialIcons name="check-circle" size={18} color={theme.colors.primary} /> : null}
                 </TVTouchable>
               );
             })}
@@ -453,19 +454,19 @@ export default function Donate() {
                 key={item.label}
                 style={{
                   width: isCompact ? '100%' : isTablet ? '23%' : '47%',
-                  backgroundColor: 'rgba(139,92,246,0.07)',
+                  backgroundColor: theme.colors.primarySurface,
                   borderRadius: 14,
                   borderWidth: 1,
-                  borderColor: 'rgba(139,92,246,0.14)',
+                  borderColor: theme.colors.primaryBorder,
                   padding: 14,
                   gap: 8,
                 }}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <MaterialIcons name={item.icon} size={16} color="#8B5CF6" />
-                  <CustomText style={{ color: '#8B5CF6', fontSize: 20, fontWeight: '800' }}>{item.pct}%</CustomText>
+                  <MaterialIcons name={item.icon} size={16} color={theme.colors.primary} />
+                  <CustomText style={{ color: theme.colors.primary, fontSize: 20, fontWeight: '800' }}>{item.pct}%</CustomText>
                 </View>
-                <CustomText style={{ color: 'rgba(247,242,255,0.45)', fontSize: 11, lineHeight: 16 }}>{item.label}</CustomText>
+                <CustomText style={{ color: theme.colors.textMuted, fontSize: 11, lineHeight: 16 }}>{item.label}</CustomText>
               </View>
             ))}
           </View>
@@ -493,8 +494,8 @@ export default function Donate() {
 
         {/* Trust note */}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, justifyContent: 'center', paddingTop: 4 }}>
-          <MaterialIcons name="verified-user" size={13} color="rgba(139,92,246,0.55)" />
-          <CustomText style={{ color: 'rgba(247,242,255,0.30)', fontSize: 11, textAlign: 'center' }}>
+          <MaterialIcons name="verified-user" size={13} color={theme.colors.textMuted} />
+          <CustomText style={{ color: theme.colors.textMuted, fontSize: 11, textAlign: 'center' }}>
             Secure giving • All transactions are encrypted
           </CustomText>
         </View>

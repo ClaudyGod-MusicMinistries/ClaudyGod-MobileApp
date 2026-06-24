@@ -10,6 +10,7 @@ import { TVTouchable } from '../ui/TVTouchable';
 import { AuthBrandPanel } from './AuthBrandPanel';
 import { BRAND_LOGO_ASSET } from '../../util/brandAssets';
 import { useDeviceClass } from '../../util/deviceClassConfig';
+import { useAppTheme } from '../../util/colorScheme';
 
 interface AuthScreenFrameProps {
   backPath: string;
@@ -22,6 +23,7 @@ interface AuthScreenFrameProps {
 
 export function AuthScreenFrame({ backPath, salutation, description, title, subtitle, children }: AuthScreenFrameProps) {
   const router = useRouter();
+  const theme = useAppTheme();
   const device = useDeviceClass();
   const { width: screenWidth } = useWindowDimensions();
   const isPhone = device.isPhone;
@@ -36,13 +38,13 @@ export function AuthScreenFrame({ backPath, salutation, description, title, subt
         width: device.isTV ? 52 : 40,
         height: device.isTV ? 52 : 40,
         borderRadius: device.isTV ? 26 : 20,
-        backgroundColor: 'rgba(255,255,255,0.08)',
+        backgroundColor: theme.colors.surface,
         alignItems: 'center',
         justifyContent: 'center',
       }}
       showFocusBorder={false}
     >
-      <MaterialIcons name="arrow-back" size={device.isTV ? 24 : 20} color="#F7F2FF" />
+      <MaterialIcons name="arrow-back" size={device.isTV ? 24 : 20} color={theme.colors.text} />
     </TVTouchable>
   );
 
@@ -51,7 +53,7 @@ export function AuthScreenFrame({ backPath, salutation, description, title, subt
     const maxFormWidth = Math.min(screenWidth, 400);
 
     return (
-      <View style={{ flex: 1, backgroundColor: '#07050C' }}>
+      <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
         <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
 
         <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
@@ -80,7 +82,7 @@ export function AuthScreenFrame({ backPath, salutation, description, title, subt
               <View style={{ alignItems: 'center', marginBottom: 28 }}>
                 <View style={{
                   width: 60, height: 60, borderRadius: 18,
-                  backgroundColor: '#18132A',
+                  backgroundColor: theme.colors.surface,
                   alignItems: 'center', justifyContent: 'center',
                   overflow: 'hidden',
                 }}>
@@ -90,7 +92,7 @@ export function AuthScreenFrame({ backPath, salutation, description, title, subt
                 <CustomText
                   variant="caption"
                   style={{
-                    color: 'rgba(247,242,255,0.40)',
+                    color: theme.colors.textMuted,
                     fontSize: 10,
                     textTransform: 'uppercase',
                     letterSpacing: 1.4,
@@ -103,13 +105,13 @@ export function AuthScreenFrame({ backPath, salutation, description, title, subt
 
                 <CustomText
                   variant="display"
-                  style={{ color: '#FFFFFF', fontSize: 26, fontWeight: '700', letterSpacing: -0.6, lineHeight: 32, marginTop: 20, textAlign: 'center' }}
+                  style={{ color: theme.colors.text, fontSize: 26, fontWeight: '700', letterSpacing: -0.6, lineHeight: 32, marginTop: 20, textAlign: 'center' }}
                 >
                   {title}
                 </CustomText>
                 <CustomText
                   variant="body"
-                  style={{ color: '#7A7288', marginTop: 6, lineHeight: 20, fontSize: 13, fontWeight: '400', textAlign: 'center' }}
+                  style={{ color: theme.colors.textMuted, marginTop: 6, lineHeight: 20, fontSize: 13, fontWeight: '400', textAlign: 'center' }}
                 >
                   {subtitle}
                 </CustomText>
@@ -128,8 +130,8 @@ export function AuthScreenFrame({ backPath, salutation, description, title, subt
 
   // ── Tablet / Desktop / TV: two-pane or centered card ──────────────────────
   return (
-    <View style={{ flex: 1, backgroundColor: '#0A0A0A' }}>
-      <StatusBar translucent={false} backgroundColor="#07050C" barStyle="light-content" />
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+      <StatusBar translucent={false} backgroundColor={theme.colors.background} barStyle="light-content" />
       <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
         <ScrollView
           style={{ flex: 1 }}
@@ -174,7 +176,7 @@ export function AuthScreenFrame({ backPath, salutation, description, title, subt
                       maxWidth: formWidth,
                       flex: showBrandPanel ? 0.82 : undefined,
                       borderRadius: device.isTablet ? 24 : 28,
-                      backgroundColor: '#111111',
+                      backgroundColor: theme.colors.elevated,
                       paddingHorizontal: device.isTV ? 32 : 26,
                       paddingVertical: device.isTV ? 32 : 26,
                     }}
@@ -186,7 +188,7 @@ export function AuthScreenFrame({ backPath, salutation, description, title, subt
                     <CustomText
                       variant="display"
                       style={{
-                        color: '#F7F2FF',
+                        color: theme.colors.text,
                         marginTop: 4,
                         fontSize: device.isTV ? 28 : device.isDesktop ? 22 : 20,
                         lineHeight: device.isTV ? 34 : device.isDesktop ? 28 : 26,
@@ -200,7 +202,7 @@ export function AuthScreenFrame({ backPath, salutation, description, title, subt
                     <CustomText
                       variant="body"
                       style={{
-                        color: '#7A7288',
+                        color: theme.colors.textMuted,
                         marginTop: 8,
                         maxWidth: 460,
                         lineHeight: device.isTV ? 22 : 20,

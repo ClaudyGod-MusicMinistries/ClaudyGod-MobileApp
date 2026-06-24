@@ -178,6 +178,11 @@ const envSchema = z
     SUPABASE_SERVICE_ROLE_KEY: z.string().optional().default(''),
     SUPABASE_STORAGE_BUCKET: z.string().trim().min(3).max(120).default('mobile-uploads'),
 
+    SUPABASE_S3_ENDPOINT: z.string().trim().optional().default(''),
+    SUPABASE_S3_REGION: z.string().trim().optional().default('eu-west-1'),
+    SUPABASE_S3_ACCESS_KEY_ID: z.string().optional().default(''),
+    SUPABASE_S3_SECRET_ACCESS_KEY: z.string().optional().default(''),
+
     MOBILE_API_KEY: z.string().min(16, 'MOBILE_API_KEY must contain at least 16 characters'),
 
     MAIL_FROM: z.string().default('ClaudyGod <noreply@claudygod.example>'),
@@ -555,6 +560,12 @@ export const env = {
   CORS_ORIGINS: splitCsv(raw.CORS_ORIGIN),
   ADMIN_ALERT_EMAILS_LIST: splitCsv(raw.ADMIN_ALERT_EMAILS),
   SUPABASE_ENABLED: Boolean(raw.SUPABASE_URL && raw.SUPABASE_SERVICE_ROLE_KEY),
+  S3_ENABLED: Boolean(
+    raw.SUPABASE_S3_ENDPOINT &&
+    raw.SUPABASE_S3_ACCESS_KEY_ID &&
+    raw.SUPABASE_S3_SECRET_ACCESS_KEY &&
+    raw.SUPABASE_STORAGE_BUCKET,
+  ),
   SMTP_ENABLED: smtpEnabled,
   SMTP_PROVIDER_LABEL:
     raw.SMTP_PROVIDER === 'brevo'

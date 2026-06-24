@@ -10,6 +10,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../CustomText';
 import { AppButton } from '../ui/AppButton';
 import { TVTouchable } from '../ui/TVTouchable';
+import { useAppTheme } from '../../util/colorScheme';
 import {
   getBiometricType,
   storeTrustedDeviceToken,
@@ -27,6 +28,7 @@ interface Props {
 }
 
 export function TrustDeviceSheet({ visible, accessToken, displayName, onDismiss }: Props) {
+  const theme = useAppTheme();
   const [biometricType, setBiometricType] = useState<'face' | 'fingerprint' | 'none'>('none');
   const [saving, setSaving] = useState(false);
   const slideAnim = React.useRef(new Animated.Value(height)).current;
@@ -39,7 +41,7 @@ export function TrustDeviceSheet({ visible, accessToken, displayName, onDismiss 
     if (visible) {
       Animated.spring(slideAnim, {
         toValue: 0,
-        useNativeDriver: true,
+        useNativeDriver: Platform.OS !== 'web',
         tension: 65,
         friction: 11,
       }).start();
@@ -47,7 +49,7 @@ export function TrustDeviceSheet({ visible, accessToken, displayName, onDismiss 
       Animated.timing(slideAnim, {
         toValue: height,
         duration: 260,
-        useNativeDriver: true,
+        useNativeDriver: Platform.OS !== 'web',
       }).start();
     }
   }, [visible, slideAnim]);
@@ -101,20 +103,20 @@ export function TrustDeviceSheet({ visible, accessToken, displayName, onDismiss 
       <Animated.View
         style={[
           styles.sheet,
-          { transform: [{ translateY: slideAnim }] },
+          { transform: [{ translateY: slideAnim }], backgroundColor: theme.colors.elevated, borderTopColor: theme.colors.primaryBorder },
         ]}
       >
         <View style={styles.handle} />
 
         {/* Icon */}
-        <View style={styles.iconWrap}>
-          <MaterialIcons name={biometricIcon} size={36} color="#8B5CF6" />
+        <View style={[styles.iconWrap, { backgroundColor: theme.colors.primarySurface, borderColor: theme.colors.primaryBorder }]}>
+          <MaterialIcons name={biometricIcon} size={36} color={theme.colors.primary} />
         </View>
 
-        <CustomText variant="heading" style={styles.title}>
+        <CustomText variant="heading" style={[styles.title, { color: theme.colors.text }]}>
           Trust this device?
         </CustomText>
-        <CustomText style={styles.body}>
+        <CustomText style={[styles.body, { color: theme.colors.textMuted }]}>
           Hi {displayName}, enable {biometricLabel} to sign in instantly next time — no password needed.
         </CustomText>
 
@@ -125,11 +127,11 @@ export function TrustDeviceSheet({ visible, accessToken, displayName, onDismiss 
             fullWidth
             loading={saving}
             loadingLabel="Setting up…"
-            leftIcon={<MaterialIcons name={biometricIcon} size={18} color="#FFFFFF" />}
+            leftIcon={<MaterialIcons name={biometricIcon} size={18} color={theme.colors.onPrimary} />}
             onPress={() => void handleTrust()}
           />
           <TVTouchable onPress={onDismiss} showFocusBorder={false} style={styles.skipBtn}>
-            <CustomText style={styles.skipLabel}>Not now</CustomText>
+            <CustomText style={[styles.skipLabel, { color: theme.colors.textMuted }]}>Not now</CustomText>
           </TVTouchable>
         </View>
       </Animated.View>
@@ -143,7 +145,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#120E1E',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: 24,
@@ -151,7 +152,6 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
     alignItems: 'center',
     borderTopWidth: 1,
-    borderColor: 'rgba(139,92,246,0.18)',
   },
   handle: {
     width: 36,
@@ -164,22 +164,18 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 20,
-    backgroundColor: 'rgba(139,92,246,0.12)',
     borderWidth: 1,
-    borderColor: 'rgba(139,92,246,0.25)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
   },
   title: {
-    color: '#F7F2FF',
     fontSize: 20,
     fontWeight: '800',
     textAlign: 'center',
     marginBottom: 8,
   },
   body: {
-    color: 'rgba(247,242,255,0.50)',
     fontSize: 13,
     textAlign: 'center',
     lineHeight: 20,
@@ -195,7 +191,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   skipLabel: {
-    color: 'rgba(214,190,255,0.45)',
     fontSize: 13,
     fontWeight: '600',
   },

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   Image,
@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
 import { CustomText } from '../components/CustomText';
+import { useAppTheme } from '../util/colorScheme';
 import { useDeviceClass } from '../util/deviceClassConfig';
 import { FadeIn } from '../components/ui/FadeIn';
 import { TVTouchable } from '../components/ui/TVTouchable';
@@ -24,87 +25,116 @@ import { useMediaPicker } from '../hooks/useMediaPicker';
 import { useContentUpload } from '../hooks/useContentUpload';
 import { APP_ROUTES } from '../util/appRoutes';
 import { useToast } from '../context/ToastContext';
+import type { AppTheme } from '../theme';
 
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
-const PRIMARY = '#8B5CF6';
-const BG = '#07050C';
-const SURFACE = '#0F0C18';
-const SURFACE_ELEVATED = '#141020';
-const BORDER = 'rgba(139,92,246,0.14)';
-const TEXT = '#F7F2FF';
-const TEXT_MUTED = 'rgba(247,242,255,0.42)';
-const TEXT_DIM = 'rgba(247,242,255,0.22)';
 
-const NAV_GROUPS = [
+// colorToken keys must exist on theme.colors
+const NAV_GROUPS: {
+  title: string;
+  items: {
+    icon: React.ComponentProps<typeof MaterialIcons>['name'];
+    label: string;
+    hint: string;
+    href: string;
+    colorToken: keyof AppTheme['colors'];
+  }[];
+}[] = [
   {
     title: 'Your Space',
     items: [
-      { icon: 'library-music' as const, label: 'Library',          hint: 'Saved songs, videos, and playlists',      href: APP_ROUTES.tabs.library,          color: '#8B5CF6' },
-      { icon: 'graphic-eq'    as const, label: 'Music Player',     hint: 'Open the audio player and worship queue', href: APP_ROUTES.tabs.player,            color: '#A78BFA' },
-      { icon: 'smart-display' as const, label: 'Videos',           hint: 'Watch sessions and ministry replays',     href: APP_ROUTES.tabs.videos,            color: '#60A5FA' },
-      { icon: 'live-tv'       as const, label: 'Live',             hint: 'Tune in to live ministry sessions',       href: APP_ROUTES.tabs.live,              color: '#EF4444' },
+      { icon: 'library-music', label: 'Library',          hint: 'Saved songs, videos, and playlists',      href: APP_ROUTES.tabs.library,         colorToken: 'primary'   },
+      { icon: 'graphic-eq',    label: 'Music Player',     hint: 'Open the audio player and worship queue', href: APP_ROUTES.tabs.player,           colorToken: 'secondary' },
+      { icon: 'smart-display', label: 'Videos',           hint: 'Watch sessions and ministry replays',     href: APP_ROUTES.tabs.videos,           colorToken: 'info'      },
+      { icon: 'live-tv',       label: 'Live',             hint: 'Tune in to live ministry sessions',       href: APP_ROUTES.tabs.live,             colorToken: 'danger'    },
     ],
   },
   {
     title: 'Account',
     items: [
-      { icon: 'tune'          as const, label: 'Settings',         hint: 'Playback, appearance, and alerts',        href: APP_ROUTES.tabs.settings,          color: '#8B5CF6' },
-      { icon: 'privacy-tip'   as const, label: 'Privacy',          hint: 'Privacy and security controls',           href: APP_ROUTES.settingsPages.privacy,  color: '#34D399' },
-      { icon: 'verified-user' as const, label: 'Account Security', hint: 'Email, password, and secure access',      href: APP_ROUTES.accountSecurity,        color: '#FBBF24' },
-      { icon: 'help-outline'  as const, label: 'Help & Support',   hint: 'Get support when you need it',            href: APP_ROUTES.settingsPages.help,     color: '#60A5FA' },
+      { icon: 'tune',          label: 'Settings',         hint: 'Playback, appearance, and alerts',        href: APP_ROUTES.tabs.settings,         colorToken: 'primary'   },
+      { icon: 'privacy-tip',   label: 'Privacy',          hint: 'Privacy and security controls',           href: APP_ROUTES.settingsPages.privacy, colorToken: 'success'   },
+      { icon: 'verified-user', label: 'Account Security', hint: 'Email, password, and secure access',      href: APP_ROUTES.accountSecurity,       colorToken: 'warning'   },
+      { icon: 'help-outline',  label: 'Help & Support',   hint: 'Get support when you need it',            href: APP_ROUTES.settingsPages.help,    colorToken: 'info'      },
     ],
   },
 ];
 
-function NavRow({ item, isFirst }: { item: (typeof NAV_GROUPS)[0]['items'][0]; isFirst: boolean }) {
+function NavRow({
+  item,
+  isFirst,
+  theme,
+}: {
+  item: (typeof NAV_GROUPS)[0]['items'][0];
+  isFirst: boolean;
+  theme: AppTheme;
+}) {
   const router = useRouter();
+  const itemColor = theme.colors[item.colorToken] as string;
+
   return (
     <TVTouchable
       onPress={() => router.push(item.href as never)}
-      style={[styles.navRow, !isFirst && styles.navRowDivider]}
+      style={[
+        styles.navRow,
+        !isFirst && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.colors.divider },
+      ]}
       showFocusBorder={false}
     >
-      <View style={[styles.iconBubble, { backgroundColor: `${item.color}18` }]}>
-        <MaterialIcons name={item.icon} size={19} color={item.color} />
+      <View style={[styles.iconBubble, { backgroundColor: `${itemColor}18` }]}>
+        <MaterialIcons name={item.icon} size={19} color={itemColor} />
       </View>
       <View style={{ flex: 1 }}>
-        <CustomText style={styles.navLabel}>{item.label}</CustomText>
-        <CustomText style={styles.navHint} numberOfLines={1}>{item.hint}</CustomText>
+        <CustomText style={[styles.navLabel, { color: theme.colors.text }]}>{item.label}</CustomText>
+        <CustomText style={[styles.navHint, { color: theme.colors.textMuted }]} numberOfLines={1}>{item.hint}</CustomText>
       </View>
-      <MaterialIcons name="chevron-right" size={20} color={TEXT_DIM} />
+      <MaterialIcons name="chevron-right" size={20} color={theme.colors.textMuted} />
     </TVTouchable>
   );
 }
 
-function NavSection({ group }: { group: (typeof NAV_GROUPS)[0] }) {
+function NavSection({ group, theme }: { group: (typeof NAV_GROUPS)[0]; theme: AppTheme }) {
   return (
     <View>
-      <CustomText style={styles.sectionLabel}>{group.title}</CustomText>
-      <View style={styles.navCard}>
+      <CustomText style={[styles.sectionLabel, { color: theme.colors.textMuted }]}>{group.title}</CustomText>
+      <View style={[styles.navCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.primaryBorder }]}>
         {group.items.map((item, i) => (
-          <NavRow key={item.label} item={item} isFirst={i === 0} />
+          <NavRow key={item.label} item={item} isFirst={i === 0} theme={theme} />
         ))}
       </View>
     </View>
   );
 }
 
-function StatPill({ value, label, icon, iconColor }: { value: string | number; label: string; icon?: React.ComponentProps<typeof MaterialIcons>['name']; iconColor?: string }) {
+function StatPill({
+  value,
+  label,
+  icon,
+  iconColor,
+  theme,
+}: {
+  value: string | number;
+  label: string;
+  icon?: React.ComponentProps<typeof MaterialIcons>['name'];
+  iconColor?: string;
+  theme: AppTheme;
+}) {
   return (
     <View style={styles.statPill}>
       {icon ? (
-        <MaterialIcons name={icon} size={18} color={iconColor ?? PRIMARY} style={{ marginBottom: 4 }} />
+        <MaterialIcons name={icon} size={18} color={iconColor ?? theme.colors.primary} style={{ marginBottom: 4 }} />
       ) : (
-        <CustomText style={[styles.statValue, iconColor ? { color: iconColor } : null]}>
+        <CustomText style={[styles.statValue, { color: iconColor ?? theme.colors.text }]}>
           {value}
         </CustomText>
       )}
-      <CustomText style={styles.statLabel}>{label}</CustomText>
+      <CustomText style={[styles.statLabel, { color: theme.colors.textMuted }]}>{label}</CustomText>
     </View>
   );
 }
 
 export default function Profile() {
+  const theme = useAppTheme();
   const router = useRouter();
   const device = useDeviceClass();
   const { showToast } = useToast();
@@ -156,13 +186,6 @@ export default function Profile() {
     return () => { active = false; };
   }, [isAuthorized]);
 
-  if (!isAuthorized) {
-    return <View style={{ flex: 1, backgroundColor: BG }} />;
-  }
-
-  const displayName = metrics.displayName || metrics.email.split('@')[0] || 'Your Profile';
-  const initial = displayName.charAt(0).toUpperCase();
-
   const signOut = async () => {
     setIsSigningOut(true);
     try { await clearMobileSession(); } catch { /* continue */ }
@@ -188,18 +211,30 @@ export default function Profile() {
     }
   };
 
+  if (!isAuthorized) {
+    return <View style={{ flex: 1, backgroundColor: theme.colors.background }} />;
+  }
+
+  const displayName = metrics.displayName || metrics.email.split('@')[0] || 'Your Profile';
+  const initial = displayName.charAt(0).toUpperCase();
+
   return (
-    <View style={{ flex: 1, backgroundColor: BG }}>
-      <StatusBar translucent={false} barStyle="light-content" backgroundColor={BG} />
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+      <StatusBar translucent={false} barStyle="light-content" backgroundColor={theme.colors.background} />
 
       {/* Sticky title — fades in as user scrolls */}
-      <SafeAreaView
-        edges={['top']}
-        style={styles.stickyHeader}
-        pointerEvents="none"
-      >
-        <Animated.View style={[styles.stickyHeaderInner, { opacity: headerOpacity }]}>
-          <CustomText style={styles.stickyTitle}>Profile</CustomText>
+      <SafeAreaView edges={['top']} style={styles.stickyHeader} pointerEvents="none">
+        <Animated.View
+          style={[
+            styles.stickyHeaderInner,
+            {
+              backgroundColor: theme.colors.background,
+              borderBottomColor: theme.colors.divider,
+            },
+            { opacity: headerOpacity },
+          ]}
+        >
+          <CustomText style={[styles.stickyTitle, { color: theme.colors.text }]}>Profile</CustomText>
         </Animated.View>
       </SafeAreaView>
 
@@ -221,17 +256,17 @@ export default function Profile() {
             <TVTouchable
               onPress={() => router.back()}
               showFocusBorder={false}
-              style={styles.toolbarBtn}
+              style={[styles.toolbarBtn, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
             >
-              <MaterialIcons name="chevron-left" size={26} color={TEXT} />
+              <MaterialIcons name="chevron-left" size={26} color={theme.colors.text} />
             </TVTouchable>
 
             <TVTouchable
               onPress={() => router.push(APP_ROUTES.tabs.settings)}
               showFocusBorder={false}
-              style={styles.toolbarBtn}
+              style={[styles.toolbarBtn, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
             >
-              <MaterialIcons name="tune" size={20} color={TEXT} />
+              <MaterialIcons name="tune" size={20} color={theme.colors.text} />
             </TVTouchable>
           </View>
 
@@ -247,52 +282,77 @@ export default function Profile() {
                 <Animated.View
                   style={[
                     styles.avatarGlow,
-                    { opacity: glowPulse },
+                    { backgroundColor: theme.colors.primary, opacity: glowPulse },
                   ]}
                 />
-                <View style={styles.avatar}>
+                <View
+                  style={[
+                    styles.avatar,
+                    {
+                      backgroundColor: theme.colors.surfaceAlt,
+                      borderColor: `${theme.colors.primary}99`,
+                    },
+                  ]}
+                >
                   {avatarUri ? (
                     <Image source={{ uri: avatarUri }} style={StyleSheet.absoluteFill} resizeMode="cover" />
                   ) : (
-                    <CustomText style={styles.avatarInitial}>{initial}</CustomText>
+                    <CustomText style={[styles.avatarInitial, { color: theme.colors.text }]}>{initial}</CustomText>
                   )}
                   {avatarUploadStatus === 'uploading' ? (
                     <View style={[StyleSheet.absoluteFill as object, styles.avatarOverlay]}>
-                      <MaterialIcons name="cloud-upload" size={26} color="#FFFFFF" />
+                      <MaterialIcons name="cloud-upload" size={26} color={theme.colors.textInverse} />
                     </View>
                   ) : null}
                 </View>
-                <View style={styles.cameraBadge}>
-                  <MaterialIcons name="photo-camera" size={13} color="#FFFFFF" />
+                <View style={[styles.cameraBadge, { backgroundColor: theme.colors.primary, borderColor: theme.colors.background }]}>
+                  <MaterialIcons name="photo-camera" size={13} color={theme.colors.textInverse} />
                 </View>
               </TVTouchable>
 
               {/* Name + email */}
-              <CustomText style={styles.displayName} numberOfLines={2}>
+              <CustomText style={[styles.displayName, { color: theme.colors.text }]} numberOfLines={2}>
                 {displayName}
               </CustomText>
               {metrics.email ? (
-                <CustomText style={styles.email} numberOfLines={1}>
+                <CustomText style={[styles.email, { color: theme.colors.textMuted }]} numberOfLines={1}>
                   {metrics.email}
                 </CustomText>
               ) : null}
 
               {/* Member badge */}
-              <View style={styles.memberBadge}>
-                <MaterialIcons name="verified" size={12} color={PRIMARY} />
-                <CustomText style={styles.memberBadgeText}>Member</CustomText>
+              <View
+                style={[
+                  styles.memberBadge,
+                  {
+                    backgroundColor: theme.colors.primarySurface,
+                    borderColor: theme.colors.primaryBorder,
+                  },
+                ]}
+              >
+                <MaterialIcons name="verified" size={12} color={theme.colors.primary} />
+                <CustomText style={[styles.memberBadgeText, { color: theme.colors.primary }]}>Member</CustomText>
               </View>
             </View>
           </FadeIn>
 
           {/* ── STATS CARD ── */}
           <FadeIn delay={40}>
-            <View style={[styles.statsCard, { marginHorizontal: gutter }]}>
-              <StatPill value={metrics.totalPlays} label="Plays" />
-              <View style={styles.statDivider} />
-              <StatPill value={metrics.liveSubscriptions} label="Live alerts" />
-              <View style={styles.statDivider} />
-              <StatPill value="" label="Active" icon="verified" iconColor={PRIMARY} />
+            <View
+              style={[
+                styles.statsCard,
+                {
+                  marginHorizontal: gutter,
+                  backgroundColor: theme.colors.surface,
+                  borderColor: theme.colors.primaryBorder,
+                },
+              ]}
+            >
+              <StatPill value={metrics.totalPlays} label="Plays" theme={theme} />
+              <View style={[styles.statDivider, { backgroundColor: theme.colors.divider }]} />
+              <StatPill value={metrics.liveSubscriptions} label="Live alerts" theme={theme} />
+              <View style={[styles.statDivider, { backgroundColor: theme.colors.divider }]} />
+              <StatPill value="" label="Active" icon="verified" iconColor={theme.colors.primary} theme={theme} />
             </View>
           </FadeIn>
 
@@ -300,22 +360,30 @@ export default function Profile() {
           <View style={[styles.navContainer, { paddingHorizontal: gutter }]}>
             {NAV_GROUPS.map((group, i) => (
               <FadeIn key={group.title} delay={80 + i * 40}>
-                <NavSection group={group} />
+                <NavSection group={group} theme={theme} />
               </FadeIn>
             ))}
 
             {/* ── SIGN OUT ── */}
             <FadeIn delay={200}>
-              <View style={styles.signOutSection}>
+              <View
+                style={[
+                  styles.signOutSection,
+                  {
+                    backgroundColor: theme.colors.elevated,
+                    borderColor: `${theme.colors.danger}30`,
+                  },
+                ]}
+              >
                 <TVTouchable
                   onPress={() => setIsLogoutSheetVisible(true)}
                   showFocusBorder={false}
                   style={styles.signOutRow}
                 >
-                  <View style={styles.signOutIcon}>
-                    <MaterialIcons name="logout" size={19} color="#EF4444" />
+                  <View style={[styles.signOutIcon, { backgroundColor: `${theme.colors.danger}18` }]}>
+                    <MaterialIcons name="logout" size={19} color={theme.colors.danger} />
                   </View>
-                  <CustomText style={styles.signOutLabel}>Sign out</CustomText>
+                  <CustomText style={[styles.signOutLabel, { color: theme.colors.danger }]}>Sign out</CustomText>
                 </TVTouchable>
               </View>
             </FadeIn>
@@ -362,7 +430,6 @@ export default function Profile() {
 }
 
 const styles = StyleSheet.create({
-  // Sticky header
   stickyHeader: {
     position: 'absolute',
     top: 0,
@@ -371,20 +438,15 @@ const styles = StyleSheet.create({
     zIndex: 20,
   },
   stickyHeaderInner: {
-    backgroundColor: BG,
     paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(255,255,255,0.08)',
     alignItems: 'center',
   },
   stickyTitle: {
-    color: TEXT,
     fontSize: 15,
     fontWeight: '700',
     letterSpacing: -0.2,
   },
-
-  // Toolbar
   toolbar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -398,12 +460,8 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.07)',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.09)',
   },
-
-  // Hero
   hero: {
     alignItems: 'center',
     paddingTop: 20,
@@ -420,22 +478,18 @@ const styles = StyleSheet.create({
     right: -14,
     bottom: -14,
     borderRadius: 80,
-    backgroundColor: PRIMARY,
     opacity: 0.22,
   },
   avatar: {
     width: 112,
     height: 112,
     borderRadius: 56,
-    backgroundColor: '#2D1B69',
     borderWidth: 2.5,
-    borderColor: `${PRIMARY}99`,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
   },
   avatarInitial: {
-    color: '#F7F2FF',
     fontSize: 44,
     fontWeight: '700',
     lineHeight: 52,
@@ -452,14 +506,11 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: PRIMARY,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: BG,
   },
   displayName: {
-    color: TEXT,
     fontSize: 24,
     fontWeight: '700',
     textAlign: 'center',
@@ -467,7 +518,6 @@ const styles = StyleSheet.create({
     lineHeight: 31,
   },
   email: {
-    color: TEXT_MUTED,
     fontSize: 13,
     marginTop: 6,
     textAlign: 'center',
@@ -480,32 +530,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderRadius: 20,
-    backgroundColor: `${PRIMARY}18`,
     borderWidth: 1,
-    borderColor: `${PRIMARY}33`,
   },
   memberBadgeText: {
-    color: PRIMARY,
     fontSize: 11,
     fontWeight: '700',
     letterSpacing: 0.6,
   },
-
-  // Stats card
   statsCard: {
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 20,
-    backgroundColor: SURFACE,
     borderWidth: 1,
-    borderColor: BORDER,
     paddingVertical: 20,
     marginBottom: 28,
-    shadowColor: '#000',
-    shadowOpacity: 0.18,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 6,
   },
   statPill: {
     flex: 1,
@@ -513,13 +551,11 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   statValue: {
-    color: TEXT,
     fontSize: 22,
     fontWeight: '700',
     letterSpacing: -0.3,
   },
   statLabel: {
-    color: TEXT_MUTED,
     fontSize: 11,
     fontWeight: '500',
     letterSpacing: 0.2,
@@ -527,15 +563,11 @@ const styles = StyleSheet.create({
   statDivider: {
     width: 1,
     height: 36,
-    backgroundColor: 'rgba(255,255,255,0.08)',
   },
-
-  // Nav
   navContainer: {
     gap: 28,
   },
   sectionLabel: {
-    color: TEXT_MUTED,
     fontSize: 11,
     fontWeight: '700',
     textTransform: 'uppercase',
@@ -545,15 +577,8 @@ const styles = StyleSheet.create({
   },
   navCard: {
     borderRadius: 18,
-    backgroundColor: SURFACE,
     borderWidth: 1,
-    borderColor: BORDER,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOpacity: 0.14,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
   },
   navRow: {
     flexDirection: 'row',
@@ -561,10 +586,6 @@ const styles = StyleSheet.create({
     gap: 14,
     paddingVertical: 15,
     paddingHorizontal: 18,
-  },
-  navRowDivider: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(255,255,255,0.07)',
   },
   iconBubble: {
     width: 38,
@@ -574,29 +595,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   navLabel: {
-    color: TEXT,
     fontSize: 14,
     fontWeight: '600',
     letterSpacing: -0.1,
   },
   navHint: {
-    color: TEXT_MUTED,
     fontSize: 12,
     marginTop: 2,
   },
-
-  // Sign out
   signOutSection: {
     borderRadius: 18,
-    backgroundColor: SURFACE_ELEVATED,
     borderWidth: 1,
-    borderColor: 'rgba(239,68,68,0.18)',
     overflow: 'hidden',
-    shadowColor: '#EF4444',
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
   },
   signOutRow: {
     flexDirection: 'row',
@@ -611,10 +621,8 @@ const styles = StyleSheet.create({
     borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(239,68,68,0.12)',
   },
   signOutLabel: {
-    color: '#EF4444',
     fontSize: 14,
     fontWeight: '700',
     flex: 1,

@@ -88,7 +88,7 @@ export function ActionSheet({
                 borderRadius: theme.radius.xl,
                 borderWidth: 1,
                 borderColor: theme.colors.border,
-                backgroundColor: '#0E0918',
+                backgroundColor: theme.colors.elevated,
                 paddingHorizontal: theme.spacing.lg,
                 paddingTop: theme.spacing.lg,
                 paddingBottom: theme.spacing.md,

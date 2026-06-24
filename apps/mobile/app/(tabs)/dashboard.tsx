@@ -22,12 +22,15 @@ import {
   type EngagementInsight,
 } from '../../services/engagementService';
 
-const INSIGHT_COLORS = {
-  warning:     '#EF4444',
-  achievement: '#F59E0B',
-  opportunity: '#34D399',
-  info:        '#8B5CF6',
-} as const;
+function getInsightColor(type: string, theme: ReturnType<typeof useAppTheme>): string {
+  const map: Record<string, string> = {
+    warning:     theme.colors.danger,
+    achievement: theme.colors.warning,
+    opportunity: theme.colors.success,
+    info:        theme.colors.primary,
+  };
+  return map[type] ?? theme.colors.primary;
+}
 
 const INSIGHT_ICONS: Record<string, React.ComponentProps<typeof MaterialIcons>['name']> = {
   warning:     'error-outline',
@@ -78,7 +81,7 @@ function MetricCard({
 
 function InsightRow({ insight, onPress, showDivider }: { insight: EngagementInsight; onPress: () => void; showDivider: boolean }) {
   const theme = useAppTheme();
-  const color = INSIGHT_COLORS[insight.type as keyof typeof INSIGHT_COLORS] ?? theme.colors.primary;
+  const color = getInsightColor(insight.type, theme);
   const iconName = INSIGHT_ICONS[insight.type] ?? 'star-half';
 
   return (

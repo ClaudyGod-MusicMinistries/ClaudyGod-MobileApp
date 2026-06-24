@@ -32,9 +32,10 @@ function formatSessionMeta(session: LiveSessionDetail): string {
 }
 
 function StatusBadge({ status }: { status: string }) {
+  const theme = useAppTheme();
   const isLive = status === 'live';
   const isUpcoming = status === 'scheduled';
-  const color = isLive ? '#EF4444' : isUpcoming ? '#F59E0B' : '#8B5CF6';
+  const color = isLive ? theme.colors.danger : isUpcoming ? theme.colors.warning : theme.colors.primary;
   const label = isLive ? 'Live now' : isUpcoming ? 'Upcoming' : 'Replay';
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: `${color}14`, borderRadius: 999, borderWidth: 1, borderColor: `${color}30`, paddingHorizontal: 12, paddingVertical: 6 }}>
@@ -47,7 +48,7 @@ function StatusBadge({ status }: { status: string }) {
 function MessageBubble({ message }: { message: LiveSessionDetail['messages'][0] }) {
   const theme = useAppTheme();
   const isSuggestion = message.kind === 'suggestion';
-  const accentColor = isSuggestion ? '#F59E0B' : theme.colors.primary;
+  const accentColor = isSuggestion ? theme.colors.warning : theme.colors.primary;
   return (
     <View style={{ borderRadius: 18, padding: 14, gap: 6, backgroundColor: theme.scheme === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(17,10,31,0.03)', borderWidth: 1, borderColor: theme.colors.border }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>

@@ -5,6 +5,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../CustomText';
 import { TVTouchable } from './TVTouchable';
 import { type ToastItem, useToast } from '../../context/ToastContext';
+import { useAppTheme } from '../../util/colorScheme';
 
 function ToastCard({
   toast,
@@ -13,6 +14,7 @@ function ToastCard({
   toast: ToastItem;
   onDismiss: (_id: string) => void;
 }) {
+  const theme = useAppTheme();
   const translateY = useRef(new Animated.Value(14)).current;
   const opacity = useRef(new Animated.Value(0)).current;
 
@@ -66,7 +68,7 @@ function ToastCard({
       <MaterialIcons name={palette.icon} size={18} color={palette.accent} style={{ marginTop: 1 }} />
 
       <View style={{ flex: 1 }}>
-        <CustomText variant="label" style={{ color: '#F7F5FF' }}>
+        <CustomText variant="label" style={{ color: theme.colors.text }}>
           {toast.title}
         </CustomText>
         {toast.message ? (

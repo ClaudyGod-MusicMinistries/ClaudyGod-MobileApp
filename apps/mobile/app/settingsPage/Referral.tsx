@@ -19,11 +19,13 @@ const HOW_IT_WORKS = [
   { step: '3', icon: 'stars' as const,        title: 'Both of you benefit',  body: 'You both unlock early access to exclusive worship content.' },
 ] as const;
 
-const REWARDS = [
-  { icon: 'library-music' as const, color: '#8B5CF6', label: '1 referral',  reward: 'Early access to new albums' },
-  { icon: 'live-tv' as const,       color: '#60A5FA', label: '3 referrals', reward: 'Exclusive live session invite' },
-  { icon: 'workspace-premium' as const, color: '#F59E0B', label: '10 referrals', reward: 'Premium member badge' },
-] as const;
+function getRewards(theme: ReturnType<typeof useAppTheme>) {
+  return [
+    { icon: 'library-music' as const, color: theme.colors.primary, label: '1 referral',  reward: 'Early access to new albums' },
+    { icon: 'live-tv' as const,       color: theme.colors.info,    label: '3 referrals', reward: 'Exclusive live session invite' },
+    { icon: 'workspace-premium' as const, color: theme.colors.warning, label: '10 referrals', reward: 'Premium member badge' },
+  ];
+}
 
 function CodeDisplay({ code, isCopied, onCopy }: { code: string; isCopied: boolean; onCopy: () => void }) {
   const theme = useAppTheme();
@@ -40,9 +42,9 @@ function CodeDisplay({ code, isCopied, onCopy }: { code: string; isCopied: boole
         onPress={onCopy}
         showFocusBorder={false}
         style={{
-          backgroundColor: 'rgba(139,92,246,0.10)',
+          backgroundColor: theme.colors.primarySurface,
           borderWidth: 1.5,
-          borderColor: 'rgba(139,92,246,0.35)',
+          borderColor: theme.colors.primaryBorder,
           borderRadius: 16,
           paddingVertical: 14,
           paddingHorizontal: 28,
@@ -53,7 +55,7 @@ function CodeDisplay({ code, isCopied, onCopy }: { code: string; isCopied: boole
       >
         <CustomText
           style={{
-            color: '#C4B5FD',
+            color: theme.colors.text_accent,
             fontSize: 28,
             fontWeight: '800',
             letterSpacing: 4,
@@ -65,13 +67,13 @@ function CodeDisplay({ code, isCopied, onCopy }: { code: string; isCopied: boole
         <MaterialIcons
           name={isCopied ? 'check-circle' : 'content-copy'}
           size={20}
-          color={isCopied ? '#34D399' : '#8B5CF6'}
+          color={isCopied ? theme.colors.success : theme.colors.primary}
         />
       </TVTouchable>
 
       <CustomText
         style={{
-          color: isCopied ? '#34D399' : theme.colors.textMuted,
+          color: isCopied ? theme.colors.success : theme.colors.textMuted,
           fontSize: 12,
           fontWeight: '500',
           textAlign: 'center',
@@ -93,14 +95,14 @@ function GuestGate() {
           width: 64,
           height: 64,
           borderRadius: 20,
-          backgroundColor: 'rgba(139,92,246,0.12)',
+          backgroundColor: theme.colors.primarySurface,
           borderWidth: 1,
-          borderColor: 'rgba(139,92,246,0.22)',
+          borderColor: theme.colors.primaryBorder,
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
-        <MaterialIcons name="card-giftcard" size={30} color="#8B5CF6" />
+        <MaterialIcons name="card-giftcard" size={30} color={theme.colors.primary} />
       </View>
       <CustomText style={{ color: theme.colors.text, fontSize: 18, fontWeight: '700', textAlign: 'center', letterSpacing: -0.3 }}>
         Get your referral code
@@ -122,7 +124,7 @@ function GuestGate() {
           size="md"
           fullWidth
           onPress={() => router.push(APP_ROUTES.auth.signIn)}
-          leftIcon={<MaterialIcons name="login" size={16} color="#8B5CF6" />}
+          leftIcon={<MaterialIcons name="login" size={16} color={theme.colors.primary} />}
         />
       </View>
     </SurfaceCard>
@@ -151,14 +153,14 @@ export default function ReferralScreen() {
                 width: 36,
                 height: 36,
                 borderRadius: 11,
-                backgroundColor: 'rgba(139,92,246,0.14)',
+                backgroundColor: theme.colors.primarySurface,
                 borderWidth: 1,
-                borderColor: 'rgba(139,92,246,0.25)',
+                borderColor: theme.colors.primaryBorder,
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
             >
-              <MaterialIcons name="card-giftcard" size={18} color="#8B5CF6" />
+              <MaterialIcons name="card-giftcard" size={18} color={theme.colors.primary} />
             </View>
             <View>
               <CustomText style={{ color: theme.colors.primary, fontSize: 10, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase' }}>
@@ -184,12 +186,12 @@ export default function ReferralScreen() {
               gap: 8,
               paddingHorizontal: 20,
               paddingVertical: 12,
-              backgroundColor: 'rgba(139,92,246,0.07)',
+              backgroundColor: theme.colors.primarySurface,
               borderTopWidth: 1,
-              borderTopColor: 'rgba(139,92,246,0.14)',
+              borderTopColor: theme.colors.primaryBorder,
             }}
           >
-            <MaterialIcons name="group" size={16} color="#8B5CF6" />
+            <MaterialIcons name="group" size={16} color={theme.colors.primary} />
             <CustomText style={{ color: theme.colors.text, fontSize: 13, fontWeight: '600' }}>
               {referralCount === 0
                 ? 'No referrals yet — start sharing!'
@@ -217,7 +219,7 @@ export default function ReferralScreen() {
             onPress={() => void share()}
             leftIcon={<MaterialIcons name="share" size={18} color="#FFFFFF" />}
             style={{
-              shadowColor: '#8B5CF6',
+              shadowColor: theme.colors.primary,
               shadowOffset: { width: 0, height: 4 },
               shadowOpacity: 0.30,
               shadowRadius: 10,
@@ -238,15 +240,15 @@ export default function ReferralScreen() {
                   width: 36,
                   height: 36,
                   borderRadius: 11,
-                  backgroundColor: 'rgba(139,92,246,0.12)',
+                  backgroundColor: theme.colors.primarySurface,
                   borderWidth: 1,
-                  borderColor: 'rgba(139,92,246,0.22)',
+                  borderColor: theme.colors.primaryBorder,
                   alignItems: 'center',
                   justifyContent: 'center',
                   flexShrink: 0,
                 }}
               >
-                <MaterialIcons name={step.icon} size={17} color="#8B5CF6" />
+                <MaterialIcons name={step.icon} size={17} color={theme.colors.primary} />
               </View>
               <View style={{ flex: 1 }}>
                 <CustomText style={{ color: theme.colors.text, fontSize: 13.5, fontWeight: '700', marginBottom: 3 }}>
@@ -265,7 +267,7 @@ export default function ReferralScreen() {
       <View style={{ gap: 12 }}>
         <SectionLabel title="Rewards" accent="Unlock" subtitle="More friends = more benefits" />
         <View style={{ gap: 10 }}>
-          {REWARDS.map((reward) => (
+          {getRewards(theme).map((reward) => (
             <SurfaceCard
               key={reward.label}
               tone="subtle"

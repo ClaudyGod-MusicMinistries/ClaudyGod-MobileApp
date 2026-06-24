@@ -97,7 +97,7 @@ export default function Rate() {
           <View style={{ flexDirection: 'row', marginTop: 16, gap: 8 }}>
             {[1, 2, 3, 4, 5].map((star) => (
               <TVTouchable key={star} onPress={() => setRating(star)} showFocusBorder={false}>
-                <MaterialIcons name={rating >= star ? 'star' : 'star-border'} size={38} color={rating >= star ? '#FFC107' : theme.colors.textSecondary} />
+                <MaterialIcons name={rating >= star ? 'star' : 'star-border'} size={38} color={rating >= star ? theme.colors.warning : theme.colors.textSecondary} />
               </TVTouchable>
             ))}
           </View>

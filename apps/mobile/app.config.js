@@ -59,9 +59,9 @@ const resolvedEasProjectId =
   fileEnv.EAS_PROJECT_ID ||
   process.env.EXPO_PUBLIC_EAS_PROJECT_ID ||
   process.env.EAS_PROJECT_ID ||
-  '';
+  '5e131e9f-13fe-476f-90e7-d61f9a801f0a'; // EAS project ID — not a secret
 const resolvedExpoOwner =
-  fileEnv.EXPO_ACCOUNT_OWNER || process.env.EXPO_ACCOUNT_OWNER || '';
+  fileEnv.EXPO_ACCOUNT_OWNER || process.env.EXPO_ACCOUNT_OWNER || 'peter4tech';
 const publicMobileApiKey =
   fileEnv.EXPO_PUBLIC_MOBILE_API_KEY || process.env.EXPO_PUBLIC_MOBILE_API_KEY || '';
 const appIconAssetPath = './assets/icon.png';

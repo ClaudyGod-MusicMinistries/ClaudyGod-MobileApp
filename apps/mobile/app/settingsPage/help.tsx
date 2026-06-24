@@ -10,6 +10,7 @@ import { TVTouchable } from '../../components/ui/TVTouchable';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import { createSupportRequest } from '../../services/userFlowService';
 import { useAppModal } from '../../context/AppModalContext';
+import { useAppTheme } from '../../util/colorScheme';
 
 const SUPPORT_CATEGORIES = [
   { id: 'playback',  label: 'Playback' },
@@ -22,10 +23,11 @@ const SUPPORT_CATEGORIES = [
 type SupportCategory = (typeof SUPPORT_CATEGORIES)[number]['id'];
 
 function SectionLabel({ title }: { title: string }) {
+  const theme = useAppTheme();
   return (
     <CustomText
       style={{
-        color: 'rgba(247,242,255,0.35)',
+        color: theme.colors.textMuted,
         fontSize: 11,
         fontWeight: '700',
         textTransform: 'uppercase',
@@ -39,6 +41,7 @@ function SectionLabel({ title }: { title: string }) {
 }
 
 export default function Help() {
+  const theme = useAppTheme();
   const { config } = useMobileAppConfig();
   const { showModal } = useAppModal();
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -106,24 +109,24 @@ export default function Help() {
       subtitle="Support for playback, account access, giving, and content."
       hero={
         <FadeIn>
-          <View style={{ backgroundColor: '#110E1A', borderRadius: 18, padding: 20, gap: 16 }}>
+          <View style={{ backgroundColor: theme.colors.surface, borderRadius: 18, padding: 20, gap: 16 }}>
             <View
               style={{
                 width: 52,
                 height: 52,
                 borderRadius: 18,
-                backgroundColor: 'rgba(139,92,246,0.15)',
+                backgroundColor: theme.colors.primarySurface,
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
             >
-              <MaterialIcons name="support-agent" size={24} color="#8B5CF6" />
+              <MaterialIcons name="support-agent" size={24} color={theme.colors.primary} />
             </View>
             <View style={{ gap: 6 }}>
-              <CustomText style={{ color: '#F7F2FF', fontSize: 20, fontWeight: '700', letterSpacing: -0.3 }}>
+              <CustomText style={{ color: theme.colors.text, fontSize: 20, fontWeight: '700', letterSpacing: -0.3 }}>
                 Get help without confusion.
               </CustomText>
-              <CustomText style={{ color: 'rgba(247,242,255,0.45)', fontSize: 13, lineHeight: 20 }}>
+              <CustomText style={{ color: theme.colors.textMuted, fontSize: 13, lineHeight: 20 }}>
                 Choose a quick contact option, send a clear request, or review answers to common questions.
               </CustomText>
             </View>
@@ -131,7 +134,7 @@ export default function Help() {
               title="Open support center"
               size="md"
               onPress={() => void Linking.openURL(supportCenterUrl)}
-              leftIcon={<MaterialIcons name="open-in-new" size={16} color="#FFFFFF" />}
+              leftIcon={<MaterialIcons name="open-in-new" size={16} color={theme.colors.onPrimary} />}
             />
           </View>
         </FadeIn>
@@ -141,7 +144,7 @@ export default function Help() {
         <FadeIn delay={70}>
           <View style={{ gap: 10 }}>
             <SectionLabel title="Contact options" />
-            <View style={{ borderRadius: 16, backgroundColor: '#110E1A', overflow: 'hidden' }}>
+            <View style={{ borderRadius: 16, backgroundColor: theme.colors.surface, overflow: 'hidden' }}>
               {contactOptions.map((item, index) => (
                 <TVTouchable
                   key={item.id}
@@ -154,7 +157,7 @@ export default function Help() {
                     paddingVertical: 14,
                     paddingHorizontal: 16,
                     borderTopWidth: index === 0 ? 0 : 1,
-                    borderTopColor: 'rgba(255,255,255,0.07)',
+                    borderTopColor: theme.colors.divider,
                   }}
                 >
                   <View
@@ -164,24 +167,24 @@ export default function Help() {
                       borderRadius: 12,
                       alignItems: 'center',
                       justifyContent: 'center',
-                      backgroundColor: 'rgba(139,92,246,0.15)',
+                      backgroundColor: theme.colors.primarySurface,
                     }}
                   >
                     <MaterialIcons
                       name={item.icon as React.ComponentProps<typeof MaterialIcons>['name']}
                       size={18}
-                      color="#8B5CF6"
+                      color={theme.colors.primary}
                     />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <CustomText style={{ color: '#F7F2FF', fontSize: 14, fontWeight: '600' }}>
+                    <CustomText style={{ color: theme.colors.text, fontSize: 14, fontWeight: '600' }}>
                       {item.title}
                     </CustomText>
-                    <CustomText style={{ color: 'rgba(247,242,255,0.40)', fontSize: 12, marginTop: 2 }}>
+                    <CustomText style={{ color: theme.colors.textMuted, fontSize: 12, marginTop: 2 }}>
                       {item.desc}
                     </CustomText>
                   </View>
-                  <MaterialIcons name="open-in-new" size={16} color="rgba(247,242,255,0.25)" />
+                  <MaterialIcons name="open-in-new" size={16} color={theme.colors.textMuted} />
                 </TVTouchable>
               ))}
             </View>
@@ -192,8 +195,8 @@ export default function Help() {
       <FadeIn delay={110}>
         <View style={{ gap: 10 }}>
           <SectionLabel title="Send a request" />
-          <View style={{ backgroundColor: '#110E1A', borderRadius: 16, padding: 20, gap: 16 }}>
-            <CustomText style={{ color: 'rgba(247,242,255,0.45)', fontSize: 13, lineHeight: 20 }}>
+          <View style={{ backgroundColor: theme.colors.surface, borderRadius: 16, padding: 20, gap: 16 }}>
+            <CustomText style={{ color: theme.colors.textMuted, fontSize: 13, lineHeight: 20 }}>
               Share the issue clearly and the support team will follow up through your account channel.
             </CustomText>
 
@@ -206,7 +209,7 @@ export default function Help() {
                     onPress={() => setSelectedCategory(category.id)}
                     style={{
                       borderRadius: 999,
-                      backgroundColor: active ? '#8B5CF6' : 'rgba(255,255,255,0.07)',
+                      backgroundColor: active ? theme.colors.primary : theme.colors.surfaceAlt,
                       paddingHorizontal: 14,
                       paddingVertical: 8,
                     }}
@@ -214,7 +217,7 @@ export default function Help() {
                   >
                     <CustomText
                       style={{
-                        color: active ? '#FFFFFF' : 'rgba(247,242,255,0.55)',
+                        color: active ? theme.colors.onPrimary : theme.colors.textMuted,
                         fontSize: 13,
                         fontWeight: '600',
                       }}
@@ -230,13 +233,13 @@ export default function Help() {
               value={subject}
               onChangeText={setSubject}
               placeholder="Short subject"
-              placeholderTextColor="rgba(247,242,255,0.28)"
+              placeholderTextColor={theme.colors.textMuted}
               style={{
                 borderRadius: 12,
-                backgroundColor: 'rgba(255,255,255,0.06)',
+                backgroundColor: theme.colors.surfaceAlt,
                 paddingHorizontal: 14,
                 paddingVertical: 13,
-                color: '#F7F2FF',
+                color: theme.colors.text,
                 fontSize: 14,
               }}
             />
@@ -244,16 +247,16 @@ export default function Help() {
               value={message}
               onChangeText={setMessage}
               placeholder="Describe the issue and your device"
-              placeholderTextColor="rgba(247,242,255,0.28)"
+              placeholderTextColor={theme.colors.textMuted}
               multiline
               textAlignVertical="top"
               style={{
                 minHeight: 120,
                 borderRadius: 12,
-                backgroundColor: 'rgba(255,255,255,0.06)',
+                backgroundColor: theme.colors.surfaceAlt,
                 paddingHorizontal: 14,
                 paddingVertical: 13,
-                color: '#F7F2FF',
+                color: theme.colors.text,
                 fontSize: 14,
               }}
             />
@@ -273,7 +276,7 @@ export default function Help() {
         <FadeIn delay={150}>
           <View style={{ gap: 10 }}>
             <SectionLabel title="Quick answers" />
-            <View style={{ borderRadius: 16, backgroundColor: '#110E1A', overflow: 'hidden' }}>
+            <View style={{ borderRadius: 16, backgroundColor: theme.colors.surface, overflow: 'hidden' }}>
               {faqItems.map((faq, index) => {
                 const open = expanded === faq.id;
                 return (
@@ -285,23 +288,23 @@ export default function Help() {
                       paddingVertical: 14,
                       paddingHorizontal: 16,
                       borderTopWidth: index === 0 ? 0 : 1,
-                      borderTopColor: 'rgba(255,255,255,0.07)',
+                      borderTopColor: theme.colors.divider,
                     }}
                   >
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                       <MaterialIcons
                         name={open ? 'expand-less' : 'expand-more'}
                         size={20}
-                        color="rgba(247,242,255,0.35)"
+                        color={theme.colors.textMuted}
                       />
-                      <CustomText style={{ color: '#F7F2FF', fontSize: 14, fontWeight: '600', flex: 1 }}>
+                      <CustomText style={{ color: theme.colors.text, fontSize: 14, fontWeight: '600', flex: 1 }}>
                         {faq.q}
                       </CustomText>
                     </View>
                     {open ? (
                       <CustomText
                         style={{
-                          color: 'rgba(247,242,255,0.55)',
+                          color: theme.colors.textMuted,
                           fontSize: 13,
                           lineHeight: 20,
                           marginTop: 10,
