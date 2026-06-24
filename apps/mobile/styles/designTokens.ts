@@ -64,10 +64,10 @@ export const layout = {
   tabletGutter:       32,
   desktopGutter:      48,
   maxContentWidth:    1140,
-  sectionGap:         24,
-  sectionGapLarge:    32,
-  headerVerticalPadding: 8,
-  tabBarContentPadding:  130,
+  sectionGap:         28,
+  sectionGapLarge:    40,
+  headerVerticalPadding: 10,
+  tabBarContentPadding:  136,
 };
 
 export * from '../theme/designSystem';

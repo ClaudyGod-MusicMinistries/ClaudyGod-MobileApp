@@ -81,22 +81,22 @@ export function AuthScreenFrame({ backPath, salutation, description, title, subt
               {/* Centered logo + app name + title + subtitle */}
               <View style={{ alignItems: 'center', marginBottom: 28 }}>
                 <View style={{
-                  width: 60, height: 60, borderRadius: 18,
+                  width: 64, height: 64, borderRadius: 20,
                   backgroundColor: theme.colors.surface,
                   alignItems: 'center', justifyContent: 'center',
                   overflow: 'hidden',
                 }}>
-                  <Image source={BRAND_LOGO_ASSET} resizeMode="cover" style={{ width: 60, height: 60 }} />
+                  <Image source={BRAND_LOGO_ASSET} resizeMode="cover" style={{ width: 64, height: 64 }} />
                 </View>
 
                 <CustomText
                   variant="caption"
                   style={{
                     color: theme.colors.textMuted,
-                    fontSize: 10,
+                    fontSize: 10.5,
                     textTransform: 'uppercase',
-                    letterSpacing: 1.4,
-                    marginTop: 8,
+                    letterSpacing: 1.5,
+                    marginTop: 10,
                     fontWeight: '600',
                   }}
                 >
@@ -105,13 +105,13 @@ export function AuthScreenFrame({ backPath, salutation, description, title, subt
 
                 <CustomText
                   variant="display"
-                  style={{ color: theme.colors.text, fontSize: 26, fontWeight: '700', letterSpacing: -0.6, lineHeight: 32, marginTop: 20, textAlign: 'center' }}
+                  style={{ color: theme.colors.text, fontSize: 26, fontWeight: '700', letterSpacing: -0.6, lineHeight: 33, marginTop: 22, textAlign: 'center' }}
                 >
                   {title}
                 </CustomText>
                 <CustomText
                   variant="body"
-                  style={{ color: theme.colors.textMuted, marginTop: 6, lineHeight: 20, fontSize: 13, fontWeight: '400', textAlign: 'center' }}
+                  style={{ color: theme.colors.textMuted, marginTop: 8, lineHeight: 21, fontSize: 13.5, fontWeight: '400', textAlign: 'center' }}
                 >
                   {subtitle}
                 </CustomText>
@@ -190,8 +190,8 @@ export function AuthScreenFrame({ backPath, salutation, description, title, subt
                       style={{
                         color: theme.colors.text,
                         marginTop: 4,
-                        fontSize: device.isTV ? 28 : device.isDesktop ? 22 : 20,
-                        lineHeight: device.isTV ? 34 : device.isDesktop ? 28 : 26,
+                        fontSize: device.isTV ? 28 : device.isDesktop ? 24 : 22,
+                        lineHeight: device.isTV ? 34 : device.isDesktop ? 30 : 28,
                         fontWeight: '700',
                         letterSpacing: -0.4,
                       }}

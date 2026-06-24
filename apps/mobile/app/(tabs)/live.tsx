@@ -90,10 +90,10 @@ function LivePulse({ viewerCount }: { viewerCount: number }) {
 function ScheduleCard({ item, onNotify }: { item: FeedCardItem; onNotify: () => void }) {
   const theme = useAppTheme();
   return (
-    <SurfaceCard tone="subtle" style={{ padding: theme.spacing.md, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+    <SurfaceCard tone="subtle" style={{ padding: theme.spacing.md, flexDirection: 'row', alignItems: 'center', gap: 14 }}>
       <View
         style={{
-          width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center',
+          width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center',
           backgroundColor: `${theme.colors.primary}12`, borderWidth: 1, borderColor: `${theme.colors.primary}28`,
         }}
       >
@@ -114,7 +114,7 @@ function ScheduleCard({ item, onNotify }: { item: FeedCardItem; onNotify: () => 
           flexDirection: 'row', alignItems: 'center', gap: 6,
           backgroundColor: `${theme.colors.primary}12`, borderRadius: 999,
           borderWidth: 1, borderColor: `${theme.colors.primary}28`,
-          paddingHorizontal: 12, paddingVertical: 7,
+          paddingHorizontal: 12, paddingVertical: 8,
         }}
       >
         <MaterialIcons name="notifications-active" size={14} color={theme.colors.primary} />

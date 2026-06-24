@@ -22,8 +22,7 @@
         "buildType": "apk"
       },
       "env": {
-        "CLAUDYGOD_ENV": "production",
-        "NODE_ENV": "production"
+        "CLAUDYGOD_ENV": "production"
       }
     },
     "production": {
@@ -32,8 +31,7 @@
       "environment": "production",
       "autoIncrement": true,
       "env": {
-        "CLAUDYGOD_ENV": "production",
-        "NODE_ENV": "production"
+        "CLAUDYGOD_ENV": "production"
       }
     }
   },

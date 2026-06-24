@@ -118,10 +118,10 @@ function AppearanceCard({ value, onChange }: { value: ThemePreference; onChange:
               >
                 <MaterialIcons name={option.icon} size={device.isTV ? 22 : 18} color={active ? theme.colors.primary : theme.colors.textMuted} />
               </View>
-              <CustomText style={{ color: active ? theme.colors.text : theme.colors.textSecondary, fontSize: device.isTV ? 14 : 12, fontWeight: active ? '700' : '500' }}>
+              <CustomText style={{ color: active ? theme.colors.text : theme.colors.textSecondary, fontSize: device.isTV ? 14 : 12.5, fontWeight: active ? '700' : '500' }}>
                 {option.label}
               </CustomText>
-              <CustomText style={{ color: theme.colors.textMuted, fontSize: device.isTV ? 11 : 10, textAlign: 'center' }}>
+              <CustomText style={{ color: theme.colors.textMuted, fontSize: device.isTV ? 11 : 10.5, textAlign: 'center' }}>
                 {option.hint}
               </CustomText>
             </TVTouchable>
@@ -138,7 +138,7 @@ function QuickLinkRow({ icon, label, hint, color, onPress }: { icon: React.Compo
 
   return (
     <TVTouchable onPress={onPress} showFocusBorder={false}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: device.isTV ? 16 : 13 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: device.isTV ? 16 : 14 }}>
         <View
           style={{
             width: device.isTV ? 48 : 42, height: device.isTV ? 48 : 42,
@@ -152,7 +152,7 @@ function QuickLinkRow({ icon, label, hint, color, onPress }: { icon: React.Compo
           <CustomText style={{ color: theme.colors.text, fontSize: device.isTV ? 15 : 13.5, fontWeight: '600' }}>
             {label}
           </CustomText>
-          {hint ? <CustomText style={{ color: theme.colors.textSecondary, fontSize: device.isTV ? 12 : 11, marginTop: 2 }}>{hint}</CustomText> : null}
+          {hint ? <CustomText style={{ color: theme.colors.textSecondary, fontSize: device.isTV ? 12.5 : 11.5, marginTop: 2 }}>{hint}</CustomText> : null}
         </View>
         <MaterialIcons name="chevron-right" size={18} color={theme.colors.textMuted} />
       </View>
