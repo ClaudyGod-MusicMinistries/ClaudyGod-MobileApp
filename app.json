@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "fdb18cc3-e1d9-40e9-9a60-34b4a3b244b7"
+      }
+    },
+    "android": {
+      "package": "com.peter4tech.claudygodmobileapp1"
+    }
+  }
+}
