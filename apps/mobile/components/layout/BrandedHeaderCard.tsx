@@ -1,11 +1,10 @@
 import React from 'react';
-import { Image, ScrollView, View, useWindowDimensions } from 'react-native';
+import { ScrollView, View, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { CustomText } from '../CustomText';
 import { TVTouchable } from '../ui/TVTouchable';
 import { useAppTheme } from '../../util/colorScheme';
-import { BRAND_LOGO_ASSET } from '../../util/brandAssets';
 import { APP_ROUTES } from '../../util/appRoutes';
 
 type HeaderAction = {
@@ -138,10 +137,7 @@ export function BrandedHeaderCard({
               marginRight: 12,
             }}
           >
-            <Image
-              source={BRAND_LOGO_ASSET}
-              style={{ width: logoSize, height: logoSize, borderRadius: Math.round(logoSize / 2) }}
-            />
+            <MaterialIcons name="home" size={logoSize} color={theme.colors.textSecondary} />
           </TVTouchable>
 
           <View style={{ flex: 1 }}>
