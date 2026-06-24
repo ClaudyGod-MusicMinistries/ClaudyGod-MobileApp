@@ -63,8 +63,8 @@ function LivePulse({ viewerCount }: { viewerCount: number }) {
           paddingHorizontal: 12, paddingVertical: 6,
         }}
       >
-        <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: '#EF4444' }} />
-        <CustomText variant="caption" style={{ color: '#EF4444', fontWeight: '700', letterSpacing: 0.6 }}>
+        <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: theme.colors.danger }} />
+        <CustomText variant="caption" style={{ color: theme.colors.danger, fontWeight: '700', letterSpacing: 0.6 }}>
           LIVE NOW
         </CustomText>
       </View>

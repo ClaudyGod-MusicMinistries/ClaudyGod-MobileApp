@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View } from 'react-native';
 import { MaterialIcons , FontAwesome } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useAppTheme } from '../util/colorScheme';
 import { CustomText } from '../components/CustomText';
 import { AuthFeedbackBanner } from '../components/auth/AuthFeedbackBanner';
 import { AuthScreenFrame } from '../components/auth/AuthScreenFrame';
@@ -36,6 +37,7 @@ function SocialButton({
   onPress: () => void;
   disabled: boolean;
 }) {
+  const theme = useAppTheme();
   const isGoogle = provider === 'google';
   return (
     <TVTouchable
@@ -79,7 +81,7 @@ function SocialButton({
           <FontAwesome name="facebook-f" size={14} color="#FFFFFF" />
         </View>
       )}
-      <CustomText style={{ color: '#F7F2FF', fontSize: 13, fontWeight: '600' }}>
+      <CustomText style={{ color: theme.colors.text, fontSize: 13, fontWeight: '600' }}>
         {isGoogle ? 'Google' : 'Facebook'}
       </CustomText>
     </TVTouchable>
@@ -102,6 +104,7 @@ function OrDivider({ label }: { label: string }) {
 
 export default function SignInScreen() {
   const router = useRouter();
+  const theme = useAppTheme();
   const { showToast } = useToast();
   const { showModal } = useAppModal();
   const [email, setEmail] = useState('');
@@ -248,13 +251,13 @@ export default function SignInScreen() {
             paddingVertical: 14,
             borderRadius: 14,
             borderWidth: 1,
-            borderColor: 'rgba(139,92,246,0.35)',
-            backgroundColor: 'rgba(139,92,246,0.08)',
+            borderColor: theme.colors.primaryBorder,
+            backgroundColor: theme.colors.primarySurface,
             opacity: anyLoading ? 0.5 : 1,
           }}
         >
-          <MaterialIcons name={biometricIcon} size={22} color="#8B5CF6" />
-          <CustomText style={{ color: '#D8CAFF', fontSize: 14, fontWeight: '700' }}>
+          <MaterialIcons name={biometricIcon} size={22} color={theme.colors.primary} />
+          <CustomText style={{ color: theme.colors.text_accent, fontSize: 14, fontWeight: '700' }}>
             {biometricLoading ? 'Verifying…' : biometricLabel}
           </CustomText>
         </TVTouchable>
@@ -299,7 +302,7 @@ export default function SignInScreen() {
         style={{ alignSelf: 'flex-end', marginTop: 12 }}
         showFocusBorder={false}
       >
-        <CustomText variant="label" style={{ color: '#D8CAFF', fontSize: 12 }}>
+        <CustomText variant="label" style={{ color: theme.colors.text_accent, fontSize: 12 }}>
           Forgot password?
         </CustomText>
       </TVTouchable>
@@ -368,7 +371,7 @@ export default function SignInScreen() {
           onPress={() => router.push(APP_ROUTES.auth.signUp)}
           showFocusBorder={false}
         >
-          <CustomText style={{ color: '#D8CAFF', fontSize: 13, fontWeight: '700' }}>
+          <CustomText style={{ color: theme.colors.text_accent, fontSize: 13, fontWeight: '700' }}>
             Sign up
           </CustomText>
         </TVTouchable>

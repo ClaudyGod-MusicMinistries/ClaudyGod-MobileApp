@@ -116,14 +116,15 @@ function ContinueRow({ items, onPress }: { items: FeedCardItem[]; onPress: (_ite
 // ─── Guest Callout ────────────────────────────────────────────────────────────
 
 function GuestCallout({ onSignIn }: { onSignIn: () => void }) {
+  const theme = useAppTheme();
   return (
     <TVTouchable onPress={onSignIn} showFocusBorder={false}>
       <View
         style={{
           borderRadius: 20,
           borderWidth: 1,
-          borderColor: 'rgba(139,92,246,0.24)',
-          backgroundColor: 'rgba(139,92,246,0.07)',
+          borderColor: theme.colors.primaryBorder,
+          backgroundColor: theme.colors.primarySurface,
           overflow: 'hidden',
           padding: 20,
           gap: 14,
@@ -138,18 +139,18 @@ function GuestCallout({ onSignIn }: { onSignIn: () => void }) {
               borderRadius: 22,
               alignItems: 'center',
               justifyContent: 'center',
-              backgroundColor: 'rgba(139,92,246,0.18)',
+              backgroundColor: theme.colors.primarySurface,
               borderWidth: 1,
-              borderColor: 'rgba(139,92,246,0.32)',
+              borderColor: theme.colors.primaryBorder,
             }}
           >
-            <MaterialIcons name="person-outline" size={22} color="#8B5CF6" />
+            <MaterialIcons name="person-outline" size={22} color={theme.colors.primary} />
           </View>
           <View style={{ flex: 1, minWidth: 0 }}>
-            <CustomText style={{ color: '#F7F2FF', fontSize: 15, fontWeight: '700', letterSpacing: -0.2 }}>
+            <CustomText style={{ color: theme.colors.text, fontSize: 15, fontWeight: '700', letterSpacing: -0.2 }}>
               Sign in for full access
             </CustomText>
-            <CustomText style={{ color: 'rgba(247,242,255,0.50)', fontSize: 12.5, marginTop: 3 }}>
+            <CustomText style={{ color: theme.colors.textMuted, fontSize: 12.5, marginTop: 3 }}>
               Save your favourites, history, and live alerts.
             </CustomText>
           </View>
@@ -166,11 +167,11 @@ function GuestCallout({ onSignIn }: { onSignIn: () => void }) {
               gap: 6,
               paddingVertical: 11,
               borderRadius: 12,
-              backgroundColor: '#8B5CF6',
+              backgroundColor: theme.colors.primary,
             }}
           >
-            <MaterialIcons name="login" size={16} color="#FFFFFF" />
-            <CustomText style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '700' }}>Sign in</CustomText>
+            <MaterialIcons name="login" size={16} color={theme.colors.onPrimary} />
+            <CustomText style={{ color: theme.colors.onPrimary, fontSize: 13, fontWeight: '700' }}>Sign in</CustomText>
           </View>
         </View>
       </View>
@@ -195,19 +196,19 @@ function AnnouncementCard({ item, onPress }: { item: FeedCardItem; onPress: () =
           <Image source={{ uri: item.imageUrl || DEFAULT_CONTENT_IMAGE_URI }} resizeMode="cover" style={StyleSheet.absoluteFillObject} />
         </View>
         <View style={{ flex: 1, minWidth: 0 }}>
-          <CustomText style={{ color: 'rgba(247,242,255,0.45)', fontSize: 9.5, fontWeight: '600', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 2 }}>
+          <CustomText style={{ color: theme.colors.textMuted, fontSize: 9.5, fontWeight: '600', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 2 }}>
             Announcement
           </CustomText>
-          <CustomText style={{ color: '#F7F2FF', fontSize: 13, fontWeight: '500' }} numberOfLines={1}>
+          <CustomText style={{ color: theme.colors.text, fontSize: 13, fontWeight: '500' }} numberOfLines={1}>
             {item.title}
           </CustomText>
           {item.subtitle ? (
-            <CustomText style={{ color: 'rgba(247,242,255,0.45)', fontSize: 11.5, marginTop: 2 }} numberOfLines={1}>
+            <CustomText style={{ color: theme.colors.textMuted, fontSize: 11.5, marginTop: 2 }} numberOfLines={1}>
               {item.subtitle}
             </CustomText>
           ) : null}
         </View>
-        <MaterialIcons name="chevron-right" size={18} color="rgba(247,242,255,0.35)" />
+        <MaterialIcons name="chevron-right" size={18} color={theme.colors.textMuted} />
       </View>
     </TVTouchable>
   );
@@ -217,6 +218,7 @@ function AnnouncementCard({ item, onPress }: { item: FeedCardItem; onPress: () =
 
 export default function HomeScreen() {
   const router = useRouter();
+  const theme = useAppTheme();
   const { width } = useWindowDimensions();
   const { isAuthenticated, user } = useAuth();
   const { feed, loading, refresh } = useContentFeed();
@@ -269,38 +271,38 @@ export default function HomeScreen() {
       id: 'music',
       label: configuredTabs.find((t) => t.id === 'player')?.label ?? 'Music',
       icon: 'graphic-eq',
-      color: '#8B5CF6',
+      color: theme.colors.primary,
       onPress: () => router.push(APP_ROUTES.tabs.player),
     },
     {
       id: 'videos',
       label: configuredTabs.find((t) => t.id === 'videos')?.label ?? 'Videos',
       icon: 'smart-display',
-      color: '#60A5FA',
+      color: theme.colors.info,
       onPress: () => router.push(APP_ROUTES.tabs.videos),
     },
     {
       id: 'live',
       label: configuredTabs.find((t) => t.id === 'live')?.label ?? 'Live',
       icon: 'live-tv',
-      color: '#F87171',
+      color: theme.colors.danger,
       onPress: () => router.push(APP_ROUTES.tabs.live),
     },
     {
       id: 'library',
       label: 'Library',
       icon: 'library-music',
-      color: '#FBBF24',
+      color: theme.colors.warning,
       onPress: () => router.push(APP_ROUTES.tabs.library),
     },
     {
       id: 'search',
       label: 'Search',
       icon: 'search',
-      color: '#34D399',
+      color: theme.colors.success,
       onPress: () => router.push(APP_ROUTES.tabs.search),
     },
-  ], [configuredTabs, router]);
+  ], [configuredTabs, router, theme]);
 
   return (
     <PremiumPage title="Home" eyebrow="Home" noBack refreshing={loading} onRefresh={() => void refresh()}>

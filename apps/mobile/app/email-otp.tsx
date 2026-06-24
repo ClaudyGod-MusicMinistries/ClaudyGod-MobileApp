@@ -17,6 +17,7 @@ import { isLikelyValidEmail, normalizeEmail } from '../lib/authValidation';
 import { requestEmailOtp, verifyEmailOtp } from '../services/authService';
 import { useToast } from '../context/ToastContext';
 import { APP_ROUTES } from '../util/appRoutes';
+import { useAppTheme } from '../util/colorScheme';
 
 type Phase = 'email' | 'code';
 
@@ -24,6 +25,7 @@ const CODE_LENGTH = 6;
 
 export default function EmailOtpScreen() {
   const router = useRouter();
+  const theme = useAppTheme();
   const { showToast } = useToast();
 
   const [phase, setPhase] = useState<Phase>('email');
@@ -175,7 +177,7 @@ export default function EmailOtpScreen() {
               showFocusBorder={false}
               style={{ marginLeft: 6 }}
             >
-              <CustomText style={{ color: '#D8CAFF', fontSize: 13, fontWeight: '700' }}>
+              <CustomText style={{ color: theme.colors.text_accent, fontSize: 13, fontWeight: '700' }}>
                 Sign in with password
               </CustomText>
             </TVTouchable>
@@ -197,6 +199,7 @@ export default function EmailOtpScreen() {
                 selectTextOnFocus
                 style={[
                   styles.codeBox,
+                  { color: theme.colors.text },
                   digits[i] ? styles.codeBoxFilled : null,
                 ]}
                 placeholderTextColor="rgba(255,255,255,0.20)"
@@ -230,7 +233,7 @@ export default function EmailOtpScreen() {
               <CustomText style={{
                 fontSize: 13,
                 fontWeight: '700',
-                color: resendCooldown > 0 ? 'rgba(214,190,255,0.35)' : '#D8CAFF',
+                color: resendCooldown > 0 ? 'rgba(214,190,255,0.35)' : theme.colors.text_accent,
               }}>
                 {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend code'}
               </CustomText>
@@ -269,7 +272,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 22,
     fontWeight: '700',
-    color: '#F7F2FF',
   },
   codeBoxFilled: {
     borderColor: 'rgba(139,92,246,0.60)',

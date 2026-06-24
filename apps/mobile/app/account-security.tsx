@@ -186,10 +186,10 @@ export default function AccountSecurity() {
           <SurfaceCard tone="strong" style={{ padding: theme.spacing.xl, marginBottom: theme.spacing.lg, overflow: 'hidden' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
               <View style={{ width: 54, height: 54, borderRadius: 27, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(251,191,36,0.14)', borderWidth: 1, borderColor: 'rgba(251,191,36,0.28)' }}>
-                <MaterialIcons name="shield" size={26} color="#F59E0B" />
+                <MaterialIcons name="shield" size={26} color={theme.colors.warning} />
               </View>
               <View style={{ flex: 1 }}>
-                <CustomText variant="caption" style={{ color: '#F59E0B', textTransform: 'uppercase', letterSpacing: 0.9 }}>
+                <CustomText variant="caption" style={{ color: theme.colors.warning, textTransform: 'uppercase', letterSpacing: 0.9 }}>
                   Protected account
                 </CustomText>
                 <CustomText variant="heading" style={{ color: theme.colors.text, marginTop: 2 }}>
@@ -229,7 +229,7 @@ export default function AccountSecurity() {
               icon="email"
               title="Change email"
               description="Enter your new email and current password. A confirmation link will be sent."
-              color="#60A5FA"
+              color={theme.colors.info}
             />
             <SecureField label="New email address" value={newEmail} onChangeText={setNewEmail} keyboardType="email-address" autoCapitalize="none" placeholder="new@example.com" />
             <SecureField label="Current password" value={currentPassword} onChangeText={setCurrentPassword} secureTextEntry placeholder="Your current password" />
@@ -249,7 +249,7 @@ export default function AccountSecurity() {
               icon="lock-reset"
               title="Change password"
               description="Verify your current password first. A secure reset link will be emailed to your account."
-              color="#8B5CF6"
+              color={theme.colors.primary}
             />
             <SecureField label="Current password" value={currentPassword} onChangeText={setCurrentPassword} secureTextEntry placeholder="Your current password" />
             <AppButton

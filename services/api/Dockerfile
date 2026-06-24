@@ -1,8 +1,8 @@
 # ── Stage 1: install all deps (including dev) for building ────────────────────
 FROM node:22-alpine AS deps
 WORKDIR /usr/src/app
-COPY package.json yarn.lock ./
-RUN yarn install --frozen-lockfile --non-interactive --network-timeout 300000
+COPY package.json ./
+RUN yarn install --no-lockfile --non-interactive --network-timeout 300000
 
 # ── Stage 2: compile TypeScript ───────────────────────────────────────────────
 FROM node:22-alpine AS build
@@ -14,8 +14,8 @@ RUN yarn build
 # ── Stage 3: production-only deps (no devDependencies) ───────────────────────
 FROM node:22-alpine AS prod-deps
 WORKDIR /usr/src/app
-COPY package.json yarn.lock ./
-RUN yarn install --frozen-lockfile --non-interactive --production --network-timeout 300000
+COPY package.json ./
+RUN yarn install --no-lockfile --non-interactive --production --network-timeout 300000
 
 # ── Stage 4: lean runtime image ───────────────────────────────────────────────
 FROM node:22-alpine

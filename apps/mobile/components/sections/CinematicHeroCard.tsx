@@ -113,7 +113,7 @@ export function CinematicHeroCard({
                   backgroundColor: 'rgba(141,99,255,0.12)',
                 }}
               >
-                <CustomText variant="caption" style={{ color: '#E7DEFF' }}>
+                <CustomText variant="caption" style={{ color: theme.colors.text_accent }}>
                   {badge}
                 </CustomText>
               </View>
@@ -133,7 +133,7 @@ export function CinematicHeroCard({
             ) : null}
 
             <View style={{ gap: 4 }}>
-              <CustomText variant="hero" style={{ color: '#F7F4FF' }} numberOfLines={2}>
+              <CustomText variant="hero" style={{ color: theme.colors.text }} numberOfLines={2}>
                 {title}
               </CustomText>
               {subtitle ? (
@@ -169,11 +169,11 @@ export function CinematicHeroCard({
                           }
                         : action.variant === 'primary'
                           ? {
-                              backgroundColor: '#8D63FF',
+                              backgroundColor: theme.colors.primary,
                             }
                           : undefined
                     }
-                    textColor={action.variant === 'secondary' ? '#F7F4FF' : undefined}
+                    textColor={action.variant === 'secondary' ? theme.colors.text : undefined}
                     leftIcon={
                       action.icon ? (
                         <MaterialIcons

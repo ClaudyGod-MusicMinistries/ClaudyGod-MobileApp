@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useAppTheme } from '../util/colorScheme';
 import { CustomText } from '../components/CustomText';
 import { AuthFeedbackBanner } from '../components/auth/AuthFeedbackBanner';
 import { AuthScreenFrame } from '../components/auth/AuthScreenFrame';
@@ -37,6 +38,7 @@ function generateSuggestedPassword(): string {
 
 export default function SignUpScreen() {
   const router = useRouter();
+  const theme = useAppTheme();
   const device = useDeviceClass();
   const { showToast } = useToast();
   const { showModal } = useAppModal();
@@ -163,8 +165,8 @@ export default function SignUpScreen() {
           showFocusBorder={false}
           style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: -4 }}
         >
-          <MaterialIcons name="auto-fix-high" size={13} color="#A78BFA" />
-          <CustomText style={{ color: '#A78BFA', fontSize: 12, fontWeight: '600' }}>
+          <MaterialIcons name="auto-fix-high" size={13} color={theme.colors.secondary} />
+          <CustomText style={{ color: theme.colors.secondary, fontSize: 12, fontWeight: '600' }}>
             Suggest a strong password
           </CustomText>
         </TVTouchable>
@@ -228,7 +230,7 @@ export default function SignUpScreen() {
               <FontAwesome name="google" size={14} color="#4285F4" />
             </View>
           )}
-          <CustomText style={{ color: '#F7F2FF', fontSize: 13, fontWeight: '600' }}>Google</CustomText>
+          <CustomText style={{ color: theme.colors.text, fontSize: 13, fontWeight: '600' }}>Google</CustomText>
         </TVTouchable>
         {/* Facebook */}
         <TVTouchable
@@ -253,7 +255,7 @@ export default function SignUpScreen() {
               <FontAwesome name="facebook-f" size={14} color="#FFFFFF" />
             </View>
           )}
-          <CustomText style={{ color: '#F7F2FF', fontSize: 13, fontWeight: '600' }}>Facebook</CustomText>
+          <CustomText style={{ color: theme.colors.text, fontSize: 13, fontWeight: '600' }}>Facebook</CustomText>
         </TVTouchable>
       </View>
 
@@ -261,7 +263,7 @@ export default function SignUpScreen() {
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, marginTop: 20 }}>
         <CustomText style={{ color: 'rgba(255,255,255,0.55)', fontSize: 13 }}>Already have an account?</CustomText>
         <TVTouchable onPress={() => router.push(APP_ROUTES.auth.signIn)} showFocusBorder={false}>
-          <CustomText style={{ color: '#E7DCFF', fontSize: 13, fontWeight: '700' }}>Sign in</CustomText>
+          <CustomText style={{ color: theme.colors.text_accent, fontSize: 13, fontWeight: '700' }}>Sign in</CustomText>
         </TVTouchable>
       </View>
     </AuthScreenFrame>

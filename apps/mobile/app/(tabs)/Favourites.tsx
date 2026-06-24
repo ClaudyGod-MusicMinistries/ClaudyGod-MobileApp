@@ -48,9 +48,9 @@ function TypeBadge({ type }: { type: string }) {
   const theme = useAppTheme();
   const map: Record<string, { icon: React.ComponentProps<typeof MaterialIcons>['name']; color: string }> = {
     audio:    { icon: 'music-note',    color: theme.colors.primary },
-    video:    { icon: 'smart-display', color: '#60A5FA' },
-    live:     { icon: 'live-tv',       color: '#EF4444' },
-    playlist: { icon: 'queue-music',   color: '#FBBF24' },
+    video:    { icon: 'smart-display', color: theme.colors.info    },
+    live:     { icon: 'live-tv',       color: theme.colors.danger  },
+    playlist: { icon: 'queue-music',   color: theme.colors.warning },
   };
   const entry = map[type] ?? { icon: 'star', color: theme.colors.primary };
   return (

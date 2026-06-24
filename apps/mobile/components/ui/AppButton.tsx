@@ -1,6 +1,7 @@
 import React, { ReactNode, useRef, useCallback, useEffect } from 'react';
 import {
   Animated,
+  Platform,
   TextStyle,
   TouchableOpacityProps,
   View,
@@ -9,6 +10,8 @@ import * as Haptics from 'expo-haptics';
 import { CustomText } from '../CustomText';
 import { useAppTheme } from '../../util/colorScheme';
 import { TVTouchable } from './TVTouchable';
+
+const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
 function BubblePulse({ color, label }: { color: string; label?: string }) {
   const d0 = useRef(new Animated.Value(0)).current;
@@ -20,8 +23,8 @@ function BubblePulse({ color, label }: { color: string; label?: string }) {
       Animated.loop(
         Animated.sequence([
           Animated.delay(delay),
-          Animated.timing(d, { toValue: 1, duration: 380, useNativeDriver: true }),
-          Animated.timing(d, { toValue: 0, duration: 380, useNativeDriver: true }),
+          Animated.timing(d, { toValue: 1, duration: 380, useNativeDriver: USE_NATIVE_DRIVER }),
+          Animated.timing(d, { toValue: 0, duration: 380, useNativeDriver: USE_NATIVE_DRIVER }),
           Animated.delay(Math.max(0, 760 - delay)),
         ]),
       );
@@ -122,7 +125,7 @@ export function AppButton({
   const resolvedTextColor =
     textColor ??
     (isPrimary
-      ? '#FFFFFF'
+      ? theme.colors.onPrimary
       : isOutline
         ? theme.colors.primary
         : isGhost

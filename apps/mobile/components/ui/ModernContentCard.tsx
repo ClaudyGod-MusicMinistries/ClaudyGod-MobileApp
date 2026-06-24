@@ -12,6 +12,7 @@ import { CustomText } from '../CustomText';
 import { colors_light } from '../../constants/color';
 import { spacing, radius } from '../../styles/designTokens';
 import { designSystem } from '../../theme/designSystem';
+import { useAppTheme } from '../../util/colorScheme';
 
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
@@ -57,6 +58,7 @@ export function ModernContentCard({
   badge,
   size = 'md',
 }: ModernContentCardProps) {
+  const theme = useAppTheme();
   const [pressed, setPressed] = useState(false);
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const shadowOpacityAnim = useRef(new Animated.Value(0.1)).current;
@@ -114,7 +116,7 @@ export function ModernContentCard({
         style={{
           borderRadius: designSystem.radius.md,
           overflow: 'hidden',
-          backgroundColor: '#111111',
+          backgroundColor: theme.colors.elevated,
         }}
       >
         {/* Image Container */}

@@ -12,11 +12,13 @@ import { getEmailValidationMessage, isLikelyValidEmail, normalizeEmail } from '.
 import { requestMobilePasswordReset } from '../services/authService';
 import { useToast } from '../context/ToastContext';
 import { APP_ROUTES } from '../util/appRoutes';
+import { useAppTheme } from '../util/colorScheme';
 
 const getParam = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] ?? '' : value ?? '');
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
+  const theme = useAppTheme();
   const { showToast } = useToast();
   const params = useLocalSearchParams<{ email?: string | string[] }>();
 
@@ -114,7 +116,7 @@ export default function ForgotPasswordScreen() {
       />
 
       <TVTouchable onPress={openResetScreen} style={{ alignSelf: 'center', marginTop: 12 }} showFocusBorder={false}>
-        <CustomText variant="label" style={{ color: '#CDB9FF' }}>
+        <CustomText variant="label" style={{ color: theme.colors.text_accent }}>
           Already have a code?
         </CustomText>
       </TVTouchable>

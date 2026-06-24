@@ -13,9 +13,9 @@ import { VideoView, useVideoPlayer } from 'expo-video';
 import { WebView } from 'react-native-webview';
 import { CustomText } from '../CustomText';
 import { isHostedVideoUrl } from '../../util/playerRoute';
+import { useAppTheme } from '../../util/colorScheme';
 
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
-const PRIMARY = '#8B5CF6';
 const CONTROLS_HIDE_DELAY = 3500;
 
 // ─── Public API ───────────────────────────────────────────────────────────────
@@ -75,6 +75,7 @@ function EmbedPlayer({
   embedUrl: string;
   height: number;
 }) {
+  const theme = useAppTheme();
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
   const shimmerOpacity = useRef(new Animated.Value(1)).current;
@@ -102,7 +103,7 @@ function EmbedPlayer({
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { borderColor: theme.colors.primaryBorder }]}>
       <View style={{ height, backgroundColor: '#000' }}>
         {!error ? (
           <WebView
@@ -119,25 +120,25 @@ function EmbedPlayer({
 
         {/* Branded loading state */}
         {!loaded && !error ? (
-          <Animated.View style={[styles.loadingShell, { opacity: shimmerOpacity }]}>
-            <View style={styles.loadingIconRing}>
-              <MaterialIcons name="smart-display" size={36} color={PRIMARY} />
+          <Animated.View style={[styles.loadingShell, { backgroundColor: theme.colors.background, opacity: shimmerOpacity }]}>
+            <View style={[styles.loadingIconRing, { backgroundColor: theme.colors.primarySurface, borderColor: theme.colors.primaryBorder }]}>
+              <MaterialIcons name="smart-display" size={36} color={theme.colors.primary} />
             </View>
-            <CustomText style={styles.loadingLabel}>Loading video…</CustomText>
+            <CustomText style={[styles.loadingLabel, { color: theme.colors.textMuted }]}>Loading video…</CustomText>
           </Animated.View>
         ) : null}
 
         {/* Error state */}
         {error ? (
-          <View style={styles.errorShell}>
-            <MaterialIcons name="videocam-off" size={38} color="rgba(247,242,255,0.22)" />
-            <CustomText style={styles.errorLabel}>Could not load video</CustomText>
+          <View style={[styles.errorShell, { backgroundColor: theme.colors.background }]}>
+            <MaterialIcons name="videocam-off" size={38} color={theme.colors.textMuted} />
+            <CustomText style={[styles.errorLabel, { color: theme.colors.textMuted }]}>Could not load video</CustomText>
             <Pressable
               onPress={() => void Linking.openURL(sourceUri)}
-              style={styles.openExternalBtn}
+              style={[styles.openExternalBtn, { backgroundColor: theme.colors.primarySurface, borderColor: theme.colors.primaryBorder }]}
             >
-              <MaterialIcons name="open-in-new" size={14} color={PRIMARY} />
-              <CustomText style={styles.openExternalText}>Open on YouTube</CustomText>
+              <MaterialIcons name="open-in-new" size={14} color={theme.colors.primary} />
+              <CustomText style={[styles.openExternalText, { color: theme.colors.primary }]}>Open on YouTube</CustomText>
             </Pressable>
           </View>
         ) : null}
@@ -176,6 +177,7 @@ function NativeVideoPlayer({
   onPlayStateChange?: VideoPlayerProps['onPlayStateChange'];
   onProgress?: VideoPlayerProps['onProgress'];
 }) {
+  const theme = useAppTheme();
   const player = useVideoPlayer(sourceUri, (p) => {
     p.loop = false;
     p.muted = false;
@@ -269,7 +271,7 @@ function NativeVideoPlayer({
   const progress = duration > 0 ? Math.min(currentTime / duration, 1) : 0;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { borderColor: theme.colors.primaryBorder }]}>
       <Pressable style={{ height }} onPress={bringUpControls}>
         {/* Video surface */}
         <VideoView
@@ -391,6 +393,7 @@ function ProgressBar({
   progress: number;
   onSeek: (ratio: number) => void;
 }) {
+  const theme = useAppTheme();
   const trackRef = useRef<View>(null);
 
   const handlePress = (e: { nativeEvent: { pageX: number } }) => {
@@ -407,7 +410,7 @@ function ProgressBar({
       style={styles.progressHit}
     >
       <View style={styles.progressTrack}>
-        <View style={[styles.progressFill, { width: `${Math.round(progress * 100)}%` as unknown as number }]}>
+        <View style={[styles.progressFill, { width: `${Math.round(progress * 100)}%` as unknown as number, backgroundColor: theme.colors.primary }]}>
           <View style={styles.progressThumb} />
         </View>
       </View>
@@ -418,9 +421,10 @@ function ProgressBar({
 // ─── TitleRow ─────────────────────────────────────────────────────────────────
 
 function TitleRow({ title }: { title: string }) {
+  const theme = useAppTheme();
   return (
-    <View style={styles.titleRow}>
-      <CustomText style={styles.titleText} numberOfLines={2}>{title}</CustomText>
+    <View style={[styles.titleRow, { borderTopColor: theme.colors.divider }]}>
+      <CustomText style={[styles.titleText, { color: theme.colors.text }]} numberOfLines={2}>{title}</CustomText>
     </View>
   );
 }
@@ -471,7 +475,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#000000',
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(139,92,246,0.18)',
     shadowColor: '#000',
     shadowOpacity: 0.32,
     shadowRadius: 20,
@@ -482,7 +485,6 @@ const styles = StyleSheet.create({
   // Loading
   loadingShell: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#080514',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 14,
@@ -494,12 +496,9 @@ const styles = StyleSheet.create({
     borderRadius: 36,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(139,92,246,0.12)',
     borderWidth: 1.5,
-    borderColor: 'rgba(139,92,246,0.28)',
   },
   loadingLabel: {
-    color: 'rgba(247,242,255,0.38)',
     fontSize: 13,
     fontWeight: '500',
   },
@@ -507,13 +506,11 @@ const styles = StyleSheet.create({
   // Error
   errorShell: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#080514',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 12,
   },
   errorLabel: {
-    color: 'rgba(247,242,255,0.38)',
     fontSize: 13,
     fontWeight: '500',
   },
@@ -524,13 +521,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 9,
     borderRadius: 999,
-    backgroundColor: 'rgba(139,92,246,0.12)',
     borderWidth: 1,
-    borderColor: 'rgba(139,92,246,0.28)',
     marginTop: 4,
   },
   openExternalText: {
-    color: PRIMARY,
     fontSize: 13,
     fontWeight: '600',
   },
@@ -561,10 +555,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 13,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(139,92,246,0.12)',
   },
   titleText: {
-    color: '#F7F2FF',
     fontSize: 14,
     fontWeight: '600',
     lineHeight: 20,
@@ -598,7 +590,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 12,
-    backgroundColor: 'rgba(139,92,246,0.22)',
+    backgroundColor: 'rgba(139,92,246,0.22)', // seek flash overlay — intentionally violet on video
   },
   seekFlashLeft: { left: 0 },
   seekFlashRight: { right: 0 },
@@ -613,7 +605,7 @@ const styles = StyleSheet.create({
     paddingTop: 14,
   },
   overlayTitleText: {
-    color: '#FFFFFF',
+    color: '#FFFFFF', // on-video overlay — always white
     fontSize: 14,
     fontWeight: '700',
     letterSpacing: -0.2,
@@ -664,7 +656,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   timeText: {
-    color: 'rgba(255,255,255,0.88)',
+    color: 'rgba(255,255,255,0.88)', // on-video overlay — always white
     fontSize: 11.5,
     fontWeight: '600',
     minWidth: 30,
@@ -692,7 +684,6 @@ const styles = StyleSheet.create({
   progressFill: {
     height: 4,
     borderRadius: 2,
-    backgroundColor: PRIMARY,
     position: 'relative',
   },
   progressThumb: {
