@@ -24,7 +24,7 @@ import AppSpinner from './AppSpinner.vue';
 
 const props = withDefaults(defineProps<{
   label?: string;
-  variant?: 'primary' | 'secondary' | 'danger' | 'ghost' | 'outline';
+  variant?: 'primary' | 'gradient' | 'secondary' | 'danger' | 'ghost' | 'outline';
   size?: 'xs' | 'sm' | 'md' | 'lg';
   loading?: boolean;
   disabled?: boolean;
@@ -46,10 +46,11 @@ const sizeClass = computed(() => ({
 }[props.size]));
 
 const variantClass = computed(() => ({
-  primary: 'bg-primary hover:bg-primary/85 text-white shadow-glow-sm',
-  secondary: 'bg-white/8 hover:bg-white/12 text-ink border border-border',
-  danger: 'bg-danger/12 hover:bg-danger/20 text-danger border border-danger/25',
-  ghost: 'hover:bg-white/8 text-ink-soft',
-  outline: 'border border-border hover:border-primary/40 hover:bg-primary/5 text-ink',
+  primary:  'bg-primary hover:bg-primary/85 text-white shadow-glow-sm',
+  gradient: 'bg-gradient-to-br from-violet-600 to-violet-800 hover:from-violet-500 hover:to-violet-700 text-white shadow-glow-sm',
+  secondary:'bg-white/8 hover:bg-white/12 text-ink border border-border',
+  danger:   'bg-danger/12 hover:bg-danger/20 text-danger border border-danger/25',
+  ghost:    'hover:bg-white/8 text-ink-soft',
+  outline:  'border border-border hover:border-primary/40 hover:bg-primary/5 text-ink',
 }[props.variant]));
 </script>
