@@ -1,249 +1,214 @@
 <template>
-  <div class="min-h-screen bg-[#07050C] flex">
+  <AuthPageLayout>
 
-    <!-- ── Left brand panel (hidden on mobile) ─────────────────────────────── -->
-    <div class="hidden lg:flex flex-col justify-between w-[420px] flex-shrink-0 bg-[#0D0B17] border-r border-white/6 p-10 relative overflow-hidden">
-      <div class="pointer-events-none absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full bg-violet-600/8 blur-3xl" />
-      <div class="pointer-events-none absolute bottom-0 right-0 w-[300px] h-[300px] rounded-full bg-violet-500/5 blur-3xl" />
-
-      <div class="relative z-10">
-        <div class="flex items-center gap-3 mb-14">
-          <img :src="BRAND_LOGO_URL" alt="ClaudyGod" class="w-9 h-9 rounded-xl object-contain" />
-          <div>
-            <p class="text-white text-sm font-bold leading-none">ClaudyGod</p>
-            <p class="text-white/40 text-xs mt-0.5">Admin Studio</p>
-          </div>
-        </div>
-
-        <h1 class="text-white text-3xl font-black tracking-tight leading-snug mb-4">
-          Manage your<br />ministry content.
+    <template #panel>
+      <div class="max-w-[380px]">
+        <p class="text-[11px] font-bold uppercase tracking-[0.2em] mb-5 text-primary-soft/80">Admin workspace</p>
+        <h1 class="font-black leading-[1.06] mb-6 text-ink" style="font-size: clamp(2.2rem, 3.2vw, 2.9rem)">
+          Manage your<br/>
+          <span style="background: linear-gradient(92deg, #c4b5fd 0%, #818cf8 55%, #8b5cf6 100%); -webkit-background-clip: text; background-clip: text; color: transparent">
+            ministry content.
+          </span>
         </h1>
-        <p class="text-white/50 text-sm leading-relaxed mb-10">
+        <p class="text-sm leading-relaxed mb-10 text-ink-soft">
           Upload music, sermons, and videos. Control the mobile app experience. Monitor your audience — all from one place.
         </p>
 
         <div class="space-y-4">
-          <div class="flex items-start gap-3">
-            <div class="w-7 h-7 rounded-lg bg-violet-500/15 border border-violet-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <FileText class="w-3.5 h-3.5 text-violet-400" />
+          <div v-for="feat in panelFeatures" :key="feat.label" class="flex items-start gap-3">
+            <div class="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
+              style="background: rgba(141,99,255,0.15); border: 1px solid rgba(141,99,255,0.28)">
+              <component :is="feat.icon" class="w-3.5 h-3.5 text-primary-soft" />
             </div>
             <div>
-              <p class="text-white/90 text-xs font-semibold">Content management</p>
-              <p class="text-white/35 text-xs leading-snug mt-0.5">Upload music, sermons, and videos. Assign to sections instantly.</p>
-            </div>
-          </div>
-          <div class="flex items-start gap-3">
-            <div class="w-7 h-7 rounded-lg bg-violet-500/15 border border-violet-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <PlayCircle class="w-3.5 h-3.5 text-violet-400" />
-            </div>
-            <div>
-              <p class="text-white/90 text-xs font-semibold">YouTube import</p>
-              <p class="text-white/35 text-xs leading-snug mt-0.5">Browse your channel and import videos directly to the app.</p>
-            </div>
-          </div>
-          <div class="flex items-start gap-3">
-            <div class="w-7 h-7 rounded-lg bg-violet-500/15 border border-violet-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <BarChart2 class="w-3.5 h-3.5 text-violet-400" />
-            </div>
-            <div>
-              <p class="text-white/90 text-xs font-semibold">Audience analytics</p>
-              <p class="text-white/35 text-xs leading-snug mt-0.5">See who's listening, what's trending, and when they tune in.</p>
+              <p class="text-ink/90 text-xs font-semibold">{{ feat.label }}</p>
+              <p class="text-ink-muted text-xs leading-snug mt-0.5">{{ feat.desc }}</p>
             </div>
           </div>
         </div>
       </div>
+    </template>
 
-      <p class="relative z-10 text-white/20 text-xs">© {{ new Date().getFullYear() }} ClaudyGod Music Ministries</p>
-    </div>
+    <!-- Form area ─────────────────────────────────────────────────────────────── -->
+    <Transition name="slide" mode="out-in">
 
-    <!-- ── Right form panel ────────────────────────────────────────────────── -->
-    <div class="flex-1 flex items-center justify-center p-6 overflow-y-auto">
-      <div class="w-full max-w-md py-8">
+      <!-- LOADING -->
+      <div v-if="phase === 'loading'" key="loading" class="text-center py-16 space-y-4">
+        <div class="w-10 h-10 border-2 border-primary/30 border-t-primary rounded-full animate-spin mx-auto" />
+        <p class="text-ink-soft text-sm">Verifying your invitation…</p>
+      </div>
 
-        <!-- Mobile-only brand mark -->
-        <div class="flex lg:hidden items-center gap-2.5 mb-8">
-          <img :src="BRAND_LOGO_URL" alt="ClaudyGod" class="w-8 h-8 rounded-xl object-contain" />
-          <div>
-            <p class="text-white text-sm font-bold leading-none">ClaudyGod</p>
-            <p class="text-white/40 text-xs">Admin Studio</p>
-          </div>
+      <!-- INVALID INVITE -->
+      <div v-else-if="phase === 'invalid'" key="invalid" class="space-y-6">
+        <div class="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto"
+          style="background: rgba(225,109,109,0.10); border: 1px solid rgba(225,109,109,0.22)">
+          <AlertTriangle class="w-8 h-8 text-danger" />
+        </div>
+        <div class="text-center">
+          <h2 class="text-ink text-xl font-bold mb-2">
+            {{ inviteError === 'INVITE_EXPIRED' ? 'Invitation expired' : inviteError === 'INVITE_USED' ? 'Already accepted' : 'Invalid invitation' }}
+          </h2>
+          <p class="text-ink-soft text-sm leading-relaxed">
+            <template v-if="inviteError === 'INVITE_EXPIRED'">This invitation has expired. Ask your administrator to send a new one.</template>
+            <template v-else-if="inviteError === 'INVITE_USED'">This invitation was already used to create an account.</template>
+            <template v-else>This invitation link is invalid or revoked. Contact your administrator.</template>
+          </p>
+        </div>
+        <RouterLink to="/login" class="flex items-center justify-center gap-2 text-primary-soft hover:text-primary text-sm font-medium transition-colors">
+          <ArrowLeft class="w-4 h-4" />
+          Back to sign in
+        </RouterLink>
+      </div>
+
+      <!-- INVITE FORM -->
+      <div v-else-if="phase === 'invite-form'" key="invite-form" class="space-y-6">
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full"
+          style="background: rgba(141,99,255,0.10); border: 1px solid rgba(141,99,255,0.22)">
+          <Mail class="w-3.5 h-3.5 text-primary-soft" />
+          <span class="text-primary-soft text-xs font-medium">Invited by {{ invite?.inviterName || 'your admin' }}</span>
+        </div>
+        <div>
+          <h2 class="text-ink text-2xl font-black tracking-tight mb-1">Set up your account</h2>
+          <p class="text-ink-muted text-sm">Create your password to complete your account setup.</p>
+        </div>
+        <form @submit.prevent="submitInvite" novalidate class="space-y-4">
+          <FieldGroup label="Full name" :error="inviteErrors.name">
+            <FormInput v-model="inviteForm.name" type="text" placeholder="Your full name" autocomplete="name" :hasError="!!inviteErrors.name" />
+          </FieldGroup>
+          <FieldGroup label="Display name" hint="shown in the admin" :error="inviteErrors.displayName">
+            <FormInput v-model="inviteForm.displayName" type="text" placeholder="e.g. john_admin" autocomplete="username" :hasError="!!inviteErrors.displayName" />
+          </FieldGroup>
+          <PasswordFields v-model:password="inviteForm.password" v-model:confirm="inviteForm.confirmPassword" :errors="inviteErrors" />
+          <ErrorBanner v-if="submitError" :message="submitError" />
+          <SubmitButton :loading="isSubmitting" label="Create account" />
+        </form>
+        <p class="text-center text-xs text-ink-muted/50 pt-2">
+          Already have an account?
+          <RouterLink to="/login" class="text-primary-soft hover:text-primary font-medium ml-1 transition-colors">Sign in</RouterLink>
+        </p>
+      </div>
+
+      <!-- CODE REGISTRATION FORM -->
+      <div v-else-if="phase === 'code-form'" key="code-form" class="space-y-7">
+        <div>
+          <h2 class="text-ink text-2xl font-black tracking-tight mb-1">Create admin account</h2>
+          <p class="text-ink-muted text-sm">Enter your details and the access code from your administrator.</p>
         </div>
 
-        <Transition name="slide" mode="out-in">
+        <form @submit.prevent="submitCode" novalidate class="space-y-6">
 
-          <!-- LOADING -->
-          <div v-if="phase === 'loading'" key="loading" class="text-center py-16 space-y-4">
-            <div class="w-10 h-10 border-2 border-violet-500/30 border-t-violet-500 rounded-full animate-spin mx-auto" />
-            <p class="text-white/50 text-sm">Verifying your invitation…</p>
+          <!-- Account details -->
+          <div class="space-y-3">
+            <p class="text-[10px] font-bold text-ink-muted/50 uppercase tracking-widest">Your details</p>
+            <FieldGroup label="Email address" :error="codeErrors.email">
+              <FormInput v-model="codeForm.email" type="email" placeholder="you@example.com" autocomplete="email" :hasError="!!codeErrors.email">
+                <template #icon><Mail class="w-4 h-4" /></template>
+              </FormInput>
+            </FieldGroup>
+            <FieldGroup label="Display name" hint="visible in sidebar" :error="codeErrors.username">
+              <FormInput v-model="codeForm.username" type="text" placeholder="e.g. john_admin" autocomplete="username" :hasError="!!codeErrors.username">
+                <template #icon><User class="w-4 h-4" /></template>
+              </FormInput>
+            </FieldGroup>
           </div>
 
-          <!-- INVALID INVITE -->
-          <div v-else-if="phase === 'invalid'" key="invalid" class="space-y-6">
-            <div class="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto">
-              <AlertTriangle class="w-8 h-8 text-red-400" />
+          <!-- Role picker -->
+          <div class="space-y-3">
+            <p class="text-[10px] font-bold text-ink-muted/50 uppercase tracking-widest">Access level</p>
+            <div class="grid grid-cols-3 gap-2">
+              <button
+                v-for="r in ROLE_OPTIONS"
+                :key="r.value"
+                type="button"
+                :class="[
+                  'flex flex-col items-center gap-1.5 p-3 rounded-xl border text-center transition-all',
+                  codeForm.role === r.value
+                    ? 'bg-primary/15 border-primary/40 text-primary-soft'
+                    : 'bg-white/3 border-border text-ink-muted hover:border-border-strong hover:text-ink-soft',
+                ]"
+                @click="codeForm.role = r.value"
+              >
+                <component :is="r.icon" class="w-4 h-4" />
+                <span class="text-[11px] font-semibold leading-none mt-1">{{ r.label }}</span>
+                <span class="text-[9px] text-ink-muted/60 leading-none mt-0.5">{{ r.desc }}</span>
+              </button>
             </div>
-            <div class="text-center">
-              <h2 class="text-white text-xl font-bold mb-2">
-                {{ inviteError === 'INVITE_EXPIRED' ? 'Invitation expired' : inviteError === 'INVITE_USED' ? 'Already accepted' : 'Invalid invitation' }}
-              </h2>
-              <p class="text-white/50 text-sm leading-relaxed">
-                <template v-if="inviteError === 'INVITE_EXPIRED'">This invitation has expired. Ask your administrator to send a new one.</template>
-                <template v-else-if="inviteError === 'INVITE_USED'">This invitation was already used to create an account.</template>
-                <template v-else>This invitation link is invalid or revoked. Contact your administrator.</template>
-              </p>
-            </div>
-            <RouterLink to="/login" class="flex items-center justify-center gap-2 text-violet-400 hover:text-violet-300 text-sm font-medium transition-colors">
-              <ArrowLeft class="w-4 h-4" />
-              Back to sign in
-            </RouterLink>
           </div>
 
-          <!-- INVITE FORM -->
-          <div v-else-if="phase === 'invite-form'" key="invite-form" class="space-y-6">
-            <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-violet-500/10 border border-violet-500/20">
-              <Mail class="w-3.5 h-3.5 text-violet-400" />
-              <span class="text-violet-300 text-xs font-medium">Invited by {{ invite?.inviterName || 'your admin' }}</span>
-            </div>
-            <div>
-              <h2 class="text-white text-2xl font-black tracking-tight mb-1">Set up your account</h2>
-              <p class="text-white/45 text-sm">Create your password to complete your account setup.</p>
-            </div>
-            <form @submit.prevent="submitInvite" novalidate class="space-y-4">
-              <FieldGroup label="Full name" :error="inviteErrors.name">
-                <FormInput v-model="inviteForm.name" type="text" placeholder="Your full name" autocomplete="name" :hasError="!!inviteErrors.name" />
-              </FieldGroup>
-              <FieldGroup label="Display name" hint="shown in the admin" :error="inviteErrors.displayName">
-                <FormInput v-model="inviteForm.displayName" type="text" placeholder="e.g. john_admin" autocomplete="username" :hasError="!!inviteErrors.displayName" />
-              </FieldGroup>
-              <PasswordFields v-model:password="inviteForm.password" v-model:confirm="inviteForm.confirmPassword" :errors="inviteErrors" />
-              <ErrorBanner v-if="submitError" :message="submitError" />
-              <SubmitButton :loading="isSubmitting" label="Create account" />
-            </form>
-            <p class="text-center text-xs text-white/30 pt-2">
-              Already have an account?
-              <RouterLink to="/login" class="text-violet-400 hover:text-violet-300 font-medium ml-1 transition-colors">Sign in</RouterLink>
-            </p>
+          <!-- Password -->
+          <div class="space-y-3">
+            <p class="text-[10px] font-bold text-ink-muted/50 uppercase tracking-widest">Password</p>
+            <PasswordFields v-model:password="codeForm.password" v-model:confirm="codeForm.confirmPassword" :errors="codeErrors" />
           </div>
 
-          <!-- CODE REGISTRATION FORM -->
-          <div v-else-if="phase === 'code-form'" key="code-form" class="space-y-7">
-            <div>
-              <h2 class="text-white text-2xl font-black tracking-tight mb-1">Create admin account</h2>
-              <p class="text-white/45 text-sm">Enter your details and the access code from your administrator.</p>
-            </div>
-
-            <form @submit.prevent="submitCode" novalidate class="space-y-6">
-
-              <!-- Account details -->
-              <div class="space-y-3">
-                <p class="text-[10px] font-bold text-white/25 uppercase tracking-widest">Your details</p>
-                <FieldGroup label="Email address" :error="codeErrors.email">
-                  <FormInput v-model="codeForm.email" type="email" placeholder="you@example.com" autocomplete="email" :hasError="!!codeErrors.email">
-                    <template #icon><Mail class="w-4 h-4" /></template>
-                  </FormInput>
-                </FieldGroup>
-                <FieldGroup label="Display name" hint="visible in sidebar" :error="codeErrors.username">
-                  <FormInput v-model="codeForm.username" type="text" placeholder="e.g. john_admin" autocomplete="username" :hasError="!!codeErrors.username">
-                    <template #icon><User class="w-4 h-4" /></template>
-                  </FormInput>
-                </FieldGroup>
-              </div>
-
-              <!-- Role picker -->
-              <div class="space-y-3">
-                <p class="text-[10px] font-bold text-white/25 uppercase tracking-widest">Access level</p>
-                <div class="grid grid-cols-3 gap-2">
-                  <button
-                    v-for="r in ROLE_OPTIONS"
-                    :key="r.value"
-                    type="button"
-                    :class="[
-                      'flex flex-col items-center gap-1.5 p-3 rounded-xl border text-center transition-all',
-                      codeForm.role === r.value
-                        ? 'bg-violet-500/15 border-violet-500/40 text-violet-300'
-                        : 'bg-white/3 border-white/8 text-white/40 hover:border-white/15 hover:text-white/60',
-                    ]"
-                    @click="codeForm.role = r.value"
-                  >
-                    <component :is="r.icon" class="w-4 h-4" />
-                    <span class="text-[11px] font-semibold leading-none mt-1">{{ r.label }}</span>
-                    <span class="text-[9px] text-white/30 leading-none mt-0.5">{{ r.desc }}</span>
-                  </button>
+          <!-- Access code -->
+          <div class="space-y-3">
+            <p class="text-[10px] font-bold text-ink-muted/50 uppercase tracking-widest">Admin code</p>
+            <FieldGroup label="Admin access code" hint="provided by your administrator" :error="codeErrors.adminSignupCode">
+              <div class="relative">
+                <div class="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none">
+                  <KeyRound class="w-4 h-4" />
                 </div>
+                <input
+                  v-model="codeForm.adminSignupCode"
+                  type="password"
+                  placeholder="Enter your access code"
+                  autocomplete="off"
+                  :class="[
+                    'w-full pl-10 pr-4 py-2.5 rounded-xl bg-bg-1 border text-ink text-sm placeholder-ink-muted/40 font-mono tracking-widest',
+                    'focus:outline-none focus:ring-2 focus:ring-primary/25 transition-all',
+                    codeErrors.adminSignupCode ? 'border-danger/50' : 'border-border focus:border-primary/50',
+                  ]"
+                />
               </div>
-
-              <!-- Password -->
-              <div class="space-y-3">
-                <p class="text-[10px] font-bold text-white/25 uppercase tracking-widest">Password</p>
-                <PasswordFields v-model:password="codeForm.password" v-model:confirm="codeForm.confirmPassword" :errors="codeErrors" />
-              </div>
-
-              <!-- Access code -->
-              <div class="space-y-3">
-                <p class="text-[10px] font-bold text-white/25 uppercase tracking-widest">Admin code</p>
-                <FieldGroup label="Admin access code" hint="provided by your administrator" :error="codeErrors.adminSignupCode">
-                  <div class="relative">
-                    <div class="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/25 pointer-events-none">
-                      <KeyRound class="w-4 h-4" />
-                    </div>
-                    <input
-                      v-model="codeForm.adminSignupCode"
-                      type="password"
-                      placeholder="Enter your access code"
-                      autocomplete="off"
-                      :class="[
-                        'w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/4 border text-white/90 text-sm placeholder-white/20 font-mono tracking-widest focus:outline-none focus:ring-2 focus:ring-violet-500/30 transition-all',
-                        codeErrors.adminSignupCode ? 'border-red-500/50' : 'border-white/8 focus:border-violet-500/40',
-                      ]"
-                    />
-                  </div>
-                </FieldGroup>
-              </div>
-
-              <ErrorBanner v-if="submitError" :message="submitError" />
-              <SubmitButton :loading="isSubmitting" label="Create account" />
-            </form>
-
-            <p class="text-center text-xs text-white/30">
-              Already have an account?
-              <RouterLink to="/login" class="text-violet-400 hover:text-violet-300 font-medium ml-1 transition-colors">Sign in</RouterLink>
-            </p>
+            </FieldGroup>
           </div>
 
-          <!-- SUCCESS -->
-          <div v-else-if="phase === 'success'" key="success" class="text-center py-10 space-y-5">
-            <div class="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto">
-              <CheckCircle2 class="w-8 h-8 text-emerald-400" />
-            </div>
-            <div>
-              <h2 class="text-white text-xl font-bold mb-1">Welcome to the team!</h2>
-              <p class="text-white/45 text-sm">Your account is ready. Taking you to the dashboard…</p>
-            </div>
-            <div class="w-5 h-5 border-2 border-violet-500/30 border-t-violet-500 rounded-full animate-spin mx-auto" />
-          </div>
+          <ErrorBanner v-if="submitError" :message="submitError" />
+          <SubmitButton :loading="isSubmitting" label="Create account" />
+        </form>
 
-          <!-- VERIFY EMAIL -->
-          <div v-else-if="phase === 'verify-email'" key="verify-email" class="text-center py-10 space-y-5">
-            <div class="w-16 h-16 rounded-2xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center mx-auto">
-              <MailOpen class="w-8 h-8 text-violet-400" />
-            </div>
-            <div>
-              <h2 class="text-white text-xl font-bold mb-1">Check your inbox</h2>
-              <p class="text-white/45 text-sm leading-relaxed">
-                We sent a verification link to<br />
-                <span class="text-violet-400 font-semibold">{{ verifyEmail }}</span>
-              </p>
-            </div>
-            <RouterLink to="/login" class="inline-flex items-center gap-2 text-violet-400 hover:text-violet-300 text-sm font-medium transition-colors">
-              <ArrowLeft class="w-4 h-4" />
-              Back to sign in
-            </RouterLink>
-          </div>
-
-        </Transition>
+        <p class="text-center text-xs text-ink-muted/50">
+          Already have an account?
+          <RouterLink to="/login" class="text-primary-soft hover:text-primary font-medium ml-1 transition-colors">Sign in</RouterLink>
+        </p>
       </div>
-    </div>
-  </div>
+
+      <!-- SUCCESS -->
+      <div v-else-if="phase === 'success'" key="success" class="text-center py-10 space-y-5">
+        <div class="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto"
+          style="background: rgba(52,211,153,0.10); border: 1px solid rgba(52,211,153,0.22)">
+          <CheckCircle2 class="w-8 h-8 text-success" />
+        </div>
+        <div>
+          <h2 class="text-ink text-xl font-bold mb-1">Welcome to the team!</h2>
+          <p class="text-ink-soft text-sm">Your account is ready. Taking you to the dashboard…</p>
+        </div>
+        <div class="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin mx-auto" />
+      </div>
+
+      <!-- VERIFY EMAIL -->
+      <div v-else-if="phase === 'verify-email'" key="verify-email" class="text-center py-10 space-y-5">
+        <div class="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto"
+          style="background: rgba(141,99,255,0.10); border: 1px solid rgba(141,99,255,0.22)">
+          <MailOpen class="w-8 h-8 text-primary-soft" />
+        </div>
+        <div>
+          <h2 class="text-ink text-xl font-bold mb-1">Check your inbox</h2>
+          <p class="text-ink-soft text-sm leading-relaxed">
+            We sent a verification link to<br />
+            <span class="text-primary-soft font-semibold">{{ verifyEmail }}</span>
+          </p>
+        </div>
+        <RouterLink to="/login" class="inline-flex items-center gap-2 text-primary-soft hover:text-primary text-sm font-medium transition-colors">
+          <ArrowLeft class="w-4 h-4" />
+          Back to sign in
+        </RouterLink>
+      </div>
+
+    </Transition>
+
+  </AuthPageLayout>
 </template>
 
 <script setup lang="ts">
@@ -257,7 +222,7 @@ import {
 import { validateInvite, acceptInvite, registerWithCode } from '@/api/auth';
 import type { InviteValidation } from '@/api/auth';
 import { useAuthStore } from '@/stores/auth.store';
-import { BRAND_LOGO_URL } from '@/utils/constants';
+import AuthPageLayout from '@/components/layout/AuthPageLayout.vue';
 
 type Phase = 'loading' | 'invalid' | 'invite-form' | 'code-form' | 'success' | 'verify-email';
 
@@ -267,18 +232,24 @@ const ROLE_OPTIONS = [
   { value: 'CREATOR' as const,   label: 'Creator',   icon: Pencil, desc: 'Create & upload' },
 ];
 
+const panelFeatures = [
+  { label: 'Content management', desc: 'Upload music, sermons, and videos. Assign to sections instantly.', icon: FileText    },
+  { label: 'YouTube import',      desc: 'Browse your channel and import videos directly to the app.',       icon: PlayCircle  },
+  { label: 'Audience analytics',  desc: 'See who\'s listening, what\'s trending, and when they tune in.',   icon: BarChart2   },
+];
+
 // ── Shared sub-components ─────────────────────────────────────────────────────
 
 const FieldGroup = defineComponent({
   props: { label: String, hint: String, error: String },
   setup(props, { slots }) {
     return () => h('div', { class: 'space-y-1.5' }, [
-      h('label', { class: 'flex items-center gap-1.5 text-xs font-semibold text-white/50' }, [
+      h('label', { class: 'flex items-center gap-1.5 text-xs font-semibold text-ink-muted' }, [
         props.label,
-        props.hint ? h('span', { class: 'font-normal text-white/25' }, `(${props.hint})`) : null,
+        props.hint ? h('span', { class: 'font-normal text-ink-muted/50' }, `(${props.hint})`) : null,
       ]),
       slots.default?.(),
-      props.error ? h('p', { class: 'text-red-400 text-xs mt-1' }, props.error) : null,
+      props.error ? h('p', { class: 'text-danger text-xs mt-1' }, props.error) : null,
     ]);
   },
 });
@@ -287,16 +258,16 @@ const FormInput = defineComponent({
   props: { modelValue: String, type: String, placeholder: String, autocomplete: String, hasError: Boolean },
   emits: ['update:modelValue'],
   setup(props, { emit, slots }) {
-    const base = 'w-full py-2.5 rounded-xl bg-white/4 border text-white/90 text-sm placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-violet-500/30 transition-all';
+    const base = 'w-full py-2.5 rounded-xl bg-bg-1 border text-ink text-sm placeholder-ink-muted/40 focus:outline-none focus:ring-2 focus:ring-primary/25 transition-all';
     const hasIcon = !!slots.icon;
     return () => h('div', { class: 'relative' }, [
-      hasIcon ? h('div', { class: 'absolute left-3.5 top-1/2 -translate-y-1/2 text-white/25 pointer-events-none' }, slots.icon?.()) : null,
+      hasIcon ? h('div', { class: 'absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none' }, slots.icon?.()) : null,
       h('input', {
         value: props.modelValue,
         type: props.type ?? 'text',
         placeholder: props.placeholder,
         autocomplete: props.autocomplete,
-        class: [base, hasIcon ? 'pl-10 pr-4' : 'px-4', props.hasError ? 'border-red-500/50' : 'border-white/8 focus:border-violet-500/40'].join(' '),
+        class: [base, hasIcon ? 'pl-10 pr-4' : 'px-4', props.hasError ? 'border-danger/50' : 'border-border focus:border-primary/50'].join(' '),
         onInput: (e: Event) => emit('update:modelValue', (e.target as HTMLInputElement).value),
       }),
     ]);
@@ -311,7 +282,7 @@ function calcStrength(p: string) {
   if (/[0-9]/.test(p)) s++;
   if (/[^A-Za-z0-9]/.test(p)) s++;
   const score = Math.min(4, Math.ceil(s * 0.9)) as 0|1|2|3|4;
-  return { score, label: ['','Weak','Fair','Good','Strong'][score], color: ['','bg-red-500','bg-amber-400','bg-blue-400','bg-emerald-500'][score] };
+  return { score, label: ['','Weak','Fair','Good','Strong'][score], color: ['','bg-danger','bg-amber','bg-info','bg-success'][score] };
 }
 
 const PasswordFields = defineComponent({
@@ -321,30 +292,30 @@ const PasswordFields = defineComponent({
     const showPass = ref(false);
     const showConf = ref(false);
     const str = computed(() => calcStrength(props.password));
-    const base = 'w-full pl-4 pr-10 py-2.5 rounded-xl bg-white/4 border text-white/90 text-sm placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-violet-500/30 transition-all';
-    const EyeBtn = (show: boolean, toggle: () => void) => h('button', { type:'button', class:'absolute right-3 top-1/2 -translate-y-1/2 text-white/25 hover:text-white/50 transition-colors', onClick: toggle }, [
+    const base = 'w-full pl-4 pr-10 py-2.5 rounded-xl bg-bg-1 border text-ink text-sm placeholder-ink-muted/40 focus:outline-none focus:ring-2 focus:ring-primary/25 transition-all';
+    const EyeBtn = (show: boolean, toggle: () => void) => h('button', { type:'button', class:'absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink-soft transition-colors', onClick: toggle }, [
       show
         ? h('svg',{class:'w-4 h-4',fill:'none',viewBox:'0 0 24 24',stroke:'currentColor','stroke-width':2},[h('path',{'stroke-linecap':'round','stroke-linejoin':'round',d:'M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21'})])
         : h('svg',{class:'w-4 h-4',fill:'none',viewBox:'0 0 24 24',stroke:'currentColor','stroke-width':2},[h('path',{'stroke-linecap':'round','stroke-linejoin':'round',d:'M15 12a3 3 0 11-6 0 3 3 0 016 0z'}),h('path',{'stroke-linecap':'round','stroke-linejoin':'round',d:'M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z'})]),
     ]);
     return () => [
       h('div',{class:'space-y-1.5'},[
-        h('label',{class:'block text-xs font-semibold text-white/50'},'Password'),
+        h('label',{class:'block text-xs font-semibold text-ink-muted'},'Password'),
         h('div',{class:'relative'},[
-          h('input',{value:props.password,type:showPass.value?'text':'password',placeholder:'Minimum 8 characters',autocomplete:'new-password',class:[base,props.errors.password?'border-red-500/50':'border-white/8 focus:border-violet-500/40'].join(' '),onInput:(e:Event)=>emit('update:password',(e.target as HTMLInputElement).value)}),
+          h('input',{value:props.password,type:showPass.value?'text':'password',placeholder:'Minimum 8 characters',autocomplete:'new-password',class:[base,props.errors.password?'border-danger/50':'border-border focus:border-primary/50'].join(' '),onInput:(e:Event)=>emit('update:password',(e.target as HTMLInputElement).value)}),
           EyeBtn(showPass.value,()=>{showPass.value=!showPass.value;}),
         ]),
-        props.password?h('div',{class:'flex items-center gap-2 mt-1.5'},[h('div',{class:'flex gap-1 flex-1'},[1,2,3,4].map(i=>h('div',{key:i,class:`h-1 flex-1 rounded-full transition-all ${i<=str.value.score?str.value.color:'bg-white/8'}`}))),h('span',{class:'text-[10px] text-white/35 whitespace-nowrap'},str.value.label)]):null,
-        props.errors.password?h('p',{class:'text-red-400 text-xs mt-1'},props.errors.password):null,
+        props.password?h('div',{class:'flex items-center gap-2 mt-1.5'},[h('div',{class:'flex gap-1 flex-1'},[1,2,3,4].map(i=>h('div',{key:i,class:`h-1 flex-1 rounded-full transition-all ${i<=str.value.score?str.value.color:'bg-border'}`}))),h('span',{class:'text-[10px] text-ink-muted whitespace-nowrap'},str.value.label)]):null,
+        props.errors.password?h('p',{class:'text-danger text-xs mt-1'},props.errors.password):null,
       ]),
       h('div',{class:'space-y-1.5'},[
-        h('label',{class:'block text-xs font-semibold text-white/50'},'Confirm password'),
+        h('label',{class:'block text-xs font-semibold text-ink-muted'},'Confirm password'),
         h('div',{class:'relative'},[
-          h('input',{value:props.confirm,type:showConf.value?'text':'password',placeholder:'Repeat your password',autocomplete:'new-password',class:[base,'pr-16',props.errors.confirmPassword?'border-red-500/50':props.confirm&&props.password===props.confirm?'border-emerald-500/40':'border-white/8 focus:border-violet-500/40'].join(' '),onInput:(e:Event)=>emit('update:confirm',(e.target as HTMLInputElement).value)}),
-          props.confirm?h('div',{class:'absolute right-9 top-1/2 -translate-y-1/2'},[props.password===props.confirm?h('svg',{class:'w-4 h-4 text-emerald-400',fill:'none',viewBox:'0 0 24 24',stroke:'currentColor','stroke-width':2.5},[h('path',{'stroke-linecap':'round','stroke-linejoin':'round',d:'M5 13l4 4L19 7'})]):h('svg',{class:'w-4 h-4 text-red-400/70',fill:'none',viewBox:'0 0 24 24',stroke:'currentColor','stroke-width':2.5},[h('path',{'stroke-linecap':'round','stroke-linejoin':'round',d:'M6 18L18 6M6 6l12 12'})])]):null,
+          h('input',{value:props.confirm,type:showConf.value?'text':'password',placeholder:'Repeat your password',autocomplete:'new-password',class:[base,'pr-16',props.errors.confirmPassword?'border-danger/50':props.confirm&&props.password===props.confirm?'border-success/40':'border-border focus:border-primary/50'].join(' '),onInput:(e:Event)=>emit('update:confirm',(e.target as HTMLInputElement).value)}),
+          props.confirm?h('div',{class:'absolute right-9 top-1/2 -translate-y-1/2'},[props.password===props.confirm?h('svg',{class:'w-4 h-4 text-success',fill:'none',viewBox:'0 0 24 24',stroke:'currentColor','stroke-width':2.5},[h('path',{'stroke-linecap':'round','stroke-linejoin':'round',d:'M5 13l4 4L19 7'})]):h('svg',{class:'w-4 h-4 text-danger/70',fill:'none',viewBox:'0 0 24 24',stroke:'currentColor','stroke-width':2.5},[h('path',{'stroke-linecap':'round','stroke-linejoin':'round',d:'M6 18L18 6M6 6l12 12'})])]):null,
           EyeBtn(showConf.value,()=>{showConf.value=!showConf.value;}),
         ]),
-        props.errors.confirmPassword?h('p',{class:'text-red-400 text-xs mt-1'},props.errors.confirmPassword):null,
+        props.errors.confirmPassword?h('p',{class:'text-danger text-xs mt-1'},props.errors.confirmPassword):null,
       ]),
     ];
   },
@@ -353,9 +324,9 @@ const PasswordFields = defineComponent({
 const ErrorBanner = defineComponent({
   props: { message: { type: String, required: true } },
   setup(props) {
-    return () => h('div',{class:'flex items-start gap-3 p-3.5 rounded-xl bg-red-500/8 border border-red-500/20'},[
-      h('svg',{class:'w-4 h-4 text-red-400 flex-shrink-0 mt-0.5',fill:'none',viewBox:'0 0 24 24',stroke:'currentColor','stroke-width':2},[h('circle',{cx:'12',cy:'12',r:'10'}),h('path',{'stroke-linecap':'round','stroke-linejoin':'round',d:'M12 8v4m0 4h.01'})]),
-      h('p',{class:'text-red-400 text-sm leading-snug'},props.message),
+    return () => h('div',{class:'flex items-start gap-3 p-3.5 rounded-xl border',style:'background:rgba(225,109,109,0.08);border-color:rgba(225,109,109,0.22)'},[
+      h('svg',{class:'w-4 h-4 text-danger flex-shrink-0 mt-0.5',fill:'none',viewBox:'0 0 24 24',stroke:'currentColor','stroke-width':2},[h('circle',{cx:'12',cy:'12',r:'10'}),h('path',{'stroke-linecap':'round','stroke-linejoin':'round',d:'M12 8v4m0 4h.01'})]),
+      h('p',{class:'text-danger text-sm leading-snug'},props.message),
     ]);
   },
 });
@@ -363,7 +334,7 @@ const ErrorBanner = defineComponent({
 const SubmitButton = defineComponent({
   props: { loading: Boolean, label: { type: String, required: true } },
   setup(props) {
-    return () => h('button',{type:'submit',disabled:props.loading,class:'w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-bold transition-all mt-2 shadow-lg shadow-violet-500/20'},[
+    return () => h('button',{type:'submit',disabled:props.loading,class:'w-full flex items-center justify-center gap-2 py-2.5 rounded-xl disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-bold transition-all mt-2',style:'background:linear-gradient(135deg,#7c3aed,#6d28d9);box-shadow:0 8px 24px rgba(109,40,217,0.25)'},[
       props.loading?h('span',{class:'w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin'}):null,
       h('span',{},props.loading?'Creating account…':props.label),
     ]);
@@ -387,7 +358,6 @@ const codeForm = ref({ email: '', username: '', role: 'ADMIN' as 'ADMIN'|'MODERA
 const codeErrors = ref<Record<string,string>>({});
 const submitError = ref('');
 const isSubmitting = ref(false);
-
 
 function validateInviteForm(): boolean {
   inviteErrors.value = {};
