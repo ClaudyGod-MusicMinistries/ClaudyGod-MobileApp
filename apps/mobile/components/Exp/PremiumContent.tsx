@@ -1412,6 +1412,144 @@ export function TrendingList({ title, items, onPressItem, actionLabel, onAction 
   );
 }
 
+// ─── FeaturedSectionCard ─────────────────────────────────────────────────────────
+
+type FeaturedSectionCardProps = {
+  sectionTitle: string;
+  item: FeedCardItem | null;
+  onPress: () => void;
+  onSeeAll: () => void;
+  loading?: boolean;
+  actionLabel?: string;
+};
+
+export function FeaturedSectionCard({
+  sectionTitle,
+  item,
+  onPress,
+  onSeeAll,
+  loading = false,
+  actionLabel = 'See all',
+}: FeaturedSectionCardProps) {
+  const theme = useAppTheme();
+  const device = useDeviceClass();
+  const { width } = useWindowDimensions();
+  const compact = width < 430;
+  const cardHeight = device.isTV ? 340 : device.isLargeDesktop ? 300 : device.isDesktop ? 260 : compact ? 210 : 230;
+
+  if (loading) {
+    return (
+      <View style={{ gap: 14 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <SkeletonLoader width={140} height={22} borderRadius={8} />
+          <SkeletonLoader width={56} height={16} borderRadius={8} />
+        </View>
+        <SkeletonLoader width="100%" height={cardHeight} borderRadius={16} />
+      </View>
+    );
+  }
+
+  if (!item) return null;
+
+  const isVideo = item.type === 'video';
+  const isLive = item.isLive;
+  const playLabel = isLive ? 'Watch live' : isVideo ? 'Watch' : 'Play';
+  const playIcon: React.ComponentProps<typeof MaterialIcons>['name'] = isLive ? 'live-tv' : 'play-arrow';
+
+  return (
+    <FadeIn>
+      <View style={{ gap: 14 }}>
+        {/* Section header */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <CustomText
+            style={{ color: theme.colors.text, fontSize: compact ? 18 : 20, fontWeight: '800', letterSpacing: -0.5 }}
+            numberOfLines={1}
+          >
+            {sectionTitle}
+          </CustomText>
+          <TVTouchable
+            onPress={onSeeAll}
+            showFocusBorder={false}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 2, paddingVertical: 4, paddingLeft: 10 }}
+          >
+            <CustomText style={{ color: theme.colors.primary, fontSize: 13, fontWeight: '600' }}>
+              {actionLabel}
+            </CustomText>
+            <MaterialIcons name="chevron-right" size={15} color={theme.colors.primary} />
+          </TVTouchable>
+        </View>
+
+        {/* Full-width image card */}
+        <TVTouchable onPress={onPress} showFocusBorder={false}>
+          <View style={{ height: cardHeight, borderRadius: 16, overflow: 'hidden', backgroundColor: theme.colors.surfaceAlt }}>
+            <Image
+              source={{ uri: item.imageUrl || DEFAULT_CONTENT_IMAGE_URI }}
+              resizeMode="cover"
+              style={StyleSheet.absoluteFillObject}
+            />
+
+            {/* Bottom scrim — text legibility only */}
+            <LinearGradient
+              colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.75)']}
+              style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: Math.round(cardHeight * 0.6) }}
+            />
+
+            {/* Live badge */}
+            {isLive ? (
+              <View
+                style={{
+                  position: 'absolute', top: 14, left: 14,
+                  flexDirection: 'row', alignItems: 'center', gap: 5,
+                  backgroundColor: theme.colors.danger,
+                  borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5,
+                }}
+              >
+                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#fff' }} />
+                <CustomText style={{ color: '#fff', fontSize: 10, fontWeight: '700', letterSpacing: 0.5 }}>LIVE</CustomText>
+              </View>
+            ) : null}
+
+            {/* Bottom content */}
+            <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: compact ? 14 : 18, gap: 8 }}>
+              <CustomText
+                style={{ color: '#FFFFFF', fontSize: compact ? 15 : 17, fontWeight: '700', letterSpacing: -0.3, lineHeight: compact ? 21 : 24 }}
+                numberOfLines={2}
+              >
+                {cleanFeedText(item.title)}
+              </CustomText>
+
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <View
+                  style={{
+                    flexDirection: 'row', alignItems: 'center', gap: 6,
+                    backgroundColor: isLive ? theme.colors.danger : theme.colors.primary,
+                    borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8,
+                  }}
+                >
+                  <MaterialIcons name={playIcon} size={15} color="#fff" />
+                  <CustomText style={{ color: '#fff', fontSize: 12.5, fontWeight: '700' }}>{playLabel}</CustomText>
+                </View>
+
+                {isValidDuration(item.duration) && !isLive ? (
+                  <CustomText style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12 }}>
+                    {item.duration}
+                  </CustomText>
+                ) : null}
+
+                {item.subtitle ? (
+                  <CustomText style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12, flex: 1 }} numberOfLines={1}>
+                    {cleanFeedText(item.subtitle)}
+                  </CustomText>
+                ) : null}
+              </View>
+            </View>
+          </View>
+        </TVTouchable>
+      </View>
+    </FadeIn>
+  );
+}
+
 // ─── StreamingBanner ──────────────────────────────────────────────────────────────
 
 type StreamingBannerProps = {

@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Image, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Image, ScrollView, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
@@ -7,34 +7,23 @@ import { CustomText } from '../../components/CustomText';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { SupportMinistryCard } from '../../components/ui/SupportMinistryCard';
 import { useContentFeed } from '../../hooks/useContentFeed';
-import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import { useWordOfDay } from '../../hooks/useWordOfDay';
 import { useAppTheme } from '../../util/colorScheme';
-import { APP_ROUTES, TAB_ROUTE_BY_ID } from '../../util/appRoutes';
+import { APP_ROUTES } from '../../util/appRoutes';
 import { buildPlayerRoute } from '../../util/playerRoute';
-import type { ContentType, FeedBundle, FeedCardItem } from '../../services/contentService';
+import type { FeedCardItem } from '../../services/contentService';
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
 import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
 import {
-  ContentRail,
-  ContentShortcut,
-  ContentShortcuts,
   EmptyState,
+  FeaturedSectionCard,
   GreetingBanner,
   LiveNowBanner,
   PremiumHero,
   PremiumPage,
-  SectionLabel,
   TrendingList,
   WordOfDayCard,
 } from '../../components/Exp/PremiumContent';
-import { AdBanner } from '../../components/ads/AdBanner';
-
-type SectionContentType = Exclude<ContentType, 'ad'>;
-
-function isSectionContentType(type: ContentType): type is SectionContentType {
-  return type !== 'ad';
-}
 
 function dedupe(items: FeedCardItem[]): FeedCardItem[] {
   const seen = new Set<string>();
@@ -46,32 +35,6 @@ function dedupe(items: FeedCardItem[]): FeedCardItem[] {
   return out;
 }
 
-// Builds all 4 sections at once with a shared exclusion set so each item only appears once.
-// Priority per section: appSections tag → type fallback.
-function buildSections(feed: FeedBundle, limit = 12) {
-  const pool = dedupe([...feed.music, ...feed.videos, ...feed.playlists, ...feed.live]);
-  const used = new Set<string>();
-
-  function take(sectionId: string, fallbackTypes: ContentType[]): FeedCardItem[] {
-    const available = pool.filter((item) => !used.has(item.id));
-    const tagged = available.filter((item) => item.appSections?.includes(sectionId));
-    const result =
-      tagged.length >= 2
-        ? tagged
-        : available.filter((item) => (fallbackTypes as string[]).includes(item.type));
-    const sliced = result.slice(0, limit);
-    sliced.forEach((item) => used.add(item.id));
-    return sliced;
-  }
-
-  return {
-    music:   take('music', ['audio']),
-    nuggets: take('nuggets-of-truth', ['video']),
-    teens:   take('teens', ['video', 'playlist']),
-    audio:   take('audio', ['audio', 'playlist']),
-  };
-}
-
 // ─── Continue Row ─────────────────────────────────────────────────────────────
 
 function ContinueRow({ items, onPress }: { items: FeedCardItem[]; onPress: (_item: FeedCardItem) => void }) {
@@ -79,30 +42,27 @@ function ContinueRow({ items, onPress }: { items: FeedCardItem[]; onPress: (_ite
   if (!items.length) return null;
 
   return (
-    <View style={{ gap: 12 }}>
-      <SectionLabel title="Pick up where you left off" />
+    <View style={{ gap: 14 }}>
+      <CustomText style={{ color: theme.colors.text, fontSize: 18, fontWeight: '800', letterSpacing: -0.4 }}>
+        Continue listening
+      </CustomText>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ gap: 14, paddingVertical: 2, paddingRight: 8 }}
+        contentContainerStyle={{ gap: 16, paddingVertical: 2, paddingRight: 8 }}
       >
         {items.slice(0, 8).map((item) => (
           <TVTouchable key={item.id} onPress={() => onPress(item)} showFocusBorder={false}>
-            <View style={{ alignItems: 'center', gap: 8, width: 72 }}>
-              <View
-                style={{
-                  width: 64, height: 64, borderRadius: 16, overflow: 'hidden',
-                  backgroundColor: theme.colors.surfaceAlt,
-                }}
-              >
-                <Image source={{ uri: item.imageUrl || DEFAULT_CONTENT_IMAGE_URI }} resizeMode="cover" style={{ width: 60, height: 60 }} />
+            <View style={{ alignItems: 'center', gap: 9, width: 80 }}>
+              <View style={{ width: 72, height: 72, borderRadius: 14, overflow: 'hidden', backgroundColor: theme.colors.surfaceAlt }}>
+                <Image source={{ uri: item.imageUrl || DEFAULT_CONTENT_IMAGE_URI }} resizeMode="cover" style={{ width: 72, height: 72 }} />
                 <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}>
-                  <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: 'rgba(0,0,0,0.52)', alignItems: 'center', justifyContent: 'center' }}>
-                    <MaterialIcons name="play-arrow" size={14} color="#FFFFFF" />
+                  <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center' }}>
+                    <MaterialIcons name="play-arrow" size={16} color="#FFFFFF" />
                   </View>
                 </View>
               </View>
-              <CustomText style={{ color: theme.colors.textSecondary, fontSize: 10, textAlign: 'center', fontWeight: '500', lineHeight: 13 }} numberOfLines={2}>
+              <CustomText style={{ color: theme.colors.textSecondary, fontSize: 11, textAlign: 'center', fontWeight: '500', lineHeight: 15 }} numberOfLines={2}>
                 {item.title}
               </CustomText>
             </View>
@@ -113,51 +73,12 @@ function ContinueRow({ items, onPress }: { items: FeedCardItem[]; onPress: (_ite
   );
 }
 
-// ─── Announcement Card ────────────────────────────────────────────────────────
-
-function AnnouncementCard({ item, onPress }: { item: FeedCardItem; onPress: () => void }) {
-  const theme = useAppTheme();
-  return (
-    <TVTouchable onPress={onPress} showFocusBorder={false}>
-      <View
-        style={{
-          flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14,
-          borderRadius: 14,
-          backgroundColor: theme.colors.surface,
-        }}
-      >
-        <View style={{ width: 40, height: 40, borderRadius: 10, overflow: 'hidden', backgroundColor: theme.colors.surfaceAlt, flexShrink: 0 }}>
-          <Image source={{ uri: item.imageUrl || DEFAULT_CONTENT_IMAGE_URI }} resizeMode="cover" style={StyleSheet.absoluteFillObject} />
-        </View>
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <CustomText style={{ color: theme.colors.textMuted, fontSize: 9.5, fontWeight: '600', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 2 }}>
-            Announcement
-          </CustomText>
-          <CustomText style={{ color: theme.colors.text, fontSize: 13, fontWeight: '500' }} numberOfLines={1}>
-            {item.title}
-          </CustomText>
-          {item.subtitle ? (
-            <CustomText style={{ color: theme.colors.textMuted, fontSize: 11.5, marginTop: 2 }} numberOfLines={1}>
-              {item.subtitle}
-            </CustomText>
-          ) : null}
-        </View>
-        <MaterialIcons name="chevron-right" size={18} color={theme.colors.textMuted} />
-      </View>
-    </TVTouchable>
-  );
-}
-
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 
 export default function HomeScreen() {
   const router = useRouter();
-  const theme = useAppTheme();
-  const { width } = useWindowDimensions();
   const { feed, loading, refresh } = useContentFeed();
-  const { config } = useMobileAppConfig();
   const { bibleVerse, adminWord } = useWordOfDay();
-  const compact = width < 430;
 
   const featured = useMemo(
     () => feed.featured ?? feed.live[0] ?? feed.music[0] ?? feed.videos[0] ?? feed.recommendations[0] ?? null,
@@ -167,8 +88,8 @@ export default function HomeScreen() {
   const liveSessions = useMemo(() => feed.live.filter((item) => item.isLive), [feed.live]);
 
   const continueItems = useMemo(
-    () => dedupe([...feed.recent, ...feed.recommendations, ...feed.mostPlayed]).slice(0, 8),
-    [feed.mostPlayed, feed.recent, feed.recommendations],
+    () => dedupe([...feed.recent, ...feed.recommendations]).slice(0, 8),
+    [feed.recent, feed.recommendations],
   );
 
   const allContent = useMemo(
@@ -176,69 +97,36 @@ export default function HomeScreen() {
     [feed.live, feed.mostPlayed, feed.music, feed.recent, feed.recommendations, feed.videos],
   );
 
-  // 4 ClaudyGod-branded sections — computed together so items don't repeat across rails
-  const { music: musicItems, nuggets: nuggetsItems, teens: teensItems, audio: audioItems } =
-    useMemo(() => buildSections(feed), [feed]);
+  // One featured item per section — pick the first tagged or first by type
+  const musicFeatured = useMemo(() => {
+    return feed.music.find((i) => i.appSections?.includes('music')) ?? feed.music[0] ?? null;
+  }, [feed.music]);
 
-  const configuredTabs = useMemo(() => config?.navigation?.tabs ?? [], [config?.navigation?.tabs]);
-  const configuredSections = useMemo(() => config?.layout?.homeSections ?? [], [config?.layout?.homeSections]);
+  const nuggetsFeatured = useMemo(() => {
+    const pool = [...feed.videos, ...feed.music];
+    return pool.find((i) => i.appSections?.includes('nuggets-of-truth')) ?? feed.videos[0] ?? null;
+  }, [feed.videos, feed.music]);
 
-  const configuredRails = useMemo(() => configuredSections
-    .map((section) => {
-      const sectionItems = allContent
-        .filter((item) => isSectionContentType(item.type) && section.contentTypes.indexOf(item.type) >= 0)
-        .slice(0, section.maxItems || 10);
-      return { section, items: sectionItems };
-    })
-    .filter((entry) => entry.items.length > 0)
-    .slice(0, 2),
-  [allContent, configuredSections]);
+  const teensFeatured = useMemo(() => {
+    const pool = [...feed.videos, ...feed.music];
+    return pool.find((i) => i.appSections?.includes('teens')) ?? feed.videos[1] ?? null;
+  }, [feed.videos, feed.music]);
+
+  const audioFeatured = useMemo(() => {
+    const pool = [...feed.music];
+    return pool.find((i) => i.appSections?.includes('audio') && i !== musicFeatured) ?? feed.music[1] ?? null;
+  }, [feed.music, musicFeatured]);
 
   const openItem = async (item: FeedCardItem, source: string) => {
     await trackPlayEvent({ contentId: item.id, contentType: item.type, title: item.title, source });
     router.push(buildPlayerRoute(item));
   };
 
-  const shortcuts = useMemo<ContentShortcut[]>(() => [
-    {
-      id: 'music',
-      label: configuredTabs.find((t) => t.id === 'player')?.label ?? 'Music',
-      icon: 'graphic-eq',
-      color: theme.colors.primary,
-      onPress: () => router.push(APP_ROUTES.tabs.player),
-    },
-    {
-      id: 'videos',
-      label: configuredTabs.find((t) => t.id === 'videos')?.label ?? 'Videos',
-      icon: 'smart-display',
-      color: theme.colors.info,
-      onPress: () => router.push(APP_ROUTES.tabs.videos),
-    },
-    {
-      id: 'live',
-      label: configuredTabs.find((t) => t.id === 'live')?.label ?? 'Live',
-      icon: 'live-tv',
-      color: theme.colors.danger,
-      onPress: () => router.push(APP_ROUTES.tabs.live),
-    },
-    {
-      id: 'library',
-      label: 'Library',
-      icon: 'library-music',
-      color: theme.colors.warning,
-      onPress: () => router.push(APP_ROUTES.tabs.library),
-    },
-    {
-      id: 'search',
-      label: 'Search',
-      icon: 'search',
-      color: theme.colors.success,
-      onPress: () => router.push(APP_ROUTES.tabs.search),
-    },
-  ], [configuredTabs, router, theme]);
+  const hasContent = allContent.length > 0;
 
   return (
     <PremiumPage title="Home" eyebrow="Home" noBack refreshing={loading} onRefresh={() => void refresh()}>
+
       {/* Greeting */}
       <GreetingBanner />
 
@@ -246,8 +134,7 @@ export default function HomeScreen() {
       <PremiumHero
         item={featured}
         title={featured ? undefined : 'Start your worship stream'}
-        subtitle={featured ? undefined : 'Music, videos, and live moments in one focused space.'}
-        eyebrow={featured ? undefined : 'Start here'}
+        subtitle={featured ? undefined : 'Music, videos, and live moments.'}
         primaryLabel={
           featured?.isLive ? 'Watch live' :
           featured?.type === 'video' ? 'Watch now' :
@@ -258,14 +145,11 @@ export default function HomeScreen() {
           featured?.type === 'video' ? 'smart-display' :
           featured ? 'play-arrow' : 'graphic-eq'
         }
-        secondaryLabel="Explore all"
-        secondaryIcon="apps"
+        secondaryLabel="Search"
+        secondaryIcon="search"
         onPrimary={featured ? () => void openItem(featured, 'home_hero') : () => router.push(APP_ROUTES.tabs.player)}
         onSecondary={() => router.push(APP_ROUTES.tabs.search)}
       />
-
-      {/* Quick nav shortcuts */}
-      <ContentShortcuts shortcuts={shortcuts} />
 
       {/* Live banner */}
       {liveSessions[0] ? (
@@ -277,165 +161,79 @@ export default function HomeScreen() {
         <ContinueRow items={continueItems} onPress={(item) => void openItem(item, 'home_continue')} />
       ) : null}
 
-      {/* Sponsored content */}
-      <AdBanner placement="home" />
+      {/* ── 4 Editorial section cards ─────────────────────────────────────── */}
 
-      {/* ── 4 ClaudyGod Content Sections ─────────────────────────────────── */}
-      <View style={{ gap: 32 }}>
+      <FeaturedSectionCard
+        sectionTitle="ClaudyGod Music"
+        item={musicFeatured}
+        onPress={() => musicFeatured ? void openItem(musicFeatured, 'home_music_featured') : router.push(APP_ROUTES.tabs.player)}
+        onSeeAll={() => router.push(APP_ROUTES.tabs.player)}
+        loading={loading && !musicFeatured}
+      />
 
-        {/* ClaudyGod Music */}
-        {(loading || musicItems.length > 0) ? (
-          <View style={{ gap: 16 }}>
-            <SectionLabel
-              title="ClaudyGod Music"
-              actionLabel="See all"
-              onAction={() => router.push(APP_ROUTES.tabs.player)}
-            />
-            <ContentRail
-              title=""
-              items={musicItems}
-              onPressItem={(item) => void openItem(item, 'home_music')}
-              loading={loading}
-              cardVariant="portrait"
-            />
-          </View>
-        ) : null}
+      <FeaturedSectionCard
+        sectionTitle="Nuggets of Truth"
+        item={nuggetsFeatured}
+        onPress={() => nuggetsFeatured ? void openItem(nuggetsFeatured, 'home_nuggets_featured') : router.push(APP_ROUTES.tabs.videos)}
+        onSeeAll={() => router.push(APP_ROUTES.tabs.videos)}
+        loading={loading && !nuggetsFeatured}
+      />
 
-        {/* ClaudyGod Nuggets of Truth */}
-        {(loading || nuggetsItems.length > 0) ? (
-          <View style={{ gap: 16 }}>
-            <SectionLabel
-              title="Nuggets of Truth"
-              actionLabel="See all"
-              onAction={() => router.push(APP_ROUTES.tabs.videos)}
-            />
-            <ContentRail
-              title=""
-              items={nuggetsItems}
-              onPressItem={(item) => void openItem(item, 'home_nuggets')}
-              loading={loading}
-              cardVariant="landscape"
-            />
-          </View>
-        ) : null}
+      <FeaturedSectionCard
+        sectionTitle="ClaudyGod Teens"
+        item={teensFeatured}
+        onPress={() => teensFeatured ? void openItem(teensFeatured, 'home_teens_featured') : router.push(APP_ROUTES.tabs.videos)}
+        onSeeAll={() => router.push(APP_ROUTES.tabs.videos)}
+        loading={loading && !teensFeatured}
+      />
 
-        {/* ClaudyGod Teens */}
-        {(loading || teensItems.length > 0) ? (
-          <View style={{ gap: 16 }}>
-            <SectionLabel
-              title="ClaudyGod Teens"
-              actionLabel="See all"
-              onAction={() => router.push(APP_ROUTES.tabs.videos)}
-            />
-            <ContentRail
-              title=""
-              items={teensItems}
-              onPressItem={(item) => void openItem(item, 'home_teens')}
-              loading={loading}
-              cardVariant="landscape"
-            />
-          </View>
-        ) : null}
+      <FeaturedSectionCard
+        sectionTitle="Latest Audio"
+        item={audioFeatured ?? musicFeatured}
+        onPress={() => {
+          const item = audioFeatured ?? musicFeatured;
+          if (item) void openItem(item, 'home_audio_featured');
+          else router.push(APP_ROUTES.tabs.player);
+        }}
+        onSeeAll={() => router.push(APP_ROUTES.tabs.player)}
+        loading={loading && !audioFeatured && !musicFeatured}
+      />
 
-        {/* ClaudyGod Audio */}
-        {(loading || audioItems.length > 0) ? (
-          <View style={{ gap: 16 }}>
-            <SectionLabel
-              title="ClaudyGod Audio"
-              actionLabel="See all"
-              onAction={() => router.push(APP_ROUTES.tabs.player)}
-            />
-            <ContentRail
-              title=""
-              items={audioItems}
-              onPressItem={(item) => void openItem(item, 'home_audio')}
-              loading={loading}
-              cardVariant="portrait"
-            />
-          </View>
-        ) : null}
-
-      </View>
-
-      {/* Admin-configured rails (rendered after branded sections) */}
-      {configuredRails.map(({ section, items }) => (
-        <View key={section.id} style={{ gap: 16 }}>
-          <SectionLabel
-            title={section.title}
-            subtitle={section.subtitle}
-            actionLabel={section.actionLabel}
-            onAction={() => router.push(TAB_ROUTE_BY_ID[section.destinationTab] as never)}
-          />
-          <ContentRail
-            title=""
-            items={items}
-            onPressItem={(item) => void openItem(item, `home_${section.id}`)}
-            loading={loading}
-          />
-        </View>
-      ))}
-
-      {/* Most played chart */}
+      {/* Most played — compact top 5 */}
       {feed.mostPlayed.length > 0 ? (
         <TrendingList
           title="Most played"
-          items={feed.mostPlayed.slice(0, 10)}
+          items={feed.mostPlayed.slice(0, 5)}
           onPressItem={(item) => void openItem(item, 'home_trending')}
           actionLabel="See all"
           onAction={() => router.push(APP_ROUTES.tabs.player)}
         />
       ) : null}
 
-      {/* Announcement */}
-      {feed.announcements[0] ? (
-        <AnnouncementCard
-          item={feed.announcements[0]}
-          onPress={() => void openItem(feed.announcements[0]!, 'home_announcement')}
-        />
-      ) : null}
-
-      {/* ClaudyGod Live replays (when no active live) */}
-      {!liveSessions.length && feed.live.length > 0 ? (
-        <View style={{ gap: 16 }}>
-          <SectionLabel
-            title="ClaudyGod Live"
-            actionLabel="See all"
-            onAction={() => router.push(APP_ROUTES.tabs.live)}
-          />
-          <ContentRail
-            title=""
-            items={feed.live.slice(0, 10)}
-            onPressItem={(item) => void openItem(item, 'home_live')}
-            loading={loading}
-            cardVariant="landscape"
-            compact={compact}
-          />
-        </View>
-      ) : null}
-
-      {/* Daily scripture from Bible API */}
+      {/* Daily scripture */}
       {bibleVerse ? (
         <WordOfDayCard word={bibleVerse} onPress={() => router.push(APP_ROUTES.settingsPages.word)} />
       ) : null}
 
-      {/* Admin-authored word — shown as a separate card when configured */}
-      {adminWord ? (
+      {/* Admin word — shown only when different from bible verse */}
+      {adminWord && adminWord.id !== bibleVerse?.id ? (
         <WordOfDayCard word={adminWord} onPress={() => router.push(APP_ROUTES.settingsPages.word)} />
       ) : null}
 
       {/* Support */}
       <SupportMinistryCard onPress={() => router.push(APP_ROUTES.settingsPages.donate)} />
 
-      {/* Full empty state */}
-      {!loading && !allContent.length ? (
+      {/* Empty state */}
+      {!loading && !hasContent ? (
         <EmptyState
-          title="Your experience is ready"
-          message="Use Search, Music, Videos, or Live to start exploring."
-          icon="auto-awesome"
+          title="Your feed is loading"
+          message="Check your connection or search for something to get started."
+          icon="wifi-off"
           actionLabel="Search"
           onAction={() => router.push(APP_ROUTES.tabs.search)}
         />
       ) : null}
+
     </PremiumPage>
   );
 }
