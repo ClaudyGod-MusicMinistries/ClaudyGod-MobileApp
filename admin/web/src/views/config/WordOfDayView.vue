@@ -337,21 +337,30 @@ function statusStyle(entry: WordOfDay): string {
 
 // ─── Form state ───────────────────────────────────────────────────────────────
 
+interface FormState {
+  word:          string;
+  verse:         string;
+  reflection:    string;
+  author:        string;
+  publishedDate: string;
+  status:        'draft' | 'published';
+}
+
 const showForm  = ref(false);
 const editingId = ref<string | null>(null);
 const isSaving  = ref(false);
 const formError = ref('');
 
-const emptyForm = () => ({
+const emptyForm = (): FormState => ({
   word:          '',
   verse:         '',
   reflection:    '',
   author:        '',
   publishedDate: today,
-  status:        'published' as const,
+  status:        'published',
 });
 
-const form = ref(emptyForm());
+const form = ref<FormState>(emptyForm());
 
 function openCreateForm() {
   editingId.value = null;
@@ -368,7 +377,7 @@ function openEditForm(entry: WordOfDay) {
     reflection:    entry.reflection,
     author:        entry.author ?? '',
     publishedDate: entry.publishedDate,
-    status:        entry.status ?? 'published',
+    status:        entry.status === 'draft' ? 'draft' : 'published',
   };
   formError.value = '';
   showForm.value = true;
