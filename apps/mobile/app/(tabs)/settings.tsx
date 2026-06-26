@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Switch, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -7,15 +7,11 @@ import { AppButton } from '../../components/ui/AppButton';
 import { CustomText } from '../../components/CustomText';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { TVTouchable } from '../../components/ui/TVTouchable';
-import { useAuth } from '../../context/AuthContext';
 import { useAppModal } from '../../context/AppModalContext';
 import { useAppTheme, useThemeContext } from '../../util/colorScheme';
 import { useDeviceClass } from '../../util/deviceClassConfig';
-import { fetchMePreferences, updateMePreferences } from '../../services/userFlowService';
-import { clearMobileSession } from '../../services/authService';
 import { APP_ROUTES } from '../../util/appRoutes';
 import {
-  EmptyState,
   PremiumPage,
   SectionLabel,
 } from '../../components/Exp/PremiumContent';
@@ -83,7 +79,7 @@ function AppearanceCard({ value, onChange }: { value: ThemePreference; onChange:
   const device = useDeviceClass();
 
   const options: { value: ThemePreference; label: string; icon: React.ComponentProps<typeof MaterialIcons>['name']; hint: string }[] = [
-    { value: 'system', label: 'System',  icon: 'devices',   hint: 'Match device setting' },
+    { value: 'system', label: 'System',  icon: 'devices',    hint: 'Match device setting' },
     { value: 'light',  label: 'Light',   icon: 'light-mode', hint: 'Always light' },
     { value: 'dark',   label: 'Dark',    icon: 'dark-mode',  hint: 'Always dark' },
   ];
@@ -166,51 +162,16 @@ export default function SettingsScreen() {
   const { themePreference, setThemePreference } = useThemeContext();
   const router = useRouter();
   const { showModal } = useAppModal();
-  const { isAuthenticated, user } = useAuth();
 
   const [notifications, setNotifications] = useState(true);
   const [autoPlay, setAutoPlay] = useState(true);
   const [highQuality, setHighQuality] = useState(false);
   const [personalization, setPersonalization] = useState(true);
-  const [preferencesLoaded, setPreferencesLoaded] = useState(false);
 
-  useEffect(() => {
-    let active = true;
-    const load = async () => {
-      if (!isAuthenticated) { setPreferencesLoaded(true); return; }
-      try {
-        const response = await fetchMePreferences();
-        if (!active) return;
-        setNotifications(response.preferences.notificationsEnabled);
-        setAutoPlay(response.preferences.autoplayEnabled);
-        setHighQuality(response.preferences.highQualityEnabled);
-        setPersonalization(response.preferences.personalizationEnabled);
-      } catch { /* keep defaults */ }
-      if (active) setPreferencesLoaded(true);
-    };
-    void load();
-    return () => { active = false; };
-  }, [isAuthenticated]);
-
-  const persist = useCallback(
-    (patch: Partial<Parameters<typeof updateMePreferences>[0]>) => {
-      if (!preferencesLoaded || !isAuthenticated) return;
-      void updateMePreferences(patch).catch(() => undefined);
-    },
-    [isAuthenticated, preferencesLoaded],
-  );
-
-  const handleLogout = async () => {
-    try { await clearMobileSession(); } catch { /* local cleanup may partially fail */ }
-    showModal({ title: 'Signed out', message: 'You can sign in again anytime.', tone: 'info', icon: 'logout' });
-    router.replace(APP_ROUTES.landing);
-  };
-
-  const handleAppearanceChange = (value: ThemePreference) => {
+  const handleAppearanceChange = useCallback((value: ThemePreference) => {
     setThemePreference(value);
-    persist({ themePreference: value });
     showModal({ title: 'Appearance updated', message: value === 'system' ? 'Using your device setting.' : `Using ${value} mode.`, tone: 'success', icon: 'palette' });
-  };
+  }, [setThemePreference, showModal]);
 
   const playbackSettings: SettingItem[] = useMemo(() => [
     {
@@ -219,7 +180,7 @@ export default function SettingsScreen() {
       hint: 'Continue to the next song or message automatically.',
       value: autoPlay,
       accent: theme.colors.primary,
-      onToggle: (v) => { setAutoPlay(v); persist({ autoplayEnabled: v }); showModal({ title: 'Playback updated', message: v ? 'Auto-play is on.' : 'Auto-play is off.', tone: 'info', icon: 'play-circle-outline' }); },
+      onToggle: (v) => { setAutoPlay(v); showModal({ title: 'Playback updated', message: v ? 'Auto-play is on.' : 'Auto-play is off.', tone: 'info', icon: 'play-circle-outline' }); },
     },
     {
       icon: 'high-quality',
@@ -227,9 +188,9 @@ export default function SettingsScreen() {
       hint: 'Use more data for richer listening when available.',
       value: highQuality,
       accent: theme.colors.info,
-      onToggle: (v) => { setHighQuality(v); persist({ highQualityEnabled: v }); showModal({ title: 'Audio quality updated', message: v ? 'Higher quality audio is enabled.' : 'Standard quality audio is enabled.', tone: 'info', icon: 'high-quality' }); },
+      onToggle: (v) => { setHighQuality(v); showModal({ title: 'Audio quality updated', message: v ? 'Higher quality audio is enabled.' : 'Standard quality audio is enabled.', tone: 'info', icon: 'high-quality' }); },
     },
-  ], [autoPlay, highQuality, persist, showModal, theme]);
+  ], [autoPlay, highQuality, showModal, theme]);
 
   const experienceSettings: SettingItem[] = useMemo(() => [
     {
@@ -238,7 +199,7 @@ export default function SettingsScreen() {
       hint: 'Receive live alerts and release reminders.',
       value: notifications,
       accent: theme.colors.warning,
-      onToggle: (v) => { setNotifications(v); persist({ notificationsEnabled: v }); showModal({ title: 'Notifications updated', message: v ? 'Alerts are on.' : 'Alerts are off.', tone: 'info', icon: 'notifications-none' }); },
+      onToggle: (v) => { setNotifications(v); showModal({ title: 'Notifications updated', message: v ? 'Alerts are on.' : 'Alerts are off.', tone: 'info', icon: 'notifications-none' }); },
     },
     {
       icon: 'auto-awesome',
@@ -246,9 +207,9 @@ export default function SettingsScreen() {
       hint: 'Use listening activity to improve suggestions.',
       value: personalization,
       accent: theme.colors.success,
-      onToggle: (v) => { setPersonalization(v); persist({ personalizationEnabled: v }); showModal({ title: 'Recommendations updated', message: v ? 'Recommendations are personalized.' : 'Personalization is off.', tone: 'info', icon: 'auto-awesome' }); },
+      onToggle: (v) => { setPersonalization(v); showModal({ title: 'Recommendations updated', message: v ? 'Recommendations are personalized.' : 'Personalization is off.', tone: 'info', icon: 'auto-awesome' }); },
     },
-  ], [notifications, personalization, persist, showModal, theme]);
+  ], [notifications, personalization, showModal, theme]);
 
   const isWideLayout = device.isDesktop || device.isTV;
 
@@ -268,58 +229,40 @@ export default function SettingsScreen() {
         />
       }
     >
-      {/* Profile header */}
+      {/* Identity */}
       <SurfaceCard tone="strong" style={{ padding: device.isTV ? 20 : 16 }}>
         <View style={{ flexDirection: isWideLayout ? 'row' : 'column', gap: isWideLayout ? 20 : 16, alignItems: isWideLayout ? 'center' : 'flex-start' }}>
-          {/* Avatar */}
           <View
             style={{
               width: device.isTV ? 72 : 56, height: device.isTV ? 72 : 56,
               borderRadius: device.isTV ? 22 : 18, alignItems: 'center', justifyContent: 'center',
-              backgroundColor: isAuthenticated ? theme.colors.card : 'rgba(255,255,255,0.06)',
+              backgroundColor: theme.colors.card,
               borderWidth: 2,
-              borderColor: isAuthenticated ? theme.colors.borderStrong : 'rgba(255,255,255,0.10)',
+              borderColor: theme.colors.borderStrong,
             }}
           >
-            {isAuthenticated && user ? (
-              <CustomText style={{ color: theme.colors.primary, fontSize: device.isTV ? 28 : 22, fontWeight: '700' }}>
-                {(user.displayName ?? user.email ?? 'U')[0]?.toUpperCase()}
-              </CustomText>
-            ) : (
-              <MaterialIcons name="person-outline" size={device.isTV ? 34 : 26} color={theme.colors.textMuted} />
-            )}
+            <MaterialIcons name="headphones" size={device.isTV ? 34 : 26} color={theme.colors.primary} />
           </View>
-
-          {/* Info */}
           <View style={{ flex: 1, minWidth: 0 }}>
             <CustomText style={{ color: theme.colors.text, fontSize: device.isTV ? 20 : 16, fontWeight: '700', letterSpacing: -0.3 }}>
-              {isAuthenticated && user ? (user.displayName ?? user.email ?? 'Account') : 'Guest user'}
+              ClaudyGod Listener
             </CustomText>
             <CustomText style={{ color: theme.colors.textSecondary, fontSize: device.isTV ? 13 : 12, marginTop: 3 }}>
-              {isAuthenticated ? (user?.email ?? 'Signed in') : 'Sign in for a personalized experience'}
+              Worship freely — no account required
             </CustomText>
           </View>
-
-          {/* Action */}
-          <AppButton
-            title={isAuthenticated ? 'Profile' : 'Sign in'}
-            variant={isAuthenticated ? 'secondary' : 'primary'}
-            size="sm"
-            onPress={() => router.push(isAuthenticated ? APP_ROUTES.profile : APP_ROUTES.auth.signIn)}
-            leftIcon={<MaterialIcons name={isAuthenticated ? 'person-outline' : 'login'} size={15} color={isAuthenticated ? theme.colors.text : theme.colors.textInverse} />}
-          />
         </View>
       </SurfaceCard>
 
-      {/* Quick links — wide: 2-column row, narrow: list */}
+      {/* Quick links */}
       <View style={{ gap: 12 }}>
         <SectionLabel title="Quick access" accent="Navigate" />
         <View style={{ flexDirection: isWideLayout ? 'row' : 'column', gap: isWideLayout ? 12 : 0 }}>
           <View style={isWideLayout ? { flex: 1, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: theme.colors.border } : {}}>
             <SurfaceCard tone="subtle" style={{ paddingHorizontal: theme.spacing.md, paddingVertical: 0 }}>
               {[
-                { icon: 'library-music' as const, label: 'Library',  hint: isAuthenticated ? 'Saved content' : 'Sign in to save', color: theme.colors.primary, onPress: () => router.push(APP_ROUTES.tabs.library) },
-                { icon: 'search'        as const, label: 'Search',   hint: 'Find songs, videos, and live',              color: theme.colors.success, onPress: () => router.push(APP_ROUTES.tabs.search) },
+                { icon: 'library-music' as const, label: 'Library',  hint: 'Saved content', color: theme.colors.primary, onPress: () => router.push(APP_ROUTES.tabs.library) },
+                { icon: 'search'        as const, label: 'Search',   hint: 'Find songs, videos, and live', color: theme.colors.success, onPress: () => router.push(APP_ROUTES.tabs.search) },
               ].map((link, idx) => (
                 <View key={link.label} style={{ borderTopWidth: idx === 0 ? 0 : 1, borderTopColor: theme.colors.border }}>
                   <QuickLinkRow {...link} />
@@ -330,9 +273,9 @@ export default function SettingsScreen() {
           <View style={isWideLayout ? { flex: 1, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: theme.colors.border } : {}}>
             <SurfaceCard tone="subtle" style={{ paddingHorizontal: theme.spacing.md, paddingVertical: 0 }}>
               {[
-                { icon: 'card-giftcard'       as const, label: 'Invite friends', hint: 'Earn rewards together', color: theme.colors.primary, onPress: () => router.push(APP_ROUTES.settingsPages.referral) },
-                { icon: 'help-outline'        as const, label: 'Help',           hint: 'Get support',           color: theme.colors.info,    onPress: () => router.push(APP_ROUTES.settingsPages.help) },
-                { icon: 'volunteer-activism'  as const, label: 'Support',        hint: 'Give or donate',        color: theme.colors.danger,  onPress: () => router.push(APP_ROUTES.settingsPages.donate) },
+                { icon: 'card-giftcard'      as const, label: 'Invite friends', hint: 'Earn rewards together', color: theme.colors.primary, onPress: () => router.push(APP_ROUTES.settingsPages.referral) },
+                { icon: 'help-outline'       as const, label: 'Help',           hint: 'Get support',           color: theme.colors.info,    onPress: () => router.push(APP_ROUTES.settingsPages.help) },
+                { icon: 'volunteer-activism' as const, label: 'Support',        hint: 'Give or donate',        color: theme.colors.danger,  onPress: () => router.push(APP_ROUTES.settingsPages.donate) },
               ].map((link, idx) => (
                 <View key={link.label} style={{ borderTopWidth: idx === 0 ? 0 : 1, borderTopColor: theme.colors.border }}>
                   <QuickLinkRow {...link} />
@@ -346,7 +289,7 @@ export default function SettingsScreen() {
       {/* Appearance */}
       <AppearanceCard value={themePreference} onChange={handleAppearanceChange} />
 
-      {/* Settings groups — wide: 2-column, narrow: stacked */}
+      {/* Settings groups */}
       <View style={{ flexDirection: isWideLayout ? 'row' : 'column', gap: 12, alignItems: 'flex-start' }}>
         <SurfaceCard tone="subtle" style={{ flex: 1, paddingHorizontal: theme.spacing.md, paddingVertical: 0 }}>
           <View style={{ paddingTop: 14, paddingBottom: 6 }}>
@@ -374,30 +317,6 @@ export default function SettingsScreen() {
           ))}
         </SurfaceCard>
       </View>
-
-      {/* Account section */}
-      <SurfaceCard tone="subtle" style={{ padding: theme.spacing.lg }}>
-        <CustomText variant="heading" style={{ color: theme.colors.text }}>
-          {isAuthenticated ? 'Account' : 'Sign in for personal features'}
-        </CustomText>
-        <CustomText variant="body" style={{ color: theme.colors.textSecondary, marginTop: 6 }}>
-          {isAuthenticated
-            ? 'Sign out safely when you are done using this device.'
-            : 'Create an account or sign in to save favorites, sync library, and keep settings across devices.'}
-        </CustomText>
-        <AppButton
-          title={isAuthenticated ? 'Sign out' : 'Sign in'}
-          variant={isAuthenticated ? 'outline' : 'primary'}
-          onPress={() => (isAuthenticated ? void handleLogout() : router.push(APP_ROUTES.auth.signIn))}
-          style={{ marginTop: 14, borderColor: isAuthenticated ? theme.colors.danger : theme.colors.primary }}
-          textColor={isAuthenticated ? theme.colors.danger : theme.colors.textInverse}
-          leftIcon={<MaterialIcons name={isAuthenticated ? 'logout' : 'login'} size={17} color={isAuthenticated ? theme.colors.danger : theme.colors.textInverse} />}
-        />
-      </SurfaceCard>
-
-      {!preferencesLoaded ? (
-        <EmptyState title="Loading preferences" message="Your settings will appear here shortly." icon="settings" />
-      ) : null}
     </PremiumPage>
   );
 }

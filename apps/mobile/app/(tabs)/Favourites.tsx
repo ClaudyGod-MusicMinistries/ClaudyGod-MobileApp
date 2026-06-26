@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Image, Share, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -7,7 +7,6 @@ import { useAppTheme } from '../../util/colorScheme';
 import { useDeviceClass } from '../../util/deviceClassConfig';
 import { APP_ROUTES } from '../../util/appRoutes';
 import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
-import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { CustomText } from '../../components/CustomText';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
@@ -20,29 +19,10 @@ import {
   PremiumPage,
   SectionLabel,
 } from '../../components/Exp/PremiumContent';
-import {
-  fetchMeLibrary,
-  removeMeLibraryItem,
-  type MeLibraryItem,
-} from '../../services/userFlowService';
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
 import { buildPlayerRoute } from '../../util/playerRoute';
 import type { FeedCardItem } from '../../services/contentService';
-import { useGuestSession } from '../../hooks/useGuestSession';
-
-function toFeedItem(item: MeLibraryItem): FeedCardItem {
-  return {
-    id: item.id,
-    title: item.title,
-    subtitle: item.subtitle || 'ClaudyGod',
-    description: item.description || '',
-    duration: item.duration || '--:--',
-    imageUrl: item.imageUrl || DEFAULT_CONTENT_IMAGE_URI,
-    mediaUrl: item.mediaUrl,
-    type: item.type,
-    createdAt: item.createdAt,
-  };
-}
+import { useLocalContent } from '../../hooks/useLocalContent';
 
 function TypeBadge({ type }: { type: string }) {
   const theme = useAppTheme();
@@ -131,36 +111,15 @@ export default function FavouritesScreen() {
   const router = useRouter();
   const device = useDeviceClass();
   const { showToast } = useToast();
-  const { isAuthenticated } = useAuth();
-  const { guestFavorites, removeFavorite: removeGuestFav, loaded: guestLoaded } = useGuestSession();
-  const [items, setItems] = useState<FeedCardItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { favorites, removeFromFavorites, loaded } = useLocalContent();
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [removeTarget, setRemoveTarget] = useState<FeedCardItem | null>(null);
   const [isRemoving, setIsRemoving] = useState(false);
 
-  const loadFavourites = useCallback(async () => {
-    if (!isAuthenticated) {
-      setItems([]);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    try {
-      const library = await fetchMeLibrary();
-      setItems(library.liked.map(toFeedItem));
-    } catch {
-      showToast({ title: 'Favourites unavailable', message: 'Please check your connection and try again.', tone: 'warning' });
-    }
-    setLoading(false);
-  }, [isAuthenticated, showToast]);
-
-  useEffect(() => { void loadFavourites(); }, [loadFavourites]);
-
-  const featured = items[0] ?? null;
-  const gridItems = useMemo(() => items.slice(featured ? 1 : 0), [featured, items]);
+  const featured = favorites[0] ?? null;
   const numCols = device.isTV ? 5 : device.isLargeDesktop ? 4 : device.isDesktop ? 3 : device.isTablet ? 3 : 2;
   const colPercent = `${Math.floor(100 / numCols) - 1}%` as const;
+  const gridItems = useMemo(() => favorites.slice(featured ? 1 : 0), [favorites, featured]);
 
   const openItem = async (item: FeedCardItem) => {
     await trackPlayEvent({ contentId: item.id, contentType: item.type, title: item.title, source: 'favourites' });
@@ -175,9 +134,9 @@ export default function FavouritesScreen() {
     }
   };
 
-  const confirmRemove = (item: FeedCardItem) => {
+  const confirmRemove = useCallback((item: FeedCardItem) => {
     setRemoveTarget(item);
-  };
+  }, []);
 
   const removeItem = async () => {
     if (!removeTarget) return;
@@ -185,12 +144,7 @@ export default function FavouritesScreen() {
     setIsRemoving(true);
     setRemovingId(item.id);
     try {
-      if (isAuthenticated) {
-        await removeMeLibraryItem({ bucket: 'liked', contentId: item.id });
-        setItems((current) => current.filter((entry) => entry.id !== item.id));
-      } else {
-        await removeGuestFav(item.id);
-      }
+      await removeFromFavorites(item.id);
       showToast({ title: 'Removed from favourites', message: item.title, tone: 'info' });
     } catch {
       showToast({ title: 'Could not remove item', message: 'Please try again.', tone: 'warning' });
@@ -202,174 +156,91 @@ export default function FavouritesScreen() {
 
   return (
     <>
-    <PremiumPage
-      title="Favourites"
-      eyebrow="Saved by you"
-      noBack
-      refreshing={loading}
-      onRefresh={() => void loadFavourites()}
-    >
-      {/* Guest: sync banner + local favourites */}
-      {!isAuthenticated && guestLoaded ? (
-        <>
-          {/* Sign-in sync strip */}
-          <TVTouchable
-            onPress={() => router.push(APP_ROUTES.auth.signIn)}
-            showFocusBorder={false}
-            style={{
-              flexDirection: 'row', alignItems: 'center', gap: 12,
-              backgroundColor: `${theme.colors.primary}14`,
-              borderWidth: 1, borderColor: `${theme.colors.primary}30`,
-              borderRadius: theme.radius.lg,
-              paddingHorizontal: theme.spacing.md,
-              paddingVertical: 12,
-            }}
-          >
-            <View style={{ width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: `${theme.colors.primary}20` }}>
-              <MaterialIcons name="sync" size={16} color={theme.colors.primary} />
+      <PremiumPage
+        title="Favourites"
+        eyebrow="Saved by you"
+        noBack
+        refreshing={!loaded}
+      >
+        {/* Empty state */}
+        {loaded && favorites.length === 0 ? (
+          <SurfaceCard tone="strong" style={{ padding: theme.spacing.xl, alignItems: 'center', gap: 18 }}>
+            <View style={{ width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center', backgroundColor: `${theme.colors.primary}14`, borderWidth: 1, borderColor: theme.colors.border }}>
+              <MaterialIcons name="favorite-border" size={34} color={theme.colors.primary} />
             </View>
-            <View style={{ flex: 1 }}>
-              <CustomText variant="label" style={{ color: theme.colors.text }}>
-                Sign in to sync across devices
+            <View style={{ alignItems: 'center', gap: 8 }}>
+              <CustomText variant="heading" style={{ color: theme.colors.text, textAlign: 'center' }}>
+                No favourites yet
               </CustomText>
-              <CustomText variant="caption" style={{ color: theme.colors.textSecondary }}>
-                Your saved items will transfer automatically when you sign in.
+              <CustomText variant="body" style={{ color: theme.colors.textSecondary, textAlign: 'center', maxWidth: 360 }}>
+                Tap the heart on songs, videos, and sessions to keep them here.
               </CustomText>
             </View>
-            <MaterialIcons name="chevron-right" size={18} color={theme.colors.primary} />
-          </TVTouchable>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center' }}>
+              <AppButton title="Discover content" size="md" onPress={() => router.push(APP_ROUTES.tabs.search)} leftIcon={<MaterialIcons name="search" size={17} color={theme.colors.textInverse} />} />
+              <AppButton title="Browse music" size="md" variant="secondary" onPress={() => router.push(APP_ROUTES.tabs.player)} leftIcon={<MaterialIcons name="graphic-eq" size={17} color={theme.colors.text} />} />
+            </View>
+          </SurfaceCard>
+        ) : null}
 
-          {/* Guest has no local favourites yet */}
-          {guestFavorites.length === 0 ? (
-            <SurfaceCard tone="strong" style={{ padding: theme.spacing.xl, alignItems: 'center', gap: 18 }}>
-              <View style={{ width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center', backgroundColor: `${theme.colors.primary}14`, borderWidth: 1, borderColor: theme.colors.border }}>
-                <MaterialIcons name="favorite-border" size={34} color={theme.colors.primary} />
-              </View>
-              <View style={{ alignItems: 'center', gap: 8 }}>
-                <CustomText variant="heading" style={{ color: theme.colors.text, textAlign: 'center' }}>
-                  No favourites yet
-                </CustomText>
-                <CustomText variant="body" style={{ color: theme.colors.textSecondary, textAlign: 'center', maxWidth: 360 }}>
-                  Tap the heart on songs, videos, and sessions to save them here even without an account.
-                </CustomText>
-              </View>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center' }}>
-                <AppButton title="Discover content" size="md" onPress={() => router.push(APP_ROUTES.tabs.search)} leftIcon={<MaterialIcons name="search" size={17} color={theme.colors.textInverse} />} />
-                <AppButton title="Browse music" size="md" variant="secondary" onPress={() => router.push(APP_ROUTES.tabs.player)} leftIcon={<MaterialIcons name="graphic-eq" size={17} color={theme.colors.text} />} />
-              </View>
-            </SurfaceCard>
-          ) : null}
+        {/* Featured hero */}
+        {featured ? (
+          <FadeIn delay={70}>
+            <PremiumHero
+              item={featured}
+              title={featured.title}
+              subtitle={featured.description || featured.subtitle || ''}
+              eyebrow="Top favourite"
+              primaryLabel="Play now"
+              primaryIcon="play-arrow"
+              onPrimary={() => void openItem(featured)}
+            />
+          </FadeIn>
+        ) : null}
 
-          {/* Guest grid using local storage */}
-          {guestFavorites.length > 0 ? (
-            <FadeIn>
-              <SectionLabel
-                title="Saved locally"
-                accent={`${guestFavorites.length} items`}
-                subtitle="Syncs to your account when you sign in"
-              />
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 10 }}>
-                {guestFavorites.map((item) => (
-                  <View key={item.id} style={{ width: colPercent, minWidth: 130 }}>
-                    <FavCard
-                      item={item}
-                      onPlay={() => void openItem(item)}
-                      onShare={() => void shareItem(item)}
-                      onRemove={() => confirmRemove(item)}
-                      removing={removingId === item.id}
-                    />
-                  </View>
-                ))}
-              </View>
-            </FadeIn>
-          ) : null}
-        </>
-      ) : null}
+        {/* Count summary */}
+        {favorites.length > 1 ? (
+          <FadeIn delay={110}>
+            <SectionLabel
+              title="All favourites"
+              accent={`${favorites.length} saved`}
+              subtitle="Your complete favourites collection"
+            />
+          </FadeIn>
+        ) : null}
 
-      {/* Authenticated empty state */}
-      {!loading && isAuthenticated && !items.length ? (
-        <SurfaceCard tone="strong" style={{ padding: theme.spacing.xl, alignItems: 'center', gap: 18 }}>
-          <View
-            style={{
-              width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center',
-              backgroundColor: `${theme.colors.primary}14`, borderWidth: 1, borderColor: theme.colors.border,
-            }}
-          >
-            <MaterialIcons name="favorite-border" size={34} color={theme.colors.primary} />
-          </View>
-          <View style={{ alignItems: 'center', gap: 8 }}>
-            <CustomText variant="heading" style={{ color: theme.colors.text, textAlign: 'center' }}>
-              No favourites yet
-            </CustomText>
-            <CustomText variant="body" style={{ color: theme.colors.textSecondary, textAlign: 'center', maxWidth: 360 }}>
-              Tap the save button on songs, videos, and live sessions to keep them here.
-            </CustomText>
-          </View>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center' }}>
-            <AppButton title="Discover content" size="md" onPress={() => router.push(APP_ROUTES.tabs.search)} leftIcon={<MaterialIcons name="search" size={17} color={theme.colors.textInverse} />} />
-            <AppButton title="Go home" size="md" variant="secondary" onPress={() => router.push(APP_ROUTES.tabs.home)} leftIcon={<MaterialIcons name="home-filled" size={17} color={theme.colors.text} />} />
-          </View>
-        </SurfaceCard>
-      ) : null}
+        {/* Responsive grid */}
+        {gridItems.length > 0 ? (
+          <FadeIn delay={140}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+              {gridItems.map((item) => (
+                <View key={item.id} style={{ width: colPercent, minWidth: 130 }}>
+                  <FavCard
+                    item={item}
+                    onPlay={() => void openItem(item)}
+                    onShare={() => void shareItem(item)}
+                    onRemove={() => confirmRemove(item)}
+                    removing={removingId === item.id}
+                  />
+                </View>
+              ))}
+            </View>
+          </FadeIn>
+        ) : null}
+      </PremiumPage>
 
-      {/* Featured hero */}
-      {featured ? (
-        <FadeIn delay={70}>
-          <PremiumHero
-            item={featured}
-            title={featured.title}
-            subtitle={featured.description || featured.subtitle || ''}
-            eyebrow="Top favourite"
-            primaryLabel="Play now"
-            primaryIcon="play-arrow"
-            onPrimary={() => void openItem(featured)}
-          />
-        </FadeIn>
-      ) : null}
-
-      {/* Count summary */}
-      {items.length > 1 ? (
-        <FadeIn delay={110}>
-          <SectionLabel
-            title="All favourites"
-            accent={`${items.length} saved`}
-            subtitle="Your complete favourites collection"
-          />
-        </FadeIn>
-      ) : null}
-
-      {/* Responsive grid */}
-      {gridItems.length > 0 ? (
-        <FadeIn delay={140}>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
-            {gridItems.map((item) => (
-              <View key={item.id} style={{ width: colPercent, minWidth: 130 }}>
-                <FavCard
-                  item={item}
-                  onPlay={() => void openItem(item)}
-                  onShare={() => void shareItem(item)}
-                  onRemove={() => confirmRemove(item)}
-                  removing={removingId === item.id}
-                />
-              </View>
-            ))}
-          </View>
-        </FadeIn>
-      ) : null}
-    </PremiumPage>
-
-    <ConfirmModal
-      visible={Boolean(removeTarget)}
-      icon="favorite"
-      title="Remove from favourites?"
-      body={removeTarget ? `"${removeTarget.title}" will be removed from your saved items.` : undefined}
-      primaryLabel="Remove"
-      primaryTone="danger"
-      secondaryLabel="Keep it"
-      loading={isRemoving}
-      onPrimary={() => { void removeItem(); }}
-      onDismiss={() => { if (!isRemoving) setRemoveTarget(null); }}
-    />
+      <ConfirmModal
+        visible={Boolean(removeTarget)}
+        icon="favorite"
+        title="Remove from favourites?"
+        body={removeTarget ? `"${removeTarget.title}" will be removed from your saved items.` : undefined}
+        primaryLabel="Remove"
+        primaryTone="danger"
+        secondaryLabel="Keep it"
+        loading={isRemoving}
+        onPrimary={() => { void removeItem(); }}
+        onDismiss={() => { if (!isRemoving) setRemoveTarget(null); }}
+      />
     </>
   );
 }

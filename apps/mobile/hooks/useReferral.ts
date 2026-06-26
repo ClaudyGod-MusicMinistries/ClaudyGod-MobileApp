@@ -2,15 +2,15 @@ import { useCallback, useEffect, useState } from 'react';
 import { Share } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useAuth } from '../context/AuthContext';
+import { useAppContext } from '../context/AppContext';
 import { apiFetch } from '../services/apiClient';
 
 const STORAGE_KEY_CODE = 'claudygod.referral.code';
 const STORAGE_KEY_COUNT = 'claudygod.referral.count';
 const SHARE_BASE_URL = 'https://claudygod.com/join';
 
-function deriveCodeFromUserId(userId: string): string {
-  const clean = userId.replace(/-/g, '').toUpperCase();
+function deriveCodeFromDeviceId(deviceId: string): string {
+  const clean = deviceId.replace(/-/g, '').toUpperCase();
   return `CG${clean.slice(0, 6)}`;
 }
 
@@ -34,26 +34,21 @@ async function fetchReferralCount(): Promise<number> {
 }
 
 export function useReferral(): ReferralState {
-  const { isAuthenticated, user } = useAuth();
+  const { deviceId } = useAppContext();
   const [code, setCode] = useState<string | null>(null);
   const [referralCount, setReferralCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isCopied, setIsCopied] = useState(false);
 
   useEffect(() => {
+    if (!deviceId) return;
     let active = true;
 
     const load = async () => {
       setIsLoading(true);
       try {
-        if (!isAuthenticated || !user?.id) {
-          setCode(null);
-          setReferralCount(0);
-          return;
-        }
-
         const stored = await AsyncStorage.getItem(STORAGE_KEY_CODE);
-        const derived = deriveCodeFromUserId(user.id);
+        const derived = deriveCodeFromDeviceId(deviceId);
         const resolved = stored ?? derived;
 
         if (!stored) {
@@ -87,7 +82,7 @@ export function useReferral(): ReferralState {
 
     void load();
     return () => { active = false; };
-  }, [isAuthenticated, user?.id]);
+  }, [deviceId]);
 
   const shareUrl = code ? `${SHARE_BASE_URL}?ref=${code}` : null;
 
@@ -97,7 +92,7 @@ export function useReferral(): ReferralState {
       await Share.share({
         title: 'Join me on ClaudyGod',
         message:
-          `I'm listening to worship music and sermons on ClaudyGod — join me! Use my code ${code} when you sign up for a free account.\n\n${shareUrl}`,
+          `I'm listening to worship music and sermons on ClaudyGod — join me! Use my code ${code} to get started.\n\n${shareUrl}`,
         url: shareUrl,
       });
     } catch {

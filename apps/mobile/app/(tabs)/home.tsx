@@ -6,7 +6,6 @@ import { useRouter } from 'expo-router';
 import { CustomText } from '../../components/CustomText';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { SupportMinistryCard } from '../../components/ui/SupportMinistryCard';
-import { useAuth } from '../../context/AuthContext';
 import { useContentFeed } from '../../hooks/useContentFeed';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import { useWordOfDay } from '../../hooks/useWordOfDay';
@@ -113,72 +112,6 @@ function ContinueRow({ items, onPress }: { items: FeedCardItem[]; onPress: (_ite
   );
 }
 
-// ─── Guest Callout ────────────────────────────────────────────────────────────
-
-function GuestCallout({ onSignIn }: { onSignIn: () => void }) {
-  const theme = useAppTheme();
-  return (
-    <TVTouchable onPress={onSignIn} showFocusBorder={false}>
-      <View
-        style={{
-          borderRadius: 20,
-          borderWidth: 1,
-          borderColor: theme.colors.primaryBorder,
-          backgroundColor: theme.colors.primarySurface,
-          overflow: 'hidden',
-          padding: 20,
-          gap: 14,
-        }}
-      >
-        {/* Icon + heading */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <View
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 22,
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: theme.colors.primarySurface,
-              borderWidth: 1,
-              borderColor: theme.colors.primaryBorder,
-            }}
-          >
-            <MaterialIcons name="person-outline" size={22} color={theme.colors.primary} />
-          </View>
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <CustomText style={{ color: theme.colors.text, fontSize: 15, fontWeight: '700', letterSpacing: -0.2 }}>
-              Sign in for full access
-            </CustomText>
-            <CustomText style={{ color: theme.colors.textMuted, fontSize: 12.5, marginTop: 3 }}>
-              Save your favourites, history, and live alerts.
-            </CustomText>
-          </View>
-        </View>
-
-        {/* CTA row */}
-        <View style={{ flexDirection: 'row', gap: 10 }}>
-          <View
-            style={{
-              flex: 1,
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 6,
-              paddingVertical: 11,
-              borderRadius: 12,
-              backgroundColor: theme.colors.primary,
-            }}
-          >
-            <MaterialIcons name="login" size={16} color={theme.colors.onPrimary} />
-            <CustomText style={{ color: theme.colors.onPrimary, fontSize: 13, fontWeight: '700' }}>Sign in</CustomText>
-          </View>
-        </View>
-      </View>
-    </TVTouchable>
-  );
-}
-
 // ─── Announcement Card ────────────────────────────────────────────────────────
 
 function AnnouncementCard({ item, onPress }: { item: FeedCardItem; onPress: () => void }) {
@@ -220,7 +153,6 @@ export default function HomeScreen() {
   const router = useRouter();
   const theme = useAppTheme();
   const { width } = useWindowDimensions();
-  const { isAuthenticated, user } = useAuth();
   const { feed, loading, refresh } = useContentFeed();
   const { config } = useMobileAppConfig();
   const { bibleVerse, adminWord } = useWordOfDay();
@@ -307,7 +239,7 @@ export default function HomeScreen() {
   return (
     <PremiumPage title="Home" eyebrow="Home" noBack refreshing={loading} onRefresh={() => void refresh()}>
       {/* Greeting */}
-      <GreetingBanner name={user?.displayName} />
+      <GreetingBanner />
 
       {/* Featured Hero */}
       <PremiumHero
@@ -339,8 +271,8 @@ export default function HomeScreen() {
         <LiveNowBanner item={liveSessions[0]} onPress={() => void openItem(liveSessions[0]!, 'home_live_banner')} />
       ) : null}
 
-      {/* Continue listening — only for authenticated users with real history */}
-      {isAuthenticated && feed.recent.length > 0 ? (
+      {/* Continue listening */}
+      {feed.recent.length > 0 ? (
         <ContinueRow items={continueItems} onPress={(item) => void openItem(item, 'home_continue')} />
       ) : null}
 
@@ -485,11 +417,6 @@ export default function HomeScreen() {
       {/* Admin-authored word — shown as a separate card when configured */}
       {adminWord ? (
         <WordOfDayCard word={adminWord} onPress={() => router.push(APP_ROUTES.settingsPages.word)} />
-      ) : null}
-
-      {/* Guest sign-in prompt */}
-      {!isAuthenticated ? (
-        <GuestCallout onSignIn={() => router.push(APP_ROUTES.auth.signIn)} />
       ) : null}
 
       {/* Support */}

@@ -8,7 +8,6 @@ import { CustomText } from '../../components/CustomText';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { PremiumPage, SectionLabel } from '../../components/Exp/PremiumContent';
-import { useAuth } from '../../context/AuthContext';
 import { useAppTheme } from '../../util/colorScheme';
 import { useReferral } from '../../hooks/useReferral';
 import { APP_ROUTES } from '../../util/appRoutes';
@@ -133,7 +132,6 @@ function GuestGate() {
 
 export default function ReferralScreen() {
   const theme = useAppTheme();
-  const { isAuthenticated } = useAuth();
   const { code, referralCount, isLoading, share, copyCode, isCopied } = useReferral();
 
   return (
@@ -178,8 +176,7 @@ export default function ReferralScreen() {
         </View>
 
         {/* Referral count strip */}
-        {isAuthenticated && (
-          <View
+        <View
             style={{
               flexDirection: 'row',
               alignItems: 'center',
@@ -198,13 +195,10 @@ export default function ReferralScreen() {
                 : `${referralCount} friend${referralCount === 1 ? '' : 's'} joined through your link`}
             </CustomText>
           </View>
-        )}
       </SurfaceCard>
 
-      {/* Code / guest gate */}
-      {!isAuthenticated ? (
-        <GuestGate />
-      ) : isLoading ? (
+      {/* Code display */}
+      {isLoading ? (
         <SurfaceCard tone="strong" style={{ padding: 40, alignItems: 'center' }}>
           <ActivityIndicator color={theme.colors.primary} />
         </SurfaceCard>
