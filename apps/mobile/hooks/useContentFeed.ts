@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { emptyFeedBundle, fetchFeedBundle, type FeedBundle } from '../services/contentService';
-import { getGuestHistory } from '../lib/guestStorage';
-import { useAuth } from '../context/AuthContext';
+import { getHistory } from '../lib/localUserStorage';
 
 export function useContentFeed() {
-  const { isAuthenticated } = useAuth();
   const [feed, setFeed] = useState<FeedBundle>(emptyFeedBundle());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -16,12 +14,12 @@ export function useContentFeed() {
     try {
       const nextFeed = await fetchFeedBundle();
 
-      // For guests, inject local playback history into feed.recent so "Continue
-      // listening" works without a server-side history record.
-      if (!isAuthenticated && nextFeed.recent.length === 0) {
-        const guestHistory = await getGuestHistory();
-        if (guestHistory.length > 0) {
-          nextFeed.recent = guestHistory;
+      // Inject local playback history into feed.recent so "Continue listening"
+      // always works, even when the server returns an empty history.
+      if (nextFeed.recent.length === 0) {
+        const localHistory = await getHistory();
+        if (localHistory.length > 0) {
+          nextFeed.recent = localHistory;
         }
       }
 
@@ -31,7 +29,7 @@ export function useContentFeed() {
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated]);
+  }, []);
 
   useEffect(() => {
     refresh();

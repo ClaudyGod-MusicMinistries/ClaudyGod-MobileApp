@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import * as FileSystem from 'expo-file-system/legacy';
 import type { FeedCardItem } from '../services/contentService';
-import { getGuestDownloads, saveGuestDownload, removeGuestDownload } from '../lib/guestStorage';
+import { getDownloads, saveDownload, removeDownload } from '../lib/localUserStorage';
 
 type DownloadStatus = 'idle' | 'downloading' | 'done' | 'error';
 
@@ -25,7 +25,7 @@ export function useOfflineDownload() {
 
   useEffect(() => {
     let active = true;
-    void getGuestDownloads().then((saved) => {
+    void getDownloads().then((saved) => {
       if (!active) return;
       const initial: Record<string, DownloadState> = {};
       saved.forEach((d) => {
@@ -77,7 +77,7 @@ export function useOfflineDownload() {
 
       await dl.downloadAsync();
 
-      await saveGuestDownload({
+      await saveDownload({
         contentId: item.id,
         title: item.title,
         localUri,
@@ -103,7 +103,7 @@ export function useOfflineDownload() {
     if (localUri) {
       try { await FileSystem.deleteAsync(localUri, { idempotent: true }); } catch { /* ignore */ }
     }
-    await removeGuestDownload(contentId);
+    await removeDownload(contentId);
     setDownloads((prev) => {
       const next = { ...prev };
       delete next[contentId];
