@@ -20,3 +20,22 @@ export async function updateWordOfDay(input: WordOfDay): Promise<WordOfDay> {
   const { data } = await client.put<WordOfDay>('/v1/admin/word-of-day/current', input);
   return data;
 }
+
+export async function listWordsOfDay(): Promise<WordOfDay[]> {
+  const { data } = await client.get<{ items: WordOfDay[] } | WordOfDay[]>('/v1/admin/word-of-day');
+  return Array.isArray(data) ? data : data.items ?? [];
+}
+
+export async function createWordOfDay(input: Omit<WordOfDay, 'id' | 'createdAt' | 'updatedAt'>): Promise<WordOfDay> {
+  const { data } = await client.post<WordOfDay>('/v1/admin/word-of-day', input);
+  return data;
+}
+
+export async function updateWordOfDayById(id: string, input: Omit<WordOfDay, 'id' | 'createdAt' | 'updatedAt'>): Promise<WordOfDay> {
+  const { data } = await client.put<WordOfDay>(`/v1/admin/word-of-day/${id}`, input);
+  return data;
+}
+
+export async function deleteWordOfDay(id: string): Promise<void> {
+  await client.delete(`/v1/admin/word-of-day/${id}`);
+}

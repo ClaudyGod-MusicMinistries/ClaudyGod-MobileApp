@@ -11,6 +11,7 @@ import { useAppModal } from '../../context/AppModalContext';
 import { useAppTheme, useThemeContext } from '../../util/colorScheme';
 import { useDeviceClass } from '../../util/deviceClassConfig';
 import { APP_ROUTES } from '../../util/appRoutes';
+import { useUserAccount } from '../../context/UserAccountContext';
 import {
   PremiumPage,
   SectionLabel,
@@ -162,6 +163,7 @@ export default function SettingsScreen() {
   const { themePreference, setThemePreference } = useThemeContext();
   const router = useRouter();
   const { showModal } = useAppModal();
+  const { account, isSignedIn, signOut, openAccountSheet } = useUserAccount();
 
   const [notifications, setNotifications] = useState(true);
   const [autoPlay, setAutoPlay] = useState(true);
@@ -229,28 +231,55 @@ export default function SettingsScreen() {
         />
       }
     >
-      {/* Identity */}
+      {/* Identity / Account card */}
       <SurfaceCard tone="strong" style={{ padding: device.isTV ? 20 : 16 }}>
         <View style={{ flexDirection: isWideLayout ? 'row' : 'column', gap: isWideLayout ? 20 : 16, alignItems: isWideLayout ? 'center' : 'flex-start' }}>
           <View
             style={{
               width: device.isTV ? 72 : 56, height: device.isTV ? 72 : 56,
               borderRadius: device.isTV ? 22 : 18, alignItems: 'center', justifyContent: 'center',
-              backgroundColor: theme.colors.card,
+              backgroundColor: isSignedIn ? theme.colors.primarySurface : theme.colors.card,
               borderWidth: 2,
-              borderColor: theme.colors.borderStrong,
+              borderColor: isSignedIn ? theme.colors.primaryBorder : theme.colors.borderStrong,
             }}
           >
-            <MaterialIcons name="headphones" size={device.isTV ? 34 : 26} color={theme.colors.primary} />
+            <MaterialIcons
+              name={isSignedIn ? 'person' : 'headphones'}
+              size={device.isTV ? 34 : 26}
+              color={theme.colors.primary}
+            />
           </View>
           <View style={{ flex: 1, minWidth: 0 }}>
             <CustomText style={{ color: theme.colors.text, fontSize: device.isTV ? 20 : 16, fontWeight: '700', letterSpacing: -0.3 }}>
-              ClaudyGod Listener
+              {isSignedIn ? account!.displayName : 'ClaudyGod Listener'}
             </CustomText>
             <CustomText style={{ color: theme.colors.textSecondary, fontSize: device.isTV ? 13 : 12, marginTop: 3 }}>
-              Worship freely — no account required
+              {isSignedIn ? account!.email : 'Worship freely — no account required'}
             </CustomText>
           </View>
+        </View>
+
+        {/* Account actions */}
+        <View style={{ marginTop: 14, gap: 8, flexDirection: isWideLayout ? 'row' : 'column' }}>
+          {isSignedIn ? (
+            <AppButton
+              title="Sign out"
+              variant="outline"
+              size="sm"
+              onPress={() => {
+                void signOut();
+                showModal({ title: 'Signed out', message: 'Your local library is still saved on this device.', tone: 'info', icon: 'logout' });
+              }}
+              leftIcon={<MaterialIcons name="logout" size={14} color={theme.colors.primary} />}
+            />
+          ) : (
+            <AppButton
+              title="Sync your library"
+              size="sm"
+              onPress={openAccountSheet}
+              leftIcon={<MaterialIcons name="sync" size={14} color="#FFFFFF" />}
+            />
+          )}
         </View>
       </SurfaceCard>
 

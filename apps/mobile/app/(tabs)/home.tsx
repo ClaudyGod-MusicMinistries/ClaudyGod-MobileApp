@@ -28,6 +28,7 @@ import {
   TrendingList,
   WordOfDayCard,
 } from '../../components/Exp/PremiumContent';
+import { AdBanner } from '../../components/ads/AdBanner';
 
 type SectionContentType = Exclude<ContentType, 'ad'>;
 
@@ -275,6 +276,9 @@ export default function HomeScreen() {
       {feed.recent.length > 0 ? (
         <ContinueRow items={continueItems} onPress={(item) => void openItem(item, 'home_continue')} />
       ) : null}
+
+      {/* Sponsored content */}
+      <AdBanner placement="home" />
 
       {/* ── 4 ClaudyGod Content Sections ─────────────────────────────────── */}
       <View style={{ gap: 32 }}>
