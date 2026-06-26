@@ -1,15 +1,19 @@
 <template>
-  <AuthLayout>
-    <!-- Step 1: Credentials -->
+  <AuthPageLayout eyebrow="Secure access">
+
+    <!-- Step 1: Credentials ─────────────────────────────────────────────────── -->
     <form v-if="!mfaRequired" class="space-y-5" @submit.prevent="onLogin">
       <div class="mb-6">
-        <h2 class="text-2xl font-black text-gray-900 tracking-tight">Welcome back</h2>
-        <p class="text-sm text-gray-500 mt-1">Sign in to your admin account</p>
+        <h2 class="text-2xl font-black text-ink tracking-tight">Welcome back</h2>
+        <p class="text-sm text-ink-soft mt-1">Sign in to your admin account</p>
       </div>
 
       <div v-if="auth.error"
-        class="p-3.5 rounded-2xl text-sm text-danger font-medium"
-        style="background:rgba(225,109,109,0.08);border:1px solid rgba(225,109,109,0.2)">
+        class="flex items-start gap-3 p-3.5 rounded-2xl text-sm text-danger font-medium"
+        style="background: rgba(225,109,109,0.08); border: 1px solid rgba(225,109,109,0.22)">
+        <svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01"/>
+        </svg>
         {{ auth.error }}
       </div>
 
@@ -20,8 +24,7 @@
         placeholder="you@example.com"
         required
         autocomplete="email"
-        id="email"
-        :light="true"
+        id="login-email"
       >
         <template #prefix>
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
@@ -29,6 +32,7 @@
           </svg>
         </template>
       </AppInput>
+
       <AppInput
         v-model="password"
         label="Password"
@@ -36,8 +40,7 @@
         placeholder="••••••••"
         required
         autocomplete="current-password"
-        id="password"
-        :light="true"
+        id="login-password"
       >
         <template #prefix>
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
@@ -46,29 +49,34 @@
         </template>
       </AppInput>
 
-      <button
+      <AppButton
         type="submit"
-        :disabled="auth.isLoading"
-        class="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold text-white transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-60 mt-2"
-        style="background:linear-gradient(135deg,#7c3aed,#6d28d9)">
-        <svg v-if="auth.isLoading" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-        </svg>
+        variant="gradient"
+        size="lg"
+        :loading="auth.isLoading"
+        :full-width="true"
+        class="mt-2"
+      >
         {{ auth.isLoading ? 'Signing in…' : 'Sign in' }}
-      </button>
+      </AppButton>
 
+      <!-- Divider -->
       <div class="relative flex items-center gap-3 my-1">
-        <div class="flex-1 h-px bg-gray-100" />
-        <span class="text-xs text-gray-400">or continue with</span>
-        <div class="flex-1 h-px bg-gray-100" />
+        <div class="flex-1 h-px bg-border"/>
+        <span class="text-xs text-ink-muted/70 whitespace-nowrap">or continue with</span>
+        <div class="flex-1 h-px bg-border"/>
       </div>
 
+      <!-- Social buttons -->
       <div class="flex gap-3">
-        <!-- Google -->
         <a
           :href="googleLoginUrl || '#'"
-          :class="['flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl text-sm font-semibold text-gray-700 transition-colors duration-150 border border-gray-200 hover:border-gray-300 hover:bg-gray-50', !googleLoginUrl && 'opacity-50 pointer-events-none']"
+          :class="[
+            'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl text-sm font-semibold transition-colors duration-150',
+            'text-ink-soft hover:text-ink border border-border hover:border-border-strong',
+            !googleLoginUrl && 'opacity-50 pointer-events-none',
+          ]"
+          style="background: rgba(255,255,255,0.04)"
         >
           <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="currentColor">
             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -78,11 +86,13 @@
           </svg>
           Google
         </a>
-        <!-- Facebook -->
         <a
           :href="facebookLoginUrl || '#'"
-          :class="['flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl text-sm font-semibold text-white transition-colors duration-150 border border-transparent hover:opacity-90', !facebookLoginUrl && 'opacity-50 pointer-events-none']"
-          style="background:#1877F2"
+          :class="[
+            'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl text-sm font-semibold text-white transition-colors duration-150 hover:opacity-90',
+            !facebookLoginUrl && 'opacity-50 pointer-events-none',
+          ]"
+          style="background: #1877F2"
         >
           <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="currentColor">
             <path d="M24 12.073C24 5.404 18.627 0 12 0S0 5.404 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.792-4.697 4.533-4.697 1.313 0 2.686.236 2.686.236v2.97h-1.513c-1.491 0-1.956.93-1.956 1.883v2.27h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/>
@@ -91,28 +101,31 @@
         </a>
       </div>
 
-      <p class="text-center text-sm text-gray-500 pt-1">
+      <p class="text-center text-sm text-ink-muted pt-1">
         Need an account?
-        <RouterLink to="/register" class="font-semibold text-violet-600 hover:text-violet-700 transition-colors">
+        <RouterLink to="/register" class="font-semibold text-primary-soft hover:text-primary transition-colors">
           Create one
         </RouterLink>
       </p>
     </form>
 
-    <!-- Step 2: MFA -->
+    <!-- Step 2: MFA ──────────────────────────────────────────────────────────── -->
     <form v-else class="space-y-5" @submit.prevent="onMfa">
       <div class="text-center mb-6">
         <div class="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3"
-          style="background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.2)">
-          <ShieldCheck class="w-6 h-6" style="color:#7c3aed" />
+          style="background: rgba(141,99,255,0.12); border: 1px solid rgba(141,99,255,0.28)">
+          <ShieldCheck class="w-6 h-6 text-primary-soft" />
         </div>
-        <h2 class="text-xl font-black text-gray-900 tracking-tight">Verification code</h2>
-        <p class="text-sm text-gray-500 mt-1">Enter the 6-digit security code from your authenticator app.</p>
+        <h2 class="text-xl font-black text-ink tracking-tight">Verification code</h2>
+        <p class="text-sm text-ink-soft mt-1">Enter the 6-digit security code from your authenticator app.</p>
       </div>
 
       <div v-if="auth.error"
-        class="p-3.5 rounded-2xl text-sm text-danger font-medium"
-        style="background:rgba(225,109,109,0.08);border:1px solid rgba(225,109,109,0.2)">
+        class="flex items-start gap-3 p-3.5 rounded-2xl text-sm text-danger font-medium"
+        style="background: rgba(225,109,109,0.08); border: 1px solid rgba(225,109,109,0.22)">
+        <svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01"/>
+        </svg>
         {{ auth.error }}
       </div>
 
@@ -126,30 +139,28 @@
         autocomplete="one-time-code"
         inputmode="numeric"
         id="mfa-code"
-        :light="true"
       />
 
-      <button
+      <AppButton
         type="submit"
-        :disabled="auth.isLoading"
-        class="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold text-white transition-all duration-150 disabled:opacity-60"
-        style="background:linear-gradient(135deg,#7c3aed,#6d28d9)">
-        <svg v-if="auth.isLoading" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-        </svg>
+        variant="gradient"
+        size="lg"
+        :loading="auth.isLoading"
+        :full-width="true"
+      >
         {{ auth.isLoading ? 'Verifying…' : 'Verify' }}
-      </button>
+      </AppButton>
 
       <button
         type="button"
-        class="w-full py-2 rounded-xl text-sm text-gray-500 hover:text-gray-700 transition-colors flex items-center justify-center gap-1.5"
+        class="w-full py-2 rounded-xl text-sm text-ink-muted hover:text-ink-soft transition-colors flex items-center justify-center gap-1.5"
         @click="mfaRequired = false; mfaToken = ''">
         <ArrowLeft class="w-3.5 h-3.5" />
         Back to sign in
       </button>
     </form>
-  </AuthLayout>
+
+  </AuthPageLayout>
 </template>
 
 <script setup lang="ts">
@@ -158,8 +169,9 @@ import { useRouter, RouterLink } from 'vue-router';
 import { ArrowLeft, ShieldCheck } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/auth.store';
 import { GOOGLE_LOGIN_URL, FACEBOOK_LOGIN_URL } from '@/api/auth';
-import AuthLayout from '@/components/layout/AuthLayout.vue';
+import AuthPageLayout from '@/components/layout/AuthPageLayout.vue';
 import AppInput from '@/components/ui/AppInput.vue';
+import AppButton from '@/components/ui/AppButton.vue';
 
 const auth = useAuthStore();
 const router = useRouter();
