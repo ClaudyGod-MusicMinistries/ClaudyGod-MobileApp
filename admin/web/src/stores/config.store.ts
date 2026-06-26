@@ -1,11 +1,21 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { getAppConfig, updateAppConfig, getWordOfDay, updateWordOfDay } from '@/api/config';
+import {
+  getAppConfig,
+  updateAppConfig,
+  getWordOfDay,
+  updateWordOfDay,
+  listWordsOfDay,
+  createWordOfDay,
+  updateWordOfDayById,
+  deleteWordOfDay,
+} from '@/api/config';
 import type { AppConfig, WordOfDay } from '@/api/types';
 
 export const useConfigStore = defineStore('config', () => {
   const appConfig = ref<AppConfig | null>(null);
   const wordOfDay = ref<WordOfDay | null>(null);
+  const wordSchedule = ref<WordOfDay[]>([]);
   const isLoading = ref(false);
   const isSaving = ref(false);
   const error = ref<string | null>(null);
@@ -49,5 +59,45 @@ export const useConfigStore = defineStore('config', () => {
     }
   }
 
-  return { appConfig, wordOfDay, isLoading, isSaving, error, fetchAppConfig, saveAppConfig, fetchWordOfDay, saveWordOfDay };
+  async function fetchWordSchedule(): Promise<void> {
+    isLoading.value = true;
+    error.value = null;
+    try {
+      wordSchedule.value = await listWordsOfDay();
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : 'Failed to load schedule';
+      wordSchedule.value = [];
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  async function addWordEntry(input: Omit<WordOfDay, 'id' | 'createdAt' | 'updatedAt'>): Promise<WordOfDay> {
+    const created = await createWordOfDay(input);
+    wordSchedule.value = [...wordSchedule.value, created].sort(
+      (a, b) => new Date(a.publishedDate).getTime() - new Date(b.publishedDate).getTime(),
+    );
+    return created;
+  }
+
+  async function editWordEntry(id: string, input: Omit<WordOfDay, 'id' | 'createdAt' | 'updatedAt'>): Promise<WordOfDay> {
+    const updated = await updateWordOfDayById(id, input);
+    wordSchedule.value = wordSchedule.value
+      .map((w) => (w.id === id ? updated : w))
+      .sort((a, b) => new Date(a.publishedDate).getTime() - new Date(b.publishedDate).getTime());
+    return updated;
+  }
+
+  async function removeWordEntry(id: string): Promise<void> {
+    await deleteWordOfDay(id);
+    wordSchedule.value = wordSchedule.value.filter((w) => w.id !== id);
+  }
+
+  return {
+    appConfig, wordOfDay, wordSchedule,
+    isLoading, isSaving, error,
+    fetchAppConfig, saveAppConfig,
+    fetchWordOfDay, saveWordOfDay,
+    fetchWordSchedule, addWordEntry, editWordEntry, removeWordEntry,
+  };
 });

@@ -25,6 +25,7 @@ import {
   TrendingList,
   dedupeFeedItems,
 } from '../../components/Exp/PremiumContent';
+import { WorshipTogetherBar } from '../../components/worship/WorshipTogetherBar';
 
 function dedupeItems(items: FeedCardItem[]): FeedCardItem[] {
   const seen = new Set<string>();
@@ -257,6 +258,9 @@ export default function PlaySection() {
           />
         )}
       </View>
+
+      {/* ── Worship Together live count ───────────────────────────────────── */}
+      {active ? <WorshipTogetherBar contentId={active.id} /> : null}
 
       {/* ── Filter chips ─────────────────────────────────────────────────── */}
       <FilterChips active={filter} onChange={setFilter} />

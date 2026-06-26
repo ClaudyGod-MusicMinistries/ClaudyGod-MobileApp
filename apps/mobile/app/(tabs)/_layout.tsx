@@ -26,7 +26,6 @@ export default function TabsLayout() {
         <Tabs.Screen name="settings" />
         <Tabs.Screen name="live" options={{ href: null }} />
         <Tabs.Screen name="search" options={{ href: null }} />
-        <Tabs.Screen name="dashboard" options={{ href: null }} />
         <Tabs.Screen name="Favourites" options={{ href: null }} />
         <Tabs.Screen name="PlaySection" options={{ href: null }} />
       </Tabs>

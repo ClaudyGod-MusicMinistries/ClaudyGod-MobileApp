@@ -1,18 +1,16 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { AppButton } from '../../components/ui/AppButton';
 import { CustomText } from '../../components/CustomText';
 import { useAppTheme } from '../../util/colorScheme';
 import { useContentFeed } from '../../hooks/useContentFeed';
+import { useLocalContent } from '../../hooks/useLocalContent';
 import type { FeedCardItem } from '../../services/contentService';
 import { APP_ROUTES } from '../../util/appRoutes';
 import { buildPlayerRoute } from '../../util/playerRoute';
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
-import { fetchMeLibrary, type MeLibrary, type MeLibraryItem } from '../../services/userFlowService';
-import { useAuth } from '../../context/AuthContext';
 import {
   ContentList,
   ContentRail,
@@ -22,34 +20,11 @@ import {
   dedupeFeedItems,
 } from '../../components/Exp/PremiumContent';
 
-type LibTab = 'saved' | 'downloads' | 'playlists';
-
-function toFeedCardItem(item: MeLibraryItem): FeedCardItem {
-  return {
-    id: item.id, title: item.title, subtitle: item.subtitle,
-    description: item.description, duration: item.duration || '--:--',
-    imageUrl: item.imageUrl || '', mediaUrl: item.mediaUrl,
-    type: item.type, createdAt: item.createdAt,
-  };
-}
-
-function buildPlaylistCards(playlists: MeLibrary['playlists']): FeedCardItem[] {
-  return playlists.map((playlist, index) => {
-    const seed = playlist.items[0];
-    return {
-      id: `playlist:${playlist.name}:${index}`, title: playlist.name,
-      subtitle: `${playlist.items.length} saved item${playlist.items.length === 1 ? '' : 's'}`,
-      description: seed?.description || 'A saved collection in your library.',
-      duration: seed?.duration || '--:--', imageUrl: seed?.imageUrl || '',
-      mediaUrl: seed?.mediaUrl, type: 'playlist', createdAt: seed?.createdAt,
-    };
-  });
-}
+type LibTab = 'saved' | 'history';
 
 const TABS: { id: LibTab; label: string; icon: React.ComponentProps<typeof MaterialIcons>['name'] }[] = [
-  { id: 'saved',     label: 'Saved',     icon: 'bookmark' },
-  { id: 'downloads', label: 'Downloads', icon: 'download-done' },
-  { id: 'playlists', label: 'Playlists', icon: 'queue-music' },
+  { id: 'saved',   label: 'Saved',   icon: 'bookmark' },
+  { id: 'history', label: 'History', icon: 'history' },
 ];
 
 function LibTabs({ active, onChange, counts }: { active: LibTab; onChange: (_t: LibTab) => void; counts: Record<LibTab, number> }) {
@@ -116,33 +91,17 @@ function LibTabs({ active, onChange, counts }: { active: LibTab; onChange: (_t: 
 }
 
 export default function LibraryScreen() {
-  const theme = useAppTheme();
   const router = useRouter();
-  const { isAuthenticated, user } = useAuth();
   const { feed, loading, refresh } = useContentFeed();
-  const [library, setLibrary] = useState<MeLibrary | null>(null);
-  const [libraryLoading, setLibraryLoading] = useState(false);
+  const { favorites, history, loaded } = useLocalContent();
   const [activeTab, setActiveTab] = useState<LibTab>('saved');
 
-  const loadLibrary = useCallback(async () => {
-    if (!isAuthenticated) { setLibrary(null); return; }
-    setLibraryLoading(true);
-    try { setLibrary(await fetchMeLibrary()); }
-    catch { setLibrary(null); }
-    finally { setLibraryLoading(false); }
-  }, [isAuthenticated]);
-
-  useEffect(() => { void loadLibrary(); }, [loadLibrary]);
-
-  const liked      = useMemo(() => (library?.liked.length      ? library.liked.map(toFeedCardItem)         : []), [library?.liked]);
-  const downloaded = useMemo(() => (library?.downloaded.length ? library.downloaded.map(toFeedCardItem)    : []), [library?.downloaded]);
-  const playlists  = useMemo(() => (library?.playlists.length  ? buildPlaylistCards(library.playlists)     : []), [library?.playlists]);
   const recommended = useMemo(
-    () => dedupeFeedItems([...liked, ...downloaded, ...playlists, ...feed.recent, ...feed.music, ...feed.playlists]),
-    [downloaded, feed.music, feed.playlists, feed.recent, liked, playlists],
+    () => dedupeFeedItems([...favorites, ...feed.recent, ...feed.music, ...feed.playlists]),
+    [favorites, feed.music, feed.playlists, feed.recent],
   );
 
-  const counts: Record<LibTab, number> = { saved: liked.length, downloads: downloaded.length, playlists: playlists.length };
+  const counts: Record<LibTab, number> = { saved: favorites.length, history: history.length };
 
   const openItem = async (item: FeedCardItem, source: string) => {
     await trackPlayEvent({ contentId: item.id, contentType: item.type, title: item.title, source });
@@ -154,68 +113,27 @@ export default function LibraryScreen() {
       title="Library"
       eyebrow="Saved"
       noBack
-      refreshing={loading || libraryLoading}
-      onRefresh={() => { refresh(); void loadLibrary(); }}
-      rightAction={
-        <AppButton
-          title=""
-          variant="secondary"
-          size="sm"
-          onPress={() => router.push(isAuthenticated ? APP_ROUTES.profile : APP_ROUTES.auth.signIn)}
-          leftIcon={<MaterialIcons name={isAuthenticated ? 'person-outline' : 'login'} size={16} color={theme.colors.text} />}
-          style={{ minWidth: 40, paddingHorizontal: 10 }}
-        />
-      }
+      refreshing={loading || !loaded}
+      onRefresh={() => refresh()}
     >
-      {/* Profile bar */}
-      {isAuthenticated && user ? (
-        <View
-          style={{
-            flexDirection: 'row', alignItems: 'center', gap: 12,
-            padding: 14, borderRadius: 16, borderWidth: 1,
-            borderColor: theme.colors.border,
-            backgroundColor: theme.colors.surface,
-          }}
-        >
-          <View
-            style={{
-              width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center',
-              backgroundColor: theme.colors.card,
-            }}
-          >
-            <CustomText style={{ color: theme.colors.primary, fontSize: 16, fontWeight: '700' }}>
-              {(user.displayName ?? user.email ?? 'U')[0]?.toUpperCase()}
-            </CustomText>
-          </View>
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <CustomText style={{ color: theme.colors.text, fontSize: 14, fontWeight: '700' }} numberOfLines={1}>
-              {user.displayName ?? 'Your library'}
-            </CustomText>
-            <CustomText style={{ color: theme.colors.textSecondary, fontSize: 11.5, marginTop: 1 }} numberOfLines={1}>
-              {liked.length} saved · {downloaded.length} downloads · {playlists.length} playlists
-            </CustomText>
-          </View>
-        </View>
-      ) : null}
-
       {/* Tabs */}
       <LibTabs active={activeTab} onChange={setActiveTab} counts={counts} />
 
-      {/* Tab content */}
+      {/* Saved */}
       {activeTab === 'saved' ? (
         <>
           <View style={{ gap: 12 }}>
-            <SectionLabel title="Saved tracks" accent="Favorites" actionLabel="See all" onAction={() => {}} />
+            <SectionLabel title="Saved tracks" accent="Favorites" />
             <ContentRail
               title=""
-              items={liked}
-              loading={libraryLoading}
+              items={favorites}
+              loading={!loaded}
               onPressItem={(item) => void openItem(item, 'library_saved')}
-              emptyTitle="Save your first favorite"
-              emptyMessage="Start from Music, Videos, or Search and keep the moments you love nearby."
+              emptyTitle="Nothing saved yet"
+              emptyMessage="Tap the heart on any track to keep it here."
             />
           </View>
-          {isAuthenticated && !libraryLoading && recommended.length > 0 ? (
+          {loaded && recommended.length > 0 ? (
             <ContentList
               title="Recommended for you"
               items={recommended}
@@ -225,48 +143,22 @@ export default function LibraryScreen() {
         </>
       ) : null}
 
-      {activeTab === 'downloads' ? (
+      {/* History */}
+      {activeTab === 'history' ? (
         <View style={{ gap: 12 }}>
-          <SectionLabel title="Downloaded" accent="Offline" />
+          <SectionLabel title="Recently played" accent="History" />
           <ContentRail
             title=""
-            items={downloaded}
-            compact
-            loading={libraryLoading}
-            onPressItem={(item) => void openItem(item, 'library_downloads')}
-            emptyTitle="No downloads yet"
-            emptyMessage="Downloaded items stay here for quick offline access."
+            items={history}
+            loading={!loaded}
+            onPressItem={(item) => void openItem(item, 'library_history')}
+            emptyTitle="No history yet"
+            emptyMessage="Your recently played tracks will appear here."
           />
         </View>
       ) : null}
 
-      {activeTab === 'playlists' ? (
-        <View style={{ gap: 12 }}>
-          <SectionLabel title="Your playlists" accent="Collections" />
-          <ContentRail
-            title=""
-            items={playlists}
-            compact
-            loading={libraryLoading}
-            onPressItem={(item) => void openItem(item, 'library_playlists')}
-            emptyTitle="No playlists yet"
-            emptyMessage="Build collections from the moments you return to often."
-          />
-        </View>
-      ) : null}
-
-      {/* Guest state */}
-      {!isAuthenticated ? (
-        <EmptyState
-          title="Sign in to keep your favorites"
-          message="Create an account or sign in to save songs, videos, and live sessions."
-          actionLabel="Sign in"
-          onAction={() => router.push(APP_ROUTES.auth.signIn)}
-          icon="library-music"
-        />
-      ) : null}
-
-      {isAuthenticated && !libraryLoading && recommended.length === 0 ? (
+      {loaded && favorites.length === 0 && history.length === 0 ? (
         <EmptyState
           title="Your library is open"
           message="Explore music and videos, then save the moments you love."

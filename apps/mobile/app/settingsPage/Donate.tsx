@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Linking, Platform, ScrollView, View, useWindowDimensions } from 'react-native';
+import { Animated, Linking, Modal, Platform, ScrollView, TouchableWithoutFeedback, View, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,7 +8,6 @@ import { CustomText } from '../../components/CustomText';
 import { AppButton } from '../../components/ui/AppButton';
 import { useAppTheme } from '../../util/colorScheme';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
-import { APP_ROUTES } from '../../util/appRoutes';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -220,6 +219,7 @@ export default function Donate() {
   const scripture = SCRIPTURES[scriptureIndex] ?? SCRIPTURES[0]!;
 
   const supportEmail = config?.privacy?.contactEmail ?? 'support@claudygod.org';
+  const [showComingSoon, setShowComingSoon] = useState(false);
 
   useEffect(() => { setSelectedCurrency(defaultCurrency); }, [defaultCurrency]);
 
@@ -237,17 +237,7 @@ export default function Donate() {
 
   const continueToReview = () => {
     if (!selectedAmount) return;
-    router.push({
-      pathname: APP_ROUTES.settingsPages.payment,
-      params: {
-        amount: selectedAmount,
-        frequency: selectedFrequency,
-        methodId: selectedMethod?.id ?? '',
-        methodLabel: selectedMethod?.label ?? '',
-        currency: selectedCurrency,
-        planId: selectedPlan?.id ?? '',
-      },
-    });
+    setShowComingSoon(true);
   };
 
   const contactSupport = () => {
@@ -258,6 +248,72 @@ export default function Donate() {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+
+      {/* Coming soon modal */}
+      <Modal
+        visible={showComingSoon}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowComingSoon(false)}
+        statusBarTranslucent
+      >
+        <TouchableWithoutFeedback onPress={() => setShowComingSoon(false)}>
+          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.65)', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+            <TouchableWithoutFeedback onPress={() => {}}>
+              <View
+                style={{
+                  backgroundColor: theme.colors.surface,
+                  borderRadius: 24,
+                  borderWidth: 1,
+                  borderColor: theme.colors.border,
+                  padding: 28,
+                  alignItems: 'center',
+                  gap: 14,
+                  maxWidth: 340,
+                  width: '100%',
+                }}
+              >
+                <View
+                  style={{
+                    width: 68, height: 68, borderRadius: 34,
+                    backgroundColor: theme.colors.primarySurface,
+                    borderWidth: 1, borderColor: theme.colors.primaryBorder,
+                    alignItems: 'center', justifyContent: 'center',
+                  }}
+                >
+                  <MaterialIcons name="volunteer-activism" size={32} color={theme.colors.primary} />
+                </View>
+                <CustomText style={{ color: theme.colors.text, fontSize: 20, fontWeight: '800', textAlign: 'center', letterSpacing: -0.3 }}>
+                  Coming soon
+                </CustomText>
+                <CustomText style={{ color: theme.colors.textSecondary, fontSize: 14, textAlign: 'center', lineHeight: 21 }}>
+                  Online giving is being set up for launch. In the meantime, you can reach us directly to give.
+                </CustomText>
+                <AppButton
+                  title="Contact us to give"
+                  size="md"
+                  fullWidth
+                  onPress={() => {
+                    setShowComingSoon(false);
+                    contactSupport();
+                  }}
+                  leftIcon={<MaterialIcons name="support-agent" size={17} color="#FFFFFF" />}
+                />
+                <TVTouchable
+                  onPress={() => setShowComingSoon(false)}
+                  showFocusBorder={false}
+                  style={{ paddingVertical: 6 }}
+                >
+                  <CustomText style={{ color: theme.colors.textMuted, fontSize: 13, fontWeight: '500' }}>
+                    Close
+                  </CustomText>
+                </TVTouchable>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
       {/* Header */}
       <View
         style={{

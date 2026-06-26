@@ -200,6 +200,9 @@ export interface WordOfDay {
   reflection: string;
   author: string | null;
   publishedDate: string;
+  status?: 'draft' | 'published' | 'archived';
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────

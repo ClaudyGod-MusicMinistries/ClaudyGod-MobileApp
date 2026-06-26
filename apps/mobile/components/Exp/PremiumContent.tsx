@@ -29,7 +29,6 @@ import { ActionSheet } from '../ui/ActionSheet';
 import type { ActionSheetAction } from '../ui/ActionSheet';
 import { FadeIn } from '../ui/FadeIn';
 import { SkeletonLoader } from '../ui/SkeletonLoader';
-import { useAuth } from '../../context/AuthContext';
 import { useAppTheme } from '../../util/colorScheme';
 import { APP_ROUTES } from '../../util/appRoutes';
 import { BRAND_LOGO_ASSET, BRAND_MUSIC_ASSET, BRAND_WORSHIP_ASSET, DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
@@ -117,7 +116,6 @@ export function PremiumPage({
 }: PremiumPageProps) {
   const theme = useAppTheme();
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
   const { width } = useWindowDimensions();
   const compact = width < 430;
   const isSidebarMode = getSidebarWidth(width) > 0;
@@ -242,16 +240,12 @@ export function PremiumPage({
                   />
 
                   <NavIconButton
-                    icon={isAuthenticated ? 'person-outline' : 'login'}
-                    label={isAuthenticated ? 'Profile' : 'Sign in'}
-                    onPress={() =>
-                      router.push(isAuthenticated ? APP_ROUTES.profile : APP_ROUTES.auth.signIn)
-                    }
+                    icon="settings"
+                    label="Settings"
+                    onPress={() => router.push(APP_ROUTES.tabs.settings)}
                     size={compact ? 36 : 40}
-                    borderColor={isAuthenticated ? theme.colors.border : 'transparent'}
-                    iconColor={isAuthenticated ? theme.colors.primary : theme.colors.textInverse}
-                    accent={!isAuthenticated}
-                    accentColor={theme.colors.primary}
+                    borderColor={theme.colors.border}
+                    iconColor={theme.colors.text}
                   />
                 </View>
               </Animated.View>
