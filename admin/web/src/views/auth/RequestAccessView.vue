@@ -1,225 +1,194 @@
 <template>
-  <div class="min-h-screen bg-[#07050C] flex">
+  <AuthPageLayout>
 
-    <!-- Left panel -->
-    <div class="hidden lg:flex flex-col justify-between w-[420px] flex-shrink-0 bg-[#0D0B17] border-r border-white/6 p-10 relative overflow-hidden">
-      <div class="pointer-events-none absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full bg-violet-600/8 blur-3xl" />
-      <div class="pointer-events-none absolute bottom-0 right-0 w-[300px] h-[300px] rounded-full bg-violet-500/5 blur-3xl" />
-
-      <div class="relative z-10">
-        <div class="flex items-center gap-3 mb-14">
-          <img :src="BRAND_LOGO_URL" alt="ClaudyGod" class="w-9 h-9 rounded-xl object-contain" />
-          <div>
-            <p class="text-white text-sm font-bold leading-none">ClaudyGod</p>
-            <p class="text-white/40 text-xs mt-0.5">Admin Studio</p>
-          </div>
-        </div>
-
-        <h1 class="text-white text-3xl font-black tracking-tight leading-snug mb-4">
-          How access<br />works.
+    <template #panel>
+      <div class="max-w-[380px]">
+        <p class="text-[11px] font-bold uppercase tracking-[0.2em] mb-5 text-primary-soft/80">Access request</p>
+        <h1 class="font-black leading-[1.06] mb-6 text-ink" style="font-size: clamp(2.2rem, 3.2vw, 2.9rem)">
+          How access<br/>
+          <span style="background: linear-gradient(92deg, #c4b5fd 0%, #818cf8 55%, #8b5cf6 100%); -webkit-background-clip: text; background-clip: text; color: transparent">
+            works.
+          </span>
         </h1>
-        <p class="text-white/50 text-sm leading-relaxed mb-10">
+        <p class="text-sm leading-relaxed mb-10 text-ink-soft">
           The admin portal is invite-only to protect your platform. Submit your request and a Super Admin will review it.
         </p>
 
         <div class="space-y-5">
           <div v-for="(step, i) in STEPS" :key="i" class="flex items-start gap-3">
-            <div class="w-7 h-7 rounded-full bg-violet-500/15 border border-violet-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <span class="text-violet-400 text-[11px] font-bold">{{ i + 1 }}</span>
+            <div class="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
+              style="background: rgba(141,99,255,0.15); border: 1px solid rgba(141,99,255,0.30)">
+              <span class="text-primary-soft text-[11px] font-bold">{{ i + 1 }}</span>
             </div>
             <div>
-              <p class="text-white/90 text-xs font-semibold">{{ step.title }}</p>
-              <p class="text-white/35 text-xs leading-snug mt-0.5">{{ step.desc }}</p>
+              <p class="text-ink/90 text-xs font-semibold">{{ step.title }}</p>
+              <p class="text-ink-muted text-xs leading-snug mt-0.5">{{ step.desc }}</p>
             </div>
           </div>
         </div>
       </div>
+    </template>
 
-      <p class="relative z-10 text-white/20 text-xs">© {{ year }} ClaudyGod Music Ministries</p>
-    </div>
+    <!-- Form area ─────────────────────────────────────────────────────────────── -->
+    <Transition name="slide" mode="out-in">
 
-    <!-- Right form panel -->
-    <div class="flex-1 flex items-center justify-center p-6 overflow-y-auto">
-      <div class="w-full max-w-md py-8">
+      <!-- REQUEST FORM -->
+      <div v-if="phase === 'form'" key="form" class="space-y-6">
 
-        <!-- Mobile brand mark -->
-        <div class="flex lg:hidden items-center gap-2.5 mb-8">
-          <img :src="BRAND_LOGO_URL" alt="ClaudyGod" class="w-8 h-8 rounded-xl object-contain" />
-          <div>
-            <p class="text-white text-sm font-bold leading-none">ClaudyGod</p>
-            <p class="text-white/40 text-xs">Admin Studio</p>
-          </div>
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full"
+          style="background: rgba(141,99,255,0.10); border: 1px solid rgba(141,99,255,0.22)">
+          <svg class="w-3.5 h-3.5 text-primary-soft" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+          </svg>
+          <span class="text-primary-soft text-xs font-medium">Admin access request</span>
         </div>
 
-        <Transition name="slide" mode="out-in">
+        <div>
+          <h2 class="text-ink text-2xl font-black tracking-tight mb-1">Request access</h2>
+          <p class="text-ink-muted text-sm">Fill in your details and we'll send your request to the Super Admin for review.</p>
+        </div>
 
-          <!-- REQUEST FORM -->
-          <div v-if="phase === 'form'" key="form" class="space-y-6">
+        <form @submit.prevent="submit" novalidate class="space-y-4">
 
-            <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-violet-500/10 border border-violet-500/20">
-              <svg class="w-3.5 h-3.5 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
-              </svg>
-              <span class="text-violet-300 text-xs font-medium">Admin access request</span>
+          <!-- Name -->
+          <div class="space-y-1.5">
+            <label class="block text-xs font-semibold text-ink-muted">Full name</label>
+            <div class="relative">
+              <div class="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+              </div>
+              <input v-model="form.name" type="text" placeholder="Your full name" autocomplete="name" :class="inputClass(errors.name)" />
             </div>
+            <p v-if="errors.name" class="text-danger text-xs">{{ errors.name }}</p>
+          </div>
 
-            <div>
-              <h2 class="text-white text-2xl font-black tracking-tight mb-1">Request access</h2>
-              <p class="text-white/45 text-sm">Fill in your details and we'll send your request to the Super Admin for review.</p>
+          <!-- Email -->
+          <div class="space-y-1.5">
+            <label class="block text-xs font-semibold text-ink-muted">Work email</label>
+            <div class="relative">
+              <div class="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+              </div>
+              <input v-model="form.email" type="email" placeholder="you@example.com" autocomplete="email" :class="inputClass(errors.email)" />
             </div>
+            <p v-if="errors.email" class="text-danger text-xs">{{ errors.email }}</p>
+          </div>
 
-            <form @submit.prevent="submit" novalidate class="space-y-4">
-
-              <!-- Name -->
-              <div class="space-y-1.5">
-                <label class="block text-xs font-semibold text-white/50">Full name</label>
-                <div class="relative">
-                  <div class="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/25 pointer-events-none">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-                  </div>
-                  <input
-                    v-model="form.name"
-                    type="text"
-                    placeholder="Your full name"
-                    autocomplete="name"
-                    :class="inputClass(errors.name)"
-                  />
-                </div>
-                <p v-if="errors.name" class="text-red-400 text-xs">{{ errors.name }}</p>
-              </div>
-
-              <!-- Email -->
-              <div class="space-y-1.5">
-                <label class="block text-xs font-semibold text-white/50">Work email</label>
-                <div class="relative">
-                  <div class="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/25 pointer-events-none">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                  </div>
-                  <input
-                    v-model="form.email"
-                    type="email"
-                    placeholder="you@example.com"
-                    autocomplete="email"
-                    :class="inputClass(errors.email)"
-                  />
-                </div>
-                <p v-if="errors.email" class="text-red-400 text-xs">{{ errors.email }}</p>
-              </div>
-
-              <!-- Role -->
-              <div class="space-y-1.5">
-                <label class="block text-xs font-semibold text-white/50">Requested role</label>
-                <div class="grid grid-cols-3 gap-2">
-                  <button
-                    v-for="r in ROLE_OPTIONS"
-                    :key="r.value"
-                    type="button"
-                    :class="[
-                      'flex flex-col items-center gap-1.5 p-3 rounded-xl border text-center transition-all',
-                      form.role === r.value
-                        ? 'bg-violet-500/15 border-violet-500/40 text-violet-300'
-                        : 'bg-white/3 border-white/8 text-white/40 hover:border-white/15 hover:text-white/60',
-                    ]"
-                    @click="form.role = r.value"
-                  >
-                    <span class="text-[11px] font-semibold leading-none mt-1">{{ r.label }}</span>
-                    <span class="text-[9px] text-white/30 leading-none mt-0.5">{{ r.desc }}</span>
-                  </button>
-                </div>
-              </div>
-
-              <!-- Message -->
-              <div class="space-y-1.5">
-                <label class="flex items-center gap-1.5 text-xs font-semibold text-white/50">
-                  Message
-                  <span class="font-normal text-white/25">(optional)</span>
-                </label>
-                <textarea
-                  v-model="form.message"
-                  rows="3"
-                  placeholder="Tell us why you need access or your role in the ministry…"
-                  class="w-full px-4 py-2.5 rounded-xl bg-white/4 border border-white/8 text-white/90 text-sm placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500/40 transition-all resize-none"
-                />
-              </div>
-
-              <!-- Error -->
-              <div v-if="submitError" class="flex items-start gap-3 p-3.5 rounded-xl bg-red-500/8 border border-red-500/20">
-                <svg class="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01"/></svg>
-                <p class="text-red-400 text-sm leading-snug">{{ submitError }}</p>
-              </div>
-
+          <!-- Role -->
+          <div class="space-y-1.5">
+            <label class="block text-xs font-semibold text-ink-muted">Requested role</label>
+            <div class="grid grid-cols-3 gap-2">
               <button
-                type="submit"
-                :disabled="isSubmitting"
-                class="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold text-white transition-all mt-2 shadow-lg shadow-violet-500/20 disabled:opacity-60 disabled:cursor-not-allowed"
-                style="background: linear-gradient(135deg, #7c3aed, #6d28d9)"
+                v-for="r in ROLE_OPTIONS"
+                :key="r.value"
+                type="button"
+                :class="[
+                  'flex flex-col items-center gap-1.5 p-3 rounded-xl border text-center transition-all',
+                  form.role === r.value
+                    ? 'bg-primary/15 border-primary/40 text-primary-soft'
+                    : 'bg-white/3 border-border text-ink-muted hover:border-border-strong hover:text-ink-soft',
+                ]"
+                @click="form.role = r.value"
               >
-                <span v-if="isSubmitting" class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                {{ isSubmitting ? 'Sending request…' : 'Send access request' }}
+                <span class="text-[11px] font-semibold leading-none mt-1">{{ r.label }}</span>
+                <span class="text-[9px] text-ink-muted/60 leading-none mt-0.5">{{ r.desc }}</span>
               </button>
-            </form>
-
-            <p class="text-center text-xs text-white/30 pt-2">
-              Already have an invite link?
-              <RouterLink to="/register" class="text-violet-400 hover:text-violet-300 font-medium ml-1 transition-colors">Use it here</RouterLink>
-            </p>
-            <p class="text-center text-xs text-white/30">
-              Have an account?
-              <RouterLink to="/login" class="text-violet-400 hover:text-violet-300 font-medium ml-1 transition-colors">Sign in</RouterLink>
-            </p>
+            </div>
           </div>
 
-          <!-- SUCCESS -->
-          <div v-else-if="phase === 'success'" key="success" class="text-center py-10 space-y-5">
-            <div class="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto">
-              <svg class="w-8 h-8 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            </div>
-            <div>
-              <h2 class="text-white text-xl font-bold mb-2">Request sent!</h2>
-              <p class="text-white/45 text-sm leading-relaxed max-w-xs mx-auto">
-                Your request has been forwarded to the Super Admin. If approved, you'll receive an invitation email at
-                <span class="text-violet-400 font-semibold">{{ form.email }}</span> with a link to set up your account.
-              </p>
-            </div>
-            <div class="p-4 rounded-xl bg-violet-500/8 border border-violet-500/15 text-left max-w-xs mx-auto">
-              <p class="text-xs text-white/50 leading-relaxed">
-                <strong class="text-white/70">What happens next:</strong><br />
-                The Super Admin will review your request and send an invite link to your email. Check your inbox (and spam folder) within 24–48 hours.
-              </p>
-            </div>
-            <RouterLink to="/login" class="inline-flex items-center gap-2 text-violet-400 hover:text-violet-300 text-sm font-medium transition-colors">
-              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-              Back to sign in
-            </RouterLink>
+          <!-- Message -->
+          <div class="space-y-1.5">
+            <label class="flex items-center gap-1.5 text-xs font-semibold text-ink-muted">
+              Message
+              <span class="font-normal text-ink-muted/50">(optional)</span>
+            </label>
+            <textarea
+              v-model="form.message"
+              rows="3"
+              placeholder="Tell us why you need access or your role in the ministry…"
+              class="w-full px-4 py-2.5 rounded-xl bg-bg-1 border border-border text-ink text-sm placeholder-ink-muted/40 focus:outline-none focus:ring-2 focus:ring-primary/25 focus:border-primary/50 transition-all resize-none"
+            />
           </div>
 
-        </Transition>
+          <!-- Error -->
+          <div v-if="submitError"
+            class="flex items-start gap-3 p-3.5 rounded-xl border"
+            style="background: rgba(225,109,109,0.08); border-color: rgba(225,109,109,0.22)">
+            <svg class="w-4 h-4 text-danger flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01"/></svg>
+            <p class="text-danger text-sm leading-snug">{{ submitError }}</p>
+          </div>
+
+          <button
+            type="submit"
+            :disabled="isSubmitting"
+            class="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold text-white transition-all mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
+            style="background: linear-gradient(135deg, #7c3aed, #6d28d9); box-shadow: 0 8px 24px rgba(109,40,217,0.25)"
+          >
+            <span v-if="isSubmitting" class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            {{ isSubmitting ? 'Sending request…' : 'Send access request' }}
+          </button>
+        </form>
+
+        <p class="text-center text-xs text-ink-muted/50 pt-2">
+          Already have an invite link?
+          <RouterLink to="/register" class="text-primary-soft hover:text-primary font-medium ml-1 transition-colors">Use it here</RouterLink>
+        </p>
+        <p class="text-center text-xs text-ink-muted/50">
+          Have an account?
+          <RouterLink to="/login" class="text-primary-soft hover:text-primary font-medium ml-1 transition-colors">Sign in</RouterLink>
+        </p>
       </div>
-    </div>
-  </div>
+
+      <!-- SUCCESS -->
+      <div v-else-if="phase === 'success'" key="success" class="text-center py-10 space-y-5">
+        <div class="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto"
+          style="background: rgba(52,211,153,0.10); border: 1px solid rgba(52,211,153,0.22)">
+          <svg class="w-8 h-8 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <div>
+          <h2 class="text-ink text-xl font-bold mb-2">Request sent!</h2>
+          <p class="text-ink-soft text-sm leading-relaxed max-w-xs mx-auto">
+            Your request has been forwarded to the Super Admin. If approved, you'll receive an invitation email at
+            <span class="text-primary-soft font-semibold">{{ form.email }}</span> with a link to set up your account.
+          </p>
+        </div>
+        <div class="p-4 rounded-xl border text-left max-w-xs mx-auto"
+          style="background: rgba(141,99,255,0.08); border-color: rgba(141,99,255,0.18)">
+          <p class="text-xs text-ink-muted leading-relaxed">
+            <strong class="text-ink-soft">What happens next:</strong><br />
+            The Super Admin will review your request and send an invite link to your email. Check your inbox (and spam folder) within 24–48 hours.
+          </p>
+        </div>
+        <RouterLink to="/login" class="inline-flex items-center gap-2 text-primary-soft hover:text-primary text-sm font-medium transition-colors">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+          Back to sign in
+        </RouterLink>
+      </div>
+
+    </Transition>
+
+  </AuthPageLayout>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue';
 import { RouterLink } from 'vue-router';
-import { BRAND_LOGO_URL } from '@/utils/constants';
 import { requestAdminAccess } from '@/api/auth';
+import AuthPageLayout from '@/components/layout/AuthPageLayout.vue';
 
 type Phase = 'form' | 'success';
 
-const year = new Date().getFullYear();
-
 const STEPS = [
-  { title: 'Submit your request', desc: 'Enter your name, email, and the role you need on the platform.' },
-  { title: 'Admin reviews', desc: 'The Super Admin is notified and reviews your request.' },
-  { title: 'Receive your invite', desc: 'If approved, an invitation link is sent to your email — valid for 48 hours.' },
-  { title: 'Set up your account', desc: 'Click the link, choose a password, and you\'re in.' },
+  { title: 'Submit your request',  desc: 'Enter your name, email, and the role you need on the platform.' },
+  { title: 'Admin reviews',        desc: 'The Super Admin is notified and reviews your request.' },
+  { title: 'Receive your invite',  desc: 'If approved, an invitation link is sent to your email — valid for 48 hours.' },
+  { title: 'Set up your account',  desc: 'Click the link, choose a password, and you\'re in.' },
 ];
 
 const ROLE_OPTIONS = [
-  { value: 'ADMIN' as const,     label: 'Admin',     desc: 'Full access' },
-  { value: 'MODERATOR' as const, label: 'Moderator', desc: 'Review content' },
-  { value: 'CREATOR' as const,   label: 'Creator',   desc: 'Upload content' },
+  { value: 'ADMIN' as const,     label: 'Admin',     desc: 'Full access'     },
+  { value: 'MODERATOR' as const, label: 'Moderator', desc: 'Review content'  },
+  { value: 'CREATOR' as const,   label: 'Creator',   desc: 'Upload content'  },
 ];
 
 const phase = ref<Phase>('form');
@@ -237,8 +206,9 @@ const errors = ref<Record<string, string>>({});
 
 const inputClass = (hasError?: string) =>
   [
-    'w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/4 border text-white/90 text-sm placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-violet-500/30 transition-all',
-    hasError ? 'border-red-500/50' : 'border-white/8 focus:border-violet-500/40',
+    'w-full pl-10 pr-4 py-2.5 rounded-xl bg-bg-1 border text-ink text-sm placeholder-ink-muted/40',
+    'focus:outline-none focus:ring-2 focus:ring-primary/25 transition-all',
+    hasError ? 'border-danger/50' : 'border-border focus:border-primary/50',
   ].join(' ');
 
 function validate(): boolean {
