@@ -65,7 +65,6 @@ export function PosterCard({
           backgroundColor: theme.colors.surfaceAlt,
           borderWidth: 1,
           borderColor: 'rgba(255,255,255,0.10)',
-          ...theme.shadows.soft,
         }}
       >
         <Image source={{ uri: imageUrl }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
@@ -108,7 +107,6 @@ export function PosterCard({
               backgroundColor: theme.colors.primary,
               alignItems: 'center',
               justifyContent: 'center',
-              ...theme.shadows.card,
             }}
           >
             <MaterialIcons name="play-arrow" size={26} color={theme.colors.textInverse} />

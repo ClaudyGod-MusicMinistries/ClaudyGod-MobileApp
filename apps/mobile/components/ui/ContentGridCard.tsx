@@ -59,11 +59,6 @@ export function ContentGridCard({
         borderRadius: 14,
         overflow: 'hidden',
         transform: [{ scale: scaleAnim }],
-        shadowColor: '#000',
-        shadowOpacity: pressed ? 0.3 : 0.15,
-        shadowRadius: 8,
-        shadowOffset: { width: 0, height: 4 },
-        elevation: 4,
       }}
     >
       <Pressable

@@ -90,11 +90,6 @@ export function FeaturedCard({
         overflow: 'hidden',
         transform: [{ scale: scaleAnim }],
         opacity: opacityAnim,
-        shadowColor: '#000',
-        shadowOpacity: pressed ? 0.35 : 0.15,
-        shadowRadius: pressed ? 20 : 12,
-        shadowOffset: { width: 0, height: pressed ? 8 : 4 },
-        elevation: pressed ? 12 : 6,
       }}
     >
       <Pressable
@@ -129,10 +124,6 @@ export function FeaturedCard({
               paddingVertical: spacing.xs,
               borderRadius: designSystem.radius.sm,
               zIndex: 10,
-              shadowColor: '#000',
-              shadowOpacity: 0.25,
-              shadowRadius: 4,
-              elevation: 3,
             }}
           >
             <CustomText style={{ color: colors_light.background, fontSize: 11, fontWeight: '700' }}>{badge}</CustomText>

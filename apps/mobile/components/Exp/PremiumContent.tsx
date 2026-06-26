@@ -357,7 +357,6 @@ export function PremiumHero({
         borderRadius: theme.radius.xl,
         overflow: 'hidden',
         backgroundColor: theme.colors.surface,
-        ...theme.shadows.xl,
       }}
     >
       <Image

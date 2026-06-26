@@ -59,9 +59,9 @@ export function AppLoadingScreen() {
               transform: [{ scale: logoScale }],
               shadowColor: theme.colors.primary,
               shadowOffset: { width: 0, height: 0 },
-              shadowRadius: 32,
-              shadowOpacity: 0.22,
-              elevation: 12,
+              shadowRadius: 16,
+              shadowOpacity: 0.14,
+              elevation: 6,
             }}
           >
             <Image source={BRAND_LOGO_ASSET} style={{ width: logoSize, height: logoSize }} resizeMode="cover" />

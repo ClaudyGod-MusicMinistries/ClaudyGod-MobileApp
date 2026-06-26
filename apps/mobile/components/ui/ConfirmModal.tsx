@@ -109,10 +109,10 @@ export function ConfirmModal({
                 padding: 24,
                 gap: 20,
                 shadowColor: '#000',
-                shadowOpacity: 0.38,
-                shadowRadius: 36,
-                shadowOffset: { width: 0, height: 22 },
-                elevation: 18,
+                shadowOpacity: 0.24,
+                shadowRadius: 20,
+                shadowOffset: { width: 0, height: 8 },
+                elevation: 12,
               }}
             >
               {/* Icon ring */}
