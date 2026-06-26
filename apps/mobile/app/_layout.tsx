@@ -10,6 +10,8 @@ import { useColorScheme, useThemeContext } from '../util/colorScheme';
 import { colors } from '../constants/color';
 import { FontProvider, FontContext } from '../context/FontContext';
 import { AppProvider } from '../context/AppContext';
+import { UserAccountProvider } from '../context/UserAccountContext';
+import { AccountSheet } from '../components/auth/AccountSheet';
 import { FloatingPlayerProvider, useFloatingPlayer } from '../context/FloatingPlayerContext';
 import { ToastProvider } from '../context/ToastContext';
 import { AppModalProvider } from '../context/AppModalContext';
@@ -147,13 +149,16 @@ export default function RootLayout() {
         <SafeAreaProvider>
           <ToastProvider>
             <AppProvider>
-              <FloatingPlayerProvider>
-                <WordOfDayProvider>
-                  <AppModalProvider>
-                    <RootLayoutInner />
-                  </AppModalProvider>
-                </WordOfDayProvider>
-              </FloatingPlayerProvider>
+              <UserAccountProvider>
+                <FloatingPlayerProvider>
+                  <WordOfDayProvider>
+                    <AppModalProvider>
+                      <RootLayoutInner />
+                      <AccountSheet />
+                    </AppModalProvider>
+                  </WordOfDayProvider>
+                </FloatingPlayerProvider>
+              </UserAccountProvider>
             </AppProvider>
           </ToastProvider>
         </SafeAreaProvider>
