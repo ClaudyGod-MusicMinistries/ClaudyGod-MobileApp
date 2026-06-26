@@ -219,10 +219,10 @@ export function WordOfDayModal({
             borderColor: theme.colors.border,
             overflow: 'hidden',
             shadowColor: '#000',
-            shadowOffset: { width: 0, height: 20 },
-            shadowOpacity: 0.50,
-            shadowRadius: 40,
-            elevation: 24,
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 0.28,
+            shadowRadius: 20,
+            elevation: 12,
           }}
         >
           {/* Top accent bar */}
@@ -291,9 +291,6 @@ export function WordOfDayModal({
                   backgroundColor: theme.colors.primary,
                   alignItems: 'center', justifyContent: 'center',
                   flexDirection: 'row', gap: 8,
-                  shadowColor: theme.colors.primary,
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.28, shadowRadius: 10, elevation: 6,
                 }}
               >
                 <MaterialIcons name="menu-book" size={18} color={theme.colors.textInverse} />

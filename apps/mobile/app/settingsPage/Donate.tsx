@@ -156,11 +156,6 @@ function SectionCard({ title, subtitle, children }: { title: string; subtitle?: 
         borderColor: theme.colors.primaryBorder,
         padding: 18,
         gap: 14,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.25,
-        shadowRadius: 16,
-        elevation: 8,
       }}
     >
       <View style={{ gap: 3 }}>
@@ -399,11 +394,6 @@ export default function Donate() {
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: 2,
-                    shadowColor: active ? theme.colors.primary : 'transparent',
-                    shadowOffset: { width: 0, height: 6 },
-                    shadowOpacity: active ? 0.45 : 0,
-                    shadowRadius: 14,
-                    elevation: active ? 8 : 0,
                   }}
                 >
                   <CustomText style={{ color: active ? theme.colors.onPrimary : theme.colors.text, fontSize: 20, fontWeight: '800' }}>
@@ -437,11 +427,6 @@ export default function Donate() {
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: 3,
-                    shadowColor: active ? theme.colors.primary : 'transparent',
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: active ? 0.4 : 0,
-                    shadowRadius: 10,
-                    elevation: active ? 6 : 0,
                   }}
                 >
                   <MaterialIcons

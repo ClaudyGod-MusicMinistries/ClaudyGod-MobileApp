@@ -56,7 +56,6 @@ export function CinematicHeroCard({
         borderWidth: 1,
         borderColor: theme.colors.border,
         backgroundColor: theme.colors.surface,
-        ...theme.shadows.card,
       }}
     >
       <Image

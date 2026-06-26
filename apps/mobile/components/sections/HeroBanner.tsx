@@ -25,7 +25,6 @@ export function HeroBanner({ imageUrl, title, subtitle, onPlay, onSave }: HeroBa
         overflow: 'hidden',
         backgroundColor: theme.colors.surface,
         marginBottom: theme.spacing.lg,
-        ...theme.shadows.card,
       }}
     >
       <Image source={{ uri: imageUrl }} style={{ width: '100%', height: 210 }} resizeMode="cover" />

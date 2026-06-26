@@ -102,11 +102,6 @@ export function BrandedHeaderCard({
         backgroundColor: theme.colors.surface,
         paddingHorizontal: isTablet ? 16 : 14,
         paddingVertical: isTablet ? 14 : 12,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.12,
-        shadowRadius: 10,
-        elevation: 6,
       }}
     >
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
