@@ -225,11 +225,6 @@ export default function Search() {
             paddingLeft: 16,
             paddingRight: 8,
             gap: 10,
-            shadowColor: theme.colors.primary,
-            shadowOffset: { width: 0, height: 10 },
-            shadowOpacity: searchFocused ? 0.14 : 0,
-            shadowRadius: 18,
-            elevation: searchFocused ? 8 : 0,
           }, animatedSearchStyle]}
         >
           <MaterialIcons name="search" size={device.isTV ? 22 : 18} color={theme.colors.textSecondary} />

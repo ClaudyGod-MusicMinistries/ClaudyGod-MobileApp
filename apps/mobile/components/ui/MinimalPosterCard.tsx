@@ -65,7 +65,6 @@ export function MinimalPosterCard({
           backgroundColor: theme.colors.surfaceAlt,
           borderWidth: 1,
           borderColor: 'rgba(255,255,255,0.10)',
-          ...theme.shadows.soft,
         }}
       >
         <Image source={{ uri: imageUrl }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />

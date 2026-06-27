@@ -89,7 +89,6 @@ export function AudioPlayer({
               borderWidth: 1,
               borderColor: 'rgba(255,255,255,0.08)',
               backgroundColor: theme.colors.surfaceAlt,
-              ...theme.shadows.card,
             }}
           >
             <Image
