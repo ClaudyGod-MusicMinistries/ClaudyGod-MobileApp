@@ -50,11 +50,8 @@ function LibTabs({ active, onChange, counts }: { active: LibTab; onChange: (_t: 
               flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
               gap: 6, paddingVertical: 10, paddingHorizontal: 10, borderRadius: 12,
               backgroundColor: isActive ? theme.colors.elevated : 'transparent',
-              shadowColor: isActive ? '#000' : 'transparent',
-              shadowOpacity: isActive ? 0.10 : 0,
-              shadowRadius: isActive ? 4 : 0,
-              shadowOffset: { width: 0, height: 2 },
-              elevation: isActive ? 2 : 0,
+              borderWidth: isActive ? 1 : 0,
+              borderColor: isActive ? theme.colors.border : 'transparent',
             }}
           >
             <MaterialIcons

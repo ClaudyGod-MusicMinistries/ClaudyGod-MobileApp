@@ -37,7 +37,13 @@ export function MinimizedFloatingPlayer() {
         borderRadius: theme.radius.xl,
         overflow: 'hidden',
         zIndex: 100,
-        ...theme.shadows.xxl,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.08)',
+        shadowColor: '#000',
+        shadowOpacity: 0.22,
+        shadowRadius: 16,
+        shadowOffset: { width: 0, height: 6 },
+        elevation: 10,
       }}
     >
       <View

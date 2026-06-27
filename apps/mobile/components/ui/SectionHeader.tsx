@@ -96,10 +96,6 @@ export function SectionHeader({ title, actionLabel, onAction, eyebrow }: Section
               backgroundColor: theme.colors.primarySurface,
               borderWidth: 1,
               borderColor: theme.colors.primaryBorder,
-              shadowColor: '#000',
-              shadowOpacity: actionPressed ? 0.15 : 0.08,
-              shadowRadius: 4,
-              elevation: 2,
             }}
             activeOpacity={0.9}
             showFocusBorder={false}

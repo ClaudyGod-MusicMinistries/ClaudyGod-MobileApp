@@ -61,38 +61,23 @@ export function ModernContentCard({
   const theme = useAppTheme();
   const [pressed, setPressed] = useState(false);
   const scaleAnim = useRef(new Animated.Value(1)).current;
-  const shadowOpacityAnim = useRef(new Animated.Value(0.1)).current;
 
   const handlePressIn = () => {
     setPressed(true);
-    Animated.parallel([
-      Animated.timing(scaleAnim, {
-        toValue: designSystem.interaction.pressScale,
-        duration: designSystem.timing.fast,
-        useNativeDriver: USE_NATIVE_DRIVER,
-      }),
-      Animated.timing(shadowOpacityAnim, {
-        toValue: 0.25,
-        duration: designSystem.timing.fast,
-        useNativeDriver: USE_NATIVE_DRIVER,
-      }),
-    ]).start();
+    Animated.timing(scaleAnim, {
+      toValue: designSystem.interaction.pressScale,
+      duration: designSystem.timing.fast,
+      useNativeDriver: USE_NATIVE_DRIVER,
+    }).start();
   };
 
   const handlePressOut = () => {
     setPressed(false);
-    Animated.parallel([
-      Animated.timing(scaleAnim, {
-        toValue: 1,
-        duration: designSystem.timing.moderate,
-        useNativeDriver: USE_NATIVE_DRIVER,
-      }),
-      Animated.timing(shadowOpacityAnim, {
-        toValue: 0.1,
-        duration: designSystem.timing.moderate,
-        useNativeDriver: USE_NATIVE_DRIVER,
-      }),
-    ]).start();
+    Animated.timing(scaleAnim, {
+      toValue: 1,
+      duration: designSystem.timing.moderate,
+      useNativeDriver: USE_NATIVE_DRIVER,
+    }).start();
   };
 
   const dims = getCardDimensions(size);
@@ -102,11 +87,6 @@ export function ModernContentCard({
       style={{
         transform: [{ scale: scaleAnim }],
         borderRadius: designSystem.radius.md,
-        shadowColor: '#000',
-        shadowOpacity: shadowOpacityAnim,
-        shadowRadius: 8,
-        shadowOffset: { width: 0, height: 4 },
-        elevation: 4,
       }}
     >
       <Pressable
@@ -198,10 +178,6 @@ export function ModernContentCard({
                 left: '50%',
                 marginTop: -(spacing.xxl / 2),
                 marginLeft: -(spacing.xxl / 2),
-                shadowColor: colors_light.accent,
-                shadowOpacity: 0.4,
-                shadowRadius: 8,
-                elevation: 3,
               }}
             >
               <MaterialIcons
