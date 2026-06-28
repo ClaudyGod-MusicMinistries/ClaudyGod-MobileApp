@@ -1,14 +1,8 @@
 // components/ui/StatCard.tsx
-/**
- * Statistics Card Component
- * Beautiful card with gradient backgrounds and smooth animations
- */
-
 import React from 'react';
-import { View, StyleSheet, Animated, Platform } from 'react-native';
+import { View, Animated, Platform } from 'react-native';
 import { useAppTheme } from '../../util/colorScheme';
 import { CustomText } from '../CustomText';
-import { spacing, radius } from '../../styles/designTokens';
 
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
@@ -20,7 +14,6 @@ interface StatCardProps {
   trendValue?: string;
   backgroundColor?: string;
   delay?: number;
-  gradient?: readonly [string, string, ...string[]];
 }
 
 export const StatCard: React.FC<StatCardProps> = ({
@@ -42,68 +35,43 @@ export const StatCard: React.FC<StatCardProps> = ({
   const trendColor = trend === 'up' ? theme.colors.success : theme.colors.danger;
 
   return (
-    <Animated.View style={{ transform: [{ scale: scaleAnim }], marginBottom: spacing.md }}>
-      <View style={[styles.cardContainer, { backgroundColor: backgroundColor || theme.colors.card }]}>
-        <View style={styles.header}>
-          {icon && <View style={{ marginRight: spacing.sm }}>{icon}</View>}
-          <CustomText style={[styles.label, { color: theme.colors.textSecondary }]}>
+    <Animated.View style={{ transform: [{ scale: scaleAnim }], marginBottom: theme.spacing.md }}>
+      <View
+        style={{
+          borderRadius: theme.radius.lg,
+          overflow: 'hidden',
+          padding: theme.spacing.lg,
+          backgroundColor: backgroundColor ?? theme.colors.card,
+        }}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: theme.spacing.md }}>
+          {icon ? <View style={{ marginRight: theme.spacing.sm }}>{icon}</View> : null}
+          <CustomText style={{ color: theme.colors.textSecondary, fontSize: 10.8, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.2 }}>
             {label}
           </CustomText>
         </View>
 
-        <View style={styles.content}>
-          <CustomText style={[styles.value, { color: theme.colors.text }]}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+          <CustomText style={{ color: theme.colors.text, fontSize: 20, fontWeight: '600', letterSpacing: 0 }}>
             {value}
           </CustomText>
 
-          {trend && trendValue && (
-            <View style={styles.trend}>
-              <CustomText style={[styles.trendValue, { color: trendColor }]}>
+          {trend && trendValue ? (
+            <View
+              style={{
+                paddingVertical: theme.spacing.xs,
+                paddingHorizontal: theme.spacing.sm,
+                backgroundColor: 'rgba(255,255,255,0.1)',
+                borderRadius: theme.radius.sm,
+              }}
+            >
+              <CustomText style={{ color: trendColor, fontSize: 10.8, fontWeight: '600' }}>
                 {trend === 'up' ? '↑' : '↓'} {trendValue}
               </CustomText>
             </View>
-          )}
+          ) : null}
         </View>
       </View>
     </Animated.View>
   );
 };
-
-const styles = StyleSheet.create({
-  cardContainer: {
-    borderRadius: radius.lg,
-    overflow: 'hidden',
-    padding: spacing.lg,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.md,
-  },
-  label: {
-    fontSize: 10.8,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.2,
-  },
-  content: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-  },
-  value: {
-    fontSize: 20,
-    fontWeight: '600',
-    letterSpacing: 0,
-  },
-  trend: {
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.sm,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: radius.sm,
-  },
-  trendValue: {
-    fontSize: 10.8,
-    fontWeight: '600',
-  },
-});

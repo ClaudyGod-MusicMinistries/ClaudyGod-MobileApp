@@ -287,7 +287,7 @@ export default function SettingsScreen() {
       <View style={{ gap: 12 }}>
         <SectionLabel title="Quick access" accent="Navigate" />
         <View style={{ flexDirection: isWideLayout ? 'row' : 'column', gap: isWideLayout ? 12 : 0 }}>
-          <View style={isWideLayout ? { flex: 1, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: theme.colors.border } : {}}>
+          <View style={isWideLayout ? { flex: 1, borderRadius: 14, overflow: 'hidden', borderWidth: 1, borderColor: theme.colors.border } : {}}>
             <SurfaceCard tone="subtle" style={{ paddingHorizontal: theme.spacing.md, paddingVertical: 0 }}>
               {[
                 { icon: 'library-music' as const, label: 'Library',  hint: 'Saved content', color: theme.colors.primary, onPress: () => router.push(APP_ROUTES.tabs.library) },
@@ -299,7 +299,7 @@ export default function SettingsScreen() {
               ))}
             </SurfaceCard>
           </View>
-          <View style={isWideLayout ? { flex: 1, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: theme.colors.border } : {}}>
+          <View style={isWideLayout ? { flex: 1, borderRadius: 14, overflow: 'hidden', borderWidth: 1, borderColor: theme.colors.border } : {}}>
             <SurfaceCard tone="subtle" style={{ paddingHorizontal: theme.spacing.md, paddingVertical: 0 }}>
               {[
                 { icon: 'card-giftcard'      as const, label: 'Invite friends', hint: 'Earn rewards together', color: theme.colors.primary, onPress: () => router.push(APP_ROUTES.settingsPages.referral) },

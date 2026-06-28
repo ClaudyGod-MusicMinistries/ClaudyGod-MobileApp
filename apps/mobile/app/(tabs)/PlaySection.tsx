@@ -213,7 +213,7 @@ export default function PlaySection() {
       {/* ── Now Playing card ─────────────────────────────────────────────── */}
       <View
         style={{
-          borderRadius: 24,
+          borderRadius: 16,
           borderWidth: 1,
           borderColor: theme.colors.primaryBorder,
           backgroundColor: theme.colors.primarySurface,

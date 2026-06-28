@@ -71,7 +71,7 @@ function DiscoveryItem({ item, onPress }: { item: FeedCardItem; onPress: () => v
     <TVTouchable onPress={onPress} showFocusBorder={false} style={{ flex: 1, minWidth: 140 }}>
       <View
         style={{
-          borderRadius: 16, overflow: 'hidden',
+          borderRadius: 10, overflow: 'hidden',
           backgroundColor: theme.colors.surfaceAlt,
           aspectRatio: 16 / 9,
         }}

@@ -50,7 +50,7 @@ function ToastCard({
         width: '100%',
         maxWidth: 420,
         alignSelf: 'center',
-        borderRadius: 24,
+        borderRadius: 12,
         borderWidth: 1,
         borderColor: palette.border,
         backgroundColor: palette.bg,

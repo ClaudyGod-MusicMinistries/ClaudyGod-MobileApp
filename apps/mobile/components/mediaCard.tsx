@@ -2,10 +2,10 @@
 import React from 'react';
 import { View, Image, Pressable } from 'react-native';
 import { CustomText } from './CustomText';
-import { radius } from '../styles/designTokens';
 import { TVTouchable } from './ui/TVTouchable';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useAppTheme } from '../util/colorScheme';
 
 interface MediaCardProps {
   imageUrl: string;
@@ -34,23 +34,16 @@ export const MediaCard: React.FC<MediaCardProps> = ({
   showMore = false,
   onMorePress,
 }) => {
-  const sizeClasses = {
-    sm: { w: 140, h: 200 },
-    md: { w: 160, h: 220 },
-    lg: { w: 200, h: 280 }
-  };
+  const theme = useAppTheme();
 
-  const sizeConfig = sizeClasses[size];
+  const sizeConfig = size === 'sm' ? { w: 140, h: 200 }
+    : size === 'lg' ? { w: 200, h: 280 }
+    : { w: 160, h: 220 };
 
   return (
     <TVTouchable
       onPress={onPress}
-      style={{
-        width: sizeConfig.w,
-        borderRadius: radius.lg,
-        overflow: 'hidden',
-        marginRight: 12,
-      }}
+      style={{ width: sizeConfig.w, borderRadius: theme.radius.lg, overflow: 'hidden', marginRight: 12 }}
       activeOpacity={0.8}
     >
       <View
@@ -58,29 +51,21 @@ export const MediaCard: React.FC<MediaCardProps> = ({
           width: sizeConfig.w,
           height: sizeConfig.h,
           overflow: 'hidden',
-          borderRadius: radius.lg,
-          backgroundColor: 'transparent',
-          borderWidth: 0,
+          borderRadius: theme.radius.lg,
+          backgroundColor: theme.colors.surfaceAlt,
         }}
       >
-        {/* Image with proper constraint */}
         <View style={{ width: '100%', height: '100%', overflow: 'hidden' }}>
-          <Image
-            source={{ uri: imageUrl }}
-            style={{ width: '100%', height: '100%' }}
-            resizeMode="cover"
-          />
+          <Image source={{ uri: imageUrl }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
         </View>
 
-        {/* Gradient Overlay */}
         <LinearGradient
           colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.15)', 'rgba(0,0,0,0.86)']}
           locations={[0, 0.55, 1]}
           style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}
         />
 
-        {/* Badge or Live Indicator */}
-        {(badge || isLive) && (
+        {(badge || isLive) ? (
           <View
             style={{
               position: 'absolute',
@@ -88,39 +73,20 @@ export const MediaCard: React.FC<MediaCardProps> = ({
               left: 8,
               paddingHorizontal: 8,
               paddingVertical: 4,
-              borderRadius: radius.sm,
-              backgroundColor: isLive ? 'rgba(239,68,68,0.95)' : 'rgba(59,130,246,0.9)',
+              borderRadius: theme.radius.sm,
+              backgroundColor: isLive ? 'rgba(239,68,68,0.95)' : theme.colors.primary,
               borderWidth: 1,
-              borderColor: isLive ? 'rgba(255,100,100,0.5)' : 'rgba(100,150,255,0.5)',
+              borderColor: isLive ? 'rgba(255,100,100,0.5)' : theme.colors.primaryBorder,
             }}
           >
-            <CustomText
-              variant="caption"
-              style={{
-                color: '#FFFFFF',
-                fontSize: 9,
-                fontWeight: '700',
-                letterSpacing: 0.5,
-              }}
-            >
+            <CustomText variant="caption" style={{ color: '#FFFFFF', fontSize: 9, fontWeight: '700', letterSpacing: 0.5 }}>
               {isLive ? '● LIVE' : badge}
             </CustomText>
           </View>
-        )}
+        ) : null}
 
-        {/* Play Button or Live Indicator */}
-        {!isLive && (
-          <View
-            style={{
-              position: 'absolute',
-              left: 0,
-              right: 0,
-              top: 0,
-              bottom: 0,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
+        {!isLive ? (
+          <View style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}>
             <View
               style={{
                 width: 48,
@@ -136,9 +102,8 @@ export const MediaCard: React.FC<MediaCardProps> = ({
               <MaterialIcons name="play-arrow" size={24} color="#FFFFFF" />
             </View>
           </View>
-        )}
+        ) : null}
 
-        {/* More Actions */}
         {showMore && onMorePress ? (
           <Pressable
             onPress={onMorePress}
@@ -161,8 +126,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
           </Pressable>
         ) : null}
 
-        {/* View Count */}
-        {viewCount !== undefined && (
+        {viewCount !== undefined ? (
           <View
             style={{
               position: 'absolute',
@@ -170,62 +134,35 @@ export const MediaCard: React.FC<MediaCardProps> = ({
               bottom: 56,
               paddingHorizontal: 8,
               paddingVertical: 4,
-              borderRadius: radius.sm,
+              borderRadius: theme.radius.sm,
               backgroundColor: 'rgba(10,10,15,0.7)',
               borderWidth: 1,
               borderColor: 'rgba(255,255,255,0.15)',
             }}
           >
-            <CustomText
-              variant="caption"
-              style={{
-                color: 'rgba(255,255,255,0.8)',
-                fontSize: 10,
-              }}
-            >
+            <CustomText variant="caption" style={{ color: 'rgba(255,255,255,0.8)', fontSize: 10 }}>
               {viewCount > 1000 ? `${(viewCount / 1000).toFixed(1)}K` : viewCount} watching
             </CustomText>
           </View>
-        )}
+        ) : null}
 
-        {/* Text Content */}
-        <View
-          style={{
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            bottom: 0,
-            paddingHorizontal: 10,
-            paddingBottom: 10,
-            paddingTop: 24,
-          }}
-        >
+        <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 10, paddingBottom: 10, paddingTop: 24 }}>
           <CustomText
             variant="body"
-            style={{
-              color: '#FFFFFF',
-              fontSize: 12.5,
-              fontWeight: '600',
-              lineHeight: 16,
-            }}
+            style={{ color: '#FFFFFF', fontSize: 12.5, fontWeight: '600', lineHeight: 16 }}
             numberOfLines={2}
           >
             {title}
           </CustomText>
-          {(meta || subtitle) && (
+          {(meta ?? subtitle) ? (
             <CustomText
               variant="caption"
-              style={{
-                color: 'rgba(255,255,255,0.7)',
-                marginTop: 3,
-                fontSize: 10.5,
-                lineHeight: 14,
-              }}
+              style={{ color: 'rgba(255,255,255,0.7)', marginTop: 3, fontSize: 10.5, lineHeight: 14 }}
               numberOfLines={1}
             >
               {meta ?? subtitle}
             </CustomText>
-          )}
+          ) : null}
         </View>
       </View>
     </TVTouchable>

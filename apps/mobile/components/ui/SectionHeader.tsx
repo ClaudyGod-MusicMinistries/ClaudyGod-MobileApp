@@ -5,7 +5,6 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../CustomText';
 import { useAppTheme } from '../../util/colorScheme';
 import { TVTouchable } from './TVTouchable';
-import { designSystem } from '../../theme/designSystem';
 
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
@@ -92,7 +91,7 @@ export function SectionHeader({ title, actionLabel, onAction, eyebrow }: Section
               gap: 6,
               paddingHorizontal: 14,
               paddingVertical: 8,
-              borderRadius: designSystem.radius.full,
+              borderRadius: theme.radius.pill,
               backgroundColor: theme.colors.primarySurface,
               borderWidth: 1,
               borderColor: theme.colors.primaryBorder,

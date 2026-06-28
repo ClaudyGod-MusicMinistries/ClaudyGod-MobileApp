@@ -12,13 +12,13 @@ export const spacing = {
 
 // ─── Border radius ────────────────────────────────────────────────────────────
 export const radius = {
-  xs:   6,    // subtle rounding on small tags
-  sm:   8,    // small elements, badges
-  md:   12,   // buttons, input fields, chips
-  lg:   14,   // content cards
-  card: 18,   // standard card/tile radius
-  xl:   20,   // modal headers, feature cards
-  xxl:  28,   // bottom sheets, large modals
+  xs:   4,    // subtle rounding on small tags
+  sm:   6,    // small elements, badges
+  md:   8,    // buttons, input fields, chips
+  lg:   10,   // content cards
+  card: 12,   // standard card/tile radius
+  xl:   14,   // modal headers, feature cards
+  xxl:  20,   // bottom sheets, large modals
   pill: 999,  // fully rounded / circle
 };
 
@@ -97,6 +97,22 @@ export const typography = {
   caption:  11,
 };
 
+// ─── Animation timing (ms) ───────────────────────────────────────────────────
+export const timing = {
+  fast:     150,
+  base:     250,
+  moderate: 350,
+  slow:     500,
+};
+
+// ─── Interaction constants ────────────────────────────────────────────────────
+export const interaction = {
+  pressScale:      0.98,
+  hoverOpacity:    0.8,
+  activeOpacity:   0.7,
+  disabledOpacity: 0.5,
+};
+
 // ─── TV / focus ──────────────────────────────────────────────────────────────
 export const tv = {
   hitSlop: { top: 14, bottom: 14, left: 14, right: 14 },
@@ -122,5 +138,3 @@ export const layout = {
   headerVerticalPadding: 10,
   tabBarContentPadding:  136,
 };
-
-export * from '../theme/designSystem';
