@@ -214,7 +214,7 @@ export function WordOfDayModal({
             opacity: cardOpacity,
             transform: [{ scale: cardScale }],
             backgroundColor: theme.colors.surface,
-            borderRadius: 28,
+            borderRadius: 20,
             borderWidth: 1,
             borderColor: theme.colors.border,
             overflow: 'hidden',

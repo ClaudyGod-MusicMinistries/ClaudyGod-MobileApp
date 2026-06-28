@@ -102,7 +102,7 @@ export function ConfirmModal({
           >
             <View
               style={{
-                borderRadius: 24,
+                borderRadius: 16,
                 borderWidth: 1,
                 borderColor: theme.colors.borderStrong,
                 backgroundColor: theme.colors.elevated,

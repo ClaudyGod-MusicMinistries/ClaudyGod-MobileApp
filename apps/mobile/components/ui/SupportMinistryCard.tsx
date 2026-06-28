@@ -18,7 +18,7 @@ export function SupportMinistryCard({ onPress }: SupportCardProps) {
     <View
       style={{
         minHeight: 104,
-        borderRadius: 22,
+        borderRadius: 14,
         padding: 15,
         overflow: 'hidden',
         justifyContent: 'center',

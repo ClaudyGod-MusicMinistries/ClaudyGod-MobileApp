@@ -164,7 +164,7 @@ export function PremiumPage({
                   gap: compact ? 8 : 10,
                   paddingVertical: compact ? 10 : 12,
                   paddingHorizontal: compact ? 12 : 14,
-                  borderRadius: 18,
+                  borderRadius: 14,
                   backgroundColor: headerBg,
                 }}
               >
@@ -674,15 +674,15 @@ export function ContentCard({
   ];
 
   const cardWidth = fixedWidth ?? (
-    compact ? 152
-    : device.isTV ? 264
-    : device.isDesktop ? 214
-    : 174
+    compact ? 170
+    : device.isTV ? 280
+    : device.isDesktop ? 220
+    : 196
   );
 
   const cardHeight =
-    variant === 'portrait'  ? Math.round(cardWidth * 1.33) :
-    variant === 'landscape' ? Math.round(cardWidth * 0.60) :
+    variant === 'portrait'  ? Math.round(cardWidth * 1.45) :
+    variant === 'landscape' ? Math.round(cardWidth * 0.62) :
     cardWidth;
 
   const scrimHeight =
@@ -713,7 +713,7 @@ export function ContentCard({
           style={{
             width: cardWidth,
             height: cardHeight,
-            borderRadius: 14,
+            borderRadius: 10,
             overflow: 'hidden',
             backgroundColor: theme.colors.surfaceAlt,
           }}
@@ -825,7 +825,7 @@ function RailSkeleton() {
   const { width } = useWindowDimensions();
   const compact = width < 430;
   const isDesktop = width >= 1024;
-  const cardWidth = compact ? 152 : isDesktop ? 214 : 174;
+  const cardWidth = compact ? 170 : isDesktop ? 220 : 196;
 
   return (
     <ScrollView
@@ -835,7 +835,7 @@ function RailSkeleton() {
     >
       {[0, 1, 2, 3].map((i) => (
         <View key={i} style={{ width: cardWidth, gap: 10 }}>
-          <SkeletonLoader width={cardWidth} height={Math.round(cardWidth * 1.33)} borderRadius={14} />
+          <SkeletonLoader width={cardWidth} height={Math.round(cardWidth * 1.45)} borderRadius={10} />
           <View style={{ gap: 7, paddingHorizontal: 2 }}>
             <SkeletonLoader width="80%" height={13} borderRadius={999} />
             <SkeletonLoader width="52%" height={11} borderRadius={999} />
@@ -860,7 +860,7 @@ function InlineEmpty({
     <View
       style={{
         minHeight: 96,
-        borderRadius: 16,
+        borderRadius: 12,
         backgroundColor: theme.colors.surfaceAlt,
         padding: 14,
         flexDirection: 'row',
@@ -1574,7 +1574,7 @@ export function StreamingBanner({ item, badge = 'Featured', title, subtitle, cta
       <TVTouchable onPress={onPress} showFocusBorder={false}>
         <View
           style={{
-            borderRadius: 18,
+            borderRadius: 12,
             overflow: 'hidden',
             backgroundColor: theme.colors.surface,
             borderWidth: 1,
@@ -1745,7 +1745,7 @@ export function ContentShortcuts({ shortcuts }: { shortcuts: ContentShortcut[] }
                 style={{
                   width: 60,
                   height: 60,
-                  borderRadius: 18,
+                  borderRadius: 12,
                   alignItems: 'center',
                   justifyContent: 'center',
                   backgroundColor: `${item.color}14`,
@@ -1784,7 +1784,7 @@ export function LiveNowBanner({ item, onPress }: { item: FeedCardItem; onPress: 
   return (
     <FadeIn delay={40}>
       <TVTouchable onPress={onPress} showFocusBorder={false}>
-        <View style={{ borderRadius: 18, overflow: 'hidden', backgroundColor: theme.colors.surface }}>
+        <View style={{ borderRadius: 12, overflow: 'hidden', backgroundColor: theme.colors.surface }}>
           <Image
             source={{ uri: item.imageUrl || DEFAULT_CONTENT_IMAGE_URI }}
             resizeMode="cover"

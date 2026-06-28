@@ -35,7 +35,7 @@ function LibTabs({ active, onChange, counts }: { active: LibTab; onChange: (_t: 
         flexDirection: 'row',
         gap: 6,
         padding: 4,
-        borderRadius: 16,
+        borderRadius: 12,
         backgroundColor: theme.colors.subtleFill,
       }}
     >

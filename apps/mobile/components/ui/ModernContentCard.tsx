@@ -1,17 +1,8 @@
-/**
- * Modern Content Card Component
- * Beautiful, reusable card for displaying content with smooth interactions
- * Enhanced with design system tokens and premium animations
- */
-
 import React, { useState, useRef } from 'react';
 import { View, Image, Platform, Pressable, StyleSheet, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../CustomText';
-import { colors_light } from '../../constants/color';
-import { spacing, radius } from '../../styles/designTokens';
-import { designSystem } from '../../theme/designSystem';
 import { useAppTheme } from '../../util/colorScheme';
 
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
@@ -34,12 +25,9 @@ interface ModernContentCardProps {
 
 const getCardDimensions = (size: 'sm' | 'md' | 'lg') => {
   switch (size) {
-    case 'sm':
-      return { imageHeight: 96, imageWidth: 96, fontSize: 10, gap: 4 };
-    case 'lg':
-      return { imageHeight: 160, imageWidth: 160, fontSize: 12, gap: 6 };
-    default:
-      return { imageHeight: 124, imageWidth: 124, fontSize: 11, gap: 5 };
+    case 'sm':  return { imageHeight: 96,  imageWidth: 96,  fontSize: 10, gap: 4 };
+    case 'lg':  return { imageHeight: 160, imageWidth: 160, fontSize: 12, gap: 6 };
+    default:    return { imageHeight: 124, imageWidth: 124, fontSize: 11, gap: 5 };
   }
 };
 
@@ -65,8 +53,8 @@ export function ModernContentCard({
   const handlePressIn = () => {
     setPressed(true);
     Animated.timing(scaleAnim, {
-      toValue: designSystem.interaction.pressScale,
-      duration: designSystem.timing.fast,
+      toValue: theme.interaction.pressScale,
+      duration: theme.timing.fast,
       useNativeDriver: USE_NATIVE_DRIVER,
     }).start();
   };
@@ -75,10 +63,12 @@ export function ModernContentCard({
     setPressed(false);
     Animated.timing(scaleAnim, {
       toValue: 1,
-      duration: designSystem.timing.moderate,
+      duration: theme.timing.moderate,
       useNativeDriver: USE_NATIVE_DRIVER,
     }).start();
   };
+
+  void pressed;
 
   const dims = getCardDimensions(size);
 
@@ -86,7 +76,7 @@ export function ModernContentCard({
     <Animated.View
       style={{
         transform: [{ scale: scaleAnim }],
-        borderRadius: designSystem.radius.md,
+        borderRadius: theme.radius.md,
       }}
     >
       <Pressable
@@ -94,7 +84,7 @@ export function ModernContentCard({
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         style={{
-          borderRadius: designSystem.radius.md,
+          borderRadius: theme.radius.md,
           overflow: 'hidden',
           backgroundColor: theme.colors.elevated,
         }}
@@ -111,150 +101,128 @@ export function ModernContentCard({
             <View
               style={{
                 flex: 1,
-                backgroundColor: colors_light.surfaceAlt,
+                backgroundColor: theme.colors.surfaceAlt,
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
             >
-              <MaterialIcons
-                name="music-note"
-                size={dims.fontSize * 1.5}
-                color={colors_light.accent}
-              />
+              <MaterialIcons name="music-note" size={dims.fontSize * 1.5} color={theme.colors.accent} />
             </View>
           )}
 
-          {/* Gradient overlay - subtle and clean */}
           <LinearGradient
-            colors={['transparent', `rgba(${colors_light.backgroundRgba ?? '10,6,18'},0.7)`]}
+            colors={['transparent', `rgba(0,0,0,0.7)`]}
             start={{ x: 0, y: 0 }}
             end={{ x: 0, y: 1 }}
-            style={{
-              position: 'absolute',
-              width: '100%',
-              height: '100%',
-            }}
+            style={{ position: 'absolute', width: '100%', height: '100%' }}
           />
 
-          {/* Badge - minimal design */}
-          {badge && (
+          {badge ? (
             <View
               style={{
                 position: 'absolute',
-                top: spacing.xs,
-                right: spacing.xs,
-                backgroundColor: colors_light.accent,
-                paddingHorizontal: spacing.xs,
+                top: theme.spacing.xs,
+                right: theme.spacing.xs,
+                backgroundColor: theme.colors.primary,
+                paddingHorizontal: theme.spacing.xs,
                 paddingVertical: 2,
-                borderRadius: radius.sm,
+                borderRadius: theme.radius.sm,
                 zIndex: 10,
               }}
             >
-              <CustomText
-                variant="caption"
-                style={{
-                  color: colors_light.background,
-                  fontWeight: '600',
-                }}
-              >
+              <CustomText variant="caption" style={{ color: '#FFFFFF', fontWeight: '600' }}>
                 {badge}
               </CustomText>
             </View>
-          )}
+          ) : null}
 
-          {/* Play Button - premium and centered */}
-          {onPlayPress && (
+          {onPlayPress ? (
             <Pressable
               onPress={onPlayPress}
               style={{
                 position: 'absolute',
-                width: spacing.xxl,
-                height: spacing.xxl,
-                borderRadius: spacing.xxl / 2,
-                backgroundColor: pressed ? colors_light.accent : colors_light.accent,
+                width: theme.spacing.xxl,
+                height: theme.spacing.xxl,
+                borderRadius: theme.spacing.xxl / 2,
+                backgroundColor: theme.colors.primary,
                 alignItems: 'center',
                 justifyContent: 'center',
                 top: '50%',
                 left: '50%',
-                marginTop: -(spacing.xxl / 2),
-                marginLeft: -(spacing.xxl / 2),
+                marginTop: -(theme.spacing.xxl / 2),
+                marginLeft: -(theme.spacing.xxl / 2),
               }}
             >
               <MaterialIcons
                 name={isPlaying ? 'pause' : 'play-arrow'}
                 size={dims.fontSize}
-                color="white"
+                color="#FFFFFF"
               />
             </Pressable>
-          )}
+          ) : null}
         </View>
 
         {/* Info Container */}
-        <View style={{ padding: size === 'sm' ? spacing.xs : spacing.sm }}>
+        <View style={{ padding: size === 'sm' ? theme.spacing.xs : theme.spacing.sm }}>
           <CustomText
             numberOfLines={2}
             style={{
-              color: colors_light.text,
+              color: theme.colors.text,
               fontSize: dims.fontSize,
               fontWeight: '600',
-              marginBottom: spacing.xs,
+              marginBottom: theme.spacing.xs,
             }}
           >
             {title}
           </CustomText>
 
-          {subtitle && (
+          {subtitle ? (
             <CustomText
               numberOfLines={1}
               style={{
-                color: colors_light.textSecondary,
+                color: theme.colors.textSecondary,
                 fontSize: dims.fontSize * 0.85,
-                marginBottom: spacing.xs,
+                marginBottom: theme.spacing.xs,
               }}
             >
               {subtitle}
             </CustomText>
-          )}
+          ) : null}
 
-          {author && (
+          {author ? (
             <CustomText
               numberOfLines={1}
-              style={{
-                color: colors_light.textSecondary,
-                fontSize: 9,
-                marginBottom: 6,
-              }}
+              style={{ color: theme.colors.textSecondary, fontSize: 9, marginBottom: 6 }}
             >
               {author}
             </CustomText>
-          )}
+          ) : null}
 
-          {/* Stats Row */}
-          {(plays || likes || duration) && (
+          {(plays !== undefined || likes !== undefined || duration) ? (
             <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-              {plays !== undefined && (
+              {plays !== undefined ? (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                  <MaterialIcons name="play-circle-outline" size={12} color={colors_light.textSecondary} />
-                  <CustomText style={{ color: colors_light.textSecondary, fontSize: 10 }}>
+                  <MaterialIcons name="play-circle-outline" size={12} color={theme.colors.textSecondary} />
+                  <CustomText style={{ color: theme.colors.textSecondary, fontSize: 10 }}>
                     {plays > 1000 ? (plays / 1000).toFixed(1) + 'K' : plays}
                   </CustomText>
                 </View>
-              )}
-              {likes !== undefined && (
+              ) : null}
+              {likes !== undefined ? (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                  <MaterialIcons name="favorite-border" size={12} color={colors_light.textSecondary} />
-                  <CustomText style={{ color: colors_light.textSecondary, fontSize: 10 }}>
+                  <MaterialIcons name="favorite-border" size={12} color={theme.colors.textSecondary} />
+                  <CustomText style={{ color: theme.colors.textSecondary, fontSize: 10 }}>
                     {likes > 1000 ? (likes / 1000).toFixed(1) + 'K' : likes}
                   </CustomText>
                 </View>
-              )}
-              {duration && (
-                <CustomText style={{ color: colors_light.textSecondary, fontSize: 10 }}>
+              ) : null}
+              {duration ? (
+                <CustomText style={{ color: theme.colors.textSecondary, fontSize: 10 }}>
                   {duration}
                 </CustomText>
-              )}
+              ) : null}
             </View>
-          )}
+          ) : null}
         </View>
       </Pressable>
     </Animated.View>

@@ -1,17 +1,9 @@
 import React from 'react';
-import {
-  ImageBackground,
-  type ImageSourcePropType,
-  ScrollView,
-  StatusBar,
-  View,
-  useWindowDimensions,
-} from 'react-native';
+import { ImageBackground, type ImageSourcePropType, ScrollView, StatusBar, View, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors } from '../../constants/color';
-import { spacing } from '../../styles/designTokens';
 import { CustomText } from '../CustomText';
+import { useAppTheme } from '../../util/colorScheme';
 
 type GradientColorStops = readonly [string, string, ...string[]];
 
@@ -34,43 +26,43 @@ export function ResponsiveSettingsLayout({
   showGradientOverlay = true,
   gradientColors,
   scrollEnabled = true,
-  contentPadding = spacing.md,
+  contentPadding,
 }: ResponsiveSettingsLayoutProps) {
+  const theme = useAppTheme();
   const { width } = useWindowDimensions();
   const isTablet = width >= 900;
-  const palette = colors.light;
+  const padding = contentPadding ?? theme.spacing.md;
   const defaultGradientColors: GradientColorStops = [
     'rgba(167,139,250,0.32)',
     'rgba(139,92,246,0.16)',
     'rgba(249,247,254,0.96)',
   ];
-  const contentWidth = isTablet ? Math.min(width - contentPadding * 2, 800) : '100%';
+  const contentWidth = isTablet ? Math.min(width - padding * 2, 800) : ('100%' as const);
 
   const content = (
     <View
       style={{
         width: contentWidth,
         alignSelf: 'center',
-        paddingHorizontal: contentPadding,
-        paddingTop: spacing.lg,
-        paddingBottom: spacing.xl,
+        paddingHorizontal: padding,
+        paddingTop: theme.spacing.lg,
+        paddingBottom: theme.spacing.xl,
       }}
     >
       {headerTitle || headerSubtitle ? (
-        <View style={{ marginBottom: spacing.lg }}>
+        <View style={{ marginBottom: theme.spacing.lg }}>
           {headerTitle ? (
-            <CustomText variant="heading" style={{ color: palette.text, marginBottom: spacing.xs }}>
+            <CustomText variant="heading" style={{ color: theme.colors.text, marginBottom: theme.spacing.xs }}>
               {headerTitle}
             </CustomText>
           ) : null}
           {headerSubtitle ? (
-            <CustomText variant="body" style={{ color: palette.textSecondary }}>
+            <CustomText variant="body" style={{ color: theme.colors.textSecondary }}>
               {headerSubtitle}
             </CustomText>
           ) : null}
         </View>
       ) : null}
-
       {children}
     </View>
   );
@@ -84,13 +76,15 @@ export function ResponsiveSettingsLayout({
     >
       {content}
     </ScrollView>
-  ) : (
-    content
-  );
+  ) : content;
 
   return (
-    <View style={{ flex: 1, backgroundColor: palette.background }}>
-      <StatusBar translucent={false} barStyle="dark-content" backgroundColor={palette.background} />
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+      <StatusBar
+        translucent={false}
+        barStyle={theme.scheme === 'light' ? 'dark-content' : 'light-content'}
+        backgroundColor={theme.colors.background}
+      />
       {backgroundImage ? (
         <ImageBackground
           source={backgroundImage}
