@@ -319,7 +319,7 @@ export function YouTubeAudioPlayer({
 
         {/* Artwork */}
         <Animated.View style={{ transform: [{ scale: artScale }] }}>
-          <Image source={{ uri: imageUri }} style={[styles.compactArt, { borderRadius: 8 }]} />
+          <Image source={{ uri: imageUri }} style={[styles.compactArt, { borderRadius: 8 }]} resizeMode="cover" />
         </Animated.View>
 
         {/* Info */}
@@ -403,6 +403,7 @@ export function YouTubeAudioPlayer({
         <Animated.Image
           source={{ uri: imageUri }}
           style={[styles.fullArt, { width: artSize, height: artSize, transform: [{ scale: artScale }] }]}
+          resizeMode="cover"
         />
         {/* YouTube badge over artwork */}
         <View style={[styles.ytOverlayBadge, { backgroundColor: '#FF0000' }]}>
