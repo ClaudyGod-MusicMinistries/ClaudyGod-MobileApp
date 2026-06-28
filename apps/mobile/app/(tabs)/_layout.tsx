@@ -2,20 +2,18 @@ import { Tabs } from 'expo-router';
 import { View } from 'react-native';
 
 import TabBar from '../../components/TabBar';
-import { colors } from '../../constants/color';
-import { useColorScheme } from '../../util/colorScheme';
+import { useAppTheme } from '../../util/colorScheme';
 
 export default function TabsLayout() {
-  const colorScheme = useColorScheme();
-  const currentColors = colors[colorScheme] ?? colors.dark;
+  const theme = useAppTheme();
 
   return (
-    <View style={{ flex: 1, backgroundColor: currentColors.background }}>
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <Tabs
         initialRouteName="home"
         screenOptions={{
           headerShown: false,
-          sceneStyle: { backgroundColor: currentColors.background },
+          sceneStyle: { backgroundColor: theme.colors.background },
         }}
         tabBar={(props) => <TabBar {...props} />}
       >

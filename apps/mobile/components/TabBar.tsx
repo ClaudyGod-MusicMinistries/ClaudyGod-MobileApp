@@ -4,15 +4,16 @@ import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import { useColorScheme } from '../util/colorScheme';
-import { colors } from '../constants/color';
-import { layout, shadows } from '../styles/designTokens';
+import { useAppTheme } from '../util/colorScheme';
+import { layout } from '../styles/designTokens';
 import { useMobileAppConfig } from '../hooks/useMobileAppConfig';
 import { getSidebarWidth } from '../util/sidebarConfig';
 import { TVTouchable } from './ui/TVTouchable';
 import { CustomText } from './CustomText';
 import { BRAND_LOGO_ASSET } from '../util/brandAssets';
 
+// layout.tabBarContentPadding is a structural constant (not theme-varying).
+// It must live at module level so non-component code can import it without hooks.
 export const BOTTOM_TAB_CONTENT_SPACER = layout.tabBarContentPadding;
 
 type TabRouteName = 'home' | 'player' | 'videos' | 'library' | 'settings';
@@ -28,11 +29,11 @@ type FooterItem = {
 const FOOTER_ORDER: TabRouteName[] = ['home', 'player', 'videos', 'library', 'settings'];
 
 const FOOTER_CONFIG: Record<TabRouteName, Omit<FooterItem, 'routeName' | 'key'>> = {
-  home:     { icon: 'home'              as const, label: 'Home' },
-  player:   { icon: 'headphones'        as const, label: 'Music' },
+  home:     { icon: 'home'               as const, label: 'Home' },
+  player:   { icon: 'headphones'         as const, label: 'Music' },
   videos:   { icon: 'play-circle-filled' as const, label: 'Videos', center: true },
-  library:  { icon: 'library-music'     as const, label: 'Library' },
-  settings: { icon: 'tune'             as const, label: 'Settings' },
+  library:  { icon: 'library-music'      as const, label: 'Library' },
+  settings: { icon: 'tune'              as const, label: 'Settings' },
 };
 
 function routeExists(routes: BottomTabBarProps['state']['routes'], routeName: string) {
@@ -46,16 +47,13 @@ function SidebarTabBar({
   navigation,
   footerItems,
   sidebarWidth,
-  isDark,
-  palette,
 }: {
   state: BottomTabBarProps['state'];
   navigation: BottomTabBarProps['navigation'];
   footerItems: FooterItem[];
   sidebarWidth: number;
-  isDark: boolean;
-  palette: typeof colors.dark;
 }) {
+  const theme = useAppTheme();
   const currentRouteName = state.routes[state.index]?.name;
   const insets = useSafeAreaInsets();
   const isTV = Platform.isTV;
@@ -76,9 +74,9 @@ function SidebarTabBar({
         left: 0, top: 0, bottom: 0,
         width: sidebarWidth,
         zIndex: 100,
-        backgroundColor: palette.tabBarBg,
+        backgroundColor: theme.colors.tabBarBg,
         borderRightWidth: 1,
-        borderRightColor: palette.primaryBorder,
+        borderRightColor: theme.colors.primaryBorder,
         paddingTop: insets.top + (isTV ? 24 : 16),
         paddingBottom: insets.bottom + (isTV ? 24 : 16),
         paddingHorizontal: isTV ? 16 : 12,
@@ -88,12 +86,12 @@ function SidebarTabBar({
       <View style={{ gap: 0 }}>
         {/* Logo */}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 8, marginBottom: isTV ? 32 : 24 }}>
-          <View style={{ width: isTV ? 44 : 38, height: isTV ? 44 : 38, borderRadius: 12, overflow: 'hidden', backgroundColor: palette.surface, borderWidth: 1, borderColor: palette.primaryBorder }}>
+          <View style={{ width: isTV ? 44 : 38, height: isTV ? 44 : 38, borderRadius: 12, overflow: 'hidden', backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.primaryBorder }}>
             <Image source={BRAND_LOGO_ASSET} resizeMode="cover" style={StyleSheet.absoluteFillObject} />
           </View>
           <View style={{ flex: 1, minWidth: 0 }}>
-            <CustomText style={{ color: palette.text, fontSize: isTV ? 16 : 14, fontWeight: '700', letterSpacing: -0.3 }} numberOfLines={1}>ClaudyGod</CustomText>
-            <CustomText style={{ color: palette.textMuted, fontSize: isTV ? 11 : 10, marginTop: 1 }} numberOfLines={1}>Worship & Ministry</CustomText>
+            <CustomText style={{ color: theme.colors.text, fontSize: isTV ? 16 : 14, fontWeight: '700', letterSpacing: -0.3 }} numberOfLines={1}>ClaudyGod</CustomText>
+            <CustomText style={{ color: theme.colors.textMuted, fontSize: isTV ? 11 : 10, marginTop: 1 }} numberOfLines={1}>Worship & Ministry</CustomText>
           </View>
         </View>
 
@@ -112,29 +110,29 @@ function SidebarTabBar({
                   gap: isTV ? 14 : 12,
                   paddingVertical: isTV ? 13 : 11,
                   paddingHorizontal: isTV ? 14 : 12,
-                  borderRadius: 14,
-                  backgroundColor: focused ? `rgba(${palette.accentRgba},0.12)` : 'transparent',
+                  borderRadius: theme.radius.xl,
+                  backgroundColor: focused ? `rgba(${theme.colors.accentRgba},0.12)` : 'transparent',
                   borderWidth: focused ? 1 : 0,
-                  borderColor: focused ? palette.primaryBorder : 'transparent',
+                  borderColor: focused ? theme.colors.primaryBorder : 'transparent',
                 }}
               >
                 <View style={{
-                  width: isTV ? 36 : 30, height: isTV ? 36 : 30, borderRadius: 10,
+                  width: isTV ? 36 : 30, height: isTV ? 36 : 30, borderRadius: theme.radius.card,
                   alignItems: 'center', justifyContent: 'center',
                   backgroundColor: focused
-                    ? (item.center ? palette.primary : `rgba(${palette.accentRgba},0.17)`)
-                    : palette.subtleFill,
+                    ? (item.center ? theme.colors.primary : `rgba(${theme.colors.accentRgba},0.17)`)
+                    : theme.colors.subtleFill,
                 }}>
                   <MaterialIcons
                     name={item.center ? 'play-arrow' : item.icon}
                     size={isTV ? 20 : 17}
-                    color={item.center ? '#FFFFFF' : (focused ? palette.primary : palette.textMuted)}
+                    color={item.center ? '#FFFFFF' : (focused ? theme.colors.primary : theme.colors.textMuted)}
                   />
                 </View>
-                <CustomText style={{ color: focused ? palette.text : palette.textMuted, fontSize: isTV ? 15 : 13.5, fontWeight: focused ? '700' : '500', flex: 1 }}>
+                <CustomText style={{ color: focused ? theme.colors.text : theme.colors.textMuted, fontSize: isTV ? 15 : 13.5, fontWeight: focused ? '700' : '500', flex: 1 }}>
                   {item.label}
                 </CustomText>
-                {focused ? <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: palette.primary }} /> : null}
+                {focused ? <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: theme.colors.primary }} /> : null}
               </TVTouchable>
             );
           })}
@@ -144,7 +142,7 @@ function SidebarTabBar({
       {/* Bottom: Settings */}
       {settingsItem ? (
         <View style={{ gap: 8 }}>
-          <View style={{ height: 1, backgroundColor: palette.border, marginHorizontal: 8 }} />
+          <View style={{ height: 1, backgroundColor: theme.colors.border, marginHorizontal: 8 }} />
           <TVTouchable
             key={settingsItem.key}
             onPress={() => navigateTo(settingsItem)}
@@ -154,16 +152,16 @@ function SidebarTabBar({
               gap: isTV ? 14 : 12,
               paddingVertical: isTV ? 12 : 10,
               paddingHorizontal: isTV ? 14 : 12,
-              borderRadius: 14,
+              borderRadius: theme.radius.xl,
               backgroundColor: currentRouteName === 'settings'
-                ? `rgba(${palette.accentRgba},0.10)`
+                ? `rgba(${theme.colors.accentRgba},0.10)`
                 : 'transparent',
             }}
           >
-            <View style={{ width: isTV ? 36 : 30, height: isTV ? 36 : 30, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.subtleFill }}>
-              <MaterialIcons name="tune" size={isTV ? 18 : 16} color={currentRouteName === 'settings' ? palette.primary : palette.textMuted} />
+            <View style={{ width: isTV ? 36 : 30, height: isTV ? 36 : 30, borderRadius: theme.radius.card, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.subtleFill }}>
+              <MaterialIcons name="tune" size={isTV ? 18 : 16} color={currentRouteName === 'settings' ? theme.colors.primary : theme.colors.textMuted} />
             </View>
-            <CustomText style={{ color: currentRouteName === 'settings' ? palette.text : palette.textMuted, fontSize: isTV ? 14 : 13, fontWeight: currentRouteName === 'settings' ? '700' : '500' }}>
+            <CustomText style={{ color: currentRouteName === 'settings' ? theme.colors.text : theme.colors.textMuted, fontSize: isTV ? 14 : 13, fontWeight: currentRouteName === 'settings' ? '700' : '500' }}>
               Settings
             </CustomText>
           </TVTouchable>
@@ -179,15 +177,15 @@ function TabItem({
   item,
   focused,
   compact,
-  palette,
   onPress,
 }: {
   item: FooterItem;
   focused: boolean;
   compact: boolean;
-  palette: typeof colors.dark;
   onPress: () => void;
 }) {
+  const theme = useAppTheme();
+
   return (
     <TVTouchable
       key={item.key}
@@ -202,20 +200,20 @@ function TabItem({
         style={{
           width: focused ? (compact ? 42 : 46) : (compact ? 32 : 36),
           height: compact ? 28 : 30,
-          borderRadius: 999,
+          borderRadius: theme.radius.pill,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: focused ? `rgba(${palette.accentRgba},0.18)` : 'transparent',
+          backgroundColor: focused ? `rgba(${theme.colors.accentRgba},0.18)` : 'transparent',
         }}
       >
         <MaterialIcons
           name={item.icon}
           size={focused ? (compact ? 20 : 22) : (compact ? 18 : 20)}
-          color={focused ? palette.primary : palette.textMuted}
+          color={focused ? theme.colors.primary : theme.colors.textMuted}
         />
       </View>
       {focused ? (
-        <CustomText style={{ color: palette.text_accent, fontSize: compact ? 8.5 : 9, lineHeight: 11, fontWeight: '700' }} numberOfLines={1}>
+        <CustomText style={{ color: theme.colors.text_accent, fontSize: compact ? 8.5 : 9, lineHeight: 11, fontWeight: '700' }} numberOfLines={1}>
           {item.label}
         </CustomText>
       ) : null}
@@ -223,8 +221,8 @@ function TabItem({
         style={{
           width: focused ? 14 : 0,
           height: 3,
-          borderRadius: 999,
-          backgroundColor: focused ? palette.primary : 'transparent',
+          borderRadius: theme.radius.pill,
+          backgroundColor: focused ? theme.colors.primary : 'transparent',
         }}
       />
     </TVTouchable>
@@ -237,35 +235,30 @@ function BottomPillTabBar({
   state,
   navigation,
   footerItems,
-  isDark,
-  palette,
   compact,
 }: {
   state: BottomTabBarProps['state'];
   navigation: BottomTabBarProps['navigation'];
   footerItems: FooterItem[];
-  isDark: boolean;
-  palette: typeof colors.dark;
   compact: boolean;
 }) {
+  const theme = useAppTheme();
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const isTablet = width >= 768;
 
-  const BAR_HEIGHT    = compact ? 62 : 70;
-  const CENTER_SIZE   = compact ? 56 : 64;
-  const CENTER_RISE   = 18;               // px the center button pops above the bar top
-  const BAR_MARGIN_H  = isTablet ? Math.max(16, (width - Math.min(680, width - 32)) / 2) : 16;
-  const BOTTOM_INSET  = Math.max(insets.bottom, 10);
+  const BAR_HEIGHT   = compact ? 62 : 70;
+  const CENTER_SIZE  = compact ? 56 : 64;
+  const CENTER_RISE  = 18;
+  const BAR_MARGIN_H = isTablet ? Math.max(16, (width - Math.min(680, width - 32)) / 2) : 16;
+  const BOTTOM_INSET = Math.max(insets.bottom, 10);
 
-  // center button bottom edge: sit centered in bar + rise above top
   const centerBtnBottom = BOTTOM_INSET + BAR_HEIGHT / 2 - CENTER_SIZE / 2 + CENTER_RISE;
 
   const currentRouteName = state.routes[state.index]?.name;
-
-  const leftItems  = footerItems.filter((i) => !i.center).slice(0, 2);
-  const rightItems = footerItems.filter((i) => !i.center).slice(2);
-  const centerItem = footerItems.find((i) => i.center) ?? null;
+  const leftItems   = footerItems.filter((i) => !i.center).slice(0, 2);
+  const rightItems  = footerItems.filter((i) => !i.center).slice(2);
+  const centerItem  = footerItems.find((i) => i.center) ?? null;
   const centerFocused = currentRouteName === centerItem?.routeName;
 
   const navigateTo = (item: FooterItem) => {
@@ -293,10 +286,10 @@ function BottomPillTabBar({
           bottom: BOTTOM_INSET,
           height: BAR_HEIGHT,
           borderRadius: BAR_HEIGHT / 2,
-          backgroundColor: palette.tabBarBg,
+          backgroundColor: theme.colors.tabBarBg,
           borderWidth: 1,
-          borderColor: palette.primaryBorder,
-          ...shadows.xxl,
+          borderColor: theme.colors.primaryBorder,
+          ...theme.shadows.xxl,
           flexDirection: 'row',
           alignItems: 'center',
           paddingHorizontal: 6,
@@ -309,7 +302,6 @@ function BottomPillTabBar({
             item={item}
             focused={currentRouteName === item.routeName}
             compact={compact}
-            palette={palette}
             onPress={() => navigateTo(item)}
           />
         ))}
@@ -323,7 +315,6 @@ function BottomPillTabBar({
             item={item}
             focused={currentRouteName === item.routeName}
             compact={compact}
-            palette={palette}
             onPress={() => navigateTo(item)}
           />
         ))}
@@ -345,7 +336,6 @@ function BottomPillTabBar({
             gap: 4,
           }}
         >
-          {/* Glow ring */}
           <View
             style={{
               width: CENTER_SIZE + 10,
@@ -354,17 +344,15 @@ function BottomPillTabBar({
               alignItems: 'center',
               justifyContent: 'center',
               backgroundColor: centerFocused
-                ? `rgba(${palette.accentRgba},0.28)`
-                : `rgba(${palette.accentRgba},0.14)`,
-              // Violet glow shadow
-              shadowColor: palette.primary,
+                ? `rgba(${theme.colors.accentRgba},0.28)`
+                : `rgba(${theme.colors.accentRgba},0.14)`,
+              shadowColor: theme.colors.primary,
               shadowOffset: { width: 0, height: 8 },
               shadowOpacity: centerFocused ? 0.65 : 0.35,
               shadowRadius: centerFocused ? 22 : 14,
               elevation: 18,
             }}
           >
-            {/* Inner circle */}
             <View
               style={{
                 width: CENTER_SIZE,
@@ -372,25 +360,20 @@ function BottomPillTabBar({
                 borderRadius: CENTER_SIZE / 2,
                 alignItems: 'center',
                 justifyContent: 'center',
-                backgroundColor: centerFocused ? palette.primary : `${palette.primary}DD`,
+                backgroundColor: centerFocused ? theme.colors.primary : `${theme.colors.primary}DD`,
                 borderWidth: 2,
                 borderColor: centerFocused
                   ? 'rgba(255,255,255,0.22)'
                   : 'rgba(255,255,255,0.10)',
               }}
             >
-              <MaterialIcons
-                name="play-arrow"
-                size={compact ? 28 : 32}
-                color="#FFFFFF"
-              />
+              <MaterialIcons name="play-arrow" size={compact ? 28 : 32} color="#FFFFFF" />
             </View>
           </View>
 
-          {/* Label below */}
           <CustomText
             style={{
-              color: centerFocused ? palette.text_accent : palette.textMuted,
+              color: centerFocused ? theme.colors.text_accent : theme.colors.textMuted,
               fontSize: compact ? 8.5 : 9,
               lineHeight: 11,
               fontWeight: '700',
@@ -409,15 +392,12 @@ function BottomPillTabBar({
 // ─── Root ─────────────────────────────────────────────────────────────────────
 
 const TabBar = ({ state, navigation }: BottomTabBarProps) => {
-  const colorScheme = useColorScheme();
-  const palette = colors[colorScheme] ?? colors.dark;
   const { width } = useWindowDimensions();
   const compact = width < 390;
   const { config } = useMobileAppConfig();
 
   const sidebarWidth = getSidebarWidth(width);
   const isSidebar = sidebarWidth > 0;
-  const isDark = colorScheme === 'dark';
 
   const footerItems = useMemo(() => {
     const configuredTabs = config?.navigation?.tabs ?? [];
@@ -446,8 +426,6 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
         navigation={navigation}
         footerItems={footerItems}
         sidebarWidth={sidebarWidth}
-        isDark={isDark}
-        palette={palette}
       />
     );
   }
@@ -457,8 +435,6 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
       state={state}
       navigation={navigation}
       footerItems={footerItems}
-      isDark={isDark}
-      palette={palette}
       compact={compact}
     />
   );

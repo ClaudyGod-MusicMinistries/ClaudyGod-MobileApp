@@ -6,8 +6,7 @@ import { useContext, useEffect, useState, type ReactNode } from 'react';
 import { StatusBar, View } from 'react-native';
 
 import { ThemeProvider } from '../context/ThemeProvider';
-import { useColorScheme, useThemeContext } from '../util/colorScheme';
-import { colors } from '../constants/color';
+import { useColorScheme, useThemeContext, useAppTheme } from '../util/colorScheme';
 import { FontProvider, FontContext } from '../context/FontContext';
 import { AppProvider } from '../context/AppContext';
 import { UserAccountProvider } from '../context/UserAccountContext';
@@ -32,15 +31,14 @@ if (!__DEV__) {
 }
 
 function ThemedLayout({ children }: { children: ReactNode }) {
-  const colorScheme = useColorScheme();
-  const currentColors = colors[colorScheme] ?? colors.dark;
+  const theme = useAppTheme();
 
   return (
-    <View style={{ flex: 1, backgroundColor: currentColors.background }}>
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <StatusBar
         translucent={false}
-        backgroundColor={currentColors.background}
-        barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'}
+        backgroundColor={theme.colors.background}
+        barStyle={theme.scheme === 'dark' ? 'light-content' : 'dark-content'}
       />
       {children}
     </View>
