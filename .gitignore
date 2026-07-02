@@ -152,3 +152,6 @@ vite.config.ts.timestamp-*
 
 # Local Docker command notes
 dockerSetup.ini
+
+# Claude Code agent worktrees — never commit these as submodule gitlinks
+.claude/worktrees/
