@@ -5,12 +5,13 @@
  * validates the token, the biometric check is entirely on-device.
  */
 import React, { useState, useEffect } from 'react';
-import { View, Modal, Animated, StyleSheet, Dimensions , Platform } from 'react-native';
+import { View, Modal, Animated, StyleSheet, Dimensions, Platform } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../CustomText';
 import { AppButton } from '../ui/AppButton';
 import { TVTouchable } from '../ui/TVTouchable';
 import { useAppTheme } from '../../util/colorScheme';
+import { makeStyles } from '../../styles/makeStyles';
 import {
   getBiometricType,
   storeTrustedDeviceToken,
@@ -27,8 +28,47 @@ interface Props {
   onDismiss: () => void;
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const useStyles = makeStyles((theme) => ({
+  sheet: {
+    position: 'absolute',
+    bottom: 0, left: 0, right: 0,
+    borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    paddingHorizontal: 24, paddingTop: 14, paddingBottom: 40,
+    alignItems: 'center', borderTopWidth: 1,
+    backgroundColor: theme.colors.elevated,
+    borderTopColor: theme.colors.primaryBorder,
+  },
+  handle: {
+    width: 36, height: 4, borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.20)', marginBottom: 24,
+  },
+  iconWrap: {
+    width: 72, height: 72, borderRadius: 20, borderWidth: 1,
+    alignItems: 'center', justifyContent: 'center', marginBottom: 16,
+    backgroundColor: theme.colors.primarySurface,
+    borderColor: theme.colors.primaryBorder,
+  },
+  title: {
+    fontSize: 20, fontWeight: '800', textAlign: 'center', marginBottom: 8,
+    color: theme.colors.text,
+  },
+  body: {
+    fontSize: 13, textAlign: 'center', lineHeight: 20, marginBottom: 28,
+    color: theme.colors.textMuted,
+  },
+  actions:   { width: '100%', gap: 10 },
+  skipBtn:   { alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 16 },
+  skipLabel: { fontSize: 13, fontWeight: '600', color: theme.colors.textMuted },
+  backdropInner: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)' },
+}));
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export function TrustDeviceSheet({ visible, accessToken, displayName, onDismiss }: Props) {
-  const theme = useAppTheme();
+  const styles = useStyles();
+  const theme  = useAppTheme();
   const [biometricType, setBiometricType] = useState<'face' | 'fingerprint' | 'none'>('none');
   const [saving, setSaving] = useState(false);
   const slideAnim = React.useRef(new Animated.Value(height)).current;
@@ -55,7 +95,7 @@ export function TrustDeviceSheet({ visible, accessToken, displayName, onDismiss 
   }, [visible, slideAnim]);
 
   const biometricLabel = biometricType === 'face' ? 'Face ID' : biometricType === 'fingerprint' ? 'Touch ID / Fingerprint' : 'Biometrics';
-  const biometricIcon = biometricType === 'face' ? 'face' : 'fingerprint';
+  const biometricIcon  = biometricType === 'face' ? 'face' : 'fingerprint';
 
   const handleTrust = async () => {
     setSaving(true);
@@ -73,7 +113,6 @@ export function TrustDeviceSheet({ visible, accessToken, displayName, onDismiss 
       await storeTrustedDeviceToken(token, label, expiresAt);
       onDismiss();
     } catch {
-      // If registration fails, just dismiss silently — it's non-critical
       onDismiss();
     } finally {
       setSaving(false);
@@ -96,27 +135,21 @@ export function TrustDeviceSheet({ visible, accessToken, displayName, onDismiss 
         showFocusBorder={false}
         style={StyleSheet.absoluteFillObject}
       >
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.55)' }} />
+        <View style={styles.backdropInner} />
       </TVTouchable>
 
       {/* Sheet */}
-      <Animated.View
-        style={[
-          styles.sheet,
-          { transform: [{ translateY: slideAnim }], backgroundColor: theme.colors.elevated, borderTopColor: theme.colors.primaryBorder },
-        ]}
-      >
+      <Animated.View style={[styles.sheet, { transform: [{ translateY: slideAnim }] }]}>
         <View style={styles.handle} />
 
-        {/* Icon */}
-        <View style={[styles.iconWrap, { backgroundColor: theme.colors.primarySurface, borderColor: theme.colors.primaryBorder }]}>
+        <View style={styles.iconWrap}>
           <MaterialIcons name={biometricIcon} size={36} color={theme.colors.primary} />
         </View>
 
-        <CustomText variant="heading" style={[styles.title, { color: theme.colors.text }]}>
+        <CustomText variant="heading" style={styles.title}>
           Trust this device?
         </CustomText>
-        <CustomText style={[styles.body, { color: theme.colors.textMuted }]}>
+        <CustomText style={styles.body}>
           Hi {displayName}, enable {biometricLabel} to sign in instantly next time — no password needed.
         </CustomText>
 
@@ -131,67 +164,10 @@ export function TrustDeviceSheet({ visible, accessToken, displayName, onDismiss 
             onPress={() => void handleTrust()}
           />
           <TVTouchable onPress={onDismiss} showFocusBorder={false} style={styles.skipBtn}>
-            <CustomText style={[styles.skipLabel, { color: theme.colors.textMuted }]}>Not now</CustomText>
+            <CustomText style={styles.skipLabel}>Not now</CustomText>
           </TVTouchable>
         </View>
       </Animated.View>
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  sheet: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 24,
-    paddingTop: 14,
-    paddingBottom: 40,
-    alignItems: 'center',
-    borderTopWidth: 1,
-  },
-  handle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: 'rgba(255,255,255,0.20)',
-    marginBottom: 24,
-  },
-  iconWrap: {
-    width: 72,
-    height: 72,
-    borderRadius: 20,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: '800',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  body: {
-    fontSize: 13,
-    textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 28,
-  },
-  actions: {
-    width: '100%',
-    gap: 10,
-  },
-  skipBtn: {
-    alignSelf: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-  },
-  skipLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-});

@@ -14,6 +14,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAppTheme } from '../../util/colorScheme';
+import { makeStyles } from '../../styles/makeStyles';
 import { CustomText } from '../CustomText';
 import { AppButton } from '../ui/AppButton';
 import { TVTouchable } from '../ui/TVTouchable';
@@ -27,33 +28,122 @@ import { useUserAccount } from '../../context/UserAccountContext';
 type SheetStep = 'choose' | 'email' | 'success';
 type EmailMode = 'signin' | 'signup';
 
-// ─── Success state ────────────────────────────────────────────────────────────
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const useStyles = makeStyles((theme) => ({
+  flex1:          { flex: 1 },
+  backdrop:       { flex: 1, backgroundColor: 'rgba(0,0,0,0.60)', justifyContent: 'flex-end' },
+
+  sheetCard: {
+    backgroundColor:      theme.colors.surface,
+    borderTopLeftRadius:  theme.radius.xxl,
+    borderTopRightRadius: theme.radius.xxl,
+    borderTopWidth:       1,
+    borderColor:          theme.colors.border,
+    paddingTop:           12,
+    paddingHorizontal:    20,
+  },
+  dragHandle: {
+    alignSelf: 'center', width: 36, height: 4,
+    borderRadius: 2, backgroundColor: theme.colors.border,
+    marginBottom: 20,
+  },
+
+  sheetHeader: {
+    flexDirection: 'row', alignItems: 'flex-start',
+    justifyContent: 'space-between', marginBottom: 20, gap: 12,
+  },
+  titleContainer:  { flex: 1, gap: 5 },
+  titleText:       { color: theme.colors.text, fontSize: 21, fontWeight: '800', letterSpacing: -0.4 },
+  subtitleText:    { color: theme.colors.textSecondary, fontSize: 13.5, lineHeight: 19 },
+  closeBtn: {
+    width: 34, height: 34, borderRadius: 17,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: theme.colors.subtleFill,
+    marginTop: 2,
+  },
+
+  errorBanner: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 8,
+    backgroundColor: `${theme.colors.danger}12`,
+    borderRadius: theme.radius.card,
+    borderWidth: 1, borderColor: `${theme.colors.danger}28`,
+    padding: 12, marginBottom: 14,
+  },
+  errorIconShift: { marginTop: 1 },
+  errorText:      { color: theme.colors.danger, fontSize: 12.5, flex: 1, lineHeight: 18 },
+
+  successContainer: { alignItems: 'center', paddingVertical: 24, gap: 16 },
+  successIcon: {
+    width: 72, height: 72, borderRadius: 36,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  successTitle:    { color: theme.colors.text, fontSize: 20, fontWeight: '800', textAlign: 'center' },
+  successSubtitle: { color: theme.colors.textSecondary, fontSize: 13.5, textAlign: 'center', lineHeight: 20 },
+
+  chooseGap:   { gap: 12 },
+  googleBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12,
+    height: 54, borderRadius: 16,
+    backgroundColor: theme.colors.card,
+    borderWidth: 1, borderColor: theme.colors.border,
+  },
+  googleCircle: {
+    width: 24, height: 24, borderRadius: 12,
+    backgroundColor: '#4285F4',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  googleLetter:  { color: '#FFFFFF', fontSize: 13, fontWeight: '800', lineHeight: 16 },
+  googleLabel:   { color: theme.colors.text, fontSize: 15, fontWeight: '600' },
+  dividerRow:    { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  dividerLine:   { flex: 1, height: 1, backgroundColor: theme.colors.border },
+  dividerLabel:  { color: theme.colors.textMuted, fontSize: 12, fontWeight: '500' },
+  skipBtn:       { alignItems: 'center', paddingVertical: 12 },
+  skipText:      { color: theme.colors.textMuted, fontSize: 13.5, fontWeight: '500' },
+
+  formGap:    { gap: 10 },
+  inputField: {
+    backgroundColor:  theme.colors.subtleFill,
+    borderRadius:     12,
+    borderWidth:      1,
+    borderColor:      theme.colors.border,
+    paddingHorizontal: 14,
+    paddingVertical:   Platform.OS === 'ios' ? 14 : 11,
+    color:            theme.colors.text,
+    fontSize:         15,
+  },
+  submitMargin:     { marginTop: 4 },
+  toggleModeBtn:    { alignItems: 'center', paddingVertical: 10 },
+  toggleModeText:   { color: theme.colors.textSecondary, fontSize: 13.5 },
+  toggleModeAccent: { color: theme.colors.primary, fontWeight: '700' },
+  backBtn:  { flexDirection: 'row', alignItems: 'center', gap: 4, justifyContent: 'center', paddingBottom: 4 },
+  backText: { color: theme.colors.textMuted, fontSize: 12 },
+}));
+
+// ─── SuccessState ─────────────────────────────────────────────────────────────
 
 function SuccessState({ displayName }: { displayName?: string }) {
-  const theme = useAppTheme();
+  const styles = useStyles();
+  const theme  = useAppTheme();
   return (
-    <View style={{ alignItems: 'center', paddingVertical: 24, gap: 16 }}>
-      <View
-        style={{
-          width: 72, height: 72, borderRadius: 36,
-          backgroundColor: `${theme.colors.success}16`,
-          borderWidth: 1, borderColor: `${theme.colors.success}28`,
-          alignItems: 'center', justifyContent: 'center',
-        }}
-      >
+    <View style={styles.successContainer}>
+      <View style={[styles.successIcon, {
+        backgroundColor: `${theme.colors.success}16`,
+        borderWidth: 1, borderColor: `${theme.colors.success}28`,
+      }]}>
         <MaterialIcons name="check" size={32} color={theme.colors.success} />
       </View>
-      <CustomText style={{ color: theme.colors.text, fontSize: 20, fontWeight: '800', textAlign: 'center' }}>
-        {displayName ? `Welcome, ${displayName}` : 'You\'re signed in'}
+      <CustomText style={styles.successTitle}>
+        {displayName ? `Welcome, ${displayName}` : "You're signed in"}
       </CustomText>
-      <CustomText style={{ color: theme.colors.textSecondary, fontSize: 13.5, textAlign: 'center', lineHeight: 20 }}>
+      <CustomText style={styles.successSubtitle}>
         Your library will now sync across all your devices.
       </CustomText>
     </View>
   );
 }
 
-// ─── Choose method step ───────────────────────────────────────────────────────
+// ─── ChooseMethod ─────────────────────────────────────────────────────────────
 
 function ChooseMethod({
   onGoogle, onEmail, onSkip, loading,
@@ -63,46 +153,33 @@ function ChooseMethod({
   onSkip: () => void;
   loading: boolean;
 }) {
-  const theme = useAppTheme();
+  const styles = useStyles();
+  const theme  = useAppTheme();
 
   return (
-    <View style={{ gap: 12 }}>
+    <View style={styles.chooseGap}>
       <TVTouchable
         onPress={onGoogle}
         disabled={loading}
         showFocusBorder={false}
-        style={{
-          flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12,
-          height: 54, borderRadius: 16,
-          backgroundColor: theme.colors.card,
-          borderWidth: 1, borderColor: theme.colors.border,
-          opacity: loading ? 0.6 : 1,
-        }}
+        style={[styles.googleBtn, { opacity: loading ? 0.6 : 1 }]}
       >
         {loading ? (
           <ActivityIndicator size="small" color={theme.colors.primary} />
         ) : (
           <>
-            <View
-              style={{
-                width: 24, height: 24, borderRadius: 12,
-                backgroundColor: '#4285F4',
-                alignItems: 'center', justifyContent: 'center',
-              }}
-            >
-              <CustomText style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '800', lineHeight: 16 }}>G</CustomText>
+            <View style={styles.googleCircle}>
+              <CustomText style={styles.googleLetter}>G</CustomText>
             </View>
-            <CustomText style={{ color: theme.colors.text, fontSize: 15, fontWeight: '600' }}>
-              Continue with Google
-            </CustomText>
+            <CustomText style={styles.googleLabel}>Continue with Google</CustomText>
           </>
         )}
       </TVTouchable>
 
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-        <View style={{ flex: 1, height: 1, backgroundColor: theme.colors.border }} />
-        <CustomText style={{ color: theme.colors.textMuted, fontSize: 12, fontWeight: '500' }}>or</CustomText>
-        <View style={{ flex: 1, height: 1, backgroundColor: theme.colors.border }} />
+      <View style={styles.dividerRow}>
+        <View style={styles.dividerLine} />
+        <CustomText style={styles.dividerLabel}>or</CustomText>
+        <View style={styles.dividerLine} />
       </View>
 
       <AppButton
@@ -114,20 +191,14 @@ function ChooseMethod({
         leftIcon={<MaterialIcons name="email" size={17} color={theme.colors.primary} />}
       />
 
-      <TVTouchable
-        onPress={onSkip}
-        showFocusBorder={false}
-        style={{ alignItems: 'center', paddingVertical: 12 }}
-      >
-        <CustomText style={{ color: theme.colors.textMuted, fontSize: 13.5, fontWeight: '500' }}>
-          Skip for now
-        </CustomText>
+      <TVTouchable onPress={onSkip} showFocusBorder={false} style={styles.skipBtn}>
+        <CustomText style={styles.skipText}>Skip for now</CustomText>
       </TVTouchable>
     </View>
   );
 }
 
-// ─── Email form step ──────────────────────────────────────────────────────────
+// ─── EmailForm ────────────────────────────────────────────────────────────────
 
 function EmailForm({
   mode, name, email, password, loading,
@@ -146,30 +217,20 @@ function EmailForm({
   onToggleMode: () => void;
   onBack: () => void;
 }) {
-  const theme = useAppTheme();
-  const emailRef = useRef<TextInput>(null);
+  const styles = useStyles();
+  const theme  = useAppTheme();
+  const emailRef    = useRef<TextInput>(null);
   const passwordRef = useRef<TextInput>(null);
 
-  const inputStyle = {
-    backgroundColor: theme.colors.subtleFill,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    paddingHorizontal: 14,
-    paddingVertical: Platform.OS === 'ios' ? 14 : 11,
-    color: theme.colors.text,
-    fontSize: 15,
-  } as const;
-
   return (
-    <View style={{ gap: 10 }}>
+    <View style={styles.formGap}>
       {mode === 'signup' ? (
         <TextInput
           placeholder="Your name"
           placeholderTextColor={theme.colors.textMuted}
           value={name}
           onChangeText={onChangeName}
-          style={inputStyle}
+          style={styles.inputField}
           autoCapitalize="words"
           returnKeyType="next"
           onSubmitEditing={() => emailRef.current?.focus()}
@@ -182,7 +243,7 @@ function EmailForm({
         placeholderTextColor={theme.colors.textMuted}
         value={email}
         onChangeText={onChangeEmail}
-        style={inputStyle}
+        style={styles.inputField}
         autoCapitalize="none"
         keyboardType="email-address"
         autoComplete="email"
@@ -196,13 +257,13 @@ function EmailForm({
         placeholderTextColor={theme.colors.textMuted}
         value={password}
         onChangeText={onChangePassword}
-        style={inputStyle}
+        style={styles.inputField}
         secureTextEntry
         returnKeyType="done"
         onSubmitEditing={onSubmit}
       />
 
-      <View style={{ marginTop: 4 }}>
+      <View style={styles.submitMargin}>
         <AppButton
           title={loading ? '' : (mode === 'signin' ? 'Sign in' : 'Create account')}
           size="lg"
@@ -213,52 +274,44 @@ function EmailForm({
         />
       </View>
 
-      <TVTouchable
-        onPress={onToggleMode}
-        showFocusBorder={false}
-        style={{ alignItems: 'center', paddingVertical: 10 }}
-      >
-        <CustomText style={{ color: theme.colors.textSecondary, fontSize: 13.5 }}>
-          {mode === 'signin' ? "No account? " : "Have an account? "}
-          <CustomText style={{ color: theme.colors.primary, fontWeight: '700' }}>
+      <TVTouchable onPress={onToggleMode} showFocusBorder={false} style={styles.toggleModeBtn}>
+        <CustomText style={styles.toggleModeText}>
+          {mode === 'signin' ? 'No account? ' : 'Have an account? '}
+          <CustomText style={styles.toggleModeAccent}>
             {mode === 'signin' ? 'Sign up free' : 'Sign in'}
           </CustomText>
         </CustomText>
       </TVTouchable>
 
-      <TVTouchable
-        onPress={onBack}
-        showFocusBorder={false}
-        style={{ flexDirection: 'row', alignItems: 'center', gap: 4, justifyContent: 'center', paddingBottom: 4 }}
-      >
+      <TVTouchable onPress={onBack} showFocusBorder={false} style={styles.backBtn}>
         <MaterialIcons name="arrow-back" size={14} color={theme.colors.textMuted} />
-        <CustomText style={{ color: theme.colors.textMuted, fontSize: 12 }}>Back</CustomText>
+        <CustomText style={styles.backText}>Back</CustomText>
       </TVTouchable>
     </View>
   );
 }
 
-// ─── Main sheet ───────────────────────────────────────────────────────────────
+// ─── AccountSheet ─────────────────────────────────────────────────────────────
 
 export function AccountSheet() {
-  const theme = useAppTheme();
+  const styles = useStyles();
+  const theme  = useAppTheme();
   const insets = useSafeAreaInsets();
   const { isSheetOpen, closeAccountSheet } = useUserAccount();
 
-  const [step, setStep] = useState<SheetStep>('choose');
-  const [mode, setMode] = useState<EmailMode>('signin');
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [step, setStep]             = useState<SheetStep>('choose');
+  const [mode, setMode]             = useState<EmailMode>('signin');
+  const [name, setName]             = useState('');
+  const [email, setEmail]           = useState('');
+  const [password, setPassword]     = useState('');
+  const [error, setError]           = useState('');
+  const [loading, setLoading]       = useState(false);
   const [signedInName, setSignedInName] = useState('');
 
   const slideAnim = useRef(new Animated.Value(700)).current;
 
   useEffect(() => {
     if (isSheetOpen) {
-      // Reset to default state every time sheet opens
       setStep('choose');
       setMode('signin');
       setError('');
@@ -266,19 +319,9 @@ export function AccountSheet() {
       setEmail('');
       setPassword('');
       setLoading(false);
-
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        useNativeDriver: true,
-        tension: 70,
-        friction: 12,
-      }).start();
+      Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, tension: 70, friction: 12 }).start();
     } else {
-      Animated.timing(slideAnim, {
-        toValue: 700,
-        duration: 220,
-        useNativeDriver: true,
-      }).start();
+      Animated.timing(slideAnim, { toValue: 700, duration: 220, useNativeDriver: true }).start();
     }
   }, [isSheetOpen, slideAnim]);
 
@@ -298,14 +341,8 @@ export function AccountSheet() {
   };
 
   const handleEmailSubmit = async () => {
-    if (!email.trim() || !password.trim()) {
-      setError('Please fill in all fields.');
-      return;
-    }
-    if (mode === 'signup' && !name.trim()) {
-      setError('Enter your name to create an account.');
-      return;
-    }
+    if (!email.trim() || !password.trim()) { setError('Please fill in all fields.'); return; }
+    if (mode === 'signup' && !name.trim()) { setError('Enter your name to create an account.'); return; }
     Keyboard.dismiss();
     setLoading(true);
     setError('');
@@ -340,57 +377,30 @@ export function AccountSheet() {
       onRequestClose={dismiss}
       statusBarTranslucent
     >
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
+      <KeyboardAvoidingView style={styles.flex1} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <TouchableWithoutFeedback onPress={dismiss}>
-          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.60)', justifyContent: 'flex-end' }}>
-            {/* Sheet card — inner TouchableWithoutFeedback prevents tap-through */}
+          <View style={styles.backdrop}>
             <TouchableWithoutFeedback onPress={() => {}}>
               <Animated.View
-                style={{
-                  transform: [{ translateY: slideAnim }],
-                  backgroundColor: theme.colors.surface,
-                  borderTopLeftRadius: 28,
-                  borderTopRightRadius: 28,
-                  borderTopWidth: 1,
-                  borderColor: theme.colors.border,
-                  paddingTop: 12,
-                  paddingBottom: insets.bottom + 20,
-                  paddingHorizontal: 20,
-                }}
+                style={[
+                  styles.sheetCard,
+                  { transform: [{ translateY: slideAnim }], paddingBottom: insets.bottom + 20 },
+                ]}
               >
-                {/* Drag handle */}
-                <View
-                  style={{
-                    alignSelf: 'center', width: 36, height: 4,
-                    borderRadius: 2, backgroundColor: theme.colors.border,
-                    marginBottom: 20,
-                  }}
-                />
+                <View style={styles.dragHandle} />
 
                 {step === 'success' ? (
                   <SuccessState displayName={signedInName} />
                 ) : (
                   <>
-                    {/* Sheet header */}
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'flex-start',
-                        justifyContent: 'space-between',
-                        marginBottom: 20,
-                        gap: 12,
-                      }}
-                    >
-                      <View style={{ flex: 1, gap: 5 }}>
-                        <CustomText style={{ color: theme.colors.text, fontSize: 21, fontWeight: '800', letterSpacing: -0.4 }}>
+                    <View style={styles.sheetHeader}>
+                      <View style={styles.titleContainer}>
+                        <CustomText style={styles.titleText}>
                           {step === 'email'
                             ? (mode === 'signin' ? 'Welcome back' : 'Create account')
                             : 'Sync your library'}
                         </CustomText>
-                        <CustomText style={{ color: theme.colors.textSecondary, fontSize: 13.5, lineHeight: 19 }}>
+                        <CustomText style={styles.subtitleText}>
                           {step === 'email'
                             ? (mode === 'signin'
                               ? 'Sign in to access your saved content across devices.'
@@ -398,36 +408,15 @@ export function AccountSheet() {
                             : 'Keep your favourites and listening history — no subscription needed.'}
                         </CustomText>
                       </View>
-                      <TVTouchable
-                        onPress={dismiss}
-                        showFocusBorder={false}
-                        style={{
-                          width: 34, height: 34, borderRadius: 17,
-                          alignItems: 'center', justifyContent: 'center',
-                          backgroundColor: theme.colors.subtleFill,
-                          marginTop: 2,
-                        }}
-                      >
+                      <TVTouchable onPress={dismiss} showFocusBorder={false} style={styles.closeBtn}>
                         <MaterialIcons name="close" size={18} color={theme.colors.textMuted} />
                       </TVTouchable>
                     </View>
 
-                    {/* Error banner */}
                     {error ? (
-                      <View
-                        style={{
-                          flexDirection: 'row', alignItems: 'flex-start', gap: 8,
-                          backgroundColor: `${theme.colors.danger}12`,
-                          borderRadius: 12,
-                          borderWidth: 1, borderColor: `${theme.colors.danger}28`,
-                          padding: 12,
-                          marginBottom: 14,
-                        }}
-                      >
-                        <MaterialIcons name="error-outline" size={16} color={theme.colors.danger} style={{ marginTop: 1 }} />
-                        <CustomText style={{ color: theme.colors.danger, fontSize: 12.5, flex: 1, lineHeight: 18 }}>
-                          {error}
-                        </CustomText>
+                      <View style={styles.errorBanner}>
+                        <MaterialIcons name="error-outline" size={16} color={theme.colors.danger} style={styles.errorIconShift} />
+                        <CustomText style={styles.errorText}>{error}</CustomText>
                       </View>
                     ) : null}
 

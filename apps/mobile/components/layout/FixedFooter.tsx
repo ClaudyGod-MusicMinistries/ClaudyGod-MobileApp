@@ -4,6 +4,7 @@ import { View, ScrollView, TouchableOpacity, Linking } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../CustomText';
 import { useAppTheme } from '../../util/colorScheme';
+import { makeStyles } from '../../styles/makeStyles';
 
 interface FooterLink {
   label: string;
@@ -48,13 +49,41 @@ const DEFAULT_SECTIONS: FooterSection[] = [
   },
 ];
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const useStyles = makeStyles((theme) => ({
+  bar: {
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+    backgroundColor: theme.colors.surface,
+    borderTopWidth: 1, borderTopColor: theme.colors.border,
+    paddingVertical: 16, paddingHorizontal: 16, zIndex: 50,
+  },
+  scrollContent:  { gap: 20, paddingRight: 16 },
+  sectionCol:     { minWidth: 120 },
+  sectionTitle: {
+    color: theme.colors.text, fontWeight: '600', marginBottom: 12,
+    fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5,
+  },
+  linksGap:       { gap: 8 },
+  linkRow:        { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  linkText:       { color: theme.colors.textSecondary, fontSize: 11 },
+  copyright: {
+    marginTop: 12, paddingTop: 12,
+    borderTopWidth: 1, borderTopColor: theme.colors.border,
+  },
+  copyrightText:  { color: theme.colors.textSecondary, fontSize: 10, textAlign: 'center' },
+}));
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export function FixedFooter({
   sections = DEFAULT_SECTIONS,
   showSocial: _showSocial = false,
   copyrightText = '© 2026 ClaudyGod. All rights reserved.',
   onContentPadding: _onContentPadding = 80,
 }: FixedFooterProps) {
-  const theme = useAppTheme();
+  const styles = useStyles();
+  const theme  = useAppTheme();
 
   const handleLinkPress = (link: FooterLink) => {
     if (link.onPress) {
@@ -67,62 +96,29 @@ export function FixedFooter({
   };
 
   return (
-    <View
-      style={{
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        backgroundColor: theme.colors.surface,
-        borderTopWidth: 1,
-        borderTopColor: theme.colors.border,
-        paddingVertical: 16,
-        paddingHorizontal: 16,
-        zIndex: 50,
-      }}
-    >
+    <View style={styles.bar}>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ gap: 20, paddingRight: 16 }}
+        contentContainerStyle={styles.scrollContent}
         scrollEnabled={true}
       >
         {sections.map((section) => (
-          <View key={section.title} style={{ minWidth: 120 }}>
-            <CustomText
-              variant="label"
-              style={{
-                color: theme.colors.text,
-                fontWeight: '600',
-                marginBottom: 12,
-                fontSize: 11,
-                textTransform: 'uppercase',
-                letterSpacing: 0.5,
-              }}
-            >
+          <View key={section.title} style={styles.sectionCol}>
+            <CustomText variant="label" style={styles.sectionTitle}>
               {section.title}
             </CustomText>
-            <View style={{ gap: 8 }}>
+            <View style={styles.linksGap}>
               {section.links.map((link) => (
                 <TouchableOpacity
                   key={link.label}
                   onPress={() => handleLinkPress(link)}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+                  style={styles.linkRow}
                 >
                   {link.icon && (
-                    <MaterialIcons
-                      name={link.icon}
-                      size={12}
-                      color={theme.colors.primary}
-                    />
+                    <MaterialIcons name={link.icon} size={12} color={theme.colors.primary} />
                   )}
-                  <CustomText
-                    style={{
-                      color: theme.colors.textSecondary,
-                      fontSize: 11,
-                    }}
-                    numberOfLines={1}
-                  >
+                  <CustomText style={styles.linkText} numberOfLines={1}>
                     {link.label}
                   </CustomText>
                 </TouchableOpacity>
@@ -132,24 +128,8 @@ export function FixedFooter({
         ))}
       </ScrollView>
 
-      {/* Copyright */}
-      <View
-        style={{
-          marginTop: 12,
-          paddingTop: 12,
-          borderTopWidth: 1,
-          borderTopColor: theme.colors.border,
-        }}
-      >
-        <CustomText
-          style={{
-            color: theme.colors.textSecondary,
-            fontSize: 10,
-            textAlign: 'center',
-          }}
-        >
-          {copyrightText}
-        </CustomText>
+      <View style={styles.copyright}>
+        <CustomText style={styles.copyrightText}>{copyrightText}</CustomText>
       </View>
     </View>
   );

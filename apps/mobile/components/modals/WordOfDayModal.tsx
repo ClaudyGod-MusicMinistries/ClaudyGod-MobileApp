@@ -6,7 +6,6 @@ import {
   Pressable,
   ScrollView,
   StatusBar,
-  StyleSheet,
   View,
   useWindowDimensions,
 } from 'react-native';
@@ -16,10 +15,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CustomText } from '../CustomText';
 import { TVTouchable } from '../ui/TVTouchable';
 import { useAppTheme } from '../../util/colorScheme';
+import { makeStyles } from '../../styles/makeStyles';
+import { common, fillAbsolute } from '../../styles/commonStyles';
 import type { WordOfDayItem } from '../../services/wordOfDayService';
 
 const SHOWN_DATE_KEY = 'claudygod.word_modal.last_shown';
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
+
+const PRIMARY_FAINT = 'rgba(139,92,246,0.12)';
+const PRIMARY_LIGHT = 'rgba(139,92,246,0.22)';
 
 function todayDateString(): string {
   const d = new Date();
@@ -49,6 +53,108 @@ function formatDate(date = new Date()): string {
   });
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const useStyles = makeStyles((theme) => ({
+  // Backdrop
+  backdrop:            { ...fillAbsolute, backgroundColor: 'rgba(7,5,12,0.80)' },
+  backfill:            { ...fillAbsolute },
+
+  // Layout
+  centerer:            { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20 },
+
+  // Card shell
+  card: {
+    backgroundColor: theme.colors.surface,
+    borderRadius:    theme.radius.xxl,
+    borderWidth:     1,
+    borderColor:     theme.colors.border,
+    overflow:        'hidden',
+    shadowColor:     '#000',
+    shadowOffset:    { width: 0, height: 8 },
+    shadowOpacity:   0.28,
+    shadowRadius:    20,
+    elevation:       12,
+  },
+  accentBar:           { height: 4, backgroundColor: theme.colors.primary },
+  scrollContent:       { padding: 24, gap: 20 },
+
+  // Modal header
+  headerWrapper:       { alignItems: 'center', gap: 4 },
+  headerIcon: {
+    width: 48, height: 48, borderRadius: 15,
+    backgroundColor: PRIMARY_FAINT,
+    borderWidth: 1.5, borderColor: 'rgba(139,92,246,0.26)',
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: 8,
+  },
+  headerLabel: {
+    color: theme.colors.primary, fontSize: 10, fontWeight: '800',
+    letterSpacing: 2, textTransform: 'uppercase',
+  },
+  headerDate:          { color: theme.colors.textMuted, fontSize: 12 },
+
+  // Divider
+  dividerRow:          { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  dividerLine:         { flex: 1, height: 1, backgroundColor: theme.colors.border },
+  dividerText: {
+    color: theme.colors.textMuted, fontSize: 9.5,
+    letterSpacing: 0.8, textTransform: 'uppercase',
+  },
+
+  // Action buttons
+  actions:             { gap: 10, paddingTop: 4 },
+  btnPrimary: {
+    height: 52, borderRadius: theme.radius.xl,
+    backgroundColor: theme.colors.primary,
+    alignItems: 'center', justifyContent: 'center',
+    flexDirection: 'row', gap: 8,
+  },
+  btnPrimaryText:      { color: theme.colors.textInverse, fontSize: 15, fontWeight: '700' },
+  btnSecondary: {
+    height: 46, borderRadius: theme.radius.xl,
+    borderWidth: 1, borderColor: theme.colors.border,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  btnSecondaryText:    { color: theme.colors.textMuted, fontSize: 14, fontWeight: '600' },
+
+  // VerseBlock
+  verseGap:            { gap: 10 },
+  verseLabelRow:       { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  verseIconBox: {
+    width: 28, height: 28, borderRadius: 8,
+    backgroundColor: PRIMARY_FAINT,
+    borderWidth: 1, borderColor: PRIMARY_LIGHT,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  verseLabel: {
+    color: theme.colors.primary, fontSize: 10, fontWeight: '800',
+    letterSpacing: 1.4, textTransform: 'uppercase',
+  },
+  verseTitle: {
+    color: theme.colors.text, fontSize: 17, fontWeight: '800',
+    letterSpacing: -0.3, lineHeight: 23,
+  },
+  versePassagePill: {
+    alignSelf: 'flex-start', paddingVertical: 4, paddingHorizontal: 11,
+    borderRadius: 20, backgroundColor: PRIMARY_FAINT,
+    borderWidth: 1, borderColor: PRIMARY_LIGHT,
+  },
+  versePassageText:    { color: theme.colors.primary, fontSize: 11.5, fontWeight: '700', letterSpacing: 0.3 },
+  verseQuoteBar:       { borderLeftWidth: 3, borderLeftColor: theme.colors.primary, paddingLeft: 12 },
+  verseQuoteText: {
+    color: theme.colors.text, fontSize: 14, lineHeight: 22,
+    fontStyle: 'italic', fontWeight: '500',
+  },
+  verseReflectionBox:    { backgroundColor: PRIMARY_FAINT, borderRadius: theme.radius.card, padding: 12 },
+  verseReflectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 6 },
+  verseReflectionLabel: {
+    color: theme.colors.primary, fontSize: 9, fontWeight: '800',
+    letterSpacing: 1.4, textTransform: 'uppercase',
+  },
+  verseReflectionText:   { color: theme.colors.textSecondary, fontSize: 13, lineHeight: 20 },
+}));
+
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
 function VerseBlock({ word, label, icon }: {
@@ -56,79 +162,41 @@ function VerseBlock({ word, label, icon }: {
   label: string;
   icon: React.ComponentProps<typeof MaterialIcons>['name'];
 }) {
+  const styles = useStyles();
   const theme = useAppTheme();
-  const primary = theme.colors.primary;
-  const primaryFaint = 'rgba(139,92,246,0.12)';
-  const primaryLight = 'rgba(139,92,246,0.22)';
 
   return (
-    <View style={{ gap: 10 }}>
-      {/* Section header */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
-        <View
-          style={{
-            width: 28, height: 28, borderRadius: 8,
-            backgroundColor: primaryFaint,
-            borderWidth: 1, borderColor: primaryLight,
-            alignItems: 'center', justifyContent: 'center',
-          }}
-        >
-          <MaterialIcons name={icon} size={14} color={primary} />
+    <View style={styles.verseGap}>
+      <View style={styles.verseLabelRow}>
+        <View style={styles.verseIconBox}>
+          <MaterialIcons name={icon} size={14} color={theme.colors.primary} />
         </View>
-        <CustomText style={{ color: primary, fontSize: 10, fontWeight: '800', letterSpacing: 1.4, textTransform: 'uppercase' }}>
-          {label}
-        </CustomText>
+        <CustomText style={styles.verseLabel}>{label}</CustomText>
       </View>
 
-      {/* Title */}
       {word.title ? (
-        <CustomText style={{
-          color: theme.colors.text,
-          fontSize: 17, fontWeight: '800', letterSpacing: -0.3, lineHeight: 23,
-        }}>
-          {word.title}
-        </CustomText>
+        <CustomText style={styles.verseTitle}>{word.title}</CustomText>
       ) : null}
 
-      {/* Reference pill */}
       {word.passage ? (
-        <View style={{ alignSelf: 'flex-start', paddingVertical: 4, paddingHorizontal: 11, borderRadius: 20, backgroundColor: primaryFaint, borderWidth: 1, borderColor: primaryLight }}>
-          <CustomText style={{ color: primary, fontSize: 11.5, fontWeight: '700', letterSpacing: 0.3 }}>
-            {word.passage}
-          </CustomText>
+        <View style={styles.versePassagePill}>
+          <CustomText style={styles.versePassageText}>{word.passage}</CustomText>
         </View>
       ) : null}
 
-      {/* Verse text */}
       {word.verse ? (
-        <View style={{ borderLeftWidth: 3, borderLeftColor: primary, paddingLeft: 12 }}>
-          <CustomText style={{
-            color: theme.colors.text,
-            fontSize: 14, lineHeight: 22, fontStyle: 'italic', fontWeight: '500',
-          }}>
-            {'”'}{word.verse}{'”'}
-          </CustomText>
+        <View style={styles.verseQuoteBar}>
+          <CustomText style={styles.verseQuoteText}>{'"'}{word.verse}{'"'}</CustomText>
         </View>
       ) : null}
 
-      {/* Reflection */}
       {word.reflection ? (
-        <View style={{
-          backgroundColor: primaryFaint,
-          borderRadius: 12, padding: 12,
-        }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 6 }}>
-            <MaterialIcons name="lightbulb-outline" size={12} color={primary} />
-            <CustomText style={{ color: primary, fontSize: 9, fontWeight: '800', letterSpacing: 1.4, textTransform: 'uppercase' }}>
-              Reflection
-            </CustomText>
+        <View style={styles.verseReflectionBox}>
+          <View style={styles.verseReflectionHeader}>
+            <MaterialIcons name="lightbulb-outline" size={12} color={theme.colors.primary} />
+            <CustomText style={styles.verseReflectionLabel}>Reflection</CustomText>
           </View>
-          <CustomText style={{
-            color: theme.colors.textSecondary,
-            fontSize: 13, lineHeight: 20,
-          }}>
-            {word.reflection}
-          </CustomText>
+          <CustomText style={styles.verseReflectionText}>{word.reflection}</CustomText>
         </View>
       ) : null}
     </View>
@@ -139,9 +207,7 @@ function VerseBlock({ word, label, icon }: {
 
 interface WordOfDayModalProps {
   visible: boolean;
-  /** Daily scripture from the Bible API — always the primary source. */
   bibleVerse: WordOfDayItem | null;
-  /** Admin-authored word for today — shown as an additional section when present. */
   adminWord: WordOfDayItem | null;
   onClose: () => void;
   onReadMore: () => void;
@@ -154,12 +220,13 @@ export function WordOfDayModal({
   onClose,
   onReadMore,
 }: WordOfDayModalProps) {
+  const styles = useStyles();
   const theme = useAppTheme();
   const { width, height } = useWindowDimensions();
 
   const backdropOpacity = useRef(new Animated.Value(0)).current;
-  const cardScale = useRef(new Animated.Value(0.88)).current;
-  const cardOpacity = useRef(new Animated.Value(0)).current;
+  const cardScale      = useRef(new Animated.Value(0.88)).current;
+  const cardOpacity    = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     let anim: Animated.CompositeAnimation;
@@ -185,8 +252,8 @@ export function WordOfDayModal({
     setTimeout(onReadMore, 200);
   }, [onClose, onReadMore]);
 
-  const cardWidth = Math.min(width - 40, 400);
-  const hasBoth = bibleVerse !== null && adminWord !== null;
+  const cardWidth  = Math.min(width - 40, 400);
+  const hasBoth    = bibleVerse !== null && adminWord !== null;
 
   if (!bibleVerse && !adminWord) return null;
 
@@ -200,118 +267,56 @@ export function WordOfDayModal({
     >
       <StatusBar backgroundColor="rgba(7,5,12,0.85)" barStyle="light-content" />
 
-      {/* Backdrop */}
-      <Animated.View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(7,5,12,0.80)', opacity: backdropOpacity }]}>
-        <Pressable style={StyleSheet.absoluteFillObject} onPress={onClose} />
+      <Animated.View style={[styles.backdrop, { opacity: backdropOpacity }]}>
+        <Pressable style={styles.backfill} onPress={onClose} />
       </Animated.View>
 
-      {/* Card */}
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20 }}>
+      <View style={styles.centerer}>
         <Animated.View
-          style={{
-            width: cardWidth,
-            maxHeight: height * 0.85,
-            opacity: cardOpacity,
-            transform: [{ scale: cardScale }],
-            backgroundColor: theme.colors.surface,
-            borderRadius: 28,
-            borderWidth: 1,
-            borderColor: theme.colors.border,
-            overflow: 'hidden',
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 8 },
-            shadowOpacity: 0.28,
-            shadowRadius: 20,
-            elevation: 12,
-          }}
+          style={[
+            styles.card,
+            { width: cardWidth, maxHeight: height * 0.85, opacity: cardOpacity, transform: [{ scale: cardScale }] },
+          ]}
         >
-          {/* Top accent bar */}
-          <View style={{ height: 4, backgroundColor: theme.colors.primary }} />
+          <View style={styles.accentBar} />
 
           <ScrollView
             bounces={false}
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ padding: 24, gap: 20 }}
+            contentContainerStyle={styles.scrollContent}
           >
-            {/* Header */}
-            <View style={{ alignItems: 'center', gap: 4 }}>
-              <View style={{
-                width: 48, height: 48, borderRadius: 15,
-                backgroundColor: 'rgba(139,92,246,0.12)',
-                borderWidth: 1.5, borderColor: 'rgba(139,92,246,0.26)',
-                alignItems: 'center', justifyContent: 'center',
-                marginBottom: 8,
-              }}>
+            <View style={[styles.headerWrapper, common.centerH]}>
+              <View style={styles.headerIcon}>
                 <MaterialIcons name="auto-stories" size={22} color={theme.colors.primary} />
               </View>
-              <CustomText style={{ color: theme.colors.primary, fontSize: 10, fontWeight: '800', letterSpacing: 2, textTransform: 'uppercase' }}>
-                Word for Today
-              </CustomText>
-              <CustomText style={{ color: theme.colors.textMuted, fontSize: 12 }}>
-                {formatDate()}
-              </CustomText>
+              <CustomText style={styles.headerLabel}>Word for Today</CustomText>
+              <CustomText style={styles.headerDate}>{formatDate()}</CustomText>
             </View>
 
-            {/* Bible verse — always the foundation */}
             {bibleVerse ? (
-              <VerseBlock
-                word={bibleVerse}
-                label="Daily Scripture"
-                icon="menu-book"
-              />
+              <VerseBlock word={bibleVerse} label="Daily Scripture" icon="menu-book" />
             ) : null}
 
-            {/* Divider only when both sources present */}
             {hasBoth ? (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <View style={{ flex: 1, height: 1, backgroundColor: theme.colors.border }} />
-                <CustomText style={{ color: theme.colors.textMuted, fontSize: 9.5, letterSpacing: 0.8, textTransform: 'uppercase' }}>
-                  Today's Message
-                </CustomText>
-                <View style={{ flex: 1, height: 1, backgroundColor: theme.colors.border }} />
+              <View style={styles.dividerRow}>
+                <View style={styles.dividerLine} />
+                <CustomText style={styles.dividerText}>Today's Message</CustomText>
+                <View style={styles.dividerLine} />
               </View>
             ) : null}
 
-            {/* Admin word — additional section */}
             {adminWord ? (
-              <VerseBlock
-                word={adminWord}
-                label="ClaudyGod Message"
-                icon="church"
-              />
+              <VerseBlock word={adminWord} label="ClaudyGod Message" icon="church" />
             ) : null}
 
-            {/* Actions */}
-            <View style={{ gap: 10, paddingTop: 4 }}>
-              <TVTouchable
-                onPress={handleReadMore}
-                showFocusBorder={false}
-                style={{
-                  height: 52, borderRadius: 14,
-                  backgroundColor: theme.colors.primary,
-                  alignItems: 'center', justifyContent: 'center',
-                  flexDirection: 'row', gap: 8,
-                }}
-              >
+            <View style={styles.actions}>
+              <TVTouchable onPress={handleReadMore} showFocusBorder={false} style={styles.btnPrimary}>
                 <MaterialIcons name="menu-book" size={18} color={theme.colors.textInverse} />
-                <CustomText style={{ color: theme.colors.textInverse, fontSize: 15, fontWeight: '700' }}>
-                  Meditate on this
-                </CustomText>
+                <CustomText style={styles.btnPrimaryText}>Meditate on this</CustomText>
               </TVTouchable>
 
-              <TVTouchable
-                onPress={onClose}
-                showFocusBorder={false}
-                style={{
-                  height: 46, borderRadius: 14,
-                  borderWidth: 1,
-                  borderColor: theme.colors.border,
-                  alignItems: 'center', justifyContent: 'center',
-                }}
-              >
-                <CustomText style={{ color: theme.colors.textMuted, fontSize: 14, fontWeight: '600' }}>
-                  Read later
-                </CustomText>
+              <TVTouchable onPress={onClose} showFocusBorder={false} style={styles.btnSecondary}>
+                <CustomText style={styles.btnSecondaryText}>Read later</CustomText>
               </TVTouchable>
             </View>
           </ScrollView>

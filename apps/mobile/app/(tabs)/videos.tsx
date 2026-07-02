@@ -7,6 +7,7 @@ import { CustomText } from '../../components/CustomText';
 import { VideoPlayer } from '../../components/media/VideoPlayer';
 import { useToast } from '../../context/ToastContext';
 import { useAppTheme } from '../../util/colorScheme';
+import { makeStyles } from '../../styles/makeStyles';
 import { useContentFeed } from '../../hooks/useContentFeed';
 import type { FeedCardItem } from '../../services/contentService';
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
@@ -24,6 +25,16 @@ import {
   SectionLabel,
   dedupeFeedItems,
 } from '../../components/Exp/PremiumContent';
+
+const useStyles = makeStyles((theme) => ({
+  filterScrollContent: { gap: 8, paddingVertical: 2 },
+  chipBase:     { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingVertical: 9, borderRadius: 999, borderWidth: 1 },
+  chipActive:   { backgroundColor: theme.colors.info, borderColor: 'transparent' as const },
+  chipDefault:  { backgroundColor: theme.colors.subtleFill, borderColor: theme.colors.border },
+  chipLabelActive:  { color: '#FFFFFF', fontSize: 13, fontWeight: '700' as const },
+  chipLabelDefault: { color: theme.colors.textSecondary, fontSize: 13, fontWeight: '500' as const },
+  gap12:        { gap: 12 },
+}));
 
 type VideoFilter = 'all' | 'sessions' | 'live' | 'shorts';
 
@@ -55,9 +66,10 @@ const FILTERS: { id: VideoFilter; label: string; icon: React.ComponentProps<type
 ];
 
 function FilterChips({ active, onChange }: { active: VideoFilter; onChange: (_f: VideoFilter) => void }) {
-  const theme = useAppTheme();
+  const styles = useStyles();
+  const theme  = useAppTheme();
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 2 }}>
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScrollContent}>
       {FILTERS.map((f) => {
         const isActive = f.id === active;
         return (
@@ -65,18 +77,10 @@ function FilterChips({ active, onChange }: { active: VideoFilter; onChange: (_f:
             key={f.id}
             onPress={() => onChange(f.id)}
             showFocusBorder={false}
-            style={{
-              flexDirection: 'row', alignItems: 'center', gap: 6,
-              paddingHorizontal: 16, paddingVertical: 9, borderRadius: 999,
-              backgroundColor: isActive
-                ? theme.colors.info
-                : theme.colors.subtleFill,
-              borderWidth: 1,
-              borderColor: isActive ? 'transparent' : theme.colors.border,
-            }}
+            style={[styles.chipBase, isActive ? styles.chipActive : styles.chipDefault]}
           >
             <MaterialIcons name={f.icon} size={14} color={isActive ? '#FFFFFF' : theme.colors.textSecondary} />
-            <CustomText style={{ color: isActive ? '#FFFFFF' : theme.colors.textSecondary, fontSize: 13, fontWeight: isActive ? '700' : '500' }}>
+            <CustomText style={isActive ? styles.chipLabelActive : styles.chipLabelDefault}>
               {f.label}
             </CustomText>
           </TVTouchable>
@@ -87,6 +91,7 @@ function FilterChips({ active, onChange }: { active: VideoFilter; onChange: (_f:
 }
 
 export default function VideosScreen() {
+  const styles = useStyles();
   const router = useRouter();
   const { showToast } = useToast();
   const { width } = useWindowDimensions();
@@ -163,7 +168,7 @@ export default function VideosScreen() {
 
       {/* Up next */}
       {upNext.length > 0 ? (
-        <View style={{ gap: 12 }}>
+        <View style={styles.gap12}>
           <SectionLabel title="Up next" />
           <View>
             {upNext.map((item) => (
@@ -174,7 +179,7 @@ export default function VideosScreen() {
       ) : null}
 
       {/* Videos rail */}
-      <View style={{ gap: 12 }}>
+      <View style={styles.gap12}>
         <SectionLabel
           title="Latest videos"
           accent="Watch"
@@ -194,7 +199,7 @@ export default function VideosScreen() {
 
       {/* Live & replays */}
       {feed.live.length > 0 ? (
-        <View style={{ gap: 12 }}>
+        <View style={styles.gap12}>
           <SectionLabel
             title="Live & replays"
             accent="Ministry"

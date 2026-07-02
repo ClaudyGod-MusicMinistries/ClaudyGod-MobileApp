@@ -3,6 +3,7 @@ import { Animated, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 
 import { useAppTheme } from '../../util/colorScheme';
+import { makeStyles } from '../../styles/makeStyles';
 import { CustomText } from '../CustomText';
 import { AppButton } from '../ui/AppButton';
 import { TVTouchable } from '../ui/TVTouchable';
@@ -21,7 +22,39 @@ interface AdBannerProps {
   placement: string;
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const useStyles = makeStyles((theme) => ({
+  card: {
+    borderRadius: 16, backgroundColor: theme.colors.card,
+    borderWidth: 1, borderColor: theme.colors.border,
+    padding: 14, gap: 10,
+  },
+  headerRow:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  sponsorRow:   { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  sponsoredPill: {
+    backgroundColor: theme.colors.primarySurface, borderRadius: 999,
+    paddingHorizontal: 8, paddingVertical: 3,
+    borderWidth: 1, borderColor: theme.colors.primaryBorder,
+  },
+  sponsoredText: {
+    color: theme.colors.primary, fontSize: 9, fontWeight: '700',
+    letterSpacing: 0.8, textTransform: 'uppercase',
+  },
+  sponsorName:  { color: theme.colors.textMuted, fontSize: 11.5, fontWeight: '500' },
+  dismissBtn: {
+    width: 26, height: 26, borderRadius: 13,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: theme.colors.subtleFill,
+  },
+  headline: { color: theme.colors.text, fontSize: 14, fontWeight: '700', lineHeight: 20 },
+  bodyText: { color: theme.colors.textSecondary, fontSize: 12.5, lineHeight: 18 },
+}));
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export function AdBanner({ placement }: AdBannerProps) {
+  const styles = useStyles();
   const theme = useAppTheme();
   const [ad, setAd] = useState<AdData | null>(null);
   const [dismissed, setDismissed] = useState(false);
@@ -47,7 +80,6 @@ export function AdBanner({ placement }: AdBannerProps) {
     return () => { mounted = false; };
   }, [placement, fadeAnim]);
 
-  // Track impression once when ad becomes visible
   useEffect(() => {
     if (ad && !impressionSent.current) {
       impressionSent.current = true;
@@ -72,62 +104,25 @@ export function AdBanner({ placement }: AdBannerProps) {
 
   return (
     <Animated.View style={{ opacity: fadeAnim }}>
-      <View
-        style={{
-          borderRadius: 16,
-          backgroundColor: theme.colors.card,
-          borderWidth: 1,
-          borderColor: theme.colors.border,
-          padding: 14,
-          gap: 10,
-        }}
-      >
-        {/* Header */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
-            <View
-              style={{
-                backgroundColor: theme.colors.primarySurface,
-                borderRadius: 999,
-                paddingHorizontal: 8,
-                paddingVertical: 3,
-                borderWidth: 1,
-                borderColor: theme.colors.primaryBorder,
-              }}
-            >
-              <CustomText style={{ color: theme.colors.primary, fontSize: 9, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase' }}>
-                Sponsored
-              </CustomText>
+      <View style={styles.card}>
+        <View style={styles.headerRow}>
+          <View style={styles.sponsorRow}>
+            <View style={styles.sponsoredPill}>
+              <CustomText style={styles.sponsoredText}>Sponsored</CustomText>
             </View>
-            <CustomText style={{ color: theme.colors.textMuted, fontSize: 11.5, fontWeight: '500' }}>
-              {ad.sponsorName}
-            </CustomText>
+            <CustomText style={styles.sponsorName}>{ad.sponsorName}</CustomText>
           </View>
-          <TVTouchable
-            onPress={handleDismiss}
-            showFocusBorder={false}
-            style={{
-              width: 26, height: 26, borderRadius: 13,
-              alignItems: 'center', justifyContent: 'center',
-              backgroundColor: theme.colors.subtleFill,
-            }}
-          >
+          <TVTouchable onPress={handleDismiss} showFocusBorder={false} style={styles.dismissBtn}>
             <MaterialIcons name="close" size={14} color={theme.colors.textMuted} />
           </TVTouchable>
         </View>
 
-        {/* Content */}
-        <CustomText style={{ color: theme.colors.text, fontSize: 14, fontWeight: '700', lineHeight: 20 }}>
-          {ad.headline}
-        </CustomText>
+        <CustomText style={styles.headline}>{ad.headline}</CustomText>
 
         {ad.body ? (
-          <CustomText style={{ color: theme.colors.textSecondary, fontSize: 12.5, lineHeight: 18 }} numberOfLines={3}>
-            {ad.body}
-          </CustomText>
+          <CustomText style={styles.bodyText} numberOfLines={3}>{ad.body}</CustomText>
         ) : null}
 
-        {/* CTA */}
         {ad.ctaLabel ? (
           <AppButton
             title={ad.ctaLabel}

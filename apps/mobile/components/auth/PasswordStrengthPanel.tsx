@@ -1,8 +1,38 @@
 import React from 'react';
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../CustomText';
 import { getPasswordStrengthReport } from '../../lib/authValidation';
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const styles = StyleSheet.create({
+  wrap: {
+    borderRadius: 18, borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    paddingHorizontal: 14, paddingVertical: 13,
+  },
+  headerRow: {
+    flexDirection: 'row', alignItems: 'center',
+    justifyContent: 'space-between', gap: 12,
+  },
+  strengthLabel:  { color: 'rgba(226,219,242,0.74)' },
+  percentPillBase: {
+    borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)',
+  },
+  progressTrack: {
+    marginTop: 10, height: 6, borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.08)', overflow: 'hidden',
+  },
+  progressFillBase: { height: '100%', borderRadius: 999 },
+  checksGap: { gap: 7, marginTop: 12 },
+  checkRow:  { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  checkTextBase: { flex: 1 },
+});
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 interface PasswordStrengthPanelProps {
   password: string;
@@ -21,26 +51,10 @@ export function PasswordStrengthPanel({ password }: PasswordStrengthPanelProps) 
           : { accent: '#8AA8FF', surface: 'rgba(110,132,255,0.10)', text: '#DFE6FF' };
 
   return (
-    <View
-      style={{
-        borderRadius: 18,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.08)',
-        backgroundColor: 'rgba(255,255,255,0.03)',
-        paddingHorizontal: 14,
-        paddingVertical: 13,
-      }}
-    >
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 12,
-        }}
-      >
+    <View style={styles.wrap}>
+      <View style={styles.headerRow}>
         <View>
-          <CustomText variant="caption" style={{ color: 'rgba(226,219,242,0.74)' }}>
+          <CustomText variant="caption" style={styles.strengthLabel}>
             Password strength
           </CustomText>
           <CustomText variant="label" style={{ color: palette.text, marginTop: 4 }}>
@@ -48,51 +62,25 @@ export function PasswordStrengthPanel({ password }: PasswordStrengthPanelProps) 
           </CustomText>
         </View>
 
-        <View
-          style={{
-            borderRadius: 999,
-            paddingHorizontal: 10,
-            paddingVertical: 6,
-            backgroundColor: palette.surface,
-            borderWidth: 1,
-            borderColor: 'rgba(255,255,255,0.06)',
-          }}
-        >
+        <View style={[styles.percentPillBase, { backgroundColor: palette.surface }]}>
           <CustomText variant="caption" style={{ color: palette.text }}>
             {report.percentage}%
           </CustomText>
         </View>
       </View>
 
-      <View
-        style={{
-          marginTop: 10,
-          height: 6,
-          borderRadius: 999,
-          backgroundColor: 'rgba(255,255,255,0.08)',
-          overflow: 'hidden',
-        }}
-      >
+      <View style={styles.progressTrack}>
         <View
-          style={{
-            width: `${report.percentage}%`,
-            height: '100%',
-            borderRadius: 999,
-            backgroundColor: palette.accent,
-          }}
+          style={[
+            styles.progressFillBase,
+            { width: `${report.percentage}%`, backgroundColor: palette.accent },
+          ]}
         />
       </View>
 
-      <View style={{ gap: 7, marginTop: 12 }}>
+      <View style={styles.checksGap}>
         {report.checks.map((check) => (
-          <View
-            key={check.id}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 8,
-            }}
-          >
+          <View key={check.id} style={styles.checkRow}>
             <MaterialIcons
               name={check.passed ? 'check-circle' : check.recommended ? 'radio-button-unchecked' : 'cancel'}
               size={16}
@@ -100,10 +88,7 @@ export function PasswordStrengthPanel({ password }: PasswordStrengthPanelProps) 
             />
             <CustomText
               variant="caption"
-              style={{
-                color: check.passed ? 'rgba(233,240,255,0.92)' : 'rgba(202,196,220,0.74)',
-                flex: 1,
-              }}
+              style={[styles.checkTextBase, { color: check.passed ? 'rgba(233,240,255,0.92)' : 'rgba(202,196,220,0.74)' }]}
             >
               {check.label}
             </CustomText>

@@ -2,6 +2,7 @@ import React, { ReactNode, useRef, useCallback, useEffect } from 'react';
 import {
   Animated,
   Platform,
+  StyleSheet,
   TextStyle,
   TouchableOpacityProps,
   View,
@@ -9,11 +10,59 @@ import {
 import * as Haptics from 'expo-haptics';
 import { CustomText } from '../CustomText';
 import { useAppTheme } from '../../util/colorScheme';
+import { makeStyles } from '../../styles/makeStyles';
 import { TVTouchable } from './TVTouchable';
 
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
+// ─── Static styles (no theme) ─────────────────────────────────────────────────
+
+const ss = StyleSheet.create({
+  bubbleRow:  { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  dotRow:     { flexDirection: 'row', gap: 5, alignItems: 'center' },
+  iconWrap:   { width: 18, height: 18, alignItems: 'center', justifyContent: 'center' },
+  contentRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+});
+
+// ─── Theme styles ─────────────────────────────────────────────────────────────
+
+const useStyles = makeStyles((theme) => ({
+  btnBase: {
+    borderRadius: theme.radius.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  // Size variants
+  btnSm:  { height: 36, paddingHorizontal: 14 },
+  btnMd:  { height: 44, paddingHorizontal: 18 },
+  btnLg:  { height: 50, paddingHorizontal: 22 },
+  // Color variants
+  btnPrimary:   { backgroundColor: theme.colors.primary },
+  btnSecondary: { backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border },
+  btnOutline:   { backgroundColor: 'transparent', borderWidth: 1, borderColor: theme.colors.primary },
+  btnGhost:     { backgroundColor: 'transparent' },
+  // States
+  btnDisabled:  { opacity: 0.5 },
+  btnStretch:   { alignSelf: 'stretch' },
+  btnFlex:      { alignSelf: 'flex-start' },
+  // Text
+  btnTextBase: {
+    textAlign: 'center', flexShrink: 1,
+    letterSpacing: 0.2, fontWeight: '600',
+  },
+  btnTextSm:  { fontSize: 12, lineHeight: 16.8 },
+  btnTextMd:  { fontSize: 13, lineHeight: 18.2 },
+  btnTextLg:  { fontSize: 14, lineHeight: 19.6 },
+  // Bubble loading label
+  bubbleLabel:{ fontSize: 13, fontWeight: '600' },
+}));
+
+// ─── BubblePulse ─────────────────────────────────────────────────────────────
+
 function BubblePulse({ color, label }: { color: string; label?: string }) {
+  const styles = useStyles();
   const d0 = useRef(new Animated.Value(0)).current;
   const d1 = useRef(new Animated.Value(0)).current;
   const d2 = useRef(new Animated.Value(0)).current;
@@ -43,20 +92,22 @@ function BubblePulse({ color, label }: { color: string; label?: string }) {
   });
 
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-      <View style={{ flexDirection: 'row', gap: 5, alignItems: 'center' }}>
+    <View style={ss.bubbleRow}>
+      <View style={ss.dotRow}>
         <Animated.View style={dot(d0)} />
         <Animated.View style={dot(d1)} />
         <Animated.View style={dot(d2)} />
       </View>
       {label ? (
-        <CustomText variant="label" numberOfLines={1} style={{ color, fontSize: 13, fontWeight: '600' }}>
+        <CustomText variant="label" numberOfLines={1} style={[styles.bubbleLabel, { color }]}>
           {label}
         </CustomText>
       ) : null}
     </View>
   );
 }
+
+// ─── AppButton ────────────────────────────────────────────────────────────────
 
 interface AppButtonProps extends TouchableOpacityProps {
   title: string;
@@ -88,7 +139,7 @@ export function AppButton({
   fullWidth,
   loading,
   loadingLabel,
-  loadingVariant = 'spinner',
+  loadingVariant: _loadingVariant = 'spinner',
   textColor,
   textStyle,
   style,
@@ -97,15 +148,16 @@ export function AppButton({
   disabled,
   ...props
 }: AppButtonProps) {
-  const theme = useAppTheme();
+  const styles   = useStyles();
+  const theme    = useAppTheme();
   const pressedRef = useRef(false);
 
-  const isPrimary = variant === 'primary';
+  const isPrimary   = variant === 'primary';
   const isSecondary = variant === 'secondary';
-  const isOutline = variant === 'outline';
-  const isGhost = variant === 'ghost';
-  const isDisabled = loading || disabled;
-  const hasTitle = title && title.trim().length > 0;
+  const isOutline   = variant === 'outline';
+  const isGhost     = variant === 'ghost';
+  const isDisabled  = loading || disabled;
+  const hasTitle    = title && title.trim().length > 0;
 
   const handlePressIn = useCallback(() => {
     pressedRef.current = true;
@@ -118,10 +170,6 @@ export function AppButton({
     pressedRef.current = false;
   }, []);
 
-  const heights = { sm: 36, md: 44, lg: 50 };
-  const fontSizes = { sm: 12, md: 13, lg: 14 };
-  const paddingH = { sm: 14, md: 18, lg: 22 };
-
   const resolvedTextColor =
     textColor ??
     (isPrimary
@@ -132,6 +180,8 @@ export function AppButton({
           ? theme.colors.textSecondary
           : theme.colors.text);
 
+  const textSizeStyle = size === 'sm' ? styles.btnTextSm : size === 'lg' ? styles.btnTextLg : styles.btnTextMd;
+
   const content = (() => {
     if (loading) {
       return <BubblePulse color={resolvedTextColor} label={loadingLabel || title} />;
@@ -140,64 +190,37 @@ export function AppButton({
     const resolvedLeftIcon = leftIcon ?? icon;
 
     return (
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: hasTitle && (resolvedLeftIcon || rightIcon) ? 7 : 0,
-        }}
-      >
-        {resolvedLeftIcon ? (
-          <View style={{ width: 18, height: 18, alignItems: 'center', justifyContent: 'center' }}>
-            {resolvedLeftIcon}
-          </View>
-        ) : null}
-
+      <View style={[ss.contentRow, { gap: hasTitle && (resolvedLeftIcon || rightIcon) ? 7 : 0 }]}>
+        {resolvedLeftIcon ? <View style={ss.iconWrap}>{resolvedLeftIcon}</View> : null}
         {hasTitle ? (
           <CustomText
             variant="label"
             allowFontScaling={false}
             numberOfLines={1}
-            style={{
-              color: resolvedTextColor,
-              textAlign: 'center',
-              flexShrink: 1,
-              fontSize: fontSizes[size],
-              lineHeight: fontSizes[size] * 1.4,
-              letterSpacing: 0.2,
-              fontWeight: '600',
-              ...(textStyle || {}),
-            }}
+            style={[styles.btnTextBase, textSizeStyle, { color: resolvedTextColor }, textStyle]}
           >
             {title}
           </CustomText>
         ) : null}
-
-        {rightIcon ? (
-          <View style={{ width: 18, height: 18, alignItems: 'center', justifyContent: 'center' }}>
-            {rightIcon}
-          </View>
-        ) : null}
+        {rightIcon ? <View style={ss.iconWrap}>{rightIcon}</View> : null}
       </View>
     );
   })();
 
-  const accessibilityProps = {
-    accessible: true,
-    accessibilityRole: 'button' as const,
-    accessibilityLabel: accessibilityLabel || title,
-    accessibilityState: {
-      disabled: isDisabled,
-      busy: loading,
-    },
-    testID,
-  };
+  const sizeStyle     = size === 'sm' ? styles.btnSm : size === 'lg' ? styles.btnLg : styles.btnMd;
+  const variantStyle  = isPrimary   ? styles.btnPrimary
+                      : isSecondary ? styles.btnSecondary
+                      : isOutline   ? styles.btnOutline
+                      :               styles.btnGhost;
 
   return (
     <TVTouchable
       {...props}
-      {...accessibilityProps}
+      accessible
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel || title}
+      accessibilityState={{ disabled: isDisabled, busy: loading }}
+      testID={testID}
       disabled={isDisabled}
       activeOpacity={0.7}
       onPressIn={(e: any) => {
@@ -213,29 +236,12 @@ export function AppButton({
         }
       }}
       style={[
-        {
-          height: heights[size],
-          paddingHorizontal: paddingH[size],
-          borderRadius: theme.radius.md,
-          backgroundColor: isPrimary
-            ? theme.colors.primary
-            : isSecondary
-              ? theme.colors.surface
-              : 'transparent',
-          borderWidth: isOutline || isSecondary ? 1 : 0,
-          borderColor: isOutline
-            ? theme.colors.primary
-            : isSecondary
-              ? theme.colors.border
-              : 'transparent',
-          opacity: isDisabled ? 0.5 : 1,
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'center',
-          alignSelf: fullWidth ? 'stretch' : 'flex-start',
-          overflow: 'hidden',
-        },
-        style as any,
+        styles.btnBase,
+        sizeStyle,
+        variantStyle,
+        isDisabled ? styles.btnDisabled : null,
+        fullWidth   ? styles.btnStretch  : styles.btnFlex,
+        style,
       ]}
       showFocusBorder={false}
     >
