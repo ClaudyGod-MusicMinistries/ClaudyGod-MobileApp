@@ -10,6 +10,7 @@ import { TVTouchable } from '../../components/ui/TVTouchable';
 import { useToast } from '../../context/ToastContext';
 import { useAppTheme } from '../../util/colorScheme';
 import { useContentFeed } from '../../hooks/useContentFeed';
+import { makeStyles } from '../../styles/makeStyles';
 import type { ContentType, FeedBundle, FeedCardItem } from '../../services/contentService';
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
 import { APP_ROUTES } from '../../util/appRoutes';
@@ -26,6 +27,58 @@ import {
   dedupeFeedItems,
 } from '../../components/Exp/PremiumContent';
 import { WorshipTogetherBar } from '../../components/worship/WorshipTogetherBar';
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const useStyles = makeStyles((theme) => ({
+  // Library button in header
+  playerLibBtn:       { minWidth: 40, paddingHorizontal: 10 },
+
+  // Now-playing card
+  nowPlayingCard: {
+    borderRadius: 16, borderWidth: 1,
+    borderColor: theme.colors.primaryBorder, backgroundColor: theme.colors.primarySurface,
+    paddingHorizontal: 16, paddingTop: 20, paddingBottom: 24, overflow: 'hidden',
+  },
+
+  // FilterChip
+  filterChipBase:       { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingVertical: 9, borderRadius: 999, borderWidth: 1 },
+  filterChipActive:     { backgroundColor: theme.colors.primary, borderColor: 'transparent' },
+  filterChipInactive:   { backgroundColor: theme.colors.subtleFill, borderColor: theme.colors.border },
+  filterChipTxtActive:  { color: '#FFFFFF', fontSize: 13, fontWeight: '700' },
+  filterChipTxtInactive:{ color: theme.colors.textSecondary, fontSize: 13, fontWeight: '500' },
+
+  // Queue
+  queueWrap:        { gap: 2 },
+  queueHeader:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
+  queueHeaderLeft:  { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  queueAccent:      { width: 3, height: 14, borderRadius: 1.5, backgroundColor: theme.colors.primary },
+  queueTitle:       { color: theme.colors.text, fontSize: 14, fontWeight: '800', letterSpacing: -0.2 },
+  queueCountPill:   { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 999, backgroundColor: theme.colors.primarySurface },
+  queueCountText:   { color: theme.colors.primary, fontSize: 10, fontWeight: '700' },
+  queueClearText:   { color: theme.colors.primary, fontSize: 12, fontWeight: '600' },
+  queueItemCard: {
+    borderRadius: theme.radius.md, backgroundColor: theme.colors.subtleFill,
+    borderWidth: 0.5, borderColor: theme.colors.border, marginBottom: 2,
+  },
+  queueItemRow:     { flexDirection: 'row', alignItems: 'center' },
+  queueItemNum: {
+    width: 32, textAlign: 'center',
+    color: 'rgba(139,92,246,0.50)', fontSize: 11, fontWeight: '700',
+  },
+  queueItemFill:    { flex: 1 },
+
+  // Browse separator
+  browseRow:        { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  browseLine:       { flex: 1, height: 1, backgroundColor: theme.colors.subtleFill },
+  browseLabel:      { color: theme.colors.textMuted, fontSize: 10, fontWeight: '600', letterSpacing: 1.2 },
+
+  // Sections
+  sectionsGap:      { gap: 28 },
+  sectionRow:       { gap: 12 },
+}));
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function dedupeItems(items: FeedCardItem[]): FeedCardItem[] {
   const seen = new Set<string>();
@@ -89,8 +142,10 @@ const FILTERS: { id: AudioFilter; label: string; icon: React.ComponentProps<type
   { id: 'playlists',label: 'Playlists', icon: 'queue-music' },
 ];
 
+// ─── FilterChips ──────────────────────────────────────────────────────────────
+
 function FilterChips({ active, onChange }: { active: AudioFilter; onChange: (_f: AudioFilter) => void }) {
-  const theme = useAppTheme();
+  const styles = useStyles();
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 2 }}>
       {FILTERS.map((f) => {
@@ -100,16 +155,10 @@ function FilterChips({ active, onChange }: { active: AudioFilter; onChange: (_f:
             key={f.id}
             onPress={() => onChange(f.id)}
             showFocusBorder={false}
-            style={{
-              flexDirection: 'row', alignItems: 'center', gap: 6,
-              paddingHorizontal: 16, paddingVertical: 9, borderRadius: 999,
-              backgroundColor: isActive ? theme.colors.primary : theme.colors.subtleFill,
-              borderWidth: 1,
-              borderColor: isActive ? 'transparent' : theme.colors.border,
-            }}
+            style={[styles.filterChipBase, isActive ? styles.filterChipActive : styles.filterChipInactive]}
           >
-            <MaterialIcons name={f.icon} size={14} color={isActive ? '#FFFFFF' : theme.colors.textSecondary} />
-            <CustomText style={{ color: isActive ? '#FFFFFF' : theme.colors.textSecondary, fontSize: 13, fontWeight: isActive ? '700' : '500' }}>
+            <MaterialIcons name={f.icon} size={14} color={isActive ? '#FFFFFF' : undefined} style={isActive ? undefined : { opacity: 0.6 }} />
+            <CustomText style={isActive ? styles.filterChipTxtActive : styles.filterChipTxtInactive}>
               {f.label}
             </CustomText>
           </TVTouchable>
@@ -119,8 +168,11 @@ function FilterChips({ active, onChange }: { active: AudioFilter; onChange: (_f:
   );
 }
 
+// ─── Main Screen ──────────────────────────────────────────────────────────────
+
 export default function PlaySection() {
-  const theme = useAppTheme();
+  const styles = useStyles();
+  const theme  = useAppTheme();
   const router = useRouter();
   const { showToast } = useToast();
   const params = useLocalSearchParams<{
@@ -165,7 +217,6 @@ export default function PlaySection() {
   ));
 
   const openItem = async (item: FeedCardItem, source: string) => {
-    // YouTube audio items play inline — no mediaUrl check needed
     if (isYouTubeAudioItem(item)) {
       setActiveId(item.id);
       setIsFavorite(false);
@@ -205,24 +256,12 @@ export default function PlaySection() {
           size="sm"
           onPress={() => router.push(APP_ROUTES.tabs.library)}
           leftIcon={<MaterialIcons name="library-music" size={16} color={theme.colors.text} />}
-          style={{ minWidth: 40, paddingHorizontal: 10 }}
+          style={styles.playerLibBtn}
         />
       }
     >
-
       {/* ── Now Playing card ─────────────────────────────────────────────── */}
-      <View
-        style={{
-          borderRadius: 16,
-          borderWidth: 1,
-          borderColor: theme.colors.primaryBorder,
-          backgroundColor: theme.colors.primarySurface,
-          paddingHorizontal: 16,
-          paddingTop: 20,
-          paddingBottom: 24,
-          overflow: 'visible',
-        }}
-      >
+      <View style={styles.nowPlayingCard}>
         {active && hasInlineAudio && isYouTubeAudioItem(active) && active.youtubeVideoId ? (
           <YouTubeAudioPlayer
             track={{ id: active.id, title: active.title, artist: active.subtitle, youtubeVideoId: active.youtubeVideoId, duration: active.duration, imageUrl: active.imageUrl }}
@@ -267,53 +306,29 @@ export default function PlaySection() {
 
       {/* ── Up next queue ────────────────────────────────────────────────── */}
       {upNext.length > 0 ? (
-        <View style={{ gap: 2 }}>
-          {/* Queue header */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <View style={{ width: 3, height: 14, borderRadius: 1.5, backgroundColor: theme.colors.primary }} />
-              <CustomText style={{ color: theme.colors.text, fontSize: 14, fontWeight: '800', letterSpacing: -0.2 }}>
-                Up next
-              </CustomText>
-              <View style={{
-                paddingHorizontal: 7, paddingVertical: 2, borderRadius: 999,
-                backgroundColor: theme.colors.primarySurface,
-              }}>
-                <CustomText style={{ color: theme.colors.primary, fontSize: 10, fontWeight: '700' }}>
-                  {upNext.length}
-                </CustomText>
+        <View style={styles.queueWrap}>
+          <View style={styles.queueHeader}>
+            <View style={styles.queueHeaderLeft}>
+              <View style={styles.queueAccent} />
+              <CustomText style={styles.queueTitle}>Up next</CustomText>
+              <View style={styles.queueCountPill}>
+                <CustomText style={styles.queueCountText}>{upNext.length}</CustomText>
               </View>
             </View>
-            <TVTouchable
-              onPress={() => setFilter(filter === 'all' ? 'songs' : 'all')}
-              showFocusBorder={false}
-            >
-              <CustomText style={{ color: theme.colors.primary, fontSize: 12, fontWeight: '600' }}>
+            <TVTouchable onPress={() => setFilter(filter === 'all' ? 'songs' : 'all')} showFocusBorder={false}>
+              <CustomText style={styles.queueClearText}>
                 {filter === 'all' ? 'Filter' : 'Clear filter'}
               </CustomText>
             </TVTouchable>
           </View>
 
           {upNext.map((item, index) => (
-            <View
-              key={item.id}
-              style={{
-                borderRadius: theme.radius.md,
-                backgroundColor: theme.colors.subtleFill,
-                borderWidth: 0.5,
-                borderColor: theme.colors.border,
-                marginBottom: 2,
-              }}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <CustomText style={{
-                  width: 32, textAlign: 'center',
-                  color: 'rgba(139,92,246,0.50)',
-                  fontSize: 11, fontWeight: '700',
-                }}>
+            <View key={item.id} style={styles.queueItemCard}>
+              <View style={styles.queueItemRow}>
+                <CustomText style={styles.queueItemNum}>
                   {(activeIndex >= 0 ? activeIndex + 1 : 0) + index + 1}
                 </CustomText>
-                <View style={{ flex: 1 }}>
+                <View style={styles.queueItemFill}>
                   <CompactContentRow item={item} onPress={() => void openItem(item, 'music_queue')} />
                 </View>
               </View>
@@ -324,71 +339,43 @@ export default function PlaySection() {
 
       {/* ── Section separator ────────────────────────────────────────────── */}
       {(musicItems.length > 0 || audioItems.length > 0 || nuggetsItems.length > 0 || teensItems.length > 0) ? (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <View style={{ flex: 1, height: 1, backgroundColor: theme.colors.subtleFill }} />
-          <CustomText style={{ color: theme.colors.textMuted, fontSize: 10, fontWeight: '600', letterSpacing: 1.2 }}>
-            BROWSE
-          </CustomText>
-          <View style={{ flex: 1, height: 1, backgroundColor: theme.colors.subtleFill }} />
+        <View style={styles.browseRow}>
+          <View style={styles.browseLine} />
+          <CustomText style={styles.browseLabel}>BROWSE</CustomText>
+          <View style={styles.browseLine} />
         </View>
       ) : null}
 
       {/* ── 4 branded content sections ───────────────────────────────────── */}
       {(musicItems.length > 0 || audioItems.length > 0 || nuggetsItems.length > 0 || teensItems.length > 0) ? (
-        <View style={{ gap: 28 }}>
-
+        <View style={styles.sectionsGap}>
           {musicItems.length > 0 ? (
-            <View style={{ gap: 12 }}>
+            <View style={styles.sectionRow}>
               <SectionLabel title="ClaudyGod Music" actionLabel="See all" onAction={() => router.push(APP_ROUTES.tabs.player)} />
-              <ContentRail
-                title=""
-                items={musicItems}
-                loading={loading}
-                onPressItem={(item) => void openItem(item, 'player_music')}
-                cardVariant="portrait"
-              />
+              <ContentRail title="" items={musicItems} loading={loading} onPressItem={(item) => void openItem(item, 'player_music')} cardVariant="portrait" />
             </View>
           ) : null}
 
           {audioItems.length > 0 ? (
-            <View style={{ gap: 12 }}>
+            <View style={styles.sectionRow}>
               <SectionLabel title="ClaudyGod Audio" actionLabel="See all" onAction={() => router.push(APP_ROUTES.tabs.player)} />
-              <ContentRail
-                title=""
-                items={audioItems}
-                loading={loading}
-                onPressItem={(item) => void openItem(item, 'player_audio')}
-                cardVariant="portrait"
-              />
+              <ContentRail title="" items={audioItems} loading={loading} onPressItem={(item) => void openItem(item, 'player_audio')} cardVariant="portrait" />
             </View>
           ) : null}
 
           {nuggetsItems.length > 0 ? (
-            <View style={{ gap: 12 }}>
+            <View style={styles.sectionRow}>
               <SectionLabel title="Nuggets of Truth" actionLabel="See all" onAction={() => router.push(APP_ROUTES.tabs.videos)} />
-              <ContentRail
-                title=""
-                items={nuggetsItems}
-                loading={loading}
-                onPressItem={(item) => void openItem(item, 'player_nuggets')}
-                cardVariant="landscape"
-              />
+              <ContentRail title="" items={nuggetsItems} loading={loading} onPressItem={(item) => void openItem(item, 'player_nuggets')} cardVariant="landscape" />
             </View>
           ) : null}
 
           {teensItems.length > 0 ? (
-            <View style={{ gap: 12 }}>
+            <View style={styles.sectionRow}>
               <SectionLabel title="ClaudyGod Teens" actionLabel="See all" onAction={() => router.push(APP_ROUTES.tabs.videos)} />
-              <ContentRail
-                title=""
-                items={teensItems}
-                loading={loading}
-                onPressItem={(item) => void openItem(item, 'player_teens')}
-                cardVariant="landscape"
-              />
+              <ContentRail title="" items={teensItems} loading={loading} onPressItem={(item) => void openItem(item, 'player_teens')} cardVariant="landscape" />
             </View>
           ) : null}
-
         </View>
       ) : null}
 
@@ -412,7 +399,6 @@ export default function PlaySection() {
           icon="graphic-eq"
         />
       ) : null}
-
     </PremiumPage>
   );
 }

@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../CustomText';
 import { useAppTheme } from '../../util/colorScheme';
+import { makeStyles } from '../../styles/makeStyles';
 
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
@@ -16,6 +17,46 @@ interface FeaturedCardProps {
   height?: number;
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const useStyles = makeStyles((theme) => ({
+  wrapBase: { width: '100%', borderRadius: theme.radius.xl, overflow: 'hidden' },
+  fill:     { flex: 1 },
+  fallbackBg: {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: theme.colors.primarySurface,
+  },
+  badge: {
+    position: 'absolute', top: theme.spacing.lg, right: theme.spacing.lg,
+    backgroundColor: theme.colors.primary,
+    paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.xs,
+    borderRadius: theme.radius.sm, zIndex: 10,
+  },
+  badgeText: { color: '#FFFFFF', fontSize: 11, fontWeight: '700' },
+  playBtnContainer: {
+    position: 'absolute', top: '50%', left: '50%',
+    marginLeft: -32, marginTop: -32, zIndex: 5,
+  },
+  playBtnInner: {
+    width: 56, height: 56, borderRadius: 28,
+    backgroundColor: theme.colors.primary,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  infoBlock: {
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+    paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.lg,
+    justifyContent: 'flex-end',
+  },
+  titleText: {
+    color: '#FFFFFF', fontSize: 20, fontWeight: '700',
+    marginBottom: theme.spacing.md, lineHeight: 28,
+  },
+  subtitleRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
+  subtitleText: { color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: '500' },
+}));
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export function FeaturedCard({
   imageUrl,
   title,
@@ -24,6 +65,7 @@ export function FeaturedCard({
   onPress,
   height = 280,
 }: FeaturedCardProps) {
+  const styles = useStyles();
   const theme = useAppTheme();
   const [pressed, setPressed] = useState(false);
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
@@ -52,109 +94,50 @@ export function FeaturedCard({
 
   return (
     <Animated.View
-      style={{
-        width: '100%',
-        height,
-        borderRadius: theme.radius.xl,
-        overflow: 'hidden',
-        transform: [{ scale: scaleAnim }],
-        opacity: opacityAnim,
-      }}
+      style={[
+        styles.wrapBase,
+        { height, transform: [{ scale: scaleAnim }], opacity: opacityAnim },
+      ]}
     >
       <Pressable
         onPress={onPress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
-        style={{ flex: 1 }}
+        style={styles.fill}
       >
         {imageUrl ? (
           <Image source={{ uri: imageUrl }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
         ) : (
-          <View style={[StyleSheet.absoluteFillObject, { backgroundColor: theme.colors.primarySurface }]} />
+          <View style={styles.fallbackBg} />
         )}
 
         <LinearGradient
           colors={['rgba(0,0,0,0.15)', 'rgba(0,0,0,0.45)', 'rgba(0,0,0,0.75)']}
           start={{ x: 0, y: 0 }}
           end={{ x: 0, y: 1 }}
-          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+          style={StyleSheet.absoluteFillObject}
         />
 
         {badge ? (
-          <View
-            style={{
-              position: 'absolute',
-              top: theme.spacing.lg,
-              right: theme.spacing.lg,
-              backgroundColor: theme.colors.primary,
-              paddingHorizontal: theme.spacing.md,
-              paddingVertical: theme.spacing.xs,
-              borderRadius: theme.radius.sm,
-              zIndex: 10,
-            }}
-          >
-            <CustomText style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '700' }}>{badge}</CustomText>
+          <View style={styles.badge}>
+            <CustomText style={styles.badgeText}>{badge}</CustomText>
           </View>
         ) : null}
 
         <Animated.View
-          style={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            marginLeft: -32,
-            marginTop: -32,
-            zIndex: 5,
-            transform: [{ scale: playButtonScaleAnim }],
-          }}
+          style={[styles.playBtnContainer, { transform: [{ scale: playButtonScaleAnim }] }]}
         >
-          <View
-            style={{
-              width: 56,
-              height: 56,
-              borderRadius: 28,
-              backgroundColor: theme.colors.primary,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
+          <View style={styles.playBtnInner}>
             <MaterialIcons name="play-arrow" size={28} color={theme.colors.onPrimary} />
           </View>
         </Animated.View>
 
-        <View
-          style={{
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            paddingHorizontal: theme.spacing.lg,
-            paddingVertical: theme.spacing.lg,
-            justifyContent: 'flex-end',
-          }}
-        >
-          <CustomText
-            numberOfLines={2}
-            style={{
-              color: '#FFFFFF',
-              fontSize: 20,
-              fontWeight: '700',
-              marginBottom: theme.spacing.md,
-              lineHeight: 28,
-            }}
-          >
-            {title}
-          </CustomText>
-
+        <View style={styles.infoBlock}>
+          <CustomText numberOfLines={2} style={styles.titleText}>{title}</CustomText>
           {subtitle ? (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm }}>
+            <View style={styles.subtitleRow}>
               <MaterialIcons name="verified" size={16} color={theme.colors.accent} />
-              <CustomText
-                numberOfLines={1}
-                style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: '500' }}
-              >
-                {subtitle}
-              </CustomText>
+              <CustomText numberOfLines={1} style={styles.subtitleText}>{subtitle}</CustomText>
             </View>
           ) : null}
         </View>

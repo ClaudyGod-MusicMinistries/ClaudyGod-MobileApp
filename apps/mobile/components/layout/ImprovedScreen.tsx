@@ -3,8 +3,13 @@
 import React, { type ReactNode } from 'react';
 import type { RefreshControlProps } from 'react-native';
 import { View, ScrollView } from 'react-native';
-import { useAppTheme } from '../../util/colorScheme';
+import { makeStyles } from '../../styles/makeStyles';
 import { useFloatingPlayer } from '../../context/FloatingPlayerContext';
+
+const useStyles = makeStyles((theme) => ({
+  root:       { flex: 1, backgroundColor: theme.colors.background },
+  scrollView: { flex: 1 },
+}));
 
 interface ImprovedScreenProps {
   children: ReactNode;
@@ -32,7 +37,7 @@ export function ImprovedScreen({
   overScrollMode = 'never',
   refreshControl,
 }: ImprovedScreenProps) {
-  const theme = useAppTheme();
+  const styles = useStyles();
   const { player } = useFloatingPlayer();
 
   // Calculate bottom padding for fixed footer and floating player
@@ -45,9 +50,9 @@ export function ImprovedScreen({
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+    <View style={styles.root}>
       <ScrollView
-        style={{ flex: 1 }}
+        style={styles.scrollView}
         contentContainerStyle={{
           paddingBottom: Math.max(bottomPaddingForContent, 20),
         }}

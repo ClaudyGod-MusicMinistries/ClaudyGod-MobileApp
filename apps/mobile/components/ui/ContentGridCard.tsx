@@ -1,14 +1,10 @@
-/**
- * Beautiful Content Grid Card
- * Displays content items in a clean grid with image and metadata
- */
-
 import React, { useState } from 'react';
 import { Image, Platform, Pressable, StyleSheet, View, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../CustomText';
 import { useAppTheme } from '../../util/colorScheme';
+import { makeStyles } from '../../styles/makeStyles';
 
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
@@ -21,6 +17,19 @@ interface ContentGridCardProps {
   size?: 'small' | 'medium';
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const useStyles = makeStyles((theme) => ({
+  cardOuter:   { flex: 1, borderRadius: 14, overflow: 'hidden' },
+  cardInner:   { borderRadius: 14, overflow: 'hidden', backgroundColor: theme.colors.surfaceAlt },
+  imgSection:  { alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' },
+  playBtn:     { position: 'absolute', width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(167,139,250,0.9)', alignItems: 'center', justifyContent: 'center' },
+  textPad:     { padding: 10 },
+  titleBase:   { color: theme.colors.text, fontWeight: '600', lineHeight: 16 },
+  subtitleText:{ color: theme.colors.textSecondary, fontSize: 11 },
+}));
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export function ContentGridCard({
   id: _id,
@@ -30,57 +39,39 @@ export function ContentGridCard({
   onPress,
   size = 'medium',
 }: ContentGridCardProps) {
-  const theme = useAppTheme();
+  const styles = useStyles();
+  const theme  = useAppTheme();
   const [pressed, setPressed] = useState(false);
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
 
   const handlePressIn = () => {
     setPressed(true);
-    Animated.spring(scaleAnim, {
-      toValue: 0.95,
-      useNativeDriver: USE_NATIVE_DRIVER,
-    }).start();
+    Animated.spring(scaleAnim, { toValue: 0.95, useNativeDriver: USE_NATIVE_DRIVER }).start();
   };
 
   const handlePressOut = () => {
     setPressed(false);
-    Animated.spring(scaleAnim, {
-      toValue: 1,
-      useNativeDriver: USE_NATIVE_DRIVER,
-    }).start();
+    Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: USE_NATIVE_DRIVER }).start();
   };
 
   const imageHeight = size === 'small' ? 140 : 180;
 
   return (
-    <Animated.View
-      style={{
-        flex: 1,
-        borderRadius: 14,
-        overflow: 'hidden',
-        transform: [{ scale: scaleAnim }],
-      }}
-    >
+    <Animated.View style={[styles.cardOuter, { transform: [{ scale: scaleAnim }] }]}>
       <Pressable
         onPress={onPress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
-        style={{
-          borderRadius: 14,
-          overflow: 'hidden',
-          backgroundColor: theme.colors.surfaceAlt,
-        }}
+        style={styles.cardInner}
       >
-        {/* Image Section */}
         <View
-          style={{
-            height: imageHeight,
-            backgroundColor: pressed ? 'rgba(167,139,250,0.15)' : 'rgba(167,139,250,0.08)',
-            alignItems: 'center',
-            justifyContent: 'center',
-            position: 'relative',
-            overflow: 'hidden',
-          }}
+          style={[
+            styles.imgSection,
+            {
+              height: imageHeight,
+              backgroundColor: pressed ? 'rgba(167,139,250,0.15)' : 'rgba(167,139,250,0.08)',
+            },
+          ]}
         >
           {imageUrl ? (
             <>
@@ -95,49 +86,26 @@ export function ContentGridCard({
           ) : (
             <MaterialIcons name="music-note" size={32} color={theme.colors.secondary} />
           )}
-
-          {/* Play Button Overlay */}
-          <View
-            style={{
-              position: 'absolute',
-              width: 44,
-              height: 44,
-              borderRadius: 22,
-              backgroundColor: 'rgba(167,139,250,0.9)',
-              alignItems: 'center',
-              justifyContent: 'center',
-              opacity: pressed ? 1 : 0.8,
-            }}
-          >
+          <View style={[styles.playBtn, { opacity: pressed ? 1 : 0.8 }]}>
             <MaterialIcons name="play-arrow" size={20} color={theme.colors.text} />
           </View>
         </View>
 
-        {/* Text Section */}
-        <View style={{ padding: 10 }}>
+        <View style={styles.textPad}>
           <CustomText
             numberOfLines={2}
-            style={{
-              color: theme.colors.text,
-              fontSize: size === 'small' ? 12 : 13,
-              fontWeight: '600',
-              marginBottom: subtitle ? 4 : 0,
-              lineHeight: 16,
-            }}
+            style={[
+              styles.titleBase,
+              {
+                fontSize: size === 'small' ? 12 : 13,
+                marginBottom: subtitle ? 4 : 0,
+              },
+            ]}
           >
             {title}
           </CustomText>
-
           {subtitle && (
-            <CustomText
-              numberOfLines={1}
-              style={{
-                color: theme.colors.textSecondary,
-                fontSize: 11,
-              }}
-            >
-              {subtitle}
-            </CustomText>
+            <CustomText numberOfLines={1} style={styles.subtitleText}>{subtitle}</CustomText>
           )}
         </View>
       </Pressable>

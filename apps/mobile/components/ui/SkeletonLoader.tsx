@@ -1,7 +1,7 @@
 // components/ui/SkeletonLoader.tsx
 import React, { useEffect, useRef } from 'react';
-import { Animated, Platform, View } from 'react-native';
-import { useAppTheme } from '../../util/colorScheme';
+import { Animated, Platform, StyleSheet, View } from 'react-native';
+import { makeStyles } from '../../styles/makeStyles';
 
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
@@ -12,72 +12,60 @@ interface SkeletonLoaderProps {
   style?: any;
 }
 
+// ─── Static styles (no theme) ─────────────────────────────────────────────────
+
+const ss = StyleSheet.create({
+  heroPad:     { padding: 16, gap: 12 },
+  heroBtnsRow: { flexDirection: 'row', gap: 8, marginTop: 8 },
+});
+
+// ─── Theme styles ─────────────────────────────────────────────────────────────
+
+const useStyles = makeStyles((theme) => ({
+  shimmerBg:  { backgroundColor: theme.colors.surface },
+  card: {
+    padding: 16, backgroundColor: theme.colors.surface,
+    borderRadius: 12, borderWidth: 1, borderColor: theme.colors.border,
+    gap: 12, marginBottom: 12,
+  },
+  heroOuter:  { backgroundColor: theme.colors.surface, borderRadius: 16, overflow: 'hidden', gap: 12, marginBottom: 12 },
+}));
+
+// ─── SkeletonLoaderComponent ──────────────────────────────────────────────────
+
 function SkeletonLoaderComponent({
   width = '100%',
   height = 16,
   borderRadius = 8,
   style,
 }: SkeletonLoaderProps) {
-  const theme = useAppTheme();
+  const styles = useStyles();
   const shimmer = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
-        Animated.timing(shimmer, {
-          toValue: 1,
-          duration: 1500,
-          useNativeDriver: USE_NATIVE_DRIVER,
-        }),
-        Animated.timing(shimmer, {
-          toValue: 0,
-          duration: 1500,
-          useNativeDriver: USE_NATIVE_DRIVER,
-        }),
+        Animated.timing(shimmer, { toValue: 1, duration: 1500, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.timing(shimmer, { toValue: 0, duration: 1500, useNativeDriver: USE_NATIVE_DRIVER }),
       ]),
     ).start();
   }, [shimmer]);
 
-  const opacity = shimmer.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.5, 0.8],
-  });
+  const opacity = shimmer.interpolate({ inputRange: [0, 1], outputRange: [0.5, 0.8] });
 
   return (
     <Animated.View
-      style={[
-        {
-          width,
-          height,
-          borderRadius,
-          backgroundColor: theme.colors.surface,
-          opacity,
-        },
-        style,
-      ]}
+      style={[styles.shimmerBg, { width, height, borderRadius, opacity }, style]}
     />
   );
 }
 
-interface SkeletonCardProps {
-  lines?: number;
-}
+// ─── SkeletonCard ─────────────────────────────────────────────────────────────
 
-function SkeletonCard({ lines = 3 }: SkeletonCardProps) {
-  const theme = useAppTheme();
-
+function SkeletonCard({ lines = 3 }: { lines?: number }) {
+  const styles = useStyles();
   return (
-    <View
-      style={{
-        padding: 16,
-        backgroundColor: theme.colors.surface,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: theme.colors.border,
-        gap: 12,
-        marginBottom: 12,
-      }}
-    >
+    <View style={styles.card}>
       <SkeletonLoaderComponent width="40%" height={14} />
       {Array.from({ length: lines }).map((_, i) => (
         <SkeletonLoaderComponent
@@ -90,29 +78,24 @@ function SkeletonCard({ lines = 3 }: SkeletonCardProps) {
   );
 }
 
+// ─── SkeletonAvatar ───────────────────────────────────────────────────────────
+
 function SkeletonAvatar({ size = 48 }: { size?: number }) {
   return <SkeletonLoaderComponent width={size} height={size} borderRadius={size / 2} />;
 }
 
-function SkeletonHeroCard() {
-  const theme = useAppTheme();
+// ─── SkeletonHeroCard ─────────────────────────────────────────────────────────
 
+function SkeletonHeroCard() {
+  const styles = useStyles();
   return (
-    <View
-      style={{
-        backgroundColor: theme.colors.surface,
-        borderRadius: 16,
-        overflow: 'hidden',
-        gap: 12,
-        marginBottom: 12,
-      }}
-    >
+    <View style={styles.heroOuter}>
       <SkeletonLoaderComponent width="100%" height={240} borderRadius={0} />
-      <View style={{ padding: 16, gap: 12 }}>
+      <View style={ss.heroPad}>
         <SkeletonLoaderComponent width="50%" height={16} />
         <SkeletonLoaderComponent width="100%" height={14} />
         <SkeletonLoaderComponent width="80%" height={14} />
-        <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+        <View style={ss.heroBtnsRow}>
           <SkeletonLoaderComponent width="45%" height={48} borderRadius={12} />
           <SkeletonLoaderComponent width="45%" height={48} borderRadius={12} />
         </View>
@@ -122,8 +105,8 @@ function SkeletonHeroCard() {
 }
 
 // Attach subcomponents as static properties
-SkeletonLoaderComponent.Card = SkeletonCard;
-SkeletonLoaderComponent.Avatar = SkeletonAvatar;
+SkeletonLoaderComponent.Card     = SkeletonCard;
+SkeletonLoaderComponent.Avatar   = SkeletonAvatar;
 SkeletonLoaderComponent.HeroCard = SkeletonHeroCard;
 
 export const SkeletonLoader = SkeletonLoaderComponent;

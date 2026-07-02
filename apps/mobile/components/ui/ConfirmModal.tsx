@@ -11,6 +11,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../CustomText';
 import { AppButton } from './AppButton';
 import { useAppTheme } from '../../util/colorScheme';
+import { makeStyles } from '../../styles/makeStyles';
 
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
@@ -30,6 +31,34 @@ export interface ConfirmModalProps {
   onDismiss: () => void;
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const useStyles = makeStyles((theme) => ({
+  backdrop:    { backgroundColor: 'rgba(2,1,6,0.70)' },
+  centerWrap:  { flex: 1, justifyContent: 'center', paddingHorizontal: 24 },
+  animContent: { width: '100%', maxWidth: 420, alignSelf: 'center' },
+  card: {
+    borderRadius: 16, borderWidth: 1,
+    borderColor: theme.colors.borderStrong,
+    backgroundColor: theme.colors.elevated,
+    padding: 24, gap: 20,
+    shadowColor: '#000', shadowOpacity: 0.24, shadowRadius: 20,
+    shadowOffset: { width: 0, height: 8 }, elevation: 12,
+  },
+  iconCenter:  { alignItems: 'center' },
+  iconRingBase: {
+    width: 68, height: 68, borderRadius: 34,
+    alignItems: 'center', justifyContent: 'center', borderWidth: 1.5,
+  },
+  textContent: { gap: 8, alignItems: 'center' },
+  titleText:   { color: theme.colors.text, textAlign: 'center' },
+  bodyText:    { color: theme.colors.textSecondary, textAlign: 'center', lineHeight: 22 },
+  btnsGap:     { gap: 10 },
+  dangerBtn:   { backgroundColor: theme.colors.danger },
+}));
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export function ConfirmModal({
   visible,
   icon,
@@ -44,6 +73,7 @@ export function ConfirmModal({
   onSecondary,
   onDismiss,
 }: ConfirmModalProps) {
+  const styles = useStyles();
   const theme = useAppTheme();
   const scale = useRef(new Animated.Value(0.88)).current;
   const opacity = useRef(new Animated.Value(0)).current;
@@ -87,76 +117,36 @@ export function ConfirmModal({
       <View style={StyleSheet.absoluteFill}>
         <Pressable
           onPress={() => { if (!loading) onDismiss(); }}
-          style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(2,1,6,0.70)' }]}
+          style={[StyleSheet.absoluteFill, styles.backdrop]}
         />
 
-        <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 24 }} pointerEvents="box-none">
+        <View style={styles.centerWrap} pointerEvents="box-none">
           <Animated.View
-            style={{
-              transform: [{ scale }],
-              opacity,
-              width: '100%',
-              maxWidth: 420,
-              alignSelf: 'center',
-            }}
+            style={[styles.animContent, { transform: [{ scale }], opacity }]}
           >
-            <View
-              style={{
-                borderRadius: 16,
-                borderWidth: 1,
-                borderColor: theme.colors.borderStrong,
-                backgroundColor: theme.colors.elevated,
-                padding: 24,
-                gap: 20,
-                shadowColor: '#000',
-                shadowOpacity: 0.24,
-                shadowRadius: 20,
-                shadowOffset: { width: 0, height: 8 },
-                elevation: 12,
-              }}
-            >
-              {/* Icon ring */}
-              <View style={{ alignItems: 'center' }}>
+            <View style={styles.card}>
+              <View style={styles.iconCenter}>
                 <View
-                  style={{
-                    width: 68,
-                    height: 68,
-                    borderRadius: 34,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: `${resolvedIconColor}1A`,
-                    borderWidth: 1.5,
-                    borderColor: `${resolvedIconColor}44`,
-                  }}
+                  style={[
+                    styles.iconRingBase,
+                    {
+                      backgroundColor: `${resolvedIconColor}1A`,
+                      borderColor: `${resolvedIconColor}44`,
+                    },
+                  ]}
                 >
                   <MaterialIcons name={icon} size={32} color={resolvedIconColor} />
                 </View>
               </View>
 
-              {/* Text content */}
-              <View style={{ gap: 8, alignItems: 'center' }}>
-                <CustomText
-                  variant="heading"
-                  style={{ color: theme.colors.text, textAlign: 'center' }}
-                >
-                  {title}
-                </CustomText>
+              <View style={styles.textContent}>
+                <CustomText variant="heading" style={styles.titleText}>{title}</CustomText>
                 {body ? (
-                  <CustomText
-                    variant="body"
-                    style={{
-                      color: theme.colors.textSecondary,
-                      textAlign: 'center',
-                      lineHeight: 22,
-                    }}
-                  >
-                    {body}
-                  </CustomText>
+                  <CustomText variant="body" style={styles.bodyText}>{body}</CustomText>
                 ) : null}
               </View>
 
-              {/* Action buttons */}
-              <View style={{ gap: 10 }}>
+              <View style={styles.btnsGap}>
                 <AppButton
                   title={primaryLabel}
                   variant="primary"
@@ -165,7 +155,7 @@ export function ConfirmModal({
                   loading={loading}
                   disabled={loading}
                   onPress={handlePrimary}
-                  style={isDanger ? { backgroundColor: theme.colors.danger } : undefined}
+                  style={isDanger ? styles.dangerBtn : undefined}
                   textColor="#FFFFFF"
                 />
                 {secondaryLabel ? (

@@ -1,8 +1,20 @@
 import React, { useEffect, useRef } from 'react';
 import { View } from 'react-native';
 import { CustomText } from '../CustomText';
-import { useAppTheme } from '../../util/colorScheme';
+import { makeStyles } from '../../styles/makeStyles';
 import { isHostedVideoUrl } from '../../util/playerRoute';
+
+const useStyles = makeStyles((theme) => ({
+  container: {
+    borderRadius: theme.radius.lg,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    overflow: 'hidden',
+  },
+  titlePad:  { padding: theme.spacing.md },
+  titleText: { color: theme.colors.text },
+}));
 
 interface VideoPlayerProps {
   title?: string;
@@ -21,7 +33,7 @@ export function VideoPlayer({
   onPlayStateChange,
   onProgress,
 }: VideoPlayerProps) {
-  const theme = useAppTheme();
+  const styles = useStyles();
   const embedUrl = buildEmbedUrl(sourceUri);
   const videoRef = useRef<any>(null);
 
@@ -56,15 +68,7 @@ export function VideoPlayer({
   }, [embedUrl, onPlayStateChange, onProgress, onRegisterControls]);
 
   return (
-    <View
-      style={{
-        borderRadius: theme.radius.lg,
-        backgroundColor: theme.colors.surface,
-        borderWidth: 1,
-        borderColor: theme.colors.border,
-        overflow: 'hidden',
-      }}
-    >
+    <View style={styles.container}>
       {embedUrl
         ? React.createElement('iframe', {
             src: embedUrl,
@@ -96,8 +100,8 @@ export function VideoPlayer({
           })}
 
       {title ? (
-        <View style={{ padding: theme.spacing.md }}>
-          <CustomText variant="subtitle" style={{ color: theme.colors.text }}>
+        <View style={styles.titlePad}>
+          <CustomText variant="subtitle" style={styles.titleText}>
             {title}
           </CustomText>
         </View>

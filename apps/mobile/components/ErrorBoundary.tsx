@@ -2,9 +2,47 @@ import React, { ReactNode } from 'react';
 import { View, Text, SafeAreaView, ScrollView, TouchableOpacity } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useAppTheme } from '../util/colorScheme';
-import type { AppTheme } from '../theme';
+import { makeStyles } from '../styles/makeStyles';
 
-// ─── Error UI (function component so it can use useAppTheme) ─────────────────
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const useStyles = makeStyles((theme) => ({
+  safeArea:       { flex: 1, backgroundColor: theme.colors.background },
+  scroll:         { flex: 1 },
+  iconBox: {
+    width: 64, height: 64, borderRadius: 32,
+    backgroundColor: theme.colors.dangerSurface,
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: 24, alignSelf: 'center',
+  },
+  messageWrap:    { marginBottom: 24 },
+  errorTitle:     { fontSize: 18, fontWeight: '600', color: theme.colors.text, marginBottom: 8 },
+  errorBody:      { fontSize: 12.5, color: theme.colors.textSecondary, lineHeight: 20 },
+  devCard: {
+    backgroundColor: theme.colors.dangerSurface, borderWidth: 1,
+    borderColor: theme.colors.dangerBorder, borderRadius: theme.radius.card,
+    padding: 16, marginBottom: 24,
+  },
+  devTitle:       { fontSize: 12, fontWeight: '600', color: theme.colors.danger, marginBottom: 8 },
+  devMessage:     { fontSize: 11, color: theme.colors.textSecondary, fontFamily: 'monospace', lineHeight: 16 },
+  stackTitle:     { fontSize: 12, fontWeight: '600', color: theme.colors.danger, marginTop: 12, marginBottom: 8 },
+  stackText:      { fontSize: 10, color: theme.colors.textSecondary, fontFamily: 'monospace', lineHeight: 14 },
+  spacer:         { flex: 1 },
+  btnsGap:        { gap: 12 },
+  retryBtn: {
+    minHeight: 48, backgroundColor: theme.colors.primary,
+    borderRadius: theme.radius.card, alignItems: 'center', justifyContent: 'center',
+  },
+  retryText:      { color: theme.colors.onPrimary, fontWeight: '600', fontSize: 14 },
+  dismissBtn: {
+    minHeight: 48, backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.card, borderWidth: 1, borderColor: theme.colors.border,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  dismissText:    { color: theme.colors.text, fontWeight: '600', fontSize: 14 },
+}));
+
+// ─── Error UI (function component so it can use hooks) ────────────────────────
 
 function ErrorUI({
   error,
@@ -17,93 +55,51 @@ function ErrorUI({
   contextLabel: string;
   onRetry: () => void;
 }) {
-  const theme = useAppTheme();
+  const styles = useStyles();
+  const theme  = useAppTheme();
   const errorMessage = error.message || 'An unexpected error occurred';
-  const stackTrace = error.stack || '';
+  const stackTrace   = error.stack || '';
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
+    <SafeAreaView style={styles.safeArea}>
       <ScrollView
-        style={{ flex: 1 }}
+        style={styles.scroll}
         contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 20, paddingVertical: 24 }}
         showsVerticalScrollIndicator={false}
       >
-        <View
-          style={{
-            width: 64, height: 64, borderRadius: 32,
-            backgroundColor: theme.colors.dangerSurface,
-            alignItems: 'center', justifyContent: 'center',
-            marginBottom: 24, alignSelf: 'center',
-          }}
-        >
+        <View style={styles.iconBox}>
           <MaterialIcons name="error-outline" size={32} color={theme.colors.danger} />
         </View>
 
-        <View style={{ marginBottom: 24 }}>
-          <Text style={{ fontSize: 18, fontWeight: '600', color: theme.colors.text, marginBottom: 8 }}>
-            Oops! Something went wrong
-          </Text>
-          <Text style={{ fontSize: 12.5, color: theme.colors.textSecondary, lineHeight: 20 }}>
+        <View style={styles.messageWrap}>
+          <Text style={styles.errorTitle}>Oops! Something went wrong</Text>
+          <Text style={styles.errorBody}>
             We ran into an unexpected error{contextLabel}. Please try again or contact support if the problem persists.
           </Text>
         </View>
 
         {isDev ? (
-          <View
-            style={{
-              backgroundColor: theme.colors.dangerSurface,
-              borderWidth: 1,
-              borderColor: theme.colors.dangerBorder,
-              borderRadius: theme.radius.card,
-              padding: 16,
-              marginBottom: 24,
-            }}
-          >
-            <Text style={{ fontSize: 12, fontWeight: '600', color: theme.colors.danger, marginBottom: 8 }}>
-              Error Message
-            </Text>
-            <Text style={{ fontSize: 11, color: theme.colors.textSecondary, fontFamily: 'monospace', lineHeight: 16 }}>
-              {errorMessage}
-            </Text>
+          <View style={styles.devCard}>
+            <Text style={styles.devTitle}>Error Message</Text>
+            <Text style={styles.devMessage}>{errorMessage}</Text>
             {stackTrace ? (
               <>
-                <Text style={{ fontSize: 12, fontWeight: '600', color: theme.colors.danger, marginTop: 12, marginBottom: 8 }}>
-                  Stack Trace
-                </Text>
-                <Text style={{ fontSize: 10, color: theme.colors.textSecondary, fontFamily: 'monospace', lineHeight: 14 }} numberOfLines={8}>
-                  {stackTrace}
-                </Text>
+                <Text style={styles.stackTitle}>Stack Trace</Text>
+                <Text style={styles.stackText} numberOfLines={8}>{stackTrace}</Text>
               </>
             ) : null}
           </View>
         ) : null}
 
-        <View style={{ flex: 1 }} />
+        <View style={styles.spacer} />
 
-        <View style={{ gap: 12 }}>
-          <TouchableOpacity
-            onPress={onRetry}
-            style={{
-              minHeight: 48, backgroundColor: theme.colors.primary,
-              borderRadius: theme.radius.card, alignItems: 'center', justifyContent: 'center',
-            }}
-          >
-            <Text style={{ color: theme.colors.onPrimary, fontWeight: '600', fontSize: 14 }}>
-              Try Again
-            </Text>
+        <View style={styles.btnsGap}>
+          <TouchableOpacity onPress={onRetry} style={styles.retryBtn}>
+            <Text style={styles.retryText}>Try Again</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={onRetry}
-            style={{
-              minHeight: 48, backgroundColor: theme.colors.surface,
-              borderRadius: theme.radius.card, borderWidth: 1, borderColor: theme.colors.border,
-              alignItems: 'center', justifyContent: 'center',
-            }}
-          >
-            <Text style={{ color: theme.colors.text, fontWeight: '600', fontSize: 14 }}>
-              Dismiss Error
-            </Text>
+          <TouchableOpacity onPress={onRetry} style={styles.dismissBtn}>
+            <Text style={styles.dismissText}>Dismiss Error</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
