@@ -6,6 +6,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
 import { useAppTheme } from '../../util/colorScheme';
+import { makeStyles } from '../../styles/makeStyles';
 import { Screen } from './Screen';
 import { SurfaceCard } from '../ui/SurfaceCard';
 import { CustomText } from '../CustomText';
@@ -22,14 +23,42 @@ interface SettingsScaffoldProps {
   backRoute?: string;
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const useStyles = makeStyles((theme) => ({
+  root:          { flex: 1, backgroundColor: theme.colors.background },
+  gradientFill:  { flex: 1 },
+  safeArea:      { flex: 1, backgroundColor: 'transparent' },
+  scroll:        { flex: 1, backgroundColor: 'transparent' },
+  scrollContent: { paddingBottom: 124 },
+  innerPad:      { paddingTop: theme.layout.headerVerticalPadding, gap: theme.layout.sectionGap },
+  cardPad:       { paddingVertical: theme.spacing.md, paddingHorizontal: theme.spacing.md },
+  headerRow:     { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  backBtn: {
+    width: 38, height: 38, borderRadius: 19,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: theme.scheme === 'dark' ? 'rgba(255,255,255,0.08)' : theme.colors.surfaceAlt,
+    borderWidth: 1, borderColor: theme.colors.border,
+  },
+  headerFill:   { flex: 1, minWidth: 0 },
+  eyebrow:      { color: theme.colors.primary, textTransform: 'uppercase', letterSpacing: 0.72 },
+  titleText:    { color: theme.colors.text, marginTop: 2 },
+  subtitleText: { color: theme.colors.textSecondary, marginTop: 2 },
+  heroWrap:     { marginTop: -2 },
+  heroBgBase:   { position: 'absolute', top: 0, left: 0, right: 0 },
+}));
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export function SettingsScaffold({ title, subtitle, children, hero, backRoute = APP_ROUTES.tabs.home }: SettingsScaffoldProps) {
+  const styles = useStyles();
   const theme = useAppTheme();
   const router = useRouter();
   const { width } = useWindowDimensions();
   const compact = width < 420;
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+    <View style={styles.root}>
       <StatusBar
         translucent={false}
         barStyle={theme.scheme === 'dark' ? 'light-content' : 'dark-content'}
@@ -39,7 +68,7 @@ export function SettingsScaffold({ title, subtitle, children, hero, backRoute = 
       <ImageBackground
         source={BRAND_HERO_ASSET}
         resizeMode="cover"
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, height: compact ? 220 : 280 }}
+        style={[styles.heroBgBase, { height: compact ? 220 : 280 }]}
       >
         <LinearGradient
           colors={
@@ -49,49 +78,40 @@ export function SettingsScaffold({ title, subtitle, children, hero, backRoute = 
           }
           start={{ x: 0, y: 0 }}
           end={{ x: 0.86, y: 1 }}
-          style={{ flex: 1 }}
+          style={styles.gradientFill}
         />
       </ImageBackground>
 
-      <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top']}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         <ScrollView
-          style={{ flex: 1, backgroundColor: 'transparent' }}
+          style={styles.scroll}
           showsVerticalScrollIndicator={false}
           bounces={false}
           overScrollMode="never"
-          contentContainerStyle={{ paddingBottom: 124 }}
+          contentContainerStyle={styles.scrollContent}
         >
           <Screen>
-            <View style={{ paddingTop: theme.layout.headerVerticalPadding, gap: theme.layout.sectionGap }}>
-              <SurfaceCard tone="strong" style={{ paddingVertical: theme.spacing.md, paddingHorizontal: theme.spacing.md }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <View style={styles.innerPad}>
+              <SurfaceCard tone="strong" style={styles.cardPad}>
+                <View style={styles.headerRow}>
                   <TVTouchable
                     onPress={() => router.replace(backRoute as never)}
                     showFocusBorder={false}
-                    style={{
-                      width: 38,
-                      height: 38,
-                      borderRadius: 19,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      backgroundColor: theme.scheme === 'dark' ? 'rgba(255,255,255,0.08)' : theme.colors.surfaceAlt,
-                      borderWidth: 1,
-                      borderColor: theme.colors.border,
-                    }}
+                    style={styles.backBtn}
                     accessibilityLabel="Go back"
                   >
                     <MaterialIcons name="chevron-left" size={23} color={theme.colors.text} />
                   </TVTouchable>
 
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <CustomText variant="caption" style={{ color: theme.colors.primary, textTransform: 'uppercase', letterSpacing: 0.72 }} numberOfLines={1}>
+                  <View style={styles.headerFill}>
+                    <CustomText variant="caption" style={styles.eyebrow} numberOfLines={1}>
                       ClaudyGod
                     </CustomText>
-                    <CustomText variant="heading" style={{ color: theme.colors.text, marginTop: 2 }} numberOfLines={1}>
+                    <CustomText variant="heading" style={styles.titleText} numberOfLines={1}>
                       {title}
                     </CustomText>
                     {subtitle ? (
-                      <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 2 }} numberOfLines={2}>
+                      <CustomText variant="caption" style={styles.subtitleText} numberOfLines={2}>
                         {subtitle}
                       </CustomText>
                     ) : null}
@@ -99,7 +119,7 @@ export function SettingsScaffold({ title, subtitle, children, hero, backRoute = 
                 </View>
               </SurfaceCard>
 
-              {hero ? <View style={{ marginTop: -2 }}>{hero}</View> : null}
+              {hero ? <View style={styles.heroWrap}>{hero}</View> : null}
               {children}
               <AppScreenFooter />
             </View>

@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router';
 import { SettingsScaffold } from '../../components/layout/SettingsScaffold';
 import { CustomText } from '../../components/CustomText';
 import { useAppTheme } from '../../util/colorScheme';
+import { makeStyles } from '../../styles/makeStyles';
 import { AppButton } from '../../components/ui/AppButton';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { FadeIn } from '../../components/ui/FadeIn';
@@ -14,7 +15,32 @@ import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import { createAppRating } from '../../services/userFlowService';
 import { useToast } from '../../context/ToastContext';
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const useStyles = makeStyles((theme) => ({
+  heroCard:      { padding: theme.spacing.xl, marginBottom: theme.spacing.lg },
+  eyebrow:       { color: theme.colors.primary, textTransform: 'uppercase', letterSpacing: 0.9 },
+  displayText:   { color: theme.colors.text, marginTop: 8 },
+  bodyText:      { color: theme.colors.textSecondary, marginTop: 8 },
+  ratingCard:    { padding: theme.spacing.xl, alignItems: 'center' },
+  ratingHeading: { color: theme.colors.text },
+  starsRow:      { flexDirection: 'row', marginTop: 16, gap: 8 },
+  scoreCaption:  { color: theme.colors.textSecondary, marginTop: 10 },
+  noteCard:      { padding: theme.spacing.lg },
+  noteHeading:   { color: theme.colors.text },
+  noteBody:      { color: theme.colors.textSecondary, marginTop: 6 },
+  textInput: {
+    minHeight: 116, marginTop: 14, borderWidth: 1, borderColor: theme.colors.border,
+    borderRadius: 16, paddingHorizontal: 14, paddingVertical: 12,
+    backgroundColor: theme.colors.surface, color: theme.colors.text,
+  },
+  btnsGap: { gap: 10, marginTop: 14 },
+}));
+
+// ─── Screen ───────────────────────────────────────────────────────────────────
+
 export default function Rate() {
+  const styles = useStyles();
   const theme = useAppTheme();
   const router = useRouter();
   const { showToast } = useToast();
@@ -75,14 +101,14 @@ export default function Rate() {
       subtitle="Share your experience and help improve the app."
       hero={
         <FadeIn>
-          <SurfaceCard tone="strong" style={{ padding: theme.spacing.xl, marginBottom: theme.spacing.lg }}>
-            <CustomText variant="caption" style={{ color: theme.colors.primary, textTransform: 'uppercase', letterSpacing: 0.9 }}>
+          <SurfaceCard tone="strong" style={styles.heroCard}>
+            <CustomText variant="caption" style={styles.eyebrow}>
               User feedback
             </CustomText>
-            <CustomText variant="display" style={{ color: theme.colors.text, marginTop: 8 }}>
+            <CustomText variant="display" style={styles.displayText}>
               Tell us how the experience feels.
             </CustomText>
-            <CustomText variant="body" style={{ color: theme.colors.textSecondary, marginTop: 8 }}>
+            <CustomText variant="body" style={styles.bodyText}>
               Your rating helps improve playback, navigation, and the worship experience across devices.
             </CustomText>
           </SurfaceCard>
@@ -90,29 +116,29 @@ export default function Rate() {
       }
     >
       <FadeIn delay={70}>
-        <SurfaceCard tone="subtle" style={{ padding: theme.spacing.xl, alignItems: 'center' }}>
-          <CustomText variant="heading" style={{ color: theme.colors.text }}>
+        <SurfaceCard tone="subtle" style={styles.ratingCard}>
+          <CustomText variant="heading" style={styles.ratingHeading}>
             Select your rating
           </CustomText>
-          <View style={{ flexDirection: 'row', marginTop: 16, gap: 8 }}>
+          <View style={styles.starsRow}>
             {[1, 2, 3, 4, 5].map((star) => (
               <TVTouchable key={star} onPress={() => setRating(star)} showFocusBorder={false}>
-                <MaterialIcons name={rating >= star ? 'star' : 'star-border'} size={38} color={rating >= star ? theme.colors.warning : theme.colors.textSecondary} />
+                <MaterialIcons
+                  name={rating >= star ? 'star' : 'star-border'}
+                  size={38}
+                  color={rating >= star ? theme.colors.warning : theme.colors.textSecondary}
+                />
               </TVTouchable>
             ))}
           </View>
-          <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 10 }}>
-            {scoreLabel}
-          </CustomText>
+          <CustomText variant="caption" style={styles.scoreCaption}>{scoreLabel}</CustomText>
         </SurfaceCard>
       </FadeIn>
 
       <FadeIn delay={110}>
-        <SurfaceCard tone="subtle" style={{ padding: theme.spacing.lg }}>
-          <CustomText variant="heading" style={{ color: theme.colors.text }}>
-            Optional note
-          </CustomText>
-          <CustomText variant="body" style={{ color: theme.colors.textSecondary, marginTop: 6 }}>
+        <SurfaceCard tone="subtle" style={styles.noteCard}>
+          <CustomText variant="heading" style={styles.noteHeading}>Optional note</CustomText>
+          <CustomText variant="body" style={styles.noteBody}>
             Share what worked well or what needs improvement.
           </CustomText>
           <TextInput
@@ -122,11 +148,23 @@ export default function Rate() {
             placeholderTextColor={theme.colors.textSecondary}
             multiline
             textAlignVertical="top"
-            style={{ minHeight: 116, marginTop: 14, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 12, backgroundColor: theme.colors.surface, color: theme.colors.text }}
+            style={styles.textInput}
           />
-          <View style={{ gap: 10, marginTop: 14 }}>
-            <AppButton title="Continue" loading={submitting} loadingLabel="Saving" disabled={rating === 0 || submitting} onPress={() => void continueFlow()} fullWidth />
-            <AppButton title="Open support instead" variant="secondary" onPress={() => router.push(feedbackRoute as never)} fullWidth />
+          <View style={styles.btnsGap}>
+            <AppButton
+              title="Continue"
+              loading={submitting}
+              loadingLabel="Saving"
+              disabled={rating === 0 || submitting}
+              onPress={() => void continueFlow()}
+              fullWidth
+            />
+            <AppButton
+              title="Open support instead"
+              variant="secondary"
+              onPress={() => router.push(feedbackRoute as never)}
+              fullWidth
+            />
           </View>
         </SurfaceCard>
       </FadeIn>

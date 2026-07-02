@@ -16,6 +16,7 @@ import { CustomText } from '../CustomText';
 import { TVTouchable } from '../ui/TVTouchable';
 import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
 import { useAppTheme } from '../../util/colorScheme';
+import { makeStyles } from '../../styles/makeStyles';
 
 export interface YouTubeAudioTrack {
   id: string;
@@ -165,7 +166,8 @@ export function YouTubeAudioPlayer({
   currentTrackNumber,
   totalTracks,
 }: YouTubeAudioPlayerProps) {
-  const theme = useAppTheme();
+  const styles = useStyles();
+  const theme  = useAppTheme();
   const { width } = useWindowDimensions();
   const isCompact = Boolean(compact);
 
@@ -303,9 +305,9 @@ export function YouTubeAudioPlayer({
   // ── Compact layout ──────────────────────────────────────────────────────────
   if (isCompact) {
     return (
-      <View style={[styles.compactRoot, { backgroundColor: theme.colors.surface }]}>
+      <View style={[ss.compactRoot, styles.compactSurface]}>
         {/* Hidden WebView */}
-        <View style={styles.hiddenWebView}>
+        <View style={ss.hiddenWebView}>
           <WebView
             ref={webViewRef}
             source={{ html }}
@@ -313,47 +315,47 @@ export function YouTubeAudioPlayer({
             javaScriptEnabled
             mediaPlaybackRequiresUserAction={false}
             allowsInlineMediaPlayback
-            style={styles.webViewStyle}
+            style={ss.webViewStyle}
           />
         </View>
 
         {/* Artwork */}
         <Animated.View style={{ transform: [{ scale: artScale }] }}>
-          <Image source={{ uri: imageUri }} style={[styles.compactArt, { borderRadius: 8 }]} />
+          <Image source={{ uri: imageUri }} style={ss.compactArt} resizeMode="cover" />
         </Animated.View>
 
         {/* Info */}
-        <View style={styles.compactInfo}>
-          <CustomText style={[styles.compactTitle, { color: theme.colors.text }]} numberOfLines={1}>
+        <View style={ss.compactInfo}>
+          <CustomText style={[ss.compactTitle, styles.compactTitle]} numberOfLines={1}>
             {track.title}
           </CustomText>
-          <View style={styles.compactMeta}>
-            <CustomText style={[styles.compactArtist, { color: theme.colors.textSecondary }]} numberOfLines={1}>
+          <View style={ss.compactMeta}>
+            <CustomText style={[ss.compactArtist, styles.compactArtist]} numberOfLines={1}>
               {track.artist || 'YouTube'}
             </CustomText>
-            <View style={[styles.ytBadge, { backgroundColor: theme.colors.primary + '20' }]}>
-              <CustomText style={[styles.ytBadgeText, { color: theme.colors.primary }]}>YT Audio</CustomText>
+            <View style={[ss.ytBadge, styles.ytBadgeBg]}>
+              <CustomText style={[ss.ytBadgeText, styles.ytBadgeColor]}>YT Audio</CustomText>
             </View>
           </View>
         </View>
 
         {/* Controls */}
-        <View style={styles.compactControls}>
+        <View style={ss.compactControls}>
           {canGoPrevious && (
-            <TVTouchable onPress={onPrevious} style={styles.iconBtn}>
+            <TVTouchable onPress={onPrevious} style={ss.iconBtn}>
               <MaterialIcons name="skip-previous" size={22} color={theme.colors.text} />
             </TVTouchable>
           )}
-          <TVTouchable onPress={togglePlay} style={[styles.playBtn, { backgroundColor: theme.colors.primary }]}>
+          <TVTouchable onPress={togglePlay} style={[ss.playBtn, styles.playBtnBg]}>
             <MaterialIcons name={isPlaying ? 'pause' : 'play-arrow'} size={22} color="#fff" />
           </TVTouchable>
           {canGoNext && (
-            <TVTouchable onPress={onNext} style={styles.iconBtn}>
+            <TVTouchable onPress={onNext} style={ss.iconBtn}>
               <MaterialIcons name="skip-next" size={22} color={theme.colors.text} />
             </TVTouchable>
           )}
           {onClose && (
-            <TVTouchable onPress={onClose} style={styles.iconBtn}>
+            <TVTouchable onPress={onClose} style={ss.iconBtn}>
               <MaterialIcons name="close" size={20} color={theme.colors.textSecondary} />
             </TVTouchable>
           )}
@@ -364,9 +366,9 @@ export function YouTubeAudioPlayer({
 
   // ── Full layout ─────────────────────────────────────────────────────────────
   return (
-    <View style={[styles.fullRoot, { backgroundColor: theme.colors.background }]}>
+    <View style={[ss.fullRoot, styles.fullBg]}>
       {/* Hidden WebView */}
-      <View style={styles.hiddenWebView}>
+      <View style={ss.hiddenWebView}>
         <WebView
           ref={webViewRef}
           source={{ html }}
@@ -374,71 +376,72 @@ export function YouTubeAudioPlayer({
           javaScriptEnabled
           mediaPlaybackRequiresUserAction={false}
           allowsInlineMediaPlayback
-          style={styles.webViewStyle}
+          style={ss.webViewStyle}
         />
       </View>
 
       {/* Close */}
       {onClose && (
-        <Pressable onPress={onClose} style={styles.closeBtn} hitSlop={12}>
+        <Pressable onPress={onClose} style={ss.closeBtn} hitSlop={12}>
           <MaterialIcons name="keyboard-arrow-down" size={28} color={theme.colors.textSecondary} />
         </Pressable>
       )}
 
       {/* Artwork with glow */}
-      <View style={[styles.artWrapper, { width: artSize + 40, height: artSize + 40 }]}>
+      <View style={[ss.artWrapper, { width: artSize + 40, height: artSize + 40 }]}>
         <Animated.View
           style={[
-            styles.glow,
+            ss.glow,
             {
               width: artSize + 40,
               height: artSize + 40,
               borderRadius: (artSize + 40) / 2,
-              backgroundColor: theme.colors.primary,
               opacity: glowOpacity,
               transform: [{ scale: glowScale }],
             },
+            styles.glowColor,
           ]}
         />
         <Animated.Image
           source={{ uri: imageUri }}
-          style={[styles.fullArt, { width: artSize, height: artSize, transform: [{ scale: artScale }] }]}
+          style={[ss.fullArt, { width: artSize, height: artSize, transform: [{ scale: artScale }] }]}
+          resizeMode="cover"
         />
         {/* YouTube badge over artwork */}
-        <View style={[styles.ytOverlayBadge, { backgroundColor: '#FF0000' }]}>
-          <CustomText style={styles.ytOverlayText}>YouTube Audio</CustomText>
+        <View style={[ss.ytOverlayBadge, { backgroundColor: '#FF0000' }]}>
+          <CustomText style={ss.ytOverlayText}>YouTube Audio</CustomText>
         </View>
       </View>
 
       {/* Error state */}
       {playerError && (
-        <View style={styles.errorRow}>
+        <View style={ss.errorRow}>
           <MaterialIcons name="warning-amber" size={14} color={theme.colors.textSecondary} />
-          <CustomText style={[styles.errorText, { color: theme.colors.textSecondary }]}>
+          <CustomText style={[ss.errorText, styles.errorColor]}>
             Playback issue — check your connection
           </CustomText>
         </View>
       )}
 
       {/* Title & Artist */}
-      <View style={styles.metaBlock}>
+      <View style={ss.metaBlock}>
         {currentTrackNumber !== undefined && totalTracks !== undefined && (
-          <CustomText style={[styles.trackNum, { color: theme.colors.textSecondary }]}>
+          <CustomText style={[ss.trackNum, styles.trackNumColor]}>
             {currentTrackNumber} / {totalTracks}
           </CustomText>
         )}
-        <CustomText style={[styles.fullTitle, { color: theme.colors.text }]} numberOfLines={2}>
+        <CustomText style={[ss.fullTitle, styles.fullTitleColor]} numberOfLines={2}>
           {track.title}
         </CustomText>
-        <CustomText style={[styles.fullArtist, { color: theme.colors.textSecondary }]} numberOfLines={1}>
+        <CustomText style={[ss.fullArtist, styles.fullArtistColor]} numberOfLines={1}>
           {track.artist || 'YouTube'}
         </CustomText>
       </View>
 
       {/* Progress bar */}
-      <View style={styles.progressBlock}>
+      <View style={ss.progressBlock}>
         <View
-          style={[styles.progressTrack, { backgroundColor: theme.colors.surface }]}
+          style={[ss.progressTrack, styles.progressTrackBg]}
           onStartShouldSetResponder={() => true}
           onMoveShouldSetResponder={() => true}
           onResponderGrant={(e) => {
@@ -461,38 +464,34 @@ export function YouTubeAudioPlayer({
         >
           <View
             style={[
-              styles.progressFill,
-              {
-                width: `${(isSeeking ? seekValue / Math.max(1, duration) : progressFraction) * 100}%`,
-                backgroundColor: theme.colors.primary,
-              },
+              ss.progressFill,
+              styles.progressPrimary,
+              { width: `${(isSeeking ? seekValue / Math.max(1, duration) : progressFraction) * 100}%` },
             ]}
           />
           <View
             style={[
-              styles.progressThumb,
-              {
-                left: `${(isSeeking ? seekValue / Math.max(1, duration) : progressFraction) * 100}%`,
-                backgroundColor: theme.colors.primary,
-              },
+              ss.progressThumb,
+              styles.progressPrimary,
+              { left: `${(isSeeking ? seekValue / Math.max(1, duration) : progressFraction) * 100}%` },
             ]}
           />
         </View>
-        <View style={styles.progressTimes}>
-          <CustomText style={[styles.timeText, { color: theme.colors.textSecondary }]}>
+        <View style={ss.progressTimes}>
+          <CustomText style={[ss.timeText, styles.timeColor]}>
             {formatTime(isSeeking ? seekValue : currentTime)}
           </CustomText>
-          <CustomText style={[styles.timeText, { color: theme.colors.textSecondary }]}>
+          <CustomText style={[ss.timeText, styles.timeColor]}>
             {formatTime(duration)}
           </CustomText>
         </View>
       </View>
 
       {/* Controls */}
-      <View style={styles.controlsRow}>
+      <View style={ss.controlsRow}>
         {/* Favorite */}
         {onFavoriteToggle ? (
-          <TVTouchable onPress={onFavoriteToggle} style={styles.iconBtn} hitSlop={10}>
+          <TVTouchable onPress={onFavoriteToggle} style={ss.iconBtn} hitSlop={10}>
             <MaterialIcons
               name={isFavorite ? 'favorite' : 'favorite-border'}
               size={24}
@@ -500,18 +499,18 @@ export function YouTubeAudioPlayer({
             />
           </TVTouchable>
         ) : (
-          <View style={styles.iconBtn} />
+          <View style={ss.iconBtn} />
         )}
 
         {/* Skip back 10 */}
-        <TVTouchable onPress={skipBack} style={styles.iconBtn} hitSlop={8}>
+        <TVTouchable onPress={skipBack} style={ss.iconBtn} hitSlop={8}>
           <MaterialIcons name="replay-10" size={30} color={theme.colors.text} />
         </TVTouchable>
 
         {/* Previous */}
         <TVTouchable
           onPress={onPrevious}
-          style={[styles.iconBtn, !canGoPrevious && styles.disabled]}
+          style={[ss.iconBtn, !canGoPrevious && ss.disabled]}
           hitSlop={8}
           disabled={!canGoPrevious}
         >
@@ -521,7 +520,7 @@ export function YouTubeAudioPlayer({
         {/* Play/pause */}
         <TVTouchable
           onPress={togglePlay}
-          style={[styles.mainPlayBtn, { backgroundColor: theme.colors.primary }]}
+          style={[ss.mainPlayBtn, styles.mainPlayBtnBg]}
         >
           <MaterialIcons name={isPlaying ? 'pause' : 'play-arrow'} size={38} color="#fff" />
         </TVTouchable>
@@ -529,7 +528,7 @@ export function YouTubeAudioPlayer({
         {/* Next */}
         <TVTouchable
           onPress={onNext}
-          style={[styles.iconBtn, !canGoNext && styles.disabled]}
+          style={[ss.iconBtn, !canGoNext && ss.disabled]}
           hitSlop={8}
           disabled={!canGoNext}
         >
@@ -537,18 +536,39 @@ export function YouTubeAudioPlayer({
         </TVTouchable>
 
         {/* Skip forward 10 */}
-        <TVTouchable onPress={skipForward} style={styles.iconBtn} hitSlop={8}>
+        <TVTouchable onPress={skipForward} style={ss.iconBtn} hitSlop={8}>
           <MaterialIcons name="forward-10" size={30} color={theme.colors.text} />
         </TVTouchable>
 
         {/* Spacer to balance favorite */}
-        <View style={styles.iconBtn} />
+        <View style={ss.iconBtn} />
       </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
+  // Compact
+  compactSurface:     { backgroundColor: theme.colors.surface },
+  compactTitle:       { color: theme.colors.text },
+  compactArtist:      { color: theme.colors.textSecondary },
+  ytBadgeBg:          { backgroundColor: `${theme.colors.primary}20` },
+  ytBadgeColor:       { color: theme.colors.primary },
+  playBtnBg:          { backgroundColor: theme.colors.primary },
+  // Full
+  fullBg:             { backgroundColor: theme.colors.background },
+  glowColor:          { backgroundColor: theme.colors.primary },
+  progressTrackBg:    { backgroundColor: theme.colors.surface },
+  progressPrimary:    { backgroundColor: theme.colors.primary },
+  timeColor:          { color: theme.colors.textSecondary },
+  errorColor:         { color: theme.colors.textSecondary },
+  trackNumColor:      { color: theme.colors.textSecondary },
+  fullTitleColor:     { color: theme.colors.text },
+  fullArtistColor:    { color: theme.colors.textSecondary },
+  mainPlayBtnBg:      { backgroundColor: theme.colors.primary },
+}));
+
+const ss = StyleSheet.create({
   // Hidden WebView — must have non-zero dimensions on Android for YT API to initialise
   hiddenWebView: {
     position: 'absolute',
@@ -569,7 +589,7 @@ const styles = StyleSheet.create({
     gap: 10,
     borderRadius: 16,
   },
-  compactArt: { width: 48, height: 48 },
+  compactArt: { width: 48, height: 48, borderRadius: 8 },
   compactInfo: { flex: 1, minWidth: 0 },
   compactMeta: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
   compactTitle: { fontSize: 13, fontWeight: '600' },

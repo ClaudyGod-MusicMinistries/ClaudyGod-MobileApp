@@ -1,18 +1,10 @@
-/**
- * Beautiful Featured Content Card
- * Displays featured content with image, title, and metadata
- * Enhanced with modern animations and professional styling
- */
-
 import React, { useState } from 'react';
 import { Image, Platform, Pressable, StyleSheet, View, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../CustomText';
-import { colors_light } from '../../constants/color';
-import { spacing} from '../../styles/designTokens';
-import { designSystem } from '../../theme/designSystem';
 import { useAppTheme } from '../../util/colorScheme';
+import { makeStyles } from '../../styles/makeStyles';
 
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
@@ -25,6 +17,46 @@ interface FeaturedCardProps {
   height?: number;
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const useStyles = makeStyles((theme) => ({
+  wrapBase: { width: '100%', borderRadius: theme.radius.xl, overflow: 'hidden' },
+  fill:     { flex: 1 },
+  fallbackBg: {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: theme.colors.primarySurface,
+  },
+  badge: {
+    position: 'absolute', top: theme.spacing.lg, right: theme.spacing.lg,
+    backgroundColor: theme.colors.primary,
+    paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.xs,
+    borderRadius: theme.radius.sm, zIndex: 10,
+  },
+  badgeText: { color: '#FFFFFF', fontSize: 11, fontWeight: '700' },
+  playBtnContainer: {
+    position: 'absolute', top: '50%', left: '50%',
+    marginLeft: -32, marginTop: -32, zIndex: 5,
+  },
+  playBtnInner: {
+    width: 56, height: 56, borderRadius: 28,
+    backgroundColor: theme.colors.primary,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  infoBlock: {
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+    paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.lg,
+    justifyContent: 'flex-end',
+  },
+  titleText: {
+    color: '#FFFFFF', fontSize: 20, fontWeight: '700',
+    marginBottom: theme.spacing.md, lineHeight: 28,
+  },
+  subtitleRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
+  subtitleText: { color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: '500' },
+}));
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export function FeaturedCard({
   imageUrl,
   title,
@@ -33,6 +65,7 @@ export function FeaturedCard({
   onPress,
   height = 280,
 }: FeaturedCardProps) {
+  const styles = useStyles();
   const theme = useAppTheme();
   const [pressed, setPressed] = useState(false);
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
@@ -42,160 +75,71 @@ export function FeaturedCard({
   const handlePressIn = () => {
     setPressed(true);
     Animated.parallel([
-      Animated.timing(scaleAnim, {
-        toValue: 0.98,
-        duration: designSystem.timing.fast,
-        useNativeDriver: USE_NATIVE_DRIVER,
-      }),
-      Animated.timing(opacityAnim, {
-        toValue: 0.9,
-        duration: designSystem.timing.fast,
-        useNativeDriver: USE_NATIVE_DRIVER,
-      }),
-      Animated.timing(playButtonScaleAnim, {
-        toValue: 1.1,
-        duration: designSystem.timing.fast,
-        useNativeDriver: USE_NATIVE_DRIVER,
-      }),
+      Animated.timing(scaleAnim, { toValue: theme.interaction.pressScale, duration: theme.timing.fast, useNativeDriver: USE_NATIVE_DRIVER }),
+      Animated.timing(opacityAnim, { toValue: 0.9, duration: theme.timing.fast, useNativeDriver: USE_NATIVE_DRIVER }),
+      Animated.timing(playButtonScaleAnim, { toValue: 1.1, duration: theme.timing.fast, useNativeDriver: USE_NATIVE_DRIVER }),
     ]).start();
   };
 
   const handlePressOut = () => {
     setPressed(false);
     Animated.parallel([
-      Animated.timing(scaleAnim, {
-        toValue: 1,
-        duration: designSystem.timing.moderate,
-        useNativeDriver: USE_NATIVE_DRIVER,
-      }),
-      Animated.timing(opacityAnim, {
-        toValue: 1,
-        duration: designSystem.timing.moderate,
-        useNativeDriver: USE_NATIVE_DRIVER,
-      }),
-      Animated.timing(playButtonScaleAnim, {
-        toValue: 1,
-        duration: designSystem.timing.moderate,
-        useNativeDriver: USE_NATIVE_DRIVER,
-      }),
+      Animated.timing(scaleAnim, { toValue: 1, duration: theme.timing.moderate, useNativeDriver: USE_NATIVE_DRIVER }),
+      Animated.timing(opacityAnim, { toValue: 1, duration: theme.timing.moderate, useNativeDriver: USE_NATIVE_DRIVER }),
+      Animated.timing(playButtonScaleAnim, { toValue: 1, duration: theme.timing.moderate, useNativeDriver: USE_NATIVE_DRIVER }),
     ]).start();
   };
 
+  void pressed;
+
   return (
     <Animated.View
-      style={{
-        width: '100%',
-        height,
-        borderRadius: designSystem.radius.xl,
-        overflow: 'hidden',
-        transform: [{ scale: scaleAnim }],
-        opacity: opacityAnim,
-      }}
+      style={[
+        styles.wrapBase,
+        { height, transform: [{ scale: scaleAnim }], opacity: opacityAnim },
+      ]}
     >
       <Pressable
         onPress={onPress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
-        style={{ flex: 1 }}
+        style={styles.fill}
       >
         {imageUrl ? (
           <Image source={{ uri: imageUrl }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
         ) : (
-          <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(139,92,246,0.1)' }]} />
+          <View style={styles.fallbackBg} />
         )}
 
-        {/* Enhanced Gradient Overlay - more dramatic */}
         <LinearGradient
           colors={['rgba(0,0,0,0.15)', 'rgba(0,0,0,0.45)', 'rgba(0,0,0,0.75)']}
           start={{ x: 0, y: 0 }}
           end={{ x: 0, y: 1 }}
-          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+          style={StyleSheet.absoluteFillObject}
         />
 
-        {/* Badge */}
-        {badge && (
-          <View
-            style={{
-              position: 'absolute',
-              top: spacing.lg,
-              right: spacing.lg,
-              backgroundColor: 'rgba(34, 211, 238, 0.95)',
-              paddingHorizontal: spacing.md,
-              paddingVertical: spacing.xs,
-              borderRadius: designSystem.radius.sm,
-              zIndex: 10,
-            }}
-          >
-            <CustomText style={{ color: colors_light.background, fontSize: 11, fontWeight: '700' }}>{badge}</CustomText>
+        {badge ? (
+          <View style={styles.badge}>
+            <CustomText style={styles.badgeText}>{badge}</CustomText>
           </View>
-        )}
+        ) : null}
 
-        {/* Play Button */}
         <Animated.View
-          style={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            marginLeft: -32,
-            marginTop: -32,
-            zIndex: 5,
-            transform: [{ scale: playButtonScaleAnim }],
-          }}
+          style={[styles.playBtnContainer, { transform: [{ scale: playButtonScaleAnim }] }]}
         >
-          <View
-            style={{
-              width: 56,
-              height: 56,
-              borderRadius: 28,
-              backgroundColor: theme.colors.primary,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
+          <View style={styles.playBtnInner}>
             <MaterialIcons name="play-arrow" size={28} color={theme.colors.onPrimary} />
           </View>
         </Animated.View>
 
-        {/* Content */}
-        <View
-          style={{
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            paddingHorizontal: spacing.lg,
-            paddingVertical: spacing.lg,
-            justifyContent: 'flex-end',
-          }}
-        >
-          <CustomText
-            numberOfLines={2}
-            style={{
-              color: colors_light.text,
-              fontSize: 20,
-              fontWeight: '700',
-              marginBottom: spacing.md,
-              lineHeight: 28,
-            }}
-          >
-            {title}
-          </CustomText>
-
-          {subtitle && (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-              <MaterialIcons name="verified" size={16} color={colors_light.accent} />
-              <CustomText
-                numberOfLines={1}
-                style={{
-                  color: 'rgba(255, 255, 255, 0.85)',
-                  fontSize: 13,
-                  fontWeight: '500',
-                }}
-              >
-                {subtitle}
-              </CustomText>
+        <View style={styles.infoBlock}>
+          <CustomText numberOfLines={2} style={styles.titleText}>{title}</CustomText>
+          {subtitle ? (
+            <View style={styles.subtitleRow}>
+              <MaterialIcons name="verified" size={16} color={theme.colors.accent} />
+              <CustomText numberOfLines={1} style={styles.subtitleText}>{subtitle}</CustomText>
             </View>
-          )}
+          ) : null}
         </View>
       </Pressable>
     </Animated.View>

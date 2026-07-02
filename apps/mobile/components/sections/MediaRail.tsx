@@ -2,7 +2,7 @@
 import React from 'react';
 import { View, ScrollView } from 'react-native';
 import { SectionHeader } from '../ui/SectionHeader';
-import { useAppTheme } from '../../util/colorScheme';
+import { makeStyles } from '../../styles/makeStyles';
 
 interface MediaRailProps<T> {
   title: string;
@@ -12,6 +12,11 @@ interface MediaRailProps<T> {
   onAction?: () => void;
 }
 
+const useStyles = makeStyles((theme) => ({
+  outerWrap:     { marginBottom: theme.layout.sectionGapLarge },
+  scrollContent: { paddingVertical: theme.spacing.sm, paddingRight: theme.spacing.md },
+}));
+
 export function MediaRail<T>({
   title,
   data,
@@ -19,15 +24,15 @@ export function MediaRail<T>({
   actionLabel,
   onAction,
 }: MediaRailProps<T>) {
-  const theme = useAppTheme();
+  const styles = useStyles();
 
   return (
-    <View style={{ marginBottom: theme.layout.sectionGapLarge }}>
+    <View style={styles.outerWrap}>
       <SectionHeader title={title} actionLabel={actionLabel} onAction={onAction} />
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingVertical: theme.spacing.sm, paddingRight: theme.spacing.md }}
+        contentContainerStyle={styles.scrollContent}
       >
         {data.map((item, index) => renderItem(item, index))}
       </ScrollView>

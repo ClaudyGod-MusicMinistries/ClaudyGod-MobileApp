@@ -1,6 +1,6 @@
 import React, { ReactNode } from 'react';
 import { View, Animated, Platform, Pressable, type StyleProp, type ViewStyle } from 'react-native';
-import { useAppTheme } from '../../util/colorScheme';
+import { makeStyles } from '../../styles/makeStyles';
 
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
@@ -14,6 +14,17 @@ interface CardProps {
   disabled?: boolean;
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const useStyles = makeStyles((theme) => ({
+  containerBase:    { overflow: 'hidden' },
+  variantElevated:  { backgroundColor: theme.colors.card },
+  variantFilled:    { backgroundColor: theme.colors.surfaceAlt },
+  variantOutlined:  { backgroundColor: 'transparent', borderWidth: 1, borderColor: theme.colors.border },
+}));
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export const Card: React.FC<CardProps> = ({
   children,
   onPress,
@@ -23,7 +34,7 @@ export const Card: React.FC<CardProps> = ({
   style,
   disabled = false,
 }) => {
-  const theme = useAppTheme();
+  const styles    = useStyles();
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
 
   const handlePressIn = () => {
@@ -38,28 +49,13 @@ export const Card: React.FC<CardProps> = ({
     }
   };
 
-  const variantStyles: Record<string, object> = {
-    elevated: {
-      backgroundColor: theme.colors.card,
-    },
-    filled: {
-      backgroundColor: theme.colors.surfaceAlt,
-    },
-    outlined: {
-      backgroundColor: 'transparent',
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-    },
-  };
+  const variantStyle =
+    variant === 'filled'   ? styles.variantFilled :
+    variant === 'outlined' ? styles.variantOutlined :
+    styles.variantElevated;
 
   const containerContent = (
-    <View
-      style={[
-        { borderRadius, overflow: 'hidden', padding },
-        variantStyles[variant],
-        style,
-      ]}
-    >
+    <View style={[styles.containerBase, { borderRadius, padding }, variantStyle, style]}>
       {children}
     </View>
   );
@@ -86,3 +82,4 @@ export const Card: React.FC<CardProps> = ({
     </Animated.View>
   );
 };
+

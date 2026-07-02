@@ -15,6 +15,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../components/CustomText';
 import { TVTouchable } from '../components/ui/TVTouchable';
 import { useAppTheme } from '../util/colorScheme';
+import { makeStyles } from '../styles/makeStyles';
 import { APP_ROUTES } from '../util/appRoutes';
 import { BRAND_WORSHIP_ASSET } from '../util/brandAssets';
 import { useDeviceClass } from '../util/deviceClassConfig';
@@ -28,31 +29,49 @@ const FEATURES = [
   { icon: 'menu-book' as const,             label: 'Word'   },
 ] as const;
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const useStyles = makeStyles((theme) => ({
+  safeArea:  { flex: 1 },
+  flex1:     { flex: 1 },
+  featureChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    paddingVertical: 6, paddingHorizontal: 11, borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.10)', borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.16)',
+  },
+  featureChipText: { color: 'rgba(255,255,255,0.80)', fontSize: 12, fontWeight: '600' },
+  brandLabel: {
+    color: 'rgba(255,255,255,0.50)', fontSize: 11, fontWeight: '700',
+    letterSpacing: 2.5, textTransform: 'uppercase', marginBottom: 10,
+  },
+  headlineBase:  { color: '#FFFFFF', fontWeight: '700', letterSpacing: -0.8, marginBottom: 12 },
+  chipsRowBase:  { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  ctaBtn: {
+    width: '100%', height: 54, borderRadius: 14,
+    backgroundColor: theme.colors.primary,
+    alignItems: 'center', justifyContent: 'center',
+    flexDirection: 'row', gap: 10,
+  },
+  ctaText: { color: theme.colors.onPrimary, fontSize: 16, fontWeight: '700', letterSpacing: -0.2 },
+}));
+
+// ─── Sub-component ────────────────────────────────────────────────────────────
+
 function FeatureChip({ icon, label }: { icon: React.ComponentProps<typeof MaterialIcons>['name']; label: string }) {
-  const theme = useAppTheme();
+  const styles = useStyles();
   return (
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 5,
-        paddingVertical: 6,
-        paddingHorizontal: 11,
-        borderRadius: 20,
-        backgroundColor: 'rgba(255,255,255,0.10)',
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.16)',
-      }}
-    >
+    <View style={styles.featureChip}>
       <MaterialIcons name={icon} size={13} color="rgba(255,255,255,0.80)" />
-      <CustomText style={{ color: 'rgba(255,255,255,0.80)', fontSize: 12, fontWeight: '600' }}>
-        {label}
-      </CustomText>
+      <CustomText style={styles.featureChipText}>{label}</CustomText>
     </View>
   );
 }
 
+// ─── Landing Page ─────────────────────────────────────────────────────────────
+
 function LandingPage() {
+  const styles = useStyles();
   const theme = useAppTheme();
   const router = useRouter();
   const device = useDeviceClass();
@@ -76,24 +95,21 @@ function LandingPage() {
 
   return (
     <View style={{ width, height, backgroundColor: '#0a0a0f' }}>
-      {/* Hero image */}
       <Image
         source={BRAND_WORSHIP_ASSET}
         style={{ position: 'absolute', top: 0, left: 0, width, height }}
         resizeMode="cover"
       />
 
-      {/* Gradient scrim — text readability only, bottom-heavy */}
       <LinearGradient
         colors={['rgba(5,4,12,0.0)', 'rgba(5,4,12,0.55)', 'rgba(5,4,12,0.92)']}
         locations={[0, 0.45, 1]}
         style={StyleSheet.absoluteFillObject}
       />
 
-      <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom', 'left', 'right']}>
-        <View style={{ flex: 1, paddingHorizontal: gutter }}>
-          {/* Spacer — push content to bottom */}
-          <View style={{ flex: 1 }} />
+      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom', 'left', 'right']}>
+        <View style={[styles.flex1, { paddingHorizontal: gutter }]}>
+          <View style={styles.flex1} />
 
           <Animated.View
             style={{
@@ -105,39 +121,27 @@ function LandingPage() {
               transform: [{ translateY: slideAnim }],
             }}
           >
-            {/* Brand label */}
             <CustomText
-              style={{
-                color: 'rgba(255,255,255,0.50)',
-                fontSize: 11,
-                fontWeight: '700',
-                letterSpacing: 2.5,
-                textTransform: 'uppercase',
-                textAlign: isPhone ? 'center' : 'left',
-                marginBottom: 10,
-              }}
+              style={[styles.brandLabel, { textAlign: isPhone ? 'center' : 'left' }]}
             >
               ClaudyGod
             </CustomText>
 
-            {/* Headline */}
             <CustomText
               variant="display"
               numberOfLines={3}
-              style={{
-                color: '#FFFFFF',
-                fontSize: titleSize,
-                lineHeight: Math.round(titleSize * 1.12),
-                fontWeight: '700',
-                letterSpacing: -0.8,
-                textAlign: isPhone ? 'center' : 'left',
-                marginBottom: 12,
-              }}
+              style={[
+                styles.headlineBase,
+                {
+                  fontSize: titleSize,
+                  lineHeight: Math.round(titleSize * 1.12),
+                  textAlign: isPhone ? 'center' : 'left',
+                },
+              ]}
             >
               {'Worship\nwithout limits.'}
             </CustomText>
 
-            {/* Subtitle */}
             <CustomText
               variant="body"
               style={{
@@ -151,40 +155,24 @@ function LandingPage() {
               {'Music, videos & live sessions — completely free.'}
             </CustomText>
 
-            {/* Feature chips */}
             <View
-              style={{
-                flexDirection: 'row',
-                flexWrap: 'wrap',
-                gap: 8,
-                justifyContent: isPhone ? 'center' : 'flex-start',
-                marginBottom: compact ? 22 : 30,
-              }}
+              style={[
+                styles.chipsRowBase,
+                { justifyContent: isPhone ? 'center' : 'flex-start', marginBottom: compact ? 22 : 30 },
+              ]}
             >
               {FEATURES.map((f) => (
                 <FeatureChip key={f.label} icon={f.icon} label={f.label} />
               ))}
             </View>
 
-            {/* Primary CTA */}
             <TVTouchable
               onPress={() => router.replace(APP_ROUTES.tabs.home)}
               showFocusBorder={false}
-              style={{
-                width: '100%',
-                height: 54,
-                borderRadius: 14,
-                backgroundColor: theme.colors.primary,
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexDirection: 'row',
-                gap: 10,
-              }}
+              style={styles.ctaBtn}
             >
               <MaterialIcons name="explore" size={20} color={theme.colors.onPrimary ?? '#fff'} />
-              <CustomText style={{ color: theme.colors.onPrimary ?? '#fff', fontSize: 16, fontWeight: '700', letterSpacing: -0.2 }}>
-                Explore now
-              </CustomText>
+              <CustomText style={styles.ctaText}>Explore now</CustomText>
             </TVTouchable>
           </Animated.View>
         </View>

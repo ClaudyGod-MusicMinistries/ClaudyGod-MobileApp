@@ -1,14 +1,9 @@
 // components/ui/StatCard.tsx
-/**
- * Statistics Card Component
- * Beautiful card with gradient backgrounds and smooth animations
- */
-
 import React from 'react';
-import { View, StyleSheet, Animated, Platform } from 'react-native';
+import { View, Animated, Platform } from 'react-native';
 import { useAppTheme } from '../../util/colorScheme';
+import { makeStyles } from '../../styles/makeStyles';
 import { CustomText } from '../CustomText';
-import { spacing, radius } from '../../styles/designTokens';
 
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
@@ -20,8 +15,32 @@ interface StatCardProps {
   trendValue?: string;
   backgroundColor?: string;
   delay?: number;
-  gradient?: readonly [string, string, ...string[]];
 }
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const useStyles = makeStyles((theme) => ({
+  animWrap:   { marginBottom: theme.spacing.md },
+  card: {
+    borderRadius: theme.radius.lg, overflow: 'hidden',
+    padding: theme.spacing.lg, backgroundColor: theme.colors.card,
+  },
+  headerRow:  { flexDirection: 'row', alignItems: 'center', marginBottom: theme.spacing.md },
+  iconWrap:   { marginRight: theme.spacing.sm },
+  labelText: {
+    color: theme.colors.textSecondary, fontSize: 10.8, fontWeight: '600',
+    textTransform: 'uppercase', letterSpacing: 0.2,
+  },
+  valueRow:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
+  valueText:  { color: theme.colors.text, fontSize: 20, fontWeight: '600', letterSpacing: 0 },
+  trendPill: {
+    paddingVertical: theme.spacing.xs, paddingHorizontal: theme.spacing.sm,
+    backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: theme.radius.sm,
+  },
+  trendText:  { fontSize: 10.8, fontWeight: '600' },
+}));
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export const StatCard: React.FC<StatCardProps> = ({
   label,
@@ -32,6 +51,7 @@ export const StatCard: React.FC<StatCardProps> = ({
   backgroundColor,
   delay = 0,
 }) => {
+  const styles = useStyles();
   const theme = useAppTheme();
   const scaleAnim = React.useRef(new Animated.Value(0.9)).current;
 
@@ -42,68 +62,25 @@ export const StatCard: React.FC<StatCardProps> = ({
   const trendColor = trend === 'up' ? theme.colors.success : theme.colors.danger;
 
   return (
-    <Animated.View style={{ transform: [{ scale: scaleAnim }], marginBottom: spacing.md }}>
-      <View style={[styles.cardContainer, { backgroundColor: backgroundColor || theme.colors.card }]}>
-        <View style={styles.header}>
-          {icon && <View style={{ marginRight: spacing.sm }}>{icon}</View>}
-          <CustomText style={[styles.label, { color: theme.colors.textSecondary }]}>
-            {label}
-          </CustomText>
+    <Animated.View style={[styles.animWrap, { transform: [{ scale: scaleAnim }] }]}>
+      <View style={[styles.card, backgroundColor ? { backgroundColor } : null]}>
+        <View style={styles.headerRow}>
+          {icon ? <View style={styles.iconWrap}>{icon}</View> : null}
+          <CustomText style={styles.labelText}>{label}</CustomText>
         </View>
 
-        <View style={styles.content}>
-          <CustomText style={[styles.value, { color: theme.colors.text }]}>
-            {value}
-          </CustomText>
+        <View style={styles.valueRow}>
+          <CustomText style={styles.valueText}>{value}</CustomText>
 
-          {trend && trendValue && (
-            <View style={styles.trend}>
-              <CustomText style={[styles.trendValue, { color: trendColor }]}>
+          {trend && trendValue ? (
+            <View style={styles.trendPill}>
+              <CustomText style={[styles.trendText, { color: trendColor }]}>
                 {trend === 'up' ? '↑' : '↓'} {trendValue}
               </CustomText>
             </View>
-          )}
+          ) : null}
         </View>
       </View>
     </Animated.View>
   );
 };
-
-const styles = StyleSheet.create({
-  cardContainer: {
-    borderRadius: radius.lg,
-    overflow: 'hidden',
-    padding: spacing.lg,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.md,
-  },
-  label: {
-    fontSize: 10.8,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.2,
-  },
-  content: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-  },
-  value: {
-    fontSize: 20,
-    fontWeight: '600',
-    letterSpacing: 0,
-  },
-  trend: {
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.sm,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: radius.sm,
-  },
-  trendValue: {
-    fontSize: 10.8,
-    fontWeight: '600',
-  },
-});
