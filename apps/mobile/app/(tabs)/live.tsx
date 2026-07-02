@@ -11,6 +11,7 @@ import { CustomText } from '../../components/CustomText';
 import { useAppTheme } from '../../util/colorScheme';
 import { useDeviceClass } from '../../util/deviceClassConfig';
 import { useContentFeed } from '../../hooks/useContentFeed';
+import { makeStyles } from '../../styles/makeStyles';
 import { APP_ROUTES } from '../../util/appRoutes';
 import { buildPlayerRoute } from '../../util/playerRoute';
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
@@ -27,6 +28,60 @@ import {
   SectionLabel,
   dedupeFeedItems,
 } from '../../components/Exp/PremiumContent';
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const useStyles = makeStyles((theme) => ({
+  // LivePulse
+  pulseRow:          { flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' },
+  liveBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: 'rgba(239,68,68,0.12)', borderRadius: 999,
+    borderWidth: 1, borderColor: 'rgba(239,68,68,0.30)',
+    paddingHorizontal: 12, paddingVertical: 6,
+  },
+  liveDot:           { width: 7, height: 7, borderRadius: 3.5, backgroundColor: theme.colors.danger },
+  liveLabel:         { color: theme.colors.danger, fontWeight: '700', letterSpacing: 0.6 },
+  viewerPill: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    backgroundColor: `${theme.colors.primary}12`, borderRadius: 999,
+    borderWidth: 1, borderColor: `${theme.colors.primary}28`,
+    paddingHorizontal: 12, paddingVertical: 6,
+  },
+  viewerText:        { color: theme.colors.primary, fontWeight: '600' },
+
+  // ScheduleCard
+  scheduleCard:      { padding: theme.spacing.md, flexDirection: 'row', alignItems: 'center', gap: 14 },
+  scheduleIconBox: {
+    width: 48, height: 48, borderRadius: 24,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: `${theme.colors.primary}12`,
+    borderWidth: 1, borderColor: `${theme.colors.primary}28`,
+  },
+  scheduleFill:      { flex: 1, minWidth: 0 },
+  scheduleTitle:     { color: theme.colors.text },
+  scheduleSubtitle:  { color: theme.colors.textSecondary, marginTop: 3 },
+  notifyBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: `${theme.colors.primary}12`, borderRadius: 999,
+    borderWidth: 1, borderColor: `${theme.colors.primary}28`,
+    paddingHorizontal: 12, paddingVertical: 8,
+  },
+  notifyText:        { color: theme.colors.primary, fontWeight: '600' },
+
+  // LiveScreen
+  videoNavBtn:       { minWidth: 40, paddingHorizontal: 10 },
+  statusCard:        { padding: theme.spacing.md },
+  statusRow: {
+    flexDirection: 'row', alignItems: 'center',
+    justifyContent: 'space-between', flexWrap: 'wrap', gap: 10,
+  },
+  sessionCount:      { color: theme.colors.textSecondary },
+  sectionGap:        { gap: 12 },
+  upcomingList:      { gap: 8 },
+}));
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function toFeedCard(session: LiveSessionSummary): FeedCardItem {
   return {
@@ -51,34 +106,20 @@ function toFeedCard(session: LiveSessionSummary): FeedCardItem {
   };
 }
 
+// ─── LivePulse ────────────────────────────────────────────────────────────────
+
 function LivePulse({ viewerCount }: { viewerCount: number }) {
-  const theme = useAppTheme();
+  const styles = useStyles();
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-      <View
-        style={{
-          flexDirection: 'row', alignItems: 'center', gap: 6,
-          backgroundColor: 'rgba(239,68,68,0.12)', borderRadius: 999,
-          borderWidth: 1, borderColor: 'rgba(239,68,68,0.30)',
-          paddingHorizontal: 12, paddingVertical: 6,
-        }}
-      >
-        <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: theme.colors.danger }} />
-        <CustomText variant="caption" style={{ color: theme.colors.danger, fontWeight: '700', letterSpacing: 0.6 }}>
-          LIVE NOW
-        </CustomText>
+    <View style={styles.pulseRow}>
+      <View style={styles.liveBadge}>
+        <View style={styles.liveDot} />
+        <CustomText variant="caption" style={styles.liveLabel}>LIVE NOW</CustomText>
       </View>
       {viewerCount > 0 ? (
-        <View
-          style={{
-            flexDirection: 'row', alignItems: 'center', gap: 5,
-            backgroundColor: `${theme.colors.primary}12`, borderRadius: 999,
-            borderWidth: 1, borderColor: `${theme.colors.primary}28`,
-            paddingHorizontal: 12, paddingVertical: 6,
-          }}
-        >
-          <MaterialIcons name="people" size={13} color={theme.colors.primary} />
-          <CustomText variant="caption" style={{ color: theme.colors.primary, fontWeight: '600' }}>
+        <View style={styles.viewerPill}>
+          <MaterialIcons name="people" size={13} color={undefined} style={{ tintColor: undefined }} />
+          <CustomText variant="caption" style={styles.viewerText}>
             {viewerCount >= 1000 ? `${(viewerCount / 1000).toFixed(1)}K` : viewerCount} watching
           </CustomText>
         </View>
@@ -87,47 +128,33 @@ function LivePulse({ viewerCount }: { viewerCount: number }) {
   );
 }
 
+// ─── ScheduleCard ─────────────────────────────────────────────────────────────
+
 function ScheduleCard({ item, onNotify }: { item: FeedCardItem; onNotify: () => void }) {
-  const theme = useAppTheme();
+  const styles = useStyles();
+  const theme  = useAppTheme();
   return (
-    <SurfaceCard tone="subtle" style={{ padding: theme.spacing.md, flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-      <View
-        style={{
-          width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center',
-          backgroundColor: `${theme.colors.primary}12`, borderWidth: 1, borderColor: `${theme.colors.primary}28`,
-        }}
-      >
+    <SurfaceCard tone="subtle" style={styles.scheduleCard}>
+      <View style={styles.scheduleIconBox}>
         <MaterialIcons name="event" size={22} color={theme.colors.primary} />
       </View>
-      <View style={{ flex: 1, minWidth: 0 }}>
-        <CustomText variant="label" style={{ color: theme.colors.text }} numberOfLines={1}>
-          {item.title}
-        </CustomText>
-        <CustomText variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 3 }} numberOfLines={1}>
-          {item.subtitle}
-        </CustomText>
+      <View style={styles.scheduleFill}>
+        <CustomText variant="label" style={styles.scheduleTitle} numberOfLines={1}>{item.title}</CustomText>
+        <CustomText variant="caption" style={styles.scheduleSubtitle} numberOfLines={1}>{item.subtitle}</CustomText>
       </View>
-      <TVTouchable
-        onPress={onNotify}
-        showFocusBorder={false}
-        style={{
-          flexDirection: 'row', alignItems: 'center', gap: 6,
-          backgroundColor: `${theme.colors.primary}12`, borderRadius: 999,
-          borderWidth: 1, borderColor: `${theme.colors.primary}28`,
-          paddingHorizontal: 12, paddingVertical: 8,
-        }}
-      >
+      <TVTouchable onPress={onNotify} showFocusBorder={false} style={styles.notifyBtn}>
         <MaterialIcons name="notifications-active" size={14} color={theme.colors.primary} />
-        <CustomText variant="caption" style={{ color: theme.colors.primary, fontWeight: '600' }}>
-          Notify me
-        </CustomText>
+        <CustomText variant="caption" style={styles.notifyText}>Notify me</CustomText>
       </TVTouchable>
     </SurfaceCard>
   );
 }
 
+// ─── Main Screen ──────────────────────────────────────────────────────────────
+
 export default function LiveScreen() {
-  const theme = useAppTheme();
+  const styles = useStyles();
+  const theme  = useAppTheme();
   const router = useRouter();
   const device = useDeviceClass();
   const { showToast } = useToast();
@@ -149,9 +176,9 @@ export default function LiveScreen() {
 
   useEffect(() => { void refresh(); }, []);
 
-  const liveCards = useMemo(() => sessions.filter((s) => s.status === 'live').map(toFeedCard), [sessions]);
+  const liveCards     = useMemo(() => sessions.filter((s) => s.status === 'live').map(toFeedCard), [sessions]);
   const upcomingCards = useMemo(() => sessions.filter((s) => s.status === 'scheduled').map(toFeedCard), [sessions]);
-  const replayCards = useMemo(
+  const replayCards   = useMemo(
     () => dedupeFeedItems([
       ...sessions.filter((s) => s.status === 'ended').map(toFeedCard),
       ...feed.live.filter((item) => !item.isLive),
@@ -160,8 +187,8 @@ export default function LiveScreen() {
     [sessions, feed.live, feed.videos],
   );
 
-  const featuredCard = liveCards[0] ?? upcomingCards[0] ?? replayCards[0] ?? null;
-  const totalViewers = liveCards.reduce((sum, c) => sum + (c.liveViewerCount ?? 0), 0);
+  const featuredCard  = liveCards[0] ?? upcomingCards[0] ?? replayCards[0] ?? null;
+  const totalViewers  = liveCards.reduce((sum, c) => sum + (c.liveViewerCount ?? 0), 0);
   const upcomingLimit = device.isTV ? 6 : device.isDesktop ? 5 : 3;
 
   const openSession = async (item: FeedCardItem, source: string) => {
@@ -196,17 +223,17 @@ export default function LiveScreen() {
           size="sm"
           onPress={() => router.push(APP_ROUTES.tabs.videos)}
           leftIcon={<MaterialIcons name="smart-display" size={16} color={theme.colors.text} />}
-          style={{ minWidth: 40, paddingHorizontal: 10 }}
+          style={styles.videoNavBtn}
         />
       }
     >
       {/* Status bar: live now */}
       {liveCards.length > 0 ? (
         <FadeIn>
-          <SurfaceCard tone="strong" style={{ padding: theme.spacing.md }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+          <SurfaceCard tone="strong" style={styles.statusCard}>
+            <View style={styles.statusRow}>
               <LivePulse viewerCount={totalViewers} />
-              <CustomText variant="caption" style={{ color: theme.colors.textSecondary }}>
+              <CustomText variant="caption" style={styles.sessionCount}>
                 {liveCards.length} session{liveCards.length !== 1 ? 's' : ''} live
               </CustomText>
             </View>
@@ -228,18 +255,9 @@ export default function LiveScreen() {
       {/* Live now */}
       {liveCards.length > 0 ? (
         <FadeIn delay={80}>
-          <View style={{ gap: 12 }}>
-            <SectionLabel
-              title="Live now"
-              accent={`${liveCards.length} active`}
-              subtitle="Happening right now across the ministry"
-            />
-            <ContentRail
-              title=""
-              items={liveCards}
-              loading={loading}
-              onPressItem={(item) => void openSession(item, 'live_now')}
-            />
+          <View style={styles.sectionGap}>
+            <SectionLabel title="Live now" accent={`${liveCards.length} active`} subtitle="Happening right now across the ministry" />
+            <ContentRail title="" items={liveCards} loading={loading} onPressItem={(item) => void openSession(item, 'live_now')} />
           </View>
         </FadeIn>
       ) : null}
@@ -247,13 +265,9 @@ export default function LiveScreen() {
       {/* Upcoming schedule */}
       {upcomingCards.length > 0 ? (
         <FadeIn delay={130}>
-          <View style={{ gap: 12 }}>
-            <SectionLabel
-              title="Coming up"
-              accent={`${upcomingCards.length} scheduled`}
-              subtitle="Get notified before these sessions start"
-            />
-            <View style={{ gap: 8 }}>
+          <View style={styles.sectionGap}>
+            <SectionLabel title="Coming up" accent={`${upcomingCards.length} scheduled`} subtitle="Get notified before these sessions start" />
+            <View style={styles.upcomingList}>
               {upcomingCards.slice(0, upcomingLimit).map((item) => (
                 <ScheduleCard key={item.id} item={item} onNotify={() => void followLive(item)} />
               ))}
@@ -265,31 +279,19 @@ export default function LiveScreen() {
       {/* Replay rail */}
       {replayCards.length > 0 ? (
         <FadeIn delay={180}>
-          <View style={{ gap: 12 }}>
+          <View style={styles.sectionGap}>
             <SectionLabel
-              title="Replays"
-              accent="Watch again"
-              subtitle="Past sessions and ministry moments"
-              actionLabel="See all"
-              onAction={() => router.push(APP_ROUTES.tabs.videos)}
+              title="Replays" accent="Watch again" subtitle="Past sessions and ministry moments"
+              actionLabel="See all" onAction={() => router.push(APP_ROUTES.tabs.videos)}
             />
-            <ContentRail
-              title=""
-              items={replayCards}
-              loading={loading}
-              onPressItem={(item) => void openSession(item, 'live_replays')}
-            />
+            <ContentRail title="" items={replayCards} loading={loading} onPressItem={(item) => void openSession(item, 'live_replays')} />
           </View>
         </FadeIn>
       ) : null}
 
       {/* Extended list */}
       {replayCards.length > 4 ? (
-        <ContentList
-          title="Watch again"
-          items={replayCards}
-          onPressItem={(item) => void openSession(item, 'live_watch_again')}
-        />
+        <ContentList title="Watch again" items={replayCards} onPressItem={(item) => void openSession(item, 'live_watch_again')} />
       ) : null}
 
       {/* Empty state */}

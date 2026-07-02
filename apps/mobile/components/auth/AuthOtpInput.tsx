@@ -3,6 +3,7 @@ import type { TextInputProps } from 'react-native';
 import { Animated, Easing, Platform, Pressable, TextInput, View, useWindowDimensions } from 'react-native';
 import { CustomText } from '../CustomText';
 import { useAppTheme } from '../../util/colorScheme';
+import { makeStyles } from '../../styles/makeStyles';
 
 interface AuthOtpInputProps {
   label?: string;
@@ -17,6 +18,35 @@ interface AuthOtpInputProps {
 const sanitizeOtp = (value: string, length: number): string =>
   value.replace(/\D/g, '').slice(0, length);
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const useStyles = makeStyles((theme) => ({
+  labelText: {
+    color: 'rgba(226,219,242,0.76)', marginBottom: 7,
+    textTransform: 'uppercase', letterSpacing: 0.58,
+  },
+  fieldBase: {
+    borderRadius: 20, borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.10)',
+    backgroundColor: 'rgba(255,255,255,0.028)', overflow: 'hidden',
+  },
+  hiddenInput: { position: 'absolute', width: 1, height: 1, opacity: 0 },
+  slotRow:     { flexDirection: 'row', justifyContent: 'space-between' },
+  slotBase: {
+    flex: 1, borderWidth: 1,
+    backgroundColor: 'rgba(255,255,255,0.02)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  helperText:  { color: 'rgba(202,196,220,0.58)', marginTop: 9 },
+  accentBar: {
+    position: 'absolute', left: 14, right: 14, bottom: 0,
+    height: 2, borderRadius: 999,
+    backgroundColor: theme.colors.secondary,
+  },
+}));
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export function AuthOtpInput({
   label,
   value,
@@ -26,7 +56,8 @@ export function AuthOtpInput({
   editable = true,
   onSubmitEditing,
 }: AuthOtpInputProps) {
-  const theme = useAppTheme();
+  const styles = useStyles();
+  const theme  = useAppTheme();
   const inputRef = useRef<TextInput | null>(null);
   const [isFocused, setIsFocused] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
@@ -40,7 +71,7 @@ export function AuthOtpInput({
   const active = isFocused || isHovered;
 
   const accentOpacity = useRef(new Animated.Value(normalizedValue ? 1 : 0.18)).current;
-  const translateY = useRef(new Animated.Value(0)).current;
+  const translateY    = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const highlighted = active || normalizedValue.length > 0;
@@ -60,11 +91,11 @@ export function AuthOtpInput({
     ]).start();
   }, [accentOpacity, active, normalizedValue, translateY, useNativeAnimations]);
 
-  const slotSize = compact ? 44 : spacious ? 54 : 48;
-  const slotRadius = compact ? 14 : 16;
+  const slotSize      = compact ? 44 : spacious ? 54 : 48;
+  const slotRadius    = compact ? 14 : 16;
   const digitFontSize = compact ? 18 : spacious ? 22 : 20;
-  const helperText = placeholder ?? `Enter the ${length}-digit code`;
-  const autoComplete = Platform.select({
+  const helperText    = placeholder ?? `Enter the ${length}-digit code`;
+  const autoComplete  = Platform.select({
     ios: 'one-time-code',
     android: 'sms-otp',
     default: 'one-time-code',
@@ -75,47 +106,26 @@ export function AuthOtpInput({
       {label ? (
         <CustomText
           variant="caption"
-          style={{
-            color: 'rgba(226,219,242,0.76)',
-            marginBottom: 7,
-            textTransform: 'uppercase',
-            letterSpacing: 0.58,
-            fontSize: compact ? 10 : 10.6,
-            lineHeight: compact ? 12 : 13,
-          }}
+          style={[styles.labelText, { fontSize: compact ? 10 : 10.6, lineHeight: compact ? 12 : 13 }]}
         >
           {label}
         </CustomText>
       ) : null}
 
-      <Animated.View
-        style={{
-          transform: [{ translateY }],
-        }}
-      >
+      <Animated.View style={{ transform: [{ translateY }] }}>
         <Pressable
-          onPress={() => {
-            if (editable) {
-              inputRef.current?.focus();
-            }
-          }}
+          onPress={() => { if (editable) inputRef.current?.focus(); }}
           onHoverIn={() => setIsHovered(true)}
           onHoverOut={() => setIsHovered(false)}
-          style={{
-            borderRadius: 20,
-            borderWidth: 1,
-            borderColor: 'rgba(255,255,255,0.10)',
-            backgroundColor: 'rgba(255,255,255,0.028)',
-            paddingHorizontal: compact ? 13 : 14,
-            paddingTop: compact ? 13 : 14,
-            paddingBottom: compact ? 11 : 12,
-            overflow: 'hidden',
-            ...(isWeb
-              ? ({
-                  cursor: editable ? 'text' : 'default',
-                } as object)
-              : null),
-          }}
+          style={[
+            styles.fieldBase,
+            {
+              paddingHorizontal: compact ? 13 : 14,
+              paddingTop: compact ? 13 : 14,
+              paddingBottom: compact ? 11 : 12,
+              ...(isWeb ? ({ cursor: editable ? 'text' : 'default' } as object) : null),
+            },
+          ]}
         >
           <TextInput
             ref={inputRef}
@@ -131,45 +141,30 @@ export function AuthOtpInput({
             onBlur={() => setIsFocused(false)}
             onSubmitEditing={onSubmitEditing}
             returnKeyType="done"
-            style={{
-              position: 'absolute',
-              width: 1,
-              height: 1,
-              opacity: 0,
-            }}
+            style={styles.hiddenInput}
           />
 
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              gap: compact ? 7 : 9,
-            }}
-          >
+          <View style={[styles.slotRow, { gap: compact ? 7 : 9 }]}>
             {Array.from({ length }).map((_, index) => {
-              const digit = normalizedValue[index] ?? '';
+              const digit    = normalizedValue[index] ?? '';
               const slotActive = isFocused && index === normalizedValue.length;
               const slotFilled = Boolean(digit);
 
               return (
                 <View
                   key={`otp-slot-${index}`}
-                  style={{
-                    flex: 1,
-                    minWidth: slotSize,
-                    height: slotSize,
-                    borderRadius: slotRadius,
-                    borderWidth: 1,
-                    borderColor:
-                      slotActive || slotFilled ? 'rgba(156,125,255,0.86)' : 'rgba(255,255,255,0.10)',
-                    backgroundColor: 'rgba(255,255,255,0.02)',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    shadowColor: slotActive ? '#9C7DFF' : '#120F1F',
-                    shadowOpacity: slotActive ? 0.18 : 0.06,
-                    shadowRadius: slotActive ? 16 : 10,
-                    shadowOffset: { width: 0, height: slotActive ? 8 : 4 },
-                  }}
+                  style={[
+                    styles.slotBase,
+                    {
+                      minWidth: slotSize, height: slotSize,
+                      borderRadius: slotRadius,
+                      borderColor: slotActive || slotFilled ? 'rgba(156,125,255,0.86)' : 'rgba(255,255,255,0.10)',
+                      shadowColor: slotActive ? '#9C7DFF' : '#120F1F',
+                      shadowOpacity: slotActive ? 0.18 : 0.06,
+                      shadowRadius: slotActive ? 16 : 10,
+                      shadowOffset: { width: 0, height: slotActive ? 8 : 4 },
+                    },
+                  ]}
                 >
                   <CustomText
                     variant="title"
@@ -189,28 +184,14 @@ export function AuthOtpInput({
 
           <CustomText
             variant="caption"
-            style={{
-              color: 'rgba(202,196,220,0.58)',
-              marginTop: 9,
-              fontSize: compact ? 10.6 : 11,
-              lineHeight: compact ? 14 : 15,
-            }}
+            style={[styles.helperText, { fontSize: compact ? 10.6 : 11, lineHeight: compact ? 14 : 15 }]}
           >
             {helperText}
           </CustomText>
 
           <Animated.View
-            style={{
-              position: 'absolute',
-              left: 14,
-              right: 14,
-              pointerEvents: 'none',
-              bottom: 0,
-              height: 2,
-              borderRadius: 999,
-              backgroundColor: theme.colors.secondary,
-              opacity: accentOpacity,
-            }}
+            style={[styles.accentBar, { opacity: accentOpacity }]}
+            pointerEvents="none"
           />
         </Pressable>
       </Animated.View>

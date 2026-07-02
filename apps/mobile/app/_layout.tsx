@@ -7,6 +7,7 @@ import { StatusBar, View } from 'react-native';
 
 import { ThemeProvider } from '../context/ThemeProvider';
 import { useColorScheme, useThemeContext, useAppTheme } from '../util/colorScheme';
+import { makeStyles } from '../styles/makeStyles';
 import { FontProvider, FontContext } from '../context/FontContext';
 import { AppProvider } from '../context/AppContext';
 import { UserAccountProvider } from '../context/UserAccountContext';
@@ -30,11 +31,16 @@ if (!__DEV__) {
   });
 }
 
+const useThemedStyles = makeStyles((theme) => ({
+  root: { flex: 1, backgroundColor: theme.colors.background },
+}));
+
 function ThemedLayout({ children }: { children: ReactNode }) {
-  const theme = useAppTheme();
+  const themedStyles = useThemedStyles();
+  const theme        = useAppTheme();
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+    <View style={themedStyles.root}>
       <StatusBar
         translucent={false}
         backgroundColor={theme.colors.background}

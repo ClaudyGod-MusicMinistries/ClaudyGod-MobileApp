@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Animated, Pressable, ViewStyle } from 'react-native';
 import { useAppTheme } from '../../util/colorScheme';
+import { makeStyles } from '../../styles/makeStyles';
 
 interface PremiumCardProps {
   variant?: 'default' | 'elevated' | 'glass';
@@ -11,6 +12,15 @@ interface PremiumCardProps {
   padding?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const useStyles = makeStyles((theme) => ({
+  cardBase:  { borderRadius: theme.radius.lg },
+  fullWidth: { width: '100%' },
+}));
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export function PremiumCard({
   variant = 'default',
   children,
@@ -19,8 +29,9 @@ export function PremiumCard({
   animated = true,
   padding = 'md',
 }: PremiumCardProps) {
-  const theme = useAppTheme();
-  const [scaleValue] = useState(new Animated.Value(1));
+  const styles = useStyles();
+  const theme  = useAppTheme();
+  const [scaleValue]   = useState(new Animated.Value(1));
   const [opacityValue] = useState(new Animated.Value(1));
 
   const paddingValue =
@@ -38,7 +49,7 @@ export function PremiumCard({
   const handlePressIn = () => {
     if (!animated || !onPress) return;
     Animated.parallel([
-      Animated.timing(scaleValue, { toValue: theme.interaction.pressScale, duration: theme.timing.fast, useNativeDriver: false }),
+      Animated.timing(scaleValue,   { toValue: theme.interaction.pressScale,   duration: theme.timing.fast, useNativeDriver: false }),
       Animated.timing(opacityValue, { toValue: theme.interaction.hoverOpacity, duration: theme.timing.fast, useNativeDriver: false }),
     ]).start();
   };
@@ -46,7 +57,7 @@ export function PremiumCard({
   const handlePressOut = () => {
     if (!animated) return;
     Animated.parallel([
-      Animated.timing(scaleValue, { toValue: 1, duration: theme.timing.base, useNativeDriver: false }),
+      Animated.timing(scaleValue,   { toValue: 1, duration: theme.timing.base, useNativeDriver: false }),
       Animated.timing(opacityValue, { toValue: 1, duration: theme.timing.base, useNativeDriver: false }),
     ]).start();
   };
@@ -54,11 +65,8 @@ export function PremiumCard({
   const content = (
     <Animated.View
       style={[
-        {
-          borderRadius: theme.radius.lg,
-          padding: paddingValue,
-          backgroundColor,
-        },
+        styles.cardBase,
+        { padding: paddingValue, backgroundColor },
         animated ? { transform: [{ scale: scaleValue }], opacity: opacityValue } : {},
         style,
       ]}
@@ -73,7 +81,7 @@ export function PremiumCard({
         onPress={onPress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
-        style={{ width: '100%' }}
+        style={styles.fullWidth}
       >
         {content}
       </Pressable>

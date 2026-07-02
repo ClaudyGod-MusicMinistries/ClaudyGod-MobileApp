@@ -2,6 +2,7 @@
 import React from 'react';
 import { View, Animated, Platform } from 'react-native';
 import { useAppTheme } from '../../util/colorScheme';
+import { makeStyles } from '../../styles/makeStyles';
 import { CustomText } from '../CustomText';
 
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
@@ -16,6 +17,31 @@ interface StatCardProps {
   delay?: number;
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const useStyles = makeStyles((theme) => ({
+  animWrap:   { marginBottom: theme.spacing.md },
+  card: {
+    borderRadius: theme.radius.lg, overflow: 'hidden',
+    padding: theme.spacing.lg, backgroundColor: theme.colors.card,
+  },
+  headerRow:  { flexDirection: 'row', alignItems: 'center', marginBottom: theme.spacing.md },
+  iconWrap:   { marginRight: theme.spacing.sm },
+  labelText: {
+    color: theme.colors.textSecondary, fontSize: 10.8, fontWeight: '600',
+    textTransform: 'uppercase', letterSpacing: 0.2,
+  },
+  valueRow:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
+  valueText:  { color: theme.colors.text, fontSize: 20, fontWeight: '600', letterSpacing: 0 },
+  trendPill: {
+    paddingVertical: theme.spacing.xs, paddingHorizontal: theme.spacing.sm,
+    backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: theme.radius.sm,
+  },
+  trendText:  { fontSize: 10.8, fontWeight: '600' },
+}));
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export const StatCard: React.FC<StatCardProps> = ({
   label,
   value,
@@ -25,6 +51,7 @@ export const StatCard: React.FC<StatCardProps> = ({
   backgroundColor,
   delay = 0,
 }) => {
+  const styles = useStyles();
   const theme = useAppTheme();
   const scaleAnim = React.useRef(new Animated.Value(0.9)).current;
 
@@ -35,37 +62,19 @@ export const StatCard: React.FC<StatCardProps> = ({
   const trendColor = trend === 'up' ? theme.colors.success : theme.colors.danger;
 
   return (
-    <Animated.View style={{ transform: [{ scale: scaleAnim }], marginBottom: theme.spacing.md }}>
-      <View
-        style={{
-          borderRadius: theme.radius.lg,
-          overflow: 'hidden',
-          padding: theme.spacing.lg,
-          backgroundColor: backgroundColor ?? theme.colors.card,
-        }}
-      >
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: theme.spacing.md }}>
-          {icon ? <View style={{ marginRight: theme.spacing.sm }}>{icon}</View> : null}
-          <CustomText style={{ color: theme.colors.textSecondary, fontSize: 10.8, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.2 }}>
-            {label}
-          </CustomText>
+    <Animated.View style={[styles.animWrap, { transform: [{ scale: scaleAnim }] }]}>
+      <View style={[styles.card, backgroundColor ? { backgroundColor } : null]}>
+        <View style={styles.headerRow}>
+          {icon ? <View style={styles.iconWrap}>{icon}</View> : null}
+          <CustomText style={styles.labelText}>{label}</CustomText>
         </View>
 
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-          <CustomText style={{ color: theme.colors.text, fontSize: 20, fontWeight: '600', letterSpacing: 0 }}>
-            {value}
-          </CustomText>
+        <View style={styles.valueRow}>
+          <CustomText style={styles.valueText}>{value}</CustomText>
 
           {trend && trendValue ? (
-            <View
-              style={{
-                paddingVertical: theme.spacing.xs,
-                paddingHorizontal: theme.spacing.sm,
-                backgroundColor: 'rgba(255,255,255,0.1)',
-                borderRadius: theme.radius.sm,
-              }}
-            >
-              <CustomText style={{ color: trendColor, fontSize: 10.8, fontWeight: '600' }}>
+            <View style={styles.trendPill}>
+              <CustomText style={[styles.trendText, { color: trendColor }]}>
                 {trend === 'up' ? '↑' : '↓'} {trendValue}
               </CustomText>
             </View>

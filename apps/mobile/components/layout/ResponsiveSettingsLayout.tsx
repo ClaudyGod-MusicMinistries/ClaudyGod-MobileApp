@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CustomText } from '../CustomText';
 import { useAppTheme } from '../../util/colorScheme';
+import { makeStyles } from '../../styles/makeStyles';
 
 type GradientColorStops = readonly [string, string, ...string[]];
 
@@ -18,6 +19,21 @@ interface ResponsiveSettingsLayoutProps {
   contentPadding?: number;
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const useStyles = makeStyles((theme) => ({
+  rootBg:        { flex: 1, backgroundColor: theme.colors.background },
+  heroImg:       { position: 'absolute', top: 0, left: 0, right: 0, height: 320 },
+  gradientFill:  { flex: 1 },
+  safeArea:      { flex: 1 },
+  scrollGrow:    { flexGrow: 1 },
+  headerMargin:  { marginBottom: theme.spacing.lg },
+  headerTitle:   { color: theme.colors.text, marginBottom: theme.spacing.xs },
+  headerSubtitle:{ color: theme.colors.textSecondary },
+}));
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export function ResponsiveSettingsLayout({
   children,
   headerTitle,
@@ -28,7 +44,8 @@ export function ResponsiveSettingsLayout({
   scrollEnabled = true,
   contentPadding,
 }: ResponsiveSettingsLayoutProps) {
-  const theme = useAppTheme();
+  const styles = useStyles();
+  const theme  = useAppTheme();
   const { width } = useWindowDimensions();
   const isTablet = width >= 900;
   const padding = contentPadding ?? theme.spacing.md;
@@ -50,14 +67,14 @@ export function ResponsiveSettingsLayout({
       }}
     >
       {headerTitle || headerSubtitle ? (
-        <View style={{ marginBottom: theme.spacing.lg }}>
+        <View style={styles.headerMargin}>
           {headerTitle ? (
-            <CustomText variant="heading" style={{ color: theme.colors.text, marginBottom: theme.spacing.xs }}>
+            <CustomText variant="heading" style={styles.headerTitle}>
               {headerTitle}
             </CustomText>
           ) : null}
           {headerSubtitle ? (
-            <CustomText variant="body" style={{ color: theme.colors.textSecondary }}>
+            <CustomText variant="body" style={styles.headerSubtitle}>
               {headerSubtitle}
             </CustomText>
           ) : null}
@@ -72,36 +89,32 @@ export function ResponsiveSettingsLayout({
       showsVerticalScrollIndicator={false}
       bounces={false}
       overScrollMode="never"
-      contentContainerStyle={{ flexGrow: 1 }}
+      contentContainerStyle={styles.scrollGrow}
     >
       {content}
     </ScrollView>
   ) : content;
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+    <View style={styles.rootBg}>
       <StatusBar
         translucent={false}
         barStyle={theme.scheme === 'light' ? 'dark-content' : 'light-content'}
         backgroundColor={theme.colors.background}
       />
       {backgroundImage ? (
-        <ImageBackground
-          source={backgroundImage}
-          resizeMode="cover"
-          style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 320 }}
-        >
+        <ImageBackground source={backgroundImage} resizeMode="cover" style={styles.heroImg}>
           {showGradientOverlay ? (
             <LinearGradient
               colors={gradientColors ?? defaultGradientColors}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              style={{ flex: 1 }}
+              style={styles.gradientFill}
             />
           ) : null}
         </ImageBackground>
       ) : null}
-      <SafeAreaView style={{ flex: 1 }}>{scrollContent}</SafeAreaView>
+      <SafeAreaView style={styles.safeArea}>{scrollContent}</SafeAreaView>
     </View>
   );
 }

@@ -5,6 +5,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../CustomText';
 import { useDeviceClass } from '../../util/deviceClassConfig';
 import { useAppTheme } from '../../util/colorScheme';
+import { makeStyles } from '../../styles/makeStyles';
 
 interface AuthTextFieldProps {
   label?: string;
@@ -29,6 +30,18 @@ interface AuthTextFieldProps {
   clearable?: boolean;
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const useStyles = makeStyles(() => ({
+  labelBase:     { marginBottom: 6, fontWeight: '400' },
+  fieldRow:      { overflow: 'hidden', flexDirection: 'row', alignItems: 'center', paddingVertical: 0 },
+  leadingWrap:   { marginRight: 10, justifyContent: 'center' },
+  inputBase:     { paddingHorizontal: 0, fontFamily: 'PlusJakartaSans_400Regular' },
+  trailingWrap:  { marginLeft: 10 },
+}));
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export function AuthTextField({
   label,
   value,
@@ -51,15 +64,16 @@ export function AuthTextField({
   hintTone = 'default',
   clearable = true,
 }: AuthTextFieldProps) {
+  const styles  = useStyles();
   const inputRef = useRef<TextInput | null>(null);
   const [isFocused, setIsFocused] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const device = useDeviceClass();
-  const theme = useAppTheme();
+  const theme  = useAppTheme();
 
   const isWeb = Platform.OS === 'web';
   const isActive = isFocused || isHovered;
-  const compact = device.isCompactPhone;
+  const compact  = device.isCompactPhone;
   const spacious = device.isDesktop || device.isTV;
   const showClearButton = clearable && editable && !trailing && value.length > 0;
 
@@ -76,10 +90,10 @@ export function AuthTextField({
   }, [isActive, translateY, useNativeAnimations, value]);
 
   const isDark = theme.scheme === 'dark';
-  const minHeight = device.isTV ? 62 : compact ? 50 : spacious ? 58 : 54;
+  const minHeight     = device.isTV ? 62 : compact ? 50 : spacious ? 58 : 54;
   const inputFontSize = device.isTV ? 16 : compact ? 13.2 : spacious ? 14.4 : 13.8;
   const inputLineHeight = device.isTV ? 22 : compact ? 18 : spacious ? 20 : 19;
-  const borderColor = isFocused
+  const borderColor   = isFocused
     ? isDark ? 'rgba(214,190,255,0.88)' : `rgba(124,58,237,0.65)`
     : isHovered
       ? isDark ? 'rgba(255,255,255,0.32)' : theme.colors.borderStrong
@@ -99,13 +113,11 @@ export function AuthTextField({
       {label ? (
         <CustomText
           variant="caption"
-          style={{
+          style={[styles.labelBase, {
             color: theme.colors.textMuted,
-            marginBottom: 6,
             fontSize: device.isTV ? 12 : compact ? 11 : 11.5,
-            fontWeight: '400',
             lineHeight: device.isTV ? 15 : 15,
-          }}
+          }]}
         >
           {label}
         </CustomText>
@@ -116,27 +128,26 @@ export function AuthTextField({
           onPress={() => inputRef.current?.focus()}
           onHoverIn={() => setIsHovered(true)}
           onHoverOut={() => setIsHovered(false)}
-          style={{
-            minHeight,
-            borderRadius: device.isTV ? 20 : 17,
-            borderWidth: 1,
-            borderColor,
-            backgroundColor,
-            paddingHorizontal: compact ? 13 : 15,
-            paddingVertical: 0,
-            overflow: 'hidden',
-            flexDirection: 'row',
-            alignItems: 'center',
-            ...(isWeb
-              ? ({
-                  cursor: editable ? 'text' : 'default',
-                  transitionDuration: '160ms',
-                  transitionProperty: 'border-color, background-color',
-                } as object)
-              : null),
-          }}
+          style={[
+            styles.fieldRow,
+            {
+              minHeight,
+              borderRadius: device.isTV ? 20 : 17,
+              borderWidth: 1,
+              borderColor,
+              backgroundColor,
+              paddingHorizontal: compact ? 13 : 15,
+              ...(isWeb
+                ? ({
+                    cursor: editable ? 'text' : 'default',
+                    transitionDuration: '160ms',
+                    transitionProperty: 'border-color, background-color',
+                  } as object)
+                : null),
+            },
+          ]}
         >
-          {leading ? <View style={{ marginRight: 10, justifyContent: 'center' }}>{leading}</View> : null}
+          {leading ? <View style={styles.leadingWrap}>{leading}</View> : null}
 
           <TextInput
             ref={inputRef}
@@ -159,30 +170,22 @@ export function AuthTextField({
             accessibilityLabel={label ?? placeholder}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
-            style={{
-              flex: 1,
-              minHeight,
-              color: theme.colors.text,
-              fontSize: inputFontSize,
-              lineHeight: inputLineHeight,
-              fontFamily: 'PlusJakartaSans_400Regular',
-              paddingVertical: compact ? 12 : 13,
-              paddingHorizontal: 0,
-              ...(isWeb
-                ? ({
-                    outlineStyle: 'none',
-                    outlineWidth: 0,
-                  } as object)
-                : null),
-            }}
+            style={[
+              styles.inputBase,
+              {
+                flex: 1, minHeight,
+                color: theme.colors.text,
+                fontSize: inputFontSize,
+                lineHeight: inputLineHeight,
+                paddingVertical: compact ? 12 : 13,
+                ...(isWeb ? ({ outlineStyle: 'none', outlineWidth: 0 } as object) : null),
+              },
+            ]}
           />
 
           {showClearButton ? (
             <Pressable
-              onPress={() => {
-                onChangeText('');
-                inputRef.current?.focus();
-              }}
+              onPress={() => { onChangeText(''); inputRef.current?.focus(); }}
               accessibilityRole="button"
               accessibilityLabel={`Clear ${label ?? placeholder}`}
               hitSlop={10}
@@ -190,8 +193,7 @@ export function AuthTextField({
                 width: device.isTV ? 36 : 30,
                 height: device.isTV ? 36 : 30,
                 borderRadius: device.isTV ? 18 : 15,
-                alignItems: 'center',
-                justifyContent: 'center',
+                alignItems: 'center', justifyContent: 'center',
                 backgroundColor: isDark ? 'rgba(255,255,255,0.10)' : theme.colors.surfaceAlt,
                 marginLeft: 8,
               }}
@@ -200,7 +202,7 @@ export function AuthTextField({
             </Pressable>
           ) : null}
 
-          {trailing ? <View style={{ marginLeft: 10 }}>{trailing}</View> : null}
+          {trailing ? <View style={styles.trailingWrap}>{trailing}</View> : null}
         </Pressable>
       </Animated.View>
 

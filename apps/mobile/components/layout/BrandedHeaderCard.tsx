@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { CustomText } from '../CustomText';
 import { TVTouchable } from '../ui/TVTouchable';
 import { useAppTheme } from '../../util/colorScheme';
+import { makeStyles } from '../../styles/makeStyles';
 import { APP_ROUTES } from '../../util/appRoutes';
 
 type HeaderAction = {
@@ -31,6 +32,41 @@ interface BrandedHeaderCardProps {
   onLogoPress?: () => void;
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const useStyles = makeStyles((theme) => ({
+  card: {
+    borderRadius: theme.radius.lg, borderWidth: 1,
+    borderColor: theme.colors.border, backgroundColor: theme.colors.surface,
+  },
+  headerRow:         { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
+  leadingRow:        { flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 12 },
+  leadingActionWrap: { marginRight: 10 },
+  actionBtnBase: {
+    borderRadius: theme.radius.md, borderWidth: 1,
+    borderColor: theme.colors.border, backgroundColor: theme.colors.surfaceAlt,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  logoBtnBase: {
+    borderRadius: theme.radius.md, borderWidth: 1,
+    borderColor: theme.colors.border, backgroundColor: theme.colors.surfaceAlt,
+    alignItems: 'center', justifyContent: 'center', marginRight: 12,
+  },
+  textFill:          { flex: 1 },
+  eyebrowText:       { color: theme.colors.textSecondary },
+  titleBase:         { color: theme.colors.text },
+  subtitleBase:      { color: theme.colors.textSecondary, marginTop: 3 },
+  actionsRow:        { flexDirection: 'row', gap: 8, marginLeft: 10 },
+  chipsContent:      { paddingTop: 14, paddingBottom: 2, paddingRight: 8 },
+  chipBase:          { marginRight: 8, borderRadius: theme.radius.md, borderWidth: 1 },
+  chipActive:        { borderColor: theme.colors.primary, backgroundColor: theme.colors.surfaceAlt },
+  chipInactive:      { borderColor: theme.colors.border, backgroundColor: theme.colors.surface },
+  chipTextActive:    { color: theme.colors.text },
+  chipTextInactive:  { color: theme.colors.textSecondary },
+}));
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export function BrandedHeaderCard({
   title,
   subtitle,
@@ -42,6 +78,7 @@ export function BrandedHeaderCard({
   autoHideSubtitleOnPhone = true,
   onLogoPress,
 }: BrandedHeaderCardProps) {
+  const styles = useStyles();
   const theme = useAppTheme();
   const router = useRouter();
   const { width } = useWindowDimensions();
@@ -55,99 +92,51 @@ export function BrandedHeaderCard({
   const chipPaddingX = isCompact ? 10 : 12;
   const chipPaddingY = isCompact ? 5 : 6;
 
-  const ui = {
-    muted: theme.colors.textSecondary,
-    subtle: theme.colors.textSecondary,
-    iconBg: theme.colors.surfaceAlt,
-    iconBorder: theme.colors.border,
-    iconColor: theme.colors.text,
-    chipBg: theme.colors.surface,
-    chipBorder: theme.colors.border,
-    chipActiveBg: theme.colors.surfaceAlt,
-    chipActiveBorder: theme.colors.primary,
-    chipText: theme.colors.textSecondary,
-    chipActiveText: theme.colors.text,
-  } as const;
-
   const renderAction = (action: HeaderAction) => (
     <TVTouchable
       key={`${action.icon}-${action.accessibilityLabel ?? 'action'}`}
       accessibilityRole="button"
       accessibilityLabel={action.accessibilityLabel}
       onPress={action.onPress}
-      style={{
-        width: actionSize,
-        height: actionSize,
-        borderRadius: theme.radius.md,
-        borderWidth: 1,
-        borderColor: ui.iconBorder,
-        backgroundColor: ui.iconBg,
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
+      style={[styles.actionBtnBase, { width: actionSize, height: actionSize }]}
       showFocusBorder={false}
     >
-      <MaterialIcons name={action.icon} size={17} color={ui.iconColor} />
+      <MaterialIcons name={action.icon} size={17} color={theme.colors.text} />
     </TVTouchable>
   );
 
   const handleLogoPress = onLogoPress ?? (() => router.push(APP_ROUTES.tabs.home));
 
   return (
-    <View
-      style={{
-        borderRadius: theme.radius.lg,
-        borderWidth: 1,
-        borderColor: theme.colors.border,
-        backgroundColor: theme.colors.surface,
-        paddingHorizontal: isTablet ? 16 : 14,
-        paddingVertical: isTablet ? 14 : 12,
-      }}
-    >
-      <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            flex: 1,
-            marginRight: 12,
-            minHeight: logoWrapSize,
-          }}
-        >
-          {leadingAction ? <View style={{ marginRight: 10 }}>{renderAction(leadingAction)}</View> : null}
+    <View style={[styles.card, { paddingHorizontal: isTablet ? 16 : 14, paddingVertical: isTablet ? 14 : 12 }]}>
+      <View style={styles.headerRow}>
+        <View style={[styles.leadingRow, { minHeight: logoWrapSize }]}>
+          {leadingAction ? (
+            <View style={styles.leadingActionWrap}>{renderAction(leadingAction)}</View>
+          ) : null}
 
           <TVTouchable
             onPress={handleLogoPress}
             showFocusBorder={false}
-            style={{
-              width: logoWrapSize,
-              height: logoWrapSize,
-              borderRadius: theme.radius.md,
-              borderWidth: 1,
-              borderColor: theme.colors.border,
-              backgroundColor: theme.colors.surfaceAlt,
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginRight: 12,
-            }}
+            style={[styles.logoBtnBase, { width: logoWrapSize, height: logoWrapSize }]}
           >
             <MaterialIcons name="home" size={logoSize} color={theme.colors.textSecondary} />
           </TVTouchable>
 
-          <View style={{ flex: 1 }}>
+          <View style={styles.textFill}>
             {showEyebrow ? (
-              <CustomText variant="caption" style={{ color: ui.muted }}>
-                {eyebrow}
-              </CustomText>
+              <CustomText variant="caption" style={styles.eyebrowText}>{eyebrow}</CustomText>
             ) : null}
             <CustomText
               variant="heading"
-              style={{
-                color: theme.colors.text,
-                marginTop: showEyebrow ? 2 : 0,
-                fontSize: isTV ? 18 : isTablet ? 16 : isCompact ? 13 : 15,
-                lineHeight: isTV ? 23 : isTablet ? 21 : isCompact ? 17 : 20,
-              }}
+              style={[
+                styles.titleBase,
+                {
+                  marginTop: showEyebrow ? 2 : 0,
+                  fontSize: isTV ? 18 : isTablet ? 16 : isCompact ? 13 : 15,
+                  lineHeight: isTV ? 23 : isTablet ? 21 : isCompact ? 17 : 20,
+                },
+              ]}
               numberOfLines={2}
             >
               {title}
@@ -155,12 +144,10 @@ export function BrandedHeaderCard({
             {subtitle && !hideSubtitle ? (
               <CustomText
                 variant="body"
-                style={{
-                  color: ui.subtle,
-                  marginTop: 3,
-                  fontSize: isCompact ? 10 : 11,
-                  lineHeight: isCompact ? 14 : 15,
-                }}
+                style={[
+                  styles.subtitleBase,
+                  { fontSize: isCompact ? 10 : 11, lineHeight: isCompact ? 14 : 15 },
+                ]}
                 numberOfLines={2}
               >
                 {subtitle}
@@ -169,7 +156,9 @@ export function BrandedHeaderCard({
           </View>
         </View>
 
-        {actions.length ? <View style={{ flexDirection: 'row', gap: 8, marginLeft: 10 }}>{actions.map(renderAction)}</View> : null}
+        {actions.length ? (
+          <View style={styles.actionsRow}>{actions.map(renderAction)}</View>
+        ) : null}
       </View>
 
       {chips?.length ? (
@@ -178,12 +167,20 @@ export function BrandedHeaderCard({
           showsHorizontalScrollIndicator={false}
           bounces={false}
           overScrollMode="never"
-          contentContainerStyle={{ paddingTop: 14, paddingBottom: 2, paddingRight: 8 }}
+          contentContainerStyle={styles.chipsContent}
         >
           {chips.map((chip) => {
             const active = Boolean(chip.active);
+            const chipStyle = [
+              styles.chipBase,
+              active ? styles.chipActive : styles.chipInactive,
+              { paddingHorizontal: chipPaddingX, paddingVertical: chipPaddingY },
+            ];
             const chipContent = (
-              <CustomText variant="label" style={{ color: active ? ui.chipActiveText : ui.chipText }}>
+              <CustomText
+                variant="label"
+                style={active ? styles.chipTextActive : styles.chipTextInactive}
+              >
                 {chip.label}
               </CustomText>
             );
@@ -193,15 +190,7 @@ export function BrandedHeaderCard({
                 <TVTouchable
                   key={chip.label}
                   onPress={chip.onPress}
-                  style={{
-                    marginRight: 8,
-                    borderRadius: theme.radius.md,
-                    borderWidth: 1,
-                    borderColor: active ? ui.chipActiveBorder : ui.chipBorder,
-                    backgroundColor: active ? ui.chipActiveBg : ui.chipBg,
-                    paddingHorizontal: chipPaddingX,
-                    paddingVertical: chipPaddingY,
-                  }}
+                  style={chipStyle}
                   showFocusBorder={false}
                 >
                   {chipContent}
@@ -210,18 +199,7 @@ export function BrandedHeaderCard({
             }
 
             return (
-              <View
-                key={chip.label}
-                style={{
-                  marginRight: 8,
-                  borderRadius: theme.radius.md,
-                  borderWidth: 1,
-                  borderColor: active ? ui.chipActiveBorder : ui.chipBorder,
-                  backgroundColor: active ? ui.chipActiveBg : ui.chipBg,
-                  paddingHorizontal: chipPaddingX,
-                  paddingVertical: chipPaddingY,
-                }}
-              >
+              <View key={chip.label} style={chipStyle}>
                 {chipContent}
               </View>
             );

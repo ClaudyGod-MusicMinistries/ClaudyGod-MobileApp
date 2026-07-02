@@ -4,6 +4,7 @@ import { CustomText } from '../CustomText';
 import { ModernContentCard } from '../ui/ModernContentCard';
 import { FadeIn } from '../ui/FadeIn';
 import { useAppTheme } from '../../util/colorScheme';
+import { makeStyles } from '../../styles/makeStyles';
 
 interface ContentItem {
   id: string;
@@ -34,6 +35,33 @@ const getCardWidth = (size: 'sm' | 'md' | 'lg', screenWidth: number) => {
   return Math.max(120, screenWidth * 0.4);
 };
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const useStyles = makeStyles((theme) => ({
+  headerRow: {
+    paddingHorizontal: theme.spacing.md, marginBottom: theme.spacing.sm,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start',
+  },
+  headerFill:     { flex: 1 },
+  titleText:      { color: theme.colors.text, marginBottom: theme.spacing.xs, fontSize: 12, lineHeight: 16, fontWeight: '600' },
+  subtitleText:   { color: theme.colors.textSecondary, fontSize: 10, lineHeight: 14 },
+  seeAllText:     { color: theme.colors.primary, fontWeight: '600' },
+  outerH:         { marginBottom: theme.spacing.lg },
+  hScrollContent: { paddingHorizontal: theme.spacing.md, gap: theme.spacing.sm },
+  engagementWrap: { paddingHorizontal: theme.spacing.md, marginTop: theme.spacing.xs },
+  engagementText: { color: theme.colors.textSecondary, fontStyle: 'italic' },
+  outerV:         { paddingHorizontal: theme.spacing.md, marginBottom: theme.spacing.lg },
+  gridRow:        { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm },
+  loadMoreBtn: {
+    marginTop: theme.spacing.md, paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md, borderRadius: theme.radius.lg,
+    borderWidth: 1.5, borderColor: theme.colors.primary, alignItems: 'center',
+  },
+  loadMoreText: { color: theme.colors.primary, fontWeight: '700' },
+}));
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export function SmartContentRail({
   title,
   subtitle,
@@ -43,6 +71,7 @@ export function SmartContentRail({
   onSeeAll,
   showEngagementHint = false,
 }: SmartContentRailProps) {
+  const styles = useStyles();
   const theme = useAppTheme();
   const { width: screenWidth } = useWindowDimensions();
   const scrollPos = useRef(new Animated.Value(0)).current;
@@ -52,36 +81,16 @@ export function SmartContentRail({
   const cardWidth = getCardWidth(cardSize, screenWidth);
 
   const Header = () => (
-    <View
-      style={{
-        paddingHorizontal: theme.spacing.md,
-        marginBottom: theme.spacing.sm,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-      }}
-    >
-      <View style={{ flex: 1 }}>
-        <CustomText
-          variant="title"
-          style={{ color: theme.colors.text, marginBottom: theme.spacing.xs, fontSize: 12, lineHeight: 16, fontWeight: '600' }}
-        >
-          {title}
-        </CustomText>
+    <View style={styles.headerRow}>
+      <View style={styles.headerFill}>
+        <CustomText variant="title" style={styles.titleText}>{title}</CustomText>
         {subtitle ? (
-          <CustomText
-            variant="label"
-            style={{ color: theme.colors.textSecondary, fontSize: 10, lineHeight: 14 }}
-          >
-            {subtitle}
-          </CustomText>
+          <CustomText variant="label" style={styles.subtitleText}>{subtitle}</CustomText>
         ) : null}
       </View>
       {onSeeAll ? (
         <Pressable onPress={onSeeAll}>
-          <CustomText variant="label" style={{ color: theme.colors.primary, fontWeight: '600' }}>
-            See all →
-          </CustomText>
+          <CustomText variant="label" style={styles.seeAllText}>See all →</CustomText>
         </Pressable>
       ) : null}
     </View>
@@ -90,14 +99,17 @@ export function SmartContentRail({
   if (horizontal) {
     return (
       <FadeIn>
-        <View style={{ marginBottom: theme.spacing.lg }}>
+        <View style={styles.outerH}>
           <Header />
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             scrollEventThrottle={16}
-            contentContainerStyle={{ paddingHorizontal: theme.spacing.md, gap: theme.spacing.sm }}
-            onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: scrollPos } } }], { useNativeDriver: false })}
+            contentContainerStyle={styles.hScrollContent}
+            onScroll={Animated.event(
+              [{ nativeEvent: { contentOffset: { x: scrollPos } } }],
+              { useNativeDriver: false },
+            )}
           >
             {items.map((item) => (
               <View key={item.id} style={{ width: cardWidth }}>
@@ -118,8 +130,8 @@ export function SmartContentRail({
             ))}
           </ScrollView>
           {showEngagementHint ? (
-            <View style={{ paddingHorizontal: theme.spacing.md, marginTop: theme.spacing.xs }}>
-              <CustomText variant="caption" style={{ color: theme.colors.textSecondary, fontStyle: 'italic' }}>
+            <View style={styles.engagementWrap}>
+              <CustomText variant="caption" style={styles.engagementText}>
                 Based on your listening history
               </CustomText>
             </View>
@@ -131,9 +143,9 @@ export function SmartContentRail({
 
   return (
     <FadeIn>
-      <View style={{ paddingHorizontal: theme.spacing.md, marginBottom: theme.spacing.lg }}>
+      <View style={styles.outerV}>
         <Header />
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm }}>
+        <View style={styles.gridRow}>
           {displayItems.map((item) => (
             <View
               key={item.id}
@@ -155,21 +167,8 @@ export function SmartContentRail({
           ))}
         </View>
         {items.length > 6 && !showMore ? (
-          <Pressable
-            onPress={() => setShowMore(true)}
-            style={{
-              marginTop: theme.spacing.md,
-              paddingVertical: theme.spacing.sm,
-              paddingHorizontal: theme.spacing.md,
-              borderRadius: theme.radius.lg,
-              borderWidth: 1.5,
-              borderColor: theme.colors.primary,
-              alignItems: 'center',
-            }}
-          >
-            <CustomText variant="title" style={{ color: theme.colors.primary, fontWeight: '700' }}>
-              Load More
-            </CustomText>
+          <Pressable onPress={() => setShowMore(true)} style={styles.loadMoreBtn}>
+            <CustomText variant="title" style={styles.loadMoreText}>Load More</CustomText>
           </Pressable>
         ) : null}
       </View>

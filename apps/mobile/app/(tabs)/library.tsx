@@ -5,6 +5,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { CustomText } from '../../components/CustomText';
 import { useAppTheme } from '../../util/colorScheme';
+import { makeStyles } from '../../styles/makeStyles';
 import { useContentFeed } from '../../hooks/useContentFeed';
 import { useLocalContent } from '../../hooks/useLocalContent';
 import type { FeedCardItem } from '../../services/contentService';
@@ -27,18 +28,35 @@ const TABS: { id: LibTab; label: string; icon: React.ComponentProps<typeof Mater
   { id: 'history', label: 'History', icon: 'history' },
 ];
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const useStyles = makeStyles((theme) => ({
+  tabBar: {
+    flexDirection: 'row', gap: 6, padding: 4,
+    borderRadius: 12, backgroundColor: theme.colors.subtleFill,
+  },
+  tabBtn:         { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, paddingHorizontal: 10, borderRadius: 12 },
+  tabBtnActive:   { backgroundColor: theme.colors.elevated, borderWidth: 1, borderColor: theme.colors.border },
+  tabBtnInactive: { backgroundColor: 'transparent', borderWidth: 0 },
+  tabLabel:       { fontSize: 12.5 },
+  tabLabelActive: { fontWeight: '700', color: theme.colors.text },
+  tabLabelInactive:{ fontWeight: '500', color: theme.colors.textMuted },
+  badgeWrap:      { minWidth: 16, height: 16, borderRadius: 8, paddingHorizontal: 4, alignItems: 'center', justifyContent: 'center' },
+  badgeActive:    { backgroundColor: theme.colors.primary },
+  badgeInactive:  { backgroundColor: 'rgba(255,255,255,0.10)' },
+  badgeText:      { fontSize: 9, fontWeight: '700' },
+  badgeTextActive:{ color: theme.colors.onPrimary },
+  badgeTextInactive: { color: theme.colors.primary },
+  sectionGap:     { gap: 12 },
+}));
+
+// ─── LibTabs ──────────────────────────────────────────────────────────────────
+
 function LibTabs({ active, onChange, counts }: { active: LibTab; onChange: (_t: LibTab) => void; counts: Record<LibTab, number> }) {
-  const theme = useAppTheme();
+  const styles = useStyles();
+  const theme  = useAppTheme();
   return (
-    <View
-      style={{
-        flexDirection: 'row',
-        gap: 6,
-        padding: 4,
-        borderRadius: 12,
-        backgroundColor: theme.colors.subtleFill,
-      }}
-    >
+    <View style={styles.tabBar}>
       {TABS.map((tab) => {
         const isActive = tab.id === active;
         return (
@@ -46,13 +64,7 @@ function LibTabs({ active, onChange, counts }: { active: LibTab; onChange: (_t: 
             key={tab.id}
             onPress={() => onChange(tab.id)}
             showFocusBorder={false}
-            style={{
-              flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-              gap: 6, paddingVertical: 10, paddingHorizontal: 10, borderRadius: 12,
-              backgroundColor: isActive ? theme.colors.elevated : 'transparent',
-              borderWidth: isActive ? 1 : 0,
-              borderColor: isActive ? theme.colors.border : 'transparent',
-            }}
+            style={[styles.tabBtn, isActive ? styles.tabBtnActive : styles.tabBtnInactive]}
           >
             <MaterialIcons
               name={tab.icon}
@@ -60,22 +72,13 @@ function LibTabs({ active, onChange, counts }: { active: LibTab; onChange: (_t: 
               color={isActive ? theme.colors.primary : theme.colors.textMuted}
             />
             <CustomText
-              style={{
-                fontSize: 12.5, fontWeight: isActive ? '700' : '500',
-                color: isActive ? theme.colors.text : theme.colors.textMuted,
-              }}
+              style={[styles.tabLabel, isActive ? styles.tabLabelActive : styles.tabLabelInactive]}
             >
               {tab.label}
             </CustomText>
             {counts[tab.id] > 0 ? (
-              <View
-                style={{
-                  minWidth: 16, height: 16, borderRadius: 8, paddingHorizontal: 4,
-                  backgroundColor: isActive ? theme.colors.primary : 'rgba(255,255,255,0.10)',
-                  alignItems: 'center', justifyContent: 'center',
-                }}
-              >
-                <CustomText style={{ fontSize: 9, fontWeight: '700', color: isActive ? theme.colors.onPrimary : theme.colors.primary }}>
+              <View style={[styles.badgeWrap, isActive ? styles.badgeActive : styles.badgeInactive]}>
+                <CustomText style={[styles.badgeText, isActive ? styles.badgeTextActive : styles.badgeTextInactive]}>
                   {counts[tab.id]}
                 </CustomText>
               </View>
@@ -87,7 +90,10 @@ function LibTabs({ active, onChange, counts }: { active: LibTab; onChange: (_t: 
   );
 }
 
+// ─── Screen ───────────────────────────────────────────────────────────────────
+
 export default function LibraryScreen() {
+  const styles = useStyles();
   const router = useRouter();
   const { feed, loading, refresh } = useContentFeed();
   const { favorites, history, loaded } = useLocalContent();
@@ -113,13 +119,11 @@ export default function LibraryScreen() {
       refreshing={loading || !loaded}
       onRefresh={() => refresh()}
     >
-      {/* Tabs */}
       <LibTabs active={activeTab} onChange={setActiveTab} counts={counts} />
 
-      {/* Saved */}
       {activeTab === 'saved' ? (
         <>
-          <View style={{ gap: 12 }}>
+          <View style={styles.sectionGap}>
             <SectionLabel title="Saved tracks" accent="Favorites" />
             <ContentRail
               title=""
@@ -140,9 +144,8 @@ export default function LibraryScreen() {
         </>
       ) : null}
 
-      {/* History */}
       {activeTab === 'history' ? (
-        <View style={{ gap: 12 }}>
+        <View style={styles.sectionGap}>
           <SectionLabel title="Recently played" accent="History" />
           <ContentRail
             title=""

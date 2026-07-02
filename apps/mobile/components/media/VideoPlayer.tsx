@@ -14,6 +14,7 @@ import { WebView } from 'react-native-webview';
 import { CustomText } from '../CustomText';
 import { isHostedVideoUrl } from '../../util/playerRoute';
 import { useAppTheme } from '../../util/colorScheme';
+import { makeStyles } from '../../styles/makeStyles';
 
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 const CONTROLS_HIDE_DELAY = 3500;
@@ -62,6 +63,252 @@ export function VideoPlayer({
   );
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const useStyles = makeStyles((theme) => ({
+  container: {
+    borderRadius: 18,
+    backgroundColor: '#000000',
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: theme.colors.primaryBorder,
+    shadowColor: '#000',
+    shadowOpacity: 0.32,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 10,
+  },
+  loadingShell: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 14,
+    zIndex: 5,
+    backgroundColor: theme.colors.background,
+  },
+  loadingIconRing: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    backgroundColor: theme.colors.primarySurface,
+    borderColor: theme.colors.primaryBorder,
+  },
+  loadingLabel: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: theme.colors.textMuted,
+  },
+  errorShell: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    backgroundColor: theme.colors.background,
+  },
+  errorLabel: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: theme.colors.textMuted,
+  },
+  openExternalBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 18,
+    paddingVertical: 9,
+    borderRadius: 999,
+    borderWidth: 1,
+    marginTop: 4,
+    backgroundColor: theme.colors.primarySurface,
+    borderColor: theme.colors.primaryBorder,
+  },
+  openExternalText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: theme.colors.primary,
+  },
+  titleRow: {
+    paddingHorizontal: 16,
+    paddingVertical: 13,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: theme.colors.divider,
+  },
+  titleText: {
+    fontSize: 14,
+    fontWeight: '600',
+    lineHeight: 20,
+    letterSpacing: -0.1,
+    color: theme.colors.text,
+  },
+  progressFill: {
+    height: 4,
+    borderRadius: 2,
+    position: 'relative',
+    backgroundColor: theme.colors.primary,
+  },
+}));
+
+// ─── Static palette-independent styles ────────────────────────────────────────
+
+const ss = StyleSheet.create({
+  // External pill (YouTube)
+  externalPill: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(0,0,0,0.60)',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+  },
+  externalPillText: {
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+
+  // Buffering
+  bufferingShell: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.36)',
+  },
+  bufferingRing: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.52)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.16)',
+  },
+
+  // Seek flash zones
+  seekFlashZone: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: '40%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+    backgroundColor: 'rgba(139,92,246,0.22)', // seek flash overlay — intentionally violet on video
+  },
+  seekFlashLeft:  { left: 0 },
+  seekFlashRight: { right: 0 },
+
+  // Controls overlay
+  overlayTopBar: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+  },
+  overlayTitleText: {
+    color: '#FFFFFF', // on-video overlay — always white
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+    textShadowColor: 'rgba(0,0,0,0.6)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
+  },
+
+  // Center play/pause controls
+  centerRow: {
+    ...StyleSheet.absoluteFillObject,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 28,
+  },
+  sideSeekBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.38)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.14)',
+  },
+  playPauseBtn: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.20)',
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.35)',
+  },
+
+  // Bottom bar
+  bottomBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingBottom: 14,
+    gap: 8,
+  },
+  timeText: {
+    color: 'rgba(255,255,255,0.88)', // on-video overlay — always white
+    fontSize: 11.5,
+    fontWeight: '600',
+    minWidth: 30,
+    textAlign: 'center',
+  },
+  fsBtn: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // Progress bar
+  progressHit: {
+    flex: 1,
+    height: 22,
+    justifyContent: 'center',
+  },
+  progressTrack: {
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.24)',
+    overflow: 'visible',
+  },
+  progressThumb: {
+    position: 'absolute',
+    right: -7,
+    top: -5,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOpacity: 0.35,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 4,
+  },
+});
+
 // ─── EmbedPlayer — YouTube / Vimeo via WebView ───────────────────────────────
 
 function EmbedPlayer({
@@ -75,7 +322,8 @@ function EmbedPlayer({
   embedUrl: string;
   height: number;
 }) {
-  const theme = useAppTheme();
+  const styles = useStyles();
+  const theme  = useAppTheme();
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
   const shimmerOpacity = useRef(new Animated.Value(1)).current;
@@ -103,7 +351,7 @@ function EmbedPlayer({
   };
 
   return (
-    <View style={[styles.container, { borderColor: theme.colors.primaryBorder }]}>
+    <View style={styles.container}>
       <View style={{ height, backgroundColor: '#000' }}>
         {!error ? (
           <WebView
@@ -120,25 +368,25 @@ function EmbedPlayer({
 
         {/* Branded loading state */}
         {!loaded && !error ? (
-          <Animated.View style={[styles.loadingShell, { backgroundColor: theme.colors.background, opacity: shimmerOpacity }]}>
-            <View style={[styles.loadingIconRing, { backgroundColor: theme.colors.primarySurface, borderColor: theme.colors.primaryBorder }]}>
+          <Animated.View style={[styles.loadingShell, { opacity: shimmerOpacity }]}>
+            <View style={styles.loadingIconRing}>
               <MaterialIcons name="smart-display" size={36} color={theme.colors.primary} />
             </View>
-            <CustomText style={[styles.loadingLabel, { color: theme.colors.textMuted }]}>Loading video…</CustomText>
+            <CustomText style={styles.loadingLabel}>Loading video…</CustomText>
           </Animated.View>
         ) : null}
 
         {/* Error state */}
         {error ? (
-          <View style={[styles.errorShell, { backgroundColor: theme.colors.background }]}>
+          <View style={styles.errorShell}>
             <MaterialIcons name="videocam-off" size={38} color={theme.colors.textMuted} />
-            <CustomText style={[styles.errorLabel, { color: theme.colors.textMuted }]}>Could not load video</CustomText>
+            <CustomText style={styles.errorLabel}>Could not load video</CustomText>
             <Pressable
               onPress={() => void Linking.openURL(sourceUri)}
-              style={[styles.openExternalBtn, { backgroundColor: theme.colors.primarySurface, borderColor: theme.colors.primaryBorder }]}
+              style={styles.openExternalBtn}
             >
               <MaterialIcons name="open-in-new" size={14} color={theme.colors.primary} />
-              <CustomText style={[styles.openExternalText, { color: theme.colors.primary }]}>Open on YouTube</CustomText>
+              <CustomText style={styles.openExternalText}>Open on YouTube</CustomText>
             </Pressable>
           </View>
         ) : null}
@@ -147,10 +395,10 @@ function EmbedPlayer({
         {loaded ? (
           <Pressable
             onPress={() => void Linking.openURL(sourceUri)}
-            style={styles.externalPill}
+            style={ss.externalPill}
           >
             <MaterialIcons name="open-in-new" size={12} color="rgba(255,255,255,0.85)" />
-            <CustomText style={styles.externalPillText}>YouTube</CustomText>
+            <CustomText style={ss.externalPillText}>YouTube</CustomText>
           </Pressable>
         ) : null}
       </View>
@@ -177,7 +425,7 @@ function NativeVideoPlayer({
   onPlayStateChange?: VideoPlayerProps['onPlayStateChange'];
   onProgress?: VideoPlayerProps['onProgress'];
 }) {
-  const theme = useAppTheme();
+  const styles = useStyles();
   const player = useVideoPlayer(sourceUri, (p) => {
     p.loop = false;
     p.muted = false;
@@ -271,7 +519,7 @@ function NativeVideoPlayer({
   const progress = duration > 0 ? Math.min(currentTime / duration, 1) : 0;
 
   return (
-    <View style={[styles.container, { borderColor: theme.colors.primaryBorder }]}>
+    <View style={styles.container}>
       <Pressable style={{ height }} onPress={bringUpControls}>
         {/* Video surface */}
         <VideoView
@@ -284,8 +532,8 @@ function NativeVideoPlayer({
 
         {/* Buffering */}
         {isBuffering ? (
-          <View style={styles.bufferingShell}>
-            <View style={styles.bufferingRing}>
+          <View style={ss.bufferingShell}>
+            <View style={ss.bufferingRing}>
               <MaterialIcons name="hourglass-top" size={24} color="rgba(255,255,255,0.70)" />
             </View>
           </View>
@@ -293,7 +541,7 @@ function NativeVideoPlayer({
 
         {/* Seek flash — left */}
         <Animated.View
-          style={[styles.seekFlashZone, styles.seekFlashLeft, { opacity: seekFlashL }]}
+          style={[ss.seekFlashZone, ss.seekFlashLeft, { opacity: seekFlashL }]}
           pointerEvents="none"
         >
           <MaterialIcons name="replay-10" size={34} color="#FFFFFF" />
@@ -301,7 +549,7 @@ function NativeVideoPlayer({
 
         {/* Seek flash — right */}
         <Animated.View
-          style={[styles.seekFlashZone, styles.seekFlashRight, { opacity: seekFlashR }]}
+          style={[ss.seekFlashZone, ss.seekFlashRight, { opacity: seekFlashR }]}
           pointerEvents="none"
         >
           <MaterialIcons name="forward-10" size={34} color="#FFFFFF" />
@@ -328,22 +576,22 @@ function NativeVideoPlayer({
 
             {/* Title overlay — top */}
             {title ? (
-              <View style={styles.overlayTopBar}>
-                <CustomText style={styles.overlayTitleText} numberOfLines={1}>
+              <View style={ss.overlayTopBar}>
+                <CustomText style={ss.overlayTitleText} numberOfLines={1}>
                   {title}
                 </CustomText>
               </View>
             ) : null}
 
             {/* Center controls */}
-            <View style={styles.centerRow} pointerEvents="box-none">
+            <View style={ss.centerRow} pointerEvents="box-none">
               {/* Rewind */}
-              <Pressable onPress={() => seekRelative(-10)} style={styles.sideSeekBtn}>
+              <Pressable onPress={() => seekRelative(-10)} style={ss.sideSeekBtn}>
                 <MaterialIcons name="replay-10" size={28} color="#FFFFFF" />
               </Pressable>
 
               {/* Play / Pause */}
-              <Pressable onPress={togglePlay} style={styles.playPauseBtn}>
+              <Pressable onPress={togglePlay} style={ss.playPauseBtn}>
                 <MaterialIcons
                   name={isPlaying ? 'pause' : 'play-arrow'}
                   size={36}
@@ -352,16 +600,16 @@ function NativeVideoPlayer({
               </Pressable>
 
               {/* Forward */}
-              <Pressable onPress={() => seekRelative(10)} style={styles.sideSeekBtn}>
+              <Pressable onPress={() => seekRelative(10)} style={ss.sideSeekBtn}>
                 <MaterialIcons name="forward-10" size={28} color="#FFFFFF" />
               </Pressable>
             </View>
 
             {/* Bottom bar */}
-            <View style={styles.bottomBar}>
-              <CustomText style={styles.timeText}>{formatTime(currentTime)}</CustomText>
+            <View style={ss.bottomBar}>
+              <CustomText style={ss.timeText}>{formatTime(currentTime)}</CustomText>
               <ProgressBar progress={progress} onSeek={seekToRatio} />
-              <CustomText style={styles.timeText}>{formatTime(duration)}</CustomText>
+              <CustomText style={ss.timeText}>{formatTime(duration)}</CustomText>
               <Pressable
                 onPress={() => {
                   /* expo-video handles fullscreen natively when user taps fullscreen button;
@@ -369,7 +617,7 @@ function NativeVideoPlayer({
                      re-shows controls as a user feedback. */
                   bringUpControls();
                 }}
-                style={styles.fsBtn}
+                style={ss.fsBtn}
                 hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
               >
                 <MaterialIcons name="fullscreen" size={22} color="rgba(255,255,255,0.85)" />
@@ -393,7 +641,7 @@ function ProgressBar({
   progress: number;
   onSeek: (ratio: number) => void;
 }) {
-  const theme = useAppTheme();
+  const styles = useStyles();
   const trackRef = useRef<View>(null);
 
   const handlePress = (e: { nativeEvent: { pageX: number } }) => {
@@ -407,11 +655,11 @@ function ProgressBar({
     <Pressable
       ref={trackRef as React.Ref<View>}
       onPress={handlePress}
-      style={styles.progressHit}
+      style={ss.progressHit}
     >
-      <View style={styles.progressTrack}>
-        <View style={[styles.progressFill, { width: `${Math.round(progress * 100)}%` as unknown as number, backgroundColor: theme.colors.primary }]}>
-          <View style={styles.progressThumb} />
+      <View style={ss.progressTrack}>
+        <View style={[styles.progressFill, { width: `${Math.round(progress * 100)}%` as unknown as number }]}>
+          <View style={ss.progressThumb} />
         </View>
       </View>
     </Pressable>
@@ -421,10 +669,10 @@ function ProgressBar({
 // ─── TitleRow ─────────────────────────────────────────────────────────────────
 
 function TitleRow({ title }: { title: string }) {
-  const theme = useAppTheme();
+  const styles = useStyles();
   return (
-    <View style={[styles.titleRow, { borderTopColor: theme.colors.divider }]}>
-      <CustomText style={[styles.titleText, { color: theme.colors.text }]} numberOfLines={2}>{title}</CustomText>
+    <View style={styles.titleRow}>
+      <CustomText style={styles.titleText} numberOfLines={2}>{title}</CustomText>
     </View>
   );
 }
@@ -466,238 +714,3 @@ function buildEmbedUrl(sourceUri: string): string | null {
 
   return null;
 }
-
-// ─── Styles ───────────────────────────────────────────────────────────────────
-
-const styles = StyleSheet.create({
-  container: {
-    borderRadius: 18,
-    backgroundColor: '#000000',
-    overflow: 'hidden',
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOpacity: 0.32,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 10,
-  },
-
-  // Loading
-  loadingShell: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 14,
-    zIndex: 5,
-  },
-  loadingIconRing: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1.5,
-  },
-  loadingLabel: {
-    fontSize: 13,
-    fontWeight: '500',
-  },
-
-  // Error
-  errorShell: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-  },
-  errorLabel: {
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  openExternalBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 18,
-    paddingVertical: 9,
-    borderRadius: 999,
-    borderWidth: 1,
-    marginTop: 4,
-  },
-  openExternalText: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-
-  // External pill (YouTube)
-  externalPill: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(0,0,0,0.60)',
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-  },
-  externalPillText: {
-    color: 'rgba(255,255,255,0.85)',
-    fontSize: 11,
-    fontWeight: '600',
-  },
-
-  // Title below video
-  titleRow: {
-    paddingHorizontal: 16,
-    paddingVertical: 13,
-    borderTopWidth: StyleSheet.hairlineWidth,
-  },
-  titleText: {
-    fontSize: 14,
-    fontWeight: '600',
-    lineHeight: 20,
-    letterSpacing: -0.1,
-  },
-
-  // Buffering
-  bufferingShell: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.36)',
-  },
-  bufferingRing: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.52)',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.16)',
-  },
-
-  // Seek flash zones
-  seekFlashZone: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    width: '40%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 12,
-    backgroundColor: 'rgba(139,92,246,0.22)', // seek flash overlay — intentionally violet on video
-  },
-  seekFlashLeft: { left: 0 },
-  seekFlashRight: { right: 0 },
-
-  // Controls overlay
-  overlayTopBar: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 16,
-    paddingTop: 14,
-  },
-  overlayTitleText: {
-    color: '#FFFFFF', // on-video overlay — always white
-    fontSize: 14,
-    fontWeight: '700',
-    letterSpacing: -0.2,
-    textShadowColor: 'rgba(0,0,0,0.6)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 4,
-  },
-
-  // Center play/pause controls
-  centerRow: {
-    ...StyleSheet.absoluteFillObject,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 28,
-  },
-  sideSeekBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.38)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
-  },
-  playPauseBtn: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.20)',
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.35)',
-  },
-
-  // Bottom bar
-  bottomBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingBottom: 14,
-    gap: 8,
-  },
-  timeText: {
-    color: 'rgba(255,255,255,0.88)', // on-video overlay — always white
-    fontSize: 11.5,
-    fontWeight: '600',
-    minWidth: 30,
-    textAlign: 'center',
-  },
-  fsBtn: {
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  // Progress bar
-  progressHit: {
-    flex: 1,
-    height: 22,
-    justifyContent: 'center',
-  },
-  progressTrack: {
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: 'rgba(255,255,255,0.24)',
-    overflow: 'visible',
-  },
-  progressFill: {
-    height: 4,
-    borderRadius: 2,
-    position: 'relative',
-  },
-  progressThumb: {
-    position: 'absolute',
-    right: -7,
-    top: -5,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOpacity: 0.35,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 4,
-  },
-});

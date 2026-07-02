@@ -16,6 +16,7 @@ import { CustomText } from '../CustomText';
 import { TVTouchable } from '../ui/TVTouchable';
 import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
 import { useAppTheme } from '../../util/colorScheme';
+import { makeStyles } from '../../styles/makeStyles';
 
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
@@ -46,6 +47,87 @@ interface AudioPlayerProps {
   totalTracks?: number;
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const useStyles = makeStyles((theme) => ({
+  // Artwork
+  artworkShadow: {
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOpacity: 0.65, shadowRadius: 52, shadowOffset: { width: 0, height: 28 },
+    elevation: 28,
+  },
+  artworkCenter:       { alignItems: 'center' },
+  artworkWrap:         { alignItems: 'center', marginBottom: 30 },
+
+  // Compact mode
+  compactWrap:         { gap: 16 },
+  compactCloseBtnWrap: { flexDirection: 'row', justifyContent: 'flex-end' },
+  closeBtn:            { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: theme.colors.surface },
+  closeBtnText:        { color: theme.colors.textSecondary },
+  compactMeta:         { gap: 3, alignItems: 'center', paddingHorizontal: 16 },
+  compactTitle:        { color: theme.colors.text, fontSize: 16, fontWeight: '700', textAlign: 'center' },
+  compactArtist:       { color: theme.colors.textMuted, fontSize: 12, textAlign: 'center' },
+  compactControlRow:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
+  compactPlayBtn: {
+    width: 68, height: 68, borderRadius: 34,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: theme.colors.primary, shadowColor: theme.colors.primary,
+    shadowOpacity: 0.50, shadowRadius: 24, shadowOffset: { width: 0, height: 8 },
+    elevation: 12,
+  },
+
+  // Track counter badge
+  trackCounterWrap:    { alignItems: 'center', marginBottom: 20 },
+  trackBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    paddingHorizontal: 12, paddingVertical: 5, borderRadius: 999, borderWidth: 1,
+    backgroundColor: theme.colors.primarySurface, borderColor: theme.colors.primaryBorder,
+  },
+  trackBadgeText:      { color: theme.colors.primary, fontSize: 11, fontWeight: '700', letterSpacing: 0.5 },
+
+  // Meta row (full mode)
+  metaRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    paddingHorizontal: 4, marginBottom: 14,
+  },
+  sideBtn: {
+    width: 44, height: 44, borderRadius: 22,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  metaFill:            { flex: 1, gap: 4 },
+  trackTitle:          { fontSize: 19, fontWeight: '800', letterSpacing: -0.4, textAlign: 'center', color: theme.colors.text },
+  trackArtist:         { fontSize: 13.5, fontWeight: '500', textAlign: 'center', color: theme.colors.textMuted },
+
+  // Controls row
+  controlsRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, marginTop: 10,
+  },
+  controlBtn: {
+    width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center',
+  },
+  playBtnFull: {
+    width: 88, height: 88, borderRadius: 44,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: theme.colors.primary, shadowColor: theme.colors.primary,
+    shadowOpacity: 0.55, shadowRadius: 28, shadowOffset: { width: 0, height: 10 },
+    elevation: 14,
+  },
+  sideBtnFaded:        { opacity: 0.28 },
+
+  // Progress
+  progressWrap:        { marginBottom: 6, marginTop: 6 },
+  progressPressable:   { paddingVertical: 13 },
+  timeRow:             { flexDirection: 'row', justifyContent: 'space-between', marginTop: 1 },
+  timeLabel:           { fontSize: 11, fontWeight: '500', color: theme.colors.textMuted },
+  progressThumb: {
+    position: 'absolute', right: -7, width: 14, height: 14, borderRadius: 7,
+    backgroundColor: '#FFFFFF', shadowOpacity: 0.45, shadowRadius: 5, elevation: 5,
+  },
+}));
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export function AudioPlayer({
   track,
   autoPlay = true,
@@ -63,19 +145,17 @@ export function AudioPlayer({
   currentTrackNumber,
   totalTracks,
 }: AudioPlayerProps) {
-  const theme = useAppTheme();
+  const styles = useStyles();
+  const theme  = useAppTheme();
   const { width } = useWindowDimensions();
   const player = useAudioPlayer(track.uri, { updateInterval: 350 });
   const status = useAudioPlayerStatus(player);
   const isCompact = Boolean(compact);
 
-  // Artwork animations
-  const artScale = useRef(new Animated.Value(1)).current;
+  const artScale   = useRef(new Animated.Value(1)).current;
   const artOpacity = useRef(new Animated.Value(1)).current;
-
-  // Glow pulse (full mode only)
   const glowOpacity = useRef(new Animated.Value(0.22)).current;
-  const glowScale = useRef(new Animated.Value(1.0)).current;
+  const glowScale   = useRef(new Animated.Value(1.0)).current;
   const glowLoopRef = useRef<Animated.CompositeAnimation | null>(null);
 
   const progressBarWidth = useRef(0);
@@ -139,7 +219,7 @@ export function AudioPlayer({
     return () => { glowLoopRef.current?.stop(); };
   }, [isPlaying, isCompact, glowOpacity, glowScale]);
 
-  // ── Audio setup effects ───────────────────────────────────────────────────
+  // ── Audio setup ───────────────────────────────────────────────────────────
   useEffect(() => {
     void setAudioModeAsync({
       allowsRecording: false,
@@ -186,7 +266,7 @@ export function AudioPlayer({
   const seekBySeconds = useCallback((delta: number) => {
     if (!status.isLoaded) return;
     const duration = Math.max(0, status.duration ?? 0);
-    const current = Math.max(0, status.currentTime ?? 0);
+    const current  = Math.max(0, status.currentTime ?? 0);
     void player.seekTo(Math.max(0, Math.min(duration || Number.MAX_SAFE_INTEGER, current + delta)));
   }, [player, status.currentTime, status.duration, status.isLoaded]);
 
@@ -199,26 +279,26 @@ export function AudioPlayer({
   }, [player, status.duration, status.isLoaded]);
 
   // ─────────────────────────────────────────────────────────────────────────
-  // COMPACT mode (used when embedded in a smaller context)
+  // COMPACT mode
   // ─────────────────────────────────────────────────────────────────────────
   if (isCompact) {
     return (
-      <View style={{ gap: 16 }}>
+      <View style={styles.compactWrap}>
         {onClose ? (
-          <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
-            <TVTouchable onPress={onClose} style={[styles.closeBtn, { backgroundColor: theme.colors.surface }]} showFocusBorder={false}>
-              <CustomText variant="caption" style={{ color: theme.colors.textSecondary }}>Close</CustomText>
+          <View style={styles.compactCloseBtnWrap}>
+            <TVTouchable onPress={onClose} style={styles.closeBtn} showFocusBorder={false}>
+              <CustomText variant="caption" style={styles.closeBtnText}>Close</CustomText>
             </TVTouchable>
           </View>
         ) : null}
-        <View style={{ alignItems: 'center' }}>
+        <View style={styles.artworkCenter}>
           <Animated.View style={[styles.artworkShadow, { width: artworkSize, height: artworkSize, borderRadius: 16, opacity: artOpacity, transform: [{ scale: artScale }] }]}>
             <Image source={{ uri: track.imageUrl || DEFAULT_CONTENT_IMAGE_URI }} resizeMode="cover" style={StyleSheet.absoluteFillObject} />
           </Animated.View>
         </View>
-        <View style={{ gap: 3, alignItems: 'center', paddingHorizontal: 16 }}>
-          <CustomText numberOfLines={1} style={{ color: theme.colors.text, fontSize: 16, fontWeight: '700', textAlign: 'center' }}>{track.title}</CustomText>
-          <CustomText numberOfLines={1} style={{ color: theme.colors.textMuted, fontSize: 12, textAlign: 'center' }}>{track.artist || 'ClaudyGod'}</CustomText>
+        <View style={styles.compactMeta}>
+          <CustomText numberOfLines={1} style={styles.compactTitle}>{track.title}</CustomText>
+          <CustomText numberOfLines={1} style={styles.compactArtist}>{track.artist || 'ClaudyGod'}</CustomText>
         </View>
         <ProgressSection
           progress={progress}
@@ -230,10 +310,10 @@ export function AudioPlayer({
           showThumb={false}
           paddingH={8}
         />
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+        <View style={styles.compactControlRow}>
           {onPrevious ? <ControlButton icon="skip-previous" onPress={onPrevious} disabled={!canGoPrevious} size={22} accessibilityLabel="Previous track" /> : null}
           <ControlButton icon="replay-10" onPress={() => seekBySeconds(-10)} size={22} accessibilityLabel="Rewind 10 seconds" />
-          <TVTouchable onPress={togglePlay} style={[styles.playBtnBase, { width: 68, height: 68, borderRadius: 34, backgroundColor: theme.colors.primary, shadowColor: theme.colors.primary }]} showFocusBorder={false} accessibilityLabel={isPlaying ? 'Pause' : 'Play'} accessibilityRole="button">
+          <TVTouchable onPress={togglePlay} style={styles.compactPlayBtn} showFocusBorder={false} accessibilityLabel={isPlaying ? 'Pause' : 'Play'} accessibilityRole="button">
             <MaterialIcons name={isPlaying ? 'pause' : 'play-arrow'} size={32} color={theme.colors.onPrimary} />
           </TVTouchable>
           <ControlButton icon="forward-10" onPress={() => seekBySeconds(10)} size={22} accessibilityLabel="Skip forward 10 seconds" />
@@ -248,30 +328,24 @@ export function AudioPlayer({
   // ─────────────────────────────────────────────────────────────────────────
   return (
     <View>
-
       {/* Track counter badge */}
       {currentTrackNumber != null && totalTracks != null && totalTracks > 1 ? (
-        <View style={{ alignItems: 'center', marginBottom: 20 }}>
-          <View style={[styles.trackBadge, { backgroundColor: theme.colors.primarySurface, borderColor: theme.colors.primaryBorder }]}>
+        <View style={styles.trackCounterWrap}>
+          <View style={styles.trackBadge}>
             <MaterialIcons name="graphic-eq" size={12} color={theme.colors.primary} />
-            <CustomText style={{ color: theme.colors.primary, fontSize: 11, fontWeight: '700', letterSpacing: 0.5 }}>
-              {`${currentTrackNumber} of ${totalTracks}`}
-            </CustomText>
+            <CustomText style={styles.trackBadgeText}>{`${currentTrackNumber} of ${totalTracks}`}</CustomText>
           </View>
         </View>
       ) : null}
 
       {/* Artwork + glow */}
-      <View style={{ alignItems: 'center', marginBottom: 30 }}>
+      <View style={styles.artworkWrap}>
         <View style={{ width: artworkSize, height: artworkSize, alignItems: 'center', justifyContent: 'center' }}>
-          {/* Pulsing radial glow behind the cover art */}
+          {/* Pulsing radial glow */}
           <Animated.View
             style={{
               position: 'absolute',
-              top: -GLOW_PAD,
-              left: -GLOW_PAD,
-              right: -GLOW_PAD,
-              bottom: -GLOW_PAD,
+              top: -GLOW_PAD, left: -GLOW_PAD, right: -GLOW_PAD, bottom: -GLOW_PAD,
               borderRadius: artworkSize / 2 + GLOW_PAD,
               backgroundColor: theme.colors.primaryBorder,
               opacity: glowOpacity,
@@ -279,69 +353,27 @@ export function AudioPlayer({
             }}
           />
           {/* Album cover */}
-          <Animated.View
-            style={[
-              styles.artworkShadow,
-              {
-                width: artworkSize,
-                height: artworkSize,
-                borderRadius: 22,
-                opacity: artOpacity,
-                transform: [{ scale: artScale }],
-              },
-            ]}
-          >
-            <Image
-              source={{ uri: track.imageUrl || DEFAULT_CONTENT_IMAGE_URI }}
-              resizeMode="cover"
-              style={StyleSheet.absoluteFillObject}
-            />
+          <Animated.View style={[styles.artworkShadow, { width: artworkSize, height: artworkSize, borderRadius: 22, opacity: artOpacity, transform: [{ scale: artScale }] }]}>
+            <Image source={{ uri: track.imageUrl || DEFAULT_CONTENT_IMAGE_URI }} resizeMode="cover" style={StyleSheet.absoluteFillObject} />
           </Animated.View>
         </View>
       </View>
 
-      {/* Title row — heart / title+artist / more-options */}
+      {/* Title row */}
       <View style={styles.metaRow}>
-        <TVTouchable
-          onPress={onFavoriteToggle}
-          disabled={!onFavoriteToggle}
-          style={styles.sideBtn}
-          showFocusBorder={false}
-          accessibilityLabel={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-        >
-          <MaterialIcons
-            name={isFavorite ? 'favorite' : 'favorite-border'}
-            size={24}
-            color={isFavorite ? theme.colors.primary : theme.colors.textMuted}
-          />
+        <TVTouchable onPress={onFavoriteToggle} disabled={!onFavoriteToggle} style={styles.sideBtn} showFocusBorder={false} accessibilityLabel={isFavorite ? 'Remove from favorites' : 'Add to favorites'}>
+          <MaterialIcons name={isFavorite ? 'favorite' : 'favorite-border'} size={24} color={isFavorite ? theme.colors.primary : theme.colors.textMuted} />
         </TVTouchable>
-
-        <View style={{ flex: 1, gap: 4 }}>
-          <CustomText
-            numberOfLines={1}
-            style={[styles.trackTitle, { color: theme.colors.text }]}
-          >
-            {track.title}
-          </CustomText>
-          <CustomText
-            numberOfLines={1}
-            style={[styles.trackArtist, { color: theme.colors.textMuted }]}
-          >
-            {track.artist || 'ClaudyGod'}
-          </CustomText>
+        <View style={styles.metaFill}>
+          <CustomText numberOfLines={1} style={styles.trackTitle}>{track.title}</CustomText>
+          <CustomText numberOfLines={1} style={styles.trackArtist}>{track.artist || 'ClaudyGod'}</CustomText>
         </View>
-
-        <TVTouchable
-          style={styles.sideBtn}
-          showFocusBorder={false}
-          accessibilityLabel="More options"
-          onPress={() => {}}
-        >
+        <TVTouchable style={styles.sideBtn} showFocusBorder={false} accessibilityLabel="More options" onPress={() => {}}>
           <MaterialIcons name="more-horiz" size={24} color={theme.colors.textMuted} />
         </TVTouchable>
       </View>
 
-      {/* Progress bar with interactive thumb */}
+      {/* Progress bar */}
       <ProgressSection
         progress={progress}
         positionLabel={positionLabel}
@@ -355,8 +387,7 @@ export function AudioPlayer({
 
       {/* Main playback controls */}
       <View style={styles.controlsRow}>
-        {/* Shuffle — visual placeholder (not yet wired) */}
-        <TVTouchable style={[styles.sideBtn, { opacity: 0.28 }]} showFocusBorder={false} onPress={() => {}}>
+        <TVTouchable style={[styles.sideBtn, styles.sideBtnFaded]} showFocusBorder={false} onPress={() => {}}>
           <MaterialIcons name="shuffle" size={20} color={theme.colors.textSecondary} />
         </TVTouchable>
 
@@ -366,14 +397,7 @@ export function AudioPlayer({
 
         <ControlButton icon="replay-10" onPress={() => seekBySeconds(-10)} size={24} accessibilityLabel="Rewind 10 seconds" />
 
-        {/* Play / Pause — primary CTA */}
-        <TVTouchable
-          onPress={togglePlay}
-          style={[styles.playBtnFull, { backgroundColor: theme.colors.primary, shadowColor: theme.colors.primary }]}
-          showFocusBorder={false}
-          accessibilityLabel={isPlaying ? 'Pause' : 'Play'}
-          accessibilityRole="button"
-        >
+        <TVTouchable onPress={togglePlay} style={styles.playBtnFull} showFocusBorder={false} accessibilityLabel={isPlaying ? 'Pause' : 'Play'} accessibilityRole="button">
           <MaterialIcons name={isPlaying ? 'pause' : 'play-arrow'} size={44} color={theme.colors.onPrimary} />
         </TVTouchable>
 
@@ -383,12 +407,10 @@ export function AudioPlayer({
           <ControlButton icon="skip-next" onPress={onNext} disabled={!canGoNext} size={28} accessibilityLabel="Next track" />
         ) : null}
 
-        {/* Repeat — visual placeholder (not yet wired) */}
-        <TVTouchable style={[styles.sideBtn, { opacity: 0.28 }]} showFocusBorder={false} onPress={() => {}}>
+        <TVTouchable style={[styles.sideBtn, styles.sideBtnFaded]} showFocusBorder={false} onPress={() => {}}>
           <MaterialIcons name="repeat" size={20} color={theme.colors.textSecondary} />
         </TVTouchable>
       </View>
-
     </View>
   );
 }
@@ -414,10 +436,11 @@ function ProgressSection({
   showThumb: boolean;
   paddingH: number;
 }) {
-  const theme = useAppTheme();
+  const styles = useStyles();
+  const theme  = useAppTheme();
   const thumbOffset = -(14 - trackHeight) / 2;
   return (
-    <View style={{ marginBottom: 6, marginTop: 6, paddingHorizontal: paddingH }}>
+    <View style={[styles.progressWrap, { paddingHorizontal: paddingH }]}>
       <Pressable
         onLayout={(e) => { progressBarWidth.current = e.nativeEvent.layout.width; }}
         onPress={(e) => {
@@ -425,24 +448,19 @@ function ProgressSection({
           if (!barW) return;
           onSeek(Math.max(0, Math.min(1, e.nativeEvent.locationX / barW)));
         }}
-        style={{ paddingVertical: 13 }}
+        style={styles.progressPressable}
       >
         <View style={{ height: trackHeight, borderRadius: trackHeight / 2, backgroundColor: theme.colors.divider }}>
           <View style={{ width: `${Math.round(progress * 100)}%`, height: trackHeight, borderRadius: trackHeight / 2, backgroundColor: theme.colors.primary }}>
             {showThumb ? (
-              <View
-                style={[
-                  styles.progressThumb,
-                  { top: thumbOffset, shadowColor: theme.colors.primary },
-                ]}
-              />
+              <View style={[styles.progressThumb, { top: thumbOffset, shadowColor: theme.colors.primary }]} />
             ) : null}
           </View>
         </View>
       </Pressable>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 1 }}>
-        <CustomText style={[styles.timeLabel, { color: theme.colors.textMuted }]}>{positionLabel}</CustomText>
-        <CustomText style={[styles.timeLabel, { color: theme.colors.textMuted }]}>{durationLabel}</CustomText>
+      <View style={styles.timeRow}>
+        <CustomText style={styles.timeLabel}>{positionLabel}</CustomText>
+        <CustomText style={styles.timeLabel}>{durationLabel}</CustomText>
       </View>
     </View>
   );
@@ -461,7 +479,8 @@ function ControlButton({
   size?: number;
   accessibilityLabel?: string;
 }) {
-  const theme = useAppTheme();
+  const styles = useStyles();
+  const theme  = useAppTheme();
   return (
     <TVTouchable
       onPress={onPress}
@@ -482,103 +501,3 @@ function formatMillis(value: number) {
   const seconds = totalSeconds % 60;
   return `${minutes}:${seconds < 10 ? `0${seconds}` : String(seconds)}`;
 }
-
-// ─── Styles ───────────────────────────────────────────────────────────────────
-
-const styles = StyleSheet.create({
-  artworkShadow: {
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOpacity: 0.65,
-    shadowRadius: 52,
-    shadowOffset: { width: 0, height: 28 },
-    elevation: 28,
-  },
-  trackBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 999,
-    borderWidth: 1,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 4,
-    marginBottom: 14,
-  },
-  sideBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  trackTitle: {
-    fontSize: 19,
-    fontWeight: '800',
-    letterSpacing: -0.4,
-    textAlign: 'center',
-  },
-  trackArtist: {
-    fontSize: 13.5,
-    fontWeight: '500',
-    textAlign: 'center',
-  },
-  progressThumb: {
-    position: 'absolute',
-    right: -7,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: '#FFFFFF',
-    shadowOpacity: 0.45,
-    shadowRadius: 5,
-    elevation: 5,
-  },
-  timeLabel: {
-    fontSize: 11,
-    fontWeight: '500',
-  },
-  controlsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    marginTop: 10,
-  },
-  controlBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  playBtnBase: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowOpacity: 0.50,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 12,
-  },
-  playBtnFull: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowOpacity: 0.55,
-    shadowRadius: 28,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 14,
-  },
-  closeBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 999,
-  },
-});
