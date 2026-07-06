@@ -84,7 +84,6 @@ make logs           # Show app logs
 - **React Native** - Cross-platform mobile framework
 - **Expo** - Development platform & tools
 - **TypeScript** - Type-safe JavaScript
-- **NativeWind** - Tailwind CSS for React Native
 - **Expo Router** - File-based routing
 
 ### Design & UI
@@ -219,7 +218,7 @@ Before shipping:
 - [ ] Tested on Android device
 - [ ] Performance verified (60fps)
 - [ ] Accessibility verified
-- [ ] Privacy policy updated
+- [x] Privacy policy updated — hosted at `/legal/privacy` (`services/api`), linked from Settings → Privacy
 - [ ] Version number bumped
 
 ## Support
@@ -239,10 +238,11 @@ For issues or questions:
 - [Expo Documentation](https://docs.expo.dev)
 - [React Native Docs](https://reactnative.dev)
 - [TypeScript Handbook](https://www.typescriptlang.org/docs)
-- [NativeWind Docs](https://nativewind.dev)
 
 ---
 
-**Status**: Production Ready ✅  
-**Version**: 1.0.0  
-**Last Updated**: 2024
+**Status**: Rebuilt for store submission — run `make lint`, `make typecheck`, and `make test`
+locally (network access is required to install dependencies) and complete device QA before
+checking this off as Production Ready.
+**Version**: 1.0.0
+**Last Updated**: 2026-07-06

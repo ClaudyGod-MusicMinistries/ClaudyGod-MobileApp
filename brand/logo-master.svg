@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 100 100">
+  <!-- ClaudyGod brand mark — "Rising Flame". Square, opaque, no baked corner
+       radius: consuming surfaces (iOS icon mask, CSS border-radius, RN View
+       overflow:hidden) apply their own rounding. -->
+  <rect width="100" height="100" fill="#1C1230"/>
+  <path d="M50 14 C 60 24, 60 32, 52 34 C 58 30, 66 40, 70 54 C 74 70, 62 82, 50 82 C 38 82, 26 70, 30 54 C 32 46, 36 42, 38 38 C 40 44, 46 44, 46 38 C 46 30, 42 26, 44 18 C 46 22, 48 18, 50 14 Z" fill="#F5F1FF"/>
+</svg>

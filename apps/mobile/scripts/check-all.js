@@ -93,7 +93,7 @@ class CheckRunner {
 
   checkTests() {
     this.header('4️⃣  TESTS CHECK');
-    return this.runCheck('Test suite', 'yarn test --passWithNoTests', true);
+    return this.runCheck('Test suite', 'yarn test', true);
   }
 
   summary() {

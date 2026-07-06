@@ -24,6 +24,7 @@
     "docker:prod:up": "docker compose --env-file .env.production -f docker-compose.production.yml up -d --build",
     "docker:prod:down": "docker compose --env-file .env.production -f docker-compose.production.yml down",
     "docker:prod:logs": "docker compose --env-file .env.production -f docker-compose.production.yml logs -f",
+    "brand:generate": "node brand/generate-assets.mjs",
     "review:all": "bash ./scripts/review-all.sh",
     "precommit:check": "bash ./scripts/precommit-all-staged.sh",
     "prepush:check": "bash ./scripts/prepush-all-checks.sh",
@@ -34,7 +35,7 @@
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/node": "^25.7.0",
-    "typescript": "^6.0.3"
+    "typescript": "~5.9.2"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",

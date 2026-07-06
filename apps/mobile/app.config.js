@@ -59,7 +59,7 @@ const resolvedEasProjectId =
   fileEnv.EAS_PROJECT_ID ||
   process.env.EXPO_PUBLIC_EAS_PROJECT_ID ||
   process.env.EAS_PROJECT_ID ||
-  '5e131e9f-13fe-476f-90e7-d61f9a801f0a'; // EAS project ID — not a secret
+  'fdb18cc3-e1d9-40e9-9a60-34b4a3b244b7'; // EAS project ID — not a secret
 const resolvedExpoOwner =
   fileEnv.EXPO_ACCOUNT_OWNER || process.env.EXPO_ACCOUNT_OWNER || 'peter4tech';
 const publicMobileApiKey =
@@ -72,7 +72,7 @@ const appFaviconAssetPath = './assets/favicon.png';
 const getFileOrEnv = (key, fallback = '') =>
   fileEnv[key] || process.env[key] || fallback;
 
-const appName = getFileOrEnv('EXPO_APP_NAME', 'CGMMTv');
+const appName = getFileOrEnv('EXPO_APP_NAME', 'ClaudyGod');
 const appSlug = getFileOrEnv('EXPO_APP_SLUG', 'claudygod');
 const appScheme = getFileOrEnv('EXPO_APP_SCHEME', 'claudygod');
 const appVersion = getFileOrEnv('EXPO_APP_VERSION', '1.0.0');
@@ -81,7 +81,11 @@ const appDescription = getFileOrEnv(
   'ClaudyGod worship, ministry updates, and secure account access across mobile and web.',
 );
 const uiStyle = getFileOrEnv('EXPO_USER_INTERFACE_STYLE', 'dark');
-const splashBgColor = getFileOrEnv('EXPO_SPLASH_BG_COLOR', '#06040D');
+// Canonical brand dark background — matches brand/logo-master.svg's tile color.
+// Keep this in sync with constants/color.ts's dark background token.
+const BRAND_DARK = '#1C1230';
+const splashBgColor = getFileOrEnv('EXPO_SPLASH_BG_COLOR', BRAND_DARK);
+const androidAdaptiveIconBgColor = getFileOrEnv('EXPO_ANDROID_ADAPTIVE_ICON_BG_COLOR', BRAND_DARK);
 const iosBundleId = getFileOrEnv('EXPO_IOS_BUNDLE_ID', 'com.claudygod.app');
 const iosBuildNumber = getFileOrEnv('EXPO_IOS_BUILD_NUMBER', '1');
 const iosSupportsTablet = getFileOrEnv('EXPO_IOS_SUPPORTS_TABLET', 'true') !== 'false';
@@ -194,13 +198,25 @@ module.exports = {
         NSMicrophoneUsageDescription: 'ClaudyGod uses your microphone to record audio messages.',
         NSPhotoLibraryUsageDescription: 'ClaudyGod accesses your photo library to let you choose a profile photo or upload content.',
       },
+      // Required since 2024 for App Store Connect uploads. Declares this app's own
+      // "required reason" API usage; installed Expo/RN modules (async-storage,
+      // secure-store, etc.) ship their own manifest fragments that autolinking
+      // aggregates automatically at prebuild time.
+      privacyManifests: {
+        NSPrivacyAccessedAPITypes: [
+          {
+            NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryUserDefaults',
+            NSPrivacyAccessedAPITypeReasons: ['CA92.1'],
+          },
+        ],
+      },
     },
     android: {
       package: androidPackage,
       icon: appIconAssetPath,
       adaptiveIcon: {
         foregroundImage: appAdaptiveIconAssetPath,
-        backgroundColor: splashBgColor,
+        backgroundColor: androidAdaptiveIconBgColor,
       },
       edgeToEdgeEnabled: androidEdgeToEdge,
     },

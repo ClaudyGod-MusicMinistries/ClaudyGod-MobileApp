@@ -1,6 +1,6 @@
 export const REFRESH_TOKEN_KEY = 'claudy_admin_refresh_token';
 export const MOBILE_PREVIEW_URL_KEY = 'claudy_admin_mobile_preview_url';
-export const BRAND_LOGO_URL = '/brand/claudy-logo.webp';
+export const BRAND_LOGO_URL = '/brand/claudy-logo.png';
 export const GOOGLE_LOGIN_URL = import.meta.env.VITE_GOOGLE_LOGIN_URL || '';
 export const INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000;
 export const YOUTUBE_SYNC_DEFAULT_LIMIT = 8;
