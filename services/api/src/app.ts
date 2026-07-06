@@ -23,10 +23,10 @@ import { biometricRouter } from './modules/auth/biometric.routes';
 import { accountSecurityRouter } from './modules/auth/accountSecurity.routes';
 import { contentRouter } from './modules/content/content.routes';
 import { healthRouter } from './modules/health/health.routes';
+import { legalRouter } from './modules/legal/legal.routes';
 import { liveRouter } from './modules/live/live.routes';
 import { meRouter } from './modules/me/me.routes';
 import { mobileRouter } from './modules/mobile/mobile.routes';
-import { uploadsRouter } from './modules/uploads/uploads.routes';
 import { youtubeRouter } from './modules/youtube/youtube.routes';
 import { adminWordOfDayRouter, mobileWordOfDayRouter } from './modules/wordOfDay/wordOfDay.routes';
 import engagementRouter from './modules/engagement/engagement.routes';
@@ -176,6 +176,9 @@ export const createApp = () => {
   // Health check (no auth needed)
   app.use('/', healthRouter);
 
+  // Public legal pages (no auth needed) — required for App Store/Play Store submission.
+  app.use('/', legalRouter);
+
   // Legacy auth routes (keep compatible with /v1/auth contract)
   app.use('/api/auth', authRouter);
 
@@ -200,7 +203,6 @@ export const createApp = () => {
   app.use('/v1/content', contentRouter);
   app.use('/v1/analytics', analyticsRouter);
   app.use('/v1/engagement', engagementRouter);
-  app.use('/v1/uploads', uploadsRouter);
   app.use('/v1/mobile', mobileRouter);
   app.use('/v1/mobile/app', mobileAppConfigRouter);
   app.use('/v1/mobile/word-of-day', mobileWordOfDayRouter);

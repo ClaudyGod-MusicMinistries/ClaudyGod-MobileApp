@@ -70,9 +70,8 @@ const LOGO_CID = 'claudygod-logo';
 
 const resolveLogoAssetPath = (): string | null => {
   const candidates = [
-    path.resolve(process.cwd(), 'assets/ClaudyGoLogo.webp'),
-    path.resolve(process.cwd(), 'src/assets/ClaudyGoLogo.webp'),
-    path.resolve(process.cwd(), '../../apps/mobile/assets/images/ClaudyGoLogo.webp'),
+    path.resolve(process.cwd(), 'assets/ClaudyGoLogo.png'),
+    path.resolve(process.cwd(), 'src/assets/ClaudyGoLogo.png'),
   ];
 
   return candidates.find((candidate) => fs.existsSync(candidate)) ?? null;
@@ -126,10 +125,10 @@ export const sendEmail = async (message: EmailMessageInput): Promise<EmailSendRe
       message.html?.includes(`cid:${LOGO_CID}`) && logoAssetPath
         ? [
             {
-              filename: 'ClaudyGoLogo.webp',
+              filename: 'ClaudyGoLogo.png',
               path: logoAssetPath,
               cid: LOGO_CID,
-              contentType: 'image/webp',
+              contentType: 'image/png',
             },
           ]
         : undefined,

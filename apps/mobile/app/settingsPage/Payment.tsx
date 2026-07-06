@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Linking, ScrollView, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -72,6 +72,16 @@ export default function PaymentScreen() {
   const methodLabel  = getParam(params.methodLabel);
   const supportEmail = config?.privacy?.contactEmail ?? 'support@claudygod.org';
 
+  // Giving isn't wired to a real payment processor yet (see Donate's "coming soon"
+  // state) — this screen only makes sense as a receipt for a completed selection.
+  // If it's reached directly (deep link, stray navigation) without an amount, bounce
+  // back to Donate instead of showing an empty/confusing "receipt".
+  useEffect(() => {
+    if (!amount) {
+      router.replace(APP_ROUTES.settingsPages.donate as never);
+    }
+  }, [amount, router]);
+
   const summaryItems = useMemo(
     () => [
       { label: 'Amount', value: amount ? `${amount} ${currency}` : 'Not selected' },
@@ -80,6 +90,10 @@ export default function PaymentScreen() {
     ],
     [amount, currency, frequency, methodLabel],
   );
+
+  if (!amount) {
+    return null;
+  }
 
   const contactGivingTeam = () => {
     const subject = encodeURIComponent('Giving review');

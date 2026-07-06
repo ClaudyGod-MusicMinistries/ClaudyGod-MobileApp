@@ -34,6 +34,7 @@ import { makeStyles } from '../../styles/makeStyles';
 import { common } from '../../styles/commonStyles';
 import { APP_ROUTES } from '../../util/appRoutes';
 import { BRAND_LOGO_ASSET, BRAND_MUSIC_ASSET, BRAND_WORSHIP_ASSET, DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
+import { useAppModal } from '../../context/AppModalContext';
 import type { FeedCardItem } from '../../services/contentService';
 
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
@@ -1243,7 +1244,7 @@ export function StreamingBanner({ item, badge = 'Featured', title, subtitle, cta
 export function GreetingBanner({ name }: { name?: string | null; newCount?: number }) {
   const styles = useStyles();
   const theme  = useAppTheme();
-  const router = useRouter();
+  const { showModal } = useAppModal();
   const hour   = new Date().getHours();
   const greeting = hour < 5 ? 'Still up' : hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
   const firstName = name ? name.split(' ')[0] : null;
@@ -1258,7 +1259,7 @@ export function GreetingBanner({ name }: { name?: string | null; newCount?: numb
           </CustomText>
           <CustomText style={styles.greetingDate}>{dateStr}</CustomText>
         </View>
-        <TVTouchable onPress={() => router.push(APP_ROUTES.profile as never)} showFocusBorder={false} style={styles.greetingNotifBtn}>
+        <TVTouchable onPress={() => showModal({ title: 'Coming soon', message: 'Notifications are on the way.', tone: 'info', primaryAction: { label: 'Got it' } })} showFocusBorder={false} style={styles.greetingNotifBtn}>
           <MaterialIcons name="notifications-none" size={20} color={theme.colors.text} />
         </TVTouchable>
       </View>

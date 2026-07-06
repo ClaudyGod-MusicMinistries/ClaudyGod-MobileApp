@@ -311,14 +311,6 @@ export interface YouTubeImportItem {
   importedAt: string | null;
 }
 
-// ─── Uploads ──────────────────────────────────────────────────────────────────
-
-export interface SignedUrlResponse {
-  uploadUrl: string;
-  key: string;
-  publicUrl: string;
-}
-
 // ─── Health ───────────────────────────────────────────────────────────────────
 
 export interface HealthCheck {

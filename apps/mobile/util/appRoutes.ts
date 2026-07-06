@@ -1,3 +1,8 @@
+// NOTE: `auth.*`, `profile`, and `accountSecurity` below are reserved for the
+// progressive/batched auth rollout (see apps/mobile/features/auth/README.md) — the
+// screens they point to live in `features/auth/`, outside Expo Router's `app/` tree,
+// so they are NOT currently routable. Do not navigate to them from live code until the
+// corresponding batch lands and a real file exists under `app/` at that path.
 export const APP_ROUTES = {
   landing: '/',
   auth: {

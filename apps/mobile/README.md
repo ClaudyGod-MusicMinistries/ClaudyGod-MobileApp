@@ -31,20 +31,19 @@ Bible Integration - Scripture references with songs
 
 | **Category**           | **Technology** |
 |--------------------------|----------------|
-| **Framework**            | React Native (Expo SDK 50+) |
+| **Framework**            | React Native 0.81 (Expo SDK 54) |
 | **Navigation**           | Expo Router (File-based routing) |
-| **Styling**              | NativeWind (Tailwind CSS for React Native) |
+| **Styling**              | Theme-aware `makeStyles` hook over `StyleSheet` (see `theme/`, `constants/color.ts`) |
 | **Language**             | TypeScript |
-| **State Management**     | Zustand |
-| **Database**             | Supabase (PostgreSQL) |
-| **Authentication**       | Claudy API JWT + email verification/reset |
-| **File Storage**         | Supabase Storage |
-| **Audio Streaming**      | Expo AV + react-native-track-player |
-| **Video Streaming**      | Expo AV Player |
+| **State Management**     | React Context (see `context/`) |
+| **Database**             | Postgres via the Claudy API (Supabase-hosted) |
+| **Authentication**       | Claudy API JWT + email verification/reset (currently guest-first — see `features/auth/README.md`) |
+| **File Storage**         | Supabase Storage (via the Claudy API's admin upload pipeline) |
+| **Audio Streaming**      | expo-audio |
+| **Video Streaming**      | expo-video |
 | **Push Notifications**   | Expo Notifications |
-| **Analytics**            | Expo Analytics |
-| **Code Quality**         | ESLint + Prettier |
-| **Testing**              | Jest + React Native Testing Library |
+| **Code Quality**         | ESLint |
+| **Testing**              | Jest (`jest-expo` preset) |
 | **Deployment**           | EAS (Expo Application Services) |
 
 ---
@@ -145,7 +144,7 @@ This complete README and codebase include:
 
 - 🎵 **Complete mobile app structure** for ClaudyGod Music Ministry  
 - 📱 **Ready-to-use components** (`MusicCard`, `AudioPlayer`, etc.)  
-- 🎨 **Professional styling** with Tailwind CSS and NativeWind  
+- 🎨 **Consistent theming** with a single `makeStyles`/theme-token system (light + dark)  
 - 🎧 **Music player functionality** with production-aligned content routing
 - 🔐 **Authentication setup** using backend JWT and transactional email flows
 - 🗂️ **Database schema** for ministry content  

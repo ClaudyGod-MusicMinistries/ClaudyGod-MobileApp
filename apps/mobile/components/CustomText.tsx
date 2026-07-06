@@ -19,12 +19,10 @@ const variantLineDefaults: Partial<Record<FontVariantKey, number>> = {
 
 interface CustomTextProps extends TextProps {
   variant?: FontVariantKey;
-  className?: string;
 }
 
 export const CustomText: React.FC<CustomTextProps> = ({
   variant = 'body',
-  className,
   children,
   style,
   numberOfLines: numberOfLinesProp,
@@ -44,7 +42,6 @@ export const CustomText: React.FC<CustomTextProps> = ({
 
   return (
     <Text
-      className={className}
       style={[finalStyle, style]}
       numberOfLines={numberOfLinesProp ?? variantLineDefaults[variant]}
       ellipsizeMode={ellipsizeModeProp ?? 'tail'}

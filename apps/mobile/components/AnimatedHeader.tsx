@@ -76,7 +76,7 @@ export const AnimatedHeader = ({
       <View style={styles.row}>
         <TVTouchable onPress={onPressHome} style={common.rowCenter} showFocusBorder={false}>
           <Image
-            source={require('../assets/images/ClaudyGoLogo.webp')}
+            source={require('../assets/images/logo.png')}
             style={styles.logoImage as ImageStyle}
             resizeMode="contain"
           />
