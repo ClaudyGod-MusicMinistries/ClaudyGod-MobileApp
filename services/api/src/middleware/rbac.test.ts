@@ -40,6 +40,10 @@ describe('hasMinRole', () => {
   });
 });
 
+// requireRole/requireExactRole throw synchronously rather than calling next(error) —
+// Express's own middleware dispatcher catches synchronous throws and forwards them to
+// error-handling middleware, so this is correct in production. Calling the middleware
+// directly (outside Express) means the throw surfaces as a real exception here.
 describe('requireRole middleware', () => {
   it('calls next() with no error when the caller meets the minimum role', () => {
     const next = jest.fn();
@@ -47,16 +51,16 @@ describe('requireRole middleware', () => {
     expect(next).toHaveBeenCalledWith();
   });
 
-  it('calls next(error) when the caller is below the minimum role', () => {
+  it('throws a ForbiddenError when the caller is below the minimum role', () => {
     const next = jest.fn();
-    requireRole('ADMIN')(fakeReq('CLIENT'), {} as Response, next);
-    expect(next).toHaveBeenCalledWith(expect.any(Error));
+    expect(() => requireRole('ADMIN')(fakeReq('CLIENT'), {} as Response, next)).toThrow(/Requires ADMIN or higher/);
+    expect(next).not.toHaveBeenCalled();
   });
 
-  it('calls next(error) when there is no authenticated user', () => {
+  it('throws an UnauthorizedError when there is no authenticated user', () => {
     const next = jest.fn();
-    requireRole('ADMIN')(fakeReq(undefined), {} as Response, next);
-    expect(next).toHaveBeenCalledWith(expect.any(Error));
+    expect(() => requireRole('ADMIN')(fakeReq(undefined), {} as Response, next)).toThrow(/Authentication required/);
+    expect(next).not.toHaveBeenCalled();
   });
 });
 
@@ -67,9 +71,9 @@ describe('requireExactRole middleware', () => {
     expect(next).toHaveBeenCalledWith();
   });
 
-  it('rejects a higher role not in the allow-list', () => {
+  it('throws a ForbiddenError for a role not in the allow-list, even a higher one', () => {
     const next = jest.fn();
-    requireExactRole('MODERATOR')(fakeReq('SUPER_ADMIN'), {} as Response, next);
-    expect(next).toHaveBeenCalledWith(expect.any(Error));
+    expect(() => requireExactRole('MODERATOR')(fakeReq('SUPER_ADMIN'), {} as Response, next)).toThrow(/Requires one of: MODERATOR/);
+    expect(next).not.toHaveBeenCalled();
   });
 });
