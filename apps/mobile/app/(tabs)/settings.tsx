@@ -67,7 +67,7 @@ const useStyles = makeStyles((theme) => ({
   rowDivider:       { borderTopColor: theme.colors.border },
   rowGroupWide:     { flex: 1, borderRadius: 14, overflow: 'hidden', borderWidth: 1, borderColor: theme.colors.border },
   quickGroupTopWash:{ position: 'absolute', top: 0, left: 0, right: 0, height: 46 },
-  settingsGroupsRow:{ gap: 12, alignItems: 'flex-start' },
+  settingsGroupsRow:{ gap: 12 },
   homeBtn:          { minWidth: 40, paddingHorizontal: 10 },
   cardEdgePad:      { paddingHorizontal: theme.spacing.md, paddingVertical: 0 },
   settingsGroupCard: { flex: 1, paddingHorizontal: theme.spacing.md, paddingVertical: 0 },
@@ -80,13 +80,13 @@ function SettingRow({ item }: { item: SettingItem }) {
   const theme  = useAppTheme();
   const device = useDeviceClass();
   const accentColor = item.accent ?? theme.colors.primary;
-  const boxSize = device.isTV ? 48 : 42;
-  const boxRadius = device.isTV ? 14 : 12;
+  const boxSize = device.isTV ? 50 : 46;
+  const boxRadius = device.isTV ? 15 : 13;
 
   return (
     <TVTouchable
       onPress={() => item.onToggle(!item.value)}
-      style={[styles.settingRowTouch, { paddingVertical: device.isTV ? 18 : 14 }]}
+      style={[styles.settingRowTouch, { paddingVertical: device.isTV ? 20 : 16 }]}
       showFocusBorder={false}
       accessibilityRole="switch"
       accessibilityState={{ checked: item.value }}
@@ -102,16 +102,16 @@ function SettingRow({ item }: { item: SettingItem }) {
       >
         <MaterialIcons
           name={item.icon}
-          size={device.isTV ? 22 : 19}
+          size={device.isTV ? 24 : 21}
           color={item.value ? accentColor : theme.colors.textMuted}
         />
       </View>
       <View style={styles.settingTextWrap}>
-        <CustomText style={[styles.settingLabel, { fontSize: device.isTV ? 15 : 13.5 }]}>
+        <CustomText style={[styles.settingLabel, { fontSize: device.isTV ? 15.5 : 14 }]}>
           {item.label}
         </CustomText>
         {item.hint ? (
-          <CustomText style={[styles.settingHint, { fontSize: device.isTV ? 12.5 : 11.5 }]}>
+          <CustomText style={[styles.settingHint, { fontSize: device.isTV ? 13 : 12 }]}>
             {item.hint}
           </CustomText>
         ) : null}
@@ -151,11 +151,12 @@ function AppearanceCard({ value, onChange }: { value: ThemePreference; onChange:
               key={option.value}
               onPress={() => onChange(option.value)}
               style={{
-                flex: 1, minHeight: device.isTV ? 88 : 68,
+                flex: 1, minHeight: device.isTV ? 92 : 78,
                 borderRadius: theme.radius.xl, borderWidth: 1.5,
-                borderColor: active ? theme.colors.primary : theme.colors.borderStrong,
-                backgroundColor: active ? theme.colors.card : 'transparent',
-                alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 8,
+                borderColor: active ? theme.colors.primary : theme.colors.border,
+                backgroundColor: active ? theme.colors.card : theme.colors.subtleFill,
+                alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10,
+                ...(active ? theme.shadows.sm : null),
               }}
               showFocusBorder={false}
               accessibilityRole="button"
@@ -163,27 +164,27 @@ function AppearanceCard({ value, onChange }: { value: ThemePreference; onChange:
             >
               <View
                 style={{
-                  width: device.isTV ? 40 : 32, height: device.isTV ? 40 : 32,
-                  borderRadius: 10, alignItems: 'center', justifyContent: 'center',
-                  backgroundColor: active ? theme.colors.elevated : 'transparent',
+                  width: device.isTV ? 44 : 36, height: device.isTV ? 44 : 36,
+                  borderRadius: 11, alignItems: 'center', justifyContent: 'center',
+                  backgroundColor: active ? theme.colors.elevated : theme.colors.subtleFillMed,
                 }}
               >
                 <MaterialIcons
                   name={option.icon}
-                  size={device.isTV ? 22 : 18}
-                  color={active ? theme.colors.primary : theme.colors.textMuted}
+                  size={device.isTV ? 24 : 20}
+                  color={active ? theme.colors.primary : theme.colors.textSecondary}
                 />
               </View>
               <CustomText
                 style={{
                   color: active ? theme.colors.text : theme.colors.textSecondary,
-                  fontSize: device.isTV ? 14 : 12.5,
-                  fontWeight: active ? '700' : '500',
+                  fontSize: device.isTV ? 15 : 13,
+                  fontWeight: active ? '700' : '600',
                 }}
               >
                 {option.label}
               </CustomText>
-              <CustomText style={{ color: theme.colors.textMuted, fontSize: device.isTV ? 11 : 10.5, textAlign: 'center' }}>
+              <CustomText style={{ color: theme.colors.textMuted, fontSize: device.isTV ? 11.5 : 10.5, textAlign: 'center' }}>
                 {option.hint}
               </CustomText>
             </TVTouchable>
@@ -200,12 +201,12 @@ function QuickLinkRow({ icon, label, hint, color, onPress }: { icon: React.Compo
   const styles = useStyles();
   const theme  = useAppTheme();
   const device = useDeviceClass();
-  const boxSize = device.isTV ? 48 : 42;
-  const boxRadius = device.isTV ? 14 : 12;
+  const boxSize = device.isTV ? 50 : 46;
+  const boxRadius = device.isTV ? 15 : 13;
 
   return (
     <TVTouchable onPress={onPress} showFocusBorder={false}>
-      <View style={[styles.linkRow, { paddingVertical: device.isTV ? 16 : 14 }]}>
+      <View style={[styles.linkRow, { paddingVertical: device.isTV ? 18 : 16 }]}>
         <View
           style={{
             width: boxSize, height: boxSize, borderRadius: boxRadius,
@@ -213,19 +214,19 @@ function QuickLinkRow({ icon, label, hint, color, onPress }: { icon: React.Compo
             backgroundColor: `${color}18`, borderWidth: 1, borderColor: `${color}28`,
           }}
         >
-          <MaterialIcons name={icon} size={device.isTV ? 22 : 19} color={color} />
+          <MaterialIcons name={icon} size={device.isTV ? 24 : 21} color={color} />
         </View>
         <View style={styles.linkLabelWrap}>
-          <CustomText style={[styles.linkLabel, { fontSize: device.isTV ? 15 : 13.5 }]}>
+          <CustomText style={[styles.linkLabel, { fontSize: device.isTV ? 15.5 : 14 }]}>
             {label}
           </CustomText>
           {hint ? (
-            <CustomText style={[styles.linkHint, { fontSize: device.isTV ? 12.5 : 11.5 }]}>
+            <CustomText style={[styles.linkHint, { fontSize: device.isTV ? 13 : 12 }]}>
               {hint}
             </CustomText>
           ) : null}
         </View>
-        <MaterialIcons name="chevron-right" size={18} color={theme.colors.textMuted} />
+        <MaterialIcons name="chevron-right" size={19} color={theme.colors.textMuted} />
       </View>
     </TVTouchable>
   );
@@ -418,7 +419,7 @@ export default function SettingsScreen() {
       <AppearanceCard value={themePreference} onChange={handleAppearanceChange} />
 
       {/* Settings groups */}
-      <View style={[styles.settingsGroupsRow, { flexDirection: isWideLayout ? 'row' : 'column' }]}>
+      <View style={[styles.settingsGroupsRow, { flexDirection: isWideLayout ? 'row' : 'column', alignItems: isWideLayout ? 'flex-start' : 'stretch' }]}>
         <SurfaceCard tone="subtle" style={styles.settingsGroupCard}>
           <View style={styles.sectionGroupPad}>
             <CustomText style={styles.sectionGroupLabel}>Playback</CustomText>

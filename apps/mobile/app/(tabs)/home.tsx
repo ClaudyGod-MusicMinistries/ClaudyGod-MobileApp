@@ -354,8 +354,8 @@ export default function HomeScreen() {
 
       {!loading && !allContent.length ? (
         <EmptyState
-          title="Your feed is loading"
-          message="Check your connection or search for something to get started."
+          title="Nothing to play yet"
+          message="We couldn't find any content. Check your connection or search for something specific."
           icon="wifi-off"
           actionLabel="Search"
           onAction={() => router.push(APP_ROUTES.tabs.search)}
