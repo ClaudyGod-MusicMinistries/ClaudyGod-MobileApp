@@ -1,5 +1,6 @@
 import React, { ReactNode } from 'react';
-import { View, Text, SafeAreaView, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useAppTheme } from '../util/colorScheme';
 import { makeStyles } from '../styles/makeStyles';
