@@ -7,6 +7,7 @@ import { useRouter } from 'expo-router';
 import { CustomText } from '../../components/CustomText';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { SupportMinistryCard } from '../../components/ui/SupportMinistryCard';
+import { InlineErrorBanner } from '../../components/ui/InlineErrorBanner';
 import { useContentFeed } from '../../hooks/useContentFeed';
 import { useWordOfDay } from '../../hooks/useWordOfDay';
 import { useAppTheme } from '../../util/colorScheme';
@@ -135,7 +136,6 @@ function HomeSearchBar({ onPress }: { onPress: () => void }) {
 
 function ContinueRow({ items, onPress }: { items: FeedCardItem[]; onPress: (_item: FeedCardItem) => void }) {
   const styles = useStyles();
-  const theme  = useAppTheme();
   const { width } = useWindowDimensions();
   const compact  = width < 430;
   const tileSize = compact ? 118 : 136;
@@ -229,7 +229,7 @@ function NewContentBanner({ item, onPress }: { item: FeedCardItem; onPress: () =
 export default function HomeScreen() {
   const styles = useStyles();
   const router = useRouter();
-  const { feed, loading, refresh } = useContentFeed();
+  const { feed, loading, error, refresh } = useContentFeed();
   const { bibleVerse, adminWord }  = useWordOfDay();
 
   const featured = useMemo(
@@ -267,6 +267,8 @@ export default function HomeScreen() {
       <GreetingBanner />
 
       <HomeSearchBar onPress={() => router.push(APP_ROUTES.tabs.search)} />
+
+      {error ? <InlineErrorBanner message={error} onRetry={() => void refresh()} /> : null}
 
       <PremiumHero
         item={featured}

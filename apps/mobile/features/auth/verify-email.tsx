@@ -2,18 +2,18 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
-import { CustomText } from '../components/CustomText';
-import { AuthFeedbackBanner } from '../components/auth/AuthFeedbackBanner';
-import { AuthOtpInput } from '../components/auth/AuthOtpInput';
-import { AuthScreenFrame } from '../components/auth/AuthScreenFrame';
-import { AuthTextField } from '../components/auth/AuthTextField';
-import { AppButton } from '../components/ui/AppButton';
-import { TVTouchable } from '../components/ui/TVTouchable';
-import { getEmailValidationMessage, isLikelyValidEmail, normalizeEmail } from '../lib/authValidation';
-import { useAuth } from '../context/AuthContext';
-import { useToast } from '../context/ToastContext';
-import { requestVerificationEmail, verifyMobileEmail } from '../services/authService';
-import { APP_ROUTES } from '../util/appRoutes';
+import { CustomText } from '../../components/CustomText';
+import { AuthFeedbackBanner } from '../../components/auth/AuthFeedbackBanner';
+import { AuthOtpInput } from '../../components/auth/AuthOtpInput';
+import { AuthScreenFrame } from '../../components/auth/AuthScreenFrame';
+import { AuthTextField } from '../../components/auth/AuthTextField';
+import { AppButton } from '../../components/ui/AppButton';
+import { TVTouchable } from '../../components/ui/TVTouchable';
+import { getEmailValidationMessage, isLikelyValidEmail, normalizeEmail } from './authValidation';
+import { useAuth } from './AuthContext';
+import { useToast } from '../../context/ToastContext';
+import { requestVerificationEmail, verifyMobileEmail } from '../../services/authService';
+import { APP_ROUTES } from '../../util/appRoutes';
 
 const getParam = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] ?? '' : value ?? '');
 

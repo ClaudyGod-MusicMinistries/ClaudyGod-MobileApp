@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Animated, Image, StyleSheet, TextInput, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { CustomText } from '../../components/CustomText';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
@@ -9,6 +10,7 @@ import { TVTouchable } from '../../components/ui/TVTouchable';
 import { useAppTheme } from '../../util/colorScheme';
 import { useToast } from '../../context/ToastContext';
 import { useContentFeed } from '../../hooks/useContentFeed';
+import { InlineErrorBanner } from '../../components/ui/InlineErrorBanner';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import { useDeviceClass } from '../../util/deviceClassConfig';
 import { makeStyles } from '../../styles/makeStyles';
@@ -201,7 +203,8 @@ export default function Search() {
   const [isSearching, setIsSearching] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
   const focusProgress = useRef(new Animated.Value(0)).current;
-  const { feed, loading, refresh } = useContentFeed();
+  const { feed, loading, error, refresh } = useContentFeed();
+  const queryClient = useQueryClient();
 
   const configuredCategories = config?.discovery?.categories;
   const configuredShortcuts  = config?.discovery?.shortcuts;
@@ -241,7 +244,10 @@ export default function Search() {
     setIsSearching(true);
     try {
       const type = activeCategory === 'All' ? undefined : activeCategory;
-      const results = await fetchSearchResults(normalized, type);
+      const results = await queryClient.fetchQuery({
+        queryKey: ['search', normalized, type ?? 'All'],
+        queryFn: () => fetchSearchResults(normalized, type),
+      });
       setRemoteResults(results);
       if (!results.length) showToast({ title: 'No matches', message: 'Try another word or category.', tone: 'info' });
     } catch (error) {
@@ -249,7 +255,7 @@ export default function Search() {
     } finally {
       setIsSearching(false);
     }
-  }, [activeCategory, query, showToast]);
+  }, [activeCategory, query, showToast, queryClient]);
 
   const openResult = async (item: FeedCardItem) => {
     await trackPlayEvent({ contentId: item.id, contentType: item.type, title: item.title, source: 'search' });
@@ -352,6 +358,8 @@ export default function Search() {
           })}
         </View>
       </SurfaceCard>
+
+      {error && !hasQuery ? <InlineErrorBanner message={error} onRetry={() => void refresh()} /> : null}
 
       {/* ── Quick discovery shortcuts ── */}
       {!hasQuery && shortcuts.length > 0 ? (

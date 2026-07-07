@@ -1,19 +1,23 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from 'react';
 import { AppState } from 'react-native';
 import type { FeedCardItem } from '../services/contentService';
+import { usePlayerProgress } from './PlayerProgressContext';
 
-// Floating player allows users to minimize and keep playing while navigating
-// Supports both audio (music) and video content
+// Floating player allows users to minimize and keep playing while navigating.
+// Supports both audio (music) and video content.
+//
+// Playback progress (currentTime/duration) lives in the separate, high-frequency
+// PlayerProgressContext — this context only holds identity/controls state, which
+// changes far less often, so a progress tick no longer re-renders every consumer here
+// (e.g. the root layout, which only needs to know whether a player is active).
 
 export type PlayerType = 'audio' | 'video' | null;
 
-interface FloatingPlayerState {
+interface PlayerState {
   type: PlayerType;
   content: FeedCardItem | null;
   isMinimized: boolean;
   isPlaying: boolean;
-  currentTime: number;
-  duration: number;
   playlist: FeedCardItem[];
   currentIndex: number;
   controls?: {
@@ -22,37 +26,35 @@ interface FloatingPlayerState {
   };
 }
 
-type FloatingPlayerContextValue = {
-  player: FloatingPlayerState;
+type PlayerContextValue = {
+  player: PlayerState;
   startPlaying: (_content: FeedCardItem, _type: PlayerType, _playlist?: FeedCardItem[]) => void;
   pause: () => void;
   resume: () => void;
   minimize: () => void;
   maximize: () => void;
   close: () => void;
-  updateProgress: (_currentTime: number, _duration: number) => void;
   playNext: () => void;
   playPrevious: () => void;
   setPlaylist: (_items: FeedCardItem[]) => void;
   setPlaybackControls: (_controls?: { pause: () => void; resume: () => void }) => void;
 };
 
-const FloatingPlayerContext = createContext<FloatingPlayerContextValue | undefined>(undefined);
+const PlayerContext = createContext<PlayerContextValue | undefined>(undefined);
 
-const INITIAL_STATE: FloatingPlayerState = {
+const INITIAL_STATE: PlayerState = {
   type: null,
   content: null,
   isMinimized: false,
   isPlaying: false,
-  currentTime: 0,
-  duration: 0,
   playlist: [],
   currentIndex: 0,
   controls: undefined,
 };
 
-export function FloatingPlayerProvider({ children }: { children: ReactNode }) {
-  const [player, setPlayer] = useState<FloatingPlayerState>(INITIAL_STATE);
+export function PlayerProvider({ children }: { children: ReactNode }) {
+  const [player, setPlayer] = useState<PlayerState>(INITIAL_STATE);
+  const { resetProgress } = usePlayerProgress();
   const controlsRef = useRef<{ pause: () => void; resume: () => void } | undefined>(undefined);
 
   useEffect(() => {
@@ -74,18 +76,17 @@ export function FloatingPlayerProvider({ children }: { children: ReactNode }) {
       const actualPlaylist = playlist.length > 0 ? playlist : [content];
       const currentIndex = actualPlaylist.findIndex((item) => item.id === content.id);
 
+      resetProgress();
       setPlayer({
         type,
         content,
         isMinimized: false,
         isPlaying: true,
-        currentTime: 0,
-        duration: 0,
         playlist: actualPlaylist,
         currentIndex: currentIndex >= 0 ? currentIndex : 0,
       });
     },
-    [],
+    [resetProgress],
   );
 
   const pause = useCallback(() => {
@@ -108,18 +109,12 @@ export function FloatingPlayerProvider({ children }: { children: ReactNode }) {
 
   const close = useCallback(() => {
     player.controls?.pause();
+    resetProgress();
     setPlayer(INITIAL_STATE);
-  }, [player.controls]);
-
-  const updateProgress = useCallback((currentTime: number, duration: number) => {
-    setPlayer((prev) => ({
-      ...prev,
-      currentTime,
-      duration,
-    }));
-  }, []);
+  }, [player.controls, resetProgress]);
 
   const playNext = useCallback(() => {
+    resetProgress();
     setPlayer((prev) => {
       if (prev.playlist.length === 0) return prev;
 
@@ -130,14 +125,13 @@ export function FloatingPlayerProvider({ children }: { children: ReactNode }) {
         ...prev,
         content: nextContent,
         currentIndex: nextIndex,
-        currentTime: 0,
-        duration: 0,
         isPlaying: true,
       };
     });
-  }, []);
+  }, [resetProgress]);
 
   const playPrevious = useCallback(() => {
+    resetProgress();
     setPlayer((prev) => {
       if (prev.playlist.length === 0) return prev;
 
@@ -148,12 +142,10 @@ export function FloatingPlayerProvider({ children }: { children: ReactNode }) {
         ...prev,
         content: prevContent,
         currentIndex: prevIndex,
-        currentTime: 0,
-        duration: 0,
         isPlaying: true,
       };
     });
-  }, []);
+  }, [resetProgress]);
 
   const setPlaylist = useCallback((items: FeedCardItem[]) => {
     setPlayer((prev) => ({
@@ -171,7 +163,7 @@ export function FloatingPlayerProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <FloatingPlayerContext.Provider
+    <PlayerContext.Provider
       value={{
         player,
         startPlaying,
@@ -180,7 +172,6 @@ export function FloatingPlayerProvider({ children }: { children: ReactNode }) {
         minimize,
         maximize,
         close,
-        updateProgress,
         playNext,
         playPrevious,
         setPlaylist,
@@ -188,15 +179,15 @@ export function FloatingPlayerProvider({ children }: { children: ReactNode }) {
       }}
     >
       {children}
-    </FloatingPlayerContext.Provider>
+    </PlayerContext.Provider>
   );
 }
 
-export function useFloatingPlayer() {
-  const context = useContext(FloatingPlayerContext);
+export function usePlayer() {
+  const context = useContext(PlayerContext);
 
   if (!context) {
-    throw new Error('useFloatingPlayer must be used inside FloatingPlayerProvider');
+    throw new Error('usePlayer must be used inside PlayerProvider');
   }
 
   return context;

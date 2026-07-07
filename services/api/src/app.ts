@@ -179,9 +179,6 @@ export const createApp = () => {
   // Public legal pages (no auth needed) — required for App Store/Play Store submission.
   app.use('/', legalRouter);
 
-  // Legacy auth routes (keep compatible with /v1/auth contract)
-  app.use('/api/auth', authRouter);
-
   // Auth routes (have their own rate limiting)
   app.use('/v1/auth', authRouter);
 

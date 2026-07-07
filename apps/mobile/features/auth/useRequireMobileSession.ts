@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { APP_ROUTES } from '../util/appRoutes';
+import { useAuth } from './AuthContext';
+import { APP_ROUTES } from '../../util/appRoutes';
 
 export function useRequireMobileSession(): boolean {
   const router = useRouter();

@@ -13,6 +13,7 @@ import { makeStyles } from '../../styles/makeStyles';
 import { useDeviceClass } from '../../util/deviceClassConfig';
 import { APP_ROUTES } from '../../util/appRoutes';
 import { useUserAccount } from '../../context/UserAccountContext';
+import { useAccountSheet } from '../../context/AccountSheetContext';
 import {
   PremiumPage,
   SectionLabel,
@@ -233,7 +234,8 @@ export default function SettingsScreen() {
   const { themePreference, setThemePreference } = useThemeContext();
   const router = useRouter();
   const { showModal } = useAppModal();
-  const { account, isSignedIn, signOut, openAccountSheet } = useUserAccount();
+  const { account, isSignedIn, signOut } = useUserAccount();
+  const { openAccountSheet } = useAccountSheet();
 
   const [notifications,   setNotifications]   = useState(true);
   const [autoPlay,        setAutoPlay]         = useState(true);

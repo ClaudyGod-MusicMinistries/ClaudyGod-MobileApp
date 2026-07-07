@@ -1,6 +1,6 @@
-// util/ThemeContext.tsx
+// context/ThemeProvider.tsx
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, { createContext, useContext, useEffect, useMemo, useState, ReactNode } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState, ReactNode } from 'react';
 import { useColorScheme as useNativeColorScheme } from 'react-native';
 import { ColorScheme } from '../constants/color';
 import { getTheme, AppTheme } from '../theme';
@@ -55,32 +55,35 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
         : 'dark'
       : themePreference;
 
-  const toggleColorScheme = () => {
+  const toggleColorScheme = useCallback(() => {
     const next = colorScheme === 'light' ? 'dark' : 'light';
     setThemePreference(next);
     void AsyncStorage.setItem(THEME_STORAGE_KEY, next).catch(() => undefined);
-  };
+  }, [colorScheme]);
 
-  const setColorScheme = (scheme: ColorScheme) => {
+  const setColorScheme = useCallback((scheme: ColorScheme) => {
     setThemePreference(scheme);
     void AsyncStorage.setItem(THEME_STORAGE_KEY, scheme).catch(() => undefined);
-  };
+  }, []);
 
-  const applyThemePreference = (scheme: ColorScheme | 'system') => {
+  const applyThemePreference = useCallback((scheme: ColorScheme | 'system') => {
     setThemePreference(scheme);
     void AsyncStorage.setItem(THEME_STORAGE_KEY, scheme).catch(() => undefined);
-  };
+  }, []);
 
   const theme = useMemo(() => getTheme(colorScheme), [colorScheme]);
 
-  const value = {
-    colorScheme,
-    themePreference,
-    toggleColorScheme,
-    setColorScheme,
-    setThemePreference: applyThemePreference,
-    theme,
-  };
+  const value = useMemo(
+    () => ({
+      colorScheme,
+      themePreference,
+      toggleColorScheme,
+      setColorScheme,
+      setThemePreference: applyThemePreference,
+      theme,
+    }),
+    [colorScheme, themePreference, toggleColorScheme, setColorScheme, applyThemePreference, theme],
+  );
 
   return (
     <ThemeContext.Provider value={value}>

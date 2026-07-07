@@ -512,7 +512,11 @@ function NativeVideoPlayer({
   };
 
   const togglePlay = () => {
-    isPlaying ? player.pause() : player.play();
+    if (isPlaying) {
+      player.pause();
+    } else {
+      player.play();
+    }
     bringUpControls();
   };
 
@@ -639,7 +643,7 @@ function ProgressBar({
   onSeek,
 }: {
   progress: number;
-  onSeek: (ratio: number) => void;
+  onSeek: (_ratio: number) => void;
 }) {
   const styles = useStyles();
   const trackRef = useRef<View>(null);

@@ -7,17 +7,17 @@ import React, { useState, useRef, useCallback } from 'react';
 import { View, TextInput, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { CustomText } from '../components/CustomText';
-import { AuthFeedbackBanner } from '../components/auth/AuthFeedbackBanner';
-import { AuthScreenFrame } from '../components/auth/AuthScreenFrame';
-import { AuthTextField } from '../components/auth/AuthTextField';
-import { AppButton } from '../components/ui/AppButton';
-import { TVTouchable } from '../components/ui/TVTouchable';
-import { isLikelyValidEmail, normalizeEmail } from '../lib/authValidation';
-import { requestEmailOtp, verifyEmailOtp } from '../services/authService';
-import { useToast } from '../context/ToastContext';
-import { APP_ROUTES } from '../util/appRoutes';
-import { useAppTheme } from '../util/colorScheme';
+import { CustomText } from '../../components/CustomText';
+import { AuthFeedbackBanner } from '../../components/auth/AuthFeedbackBanner';
+import { AuthScreenFrame } from '../../components/auth/AuthScreenFrame';
+import { AuthTextField } from '../../components/auth/AuthTextField';
+import { AppButton } from '../../components/ui/AppButton';
+import { TVTouchable } from '../../components/ui/TVTouchable';
+import { isLikelyValidEmail, normalizeEmail } from './authValidation';
+import { requestEmailOtp, verifyEmailOtp } from '../../services/authService';
+import { useToast } from '../../context/ToastContext';
+import { APP_ROUTES } from '../../util/appRoutes';
+import { useAppTheme } from '../../util/colorScheme';
 
 type Phase = 'email' | 'code';
 

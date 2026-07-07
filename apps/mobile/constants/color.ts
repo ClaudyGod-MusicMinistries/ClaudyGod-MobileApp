@@ -141,7 +141,3 @@ export const colors = {
 };
 
 export type ColorScheme = 'light' | 'dark';
-
-// Legacy aliases kept for older imports in the project.
-export const colors_light = colors.dark;
-export const colors_dark = colors.light;

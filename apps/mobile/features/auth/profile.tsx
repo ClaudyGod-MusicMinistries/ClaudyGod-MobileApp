@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Image,
@@ -11,21 +11,21 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
-import { CustomText } from '../components/CustomText';
-import { useAppTheme } from '../util/colorScheme';
-import { useDeviceClass } from '../util/deviceClassConfig';
-import { FadeIn } from '../components/ui/FadeIn';
-import { TVTouchable } from '../components/ui/TVTouchable';
-import { ConfirmModal } from '../components/ui/ConfirmModal';
-import { ActionSheet } from '../components/ui/ActionSheet';
-import { fetchUserProfileMetrics } from '../services/supabaseAnalytics';
-import { clearMobileSession } from '../services/authService';
-import { useRequireMobileSession } from '../hooks/useRequireMobileSession';
-import { useMediaPicker } from '../hooks/useMediaPicker';
-import { useContentUpload } from '../hooks/useContentUpload';
-import { APP_ROUTES } from '../util/appRoutes';
-import { useToast } from '../context/ToastContext';
-import type { AppTheme } from '../theme';
+import { CustomText } from '../../components/CustomText';
+import { useAppTheme } from '../../util/colorScheme';
+import { useDeviceClass } from '../../util/deviceClassConfig';
+import { FadeIn } from '../../components/ui/FadeIn';
+import { TVTouchable } from '../../components/ui/TVTouchable';
+import { ConfirmModal } from '../../components/ui/ConfirmModal';
+import { ActionSheet } from '../../components/ui/ActionSheet';
+import { fetchUserProfileMetrics } from '../../services/supabaseAnalytics';
+import { clearMobileSession } from '../../services/authService';
+import { useRequireMobileSession } from './useRequireMobileSession';
+import { useMediaPicker } from '../../hooks/useMediaPicker';
+import { useContentUpload } from '../../hooks/useContentUpload';
+import { APP_ROUTES } from '../../util/appRoutes';
+import { useToast } from '../../context/ToastContext';
+import type { AppTheme } from '../../theme';
 
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 

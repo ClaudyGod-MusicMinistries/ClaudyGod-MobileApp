@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../CustomText';
-import { getPasswordStrengthReport } from '../../lib/authValidation';
+import { getPasswordStrengthReport } from '../../features/auth/authValidation';
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 

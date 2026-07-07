@@ -12,13 +12,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 
-import { AppButton } from '../components/ui/AppButton';
-import { CustomText } from '../components/CustomText';
-import { TVTouchable } from '../components/ui/TVTouchable';
-import { useAppTheme } from '../util/colorScheme';
-import { APP_ROUTES } from '../util/appRoutes';
-import { BRAND_WORSHIP_ASSET } from '../util/brandAssets';
-import { useDeviceClass } from '../util/deviceClassConfig';
+import { AppButton } from '../../components/ui/AppButton';
+import { CustomText } from '../../components/CustomText';
+import { TVTouchable } from '../../components/ui/TVTouchable';
+import { useAppTheme } from '../../util/colorScheme';
+import { APP_ROUTES } from '../../util/appRoutes';
+import { BRAND_WORSHIP_ASSET } from '../../util/brandAssets';
+import { useDeviceClass } from '../../util/deviceClassConfig';
 
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
@@ -220,7 +220,7 @@ export default function LandingScreen() {
             >
               <MaterialIcons name="explore" size={20} color={theme.colors.onPrimary} />
               <CustomText style={{ color: theme.colors.onPrimary, fontSize: 16, fontWeight: '700', letterSpacing: -0.2 }}>
-                Start exploring — it's free
+                Start exploring — it&apos;s free
               </CustomText>
             </TVTouchable>
 

@@ -2,7 +2,8 @@ import React from 'react';
 import { Image, View, TouchableOpacity } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useFloatingPlayer } from '../../context/FloatingPlayerContext';
+import { usePlayer } from '../../context/PlayerContext';
+import { usePlayerProgress } from '../../context/PlayerProgressContext';
 import { useAppTheme } from '../../util/colorScheme';
 import { makeStyles } from '../../styles/makeStyles';
 import { CustomText } from '../CustomText';
@@ -57,7 +58,8 @@ const useStyles = makeStyles((theme) => ({
 
 export function MinimizedFloatingPlayer() {
   const styles = useStyles();
-  const { player, resume, pause, maximize, close } = useFloatingPlayer();
+  const { player, resume, pause, maximize, close } = usePlayer();
+  const { currentTime, duration } = usePlayerProgress();
   const theme = useAppTheme();
   const router = useRouter();
 
@@ -65,8 +67,8 @@ export function MinimizedFloatingPlayer() {
     return null;
   }
 
-  const progressPercentage = player.duration > 0
-    ? Math.min(100, (player.currentTime / player.duration) * 100)
+  const progressPercentage = duration > 0
+    ? Math.min(100, (currentTime / duration) * 100)
     : 0;
   const isAudio = player.type === 'audio';
   const hasControls = Boolean(player.controls);

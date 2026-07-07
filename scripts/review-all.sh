@@ -4,6 +4,10 @@
 #  Manual trigger: make review  OR  bash ./scripts/review-all.sh
 #  Equivalent to running the pre-push gate without git context.
 #  Logs to logs/git-hooks/review-YYYY-MM-DD_HH-MM-SS.log
+#
+#  Portable to macOS's stock bash 3.2 + BSD date on purpose: no associative
+#  arrays (bash 4+ only) and no `date +%N` (GNU-only, prints a literal "N" on
+#  BSD date) — timing is whole-second precision, which this gate doesn't need.
 # =============================================================================
 set -euo pipefail
 
@@ -20,7 +24,7 @@ exec > >(tee -a "$LOG_FILE") 2>&1
 ERRORS=0
 WARNINGS=0
 STEP_NUM=0
-declare -A STEP_TIMES
+CURRENT_STEP_START=0
 
 echo "════════════════════════════════════════════════════════════════"
 echo "  ClaudyGod Full Repo Review  •  $TIMESTAMP"
@@ -29,20 +33,22 @@ echo "════════════════════════�
 
 step_start() {
   ((STEP_NUM++)) || true
-  STEP_TIMES[$STEP_NUM]=$(date +%s%3N)
+  CURRENT_STEP_START=$(date +%s)
   echo ""
   echo "┌─ [Step $STEP_NUM] $1"
+}
+
+step_elapsed() {
+  echo $(( $(date +%s) - CURRENT_STEP_START ))
 }
 
 run_step() {
   local name="$1"; shift
   step_start "$name"
   if "$@" 2>&1; then
-    local elapsed=$(( $(date +%s%3N) - STEP_TIMES[$STEP_NUM] ))
-    echo "└─ [PASS] $name (${elapsed}ms)"
+    echo "└─ [PASS] $name ($(step_elapsed)s)"
   else
-    local elapsed=$(( $(date +%s%3N) - STEP_TIMES[$STEP_NUM] ))
-    echo "└─ [FAIL] $name (${elapsed}ms)"
+    echo "└─ [FAIL] $name ($(step_elapsed)s)"
     ((ERRORS++)) || true
   fi
 }
@@ -51,11 +57,9 @@ warn_step() {
   local name="$1"; shift
   step_start "$name"
   if "$@" 2>&1; then
-    local elapsed=$(( $(date +%s%3N) - STEP_TIMES[$STEP_NUM] ))
-    echo "└─ [PASS] $name (${elapsed}ms)"
+    echo "└─ [PASS] $name ($(step_elapsed)s)"
   else
-    local elapsed=$(( $(date +%s%3N) - STEP_TIMES[$STEP_NUM] ))
-    echo "└─ [WARN] $name (${elapsed}ms)"
+    echo "└─ [WARN] $name ($(step_elapsed)s)"
     ((WARNINGS++)) || true
   fi
 }
@@ -77,11 +81,9 @@ run_step  "Docker compose validation"              bash ./scripts/docker-validat
 # ── Security audit ────────────────────────────────────────────────────────────
 step_start "Security audit — yarn audit (high+critical)"
 if yarn --cwd ./services/api audit --level high 2>&1; then
-  local_elapsed=$(( $(date +%s%3N) - STEP_TIMES[$STEP_NUM] ))
-  echo "└─ [PASS] Security audit (${local_elapsed}ms)"
+  echo "└─ [PASS] Security audit ($(step_elapsed)s)"
 else
-  local_elapsed=$(( $(date +%s%3N) - STEP_TIMES[$STEP_NUM] ))
-  echo "└─ [WARN] Security audit — review findings (${local_elapsed}ms)"
+  echo "└─ [WARN] Security audit — review findings ($(step_elapsed)s)"
   ((WARNINGS++)) || true
 fi
 

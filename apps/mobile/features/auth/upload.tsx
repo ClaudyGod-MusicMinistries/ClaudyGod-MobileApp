@@ -4,16 +4,16 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { CustomText } from '../components/CustomText';
-import { AppButton } from '../components/ui/AppButton';
-import { TVTouchable } from '../components/ui/TVTouchable';
-import { AudioRecorderWidget } from '../components/media/AudioRecorderWidget';
-import { useMediaPicker } from '../hooks/useMediaPicker';
-import { useAudioRecorderSession } from '../hooks/useAudioRecorder';
-import { useContentUpload } from '../hooks/useContentUpload';
-import { useRequireMobileSession } from '../hooks/useRequireMobileSession';
-import { useToast } from '../context/ToastContext';
-import { useAppTheme } from '../util/colorScheme';
+import { CustomText } from '../../components/CustomText';
+import { AppButton } from '../../components/ui/AppButton';
+import { TVTouchable } from '../../components/ui/TVTouchable';
+import { AudioRecorderWidget } from '../../components/media/AudioRecorderWidget';
+import { useMediaPicker } from '../../hooks/useMediaPicker';
+import { useAudioRecorderSession } from '../../hooks/useAudioRecorder';
+import { useContentUpload } from '../../hooks/useContentUpload';
+import { useRequireMobileSession } from './useRequireMobileSession';
+import { useToast } from '../../context/ToastContext';
+import { useAppTheme } from '../../util/colorScheme';
 
 type Step = 'type' | 'source' | 'meta' | 'uploading' | 'done';
 type ContentKind = 'audio' | 'video';
@@ -26,15 +26,18 @@ export default function UploadScreen() {
 
   const { pickFromGallery, captureFromCamera, pickAudioFile } = useMediaPicker();
   const recorder = useAudioRecorderSession();
-  const { upload, progress, status: uploadStatus } = useContentUpload();
+  // status/setTitle/description/setDescription are unused: this form isn't fully wired
+  // (no status indicator or description field yet) — see features/auth/README.md,
+  // this screen also needs a new backend endpoint before any batch reactivates it.
+  const { upload, progress, status: _uploadStatus } = useContentUpload();
 
   const [step, setStep] = useState<Step>('type');
   const [kind, setKind] = useState<ContentKind>('audio');
   const [mediaUri, setMediaUri] = useState<string | null>(null);
   const [mediaMime, setMediaMime] = useState<string>('audio/mpeg');
   const [mediaName, setMediaName] = useState<string>('');
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+  const [title, _setTitle] = useState('');
+  const [_description, _setDescription] = useState('');
 
   if (!isAuthorized) return <View style={{ flex: 1, backgroundColor: theme.colors.background }} />;
 

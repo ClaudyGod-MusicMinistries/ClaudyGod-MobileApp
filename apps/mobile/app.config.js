@@ -213,6 +213,7 @@ module.exports = {
     },
     android: {
       package: androidPackage,
+      versionCode: androidVersionCode,
       icon: appIconAssetPath,
       adaptiveIcon: {
         foregroundImage: appAdaptiveIconAssetPath,
