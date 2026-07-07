@@ -35,8 +35,31 @@ export const useFeedStyles = makeStyles((theme) => ({
   heroMetaText:      { color: 'rgba(255,255,255,0.52)', fontSize: 11, marginTop: 5, letterSpacing: 0.2 },
   heroSubtitle:      { color: 'rgba(255,255,255,0.76)', marginTop: 6, maxWidth: 520, lineHeight: 20 },
   heroButtons:       { flexDirection: 'row', gap: 8, marginTop: 14 },
-  heroPlaceholderCircle1: { position: 'absolute', top: -40, right: -40, width: 220, height: 220, borderRadius: 110, backgroundColor: `${theme.colors.primary}22` },
-  heroPlaceholderCircle2: { position: 'absolute', bottom: -60, left: -50, width: 200, height: 200, borderRadius: 100, backgroundColor: `${theme.colors.primary}14` },
+
+  // PremiumHero — empty/no-item state (compact, icon-led, single cohesive card —
+  // deliberately NOT the tall photo-hero shell, which needs a photo to work).
+  heroEmptyCard: {
+    borderRadius: theme.radius.xl,
+    overflow: 'hidden',
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    alignItems: 'center',
+    paddingVertical: 28,
+    paddingHorizontal: 24,
+  },
+  heroEmptyCircle1: { position: 'absolute', top: -50, right: -50, width: 200, height: 200, borderRadius: 100, backgroundColor: `${theme.colors.primary}16` },
+  heroEmptyCircle2: { position: 'absolute', bottom: -60, left: -40, width: 160, height: 160, borderRadius: 80, backgroundColor: `${theme.colors.primary}0D` },
+  heroEmptyIconBox: {
+    width: 60, height: 60, borderRadius: 30,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: theme.colors.primarySurface,
+    borderWidth: 1, borderColor: theme.colors.primaryBorder,
+    marginBottom: 14,
+  },
+  heroEmptyTitle:    { color: theme.colors.text, textAlign: 'center' },
+  heroEmptySubtitle: { color: theme.colors.textSecondary, textAlign: 'center', marginTop: 6, maxWidth: 320 },
+  heroEmptyCtaRow:   { flexDirection: 'row', gap: 10, marginTop: 18, justifyContent: 'center' },
 
   // QuickActionGrid
   quickCompactItem:  { alignItems: 'center', gap: 8, width: 68 },

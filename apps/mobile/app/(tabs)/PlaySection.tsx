@@ -282,8 +282,8 @@ export default function PlaySection() {
       }
     >
       {/* ── Now Playing card ─────────────────────────────────────────────── */}
-      <View style={styles.nowPlayingCard}>
-        {active && hasInlineAudio && isYouTubeAudioItem(active) && active.youtubeVideoId ? (
+      {active && hasInlineAudio && isYouTubeAudioItem(active) && active.youtubeVideoId ? (
+        <View style={styles.nowPlayingCard}>
           <YouTubeAudioPlayer
             track={{ id: active.id, title: active.title, artist: active.subtitle, youtubeVideoId: active.youtubeVideoId, duration: active.duration, imageUrl: active.imageUrl }}
             onPrevious={goPrevious}
@@ -295,7 +295,9 @@ export default function PlaySection() {
             currentTrackNumber={activeIndex >= 0 ? activeIndex + 1 : undefined}
             totalTracks={allQueue.length}
           />
-        ) : active && hasInlineAudio && active.mediaUrl ? (
+        </View>
+      ) : active && hasInlineAudio && active.mediaUrl ? (
+        <View style={styles.nowPlayingCard}>
           <AudioPlayer
             track={{ id: active.id, title: active.title, artist: active.subtitle, uri: active.mediaUrl, duration: active.duration, imageUrl: active.imageUrl }}
             onPrevious={goPrevious}
@@ -311,17 +313,18 @@ export default function PlaySection() {
             repeatMode={repeatMode}
             onCycleRepeat={allQueue.length > 0 ? cycleRepeat : undefined}
           />
-        ) : (
-          <PremiumHero
-            item={active}
-            title={active?.title ?? 'Choose something to play'}
-            subtitle={active?.description || 'Select a song, message, or playlist to begin listening.'}
-            primaryLabel={active?.mediaUrl ? 'Open' : 'Browse music'}
-            primaryIcon={active?.mediaUrl ? 'open-in-new' : 'graphic-eq'}
-            onPrimary={() => (active ? void openItem(active, 'music_hero') : undefined)}
-          />
-        )}
-      </View>
+        </View>
+      ) : (
+        <PremiumHero
+          item={active}
+          title={active?.title ?? 'Choose something to play'}
+          subtitle={active?.description || 'Select a song, message, or playlist to begin listening.'}
+          emptyIcon="library-music"
+          primaryLabel={active?.mediaUrl ? 'Open' : 'Browse music'}
+          primaryIcon={active?.mediaUrl ? 'open-in-new' : 'queue-music'}
+          onPrimary={() => (active ? void openItem(active, 'music_hero') : undefined)}
+        />
+      )}
 
       {error ? <InlineErrorBanner message={error} onRetry={() => void refresh()} /> : null}
 

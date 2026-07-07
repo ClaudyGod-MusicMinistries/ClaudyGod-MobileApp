@@ -274,6 +274,7 @@ export default function HomeScreen() {
         item={featured}
         title={featured ? undefined : 'Start your worship stream'}
         subtitle={featured ? undefined : 'Music, videos, and live moments.'}
+        emptyIcon="graphic-eq"
         primaryLabel={
           featured?.isLive ? 'Watch live' :
           featured?.type === 'video' ? 'Watch now' :

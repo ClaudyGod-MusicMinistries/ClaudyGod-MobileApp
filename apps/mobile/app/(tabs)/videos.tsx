@@ -153,6 +153,7 @@ export default function VideosScreen() {
           item={active}
           title={active?.title ?? 'Choose a video'}
           subtitle={active?.description || 'Select a video, live replay, or featured session to watch.'}
+          emptyIcon="smart-display"
           primaryLabel={active?.mediaUrl ? 'Open video' : 'Browse videos'}
           primaryIcon={active?.mediaUrl ? 'open-in-new' : 'smart-display'}
           onPrimary={() => (active?.mediaUrl ? void Linking.openURL(active.mediaUrl) : undefined)}

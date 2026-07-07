@@ -240,6 +240,7 @@ export default function LiveScreen() {
         item={featuredCard}
         title={featuredCard?.title ?? 'Live sessions'}
         subtitle={featuredCard?.description || 'Follow upcoming services and rewatch recent ministry moments.'}
+        emptyIcon="sensors"
         eyebrow={featuredCard?.isLive ? 'Live now' : featuredCard ? 'Upcoming' : 'Ministry'}
         primaryLabel={featuredCard?.isLive ? 'Watch live' : featuredCard?.mediaUrl ? 'Watch replay' : 'Notify me'}
         primaryIcon={featuredCard?.isLive || featuredCard?.mediaUrl ? 'live-tv' : 'notifications-active'}
