@@ -22,16 +22,6 @@ type DonateMethod = {
   badge?: string;
 };
 
-type DonatePlan = {
-  id: string;
-  name: string;
-  amount: string;
-  period: DonateFrequency | 'once';
-  note: string;
-  featured?: boolean;
-  icon: React.ComponentProps<typeof MaterialIcons>['name'];
-};
-
 // ─── Defaults ────────────────────────────────────────────────────────────────
 
 const DEFAULT_AMOUNTS = ['10', '25', '50', '100', '250', '500'];

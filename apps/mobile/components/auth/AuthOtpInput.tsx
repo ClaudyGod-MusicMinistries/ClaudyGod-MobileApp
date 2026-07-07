@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { TextInputProps } from 'react-native';
 import { Animated, Easing, Platform, Pressable, TextInput, View, useWindowDimensions } from 'react-native';
 import { CustomText } from '../CustomText';
-import { useAppTheme } from '../../util/colorScheme';
 import { makeStyles } from '../../styles/makeStyles';
 
 interface AuthOtpInputProps {
@@ -57,7 +56,6 @@ export function AuthOtpInput({
   onSubmitEditing,
 }: AuthOtpInputProps) {
   const styles = useStyles();
-  const theme  = useAppTheme();
   const inputRef = useRef<TextInput | null>(null);
   const [isFocused, setIsFocused] = useState(false);
   const [isHovered, setIsHovered] = useState(false);

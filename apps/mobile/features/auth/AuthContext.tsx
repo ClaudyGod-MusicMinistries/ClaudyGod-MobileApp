@@ -6,9 +6,9 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import type { MobileAuthUser } from '../services/authService';
-import { restoreMobileSession, subscribeToMobileAuthStateChange , apiFetchWithMobileSession } from '../services/authService';
-import { exportForAccountSync, clearAllGuestData } from '../lib/guestStorage';
+import type { MobileAuthUser } from '../../services/authService';
+import { restoreMobileSession, subscribeToMobileAuthStateChange , apiFetchWithMobileSession } from '../../services/authService';
+import { exportForAccountSync, clearAllGuestData } from '../../lib/guestStorage';
 
 type AuthContextValue = {
   accessToken: string | null;

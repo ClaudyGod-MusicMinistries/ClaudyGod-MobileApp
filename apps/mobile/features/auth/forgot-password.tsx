@@ -2,17 +2,17 @@ import React, { useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
-import { CustomText } from '../components/CustomText';
-import { AuthFeedbackBanner } from '../components/auth/AuthFeedbackBanner';
-import { AuthScreenFrame } from '../components/auth/AuthScreenFrame';
-import { AuthTextField } from '../components/auth/AuthTextField';
-import { AppButton } from '../components/ui/AppButton';
-import { TVTouchable } from '../components/ui/TVTouchable';
-import { getEmailValidationMessage, isLikelyValidEmail, normalizeEmail } from '../lib/authValidation';
-import { requestMobilePasswordReset } from '../services/authService';
-import { useToast } from '../context/ToastContext';
-import { APP_ROUTES } from '../util/appRoutes';
-import { useAppTheme } from '../util/colorScheme';
+import { CustomText } from '../../components/CustomText';
+import { AuthFeedbackBanner } from '../../components/auth/AuthFeedbackBanner';
+import { AuthScreenFrame } from '../../components/auth/AuthScreenFrame';
+import { AuthTextField } from '../../components/auth/AuthTextField';
+import { AppButton } from '../../components/ui/AppButton';
+import { TVTouchable } from '../../components/ui/TVTouchable';
+import { getEmailValidationMessage, isLikelyValidEmail, normalizeEmail } from './authValidation';
+import { requestMobilePasswordReset } from '../../services/authService';
+import { useToast } from '../../context/ToastContext';
+import { APP_ROUTES } from '../../util/appRoutes';
+import { useAppTheme } from '../../util/colorScheme';
 
 const getParam = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] ?? '' : value ?? '');
 

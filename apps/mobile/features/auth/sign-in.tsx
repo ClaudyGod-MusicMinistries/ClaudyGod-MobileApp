@@ -2,29 +2,29 @@ import React, { useState, useEffect } from 'react';
 import { View } from 'react-native';
 import { MaterialIcons , FontAwesome } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useAppTheme } from '../util/colorScheme';
-import { CustomText } from '../components/CustomText';
-import { AuthFeedbackBanner } from '../components/auth/AuthFeedbackBanner';
-import { AuthScreenFrame } from '../components/auth/AuthScreenFrame';
-import { AuthTextField } from '../components/auth/AuthTextField';
-import { AppButton } from '../components/ui/AppButton';
-import { TVTouchable } from '../components/ui/TVTouchable';
-import { TrustDeviceSheet } from '../components/auth/TrustDeviceSheet';
-import { getEmailValidationMessage, isLikelyValidEmail, normalizeEmail } from '../lib/authValidation';
+import { useAppTheme } from '../../util/colorScheme';
+import { CustomText } from '../../components/CustomText';
+import { AuthFeedbackBanner } from '../../components/auth/AuthFeedbackBanner';
+import { AuthScreenFrame } from '../../components/auth/AuthScreenFrame';
+import { AuthTextField } from '../../components/auth/AuthTextField';
+import { AppButton } from '../../components/ui/AppButton';
+import { TVTouchable } from '../../components/ui/TVTouchable';
+import { TrustDeviceSheet } from '../../components/auth/TrustDeviceSheet';
+import { getEmailValidationMessage, isLikelyValidEmail, normalizeEmail } from './authValidation';
 import {
   loginMobileUser,
   loginMobileUserWithGoogle,
   loginMobileUserWithFacebook,
   signInWithTrustedDeviceToken,
-} from '../services/authService';
+} from '../../services/authService';
 import {
   getTrustedDeviceToken,
   getBiometricType,
   promptBiometric,
-} from '../lib/trustedDevice';
-import { useToast } from '../context/ToastContext';
-import { useAppModal } from '../context/AppModalContext';
-import { APP_ROUTES } from '../util/appRoutes';
+} from '../../lib/trustedDevice';
+import { useToast } from '../../context/ToastContext';
+import { useAppModal } from '../../context/AppModalContext';
+import { APP_ROUTES } from '../../util/appRoutes';
 
 // ─── Social button ────────────────────────────────────────────────────────────
 

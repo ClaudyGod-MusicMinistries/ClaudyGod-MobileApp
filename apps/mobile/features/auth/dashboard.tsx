@@ -9,7 +9,7 @@ import { TVTouchable } from '../../components/ui/TVTouchable';
 import { FadeIn } from '../../components/ui/FadeIn';
 import { SupportMinistryCard } from '../../components/ui/SupportMinistryCard';
 import { EmptyState, PremiumPage, SectionLabel } from '../../components/Exp/PremiumContent';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from './AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useAppTheme } from '../../util/colorScheme';
 import { useDeviceClass } from '../../util/deviceClassConfig';

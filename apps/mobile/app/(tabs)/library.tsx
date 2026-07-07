@@ -7,6 +7,7 @@ import { CustomText } from '../../components/CustomText';
 import { useAppTheme } from '../../util/colorScheme';
 import { makeStyles } from '../../styles/makeStyles';
 import { useContentFeed } from '../../hooks/useContentFeed';
+import { InlineErrorBanner } from '../../components/ui/InlineErrorBanner';
 import { useLocalContent } from '../../hooks/useLocalContent';
 import type { FeedCardItem } from '../../services/contentService';
 import { APP_ROUTES } from '../../util/appRoutes';
@@ -95,7 +96,7 @@ function LibTabs({ active, onChange, counts }: { active: LibTab; onChange: (_t: 
 export default function LibraryScreen() {
   const styles = useStyles();
   const router = useRouter();
-  const { feed, loading, refresh } = useContentFeed();
+  const { feed, loading, error, refresh } = useContentFeed();
   const { favorites, history, loaded } = useLocalContent();
   const [activeTab, setActiveTab] = useState<LibTab>('saved');
 
@@ -120,6 +121,8 @@ export default function LibraryScreen() {
       onRefresh={() => refresh()}
     >
       <LibTabs active={activeTab} onChange={setActiveTab} counts={counts} />
+
+      {error ? <InlineErrorBanner message={error} onRetry={() => void refresh()} /> : null}
 
       {activeTab === 'saved' ? (
         <>

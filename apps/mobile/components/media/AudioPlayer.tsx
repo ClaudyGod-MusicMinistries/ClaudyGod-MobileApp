@@ -242,12 +242,12 @@ export function AudioPlayer({
     onProgress?.(status.currentTime, status.duration ?? 0);
   }, [onPlayStateChange, onProgress, status.currentTime, status.duration, status.isLoaded, status.playing]);
 
+  const statusError = (status as unknown as { error?: string }).error;
   useEffect(() => {
-    const err = (status as unknown as { error?: string }).error;
-    if (!err) return;
-    console.warn('[AudioPlayer] Playback error:', err);
+    if (!statusError) return;
+    console.warn('[AudioPlayer] Playback error:', statusError);
     onPlayStateChange?.(false);
-  }, [(status as unknown as { error?: string }).error, onPlayStateChange]);
+  }, [statusError, onPlayStateChange]);
 
   useEffect(() => {
     if (!status.isLoaded) return;
@@ -431,7 +431,7 @@ function ProgressSection({
   positionLabel: string;
   durationLabel: string;
   progressBarWidth: React.MutableRefObject<number>;
-  onSeek: (fraction: number) => void;
+  onSeek: (_fraction: number) => void;
   trackHeight: number;
   showThumb: boolean;
   paddingH: number;

@@ -3,25 +3,25 @@ import { View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
-import { CustomText } from '../components/CustomText';
-import { AuthFeedbackBanner } from '../components/auth/AuthFeedbackBanner';
-import { AuthOtpInput } from '../components/auth/AuthOtpInput';
-import { AuthScreenFrame } from '../components/auth/AuthScreenFrame';
-import { AuthTextField } from '../components/auth/AuthTextField';
-import { PasswordStrengthPanel } from '../components/auth/PasswordStrengthPanel';
-import { AppButton } from '../components/ui/AppButton';
-import { TVTouchable } from '../components/ui/TVTouchable';
+import { CustomText } from '../../components/CustomText';
+import { AuthFeedbackBanner } from '../../components/auth/AuthFeedbackBanner';
+import { AuthOtpInput } from '../../components/auth/AuthOtpInput';
+import { AuthScreenFrame } from '../../components/auth/AuthScreenFrame';
+import { AuthTextField } from '../../components/auth/AuthTextField';
+import { PasswordStrengthPanel } from '../../components/auth/PasswordStrengthPanel';
+import { AppButton } from '../../components/ui/AppButton';
+import { TVTouchable } from '../../components/ui/TVTouchable';
 import {
   getEmailValidationMessage,
   getPasswordConfirmationMessage,
   isLikelyValidEmail,
   isPasswordCompliant,
   normalizeEmail,
-} from '../lib/authValidation';
-import { resetMobilePassword } from '../services/authService';
-import { useToast } from '../context/ToastContext';
-import { APP_ROUTES } from '../util/appRoutes';
-import { useAppTheme } from '../util/colorScheme';
+} from './authValidation';
+import { resetMobilePassword } from '../../services/authService';
+import { useToast } from '../../context/ToastContext';
+import { APP_ROUTES } from '../../util/appRoutes';
+import { useAppTheme } from '../../util/colorScheme';
 
 const getParam = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] ?? '' : value ?? '');
 

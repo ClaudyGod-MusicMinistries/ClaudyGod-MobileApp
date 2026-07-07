@@ -4,24 +4,24 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
 
-import { SettingsScaffold } from '../components/layout/SettingsScaffold';
-import { SurfaceCard } from '../components/ui/SurfaceCard';
-import { AppButton } from '../components/ui/AppButton';
-import { ActionSheet } from '../components/ui/ActionSheet';
-import { FadeIn } from '../components/ui/FadeIn';
-import { CustomText } from '../components/CustomText';
-import { useAppTheme } from '../util/colorScheme';
-import { useDeviceClass } from '../util/deviceClassConfig';
-import { APP_ROUTES } from '../util/appRoutes';
-import { useRequireMobileSession } from '../hooks/useRequireMobileSession';
-import { useAuth } from '../context/AuthContext';
-import { useToast } from '../context/ToastContext';
-import { clearMobileSession } from '../services/authService';
+import { SettingsScaffold } from '../../components/layout/SettingsScaffold';
+import { SurfaceCard } from '../../components/ui/SurfaceCard';
+import { AppButton } from '../../components/ui/AppButton';
+import { ActionSheet } from '../../components/ui/ActionSheet';
+import { FadeIn } from '../../components/ui/FadeIn';
+import { CustomText } from '../../components/CustomText';
+import { useAppTheme } from '../../util/colorScheme';
+import { useDeviceClass } from '../../util/deviceClassConfig';
+import { APP_ROUTES } from '../../util/appRoutes';
+import { useRequireMobileSession } from './useRequireMobileSession';
+import { useAuth } from './AuthContext';
+import { useToast } from '../../context/ToastContext';
+import { clearMobileSession } from '../../services/authService';
 import {
   confirmEmailChange,
   requestEmailChange,
   requestPasswordChange,
-} from '../services/accountSecurityService';
+} from '../../services/accountSecurityService';
 
 type PendingAction = 'email' | 'password' | 'confirm-token' | null;
 

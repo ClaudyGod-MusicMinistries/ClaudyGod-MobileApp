@@ -10,6 +10,7 @@ import { TVTouchable } from '../../components/ui/TVTouchable';
 import { useToast } from '../../context/ToastContext';
 import { useAppTheme } from '../../util/colorScheme';
 import { useContentFeed } from '../../hooks/useContentFeed';
+import { InlineErrorBanner } from '../../components/ui/InlineErrorBanner';
 import { makeStyles } from '../../styles/makeStyles';
 import type { ContentType, FeedBundle, FeedCardItem } from '../../services/contentService';
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
@@ -184,7 +185,7 @@ export default function PlaySection() {
     duration?: string | string[];
     mediaUrl?: string | string[];
   }>();
-  const { feed, loading, refresh } = useContentFeed();
+  const { feed, loading, error, refresh } = useContentFeed();
   const [filter, setFilter] = useState<AudioFilter>('all');
   const [isFavorite, setIsFavorite] = useState(false);
 
@@ -297,6 +298,8 @@ export default function PlaySection() {
           />
         )}
       </View>
+
+      {error ? <InlineErrorBanner message={error} onRetry={() => void refresh()} /> : null}
 
       {/* ── Worship Together live count ───────────────────────────────────── */}
       {active ? <WorshipTogetherBar contentId={active.id} /> : null}
