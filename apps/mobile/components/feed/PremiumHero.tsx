@@ -10,7 +10,7 @@ import { FadeIn } from '../ui/FadeIn';
 import { useDeviceClass } from '../../util/deviceClassConfig';
 import { useAppTheme } from '../../util/colorScheme';
 import { common } from '../../styles/commonStyles';
-import { BRAND_WORSHIP_ASSET, DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
+import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
 import type { FeedCardItem } from '../../services/contentService';
 import { useFeedStyles } from './styles';
 import { isValidDuration } from './utils';
@@ -54,7 +54,25 @@ export function PremiumHero({
   return (
     <FadeIn delay={30} duration={500}>
       <View style={[styles.heroContainer, { height: heroHeight }]}>
-        <Image source={item ? { uri: imageUrl } : BRAND_WORSHIP_ASSET} resizeMode="cover" style={common.fill} />
+        {item ? (
+          <Image source={{ uri: imageUrl }} resizeMode="cover" style={common.fill} />
+        ) : (
+          // No featured item yet — a wash instead of a photo, since none of the
+          // brand photo assets are composed for this wide a hero shape (forcing
+          // one via resizeMode="cover" just crops it into an ugly close-up).
+          <View style={common.fill}>
+            <LinearGradient
+              colors={theme.scheme === 'dark'
+                ? ['#2A1B4A', '#1C1230', '#120B22']
+                : ['#EDE4FF', '#F7F2FF', '#FFFFFF']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={common.fill}
+            />
+            <View style={styles.heroPlaceholderCircle1} />
+            <View style={styles.heroPlaceholderCircle2} />
+          </View>
+        )}
 
         <LinearGradient
           colors={isWide

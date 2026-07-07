@@ -35,6 +35,8 @@ export const useFeedStyles = makeStyles((theme) => ({
   heroMetaText:      { color: 'rgba(255,255,255,0.52)', fontSize: 11, marginTop: 5, letterSpacing: 0.2 },
   heroSubtitle:      { color: 'rgba(255,255,255,0.76)', marginTop: 6, maxWidth: 520, lineHeight: 20 },
   heroButtons:       { flexDirection: 'row', gap: 8, marginTop: 14 },
+  heroPlaceholderCircle1: { position: 'absolute', top: -40, right: -40, width: 220, height: 220, borderRadius: 110, backgroundColor: `${theme.colors.primary}22` },
+  heroPlaceholderCircle2: { position: 'absolute', bottom: -60, left: -50, width: 200, height: 200, borderRadius: 100, backgroundColor: `${theme.colors.primary}14` },
 
   // QuickActionGrid
   quickCompactItem:  { alignItems: 'center', gap: 8, width: 68 },

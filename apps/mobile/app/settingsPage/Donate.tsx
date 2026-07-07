@@ -25,6 +25,22 @@ type DonateMethod = {
 
 const DEFAULT_AMOUNTS = ['10', '25', '50', '100', '250', '500'];
 
+const DEFAULT_CURRENCY_OPTIONS: { code: string; label: string; symbol?: string }[] = [
+  { code: 'USD', label: 'US Dollar',        symbol: '$' },
+  { code: 'NGN', label: 'Nigerian Naira',   symbol: '₦' },
+  { code: 'GBP', label: 'British Pound',    symbol: '£' },
+  { code: 'EUR', label: 'Euro',             symbol: '€' },
+];
+
+// Amounts scale very differently by currency (10 USD vs. 10 NGN are not
+// comparable) — give each default currency its own sensible quick-pick scale.
+const DEFAULT_AMOUNTS_BY_CURRENCY: Record<string, string[]> = {
+  USD: DEFAULT_AMOUNTS,
+  GBP: DEFAULT_AMOUNTS,
+  EUR: DEFAULT_AMOUNTS,
+  NGN: ['1000', '2500', '5000', '10000', '25000', '50000'],
+};
+
 const DEFAULT_METHODS: DonateMethod[] = [
   { id: 'bank',   icon: 'account-balance', label: 'Bank Transfer',  subtitle: 'Direct to ministry account' },
   { id: 'mobile', icon: 'phone-android',   label: 'Mobile Money',   subtitle: 'Fast & secure mobile transfer' },
@@ -74,21 +90,21 @@ const useStyles = makeStyles((theme) => ({
 
   // Currency
   currencyRow:      { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  currencyBase:     { borderRadius: 999, paddingHorizontal: 14, paddingVertical: 9 },
-  currencyActive:   { backgroundColor: theme.colors.primary },
-  currencyInactive: { backgroundColor: theme.colors.surface },
-  currencyTxtActive:   { color: theme.colors.onPrimary, fontSize: 13, fontWeight: '600' },
-  currencyTxtInactive: { color: theme.colors.textMuted,   fontSize: 13, fontWeight: '600' },
+  currencyBase:     { borderRadius: 999, paddingHorizontal: 16, paddingVertical: 10, borderWidth: 1.5, minWidth: 76, alignItems: 'center' },
+  currencyActive:   { backgroundColor: theme.colors.primary, borderColor: 'transparent', ...theme.shadows.sm },
+  currencyInactive: { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+  currencyTxtActive:   { color: theme.colors.onPrimary, fontSize: 13.5, fontWeight: '700' },
+  currencyTxtInactive: { color: theme.colors.textSecondary, fontSize: 13.5, fontWeight: '600' },
 
   // Amount
   amountGrid:       { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  amountBase:       { minHeight: 64, borderRadius: 16, alignItems: 'center', justifyContent: 'center', gap: 2 },
-  amountActive:     { backgroundColor: theme.colors.primary, borderWidth: 1, borderColor: 'transparent' },
-  amountInactive:   { backgroundColor: theme.colors.surface,  borderWidth: 1, borderColor: theme.colors.border },
-  amountValActive:  { color: theme.colors.onPrimary,          fontSize: 20, fontWeight: '800' },
-  amountValInactive:{ color: theme.colors.text,               fontSize: 20, fontWeight: '800' },
-  amountCurActive:  { color: 'rgba(255,255,255,0.75)',         fontSize: 10, fontWeight: '600' },
-  amountCurInactive:{ color: theme.colors.textMuted,           fontSize: 10, fontWeight: '600' },
+  amountBase:       { minHeight: 72, borderRadius: 16, alignItems: 'center', justifyContent: 'center', gap: 2 },
+  amountActive:     { backgroundColor: theme.colors.primary, borderWidth: 1.5, borderColor: theme.colors.primary, ...theme.shadows.sm },
+  amountInactive:   { backgroundColor: theme.colors.surface,  borderWidth: 1.5, borderColor: theme.colors.border },
+  amountValActive:  { color: theme.colors.onPrimary,          fontSize: 21, fontWeight: '800' },
+  amountValInactive:{ color: theme.colors.text,               fontSize: 21, fontWeight: '800' },
+  amountCurActive:  { color: 'rgba(255,255,255,0.75)',         fontSize: 10.5, fontWeight: '700', letterSpacing: 0.4 },
+  amountCurInactive:{ color: theme.colors.textMuted,           fontSize: 10.5, fontWeight: '700', letterSpacing: 0.4 },
 
   // Frequency
   freqBase:         { flex: 1, minHeight: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center', gap: 3 },
@@ -221,8 +237,14 @@ export default function Donate() {
   const donateConfig = config?.donate;
 
   const quickAmounts    = useMemo(() => donateConfig?.quickAmounts?.length ? donateConfig.quickAmounts : DEFAULT_AMOUNTS, [donateConfig]);
-  const quickByCurrency = useMemo(() => donateConfig?.quickAmountsByCurrency ?? {}, [donateConfig]);
-  const currencyOptions = useMemo(() => donateConfig?.currencyOptions ?? [], [donateConfig]);
+  const quickByCurrency = useMemo(
+    () => ({ ...DEFAULT_AMOUNTS_BY_CURRENCY, ...(donateConfig?.quickAmountsByCurrency ?? {}) }),
+    [donateConfig],
+  );
+  const currencyOptions = useMemo(
+    () => (donateConfig?.currencyOptions?.length ? donateConfig.currencyOptions : DEFAULT_CURRENCY_OPTIONS),
+    [donateConfig],
+  );
   const configMethods   = useMemo<DonateMethod[]>(() =>
     donateConfig?.methods?.length
       ? donateConfig.methods.map((m) => ({ id: m.id, icon: m.icon as DonateMethod['icon'], label: m.label, subtitle: m.subtitle, badge: m.badge }))
