@@ -2940,6 +2940,11 @@
   dependencies:
     "@types/react" "*"
 
+"@types/react-reconciler@~0.33.0":
+  version "0.33.0"
+  resolved "https://registry.npmjs.org/@types/react-reconciler/-/react-reconciler-0.33.0.tgz"
+  integrity sha512-HZOXsKT0tGI9LlUw2LuedXsVeB88wFa536vVL0M6vE8zN63nI+sSr1ByxmPToP5K5bukaVscyeCJcF9guVNJ1g==
+
 "@types/react@*", "@types/react@~19.1.0":
   version "19.1.17"
   resolved "https://registry.npmjs.org/@types/react/-/react-19.1.17.tgz"
@@ -9333,6 +9338,13 @@ react-native@0.81.5:
     ws "^6.2.3"
     yargs "^17.6.2"
 
+react-reconciler@~0.33.0:
+  version "0.33.0"
+  resolved "https://registry.npmjs.org/react-reconciler/-/react-reconciler-0.33.0.tgz"
+  integrity sha512-KetWRytFv1epdpJc3J4G75I4WrplZE5jOL7Yq0p34+OVOKF4Se7WrdIdVC45XsSSmUTlht2FM/fM1FZb1mfQeA==
+  dependencies:
+    scheduler "^0.27.0"
+
 react-refresh@^0.14.0, react-refresh@^0.14.2:
   version "0.14.2"
   resolved "https://registry.npmjs.org/react-refresh/-/react-refresh-0.14.2.tgz"
@@ -9365,7 +9377,7 @@ react-style-singleton@^2.2.2, react-style-singleton@^2.2.3:
     get-nonce "^1.0.0"
     tslib "^2.0.0"
 
-react-test-renderer@^19.1.0, react-test-renderer@19.1.0:
+react-test-renderer@19.1.0:
   version "19.1.0"
   resolved "https://registry.npmjs.org/react-test-renderer/-/react-test-renderer-19.1.0.tgz"
   integrity sha512-jXkSl3CpvPYEF+p/eGDLB4sPoDX8pKkYvRl9+rR8HxLY0X04vW7hCm1/0zHoUSjPZ3bDa+wXWNTDVIw/R8aDVw==
@@ -9773,6 +9785,11 @@ scheduler@^0.26.0, scheduler@0.26.0:
   version "0.26.0"
   resolved "https://registry.npmjs.org/scheduler/-/scheduler-0.26.0.tgz"
   integrity sha512-NlHwttCI/l5gCPR3D1nNXtWABUmBwvZpEQiD4IXSbIDq8BzLIK/7Ir5gTFSGZDUu37K5cMNp0hFtzO38sC7gWA==
+
+scheduler@^0.27.0:
+  version "0.27.0"
+  resolved "https://registry.npmjs.org/scheduler/-/scheduler-0.27.0.tgz"
+  integrity sha512-eNv+WrVbKu1f3vbYJT/xtiF5syA5HPIMtf9IgY/nKg0sWqzAUEvqY/xm7OcZc/qafLx/iO9FgOmeSAp4v5ti/Q==
 
 semver@^6.3.0, semver@^6.3.1:
   version "6.3.1"
@@ -10586,6 +10603,14 @@ test-exclude@^6.0.0:
     "@istanbuljs/schema" "^0.1.2"
     glob "^7.1.4"
     minimatch "^3.0.4"
+
+test-renderer@^1.2.0:
+  version "1.2.0"
+  resolved "https://registry.npmjs.org/test-renderer/-/test-renderer-1.2.0.tgz"
+  integrity sha512-JYiEGbgBGtmHAWX8Kf99gGRL1HtjcRVHLrmJNTZL4vFs9XrnWcuL45Iszw/pO4094+JR7havSrN+ds6YTOpSQA==
+  dependencies:
+    "@types/react-reconciler" "~0.33.0"
+    react-reconciler "~0.33.0"
 
 text-hex@1.0.x:
   version "1.0.0"
