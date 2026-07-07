@@ -27,7 +27,7 @@ import {
   SectionLabel,
   TrendingList,
   WordOfDayCard,
-} from '../../components/Exp/PremiumContent';
+} from '../../components/feed';
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 

@@ -28,7 +28,7 @@ import {
   PremiumPage,
   SectionLabel,
   dedupeFeedItems,
-} from '../../components/Exp/PremiumContent';
+} from '../../components/feed';
 
 // Stable reference so `sessions` doesn't change identity on every render while loading.
 const EMPTY_SESSIONS: LiveSessionSummary[] = [];

@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Linking, ScrollView, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { AudioPlayer } from '../../components/media/AudioPlayer';
+import { AudioPlayer, type RepeatMode } from '../../components/media/AudioPlayer';
 import { YouTubeAudioPlayer } from '../../components/media/YouTubeAudioPlayer';
 import { CustomText } from '../../components/CustomText';
 import { AppButton } from '../../components/ui/AppButton';
@@ -26,7 +26,7 @@ import {
   SectionLabel,
   TrendingList,
   dedupeFeedItems,
-} from '../../components/Exp/PremiumContent';
+} from '../../components/feed';
 import { WorshipTogetherBar } from '../../components/worship/WorshipTogetherBar';
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -188,6 +188,8 @@ export default function PlaySection() {
   const { feed, loading, error, refresh } = useContentFeed();
   const [filter, setFilter] = useState<AudioFilter>('all');
   const [isFavorite, setIsFavorite] = useState(false);
+  const [shuffleEnabled, setShuffleEnabled] = useState(false);
+  const [repeatMode, setRepeatMode] = useState<RepeatMode>('off');
 
   const { music: musicItems, audio: audioItems, nuggets: nuggetsItems, teens: teensItems } =
     useMemo(() => buildMusicSections(feed), [feed]);
@@ -210,8 +212,9 @@ export default function PlaySection() {
   const [activeId, setActiveId] = useState(routeItem?.id ?? allQueue[0]?.id ?? '');
   const active = allQueue.find((item) => item.id === activeId) ?? routeItem ?? allQueue[0] ?? null;
   const activeIndex = active ? allQueue.findIndex((item) => item.id === active.id) : -1;
-  const canGoPrevious = activeIndex > 0;
-  const canGoNext = activeIndex >= 0 && activeIndex < allQueue.length - 1;
+  const canWrapQueue = (repeatMode === 'all' || shuffleEnabled) && allQueue.length > 1;
+  const canGoPrevious = activeIndex > 0 || canWrapQueue;
+  const canGoNext = (activeIndex >= 0 && activeIndex < allQueue.length - 1) || canWrapQueue;
   const hasInlineAudio = Boolean(active && (
     (active.mediaUrl && isDirectPlayableAudioUrl(active.mediaUrl)) ||
     isYouTubeAudioItem(active)
@@ -238,8 +241,25 @@ export default function PlaySection() {
     await trackPlayEvent({ contentId: item.id, contentType: item.type, title: item.title, source });
   };
 
-  const goPrevious = () => { const prev = canGoPrevious ? allQueue[activeIndex - 1] : null; if (prev) void openItem(prev, 'music_prev'); };
-  const goNext    = () => { const next = canGoNext ? allQueue[activeIndex + 1] : null; if (next) void openItem(next, 'music_next'); };
+  const pickRandomOther = () => {
+    const candidates = allQueue.filter((item) => item.id !== active?.id);
+    if (candidates.length === 0) return null;
+    return candidates[Math.floor(Math.random() * candidates.length)] ?? null;
+  };
+
+  const goPrevious = () => {
+    if (!canGoPrevious || allQueue.length === 0) return;
+    const prev = shuffleEnabled ? pickRandomOther() : allQueue[(activeIndex - 1 + allQueue.length) % allQueue.length];
+    if (prev) void openItem(prev, 'music_prev');
+  };
+  const goNext = () => {
+    if (!canGoNext || allQueue.length === 0) return;
+    const next = shuffleEnabled ? pickRandomOther() : allQueue[(activeIndex + 1) % allQueue.length];
+    if (next) void openItem(next, 'music_next');
+  };
+
+  const toggleShuffle = () => setShuffleEnabled((v) => !v);
+  const cycleRepeat = () => setRepeatMode((m) => (m === 'off' ? 'all' : m === 'all' ? 'one' : 'off'));
 
   const upNext = filteredQueue.filter((item) => item.id !== active?.id).slice(0, 8);
 
@@ -286,6 +306,10 @@ export default function PlaySection() {
             onFavoriteToggle={() => setIsFavorite((f) => !f)}
             currentTrackNumber={activeIndex >= 0 ? activeIndex + 1 : undefined}
             totalTracks={allQueue.length}
+            shuffleEnabled={shuffleEnabled}
+            onToggleShuffle={allQueue.length > 1 ? toggleShuffle : undefined}
+            repeatMode={repeatMode}
+            onCycleRepeat={allQueue.length > 0 ? cycleRepeat : undefined}
           />
         ) : (
           <PremiumHero

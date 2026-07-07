@@ -3,16 +3,14 @@
 // Use this instead of bare <Image> or <ImageBackground> everywhere in the app.
 import React, { useState } from 'react';
 import {
-  Animated,
-  Image,
   StyleSheet,
   type ImageResizeMode,
-  type ImageSourcePropType,
   type ImageStyle,
   type StyleProp,
   type ViewStyle,
   View,
 } from 'react-native';
+import { Image, type ImageContentFit, type ImageSource } from 'expo-image';
 import { makeStyles } from '../../styles/makeStyles';
 import { common } from '../../styles/commonStyles';
 import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
@@ -21,7 +19,7 @@ interface AppImageProps {
   /** Remote URI string. Provide this or `source`, not both. */
   uri?: string | null;
   /** Static require() source. Use for local assets. */
-  source?: ImageSourcePropType;
+  source?: ImageSource | number;
   /** Container style — controls size and position. Always set width + height here. */
   style?: StyleProp<ViewStyle>;
   /** Extra style applied directly to the <Image> element (use sparingly). */
@@ -35,6 +33,15 @@ interface AppImageProps {
   showSkeleton?: boolean;
   testID?: string;
 }
+
+const RESIZE_MODE_TO_CONTENT_FIT: Record<ImageResizeMode, ImageContentFit> = {
+  cover: 'cover',
+  contain: 'contain',
+  stretch: 'fill',
+  center: 'none',
+  repeat: 'cover',
+  none: 'none',
+};
 
 const useStyles = makeStyles((theme) => ({
   container: {
@@ -66,24 +73,15 @@ export function AppImage({
   const styles = useStyles();
   const [loading, setLoading] = useState(true);
   const [errored, setErrored] = useState(false);
-  const skeletonOpacity = React.useRef(new Animated.Value(1)).current;
 
-  const handleLoad = () => {
-    setLoading(false);
-    Animated.timing(skeletonOpacity, {
-      toValue: 0,
-      duration: 200,
-      useNativeDriver: true,
-    }).start();
-  };
+  const handleLoad = () => setLoading(false);
 
   const handleError = () => {
     setErrored(true);
     setLoading(false);
-    skeletonOpacity.setValue(0);
   };
 
-  const resolvedSource: ImageSourcePropType = (() => {
+  const resolvedSource: ImageSource | number = (() => {
     if (source) return source;
     const activeUri = errored
       ? (fallbackUri ?? DEFAULT_CONTENT_IMAGE_URI)
@@ -108,15 +106,13 @@ export function AppImage({
       <Image
         source={resolvedSource}
         style={resolvedImageStyle}
-        resizeMode={resizeMode}
+        contentFit={RESIZE_MODE_TO_CONTENT_FIT[resizeMode]}
+        transition={200}
         onLoad={handleLoad}
         onError={handleError}
       />
       {showSkeleton && uri && !source && loading && (
-        <Animated.View
-          style={[common.fill, styles.skeleton, { opacity: skeletonOpacity }]}
-          pointerEvents="none"
-        />
+        <View style={[common.fill, styles.skeleton]} pointerEvents="none" />
       )}
     </View>
   );

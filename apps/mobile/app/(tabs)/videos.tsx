@@ -25,7 +25,7 @@ import {
   PremiumPage,
   SectionLabel,
   dedupeFeedItems,
-} from '../../components/Exp/PremiumContent';
+} from '../../components/feed';
 
 const useStyles = makeStyles((theme) => ({
   filterScrollContent: { gap: 8, paddingVertical: 2 },

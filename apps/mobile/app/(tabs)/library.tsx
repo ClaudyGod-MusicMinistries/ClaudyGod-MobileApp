@@ -1,13 +1,19 @@
-import React, { useMemo, useState } from 'react';
-import { View } from 'react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import { Share, View } from 'react-native';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { CustomText } from '../../components/CustomText';
+import { SurfaceCard } from '../../components/ui/SurfaceCard';
+import { AppButton } from '../../components/ui/AppButton';
+import { FadeIn } from '../../components/ui/FadeIn';
+import { ConfirmModal } from '../../components/ui/ConfirmModal';
 import { useAppTheme } from '../../util/colorScheme';
+import { useDeviceClass } from '../../util/deviceClassConfig';
 import { makeStyles } from '../../styles/makeStyles';
 import { useContentFeed } from '../../hooks/useContentFeed';
 import { InlineErrorBanner } from '../../components/ui/InlineErrorBanner';
+import { useToast } from '../../context/ToastContext';
 import { useLocalContent } from '../../hooks/useLocalContent';
 import type { FeedCardItem } from '../../services/contentService';
 import { APP_ROUTES } from '../../util/appRoutes';
@@ -16,11 +22,12 @@ import { trackPlayEvent } from '../../services/supabaseAnalytics';
 import {
   ContentList,
   ContentRail,
-  EmptyState,
+  FavoriteCard,
+  PremiumHero,
   PremiumPage,
   SectionLabel,
   dedupeFeedItems,
-} from '../../components/Exp/PremiumContent';
+} from '../../components/feed';
 
 type LibTab = 'saved' | 'history';
 
@@ -49,6 +56,23 @@ const useStyles = makeStyles((theme) => ({
   badgeTextActive:{ color: theme.colors.onPrimary },
   badgeTextInactive: { color: theme.colors.primary },
   sectionGap:     { gap: 12 },
+
+  // Saved-tab empty state (ported from the former Favourites screen)
+  emptyCard:         { padding: theme.spacing.xl, alignItems: 'center', gap: 18 },
+  emptyIconBox: {
+    width: 80, height: 80, borderRadius: 40,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: `${theme.colors.primary}14`,
+    borderWidth: 1, borderColor: theme.colors.border,
+  },
+  emptyTextWrap:     { alignItems: 'center', gap: 8 },
+  emptyTitle:        { color: theme.colors.text, textAlign: 'center' },
+  emptyBody:         { color: theme.colors.textSecondary, textAlign: 'center', maxWidth: 360 },
+  emptyBtnsRow:      { flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center' },
+
+  // Saved-tab responsive grid
+  gridWrap:     { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  gridItem:     { minWidth: 130 },
 }));
 
 // ─── LibTabs ──────────────────────────────────────────────────────────────────
@@ -95,10 +119,16 @@ function LibTabs({ active, onChange, counts }: { active: LibTab; onChange: (_t: 
 
 export default function LibraryScreen() {
   const styles = useStyles();
+  const theme  = useAppTheme();
   const router = useRouter();
+  const device = useDeviceClass();
+  const { showToast } = useToast();
   const { feed, loading, error, refresh } = useContentFeed();
-  const { favorites, history, loaded } = useLocalContent();
+  const { favorites, history, loaded, removeFromFavorites } = useLocalContent();
   const [activeTab, setActiveTab] = useState<LibTab>('saved');
+  const [removingId, setRemovingId]     = useState<string | null>(null);
+  const [removeTarget, setRemoveTarget] = useState<FeedCardItem | null>(null);
+  const [isRemoving, setIsRemoving]     = useState(false);
 
   const recommended = useMemo(
     () => dedupeFeedItems([...favorites, ...feed.recent, ...feed.music, ...feed.playlists]),
@@ -107,69 +137,152 @@ export default function LibraryScreen() {
 
   const counts: Record<LibTab, number> = { saved: favorites.length, history: history.length };
 
+  const featured   = favorites[0] ?? null;
+  const numCols    = device.isTV ? 5 : device.isLargeDesktop ? 4 : device.isDesktop ? 3 : device.isTablet ? 3 : 2;
+  const colPercent = `${Math.floor(100 / numCols) - 1}%` as const;
+  const gridItems  = useMemo(() => favorites.slice(featured ? 1 : 0), [favorites, featured]);
+
   const openItem = async (item: FeedCardItem, source: string) => {
     await trackPlayEvent({ contentId: item.id, contentType: item.type, title: item.title, source });
     router.push(buildPlayerRoute(item));
   };
 
+  const shareItem = async (item: FeedCardItem) => {
+    try {
+      await Share.share({ message: `${item.title}\n${item.subtitle}${item.mediaUrl ? `\n${item.mediaUrl}` : ''}` });
+    } catch {
+      showToast({ title: 'Share unavailable', message: 'Please try again.', tone: 'warning' });
+    }
+  };
+
+  const confirmRemove = useCallback((item: FeedCardItem) => {
+    setRemoveTarget(item);
+  }, []);
+
+  const removeItem = async () => {
+    if (!removeTarget) return;
+    const item = removeTarget;
+    setIsRemoving(true);
+    setRemovingId(item.id);
+    try {
+      await removeFromFavorites(item.id);
+      showToast({ title: 'Removed from favourites', message: item.title, tone: 'info' });
+    } catch {
+      showToast({ title: 'Could not remove item', message: 'Please try again.', tone: 'warning' });
+    }
+    setIsRemoving(false);
+    setRemovingId(null);
+    setRemoveTarget(null);
+  };
+
   return (
-    <PremiumPage
-      title="Library"
-      eyebrow="Saved"
-      noBack
-      refreshing={loading || !loaded}
-      onRefresh={() => refresh()}
-    >
-      <LibTabs active={activeTab} onChange={setActiveTab} counts={counts} />
+    <>
+      <PremiumPage
+        title="Library"
+        eyebrow="Saved"
+        noBack
+        refreshing={loading || !loaded}
+        onRefresh={() => refresh()}
+      >
+        <LibTabs active={activeTab} onChange={setActiveTab} counts={counts} />
 
-      {error ? <InlineErrorBanner message={error} onRetry={() => void refresh()} /> : null}
+        {error ? <InlineErrorBanner message={error} onRetry={() => void refresh()} /> : null}
 
-      {activeTab === 'saved' ? (
-        <>
+        {activeTab === 'saved' ? (
+          <>
+            {loaded && favorites.length === 0 ? (
+              <SurfaceCard tone="strong" style={styles.emptyCard}>
+                <View style={styles.emptyIconBox}>
+                  <MaterialIcons name="favorite-border" size={34} color={theme.colors.primary} />
+                </View>
+                <View style={styles.emptyTextWrap}>
+                  <CustomText variant="heading" style={styles.emptyTitle}>No favourites yet</CustomText>
+                  <CustomText variant="body" style={styles.emptyBody}>
+                    Tap the heart on songs, videos, and sessions to keep them here.
+                  </CustomText>
+                </View>
+                <View style={styles.emptyBtnsRow}>
+                  <AppButton title="Discover content" size="md" onPress={() => router.push(APP_ROUTES.tabs.search)} leftIcon={<MaterialIcons name="search" size={17} color={theme.colors.textInverse} />} />
+                  <AppButton title="Browse music" size="md" variant="secondary" onPress={() => router.push(APP_ROUTES.tabs.player)} leftIcon={<MaterialIcons name="graphic-eq" size={17} color={theme.colors.text} />} />
+                </View>
+              </SurfaceCard>
+            ) : null}
+
+            {featured ? (
+              <FadeIn delay={70}>
+                <PremiumHero
+                  item={featured}
+                  title={featured.title}
+                  subtitle={featured.description || featured.subtitle || ''}
+                  eyebrow="Top favourite"
+                  primaryLabel="Play now"
+                  primaryIcon="play-arrow"
+                  onPrimary={() => void openItem(featured, 'library_saved')}
+                />
+              </FadeIn>
+            ) : null}
+
+            {favorites.length > 1 ? (
+              <FadeIn delay={110}>
+                <SectionLabel title="All favourites" accent={`${favorites.length} saved`} subtitle="Your complete favourites collection" />
+              </FadeIn>
+            ) : null}
+
+            {gridItems.length > 0 ? (
+              <FadeIn delay={140}>
+                <View style={styles.gridWrap}>
+                  {gridItems.map((item) => (
+                    <View key={item.id} style={[styles.gridItem, { width: colPercent }]}>
+                      <FavoriteCard
+                        item={item}
+                        onPlay={() => void openItem(item, 'library_saved')}
+                        onShare={() => void shareItem(item)}
+                        onRemove={() => confirmRemove(item)}
+                        removing={removingId === item.id}
+                      />
+                    </View>
+                  ))}
+                </View>
+              </FadeIn>
+            ) : null}
+
+            {loaded && recommended.length > 0 ? (
+              <ContentList
+                title="Recommended for you"
+                items={recommended}
+                onPressItem={(item) => void openItem(item, 'library_recommended')}
+              />
+            ) : null}
+          </>
+        ) : null}
+
+        {activeTab === 'history' ? (
           <View style={styles.sectionGap}>
-            <SectionLabel title="Saved tracks" accent="Favorites" />
+            <SectionLabel title="Recently played" accent="History" />
             <ContentRail
               title=""
-              items={favorites}
+              items={history}
               loading={!loaded}
-              onPressItem={(item) => void openItem(item, 'library_saved')}
-              emptyTitle="Nothing saved yet"
-              emptyMessage="Tap the heart on any track to keep it here."
+              onPressItem={(item) => void openItem(item, 'library_history')}
+              emptyTitle="No history yet"
+              emptyMessage="Your recently played tracks will appear here."
             />
           </View>
-          {loaded && recommended.length > 0 ? (
-            <ContentList
-              title="Recommended for you"
-              items={recommended}
-              onPressItem={(item) => void openItem(item, 'library_recommended')}
-            />
-          ) : null}
-        </>
-      ) : null}
+        ) : null}
+      </PremiumPage>
 
-      {activeTab === 'history' ? (
-        <View style={styles.sectionGap}>
-          <SectionLabel title="Recently played" accent="History" />
-          <ContentRail
-            title=""
-            items={history}
-            loading={!loaded}
-            onPressItem={(item) => void openItem(item, 'library_history')}
-            emptyTitle="No history yet"
-            emptyMessage="Your recently played tracks will appear here."
-          />
-        </View>
-      ) : null}
-
-      {loaded && favorites.length === 0 && history.length === 0 ? (
-        <EmptyState
-          title="Your library is open"
-          message="Explore music and videos, then save the moments you love."
-          actionLabel="Explore music"
-          onAction={() => router.push(APP_ROUTES.tabs.player)}
-          icon="bookmark-border"
-        />
-      ) : null}
-    </PremiumPage>
+      <ConfirmModal
+        visible={Boolean(removeTarget)}
+        icon="favorite"
+        title="Remove from favourites?"
+        body={removeTarget ? `"${removeTarget.title}" will be removed from your saved items.` : undefined}
+        primaryLabel="Remove"
+        primaryTone="danger"
+        secondaryLabel="Keep it"
+        loading={isRemoving}
+        onPrimary={() => { void removeItem(); }}
+        onDismiss={() => { if (!isRemoving) setRemoveTarget(null); }}
+      />
+    </>
   );
 }

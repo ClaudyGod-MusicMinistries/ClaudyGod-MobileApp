@@ -99,6 +99,7 @@ export default function Rate() {
     <SettingsScaffold
       title="Rate & Review"
       subtitle="Share your experience and help improve the app."
+      icon="star-rate"
       hero={
         <FadeIn>
           <SurfaceCard tone="strong" style={styles.heroCard}>

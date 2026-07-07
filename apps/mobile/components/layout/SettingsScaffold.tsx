@@ -18,6 +18,7 @@ import { APP_ROUTES } from '../../util/appRoutes';
 interface SettingsScaffoldProps {
   title: string;
   subtitle?: string;
+  icon?: React.ComponentProps<typeof MaterialIcons>['name'];
   children: React.ReactNode;
   hero?: React.ReactNode;
   backRoute?: string;
@@ -33,7 +34,16 @@ const useStyles = makeStyles((theme) => ({
   scrollContent: { paddingBottom: 124 },
   innerPad:      { paddingTop: theme.layout.headerVerticalPadding, gap: theme.layout.sectionGap },
   cardPad:       { paddingVertical: theme.spacing.md, paddingHorizontal: theme.spacing.md },
+  headerCircle1: { position: 'absolute', top: -26, right: -26, width: 100, height: 100, borderRadius: 50, backgroundColor: `${theme.colors.primary}0F` },
+  headerCircle2: { position: 'absolute', bottom: -34, right: 40, width: 70, height: 70, borderRadius: 35, backgroundColor: `${theme.colors.primary}0A` },
   headerRow:     { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  headerIconBox: {
+    width: 40, height: 40, borderRadius: 13,
+    backgroundColor: theme.colors.primarySurface,
+    borderWidth: 1, borderColor: theme.colors.primaryBorder,
+    alignItems: 'center', justifyContent: 'center',
+    flexShrink: 0,
+  },
   backBtn: {
     width: 38, height: 38, borderRadius: 19,
     alignItems: 'center', justifyContent: 'center',
@@ -50,7 +60,7 @@ const useStyles = makeStyles((theme) => ({
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function SettingsScaffold({ title, subtitle, children, hero, backRoute = APP_ROUTES.tabs.home }: SettingsScaffoldProps) {
+export function SettingsScaffold({ title, subtitle, icon, children, hero, backRoute = APP_ROUTES.tabs.home }: SettingsScaffoldProps) {
   const styles = useStyles();
   const theme = useAppTheme();
   const router = useRouter();
@@ -93,6 +103,9 @@ export function SettingsScaffold({ title, subtitle, children, hero, backRoute = 
           <Screen>
             <View style={styles.innerPad}>
               <SurfaceCard tone="strong" style={styles.cardPad}>
+                <View style={styles.headerCircle1} />
+                <View style={styles.headerCircle2} />
+
                 <View style={styles.headerRow}>
                   <TVTouchable
                     onPress={() => router.replace(backRoute as never)}
@@ -102,6 +115,12 @@ export function SettingsScaffold({ title, subtitle, children, hero, backRoute = 
                   >
                     <MaterialIcons name="chevron-left" size={23} color={theme.colors.text} />
                   </TVTouchable>
+
+                  {icon ? (
+                    <View style={styles.headerIconBox}>
+                      <MaterialIcons name={icon} size={19} color={theme.colors.primary} />
+                    </View>
+                  ) : null}
 
                   <View style={styles.headerFill}>
                     <CustomText variant="caption" style={styles.eyebrow} numberOfLines={1}>
