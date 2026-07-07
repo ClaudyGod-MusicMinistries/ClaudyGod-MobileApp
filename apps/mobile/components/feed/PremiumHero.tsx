@@ -58,7 +58,7 @@ export function PremiumHero({
           <View style={styles.heroEmptyCircle2} />
 
           <View style={styles.heroEmptyIconBox}>
-            <MaterialIcons name={emptyIcon} size={30} color={theme.colors.primary} />
+            <MaterialIcons name={emptyIcon} size={32} color={theme.colors.primary} />
           </View>
 
           <CustomText variant="heading" style={styles.heroEmptyTitle} numberOfLines={1}>

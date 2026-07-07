@@ -294,7 +294,7 @@ export default function SettingsScreen() {
 
   const isWideLayout = device.isDesktop || device.isTV;
   const accountPad   = device.isTV ? 20 : 16;
-  const avatarSize   = device.isTV ? 72 : 56;
+  const avatarSize   = device.isTV ? 76 : 60;
   const avatarRadius = device.isTV ? 22 : 18;
   const nameSize     = device.isTV ? 20 : 16;
   const subSize      = device.isTV ? 13 : 12;
@@ -331,19 +331,20 @@ export default function SettingsScreen() {
             style={{
               width: avatarSize, height: avatarSize, borderRadius: avatarRadius,
               alignItems: 'center', justifyContent: 'center',
-              backgroundColor: isSignedIn ? theme.colors.primarySurface : theme.colors.card,
+              backgroundColor: isSignedIn ? theme.colors.primarySurface : theme.colors.primarySurface,
               borderWidth: 2,
-              borderColor: isSignedIn ? theme.colors.primaryBorder : theme.colors.borderStrong,
+              borderColor: theme.colors.primaryBorder,
+              ...theme.shadows.sm,
             }}
           >
             <MaterialIcons
               name={isSignedIn ? 'person' : 'headphones'}
-              size={device.isTV ? 34 : 26}
+              size={device.isTV ? 36 : 28}
               color={theme.colors.primary}
             />
           </View>
           <View style={styles.identityWrap}>
-            <CustomText style={[styles.identityName, { fontSize: nameSize }]}>
+            <CustomText style={[styles.identityName, { fontSize: nameSize + 1 }]}>
               {isSignedIn ? account!.displayName : 'ClaudyGod Listener'}
             </CustomText>
             <CustomText style={[styles.identitySub, { fontSize: subSize }]}>
@@ -378,7 +379,7 @@ export default function SettingsScreen() {
       {/* Quick links */}
       <View style={styles.quickLinkSection}>
         <SectionLabel title="Quick access" accent="Navigate" />
-        <View style={{ flexDirection: isWideLayout ? 'row' : 'column', gap: isWideLayout ? 12 : 0 }}>
+        <View style={{ flexDirection: isWideLayout ? 'row' : 'column', gap: 12 }}>
           <View style={isWideLayout ? styles.rowGroupWide : {}}>
             <SurfaceCard tone="subtle" style={styles.cardEdgePad}>
               <LinearGradient
