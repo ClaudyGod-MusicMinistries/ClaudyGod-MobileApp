@@ -62,13 +62,21 @@ const useStyles = makeStyles((theme) => ({
   emptyIconBox: {
     width: 80, height: 80, borderRadius: 40,
     alignItems: 'center', justifyContent: 'center',
-    backgroundColor: `${theme.colors.primary}14`,
-    borderWidth: 1, borderColor: theme.colors.border,
+    backgroundColor: theme.colors.primarySurface,
+    borderWidth: 1.5, borderColor: theme.colors.primaryBorder,
+    shadowColor: theme.colors.primary,
+    shadowOpacity: 0.28, shadowRadius: 18, shadowOffset: { width: 0, height: 7 },
+    elevation: 6,
   },
   emptyTextWrap:     { alignItems: 'center', gap: 8 },
   emptyTitle:        { color: theme.colors.text, textAlign: 'center' },
   emptyBody:         { color: theme.colors.textSecondary, textAlign: 'center', maxWidth: 360 },
-  emptyBtnsRow:      { flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center' },
+  emptyActions:      { alignItems: 'center', gap: 4, alignSelf: 'stretch' },
+  emptySecondaryLink: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingVertical: 10, paddingHorizontal: 12,
+  },
+  emptySecondaryLinkText: { color: theme.colors.primary, fontWeight: '600' },
 
   // Saved-tab responsive grid
   gridWrap:     { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
@@ -201,9 +209,18 @@ export default function LibraryScreen() {
                     Tap the heart on songs, videos, and sessions to keep them here.
                   </CustomText>
                 </View>
-                <View style={styles.emptyBtnsRow}>
-                  <AppButton title="Discover content" size="md" onPress={() => router.push(APP_ROUTES.tabs.search)} leftIcon={<MaterialIcons name="search" size={17} color={theme.colors.textInverse} />} />
-                  <AppButton title="Browse music" size="md" variant="secondary" onPress={() => router.push(APP_ROUTES.tabs.player)} leftIcon={<MaterialIcons name="graphic-eq" size={17} color={theme.colors.text} />} />
+                <View style={styles.emptyActions}>
+                  <AppButton
+                    title="Discover content"
+                    size="md"
+                    fullWidth
+                    onPress={() => router.push(APP_ROUTES.tabs.search)}
+                    leftIcon={<MaterialIcons name="search" size={17} color={theme.colors.textInverse} />}
+                  />
+                  <TVTouchable onPress={() => router.push(APP_ROUTES.tabs.player)} showFocusBorder={false} style={styles.emptySecondaryLink}>
+                    <MaterialIcons name="library-music" size={15} color={theme.colors.primary} />
+                    <CustomText variant="label" style={styles.emptySecondaryLinkText}>Or browse music</CustomText>
+                  </TVTouchable>
                 </View>
               </SurfaceCard>
             ) : null}

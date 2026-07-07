@@ -283,7 +283,7 @@ export default function HomeScreen() {
         primaryIcon={
           featured?.isLive ? 'live-tv' :
           featured?.type === 'video' ? 'smart-display' :
-          featured ? 'play-arrow' : 'graphic-eq'
+          featured ? 'play-arrow' : 'play-circle-outline'
         }
         secondaryLabel="Search"
         secondaryIcon="search"
