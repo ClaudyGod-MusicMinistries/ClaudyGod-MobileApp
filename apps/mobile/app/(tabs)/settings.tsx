@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { Switch, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
@@ -17,7 +18,7 @@ import { useAccountSheet } from '../../context/AccountSheetContext';
 import {
   PremiumPage,
   SectionLabel,
-} from '../../components/Exp/PremiumContent';
+} from '../../components/feed';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -52,6 +53,10 @@ const useStyles = makeStyles((theme) => ({
   linkHint:         { color: theme.colors.textSecondary, marginTop: 2 },
 
   // SettingsScreen
+  identityCard:     { overflow: 'hidden' },
+  identityWash:     { position: 'absolute', top: 0, left: 0, right: 0, height: 140 },
+  identityCircle1:  { position: 'absolute', top: -30, right: -30, width: 120, height: 120, borderRadius: 60, backgroundColor: `${theme.colors.primary}12` },
+  identityCircle2:  { position: 'absolute', bottom: -40, left: -24, width: 100, height: 100, borderRadius: 50, backgroundColor: `${theme.colors.primary}0A` },
   identityWrap:     { flex: 1, minWidth: 0 },
   identityName:     { color: theme.colors.text, fontWeight: '700', letterSpacing: -0.3 },
   identitySub:      { color: theme.colors.textSecondary, marginTop: 3 },
@@ -61,6 +66,7 @@ const useStyles = makeStyles((theme) => ({
   sectionGroupLabel:{ color: theme.colors.primary, fontSize: 10, fontWeight: '700', letterSpacing: 1.0, textTransform: 'uppercase' },
   rowDivider:       { borderTopColor: theme.colors.border },
   rowGroupWide:     { flex: 1, borderRadius: 14, overflow: 'hidden', borderWidth: 1, borderColor: theme.colors.border },
+  quickGroupTopWash:{ position: 'absolute', top: 0, left: 0, right: 0, height: 46 },
   settingsGroupsRow:{ gap: 12, alignItems: 'flex-start' },
   homeBtn:          { minWidth: 40, paddingHorizontal: 10 },
   cardEdgePad:      { paddingHorizontal: theme.spacing.md, paddingVertical: 0 },
@@ -309,7 +315,16 @@ export default function SettingsScreen() {
       }
     >
       {/* Identity / Account card */}
-      <SurfaceCard tone="strong" style={{ padding: accountPad }}>
+      <SurfaceCard tone="strong" style={[styles.identityCard, { padding: accountPad }]}>
+        <LinearGradient
+          colors={[`${theme.colors.primary}14`, 'transparent']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.identityWash}
+        />
+        <View style={styles.identityCircle1} />
+        <View style={styles.identityCircle2} />
+
         <View style={{ flexDirection: isWideLayout ? 'row' : 'column', gap: isWideLayout ? 20 : 16, alignItems: isWideLayout ? 'center' : 'flex-start' }}>
           <View
             style={{
@@ -365,6 +380,10 @@ export default function SettingsScreen() {
         <View style={{ flexDirection: isWideLayout ? 'row' : 'column', gap: isWideLayout ? 12 : 0 }}>
           <View style={isWideLayout ? styles.rowGroupWide : {}}>
             <SurfaceCard tone="subtle" style={styles.cardEdgePad}>
+              <LinearGradient
+                colors={[`${theme.colors.primary}0F`, 'transparent']}
+                style={styles.quickGroupTopWash}
+              />
               {[
                 { icon: 'library-music' as const, label: 'Library', hint: 'Saved content',             color: theme.colors.primary, onPress: () => router.push(APP_ROUTES.tabs.library) },
                 { icon: 'search'        as const, label: 'Search',  hint: 'Find songs, videos, and live', color: theme.colors.success, onPress: () => router.push(APP_ROUTES.tabs.search) },
@@ -377,6 +396,10 @@ export default function SettingsScreen() {
           </View>
           <View style={isWideLayout ? styles.rowGroupWide : {}}>
             <SurfaceCard tone="subtle" style={styles.cardEdgePad}>
+              <LinearGradient
+                colors={[`${theme.colors.primary}0F`, 'transparent']}
+                style={styles.quickGroupTopWash}
+              />
               {[
                 { icon: 'card-giftcard'      as const, label: 'Invite friends', hint: 'Earn rewards together', color: theme.colors.primary, onPress: () => router.push(APP_ROUTES.settingsPages.referral) },
                 { icon: 'help-outline'       as const, label: 'Help',           hint: 'Get support',           color: theme.colors.info,    onPress: () => router.push(APP_ROUTES.settingsPages.help) },

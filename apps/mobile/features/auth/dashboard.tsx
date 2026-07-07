@@ -8,7 +8,7 @@ import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { FadeIn } from '../../components/ui/FadeIn';
 import { SupportMinistryCard } from '../../components/ui/SupportMinistryCard';
-import { EmptyState, PremiumPage, SectionLabel } from '../../components/Exp/PremiumContent';
+import { EmptyState, PremiumPage, SectionLabel } from '../../components/feed';
 import { useAuth } from './AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useAppTheme } from '../../util/colorScheme';

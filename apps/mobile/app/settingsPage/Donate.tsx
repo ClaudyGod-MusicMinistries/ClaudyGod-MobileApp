@@ -1,11 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Linking, Modal, Platform, ScrollView, TouchableWithoutFeedback, View, useWindowDimensions } from 'react-native';
+import { Animated, Linking, Modal, Platform, TouchableWithoutFeedback, View, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { CustomText } from '../../components/CustomText';
 import { AppButton } from '../../components/ui/AppButton';
+import { SettingsScaffold } from '../../components/layout/SettingsScaffold';
 import { useAppTheme } from '../../util/colorScheme';
 import { makeStyles } from '../../styles/makeStyles';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
@@ -52,15 +51,6 @@ function frequencyLabel(v: DonateFrequency) {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const useStyles = makeStyles((theme) => ({
-  root:             { flex: 1, backgroundColor: theme.colors.background },
-
-  // Header
-  header:           { paddingHorizontal: 20, paddingBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 12 },
-  headerBack:       { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.surface },
-  headerWrap:       { flex: 1 },
-  headerTitle:      { color: theme.colors.text, fontSize: 17, fontWeight: '800', letterSpacing: -0.3 },
-  headerSub:        { color: theme.colors.textMuted, fontSize: 12, marginTop: 1 },
-
   // Hero
   heroBg:           { backgroundColor: theme.colors.accent, borderRadius: 28, padding: 22, overflow: 'hidden' },
   heroCircle1:      { position: 'absolute', top: -30, right: -30, width: 120, height: 120, borderRadius: 60, backgroundColor: 'rgba(255,255,255,0.07)' },
@@ -132,8 +122,6 @@ const useStyles = makeStyles((theme) => ({
   ctaWrap:          { gap: 10, paddingTop: 4 },
   trustRow:         { flexDirection: 'row', alignItems: 'center', gap: 8, justifyContent: 'center', paddingTop: 4 },
   trustText:        { color: theme.colors.textMuted, fontSize: 11, textAlign: 'center' },
-  flex1:            { flex: 1 },
-  scrollContent:    { paddingHorizontal: 16, gap: 16 },
 
   // Coming-soon modal
   modalOverlay:     { flex: 1, backgroundColor: 'rgba(0,0,0,0.65)', alignItems: 'center', justifyContent: 'center', padding: 24 },
@@ -225,9 +213,7 @@ function SectionCard({ title, subtitle, children }: { title: string; subtitle?: 
 export default function Donate() {
   const styles = useStyles();
   const theme  = useAppTheme();
-  const router = useRouter();
   const { width } = useWindowDimensions();
-  const insets = useSafeAreaInsets();
   const { config } = useMobileAppConfig();
 
   const isCompact = width < 390;
@@ -294,7 +280,7 @@ export default function Donate() {
   const impactWidth = isCompact ? '100%' : isTablet ? '23%' : '47%';
 
   return (
-    <View style={styles.root}>
+    <>
       {/* Coming soon modal */}
       <Modal
         visible={showComingSoon}
@@ -330,30 +316,20 @@ export default function Donate() {
         </TouchableWithoutFeedback>
       </Modal>
 
-      {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-        <TVTouchable onPress={() => router.back()} showFocusBorder={false} style={styles.headerBack}>
-          <MaterialIcons name="arrow-back" size={18} color={theme.colors.text} />
-        </TVTouchable>
-        <View style={styles.headerWrap}>
-          <CustomText style={styles.headerTitle}>Giving</CustomText>
-          <CustomText style={styles.headerSub}>Partner with the ministry</CustomText>
-        </View>
-      </View>
-
-      <ScrollView
-        style={styles.flex1}
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 24 }]}
-        showsVerticalScrollIndicator={false}
+      <SettingsScaffold
+        title="Giving"
+        subtitle="Partner with the ministry"
+        icon="volunteer-activism"
+        hero={
+          <HeroBanner
+            selectedAmount={selectedAmount}
+            selectedCurrency={selectedCurrency}
+            selectedFrequency={selectedFrequency}
+            selectedMethod={selectedMethod}
+            scripture={scripture}
+          />
+        }
       >
-        <HeroBanner
-          selectedAmount={selectedAmount}
-          selectedCurrency={selectedCurrency}
-          selectedFrequency={selectedFrequency}
-          selectedMethod={selectedMethod}
-          scripture={scripture}
-        />
-
         {/* Currency selector */}
         {currencyOptions.length > 1 ? (
           <SectionCard title="Currency">
@@ -497,7 +473,7 @@ export default function Donate() {
           <MaterialIcons name="verified-user" size={13} color={theme.colors.textMuted} />
           <CustomText style={styles.trustText}>Secure giving • All transactions are encrypted</CustomText>
         </View>
-      </ScrollView>
-    </View>
+      </SettingsScaffold>
+    </>
   );
 }

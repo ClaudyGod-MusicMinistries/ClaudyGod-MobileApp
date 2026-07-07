@@ -87,16 +87,6 @@ export const shadows = {
 // ─── Blur ────────────────────────────────────────────────────────────────────
 export const blur = { glass: 12 };
 
-// ─── Typography scale (numeric values only; use CustomText variant prop instead)
-export const typography = {
-  hero:     26,
-  headline: 20,
-  title:    15,
-  body:     14,
-  label:    12,
-  caption:  11,
-};
-
 // ─── Animation timing (ms) ───────────────────────────────────────────────────
 export const timing = {
   fast:     150,

@@ -115,6 +115,7 @@ export default function PaymentScreen() {
     <SettingsScaffold
       title="Review giving"
       subtitle="Confirm your giving details before completing securely."
+      icon="lock-outline"
       hero={
         <FadeIn>
           <SurfaceCard tone="strong" style={styles.heroCard}>

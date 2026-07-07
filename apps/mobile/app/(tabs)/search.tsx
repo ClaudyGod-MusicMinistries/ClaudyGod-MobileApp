@@ -25,7 +25,7 @@ import {
   PremiumPage,
   SectionLabel,
   dedupeFeedItems,
-} from '../../components/Exp/PremiumContent';
+} from '../../components/feed';
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 

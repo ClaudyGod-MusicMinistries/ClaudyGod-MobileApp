@@ -6,7 +6,9 @@ import { AppButton } from '../../components/ui/AppButton';
 import { CustomText } from '../../components/CustomText';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { TVTouchable } from '../../components/ui/TVTouchable';
-import { PremiumPage, SectionLabel } from '../../components/Exp/PremiumContent';
+import { FadeIn } from '../../components/ui/FadeIn';
+import { SectionLabel } from '../../components/feed';
+import { SettingsScaffold } from '../../components/layout/SettingsScaffold';
 import { useAppTheme } from '../../util/colorScheme';
 import { makeStyles } from '../../styles/makeStyles';
 import { useReferral } from '../../hooks/useReferral';
@@ -129,33 +131,40 @@ export default function ReferralScreen() {
   const { code, referralCount, isLoading, share, copyCode, isCopied } = useReferral();
 
   return (
-    <PremiumPage title="Invite Friends" eyebrow="Referrals">
-      <SurfaceCard tone="strong" style={styles.heroCard}>
-        <View style={styles.heroPad}>
-          <View style={styles.heroTopRow}>
-            <View style={styles.heroIconBox}>
-              <MaterialIcons name="card-giftcard" size={18} color={theme.colors.primary} />
+    <SettingsScaffold
+      title="Invite Friends"
+      subtitle="Share ClaudyGod and unlock rewards together"
+      icon="card-giftcard"
+      hero={
+        <FadeIn>
+          <SurfaceCard tone="strong" style={styles.heroCard}>
+            <View style={styles.heroPad}>
+              <View style={styles.heroTopRow}>
+                <View style={styles.heroIconBox}>
+                  <MaterialIcons name="card-giftcard" size={18} color={theme.colors.primary} />
+                </View>
+                <View>
+                  <CustomText style={styles.heroBadge}>Referral Program</CustomText>
+                  <CustomText style={styles.heroTitle}>Invite &amp; earn rewards</CustomText>
+                </View>
+              </View>
+              <CustomText style={styles.heroBody}>
+                Share ClaudyGod with the people in your life. Every friend you invite gets free access — and you both unlock exclusive rewards.
+              </CustomText>
             </View>
-            <View>
-              <CustomText style={styles.heroBadge}>Referral Program</CustomText>
-              <CustomText style={styles.heroTitle}>Invite &amp; earn rewards</CustomText>
+
+            <View style={styles.countStrip}>
+              <MaterialIcons name="group" size={16} color={theme.colors.primary} />
+              <CustomText style={styles.countText}>
+                {referralCount === 0
+                  ? 'No referrals yet — start sharing!'
+                  : `${referralCount} friend${referralCount === 1 ? '' : 's'} joined through your link`}
+              </CustomText>
             </View>
-          </View>
-          <CustomText style={styles.heroBody}>
-            Share ClaudyGod with the people in your life. Every friend you invite gets free access — and you both unlock exclusive rewards.
-          </CustomText>
-        </View>
-
-        <View style={styles.countStrip}>
-          <MaterialIcons name="group" size={16} color={theme.colors.primary} />
-          <CustomText style={styles.countText}>
-            {referralCount === 0
-              ? 'No referrals yet — start sharing!'
-              : `${referralCount} friend${referralCount === 1 ? '' : 's'} joined through your link`}
-          </CustomText>
-        </View>
-      </SurfaceCard>
-
+          </SurfaceCard>
+        </FadeIn>
+      }
+    >
       {isLoading ? (
         <SurfaceCard tone="strong" style={styles.loadingPad}>
           <ActivityIndicator color={theme.colors.primary} />
@@ -208,6 +217,6 @@ export default function ReferralScreen() {
           ))}
         </View>
       </View>
-    </PremiumPage>
+    </SettingsScaffold>
   );
 }

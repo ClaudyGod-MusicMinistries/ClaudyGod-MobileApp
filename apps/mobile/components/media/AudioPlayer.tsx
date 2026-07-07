@@ -1,9 +1,10 @@
-import React, { useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useEffect, useRef, useMemo, useCallback, useState } from 'react';
 import {
   Animated,
   Image,
   Platform,
   Pressable,
+  Share,
   StyleSheet,
   View,
   useWindowDimensions,
@@ -14,9 +15,12 @@ import { MaterialIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { CustomText } from '../CustomText';
 import { TVTouchable } from '../ui/TVTouchable';
+import { ActionSheet, type ActionSheetAction } from '../ui/ActionSheet';
 import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
 import { useAppTheme } from '../../util/colorScheme';
 import { makeStyles } from '../../styles/makeStyles';
+
+export type RepeatMode = 'off' | 'all' | 'one';
 
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
@@ -45,6 +49,10 @@ interface AudioPlayerProps {
   onFavoriteToggle?: () => void;
   currentTrackNumber?: number;
   totalTracks?: number;
+  shuffleEnabled?: boolean;
+  onToggleShuffle?: () => void;
+  repeatMode?: RepeatMode;
+  onCycleRepeat?: () => void;
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -53,9 +61,7 @@ const useStyles = makeStyles((theme) => ({
   // Artwork
   artworkShadow: {
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOpacity: 0.65, shadowRadius: 52, shadowOffset: { width: 0, height: 28 },
-    elevation: 28,
+    ...theme.shadows.xxl,
   },
   artworkCenter:       { alignItems: 'center' },
   artworkWrap:         { alignItems: 'center', marginBottom: 30 },
@@ -144,6 +150,10 @@ export function AudioPlayer({
   onFavoriteToggle,
   currentTrackNumber,
   totalTracks,
+  shuffleEnabled = false,
+  onToggleShuffle,
+  repeatMode = 'off',
+  onCycleRepeat,
 }: AudioPlayerProps) {
   const styles = useStyles();
   const theme  = useAppTheme();
@@ -151,6 +161,7 @@ export function AudioPlayer({
   const player = useAudioPlayer(track.uri, { updateInterval: 350 });
   const status = useAudioPlayerStatus(player);
   const isCompact = Boolean(compact);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const artScale   = useRef(new Animated.Value(1)).current;
   const artOpacity = useRef(new Animated.Value(1)).current;
@@ -242,6 +253,18 @@ export function AudioPlayer({
     onProgress?.(status.currentTime, status.duration ?? 0);
   }, [onPlayStateChange, onProgress, status.currentTime, status.duration, status.isLoaded, status.playing]);
 
+  // "Repeat one" is handled natively by the player itself; "repeat all" advances
+  // the queue when the current track ends (playback naturally stops otherwise).
+  useEffect(() => {
+    player.loop = repeatMode === 'one';
+  }, [player, repeatMode, track.uri]);
+
+  useEffect(() => {
+    if (repeatMode === 'all' && status.didJustFinish) {
+      onNext?.();
+    }
+  }, [status.didJustFinish, repeatMode, onNext]);
+
   const statusError = (status as unknown as { error?: string }).error;
   useEffect(() => {
     if (!statusError) return;
@@ -277,6 +300,33 @@ export function AudioPlayer({
     void Haptics.selectionAsync();
     void player.seekTo(Math.max(0, Math.min(duration, duration * fraction)));
   }, [player, status.duration, status.isLoaded]);
+
+  const toggleShuffle = useCallback(() => {
+    if (!onToggleShuffle) return;
+    void Haptics.selectionAsync();
+    onToggleShuffle();
+  }, [onToggleShuffle]);
+
+  const cycleRepeat = useCallback(() => {
+    if (!onCycleRepeat) return;
+    void Haptics.selectionAsync();
+    onCycleRepeat();
+  }, [onCycleRepeat]);
+
+  const shareTrack = useCallback(() => {
+    setMenuOpen(false);
+    void Share.share({
+      title: track.title,
+      message: track.artist ? `${track.title} — ${track.artist}` : track.title,
+    });
+  }, [track.title, track.artist]);
+
+  const menuActions: ActionSheetAction[] = useMemo(() => [
+    { key: 'share', label: 'Share', icon: 'share', onPress: shareTrack },
+  ], [shareTrack]);
+
+  const repeatIcon: React.ComponentProps<typeof MaterialIcons>['name'] = repeatMode === 'one' ? 'repeat-one' : 'repeat';
+  const repeatActive = repeatMode !== 'off';
 
   // ─────────────────────────────────────────────────────────────────────────
   // COMPACT mode
@@ -368,7 +418,7 @@ export function AudioPlayer({
           <CustomText numberOfLines={1} style={styles.trackTitle}>{track.title}</CustomText>
           <CustomText numberOfLines={1} style={styles.trackArtist}>{track.artist || 'ClaudyGod'}</CustomText>
         </View>
-        <TVTouchable style={styles.sideBtn} showFocusBorder={false} accessibilityLabel="More options" onPress={() => {}}>
+        <TVTouchable style={styles.sideBtn} showFocusBorder={false} accessibilityLabel="More options" onPress={() => setMenuOpen(true)}>
           <MaterialIcons name="more-horiz" size={24} color={theme.colors.textMuted} />
         </TVTouchable>
       </View>
@@ -387,8 +437,15 @@ export function AudioPlayer({
 
       {/* Main playback controls */}
       <View style={styles.controlsRow}>
-        <TVTouchable style={[styles.sideBtn, styles.sideBtnFaded]} showFocusBorder={false} onPress={() => {}}>
-          <MaterialIcons name="shuffle" size={20} color={theme.colors.textSecondary} />
+        <TVTouchable
+          style={[styles.sideBtn, !shuffleEnabled && styles.sideBtnFaded]}
+          showFocusBorder={false}
+          disabled={!onToggleShuffle}
+          onPress={toggleShuffle}
+          accessibilityLabel="Shuffle"
+          accessibilityState={{ selected: shuffleEnabled }}
+        >
+          <MaterialIcons name="shuffle" size={20} color={shuffleEnabled ? theme.colors.primary : theme.colors.textSecondary} />
         </TVTouchable>
 
         {onPrevious ? (
@@ -407,10 +464,25 @@ export function AudioPlayer({
           <ControlButton icon="skip-next" onPress={onNext} disabled={!canGoNext} size={28} accessibilityLabel="Next track" />
         ) : null}
 
-        <TVTouchable style={[styles.sideBtn, styles.sideBtnFaded]} showFocusBorder={false} onPress={() => {}}>
-          <MaterialIcons name="repeat" size={20} color={theme.colors.textSecondary} />
+        <TVTouchable
+          style={[styles.sideBtn, !repeatActive && styles.sideBtnFaded]}
+          showFocusBorder={false}
+          disabled={!onCycleRepeat}
+          onPress={cycleRepeat}
+          accessibilityLabel={`Repeat: ${repeatMode}`}
+          accessibilityState={{ selected: repeatActive }}
+        >
+          <MaterialIcons name={repeatIcon} size={20} color={repeatActive ? theme.colors.primary : theme.colors.textSecondary} />
         </TVTouchable>
       </View>
+
+      <ActionSheet
+        visible={menuOpen}
+        title={track.title}
+        description={track.artist || undefined}
+        actions={menuActions}
+        onClose={() => setMenuOpen(false)}
+      />
     </View>
   );
 }

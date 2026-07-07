@@ -1,5 +1,6 @@
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useContext, useEffect, useState, type ReactNode } from 'react';
 import { StatusBar, View } from 'react-native';
 import { QueryClientProvider } from '@tanstack/react-query';
@@ -151,33 +152,35 @@ function RootLayoutInner() {
 
 export default function RootLayout() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <FontProvider>
-          <SafeAreaProvider>
-            <ErrorBoundary context="the app">
-              <ToastProvider>
-                <AppProvider>
-                  <UserAccountProvider>
-                    <AccountSheetProvider>
-                      <PlayerProgressProvider>
-                        <PlayerProvider>
-                          <WordOfDayProvider>
-                            <AppModalProvider>
-                              <RootLayoutInner />
-                              <AccountSheet />
-                            </AppModalProvider>
-                          </WordOfDayProvider>
-                        </PlayerProvider>
-                      </PlayerProgressProvider>
-                    </AccountSheetProvider>
-                  </UserAccountProvider>
-                </AppProvider>
-              </ToastProvider>
-            </ErrorBoundary>
-          </SafeAreaProvider>
-        </FontProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <FontProvider>
+            <SafeAreaProvider>
+              <ErrorBoundary context="the app">
+                <ToastProvider>
+                  <AppProvider>
+                    <UserAccountProvider>
+                      <AccountSheetProvider>
+                        <PlayerProgressProvider>
+                          <PlayerProvider>
+                            <WordOfDayProvider>
+                              <AppModalProvider>
+                                <RootLayoutInner />
+                                <AccountSheet />
+                              </AppModalProvider>
+                            </WordOfDayProvider>
+                          </PlayerProvider>
+                        </PlayerProgressProvider>
+                      </AccountSheetProvider>
+                    </UserAccountProvider>
+                  </AppProvider>
+                </ToastProvider>
+              </ErrorBoundary>
+            </SafeAreaProvider>
+          </FontProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </GestureHandlerRootView>
   );
 }

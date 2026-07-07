@@ -188,6 +188,7 @@ export default function Privacy() {
     <SettingsScaffold
       title="Privacy & Security"
       subtitle="Clear controls for account data, activity, and safety."
+      icon="security"
       hero={
         <FadeIn>
           <SurfaceCard tone="strong" style={styles.heroPad}>
