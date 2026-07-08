@@ -185,16 +185,22 @@ jobs:
       - uses: actions/checkout@v4
 
       # Sync just the compose file the server needs — never the repo, never .env.production.
+      # Plain scp via a run step (not appleboy/scp-action) — the org's Actions allowlist
+      # permits appleboy/ssh-action but not appleboy/scp-action, and this needs no
+      # third-party action at all.
       - name: Copy compose file to server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.DEPLOY_SSH_HOST }}
-          username: ${{ secrets.DEPLOY_SSH_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          port: ${{ secrets.DEPLOY_SSH_PORT || 22 }}
-          source: "docker-compose.production.yml"
-          target: ${{ secrets.DEPLOY_APP_DIR }}
-          overwrite: true
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -p "${{ secrets.DEPLOY_SSH_PORT || 22 }}" -H "${{ secrets.DEPLOY_SSH_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+
+          scp -i ~/.ssh/deploy_key -P "${{ secrets.DEPLOY_SSH_PORT || 22 }}" \
+            docker-compose.production.yml \
+            "${{ secrets.DEPLOY_SSH_USER }}@${{ secrets.DEPLOY_SSH_HOST }}:${{ secrets.DEPLOY_APP_DIR }}/docker-compose.production.yml"
+
+          rm -f ~/.ssh/deploy_key
 
       - name: Pull images, run migrations, roll out
         uses: appleboy/ssh-action@v1.2.0
