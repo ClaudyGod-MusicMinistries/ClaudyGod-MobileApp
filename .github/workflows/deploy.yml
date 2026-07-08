@@ -166,8 +166,9 @@ jobs:
   #   Secrets:
   #     VPS_HOST            — VPS hostname or IP
   #     VPS_USER            — SSH user with docker + git permissions on the VPS
-  #     VPS_SSH_KEY         — private key for that user, base64-encoded
-  #                           (e.g. `base64 -i deploy_key | pbcopy` before pasting in)
+  #     VPS_SSH_KEY         — private key for that user, pasted as plain multi-line text
+  #                           (`cat deploy_key`) — appleboy/ssh-action's `key:` input
+  #                           accepts this directly, no encoding needed
   #     VPS_PORT            — SSH port
   #     VPS_DEPLOY_PATH     — absolute path to the repo's git clone on the VPS,
   #                           containing the real .env.production (e.g. /opt/claudygod)
@@ -209,31 +210,17 @@ jobs:
 
           if [ -n "$missing" ]; then
             echo "::error::Deployment is not configured yet — missing:$missing"
-            echo "Add these under Settings → Secrets and variables → Actions (secrets vs. the one variable as noted above)."
-            echo "See docs/RUNBOOK.md → 'Production deployment' for what each one is and how to obtain it."
+            echo "Add these under Settings → Secrets and variables → Actions (all are Secrets except API_DOMAIN, which is a Variable)."
             exit 1
           fi
           echo "All required deployment secrets/variables are present."
 
-      # VPS_SSH_KEY must be base64-encoded — not a stylistic choice, this is what makes
-      # a multi-line private key survive being pasted through GitHub's secret UI intact
-      # (immune to trailing-newline trimming and CRLF/LF mangling that a raw multi-line
-      # paste is exposed to). This step enforces that contract strictly and fails with
-      # exact remediation steps rather than silently guessing at the format — a wrong
-      # guess here would deploy with a corrupt or wrong key and fail confusingly later.
-      # See docs/RUNBOOK.md → "Rotating VPS_SSH_KEY" before ever touching this secret.
-      - name: Decode and validate SSH key
-        run: |
-          mkdir -p ~/.ssh
-          if ! printf '%s' "${{ secrets.VPS_SSH_KEY }}" | base64 -d > ~/.ssh/deploy_key 2>/dev/null \
-             || ! grep -q "PRIVATE KEY" ~/.ssh/deploy_key; then
-            echo "::error::VPS_SSH_KEY is not valid base64-encoded private key data."
-            echo "Re-encode the real key and replace the secret — see docs/RUNBOOK.md → 'Rotating VPS_SSH_KEY' for the exact command."
-            exit 1
-          fi
-          chmod 600 ~/.ssh/deploy_key
-          echo "VPS_SSH_KEY decoded and validated ($(ssh-keygen -lf ~/.ssh/deploy_key 2>/dev/null || echo 'fingerprint unavailable'))."
-
+      # appleboy/ssh-action accepts the private key directly via `key:` and handles
+      # writing it to disk internally — no manual decode step, no encoding convention
+      # for anyone to get wrong on the next rotation. Paste VPS_SSH_KEY as the plain
+      # multi-line key text (`cat your_key`), nothing else. This replaces an earlier
+      # hand-rolled base64-decode step that kept breaking on re-rotation — the decode
+      # step was never necessary, it was solving a problem this action already solves.
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.2.0
         env:
@@ -242,7 +229,7 @@ jobs:
         with:
           host:     ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
-          key_path: /home/runner/.ssh/deploy_key
+          key:      ${{ secrets.VPS_SSH_KEY }}
           port:     ${{ secrets.VPS_PORT }}
           envs:     GHCR_DEPLOY_TOKEN,DEPLOY_SHA
           script_stop: true
