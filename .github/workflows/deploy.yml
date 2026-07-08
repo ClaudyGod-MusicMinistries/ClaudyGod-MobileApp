@@ -215,11 +215,24 @@ jobs:
           fi
           echo "All required deployment secrets/variables are present."
 
-      - name: Decode SSH key
+      # VPS_SSH_KEY must be base64-encoded — not a stylistic choice, this is what makes
+      # a multi-line private key survive being pasted through GitHub's secret UI intact
+      # (immune to trailing-newline trimming and CRLF/LF mangling that a raw multi-line
+      # paste is exposed to). This step enforces that contract strictly and fails with
+      # exact remediation steps rather than silently guessing at the format — a wrong
+      # guess here would deploy with a corrupt or wrong key and fail confusingly later.
+      # See docs/RUNBOOK.md → "Rotating VPS_SSH_KEY" before ever touching this secret.
+      - name: Decode and validate SSH key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.VPS_SSH_KEY }}" | base64 -d > ~/.ssh/deploy_key
+          if ! printf '%s' "${{ secrets.VPS_SSH_KEY }}" | base64 -d > ~/.ssh/deploy_key 2>/dev/null \
+             || ! grep -q "PRIVATE KEY" ~/.ssh/deploy_key; then
+            echo "::error::VPS_SSH_KEY is not valid base64-encoded private key data."
+            echo "Re-encode the real key and replace the secret — see docs/RUNBOOK.md → 'Rotating VPS_SSH_KEY' for the exact command."
+            exit 1
+          fi
           chmod 600 ~/.ssh/deploy_key
+          echo "VPS_SSH_KEY decoded and validated ($(ssh-keygen -lf ~/.ssh/deploy_key 2>/dev/null || echo 'fingerprint unavailable'))."
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.2.0
