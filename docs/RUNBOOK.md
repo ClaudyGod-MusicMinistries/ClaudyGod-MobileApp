@@ -102,3 +102,39 @@ The Makefile already has a target for this — SSH to the server and run
 and `make clean-legacy` (remove stale pre-rename containers and restart api/worker so
 Traefik's routing table refreshes — see the Makefile for what it actually touches before
 running it).
+
+### Rotating `VPS_SSH_KEY`
+
+**This secret must always be base64-encoded — never the raw multi-line key text.**
+That's not a stylistic preference: a raw multi-line value is exposed to trailing-newline
+trimming and CRLF/LF mangling depending on how it's pasted into GitHub's UI, silently
+corrupting the key. Base64 collapses it to one line immune to both. The `deploy` job's
+"Decode and validate SSH key" step enforces this — it fails the run immediately with a
+clear error if the secret isn't valid base64 that decodes to a real private key, rather
+than guessing at the format (a wrong guess would deploy with a corrupt/wrong key and fail
+confusingly several steps later instead of immediately).
+
+To rotate it correctly:
+
+1. Generate a new keypair (or locate the existing one you're rotating to) — don't reuse
+   your personal SSH key:
+   ```
+   ssh-keygen -t ed25519 -C "github-deploy" -f deploy_key -N ""
+   ```
+2. Authorize the **public** half on the VPS for `VPS_USER`:
+   ```
+   ssh-copy-id -i deploy_key.pub <VPS_USER>@<VPS_HOST>
+   ```
+3. Base64-encode the **private** half — this exact output is what goes in the secret,
+   as a single line, nothing else:
+   ```
+   base64 -i deploy_key          # macOS
+   base64 -w0 deploy_key          # Linux
+   ```
+4. Settings → Secrets and variables → Actions → `VPS_SSH_KEY` → paste that base64 output
+   (replacing the old value entirely, not appending).
+5. Delete `deploy_key`/`deploy_key.pub` from your local machine once step 4 is saved —
+   don't leave deploy keys lying around in a working directory.
+6. Push (or re-run the `deploy` job manually) — the "Decode and validate SSH key" step
+   will print the new key's fingerprint on success, so you can visually confirm it's the
+   key you just rotated to before it's used for anything.
