@@ -1,5 +1,5 @@
 import React from 'react';
-import { ImageBackground, ScrollView, StatusBar, View, useWindowDimensions } from 'react-native';
+import { ScrollView, StatusBar, View, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -12,12 +12,12 @@ import { SurfaceCard } from '../ui/SurfaceCard';
 import { CustomText } from '../CustomText';
 import { TVTouchable } from '../ui/TVTouchable';
 import { AppScreenFooter } from './AppScreenFooter';
-import { BRAND_HERO_ASSET } from '../../util/brandAssets';
 import { APP_ROUTES } from '../../util/appRoutes';
 
 interface SettingsScaffoldProps {
   title: string;
   subtitle?: string;
+  icon?: React.ComponentProps<typeof MaterialIcons>['name'];
   children: React.ReactNode;
   hero?: React.ReactNode;
   backRoute?: string;
@@ -33,7 +33,16 @@ const useStyles = makeStyles((theme) => ({
   scrollContent: { paddingBottom: 124 },
   innerPad:      { paddingTop: theme.layout.headerVerticalPadding, gap: theme.layout.sectionGap },
   cardPad:       { paddingVertical: theme.spacing.md, paddingHorizontal: theme.spacing.md },
+  headerCircle1: { position: 'absolute', top: -26, right: -26, width: 100, height: 100, borderRadius: 50, backgroundColor: `${theme.colors.primary}0F` },
+  headerCircle2: { position: 'absolute', bottom: -34, right: 40, width: 70, height: 70, borderRadius: 35, backgroundColor: `${theme.colors.primary}0A` },
   headerRow:     { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  headerIconBox: {
+    width: 40, height: 40, borderRadius: 13,
+    backgroundColor: theme.colors.primarySurface,
+    borderWidth: 1, borderColor: theme.colors.primaryBorder,
+    alignItems: 'center', justifyContent: 'center',
+    flexShrink: 0,
+  },
   backBtn: {
     width: 38, height: 38, borderRadius: 19,
     alignItems: 'center', justifyContent: 'center',
@@ -45,12 +54,14 @@ const useStyles = makeStyles((theme) => ({
   titleText:    { color: theme.colors.text, marginTop: 2 },
   subtitleText: { color: theme.colors.textSecondary, marginTop: 2 },
   heroWrap:     { marginTop: -2 },
-  heroBgBase:   { position: 'absolute', top: 0, left: 0, right: 0 },
+  backdropBase: { position: 'absolute', top: 0, left: 0, right: 0, overflow: 'hidden' },
+  backdropCircle1: { position: 'absolute', top: -60, right: -50, width: 220, height: 220, borderRadius: 110, backgroundColor: `${theme.colors.primary}1C` },
+  backdropCircle2: { position: 'absolute', top: 40, left: -70, width: 180, height: 180, borderRadius: 90, backgroundColor: `${theme.colors.primary}12` },
 }));
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function SettingsScaffold({ title, subtitle, children, hero, backRoute = APP_ROUTES.tabs.home }: SettingsScaffoldProps) {
+export function SettingsScaffold({ title, subtitle, icon, children, hero, backRoute = APP_ROUTES.tabs.home }: SettingsScaffoldProps) {
   const styles = useStyles();
   const theme = useAppTheme();
   const router = useRouter();
@@ -65,22 +76,20 @@ export function SettingsScaffold({ title, subtitle, children, hero, backRoute = 
         backgroundColor={theme.colors.background}
       />
 
-      <ImageBackground
-        source={BRAND_HERO_ASSET}
-        resizeMode="cover"
-        style={[styles.heroBgBase, { height: compact ? 220 : 280 }]}
-      >
+      <View style={[styles.backdropBase, { height: compact ? 220 : 280 }]}>
         <LinearGradient
           colors={
             theme.scheme === 'dark'
-              ? ['rgba(6,4,12,0.28)', 'rgba(6,4,12,0.72)', theme.colors.background]
-              : ['rgba(124,58,237,0.10)', 'rgba(250,247,255,0.70)', theme.colors.background]
+              ? ['rgba(124,58,237,0.22)', 'rgba(6,4,12,0.55)', theme.colors.background]
+              : ['rgba(124,58,237,0.14)', 'rgba(250,247,255,0.75)', theme.colors.background]
           }
           start={{ x: 0, y: 0 }}
           end={{ x: 0.86, y: 1 }}
           style={styles.gradientFill}
         />
-      </ImageBackground>
+        <View style={styles.backdropCircle1} />
+        <View style={styles.backdropCircle2} />
+      </View>
 
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <ScrollView
@@ -93,6 +102,9 @@ export function SettingsScaffold({ title, subtitle, children, hero, backRoute = 
           <Screen>
             <View style={styles.innerPad}>
               <SurfaceCard tone="strong" style={styles.cardPad}>
+                <View style={styles.headerCircle1} />
+                <View style={styles.headerCircle2} />
+
                 <View style={styles.headerRow}>
                   <TVTouchable
                     onPress={() => router.replace(backRoute as never)}
@@ -102,6 +114,12 @@ export function SettingsScaffold({ title, subtitle, children, hero, backRoute = 
                   >
                     <MaterialIcons name="chevron-left" size={23} color={theme.colors.text} />
                   </TVTouchable>
+
+                  {icon ? (
+                    <View style={styles.headerIconBox}>
+                      <MaterialIcons name={icon} size={19} color={theme.colors.primary} />
+                    </View>
+                  ) : null}
 
                   <View style={styles.headerFill}>
                     <CustomText variant="caption" style={styles.eyebrow} numberOfLines={1}>

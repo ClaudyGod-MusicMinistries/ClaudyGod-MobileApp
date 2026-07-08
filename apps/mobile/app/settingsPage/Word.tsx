@@ -165,6 +165,7 @@ export default function WordForTodayScreen() {
     <SettingsScaffold
       title="Word for Today"
       subtitle="A focused reflection for worship, prayer, and your day."
+      icon="auto-stories"
       hero={
         <FadeIn>
           <SurfaceCard tone="strong" style={styles.heroPad}>

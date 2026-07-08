@@ -36,14 +36,17 @@ echo "  Log    : $LOG_FILE"
 echo "════════════════════════════════════════════════════════════════"
 
 # ── Timing helpers ────────────────────────────────────────────────────────────
+# Not using `declare -A` (bash 4+ only) or `date +%s%3N` (GNU-only `%N`) —
+# macOS ships bash 3.2 and BSD date, neither of which support these. Steps run
+# sequentially (never overlapping), so a single scalar start-time is enough.
 ERRORS=0
 WARNINGS=0
 STEP_NUM=0
-declare -A STEP_TIMES
+CURRENT_STEP_START=0
 
 step_start() {
   ((STEP_NUM++)) || true
-  STEP_TIMES[$STEP_NUM]=$(date +%s%3N)
+  CURRENT_STEP_START=$(date +%s)
   echo ""
   echo "┌─ [Step $STEP_NUM] $1"
 }
@@ -51,14 +54,14 @@ step_start() {
 step_end() {
   local status="$1"
   local label="$2"
-  local elapsed=$(( $(date +%s%3N) - STEP_TIMES[$STEP_NUM] ))
+  local elapsed=$(( $(date +%s) - CURRENT_STEP_START ))
   if [ "$status" = "pass" ]; then
-    echo "└─ [PASS] $label (${elapsed}ms)"
+    echo "└─ [PASS] $label (${elapsed}s)"
   elif [ "$status" = "fail" ]; then
-    echo "└─ [FAIL] $label (${elapsed}ms) ← BLOCKING"
+    echo "└─ [FAIL] $label (${elapsed}s) ← BLOCKING"
     ((ERRORS++)) || true
   elif [ "$status" = "warn" ]; then
-    echo "└─ [WARN] $label (${elapsed}ms)"
+    echo "└─ [WARN] $label (${elapsed}s)"
     ((WARNINGS++)) || true
   else
     echo "└─ [SKIP] $label"

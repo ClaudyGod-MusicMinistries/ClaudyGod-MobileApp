@@ -1,18 +1,21 @@
-import '../global.css';
-
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useContext, useEffect, useState, type ReactNode } from 'react';
 import { StatusBar, View } from 'react-native';
+import { QueryClientProvider } from '@tanstack/react-query';
 
+import { queryClient } from '../lib/queryClient';
 import { ThemeProvider } from '../context/ThemeProvider';
-import { useColorScheme, useThemeContext, useAppTheme } from '../util/colorScheme';
+import { useThemeContext, useAppTheme } from '../util/colorScheme';
 import { makeStyles } from '../styles/makeStyles';
 import { FontProvider, FontContext } from '../context/FontContext';
 import { AppProvider } from '../context/AppContext';
 import { UserAccountProvider } from '../context/UserAccountContext';
+import { AccountSheetProvider } from '../context/AccountSheetContext';
 import { AccountSheet } from '../components/auth/AccountSheet';
-import { FloatingPlayerProvider, useFloatingPlayer } from '../context/FloatingPlayerContext';
+import { PlayerProvider, usePlayer } from '../context/PlayerContext';
+import { PlayerProgressProvider } from '../context/PlayerProgressContext';
 import { ToastProvider } from '../context/ToastContext';
 import { AppModalProvider } from '../context/AppModalContext';
 import { ToastViewport } from '../components/ui/ToastViewport';
@@ -22,10 +25,11 @@ import { WordOfDayProvider } from '../context/WordOfDayContext';
 import { APP_ROUTES } from '../util/appRoutes';
 import { AppLoadingScreen } from '../components/Exp/AppLoading';
 import { useWordOfDay } from '../hooks/useWordOfDay';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 
 // Global unhandled JS error handler — active in production builds only.
 if (!__DEV__) {
-  const ErrorUtils = (globalThis as unknown as { ErrorUtils?: { setGlobalHandler: (handler: (error: Error, isFatal?: boolean) => void) => void } }).ErrorUtils;
+  const ErrorUtils = (globalThis as unknown as { ErrorUtils?: { setGlobalHandler: (_handler: (_error: Error, _isFatal?: boolean) => void) => void } }).ErrorUtils;
   ErrorUtils?.setGlobalHandler((error, isFatal) => {
     console.error(`[GlobalError] ${isFatal ? 'fatal' : 'non-fatal'}:`, error?.message ?? error);
   });
@@ -53,7 +57,7 @@ function ThemedLayout({ children }: { children: ReactNode }) {
 
 function RootLayoutInner() {
   const { fontsLoaded } = useContext(FontContext);
-  const { themePreference: _themePreference } = useThemeContext();
+  useThemeContext(); // Subscribes so this layout re-renders when the theme changes.
   const router = useRouter();
   const segments = useSegments();
 
@@ -95,7 +99,7 @@ function RootLayoutInner() {
     }
   }, [bootDelayDone, firstSegment, fontsLoaded, router]);
 
-  const { isPlaying: _isPlaying } = useFloatingPlayer().player;
+  usePlayer(); // Subscribes so this layout re-renders on player identity changes (not progress ticks).
 
   if (!fontsLoaded || !bootDelayDone) {
     return <AppLoadingScreen />;
@@ -148,25 +152,35 @@ function RootLayoutInner() {
 
 export default function RootLayout() {
   return (
-    <ThemeProvider>
-      <FontProvider>
-        <SafeAreaProvider>
-          <ToastProvider>
-            <AppProvider>
-              <UserAccountProvider>
-                <FloatingPlayerProvider>
-                  <WordOfDayProvider>
-                    <AppModalProvider>
-                      <RootLayoutInner />
-                      <AccountSheet />
-                    </AppModalProvider>
-                  </WordOfDayProvider>
-                </FloatingPlayerProvider>
-              </UserAccountProvider>
-            </AppProvider>
-          </ToastProvider>
-        </SafeAreaProvider>
-      </FontProvider>
-    </ThemeProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <FontProvider>
+            <SafeAreaProvider>
+              <ErrorBoundary context="the app">
+                <ToastProvider>
+                  <AppProvider>
+                    <UserAccountProvider>
+                      <AccountSheetProvider>
+                        <PlayerProgressProvider>
+                          <PlayerProvider>
+                            <WordOfDayProvider>
+                              <AppModalProvider>
+                                <RootLayoutInner />
+                                <AccountSheet />
+                              </AppModalProvider>
+                            </WordOfDayProvider>
+                          </PlayerProvider>
+                        </PlayerProgressProvider>
+                      </AccountSheetProvider>
+                    </UserAccountProvider>
+                  </AppProvider>
+                </ToastProvider>
+              </ErrorBoundary>
+            </SafeAreaProvider>
+          </FontProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </GestureHandlerRootView>
   );
 }

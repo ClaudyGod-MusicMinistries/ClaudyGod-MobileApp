@@ -23,7 +23,7 @@ import {
   loginMobileUserWithGoogle,
   registerMobileUser,
 } from '../../services/authService';
-import { useUserAccount } from '../../context/UserAccountContext';
+import { useAccountSheet } from '../../context/AccountSheetContext';
 
 type SheetStep = 'choose' | 'email' | 'success';
 type EmailMode = 'signin' | 'signup';
@@ -297,7 +297,7 @@ export function AccountSheet() {
   const styles = useStyles();
   const theme  = useAppTheme();
   const insets = useSafeAreaInsets();
-  const { isSheetOpen, closeAccountSheet } = useUserAccount();
+  const { isSheetOpen, closeAccountSheet } = useAccountSheet();
 
   const [step, setStep]             = useState<SheetStep>('choose');
   const [mode, setMode]             = useState<EmailMode>('signin');

@@ -300,7 +300,7 @@ export function WordOfDayModal({
             {hasBoth ? (
               <View style={styles.dividerRow}>
                 <View style={styles.dividerLine} />
-                <CustomText style={styles.dividerText}>Today's Message</CustomText>
+                <CustomText style={styles.dividerText}>Today&apos;s Message</CustomText>
                 <View style={styles.dividerLine} />
               </View>
             ) : null}

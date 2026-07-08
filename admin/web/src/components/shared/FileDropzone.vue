@@ -99,9 +99,8 @@ import { uploadFile } from '@/api/uploads';
 const props = withDefaults(defineProps<{
   label: string;
   accept?: string;
-  folder?: string;
   maxMb?: number;
-}>(), { accept: '*', folder: 'content', maxMb: 500 });
+}>(), { accept: '*', maxMb: 500 });
 
 const emit = defineEmits<{
   (e: 'uploaded', url: string): void;
@@ -160,7 +159,7 @@ async function handleFile(file: File): Promise<void> {
 
   try {
     uploadStage.value = isMedia ? 'Requesting upload URL…' : 'Uploading…';
-    const { publicUrl } = await uploadFile(file, props.folder, (pct) => {
+    const { publicUrl } = await uploadFile(file, (pct) => {
       progress.value = pct;
       if (pct < 30) uploadStage.value = isMedia ? 'Requesting upload URL…' : 'Uploading…';
       else if (pct < 95) uploadStage.value = 'Uploading file…';

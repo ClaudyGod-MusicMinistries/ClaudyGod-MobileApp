@@ -37,7 +37,7 @@
         <AppCard class="p-5 space-y-4">
           <h3 class="text-sm font-bold text-ink">Media</h3>
           <AppInput v-model="form.mediaUrl" label="Media URL" placeholder="https://…" hint="Or upload a file below" />
-          <FileDropzone label="Upload media file" accept="audio/*,video/*" folder="media" @uploaded="form.mediaUrl = $event" />
+          <FileDropzone label="Upload media file" accept="audio/*,video/*" @uploaded="form.mediaUrl = $event" />
         </AppCard>
       </div>
 

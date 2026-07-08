@@ -7,7 +7,11 @@ CI_DATABASE_URL="${CI_DATABASE_URL:-postgresql://postgres:ci-password@db.your-pr
 CI_SUPABASE_URL="${CI_SUPABASE_URL:-https://your-project.supabase.co}"
 CI_SUPABASE_PUBLISHABLE_KEY="${CI_SUPABASE_PUBLISHABLE_KEY:-sb_publishable__ci_placeholder_key}"
 CI_SUPABASE_SERVICE_ROLE_KEY="${CI_SUPABASE_SERVICE_ROLE_KEY:-ci-supabase-service-role-key}"
-CI_YOUTUBE_API_KEY="${CI_YOUTUBE_API_KEY:-ci-youtube-api-key-placeholder}"
+
+# YOUTUBE_API_KEY validates as either empty or a real "AIza..." key (see
+# services/api/src/config/env.ts) — an arbitrary placeholder string satisfies
+# neither and crashes env validation, so fall back to empty, not a placeholder.
+CI_YOUTUBE_API_KEY="${CI_YOUTUBE_API_KEY:-}"
 CI_YOUTUBE_CHANNEL_ID="${CI_YOUTUBE_CHANNEL_ID:-https://www.youtube.com/@YourChannel}"
 CI_POSTFIX_SMTP_USERNAME="${CI_POSTFIX_SMTP_USERNAME:-ci-brevo-username}"
 CI_POSTFIX_SMTP_PASSWORD="${CI_POSTFIX_SMTP_PASSWORD:-ci-brevo-password}"

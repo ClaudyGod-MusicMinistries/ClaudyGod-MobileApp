@@ -19,9 +19,13 @@ import type { AppTheme } from '../theme';
 type AnyStyle = ViewStyle | TextStyle | ImageStyle;
 type StyleMap = Record<string, AnyStyle>;
 
-export function makeStyles<T extends StyleMap>(factory: (theme: AppTheme) => T) {
-  return function useStyles(): StyleSheet.NamedStyles<T> {
+export function makeStyles<T extends StyleMap>(factory: (_theme: AppTheme) => T) {
+  return function useStyles(): T {
     const theme = useAppTheme();
-    return useMemo(() => StyleSheet.create(factory(theme)), [theme]);
+    // StyleSheet.create returns its input unchanged at runtime — typing the return as
+    // `T` (rather than `StyleSheet.NamedStyles<T>`, which widens every key to
+    // `ViewStyle | TextStyle | ImageStyle`) preserves each style's specific inferred
+    // type, so passing e.g. an image style to <Image style={...}> type-checks correctly.
+    return useMemo(() => StyleSheet.create(factory(theme)) as T, [theme]);
   };
 }

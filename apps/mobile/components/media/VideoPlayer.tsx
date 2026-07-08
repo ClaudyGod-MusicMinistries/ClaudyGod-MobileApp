@@ -72,11 +72,7 @@ const useStyles = makeStyles((theme) => ({
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: theme.colors.primaryBorder,
-    shadowColor: '#000',
-    shadowOpacity: 0.32,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 10,
+    ...theme.shadows.xl,
   },
   loadingShell: {
     ...StyleSheet.absoluteFillObject,
@@ -512,7 +508,11 @@ function NativeVideoPlayer({
   };
 
   const togglePlay = () => {
-    isPlaying ? player.pause() : player.play();
+    if (isPlaying) {
+      player.pause();
+    } else {
+      player.play();
+    }
     bringUpControls();
   };
 
@@ -639,7 +639,7 @@ function ProgressBar({
   onSeek,
 }: {
   progress: number;
-  onSeek: (ratio: number) => void;
+  onSeek: (_ratio: number) => void;
 }) {
   const styles = useStyles();
   const trackRef = useRef<View>(null);

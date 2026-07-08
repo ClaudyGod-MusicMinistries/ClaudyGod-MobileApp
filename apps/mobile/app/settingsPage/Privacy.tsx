@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Linking, TextInput, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 
 import { SettingsScaffold } from '../../components/layout/SettingsScaffold';
 import { CustomText } from '../../components/CustomText';
@@ -12,8 +11,8 @@ import { FadeIn } from '../../components/ui/FadeIn';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { AppButton } from '../../components/ui/AppButton';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
-import { APP_ROUTES } from '../../util/appRoutes';
 import { useAppModal } from '../../context/AppModalContext';
+import { ENV } from '../../services/config';
 import {
   fetchMePrivacyOverview,
   requestPrivacyDataExport,
@@ -103,7 +102,6 @@ function PrivacyAction({ icon, title, description, onPress }: { icon: React.Comp
 export default function Privacy() {
   const styles = useStyles();
   const theme  = useAppTheme();
-  const router = useRouter();
   const { config } = useMobileAppConfig();
   const { showModal } = useAppModal();
   const [loading,           setLoading]           = useState(true);
@@ -190,6 +188,7 @@ export default function Privacy() {
     <SettingsScaffold
       title="Privacy & Security"
       subtitle="Clear controls for account data, activity, and safety."
+      icon="security"
       hero={
         <FadeIn>
           <SurfaceCard tone="strong" style={styles.heroPad}>
@@ -214,10 +213,20 @@ export default function Privacy() {
         <SurfaceCard tone="subtle" style={styles.sectionPad}>
           <CustomText variant="heading" style={styles.sectionHead}>Account actions</CustomText>
           <View style={styles.actionsList}>
-            <PrivacyAction icon="password"          title="Password & sign in"      description="Update access through the sign-in flow."       onPress={() => router.push(APP_ROUTES.auth.forgotPassword)} />
+            <PrivacyAction icon="password"          title="Password & sign in"      description="Account sign-in is coming soon."                onPress={() => showModal({ title: 'Coming soon', message: 'Account sign-in and password management are on the way. For now, ClaudyGod works fully as a guest.', tone: 'info', primaryAction: { label: 'Got it' } })} />
             <PrivacyAction icon="download"          title="Export my data"          description="Request a copy of account and activity data."   onPress={() => void requestExport()} />
             <PrivacyAction icon="history-toggle-off" title="Reset recommendations"  description="Clear activity used for recommendations."       onPress={resetHistory} />
             <PrivacyAction icon="email"             title="Contact privacy team"    description={contactEmail}                                   onPress={() => void Linking.openURL(`mailto:${contactEmail}`)} />
+          </View>
+        </SurfaceCard>
+      </FadeIn>
+
+      <FadeIn delay={130}>
+        <SurfaceCard tone="subtle" style={styles.sectionPad}>
+          <CustomText variant="heading" style={styles.sectionHead}>Legal</CustomText>
+          <View style={styles.actionsList}>
+            <PrivacyAction icon="policy"    title="Privacy Policy"    description="How we collect and use your data." onPress={() => void Linking.openURL(`${ENV.apiUrl}/legal/privacy`)} />
+            <PrivacyAction icon="gavel"     title="Terms of Service"  description="The rules for using ClaudyGod."     onPress={() => void Linking.openURL(`${ENV.apiUrl}/legal/terms`)} />
           </View>
         </SurfaceCard>
       </FadeIn>

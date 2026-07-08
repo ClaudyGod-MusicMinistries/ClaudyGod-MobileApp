@@ -498,7 +498,22 @@ export const registerUser = async (
 ): Promise<AuthResponse | RegisterResponse> => {
   const email = input.email.trim().toLowerCase();
   const displayName = input.username.trim();
-  const requestedRole: UserRole = input.role === 'ADMIN' ? 'ADMIN' : 'CLIENT';
+
+  // Roles a caller may self-assign via signup code. SUPER_ADMIN is deliberately excluded —
+  // it must only ever be granted through the invite flow, never a shared-code self-signup.
+  const CODE_GATED_ROLES: readonly UserRole[] = ['ADMIN', 'MODERATOR', 'CREATOR'];
+
+  let requestedRole: UserRole;
+  if (!input.role || input.role === 'CLIENT') {
+    requestedRole = 'CLIENT';
+  } else if (CODE_GATED_ROLES.includes(input.role)) {
+    requestedRole = input.role;
+  } else {
+    throw new ForbiddenError(
+      `Self-registration is not permitted for role ${input.role}`,
+      'AUTH_ROLE_NOT_SELF_REGISTERABLE',
+    );
+  }
 
   const existing = await pool.query<UserRow>(
     `SELECT id, email, password_hash, display_name, role, is_active, created_at, email_verified_at
@@ -508,7 +523,7 @@ export const registerUser = async (
     [email],
   );
 
-  if (requestedRole === 'ADMIN') {
+  if (CODE_GATED_ROLES.includes(requestedRole)) {
     const providedCode = input.adminSignupCode?.trim();
     if (!env.ADMIN_SIGNUP_CODE) {
       throw new ForbiddenError('Admin signup is disabled', 'AUTH_ADMIN_DISABLED');

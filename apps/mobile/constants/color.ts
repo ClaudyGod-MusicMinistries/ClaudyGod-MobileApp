@@ -62,7 +62,7 @@ export const colors = {
     warningBorder:  'rgba(180,83,9,0.16)',
 
     // ── Tab bar ───────────────────────────────────────────────────────────────
-    tabBarBg: 'rgba(10,6,18,0.97)',
+    tabBarBg: 'rgba(28,18,48,0.97)',
 
     // ── Player ───────────────────────────────────────────────────────────────
     playerGlass: 'rgba(255,255,255,0.94)',
@@ -70,8 +70,10 @@ export const colors = {
 
   dark: {
     // ── Backgrounds ──────────────────────────────────────────────────────────
-    background:     '#07050C',
-    backgroundRgba: '7,5,12',
+    // Matches brand/logo-master.svg's tile color — keep in sync with
+    // app.config.js's splashBgColor/androidAdaptiveIconBgColor.
+    background:     '#1C1230',
+    backgroundRgba: '28,18,48',
     surface:        '#0F0C18',
     surfaceAlt:     '#141020',
     elevated:       '#141020',
@@ -85,8 +87,8 @@ export const colors = {
     subtleFillStrong: 'rgba(255,255,255,0.12)',
 
     // ── Glass / overlay ───────────────────────────────────────────────────────
-    glass:        'rgba(7,5,12,0.72)',
-    glassStrong:  'rgba(7,5,12,0.94)',
+    glass:        'rgba(28,18,48,0.72)',
+    glassStrong:  'rgba(28,18,48,0.94)',
     overlay:      'rgba(0,0,0,0.72)',
     overlayLight: 'rgba(0,0,0,0.48)',
     scrim:        'rgba(0,0,0,0.80)',
@@ -105,7 +107,7 @@ export const colors = {
     text_primary:   '#F7F2FF',
     text_secondary: '#B8B0CC',
     text_accent:    '#D8CAFF',
-    textInverse:    '#07050C',
+    textInverse:    '#1C1230',
     onPrimary:      '#FFFFFF',
 
     // ── Brand / semantic ──────────────────────────────────────────────────────
@@ -131,15 +133,11 @@ export const colors = {
     warningBorder:  'rgba(251,191,36,0.18)',
 
     // ── Tab bar ───────────────────────────────────────────────────────────────
-    tabBarBg: 'rgba(7,4,13,0.97)',
+    tabBarBg: 'rgba(28,18,48,0.97)',
 
     // ── Player ───────────────────────────────────────────────────────────────
-    playerGlass: 'rgba(7,5,12,0.92)',
+    playerGlass: 'rgba(28,18,48,0.92)',
   },
 };
 
 export type ColorScheme = 'light' | 'dark';
-
-// Legacy aliases kept for older imports in the project.
-export const colors_light = colors.dark;
-export const colors_dark = colors.light;

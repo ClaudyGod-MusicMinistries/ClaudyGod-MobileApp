@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { Switch, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
@@ -13,10 +14,11 @@ import { makeStyles } from '../../styles/makeStyles';
 import { useDeviceClass } from '../../util/deviceClassConfig';
 import { APP_ROUTES } from '../../util/appRoutes';
 import { useUserAccount } from '../../context/UserAccountContext';
+import { useAccountSheet } from '../../context/AccountSheetContext';
 import {
   PremiumPage,
   SectionLabel,
-} from '../../components/Exp/PremiumContent';
+} from '../../components/feed';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -51,6 +53,10 @@ const useStyles = makeStyles((theme) => ({
   linkHint:         { color: theme.colors.textSecondary, marginTop: 2 },
 
   // SettingsScreen
+  identityCard:     { overflow: 'hidden' },
+  identityWash:     { position: 'absolute', top: 0, left: 0, right: 0, height: 140 },
+  identityCircle1:  { position: 'absolute', top: -30, right: -30, width: 120, height: 120, borderRadius: 60, backgroundColor: `${theme.colors.primary}12` },
+  identityCircle2:  { position: 'absolute', bottom: -40, left: -24, width: 100, height: 100, borderRadius: 50, backgroundColor: `${theme.colors.primary}0A` },
   identityWrap:     { flex: 1, minWidth: 0 },
   identityName:     { color: theme.colors.text, fontWeight: '700', letterSpacing: -0.3 },
   identitySub:      { color: theme.colors.textSecondary, marginTop: 3 },
@@ -60,7 +66,8 @@ const useStyles = makeStyles((theme) => ({
   sectionGroupLabel:{ color: theme.colors.primary, fontSize: 10, fontWeight: '700', letterSpacing: 1.0, textTransform: 'uppercase' },
   rowDivider:       { borderTopColor: theme.colors.border },
   rowGroupWide:     { flex: 1, borderRadius: 14, overflow: 'hidden', borderWidth: 1, borderColor: theme.colors.border },
-  settingsGroupsRow:{ gap: 12, alignItems: 'flex-start' },
+  quickGroupTopWash:{ position: 'absolute', top: 0, left: 0, right: 0, height: 46 },
+  settingsGroupsRow:{ gap: 12 },
   homeBtn:          { minWidth: 40, paddingHorizontal: 10 },
   cardEdgePad:      { paddingHorizontal: theme.spacing.md, paddingVertical: 0 },
   settingsGroupCard: { flex: 1, paddingHorizontal: theme.spacing.md, paddingVertical: 0 },
@@ -73,13 +80,13 @@ function SettingRow({ item }: { item: SettingItem }) {
   const theme  = useAppTheme();
   const device = useDeviceClass();
   const accentColor = item.accent ?? theme.colors.primary;
-  const boxSize = device.isTV ? 48 : 42;
-  const boxRadius = device.isTV ? 14 : 12;
+  const boxSize = device.isTV ? 50 : 46;
+  const boxRadius = device.isTV ? 15 : 13;
 
   return (
     <TVTouchable
       onPress={() => item.onToggle(!item.value)}
-      style={[styles.settingRowTouch, { paddingVertical: device.isTV ? 18 : 14 }]}
+      style={[styles.settingRowTouch, { paddingVertical: device.isTV ? 20 : 16 }]}
       showFocusBorder={false}
       accessibilityRole="switch"
       accessibilityState={{ checked: item.value }}
@@ -95,16 +102,16 @@ function SettingRow({ item }: { item: SettingItem }) {
       >
         <MaterialIcons
           name={item.icon}
-          size={device.isTV ? 22 : 19}
+          size={device.isTV ? 24 : 21}
           color={item.value ? accentColor : theme.colors.textMuted}
         />
       </View>
       <View style={styles.settingTextWrap}>
-        <CustomText style={[styles.settingLabel, { fontSize: device.isTV ? 15 : 13.5 }]}>
+        <CustomText style={[styles.settingLabel, { fontSize: device.isTV ? 15.5 : 14 }]}>
           {item.label}
         </CustomText>
         {item.hint ? (
-          <CustomText style={[styles.settingHint, { fontSize: device.isTV ? 12.5 : 11.5 }]}>
+          <CustomText style={[styles.settingHint, { fontSize: device.isTV ? 13 : 12 }]}>
             {item.hint}
           </CustomText>
         ) : null}
@@ -144,11 +151,12 @@ function AppearanceCard({ value, onChange }: { value: ThemePreference; onChange:
               key={option.value}
               onPress={() => onChange(option.value)}
               style={{
-                flex: 1, minHeight: device.isTV ? 88 : 68,
+                flex: 1, minHeight: device.isTV ? 92 : 78,
                 borderRadius: theme.radius.xl, borderWidth: 1.5,
-                borderColor: active ? theme.colors.primary : theme.colors.borderStrong,
-                backgroundColor: active ? theme.colors.card : 'transparent',
-                alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 8,
+                borderColor: active ? theme.colors.primary : theme.colors.border,
+                backgroundColor: active ? theme.colors.card : theme.colors.subtleFill,
+                alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10,
+                ...(active ? theme.shadows.sm : null),
               }}
               showFocusBorder={false}
               accessibilityRole="button"
@@ -156,27 +164,27 @@ function AppearanceCard({ value, onChange }: { value: ThemePreference; onChange:
             >
               <View
                 style={{
-                  width: device.isTV ? 40 : 32, height: device.isTV ? 40 : 32,
-                  borderRadius: 10, alignItems: 'center', justifyContent: 'center',
-                  backgroundColor: active ? theme.colors.elevated : 'transparent',
+                  width: device.isTV ? 44 : 36, height: device.isTV ? 44 : 36,
+                  borderRadius: 11, alignItems: 'center', justifyContent: 'center',
+                  backgroundColor: active ? theme.colors.elevated : theme.colors.subtleFillMed,
                 }}
               >
                 <MaterialIcons
                   name={option.icon}
-                  size={device.isTV ? 22 : 18}
-                  color={active ? theme.colors.primary : theme.colors.textMuted}
+                  size={device.isTV ? 24 : 20}
+                  color={active ? theme.colors.primary : theme.colors.textSecondary}
                 />
               </View>
               <CustomText
                 style={{
                   color: active ? theme.colors.text : theme.colors.textSecondary,
-                  fontSize: device.isTV ? 14 : 12.5,
-                  fontWeight: active ? '700' : '500',
+                  fontSize: device.isTV ? 15 : 13,
+                  fontWeight: active ? '700' : '600',
                 }}
               >
                 {option.label}
               </CustomText>
-              <CustomText style={{ color: theme.colors.textMuted, fontSize: device.isTV ? 11 : 10.5, textAlign: 'center' }}>
+              <CustomText style={{ color: theme.colors.textMuted, fontSize: device.isTV ? 11.5 : 10.5, textAlign: 'center' }}>
                 {option.hint}
               </CustomText>
             </TVTouchable>
@@ -193,12 +201,12 @@ function QuickLinkRow({ icon, label, hint, color, onPress }: { icon: React.Compo
   const styles = useStyles();
   const theme  = useAppTheme();
   const device = useDeviceClass();
-  const boxSize = device.isTV ? 48 : 42;
-  const boxRadius = device.isTV ? 14 : 12;
+  const boxSize = device.isTV ? 50 : 46;
+  const boxRadius = device.isTV ? 15 : 13;
 
   return (
     <TVTouchable onPress={onPress} showFocusBorder={false}>
-      <View style={[styles.linkRow, { paddingVertical: device.isTV ? 16 : 14 }]}>
+      <View style={[styles.linkRow, { paddingVertical: device.isTV ? 18 : 16 }]}>
         <View
           style={{
             width: boxSize, height: boxSize, borderRadius: boxRadius,
@@ -206,19 +214,19 @@ function QuickLinkRow({ icon, label, hint, color, onPress }: { icon: React.Compo
             backgroundColor: `${color}18`, borderWidth: 1, borderColor: `${color}28`,
           }}
         >
-          <MaterialIcons name={icon} size={device.isTV ? 22 : 19} color={color} />
+          <MaterialIcons name={icon} size={device.isTV ? 24 : 21} color={color} />
         </View>
         <View style={styles.linkLabelWrap}>
-          <CustomText style={[styles.linkLabel, { fontSize: device.isTV ? 15 : 13.5 }]}>
+          <CustomText style={[styles.linkLabel, { fontSize: device.isTV ? 15.5 : 14 }]}>
             {label}
           </CustomText>
           {hint ? (
-            <CustomText style={[styles.linkHint, { fontSize: device.isTV ? 12.5 : 11.5 }]}>
+            <CustomText style={[styles.linkHint, { fontSize: device.isTV ? 13 : 12 }]}>
               {hint}
             </CustomText>
           ) : null}
         </View>
-        <MaterialIcons name="chevron-right" size={18} color={theme.colors.textMuted} />
+        <MaterialIcons name="chevron-right" size={19} color={theme.colors.textMuted} />
       </View>
     </TVTouchable>
   );
@@ -233,7 +241,8 @@ export default function SettingsScreen() {
   const { themePreference, setThemePreference } = useThemeContext();
   const router = useRouter();
   const { showModal } = useAppModal();
-  const { account, isSignedIn, signOut, openAccountSheet } = useUserAccount();
+  const { account, isSignedIn, signOut } = useUserAccount();
+  const { openAccountSheet } = useAccountSheet();
 
   const [notifications,   setNotifications]   = useState(true);
   const [autoPlay,        setAutoPlay]         = useState(true);
@@ -285,7 +294,7 @@ export default function SettingsScreen() {
 
   const isWideLayout = device.isDesktop || device.isTV;
   const accountPad   = device.isTV ? 20 : 16;
-  const avatarSize   = device.isTV ? 72 : 56;
+  const avatarSize   = device.isTV ? 76 : 60;
   const avatarRadius = device.isTV ? 22 : 18;
   const nameSize     = device.isTV ? 20 : 16;
   const subSize      = device.isTV ? 13 : 12;
@@ -307,25 +316,35 @@ export default function SettingsScreen() {
       }
     >
       {/* Identity / Account card */}
-      <SurfaceCard tone="strong" style={{ padding: accountPad }}>
+      <SurfaceCard tone="strong" style={[styles.identityCard, { padding: accountPad }]}>
+        <LinearGradient
+          colors={[`${theme.colors.primary}14`, 'transparent']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.identityWash}
+        />
+        <View style={styles.identityCircle1} />
+        <View style={styles.identityCircle2} />
+
         <View style={{ flexDirection: isWideLayout ? 'row' : 'column', gap: isWideLayout ? 20 : 16, alignItems: isWideLayout ? 'center' : 'flex-start' }}>
           <View
             style={{
               width: avatarSize, height: avatarSize, borderRadius: avatarRadius,
               alignItems: 'center', justifyContent: 'center',
-              backgroundColor: isSignedIn ? theme.colors.primarySurface : theme.colors.card,
+              backgroundColor: isSignedIn ? theme.colors.primarySurface : theme.colors.primarySurface,
               borderWidth: 2,
-              borderColor: isSignedIn ? theme.colors.primaryBorder : theme.colors.borderStrong,
+              borderColor: theme.colors.primaryBorder,
+              ...theme.shadows.sm,
             }}
           >
             <MaterialIcons
               name={isSignedIn ? 'person' : 'headphones'}
-              size={device.isTV ? 34 : 26}
+              size={device.isTV ? 36 : 28}
               color={theme.colors.primary}
             />
           </View>
           <View style={styles.identityWrap}>
-            <CustomText style={[styles.identityName, { fontSize: nameSize }]}>
+            <CustomText style={[styles.identityName, { fontSize: nameSize + 1 }]}>
               {isSignedIn ? account!.displayName : 'ClaudyGod Listener'}
             </CustomText>
             <CustomText style={[styles.identitySub, { fontSize: subSize }]}>
@@ -360,9 +379,13 @@ export default function SettingsScreen() {
       {/* Quick links */}
       <View style={styles.quickLinkSection}>
         <SectionLabel title="Quick access" accent="Navigate" />
-        <View style={{ flexDirection: isWideLayout ? 'row' : 'column', gap: isWideLayout ? 12 : 0 }}>
+        <View style={{ flexDirection: isWideLayout ? 'row' : 'column', gap: 12 }}>
           <View style={isWideLayout ? styles.rowGroupWide : {}}>
             <SurfaceCard tone="subtle" style={styles.cardEdgePad}>
+              <LinearGradient
+                colors={[`${theme.colors.primary}0F`, 'transparent']}
+                style={styles.quickGroupTopWash}
+              />
               {[
                 { icon: 'library-music' as const, label: 'Library', hint: 'Saved content',             color: theme.colors.primary, onPress: () => router.push(APP_ROUTES.tabs.library) },
                 { icon: 'search'        as const, label: 'Search',  hint: 'Find songs, videos, and live', color: theme.colors.success, onPress: () => router.push(APP_ROUTES.tabs.search) },
@@ -375,6 +398,10 @@ export default function SettingsScreen() {
           </View>
           <View style={isWideLayout ? styles.rowGroupWide : {}}>
             <SurfaceCard tone="subtle" style={styles.cardEdgePad}>
+              <LinearGradient
+                colors={[`${theme.colors.primary}0F`, 'transparent']}
+                style={styles.quickGroupTopWash}
+              />
               {[
                 { icon: 'card-giftcard'      as const, label: 'Invite friends', hint: 'Earn rewards together', color: theme.colors.primary, onPress: () => router.push(APP_ROUTES.settingsPages.referral) },
                 { icon: 'help-outline'       as const, label: 'Help',           hint: 'Get support',           color: theme.colors.info,    onPress: () => router.push(APP_ROUTES.settingsPages.help) },
@@ -393,7 +420,7 @@ export default function SettingsScreen() {
       <AppearanceCard value={themePreference} onChange={handleAppearanceChange} />
 
       {/* Settings groups */}
-      <View style={[styles.settingsGroupsRow, { flexDirection: isWideLayout ? 'row' : 'column' }]}>
+      <View style={[styles.settingsGroupsRow, { flexDirection: isWideLayout ? 'row' : 'column', alignItems: isWideLayout ? 'flex-start' : 'stretch' }]}>
         <SurfaceCard tone="subtle" style={styles.settingsGroupCard}>
           <View style={styles.sectionGroupPad}>
             <CustomText style={styles.sectionGroupLabel}>Playback</CustomText>

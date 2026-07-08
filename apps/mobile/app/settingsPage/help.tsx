@@ -128,6 +128,7 @@ export default function Help() {
     <SettingsScaffold
       title="Help & Support"
       subtitle="Support for playback, account access, giving, and content."
+      icon="support-agent"
       hero={
         <FadeIn>
           <View style={styles.heroCard}>

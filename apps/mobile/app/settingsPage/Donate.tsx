@@ -1,11 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Linking, Modal, Platform, ScrollView, TouchableWithoutFeedback, View, useWindowDimensions } from 'react-native';
+import { Animated, Linking, Modal, Platform, TouchableWithoutFeedback, View, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { CustomText } from '../../components/CustomText';
 import { AppButton } from '../../components/ui/AppButton';
+import { SettingsScaffold } from '../../components/layout/SettingsScaffold';
 import { useAppTheme } from '../../util/colorScheme';
 import { makeStyles } from '../../styles/makeStyles';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
@@ -22,19 +21,25 @@ type DonateMethod = {
   badge?: string;
 };
 
-type DonatePlan = {
-  id: string;
-  name: string;
-  amount: string;
-  period: DonateFrequency | 'once';
-  note: string;
-  featured?: boolean;
-  icon: React.ComponentProps<typeof MaterialIcons>['name'];
-};
-
 // ─── Defaults ────────────────────────────────────────────────────────────────
 
 const DEFAULT_AMOUNTS = ['10', '25', '50', '100', '250', '500'];
+
+const DEFAULT_CURRENCY_OPTIONS: { code: string; label: string; symbol?: string }[] = [
+  { code: 'USD', label: 'US Dollar',        symbol: '$' },
+  { code: 'NGN', label: 'Nigerian Naira',   symbol: '₦' },
+  { code: 'GBP', label: 'British Pound',    symbol: '£' },
+  { code: 'EUR', label: 'Euro',             symbol: '€' },
+];
+
+// Amounts scale very differently by currency (10 USD vs. 10 NGN are not
+// comparable) — give each default currency its own sensible quick-pick scale.
+const DEFAULT_AMOUNTS_BY_CURRENCY: Record<string, string[]> = {
+  USD: DEFAULT_AMOUNTS,
+  GBP: DEFAULT_AMOUNTS,
+  EUR: DEFAULT_AMOUNTS,
+  NGN: ['1000', '2500', '5000', '10000', '25000', '50000'],
+};
 
 const DEFAULT_METHODS: DonateMethod[] = [
   { id: 'bank',   icon: 'account-balance', label: 'Bank Transfer',  subtitle: 'Direct to ministry account' },
@@ -62,15 +67,6 @@ function frequencyLabel(v: DonateFrequency) {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const useStyles = makeStyles((theme) => ({
-  root:             { flex: 1, backgroundColor: theme.colors.background },
-
-  // Header
-  header:           { paddingHorizontal: 20, paddingBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 12 },
-  headerBack:       { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.surface },
-  headerWrap:       { flex: 1 },
-  headerTitle:      { color: theme.colors.text, fontSize: 17, fontWeight: '800', letterSpacing: -0.3 },
-  headerSub:        { color: theme.colors.textMuted, fontSize: 12, marginTop: 1 },
-
   // Hero
   heroBg:           { backgroundColor: theme.colors.accent, borderRadius: 28, padding: 22, overflow: 'hidden' },
   heroCircle1:      { position: 'absolute', top: -30, right: -30, width: 120, height: 120, borderRadius: 60, backgroundColor: 'rgba(255,255,255,0.07)' },
@@ -94,21 +90,21 @@ const useStyles = makeStyles((theme) => ({
 
   // Currency
   currencyRow:      { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  currencyBase:     { borderRadius: 999, paddingHorizontal: 14, paddingVertical: 9 },
-  currencyActive:   { backgroundColor: theme.colors.primary },
-  currencyInactive: { backgroundColor: theme.colors.surface },
-  currencyTxtActive:   { color: theme.colors.onPrimary, fontSize: 13, fontWeight: '600' },
-  currencyTxtInactive: { color: theme.colors.textMuted,   fontSize: 13, fontWeight: '600' },
+  currencyBase:     { borderRadius: 999, paddingHorizontal: 16, paddingVertical: 10, borderWidth: 1.5, minWidth: 76, alignItems: 'center' },
+  currencyActive:   { backgroundColor: theme.colors.primary, borderColor: 'transparent', ...theme.shadows.sm },
+  currencyInactive: { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+  currencyTxtActive:   { color: theme.colors.onPrimary, fontSize: 13.5, fontWeight: '700' },
+  currencyTxtInactive: { color: theme.colors.textSecondary, fontSize: 13.5, fontWeight: '600' },
 
   // Amount
   amountGrid:       { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  amountBase:       { minHeight: 64, borderRadius: 16, alignItems: 'center', justifyContent: 'center', gap: 2 },
-  amountActive:     { backgroundColor: theme.colors.primary, borderWidth: 1, borderColor: 'transparent' },
-  amountInactive:   { backgroundColor: theme.colors.surface,  borderWidth: 1, borderColor: theme.colors.border },
-  amountValActive:  { color: theme.colors.onPrimary,          fontSize: 20, fontWeight: '800' },
-  amountValInactive:{ color: theme.colors.text,               fontSize: 20, fontWeight: '800' },
-  amountCurActive:  { color: 'rgba(255,255,255,0.75)',         fontSize: 10, fontWeight: '600' },
-  amountCurInactive:{ color: theme.colors.textMuted,           fontSize: 10, fontWeight: '600' },
+  amountBase:       { minHeight: 72, borderRadius: 16, alignItems: 'center', justifyContent: 'center', gap: 2 },
+  amountActive:     { backgroundColor: theme.colors.primary, borderWidth: 1.5, borderColor: theme.colors.primary, ...theme.shadows.sm },
+  amountInactive:   { backgroundColor: theme.colors.surface,  borderWidth: 1.5, borderColor: theme.colors.border },
+  amountValActive:  { color: theme.colors.onPrimary,          fontSize: 21, fontWeight: '800' },
+  amountValInactive:{ color: theme.colors.text,               fontSize: 21, fontWeight: '800' },
+  amountCurActive:  { color: 'rgba(255,255,255,0.75)',         fontSize: 10.5, fontWeight: '700', letterSpacing: 0.4 },
+  amountCurInactive:{ color: theme.colors.textMuted,           fontSize: 10.5, fontWeight: '700', letterSpacing: 0.4 },
 
   // Frequency
   freqBase:         { flex: 1, minHeight: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center', gap: 3 },
@@ -142,8 +138,6 @@ const useStyles = makeStyles((theme) => ({
   ctaWrap:          { gap: 10, paddingTop: 4 },
   trustRow:         { flexDirection: 'row', alignItems: 'center', gap: 8, justifyContent: 'center', paddingTop: 4 },
   trustText:        { color: theme.colors.textMuted, fontSize: 11, textAlign: 'center' },
-  flex1:            { flex: 1 },
-  scrollContent:    { paddingHorizontal: 16, gap: 16 },
 
   // Coming-soon modal
   modalOverlay:     { flex: 1, backgroundColor: 'rgba(0,0,0,0.65)', alignItems: 'center', justifyContent: 'center', padding: 24 },
@@ -235,9 +229,7 @@ function SectionCard({ title, subtitle, children }: { title: string; subtitle?: 
 export default function Donate() {
   const styles = useStyles();
   const theme  = useAppTheme();
-  const router = useRouter();
   const { width } = useWindowDimensions();
-  const insets = useSafeAreaInsets();
   const { config } = useMobileAppConfig();
 
   const isCompact = width < 390;
@@ -245,8 +237,14 @@ export default function Donate() {
   const donateConfig = config?.donate;
 
   const quickAmounts    = useMemo(() => donateConfig?.quickAmounts?.length ? donateConfig.quickAmounts : DEFAULT_AMOUNTS, [donateConfig]);
-  const quickByCurrency = useMemo(() => donateConfig?.quickAmountsByCurrency ?? {}, [donateConfig]);
-  const currencyOptions = useMemo(() => donateConfig?.currencyOptions ?? [], [donateConfig]);
+  const quickByCurrency = useMemo(
+    () => ({ ...DEFAULT_AMOUNTS_BY_CURRENCY, ...(donateConfig?.quickAmountsByCurrency ?? {}) }),
+    [donateConfig],
+  );
+  const currencyOptions = useMemo(
+    () => (donateConfig?.currencyOptions?.length ? donateConfig.currencyOptions : DEFAULT_CURRENCY_OPTIONS),
+    [donateConfig],
+  );
   const configMethods   = useMemo<DonateMethod[]>(() =>
     donateConfig?.methods?.length
       ? donateConfig.methods.map((m) => ({ id: m.id, icon: m.icon as DonateMethod['icon'], label: m.label, subtitle: m.subtitle, badge: m.badge }))
@@ -304,7 +302,7 @@ export default function Donate() {
   const impactWidth = isCompact ? '100%' : isTablet ? '23%' : '47%';
 
   return (
-    <View style={styles.root}>
+    <>
       {/* Coming soon modal */}
       <Modal
         visible={showComingSoon}
@@ -340,30 +338,20 @@ export default function Donate() {
         </TouchableWithoutFeedback>
       </Modal>
 
-      {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-        <TVTouchable onPress={() => router.back()} showFocusBorder={false} style={styles.headerBack}>
-          <MaterialIcons name="arrow-back" size={18} color={theme.colors.text} />
-        </TVTouchable>
-        <View style={styles.headerWrap}>
-          <CustomText style={styles.headerTitle}>Giving</CustomText>
-          <CustomText style={styles.headerSub}>Partner with the ministry</CustomText>
-        </View>
-      </View>
-
-      <ScrollView
-        style={styles.flex1}
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 24 }]}
-        showsVerticalScrollIndicator={false}
+      <SettingsScaffold
+        title="Giving"
+        subtitle="Partner with the ministry"
+        icon="volunteer-activism"
+        hero={
+          <HeroBanner
+            selectedAmount={selectedAmount}
+            selectedCurrency={selectedCurrency}
+            selectedFrequency={selectedFrequency}
+            selectedMethod={selectedMethod}
+            scripture={scripture}
+          />
+        }
       >
-        <HeroBanner
-          selectedAmount={selectedAmount}
-          selectedCurrency={selectedCurrency}
-          selectedFrequency={selectedFrequency}
-          selectedMethod={selectedMethod}
-          scripture={scripture}
-        />
-
         {/* Currency selector */}
         {currencyOptions.length > 1 ? (
           <SectionCard title="Currency">
@@ -507,7 +495,7 @@ export default function Donate() {
           <MaterialIcons name="verified-user" size={13} color={theme.colors.textMuted} />
           <CustomText style={styles.trustText}>Secure giving • All transactions are encrypted</CustomText>
         </View>
-      </ScrollView>
-    </View>
+      </SettingsScaffold>
+    </>
   );
 }

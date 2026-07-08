@@ -1,7 +1,8 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useQuery } from '@tanstack/react-query';
 
 import { AppButton } from '../../components/ui/AppButton';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
@@ -27,7 +28,10 @@ import {
   PremiumPage,
   SectionLabel,
   dedupeFeedItems,
-} from '../../components/Exp/PremiumContent';
+} from '../../components/feed';
+
+// Stable reference so `sessions` doesn't change identity on every render while loading.
+const EMPTY_SESSIONS: LiveSessionSummary[] = [];
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
@@ -118,7 +122,7 @@ function LivePulse({ viewerCount }: { viewerCount: number }) {
       </View>
       {viewerCount > 0 ? (
         <View style={styles.viewerPill}>
-          <MaterialIcons name="people" size={13} color={undefined} style={{ tintColor: undefined }} />
+          <MaterialIcons name="people" size={13} />
           <CustomText variant="caption" style={styles.viewerText}>
             {viewerCount >= 1000 ? `${(viewerCount / 1000).toFixed(1)}K` : viewerCount} watching
           </CustomText>
@@ -159,22 +163,12 @@ export default function LiveScreen() {
   const device = useDeviceClass();
   const { showToast } = useToast();
   const { feed } = useContentFeed();
-  const [sessions, setSessions] = useState<LiveSessionSummary[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const refresh = async () => {
-    setLoading(true);
-    try {
-      const response = await fetchLiveSessions('all');
-      setSessions(response.items);
-    } catch {
-      setSessions([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => { void refresh(); }, []);
+  const { data, isLoading: loading, refetch } = useQuery({
+    queryKey: ['liveSessions', 'all'],
+    queryFn: async () => (await fetchLiveSessions('all')).items,
+  });
+  const sessions = data ?? EMPTY_SESSIONS;
+  const refresh = () => refetch();
 
   const liveCards     = useMemo(() => sessions.filter((s) => s.status === 'live').map(toFeedCard), [sessions]);
   const upcomingCards = useMemo(() => sessions.filter((s) => s.status === 'scheduled').map(toFeedCard), [sessions]);
@@ -246,6 +240,7 @@ export default function LiveScreen() {
         item={featuredCard}
         title={featuredCard?.title ?? 'Live sessions'}
         subtitle={featuredCard?.description || 'Follow upcoming services and rewatch recent ministry moments.'}
+        emptyIcon="sensors"
         eyebrow={featuredCard?.isLive ? 'Live now' : featuredCard ? 'Upcoming' : 'Ministry'}
         primaryLabel={featuredCard?.isLive ? 'Watch live' : featuredCard?.mediaUrl ? 'Watch replay' : 'Notify me'}
         primaryIcon={featuredCard?.isLive || featuredCard?.mediaUrl ? 'live-tv' : 'notifications-active'}

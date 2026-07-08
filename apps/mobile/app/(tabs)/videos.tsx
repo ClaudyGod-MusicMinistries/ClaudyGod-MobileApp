@@ -9,6 +9,7 @@ import { useToast } from '../../context/ToastContext';
 import { useAppTheme } from '../../util/colorScheme';
 import { makeStyles } from '../../styles/makeStyles';
 import { useContentFeed } from '../../hooks/useContentFeed';
+import { InlineErrorBanner } from '../../components/ui/InlineErrorBanner';
 import type { FeedCardItem } from '../../services/contentService';
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
 import { APP_ROUTES } from '../../util/appRoutes';
@@ -24,7 +25,7 @@ import {
   PremiumPage,
   SectionLabel,
   dedupeFeedItems,
-} from '../../components/Exp/PremiumContent';
+} from '../../components/feed';
 
 const useStyles = makeStyles((theme) => ({
   filterScrollContent: { gap: 8, paddingVertical: 2 },
@@ -103,7 +104,7 @@ export default function VideosScreen() {
     duration?: string | string[];
     mediaUrl?: string | string[];
   }>();
-  const { feed, loading, refresh } = useContentFeed();
+  const { feed, loading, error, refresh } = useContentFeed();
   const [filter, setFilter] = useState<VideoFilter>('all');
 
   const routeItem = useMemo(() => parseRouteItem(params), [params]);
@@ -152,11 +153,14 @@ export default function VideosScreen() {
           item={active}
           title={active?.title ?? 'Choose a video'}
           subtitle={active?.description || 'Select a video, live replay, or featured session to watch.'}
+          emptyIcon="smart-display"
           primaryLabel={active?.mediaUrl ? 'Open video' : 'Browse videos'}
           primaryIcon={active?.mediaUrl ? 'open-in-new' : 'smart-display'}
           onPrimary={() => (active?.mediaUrl ? void Linking.openURL(active.mediaUrl) : undefined)}
         />
       )}
+
+      {error ? <InlineErrorBanner message={error} onRetry={() => void refresh()} /> : null}
 
       {/* Filter chips */}
       <FilterChips active={filter} onChange={setFilter} />

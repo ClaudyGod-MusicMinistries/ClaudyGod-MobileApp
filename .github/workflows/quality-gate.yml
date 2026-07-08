@@ -35,12 +35,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Node.js 20 via nvm
+      - name: Set up Node.js 22 via nvm
         run: |
           . "$HOME/.nvm/nvm.sh"
-          nvm install 20
-          nvm use 20
-          echo "$(nvm which 20 | xargs dirname)" >> "$GITHUB_PATH"
+          nvm install 22
+          nvm use 22
+          echo "$(nvm which 22 | xargs dirname)" >> "$GITHUB_PATH"
 
       - name: Enable Corepack and activate Yarn Classic
         run: |

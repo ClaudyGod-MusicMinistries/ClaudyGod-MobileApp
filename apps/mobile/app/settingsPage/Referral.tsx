@@ -1,17 +1,17 @@
 import React from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 
 import { AppButton } from '../../components/ui/AppButton';
 import { CustomText } from '../../components/CustomText';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { TVTouchable } from '../../components/ui/TVTouchable';
-import { PremiumPage, SectionLabel } from '../../components/Exp/PremiumContent';
+import { FadeIn } from '../../components/ui/FadeIn';
+import { SectionLabel } from '../../components/feed';
+import { SettingsScaffold } from '../../components/layout/SettingsScaffold';
 import { useAppTheme } from '../../util/colorScheme';
 import { makeStyles } from '../../styles/makeStyles';
 import { useReferral } from '../../hooks/useReferral';
-import { APP_ROUTES } from '../../util/appRoutes';
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
@@ -33,17 +33,6 @@ const useStyles = makeStyles((theme) => ({
   codeMutedText:   { color: theme.colors.textMuted, fontSize: 12, fontWeight: '500', textAlign: 'center' },
   shareBtn:        { shadowColor: theme.colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.30, shadowRadius: 10, elevation: 8 },
 
-  // GuestGate
-  guestPad:        { padding: 24, alignItems: 'center', gap: 16 },
-  guestIconBox: {
-    width: 64, height: 64, borderRadius: 20,
-    backgroundColor: theme.colors.primarySurface,
-    borderWidth: 1, borderColor: theme.colors.primaryBorder,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  guestTitle:      { color: theme.colors.text, fontSize: 18, fontWeight: '700', textAlign: 'center', letterSpacing: -0.3 },
-  guestSubtitle:   { color: theme.colors.textSecondary, fontSize: 13.5, textAlign: 'center', lineHeight: 20 },
-  guestBtnWrap:    { width: '100%', gap: 10 },
 
   // Hero card
   heroCard:        { overflow: 'hidden' },
@@ -133,39 +122,6 @@ function CodeDisplay({ code, isCopied, onCopy }: { code: string; isCopied: boole
   );
 }
 
-function GuestGate() {
-  const styles = useStyles();
-  const theme  = useAppTheme();
-  const router = useRouter();
-  return (
-    <SurfaceCard tone="strong" style={styles.guestPad}>
-      <View style={styles.guestIconBox}>
-        <MaterialIcons name="card-giftcard" size={30} color={theme.colors.primary} />
-      </View>
-      <CustomText style={styles.guestTitle}>Get your referral code</CustomText>
-      <CustomText style={styles.guestSubtitle}>
-        Create a free account to receive your unique referral code and start inviting friends to the ClaudyGod community.
-      </CustomText>
-      <View style={styles.guestBtnWrap}>
-        <AppButton
-          title="Create free account"
-          size="md"
-          fullWidth
-          onPress={() => router.push(APP_ROUTES.auth.signUp)}
-          leftIcon={<MaterialIcons name="person-add" size={16} color="#FFFFFF" />}
-        />
-        <AppButton
-          title="Sign in"
-          variant="outline"
-          size="md"
-          fullWidth
-          onPress={() => router.push(APP_ROUTES.auth.signIn)}
-          leftIcon={<MaterialIcons name="login" size={16} color={theme.colors.primary} />}
-        />
-      </View>
-    </SurfaceCard>
-  );
-}
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
@@ -175,33 +131,40 @@ export default function ReferralScreen() {
   const { code, referralCount, isLoading, share, copyCode, isCopied } = useReferral();
 
   return (
-    <PremiumPage title="Invite Friends" eyebrow="Referrals">
-      <SurfaceCard tone="strong" style={styles.heroCard}>
-        <View style={styles.heroPad}>
-          <View style={styles.heroTopRow}>
-            <View style={styles.heroIconBox}>
-              <MaterialIcons name="card-giftcard" size={18} color={theme.colors.primary} />
+    <SettingsScaffold
+      title="Invite Friends"
+      subtitle="Share ClaudyGod and unlock rewards together"
+      icon="card-giftcard"
+      hero={
+        <FadeIn>
+          <SurfaceCard tone="strong" style={styles.heroCard}>
+            <View style={styles.heroPad}>
+              <View style={styles.heroTopRow}>
+                <View style={styles.heroIconBox}>
+                  <MaterialIcons name="card-giftcard" size={18} color={theme.colors.primary} />
+                </View>
+                <View>
+                  <CustomText style={styles.heroBadge}>Referral Program</CustomText>
+                  <CustomText style={styles.heroTitle}>Invite &amp; earn rewards</CustomText>
+                </View>
+              </View>
+              <CustomText style={styles.heroBody}>
+                Share ClaudyGod with the people in your life. Every friend you invite gets free access — and you both unlock exclusive rewards.
+              </CustomText>
             </View>
-            <View>
-              <CustomText style={styles.heroBadge}>Referral Program</CustomText>
-              <CustomText style={styles.heroTitle}>Invite &amp; earn rewards</CustomText>
+
+            <View style={styles.countStrip}>
+              <MaterialIcons name="group" size={16} color={theme.colors.primary} />
+              <CustomText style={styles.countText}>
+                {referralCount === 0
+                  ? 'No referrals yet — start sharing!'
+                  : `${referralCount} friend${referralCount === 1 ? '' : 's'} joined through your link`}
+              </CustomText>
             </View>
-          </View>
-          <CustomText style={styles.heroBody}>
-            Share ClaudyGod with the people in your life. Every friend you invite gets free access — and you both unlock exclusive rewards.
-          </CustomText>
-        </View>
-
-        <View style={styles.countStrip}>
-          <MaterialIcons name="group" size={16} color={theme.colors.primary} />
-          <CustomText style={styles.countText}>
-            {referralCount === 0
-              ? 'No referrals yet — start sharing!'
-              : `${referralCount} friend${referralCount === 1 ? '' : 's'} joined through your link`}
-          </CustomText>
-        </View>
-      </SurfaceCard>
-
+          </SurfaceCard>
+        </FadeIn>
+      }
+    >
       {isLoading ? (
         <SurfaceCard tone="strong" style={styles.loadingPad}>
           <ActivityIndicator color={theme.colors.primary} />
@@ -254,6 +217,6 @@ export default function ReferralScreen() {
           ))}
         </View>
       </View>
-    </PremiumPage>
+    </SettingsScaffold>
   );
 }

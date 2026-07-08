@@ -7,6 +7,7 @@ import { useRouter } from 'expo-router';
 import { CustomText } from '../../components/CustomText';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { SupportMinistryCard } from '../../components/ui/SupportMinistryCard';
+import { InlineErrorBanner } from '../../components/ui/InlineErrorBanner';
 import { useContentFeed } from '../../hooks/useContentFeed';
 import { useWordOfDay } from '../../hooks/useWordOfDay';
 import { useAppTheme } from '../../util/colorScheme';
@@ -26,7 +27,7 @@ import {
   SectionLabel,
   TrendingList,
   WordOfDayCard,
-} from '../../components/Exp/PremiumContent';
+} from '../../components/feed';
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
@@ -135,7 +136,6 @@ function HomeSearchBar({ onPress }: { onPress: () => void }) {
 
 function ContinueRow({ items, onPress }: { items: FeedCardItem[]; onPress: (_item: FeedCardItem) => void }) {
   const styles = useStyles();
-  const theme  = useAppTheme();
   const { width } = useWindowDimensions();
   const compact  = width < 430;
   const tileSize = compact ? 118 : 136;
@@ -229,7 +229,7 @@ function NewContentBanner({ item, onPress }: { item: FeedCardItem; onPress: () =
 export default function HomeScreen() {
   const styles = useStyles();
   const router = useRouter();
-  const { feed, loading, refresh } = useContentFeed();
+  const { feed, loading, error, refresh } = useContentFeed();
   const { bibleVerse, adminWord }  = useWordOfDay();
 
   const featured = useMemo(
@@ -268,10 +268,13 @@ export default function HomeScreen() {
 
       <HomeSearchBar onPress={() => router.push(APP_ROUTES.tabs.search)} />
 
+      {error ? <InlineErrorBanner message={error} onRetry={() => void refresh()} /> : null}
+
       <PremiumHero
         item={featured}
         title={featured ? undefined : 'Start your worship stream'}
         subtitle={featured ? undefined : 'Music, videos, and live moments.'}
+        emptyIcon="graphic-eq"
         primaryLabel={
           featured?.isLive ? 'Watch live' :
           featured?.type === 'video' ? 'Watch now' :
@@ -280,7 +283,7 @@ export default function HomeScreen() {
         primaryIcon={
           featured?.isLive ? 'live-tv' :
           featured?.type === 'video' ? 'smart-display' :
-          featured ? 'play-arrow' : 'graphic-eq'
+          featured ? 'play-arrow' : 'play-circle-outline'
         }
         secondaryLabel="Search"
         secondaryIcon="search"
@@ -352,8 +355,8 @@ export default function HomeScreen() {
 
       {!loading && !allContent.length ? (
         <EmptyState
-          title="Your feed is loading"
-          message="Check your connection or search for something to get started."
+          title="Nothing to play yet"
+          message="We couldn't find any content. Check your connection or search for something specific."
           icon="wifi-off"
           actionLabel="Search"
           onAction={() => router.push(APP_ROUTES.tabs.search)}

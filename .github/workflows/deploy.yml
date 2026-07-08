@@ -40,9 +40,9 @@ jobs:
       - name: Set up Node.js 20 via nvm
         run: |
           . "$HOME/.nvm/nvm.sh"
-          nvm install 20
-          nvm use 20
-          echo "$(nvm which 20 | xargs dirname)" >> "$GITHUB_PATH"
+          nvm install 22
+          nvm use 22
+          echo "$(nvm which 22 | xargs dirname)" >> "$GITHUB_PATH"
 
       - name: Enable Corepack and activate Yarn Classic
         run: |
@@ -152,9 +152,125 @@ jobs:
           cache-from: type=gha,scope=mobile
           cache-to:   type=gha,scope=mobile,mode=max
 
-  # ── 3. Deploy — temporarily disabled; re-enable when SSH credentials are ready ─
-  # deploy:
-  #   name: Deploy to Server
-  #   runs-on: ubuntu-latest
-  #   needs: build-push
-  #   ...uncomment this job when VPS SSH is sorted
+  # ── 3. Deploy — SSH into the VPS, pull the images just built, migrate, roll out ─
+  #
+  # Required GitHub repo configuration (Settings → Secrets and variables → Actions):
+  #   Secrets:
+  #     DEPLOY_SSH_HOST        — VPS hostname or IP
+  #     DEPLOY_SSH_USER        — SSH user with docker permissions on the VPS
+  #     DEPLOY_SSH_KEY         — private key for that user (no passphrase)
+  #     DEPLOY_SSH_PORT        — SSH port (optional, defaults to 22)
+  #     DEPLOY_APP_DIR         — absolute path on the VPS holding docker-compose.production.yml
+  #                              and the real .env.production (e.g. /opt/claudygod)
+  #     DEPLOY_GHCR_TOKEN      — GitHub PAT with `read:packages`, used by the VPS itself
+  #                              to `docker login ghcr.io` (only needed while the GHCR
+  #                              packages are private)
+  #   Variables:
+  #     API_DOMAIN             — e.g. api.claudygod.org (for the post-deploy health check)
+  #
+  # This job never creates or touches .env.production on the server — that file holds
+  # real production secrets and is managed by whoever operates the VPS, once, out of
+  # band. `scripts/setup-ci-env.sh` (used by the `quality`/`build-push` jobs above) only
+  # ever writes a CI-local file for running tests; it has no path to the server at all.
+  deploy:
+    name: Deploy to Server
+    runs-on: ubuntu-latest
+    needs: build-push
+    timeout-minutes: 20
+    environment:
+      name: production
+      url: https://${{ vars.API_DOMAIN }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Sync just the compose file the server needs — never the repo, never .env.production.
+      - name: Copy compose file to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_SSH_HOST }}
+          username: ${{ secrets.DEPLOY_SSH_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_SSH_PORT || 22 }}
+          source: "docker-compose.production.yml"
+          target: ${{ secrets.DEPLOY_APP_DIR }}
+          overwrite: true
+
+      - name: Pull images, run migrations, roll out
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_SSH_HOST }}
+          username: ${{ secrets.DEPLOY_SSH_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_SSH_PORT || 22 }}
+          script_stop: true
+          script: |
+            set -euo pipefail
+            cd "${{ secrets.DEPLOY_APP_DIR }}"
+
+            if [ ! -f .env.production ]; then
+              echo "::error::.env.production is missing on the server at ${{ secrets.DEPLOY_APP_DIR }} — refusing to deploy without real secrets."
+              exit 1
+            fi
+
+            echo "${{ secrets.DEPLOY_GHCR_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+            export GHCR_OWNER="${{ env.GHCR_OWNER }}"
+            export IMAGE_TAG="${{ github.sha }}"
+            COMPOSE="docker compose -f docker-compose.production.yml --env-file .env.production"
+
+            echo "── Pulling images for $IMAGE_TAG ──"
+            $COMPOSE pull
+
+            echo "── Running database migrations ──"
+            $COMPOSE run --rm migrate
+
+            echo "── Rolling out updated services ──"
+            $COMPOSE up -d --remove-orphans redis postfix-relay api worker admin-web mobile-web
+
+            echo "── Pruning images older than 48h ──"
+            docker image prune -af --filter "until=48h" || true
+
+      - name: Wait for containers to report healthy
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_SSH_HOST }}
+          username: ${{ secrets.DEPLOY_SSH_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_SSH_PORT || 22 }}
+          script_stop: true
+          script: |
+            set -euo pipefail
+            cd "${{ secrets.DEPLOY_APP_DIR }}"
+            COMPOSE="docker compose -f docker-compose.production.yml --env-file .env.production"
+
+            for i in $(seq 1 15); do
+              unhealthy=$($COMPOSE ps --format '{{.Health}}' 2>/dev/null | grep -v '^healthy$' | grep -v '^$' || true)
+              if [ -z "$unhealthy" ]; then
+                echo "All containers healthy."
+                exit 0
+              fi
+              echo "Waiting for containers to become healthy ($i/15)..."
+              sleep 6
+            done
+
+            echo "::error::Containers did not become healthy in time — dumping recent logs."
+            $COMPOSE ps
+            $COMPOSE logs --tail=100 api worker admin-web mobile-web
+            exit 1
+
+      # The internal docker healthcheck only proves the container is up — this proves
+      # DNS, TLS, and Traefik are actually routing real traffic to it.
+      - name: Verify public API endpoint
+        run: |
+          for i in $(seq 1 10); do
+            status=$(curl -s -o /dev/null -w '%{http_code}' "https://${{ vars.API_DOMAIN }}/health" || echo "000")
+            if [ "$status" = "200" ]; then
+              echo "API is reachable and healthy at https://${{ vars.API_DOMAIN }}/health"
+              exit 0
+            fi
+            echo "Public health check returned $status, retrying ($i/10)..."
+            sleep 6
+          done
+          echo "::error::API did not respond healthy at https://${{ vars.API_DOMAIN }}/health after deploy."
+          exit 1

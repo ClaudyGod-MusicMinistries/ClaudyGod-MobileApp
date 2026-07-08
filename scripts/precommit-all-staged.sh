@@ -29,7 +29,11 @@ echo "  Log: $LOG_FILE"
 echo "════════════════════════════════════════════════════════════"
 
 # ── Staged file list ──────────────────────────────────────────────────────────
-mapfile -t STAGED < <(git diff --cached --name-only --diff-filter=ACMR)
+# Not using `mapfile` (bash 4+ only) — macOS ships bash 3.2, which lacks it.
+STAGED=()
+while IFS= read -r f; do
+  [ -n "$f" ] && STAGED+=("$f")
+done < <(git diff --cached --name-only --diff-filter=ACMR)
 
 if [ "${#STAGED[@]}" -eq 0 ]; then
   echo "[SKIP] No staged files — nothing to check."
@@ -38,7 +42,7 @@ fi
 
 echo ""
 echo "[INFO] Staged files (${#STAGED[@]}):"
-printf '  • %s\n' "${staged[@]+"${STAGED[@]}"}"
+printf '  • %s\n' "${STAGED[@]}"
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 ERRORS=0
