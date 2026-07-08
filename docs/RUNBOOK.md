@@ -77,7 +77,7 @@ pre-flight secrets check and a public health-check step added on top.
 | `VPS_PORT` | Secret | SSH port |
 | `VPS_DEPLOY_PATH` | Secret | Absolute path to the repo's git clone on the VPS |
 | `GHCR_DEPLOY_TOKEN` | Secret | GitHub PAT (`read:packages`) so the VPS can `docker login ghcr.io` |
-| `API_DOMAIN` | Variable | Public API hostname, used for the post-deploy health check |
+| `API_DOMAIN` | **Variable** (not secret) | `apimobile.claudygod.org` — matches `VITE_API_URL`/`EXPO_PUBLIC_API_URL` already set in `quality-gate.yml`'s Docker build check |
 
 ### What `deploy` actually does, in order
 

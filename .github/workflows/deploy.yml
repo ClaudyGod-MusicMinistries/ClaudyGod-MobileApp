@@ -175,7 +175,9 @@ jobs:
   #                           `docker login ghcr.io` (only needed while GHCR packages
   #                           are private)
   #   Variables:
-  #     API_DOMAIN          — e.g. api.claudygod.org (for the post-deploy health check)
+  #     API_DOMAIN          — apimobile.claudygod.org (matches VITE_API_URL /
+  #                           EXPO_PUBLIC_API_URL already used in quality-gate.yml;
+  #                           used here for the post-deploy health check)
   #
   # This job never creates or touches .env.production on the server — that file holds
   # real production secrets and is managed by whoever operates the VPS, once, out of
