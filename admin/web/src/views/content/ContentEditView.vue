@@ -47,7 +47,24 @@
           <!-- App sections multi-select -->
           <div class="space-y-2">
             <p class="text-xs font-medium text-ink-muted">App sections</p>
-            <p class="text-[11px] text-ink-muted">Controls which section of the app this content appears in.</p>
+            <p class="text-[11px] text-ink-muted">
+              Controls which mobile section this content appears in — must match a section's name in
+              Mobile config → Layout sections exactly (case-insensitive).
+            </p>
+
+            <!-- Currently applied tags, including free-typed ones not in the quick-pick list -->
+            <div v-if="form.appSections.length" class="flex flex-wrap gap-2 pt-1">
+              <span
+                v-for="tag in form.appSections"
+                :key="tag"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-primary/20 border border-primary/40 text-primary-soft"
+              >
+                {{ tag }}
+                <button type="button" class="hover:text-danger" @click="toggleSection(tag)">×</button>
+              </span>
+            </div>
+
+            <!-- Quick picks -->
             <div class="flex flex-wrap gap-2 pt-1">
               <button
                 v-for="s in SECTION_OPTIONS"
@@ -64,6 +81,18 @@
                 {{ s.label }}
               </button>
             </div>
+
+            <!-- Free-text add -->
+            <div class="flex gap-2 pt-1">
+              <AppInput
+                v-model="newSectionTag"
+                placeholder="Type a section name and press Enter"
+                class="flex-1"
+                @keydown.enter.prevent="addSectionTag"
+              />
+              <AppButton variant="secondary" size="sm" @click="addSectionTag">Add</AppButton>
+            </div>
+            <p v-if="sectionTagError" class="text-[11px] text-danger">{{ sectionTagError }}</p>
           </div>
         </AppCard>
 
@@ -150,6 +179,25 @@ function toggleSection(value: string): void {
   } else {
     form.value.appSections.splice(idx, 1);
   }
+}
+
+const newSectionTag = ref('');
+const sectionTagError = ref('');
+
+function addSectionTag(): void {
+  const value = newSectionTag.value.trim();
+  sectionTagError.value = '';
+  if (!value) return;
+  if (value.length < 2 || value.length > 80) {
+    sectionTagError.value = 'Section names must be 2-80 characters';
+    return;
+  }
+  if (form.value.appSections.some((s) => s.toLowerCase() === value.toLowerCase())) {
+    newSectionTag.value = '';
+    return;
+  }
+  form.value.appSections.push(value);
+  newSectionTag.value = '';
 }
 
 function onMediaUploaded(payload: { url: string; sessionId: string }): void {

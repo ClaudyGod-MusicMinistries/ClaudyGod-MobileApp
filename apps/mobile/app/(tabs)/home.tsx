@@ -10,11 +10,13 @@ import { SupportMinistryCard } from '../../components/ui/SupportMinistryCard';
 import { InlineErrorBanner } from '../../components/ui/InlineErrorBanner';
 import { useContentFeed } from '../../hooks/useContentFeed';
 import { useWordOfDay } from '../../hooks/useWordOfDay';
+import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
+import { getHomeLayoutSections, deriveLayoutSectionItems } from '../../util/mobileLayout';
 import { useAppTheme } from '../../util/colorScheme';
 import { makeStyles } from '../../styles/makeStyles';
 import { APP_ROUTES } from '../../util/appRoutes';
 import { buildPlayerRoute } from '../../util/playerRoute';
-import type { ContentType, FeedBundle, FeedCardItem } from '../../services/contentService';
+import type { ContentType, FeedCardItem } from '../../services/contentService';
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
 import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
 import {
@@ -92,29 +94,14 @@ function dedupe(items: FeedCardItem[]): FeedCardItem[] {
   return out;
 }
 
-function buildSections(feed: FeedBundle, limit = 16) {
-  const pool = dedupe([...feed.music, ...feed.videos, ...feed.playlists, ...feed.live]);
-  const used = new Set<string>();
-
-  function take(sectionId: string, fallbackTypes: ContentType[]): FeedCardItem[] {
-    const available = pool.filter((item) => !used.has(item.id));
-    const tagged    = available.filter((item) => item.appSections?.includes(sectionId));
-    const result    =
-      tagged.length >= 2
-        ? tagged
-        : available.filter((item) => (fallbackTypes as string[]).includes(item.type));
-    const sliced = result.slice(0, limit);
-    sliced.forEach((item) => used.add(item.id));
-    return sliced;
-  }
-
-  return {
-    music:   take('music', ['audio']),
-    nuggets: take('nuggets-of-truth', ['video']),
-    teens:   take('teens', ['video', 'playlist']),
-    audio:   take('audio', ['audio', 'playlist']),
-  };
-}
+const DESTINATION_ROUTES: Record<string, string> = {
+  home: APP_ROUTES.tabs.home,
+  videos: APP_ROUTES.tabs.videos,
+  player: APP_ROUTES.tabs.player,
+  live: APP_ROUTES.tabs.live,
+  library: APP_ROUTES.tabs.library,
+  search: APP_ROUTES.tabs.search,
+};
 
 // ─── HomeSearchBar ────────────────────────────────────────────────────────────
 
@@ -231,6 +218,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const { feed, loading, error, refresh } = useContentFeed();
   const { bibleVerse, adminWord }  = useWordOfDay();
+  const { config: appConfig } = useMobileAppConfig();
 
   const featured = useMemo(
     () => feed.featured ?? feed.live[0] ?? feed.music[0] ?? feed.videos[0] ?? feed.recommendations[0] ?? null,
@@ -249,8 +237,11 @@ export default function HomeScreen() {
     [feed.live, feed.mostPlayed, feed.music, feed.recent, feed.recommendations, feed.videos],
   );
 
-  const { music: musicItems, nuggets: nuggetsItems, teens: teensItems, audio: audioItems } =
-    useMemo(() => buildSections(feed), [feed]);
+  const homeSections = useMemo(() => getHomeLayoutSections(appConfig), [appConfig]);
+  const sectionItems = useMemo(
+    () => homeSections.map((section) => ({ section, items: deriveLayoutSectionItems(feed, section) })),
+    [homeSections, feed],
+  );
 
   const newRelease = useMemo(() => {
     const candidates = [...feed.videos, ...feed.music];
@@ -304,33 +295,25 @@ export default function HomeScreen() {
       ) : null}
 
       <View style={styles.sectionsGap}>
-        {(loading || musicItems.length > 0) ? (
-          <View style={styles.sectionRow}>
-            <SectionLabel title="ClaudyGod Music" actionLabel="See all" onAction={() => router.push(APP_ROUTES.tabs.player)} />
-            <ContentRail title="" items={musicItems} onPressItem={(item) => void openItem(item, 'home_music')} loading={loading} cardVariant="portrait" hideWhenEmpty />
-          </View>
-        ) : null}
-
-        {(loading || nuggetsItems.length > 0) ? (
-          <View style={styles.sectionRow}>
-            <SectionLabel title="Nuggets of Truth" actionLabel="See all" onAction={() => router.push(APP_ROUTES.tabs.videos)} />
-            <ContentRail title="" items={nuggetsItems} onPressItem={(item) => void openItem(item, 'home_nuggets')} loading={loading} cardVariant="landscape" hideWhenEmpty />
-          </View>
-        ) : null}
-
-        {(loading || teensItems.length > 0) ? (
-          <View style={styles.sectionRow}>
-            <SectionLabel title="ClaudyGod Teens" actionLabel="See all" onAction={() => router.push(APP_ROUTES.tabs.videos)} />
-            <ContentRail title="" items={teensItems} onPressItem={(item) => void openItem(item, 'home_teens')} loading={loading} cardVariant="landscape" hideWhenEmpty />
-          </View>
-        ) : null}
-
-        {(loading || audioItems.length > 0) ? (
-          <View style={styles.sectionRow}>
-            <SectionLabel title="Latest Audio" actionLabel="See all" onAction={() => router.push(APP_ROUTES.tabs.player)} />
-            <ContentRail title="" items={audioItems} onPressItem={(item) => void openItem(item, 'home_audio')} loading={loading} cardVariant="portrait" hideWhenEmpty />
-          </View>
-        ) : null}
+        {sectionItems.map(({ section, items }, index) => (
+          (loading || items.length > 0) ? (
+            <View key={section.id} style={styles.sectionRow}>
+              <SectionLabel
+                title={section.title}
+                actionLabel={section.actionLabel}
+                onAction={() => router.push((DESTINATION_ROUTES[section.destinationTab] ?? APP_ROUTES.tabs.home) as never)}
+              />
+              <ContentRail
+                title=""
+                items={items}
+                onPressItem={(item) => void openItem(item, `home_${section.id}`)}
+                loading={loading}
+                cardVariant={index % 2 === 0 ? 'portrait' : 'landscape'}
+                hideWhenEmpty
+              />
+            </View>
+          ) : null
+        ))}
       </View>
 
       {feed.mostPlayed.length > 0 ? (

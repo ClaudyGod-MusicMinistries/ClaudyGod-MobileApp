@@ -184,56 +184,168 @@ export interface AiAdCopyResponse {
 }
 
 // ─── App Config ───────────────────────────────────────────────────────────────
+// Mirrors services/api's mobileAppConfigSchema field-for-field. The PUT endpoint
+// requires the ENTIRE object every save (fully .strict() + required) — the admin
+// UI only exposes editing for layout/discovery/settingsHub/monetization, so the
+// rest (privacy/help/about/donate/rate/navigation/intelligence) is round-tripped
+// untouched: loaded on GET, held in local state, sent back as-is on PUT.
 
-export interface AppConfig {
-  layout: {
-    sections: LayoutSection[];
-  };
-  discovery: {
-    categories: string[];
-    shortcuts: DiscoveryShortcut[];
-  };
-  settingsHub: {
-    sections: SettingsHubSection[];
-  };
-  adPlacements: AdPlacement[];
+export type MobileContentType = 'audio' | 'video' | 'playlist' | 'announcement' | 'live';
+export type MobileTabId = 'home' | 'videos' | 'player' | 'live' | 'library' | 'search';
+
+export interface MobileLayoutSection {
+  id: string;
+  title: string;
+  subtitle: string;
+  contentTypes: MobileContentType[];
+  actionLabel: string;
+  destinationTab: MobileTabId;
+  maxItems: number;
 }
 
-export interface LayoutSection {
-  id: string;
-  type: string;
+export interface MobileNavigationTab {
+  id: MobileTabId;
   label: string;
-  visible: boolean;
-  query?: Record<string, unknown>;
+  icon: string;
 }
 
-export interface DiscoveryShortcut {
+export type DiscoveryCategory = 'All' | 'audio' | 'video' | 'playlist' | 'live' | 'announcement';
+
+export interface SearchShortcut {
   id: string;
+  icon: string;
   label: string;
   query: string;
-  category?: string;
-  icon?: string;
+  category: DiscoveryCategory;
+}
+
+export type SettingsDestination =
+  | 'tabs.home' | 'tabs.player' | 'tabs.videos' | 'tabs.live' | 'tabs.library' | 'tabs.search' | 'tabs.settings'
+  | 'profile' | 'settings.privacy' | 'settings.donate' | 'settings.help' | 'settings.about' | 'settings.rate';
+
+export interface SettingsHubItem {
+  id: string;
+  icon: string;
+  label: string;
+  hint: string;
+  destination: SettingsDestination;
 }
 
 export interface SettingsHubSection {
   id: string;
-  label: string;
+  title: string;
   items: SettingsHubItem[];
 }
 
-export interface SettingsHubItem {
+export type AdPlacementScreen = 'landing' | 'home' | 'videos' | 'player' | 'live' | 'library' | 'search';
+
+export interface AdPlacementSlot {
   id: string;
-  label: string;
-  icon?: string;
-  href?: string;
-  action?: string;
+  title: string;
+  subtitle: string;
+  screen: AdPlacementScreen;
+  enabled: boolean;
+  maxItems: number;
 }
 
-export interface AdPlacement {
+export interface HelpContact {
   id: string;
-  position: string;
-  type: string;
-  enabled: boolean;
+  icon: string;
+  title: string;
+  desc: string;
+  actionUrl: string;
+}
+
+export interface Faq {
+  id: string;
+  q: string;
+  a: string;
+}
+
+export interface SocialLink {
+  icon: string;
+  label: string;
+  url: string;
+}
+
+export interface DonateMethod {
+  id: string;
+  icon: string;
+  label: string;
+  subtitle: string;
+  badge?: string;
+}
+
+export interface DonatePlan {
+  id: string;
+  name: string;
+  amount: string;
+  period: 'once' | 'monthly';
+  note: string;
+  featured?: boolean;
+  icon: string;
+}
+
+export interface AppConfig {
+  version: number;
+  privacy: {
+    contactEmail: string;
+    deleteConfirmPhrase: string;
+    principles: string[];
+  };
+  help: {
+    supportCenterUrl: string;
+    contact: HelpContact[];
+    faqs: Faq[];
+  };
+  about: {
+    heroStats: Array<{ label: string; value: string }>;
+    featureChips: Array<{ icon: string; label: string }>;
+    team: Array<{ name: string; role: string; desc: string }>;
+    social: SocialLink[];
+    versionLabel: string;
+  };
+  donate: {
+    currency: string;
+    currencyOptions?: Array<{ code: string; label: string; symbol?: string }>;
+    quickAmounts: string[];
+    quickAmountsByCurrency?: Record<string, string[]>;
+    methods: DonateMethod[];
+    plans: DonatePlan[];
+    impactBreakdown: Array<{ label: string; value: number; icon: string }>;
+  };
+  rate: {
+    iosStoreUrl: string;
+    androidStoreUrl: string;
+    feedbackRoute: string;
+  };
+  layout: {
+    homeSections: MobileLayoutSection[];
+    videoSections: MobileLayoutSection[];
+    playerSections: MobileLayoutSection[];
+    librarySections: MobileLayoutSection[];
+  };
+  navigation: {
+    tabs: MobileNavigationTab[];
+  };
+  discovery: {
+    categories: DiscoveryCategory[];
+    shortcuts: SearchShortcut[];
+  };
+  settingsHub: {
+    sections: SettingsHubSection[];
+  };
+  monetization: {
+    adsEnabled: boolean;
+    disclosureLabel: string;
+    placements: AdPlacementSlot[];
+  };
+  intelligence: {
+    assistantEnabled: boolean;
+    adCopySuggestionsEnabled: boolean;
+    providerLabel: string;
+    defaultTone: string;
+  };
 }
 
 // ─── Word of Day ──────────────────────────────────────────────────────────────
