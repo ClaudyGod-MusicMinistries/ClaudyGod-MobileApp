@@ -1,4 +1,4 @@
-import type { ContentType, ContentStatus, ContentRequestStatus, AdStatus, LiveStatus, SupportRequestStatus } from '@/utils/constants';
+import type { ContentType, ContentRequestStatus, AdStatus, AdCampaignPlacement, LiveStatus, SupportRequestStatus, UserRoleValue } from '@/utils/constants';
 
 // ─── Shared ───────────────────────────────────────────────────────────────────
 
@@ -21,18 +21,25 @@ export interface AdminUser {
   id: string;
   email: string;
   displayName: string | null;
-  role: number;
+  role: UserRoleValue;
   isVerified: boolean;
   createdAt: string;
 }
 
-export interface LoginResponse {
+export interface LoginSuccessResponse {
   accessToken: string;
   refreshToken: string;
   user: AdminUser;
-  requiresMfa?: boolean;
-  mfaToken?: string;
+  mfaRequired?: false;
 }
+
+export interface LoginMfaRequiredResponse {
+  mfaRequired: true;
+  mfaToken: string;
+  message?: string;
+}
+
+export type LoginResponse = LoginSuccessResponse | LoginMfaRequiredResponse;
 
 export interface RefreshResponse {
   accessToken: string;
@@ -41,34 +48,57 @@ export interface RefreshResponse {
 
 // ─── Content ──────────────────────────────────────────────────────────────────
 
+export type ContentSourceKind = 'upload' | 'youtube' | 'external';
+export type ContentVisibility = 'draft' | 'published';
+
 export interface ContentItem {
   id: string;
   title: string;
   description: string | null;
   type: ContentType;
-  status: ContentStatus;
-  visibility: string;
-  artworkUrl: string | null;
-  mediaUrl: string | null;
+  url?: string;
+  thumbnailUrl?: string;
+  sourceKind?: ContentSourceKind;
+  externalSourceId?: string;
+  channelName?: string;
+  duration?: string;
+  appSections: string[];
   tags: string[];
-  section: string | null;
-  playCount: number;
+  metadata: Record<string, unknown>;
+  visibility: ContentVisibility;
   createdAt: string;
   updatedAt: string;
-  publishedAt: string | null;
+  author: { id: string; displayName: string; email: string; role: string };
+}
+
+// A lightweight preview shape — the dashboard's "Latest content" widget only
+// ever sends this subset, not the full ContentItem.
+export interface DashboardContentPreview {
+  id: string;
+  title: string;
+  description: string | null;
+  type: ContentType;
+  visibility: ContentVisibility;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface ContentCreateInput {
   title: string;
-  description?: string;
+  description: string;
   type: ContentType;
-  status?: ContentStatus;
-  visibility?: string;
-  artworkUrl?: string;
-  mediaUrl?: string;
-  tags?: string[];
+  url?: string;
+  thumbnailUrl?: string;
+  mediaUploadSessionId?: string;
+  thumbnailUploadSessionId?: string;
+  channelName?: string;
+  duration?: string;
+  sourceKind?: ContentSourceKind;
+  externalSourceId?: string;
   appSections?: string[];
-  publishedAt?: string;
+  tags?: string[];
+  metadata?: Record<string, unknown>;
+  visibility?: ContentVisibility;
 }
 
 export interface ContentUpdateInput extends Partial<ContentCreateInput> {
@@ -114,21 +144,36 @@ export interface LiveSessionInput {
 export interface AdCampaign {
   id: string;
   name: string;
+  sponsorName: string;
   headline: string;
   body: string;
   status: AdStatus;
-  placement: string;
-  startsAt: string | null;
-  endsAt: string | null;
+  placement: AdCampaignPlacement;
+  ctaLabel: string;
+  ctaUrl: string;
+  imageUrl?: string;
+  audienceTags: string[];
+  dailyBudgetCents: number;
+  weight: number;
+  startsAt?: string;
+  endsAt?: string;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface AdCampaignInput {
   name: string;
+  sponsorName: string;
   headline: string;
   body: string;
-  placement: string;
+  placement: AdCampaignPlacement;
   status?: AdStatus;
+  ctaLabel: string;
+  ctaUrl: string;
+  imageUrl?: string;
+  audienceTags?: string[];
+  dailyBudgetCents?: number;
+  weight?: number;
   startsAt?: string;
   endsAt?: string;
 }
@@ -194,15 +239,28 @@ export interface AdPlacement {
 // ─── Word of Day ──────────────────────────────────────────────────────────────
 
 export interface WordOfDay {
-  id?: string;
-  word: string;
+  id: string;
+  title: string;
+  passage: string;
   verse: string;
   reflection: string;
-  author: string | null;
-  publishedDate: string;
-  status?: 'draft' | 'published' | 'archived';
-  createdAt?: string;
-  updatedAt?: string;
+  messageDate: string;
+  status: 'draft' | 'published' | 'archived';
+  notifyEmail: boolean;
+  publishedAt?: string;
+  notifiedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WordOfDayInput {
+  title?: string;
+  passage: string;
+  verse: string;
+  reflection: string;
+  messageDate?: string;
+  status: 'draft' | 'published';
+  notifySubscribers?: boolean;
 }
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
@@ -221,7 +279,7 @@ export interface DashboardData {
   generatedAt: string;
   summary: DashboardStats;
   overview: {
-    latestContent: ContentItem[];
+    latestContent: DashboardContentPreview[];
     requestStatusBoard: { status: string; count: number }[];
     requestQueuePreview: ContentRequest[];
   };
@@ -233,7 +291,7 @@ export interface UserRecord {
   id: string;
   email: string;
   displayName: string | null;
-  role: number;
+  role: UserRoleValue;
   isVerified: boolean;
   createdAt: string;
 }
@@ -260,7 +318,7 @@ export interface EngagementOverview {
 export interface ContentInsight {
   contentId: string;
   title: string;
-  type: ContentType;
+  type: string;
   plays: number;
   uniqueListeners: number;
   avgCompletionPct: number;

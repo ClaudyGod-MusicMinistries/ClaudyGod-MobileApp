@@ -28,10 +28,10 @@
           </template>
           <template #cell-role="{ row }">
             <AppSelect
-              :model-value="String(row.role)"
+              :model-value="row.role as string"
               :options="roleOptions"
               class="w-36"
-              @update:model-value="confirmRoleChange(row, Number($event))"
+              @update:model-value="confirmRoleChange(row, $event as AssignableRoleValue)"
             />
           </template>
           <template #cell-isVerified="{ value }">
@@ -82,7 +82,8 @@
 import { ref, onMounted } from 'vue';
 import { useUsersStore } from '@/stores/users.store';
 import { useUiStore } from '@/stores/ui.store';
-import { Role, ROLE_LABELS } from '@/utils/constants';
+import { ASSIGNABLE_ROLE_OPTIONS, ROLE_LABELS, roleRank } from '@/utils/constants';
+import type { AssignableRoleValue } from '@/utils/constants';
 import AppCard from '@/components/ui/AppCard.vue';
 import AppTable from '@/components/ui/AppTable.vue';
 import AppBadge from '@/components/ui/AppBadge.vue';
@@ -118,7 +119,7 @@ const supportCols = [
   { key: 'createdAt', label: 'Date', align: 'right' as const },
 ];
 
-const roleOptions = Object.entries(ROLE_LABELS).map(([value, label]) => ({ value, label }));
+const roleOptions = ASSIGNABLE_ROLE_OPTIONS;
 const supportStatusOptions = [
   { value: 'open', label: 'Open' },
   { value: 'in_progress', label: 'In progress' },
@@ -131,13 +132,13 @@ onMounted(() => {
   void store.fetchSupportRequests();
 });
 
-async function confirmRoleChange(row: Record<string, unknown>, role: number): Promise<void> {
+async function confirmRoleChange(row: Record<string, unknown>, role: AssignableRoleValue): Promise<void> {
   const id = row.id as string;
   if (!id) {
     ui.addToast({ tone: 'error', title: 'Invalid user ID' });
     return;
   }
-  const label = ROLE_LABELS[role as Role] ?? `Role ${role}`;
+  const label = ROLE_LABELS[roleRank(role)];
   const ok = await ui.confirm({
     title: 'Change role',
     message: `Change ${row.email}'s role to ${label}?`,

@@ -103,7 +103,7 @@ const props = withDefaults(defineProps<{
 }>(), { accept: '*', maxMb: 500 });
 
 const emit = defineEmits<{
-  (e: 'uploaded', url: string): void;
+  (e: 'uploaded', payload: { url: string; sessionId: string }): void;
   (e: 'reset'): void;
 }>();
 
@@ -159,7 +159,7 @@ async function handleFile(file: File): Promise<void> {
 
   try {
     uploadStage.value = isMedia ? 'Requesting upload URL…' : 'Uploading…';
-    const { publicUrl } = await uploadFile(file, (pct) => {
+    const { publicUrl, sessionId } = await uploadFile(file, (pct) => {
       progress.value = pct;
       if (pct < 30) uploadStage.value = isMedia ? 'Requesting upload URL…' : 'Uploading…';
       else if (pct < 95) uploadStage.value = 'Uploading file…';
@@ -168,7 +168,7 @@ async function handleFile(file: File): Promise<void> {
     progress.value = 100;
     uploadStage.value = 'Done!';
     uploadedFile.value = { name: file.name, size: file.size };
-    emit('uploaded', publicUrl);
+    emit('uploaded', { url: publicUrl, sessionId });
   } catch (e) {
     uploadError.value = e instanceof Error ? e.message : 'Upload failed — please try again';
     pendingFile.value = null;

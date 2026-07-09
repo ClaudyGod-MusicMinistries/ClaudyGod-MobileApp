@@ -9,8 +9,8 @@ import {
   setRefreshToken,
   clearRefreshToken,
 } from '@/api/client';
-import { Role, INACTIVITY_TIMEOUT_MS } from '@/utils/constants';
-import type { AdminUser, LoginResponse } from '@/api/types';
+import { Role, INACTIVITY_TIMEOUT_MS, roleRank } from '@/utils/constants';
+import type { AdminUser, LoginResponse, LoginSuccessResponse } from '@/api/types';
 
 function _extractMessage(e: unknown): string {
   if (e instanceof Error) return e.message;
@@ -23,7 +23,7 @@ export const useAuthStore = defineStore('auth', () => {
   const error = ref<string | null>(null);
 
   const isAuthenticated = computed(() => Boolean(user.value));
-  const role = computed<Role>(() => (user.value?.role as Role) ?? Role.CLIENT);
+  const role = computed<Role>(() => roleRank(user.value?.role));
 
   function hasMinRole(minRole: Role): boolean {
     return role.value >= minRole;
@@ -56,7 +56,7 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null;
     try {
       const res = await apiLogin(email, password);
-      if (!res.requiresMfa) {
+      if (!res.mfaRequired) {
         _applySession(res);
       }
       return res;
@@ -82,7 +82,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  function _applySession(res: LoginResponse): void {
+  function _applySession(res: LoginSuccessResponse): void {
     setAccessToken(res.accessToken);
     setRefreshToken(res.refreshToken);
     user.value = res.user;
@@ -117,7 +117,7 @@ export const useAuthStore = defineStore('auth', () => {
     void import('@/router').then(({ router }) => { void router.push('/login'); });
   }
 
-  function applyExternalSession(res: LoginResponse): void {
+  function applyExternalSession(res: LoginSuccessResponse): void {
     _applySession(res);
   }
 

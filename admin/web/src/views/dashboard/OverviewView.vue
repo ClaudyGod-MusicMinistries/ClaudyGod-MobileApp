@@ -93,7 +93,7 @@
             :rows="latestContent"
             :loading="dashboard.isLoading"
           >
-            <template #cell-status="{ value }">
+            <template #cell-visibility="{ value }">
               <StatusBadge :status="String(value)" />
             </template>
             <template #cell-type="{ value }">
@@ -182,7 +182,7 @@ const requestBoard = computed(() => dashboard.data?.overview.requestStatusBoard 
 const contentCols = [
   { key: 'title', label: 'Title' },
   { key: 'type', label: 'Type' },
-  { key: 'status', label: 'Status' },
+  { key: 'visibility', label: 'Status' },
   { key: 'createdAt', label: 'Added', align: 'right' as const },
 ];
 

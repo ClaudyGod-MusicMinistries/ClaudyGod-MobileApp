@@ -44,26 +44,27 @@
         <!-- Date + Word row -->
         <div class="grid grid-cols-2 gap-4">
           <AppInput
-            v-model="form.publishedDate"
+            v-model="form.messageDate"
             label="Publish date"
             type="date"
             :min="minDate"
             required
           />
           <AppInput
-            v-model="form.word"
+            v-model="form.title"
             label="Word / Title"
             placeholder="e.g. Grace, Redemption, Faith"
             required
           />
         </div>
 
-        <!-- Author + Status row -->
+        <!-- Passage + Status row -->
         <div class="grid grid-cols-2 gap-4">
           <AppInput
-            v-model="form.author"
-            label="Author"
-            placeholder="e.g. Pastor Emmanuel"
+            v-model="form.passage"
+            label="Scripture reference"
+            placeholder="e.g. John 3:16"
+            required
           />
           <div class="space-y-1">
             <label class="block text-xs font-semibold text-ink-muted uppercase tracking-wide">Status</label>
@@ -88,8 +89,8 @@
         <!-- Verse -->
         <AppTextarea
           v-model="form.verse"
-          label="Scripture"
-          placeholder='e.g. "For God so loved the world..." — John 3:16'
+          label="Scripture text"
+          placeholder='e.g. "For God so loved the world..."'
           :rows="3"
           :max-length="300"
           required
@@ -162,7 +163,7 @@
             :key="entry.id"
             :class="[
               'flex items-start gap-4 p-4 rounded-xl border transition-colors',
-              isToday(entry.publishedDate)
+              isToday(entry.messageDate)
                 ? 'border-primary/40 bg-primary/5'
                 : 'border-border bg-surface hover:border-primary/20',
             ]"
@@ -171,32 +172,32 @@
             <div
               :class="[
                 'shrink-0 w-12 text-center rounded-lg py-1.5 border',
-                isToday(entry.publishedDate)
+                isToday(entry.messageDate)
                   ? 'bg-primary/20 border-primary/40'
-                  : isPast(entry.publishedDate)
+                  : isPast(entry.messageDate)
                   ? 'bg-surface border-border'
                   : 'bg-surface border-border',
               ]"
             >
-              <p :class="['text-base font-black leading-none', isToday(entry.publishedDate) ? 'text-primary-soft' : 'text-ink']">
-                {{ formatDay(entry.publishedDate) }}
+              <p :class="['text-base font-black leading-none', isToday(entry.messageDate) ? 'text-primary-soft' : 'text-ink']">
+                {{ formatDay(entry.messageDate) }}
               </p>
               <p class="text-[9px] font-bold uppercase tracking-wide text-ink-muted mt-0.5">
-                {{ formatWeekday(entry.publishedDate) }}
+                {{ formatWeekday(entry.messageDate) }}
               </p>
             </div>
 
             <!-- Content -->
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2 flex-wrap">
-                <p class="text-sm font-bold text-ink">{{ entry.word }}</p>
+                <p class="text-sm font-bold text-ink">{{ entry.title }}</p>
                 <!-- Status pill -->
                 <span :class="['text-[10px] font-bold px-2 py-0.5 rounded-full border', statusStyle(entry)]">
                   {{ statusLabel(entry) }}
                 </span>
               </div>
               <p class="text-xs text-ink-muted mt-0.5 line-clamp-1 italic">{{ entry.verse }}</p>
-              <p v-if="entry.author" class="text-[10px] text-ink-muted mt-0.5">— {{ entry.author }}</p>
+              <p v-if="entry.passage" class="text-[10px] text-ink-muted mt-0.5">— {{ entry.passage }}</p>
             </div>
 
             <!-- Actions -->
@@ -241,8 +242,8 @@
           <div class="w-full max-w-sm bg-[#14111f] border border-border rounded-2xl p-6 space-y-4 shadow-2xl">
             <p class="text-base font-bold text-ink">Delete this entry?</p>
             <p class="text-sm text-ink-muted">
-              The word for <strong class="text-ink">{{ formatFullDate(deleteTarget.publishedDate) }}</strong>
-              (<em>{{ deleteTarget.word }}</em>) will be permanently removed.
+              The word for <strong class="text-ink">{{ formatFullDate(deleteTarget.messageDate) }}</strong>
+              (<em>{{ deleteTarget.title }}</em>) will be permanently removed.
             </p>
             <div class="flex gap-3 justify-end">
               <AppButton variant="ghost" size="sm" @click="deleteTarget = null">Cancel</AppButton>
@@ -271,7 +272,7 @@ import AppCard from '@/components/ui/AppCard.vue';
 import AppInput from '@/components/ui/AppInput.vue';
 import AppTextarea from '@/components/ui/AppTextarea.vue';
 import AppButton from '@/components/ui/AppButton.vue';
-import type { WordOfDay } from '@/api/types';
+import type { WordOfDay, WordOfDayInput } from '@/api/types';
 
 const store = useConfigStore();
 const ui = useUiStore();
@@ -307,7 +308,7 @@ const schedule = computed(() => store.wordSchedule);
 const groupedSchedule = computed(() => {
   const groups: Record<string, WordOfDay[]> = {};
   for (const entry of schedule.value) {
-    const key = formatMonthYear(entry.publishedDate);
+    const key = formatMonthYear(entry.messageDate);
     if (!groups[key]) groups[key] = [];
     groups[key]!.push(entry);
   }
@@ -323,27 +324,27 @@ const statusOptions = [
 
 function statusLabel(entry: WordOfDay): string {
   if (entry.status === 'draft') return 'Draft';
-  if (isToday(entry.publishedDate)) return 'Today';
-  if (isPast(entry.publishedDate)) return 'Past';
+  if (isToday(entry.messageDate)) return 'Today';
+  if (isPast(entry.messageDate)) return 'Past';
   return 'Upcoming';
 }
 
 function statusStyle(entry: WordOfDay): string {
   if (entry.status === 'draft') return 'text-amber-400 border-amber-400/20 bg-amber-400/10';
-  if (isToday(entry.publishedDate)) return 'text-primary-soft border-primary/30 bg-primary/10';
-  if (isPast(entry.publishedDate)) return 'text-ink-muted border-border bg-transparent';
+  if (isToday(entry.messageDate)) return 'text-primary-soft border-primary/30 bg-primary/10';
+  if (isPast(entry.messageDate)) return 'text-ink-muted border-border bg-transparent';
   return 'text-emerald-400 border-emerald-400/20 bg-emerald-400/10';
 }
 
 // ─── Form state ───────────────────────────────────────────────────────────────
 
 interface FormState {
-  word:          string;
-  verse:         string;
-  reflection:    string;
-  author:        string;
-  publishedDate: string;
-  status:        'draft' | 'published';
+  title:       string;
+  passage:     string;
+  verse:       string;
+  reflection:  string;
+  messageDate: string;
+  status:      'draft' | 'published';
 }
 
 const showForm  = ref(false);
@@ -352,12 +353,12 @@ const isSaving  = ref(false);
 const formError = ref('');
 
 const emptyForm = (): FormState => ({
-  word:          '',
-  verse:         '',
-  reflection:    '',
-  author:        '',
-  publishedDate: today,
-  status:        'published',
+  title:       '',
+  passage:     '',
+  verse:       '',
+  reflection:  '',
+  messageDate: today,
+  status:      'published',
 });
 
 const form = ref<FormState>(emptyForm());
@@ -372,12 +373,12 @@ function openCreateForm() {
 function openEditForm(entry: WordOfDay) {
   editingId.value = entry.id ?? null;
   form.value = {
-    word:          entry.word,
-    verse:         entry.verse,
-    reflection:    entry.reflection,
-    author:        entry.author ?? '',
-    publishedDate: entry.publishedDate,
-    status:        entry.status === 'draft' ? 'draft' : 'published',
+    title:       entry.title,
+    passage:     entry.passage,
+    verse:       entry.verse,
+    reflection:  entry.reflection,
+    messageDate: entry.messageDate,
+    status:      entry.status === 'draft' ? 'draft' : 'published',
   };
   formError.value = '';
   showForm.value = true;
@@ -390,22 +391,23 @@ function closeForm() {
 }
 
 async function onSave() {
-  const { word, verse, reflection, publishedDate, status } = form.value;
+  const { title, passage, verse, reflection, messageDate, status } = form.value;
 
-  if (!word.trim())         { formError.value = 'Word or title is required.'; return; }
-  if (!verse.trim())        { formError.value = 'Scripture is required.'; return; }
+  if (!title.trim())        { formError.value = 'Word or title is required.'; return; }
+  if (!passage.trim())      { formError.value = 'Scripture reference is required.'; return; }
+  if (!verse.trim())        { formError.value = 'Scripture text is required.'; return; }
   if (!reflection.trim())   { formError.value = 'Reflection is required.'; return; }
-  if (!publishedDate)       { formError.value = 'Publish date is required.'; return; }
+  if (!messageDate)         { formError.value = 'Publish date is required.'; return; }
 
   formError.value = '';
   isSaving.value = true;
 
-  const payload = {
-    word:          word.trim(),
-    verse:         verse.trim(),
-    reflection:    reflection.trim(),
-    author:        form.value.author.trim() || null,
-    publishedDate,
+  const payload: WordOfDayInput = {
+    title:       title.trim(),
+    passage:     passage.trim(),
+    verse:       verse.trim(),
+    reflection:  reflection.trim(),
+    messageDate,
     status,
   };
 
@@ -415,7 +417,7 @@ async function onSave() {
       ui.addToast({ tone: 'success', title: 'Entry updated' });
     } else {
       await store.addWordEntry(payload);
-      ui.addToast({ tone: 'success', title: 'Entry scheduled', message: `Word for ${formatFullDate(publishedDate)}` });
+      ui.addToast({ tone: 'success', title: 'Entry scheduled', message: `Word for ${formatFullDate(messageDate)}` });
     }
     closeForm();
   } catch (e) {

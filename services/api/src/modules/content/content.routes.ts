@@ -8,6 +8,7 @@ import { authenticate } from '../../middleware/authenticate';
 import { contentRequestLimiter } from '../../middleware/rateLimiter';
 import {
   assignContentSectionsSchema,
+  bulkUpdateVisibilitySchema,
   contentIdParamsSchema,
   contentRequestIdParamsSchema,
   createContentSchema,
@@ -18,9 +19,11 @@ import {
   updateVisibilitySchema,
 } from './content.schema';
 import {
+  bulkUpdateContentVisibility,
   createContentRequest,
   deleteContent,
   createDraftFromContentRequest,
+  getManagedContentById,
   updateContent,
   updateContentSections,
   createContent,
@@ -59,8 +62,11 @@ contentRouter.get(
       type: parsed.type,
       status: parsed.status,
       visibility: parsed.visibility,
+      section: parsed.section,
       search: parsed.search,
       updatedAfter: parsed.updatedAfter,
+      sort: parsed.sort,
+      sortDir: parsed.sortDir,
     };
     const data = await listPublicContent(query);
     res.status(200).json(data);
@@ -82,11 +88,42 @@ contentRouter.get(
       type: parsed.type,
       status: parsed.status,
       visibility: parsed.visibility,
+      section: parsed.section,
       search: parsed.search,
       updatedAfter: parsed.updatedAfter,
+      sort: parsed.sort,
+      sortDir: parsed.sortDir,
     };
     const data = await listManagedContent(req.user!, query);
     res.status(200).json(data);
+  }),
+);
+
+contentRouter.get(
+  '/manage/:id',
+  authenticate,
+  asyncHandler(async (req, res) => {
+    if (!req.user) {
+      throw new UnauthorizedError('Unauthorized', 'AUTH_REQUIRED');
+    }
+    const params = validateSchema(contentIdParamsSchema, req.params);
+    const item = await getManagedContentById(req.user, params.id);
+    res.status(200).json(item);
+  }),
+);
+
+contentRouter.patch(
+  '/manage/bulk',
+  authenticate,
+  asyncHandler(async (req, res) => {
+    const actor = requireAdmin(req.user);
+    const payload = validateSchema(bulkUpdateVisibilitySchema, req.body);
+    const result = await bulkUpdateContentVisibility({
+      ids: payload.ids,
+      visibility: payload.visibility,
+      requester: actor,
+    });
+    res.status(200).json(result);
   }),
 );
 
@@ -149,7 +186,7 @@ contentRouter.post(
 );
 
 contentRouter.post(
-  '/',
+  '/manage',
   authenticate,
   asyncHandler(async (req, res) => {
     const actor = requireAdmin(req.user);
@@ -165,7 +202,7 @@ contentRouter.post(
 );
 
 contentRouter.patch(
-  '/:id',
+  '/manage/:id',
   authenticate,
   asyncHandler(async (req, res) => {
     const actor = requireAdmin(req.user);
@@ -255,7 +292,7 @@ contentRouter.get(
 );
 
 contentRouter.delete(
-  '/:id',
+  '/manage/:id',
   authenticate,
   asyncHandler(async (req, res) => {
     const actor = requireAdmin(req.user);

@@ -21,7 +21,22 @@ export async function fetchChannelVideos(params?: { maxResults?: number; channel
   return data;
 }
 
-export async function importVideos(selections: Array<{ youtubeVideoId: string; appSections: string[]; visibility?: string; playAsAudio?: boolean }>): Promise<{ imported: number }> {
+export interface YouTubeImportSelection {
+  youtubeVideoId: string;
+  title: string;
+  description: string;
+  channelTitle: string;
+  publishedAt: string;
+  thumbnailUrl: string;
+  url: string;
+  duration: string;
+  isLive: boolean;
+  appSections: string[];
+  tags: string[];
+  visibility?: 'draft' | 'published';
+}
+
+export async function importVideos(selections: YouTubeImportSelection[]): Promise<{ imported: number }> {
   const { data } = await client.post<{ imported: number }>('/v1/youtube/import', { selections });
   return data;
 }

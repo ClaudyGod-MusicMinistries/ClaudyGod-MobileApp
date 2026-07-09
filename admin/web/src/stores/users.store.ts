@@ -7,6 +7,7 @@ import {
   updateSupportRequestStatus,
 } from '@/api/users';
 import type { UserRecord, SupportRequest } from '@/api/types';
+import type { AssignableRoleValue, UserRoleValue } from '@/utils/constants';
 
 export const useUsersStore = defineStore('users', () => {
   const users = ref<UserRecord[]>([]);
@@ -14,7 +15,7 @@ export const useUsersStore = defineStore('users', () => {
   const isLoading = ref(false);
   const error = ref<string | null>(null);
 
-  const userFilters = reactive({ search: '', role: undefined as number | undefined, page: 1, pageSize: 25 });
+  const userFilters = reactive({ search: '', role: undefined as UserRoleValue | undefined, page: 1, pageSize: 25 });
 
   const supportRequests = ref<SupportRequest[]>([]);
   const supportTotal = ref(0);
@@ -34,7 +35,7 @@ export const useUsersStore = defineStore('users', () => {
     }
   }
 
-  async function changeRole(userId: string, role: number): Promise<void> {
+  async function changeRole(userId: string, role: AssignableRoleValue): Promise<void> {
     try {
       const updated = await updateUserRole(userId, role);
       users.value = users.value.map((u) => (u.id === userId ? updated : u));
