@@ -49,23 +49,17 @@ const router = createRouter({
       meta: { public: true, title: 'Request access' },
     },
 
-    // ─── Authenticated routes (wrapped in AdminShell) ────────────────────────
-    {
-      path: '/dashboard',
-      component: AdminShell,
-      children: [
-        {
-          path: '',
-          name: 'dashboard',
-          component: () => import('@/views/dashboard/OverviewView.vue'),
-          meta: { minRole: Role.ADMIN, title: 'Overview' },
-        },
-      ],
-    },
+    // ─── Authenticated routes (wrapped in a single shared AdminShell) ────────
     {
       path: '/',
       component: AdminShell,
       children: [
+        {
+          path: 'dashboard',
+          name: 'dashboard',
+          component: () => import('@/views/dashboard/OverviewView.vue'),
+          meta: { minRole: Role.ADMIN, title: 'Overview' },
+        },
         // Content
         {
           path: 'content',

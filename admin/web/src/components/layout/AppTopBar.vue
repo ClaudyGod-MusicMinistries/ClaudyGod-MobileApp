@@ -1,13 +1,26 @@
 <template>
-  <header class="flex items-center justify-between gap-4 px-6 py-3.5 border-b border-border bg-surface/80 backdrop-blur-sm flex-shrink-0 min-h-[64px]">
-    <!-- Breadcrumb + title -->
-    <div class="min-w-0">
-      <div class="flex items-center gap-1.5 text-xs text-ink-muted mb-0.5">
-        <span>Admin Studio</span>
-        <span>›</span>
-        <span class="text-ink-soft font-medium">{{ pageTitle }}</span>
+  <header class="flex items-center justify-between gap-4 px-4 sm:px-6 py-3.5 border-b border-border bg-surface/80 backdrop-blur-sm flex-shrink-0 min-h-[64px]">
+    <!-- Hamburger (mobile/tablet only) + Breadcrumb + title -->
+    <div class="flex items-center gap-3 min-w-0">
+      <button
+        type="button"
+        class="lg:hidden -ml-1 p-2 rounded-xl text-ink-muted hover:text-ink hover:bg-white/8 transition-colors flex-shrink-0"
+        aria-label="Open navigation menu"
+        @click="ui.toggleMobileDrawer()"
+      >
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+
+      <div class="min-w-0">
+        <div class="flex items-center gap-1.5 text-xs text-ink-muted mb-0.5">
+          <span>Admin Studio</span>
+          <span>›</span>
+          <span class="text-ink-soft font-medium">{{ pageTitle }}</span>
+        </div>
+        <h1 class="text-base font-bold text-ink truncate">{{ pageTitle }}</h1>
       </div>
-      <h1 class="text-base font-bold text-ink truncate">{{ pageTitle }}</h1>
     </div>
 
     <!-- Right actions -->
@@ -60,11 +73,13 @@ import { useRoute } from 'vue-router';
 import { onClickOutside } from '@vueuse/core';
 import { useAuthStore } from '@/stores/auth.store';
 import { useDashboardStore } from '@/stores/dashboard.store';
+import { useUiStore } from '@/stores/ui.store';
 import UserAvatar from '@/components/shared/UserAvatar.vue';
 
 const route = useRoute();
 const auth = useAuthStore();
 const dashboard = useDashboardStore();
+const ui = useUiStore();
 
 const menuOpen = ref(false);
 const menuRef = ref<HTMLElement | null>(null);
