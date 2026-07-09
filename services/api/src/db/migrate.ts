@@ -1002,6 +1002,11 @@ const migrationStatements = [
      WHERE revoked_at IS NULL`,
   `CREATE INDEX IF NOT EXISTS idx_trusted_device_tokens_hash
      ON trusted_device_tokens (token_hash)`,
+
+  /* ── Auth action tokens: allow MFA step-up tokens (login already issues these) ─ */
+  `ALTER TABLE auth_action_tokens DROP CONSTRAINT IF EXISTS auth_action_tokens_token_type_check`,
+  `ALTER TABLE auth_action_tokens ADD CONSTRAINT auth_action_tokens_token_type_check
+     CHECK (token_type IN ('email_verification', 'password_reset', 'mfa_step_up'))`,
 ];
 
 const MIGRATION_LOCK_ID = 7_246_130_001;

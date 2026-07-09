@@ -5,6 +5,9 @@ export const GOOGLE_LOGIN_URL = import.meta.env.VITE_GOOGLE_LOGIN_URL || '';
 export const INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000;
 export const YOUTUBE_SYNC_DEFAULT_LIMIT = 8;
 
+// Internal rank used for "at least this level" comparisons (route guards, nav visibility,
+// RolePill severity). The API never sends these numbers — it sends the string role below —
+// so every numeric Role value must be derived through roleRank(), never trusted from the wire.
 export enum Role {
   CLIENT = 0,
   CREATOR = 1,
@@ -20,6 +23,31 @@ export const ROLE_LABELS: Record<Role, string> = {
   [Role.ADMIN]: 'Admin',
   [Role.SUPER_ADMIN]: 'Super Admin',
 };
+
+// The actual role value the API sends (app_users.role, JWT claims) and accepts back on
+// PATCH /v1/admin/users/:id/role. SUPER_ADMIN is granted only via invite/access-request
+// approval, never through the general role editor.
+export type UserRoleValue = 'CLIENT' | 'CREATOR' | 'MODERATOR' | 'ADMIN' | 'SUPER_ADMIN';
+export type AssignableRoleValue = Exclude<UserRoleValue, 'SUPER_ADMIN'>;
+
+const ROLE_RANK: Record<UserRoleValue, Role> = {
+  CLIENT: Role.CLIENT,
+  CREATOR: Role.CREATOR,
+  MODERATOR: Role.MODERATOR,
+  ADMIN: Role.ADMIN,
+  SUPER_ADMIN: Role.SUPER_ADMIN,
+};
+
+export function roleRank(role: UserRoleValue | string | null | undefined): Role {
+  return ROLE_RANK[role as UserRoleValue] ?? Role.CLIENT;
+}
+
+export const ASSIGNABLE_ROLE_OPTIONS: Array<{ value: AssignableRoleValue; label: string }> = [
+  'CLIENT',
+  'CREATOR',
+  'MODERATOR',
+  'ADMIN',
+].map((value) => ({ value: value as AssignableRoleValue, label: ROLE_LABELS[ROLE_RANK[value as UserRoleValue]] }));
 
 export const CONTENT_TYPES = ['audio', 'video', 'playlist', 'announcement'] as const;
 export type ContentType = (typeof CONTENT_TYPES)[number];
@@ -40,8 +68,11 @@ export type ContentRequestStatus = (typeof CONTENT_REQUEST_STATUS_OPTIONS)[numbe
 export const SUPPORT_REQUEST_STATUS_OPTIONS = ['open', 'in_progress', 'resolved', 'closed'] as const;
 export type SupportRequestStatus = (typeof SUPPORT_REQUEST_STATUS_OPTIONS)[number];
 
-export const AD_STATUS_OPTIONS = ['draft', 'active', 'paused', 'ended'] as const;
+export const AD_STATUS_OPTIONS = ['draft', 'active', 'paused', 'archived'] as const;
 export type AdStatus = (typeof AD_STATUS_OPTIONS)[number];
+
+export const AD_CAMPAIGN_PLACEMENT_OPTIONS = ['landing', 'home', 'videos', 'player', 'live', 'library', 'search'] as const;
+export type AdCampaignPlacement = (typeof AD_CAMPAIGN_PLACEMENT_OPTIONS)[number];
 
 export const LIVE_STATUS_OPTIONS = ['scheduled', 'live', 'ended'] as const;
 export type LiveStatus = (typeof LIVE_STATUS_OPTIONS)[number];

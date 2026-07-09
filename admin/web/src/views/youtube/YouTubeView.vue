@@ -388,12 +388,23 @@ async function importSelected(): Promise<void> {
   if (!selected.value.size) return;
   importing.value = true;
   try {
-    const selections = Array.from(selected.value).map((id) => ({
-      youtubeVideoId: id,
-      appSections: videoSections.value[id] ?? [],
-      visibility: getVisibility(id),
-      playAsAudio: getPlayAsAudio(id),
-    }));
+    const selections = Array.from(selected.value)
+      .map((id) => videos.value.find((v) => v.youtubeVideoId === id))
+      .filter((v): v is YouTubeVideoItem => Boolean(v))
+      .map((v) => ({
+        youtubeVideoId: v.youtubeVideoId,
+        title: v.title,
+        description: v.description,
+        channelTitle: v.channelTitle,
+        publishedAt: v.publishedAt,
+        thumbnailUrl: v.thumbnailUrl,
+        url: v.url,
+        duration: v.duration,
+        isLive: v.isLive,
+        appSections: videoSections.value[v.youtubeVideoId] ?? [],
+        tags: v.suggestedTags,
+        visibility: getVisibility(v.youtubeVideoId) as 'draft' | 'published',
+      }));
     const { imported } = await importVideos(selections);
     ui.addToast({ tone: 'success', title: `${imported} video${imported !== 1 ? 's' : ''} imported to content` });
     selected.value = new Set();

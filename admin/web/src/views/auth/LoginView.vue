@@ -187,14 +187,12 @@ const facebookLoginUrl = FACEBOOK_LOGIN_URL || null;
 async function onLogin(): Promise<void> {
   try {
     const res = await auth.login(email.value, password.value);
-    if (res.requiresMfa && res.mfaToken) {
+    if (res.mfaRequired) {
       mfaToken.value = res.mfaToken;
       mfaRequired.value = true;
       return;
     }
-    if (!res.requiresMfa) {
-      await router.push('/dashboard');
-    }
+    await router.push('/dashboard');
   } catch {
     // auth.error is set by the store — the template already displays it
   }

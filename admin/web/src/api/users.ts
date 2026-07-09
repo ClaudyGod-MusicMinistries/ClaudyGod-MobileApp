@@ -1,9 +1,10 @@
 import client from './client';
 import type { UserRecord, SupportRequest, PaginatedResponse } from './types';
+import type { AssignableRoleValue, UserRoleValue } from '@/utils/constants';
 
 export interface UserListParams {
   search?: string;
-  role?: number;
+  role?: UserRoleValue;
   page?: number;
   pageSize?: number;
 }
@@ -13,9 +14,9 @@ export async function listUsers(params?: UserListParams): Promise<PaginatedRespo
   return data;
 }
 
-export async function updateUserRole(userId: string, role: number): Promise<UserRecord> {
-  const { data } = await client.patch<UserRecord>(`/v1/admin/users/${userId}/role`, { role });
-  return data;
+export async function updateUserRole(userId: string, role: AssignableRoleValue): Promise<UserRecord> {
+  const { data } = await client.patch<{ user: UserRecord; message: string }>(`/v1/admin/users/${userId}/role`, { role });
+  return data.user;
 }
 
 export interface SupportRequestListParams {

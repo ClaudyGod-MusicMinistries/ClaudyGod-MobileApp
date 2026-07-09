@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { listCampaigns, createCampaign, updateCampaign, generateAdCopy } from '@/api/ads';
+import type { AdCopyRequest } from '@/api/ads';
 import type { AdCampaign, AdCampaignInput, AiAdCopyResponse } from '@/api/types';
 
 export const useAdsStore = defineStore('ads', () => {
@@ -15,7 +16,7 @@ export const useAdsStore = defineStore('ads', () => {
     isLoading.value = true;
     error.value = null;
     try {
-      const res = await listCampaigns({ status, page: 1 });
+      const res = await listCampaigns({ status });
       campaigns.value = res.items;
       total.value = res.total;
     } catch (e) {
@@ -42,10 +43,10 @@ export const useAdsStore = defineStore('ads', () => {
     campaigns.value = campaigns.value.map((c) => (c.id === id ? updated : c));
   }
 
-  async function generateCopy(prompt: string): Promise<AiAdCopyResponse> {
+  async function generateCopy(input: AdCopyRequest): Promise<AiAdCopyResponse> {
     isGenerating.value = true;
     try {
-      return await generateAdCopy(prompt);
+      return await generateAdCopy(input);
     } finally {
       isGenerating.value = false;
     }

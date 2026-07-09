@@ -197,17 +197,28 @@ export const updateContentSchema = z
     }
   });
 
+const contentSortFieldSchema = z.enum(['createdAt', 'updatedAt', 'title']);
+const sortDirSchema = z.enum(['asc', 'desc']);
+
 export const listContentQuerySchema = z
   .object({
     page: z.coerce.number().int().min(1).default(1),
-    limit: z.coerce.number().int().min(1).max(100).default(20),
+    limit: z.coerce.number().int().min(1).max(100).optional(),
+    pageSize: z.coerce.number().int().min(1).max(100).optional(),
     type: contentFilterTypeSchema.optional(),
     status: visibilitySchema.optional(),
     visibility: visibilitySchema.optional(),
+    section: optionalTrimmedSearchSchema,
     search: optionalTrimmedSearchSchema,
     updatedAfter: optionalUpdatedAfterSchema,
+    sort: contentSortFieldSchema.optional(),
+    sortDir: sortDirSchema.optional(),
   })
-  .strict();
+  .strict()
+  .transform((value) => ({
+    ...value,
+    limit: value.pageSize ?? value.limit ?? 20,
+  }));
 
 export const contentIdParamsSchema = z
   .object({
@@ -223,6 +234,13 @@ export const contentRequestIdParamsSchema = z
 
 export const updateVisibilitySchema = z
   .object({
+    visibility: visibilitySchema,
+  })
+  .strict();
+
+export const bulkUpdateVisibilitySchema = z
+  .object({
+    ids: z.array(z.string().uuid()).min(1).max(200),
     visibility: visibilitySchema,
   })
   .strict();

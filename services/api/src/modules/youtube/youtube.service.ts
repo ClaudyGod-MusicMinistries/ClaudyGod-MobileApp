@@ -461,6 +461,71 @@ export async function syncYouTubeVideosToContent(params: {
   };
 }
 
+export async function getYouTubeSyncStatus(): Promise<{
+  channelId: string | null;
+  channelTitle: string | null;
+  lastSyncedAt: string | null;
+  videoCount: number;
+  status: 'idle' | 'syncing' | 'error';
+}> {
+  const [countResult, latestVideoResult, latestRunResult] = await Promise.all([
+    pool.query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM content_items WHERE source_kind = 'youtube'`,
+    ),
+    pool.query<{ channel_name: string | null }>(
+      `SELECT channel_name FROM content_items
+       WHERE source_kind = 'youtube' AND channel_name IS NOT NULL
+       ORDER BY updated_at DESC LIMIT 1`,
+    ),
+    pool.query<{ status: 'pending' | 'processing' | 'completed' | 'failed'; created_at: string | Date }>(
+      `SELECT status, created_at FROM automation_runs
+       WHERE run_type IN ('youtube_sync', 'youtube_curated_import')
+       ORDER BY created_at DESC LIMIT 1`,
+    ).catch(() => ({ rows: [] as Array<{ status: 'pending' | 'processing' | 'completed' | 'failed'; created_at: string | Date }> })),
+  ]);
+
+  const latestRun = latestRunResult.rows[0] ?? null;
+
+  return {
+    channelId: env.YOUTUBE_CHANNEL_ID || null,
+    channelTitle: latestVideoResult.rows[0]?.channel_name ?? null,
+    lastSyncedAt: latestRun ? new Date(latestRun.created_at).toISOString() : null,
+    videoCount: Number(countResult.rows[0]?.count ?? 0),
+    status: latestRun?.status === 'failed' ? 'error' : 'idle',
+  };
+}
+
+export async function listYouTubeImportQueue(): Promise<
+  Array<{
+    id: string;
+    videoId: string;
+    title: string;
+    status: 'pending' | 'imported' | 'skipped' | 'error';
+    importedAt: string | null;
+  }>
+> {
+  const result = await pool.query<{
+    id: string;
+    external_source_id: string | null;
+    title: string;
+    created_at: string | Date;
+  }>(
+    `SELECT id, external_source_id, title, created_at
+     FROM content_items
+     WHERE source_kind = 'youtube'
+     ORDER BY created_at DESC
+     LIMIT 50`,
+  );
+
+  return result.rows.map((row) => ({
+    id: row.id,
+    videoId: row.external_source_id ?? '',
+    title: row.title,
+    status: 'imported' as const,
+    importedAt: new Date(row.created_at).toISOString(),
+  }));
+}
+
 export async function importYouTubeSelectionsToContent(params: {
   actorUserId: string;
   selections: Array<{

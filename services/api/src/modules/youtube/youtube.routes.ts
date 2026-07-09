@@ -4,9 +4,41 @@ import { UnauthorizedError } from '../../lib/errors';
 import { validateSchema } from '../../lib/validation';
 import { authenticate } from '../../middleware/authenticate';
 import { youtubeImportSchema, youtubeListQuerySchema, youtubeSyncSchema } from './youtube.schema';
-import { fetchYouTubeVideos, importYouTubeSelectionsToContent, syncYouTubeVideosToContent } from './youtube.service';
+import {
+  fetchYouTubeVideos,
+  getYouTubeSyncStatus,
+  importYouTubeSelectionsToContent,
+  listYouTubeImportQueue,
+  syncYouTubeVideosToContent,
+} from './youtube.service';
 
 export const youtubeRouter = Router();
+
+youtubeRouter.get(
+  '/status',
+  authenticate,
+  asyncHandler(async (req, res) => {
+    if (!req.user) {
+      throw new UnauthorizedError('Unauthorized', 'AUTH_REQUIRED');
+    }
+
+    const result = await getYouTubeSyncStatus();
+    res.status(200).json(result);
+  }),
+);
+
+youtubeRouter.get(
+  '/imports',
+  authenticate,
+  asyncHandler(async (req, res) => {
+    if (!req.user) {
+      throw new UnauthorizedError('Unauthorized', 'AUTH_REQUIRED');
+    }
+
+    const result = await listYouTubeImportQueue();
+    res.status(200).json(result);
+  }),
+);
 
 youtubeRouter.get(
   '/videos',

@@ -1,5 +1,5 @@
 import client from './client';
-import type { LoginResponse, AdminUser } from './types';
+import type { LoginResponse, LoginSuccessResponse, AdminUser } from './types';
 
 export interface InviteValidation {
   id: string;
@@ -23,8 +23,8 @@ export async function login(email: string, password: string): Promise<LoginRespo
   return data;
 }
 
-export async function loginWithMfa(mfaToken: string, code: string): Promise<LoginResponse> {
-  const { data } = await client.post<LoginResponse>('/v1/auth/mfa/verify', { mfaToken, code });
+export async function loginWithMfa(mfaToken: string, code: string): Promise<LoginSuccessResponse> {
+  const { data } = await client.post<LoginSuccessResponse>('/v1/auth/mfa/verify', { mfaToken, code });
   return data;
 }
 
@@ -53,8 +53,8 @@ export async function acceptInvite(input: {
   name: string;
   displayName: string;
   password: string;
-}): Promise<LoginResponse> {
-  const { data } = await client.post<LoginResponse>('/v1/auth/invitations/accept', input);
+}): Promise<LoginSuccessResponse> {
+  const { data } = await client.post<LoginSuccessResponse>('/v1/auth/invitations/accept', input);
   return data;
 }
 
@@ -78,8 +78,8 @@ export async function registerWithCode(input: {
   username: string;
   role: 'ADMIN' | 'MODERATOR' | 'CREATOR';
   adminSignupCode: string;
-}): Promise<LoginResponse> {
-  const { data } = await client.post<LoginResponse>('/v1/auth/register', input);
+}): Promise<LoginSuccessResponse> {
+  const { data } = await client.post<LoginSuccessResponse>('/v1/auth/register', input);
   return data;
 }
 

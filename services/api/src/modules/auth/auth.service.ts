@@ -44,7 +44,7 @@ import type {
   VerifyEmailInput,
 } from './auth.types';
 
-type AuthTokenType = 'email_verification' | 'password_reset';
+type AuthTokenType = 'email_verification' | 'password_reset' | 'mfa_step_up';
 
 interface QueryRunner {
   query: PoolClient['query'];
@@ -775,6 +775,41 @@ export const loginUser = async (input: LoginInput, context: AuthRequestContext =
     accessToken: buildAccessToken(safeUser),
     user: safeUser,
   };
+};
+
+export const verifyMfaLogin = async (
+  input: { mfaToken: string; code: string },
+  context: AuthRequestContext = {},
+): Promise<Pick<AuthResponse, 'user' | 'message'>> => {
+  const { user_id: userId } = await consumeAuthActionToken({
+    rawToken: input.mfaToken,
+    tokenType: 'mfa_step_up',
+  });
+
+  const isMfaValid = await validateMfaCode(userId, input.code);
+  if (!isMfaValid) {
+    await recordSecurityEvent(userId, 'login_mfa_failed', {
+      ip: context.requestIp, userAgent: context.userAgent,
+    });
+    throw new UnauthorizedError('Invalid MFA code', 'MFA_INVALID_CODE');
+  }
+
+  const safeUser = await getUserById(userId);
+
+  await Promise.all([
+    clearFailedLogins(userId),
+    pool.query(`UPDATE app_users SET last_login_at = NOW() WHERE id = $1`, [userId]),
+    recordAuthActivity({
+      userId: safeUser.id, email: safeUser.email,
+      eventKey: 'login_success', status: 'success',
+      requestIp: context.requestIp, userAgent: context.userAgent,
+    }),
+    recordSecurityEvent(safeUser.id, 'login_success', {
+      ip: context.requestIp, userAgent: context.userAgent,
+    }),
+  ]);
+
+  return { user: safeUser };
 };
 
 export const verifyEmail = async (input: VerifyEmailInput, context: AuthRequestContext = {}): Promise<AuthResponse> => {

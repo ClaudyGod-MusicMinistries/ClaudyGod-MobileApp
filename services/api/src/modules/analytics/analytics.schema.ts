@@ -6,3 +6,9 @@ export const mostPlayedQuerySchema = z
     windowDays: z.coerce.number().int().min(1).max(365).default(90),
   })
   .strict();
+
+export const adminContentInsightsQuerySchema = z
+  .object({
+    limit: z.coerce.number().int().min(1).max(50).default(20),
+  })
+  .strict();

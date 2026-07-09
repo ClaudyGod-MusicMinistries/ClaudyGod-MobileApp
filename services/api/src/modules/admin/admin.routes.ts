@@ -9,6 +9,8 @@ import {
   adminUserIdParamsSchema,
   createInvitationSchema,
   invitationIdParamsSchema,
+  listAdminSupportRequestsQuerySchema,
+  listAdminUsersQuerySchema,
   sendAdminTestEmailSchema,
   supportRequestIdParamsSchema,
   updateAdminUserRoleSchema,
@@ -18,7 +20,9 @@ import {
   getAdminContentSectionSuggestions,
   getAdminEmailDiagnostics,
   getAdminDashboard,
+  listAdminSupportRequests,
   listAdminUnassignedContent,
+  listAdminUsers,
   sendAdminTestEmail,
   updateAdminUserRole,
   updateAdminSupportRequestStatus,
@@ -106,6 +110,26 @@ adminRouter.post(
       actor,
     });
     res.status(202).json(result);
+  }),
+);
+
+adminRouter.get(
+  '/users',
+  asyncHandler(async (req, res) => {
+    requireAdmin(req);
+    const query = validateSchema(listAdminUsersQuerySchema, req.query);
+    const result = await listAdminUsers(query);
+    res.status(200).json(result);
+  }),
+);
+
+adminRouter.get(
+  '/support-requests',
+  asyncHandler(async (req, res) => {
+    requireAdmin(req);
+    const query = validateSchema(listAdminSupportRequestsQuerySchema, req.query);
+    const result = await listAdminSupportRequests(query);
+    res.status(200).json(result);
   }),
 );
 

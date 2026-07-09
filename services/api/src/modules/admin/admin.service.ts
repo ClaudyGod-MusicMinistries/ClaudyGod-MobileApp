@@ -72,6 +72,7 @@ interface SupportRow {
   message: string;
   priority: 'low' | 'normal' | 'high' | 'urgent';
   created_at: string | Date;
+  updated_at: string | Date;
   user_id: string | null;
   display_name: string | null;
   email: string | null;
@@ -100,7 +101,9 @@ interface RecentManagedContentRow {
   id: string;
   title: string;
   description: string;
+  content_type: string;
   visibility: ContentVisibility;
+  created_at: string | Date;
   updated_at: string | Date;
 }
 
@@ -212,6 +215,11 @@ const toAdminRecentUser = (row: RecentUserRow, redactEmail = false) => ({
   createdAt: toIso(row.created_at),
   lastLoginAt: row.last_login_at ? toIso(row.last_login_at) : null,
   emailVerifiedAt: row.email_verified_at ? toIso(row.email_verified_at) : null,
+});
+
+const toAdminUserRecord = (row: RecentUserRow) => ({
+  ...toAdminRecentUser(row),
+  isVerified: Boolean(row.email_verified_at),
 });
 
 const getEmailDeliverySummaryResult = () =>
@@ -465,7 +473,9 @@ const getScopedRecentManagedContentResult = (requester: JwtClaims) => {
          id::text,
          title,
          description,
+         content_type,
          visibility,
+         created_at,
          updated_at
        FROM content_items
        ORDER BY updated_at DESC, created_at DESC
@@ -478,7 +488,9 @@ const getScopedRecentManagedContentResult = (requester: JwtClaims) => {
        id::text,
        title,
        description,
+       content_type,
        visibility,
+       created_at,
        updated_at
      FROM content_items
      WHERE author_id = $1
@@ -1098,7 +1110,9 @@ export const getAdminDashboard = async (requester: JwtClaims) => {
         id: row.id,
         title: row.title,
         description: row.description,
+        type: row.content_type,
         visibility: row.visibility,
+        createdAt: toIso(row.created_at),
         updatedAt: toIso(row.updated_at),
       })),
     },
@@ -1344,7 +1358,7 @@ export const updateAdminUserRole = async (input: {
 
   if (existing.role === input.role) {
     return {
-      user: toAdminRecentUser(existing),
+      user: toAdminUserRecord(existing),
       message: 'Role already matches the selected value.',
     };
   }
@@ -1399,8 +1413,142 @@ export const updateAdminUserRole = async (input: {
   });
 
   return {
-    user: toAdminRecentUser(updated),
+    user: toAdminUserRecord(updated),
     message: `User role updated to ${input.role}.`,
+  };
+};
+
+export const listAdminUsers = async (params: {
+  search?: string;
+  role?: UserRole;
+  page: number;
+  pageSize: number;
+}) => {
+  const values: Array<string | number> = [];
+  const conditions: string[] = [];
+
+  if (params.search) {
+    values.push(`%${params.search}%`);
+    conditions.push(`(email ILIKE $${values.length} OR display_name ILIKE $${values.length})`);
+  }
+
+  if (params.role) {
+    values.push(params.role);
+    conditions.push(`role = $${values.length}`);
+  }
+
+  const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+  const offset = (params.page - 1) * params.pageSize;
+
+  values.push(params.pageSize, offset);
+  const limitParam = values.length - 1;
+  const offsetParam = values.length;
+
+  const [dataResult, countResult] = await Promise.all([
+    pool.query<RecentUserRow>(
+      `SELECT
+         id,
+         email,
+         display_name,
+         role,
+         auth_provider,
+         created_at,
+         last_login_at,
+         email_verified_at
+       FROM app_users
+       ${whereClause}
+       ORDER BY created_at DESC
+       LIMIT $${limitParam}
+       OFFSET $${offsetParam}`,
+      values,
+    ),
+    pool.query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM app_users ${whereClause}`,
+      values.slice(0, values.length - 2),
+    ),
+  ]);
+
+  const total = Number(countResult.rows[0]!.count);
+
+  return {
+    items: dataResult.rows.map((row) => toAdminUserRecord(row)),
+    total,
+    page: params.page,
+    pageSize: params.pageSize,
+    hasMore: params.page * params.pageSize < total,
+  };
+};
+
+export const listAdminSupportRequests = async (params: {
+  status?: 'open' | 'in_progress' | 'resolved' | 'closed';
+  page: number;
+  pageSize: number;
+}) => {
+  const values: Array<string | number> = [];
+  const conditions: string[] = [];
+
+  if (params.status) {
+    values.push(params.status);
+    conditions.push(`s.status = $${values.length}`);
+  }
+
+  const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+  const offset = (params.page - 1) * params.pageSize;
+
+  values.push(params.pageSize, offset);
+  const limitParam = values.length - 1;
+  const offsetParam = values.length;
+
+  const [dataResult, countResult] = await Promise.all([
+    pool.query<SupportRow>(
+      `SELECT
+         s.id,
+         s.status,
+         s.category,
+         s.subject,
+         s.message,
+         s.priority,
+         s.created_at,
+         s.updated_at,
+         u.id AS user_id,
+         u.display_name,
+         u.email
+       FROM support_requests s
+       LEFT JOIN app_users u ON u.id = s.user_id
+       ${whereClause}
+       ORDER BY s.created_at DESC
+       LIMIT $${limitParam}
+       OFFSET $${offsetParam}`,
+      values,
+    ),
+    pool.query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM support_requests s ${whereClause}`,
+      values.slice(0, values.length - 2),
+    ),
+  ]);
+
+  const total = Number(countResult.rows[0]!.count);
+
+  return {
+    items: dataResult.rows.map((row) => ({
+      id: row.id,
+      subject: row.subject,
+      message: row.message,
+      status: row.status,
+      createdAt: toIso(row.created_at),
+      updatedAt: toIso(row.updated_at),
+      user: row.user_id
+        ? {
+            id: row.user_id,
+            displayName: row.display_name ?? 'Unknown user',
+            email: row.email ?? '',
+          }
+        : null,
+    })),
+    total,
+    page: params.page,
+    pageSize: params.pageSize,
+    hasMore: params.page * params.pageSize < total,
   };
 };
 
@@ -1408,11 +1556,20 @@ export const updateAdminSupportRequestStatus = async (input: {
   requestId: string;
   status: 'open' | 'in_progress' | 'resolved' | 'closed';
 }) => {
-  const result = await pool.query<{ id: string }>(
-    `UPDATE support_requests
+  const result = await pool.query<SupportRow>(
+    `UPDATE support_requests s
      SET status = $2, updated_at = NOW()
-     WHERE id = $1
-     RETURNING id`,
+     WHERE s.id = $1
+     RETURNING
+       s.id,
+       s.status,
+       s.category,
+       s.subject,
+       s.message,
+       s.priority,
+       s.created_at,
+       s.updated_at,
+       s.user_id`,
     [input.requestId, input.status],
   );
 
@@ -1420,7 +1577,30 @@ export const updateAdminSupportRequestStatus = async (input: {
     throw new NotFoundError('Support request not found', 'SUPPORT_REQUEST_NOT_FOUND');
   }
 
-  return { updated: true, id: input.requestId, status: input.status };
+  const row = result.rows[0]!;
+  const userResult = row.user_id
+    ? await pool.query<{ display_name: string | null; email: string }>(
+        `SELECT display_name, email FROM app_users WHERE id = $1`,
+        [row.user_id],
+      )
+    : null;
+  const userRow = userResult?.rows[0];
+
+  return {
+    id: row.id,
+    subject: row.subject,
+    message: row.message,
+    status: row.status,
+    createdAt: toIso(row.created_at),
+    updatedAt: toIso(row.updated_at),
+    user: row.user_id
+      ? {
+          id: row.user_id,
+          displayName: userRow?.display_name ?? 'Unknown user',
+          email: userRow?.email ?? '',
+        }
+      : null,
+  };
 };
 
 export const listAdminUnassignedContent = async (params: {

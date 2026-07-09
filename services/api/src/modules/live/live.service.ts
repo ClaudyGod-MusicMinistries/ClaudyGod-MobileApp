@@ -276,8 +276,15 @@ const getLiveSessionRowById = async (sessionId: string): Promise<LiveSessionRow>
   return result.rows[0]!;
 };
 
-export const listAdminLiveSessions = async (actor: JwtClaims): Promise<{
+export const listAdminLiveSessions = async (
+  actor: JwtClaims,
+  params: { status?: 'scheduled' | 'live' | 'ended' | 'cancelled'; page: number; pageSize: number },
+): Promise<{
   items: LiveSession[];
+  total: number;
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
   summary: {
     total: number;
     live: number;
@@ -288,23 +295,60 @@ export const listAdminLiveSessions = async (actor: JwtClaims): Promise<{
 }> => {
   assertAdmin(actor);
 
-  const result = await pool.query<LiveSessionRow>(
-    `${liveSessionBaseSelect}
-     ${liveSessionGroupBy}
-     ${liveSessionOrder}`,
+  const whereClause = params.status ? 'WHERE ls.status = $1' : '';
+  const offset = (params.page - 1) * params.pageSize;
+  const values: unknown[] = params.status ? [params.status, params.pageSize, offset] : [params.pageSize, offset];
+  const limitParam = params.status ? 2 : 1;
+  const offsetParam = params.status ? 3 : 2;
+
+  const [dataResult, countResult, summaryResult] = await Promise.all([
+    pool.query<LiveSessionRow>(
+      `${liveSessionBaseSelect}
+       ${whereClause}
+       ${liveSessionGroupBy}
+       ${liveSessionOrder}
+       LIMIT $${limitParam}
+       OFFSET $${offsetParam}`,
+      values,
+    ),
+    pool.query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM live_sessions ls ${whereClause}`,
+      params.status ? [params.status] : [],
+    ),
+    pool.query<{ status: string; count: string }>(
+      `SELECT status, COUNT(*)::text AS count FROM live_sessions GROUP BY status`,
+    ),
+  ]);
+
+  const items = dataResult.rows.map(toLiveSession);
+  const total = Number(countResult.rows[0]?.count ?? 0);
+  const summaryByStatus = new Map(summaryResult.rows.map((row) => [row.status, Number(row.count)]));
+  const totalMessagesResult = await pool.query<{ count: string }>(
+    `SELECT COUNT(*)::text AS count FROM live_session_messages WHERE status = 'visible'`,
   );
 
-  const items = result.rows.map(toLiveSession);
   return {
     items,
+    total,
+    page: params.page,
+    pageSize: params.pageSize,
+    hasMore: params.page * params.pageSize < total,
     summary: {
-      total: items.length,
-      live: items.filter((item) => item.status === 'live').length,
-      upcoming: items.filter((item) => item.status === 'scheduled').length,
-      archive: items.filter((item) => item.status === 'ended').length,
-      totalMessages: items.reduce((sum, item) => sum + item.messageCount, 0),
+      total: Array.from(summaryByStatus.values()).reduce((sum, n) => sum + n, 0),
+      live: summaryByStatus.get('live') ?? 0,
+      upcoming: summaryByStatus.get('scheduled') ?? 0,
+      archive: summaryByStatus.get('ended') ?? 0,
+      totalMessages: Number(totalMessagesResult.rows[0]?.count ?? 0),
     },
   };
+};
+
+export const deleteAdminLiveSession = async (actor: JwtClaims, sessionId: string): Promise<void> => {
+  assertAdmin(actor);
+  const result = await pool.query(`DELETE FROM live_sessions WHERE id = $1`, [sessionId]);
+  if ((result.rowCount ?? 0) === 0) {
+    throw new NotFoundError('Live session not found', 'LIVE_SESSION_NOT_FOUND');
+  }
 };
 
 export const getAdminLiveSessionDetail = async (actor: JwtClaims, sessionId: string): Promise<LiveSessionDetail> => {

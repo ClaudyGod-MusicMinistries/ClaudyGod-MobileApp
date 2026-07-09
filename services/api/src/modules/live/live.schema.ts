@@ -99,6 +99,14 @@ export const listLiveSessionsQuerySchema = z
   })
   .strict();
 
+export const listAdminLiveSessionsQuerySchema = z
+  .object({
+    status: liveSessionStatusSchema.optional(),
+    page: z.coerce.number().int().min(1).default(1),
+    pageSize: z.coerce.number().int().min(1).max(100).default(50),
+  })
+  .strict();
+
 export const createLiveMessageSchema = z
   .object({
     kind: liveMessageKindSchema.default('comment'),

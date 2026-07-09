@@ -19,7 +19,13 @@ adminAdsRouter.get(
 
     const query = validateSchema(listAdCampaignsQuerySchema, req.query);
     const items = await listAdCampaigns(query);
-    res.status(200).json({ items });
+    res.status(200).json({
+      items,
+      total: items.length,
+      page: 1,
+      pageSize: items.length,
+      hasMore: false,
+    });
   }),
 );
 

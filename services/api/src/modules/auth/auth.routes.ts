@@ -37,6 +37,7 @@ import {
   requestPasswordReset,
   resetPassword,
   verifyEmail,
+  verifyMfaLogin,
   createAccessRequest,
 } from './auth.service';
 import { requestEmailOtp, verifyEmailOtp } from './emailOtp.service';
@@ -107,6 +108,14 @@ function getAuthRequestContext(req: Request) {
 
 async function handleSignIn(req: Request, res: Response) {
   const result = await loginUser(req.validated, getAuthRequestContext(req));
+  if (result.mfaRequired) {
+    res.status(200).json({
+      mfaRequired: true,
+      mfaToken: result.mfaToken,
+      message: result.message ?? 'MFA verification required',
+    });
+    return;
+  }
   const session = await buildSessionPayload(result, req);
   respondWithAuthSession(req, res, session, 200);
 }
@@ -148,6 +157,22 @@ authRouter.post(
   authLimiter,
   validateBody(signInSchema),
   asyncHandler(handleSignIn),
+);
+
+const mfaVerifyLoginSchema = z.object({
+  mfaToken: z.string().min(32, 'Invalid MFA token'),
+  code: z.string().trim().min(6).max(8),
+});
+
+authRouter.post(
+  '/mfa/verify',
+  authLimiter,
+  asyncHandler(async (req, res) => {
+    const { mfaToken, code } = validateSchema(mfaVerifyLoginSchema, req.body);
+    const result = await verifyMfaLogin({ mfaToken, code }, getAuthRequestContext(req));
+    const session = await buildSessionPayload(result, req);
+    respondWithAuthSession(req, res, session, 200);
+  }),
 );
 
 authRouter.post(

@@ -118,13 +118,18 @@ export interface ContentListQuery {
   type?: ContentFilterType;
   status?: ContentVisibility;
   visibility?: ContentVisibility;
+  section?: string;
   search?: string;
   updatedAfter?: string;
+  sort?: 'createdAt' | 'updatedAt' | 'title';
+  sortDir?: 'asc' | 'desc';
 }
 
 export interface ContentListResponse {
   page: number;
   limit: number;
+  pageSize: number;
   total: number;
+  hasMore: boolean;
   items: ContentItem[];
 }

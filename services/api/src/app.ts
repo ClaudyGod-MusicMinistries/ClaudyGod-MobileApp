@@ -10,7 +10,7 @@ import { errorHandler } from './middleware/errorHandler';
 import { notFoundHandler } from './middleware/notFoundHandler';
 import { requestTrackingMiddleware } from './middleware/requestTracking';
 import { apiLimiter } from './middleware/rateLimiter';
-import { analyticsRouter } from './modules/analytics/analytics.routes';
+import { adminAnalyticsRouter, analyticsRouter } from './modules/analytics/analytics.routes';
 import { adminRouter } from './modules/admin/admin.routes';
 import { adminStorageRouter } from './modules/admin/storage.routes';
 import { adminAiRouter } from './modules/ai/ai.routes';
@@ -209,6 +209,7 @@ export const createApp = () => {
   app.use('/v1/admin/ai', adminAiRouter);
   app.use('/v1/admin/app-config', adminAppConfigRouter);
   app.use('/v1/admin/word-of-day', adminWordOfDayRouter);
+  app.use('/v1/admin/analytics', adminAnalyticsRouter);
   app.use('/v1/youtube', youtubeRouter);
   app.use('/v1/search', searchRouter);
   app.use('/v1/me/devices', devicesRouter);
