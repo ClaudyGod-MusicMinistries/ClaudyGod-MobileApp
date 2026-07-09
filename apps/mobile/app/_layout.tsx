@@ -129,7 +129,7 @@ function RootLayoutInner() {
           options={{ animation: 'slide_from_right' }}
         />
         <Stack.Screen
-          name="live"
+          name="live/[sessionId]"
           options={{ animation: 'slide_from_right' }}
         />
       </Stack>
