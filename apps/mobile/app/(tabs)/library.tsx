@@ -12,6 +12,8 @@ import { useAppTheme } from '../../util/colorScheme';
 import { useDeviceClass } from '../../util/deviceClassConfig';
 import { makeStyles } from '../../styles/makeStyles';
 import { useContentFeed } from '../../hooks/useContentFeed';
+import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
+import { getLibraryLayoutSections, deriveLayoutSectionItems } from '../../util/mobileLayout';
 import { InlineErrorBanner } from '../../components/ui/InlineErrorBanner';
 import { useToast } from '../../context/ToastContext';
 import { useLocalContent } from '../../hooks/useLocalContent';
@@ -132,13 +134,20 @@ export default function LibraryScreen() {
   const device = useDeviceClass();
   const { showToast } = useToast();
   const { feed, loading, error, refresh } = useContentFeed();
+  const { config: appConfig } = useMobileAppConfig();
   const { favorites, history, loaded, removeFromFavorites } = useLocalContent();
   const [activeTab, setActiveTab] = useState<LibTab>('saved');
   const [removingId, setRemovingId]     = useState<string | null>(null);
   const [removeTarget, setRemoveTarget] = useState<FeedCardItem | null>(null);
   const [isRemoving, setIsRemoving]     = useState(false);
 
-  const recommended = useMemo(
+  const librarySections = useMemo(() => getLibraryLayoutSections(appConfig), [appConfig]);
+  const sectionItems = useMemo(
+    () => librarySections.map((section) => ({ section, items: deriveLayoutSectionItems(feed, section) })),
+    [librarySections, feed],
+  );
+
+  const recommendedFallback = useMemo(
     () => dedupeFeedItems([...favorites, ...feed.recent, ...feed.music, ...feed.playlists]),
     [favorites, feed.music, feed.playlists, feed.recent],
   );
@@ -263,10 +272,21 @@ export default function LibraryScreen() {
               </FadeIn>
             ) : null}
 
-            {loaded && recommended.length > 0 ? (
+            {loaded && sectionItems.some(({ items }) => items.length > 0) ? (
+              sectionItems.map(({ section, items }) => (
+                items.length > 0 ? (
+                  <ContentList
+                    key={section.id}
+                    title={section.title}
+                    items={items}
+                    onPressItem={(item) => void openItem(item, `library_${section.id}`)}
+                  />
+                ) : null
+              ))
+            ) : loaded && recommendedFallback.length > 0 ? (
               <ContentList
                 title="Recommended for you"
-                items={recommended}
+                items={recommendedFallback}
                 onPressItem={(item) => void openItem(item, 'library_recommended')}
               />
             ) : null}

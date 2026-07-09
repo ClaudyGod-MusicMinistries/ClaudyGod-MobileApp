@@ -2,13 +2,13 @@ import client from './client';
 import type { AppConfig, WordOfDay, WordOfDayInput } from './types';
 
 export async function getAppConfig(): Promise<AppConfig> {
-  const { data } = await client.get<AppConfig>('/v1/admin/app-config');
-  return data;
+  const { data } = await client.get<{ config: AppConfig; meta: { key: string; updatedAt: string } }>('/v1/admin/app-config');
+  return data.config;
 }
 
 export async function updateAppConfig(config: AppConfig): Promise<AppConfig> {
-  const { data } = await client.put<AppConfig>('/v1/admin/app-config', config);
-  return data;
+  const { data } = await client.put<{ config: AppConfig; meta: { key: string; updatedAt: string } }>('/v1/admin/app-config', { config });
+  return data.config;
 }
 
 export async function listWordsOfDay(): Promise<WordOfDay[]> {

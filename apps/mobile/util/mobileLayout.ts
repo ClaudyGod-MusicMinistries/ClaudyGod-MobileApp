@@ -64,5 +64,10 @@ export function deriveLayoutSectionItems(feed: FeedBundle, section: MobileLayout
     return curated.slice(0, section.maxItems);
   }
 
-  return [];
+  // No content has been tagged into this section yet (e.g. it was just created) —
+  // fall back to a type-based sample so the section isn't a blank gap.
+  const typeFallback = pool.filter(
+    (item) => item.type !== 'ad' && section.contentTypes.includes(item.type),
+  );
+  return typeFallback.slice(0, section.maxItems);
 }

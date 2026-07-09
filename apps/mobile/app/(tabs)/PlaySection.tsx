@@ -10,9 +10,11 @@ import { TVTouchable } from '../../components/ui/TVTouchable';
 import { useToast } from '../../context/ToastContext';
 import { useAppTheme } from '../../util/colorScheme';
 import { useContentFeed } from '../../hooks/useContentFeed';
+import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
+import { getPlayerLayoutSections, deriveLayoutSectionItems } from '../../util/mobileLayout';
 import { InlineErrorBanner } from '../../components/ui/InlineErrorBanner';
 import { makeStyles } from '../../styles/makeStyles';
-import type { ContentType, FeedBundle, FeedCardItem } from '../../services/contentService';
+import type { FeedCardItem } from '../../services/contentService';
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
 import { APP_ROUTES } from '../../util/appRoutes';
 import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
@@ -81,36 +83,14 @@ const useStyles = makeStyles((theme) => ({
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function dedupeItems(items: FeedCardItem[]): FeedCardItem[] {
-  const seen = new Set<string>();
-  return items.filter((item) => {
-    const key = item.mediaUrl?.trim() ? `media:${item.mediaUrl.trim()}` : `id:${item.id}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-}
-
-function buildMusicSections(feed: FeedBundle, limit = 12) {
-  const pool = dedupeItems([...feed.music, ...feed.videos, ...feed.playlists, ...feed.live]);
-  const used = new Set<string>();
-
-  function take(sectionId: string, fallbackTypes: ContentType[]): FeedCardItem[] {
-    const available = pool.filter((item) => !used.has(item.id));
-    const tagged = available.filter((item) => item.appSections?.includes(sectionId));
-    const candidates = tagged.length >= 2 ? tagged : available.filter((item) => (fallbackTypes as string[]).includes(item.type));
-    const sliced = candidates.slice(0, limit);
-    sliced.forEach((item) => used.add(item.id));
-    return sliced;
-  }
-
-  return {
-    music:   take('music', ['audio']),
-    audio:   take('audio', ['audio', 'playlist']),
-    nuggets: take('nuggets-of-truth', ['video']),
-    teens:   take('teens', ['video', 'playlist']),
-  };
-}
+const DESTINATION_ROUTES: Record<string, string> = {
+  home: APP_ROUTES.tabs.home,
+  videos: APP_ROUTES.tabs.videos,
+  player: APP_ROUTES.tabs.player,
+  live: APP_ROUTES.tabs.live,
+  library: APP_ROUTES.tabs.library,
+  search: APP_ROUTES.tabs.search,
+};
 
 type AudioFilter = 'all' | 'songs' | 'messages' | 'playlists';
 
@@ -186,13 +166,18 @@ export default function PlaySection() {
     mediaUrl?: string | string[];
   }>();
   const { feed, loading, error, refresh } = useContentFeed();
+  const { config: appConfig } = useMobileAppConfig();
   const [filter, setFilter] = useState<AudioFilter>('all');
   const [isFavorite, setIsFavorite] = useState(false);
   const [shuffleEnabled, setShuffleEnabled] = useState(false);
   const [repeatMode, setRepeatMode] = useState<RepeatMode>('off');
 
-  const { music: musicItems, audio: audioItems, nuggets: nuggetsItems, teens: teensItems } =
-    useMemo(() => buildMusicSections(feed), [feed]);
+  const playerSections = useMemo(() => getPlayerLayoutSections(appConfig), [appConfig]);
+  const sectionItems = useMemo(
+    () => playerSections.map((section) => ({ section, items: deriveLayoutSectionItems(feed, section) })),
+    [playerSections, feed],
+  );
+  const hasSectionItems = sectionItems.some(({ items }) => items.length > 0);
 
   const routeItem = useMemo(() => parseRouteItem(params), [params]);
   const allQueue = useMemo(
@@ -368,7 +353,7 @@ export default function PlaySection() {
       ) : null}
 
       {/* ── Section separator ────────────────────────────────────────────── */}
-      {(musicItems.length > 0 || audioItems.length > 0 || nuggetsItems.length > 0 || teensItems.length > 0) ? (
+      {hasSectionItems ? (
         <View style={styles.browseRow}>
           <View style={styles.browseLine} />
           <CustomText style={styles.browseLabel}>BROWSE</CustomText>
@@ -376,36 +361,27 @@ export default function PlaySection() {
         </View>
       ) : null}
 
-      {/* ── 4 branded content sections ───────────────────────────────────── */}
-      {(musicItems.length > 0 || audioItems.length > 0 || nuggetsItems.length > 0 || teensItems.length > 0) ? (
+      {/* ── Configured content sections ──────────────────────────────────── */}
+      {hasSectionItems ? (
         <View style={styles.sectionsGap}>
-          {musicItems.length > 0 ? (
-            <View style={styles.sectionRow}>
-              <SectionLabel title="ClaudyGod Music" actionLabel="See all" onAction={() => router.push(APP_ROUTES.tabs.player)} />
-              <ContentRail title="" items={musicItems} loading={loading} onPressItem={(item) => void openItem(item, 'player_music')} cardVariant="portrait" />
-            </View>
-          ) : null}
-
-          {audioItems.length > 0 ? (
-            <View style={styles.sectionRow}>
-              <SectionLabel title="ClaudyGod Audio" actionLabel="See all" onAction={() => router.push(APP_ROUTES.tabs.player)} />
-              <ContentRail title="" items={audioItems} loading={loading} onPressItem={(item) => void openItem(item, 'player_audio')} cardVariant="portrait" />
-            </View>
-          ) : null}
-
-          {nuggetsItems.length > 0 ? (
-            <View style={styles.sectionRow}>
-              <SectionLabel title="Nuggets of Truth" actionLabel="See all" onAction={() => router.push(APP_ROUTES.tabs.videos)} />
-              <ContentRail title="" items={nuggetsItems} loading={loading} onPressItem={(item) => void openItem(item, 'player_nuggets')} cardVariant="landscape" />
-            </View>
-          ) : null}
-
-          {teensItems.length > 0 ? (
-            <View style={styles.sectionRow}>
-              <SectionLabel title="ClaudyGod Teens" actionLabel="See all" onAction={() => router.push(APP_ROUTES.tabs.videos)} />
-              <ContentRail title="" items={teensItems} loading={loading} onPressItem={(item) => void openItem(item, 'player_teens')} cardVariant="landscape" />
-            </View>
-          ) : null}
+          {sectionItems.map(({ section, items }, index) => (
+            items.length > 0 ? (
+              <View key={section.id} style={styles.sectionRow}>
+                <SectionLabel
+                  title={section.title}
+                  actionLabel={section.actionLabel}
+                  onAction={() => router.push((DESTINATION_ROUTES[section.destinationTab] ?? APP_ROUTES.tabs.player) as never)}
+                />
+                <ContentRail
+                  title=""
+                  items={items}
+                  loading={loading}
+                  onPressItem={(item) => void openItem(item, `player_${section.id}`)}
+                  cardVariant={index % 2 === 0 ? 'portrait' : 'landscape'}
+                />
+              </View>
+            ) : null
+          ))}
         </View>
       ) : null}
 
@@ -420,7 +396,7 @@ export default function PlaySection() {
         />
       ) : null}
 
-      {!loading && !allQueue.length && !musicItems.length && !audioItems.length && !nuggetsItems.length && !teensItems.length ? (
+      {!loading && !allQueue.length && !hasSectionItems ? (
         <EmptyState
           title="No music right now"
           message="Try Videos, Live, or Search for something to play."

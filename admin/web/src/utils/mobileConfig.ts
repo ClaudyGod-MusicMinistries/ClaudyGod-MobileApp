@@ -37,8 +37,10 @@ export const AD_PLACEMENT_SCREEN_OPTIONS = [
   { value: 'search', label: 'Search' },
 ] as const;
 
+export type LayoutGroupKey = 'homeSections' | 'videoSections' | 'playerSections' | 'librarySections';
+
 export interface LayoutGroupMeta {
-  key: string;
+  key: LayoutGroupKey;
   title: string;
   description: string;
   defaultActionLabel: string;
@@ -61,7 +63,7 @@ export function cloneMobileConfig<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
-export function createLayoutSection(group: string): Record<string, unknown> {
+export function createLayoutSection(group: LayoutGroupKey): Record<string, unknown> {
   const meta = MOBILE_LAYOUT_GROUPS.find((e) => e.key === group);
   const baseName = meta ? meta.title.toLowerCase() : 'section';
   return {

@@ -9,6 +9,8 @@ import { useToast } from '../../context/ToastContext';
 import { useAppTheme } from '../../util/colorScheme';
 import { makeStyles } from '../../styles/makeStyles';
 import { useContentFeed } from '../../hooks/useContentFeed';
+import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
+import { getVideoLayoutSections, deriveLayoutSectionItems } from '../../util/mobileLayout';
 import { InlineErrorBanner } from '../../components/ui/InlineErrorBanner';
 import type { FeedCardItem } from '../../services/contentService';
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
@@ -105,7 +107,14 @@ export default function VideosScreen() {
     mediaUrl?: string | string[];
   }>();
   const { feed, loading, error, refresh } = useContentFeed();
+  const { config: appConfig } = useMobileAppConfig();
   const [filter, setFilter] = useState<VideoFilter>('all');
+
+  const videoSections = useMemo(() => getVideoLayoutSections(appConfig), [appConfig]);
+  const sectionItems = useMemo(
+    () => videoSections.map((section) => ({ section, items: deriveLayoutSectionItems(feed, section) })),
+    [videoSections, feed],
+  );
 
   const routeItem = useMemo(() => parseRouteItem(params), [params]);
   const allQueue = useMemo(
@@ -219,6 +228,21 @@ export default function VideosScreen() {
           />
         </View>
       ) : null}
+
+      {/* Configured video sections */}
+      {sectionItems.map(({ section, items }) => (
+        items.length > 0 ? (
+          <View key={section.id} style={styles.gap12}>
+            <SectionLabel title={section.title} subtitle={section.subtitle} actionLabel={section.actionLabel} onAction={() => {}} />
+            <ContentRail
+              title=""
+              items={items}
+              loading={loading}
+              onPressItem={(item) => void openItem(item, `videos_${section.id}`)}
+            />
+          </View>
+        ) : null
+      ))}
 
       {/* More to watch — overflow beyond the rail's 14-item limit */}
       {filteredItems.length > 14 ? (
