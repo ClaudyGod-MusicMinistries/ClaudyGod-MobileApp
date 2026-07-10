@@ -1007,6 +1007,10 @@ const migrationStatements = [
   `ALTER TABLE auth_action_tokens DROP CONSTRAINT IF EXISTS auth_action_tokens_token_type_check`,
   `ALTER TABLE auth_action_tokens ADD CONSTRAINT auth_action_tokens_token_type_check
      CHECK (token_type IN ('email_verification', 'password_reset', 'mfa_step_up'))`,
+
+  /* ── Content items: admin-controlled manual ordering ──────────────────────── */
+  `ALTER TABLE content_items ADD COLUMN IF NOT EXISTS sort_order INTEGER`,
+  `CREATE INDEX IF NOT EXISTS idx_content_items_sort_order ON content_items (sort_order)`,
 ];
 
 const MIGRATION_LOCK_ID = 7_246_130_001;

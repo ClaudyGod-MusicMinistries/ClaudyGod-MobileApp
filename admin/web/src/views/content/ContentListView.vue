@@ -6,16 +6,65 @@
         <h2 class="text-base font-bold text-ink">Content library</h2>
         <p class="text-xs text-ink-muted mt-0.5">{{ store.total }} items total</p>
       </div>
-      <RouterLink to="/content/new">
-        <AppButton size="sm">
-          <template #icon-left>
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-          </template>
-          New content
+      <div class="flex gap-2">
+        <AppButton variant="secondary" size="sm" @click="toggleReorderMode">
+          {{ reorderMode ? 'Done reordering' : 'Reorder' }}
         </AppButton>
-      </RouterLink>
+        <RouterLink to="/content/new">
+          <AppButton size="sm">
+            <template #icon-left>
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+            </template>
+            New content
+          </AppButton>
+        </RouterLink>
+      </div>
     </div>
 
+    <!-- Reorder mode -->
+    <template v-if="reorderMode">
+      <AppCard class="p-4 space-y-4">
+        <div class="flex items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <label class="text-xs font-semibold text-ink-muted uppercase tracking-wide">Reordering</label>
+            <AppSelect
+              v-model="reorderType"
+              :options="typeOptions"
+              class="w-40"
+            />
+          </div>
+          <AppButton size="sm" :loading="reorderSaving" @click="saveReorder">Save order</AppButton>
+        </div>
+        <p class="text-xs text-ink-muted">
+          Drag to set the order this content appears in on the mobile app. This order applies wherever this content shows up.
+        </p>
+
+        <div v-if="reorderLoading" class="py-10 text-center text-sm text-ink-muted">Loading…</div>
+        <AppEmptyState v-else-if="!reorderItems.length" title="No content of this type" message="Try a different type." />
+        <draggable
+          v-else
+          v-model="reorderItems"
+          item-key="id"
+          handle=".drag-handle"
+          class="space-y-2"
+        >
+          <template #item="{ element }: { element: ContentItem }">
+            <div class="flex items-center gap-3 p-3 rounded-xl border border-border bg-surface">
+              <span class="drag-handle cursor-grab text-ink-muted shrink-0" title="Drag to reorder">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 8h16M4 16h16"/></svg>
+              </span>
+              <div class="w-9 h-9 rounded-lg bg-white/8 overflow-hidden flex-shrink-0">
+                <img v-if="element.thumbnailUrl" :src="element.thumbnailUrl" alt="" class="w-full h-full object-cover" />
+              </div>
+              <p class="text-sm font-medium text-ink truncate flex-1 min-w-0">{{ element.title }}</p>
+              <StatusBadge :status="element.visibility" />
+            </div>
+          </template>
+        </draggable>
+      </AppCard>
+    </template>
+
+    <template v-else>
     <!-- Filters -->
     <AppCard class="p-4">
       <div class="flex flex-wrap gap-3 items-end">
@@ -112,19 +161,24 @@
       :total="store.total"
       @change="onPageChange"
     />
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue';
+import draggable from 'vuedraggable';
 import { useContentStore } from '@/stores/content.store';
 import { useUiStore } from '@/stores/ui.store';
+import { listContent, reorderContent } from '@/api/content';
+import type { ContentItem } from '@/api/types';
 import AppCard from '@/components/ui/AppCard.vue';
 import AppResponsiveTable from '@/components/ui/AppResponsiveTable.vue';
 import AppBadge from '@/components/ui/AppBadge.vue';
 import AppButton from '@/components/ui/AppButton.vue';
 import AppSelect from '@/components/ui/AppSelect.vue';
 import AppPagination from '@/components/ui/AppPagination.vue';
+import AppEmptyState from '@/components/ui/AppEmptyState.vue';
 import StatusBadge from '@/components/shared/StatusBadge.vue';
 import SearchInput from '@/components/shared/SearchInput.vue';
 
@@ -132,6 +186,12 @@ const store = useContentStore();
 const ui = useUiStore();
 const selectedIds = ref<string[]>([]);
 const bulkLoading = ref(false);
+
+const reorderMode = ref(false);
+const reorderType = ref('audio');
+const reorderItems = ref<ContentItem[]>([]);
+const reorderLoading = ref(false);
+const reorderSaving = ref(false);
 
 const columns = [
   { key: 'title', label: 'Title' },
@@ -176,6 +236,40 @@ function resetFilters(): void {
   store.filters.search = undefined;
   store.filters.page = 1;
   void store.fetchContent();
+}
+
+async function fetchReorderItems(): Promise<void> {
+  reorderLoading.value = true;
+  try {
+    const res = await listContent({ type: reorderType.value, sort: 'sortOrder', sortDir: 'asc', pageSize: 100 });
+    reorderItems.value = res.items;
+  } catch (e) {
+    ui.addToast({ tone: 'danger', title: 'Failed to load items', message: e instanceof Error ? e.message : undefined });
+  } finally {
+    reorderLoading.value = false;
+  }
+}
+
+function toggleReorderMode(): void {
+  reorderMode.value = !reorderMode.value;
+  if (reorderMode.value) void fetchReorderItems();
+}
+
+watch(reorderType, () => {
+  if (reorderMode.value) void fetchReorderItems();
+});
+
+async function saveReorder(): Promise<void> {
+  reorderSaving.value = true;
+  try {
+    const items = reorderItems.value.map((item, idx) => ({ id: item.id, sortOrder: idx }));
+    await reorderContent(items);
+    ui.addToast({ tone: 'success', title: 'Order saved' });
+  } catch (e) {
+    ui.addToast({ tone: 'danger', title: 'Failed to save order', message: e instanceof Error ? e.message : undefined });
+  } finally {
+    reorderSaving.value = false;
+  }
 }
 
 async function toggleVisibility(row: Record<string, unknown>): Promise<void> {
