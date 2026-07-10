@@ -197,7 +197,7 @@ export const updateContentSchema = z
     }
   });
 
-const contentSortFieldSchema = z.enum(['createdAt', 'updatedAt', 'title']);
+const contentSortFieldSchema = z.enum(['createdAt', 'updatedAt', 'title', 'sortOrder']);
 const sortDirSchema = z.enum(['asc', 'desc']);
 
 export const listContentQuerySchema = z
@@ -242,6 +242,22 @@ export const bulkUpdateVisibilitySchema = z
   .object({
     ids: z.array(z.string().uuid()).min(1).max(200),
     visibility: visibilitySchema,
+  })
+  .strict();
+
+export const reorderContentSchema = z
+  .object({
+    items: z
+      .array(
+        z
+          .object({
+            id: z.string().uuid(),
+            sortOrder: z.number().int(),
+          })
+          .strict(),
+      )
+      .min(1)
+      .max(200),
   })
   .strict();
 
