@@ -42,7 +42,7 @@
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2 flex-wrap">
             <p class="text-sm font-semibold text-ink truncate">{{ req.name }}</p>
-            <RolePill :role="roleValue(req.role)" />
+            <RolePill :role="roleRank(req.role)" />
             <span
               :class="[
                 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide',
@@ -136,7 +136,7 @@ import { ref, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/auth.store';
 import { listAccessRequests, approveAccessRequest, rejectAccessRequest } from '@/api/auth';
 import type { AccessRequest } from '@/api/auth';
-import { Role } from '@/utils/constants';
+import { roleRank } from '@/utils/constants';
 import AppButton from '@/components/ui/AppButton.vue';
 import AppCard from '@/components/ui/AppCard.vue';
 import AppSpinner from '@/components/ui/AppSpinner.vue';
@@ -159,16 +159,6 @@ const approveTarget = ref<AccessRequest | null>(null);
 const approveRole = ref<'ADMIN' | 'MODERATOR' | 'CREATOR'>('MODERATOR');
 const approving = ref(false);
 const approveError = ref('');
-
-function roleValue(role: string): Role {
-  const map: Record<string, Role> = {
-    SUPER_ADMIN: Role.SUPER_ADMIN,
-    ADMIN: Role.ADMIN,
-    MODERATOR: Role.MODERATOR,
-    CREATOR: Role.CREATOR,
-  };
-  return map[role] ?? Role.CLIENT;
-}
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });

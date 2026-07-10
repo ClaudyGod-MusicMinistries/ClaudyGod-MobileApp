@@ -15,29 +15,26 @@
       <div class="lg:col-span-2 space-y-5">
         <AppCard class="p-5 space-y-4">
           <AppInput v-model="form.title" label="Title" placeholder="Content title" required />
-          <AppTextarea v-model="form.description" label="Description" placeholder="Describe this content…" :rows="3" />
-          <div class="grid grid-cols-2 gap-4">
-            <AppSelect v-model="form.type" label="Content type" :options="typeOptions" required />
-            <AppSelect v-model="form.visibility" label="Visibility" :options="visibilityOptions" />
-          </div>
+          <AppTextarea v-model="form.description" label="Description" placeholder="Describe this content…" :rows="3" required />
+          <AppSelect v-model="form.type" label="Content type" :options="typeOptions" required />
           <AppInput v-model="form.tags" label="Tags" placeholder="worship, prayer (comma-separated)" hint="Separate tags with commas" />
         </AppCard>
 
         <!-- Artwork -->
         <AppCard class="p-5 space-y-4">
           <h3 class="text-sm font-bold text-ink">Artwork</h3>
-          <div v-if="form.artworkUrl" class="relative">
-            <img :src="form.artworkUrl" alt="Artwork" class="w-32 h-32 rounded-xl object-cover border border-border" />
-            <AppButton variant="ghost" size="xs" class="mt-2 text-danger" @click="form.artworkUrl = ''">Remove</AppButton>
+          <div v-if="form.thumbnailUrl" class="relative">
+            <img :src="form.thumbnailUrl" alt="Artwork" class="w-32 h-32 rounded-xl object-cover border border-border" />
+            <AppButton variant="ghost" size="xs" class="mt-2 text-danger" @click="form.thumbnailUrl = ''; form.thumbnailUploadSessionId = undefined">Remove</AppButton>
           </div>
-          <FileDropzone label="Upload artwork" accept="image/*" @uploaded="form.artworkUrl = $event" />
+          <FileDropzone label="Upload artwork" accept="image/*" @uploaded="onThumbnailUploaded" />
         </AppCard>
 
         <!-- Media -->
         <AppCard class="p-5 space-y-4">
           <h3 class="text-sm font-bold text-ink">Media</h3>
-          <AppInput v-model="form.mediaUrl" label="Media URL" placeholder="https://…" hint="Or upload a file below" />
-          <FileDropzone label="Upload media file" accept="audio/*,video/*" @uploaded="form.mediaUrl = $event" />
+          <AppInput v-model="form.url" label="Media URL" placeholder="https://…" hint="Or upload a file below" @update:model-value="onUrlTyped" />
+          <FileDropzone label="Upload media file" accept="audio/*,video/*" @uploaded="onMediaUploaded" />
         </AppCard>
       </div>
 
@@ -45,13 +42,29 @@
       <div class="space-y-4">
         <AppCard class="p-5 space-y-4">
           <h3 class="text-sm font-bold text-ink">Publishing</h3>
-          <AppSelect v-model="form.status" label="Status" :options="statusOptions" />
-          <AppInput v-model="form.publishedAt" label="Publish date" type="datetime-local" />
+          <AppSelect v-model="form.visibility" label="Visibility" :options="visibilityOptions" />
 
           <!-- App sections multi-select -->
           <div class="space-y-2">
             <p class="text-xs font-medium text-ink-muted">App sections</p>
-            <p class="text-[11px] text-ink-muted">Controls which section of the app this content appears in.</p>
+            <p class="text-[11px] text-ink-muted">
+              Controls which mobile section this content appears in — must match a section's name in
+              Mobile config → Layout sections exactly (case-insensitive).
+            </p>
+
+            <!-- Currently applied tags, including free-typed ones not in the quick-pick list -->
+            <div v-if="form.appSections.length" class="flex flex-wrap gap-2 pt-1">
+              <span
+                v-for="tag in form.appSections"
+                :key="tag"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-primary/20 border border-primary/40 text-primary-soft"
+              >
+                {{ tag }}
+                <button type="button" class="hover:text-danger" @click="toggleSection(tag)">×</button>
+              </span>
+            </div>
+
+            <!-- Quick picks -->
             <div class="flex flex-wrap gap-2 pt-1">
               <button
                 v-for="s in SECTION_OPTIONS"
@@ -68,6 +81,18 @@
                 {{ s.label }}
               </button>
             </div>
+
+            <!-- Free-text add -->
+            <div class="flex gap-2 pt-1">
+              <AppInput
+                v-model="newSectionTag"
+                placeholder="Type a section name and press Enter"
+                class="flex-1"
+                @keydown.enter.prevent="addSectionTag"
+              />
+              <AppButton variant="secondary" size="sm" @click="addSectionTag">Add</AppButton>
+            </div>
+            <p v-if="sectionTagError" class="text-[11px] text-danger">{{ sectionTagError }}</p>
           </div>
         </AppCard>
 
@@ -117,18 +142,35 @@ const SECTION_OPTIONS = [
   { value: 'announcement',     label: 'Announcements' },
 ];
 
-const form = ref({
+interface FormState {
+  title: string;
+  description: string;
+  type: 'audio' | 'video' | 'playlist' | 'announcement';
+  url: string;
+  thumbnailUrl: string;
+  mediaUploadSessionId: string | undefined;
+  thumbnailUploadSessionId: string | undefined;
+  sourceKind: 'upload' | 'external';
+  tags: string;
+  appSections: string[];
+  visibility: 'draft' | 'published';
+}
+
+const emptyForm = (): FormState => ({
   title: '',
   description: '',
   type: 'audio',
-  visibility: 'published',
-  status: 'draft',
-  artworkUrl: '',
-  mediaUrl: '',
+  url: '',
+  thumbnailUrl: '',
+  mediaUploadSessionId: undefined,
+  thumbnailUploadSessionId: undefined,
+  sourceKind: 'upload',
   tags: '',
-  appSections: [] as string[],
-  publishedAt: '',
+  appSections: [],
+  visibility: 'draft',
 });
+
+const form = ref<FormState>(emptyForm());
 
 function toggleSection(value: string): void {
   const idx = form.value.appSections.indexOf(value);
@@ -139,6 +181,43 @@ function toggleSection(value: string): void {
   }
 }
 
+const newSectionTag = ref('');
+const sectionTagError = ref('');
+
+function addSectionTag(): void {
+  const value = newSectionTag.value.trim();
+  sectionTagError.value = '';
+  if (!value) return;
+  if (value.length < 2 || value.length > 80) {
+    sectionTagError.value = 'Section names must be 2-80 characters';
+    return;
+  }
+  if (form.value.appSections.some((s) => s.toLowerCase() === value.toLowerCase())) {
+    newSectionTag.value = '';
+    return;
+  }
+  form.value.appSections.push(value);
+  newSectionTag.value = '';
+}
+
+function onMediaUploaded(payload: { url: string; sessionId: string }): void {
+  form.value.url = payload.url;
+  form.value.mediaUploadSessionId = payload.sessionId;
+  form.value.sourceKind = 'upload';
+}
+
+function onThumbnailUploaded(payload: { url: string; sessionId: string }): void {
+  form.value.thumbnailUrl = payload.url;
+  form.value.thumbnailUploadSessionId = payload.sessionId;
+}
+
+// A manually-typed URL isn't backed by an upload session — mark it external so the
+// backend doesn't expect a session that was never created.
+function onUrlTyped(): void {
+  form.value.sourceKind = 'external';
+  form.value.mediaUploadSessionId = undefined;
+}
+
 onMounted(async () => {
   if (!isNew.value && id.value) {
     await store.fetchOne(id.value);
@@ -147,14 +226,15 @@ onMounted(async () => {
       form.value = {
         title: c.title,
         description: c.description ?? '',
-        type: c.type,
-        visibility: c.visibility,
-        status: c.status,
-        artworkUrl: c.artworkUrl ?? '',
-        mediaUrl: c.mediaUrl ?? '',
+        type: c.type as FormState['type'],
+        url: c.url ?? '',
+        thumbnailUrl: c.thumbnailUrl ?? '',
+        mediaUploadSessionId: undefined,
+        thumbnailUploadSessionId: undefined,
+        sourceKind: c.sourceKind === 'upload' ? 'upload' : 'external',
         tags: c.tags.join(', '),
-        appSections: (c as unknown as { appSections?: string[] }).appSections ?? [],
-        publishedAt: c.publishedAt ?? '',
+        appSections: c.appSections ?? [],
+        visibility: c.visibility,
       };
     }
   }
@@ -166,38 +246,44 @@ const typeOptions = [
   { value: 'playlist', label: 'Playlist' },
   { value: 'announcement', label: 'Announcement' },
 ];
-const statusOptions = [
-  { value: 'draft', label: 'Draft' },
-  { value: 'published', label: 'Published' },
-];
 const visibilityOptions = [
-  { value: 'published', label: 'Public' },
-  { value: 'draft', label: 'Private' },
+  { value: 'published', label: 'Published' },
+  { value: 'draft', label: 'Draft' },
 ];
 
-async function onSave(overrideStatus?: string): Promise<void> {
+async function onSave(overrideVisibility?: 'draft' | 'published'): Promise<void> {
   if (!form.value.title?.trim()) {
-    ui.addToast({ tone: 'error', title: 'Title is required' });
+    ui.addToast({ tone: 'danger', title: 'Title is required' });
     return;
   }
-  if (!form.value.type) {
-    ui.addToast({ tone: 'error', title: 'Content type is required' });
+  if (!form.value.description?.trim()) {
+    ui.addToast({ tone: 'danger', title: 'Description is required' });
+    return;
+  }
+  const requiresUrl = form.value.type === 'audio' || form.value.type === 'video';
+  if (requiresUrl && !form.value.url?.trim()) {
+    ui.addToast({ tone: 'danger', title: 'A media URL or uploaded file is required for audio/video' });
+    return;
+  }
+  if (requiresUrl && form.value.sourceKind === 'upload' && !form.value.thumbnailUrl?.trim()) {
+    ui.addToast({ tone: 'danger', title: 'A thumbnail is required for uploaded audio/video' });
     return;
   }
 
   const tags = form.value.tags.split(',').map((t) => t.trim()).filter(Boolean);
-  const status = (overrideStatus ?? form.value.status) as 'draft' | 'published';
+  const visibility = overrideVisibility ?? form.value.visibility;
   const base = {
     title: form.value.title.trim(),
-    description: form.value.description,
-    type: form.value.type as ContentCreateInput['type'],
-    visibility: form.value.visibility,
-    artworkUrl: form.value.artworkUrl,
-    mediaUrl: form.value.mediaUrl,
+    description: form.value.description.trim(),
+    type: form.value.type,
+    url: form.value.url || undefined,
+    thumbnailUrl: form.value.thumbnailUrl || undefined,
+    mediaUploadSessionId: form.value.mediaUploadSessionId,
+    thumbnailUploadSessionId: form.value.thumbnailUploadSessionId,
+    sourceKind: form.value.sourceKind,
     appSections: form.value.appSections,
-    publishedAt: form.value.publishedAt || undefined,
     tags,
-    status,
+    visibility,
   };
 
   try {
@@ -212,7 +298,7 @@ async function onSave(overrideStatus?: string): Promise<void> {
     void router.push('/content');
   } catch (e) {
     ui.addToast({
-      tone: 'error',
+      tone: 'danger',
       title: 'Save failed',
       message: e instanceof Error ? e.message : 'An unexpected error occurred',
     });

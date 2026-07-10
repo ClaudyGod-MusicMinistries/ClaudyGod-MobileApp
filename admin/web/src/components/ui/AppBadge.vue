@@ -6,9 +6,10 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import type { AppTone } from '@/utils/constants';
 
 const props = withDefaults(defineProps<{
-  tone?: 'primary' | 'success' | 'danger' | 'warning' | 'info' | 'neutral';
+  tone?: AppTone;
 }>(), { tone: 'neutral' });
 
 const toneClass = computed(() => ({

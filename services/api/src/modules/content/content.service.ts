@@ -218,7 +218,9 @@ const enqueuePublishEmail = async (item: ContentItem, actor: JwtClaims): Promise
 const buildListResponse = (rows: ContentRow[], total: number, query: ContentListQuery): ContentListResponse => ({
   page: query.page,
   limit: query.limit,
+  pageSize: query.limit,
   total,
+  hasMore: query.page * query.limit < total,
   items: rows.map(toContentItem),
 });
 
@@ -419,22 +421,31 @@ function normalizeListQuery(query: ContentListQuery): {
   limit: number;
   type?: ContentType;
   visibility?: ContentVisibility;
+  section?: string;
   search?: string;
   updatedAfter?: string;
+  sort?: ContentListQuery['sort'];
+  sortDir?: ContentListQuery['sortDir'];
   unsupportedTypeRequested: boolean;
 } {
   const visibility = query.visibility ?? query.status;
   const requestedType = query.type;
+  const section = query.section?.trim() ? query.section.trim() : undefined;
   const search = query.search?.trim() ? query.search.trim() : undefined;
   const updatedAfter = query.updatedAfter;
+  const sort = query.sort;
+  const sortDir = query.sortDir;
 
   if (!requestedType) {
     return {
       page: query.page,
       limit: query.limit,
       visibility,
+      section,
       search,
       updatedAfter,
+      sort,
+      sortDir,
       unsupportedTypeRequested: false,
     };
   }
@@ -444,8 +455,11 @@ function normalizeListQuery(query: ContentListQuery): {
       page: query.page,
       limit: query.limit,
       visibility,
+      section,
       search,
       updatedAfter,
+      sort,
+      sortDir,
       unsupportedTypeRequested: true,
     };
   }
@@ -455,10 +469,28 @@ function normalizeListQuery(query: ContentListQuery): {
     limit: query.limit,
     type: requestedType as ContentType,
     visibility,
+    section,
     search,
     updatedAfter,
+    sort,
+    sortDir,
     unsupportedTypeRequested: false,
   };
+}
+
+const CONTENT_SORT_COLUMNS: Record<NonNullable<ContentListQuery['sort']>, string> = {
+  createdAt: 'c.created_at',
+  updatedAt: 'c.updated_at',
+  title: 'c.title',
+};
+
+function buildContentOrderByClause(sort?: ContentListQuery['sort'], sortDir?: ContentListQuery['sortDir']): string {
+  if (!sort) {
+    return 'ORDER BY c.updated_at DESC, c.created_at DESC';
+  }
+  const column = CONTENT_SORT_COLUMNS[sort];
+  const direction = sortDir === 'asc' ? 'ASC' : 'DESC';
+  return `ORDER BY ${column} ${direction}`;
 }
 
 export const listPublicContent = async (query: ContentListQuery): Promise<ContentListResponse> => {
@@ -468,7 +500,9 @@ export const listPublicContent = async (query: ContentListQuery): Promise<Conten
     return {
       page: query.page,
       limit: query.limit,
+      pageSize: query.limit,
       total: 0,
+      hasMore: false,
       items: [],
     };
   }
@@ -544,7 +578,9 @@ export const listPublicContent = async (query: ContentListQuery): Promise<Conten
       return {
         page: query.page,
         limit: query.limit,
+        pageSize: query.limit,
         total: 0,
+        hasMore: false,
         items: [],
       };
     }
@@ -564,7 +600,9 @@ export const listManagedContent = async (
     return {
       page: query.page,
       limit: query.limit,
+      pageSize: query.limit,
       total: 0,
+      hasMore: false,
       items: [],
     };
   }
@@ -589,6 +627,11 @@ export const listManagedContent = async (
     conditions.push(`c.visibility = $${values.length}`);
   }
 
+  if (normalized.section) {
+    values.push(normalized.section);
+    conditions.push(`$${values.length} = ANY(c.app_sections)`);
+  }
+
   if (normalized.search) {
     values.push(`%${normalized.search}%`);
     conditions.push(`(c.title ILIKE $${values.length} OR c.description ILIKE $${values.length})`);
@@ -600,6 +643,7 @@ export const listManagedContent = async (
   }
 
   const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+  const orderByClause = buildContentOrderByClause(normalized.sort, normalized.sortDir);
 
   values.push(normalized.limit, offset);
   const limitParam = values.length - 1;
@@ -634,7 +678,7 @@ export const listManagedContent = async (
          FROM content_items c
          INNER JOIN app_users u ON u.id = c.author_id
          ${whereClause}
-         ORDER BY c.updated_at DESC, c.created_at DESC
+         ${orderByClause}
          LIMIT $${limitParam}
          OFFSET $${offsetParam}`,
         values,
@@ -651,7 +695,9 @@ export const listManagedContent = async (
       return {
         page: query.page,
         limit: query.limit,
+        pageSize: query.limit,
         total: 0,
+        hasMore: false,
         items: [],
       };
     }
@@ -659,6 +705,17 @@ export const listManagedContent = async (
   }
 
   return buildListResponse(dataResult.rows, Number(countResult.rows[0]!.count), query);
+};
+
+export const getManagedContentById = async (requester: JwtClaims, contentId: string): Promise<ContentItem> => {
+  const row = await loadContentRowById(pool, contentId);
+  if (!row) {
+    throw new NotFoundError('Content not found');
+  }
+  if (requester.role !== 'ADMIN' && row.author_id !== requester.sub) {
+    throw new ForbiddenError('You can only view your own content');
+  }
+  return toContentItem(row);
 };
 
 export const listContentRequests = async (requester: JwtClaims): Promise<ContentSubmissionRequest[]> => {
@@ -1344,6 +1401,30 @@ export const updateContentVisibility = async ({
   }
 
   return item;
+};
+
+export const bulkUpdateContentVisibility = async ({
+  ids,
+  visibility,
+  requester,
+}: {
+  ids: string[];
+  visibility: ContentVisibility;
+  requester: JwtClaims;
+}): Promise<{ updated: number; failed: Array<{ id: string; message: string }> }> => {
+  let updated = 0;
+  const failed: Array<{ id: string; message: string }> = [];
+
+  for (const contentId of ids) {
+    try {
+      await updateContentVisibility({ contentId, visibility, requester });
+      updated += 1;
+    } catch (error) {
+      failed.push({ id: contentId, message: error instanceof Error ? error.message : 'Update failed' });
+    }
+  }
+
+  return { updated, failed };
 };
 
 export const deleteContent = async ({

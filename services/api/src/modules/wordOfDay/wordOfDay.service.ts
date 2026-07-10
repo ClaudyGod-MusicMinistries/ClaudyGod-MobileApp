@@ -2,6 +2,7 @@ import type { JwtClaims } from '../../utils/jwt';
 import { pool } from '../../db/pool';
 import { queueEmailJob } from '../../infra/transactionalEmails';
 import { isMissingDatabaseStructureError } from '../../lib/postgres';
+import { ConflictError, NotFoundError } from '../../lib/errors';
 
 type WordStatus = 'draft' | 'published' | 'archived';
 
@@ -255,4 +256,122 @@ export const upsertWordOfDayEntry = async (params: {
     entry: mapWord(refreshed.rows[0]!),
     notifications,
   };
+};
+
+export const createWordOfDayEntry = async (params: {
+  actor: JwtClaims;
+  input: {
+    title?: string;
+    passage: string;
+    verse: string;
+    reflection: string;
+    messageDate?: string;
+    status: WordStatus;
+    notifySubscribers: boolean;
+  };
+}): Promise<{ entry: ReturnType<typeof mapWord> }> => {
+  const messageDate = params.input.messageDate ?? toDateOnly(new Date());
+  const title = params.input.title?.trim() || 'Word for Today';
+
+  const existing = await pool.query<{ id: string }>(
+    `SELECT id FROM word_of_day_entries WHERE message_date = $1::date`,
+    [messageDate],
+  );
+  if ((existing.rowCount ?? 0) > 0) {
+    throw new ConflictError('An entry already exists for this date — edit it instead', 'WORD_OF_DAY_DATE_TAKEN');
+  }
+
+  const result = await pool.query<WordRow>(
+    `INSERT INTO word_of_day_entries (
+       title, passage, verse_text, reflection_text, message_date, status, notify_email,
+       published_at, created_by, updated_by
+     )
+     VALUES (
+       $1, $2, $3, $4, $5::date, $6, $7,
+       CASE WHEN $6 = 'published' THEN NOW() ELSE NULL END,
+       $8, $8
+     )
+     RETURNING *`,
+    [
+      title,
+      params.input.passage.trim(),
+      params.input.verse.trim(),
+      params.input.reflection.trim(),
+      messageDate,
+      params.input.status,
+      params.input.notifySubscribers,
+      params.actor.sub,
+    ],
+  );
+
+  return { entry: mapWord(result.rows[0]!) };
+};
+
+export const updateWordOfDayEntryById = async (params: {
+  actor: JwtClaims;
+  id: string;
+  input: {
+    title?: string;
+    passage: string;
+    verse: string;
+    reflection: string;
+    messageDate?: string;
+    status: WordStatus;
+    notifySubscribers: boolean;
+  };
+}): Promise<{ entry: ReturnType<typeof mapWord> }> => {
+  const title = params.input.title?.trim() || 'Word for Today';
+
+  if (params.input.messageDate) {
+    const dateConflict = await pool.query<{ id: string }>(
+      `SELECT id FROM word_of_day_entries WHERE message_date = $1::date AND id != $2`,
+      [params.input.messageDate, params.id],
+    );
+    if ((dateConflict.rowCount ?? 0) > 0) {
+      throw new ConflictError('Another entry already exists for this date', 'WORD_OF_DAY_DATE_TAKEN');
+    }
+  }
+
+  const result = await pool.query<WordRow>(
+    `UPDATE word_of_day_entries
+     SET title = $2,
+         passage = $3,
+         verse_text = $4,
+         reflection_text = $5,
+         message_date = COALESCE($6::date, message_date),
+         status = $7,
+         notify_email = $8,
+         published_at = CASE
+           WHEN $7 = 'published' THEN COALESCE(published_at, NOW())
+           ELSE published_at
+         END,
+         updated_by = $9,
+         updated_at = NOW()
+     WHERE id = $1
+     RETURNING *`,
+    [
+      params.id,
+      title,
+      params.input.passage.trim(),
+      params.input.verse.trim(),
+      params.input.reflection.trim(),
+      params.input.messageDate ?? null,
+      params.input.status,
+      params.input.notifySubscribers,
+      params.actor.sub,
+    ],
+  );
+
+  if (result.rowCount === 0) {
+    throw new NotFoundError('Word of Day entry not found', 'WORD_OF_DAY_NOT_FOUND');
+  }
+
+  return { entry: mapWord(result.rows[0]!) };
+};
+
+export const deleteWordOfDayEntry = async (id: string): Promise<void> => {
+  const result = await pool.query(`DELETE FROM word_of_day_entries WHERE id = $1`, [id]);
+  if ((result.rowCount ?? 0) === 0) {
+    throw new NotFoundError('Word of Day entry not found', 'WORD_OF_DAY_NOT_FOUND');
+  }
 };

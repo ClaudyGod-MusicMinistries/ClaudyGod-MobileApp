@@ -16,7 +16,7 @@
       </AppCard>
 
       <AppCard>
-        <AppTable :columns="userCols" :rows="store.users as Record<string, unknown>[]" :loading="store.isLoading">
+        <AppResponsiveTable :columns="userCols" :rows="store.users as Record<string, unknown>[]" :loading="store.isLoading">
           <template #cell-displayName="{ row }">
             <div class="flex items-center gap-2.5">
               <UserAvatar :name="(row.displayName as string) ?? undefined" :email="row.email as string" size="sm" />
@@ -28,10 +28,10 @@
           </template>
           <template #cell-role="{ row }">
             <AppSelect
-              :model-value="String(row.role)"
+              :model-value="row.role as string"
               :options="roleOptions"
               class="w-36"
-              @update:model-value="confirmRoleChange(row, Number($event))"
+              @update:model-value="confirmRoleChange(row, $event as AssignableRoleValue)"
             />
           </template>
           <template #cell-isVerified="{ value }">
@@ -40,7 +40,7 @@
           <template #cell-createdAt="{ value }">
             <span class="text-xs text-ink-muted">{{ formatDate(String(value)) }}</span>
           </template>
-        </AppTable>
+        </AppResponsiveTable>
       </AppCard>
 
       <AppPagination :page="store.userFilters.page ?? 1" :page-size="store.userFilters.pageSize ?? 25" :total="store.usersTotal" @change="(p) => { store.userFilters.page = p; void store.fetchUsers(); }" />
@@ -54,7 +54,7 @@
         </AppButton>
       </div>
       <AppCard>
-        <AppTable :columns="supportCols" :rows="store.supportRequests as Record<string, unknown>[]" :loading="store.supportLoading">
+        <AppResponsiveTable :columns="supportCols" :rows="store.supportRequests as Record<string, unknown>[]" :loading="store.supportLoading">
           <template #cell-user="{ value }">
             <span class="text-xs text-ink-soft">{{ getEmail(value) }}</span>
           </template>
@@ -72,7 +72,7 @@
               @update:model-value="void store.updateSupportStatus(row.id as string, $event)"
             />
           </template>
-        </AppTable>
+        </AppResponsiveTable>
       </AppCard>
     </template>
   </div>
@@ -82,9 +82,10 @@
 import { ref, onMounted } from 'vue';
 import { useUsersStore } from '@/stores/users.store';
 import { useUiStore } from '@/stores/ui.store';
-import { Role, ROLE_LABELS } from '@/utils/constants';
+import { ASSIGNABLE_ROLE_OPTIONS, ROLE_LABELS, roleRank } from '@/utils/constants';
+import type { AssignableRoleValue } from '@/utils/constants';
 import AppCard from '@/components/ui/AppCard.vue';
-import AppTable from '@/components/ui/AppTable.vue';
+import AppResponsiveTable from '@/components/ui/AppResponsiveTable.vue';
 import AppBadge from '@/components/ui/AppBadge.vue';
 import AppButton from '@/components/ui/AppButton.vue';
 import AppSelect from '@/components/ui/AppSelect.vue';
@@ -118,7 +119,7 @@ const supportCols = [
   { key: 'createdAt', label: 'Date', align: 'right' as const },
 ];
 
-const roleOptions = Object.entries(ROLE_LABELS).map(([value, label]) => ({ value, label }));
+const roleOptions = ASSIGNABLE_ROLE_OPTIONS;
 const supportStatusOptions = [
   { value: 'open', label: 'Open' },
   { value: 'in_progress', label: 'In progress' },
@@ -131,13 +132,13 @@ onMounted(() => {
   void store.fetchSupportRequests();
 });
 
-async function confirmRoleChange(row: Record<string, unknown>, role: number): Promise<void> {
+async function confirmRoleChange(row: Record<string, unknown>, role: AssignableRoleValue): Promise<void> {
   const id = row.id as string;
   if (!id) {
-    ui.addToast({ tone: 'error', title: 'Invalid user ID' });
+    ui.addToast({ tone: 'danger', title: 'Invalid user ID' });
     return;
   }
-  const label = ROLE_LABELS[role as Role] ?? `Role ${role}`;
+  const label = ROLE_LABELS[roleRank(role)];
   const ok = await ui.confirm({
     title: 'Change role',
     message: `Change ${row.email}'s role to ${label}?`,
@@ -149,7 +150,7 @@ async function confirmRoleChange(row: Record<string, unknown>, role: number): Pr
     ui.addToast({ tone: 'success', title: 'Role updated' });
   } catch (e) {
     ui.addToast({
-      tone: 'error',
+      tone: 'danger',
       title: 'Role update failed',
       message: e instanceof Error ? e.message : 'Please try again',
     });

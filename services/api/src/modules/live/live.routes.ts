@@ -7,6 +7,7 @@ import {
   createLiveMessageSchema,
   createLiveSessionSchema,
   endLiveSessionSchema,
+  listAdminLiveSessionsQuerySchema,
   listLiveSessionsQuerySchema,
   liveSessionIdParamsSchema,
   updateLiveSessionSchema,
@@ -14,6 +15,7 @@ import {
 import {
   createLiveSession,
   createLiveSessionMessage,
+  deleteAdminLiveSession,
   endLiveSession,
   getAdminLiveSessionDetail,
   getPublicLiveSessionDetail,
@@ -75,7 +77,8 @@ liveRouter.get(
   authenticate,
   asyncHandler(async (req, res) => {
     const actor = requireAdmin(req);
-    const result = await listAdminLiveSessions(actor);
+    const query = validateSchema(listAdminLiveSessionsQuerySchema, req.query);
+    const result = await listAdminLiveSessions(actor, query);
     res.status(200).json(result);
   }),
 );
@@ -111,6 +114,17 @@ liveRouter.patch(
     const payload = validateSchema(updateLiveSessionSchema, req.body);
     const result = await updateLiveSession(actor, params.id, payload);
     res.status(200).json(result);
+  }),
+);
+
+liveRouter.delete(
+  '/manage/:id',
+  authenticate,
+  asyncHandler(async (req, res) => {
+    const actor = requireAdmin(req);
+    const params = validateSchema(liveSessionIdParamsSchema, req.params);
+    await deleteAdminLiveSession(actor, params.id);
+    res.status(204).send();
   }),
 );
 

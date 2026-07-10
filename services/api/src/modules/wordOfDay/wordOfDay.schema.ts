@@ -28,3 +28,9 @@ export const upsertWordOfDaySchema = z
   .strict();
 
 export type UpsertWordOfDayInput = z.infer<typeof upsertWordOfDaySchema>;
+
+export const wordOfDayIdParamsSchema = z
+  .object({
+    id: z.string().uuid(),
+  })
+  .strict();

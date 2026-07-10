@@ -232,14 +232,14 @@
       <div class="space-y-3">
         <h3 class="text-sm font-bold text-ink">Import queue</h3>
         <AppCard>
-          <AppTable :columns="columns" :rows="importQueue as Record<string, unknown>[]" :loading="isLoading">
+          <AppResponsiveTable :columns="columns" :rows="importQueue as Record<string, unknown>[]" :loading="isLoading">
             <template #cell-status="{ value }">
               <StatusBadge :status="String(value)" />
             </template>
             <template #cell-importedAt="{ value }">
               <span class="text-xs text-ink-muted">{{ value ? formatDate(String(value)) : '—' }}</span>
             </template>
-          </AppTable>
+          </AppResponsiveTable>
         </AppCard>
       </div>
     </template>
@@ -252,7 +252,7 @@ import { getSyncStatus, triggerSync, listImportQueue, fetchChannelVideos, import
 import { useUiStore } from '@/stores/ui.store';
 import type { YouTubeSyncStatus, YouTubeImportItem, YouTubeVideoItem } from '@/api/types';
 import AppCard from '@/components/ui/AppCard.vue';
-import AppTable from '@/components/ui/AppTable.vue';
+import AppResponsiveTable from '@/components/ui/AppResponsiveTable.vue';
 import AppButton from '@/components/ui/AppButton.vue';
 import AppSpinner from '@/components/ui/AppSpinner.vue';
 import StatusBadge from '@/components/shared/StatusBadge.vue';
@@ -335,7 +335,7 @@ async function loadVideos(): Promise<void> {
       }
     }
   } catch (e) {
-    ui.addToast({ tone: 'error', title: 'Failed to load videos', message: e instanceof Error ? e.message : undefined });
+    ui.addToast({ tone: 'danger', title: 'Failed to load videos', message: e instanceof Error ? e.message : undefined });
   } finally {
     loadingVideos.value = false;
   }
@@ -388,12 +388,23 @@ async function importSelected(): Promise<void> {
   if (!selected.value.size) return;
   importing.value = true;
   try {
-    const selections = Array.from(selected.value).map((id) => ({
-      youtubeVideoId: id,
-      appSections: videoSections.value[id] ?? [],
-      visibility: getVisibility(id),
-      playAsAudio: getPlayAsAudio(id),
-    }));
+    const selections = Array.from(selected.value)
+      .map((id) => videos.value.find((v) => v.youtubeVideoId === id))
+      .filter((v): v is YouTubeVideoItem => Boolean(v))
+      .map((v) => ({
+        youtubeVideoId: v.youtubeVideoId,
+        title: v.title,
+        description: v.description,
+        channelTitle: v.channelTitle,
+        publishedAt: v.publishedAt,
+        thumbnailUrl: v.thumbnailUrl,
+        url: v.url,
+        duration: v.duration,
+        isLive: v.isLive,
+        appSections: videoSections.value[v.youtubeVideoId] ?? [],
+        tags: v.suggestedTags,
+        visibility: getVisibility(v.youtubeVideoId) as 'draft' | 'published',
+      }));
     const { imported } = await importVideos(selections);
     ui.addToast({ tone: 'success', title: `${imported} video${imported !== 1 ? 's' : ''} imported to content` });
     selected.value = new Set();
@@ -403,7 +414,7 @@ async function importSelected(): Promise<void> {
       // Queue refresh is non-fatal
     }
   } catch (e) {
-    ui.addToast({ tone: 'error', title: 'Import failed', message: e instanceof Error ? e.message : undefined });
+    ui.addToast({ tone: 'danger', title: 'Import failed', message: e instanceof Error ? e.message : undefined });
   } finally {
     importing.value = false;
   }
@@ -416,7 +427,7 @@ async function triggerSyncAll(): Promise<void> {
     ui.addToast({ tone: 'success', title: `Sync started — ${queued} videos queued` });
     syncStatus.value = await getSyncStatus();
   } catch (e) {
-    ui.addToast({ tone: 'error', title: 'Sync failed', message: e instanceof Error ? e.message : undefined });
+    ui.addToast({ tone: 'danger', title: 'Sync failed', message: e instanceof Error ? e.message : undefined });
   } finally {
     syncing.value = false;
   }

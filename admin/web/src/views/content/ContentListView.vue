@@ -54,7 +54,7 @@
 
     <!-- Table -->
     <AppCard>
-      <AppTable
+      <AppResponsiveTable
         :columns="columns"
         :rows="store.items as Record<string, unknown>[]"
         :loading="store.isLoading"
@@ -67,7 +67,7 @@
         <template #cell-title="{ row }">
           <div class="flex items-center gap-3">
             <div class="w-9 h-9 rounded-lg bg-white/8 overflow-hidden flex-shrink-0">
-              <img v-if="row.artworkUrl" :src="row.artworkUrl as string" alt="" class="w-full h-full object-cover" />
+              <img v-if="row.thumbnailUrl" :src="row.thumbnailUrl as string" alt="" class="w-full h-full object-cover" />
               <div v-else class="w-full h-full flex items-center justify-center">
                 <svg class="w-4 h-4 text-ink-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/></svg>
               </div>
@@ -80,11 +80,8 @@
         <template #cell-type="{ value }">
           <AppBadge tone="neutral">{{ value }}</AppBadge>
         </template>
-        <template #cell-status="{ value }">
+        <template #cell-visibility="{ value }">
           <StatusBadge :status="String(value)" />
-        </template>
-        <template #cell-playCount="{ value }">
-          <span class="tabular-nums text-ink-soft">{{ value ?? 0 }}</span>
         </template>
         <template #cell-createdAt="{ value }">
           <span class="text-xs text-ink-muted">{{ formatDate(String(value)) }}</span>
@@ -96,8 +93,8 @@
                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
               </AppButton>
             </RouterLink>
-            <AppButton size="xs" variant="ghost" :title="row.status === 'published' ? 'Unpublish' : 'Publish'" @click="toggleStatus(row)">
-              <svg v-if="row.status === 'published'" class="w-3.5 h-3.5 text-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>
+            <AppButton size="xs" variant="ghost" :title="row.visibility === 'published' ? 'Unpublish' : 'Publish'" @click="toggleVisibility(row)">
+              <svg v-if="row.visibility === 'published'" class="w-3.5 h-3.5 text-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>
               <svg v-else class="w-3.5 h-3.5 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
             </AppButton>
             <AppButton size="xs" variant="ghost" class="text-danger" title="Delete" @click="confirmDelete(row)">
@@ -105,7 +102,7 @@
             </AppButton>
           </div>
         </template>
-      </AppTable>
+      </AppResponsiveTable>
     </AppCard>
 
     <!-- Pagination -->
@@ -123,7 +120,7 @@ import { ref, watch, onMounted } from 'vue';
 import { useContentStore } from '@/stores/content.store';
 import { useUiStore } from '@/stores/ui.store';
 import AppCard from '@/components/ui/AppCard.vue';
-import AppTable from '@/components/ui/AppTable.vue';
+import AppResponsiveTable from '@/components/ui/AppResponsiveTable.vue';
 import AppBadge from '@/components/ui/AppBadge.vue';
 import AppButton from '@/components/ui/AppButton.vue';
 import AppSelect from '@/components/ui/AppSelect.vue';
@@ -139,8 +136,7 @@ const bulkLoading = ref(false);
 const columns = [
   { key: 'title', label: 'Title' },
   { key: 'type', label: 'Type' },
-  { key: 'status', label: 'Status' },
-  { key: 'playCount', label: 'Plays', sortable: true, align: 'right' as const },
+  { key: 'visibility', label: 'Status' },
   { key: 'createdAt', label: 'Created', sortable: true, align: 'right' as const },
 ];
 
@@ -182,11 +178,11 @@ function resetFilters(): void {
   void store.fetchContent();
 }
 
-async function toggleStatus(row: Record<string, unknown>): Promise<void> {
-  const newStatus = row.status === 'published' ? 'draft' : 'published';
-  await store.save({ id: row.id as string, status: newStatus as 'draft' | 'published' });
+async function toggleVisibility(row: Record<string, unknown>): Promise<void> {
+  const newVisibility = row.visibility === 'published' ? 'draft' : 'published';
+  await store.save({ id: row.id as string, visibility: newVisibility as 'draft' | 'published' });
   void store.fetchContent();
-  ui.addToast({ tone: 'success', title: newStatus === 'published' ? 'Published' : 'Unpublished' });
+  ui.addToast({ tone: 'success', title: newVisibility === 'published' ? 'Published' : 'Unpublished' });
 }
 
 async function confirmDelete(row: Record<string, unknown>): Promise<void> {
@@ -196,16 +192,16 @@ async function confirmDelete(row: Record<string, unknown>): Promise<void> {
   ui.addToast({ tone: 'success', title: 'Deleted' });
 }
 
-async function bulkAction(status: string): Promise<void> {
+async function bulkAction(visibility: string): Promise<void> {
   const count = selectedIds.value.length;
   bulkLoading.value = true;
   try {
-    await store.bulkAction(selectedIds.value, { status: status as 'draft' | 'published' });
+    await store.bulkAction(selectedIds.value, { visibility: visibility as 'draft' | 'published' });
     selectedIds.value = [];
-    ui.addToast({ tone: 'success', title: `${status === 'published' ? 'Published' : 'Unpublished'} ${count} item${count !== 1 ? 's' : ''}` });
+    ui.addToast({ tone: 'success', title: `${visibility === 'published' ? 'Published' : 'Unpublished'} ${count} item${count !== 1 ? 's' : ''}` });
   } catch (e) {
     ui.addToast({
-      tone: 'error',
+      tone: 'danger',
       title: 'Bulk action failed',
       message: e instanceof Error ? e.message : 'Please try again',
     });
