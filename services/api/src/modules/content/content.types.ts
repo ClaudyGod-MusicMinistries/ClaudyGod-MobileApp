@@ -121,7 +121,7 @@ export interface ContentListQuery {
   section?: string;
   search?: string;
   updatedAfter?: string;
-  sort?: 'createdAt' | 'updatedAt' | 'title';
+  sort?: 'createdAt' | 'updatedAt' | 'title' | 'sortOrder';
   sortDir?: 'asc' | 'desc';
 }
 

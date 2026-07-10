@@ -482,11 +482,12 @@ const CONTENT_SORT_COLUMNS: Record<NonNullable<ContentListQuery['sort']>, string
   createdAt: 'c.created_at',
   updatedAt: 'c.updated_at',
   title: 'c.title',
+  sortOrder: 'c.sort_order',
 };
 
 function buildContentOrderByClause(sort?: ContentListQuery['sort'], sortDir?: ContentListQuery['sortDir']): string {
   if (!sort) {
-    return 'ORDER BY c.updated_at DESC, c.created_at DESC';
+    return 'ORDER BY c.sort_order NULLS LAST, c.updated_at DESC, c.created_at DESC';
   }
   const column = CONTENT_SORT_COLUMNS[sort];
   const direction = sortDir === 'asc' ? 'ASC' : 'DESC';
@@ -561,7 +562,7 @@ export const listPublicContent = async (query: ContentListQuery): Promise<Conten
          FROM content_items c
          INNER JOIN app_users u ON u.id = c.author_id
          WHERE ${whereClause}
-         ORDER BY c.updated_at DESC, c.created_at DESC
+         ORDER BY c.sort_order NULLS LAST, c.updated_at DESC, c.created_at DESC
          LIMIT $${limitParam}
          OFFSET $${offsetParam}`,
         values,
@@ -1425,6 +1426,23 @@ export const bulkUpdateContentVisibility = async ({
   }
 
   return { updated, failed };
+};
+
+export const reorderContent = async (
+  items: Array<{ id: string; sortOrder: number }>,
+): Promise<{ updated: number }> => {
+  const ids = items.map((item) => item.id);
+  const sortOrders = items.map((item) => item.sortOrder);
+
+  const result = await pool.query(
+    `UPDATE content_items
+     SET sort_order = v.sort_order, updated_at = NOW()
+     FROM (SELECT unnest($1::uuid[]) AS id, unnest($2::int[]) AS sort_order) AS v
+     WHERE content_items.id = v.id`,
+    [ids, sortOrders],
+  );
+
+  return { updated: result.rowCount ?? 0 };
 };
 
 export const deleteContent = async ({

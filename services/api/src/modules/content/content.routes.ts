@@ -14,6 +14,7 @@ import {
   createContentSchema,
   createContentRequestSchema,
   listContentQuerySchema,
+  reorderContentSchema,
   updateContentRequestStatusSchema,
   updateContentSchema,
   updateVisibilitySchema,
@@ -24,6 +25,7 @@ import {
   deleteContent,
   createDraftFromContentRequest,
   getManagedContentById,
+  reorderContent,
   updateContent,
   updateContentSections,
   createContent,
@@ -123,6 +125,17 @@ contentRouter.patch(
       visibility: payload.visibility,
       requester: actor,
     });
+    res.status(200).json(result);
+  }),
+);
+
+contentRouter.patch(
+  '/manage/reorder',
+  authenticate,
+  asyncHandler(async (req, res) => {
+    requireAdmin(req.user);
+    const payload = validateSchema(reorderContentSchema, req.body);
+    const result = await reorderContent(payload.items);
     res.status(200).json(result);
   }),
 );

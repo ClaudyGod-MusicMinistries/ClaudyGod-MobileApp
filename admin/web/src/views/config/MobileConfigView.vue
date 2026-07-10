@@ -2,8 +2,13 @@
   <div class="space-y-5">
     <div class="flex items-center justify-between">
       <h2 class="text-base font-bold text-ink">Mobile app config</h2>
-      <AppButton :loading="store.isSaving" @click="onSave">Save changes</AppButton>
+      <div class="flex items-center gap-2">
+        <AppButton variant="secondary" size="sm" @click="previewOpen = true">Preview</AppButton>
+        <AppButton :loading="store.isSaving" @click="onSave">Save changes</AppButton>
+      </div>
     </div>
+
+    <MobilePreviewPanel v-model="previewOpen" />
 
     <div v-if="store.isLoading" class="flex items-center justify-center py-20">
       <AppSpinner size="lg" />
@@ -169,10 +174,12 @@ import AppSelect from '@/components/ui/AppSelect.vue';
 import AppToggle from '@/components/ui/AppToggle.vue';
 import AppSpinner from '@/components/ui/AppSpinner.vue';
 import AppEmptyState from '@/components/ui/AppEmptyState.vue';
+import MobilePreviewPanel from '@/components/shared/MobilePreviewPanel.vue';
 
 const store = useConfigStore();
 const ui = useUiStore();
 const activeTab = ref('layout');
+const previewOpen = ref(false);
 
 const tabs = [
   { id: 'layout', label: 'Layout sections' },

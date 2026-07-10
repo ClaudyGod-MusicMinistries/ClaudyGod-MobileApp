@@ -47,6 +47,11 @@ export async function bulkUpdateContent(ids: string[], patch: Partial<ContentUpd
   await client.patch('/v1/content/manage/bulk', { ids, ...patch });
 }
 
+export async function reorderContent(items: Array<{ id: string; sortOrder: number }>): Promise<{ updated: number }> {
+  const { data } = await client.patch<{ updated: number }>('/v1/content/manage/reorder', { items });
+  return data;
+}
+
 // ─── Content requests ─────────────────────────────────────────────────────────
 
 export interface RequestListParams {
