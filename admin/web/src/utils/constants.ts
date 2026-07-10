@@ -5,7 +5,10 @@ export const APP_TONES = ['primary', 'success', 'danger', 'warning', 'info', 'ne
 export type AppTone = (typeof APP_TONES)[number];
 
 export const REFRESH_TOKEN_KEY = 'claudy_admin_refresh_token';
+// Reserved for a future per-browser preview URL override (e.g. staging) — not built
+// yet; the mobile preview panel uses MOBILE_PREVIEW_DEFAULT_URL directly for now.
 export const MOBILE_PREVIEW_URL_KEY = 'claudy_admin_mobile_preview_url';
+export const MOBILE_PREVIEW_DEFAULT_URL = 'https://mobileapp.claudygod.org';
 export const BRAND_LOGO_URL = '/brand/claudy-logo.png';
 export const GOOGLE_LOGIN_URL = import.meta.env.VITE_GOOGLE_LOGIN_URL || '';
 export const INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000;
