@@ -387,6 +387,13 @@ export interface DashboardStats {
   pendingRequests: number;
 }
 
+export interface DashboardSignal {
+  id: string;
+  tone: 'warning' | 'info' | 'success';
+  title: string;
+  detail: string;
+}
+
 export interface DashboardData {
   generatedAt: string;
   summary: DashboardStats;
@@ -395,6 +402,7 @@ export interface DashboardData {
     requestStatusBoard: { status: string; count: number }[];
     requestQueuePreview: ContentRequest[];
   };
+  smartInsights: DashboardSignal[];
 }
 
 // ─── Users ────────────────────────────────────────────────────────────────────

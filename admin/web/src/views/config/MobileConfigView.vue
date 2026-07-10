@@ -210,7 +210,7 @@ async function onSave(): Promise<void> {
     await store.saveAppConfig(config.value);
     ui.addToast({ tone: 'success', title: 'Mobile config saved' });
   } catch (e) {
-    ui.addToast({ tone: 'error', title: e instanceof Error ? e.message : 'Save failed' });
+    ui.addToast({ tone: 'danger', title: e instanceof Error ? e.message : 'Save failed' });
   }
 }
 

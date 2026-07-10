@@ -27,7 +27,7 @@
     </div>
 
     <AppCard>
-      <AppTable :columns="columns" :rows="store.sessions as Record<string, unknown>[]" :loading="store.isLoading">
+      <AppResponsiveTable :columns="columns" :rows="store.sessions as Record<string, unknown>[]" :loading="store.isLoading">
         <template #cell-status="{ value }">
           <StatusBadge :status="String(value)" />
         </template>
@@ -49,7 +49,7 @@
             </AppButton>
           </div>
         </template>
-      </AppTable>
+      </AppResponsiveTable>
     </AppCard>
 
     <!-- Create / Edit modal -->
@@ -75,7 +75,7 @@ import { ref, onMounted } from 'vue';
 import { useLiveStore } from '@/stores/live.store';
 import { useUiStore } from '@/stores/ui.store';
 import AppCard from '@/components/ui/AppCard.vue';
-import AppTable from '@/components/ui/AppTable.vue';
+import AppResponsiveTable from '@/components/ui/AppResponsiveTable.vue';
 import AppButton from '@/components/ui/AppButton.vue';
 import AppModal from '@/components/ui/AppModal.vue';
 import AppInput from '@/components/ui/AppInput.vue';

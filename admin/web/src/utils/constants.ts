@@ -1,3 +1,9 @@
+// Canonical tone vocabulary — AppBadge, StatusBadge, and the toast system all key
+// off this same set of words (e.g. "danger", never "error") so they never drift
+// apart the way AppToast's tones once did.
+export const APP_TONES = ['primary', 'success', 'danger', 'warning', 'info', 'neutral'] as const;
+export type AppTone = (typeof APP_TONES)[number];
+
 export const REFRESH_TOKEN_KEY = 'claudy_admin_refresh_token';
 export const MOBILE_PREVIEW_URL_KEY = 'claudy_admin_mobile_preview_url';
 export const BRAND_LOGO_URL = '/brand/claudy-logo.png';

@@ -54,7 +54,7 @@
 
     <!-- Table -->
     <AppCard>
-      <AppTable
+      <AppResponsiveTable
         :columns="columns"
         :rows="store.items as Record<string, unknown>[]"
         :loading="store.isLoading"
@@ -102,7 +102,7 @@
             </AppButton>
           </div>
         </template>
-      </AppTable>
+      </AppResponsiveTable>
     </AppCard>
 
     <!-- Pagination -->
@@ -120,7 +120,7 @@ import { ref, watch, onMounted } from 'vue';
 import { useContentStore } from '@/stores/content.store';
 import { useUiStore } from '@/stores/ui.store';
 import AppCard from '@/components/ui/AppCard.vue';
-import AppTable from '@/components/ui/AppTable.vue';
+import AppResponsiveTable from '@/components/ui/AppResponsiveTable.vue';
 import AppBadge from '@/components/ui/AppBadge.vue';
 import AppButton from '@/components/ui/AppButton.vue';
 import AppSelect from '@/components/ui/AppSelect.vue';
@@ -201,7 +201,7 @@ async function bulkAction(visibility: string): Promise<void> {
     ui.addToast({ tone: 'success', title: `${visibility === 'published' ? 'Published' : 'Unpublished'} ${count} item${count !== 1 ? 's' : ''}` });
   } catch (e) {
     ui.addToast({
-      tone: 'error',
+      tone: 'danger',
       title: 'Bulk action failed',
       message: e instanceof Error ? e.message : 'Please try again',
     });

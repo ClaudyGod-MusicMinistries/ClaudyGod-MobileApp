@@ -421,7 +421,7 @@ async function onSave() {
     }
     closeForm();
   } catch (e) {
-    ui.addToast({ tone: 'error', title: e instanceof Error ? e.message : 'Failed to save entry' });
+    ui.addToast({ tone: 'danger', title: e instanceof Error ? e.message : 'Failed to save entry' });
   } finally {
     isSaving.value = false;
   }
@@ -444,7 +444,7 @@ async function onDelete() {
     ui.addToast({ tone: 'success', title: 'Entry deleted' });
     deleteTarget.value = null;
   } catch (e) {
-    ui.addToast({ tone: 'error', title: e instanceof Error ? e.message : 'Delete failed' });
+    ui.addToast({ tone: 'danger', title: e instanceof Error ? e.message : 'Delete failed' });
   } finally {
     isDeleting.value = false;
   }

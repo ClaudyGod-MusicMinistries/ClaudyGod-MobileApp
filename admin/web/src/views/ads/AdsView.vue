@@ -9,7 +9,7 @@
     </div>
 
     <AppCard>
-      <AppTable :columns="columns" :rows="store.campaigns as Record<string, unknown>[]" :loading="store.isLoading">
+      <AppResponsiveTable :columns="columns" :rows="store.campaigns as Record<string, unknown>[]" :loading="store.isLoading">
         <template #cell-status="{ value }">
           <StatusBadge :status="String(value)" />
         </template>
@@ -24,7 +24,7 @@
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
           </AppButton>
         </template>
-      </AppTable>
+      </AppResponsiveTable>
     </AppCard>
 
     <!-- Create/Edit modal -->
@@ -78,7 +78,7 @@ import { useAdsStore } from '@/stores/ads.store';
 import { useUiStore } from '@/stores/ui.store';
 import { AD_STATUS_OPTIONS, AD_CAMPAIGN_PLACEMENT_OPTIONS, type AdCampaignPlacement, type AdStatus } from '@/utils/constants';
 import AppCard from '@/components/ui/AppCard.vue';
-import AppTable from '@/components/ui/AppTable.vue';
+import AppResponsiveTable from '@/components/ui/AppResponsiveTable.vue';
 import AppButton from '@/components/ui/AppButton.vue';
 import AppModal from '@/components/ui/AppModal.vue';
 import AppInput from '@/components/ui/AppInput.vue';
@@ -188,7 +188,7 @@ async function generateCopy(): Promise<void> {
 async function saveCampaign(): Promise<void> {
   if (!form.value.name.trim() || !form.value.sponsorName.trim() || !form.value.headline.trim()
     || !form.value.body.trim() || !form.value.ctaLabel.trim() || !form.value.ctaUrl.trim()) {
-    ui.addToast({ tone: 'error', title: 'Fill in all required fields' });
+    ui.addToast({ tone: 'danger', title: 'Fill in all required fields' });
     return;
   }
 
@@ -215,7 +215,7 @@ async function saveCampaign(): Promise<void> {
     }
     modalOpen.value = false;
   } catch (e) {
-    ui.addToast({ tone: 'error', title: e instanceof Error ? e.message : 'Failed to save campaign' });
+    ui.addToast({ tone: 'danger', title: e instanceof Error ? e.message : 'Failed to save campaign' });
   }
 }
 

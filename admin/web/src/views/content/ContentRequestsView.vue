@@ -16,7 +16,7 @@
     </div>
 
     <AppCard>
-      <AppTable
+      <AppResponsiveTable
         :columns="columns"
         :rows="filteredRequests as Record<string, unknown>[]"
         :loading="store.requestsLoading"
@@ -55,7 +55,7 @@
             </AppButton>
           </div>
         </template>
-      </AppTable>
+      </AppResponsiveTable>
     </AppCard>
 
     <!-- Reject modal -->
@@ -79,7 +79,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useContentStore } from '@/stores/content.store';
 import { useUiStore } from '@/stores/ui.store';
 import AppCard from '@/components/ui/AppCard.vue';
-import AppTable from '@/components/ui/AppTable.vue';
+import AppResponsiveTable from '@/components/ui/AppResponsiveTable.vue';
 import AppBadge from '@/components/ui/AppBadge.vue';
 import AppButton from '@/components/ui/AppButton.vue';
 import AppModal from '@/components/ui/AppModal.vue';
