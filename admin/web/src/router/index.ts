@@ -105,6 +105,12 @@ const router = createRouter({
           component: () => import('@/views/config/WordOfDayView.vue'),
           meta: { minRole: Role.MODERATOR, title: 'Word of the day' },
         },
+        {
+          path: 'preview',
+          name: 'mobile-preview',
+          component: () => import('@/views/preview/PreviewView.vue'),
+          meta: { minRole: Role.MODERATOR, title: 'Mobile preview' },
+        },
         // Ads
         {
           path: 'ads',

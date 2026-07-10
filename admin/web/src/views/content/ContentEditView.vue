@@ -7,8 +7,13 @@
         </RouterLink>
         <h2 class="text-base font-bold text-ink">{{ isNew ? 'New content' : 'Edit content' }}</h2>
       </div>
-      <div v-if="store.saveError" class="text-xs text-danger">{{ store.saveError }}</div>
+      <div class="flex items-center gap-3">
+        <div v-if="store.saveError" class="text-xs text-danger">{{ store.saveError }}</div>
+        <AppButton variant="secondary" size="sm" @click="previewOpen = true">Preview</AppButton>
+      </div>
     </div>
+
+    <MobilePreviewPanel v-model="previewOpen" />
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <!-- Main form -->
@@ -120,6 +125,7 @@ import AppTextarea from '@/components/ui/AppTextarea.vue';
 import AppSelect from '@/components/ui/AppSelect.vue';
 import AppButton from '@/components/ui/AppButton.vue';
 import FileDropzone from '@/components/shared/FileDropzone.vue';
+import MobilePreviewPanel from '@/components/shared/MobilePreviewPanel.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -128,6 +134,7 @@ const ui = useUiStore();
 
 const isNew = computed(() => route.name === 'content-new');
 const id = computed(() => isNew.value ? null : route.params.id as string);
+const previewOpen = ref(false);
 
 const SECTION_OPTIONS = [
   { value: 'video',            label: 'Videos' },
