@@ -31,7 +31,7 @@
       <div class="space-y-3">
         <h3 class="text-sm font-bold text-ink">Content performance</h3>
         <AppCard>
-          <AppTable
+          <AppResponsiveTable
             :columns="insightCols"
             :rows="insights as Record<string, unknown>[]"
             :loading="isLoading"
@@ -50,7 +50,7 @@
                 <span class="text-xs text-ink-muted tabular-nums">{{ (Number(value)).toFixed(0) }}%</span>
               </div>
             </template>
-          </AppTable>
+          </AppResponsiveTable>
         </AppCard>
       </div>
 
@@ -83,7 +83,7 @@ import { ref, onMounted } from 'vue';
 import { getEngagementOverview, getContentInsights, getCommunityInsights } from '@/api/analytics';
 import type { EngagementOverview, ContentInsight, CommunityInsight } from '@/api/types';
 import AppCard from '@/components/ui/AppCard.vue';
-import AppTable from '@/components/ui/AppTable.vue';
+import AppResponsiveTable from '@/components/ui/AppResponsiveTable.vue';
 import AppBadge from '@/components/ui/AppBadge.vue';
 import AppStatCard from '@/components/ui/AppStatCard.vue';
 import AppEmptyState from '@/components/ui/AppEmptyState.vue';

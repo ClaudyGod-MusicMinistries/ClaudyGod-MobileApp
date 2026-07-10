@@ -1,9 +1,24 @@
 ﻿<template>
   <div class="space-y-6">
     <!-- Greeting -->
-    <div class="mb-2">
+    <div>
       <h1 class="text-2xl font-black text-ink tracking-tight">{{ greeting }}, {{ auth.user?.displayName || 'there' }}.</h1>
       <p class="text-sm text-ink-muted mt-1">Here's what's happening across your ministry today.</p>
+    </div>
+
+    <!-- Signals — real, computed operational insights, not decoration -->
+    <div v-if="signals.length" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+      <div
+        v-for="signal in signals"
+        :key="signal.id"
+        :class="['flex items-start gap-3 p-3.5 rounded-xl border', signalClass(signal.tone)]"
+      >
+        <component :is="signalIcon(signal.tone)" class="w-4 h-4 mt-0.5 shrink-0" />
+        <div class="min-w-0">
+          <p class="text-xs font-bold leading-tight">{{ signal.title }}</p>
+          <p class="text-[11px] mt-0.5 text-ink-muted leading-snug">{{ signal.detail }}</p>
+        </div>
+      </div>
     </div>
 
     <!-- Quick actions -->
@@ -80,15 +95,15 @@
       </AppStatCard>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       <!-- Latest content -->
-      <div class="lg:col-span-2 space-y-3">
+      <div class="md:col-span-2 lg:col-span-2 space-y-3">
         <div class="flex items-center justify-between">
           <h2 class="text-sm font-bold text-ink">Latest content</h2>
           <RouterLink to="/content" class="text-xs text-primary hover:underline">View all →</RouterLink>
         </div>
         <AppCard>
-          <AppTable
+          <AppResponsiveTable
             :columns="contentCols"
             :rows="latestContent"
             :loading="dashboard.isLoading"
@@ -102,12 +117,12 @@
             <template #cell-createdAt="{ value }">
               <span class="text-xs text-ink-muted">{{ formatDate(String(value)) }}</span>
             </template>
-          </AppTable>
+          </AppResponsiveTable>
         </AppCard>
       </div>
 
       <!-- Right column -->
-      <div class="space-y-4">
+      <div class="md:col-span-2 lg:col-span-1 space-y-4">
         <!-- Request status board -->
         <div>
           <h2 class="text-sm font-bold text-ink mb-3">Content review</h2>
@@ -148,11 +163,12 @@
 
 <script setup lang="ts">
 import { computed, onMounted } from 'vue';
-import { BadgeCheck, FileText, Plus, Radio, Smartphone, TrendingUp, Users, Users2, Youtube } from 'lucide-vue-next';
+import { AlertTriangle, BadgeCheck, CheckCircle2, FileText, Info, Plus, Radio, Smartphone, TrendingUp, Users, Users2, Youtube } from 'lucide-vue-next';
 import { useDashboardStore } from '@/stores/dashboard.store';
 import { useAuthStore } from '@/stores/auth.store';
+import type { DashboardSignal } from '@/api/types';
 import AppCard from '@/components/ui/AppCard.vue';
-import AppTable from '@/components/ui/AppTable.vue';
+import AppResponsiveTable from '@/components/ui/AppResponsiveTable.vue';
 import AppBadge from '@/components/ui/AppBadge.vue';
 import AppButton from '@/components/ui/AppButton.vue';
 import AppStatCard from '@/components/ui/AppStatCard.vue';
@@ -178,6 +194,19 @@ const summary = computed(() => dashboard.data?.summary ?? {
 
 const latestContent = computed(() => (dashboard.data?.overview.latestContent ?? []) as Record<string, unknown>[]);
 const requestBoard = computed(() => dashboard.data?.overview.requestStatusBoard ?? []);
+const signals = computed(() => dashboard.data?.smartInsights ?? []);
+
+function signalClass(tone: DashboardSignal['tone']): string {
+  return {
+    warning: 'bg-amber/10 border-amber/20 text-amber',
+    info: 'bg-info/10 border-info/20 text-info',
+    success: 'bg-success/10 border-success/20 text-success',
+  }[tone];
+}
+
+function signalIcon(tone: DashboardSignal['tone']) {
+  return { warning: AlertTriangle, info: Info, success: CheckCircle2 }[tone];
+}
 
 const contentCols = [
   { key: 'title', label: 'Title' },

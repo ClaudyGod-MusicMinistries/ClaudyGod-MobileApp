@@ -253,20 +253,20 @@ const visibilityOptions = [
 
 async function onSave(overrideVisibility?: 'draft' | 'published'): Promise<void> {
   if (!form.value.title?.trim()) {
-    ui.addToast({ tone: 'error', title: 'Title is required' });
+    ui.addToast({ tone: 'danger', title: 'Title is required' });
     return;
   }
   if (!form.value.description?.trim()) {
-    ui.addToast({ tone: 'error', title: 'Description is required' });
+    ui.addToast({ tone: 'danger', title: 'Description is required' });
     return;
   }
   const requiresUrl = form.value.type === 'audio' || form.value.type === 'video';
   if (requiresUrl && !form.value.url?.trim()) {
-    ui.addToast({ tone: 'error', title: 'A media URL or uploaded file is required for audio/video' });
+    ui.addToast({ tone: 'danger', title: 'A media URL or uploaded file is required for audio/video' });
     return;
   }
   if (requiresUrl && form.value.sourceKind === 'upload' && !form.value.thumbnailUrl?.trim()) {
-    ui.addToast({ tone: 'error', title: 'A thumbnail is required for uploaded audio/video' });
+    ui.addToast({ tone: 'danger', title: 'A thumbnail is required for uploaded audio/video' });
     return;
   }
 
@@ -298,7 +298,7 @@ async function onSave(overrideVisibility?: 'draft' | 'published'): Promise<void>
     void router.push('/content');
   } catch (e) {
     ui.addToast({
-      tone: 'error',
+      tone: 'danger',
       title: 'Save failed',
       message: e instanceof Error ? e.message : 'An unexpected error occurred',
     });

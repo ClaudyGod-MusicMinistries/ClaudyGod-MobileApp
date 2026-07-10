@@ -1,7 +1,10 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
+import type { AppTone } from '@/utils/constants';
 
-export type ToastTone = 'success' | 'error' | 'warning' | 'info';
+// Toasts don't need the full AppTone vocabulary (no "primary"/"neutral" toast) but
+// use the same words for the tones they share — "danger", never "error".
+export type ToastTone = Exclude<AppTone, 'primary' | 'neutral'>;
 
 export interface Toast {
   id: string;
