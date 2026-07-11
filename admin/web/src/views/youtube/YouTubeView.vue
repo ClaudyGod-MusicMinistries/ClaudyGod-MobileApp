@@ -87,40 +87,71 @@
           <p class="text-[11px] text-ink-muted">{{ filteredVideos.length }} video{{ filteredVideos.length !== 1 ? 's' : '' }}</p>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
           <div
             v-for="video in filteredVideos"
             :key="video.youtubeVideoId"
             :class="[
-              'rounded-xl border overflow-hidden transition-all cursor-pointer',
+              'group relative rounded-2xl border bg-surface overflow-hidden shadow-panel transition-all duration-200 cursor-pointer',
               selected.has(video.youtubeVideoId)
-                ? 'border-primary/40 ring-1 ring-primary/30'
-                : 'border-border hover:border-white/20',
+                ? 'border-primary/50 ring-2 ring-primary/25'
+                : 'border-border hover:border-white/20 hover:-translate-y-0.5 hover:shadow-lg',
             ]"
             @click="toggleSelect(video.youtubeVideoId)"
           >
             <!-- Thumbnail -->
-            <div class="relative aspect-video bg-surface-strong">
+            <div class="relative aspect-video bg-surface-strong overflow-hidden">
               <img
                 v-if="video.thumbnailUrl"
                 :src="video.thumbnailUrl"
                 :alt="video.title"
-                class="w-full h-full object-cover"
+                class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
               />
-              <div class="absolute top-2 right-2 bg-black/70 text-white text-[10px] px-1.5 py-0.5 rounded font-mono">
+              <div class="absolute inset-0 bg-gradient-to-t from-black/65 via-black/0 to-black/0 pointer-events-none" />
+
+              <!-- Top-left badges -->
+              <div class="absolute top-2.5 left-2.5 flex items-center gap-1.5">
+                <span v-if="video.isLive" class="inline-flex items-center gap-1 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow">
+                  <span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />LIVE
+                </span>
+                <span v-if="importedMap.has(video.youtubeVideoId)" class="inline-flex items-center gap-1 bg-emerald-500/90 text-white text-[10px] font-semibold px-2 py-1 rounded-full shadow backdrop-blur-sm">
+                  <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                  In Content
+                </span>
+              </div>
+
+              <!-- Duration -->
+              <div class="absolute bottom-2.5 right-2.5 bg-black/75 text-white text-[10px] font-mono px-1.5 py-0.5 rounded-md backdrop-blur-sm">
                 {{ video.duration }}
               </div>
-              <div v-if="video.isLive" class="absolute top-2 left-2 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded font-bold">LIVE</div>
-              <!-- Selected overlay -->
-              <div v-if="selected.has(video.youtubeVideoId)" class="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                <svg class="w-8 h-8 text-primary" fill="currentColor" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+
+              <!-- Selected check -->
+              <div
+                v-if="selected.has(video.youtubeVideoId)"
+                class="absolute top-2.5 right-2.5 w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow-lg"
+              >
+                <svg class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
               </div>
             </div>
 
             <!-- Info -->
-            <div class="p-3 space-y-2 bg-surface">
+            <div class="p-3.5 space-y-2.5">
               <p class="text-xs font-semibold text-ink line-clamp-2 leading-snug">{{ video.title }}</p>
-              <p class="text-[10px] text-ink-muted">{{ formatDate(video.publishedAt) }}</p>
+              <p class="text-[10px] text-ink-muted flex items-center gap-1">
+                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                {{ formatDate(video.publishedAt) }}
+              </p>
+
+              <!-- Edit in Content (already imported) -->
+              <RouterLink
+                v-if="importedMap.has(video.youtubeVideoId)"
+                :to="`/content/${importedMap.get(video.youtubeVideoId)}`"
+                class="flex items-center justify-center gap-1.5 w-full py-1.5 rounded-lg text-[11px] font-semibold bg-primary/12 border border-primary/30 text-primary-soft hover:bg-primary/20 transition-colors"
+                @click.stop
+              >
+                Edit in Content
+                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+              </RouterLink>
 
               <!-- Assignment controls (shown when selected) -->
               <div v-if="selected.has(video.youtubeVideoId)" class="space-y-3 pt-1" @click.stop>
@@ -157,8 +188,8 @@
                 </div>
               </div>
 
-              <!-- Suggested sections (when not selected) -->
-              <div v-else-if="video.suggestedAppSections.length" class="flex flex-wrap gap-1">
+              <!-- Suggested sections (when not selected, not yet imported) -->
+              <div v-else-if="!importedMap.has(video.youtubeVideoId) && video.suggestedAppSections.length" class="flex flex-wrap gap-1">
                 <span
                   v-for="s in video.suggestedAppSections.slice(0, 3)"
                   :key="s"
@@ -217,6 +248,11 @@
         <h3 class="text-sm font-bold text-ink">Import queue</h3>
         <AppCard>
           <AppResponsiveTable :columns="columns" :rows="importQueue as Record<string, unknown>[]" :loading="isLoading">
+            <template #cell-title="{ row, value }">
+              <RouterLink :to="`/content/${row.id}`" class="text-sm font-medium text-ink hover:text-primary transition-colors line-clamp-1">
+                {{ value }}
+              </RouterLink>
+            </template>
             <template #cell-status="{ value }">
               <StatusBadge :status="String(value)" />
             </template>
@@ -300,6 +336,10 @@ const filteredVideos = computed(() =>
       )
     : videos.value,
 );
+
+// Maps a YouTube video id to its content_items id when it's already been imported,
+// so Browse & Import cards can link straight to the Content editor.
+const importedMap = computed(() => new Map(importQueue.value.map((item) => [item.videoId, item.id])));
 
 const columns = [
   { key: 'title',      label: 'Video title' },
