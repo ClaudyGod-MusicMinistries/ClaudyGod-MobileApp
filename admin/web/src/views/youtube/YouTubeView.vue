@@ -143,26 +143,8 @@
                   </div>
                 </div>
 
-                <!-- Play-as-audio + visibility row -->
-                <div class="flex items-center justify-between gap-2 pt-0.5">
-                  <!-- Play as audio toggle -->
-                  <label class="flex items-center gap-2 cursor-pointer group" @click.stop>
-                    <div
-                      :class="[
-                        'relative w-8 h-4 rounded-full transition-colors',
-                        getPlayAsAudio(video.youtubeVideoId) ? 'bg-primary' : 'bg-white/12',
-                      ]"
-                      @click.stop="togglePlayAsAudio(video.youtubeVideoId)"
-                    >
-                      <div :class="[
-                        'absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform',
-                        getPlayAsAudio(video.youtubeVideoId) ? 'translate-x-4' : 'translate-x-0.5',
-                      ]" />
-                    </div>
-                    <span class="text-[10px] text-ink-muted group-hover:text-ink transition-colors">Play as audio</span>
-                  </label>
-
-                  <!-- Per-video visibility -->
+                <!-- Visibility -->
+                <div class="flex items-center justify-end gap-2 pt-0.5">
                   <select
                     :value="getVisibility(video.youtubeVideoId)"
                     class="text-[10px] font-medium bg-white/6 border border-border rounded-lg px-2 py-1 text-ink focus:outline-none cursor-pointer"
@@ -173,11 +155,6 @@
                     <option value="draft">Draft</option>
                   </select>
                 </div>
-
-                <!-- Audio hint -->
-                <p v-if="getPlayAsAudio(video.youtubeVideoId)" class="text-[9px] text-primary-soft/70 leading-snug">
-                  Users will be able to play this video through the audio player UI in the app.
-                </p>
               </div>
 
               <!-- Suggested sections (when not selected) -->
@@ -190,6 +167,13 @@
               </div>
             </div>
           </div>
+        </div>
+
+        <!-- Load more -->
+        <div v-if="nextPageToken && !searchQuery" class="flex justify-center pt-2">
+          <AppButton variant="secondary" size="sm" :loading="loadingMore" @click="loadMoreVideos">
+            Load more
+          </AppButton>
         </div>
       </div>
 
@@ -239,6 +223,13 @@
             <template #cell-importedAt="{ value }">
               <span class="text-xs text-ink-muted">{{ value ? formatDate(String(value)) : '—' }}</span>
             </template>
+            <template #actions="{ row }">
+              <div class="flex items-center justify-end">
+                <AppButton size="xs" variant="ghost" class="text-danger" title="Delete" :loading="deletingId === row.id" @click="deleteQueueItem(row)">
+                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                </AppButton>
+              </div>
+            </template>
           </AppResponsiveTable>
         </AppCard>
       </div>
@@ -249,6 +240,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { getSyncStatus, triggerSync, listImportQueue, fetchChannelVideos, importVideos } from '@/api/youtube';
+import { deleteContent } from '@/api/content';
 import { useUiStore } from '@/stores/ui.store';
 import type { YouTubeSyncStatus, YouTubeImportItem, YouTubeVideoItem } from '@/api/types';
 import AppCard from '@/components/ui/AppCard.vue';
@@ -285,16 +277,20 @@ const videos        = ref<YouTubeVideoItem[]>([]);
 const selected      = ref(new Set<string>());
 const searchQuery   = ref('');
 const globalVisibility = ref<'published' | 'draft'>('published');
+const nextPageToken = ref<string | null>(null);
 
 // Per-video state maps
 const videoSections   = ref<Record<string, string[]>>({});
-const videoPlayAsAudio = ref<Record<string, boolean>>({});
 const videoVisibility  = ref<Record<string, string>>({});
 
 const isLoading     = ref(false);
 const loadingVideos = ref(false);
+const loadingMore   = ref(false);
 const syncing       = ref(false);
 const importing     = ref(false);
+const deletingId    = ref<string | null>(null);
+
+const PAGE_SIZE = 20;
 
 const filteredVideos = computed(() =>
   searchQuery.value.trim()
@@ -321,23 +317,43 @@ onMounted(async () => {
   }
 });
 
+function trackVideoDefaults(items: YouTubeVideoItem[]): void {
+  for (const v of items) {
+    if (!videoSections.value[v.youtubeVideoId]) {
+      videoSections.value[v.youtubeVideoId] = [...v.suggestedAppSections];
+    }
+    if (videoVisibility.value[v.youtubeVideoId] === undefined) {
+      videoVisibility.value[v.youtubeVideoId] = 'published';
+    }
+  }
+}
+
 async function loadVideos(): Promise<void> {
   loadingVideos.value = true;
   try {
-    const result = await fetchChannelVideos({ maxResults: 50 });
+    const result = await fetchChannelVideos({ maxResults: PAGE_SIZE });
     videos.value = result.items ?? [];
-    for (const v of videos.value) {
-      if (!videoSections.value[v.youtubeVideoId]) {
-        videoSections.value[v.youtubeVideoId] = [...v.suggestedAppSections];
-      }
-      if (videoVisibility.value[v.youtubeVideoId] === undefined) {
-        videoVisibility.value[v.youtubeVideoId] = 'published';
-      }
-    }
+    nextPageToken.value = result.nextPageToken;
+    trackVideoDefaults(videos.value);
   } catch (e) {
     ui.addToast({ tone: 'danger', title: 'Failed to load videos', message: e instanceof Error ? e.message : undefined });
   } finally {
     loadingVideos.value = false;
+  }
+}
+
+async function loadMoreVideos(): Promise<void> {
+  if (!nextPageToken.value) return;
+  loadingMore.value = true;
+  try {
+    const result = await fetchChannelVideos({ maxResults: PAGE_SIZE, pageToken: nextPageToken.value });
+    videos.value = [...videos.value, ...(result.items ?? [])];
+    nextPageToken.value = result.nextPageToken;
+    trackVideoDefaults(result.items ?? []);
+  } catch (e) {
+    ui.addToast({ tone: 'danger', title: 'Failed to load more videos', message: e instanceof Error ? e.message : undefined });
+  } finally {
+    loadingMore.value = false;
   }
 }
 
@@ -366,14 +382,6 @@ function toggleVideoSection(videoId: string, section: string): void {
   const current = videoSections.value[videoId] ?? [];
   const idx = current.indexOf(section);
   videoSections.value[videoId] = idx === -1 ? [...current, section] : current.filter((s) => s !== section);
-}
-
-function getPlayAsAudio(videoId: string): boolean {
-  return videoPlayAsAudio.value[videoId] ?? false;
-}
-
-function togglePlayAsAudio(videoId: string): void {
-  videoPlayAsAudio.value[videoId] = !getPlayAsAudio(videoId);
 }
 
 function getVisibility(videoId: string): string {
@@ -406,7 +414,13 @@ async function importSelected(): Promise<void> {
         visibility: getVisibility(v.youtubeVideoId) as 'draft' | 'published',
       }));
     const { imported } = await importVideos(selections);
-    ui.addToast({ tone: 'success', title: `${imported} video${imported !== 1 ? 's' : ''} imported to content` });
+    ui.addToast({
+      tone: 'success',
+      title: `${imported} video${imported !== 1 ? 's' : ''} imported to content`,
+      message: 'Drafts are ready to edit and assign sections.',
+      action: { label: 'View in Content', to: '/content' },
+      duration: 8000,
+    });
     selected.value = new Set();
     try {
       importQueue.value = await listImportQueue();
@@ -417,6 +431,26 @@ async function importSelected(): Promise<void> {
     ui.addToast({ tone: 'danger', title: 'Import failed', message: e instanceof Error ? e.message : undefined });
   } finally {
     importing.value = false;
+  }
+}
+
+async function deleteQueueItem(row: Record<string, unknown>): Promise<void> {
+  const ok = await ui.confirm({
+    title: 'Delete imported video',
+    message: `Delete "${row.title}"? It will be moved to Trash and can be restored later.`,
+    tone: 'danger',
+    confirmLabel: 'Delete',
+  });
+  if (!ok) return;
+  deletingId.value = row.id as string;
+  try {
+    await deleteContent(row.id as string);
+    importQueue.value = importQueue.value.filter((item) => item.id !== row.id);
+    ui.addToast({ tone: 'success', title: 'Moved to Trash' });
+  } catch (e) {
+    ui.addToast({ tone: 'danger', title: 'Delete failed', message: e instanceof Error ? e.message : undefined });
+  } finally {
+    deletingId.value = null;
   }
 }
 

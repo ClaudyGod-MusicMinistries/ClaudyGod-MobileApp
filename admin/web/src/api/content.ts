@@ -52,6 +52,22 @@ export async function reorderContent(items: Array<{ id: string; sortOrder: numbe
   return data;
 }
 
+// ─── Trash ────────────────────────────────────────────────────────────────────
+
+export async function listTrash(params?: ContentListParams): Promise<PaginatedResponse<ContentItem>> {
+  const { data } = await client.get<PaginatedResponse<ContentItem>>('/v1/content/manage/trash', { params });
+  return data;
+}
+
+export async function restoreContent(id: string): Promise<ContentItem> {
+  const { data } = await client.post<ContentItem>(`/v1/content/manage/${id}/restore`);
+  return data;
+}
+
+export async function permanentlyDeleteContent(id: string): Promise<void> {
+  await client.delete(`/v1/content/manage/${id}/permanent`);
+}
+
 // ─── Content requests ─────────────────────────────────────────────────────────
 
 export interface RequestListParams {

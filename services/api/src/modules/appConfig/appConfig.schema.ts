@@ -258,6 +258,12 @@ export const mobileAppConfigSchema = z
         feedbackRoute: z.string().trim().min(1).max(120).default('/settingsPage/help'),
       })
       .strict(),
+    hero: z
+      .object({
+        fallbackTitle: shortTextSchema.max(80).default('Start your worship stream'),
+        fallbackSubtitle: shortTextSchema.max(160).default('Music, videos, and live moments.'),
+      })
+      .strict(),
     layout: z
       .object({
         homeSections: z.array(mobileLayoutSectionSchema).min(1).max(16),
