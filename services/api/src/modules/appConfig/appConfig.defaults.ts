@@ -176,6 +176,10 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
     androidStoreUrl: 'https://play.google.com/store/apps/details?id=com.claudygod.app',
     feedbackRoute: '/settingsPage/help',
   },
+  hero: {
+    fallbackTitle: 'Start your worship stream',
+    fallbackSubtitle: 'Music, videos, and live moments.',
+  },
   layout: {
     homeSections: [
       {

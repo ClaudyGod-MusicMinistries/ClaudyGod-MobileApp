@@ -80,6 +80,12 @@ const router = createRouter({
           meta: { minRole: Role.CREATOR, title: 'Edit content' },
         },
         {
+          path: 'content/trash',
+          name: 'content-trash',
+          component: () => import('@/views/content/ContentTrashView.vue'),
+          meta: { minRole: Role.MODERATOR, title: 'Trash' },
+        },
+        {
           path: 'requests',
           name: 'requests',
           component: () => import('@/views/content/ContentRequestsView.vue'),

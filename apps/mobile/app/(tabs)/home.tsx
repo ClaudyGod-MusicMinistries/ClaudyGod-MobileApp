@@ -263,8 +263,8 @@ export default function HomeScreen() {
 
       <PremiumHero
         item={featured}
-        title={featured ? undefined : 'Start your worship stream'}
-        subtitle={featured ? undefined : 'Music, videos, and live moments.'}
+        title={featured ? undefined : (appConfig?.hero?.fallbackTitle ?? 'Start your worship stream')}
+        subtitle={featured ? undefined : (appConfig?.hero?.fallbackSubtitle ?? 'Music, videos, and live moments.')}
         emptyIcon="graphic-eq"
         primaryLabel={
           featured?.isLive ? 'Watch live' :

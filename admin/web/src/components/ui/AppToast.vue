@@ -27,6 +27,12 @@
           <div class="flex-1 min-w-0">
             <p class="text-sm font-semibold text-ink">{{ toast.title }}</p>
             <p v-if="toast.message" class="text-xs text-ink-soft mt-0.5">{{ toast.message }}</p>
+            <RouterLink
+              v-if="toast.action"
+              :to="toast.action.to"
+              class="inline-block text-xs font-semibold text-primary hover:text-primary-soft mt-1.5 transition-colors"
+              @click="ui.removeToast(toast.id)"
+            >{{ toast.action.label }} &rarr;</RouterLink>
           </div>
           <button type="button" class="p-1 rounded-lg hover:bg-white/10 transition-colors text-ink-muted" @click="ui.removeToast(toast.id)">
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>

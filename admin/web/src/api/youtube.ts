@@ -16,7 +16,7 @@ export async function listImportQueue(): Promise<YouTubeImportItem[]> {
   return data;
 }
 
-export async function fetchChannelVideos(params?: { maxResults?: number; channelId?: string }): Promise<YouTubeVideosResponse> {
+export async function fetchChannelVideos(params?: { maxResults?: number; channelId?: string; pageToken?: string }): Promise<YouTubeVideosResponse> {
   const { data } = await client.get<YouTubeVideosResponse>('/v1/youtube/videos', { params });
   return data;
 }

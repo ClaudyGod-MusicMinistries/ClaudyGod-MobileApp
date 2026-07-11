@@ -25,6 +25,9 @@ import {
   deleteContent,
   createDraftFromContentRequest,
   getManagedContentById,
+  listDeletedContent,
+  permanentlyDeleteContent,
+  restoreContent,
   reorderContent,
   updateContent,
   updateContentSections,
@@ -98,6 +101,31 @@ contentRouter.get(
     };
     const data = await listManagedContent(req.user!, query);
     res.status(200).json(data);
+  }),
+);
+
+contentRouter.get(
+  '/manage/trash',
+  authenticate,
+  asyncHandler(async (req, res) => {
+    if (!req.user) {
+      throw new UnauthorizedError('Unauthorized', 'AUTH_REQUIRED');
+    }
+    const parsed = validateSchema(listContentQuerySchema, req.query);
+    const query = {
+      page: parsed.page ?? 1,
+      limit: parsed.limit ?? 20,
+      type: parsed.type,
+      status: parsed.status,
+      visibility: parsed.visibility,
+      section: parsed.section,
+      search: parsed.search,
+      updatedAfter: parsed.updatedAfter,
+      sort: parsed.sort,
+      sortDir: parsed.sortDir,
+    };
+    const result = await listDeletedContent(req.user, query);
+    res.status(200).json(result);
   }),
 );
 
@@ -293,6 +321,7 @@ contentRouter.get(
        INNER JOIN content_items ci ON ci.id = ts.content_id
        WHERE ts.period = $1
          AND ci.visibility = 'published'
+         AND ci.deleted_at IS NULL
        ORDER BY ts.content_id, ts.calculated_at DESC, ts.score DESC
        LIMIT $2`,
       [period, limit],
@@ -312,6 +341,36 @@ contentRouter.delete(
 
     const params = validateSchema(contentIdParamsSchema, req.params);
     const result = await deleteContent({
+      contentId: params.id,
+      requester: actor,
+    });
+    res.status(200).json(result);
+  }),
+);
+
+contentRouter.post(
+  '/manage/:id/restore',
+  authenticate,
+  asyncHandler(async (req, res) => {
+    const actor = requireAdmin(req.user);
+
+    const params = validateSchema(contentIdParamsSchema, req.params);
+    const result = await restoreContent({
+      contentId: params.id,
+      requester: actor,
+    });
+    res.status(200).json(result);
+  }),
+);
+
+contentRouter.delete(
+  '/manage/:id/permanent',
+  authenticate,
+  asyncHandler(async (req, res) => {
+    const actor = requireAdmin(req.user);
+
+    const params = validateSchema(contentIdParamsSchema, req.params);
+    const result = await permanentlyDeleteContent({
       contentId: params.id,
       requester: actor,
     });

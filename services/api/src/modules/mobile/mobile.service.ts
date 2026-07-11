@@ -215,7 +215,7 @@ const loadPublishedContent = async (limit = 120): Promise<MobileFeedItem[]> => {
          u.display_name AS author_display_name
        FROM content_items c
        INNER JOIN app_users u ON u.id = c.author_id
-       WHERE c.visibility = 'published'
+       WHERE c.visibility = 'published' AND c.deleted_at IS NULL
        ORDER BY c.sort_order NULLS LAST, c.updated_at DESC, c.created_at DESC
        LIMIT $1`,
       [limit],

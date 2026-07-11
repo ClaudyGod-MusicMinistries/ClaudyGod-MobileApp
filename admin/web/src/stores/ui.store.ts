@@ -12,6 +12,7 @@ export interface Toast {
   message?: string;
   tone: ToastTone;
   duration?: number;
+  action?: { label: string; to: string };
 }
 
 export interface ConfirmOptions {

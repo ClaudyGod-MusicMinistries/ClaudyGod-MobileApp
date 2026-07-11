@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   Linking,
@@ -38,6 +38,22 @@ export function VideoPlayer({
   onPlayStateChange,
   onProgress,
 }: VideoPlayerProps) {
+  const youtubeVideoId = extractYouTubeVideoId(sourceUri);
+
+  if (youtubeVideoId) {
+    return (
+      <YouTubeIframePlayer
+        title={title}
+        sourceUri={sourceUri}
+        videoId={youtubeVideoId}
+        height={height}
+        onRegisterControls={onRegisterControls}
+        onPlayStateChange={onPlayStateChange}
+        onProgress={onProgress}
+      />
+    );
+  }
+
   const embedUrl = buildEmbedUrl(sourceUri);
 
   if (embedUrl) {
@@ -404,6 +420,274 @@ function EmbedPlayer({
   );
 }
 
+// ─── YouTubeIframePlayer — official IFrame Player API, custom-skinned controls ─
+// Stays within YouTube's Terms of Service (uses their official embed player under
+// the hood) while hiding all of YouTube's visible chrome (controls:0/modestbranding)
+// and driving the same controls UI as NativeVideoPlayer via a postMessage bridge.
+
+interface YouTubeBridgeMessage {
+  type: 'ready' | 'state' | 'progress' | 'error';
+  state?: number;
+  currentTime?: number;
+  duration?: number;
+}
+
+function buildYouTubeBootstrapHtml(videoId: string): string {
+  return `<!DOCTYPE html><html><head>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<style>html,body,#player{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hidden;}</style>
+</head><body>
+<div id="player"></div>
+<script src="https://www.youtube.com/iframe_api"></script>
+<script>
+var player;
+function post(msg) { if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(JSON.stringify(msg)); }
+function onYouTubeIframeAPIReady() {
+  player = new YT.Player('player', {
+    videoId: '${videoId}',
+    playerVars: { controls: 0, modestbranding: 1, rel: 0, iv_load_policy: 3, playsinline: 1, autoplay: 1, fs: 0 },
+    events: {
+      onReady: function() {
+        post({ type: 'ready' });
+        setInterval(function() {
+          try { post({ type: 'progress', currentTime: player.getCurrentTime(), duration: player.getDuration() }); } catch (e) {}
+        }, 250);
+      },
+      onStateChange: function(e) { post({ type: 'state', state: e.data }); },
+      onError: function() { post({ type: 'error' }); }
+    }
+  });
+}
+</script>
+</body></html>`;
+}
+
+function YouTubeIframePlayer({
+  title,
+  sourceUri,
+  videoId,
+  height,
+  onRegisterControls,
+  onPlayStateChange,
+  onProgress,
+}: {
+  title?: string;
+  sourceUri: string;
+  videoId: string;
+  height: number;
+  onRegisterControls?: VideoPlayerProps['onRegisterControls'];
+  onPlayStateChange?: VideoPlayerProps['onPlayStateChange'];
+  onProgress?: VideoPlayerProps['onProgress'];
+}) {
+  const styles = useStyles();
+  const theme = useAppTheme();
+  const webviewRef = useRef<WebView>(null);
+  const html = useMemo(() => buildYouTubeBootstrapHtml(videoId), [videoId]);
+
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [isBuffering, setIsBuffering] = useState(true);
+  const [controlsShown, setControlsShown] = useState(true);
+  const [error, setError] = useState(false);
+
+  const controlsOpacity = useRef(new Animated.Value(1)).current;
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const seekFlashL = useRef(new Animated.Value(0)).current;
+  const seekFlashR = useRef(new Animated.Value(0)).current;
+
+  const sendCommand = useCallback((js: string) => {
+    webviewRef.current?.injectJavaScript(`${js}; true;`);
+  }, []);
+
+  const play = useCallback(() => sendCommand('player && player.playVideo()'), [sendCommand]);
+  const pause = useCallback(() => sendCommand('player && player.pauseVideo()'), [sendCommand]);
+  const seekTo = useCallback(
+    (seconds: number) => sendCommand(`player && player.seekTo(${seconds}, true)`),
+    [sendCommand],
+  );
+
+  useEffect(() => {
+    onRegisterControls?.({ pause, resume: play });
+    return () => { onRegisterControls?.(undefined); };
+  }, [onRegisterControls, play, pause]);
+
+  const scheduleHide = useCallback(() => {
+    if (hideTimer.current) clearTimeout(hideTimer.current);
+    hideTimer.current = setTimeout(() => {
+      Animated.timing(controlsOpacity, { toValue: 0, duration: 300, useNativeDriver: USE_NATIVE_DRIVER }).start(() => {
+        setControlsShown(false);
+      });
+    }, CONTROLS_HIDE_DELAY);
+  }, [controlsOpacity]);
+
+  const bringUpControls = useCallback(() => {
+    if (hideTimer.current) clearTimeout(hideTimer.current);
+    setControlsShown(true);
+    Animated.timing(controlsOpacity, { toValue: 1, duration: 180, useNativeDriver: USE_NATIVE_DRIVER }).start();
+    scheduleHide();
+  }, [controlsOpacity, scheduleHide]);
+
+  useEffect(() => {
+    if (isPlaying) scheduleHide();
+    else bringUpControls();
+    return () => { if (hideTimer.current) clearTimeout(hideTimer.current); };
+  }, [isPlaying, scheduleHide, bringUpControls]);
+
+  const flashSeek = (side: 'left' | 'right') => {
+    const anim = side === 'left' ? seekFlashL : seekFlashR;
+    anim.setValue(0);
+    Animated.sequence([
+      Animated.timing(anim, { toValue: 1, duration: 100, useNativeDriver: USE_NATIVE_DRIVER }),
+      Animated.timing(anim, { toValue: 0, duration: 500, useNativeDriver: USE_NATIVE_DRIVER }),
+    ]).start();
+  };
+
+  const seekRelative = (seconds: number) => {
+    const next = Math.max(0, duration > 0 ? Math.min(currentTime + seconds, duration) : currentTime + seconds);
+    seekTo(next);
+    flashSeek(seconds < 0 ? 'left' : 'right');
+    bringUpControls();
+  };
+
+  const seekToRatio = (ratio: number) => {
+    seekTo(Math.max(0, Math.min(ratio * duration, duration)));
+    bringUpControls();
+  };
+
+  const togglePlay = () => {
+    if (isPlaying) pause(); else play();
+    bringUpControls();
+  };
+
+  const handleMessage = useCallback((event: { nativeEvent: { data: string } }) => {
+    try {
+      const msg = JSON.parse(event.nativeEvent.data) as YouTubeBridgeMessage;
+      if (msg.type === 'progress') {
+        const ct = msg.currentTime ?? 0;
+        const dur = msg.duration ?? 0;
+        setCurrentTime(ct);
+        setDuration(dur);
+        onProgress?.(ct, dur);
+      } else if (msg.type === 'state') {
+        const playing = msg.state === 1;
+        setIsPlaying(playing);
+        setIsBuffering(msg.state === 3);
+        onPlayStateChange?.(playing);
+      } else if (msg.type === 'error') {
+        setError(true);
+      }
+    } catch {
+      // ignore malformed bridge messages
+    }
+  }, [onProgress, onPlayStateChange]);
+
+  const progress = duration > 0 ? Math.min(currentTime / duration, 1) : 0;
+
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <View style={[styles.errorShell, { height, position: 'relative' }]}>
+          <MaterialIcons name="videocam-off" size={38} color={theme.colors.textMuted} />
+          <CustomText style={styles.errorLabel}>Could not load video</CustomText>
+          <Pressable onPress={() => void Linking.openURL(sourceUri)} style={styles.openExternalBtn}>
+            <MaterialIcons name="open-in-new" size={14} color={theme.colors.primary} />
+            <CustomText style={styles.openExternalText}>Open on YouTube</CustomText>
+          </Pressable>
+        </View>
+        {title ? <TitleRow title={title} /> : null}
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      <Pressable style={{ height }} onPress={bringUpControls}>
+        <WebView
+          ref={webviewRef}
+          source={{ html }}
+          style={{ width: '100%', height, backgroundColor: '#000' }}
+          allowsFullscreenVideo
+          allowsInlineMediaPlayback
+          mediaPlaybackRequiresUserAction={false}
+          javaScriptEnabled
+          domStorageEnabled
+          scrollEnabled={false}
+          pointerEvents="none"
+          onMessage={handleMessage}
+        />
+
+        {/* Buffering */}
+        {isBuffering ? (
+          <View style={ss.bufferingShell}>
+            <View style={ss.bufferingRing}>
+              <MaterialIcons name="hourglass-top" size={24} color="rgba(255,255,255,0.70)" />
+            </View>
+          </View>
+        ) : null}
+
+        {/* Seek flash — left */}
+        <Animated.View style={[ss.seekFlashZone, ss.seekFlashLeft, { opacity: seekFlashL }]} pointerEvents="none">
+          <MaterialIcons name="replay-10" size={34} color="#FFFFFF" />
+        </Animated.View>
+
+        {/* Seek flash — right */}
+        <Animated.View style={[ss.seekFlashZone, ss.seekFlashRight, { opacity: seekFlashR }]} pointerEvents="none">
+          <MaterialIcons name="forward-10" size={34} color="#FFFFFF" />
+        </Animated.View>
+
+        {/* Controls overlay */}
+        {controlsShown ? (
+          <Animated.View style={[StyleSheet.absoluteFill, { opacity: controlsOpacity }]} pointerEvents="box-none">
+            <LinearGradient
+              colors={['rgba(0,0,0,0.75)', 'rgba(0,0,0,0)']}
+              style={[StyleSheet.absoluteFill, { bottom: '55%' }]}
+              pointerEvents="none"
+            />
+            <LinearGradient
+              colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.88)']}
+              style={[StyleSheet.absoluteFill, { top: '50%' }]}
+              pointerEvents="none"
+            />
+
+            {title ? (
+              <View style={ss.overlayTopBar}>
+                <CustomText style={ss.overlayTitleText} numberOfLines={1}>{title}</CustomText>
+              </View>
+            ) : null}
+
+            <View style={ss.centerRow} pointerEvents="box-none">
+              <Pressable onPress={() => seekRelative(-10)} style={ss.sideSeekBtn}>
+                <MaterialIcons name="replay-10" size={28} color="#FFFFFF" />
+              </Pressable>
+              <Pressable onPress={togglePlay} style={ss.playPauseBtn}>
+                <MaterialIcons name={isPlaying ? 'pause' : 'play-arrow'} size={36} color="#FFFFFF" />
+              </Pressable>
+              <Pressable onPress={() => seekRelative(10)} style={ss.sideSeekBtn}>
+                <MaterialIcons name="forward-10" size={28} color="#FFFFFF" />
+              </Pressable>
+            </View>
+
+            <View style={ss.bottomBar}>
+              <CustomText style={ss.timeText}>{formatTime(currentTime)}</CustomText>
+              <ProgressBar progress={progress} onSeek={seekToRatio} />
+              <CustomText style={ss.timeText}>{formatTime(duration)}</CustomText>
+            </View>
+
+            {/* Minimal attribution — required for IFrame API compliance */}
+            <Pressable onPress={() => void Linking.openURL(sourceUri)} style={ss.externalPill}>
+              <MaterialIcons name="open-in-new" size={12} color="rgba(255,255,255,0.85)" />
+              <CustomText style={ss.externalPillText}>YouTube</CustomText>
+            </Pressable>
+          </Animated.View>
+        ) : null}
+      </Pressable>
+
+      {title ? <TitleRow title={title} /> : null}
+    </View>
+  );
+}
+
 // ─── NativeVideoPlayer — expo-video with full custom controls ─────────────────
 
 function NativeVideoPlayer({
@@ -684,6 +968,29 @@ function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60);
   const s = Math.floor(seconds % 60);
   return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
+function extractYouTubeVideoId(sourceUri: string): string | null {
+  const value = String(sourceUri || '').trim();
+  if (!value) return null;
+
+  try {
+    const url = new URL(value);
+    const host = url.hostname.toLowerCase();
+
+    if (host.includes('youtu.be')) {
+      const id = url.pathname.replace(/^\/+/, '').split('/')[0];
+      return id || null;
+    }
+    if (host.includes('youtube.com')) {
+      const id = url.searchParams.get('v') || url.pathname.split('/').filter(Boolean).pop();
+      return id || null;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
 }
 
 function buildEmbedUrl(sourceUri: string): string | null {

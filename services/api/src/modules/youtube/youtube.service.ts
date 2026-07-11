@@ -2,9 +2,38 @@ import { env } from '../../config/env';
 import { pool } from '../../db/pool';
 import { BadRequestError, HttpError, NotFoundError } from '../../lib/errors';
 import { createLogger } from '../../lib/logger';
+import { buildPublicObjectUrl, putObjectBuffer } from '../../infra/s3';
 import type { ContentVisibility } from '../content/content.types';
 
 const log = createLogger('youtube.service');
+
+// Re-hosts a YouTube-CDN thumbnail to our own storage so imported content doesn't
+// depend on i.ytimg.com — falls back to the source URL if the fetch/upload fails,
+// since a broken re-host shouldn't block an otherwise-valid import.
+async function rehostThumbnail(videoId: string, sourceUrl: string): Promise<string> {
+  if (!env.S3_ENABLED || !sourceUrl) {
+    return sourceUrl;
+  }
+  try {
+    const response = await fetch(sourceUrl);
+    if (!response.ok) {
+      return sourceUrl;
+    }
+    const contentType = response.headers.get('content-type') || 'image/jpeg';
+    const arrayBuffer = await response.arrayBuffer();
+    const key = `content/youtube-thumbnails/${videoId}.jpg`;
+    await putObjectBuffer({
+      bucket: env.SUPABASE_STORAGE_BUCKET,
+      key,
+      contentType,
+      body: Buffer.from(arrayBuffer),
+    });
+    return buildPublicObjectUrl(key);
+  } catch (error) {
+    log.warn('Failed to rehost YouTube thumbnail, falling back to source URL', { videoId, error });
+    return sourceUrl;
+  }
+}
 
 export interface YouTubeVideoItem {
   youtubeVideoId: string;
@@ -38,6 +67,7 @@ interface YouTubeSearchResponse {
       };
     };
   }>;
+  nextPageToken?: string;
   error?: { message?: string };
 }
 
@@ -263,10 +293,12 @@ async function resolveChannelId(channelIdentifier: string): Promise<string> {
 export async function fetchYouTubeVideos(input?: {
   channelId?: string;
   maxResults?: number;
+  pageToken?: string;
 }): Promise<{
   channelId: string;
   fetchedAt: string;
   items: YouTubeVideoItem[];
+  nextPageToken: string | null;
 }> {
   ensureYouTubeConfigured(input?.channelId);
 
@@ -282,6 +314,9 @@ export async function fetchYouTubeVideos(input?: {
     order: 'date',
     maxResults: String(maxResults),
   });
+  if (input?.pageToken) {
+    searchParams.set('pageToken', input.pageToken);
+  }
 
   const search = await fetchJson<YouTubeSearchResponse>(
     `https://www.googleapis.com/youtube/v3/search?${searchParams.toString()}`,
@@ -295,6 +330,7 @@ export async function fetchYouTubeVideos(input?: {
       channelId,
       fetchedAt: new Date().toISOString(),
       items: [],
+      nextPageToken: search.nextPageToken ?? null,
     };
   }
 
@@ -351,6 +387,7 @@ export async function fetchYouTubeVideos(input?: {
     channelId,
     fetchedAt: new Date().toISOString(),
     items,
+    nextPageToken: search.nextPageToken ?? null,
   };
 }
 
@@ -390,6 +427,7 @@ export async function syncYouTubeVideosToContent(params: {
       .slice(0, 5000);
     const resolvedSections = normalizeTextList([...(appSections ?? []), ...video.suggestedAppSections]);
     const resolvedTags = normalizeTextList([...sharedTags, ...video.suggestedTags]);
+    const hostedThumbnailUrl = await rehostThumbnail(video.youtubeVideoId, video.thumbnailUrl);
 
     if (existing.rowCount && existing.rowCount > 0) {
       await pool.query(
@@ -411,7 +449,7 @@ export async function syncYouTubeVideosToContent(params: {
           title.slice(0, 180),
           description,
           params.visibility,
-          video.thumbnailUrl,
+          hostedThumbnailUrl,
           video.youtubeVideoId,
           video.channelTitle,
           video.duration,
@@ -434,7 +472,7 @@ export async function syncYouTubeVideosToContent(params: {
         title.slice(0, 180),
         description || 'Imported from YouTube channel feed.',
         video.url,
-        video.thumbnailUrl,
+        hostedThumbnailUrl,
         params.visibility,
         video.youtubeVideoId,
         video.channelTitle,
@@ -480,11 +518,11 @@ export async function getYouTubeSyncStatus(): Promise<{
 }> {
   const [countResult, latestVideoResult, latestRunResult] = await Promise.all([
     pool.query<{ count: string }>(
-      `SELECT COUNT(*)::text AS count FROM content_items WHERE source_kind = 'youtube'`,
+      `SELECT COUNT(*)::text AS count FROM content_items WHERE source_kind = 'youtube' AND deleted_at IS NULL`,
     ),
     pool.query<{ channel_name: string | null }>(
       `SELECT channel_name FROM content_items
-       WHERE source_kind = 'youtube' AND channel_name IS NOT NULL
+       WHERE source_kind = 'youtube' AND channel_name IS NOT NULL AND deleted_at IS NULL
        ORDER BY updated_at DESC LIMIT 1`,
     ),
     pool.query<{ status: 'pending' | 'processing' | 'completed' | 'failed'; created_at: string | Date }>(
@@ -522,7 +560,7 @@ export async function listYouTubeImportQueue(): Promise<
   }>(
     `SELECT id, external_source_id, title, created_at
      FROM content_items
-     WHERE source_kind = 'youtube'
+     WHERE source_kind = 'youtube' AND deleted_at IS NULL
      ORDER BY created_at DESC
      LIMIT 50`,
   );
@@ -575,6 +613,7 @@ export async function importYouTubeSelectionsToContent(params: {
       .filter(Boolean)
       .join('\n\n')
       .slice(0, 5000);
+    const hostedThumbnailUrl = await rehostThumbnail(selection.youtubeVideoId, selection.thumbnailUrl);
 
     if (existing.rowCount && existing.rowCount > 0) {
       await pool.query(
@@ -598,7 +637,7 @@ export async function importYouTubeSelectionsToContent(params: {
           description,
           selection.visibility,
           selection.url,
-          selection.thumbnailUrl,
+          hostedThumbnailUrl,
           selection.youtubeVideoId,
           selection.channelTitle,
           selection.duration,
@@ -621,7 +660,7 @@ export async function importYouTubeSelectionsToContent(params: {
         selection.title.trim().slice(0, 180),
         description || 'Imported from YouTube channel feed.',
         selection.url,
-        selection.thumbnailUrl,
+        hostedThumbnailUrl,
         selection.visibility,
         selection.youtubeVideoId,
         selection.channelTitle,

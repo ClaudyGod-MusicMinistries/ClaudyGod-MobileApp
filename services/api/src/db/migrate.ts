@@ -1011,6 +1011,10 @@ const migrationStatements = [
   /* ── Content items: admin-controlled manual ordering ──────────────────────── */
   `ALTER TABLE content_items ADD COLUMN IF NOT EXISTS sort_order INTEGER`,
   `CREATE INDEX IF NOT EXISTS idx_content_items_sort_order ON content_items (sort_order)`,
+
+  /* ── Content items: soft-delete (trash/restore) ────────────────────────────── */
+  `ALTER TABLE content_items ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ`,
+  `CREATE INDEX IF NOT EXISTS idx_content_items_deleted_at ON content_items (deleted_at)`,
 ];
 
 const MIGRATION_LOCK_ID = 7_246_130_001;

@@ -92,6 +92,10 @@ export interface MobileAppExperienceConfig {
     androidStoreUrl: string;
     feedbackRoute: string;
   };
+  hero: {
+    fallbackTitle: string;
+    fallbackSubtitle: string;
+  };
   layout: {
     homeSections: {
       id: string;

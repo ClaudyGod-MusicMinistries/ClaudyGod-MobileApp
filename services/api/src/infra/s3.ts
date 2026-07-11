@@ -97,6 +97,23 @@ export async function deleteObject(params: { bucket: string; key: string }): Pro
   logger.info('[s3] object deleted', { bucket: params.bucket, key: params.key });
 }
 
+export async function putObjectBuffer(params: {
+  bucket: string;
+  key: string;
+  contentType: string;
+  body: Buffer;
+}): Promise<void> {
+  await getClient().send(
+    new PutObjectCommand({
+      Bucket: params.bucket,
+      Key: params.key,
+      ContentType: params.contentType,
+      Body: params.body,
+    }),
+  );
+  logger.debug('[s3] object uploaded', { bucket: params.bucket, key: params.key, bytes: params.body.length });
+}
+
 export function buildPublicObjectUrl(key: string): string {
   const base = env.SUPABASE_URL.replace(/\/+$/, '');
   return `${base}/storage/v1/object/public/${env.SUPABASE_STORAGE_BUCKET}/${key}`;
