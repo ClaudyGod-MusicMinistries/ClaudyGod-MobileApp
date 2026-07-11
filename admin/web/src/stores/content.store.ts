@@ -9,6 +9,9 @@ import {
   bulkUpdateContent,
   listRequests,
   updateRequestStatus,
+  listTrash,
+  restoreContent as restoreContentApi,
+  permanentlyDeleteContent as permanentlyDeleteContentApi,
 } from '@/api/content';
 import type {
   ContentItem,
@@ -46,6 +49,12 @@ export const useContentStore = defineStore('content', () => {
   const requests = ref<ContentRequest[]>([]);
   const requestsTotal = ref(0);
   const requestsLoading = ref(false);
+
+  // Trash
+  const trashItems = ref<ContentItem[]>([]);
+  const trashTotal = ref(0);
+  const trashLoading = ref(false);
+  const trashError = ref<string | null>(null);
 
   async function fetchContent(): Promise<void> {
     isLoading.value = true;
@@ -127,10 +136,38 @@ export const useContentStore = defineStore('content', () => {
     saveError.value = null;
   }
 
+  async function fetchTrash(): Promise<void> {
+    trashLoading.value = true;
+    trashError.value = null;
+    try {
+      const res = await listTrash({ page: 1, pageSize: 100 });
+      trashItems.value = res.items;
+      trashTotal.value = res.total;
+    } catch (e) {
+      trashError.value = e instanceof Error ? e.message : 'Failed to load trash';
+    } finally {
+      trashLoading.value = false;
+    }
+  }
+
+  async function restore(id: string): Promise<void> {
+    await restoreContentApi(id);
+    trashItems.value = trashItems.value.filter((i) => i.id !== id);
+    trashTotal.value = Math.max(0, trashTotal.value - 1);
+  }
+
+  async function permanentlyDelete(id: string): Promise<void> {
+    await permanentlyDeleteContentApi(id);
+    trashItems.value = trashItems.value.filter((i) => i.id !== id);
+    trashTotal.value = Math.max(0, trashTotal.value - 1);
+  }
+
   return {
     items, total, isLoading, error, filters, current, isSaving, saveError,
     requests, requestsTotal, requestsLoading,
+    trashItems, trashTotal, trashLoading, trashError,
     fetchContent, fetchOne, save, remove, bulkAction,
     fetchRequests, updateRequest, resetCurrent,
+    fetchTrash, restore, permanentlyDelete,
   };
 });

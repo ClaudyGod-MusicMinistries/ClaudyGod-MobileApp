@@ -280,10 +280,10 @@ async function toggleVisibility(row: Record<string, unknown>): Promise<void> {
 }
 
 async function confirmDelete(row: Record<string, unknown>): Promise<void> {
-  const ok = await ui.confirm({ title: 'Delete content', message: `Delete "${row.title}"? This cannot be undone.`, tone: 'danger', confirmLabel: 'Delete' });
+  const ok = await ui.confirm({ title: 'Delete content', message: `Delete "${row.title}"? It will be moved to Trash and can be restored later.`, tone: 'danger', confirmLabel: 'Delete' });
   if (!ok) return;
   await store.remove(row.id as string);
-  ui.addToast({ tone: 'success', title: 'Deleted' });
+  ui.addToast({ tone: 'success', title: 'Moved to Trash' });
 }
 
 async function bulkAction(visibility: string): Promise<void> {
@@ -305,13 +305,13 @@ async function bulkAction(visibility: string): Promise<void> {
 }
 
 async function bulkDelete(): Promise<void> {
-  const ok = await ui.confirm({ title: 'Delete selected', message: `Delete ${selectedIds.value.length} items? This cannot be undone.`, tone: 'danger', confirmLabel: 'Delete all' });
+  const ok = await ui.confirm({ title: 'Delete selected', message: `Delete ${selectedIds.value.length} items? They will be moved to Trash and can be restored later.`, tone: 'danger', confirmLabel: 'Delete all' });
   if (!ok) return;
   bulkLoading.value = true;
   for (const id of selectedIds.value) { await store.remove(id); }
   selectedIds.value = [];
   bulkLoading.value = false;
-  ui.addToast({ tone: 'success', title: 'Deleted selected items' });
+  ui.addToast({ tone: 'success', title: 'Moved selected items to Trash' });
 }
 
 function formatDate(iso: string): string {

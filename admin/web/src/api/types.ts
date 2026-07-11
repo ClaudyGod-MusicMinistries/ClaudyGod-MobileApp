@@ -319,6 +319,10 @@ export interface AppConfig {
     androidStoreUrl: string;
     feedbackRoute: string;
   };
+  hero: {
+    fallbackTitle: string;
+    fallbackSubtitle: string;
+  };
   layout: {
     homeSections: MobileLayoutSection[];
     videoSections: MobileLayoutSection[];
@@ -471,6 +475,7 @@ export interface YouTubeVideosResponse {
   channelId: string;
   fetchedAt: string;
   items: YouTubeVideoItem[];
+  nextPageToken: string | null;
 }
 
 export interface YouTubeSyncStatus {

@@ -33,6 +33,18 @@
 
       <!-- Layout Sections -->
       <div v-if="activeTab === 'layout'" class="space-y-6">
+        <!-- Header -->
+        <AppCard class="p-4 space-y-3">
+          <div>
+            <h3 class="text-sm font-bold text-ink">Landing header</h3>
+            <p class="text-xs text-ink-muted">Shown on the Home tab when there's no featured or live item to highlight.</p>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <AppInput v-model="config.hero.fallbackTitle" label="Title" placeholder="Start your worship stream" />
+            <AppInput v-model="config.hero.fallbackSubtitle" label="Subtitle" placeholder="Music, videos, and live moments." />
+          </div>
+        </AppCard>
+
         <p class="text-xs text-ink-muted">
           Sections control what shows up on each mobile tab. Content appears in a section once it's tagged
           with that section's name under Content → App sections.

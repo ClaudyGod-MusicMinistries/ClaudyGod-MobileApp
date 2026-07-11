@@ -81,6 +81,7 @@ export const youtubeListQuerySchema = z
   .object({
     channelId: optionalChannelIdentifierSchema,
     maxResults: z.coerce.number().int().min(1).max(50).optional(),
+    pageToken: z.string().trim().min(1).max(255).optional(),
   })
   .strict();
 
