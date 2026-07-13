@@ -1015,6 +1015,12 @@ const migrationStatements = [
   /* ── Content items: soft-delete (trash/restore) ────────────────────────────── */
   `ALTER TABLE content_items ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ`,
   `CREATE INDEX IF NOT EXISTS idx_content_items_deleted_at ON content_items (deleted_at)`,
+
+  /* ── Content items: fast YouTube video id lookup for the Browse & Import
+         "already in Content" cross-reference join ────────────────────────────── */
+  `CREATE INDEX IF NOT EXISTS idx_content_items_external_source_id
+     ON content_items (external_source_id)
+     WHERE external_source_id IS NOT NULL`,
 ];
 
 const MIGRATION_LOCK_ID = 7_246_130_001;

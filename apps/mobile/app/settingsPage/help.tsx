@@ -24,7 +24,7 @@ const useStyles = makeStyles((theme) => ({
   heroIconBox:     { width: 52, height: 52, borderRadius: 18, backgroundColor: theme.colors.primarySurface, alignItems: 'center', justifyContent: 'center' },
   heroTextWrap:    { gap: 6 },
   heroTitle:       { color: theme.colors.text, fontSize: 20, fontWeight: '700', letterSpacing: -0.3 },
-  heroSubtitle:    { color: theme.colors.textMuted, fontSize: 13, lineHeight: 20 },
+  heroSubtitle:    { color: theme.colors.textMuted, lineHeight: 20 },
 
   // Contact section
   sectionGap:      { gap: 10 },
@@ -38,7 +38,7 @@ const useStyles = makeStyles((theme) => ({
 
   // Support form
   formCard:        { backgroundColor: theme.colors.surface, borderRadius: 16, padding: 20, gap: 16 },
-  formDesc:        { color: theme.colors.textMuted, fontSize: 13, lineHeight: 20 },
+  formDesc:        { color: theme.colors.textMuted, lineHeight: 20 },
   pillRow:         { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   pillBase:        { borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },
   pillActive:      { backgroundColor: theme.colors.primary },
@@ -58,7 +58,7 @@ const useStyles = makeStyles((theme) => ({
   faqDivider:      { borderTopColor: theme.colors.divider },
   faqQuestionRow:  { flexDirection: 'row', alignItems: 'center', gap: 12 },
   faqQuestion:     { color: theme.colors.text, fontSize: 14, fontWeight: '600', flex: 1 },
-  faqAnswer:       { color: theme.colors.textMuted, fontSize: 13, lineHeight: 20, marginTop: 10, paddingLeft: 32 },
+  faqAnswer:       { color: theme.colors.textMuted, lineHeight: 20, marginTop: 10, paddingLeft: 32 },
 }));
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -137,7 +137,7 @@ export default function Help() {
             </View>
             <View style={styles.heroTextWrap}>
               <CustomText style={styles.heroTitle}>Get help without confusion.</CustomText>
-              <CustomText style={styles.heroSubtitle}>
+              <CustomText variant="subtitle" style={styles.heroSubtitle}>
                 Choose a quick contact option, send a clear request, or review answers to common questions.
               </CustomText>
             </View>
@@ -186,7 +186,7 @@ export default function Help() {
         <View style={styles.sectionGap}>
           <SectionLabel title="Send a request" />
           <View style={styles.formCard}>
-            <CustomText style={styles.formDesc}>
+            <CustomText variant="subtitle" style={styles.formDesc}>
               Share the issue clearly and the support team will follow up through your account channel.
             </CustomText>
 
@@ -258,7 +258,7 @@ export default function Help() {
                       />
                       <CustomText style={styles.faqQuestion}>{faq.q}</CustomText>
                     </View>
-                    {open ? <CustomText style={styles.faqAnswer}>{faq.a}</CustomText> : null}
+                    {open ? <CustomText variant="subtitle" style={styles.faqAnswer}>{faq.a}</CustomText> : null}
                   </TVTouchable>
                 );
               })}

@@ -59,7 +59,7 @@ const useStyles = makeStyles((theme) => ({
   queueTitle:       { color: theme.colors.text, fontSize: 14, fontWeight: '800', letterSpacing: -0.2 },
   queueCountPill:   { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 999, backgroundColor: theme.colors.primarySurface },
   queueCountText:   { color: theme.colors.primary, fontSize: 10, fontWeight: '700' },
-  queueClearText:   { color: theme.colors.primary, fontSize: 12, fontWeight: '600' },
+  queueClearText:   { color: theme.colors.primary, fontWeight: '600' },
   queueItemCard: {
     borderRadius: theme.radius.md, backgroundColor: theme.colors.subtleFill,
     borderWidth: 0.5, borderColor: theme.colors.border, marginBottom: 2,
@@ -331,7 +331,7 @@ export default function PlaySection() {
               </View>
             </View>
             <TVTouchable onPress={() => setFilter(filter === 'all' ? 'songs' : 'all')} showFocusBorder={false}>
-              <CustomText style={styles.queueClearText}>
+              <CustomText variant="label" style={styles.queueClearText}>
                 {filter === 'all' ? 'Filter' : 'Clear filter'}
               </CustomText>
             </TVTouchable>

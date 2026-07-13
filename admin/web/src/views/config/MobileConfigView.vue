@@ -1,12 +1,9 @@
 <template>
   <div class="space-y-5">
-    <div class="flex items-center justify-between">
-      <h2 class="text-base font-bold text-ink">Mobile app config</h2>
-      <div class="flex items-center gap-2">
-        <AppButton variant="secondary" size="sm" @click="previewOpen = true">Preview</AppButton>
-        <AppButton :loading="store.isSaving" @click="onSave">Save changes</AppButton>
-      </div>
-    </div>
+    <PageHeader icon="config" title="Mobile app config">
+      <AppButton variant="secondary" size="sm" @click="previewOpen = true">Preview</AppButton>
+      <AppButton :loading="store.isSaving" @click="onSave">Save changes</AppButton>
+    </PageHeader>
 
     <MobilePreviewPanel v-model="previewOpen" />
 
@@ -39,7 +36,7 @@
             <h3 class="text-sm font-bold text-ink">Landing header</h3>
             <p class="text-xs text-ink-muted">Shown on the Home tab when there's no featured or live item to highlight.</p>
           </div>
-          <div class="grid grid-cols-2 gap-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <AppInput v-model="config.hero.fallbackTitle" label="Title" placeholder="Start your worship stream" />
             <AppInput v-model="config.hero.fallbackSubtitle" label="Subtitle" placeholder="Music, videos, and live moments." />
           </div>
@@ -63,7 +60,7 @@
               class="p-4 space-y-3"
             >
               <div class="flex items-start justify-between gap-3">
-                <div class="flex-1 grid grid-cols-2 gap-3">
+                <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <AppInput v-model="section.title" label="Title" placeholder="e.g. Nuggets of Truth" />
                   <AppInput v-model="section.subtitle" label="Subtitle" placeholder="Short description shown under the title" />
                 </div>
@@ -87,7 +84,7 @@
                 </button>
               </div>
 
-              <div class="grid grid-cols-3 gap-3">
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <AppInput v-model="section.actionLabel" label="Action label" placeholder="Open" />
                 <AppSelect v-model="section.destinationTab" label="Destination tab" :options="MOBILE_TAB_DESTINATION_OPTIONS_ARR" />
                 <AppInput v-model.number="section.maxItems" type="number" label="Max items" min="1" max="24" />
@@ -116,7 +113,7 @@
             <AppButton variant="secondary" size="xs" @click="addShortcut">+ Add</AppButton>
           </div>
           <div class="space-y-3">
-            <div v-for="(sc, i) in config.discovery.shortcuts" :key="sc.id" class="grid grid-cols-5 gap-2 items-end">
+            <div v-for="(sc, i) in config.discovery.shortcuts" :key="sc.id" class="grid grid-cols-1 sm:grid-cols-5 gap-2 sm:items-end">
               <AppInput v-model="sc.icon" label="Icon" placeholder="travel-explore" />
               <AppInput v-model="sc.label" label="Label" placeholder="Worship" />
               <AppInput v-model="sc.query" label="Query" placeholder="worship" />
@@ -127,11 +124,11 @@
         </AppCard>
       </div>
 
-      <!-- Settings Hub placeholder -->
+      <!-- Settings Hub summary -->
       <div v-if="activeTab === 'settings'" class="space-y-3">
         <AppCard class="p-5">
           <p class="text-sm text-ink-soft">Settings hub configuration: {{ config.settingsHub.sections.length }} sections</p>
-          <p class="text-xs text-ink-muted mt-1">Full editor coming in a future build — existing sections are preserved as-is on save.</p>
+          <p class="text-xs text-ink-muted mt-1">Section editing lives here later — your current configuration stays exactly as-is until then.</p>
         </AppCard>
       </div>
 
@@ -139,15 +136,17 @@
       <div v-if="activeTab === 'ads'" class="space-y-3">
         <div v-for="(placement, i) in config.monetization.placements" :key="placement.id">
           <AppCard class="p-4 space-y-3">
-            <div class="flex items-center gap-4">
-              <div class="flex-1 grid grid-cols-2 gap-3">
+            <div class="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+              <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <AppInput v-model="placement.title" label="Title" placeholder="Sponsored placement" />
                 <AppSelect v-model="placement.screen" label="Screen" :options="AD_PLACEMENT_SCREEN_OPTIONS_ARR" />
               </div>
-              <AppToggle v-model="config.monetization.placements[i].enabled" />
-              <AppButton variant="ghost" size="xs" class="text-danger" @click="removePlacement(i)">Remove</AppButton>
+              <div class="flex items-center justify-between sm:justify-start gap-3 shrink-0">
+                <AppToggle v-model="config.monetization.placements[i].enabled" />
+                <AppButton variant="ghost" size="xs" class="text-danger" @click="removePlacement(i)">Remove</AppButton>
+              </div>
             </div>
-            <div class="grid grid-cols-2 gap-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <AppInput v-model="placement.subtitle" label="Subtitle" placeholder="Promoted slot inside the mobile app experience." />
               <AppInput v-model.number="placement.maxItems" type="number" label="Max items" min="1" max="8" />
             </div>
@@ -187,6 +186,7 @@ import AppToggle from '@/components/ui/AppToggle.vue';
 import AppSpinner from '@/components/ui/AppSpinner.vue';
 import AppEmptyState from '@/components/ui/AppEmptyState.vue';
 import MobilePreviewPanel from '@/components/shared/MobilePreviewPanel.vue';
+import PageHeader from '@/components/shared/PageHeader.vue';
 
 const store = useConfigStore();
 const ui = useUiStore();

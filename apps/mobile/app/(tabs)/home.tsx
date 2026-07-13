@@ -55,7 +55,7 @@ const useStyles = makeStyles((theme) => ({
     backgroundColor: theme.colors.primary,
     alignItems: 'center', justifyContent: 'center',
   },
-  continueTileTitle: { color: theme.colors.text, fontSize: 12, fontWeight: '600', lineHeight: 16 },
+  continueTileTitle: { color: theme.colors.text, fontWeight: '600', lineHeight: 16 },
 
   // NewContentBanner
   bannerCard:       { borderRadius: 10, overflow: 'hidden', backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border },
@@ -66,7 +66,7 @@ const useStyles = makeStyles((theme) => ({
   bannerPlayRow:    { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
   bannerPlayBtn:    { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: theme.colors.primary, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 7 },
   bannerPlayText:   { color: '#fff', fontSize: 12, fontWeight: '700' },
-  bannerDuration:   { color: theme.colors.textMuted, fontSize: 11 },
+  bannerDuration:   { color: theme.colors.textMuted },
   bannerTitleBase:  { color: theme.colors.text, fontWeight: '800', letterSpacing: -0.3 },
 
   // Section containers
@@ -150,7 +150,7 @@ function ContinueRow({ items, onPress }: { items: FeedCardItem[]; onPress: (_ite
                   <MaterialIcons name="play-arrow" size={17} color="#fff" />
                 </View>
               </View>
-              <CustomText style={styles.continueTileTitle} numberOfLines={2}>
+              <CustomText variant="label" style={styles.continueTileTitle} numberOfLines={2}>
                 {item.title}
               </CustomText>
             </View>
@@ -194,7 +194,7 @@ function NewContentBanner({ item, onPress }: { item: FeedCardItem; onPress: () =
                 </CustomText>
               </View>
               {item.duration ? (
-                <CustomText style={styles.bannerDuration}>{item.duration}</CustomText>
+                <CustomText variant="caption" style={styles.bannerDuration}>{item.duration}</CustomText>
               ) : null}
             </View>
           </View>

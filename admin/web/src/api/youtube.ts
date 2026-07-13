@@ -7,7 +7,9 @@ export async function getSyncStatus(): Promise<YouTubeSyncStatus> {
 }
 
 export async function triggerSync(limit?: number): Promise<{ queued: number }> {
-  const { data } = await client.post<{ queued: number }>('/v1/youtube/sync', { limit });
+  // Sync now walks the entire channel (paginated) in one request, which can take
+  // well past the client's default 20s timeout for larger channels.
+  const { data } = await client.post<{ queued: number }>('/v1/youtube/sync', { limit }, { timeout: 120_000 });
   return data;
 }
 

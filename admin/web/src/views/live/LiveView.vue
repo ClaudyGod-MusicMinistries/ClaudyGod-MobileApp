@@ -1,17 +1,13 @@
 ﻿<template>
   <div class="space-y-5">
-    <div class="flex items-center justify-between gap-4">
-      <div>
-        <h2 class="text-base font-bold text-ink">Live sessions</h2>
-        <p class="text-xs text-ink-muted mt-0.5">{{ store.total }} sessions total</p>
-      </div>
+    <PageHeader icon="live" title="Live sessions" :subtitle="`${store.total} session${store.total !== 1 ? 's' : ''} total`">
       <AppButton size="sm" @click="openCreate">
         <template #icon-left>
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
         </template>
         New session
       </AppButton>
-    </div>
+    </PageHeader>
 
     <!-- Tabs -->
     <div class="flex gap-2">
@@ -82,6 +78,7 @@ import AppInput from '@/components/ui/AppInput.vue';
 import AppTextarea from '@/components/ui/AppTextarea.vue';
 import AppSelect from '@/components/ui/AppSelect.vue';
 import StatusBadge from '@/components/shared/StatusBadge.vue';
+import PageHeader from '@/components/shared/PageHeader.vue';
 
 const store = useLiveStore();
 const ui = useUiStore();
