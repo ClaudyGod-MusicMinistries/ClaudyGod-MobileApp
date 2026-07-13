@@ -48,6 +48,40 @@ export interface YouTubeVideoItem {
   liveViewerCount?: number;
   suggestedAppSections: string[];
   suggestedTags: string[];
+  // Server-verified — populated by a live join against content_items, not a
+  // capped/cached guess, so it's accurate regardless of channel size or how
+  // far back an import happened.
+  contentId: string | null;
+  contentVisibility: 'draft' | 'published' | null;
+}
+
+// Joins a batch of freshly-fetched YouTube videos against content_items so the
+// Browse & Import grid can show real, verified "already in Content" state
+// instead of cross-referencing a separately-fetched, capped recent-imports list.
+async function attachContentState(
+  items: Array<Omit<YouTubeVideoItem, 'contentId' | 'contentVisibility'>>,
+): Promise<YouTubeVideoItem[]> {
+  if (items.length === 0) {
+    return [];
+  }
+
+  const videoIds = items.map((item) => item.youtubeVideoId);
+  const result = await pool.query<{ external_source_id: string; id: string; visibility: 'draft' | 'published' }>(
+    `SELECT external_source_id, id, visibility
+     FROM content_items
+     WHERE external_source_id = ANY($1::text[]) AND deleted_at IS NULL`,
+    [videoIds],
+  );
+  const byVideoId = new Map(result.rows.map((row) => [row.external_source_id, row]));
+
+  return items.map((item) => {
+    const match = byVideoId.get(item.youtubeVideoId);
+    return {
+      ...item,
+      contentId: match?.id ?? null,
+      contentVisibility: match?.visibility ?? null,
+    };
+  });
 }
 
 interface YouTubeSearchResponse {
@@ -348,7 +382,7 @@ export async function fetchYouTubeVideos(input?: {
     (videos.items || []).map((item) => [item.id || '', item]),
   );
 
-  const items: YouTubeVideoItem[] = searchItems.map((item) => {
+  const rawItems: Array<Omit<YouTubeVideoItem, 'contentId' | 'contentVisibility'>> = searchItems.map((item) => {
     const id = item.id!.videoId!;
     const snippet = item.snippet!;
     const details = detailsById.get(id);
@@ -386,9 +420,105 @@ export async function fetchYouTubeVideos(input?: {
   return {
     channelId,
     fetchedAt: new Date().toISOString(),
-    items,
+    items: await attachContentState(rawItems),
     nextPageToken: search.nextPageToken ?? null,
   };
+}
+
+// Safety cap on how many videos a single "Sync all" run will walk through — high
+// enough to cover any realistic channel size while bounding YouTube API quota
+// usage and run time if something is misconfigured (e.g. a channel ID typo that
+// somehow still resolves).
+const SYNC_MAX_PAGES = 20;
+
+// The single place that turns one YouTube video into a content_items row — used
+// by both the full-channel sync and the explicit curated-selection import so
+// there's exactly one INSERT/UPDATE to fix when the shape of that row changes.
+// Sections/tags are preserved (not wiped) when the caller passes none, since a
+// routine re-sync shouldn't silently clear an admin's manual section tagging.
+async function upsertYouTubeVideoToContent(params: {
+  actorUserId: string;
+  youtubeVideoId: string;
+  title: string;
+  description: string;
+  channelTitle: string;
+  url: string;
+  thumbnailUrl: string;
+  duration: string;
+  visibility: ContentVisibility;
+  appSections: string[];
+  tags: string[];
+}): Promise<{ created: boolean; contentId: string }> {
+  const existing = await pool.query<{ id: string }>(
+    `SELECT id FROM content_items WHERE external_source_id = $1 OR media_url = $2 LIMIT 1`,
+    [params.youtubeVideoId, params.url],
+  );
+
+  const title = params.title.trim().slice(0, 180);
+  const description = [params.description, `YouTube Channel: ${params.channelTitle}`]
+    .filter(Boolean)
+    .join('\n\n')
+    .slice(0, 5000);
+  const resolvedSections = normalizeTextList(params.appSections);
+  const resolvedTags = normalizeTextList(params.tags);
+  const hostedThumbnailUrl = await rehostThumbnail(params.youtubeVideoId, params.thumbnailUrl);
+
+  if (existing.rowCount && existing.rowCount > 0) {
+    const contentId = existing.rows[0]!.id;
+    await pool.query(
+      `UPDATE content_items
+       SET title = $2,
+           description = $3,
+           visibility = $4,
+           media_url = $5,
+           thumbnail_url = $6,
+           source_kind = 'youtube',
+           external_source_id = $7,
+           channel_name = $8,
+           duration_label = $9,
+           app_sections = COALESCE($10::text[], app_sections),
+           tags = COALESCE($11::text[], tags),
+           updated_at = NOW()
+       WHERE id = $1`,
+      [
+        contentId,
+        title,
+        description,
+        params.visibility,
+        params.url,
+        hostedThumbnailUrl,
+        params.youtubeVideoId,
+        params.channelTitle,
+        params.duration,
+        resolvedSections.length > 0 ? resolvedSections : null,
+        resolvedTags.length > 0 ? resolvedTags : null,
+      ],
+    );
+    return { created: false, contentId };
+  }
+
+  const inserted = await pool.query<{ id: string }>(
+    `INSERT INTO content_items (
+       author_id, title, description, content_type, media_url, thumbnail_url, visibility,
+       source_kind, external_source_id, channel_name, duration_label, app_sections, tags
+     )
+     VALUES ($1, $2, $3, 'video', $4, $5, $6, 'youtube', $7, $8, $9, $10::text[], $11::text[])
+     RETURNING id`,
+    [
+      params.actorUserId,
+      title,
+      description || 'Imported from YouTube channel feed.',
+      params.url,
+      hostedThumbnailUrl,
+      params.visibility,
+      params.youtubeVideoId,
+      params.channelTitle,
+      params.duration,
+      resolvedSections,
+      resolvedTags,
+    ],
+  );
+  return { created: true, contentId: inserted.rows[0]!.id };
 }
 
 export async function syncYouTubeVideosToContent(params: {
@@ -399,92 +529,60 @@ export async function syncYouTubeVideosToContent(params: {
   appSections?: string[];
   tags?: string[];
 }): Promise<{
-  summary: { created: number; updated: number; skipped: number };
+  summary: { created: number; updated: number; skipped: number; fetched: number };
   channelId: string;
-  items: YouTubeVideoItem[];
+  queued: number;
 }> {
-  const payload = await fetchYouTubeVideos({
-    channelId: params.channelId,
-    maxResults: params.maxResults,
-  });
-
   let created = 0;
   let updated = 0;
   let skipped = 0;
+  let fetched = 0;
+  let channelId = '';
   const appSections = Array.isArray(params.appSections) ? normalizeTextList(params.appSections) : undefined;
   const sharedTags = Array.isArray(params.tags) ? normalizeTextList(params.tags) : [];
 
-  for (const video of payload.items) {
-    const existing = await pool.query<{ id: string }>(
-      `SELECT id FROM content_items WHERE media_url = $1 LIMIT 1`,
-      [video.url],
-    );
+  let pageToken: string | undefined;
+  let page = 0;
 
-    const title = video.isLive ? `${video.title}` : video.title;
-    const description = [video.description, `YouTube Channel: ${video.channelTitle}`]
-      .filter(Boolean)
-      .join('\n\n')
-      .slice(0, 5000);
-    const resolvedSections = normalizeTextList([...(appSections ?? []), ...video.suggestedAppSections]);
-    const resolvedTags = normalizeTextList([...sharedTags, ...video.suggestedTags]);
-    const hostedThumbnailUrl = await rehostThumbnail(video.youtubeVideoId, video.thumbnailUrl);
+  do {
+    const payload = await fetchYouTubeVideos({
+      channelId: params.channelId,
+      maxResults: params.maxResults ?? 50,
+      pageToken,
+    });
+    channelId = payload.channelId;
+    fetched += payload.items.length;
 
-    if (existing.rowCount && existing.rowCount > 0) {
-      await pool.query(
-        `UPDATE content_items
-         SET title = $2,
-             description = $3,
-             visibility = $4,
-             thumbnail_url = $5,
-             source_kind = 'youtube',
-             external_source_id = $6,
-             channel_name = $7,
-             duration_label = $8,
-             app_sections = COALESCE($9::text[], app_sections),
-             tags = COALESCE($10::text[], tags),
-             updated_at = NOW()
-         WHERE id = $1`,
-        [
-          existing.rows[0]!.id,
-          title.slice(0, 180),
-          description,
-          params.visibility,
-          hostedThumbnailUrl,
-          video.youtubeVideoId,
-          video.channelTitle,
-          video.duration,
-          resolvedSections.length > 0 ? resolvedSections : null,
-          resolvedTags.length > 0 ? resolvedTags : null,
-        ],
-      );
-      updated += 1;
-      continue;
+    for (const video of payload.items) {
+      const resolvedSections = normalizeTextList([...(appSections ?? []), ...video.suggestedAppSections]);
+      const resolvedTags = normalizeTextList([...sharedTags, ...video.suggestedTags]);
+
+      const result = await upsertYouTubeVideoToContent({
+        actorUserId: params.actorUserId,
+        youtubeVideoId: video.youtubeVideoId,
+        title: video.title,
+        description: video.description,
+        channelTitle: video.channelTitle,
+        url: video.url,
+        thumbnailUrl: video.thumbnailUrl,
+        duration: video.duration,
+        visibility: params.visibility,
+        appSections: resolvedSections,
+        tags: resolvedTags,
+      });
+
+      if (result.created) {
+        created += 1;
+      } else {
+        updated += 1;
+      }
     }
 
-    await pool.query(
-      `INSERT INTO content_items (
-         author_id, title, description, content_type, media_url, thumbnail_url, visibility,
-         source_kind, external_source_id, channel_name, duration_label, app_sections, tags
-       )
-       VALUES ($1, $2, $3, 'video', $4, $5, $6, 'youtube', $7, $8, $9, $10::text[], $11::text[])`,
-      [
-        params.actorUserId,
-        title.slice(0, 180),
-        description || 'Imported from YouTube channel feed.',
-        video.url,
-        hostedThumbnailUrl,
-        params.visibility,
-        video.youtubeVideoId,
-        video.channelTitle,
-        video.duration,
-        resolvedSections,
-        resolvedTags,
-      ],
-    );
-    created += 1;
-  }
+    pageToken = payload.nextPageToken ?? undefined;
+    page += 1;
+  } while (pageToken && page < SYNC_MAX_PAGES);
 
-  if (payload.items.length === 0) {
+  if (fetched === 0) {
     skipped = 1;
   }
 
@@ -492,20 +590,14 @@ export async function syncYouTubeVideosToContent(params: {
     actorUserId: params.actorUserId,
     runType: 'youtube_sync',
     status: 'completed',
-    summary: {
-      channelId: payload.channelId,
-      created,
-      updated,
-      skipped,
-      fetched: payload.items.length,
-    },
+    summary: { channelId, created, updated, skipped, fetched },
     notes: 'Bulk YouTube sync completed from admin dashboard.',
   });
 
   return {
-    summary: { created, updated, skipped },
-    channelId: payload.channelId,
-    items: payload.items,
+    summary: { created, updated, skipped, fetched },
+    channelId,
+    queued: created + updated,
   };
 }
 
@@ -549,6 +641,7 @@ export async function listYouTubeImportQueue(): Promise<
     videoId: string;
     title: string;
     status: 'pending' | 'imported' | 'skipped' | 'error';
+    visibility: 'draft' | 'published';
     importedAt: string | null;
   }>
 > {
@@ -556,13 +649,14 @@ export async function listYouTubeImportQueue(): Promise<
     id: string;
     external_source_id: string | null;
     title: string;
+    visibility: 'draft' | 'published';
     created_at: string | Date;
   }>(
-    `SELECT id, external_source_id, title, created_at
+    `SELECT id, external_source_id, title, visibility, created_at
      FROM content_items
      WHERE source_kind = 'youtube' AND deleted_at IS NULL
      ORDER BY created_at DESC
-     LIMIT 50`,
+     LIMIT 200`,
   );
 
   return result.rows.map((row) => ({
@@ -570,6 +664,7 @@ export async function listYouTubeImportQueue(): Promise<
     videoId: row.external_source_id ?? '',
     title: row.title,
     status: 'imported' as const,
+    visibility: row.visibility,
     importedAt: new Date(row.created_at).toISOString(),
   }));
 }
@@ -593,83 +688,32 @@ export async function importYouTubeSelectionsToContent(params: {
   }>;
 }): Promise<{
   summary: { created: number; updated: number; skipped: number };
-  items: YouTubeVideoItem[];
+  imported: number;
 }> {
   let created = 0;
   let updated = 0;
   let skipped = 0;
 
   for (const selection of params.selections) {
-    const existing = await pool.query<{ id: string }>(
-      `SELECT id FROM content_items
-       WHERE external_source_id = $1 OR media_url = $2
-       LIMIT 1`,
-      [selection.youtubeVideoId, selection.url],
-    );
+    const result = await upsertYouTubeVideoToContent({
+      actorUserId: params.actorUserId,
+      youtubeVideoId: selection.youtubeVideoId,
+      title: selection.title,
+      description: selection.description,
+      channelTitle: selection.channelTitle,
+      url: selection.url,
+      thumbnailUrl: selection.thumbnailUrl,
+      duration: selection.duration,
+      visibility: selection.visibility,
+      appSections: normalizeTextList(selection.appSections),
+      tags: normalizeTextList(selection.tags),
+    });
 
-    const resolvedSections = normalizeTextList(selection.appSections);
-    const resolvedTags = normalizeTextList(selection.tags);
-    const description = [selection.description, `YouTube Channel: ${selection.channelTitle}`]
-      .filter(Boolean)
-      .join('\n\n')
-      .slice(0, 5000);
-    const hostedThumbnailUrl = await rehostThumbnail(selection.youtubeVideoId, selection.thumbnailUrl);
-
-    if (existing.rowCount && existing.rowCount > 0) {
-      await pool.query(
-        `UPDATE content_items
-         SET title = $2,
-             description = $3,
-             visibility = $4,
-             media_url = $5,
-             thumbnail_url = $6,
-             source_kind = 'youtube',
-             external_source_id = $7,
-             channel_name = $8,
-             duration_label = $9,
-             app_sections = $10::text[],
-             tags = $11::text[],
-             updated_at = NOW()
-         WHERE id = $1`,
-        [
-          existing.rows[0]!.id,
-          selection.title.trim().slice(0, 180),
-          description,
-          selection.visibility,
-          selection.url,
-          hostedThumbnailUrl,
-          selection.youtubeVideoId,
-          selection.channelTitle,
-          selection.duration,
-          resolvedSections,
-          resolvedTags,
-        ],
-      );
+    if (result.created) {
+      created += 1;
+    } else {
       updated += 1;
-      continue;
     }
-
-    await pool.query(
-      `INSERT INTO content_items (
-         author_id, title, description, content_type, media_url, thumbnail_url, visibility,
-         source_kind, external_source_id, channel_name, duration_label, app_sections, tags
-       )
-       VALUES ($1, $2, $3, 'video', $4, $5, $6, 'youtube', $7, $8, $9, $10::text[], $11::text[])`,
-      [
-        params.actorUserId,
-        selection.title.trim().slice(0, 180),
-        description || 'Imported from YouTube channel feed.',
-        selection.url,
-        hostedThumbnailUrl,
-        selection.visibility,
-        selection.youtubeVideoId,
-        selection.channelTitle,
-        selection.duration,
-        resolvedSections,
-        resolvedTags,
-      ],
-    );
-    created += 1;
   }
 
   if (params.selections.length === 0) {
@@ -691,19 +735,6 @@ export async function importYouTubeSelectionsToContent(params: {
 
   return {
     summary: { created, updated, skipped },
-    items: params.selections.map((selection) => ({
-      youtubeVideoId: selection.youtubeVideoId,
-      title: selection.title,
-      description: selection.description,
-      channelTitle: selection.channelTitle,
-      publishedAt: selection.publishedAt,
-      thumbnailUrl: selection.thumbnailUrl,
-      url: selection.url,
-      duration: selection.duration,
-      isLive: selection.isLive,
-      liveViewerCount: selection.liveViewerCount,
-      suggestedAppSections: deriveSuggestedAppSections(selection),
-      suggestedTags: deriveSuggestedTags(selection),
-    })),
+    imported: created + updated,
   };
 }

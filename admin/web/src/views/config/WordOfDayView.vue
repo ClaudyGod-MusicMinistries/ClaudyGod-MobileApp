@@ -2,11 +2,7 @@
   <div class="space-y-6">
 
     <!-- Page header -->
-    <div class="flex items-center justify-between gap-4">
-      <div>
-        <h2 class="text-base font-bold text-ink">Word of Today</h2>
-        <p class="text-xs text-ink-muted mt-0.5">Schedule devotional content ahead of time — daily, weekly, or monthly.</p>
-      </div>
+    <PageHeader icon="word" title="Word of Today" subtitle="Schedule devotional content ahead of time — daily, weekly, or monthly.">
       <AppButton
         v-if="!showForm"
         @click="openCreateForm"
@@ -14,7 +10,7 @@
       >
         + New entry
       </AppButton>
-    </div>
+    </PageHeader>
 
     <!-- Create / Edit form panel -->
     <Transition
@@ -42,7 +38,7 @@
         </div>
 
         <!-- Date + Word row -->
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <AppInput
             v-model="form.messageDate"
             label="Publish date"
@@ -59,7 +55,7 @@
         </div>
 
         <!-- Passage + Status row -->
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <AppInput
             v-model="form.passage"
             label="Scripture reference"
@@ -272,6 +268,7 @@ import AppCard from '@/components/ui/AppCard.vue';
 import AppInput from '@/components/ui/AppInput.vue';
 import AppTextarea from '@/components/ui/AppTextarea.vue';
 import AppButton from '@/components/ui/AppButton.vue';
+import PageHeader from '@/components/shared/PageHeader.vue';
 import type { WordOfDay, WordOfDayInput } from '@/api/types';
 
 const store = useConfigStore();

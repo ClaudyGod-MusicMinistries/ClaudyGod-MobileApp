@@ -1,14 +1,10 @@
 <template>
   <div class="space-y-4">
-    <div class="flex items-center justify-between gap-4">
-      <div>
-        <h2 class="text-base font-bold text-ink">Trash</h2>
-        <p class="text-xs text-ink-muted mt-0.5">{{ store.trashTotal }} deleted item{{ store.trashTotal !== 1 ? 's' : '' }}</p>
-      </div>
+    <PageHeader icon="trash" tone="danger" title="Trash" :subtitle="`${store.trashTotal} deleted item${store.trashTotal !== 1 ? 's' : ''}`">
       <RouterLink to="/content">
         <AppButton variant="secondary" size="sm">Back to content</AppButton>
       </RouterLink>
-    </div>
+    </PageHeader>
 
     <AppCard>
       <AppEmptyState
@@ -62,6 +58,7 @@ import AppBadge from '@/components/ui/AppBadge.vue';
 import AppButton from '@/components/ui/AppButton.vue';
 import AppEmptyState from '@/components/ui/AppEmptyState.vue';
 import StatusBadge from '@/components/shared/StatusBadge.vue';
+import PageHeader from '@/components/shared/PageHeader.vue';
 
 const store = useContentStore();
 const ui = useUiStore();

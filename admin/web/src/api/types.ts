@@ -469,6 +469,8 @@ export interface YouTubeVideoItem {
   isLive: boolean;
   suggestedAppSections: string[];
   suggestedTags: string[];
+  contentId: string | null;
+  contentVisibility: 'draft' | 'published' | null;
 }
 
 export interface YouTubeVideosResponse {
@@ -491,6 +493,7 @@ export interface YouTubeImportItem {
   videoId: string;
   title: string;
   status: 'pending' | 'imported' | 'skipped' | 'error';
+  visibility: 'draft' | 'published';
   importedAt: string | null;
 }
 

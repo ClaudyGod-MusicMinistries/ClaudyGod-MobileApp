@@ -1,12 +1,11 @@
 ﻿<template>
   <div class="space-y-5">
-    <div class="flex items-center justify-between">
-      <h2 class="text-base font-bold text-ink">Ad campaigns</h2>
+    <PageHeader icon="ads" title="Ad campaigns">
       <AppButton size="sm" @click="openCreate">
         <template #icon-left><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg></template>
         New campaign
       </AppButton>
-    </div>
+    </PageHeader>
 
     <AppCard>
       <AppResponsiveTable :columns="columns" :rows="store.campaigns as Record<string, unknown>[]" :loading="store.isLoading">
@@ -30,11 +29,11 @@
     <!-- Create/Edit modal -->
     <AppModal v-model="modalOpen" :title="editTarget ? 'Edit campaign' : 'New campaign'" size="lg">
       <div class="space-y-4">
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <AppInput v-model="form.name" label="Campaign name" required />
           <AppInput v-model="form.sponsorName" label="Sponsor name" required placeholder="Who is this ad for?" />
         </div>
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <AppSelect v-model="form.placement" label="Placement" :options="placementOptions" />
           <AppSelect v-model="form.status" label="Status" :options="adStatusOptions" />
         </div>
@@ -53,11 +52,11 @@
 
         <AppInput v-model="form.headline" label="Headline" required placeholder="Short, punchy headline" />
         <AppTextarea v-model="form.body" label="Body copy" :rows="3" required placeholder="Ad body text…" />
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <AppInput v-model="form.ctaLabel" label="CTA label" required placeholder="e.g. Listen now" />
           <AppInput v-model="form.ctaUrl" label="CTA URL" required placeholder="https://…" />
         </div>
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <AppInput v-model="form.startsAt" label="Starts at" type="datetime-local" />
           <AppInput v-model="form.endsAt" label="Ends at" type="datetime-local" />
         </div>
@@ -85,6 +84,7 @@ import AppInput from '@/components/ui/AppInput.vue';
 import AppTextarea from '@/components/ui/AppTextarea.vue';
 import AppSelect from '@/components/ui/AppSelect.vue';
 import StatusBadge from '@/components/shared/StatusBadge.vue';
+import PageHeader from '@/components/shared/PageHeader.vue';
 import type { AdCampaignInput } from '@/api/types';
 
 const store = useAdsStore();

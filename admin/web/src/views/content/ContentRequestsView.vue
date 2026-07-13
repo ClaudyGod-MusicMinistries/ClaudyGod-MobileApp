@@ -1,19 +1,16 @@
 ﻿<template>
   <div class="space-y-5">
-    <div class="flex items-center justify-between">
-      <h2 class="text-base font-bold text-ink">Content requests</h2>
-      <div class="flex gap-2">
-        <AppButton
-          v-for="tab in tabs"
-          :key="tab.value"
-          :variant="activeTab === tab.value ? 'primary' : 'secondary'"
-          size="sm"
-          @click="activeTab = tab.value"
-        >
-          {{ tab.label }}
-        </AppButton>
-      </div>
-    </div>
+    <PageHeader icon="requests" title="Content requests">
+      <AppButton
+        v-for="tab in tabs"
+        :key="tab.value"
+        :variant="activeTab === tab.value ? 'primary' : 'secondary'"
+        size="sm"
+        @click="activeTab = tab.value"
+      >
+        {{ tab.label }}
+      </AppButton>
+    </PageHeader>
 
     <AppCard>
       <AppResponsiveTable
@@ -85,6 +82,7 @@ import AppButton from '@/components/ui/AppButton.vue';
 import AppModal from '@/components/ui/AppModal.vue';
 import AppTextarea from '@/components/ui/AppTextarea.vue';
 import StatusBadge from '@/components/shared/StatusBadge.vue';
+import PageHeader from '@/components/shared/PageHeader.vue';
 
 const store = useContentStore();
 const ui = useUiStore();

@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-6">
-    <h2 class="text-base font-bold text-ink">Analytics</h2>
+    <PageHeader icon="analytics" title="Analytics" />
 
     <!-- KPI cards -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -87,6 +87,7 @@ import AppResponsiveTable from '@/components/ui/AppResponsiveTable.vue';
 import AppBadge from '@/components/ui/AppBadge.vue';
 import AppStatCard from '@/components/ui/AppStatCard.vue';
 import AppEmptyState from '@/components/ui/AppEmptyState.vue';
+import PageHeader from '@/components/shared/PageHeader.vue';
 
 const isLoading = ref(false);
 const overview = ref<EngagementOverview | null>(null);

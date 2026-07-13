@@ -1,6 +1,6 @@
 ﻿<template>
   <div class="space-y-5">
-    <h2 class="text-base font-bold text-ink">User management</h2>
+    <PageHeader icon="users" title="User management" />
 
     <!-- Tabs -->
     <div class="flex gap-2">
@@ -93,6 +93,7 @@ import AppPagination from '@/components/ui/AppPagination.vue';
 import StatusBadge from '@/components/shared/StatusBadge.vue';
 import SearchInput from '@/components/shared/SearchInput.vue';
 import UserAvatar from '@/components/shared/UserAvatar.vue';
+import PageHeader from '@/components/shared/PageHeader.vue';
 
 const store = useUsersStore();
 const ui = useUiStore();
