@@ -46,7 +46,7 @@ const useStyles = makeStyles((theme) => ({
   },
   heroBadge:       { color: theme.colors.primary, fontSize: 10, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase' },
   heroTitle:       { color: theme.colors.text, fontSize: 15, fontWeight: '700', marginTop: 1 },
-  heroBody:        { color: theme.colors.textSecondary, fontSize: 13, lineHeight: 19, marginBottom: 16 },
+  heroBody:        { color: theme.colors.textSecondary, lineHeight: 19, marginBottom: 16 },
   countStrip: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     paddingHorizontal: 20, paddingVertical: 12,
@@ -148,7 +148,7 @@ export default function ReferralScreen() {
                   <CustomText style={styles.heroTitle}>Invite &amp; earn rewards</CustomText>
                 </View>
               </View>
-              <CustomText style={styles.heroBody}>
+              <CustomText variant="subtitle" style={styles.heroBody}>
                 Share ClaudyGod with the people in your life. Every friend you invite gets free access — and you both unlock exclusive rewards.
               </CustomText>
             </View>

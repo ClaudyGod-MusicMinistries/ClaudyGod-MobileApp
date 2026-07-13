@@ -90,12 +90,13 @@
             v-for="video in filteredVideos"
             :key="video.youtubeVideoId"
             :class="[
-              'group relative rounded-2xl border bg-surface overflow-hidden shadow-panel transition-all duration-200 cursor-pointer',
+              'group relative rounded-2xl border bg-surface overflow-hidden shadow-panel transition-all duration-200',
+              video.contentId ? '' : 'cursor-pointer',
               selected.has(video.youtubeVideoId)
                 ? 'border-primary/50 ring-2 ring-primary/25'
                 : 'border-border hover:border-white/20 hover:-translate-y-0.5 hover:shadow-lg',
             ]"
-            @click="toggleSelect(video.youtubeVideoId)"
+            @click="onCardClick(video)"
           >
             <!-- Thumbnail -->
             <div class="relative aspect-video bg-surface-strong overflow-hidden">
@@ -107,8 +108,24 @@
               />
               <div class="absolute inset-0 bg-gradient-to-t from-black/65 via-black/0 to-black/0 pointer-events-none" />
 
-              <!-- Top-left badges -->
-              <div class="absolute top-2.5 left-2.5 flex items-center gap-1.5">
+              <!-- Multi-select checkbox (only for not-yet-imported videos) -->
+              <button
+                v-if="!video.contentId"
+                type="button"
+                :class="[
+                  'absolute top-2.5 left-2.5 w-5 h-5 rounded-md border flex items-center justify-center transition-colors',
+                  selected.has(video.youtubeVideoId)
+                    ? 'bg-primary border-primary'
+                    : 'bg-black/50 border-white/40 hover:border-white/70',
+                ]"
+                title="Select for bulk import"
+                @click.stop="toggleSelect(video.youtubeVideoId)"
+              >
+                <svg v-if="selected.has(video.youtubeVideoId)" class="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+              </button>
+
+              <!-- Top-right badges -->
+              <div class="absolute top-2.5 right-2.5 flex items-center gap-1.5">
                 <span v-if="video.isLive" class="inline-flex items-center gap-1 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow">
                   <span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />LIVE
                 </span>
@@ -127,14 +144,6 @@
               <!-- Duration -->
               <div class="absolute bottom-2.5 right-2.5 bg-black/75 text-white text-[10px] font-mono px-1.5 py-0.5 rounded-md backdrop-blur-sm">
                 {{ video.duration }}
-              </div>
-
-              <!-- Selected check -->
-              <div
-                v-if="selected.has(video.youtubeVideoId)"
-                class="absolute top-2.5 right-2.5 w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow-lg"
-              >
-                <svg class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
               </div>
             </div>
 
@@ -157,58 +166,19 @@
                 <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
               </RouterLink>
 
-              <!-- Quick add — one click, no need to enter select mode -->
+              <!-- Send to Content prompt -->
               <button
                 v-else
                 type="button"
-                class="flex items-center justify-center gap-1.5 w-full py-1.5 rounded-lg text-[11px] font-semibold bg-white/6 border border-border text-ink hover:border-primary/40 hover:text-primary-soft transition-colors disabled:opacity-50"
-                :disabled="quickAddingId === video.youtubeVideoId"
-                @click.stop="quickAddToContent(video)"
+                class="flex items-center justify-center gap-1.5 w-full py-1.5 rounded-lg text-[11px] font-semibold bg-white/6 border border-border text-ink hover:border-primary/40 hover:text-primary-soft transition-colors"
+                @click.stop="openSendModal(video)"
               >
-                <AppSpinner v-if="quickAddingId === video.youtubeVideoId" size="xs" />
-                <template v-else>
-                  Add to Content
-                  <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-                </template>
+                Send to Content
+                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
               </button>
 
-              <!-- Assignment controls (shown when selected) -->
-              <div v-if="selected.has(video.youtubeVideoId)" class="space-y-3 pt-1" @click.stop>
-                <!-- Section assignment -->
-                <div class="space-y-1.5">
-                  <p class="text-[10px] font-semibold text-ink-muted uppercase tracking-wide">Assign sections</p>
-                  <div class="flex flex-wrap gap-1.5">
-                    <button
-                      v-for="s in SECTION_OPTIONS"
-                      :key="s.value"
-                      type="button"
-                      :class="[
-                        'px-2 py-1 rounded-full text-[10px] font-medium border transition-colors',
-                        getSections(video.youtubeVideoId).includes(s.value)
-                          ? 'bg-primary/20 border-primary/40 text-primary-soft'
-                          : 'bg-white/4 border-border text-ink-muted hover:border-primary/30',
-                      ]"
-                      @click="toggleVideoSection(video.youtubeVideoId, s.value)"
-                    >{{ s.label }}</button>
-                  </div>
-                </div>
-
-                <!-- Visibility -->
-                <div class="flex items-center justify-end gap-2 pt-0.5">
-                  <select
-                    :value="getVisibility(video.youtubeVideoId)"
-                    class="text-[10px] font-medium bg-white/6 border border-border rounded-lg px-2 py-1 text-ink focus:outline-none cursor-pointer"
-                    @click.stop
-                    @change="setVisibility(video.youtubeVideoId, ($event.target as HTMLSelectElement).value)"
-                  >
-                    <option value="published">Published</option>
-                    <option value="draft">Draft</option>
-                  </select>
-                </div>
-              </div>
-
-              <!-- Suggested sections (when not selected, not yet imported) -->
-              <div v-else-if="!video.contentId && video.suggestedAppSections.length" class="flex flex-wrap gap-1">
+              <!-- Suggested sections preview (not yet imported) -->
+              <div v-if="!video.contentId && video.suggestedAppSections.length" class="flex flex-wrap gap-1">
                 <span
                   v-for="s in video.suggestedAppSections.slice(0, 3)"
                   :key="s"
@@ -294,6 +264,48 @@
         </AppCard>
       </div>
     </template>
+
+    <!-- Send to Content modal -->
+    <AppModal v-model="sendModalOpen" title="Send to Content" size="sm">
+      <div v-if="sendModalVideo" class="space-y-4">
+        <div class="flex gap-3">
+          <div class="w-20 aspect-video rounded-lg overflow-hidden bg-surface-strong shrink-0">
+            <img v-if="sendModalVideo.thumbnailUrl" :src="sendModalVideo.thumbnailUrl" :alt="sendModalVideo.title" class="w-full h-full object-cover" />
+          </div>
+          <div class="min-w-0">
+            <p class="text-xs font-semibold text-ink line-clamp-2 leading-snug">{{ sendModalVideo.title }}</p>
+            <p class="text-[11px] text-ink-muted mt-1">{{ sendModalVideo.channelTitle }} · {{ sendModalVideo.duration }}</p>
+          </div>
+        </div>
+
+        <div class="space-y-1.5">
+          <p class="text-xs font-semibold text-ink-soft uppercase tracking-wide">App sections</p>
+          <div class="flex flex-wrap gap-1.5">
+            <button
+              v-for="s in SECTION_OPTIONS"
+              :key="s.value"
+              type="button"
+              :class="[
+                'px-2.5 py-1 rounded-full text-[11px] font-medium border transition-colors',
+                sendModalSections.includes(s.value)
+                  ? 'bg-primary/20 border-primary/40 text-primary-soft'
+                  : 'bg-white/4 border-border text-ink-muted hover:border-primary/30',
+              ]"
+              @click="toggleSendModalSection(s.value)"
+            >{{ s.label }}</button>
+          </div>
+        </div>
+
+        <AppSelect v-model="sendModalVisibility" label="Visibility" :options="[{ value: 'published', label: 'Published' }, { value: 'draft', label: 'Draft' }]" />
+      </div>
+
+      <template #footer>
+        <div class="flex gap-2 justify-end">
+          <AppButton variant="secondary" size="sm" @click="closeSendModal">Cancel</AppButton>
+          <AppButton size="sm" :loading="sendModalSaving" @click="confirmSendToContent">Send to Content</AppButton>
+        </div>
+      </template>
+    </AppModal>
   </div>
 </template>
 
@@ -306,6 +318,8 @@ import type { YouTubeSyncStatus, YouTubeImportItem, YouTubeVideoItem } from '@/a
 import AppCard from '@/components/ui/AppCard.vue';
 import AppResponsiveTable from '@/components/ui/AppResponsiveTable.vue';
 import AppButton from '@/components/ui/AppButton.vue';
+import AppModal from '@/components/ui/AppModal.vue';
+import AppSelect from '@/components/ui/AppSelect.vue';
 import AppSpinner from '@/components/ui/AppSpinner.vue';
 import StatusBadge from '@/components/shared/StatusBadge.vue';
 import SearchInput from '@/components/shared/SearchInput.vue';
@@ -342,9 +356,12 @@ const searchQuery   = ref('');
 const globalVisibility = ref<'published' | 'draft'>('published');
 const nextPageToken = ref<string | null>(null);
 
-// Per-video state maps
-const videoSections   = ref<Record<string, string[]>>({});
-const videoVisibility  = ref<Record<string, string>>({});
+// Send-to-Content modal (single-video, deliberate review before it lands in Content)
+const sendModalOpen = ref(false);
+const sendModalVideo = ref<YouTubeVideoItem | null>(null);
+const sendModalSections = ref<string[]>([]);
+const sendModalVisibility = ref<'draft' | 'published'>('published');
+const sendModalSaving = ref(false);
 
 const isLoading     = ref(false);
 const loadingVideos = ref(false);
@@ -364,8 +381,6 @@ const filteredVideos = computed(() =>
     : videos.value,
 );
 
-const quickAddingId = ref<string | null>(null);
-
 const columns = [
   { key: 'title',      label: 'Video title' },
   { key: 'videoId',    label: 'Video ID' },
@@ -382,24 +397,12 @@ onMounted(async () => {
   }
 });
 
-function trackVideoDefaults(items: YouTubeVideoItem[]): void {
-  for (const v of items) {
-    if (!videoSections.value[v.youtubeVideoId]) {
-      videoSections.value[v.youtubeVideoId] = [...v.suggestedAppSections];
-    }
-    if (videoVisibility.value[v.youtubeVideoId] === undefined) {
-      videoVisibility.value[v.youtubeVideoId] = 'published';
-    }
-  }
-}
-
 async function loadVideos(): Promise<void> {
   loadingVideos.value = true;
   try {
     const result = await fetchChannelVideos({ maxResults: PAGE_SIZE });
     videos.value = result.items ?? [];
     nextPageToken.value = result.nextPageToken;
-    trackVideoDefaults(videos.value);
   } catch (e) {
     ui.addToast({ tone: 'danger', title: 'Failed to load videos', message: e instanceof Error ? e.message : undefined });
   } finally {
@@ -414,7 +417,6 @@ async function loadMoreVideos(): Promise<void> {
     const result = await fetchChannelVideos({ maxResults: PAGE_SIZE, pageToken: nextPageToken.value });
     videos.value = [...videos.value, ...(result.items ?? [])];
     nextPageToken.value = result.nextPageToken;
-    trackVideoDefaults(result.items ?? []);
   } catch (e) {
     ui.addToast({ tone: 'danger', title: 'Failed to load more videos', message: e instanceof Error ? e.message : undefined });
   } finally {
@@ -439,24 +441,6 @@ function toggleSelectAll(): void {
   }
 }
 
-function getSections(videoId: string): string[] {
-  return videoSections.value[videoId] ?? [];
-}
-
-function toggleVideoSection(videoId: string, section: string): void {
-  const current = videoSections.value[videoId] ?? [];
-  const idx = current.indexOf(section);
-  videoSections.value[videoId] = idx === -1 ? [...current, section] : current.filter((s) => s !== section);
-}
-
-function getVisibility(videoId: string): string {
-  return videoVisibility.value[videoId] ?? globalVisibility.value;
-}
-
-function setVisibility(videoId: string, value: string): void {
-  videoVisibility.value[videoId] = value;
-}
-
 async function importSelected(): Promise<void> {
   if (!selected.value.size) return;
   importing.value = true;
@@ -474,9 +458,9 @@ async function importSelected(): Promise<void> {
         url: v.url,
         duration: v.duration,
         isLive: v.isLive,
-        appSections: videoSections.value[v.youtubeVideoId] ?? [],
+        appSections: v.suggestedAppSections,
         tags: v.suggestedTags,
-        visibility: getVisibility(v.youtubeVideoId) as 'draft' | 'published',
+        visibility: globalVisibility.value,
       }));
     const { imported } = await importVideos(selections);
     ui.addToast({
@@ -506,10 +490,36 @@ async function importSelected(): Promise<void> {
   }
 }
 
-// One-click add for a single card — bypasses select mode entirely for the common
-// case of "just get this video into Content," using its suggested sections/tags.
-async function quickAddToContent(video: YouTubeVideoItem): Promise<void> {
-  quickAddingId.value = video.youtubeVideoId;
+function onCardClick(video: YouTubeVideoItem): void {
+  if (video.contentId) return; // already in Content — use the explicit "Edit in Content" link instead
+  openSendModal(video);
+}
+
+function openSendModal(video: YouTubeVideoItem): void {
+  sendModalVideo.value = video;
+  sendModalSections.value = [...video.suggestedAppSections];
+  sendModalVisibility.value = 'published';
+  sendModalOpen.value = true;
+}
+
+function closeSendModal(): void {
+  sendModalOpen.value = false;
+  sendModalVideo.value = null;
+}
+
+function toggleSendModalSection(value: string): void {
+  const idx = sendModalSections.value.indexOf(value);
+  if (idx === -1) {
+    sendModalSections.value.push(value);
+  } else {
+    sendModalSections.value.splice(idx, 1);
+  }
+}
+
+async function confirmSendToContent(): Promise<void> {
+  const video = sendModalVideo.value;
+  if (!video) return;
+  sendModalSaving.value = true;
   try {
     await importVideos([{
       youtubeVideoId: video.youtubeVideoId,
@@ -521,18 +531,15 @@ async function quickAddToContent(video: YouTubeVideoItem): Promise<void> {
       url: video.url,
       duration: video.duration,
       isLive: video.isLive,
-      appSections: video.suggestedAppSections,
+      appSections: sendModalSections.value,
       tags: video.suggestedTags,
-      visibility: 'published',
+      visibility: sendModalVisibility.value,
     }]);
     ui.addToast({
       tone: 'success',
-      title: 'Added to Content',
+      title: 'Sent to Content',
       action: { label: 'View in Content', to: '/content' },
     });
-    // The import just succeeded with visibility 'published' — flip the card's
-    // state locally rather than a full re-fetch. listImportQueue() (below) still
-    // gives us the real content id without a second round trip for this one video.
     try {
       importQueue.value = await listImportQueue();
       const created = importQueue.value.find((item) => item.videoId === video.youtubeVideoId);
@@ -543,10 +550,11 @@ async function quickAddToContent(video: YouTubeVideoItem): Promise<void> {
     } catch {
       // Non-fatal — the badge will just catch up on the next full reload.
     }
+    closeSendModal();
   } catch (e) {
-    ui.addToast({ tone: 'danger', title: 'Failed to add to Content', message: e instanceof Error ? e.message : undefined });
+    ui.addToast({ tone: 'danger', title: 'Failed to send to Content', message: e instanceof Error ? e.message : undefined });
   } finally {
-    quickAddingId.value = null;
+    sendModalSaving.value = false;
   }
 }
 

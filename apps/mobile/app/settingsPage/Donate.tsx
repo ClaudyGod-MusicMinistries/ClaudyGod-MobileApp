@@ -75,7 +75,7 @@ const useStyles = makeStyles((theme) => ({
   heroIconCircle:   { width: 52, height: 52, borderRadius: 26, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
   heroTitleWrap:    { flex: 1 },
   heroLabel:        { color: 'rgba(255,255,255,0.75)', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.9 },
-  heroTitle:        { color: theme.colors.onPrimary, fontSize: 18, fontWeight: '800', marginTop: 3, letterSpacing: -0.3 },
+  heroTitle:        { color: theme.colors.onPrimary, fontWeight: '800', marginTop: 3, letterSpacing: -0.3 },
   pillRow:          { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
   pill:             { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.16)', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7, flex: 1, minWidth: 80 },
   pillText:         { color: theme.colors.onPrimary, fontSize: 11, fontWeight: '600', flex: 1 },
@@ -132,21 +132,21 @@ const useStyles = makeStyles((theme) => ({
   impactCard:       { backgroundColor: theme.colors.primarySurface, borderRadius: 14, borderWidth: 1, borderColor: theme.colors.primaryBorder, padding: 14, gap: 8 },
   impactRow:        { flexDirection: 'row', alignItems: 'center', gap: 8 },
   impactPct:        { color: theme.colors.primary, fontSize: 20, fontWeight: '800' },
-  impactLabel:      { color: theme.colors.textMuted, fontSize: 11, lineHeight: 16 },
+  impactLabel:      { color: theme.colors.textMuted, lineHeight: 16 },
 
   // CTA
   ctaWrap:          { gap: 10, paddingTop: 4 },
   trustRow:         { flexDirection: 'row', alignItems: 'center', gap: 8, justifyContent: 'center', paddingTop: 4 },
-  trustText:        { color: theme.colors.textMuted, fontSize: 11, textAlign: 'center' },
+  trustText:        { color: theme.colors.textMuted, textAlign: 'center' },
 
   // Coming-soon modal
   modalOverlay:     { flex: 1, backgroundColor: 'rgba(0,0,0,0.65)', alignItems: 'center', justifyContent: 'center', padding: 24 },
   modalCard:        { backgroundColor: theme.colors.surface, borderRadius: 24, borderWidth: 1, borderColor: theme.colors.border, padding: 28, alignItems: 'center', gap: 14, maxWidth: 340, width: '100%' },
   modalIcon:        { width: 68, height: 68, borderRadius: 34, backgroundColor: theme.colors.primarySurface, borderWidth: 1, borderColor: theme.colors.primaryBorder, alignItems: 'center', justifyContent: 'center' },
   modalTitle:       { color: theme.colors.text, fontSize: 20, fontWeight: '800', textAlign: 'center', letterSpacing: -0.3 },
-  modalSubtitle:    { color: theme.colors.textSecondary, fontSize: 14, textAlign: 'center', lineHeight: 21 },
+  modalSubtitle:    { color: theme.colors.textSecondary, textAlign: 'center' },
   modalClose:       { paddingVertical: 6 },
-  modalCloseText:   { color: theme.colors.textMuted, fontSize: 13, fontWeight: '500' },
+  modalCloseText:   { color: theme.colors.textMuted, fontWeight: '500' },
 }));
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -190,7 +190,7 @@ function HeroBanner({
           </View>
           <View style={styles.heroTitleWrap}>
             <CustomText style={styles.heroLabel}>Support the ministry</CustomText>
-            <CustomText style={styles.heroTitle}>Give with purpose</CustomText>
+            <CustomText variant="heading" style={styles.heroTitle}>Give with purpose</CustomText>
           </View>
         </View>
 
@@ -318,9 +318,9 @@ export default function Donate() {
                 <View style={styles.modalIcon}>
                   <MaterialIcons name="volunteer-activism" size={32} color={theme.colors.primary} />
                 </View>
-                <CustomText style={styles.modalTitle}>Coming soon</CustomText>
-                <CustomText style={styles.modalSubtitle}>
-                  Online giving is being set up for launch. In the meantime, you can reach us directly to give.
+                <CustomText style={styles.modalTitle}>Give by reaching out</CustomText>
+                <CustomText variant="body" style={styles.modalSubtitle}>
+                  Online giving is on its way. For now, our team is glad to help you give directly — just reach out.
                 </CustomText>
                 <AppButton
                   title="Contact us to give"
@@ -330,7 +330,7 @@ export default function Donate() {
                   leftIcon={<MaterialIcons name="support-agent" size={17} color="#FFFFFF" />}
                 />
                 <TVTouchable onPress={() => setShowComingSoon(false)} showFocusBorder={false} style={styles.modalClose}>
-                  <CustomText style={styles.modalCloseText}>Close</CustomText>
+                  <CustomText variant="subtitle" style={styles.modalCloseText}>Close</CustomText>
                 </TVTouchable>
               </View>
             </TouchableWithoutFeedback>
@@ -465,7 +465,7 @@ export default function Donate() {
                   <MaterialIcons name={item.icon} size={16} color={theme.colors.primary} />
                   <CustomText style={styles.impactPct}>{item.pct}%</CustomText>
                 </View>
-                <CustomText style={styles.impactLabel}>{item.label}</CustomText>
+                <CustomText variant="caption" style={styles.impactLabel}>{item.label}</CustomText>
               </View>
             ))}
           </View>
@@ -493,7 +493,7 @@ export default function Donate() {
 
         <View style={styles.trustRow}>
           <MaterialIcons name="verified-user" size={13} color={theme.colors.textMuted} />
-          <CustomText style={styles.trustText}>Secure giving • All transactions are encrypted</CustomText>
+          <CustomText variant="caption" style={styles.trustText}>Secure giving • All transactions are encrypted</CustomText>
         </View>
       </SettingsScaffold>
     </>

@@ -213,7 +213,7 @@ export default function Privacy() {
         <SurfaceCard tone="subtle" style={styles.sectionPad}>
           <CustomText variant="heading" style={styles.sectionHead}>Account actions</CustomText>
           <View style={styles.actionsList}>
-            <PrivacyAction icon="password"          title="Password & sign in"      description="Account sign-in is coming soon."                onPress={() => showModal({ title: 'Coming soon', message: 'Account sign-in and password management are on the way. For now, ClaudyGod works fully as a guest.', tone: 'info', primaryAction: { label: 'Got it' } })} />
+            <PrivacyAction icon="password"          title="Guest access"            description="ClaudyGod works fully without an account — nothing to set up." onPress={() => showModal({ title: 'Guest by design', message: 'ClaudyGod is built to work fully as a guest, with no account required. Your activity and preferences stay on this device.', tone: 'info', primaryAction: { label: 'Got it' } })} />
             <PrivacyAction icon="download"          title="Export my data"          description="Request a copy of account and activity data."   onPress={() => void requestExport()} />
             <PrivacyAction icon="history-toggle-off" title="Reset recommendations"  description="Clear activity used for recommendations."       onPress={resetHistory} />
             <PrivacyAction icon="email"             title="Contact privacy team"    description={contactEmail}                                   onPress={() => void Linking.openURL(`mailto:${contactEmail}`)} />

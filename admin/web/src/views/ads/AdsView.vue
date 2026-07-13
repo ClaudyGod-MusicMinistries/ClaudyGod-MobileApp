@@ -43,7 +43,10 @@
           <div class="flex items-center justify-between">
             <p class="text-xs font-semibold text-primary-soft uppercase tracking-wide">AI copy generator</p>
             <AppButton variant="secondary" size="xs" :loading="store.isGenerating" @click="generateCopy">
-              ✦ Generate
+              <template #icon-left>
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+              </template>
+              Generate
             </AppButton>
           </div>
           <AppInput v-model="aiObjective" placeholder="Describe the objective (e.g. 'Promote Easter Sunday worship event')" />

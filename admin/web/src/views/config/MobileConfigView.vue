@@ -124,11 +124,11 @@
         </AppCard>
       </div>
 
-      <!-- Settings Hub placeholder -->
+      <!-- Settings Hub summary -->
       <div v-if="activeTab === 'settings'" class="space-y-3">
         <AppCard class="p-5">
           <p class="text-sm text-ink-soft">Settings hub configuration: {{ config.settingsHub.sections.length }} sections</p>
-          <p class="text-xs text-ink-muted mt-1">Full editor coming in a future build — existing sections are preserved as-is on save.</p>
+          <p class="text-xs text-ink-muted mt-1">Section editing lives here later — your current configuration stays exactly as-is until then.</p>
         </AppCard>
       </div>
 

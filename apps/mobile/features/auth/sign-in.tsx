@@ -164,7 +164,6 @@ export default function SignInScreen() {
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to sign in right now.';
       setErrorMessage(message);
-      showToast({ title: 'Sign in failed', message, tone: 'error' });
       showModal({ title: 'Sign in failed', message, tone: 'error' });
       if (/email is not verified/i.test(message)) {
         router.push({ pathname: APP_ROUTES.auth.verifyEmail, params: { email: normalizedEmail } });
