@@ -1,7 +1,6 @@
 <template>
   <div class="space-y-6">
-    <div class="flex items-center justify-between gap-4">
-      <h2 class="text-base font-bold text-ink">YouTube</h2>
+    <PageHeader icon="youtube" tone="youtube" title="YouTube">
       <!-- Tab bar -->
       <div class="flex gap-1 bg-white/4 rounded-xl p-1">
         <button
@@ -15,26 +14,25 @@
           @click="activeTab = tab.id"
         >{{ tab.label }}</button>
       </div>
-    </div>
+    </PageHeader>
 
     <!-- ── TAB: Browse & Import ─────────────────────────────────────────────── -->
     <template v-if="activeTab === 'browse'">
       <!-- Channel status -->
-      <AppCard class="p-4">
-        <div class="flex items-center justify-between gap-4">
-          <div>
-            <p class="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-0.5">Channel</p>
-            <p class="text-sm font-bold text-ink">{{ syncStatus?.channelTitle || 'Not configured' }}</p>
-            <p v-if="syncStatus?.channelId" class="text-xs text-ink-muted">{{ syncStatus.channelId }}</p>
+      <AppCard class="p-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-red-500/25 to-red-500/5 border border-red-500/20 flex items-center justify-center shrink-0 text-red-400 font-bold text-sm">
+              {{ (syncStatus?.channelTitle || '?').charAt(0) }}
+            </div>
+            <div class="min-w-0">
+              <p class="text-[10px] font-semibold text-ink-muted uppercase tracking-wide">Channel</p>
+              <p class="text-sm font-bold text-ink truncate">{{ syncStatus?.channelTitle || 'Not configured' }}</p>
+              <p v-if="syncStatus?.channelId" class="text-[11px] text-ink-muted truncate">{{ syncStatus.channelId }}</p>
+            </div>
           </div>
-          <div class="flex items-center gap-2">
-            <!-- Search -->
-            <input
-              v-model="searchQuery"
-              type="search"
-              placeholder="Filter videos…"
-              class="h-8 px-3 text-xs rounded-lg bg-white/6 border border-border focus:outline-none focus:border-primary/40 text-ink placeholder:text-ink-muted w-36"
-            />
+          <div class="flex items-center gap-2 shrink-0">
+            <SearchInput :model-value="searchQuery" placeholder="Filter videos…" class="w-44" @update:model-value="searchQuery = $event" />
             <AppButton size="sm" :loading="loadingVideos" @click="loadVideos">
               <template #icon-left>
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
@@ -54,8 +52,8 @@
       <!-- Video grid -->
       <div v-else-if="filteredVideos.length" class="space-y-4">
         <!-- Selected banner -->
-        <div v-if="selected.size" class="flex items-center justify-between gap-4 p-3 bg-primary/10 border border-primary/20 rounded-xl">
-          <div class="flex items-center gap-3">
+        <div v-if="selected.size" class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-primary/10 border border-primary/20 rounded-xl">
+          <div class="flex flex-wrap items-center gap-3">
             <p class="text-sm font-semibold text-primary-soft">{{ selected.size }} video{{ selected.size > 1 ? 's' : '' }} selected</p>
             <!-- Global visibility for batch -->
             <div class="flex items-center gap-1.5 bg-white/6 border border-border rounded-lg px-2 py-1">
@@ -114,9 +112,15 @@
                 <span v-if="video.isLive" class="inline-flex items-center gap-1 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow">
                   <span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />LIVE
                 </span>
-                <span v-if="importedMap.has(video.youtubeVideoId)" class="inline-flex items-center gap-1 bg-emerald-500/90 text-white text-[10px] font-semibold px-2 py-1 rounded-full shadow backdrop-blur-sm">
+                <span
+                  v-if="video.contentId"
+                  :class="[
+                    'inline-flex items-center gap-1 text-white text-[10px] font-semibold px-2 py-1 rounded-full shadow backdrop-blur-sm',
+                    video.contentVisibility === 'published' ? 'bg-emerald-500/90' : 'bg-amber-500/90',
+                  ]"
+                >
                   <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                  In Content
+                  {{ video.contentVisibility === 'published' ? 'Published' : 'Draft' }}
                 </span>
               </div>
 
@@ -144,14 +148,29 @@
 
               <!-- Edit in Content (already imported) -->
               <RouterLink
-                v-if="importedMap.has(video.youtubeVideoId)"
-                :to="`/content/${importedMap.get(video.youtubeVideoId)}`"
+                v-if="video.contentId"
+                :to="`/content/${video.contentId}`"
                 class="flex items-center justify-center gap-1.5 w-full py-1.5 rounded-lg text-[11px] font-semibold bg-primary/12 border border-primary/30 text-primary-soft hover:bg-primary/20 transition-colors"
                 @click.stop
               >
                 Edit in Content
                 <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
               </RouterLink>
+
+              <!-- Quick add — one click, no need to enter select mode -->
+              <button
+                v-else
+                type="button"
+                class="flex items-center justify-center gap-1.5 w-full py-1.5 rounded-lg text-[11px] font-semibold bg-white/6 border border-border text-ink hover:border-primary/40 hover:text-primary-soft transition-colors disabled:opacity-50"
+                :disabled="quickAddingId === video.youtubeVideoId"
+                @click.stop="quickAddToContent(video)"
+              >
+                <AppSpinner v-if="quickAddingId === video.youtubeVideoId" size="xs" />
+                <template v-else>
+                  Add to Content
+                  <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                </template>
+              </button>
 
               <!-- Assignment controls (shown when selected) -->
               <div v-if="selected.has(video.youtubeVideoId)" class="space-y-3 pt-1" @click.stop>
@@ -189,7 +208,7 @@
               </div>
 
               <!-- Suggested sections (when not selected, not yet imported) -->
-              <div v-else-if="!importedMap.has(video.youtubeVideoId) && video.suggestedAppSections.length" class="flex flex-wrap gap-1">
+              <div v-else-if="!video.contentId && video.suggestedAppSections.length" class="flex flex-wrap gap-1">
                 <span
                   v-for="s in video.suggestedAppSections.slice(0, 3)"
                   :key="s"
@@ -224,15 +243,20 @@
     <!-- ── TAB: Sync & Queue ────────────────────────────────────────────────── -->
     <template v-else-if="activeTab === 'sync'">
       <AppCard class="p-5">
-        <div class="flex items-start justify-between gap-6">
-          <div class="space-y-1">
-            <p class="text-xs font-semibold text-ink-muted uppercase tracking-wide">Channel</p>
-            <p class="text-base font-bold text-ink">{{ syncStatus?.channelTitle || 'Not configured' }}</p>
-            <p v-if="syncStatus?.channelId" class="text-xs text-ink-muted">{{ syncStatus.channelId }}</p>
-            <p class="text-xs text-ink-muted mt-2">Last synced: {{ syncStatus?.lastSyncedAt ? formatDate(syncStatus.lastSyncedAt) : 'Never' }}</p>
-            <p class="text-xs text-ink-muted">{{ syncStatus?.videoCount ?? 0 }} videos tracked</p>
+        <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-6">
+          <div class="flex items-start gap-3 min-w-0">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-red-500/25 to-red-500/5 border border-red-500/20 flex items-center justify-center shrink-0 text-red-400 font-bold text-sm">
+              {{ (syncStatus?.channelTitle || '?').charAt(0) }}
+            </div>
+            <div class="min-w-0 space-y-1">
+              <p class="text-[10px] font-semibold text-ink-muted uppercase tracking-wide">Channel</p>
+              <p class="text-base font-bold text-ink truncate">{{ syncStatus?.channelTitle || 'Not configured' }}</p>
+              <p v-if="syncStatus?.channelId" class="text-xs text-ink-muted truncate">{{ syncStatus.channelId }}</p>
+              <p class="text-xs text-ink-muted mt-2">Last synced: {{ syncStatus?.lastSyncedAt ? formatDate(syncStatus.lastSyncedAt) : 'Never' }}</p>
+              <p class="text-xs text-ink-muted">{{ syncStatus?.videoCount ?? 0 }} videos tracked</p>
+            </div>
           </div>
-          <div class="flex flex-col items-end gap-2">
+          <div class="flex flex-row sm:flex-col items-center sm:items-end gap-2 shrink-0">
             <StatusBadge :status="syncStatus?.status ?? 'idle'" />
             <AppButton size="sm" :loading="syncing" :disabled="syncStatus?.status === 'syncing'" @click="triggerSyncAll">
               <template #icon-left>
@@ -245,7 +269,7 @@
       </AppCard>
 
       <div class="space-y-3">
-        <h3 class="text-sm font-bold text-ink">Import queue</h3>
+        <SectionHeading icon="sections" label="Import queue" />
         <AppCard>
           <AppResponsiveTable :columns="columns" :rows="importQueue as Record<string, unknown>[]" :loading="isLoading">
             <template #cell-title="{ row, value }">
@@ -253,7 +277,7 @@
                 {{ value }}
               </RouterLink>
             </template>
-            <template #cell-status="{ value }">
+            <template #cell-visibility="{ value }">
               <StatusBadge :status="String(value)" />
             </template>
             <template #cell-importedAt="{ value }">
@@ -284,6 +308,9 @@ import AppResponsiveTable from '@/components/ui/AppResponsiveTable.vue';
 import AppButton from '@/components/ui/AppButton.vue';
 import AppSpinner from '@/components/ui/AppSpinner.vue';
 import StatusBadge from '@/components/shared/StatusBadge.vue';
+import SearchInput from '@/components/shared/SearchInput.vue';
+import SectionHeading from '@/components/shared/SectionHeading.vue';
+import PageHeader from '@/components/shared/PageHeader.vue';
 
 const ui = useUiStore();
 
@@ -337,14 +364,12 @@ const filteredVideos = computed(() =>
     : videos.value,
 );
 
-// Maps a YouTube video id to its content_items id when it's already been imported,
-// so Browse & Import cards can link straight to the Content editor.
-const importedMap = computed(() => new Map(importQueue.value.map((item) => [item.videoId, item.id])));
+const quickAddingId = ref<string | null>(null);
 
 const columns = [
   { key: 'title',      label: 'Video title' },
   { key: 'videoId',    label: 'Video ID' },
-  { key: 'status',     label: 'Status' },
+  { key: 'visibility', label: 'Status' },
   { key: 'importedAt', label: 'Imported', align: 'right' as const },
 ];
 
@@ -461,9 +486,16 @@ async function importSelected(): Promise<void> {
       action: { label: 'View in Content', to: '/content' },
       duration: 8000,
     });
+    const importedIds = new Set(selections.map((s) => s.youtubeVideoId));
     selected.value = new Set();
     try {
       importQueue.value = await listImportQueue();
+      const byVideoId = new Map(importQueue.value.map((item) => [item.videoId, item]));
+      videos.value = videos.value.map((v) => {
+        if (!importedIds.has(v.youtubeVideoId)) return v;
+        const created = byVideoId.get(v.youtubeVideoId);
+        return created ? { ...v, contentId: created.id, contentVisibility: created.visibility } : v;
+      });
     } catch {
       // Queue refresh is non-fatal
     }
@@ -471,6 +503,50 @@ async function importSelected(): Promise<void> {
     ui.addToast({ tone: 'danger', title: 'Import failed', message: e instanceof Error ? e.message : undefined });
   } finally {
     importing.value = false;
+  }
+}
+
+// One-click add for a single card — bypasses select mode entirely for the common
+// case of "just get this video into Content," using its suggested sections/tags.
+async function quickAddToContent(video: YouTubeVideoItem): Promise<void> {
+  quickAddingId.value = video.youtubeVideoId;
+  try {
+    await importVideos([{
+      youtubeVideoId: video.youtubeVideoId,
+      title: video.title,
+      description: video.description,
+      channelTitle: video.channelTitle,
+      publishedAt: video.publishedAt,
+      thumbnailUrl: video.thumbnailUrl,
+      url: video.url,
+      duration: video.duration,
+      isLive: video.isLive,
+      appSections: video.suggestedAppSections,
+      tags: video.suggestedTags,
+      visibility: 'published',
+    }]);
+    ui.addToast({
+      tone: 'success',
+      title: 'Added to Content',
+      action: { label: 'View in Content', to: '/content' },
+    });
+    // The import just succeeded with visibility 'published' — flip the card's
+    // state locally rather than a full re-fetch. listImportQueue() (below) still
+    // gives us the real content id without a second round trip for this one video.
+    try {
+      importQueue.value = await listImportQueue();
+      const created = importQueue.value.find((item) => item.videoId === video.youtubeVideoId);
+      const idx = videos.value.findIndex((v) => v.youtubeVideoId === video.youtubeVideoId);
+      if (created && idx !== -1) {
+        videos.value[idx] = { ...videos.value[idx]!, contentId: created.id, contentVisibility: created.visibility };
+      }
+    } catch {
+      // Non-fatal — the badge will just catch up on the next full reload.
+    }
+  } catch (e) {
+    ui.addToast({ tone: 'danger', title: 'Failed to add to Content', message: e instanceof Error ? e.message : undefined });
+  } finally {
+    quickAddingId.value = null;
   }
 }
 
@@ -486,6 +562,7 @@ async function deleteQueueItem(row: Record<string, unknown>): Promise<void> {
   try {
     await deleteContent(row.id as string);
     importQueue.value = importQueue.value.filter((item) => item.id !== row.id);
+    videos.value = videos.value.map((v) => (v.contentId === row.id ? { ...v, contentId: null, contentVisibility: null } : v));
     ui.addToast({ tone: 'success', title: 'Moved to Trash' });
   } catch (e) {
     ui.addToast({ tone: 'danger', title: 'Delete failed', message: e instanceof Error ? e.message : undefined });
@@ -498,8 +575,13 @@ async function triggerSyncAll(): Promise<void> {
   syncing.value = true;
   try {
     const { queued } = await triggerSync();
-    ui.addToast({ tone: 'success', title: `Sync started — ${queued} videos queued` });
+    ui.addToast({ tone: 'success', title: `Synced ${queued} video${queued !== 1 ? 's' : ''} to Content` });
     syncStatus.value = await getSyncStatus();
+    try {
+      importQueue.value = await listImportQueue();
+    } catch {
+      // Queue refresh is non-fatal
+    }
   } catch (e) {
     ui.addToast({ tone: 'danger', title: 'Sync failed', message: e instanceof Error ? e.message : undefined });
   } finally {

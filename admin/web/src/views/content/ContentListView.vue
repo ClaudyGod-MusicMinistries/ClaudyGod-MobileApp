@@ -1,25 +1,19 @@
 ﻿<template>
   <div class="space-y-4">
     <!-- Header -->
-    <div class="flex items-center justify-between gap-4">
-      <div>
-        <h2 class="text-base font-bold text-ink">Content library</h2>
-        <p class="text-xs text-ink-muted mt-0.5">{{ store.total }} items total</p>
-      </div>
-      <div class="flex gap-2">
-        <AppButton variant="secondary" size="sm" @click="toggleReorderMode">
-          {{ reorderMode ? 'Done reordering' : 'Reorder' }}
+    <PageHeader icon="content" title="Content library" :subtitle="`${store.total} item${store.total !== 1 ? 's' : ''} total`">
+      <AppButton variant="secondary" size="sm" @click="toggleReorderMode">
+        {{ reorderMode ? 'Done reordering' : 'Reorder' }}
+      </AppButton>
+      <RouterLink to="/content/new">
+        <AppButton size="sm">
+          <template #icon-left>
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+          </template>
+          New content
         </AppButton>
-        <RouterLink to="/content/new">
-          <AppButton size="sm">
-            <template #icon-left>
-              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-            </template>
-            New content
-          </AppButton>
-        </RouterLink>
-      </div>
-    </div>
+      </RouterLink>
+    </PageHeader>
 
     <!-- Reorder mode -->
     <template v-if="reorderMode">
@@ -181,6 +175,7 @@ import AppPagination from '@/components/ui/AppPagination.vue';
 import AppEmptyState from '@/components/ui/AppEmptyState.vue';
 import StatusBadge from '@/components/shared/StatusBadge.vue';
 import SearchInput from '@/components/shared/SearchInput.vue';
+import PageHeader from '@/components/shared/PageHeader.vue';
 
 const store = useContentStore();
 const ui = useUiStore();
