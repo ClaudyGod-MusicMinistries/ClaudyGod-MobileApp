@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import { ENV } from './config';
+import { Sentry } from '../lib/sentry';
 
 export class ApiError extends Error {
   status: number;
@@ -100,8 +101,22 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
         }[response.status] ||
         `Request failed with status ${response.status}`;
 
+      Sentry.addBreadcrumb({
+        category: 'http',
+        message: `${init?.method ?? 'GET'} ${path} -> ${response.status}`,
+        level: 'warning',
+        data: { status: response.status },
+      });
+
       throw new ApiError(response.status, errorMessage);
     }
+
+    Sentry.addBreadcrumb({
+      category: 'http',
+      message: `${init?.method ?? 'GET'} ${path} -> ${response.status}`,
+      level: 'info',
+      data: { status: response.status },
+    });
 
     return (await response.json()) as T;
   } catch (error) {
