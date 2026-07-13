@@ -1,0 +1,17 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: claudygod-api
+    metrics_path: /metrics
+    scheme: http
+    static_configs:
+      - targets: ["api:4000"]
+    authorization:
+      type: Bearer
+      # Templated in at container start (see the prometheus service's `command`
+      # in docker-compose.production.yml) — Prometheus's config format has no
+      # native env-var substitution, so this placeholder gets swapped for the
+      # real METRICS_TOKEN value via `sed` before Prometheus reads the file.
+      credentials: __METRICS_TOKEN__

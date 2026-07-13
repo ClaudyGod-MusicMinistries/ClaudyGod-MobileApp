@@ -1,3 +1,9 @@
+import { initSentry } from './lib/sentry';
+
+// Initialized before any other import that might throw during module load, so
+// Sentry can capture even the earliest startup failures.
+initSentry();
+
 import { initTelemetry } from './lib/telemetry';
 import { createApp } from './app';
 import { env } from './config/env';

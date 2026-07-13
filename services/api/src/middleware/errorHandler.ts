@@ -3,6 +3,7 @@ import { ZodError } from 'zod';
 import { env } from '../config/env';
 import { HttpError } from '../lib/errors';
 import { logger } from '../lib/logger';
+import { Sentry } from '../lib/sentry';
 
 export const errorHandler: ErrorRequestHandler = (error, req, res, _next) => {
   let statusCode = 500;
@@ -32,6 +33,12 @@ export const errorHandler: ErrorRequestHandler = (error, req, res, _next) => {
       statusCode,
       message: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
+    });
+    // Only genuine server-side failures go to Sentry — 4xx (validation, auth,
+    // not-found) are normal, expected traffic and would just be noise/quota
+    // burn if reported the same way as a real 500.
+    Sentry.captureException(error, {
+      contexts: { request: { requestId: req.id, method: req.method, path: req.path } },
     });
   }
 
