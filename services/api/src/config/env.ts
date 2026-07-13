@@ -237,6 +237,7 @@ const envSchema = z
 
     METRICS_TOKEN: z.string().optional().default(''),
     OTEL_EXPORTER_OTLP_ENDPOINT: z.string().optional().default(''),
+    SENTRY_DSN: z.string().optional().default(''),
 
     GOOGLE_CLIENT_ID: z.string().optional().default(''),
     GOOGLE_CLIENT_SECRET: z.string().optional().default(''),

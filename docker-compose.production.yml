@@ -69,6 +69,9 @@ x-backend-env: &backend-env
 
   ADMIN_SIGNUP_CODE: ${ADMIN_SIGNUP_CODE:-}
 
+  METRICS_TOKEN: ${METRICS_TOKEN:?METRICS_TOKEN is required}
+  SENTRY_DSN: ${SENTRY_DSN:-}
+
 # ─── Services ─────────────────────────────────────────────────────────────────
 services:
 
@@ -249,6 +252,89 @@ services:
     networks:
       - internal
 
+  # ── Prometheus (internal only — never exposed via Traefik; Grafana reads it) ─
+  prometheus:
+    image: prom/prometheus:latest
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=false"
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      METRICS_TOKEN: ${METRICS_TOKEN:?METRICS_TOKEN is required}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        sed "s|__METRICS_TOKEN__|$${METRICS_TOKEN}|" /etc/prometheus/prometheus.yml.template > /etc/prometheus/prometheus.yml &&
+        exec /bin/prometheus --config.file=/etc/prometheus/prometheus.yml --storage.tsdb.path=/prometheus --storage.tsdb.retention.time=30d
+    volumes:
+      - ./ops/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml.template:ro
+      - prometheus_data:/prometheus
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:9090/-/healthy >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - internal
+
+  # ── Grafana (HTTP — exposed via Traefik as cgm-grafana; has its own login) ──
+  grafana:
+    image: grafana/grafana:latest
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD is required}
+      GF_SERVER_ROOT_URL: https://${GRAFANA_DOMAIN}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./ops/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./ops/grafana/provisioning/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    expose:
+      - "3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/health >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
+    networks:
+      - edge
+      - internal
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=${TRAEFIK_PUBLIC_NETWORK:-traefik-public}"
+      # Router
+      - "traefik.http.routers.cgm-grafana.rule=Host(`${GRAFANA_DOMAIN}`)"
+      - "traefik.http.routers.cgm-grafana.entrypoints=websecure"
+      - "traefik.http.routers.cgm-grafana.tls=true"
+      - "traefik.http.routers.cgm-grafana.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-letsencrypt}"
+      - "traefik.http.routers.cgm-grafana.middlewares=cgm-grafana-compress,cgm-grafana-headers"
+      # Middlewares
+      - "traefik.http.middlewares.cgm-grafana-compress.compress=true"
+      - "traefik.http.middlewares.cgm-grafana-headers.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.cgm-grafana-headers.headers.browserXssFilter=true"
+      - "traefik.http.middlewares.cgm-grafana-headers.headers.frameDeny=true"
+      - "traefik.http.middlewares.cgm-grafana-headers.headers.referrerPolicy=strict-origin-when-cross-origin"
+      - "traefik.http.middlewares.cgm-grafana-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.cgm-grafana-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.cgm-grafana-headers.headers.stsPreload=true"
+      # Service
+      - "traefik.http.services.cgm-grafana.loadbalancer.server.port=3000"
+
   # ── Admin web (HTTP — exposed via Traefik as cgm-admin) ───────────────────
   admin-web:
     image: ghcr.io/${GHCR_OWNER:-claudygod-musicministries}/claudygod-admin:${IMAGE_TAG:-latest}
@@ -350,6 +436,8 @@ services:
 # ─── Volumes ──────────────────────────────────────────────────────────────────
 volumes:
   redis_data:
+  prometheus_data:
+  grafana_data:
 
 # ─── Networks ─────────────────────────────────────────────────────────────────
 networks:
