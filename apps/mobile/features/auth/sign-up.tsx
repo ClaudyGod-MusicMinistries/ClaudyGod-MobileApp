@@ -70,11 +70,11 @@ export default function SignUpScreen() {
     setSubmitting(true);
     try {
       const session = await registerMobileUser({ displayName: name.trim(), email: normalizedEmail, password });
-      if (session.requiresEmailVerification) { router.replace({ pathname: APP_ROUTES.auth.verifyEmail, params: { email: normalizedEmail, notice: session.message ?? 'A verification code has been sent to your email.' } }); showModal({ title: 'Verification code sent', message: 'Check your email to finish creating your account.', tone: 'success' }); showToast({ title: 'Verification code sent', message: 'Check your email to finish creating your account.', tone: 'success' }); return; }
+      if (session.requiresEmailVerification) { router.replace({ pathname: APP_ROUTES.auth.verifyEmail, params: { email: normalizedEmail, notice: session.message ?? 'A verification code has been sent to your email.' } }); showModal({ title: 'Verification code sent', message: 'Check your email to finish creating your account.', tone: 'success' }); return; }
       router.replace(APP_ROUTES.tabs.home);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to create account right now.';
-      setErrorMessage(message); showToast({ title: 'Account creation failed', message, tone: 'error' });
+      setErrorMessage(message);
       showModal({ title: 'Account creation failed', message, tone: 'error' });
     } finally { setSubmitting(false); }
   };

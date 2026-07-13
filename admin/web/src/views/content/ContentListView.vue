@@ -123,6 +123,28 @@
         <template #cell-type="{ value }">
           <AppBadge tone="neutral">{{ value }}</AppBadge>
         </template>
+        <template #cell-sourceKind="{ value }">
+          <span
+            v-if="value === 'youtube'"
+            class="inline-flex items-center gap-1 text-[11px] font-medium text-red-400"
+            title="Imported from YouTube"
+          >
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            YouTube
+          </span>
+          <span
+            v-else-if="value === 'external'"
+            class="inline-flex items-center gap-1 text-[11px] font-medium text-ink-muted"
+            title="Linked to an external URL"
+          >
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 010 5.656l-3 3a4 4 0 01-5.656-5.656l1.5-1.5M10.172 13.828a4 4 0 010-5.656l3-3a4 4 0 015.656 5.656l-1.5 1.5"/></svg>
+            Link
+          </span>
+          <span v-else class="inline-flex items-center gap-1 text-[11px] font-medium text-ink-muted" title="Uploaded directly">
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+            Upload
+          </span>
+        </template>
         <template #cell-visibility="{ value }">
           <StatusBadge :status="String(value)" />
         </template>
@@ -191,6 +213,7 @@ const reorderSaving = ref(false);
 const columns = [
   { key: 'title', label: 'Title' },
   { key: 'type', label: 'Type' },
+  { key: 'sourceKind', label: 'Source' },
   { key: 'visibility', label: 'Status' },
   { key: 'createdAt', label: 'Created', sortable: true, align: 'right' as const },
 ];
