@@ -117,6 +117,9 @@ const seedEnv = (key, value) => {
     case 'EXPO_PUBLIC_MOBILE_API_KEY':
       process.env.EXPO_PUBLIC_MOBILE_API_KEY = value;
       break;
+    case 'EXPO_PUBLIC_SENTRY_DSN':
+      process.env.EXPO_PUBLIC_SENTRY_DSN = value;
+      break;
     case 'CLAUDYGOD_ENV':
       process.env.CLAUDYGOD_ENV = value;
       break;
@@ -134,6 +137,7 @@ seedEnv('EXPO_PUBLIC_SUPABASE_KEY', publicSupabaseKey);
 seedEnv('EXPO_PUBLIC_SUPABASE_ANON_KEY', resolvedSupabaseAnonKey);
 seedEnv('EXPO_PUBLIC_EAS_PROJECT_ID', resolvedEasProjectId);
 seedEnv('EXPO_PUBLIC_MOBILE_API_KEY', publicMobileApiKey);
+seedEnv('EXPO_PUBLIC_SENTRY_DSN', fileEnv.EXPO_PUBLIC_SENTRY_DSN);
 seedEnv('CLAUDYGOD_ENV', fileEnv.CLAUDYGOD_ENV);
 seedEnv('NODE_ENV', fileEnv.NODE_ENV);
 
@@ -159,6 +163,9 @@ const getEnv = (keys, fallback = '') => {
         break;
       case 'EXPO_PUBLIC_MOBILE_API_KEY':
         if (process.env.EXPO_PUBLIC_MOBILE_API_KEY) return process.env.EXPO_PUBLIC_MOBILE_API_KEY;
+        break;
+      case 'EXPO_PUBLIC_SENTRY_DSN':
+        if (process.env.EXPO_PUBLIC_SENTRY_DSN) return process.env.EXPO_PUBLIC_SENTRY_DSN;
         break;
       default:
         break;
@@ -242,6 +249,7 @@ module.exports = {
       ),
       EXPO_PUBLIC_EAS_PROJECT_ID: getEnv('EXPO_PUBLIC_EAS_PROJECT_ID', resolvedEasProjectId),
       EXPO_PUBLIC_MOBILE_API_KEY: getEnv('EXPO_PUBLIC_MOBILE_API_KEY', publicMobileApiKey),
+      EXPO_PUBLIC_SENTRY_DSN: getEnv('EXPO_PUBLIC_SENTRY_DSN', ''),
       ...(resolvedEasProjectId
         ? {
             eas: {
@@ -268,6 +276,15 @@ module.exports = {
         'expo-image-picker',
         {
           photosPermission: 'ClaudyGod accesses your photo library to let you choose a profile photo or upload content.',
+        },
+      ],
+      // No-op for local/dev builds without Sentry configured — only affects EAS builds
+      // that set SENTRY_ORG/SENTRY_PROJECT/SENTRY_AUTH_TOKEN for source map upload.
+      [
+        '@sentry/react-native/expo',
+        {
+          ...(process.env.SENTRY_ORG ? { organization: process.env.SENTRY_ORG } : {}),
+          ...(process.env.SENTRY_PROJECT ? { project: process.env.SENTRY_PROJECT } : {}),
         },
       ],
     ],
