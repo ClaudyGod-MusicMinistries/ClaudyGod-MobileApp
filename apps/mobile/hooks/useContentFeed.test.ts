@@ -10,7 +10,7 @@ jest.mock('../services/contentService', () => {
   const actual = jest.requireActual('../services/contentService');
   return { ...actual, fetchFeedBundle: jest.fn() };
 });
-jest.mock('../lib/localUserStorage', () => ({ getHistory: jest.fn() }));
+jest.mock('../lib/localUserStorage', () => ({ ...jest.requireActual('../lib/localUserStorage'), getHistory: jest.fn() }));
 
 const mockedFetchFeedBundle = fetchFeedBundle as jest.MockedFunction<typeof fetchFeedBundle>;
 const mockedGetHistory = getHistory as jest.MockedFunction<typeof getHistory>;

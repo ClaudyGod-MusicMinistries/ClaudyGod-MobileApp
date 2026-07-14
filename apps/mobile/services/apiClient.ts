@@ -1,6 +1,6 @@
 import { Platform } from 'react-native';
 import { ENV } from './config';
-import { Sentry } from '../lib/sentry';
+import { reportBreadcrumb } from '../lib/sentry';
 
 export class ApiError extends Error {
   status: number;
@@ -101,7 +101,7 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
         }[response.status] ||
         `Request failed with status ${response.status}`;
 
-      Sentry.addBreadcrumb({
+      reportBreadcrumb({
         category: 'http',
         message: `${init?.method ?? 'GET'} ${path} -> ${response.status}`,
         level: 'warning',
@@ -111,7 +111,7 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
       throw new ApiError(response.status, errorMessage);
     }
 
-    Sentry.addBreadcrumb({
+    reportBreadcrumb({
       category: 'http',
       message: `${init?.method ?? 'GET'} ${path} -> ${response.status}`,
       level: 'info',

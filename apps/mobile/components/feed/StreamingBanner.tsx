@@ -50,8 +50,8 @@ export function StreamingBanner({ item, badge = 'Featured', title, subtitle, cta
                 </View>
               </View>
             </View>
-            <View style={{ width: artSize, position: 'relative', flexShrink: 0 }}>
-              <Image source={item?.imageUrl ? { uri: item.imageUrl } : BRAND_MUSIC_ASSET} resizeMode="cover" style={{ width: artSize, height: '100%' }} />
+            <View style={{ width: artSize, height: artSize, alignSelf: 'center', position: 'relative', flexShrink: 0 }}>
+              <Image source={item?.imageUrl ? { uri: item.imageUrl } : BRAND_MUSIC_ASSET} resizeMode="cover" style={{ width: artSize, height: artSize }} />
             </View>
           </View>
         </View>
