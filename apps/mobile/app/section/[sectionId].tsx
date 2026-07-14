@@ -24,7 +24,7 @@ import {
 import { ContentList, EmptyState } from '../../components/feed';
 
 const useStyles = makeStyles((theme) => ({
-  headerRow:      { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   backBtn: {
     width: 44, height: 44, borderRadius: 22,
     alignItems: 'center', justifyContent: 'center',
@@ -32,21 +32,21 @@ const useStyles = makeStyles((theme) => ({
     backgroundColor: theme.colors.surface,
   },
   headerTextWrap: { flex: 1, minWidth: 0 },
-  headerTitle:    { color: theme.colors.text },
-  headerMeta:     { color: theme.colors.textSecondary, marginTop: 2 },
+  headerTitle: { color: theme.colors.text },
+  headerMeta: { color: theme.colors.textSecondary, marginTop: 2 },
   suggestedNote: {
     borderRadius: 10, borderWidth: 1, borderColor: theme.colors.border,
     backgroundColor: theme.colors.subtleFill, padding: 12,
     flexDirection: 'row', alignItems: 'center', gap: 8,
   },
-  suggestedText:  { color: theme.colors.textSecondary, flex: 1 },
-  loadingWrap:    { alignItems: 'center', paddingVertical: 60 },
-  errorPad:       { padding: theme.spacing.lg, gap: 10 },
-  errorTitle:     { color: theme.colors.text },
-  errorBody:      { color: theme.colors.textSecondary },
-  outerPad:       { gap: theme.spacing.lg, paddingTop: theme.layout.sectionGap },
-  scrollFill:     { flex: 1, backgroundColor: 'transparent' },
-  scrollContent:  { paddingBottom: theme.layout.tabBarContentPadding },
+  suggestedText: { color: theme.colors.textSecondary, flex: 1 },
+  loadingWrap: { alignItems: 'center', paddingVertical: 60 },
+  errorPad: { padding: theme.spacing.lg, gap: 10 },
+  errorTitle: { color: theme.colors.text },
+  errorBody: { color: theme.colors.textSecondary },
+  outerPad: { gap: theme.spacing.lg, paddingTop: theme.layout.sectionGap },
+  scrollFill: { flex: 1, backgroundColor: 'transparent' },
+  scrollContent: { paddingBottom: theme.layout.tabBarContentPadding },
 }));
 
 const VALID_SCREENS: LayoutScreen[] = ['home', 'videos', 'player', 'library'];
@@ -57,7 +57,7 @@ function isLayoutScreen(value: string | undefined): value is LayoutScreen {
 
 export default function SectionDetailScreen() {
   const styles = useStyles();
-  const theme  = useAppTheme();
+  const theme = useAppTheme();
   const router = useRouter();
   const params = useLocalSearchParams<{
     sectionId?: string | string[];
@@ -69,11 +69,11 @@ export default function SectionDetailScreen() {
   const screen: LayoutScreen = isLayoutScreen(routeParamToString(params.screen)) ? (routeParamToString(params.screen) as LayoutScreen) : 'home';
   const fallbackTitle = routeParamToString(params.title) ?? 'Section';
 
-  const [detail, setDetail]         = useState<MobileSectionDetail | null>(null);
-  const [items, setItems]           = useState<FeedCardItem[]>([]);
-  const [loading, setLoading]       = useState(true);
+  const [detail, setDetail] = useState<MobileSectionDetail | null>(null);
+  const [items, setItems] = useState<FeedCardItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [error, setError]           = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async (page: number) => {
     if (!sectionId) {
@@ -158,7 +158,7 @@ export default function SectionDetailScreen() {
               <View style={styles.suggestedNote}>
                 <MaterialIcons name="auto-awesome" size={16} color={theme.colors.textSecondary} />
                 <CustomText variant="caption" style={styles.suggestedText}>
-                  Nothing has been curated into this section yet — showing a suggested sample instead.
+                  Nothing has been uploaded yet. Sorry for the inconvenience.
                 </CustomText>
               </View>
             ) : null}
@@ -174,7 +174,7 @@ export default function SectionDetailScreen() {
             {!loading && !error && !items.length ? (
               <EmptyState
                 title="Nothing here yet"
-                message="Check back soon — the admin hasn't added content to this section yet."
+                message="Check back soon — We are sorry for the inconvenience."
               />
             ) : null}
 
