@@ -32,9 +32,41 @@ export interface MobileFeedRail {
   items: MobileFeedItem[];
 }
 
+export type MobileLayoutScreen = 'home' | 'videos' | 'player' | 'library';
+
+export interface MobileLayoutSectionResult {
+  id: string;
+  title: string;
+  subtitle: string;
+  actionLabel: string;
+  destinationTab: string;
+  maxItems: number;
+  items: MobileFeedItem[];
+  overflowCount: number;
+  isCurated: boolean;
+}
+
 export interface MobileFeedResponse {
   generatedAt: string;
   featured: MobileFeedItem | null;
   rails: MobileFeedRail[];
+  layoutSections: Record<MobileLayoutScreen, MobileLayoutSectionResult[]>;
   topCategories: string[];
+}
+
+export interface MobileSectionDetailResponse {
+  section: {
+    id: string;
+    title: string;
+    subtitle: string;
+    actionLabel: string;
+    destinationTab: string;
+    maxItems: number;
+  };
+  items: MobileFeedItem[];
+  page: number;
+  limit: number;
+  total: number;
+  hasMore: boolean;
+  isCurated: boolean;
 }

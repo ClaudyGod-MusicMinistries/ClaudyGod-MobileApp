@@ -520,6 +520,11 @@ export const listPublicContent = async (query: ContentListQuery): Promise<Conten
     conditions.push(`c.content_type = $${values.length}`);
   }
 
+  if (normalized.section) {
+    values.push(normalized.section);
+    conditions.push(`$${values.length} = ANY(c.app_sections)`);
+  }
+
   if (normalized.search) {
     values.push(`%${normalized.search}%`);
     conditions.push(`(c.title ILIKE $${values.length} OR c.description ILIKE $${values.length})`);
