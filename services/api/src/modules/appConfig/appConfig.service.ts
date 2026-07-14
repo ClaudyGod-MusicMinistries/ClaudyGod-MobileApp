@@ -65,6 +65,10 @@ function mergeWithDefaults(value: unknown): MobileAppConfig {
       ...DEFAULT_MOBILE_APP_CONFIG.rate,
       ...(input.rate ?? {}),
     },
+    referral: {
+      ...DEFAULT_MOBILE_APP_CONFIG.referral,
+      ...(input.referral ?? {}),
+    },
     layout: {
       ...DEFAULT_MOBILE_APP_CONFIG.layout,
       ...(input.layout ?? {}),

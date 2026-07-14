@@ -25,6 +25,7 @@ export const SETTINGS_DESTINATION_OPTIONS = [
   { value: 'settings.help', label: 'Help' },
   { value: 'settings.about', label: 'About' },
   { value: 'settings.rate', label: 'Rate app' },
+  { value: 'settings.referral', label: 'Invite friends' },
 ] as const;
 
 export const AD_PLACEMENT_SCREEN_OPTIONS = [
@@ -91,4 +92,12 @@ export function createSettingsHubItem(): Record<string, unknown> {
 
 export function createAdPlacement(): Record<string, unknown> {
   return { id: makeId('placement'), title: 'Sponsored placement', subtitle: 'Promoted slot inside the mobile app experience.', screen: 'home', enabled: true, maxItems: 1 };
+}
+
+export function createReferralStep(): Record<string, unknown> {
+  return { icon: 'star', title: 'New step', body: 'Describe this step of the referral flow.' };
+}
+
+export function createReferralTier(): Record<string, unknown> {
+  return { icon: 'workspace-premium', threshold: 1, reward: 'Describe the reward for this tier.' };
 }

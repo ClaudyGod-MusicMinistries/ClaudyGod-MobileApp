@@ -170,11 +170,28 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
       { label: 'Production & Editing', value: 33, icon: 'movie-edit' },
       { label: 'Outreach & Events', value: 25, icon: 'groups' },
     ],
+    scriptures: [
+      '"Give, and it will be given to you." — Luke 6:38',
+      '"Each of you should give what you have decided in your heart to give." — 2 Cor 9:7',
+      '"Bring the whole tithe into the storehouse." — Malachi 3:10',
+    ],
   },
   rate: {
     iosStoreUrl: 'https://apps.apple.com/app/idYOUR_APP_ID',
     androidStoreUrl: 'https://play.google.com/store/apps/details?id=com.claudygod.app',
     feedbackRoute: '/settingsPage/help',
+  },
+  referral: {
+    howItWorks: [
+      { icon: 'share', title: 'Share your link', body: 'Send your unique referral link to friends and family.' },
+      { icon: 'person-add', title: 'Friend joins free', body: 'They create a free ClaudyGod account — no payment needed.' },
+      { icon: 'stars', title: 'Both of you benefit', body: 'You both unlock early access to exclusive worship content.' },
+    ],
+    rewardTiers: [
+      { icon: 'library-music', threshold: 1, reward: 'Early access to new albums' },
+      { icon: 'live-tv', threshold: 3, reward: 'Exclusive live session invite' },
+      { icon: 'workspace-premium', threshold: 10, reward: 'Premium member badge' },
+    ],
   },
   hero: {
     fallbackTitle: 'Start your worship stream',
@@ -246,20 +263,20 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
   settingsHub: {
     sections: [
       {
-        id: 'account',
-        title: 'Account',
+        id: 'quick-access',
+        title: 'Quick access',
         items: [
-          { id: 'profile', icon: 'person-outline', label: 'Profile', hint: 'Manage your account details.', destination: 'profile' },
-          { id: 'library', icon: 'library-music', label: 'Library', hint: 'Open saved songs and videos.', destination: 'tabs.library' },
+          { id: 'library', icon: 'library-music', label: 'Library', hint: 'Saved content', destination: 'tabs.library' },
+          { id: 'search', icon: 'search', label: 'Search', hint: 'Find songs, videos, and live', destination: 'tabs.search' },
         ],
       },
       {
         id: 'support',
         title: 'Support',
         items: [
-          { id: 'privacy', icon: 'security', label: 'Privacy', hint: 'Review privacy and security controls.', destination: 'settings.privacy' },
-          { id: 'help', icon: 'help-outline', label: 'Help', hint: 'Contact the support team.', destination: 'settings.help' },
-          { id: 'donate', icon: 'volunteer-activism', label: 'Give', hint: 'Support the ministry.', destination: 'settings.donate' },
+          { id: 'referral', icon: 'card-giftcard', label: 'Invite friends', hint: 'Earn rewards together', destination: 'settings.referral' },
+          { id: 'help', icon: 'help-outline', label: 'Help', hint: 'Get support', destination: 'settings.help' },
+          { id: 'donate', icon: 'volunteer-activism', label: 'Support', hint: 'Give or donate', destination: 'settings.donate' },
         ],
       },
     ],

@@ -59,6 +59,22 @@ const donatePlanSchema = z
   })
   .strict();
 
+const referralStepSchema = z
+  .object({
+    icon: iconNameSchema,
+    title: shortTextSchema.max(120),
+    body: shortTextSchema.max(240),
+  })
+  .strict();
+
+const referralRewardTierSchema = z
+  .object({
+    icon: iconNameSchema,
+    threshold: z.coerce.number().int().min(1).max(1000),
+    reward: shortTextSchema.max(160),
+  })
+  .strict();
+
 const mobileLayoutContentTypeSchema = z.enum(['audio', 'video', 'playlist', 'announcement', 'live']);
 const adPlacementScreenSchema = z.enum(['landing', 'home', 'videos', 'player', 'live', 'library', 'search']);
 
@@ -113,6 +129,7 @@ const settingsDestinationSchema = z.enum([
   'settings.help',
   'settings.about',
   'settings.rate',
+  'settings.referral',
 ]);
 
 const settingsHubItemSchema = z
@@ -249,6 +266,7 @@ export const mobileAppConfigSchema = z
           )
           .min(1)
           .max(12),
+        scriptures: z.array(shortTextSchema.max(280)).min(1).max(12),
       })
       .strict(),
     rate: z
@@ -256,6 +274,12 @@ export const mobileAppConfigSchema = z
         iosStoreUrl: urlSchema,
         androidStoreUrl: urlSchema,
         feedbackRoute: z.string().trim().min(1).max(120).default('/settingsPage/help'),
+      })
+      .strict(),
+    referral: z
+      .object({
+        howItWorks: z.array(referralStepSchema).min(1).max(6),
+        rewardTiers: z.array(referralRewardTierSchema).min(1).max(8),
       })
       .strict(),
     hero: z

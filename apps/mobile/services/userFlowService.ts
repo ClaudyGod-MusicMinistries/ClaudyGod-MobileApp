@@ -86,11 +86,16 @@ export interface MobileAppExperienceConfig {
       icon: string;
     }[];
     impactBreakdown: { label: string; value: number; icon: string }[];
+    scriptures: string[];
   };
   rate: {
     iosStoreUrl: string;
     androidStoreUrl: string;
     feedbackRoute: string;
+  };
+  referral: {
+    howItWorks: { icon: string; title: string; body: string }[];
+    rewardTiers: { icon: string; threshold: number; reward: string }[];
   };
   hero: {
     fallbackTitle: string;
@@ -173,7 +178,8 @@ export interface MobileAppExperienceConfig {
           | 'settings.donate'
           | 'settings.help'
           | 'settings.about'
-          | 'settings.rate';
+          | 'settings.rate'
+          | 'settings.referral';
       }[];
     }[];
   };

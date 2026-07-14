@@ -12,10 +12,12 @@ import { useAppModal } from '../../context/AppModalContext';
 import { useAppTheme, useThemeContext } from '../../util/colorScheme';
 import { makeStyles } from '../../styles/makeStyles';
 import { useDeviceClass } from '../../util/deviceClassConfig';
-import { APP_ROUTES } from '../../util/appRoutes';
+import { APP_ROUTES, APP_ROUTE_BY_ID, type AppRouteId } from '../../util/appRoutes';
 import { useUserAccount } from '../../context/UserAccountContext';
 import { useAccountSheet } from '../../context/AccountSheetContext';
 import { fetchMePreferences, updateMePreferences, type MePreferences } from '../../services/userFlowService';
+import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
+import { getSettingsHubSections } from '../../util/mobileExperienceConfig';
 import { getPreference, setPreference } from '../../lib/localUserStorage';
 import { setDiagnosticsAllowed } from '../../lib/sentry';
 import {
@@ -32,6 +34,32 @@ const GUEST_DEFAULTS: Record<TogglePreferenceKey, boolean> = {
   personalizationEnabled: true,
   diagnosticsEnabled: true,
 };
+
+// Fallback-only — used before admin config has loaded, or if it's ever empty.
+// Mirrors the same defaults now configurable via admin's Mobile config → Settings hub.
+const DEFAULT_QUICK_ACCESS_SECTIONS: {
+  id: string;
+  title: string;
+  items: { id: string; icon: string; label: string; hint: string; destination: AppRouteId }[];
+}[] = [
+  {
+    id: 'quick-access', title: '',
+    items: [
+      { id: 'library', icon: 'library-music', label: 'Library', hint: 'Saved content', destination: 'tabs.library' },
+      { id: 'search', icon: 'search', label: 'Search', hint: 'Find songs, videos, and live', destination: 'tabs.search' },
+    ],
+  },
+  {
+    id: 'support', title: '',
+    items: [
+      { id: 'referral', icon: 'card-giftcard', label: 'Invite friends', hint: 'Earn rewards together', destination: 'settings.referral' },
+      { id: 'help', icon: 'help-outline', label: 'Help', hint: 'Get support', destination: 'settings.help' },
+      { id: 'donate', icon: 'volunteer-activism', label: 'Support', hint: 'Give or donate', destination: 'settings.donate' },
+    ],
+  },
+];
+
+const QUICK_LINK_PALETTE_KEYS = ['primary', 'success', 'info', 'danger'] as const;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -256,6 +284,12 @@ export default function SettingsScreen() {
   const { showModal } = useAppModal();
   const { account, isSignedIn, signOut } = useUserAccount();
   const { openAccountSheet } = useAccountSheet();
+  const { config: appConfig } = useMobileAppConfig();
+
+  const settingsHubSections = useMemo(() => {
+    const configured = getSettingsHubSections(appConfig);
+    return configured.length ? configured : DEFAULT_QUICK_ACCESS_SECTIONS;
+  }, [appConfig]);
 
   const [notifications,   setNotifications]   = useState(true);
   const [autoPlay,        setAutoPlay]         = useState(true);
@@ -457,43 +491,31 @@ export default function SettingsScreen() {
         </View>
       </SurfaceCard>
 
-      {/* Quick links */}
+      {/* Quick links — driven by admin's Mobile config → Settings hub */}
       <View style={styles.quickLinkSection}>
         <SectionLabel title="Quick access" accent="Navigate" />
         <View style={{ flexDirection: isWideLayout ? 'row' : 'column', gap: 12 }}>
-          <View style={isWideLayout ? styles.rowGroupWide : {}}>
-            <SurfaceCard tone="subtle" style={styles.cardEdgePad}>
-              <LinearGradient
-                colors={[`${theme.colors.primary}0F`, 'transparent']}
-                style={styles.quickGroupTopWash}
-              />
-              {[
-                { icon: 'library-music' as const, label: 'Library', hint: 'Saved content',             color: theme.colors.primary, onPress: () => router.push(APP_ROUTES.tabs.library) },
-                { icon: 'search'        as const, label: 'Search',  hint: 'Find songs, videos, and live', color: theme.colors.success, onPress: () => router.push(APP_ROUTES.tabs.search) },
-              ].map((link, idx) => (
-                <View key={link.label} style={[styles.rowDivider, { borderTopWidth: idx === 0 ? 0 : 1 }]}>
-                  <QuickLinkRow {...link} />
-                </View>
-              ))}
-            </SurfaceCard>
-          </View>
-          <View style={isWideLayout ? styles.rowGroupWide : {}}>
-            <SurfaceCard tone="subtle" style={styles.cardEdgePad}>
-              <LinearGradient
-                colors={[`${theme.colors.primary}0F`, 'transparent']}
-                style={styles.quickGroupTopWash}
-              />
-              {[
-                { icon: 'card-giftcard'      as const, label: 'Invite friends', hint: 'Earn rewards together', color: theme.colors.primary, onPress: () => router.push(APP_ROUTES.settingsPages.referral) },
-                { icon: 'help-outline'       as const, label: 'Help',           hint: 'Get support',           color: theme.colors.info,    onPress: () => router.push(APP_ROUTES.settingsPages.help) },
-                { icon: 'volunteer-activism' as const, label: 'Support',        hint: 'Give or donate',        color: theme.colors.danger,  onPress: () => router.push(APP_ROUTES.settingsPages.donate) },
-              ].map((link, idx) => (
-                <View key={link.label} style={[styles.rowDivider, { borderTopWidth: idx === 0 ? 0 : 1 }]}>
-                  <QuickLinkRow {...link} />
-                </View>
-              ))}
-            </SurfaceCard>
-          </View>
+          {settingsHubSections.map((section) => (
+            <View key={section.id} style={isWideLayout ? styles.rowGroupWide : {}}>
+              <SurfaceCard tone="subtle" style={styles.cardEdgePad}>
+                <LinearGradient
+                  colors={[`${theme.colors.primary}0F`, 'transparent']}
+                  style={styles.quickGroupTopWash}
+                />
+                {section.items.map((item, idx) => (
+                  <View key={item.id} style={[styles.rowDivider, { borderTopWidth: idx === 0 ? 0 : 1 }]}>
+                    <QuickLinkRow
+                      icon={item.icon as React.ComponentProps<typeof MaterialIcons>['name']}
+                      label={item.label}
+                      hint={item.hint}
+                      color={theme.colors[QUICK_LINK_PALETTE_KEYS[idx % QUICK_LINK_PALETTE_KEYS.length]!]}
+                      onPress={() => router.push((APP_ROUTE_BY_ID[item.destination as AppRouteId] ?? APP_ROUTES.tabs.settings) as never)}
+                    />
+                  </View>
+                ))}
+              </SurfaceCard>
+            </View>
+          ))}
         </View>
       </View>
 

@@ -292,7 +292,7 @@
                   : 'bg-white/4 border-border text-ink-muted hover:border-primary/30',
               ]"
               @click="toggleSendModalSection(s.value)"
-            >{{ s.label }}</button>
+            >{{ s.label }}<span v-if="s.screens.length" class="opacity-60"> · {{ s.screens.join(', ') }}</span></button>
           </div>
         </div>
 
@@ -314,6 +314,7 @@ import { ref, computed, onMounted } from 'vue';
 import { getSyncStatus, triggerSync, listImportQueue, fetchChannelVideos, importVideos } from '@/api/youtube';
 import { deleteContent } from '@/api/content';
 import { useUiStore } from '@/stores/ui.store';
+import { useConfigStore } from '@/stores/config.store';
 import type { YouTubeSyncStatus, YouTubeImportItem, YouTubeVideoItem } from '@/api/types';
 import AppCard from '@/components/ui/AppCard.vue';
 import AppResponsiveTable from '@/components/ui/AppResponsiveTable.vue';
@@ -327,6 +328,7 @@ import SectionHeading from '@/components/shared/SectionHeading.vue';
 import PageHeader from '@/components/shared/PageHeader.vue';
 
 const ui = useUiStore();
+const configStore = useConfigStore();
 
 const TABS = [
   { id: 'browse', label: 'Browse & Import' },
@@ -335,18 +337,34 @@ const TABS = [
 type Tab = typeof TABS[number]['id'];
 const activeTab = ref<Tab>('browse');
 
-const SECTION_OPTIONS = [
-  { value: 'video',            label: 'Videos' },
-  { value: 'music',            label: 'Music' },
-  { value: 'audio',            label: 'Audio' },
-  { value: 'live',             label: 'Live' },
-  { value: 'nuggets-of-truth', label: 'Nuggets of Truth' },
-  { value: 'teachings',        label: 'Teachings' },
-  { value: 'teens',            label: 'Teens' },
-  { value: 'speaks',           label: 'Speaks' },
-  { value: 'playlist',         label: 'Playlists' },
-  { value: 'announcement',     label: 'Announcements' },
+// The only real source of truth for "what sections exist" is the mobile
+// config's own Layout sections (config store) — see ContentEditView.vue for
+// the same fix; a hardcoded list here previously let this picker drift out of
+// sync with whatever sections MobileConfigView actually defines.
+const LAYOUT_GROUPS: { key: 'homeSections' | 'videoSections' | 'playerSections' | 'librarySections'; label: string }[] = [
+  { key: 'homeSections', label: 'Home' },
+  { key: 'videoSections', label: 'Videos' },
+  { key: 'playerSections', label: 'Player' },
+  { key: 'librarySections', label: 'Library' },
 ];
+
+const SECTION_OPTIONS = computed(() => {
+  const byId = new Map<string, { value: string; label: string; screens: string[] }>();
+  const layout = configStore.appConfig?.layout;
+  if (layout) {
+    for (const group of LAYOUT_GROUPS) {
+      for (const section of layout[group.key] ?? []) {
+        const existing = byId.get(section.id);
+        if (existing) {
+          existing.screens.push(group.label);
+        } else {
+          byId.set(section.id, { value: section.id, label: section.title, screens: [group.label] });
+        }
+      }
+    }
+  }
+  return [...byId.values()];
+});
 
 const syncStatus    = ref<YouTubeSyncStatus | null>(null);
 const importQueue   = ref<YouTubeImportItem[]>([]);
@@ -389,6 +407,10 @@ const columns = [
 ];
 
 onMounted(async () => {
+  if (!configStore.appConfig) {
+    void configStore.fetchAppConfig();
+  }
+
   isLoading.value = true;
   try {
     [syncStatus.value, importQueue.value] = await Promise.all([getSyncStatus(), listImportQueue()]);

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 
@@ -12,6 +12,7 @@ import { SettingsScaffold } from '../../components/layout/SettingsScaffold';
 import { useAppTheme } from '../../util/colorScheme';
 import { makeStyles } from '../../styles/makeStyles';
 import { useReferral } from '../../hooks/useReferral';
+import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
@@ -86,19 +87,21 @@ const useStyles = makeStyles((theme) => ({
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const HOW_IT_WORKS = [
-  { step: '1', icon: 'share' as const,        title: 'Share your link',    body: 'Send your unique referral link to friends and family.' },
-  { step: '2', icon: 'person-add' as const,   title: 'Friend joins free',  body: 'They create a free ClaudyGod account — no payment needed.' },
-  { step: '3', icon: 'stars' as const,        title: 'Both of you benefit', body: 'You both unlock early access to exclusive worship content.' },
-] as const;
+// Fallback-only — used before admin config has loaded, or if it's ever empty.
+// Mirrors the same defaults now configurable via admin's Mobile config → Referral.
+const DEFAULT_HOW_IT_WORKS = [
+  { icon: 'share',      title: 'Share your link',     body: 'Send your unique referral link to friends and family.' },
+  { icon: 'person-add', title: 'Friend joins free',   body: 'They create a free ClaudyGod account — no payment needed.' },
+  { icon: 'stars',      title: 'Both of you benefit', body: 'You both unlock early access to exclusive worship content.' },
+];
 
-function getRewards(theme: ReturnType<typeof useAppTheme>) {
-  return [
-    { icon: 'library-music' as const,       color: theme.colors.primary, label: '1 referral',   reward: 'Early access to new albums' },
-    { icon: 'live-tv' as const,             color: theme.colors.info,    label: '3 referrals',  reward: 'Exclusive live session invite' },
-    { icon: 'workspace-premium' as const,   color: theme.colors.warning, label: '10 referrals', reward: 'Premium member badge' },
-  ];
-}
+const DEFAULT_REWARD_TIERS = [
+  { icon: 'library-music',     threshold: 1,  reward: 'Early access to new albums' },
+  { icon: 'live-tv',           threshold: 3,  reward: 'Exclusive live session invite' },
+  { icon: 'workspace-premium', threshold: 10, reward: 'Premium member badge' },
+];
+
+const REWARD_TIER_PALETTE_KEYS = ['primary', 'info', 'warning'] as const;
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -129,6 +132,23 @@ export default function ReferralScreen() {
   const styles = useStyles();
   const theme  = useAppTheme();
   const { code, referralCount, isLoading, share, copyCode, isCopied } = useReferral();
+  const { config } = useMobileAppConfig();
+
+  const howItWorks = useMemo(() => {
+    const configured = config?.referral?.howItWorks;
+    return configured?.length ? configured : DEFAULT_HOW_IT_WORKS;
+  }, [config]);
+
+  const rewards = useMemo(() => {
+    const configured = config?.referral?.rewardTiers;
+    const tiers = configured?.length ? configured : DEFAULT_REWARD_TIERS;
+    return tiers.map((tier, idx) => ({
+      icon: tier.icon,
+      color: theme.colors[REWARD_TIER_PALETTE_KEYS[idx % REWARD_TIER_PALETTE_KEYS.length]!],
+      label: `${tier.threshold} referral${tier.threshold === 1 ? '' : 's'}`,
+      reward: tier.reward,
+    }));
+  }, [config, theme]);
 
   return (
     <SettingsScaffold
@@ -186,10 +206,10 @@ export default function ReferralScreen() {
       <View style={styles.howGap}>
         <SectionLabel title="How it works" accent="Simple" />
         <SurfaceCard tone="subtle" style={styles.stepsPad}>
-          {HOW_IT_WORKS.map((step) => (
-            <View key={step.step} style={styles.stepRow}>
+          {howItWorks.map((step, idx) => (
+            <View key={idx} style={styles.stepRow}>
               <View style={styles.stepIconBox}>
-                <MaterialIcons name={step.icon} size={17} color={theme.colors.primary} />
+                <MaterialIcons name={step.icon as React.ComponentProps<typeof MaterialIcons>['name']} size={17} color={theme.colors.primary} />
               </View>
               <View style={styles.stepBody}>
                 <CustomText style={styles.stepTitle}>{step.title}</CustomText>
@@ -203,10 +223,10 @@ export default function ReferralScreen() {
       <View style={styles.rewardsGap}>
         <SectionLabel title="Rewards" accent="Unlock" subtitle="More friends = more benefits" />
         <View style={styles.rewardsList}>
-          {getRewards(theme).map((reward) => (
+          {rewards.map((reward) => (
             <SurfaceCard key={reward.label} tone="subtle" style={styles.rewardCard}>
               <View style={[styles.rewardIconBox, { backgroundColor: `${reward.color}16`, borderColor: `${reward.color}28` }]}>
-                <MaterialIcons name={reward.icon} size={20} color={reward.color} />
+                <MaterialIcons name={reward.icon as React.ComponentProps<typeof MaterialIcons>['name']} size={20} color={reward.color} />
               </View>
               <View style={styles.rewardTextWrap}>
                 <CustomText style={styles.rewardTier}>{reward.label}</CustomText>
