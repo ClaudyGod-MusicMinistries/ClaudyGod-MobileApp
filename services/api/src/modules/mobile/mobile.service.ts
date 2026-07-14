@@ -8,7 +8,16 @@ import type { AdPlacementScreen, MobileAppConfig } from '../appConfig/appConfig.
 import type { ContentSourceKind, ContentType } from '../content/content.types';
 import type { LiveSessionStatus } from '../live/live.types';
 import { fetchYouTubeVideos, type YouTubeVideoItem } from '../youtube/youtube.service';
-import type { MobileFeedItem, MobileFeedRail, MobileFeedResponse } from './mobile.types';
+import type {
+  MobileFeedItem,
+  MobileFeedRail,
+  MobileFeedResponse,
+  MobileLayoutScreen,
+  MobileLayoutSectionResult,
+  MobileSectionDetailResponse,
+} from './mobile.types';
+
+type MobileLayoutSection = MobileAppConfig['layout']['homeSections'][number];
 
 interface PublishedContentRow {
   id: string;
@@ -98,6 +107,64 @@ const classifyRail = (item: MobileFeedItem): 'music' | 'video' | 'playlist' | 'a
 
   return 'video';
 };
+
+const normalizeSectionToken = (value: string): string => value.trim().toLowerCase();
+
+// Content is tagged into a section by the admin's own id or title (see
+// admin/web ContentEditView.vue) — match either so a legacy title-based tag
+// still resolves after a section is renamed.
+export const matchesConfiguredSection = (item: MobileFeedItem, section: MobileLayoutSection): boolean => {
+  const tokens = new Set([normalizeSectionToken(section.id), normalizeSectionToken(section.title)]);
+  return item.appSections.some((value) => tokens.has(normalizeSectionToken(value)));
+};
+
+// Ranked items matching this section's tag; if none are tagged yet, fall back
+// to a type-based sample so a freshly-created section isn't a blank gap. The
+// caller is told which case applies via `isCurated` rather than silently
+// blending the two.
+const resolveConfiguredSectionPool = (
+  ranked: MobileFeedItem[],
+  section: MobileLayoutSection,
+): { pool: MobileFeedItem[]; isCurated: boolean } => {
+  const matched = ranked.filter((item) => matchesConfiguredSection(item, section));
+  if (matched.length > 0) {
+    return { pool: matched, isCurated: true };
+  }
+
+  return {
+    pool: ranked.filter((item) => item.type !== 'ad' && section.contentTypes.includes(item.type)),
+    isCurated: false,
+  };
+};
+
+export const buildLayoutSectionResult = (
+  ranked: MobileFeedItem[],
+  section: MobileLayoutSection,
+): MobileLayoutSectionResult => {
+  const { pool: sectionPool, isCurated } = resolveConfiguredSectionPool(ranked, section);
+
+  return {
+    id: section.id,
+    title: section.title,
+    subtitle: section.subtitle,
+    actionLabel: section.actionLabel,
+    destinationTab: section.destinationTab,
+    maxItems: section.maxItems,
+    items: sectionPool.slice(0, section.maxItems),
+    overflowCount: Math.max(0, sectionPool.length - section.maxItems),
+    isCurated,
+  };
+};
+
+const buildAllLayoutSections = (
+  ranked: MobileFeedItem[],
+  config: MobileAppConfig,
+): MobileFeedResponse['layoutSections'] => ({
+  home: config.layout.homeSections.map((section) => buildLayoutSectionResult(ranked, section)),
+  videos: config.layout.videoSections.map((section) => buildLayoutSectionResult(ranked, section)),
+  player: config.layout.playerSections.map((section) => buildLayoutSectionResult(ranked, section)),
+  library: config.layout.librarySections.map((section) => buildLayoutSectionResult(ranked, section)),
+});
 
 const buildRankScore = (item: MobileFeedItem, playCount: number): number => {
   const updatedAt = Date.parse(item.updatedAt || item.createdAt || '');
@@ -324,8 +391,14 @@ const buildSponsoredRails = async (
     .filter((rail) => rail.items.length > 0);
 };
 
-export const buildMobileFeed = async (): Promise<MobileFeedResponse> => {
-  const [publishedContent, liveSessions, mostPlayedResult, youtubeResult, mobileConfigResult] = await Promise.all([
+interface UnifiedContentPool {
+  pool: MobileFeedItem[];
+  ranked: MobileFeedItem[];
+  trending: MobileFeedItem[];
+}
+
+const loadUnifiedContentPool = async (): Promise<UnifiedContentPool> => {
+  const [publishedContent, liveSessions, mostPlayedResult, youtubeResult] = await Promise.all([
     loadPublishedContent(),
     loadLiveSessions(),
     listMostPlayedContent({ limit: 12, windowDays: 90 }),
@@ -334,7 +407,6 @@ export const buildMobileFeed = async (): Promise<MobileFeedResponse> => {
       fetchedAt: new Date().toISOString(),
       items: [] as YouTubeVideoItem[],
     })),
-    getMobileAppConfig(),
   ]);
 
   const youtubeItems = youtubeResult.items.map(toYouTubeFeedItem);
@@ -363,9 +435,9 @@ export const buildMobileFeed = async (): Promise<MobileFeedResponse> => {
     } satisfies MobileFeedItem;
   });
 
-  const unifiedPool = dedupeItems([...liveSessions, ...publishedContent, ...youtubeItems, ...trending]);
+  const pool = dedupeItems([...liveSessions, ...publishedContent, ...youtubeItems, ...trending]);
 
-  const ranked = [...unifiedPool].sort((left, right) => {
+  const ranked = [...pool].sort((left, right) => {
     const scoreDiff =
       buildRankScore(right, playCountById.get(right.id) ?? 0) -
       buildRankScore(left, playCountById.get(left.id) ?? 0);
@@ -375,6 +447,15 @@ export const buildMobileFeed = async (): Promise<MobileFeedResponse> => {
 
     return Date.parse(right.updatedAt || right.createdAt) - Date.parse(left.updatedAt || left.createdAt);
   });
+
+  return { pool, ranked, trending };
+};
+
+export const buildMobileFeed = async (): Promise<MobileFeedResponse> => {
+  const [{ pool: unifiedPool, ranked, trending }, mobileConfigResult] = await Promise.all([
+    loadUnifiedContentPool(),
+    getMobileAppConfig(),
+  ]);
 
   const live = unifiedPool.filter((item) => classifyRail(item) === 'live');
   const music = unifiedPool.filter((item) => classifyRail(item) === 'music');
@@ -403,9 +484,57 @@ export const buildMobileFeed = async (): Promise<MobileFeedResponse> => {
     generatedAt: new Date().toISOString(),
     featured: ranked[0] ?? null,
     rails,
+    layoutSections: buildAllLayoutSections(ranked, mobileConfigResult.config),
     topCategories: rails
       .filter((rail) => !rail.id.startsWith('sponsored-'))
       .map((rail) => rail.title)
       .slice(0, 5),
+  };
+};
+
+const SECTIONS_BY_SCREEN = (config: MobileAppConfig): Record<MobileLayoutScreen, MobileLayoutSection[]> => ({
+  home: config.layout.homeSections,
+  videos: config.layout.videoSections,
+  player: config.layout.playerSections,
+  library: config.layout.librarySections,
+});
+
+export const getMobileSectionDetail = async (params: {
+  screen: MobileLayoutScreen;
+  sectionId: string;
+  page: number;
+  limit: number;
+}): Promise<MobileSectionDetailResponse | null> => {
+  const [{ ranked }, mobileConfigResult] = await Promise.all([
+    loadUnifiedContentPool(),
+    getMobileAppConfig(),
+  ]);
+
+  const section = SECTIONS_BY_SCREEN(mobileConfigResult.config)[params.screen].find(
+    (candidate) => candidate.id === params.sectionId,
+  );
+  if (!section) {
+    return null;
+  }
+
+  const { pool: sectionPool, isCurated } = resolveConfiguredSectionPool(ranked, section);
+  const offset = (params.page - 1) * params.limit;
+  const items = sectionPool.slice(offset, offset + params.limit);
+
+  return {
+    section: {
+      id: section.id,
+      title: section.title,
+      subtitle: section.subtitle,
+      actionLabel: section.actionLabel,
+      destinationTab: section.destinationTab,
+      maxItems: section.maxItems,
+    },
+    items,
+    page: params.page,
+    limit: params.limit,
+    total: sectionPool.length,
+    hasMore: offset + items.length < sectionPool.length,
+    isCurated,
   };
 };

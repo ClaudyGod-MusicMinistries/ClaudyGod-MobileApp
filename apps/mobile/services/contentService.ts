@@ -23,10 +23,30 @@ interface MobileFeedApiRail {
   items: MobileFeedApiItem[];
 }
 
+interface MobileFeedApiLayoutSection {
+  id: string;
+  title: string;
+  subtitle: string;
+  actionLabel: string;
+  destinationTab: string;
+  maxItems: number;
+  items: MobileFeedApiItem[];
+  overflowCount: number;
+  isCurated: boolean;
+}
+
+interface MobileFeedApiLayoutSections {
+  home: MobileFeedApiLayoutSection[];
+  videos: MobileFeedApiLayoutSection[];
+  player: MobileFeedApiLayoutSection[];
+  library: MobileFeedApiLayoutSection[];
+}
+
 interface MobileFeedApiResponse {
   generatedAt: string;
   featured: MobileFeedApiItem | null;
   rails: MobileFeedApiRail[];
+  layoutSections?: MobileFeedApiLayoutSections;
   topCategories: string[];
 }
 
@@ -129,6 +149,20 @@ export interface FeedCardItem {
   playAsAudio?: boolean;
 }
 
+export interface FeedLayoutSection {
+  id: string;
+  title: string;
+  subtitle: string;
+  actionLabel: string;
+  destinationTab: string;
+  maxItems: number;
+  items: FeedCardItem[];
+  overflowCount: number;
+  isCurated: boolean;
+}
+
+export type LayoutScreen = 'home' | 'videos' | 'player' | 'library';
+
 export interface FeedBundle {
   featured: FeedCardItem | null;
   music: FeedCardItem[];
@@ -141,9 +175,17 @@ export interface FeedBundle {
   recent: FeedCardItem[];
   recommendations: FeedCardItem[];
   topCategories: string[];
+  layoutSections: Record<LayoutScreen, FeedLayoutSection[]>;
 }
 
 const FALLBACK_IMAGE = DEFAULT_CONTENT_IMAGE_URI;
+
+const EMPTY_LAYOUT_SECTIONS: Record<LayoutScreen, FeedLayoutSection[]> = {
+  home: [],
+  videos: [],
+  player: [],
+  library: [],
+};
 
 const DEFAULT_BUNDLE: FeedBundle = {
   featured: null,
@@ -157,6 +199,7 @@ const DEFAULT_BUNDLE: FeedBundle = {
   recent: [],
   recommendations: [],
   topCategories: ['All', 'Music', 'Videos', 'Live', 'Playlists'],
+  layoutSections: EMPTY_LAYOUT_SECTIONS,
 };
 
 type QueryValue = string | number | boolean | null | undefined;
@@ -518,6 +561,34 @@ function getSponsoredItems(rails: { id: string; items: FeedCardItem[] }[]): Feed
   return sponsoredItems;
 }
 
+function normalizeLayoutSections(
+  layoutSections: MobileFeedApiLayoutSections | undefined,
+): Record<LayoutScreen, FeedLayoutSection[]> {
+  if (!layoutSections) {
+    return EMPTY_LAYOUT_SECTIONS;
+  }
+
+  const normalizeScreen = (sections: MobileFeedApiLayoutSection[]): FeedLayoutSection[] =>
+    sections.map((section) => ({
+      id: section.id,
+      title: section.title,
+      subtitle: section.subtitle,
+      actionLabel: section.actionLabel,
+      destinationTab: section.destinationTab,
+      maxItems: section.maxItems,
+      items: section.items.map(normalizeFeedItem),
+      overflowCount: section.overflowCount,
+      isCurated: section.isCurated,
+    }));
+
+  return {
+    home: normalizeScreen(layoutSections.home ?? []),
+    videos: normalizeScreen(layoutSections.videos ?? []),
+    player: normalizeScreen(layoutSections.player ?? []),
+    library: normalizeScreen(layoutSections.library ?? []),
+  };
+}
+
 function bundleFromApiFeed(response: MobileFeedApiResponse): FeedBundle {
   const apiRails: MobileFeedApiRail[] = Array.isArray(response.rails) ? response.rails : [];
 
@@ -561,6 +632,48 @@ function bundleFromApiFeed(response: MobileFeedApiResponse): FeedBundle {
       Array.isArray(response.topCategories) && response.topCategories.length > 0
         ? response.topCategories
         : DEFAULT_BUNDLE.topCategories,
+    layoutSections: normalizeLayoutSections(response.layoutSections),
+  };
+}
+
+interface MobileSectionDetailApiResponse {
+  section: {
+    id: string;
+    title: string;
+    subtitle: string;
+    actionLabel: string;
+    destinationTab: string;
+    maxItems: number;
+  };
+  items: MobileFeedApiItem[];
+  page: number;
+  limit: number;
+  total: number;
+  hasMore: boolean;
+  isCurated: boolean;
+}
+
+export interface MobileSectionDetail {
+  section: MobileSectionDetailApiResponse['section'];
+  items: FeedCardItem[];
+  page: number;
+  limit: number;
+  total: number;
+  hasMore: boolean;
+  isCurated: boolean;
+}
+
+export async function fetchMobileSectionDetail(
+  sectionId: string,
+  screen: LayoutScreen,
+  page = 1,
+  limit = 20,
+): Promise<MobileSectionDetail> {
+  const qs = buildQueryString({ screen, page, limit });
+  const response = await apiFetch<MobileSectionDetailApiResponse>(`/v1/mobile/sections/${encodeURIComponent(sectionId)}?${qs}`);
+  return {
+    ...response,
+    items: response.items.map(normalizeFeedItem),
   };
 }
 
@@ -677,5 +790,6 @@ export function emptyFeedBundle(): FeedBundle {
     recent: [],
     recommendations: [],
     topCategories: [...DEFAULT_BUNDLE.topCategories],
+    layoutSections: { home: [], videos: [], player: [], library: [] },
   };
 }

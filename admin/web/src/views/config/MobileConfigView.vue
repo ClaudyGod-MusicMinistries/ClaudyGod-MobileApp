@@ -124,11 +124,98 @@
         </AppCard>
       </div>
 
-      <!-- Settings Hub summary -->
-      <div v-if="activeTab === 'settings'" class="space-y-3">
-        <AppCard class="p-5">
-          <p class="text-sm text-ink-soft">Settings hub configuration: {{ config.settingsHub.sections.length }} sections</p>
-          <p class="text-xs text-ink-muted mt-1">Section editing lives here later — your current configuration stays exactly as-is until then.</p>
+      <!-- Settings Hub -->
+      <div v-if="activeTab === 'settings'" class="space-y-4">
+        <p class="text-xs text-ink-muted">
+          Controls the "Quick access" link groups shown on the mobile Settings tab.
+        </p>
+
+        <div v-for="(section, sIdx) in config.settingsHub.sections" :key="section.id" class="space-y-3">
+          <AppCard class="p-4 space-y-3">
+            <div class="flex items-start justify-between gap-3">
+              <AppInput v-model="section.title" label="Section title" class="flex-1" placeholder="e.g. Quick access" />
+              <AppButton variant="ghost" size="xs" class="text-danger mt-5" @click="removeSettingsHubSection(sIdx)">Remove section</AppButton>
+            </div>
+
+            <div class="space-y-3">
+              <div
+                v-for="(item, iIdx) in section.items"
+                :key="item.id"
+                class="grid grid-cols-1 sm:grid-cols-5 gap-2 sm:items-end border-t border-border/60 pt-3 first:border-t-0 first:pt-0"
+              >
+                <AppInput v-model="item.icon" label="Icon" placeholder="library-music" />
+                <AppInput v-model="item.label" label="Label" placeholder="Library" />
+                <AppInput v-model="item.hint" label="Hint" placeholder="Saved content" />
+                <AppSelect v-model="item.destination" label="Destination" :options="SETTINGS_DESTINATION_OPTIONS_ARR" />
+                <AppButton variant="ghost" size="sm" class="text-danger mb-0" @click="removeSettingsHubItem(sIdx, iIdx)">Remove</AppButton>
+              </div>
+            </div>
+            <AppButton variant="secondary" size="xs" @click="addSettingsHubItem(sIdx)">+ Add link</AppButton>
+          </AppCard>
+        </div>
+        <AppButton variant="secondary" size="sm" @click="addSettingsHubSection">+ Add section</AppButton>
+      </div>
+
+      <!-- Referral program -->
+      <div v-if="activeTab === 'referral'" class="space-y-6">
+        <div class="space-y-3">
+          <div>
+            <h3 class="text-sm font-bold text-ink">How it works</h3>
+            <p class="text-xs text-ink-muted">Steps shown on the mobile Invite Friends screen.</p>
+          </div>
+          <div class="space-y-3">
+            <AppCard v-for="(step, idx) in config.referral.howItWorks" :key="idx" class="p-4 space-y-3">
+              <div class="flex items-start justify-between gap-3">
+                <div class="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <AppInput v-model="step.icon" label="Icon" placeholder="share" />
+                  <AppInput v-model="step.title" label="Title" class="sm:col-span-2" placeholder="Share your link" />
+                </div>
+                <AppButton variant="ghost" size="xs" class="text-danger mt-5" @click="removeReferralStep(idx)">Remove</AppButton>
+              </div>
+              <AppTextarea v-model="step.body" label="Description" :rows="2" placeholder="Send your unique referral link to friends and family." />
+            </AppCard>
+            <AppButton variant="secondary" size="sm" @click="addReferralStep">+ Add step</AppButton>
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <div>
+            <h3 class="text-sm font-bold text-ink">Reward tiers</h3>
+            <p class="text-xs text-ink-muted">Milestones shown as a user's referral count grows.</p>
+          </div>
+          <div class="space-y-3">
+            <AppCard v-for="(tier, idx) in config.referral.rewardTiers" :key="idx" class="p-4">
+              <div class="flex items-start justify-between gap-3">
+                <div class="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <AppInput v-model="tier.icon" label="Icon" placeholder="workspace-premium" />
+                  <AppInput v-model.number="tier.threshold" type="number" label="Referrals needed" min="1" />
+                  <AppInput v-model="tier.reward" label="Reward" placeholder="Premium member badge" />
+                </div>
+                <AppButton variant="ghost" size="xs" class="text-danger mt-5" @click="removeReferralTier(idx)">Remove</AppButton>
+              </div>
+            </AppCard>
+            <AppButton variant="secondary" size="sm" @click="addReferralTier">+ Add tier</AppButton>
+          </div>
+        </div>
+      </div>
+
+      <!-- Giving quotes -->
+      <div v-if="activeTab === 'giving'" class="space-y-4">
+        <AppCard class="p-5 space-y-3">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-sm font-bold text-ink">Giving page quotes</h3>
+              <p class="text-xs text-ink-muted">Scripture quotes shown (one per day, rotating) on the mobile Donate screen.</p>
+            </div>
+            <AppButton variant="secondary" size="xs" @click="addScripture">+ Add</AppButton>
+          </div>
+          <div class="space-y-2">
+            <div v-for="(_, i) in config.donate.scriptures" :key="i" class="flex gap-2 items-start">
+              <AppTextarea v-model="config.donate.scriptures[i]" :rows="2" class="flex-1" placeholder='"Give, and it will be given to you." — Luke 6:38' />
+              <AppButton variant="ghost" size="sm" class="text-danger" @click="removeScripture(i)">Remove</AppButton>
+            </div>
+          </div>
+          <p class="text-[11px] text-ink-muted">Other giving settings (methods, plans, currencies) aren't editable here yet.</p>
         </AppCard>
       </div>
 
@@ -166,21 +253,27 @@
 import { ref, computed, onMounted } from 'vue';
 import { useConfigStore } from '@/stores/config.store';
 import { useUiStore } from '@/stores/ui.store';
-import type { AppConfig, MobileContentType, MobileLayoutSection } from '@/api/types';
+import type { AppConfig, MobileContentType, MobileLayoutSection, SettingsHubItem, ReferralStep, ReferralRewardTier } from '@/api/types';
 import {
   MOBILE_CONTENT_TYPE_OPTIONS,
   MOBILE_TAB_DESTINATION_OPTIONS,
   DISCOVERY_CATEGORY_OPTIONS,
   AD_PLACEMENT_SCREEN_OPTIONS,
+  SETTINGS_DESTINATION_OPTIONS,
   MOBILE_LAYOUT_GROUPS,
   cloneMobileConfig,
   createLayoutSection,
   createDiscoveryShortcut,
   createAdPlacement,
+  createSettingsHubSection,
+  createSettingsHubItem,
+  createReferralStep,
+  createReferralTier,
 } from '@/utils/mobileConfig';
 import AppCard from '@/components/ui/AppCard.vue';
 import AppButton from '@/components/ui/AppButton.vue';
 import AppInput from '@/components/ui/AppInput.vue';
+import AppTextarea from '@/components/ui/AppTextarea.vue';
 import AppSelect from '@/components/ui/AppSelect.vue';
 import AppToggle from '@/components/ui/AppToggle.vue';
 import AppSpinner from '@/components/ui/AppSpinner.vue';
@@ -197,16 +290,20 @@ const tabs = [
   { id: 'layout', label: 'Layout sections' },
   { id: 'discovery', label: 'Discovery' },
   { id: 'settings', label: 'Settings hub' },
+  { id: 'referral', label: 'Referral' },
+  { id: 'giving', label: 'Giving quotes' },
   { id: 'ads', label: 'Ad placements' },
 ];
 
 const MOBILE_TAB_DESTINATION_OPTIONS_ARR = MOBILE_TAB_DESTINATION_OPTIONS.map((o) => ({ ...o }));
 const DISCOVERY_CATEGORY_OPTIONS_ARR = DISCOVERY_CATEGORY_OPTIONS.map((v) => ({ value: v, label: v }));
 const AD_PLACEMENT_SCREEN_OPTIONS_ARR = AD_PLACEMENT_SCREEN_OPTIONS.map((o) => ({ ...o }));
+const SETTINGS_DESTINATION_OPTIONS_ARR = SETTINGS_DESTINATION_OPTIONS.map((o) => ({ ...o }));
 
 // Editable deep clone of the full config — round-tripped in full on save since the
-// backend requires the entire object (privacy/help/about/donate/rate/navigation/
-// intelligence aren't editable here, they're just held and sent back unchanged).
+// backend requires the entire object (privacy/help/about/donate-core/rate/navigation/
+// intelligence aren't editable here yet, they're just held and sent back unchanged;
+// donate.scriptures and referral are the exception — those have their own tabs below).
 const config = ref<AppConfig | null>(null);
 
 const categoriesText = computed({
@@ -266,5 +363,45 @@ function addPlacement(): void {
 
 function removePlacement(i: number): void {
   config.value?.monetization.placements.splice(i, 1);
+}
+
+function addSettingsHubSection(): void {
+  config.value?.settingsHub.sections.push(createSettingsHubSection() as unknown as AppConfig['settingsHub']['sections'][number]);
+}
+
+function removeSettingsHubSection(idx: number): void {
+  config.value?.settingsHub.sections.splice(idx, 1);
+}
+
+function addSettingsHubItem(sectionIdx: number): void {
+  config.value?.settingsHub.sections[sectionIdx]?.items.push(createSettingsHubItem() as unknown as SettingsHubItem);
+}
+
+function removeSettingsHubItem(sectionIdx: number, itemIdx: number): void {
+  config.value?.settingsHub.sections[sectionIdx]?.items.splice(itemIdx, 1);
+}
+
+function addReferralStep(): void {
+  config.value?.referral.howItWorks.push(createReferralStep() as unknown as ReferralStep);
+}
+
+function removeReferralStep(idx: number): void {
+  config.value?.referral.howItWorks.splice(idx, 1);
+}
+
+function addReferralTier(): void {
+  config.value?.referral.rewardTiers.push(createReferralTier() as unknown as ReferralRewardTier);
+}
+
+function removeReferralTier(idx: number): void {
+  config.value?.referral.rewardTiers.splice(idx, 1);
+}
+
+function addScripture(): void {
+  config.value?.donate.scriptures.push('');
+}
+
+function removeScripture(idx: number): void {
+  config.value?.donate.scriptures.splice(idx, 1);
 }
 </script>
