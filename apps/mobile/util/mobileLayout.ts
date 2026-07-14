@@ -1,38 +1,8 @@
-import type { FeedBundle, FeedCardItem } from '../services/contentService';
+import type { FeedBundle, FeedCardItem, LayoutScreen } from '../services/contentService';
 import type { MobileAppExperienceConfig } from '../services/userFlowService';
 
 export type MobileLayoutSection = MobileAppExperienceConfig['layout']['homeSections'][number];
-
-function normalizeToken(value: string): string {
-  return value.trim().toLowerCase();
-}
-
-function dedupeItems(items: FeedCardItem[]): FeedCardItem[] {
-  const seen = new Set<string>();
-  const result: FeedCardItem[] = [];
-
-  for (const item of items) {
-    const key = item.mediaUrl?.trim() ? `media:${item.mediaUrl.trim()}` : `id:${item.id}`;
-    if (seen.has(key)) {
-      continue;
-    }
-    seen.add(key);
-    result.push(item);
-  }
-
-  return result;
-}
-
-function buildCuratedPool(feed: FeedBundle): FeedCardItem[] {
-  return dedupeItems([
-    ...feed.videos,
-    ...feed.music,
-    ...feed.playlists,
-    ...feed.live,
-    ...feed.announcements,
-    ...feed.recent,
-  ]);
-}
+export type { LayoutScreen };
 
 export function getHomeLayoutSections(config?: MobileAppExperienceConfig | null): MobileLayoutSection[] {
   return config?.layout?.homeSections?.length ? config.layout.homeSections : [];
@@ -50,31 +20,41 @@ export function getLibraryLayoutSections(config?: MobileAppExperienceConfig | nu
   return config?.layout?.librarySections?.length ? config.layout.librarySections : [];
 }
 
-export function matchesLayoutSection(item: FeedCardItem, section: MobileLayoutSection): boolean {
-  const sectionTokens = new Set([normalizeToken(section.id), normalizeToken(section.title)]);
-  return Boolean(
-    item.appSections?.some((value) => sectionTokens.has(normalizeToken(value))),
-  );
+// Section membership is now resolved server-side (mobile.service.ts,
+// buildAllLayoutSections) from the same admin-tagged `appSections` the server
+// ranks and dedupes against — these helpers just look up that precomputed
+// result by section id so the client never re-derives (and can't drift from)
+// what the server decided.
+function findResolvedSection(feed: FeedBundle, screen: LayoutScreen, section: MobileLayoutSection) {
+  return feed.layoutSections[screen].find((resolved) => resolved.id === section.id);
 }
 
-function resolveLayoutSectionPool(feed: FeedBundle, section: MobileLayoutSection): FeedCardItem[] {
-  const pool = buildCuratedPool(feed);
-  const curated = pool.filter((item) => matchesLayoutSection(item, section));
-  if (curated.length > 0) {
-    return curated;
-  }
-
-  // No content has been tagged into this section yet (e.g. it was just created) —
-  // fall back to a type-based sample so the section isn't a blank gap.
-  return pool.filter((item) => item.type !== 'ad' && section.contentTypes.includes(item.type));
+export function deriveLayoutSectionItems(
+  feed: FeedBundle,
+  section: MobileLayoutSection,
+  screen: LayoutScreen,
+): FeedCardItem[] {
+  return findResolvedSection(feed, screen, section)?.items ?? [];
 }
 
-export function deriveLayoutSectionItems(feed: FeedBundle, section: MobileLayoutSection): FeedCardItem[] {
-  return resolveLayoutSectionPool(feed, section).slice(0, section.maxItems);
+// How many more matched items exist beyond what's already shown — used to
+// decide whether "See all" should be offered, without duplicating the actual
+// overflow list client-side (the section-detail screen paginates it properly).
+export function deriveLayoutSectionOverflowCount(
+  feed: FeedBundle,
+  section: MobileLayoutSection,
+  screen: LayoutScreen,
+): number {
+  return findResolvedSection(feed, screen, section)?.overflowCount ?? 0;
 }
 
-// The rest of the matched pool beyond maxItems — used to show a real "See all"
-// overflow list instead of a button that claims there's more without proving it.
-export function deriveLayoutSectionOverflow(feed: FeedBundle, section: MobileLayoutSection): FeedCardItem[] {
-  return resolveLayoutSectionPool(feed, section).slice(section.maxItems);
+// False when this section has no admin-tagged content yet and is showing a
+// type-based sample instead — lets the UI label it honestly (e.g. "Suggested")
+// rather than presenting a fallback as if it were curated.
+export function isLayoutSectionCurated(
+  feed: FeedBundle,
+  section: MobileLayoutSection,
+  screen: LayoutScreen,
+): boolean {
+  return findResolvedSection(feed, screen, section)?.isCurated ?? true;
 }

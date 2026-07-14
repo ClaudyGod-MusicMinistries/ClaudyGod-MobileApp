@@ -113,7 +113,7 @@ const normalizeSectionToken = (value: string): string => value.trim().toLowerCas
 // Content is tagged into a section by the admin's own id or title (see
 // admin/web ContentEditView.vue) — match either so a legacy title-based tag
 // still resolves after a section is renamed.
-const matchesConfiguredSection = (item: MobileFeedItem, section: MobileLayoutSection): boolean => {
+export const matchesConfiguredSection = (item: MobileFeedItem, section: MobileLayoutSection): boolean => {
   const tokens = new Set([normalizeSectionToken(section.id), normalizeSectionToken(section.title)]);
   return item.appSections.some((value) => tokens.has(normalizeSectionToken(value)));
 };
@@ -137,7 +137,7 @@ const resolveConfiguredSectionPool = (
   };
 };
 
-const buildLayoutSectionResult = (
+export const buildLayoutSectionResult = (
   ranked: MobileFeedItem[],
   section: MobileLayoutSection,
 ): MobileLayoutSectionResult => {

@@ -94,15 +94,6 @@ function dedupe(items: FeedCardItem[]): FeedCardItem[] {
   return out;
 }
 
-const DESTINATION_ROUTES: Record<string, string> = {
-  home: APP_ROUTES.tabs.home,
-  videos: APP_ROUTES.tabs.videos,
-  player: APP_ROUTES.tabs.player,
-  live: APP_ROUTES.tabs.live,
-  library: APP_ROUTES.tabs.library,
-  search: APP_ROUTES.tabs.search,
-};
-
 // ─── HomeSearchBar ────────────────────────────────────────────────────────────
 
 function HomeSearchBar({ onPress }: { onPress: () => void }) {
@@ -239,7 +230,7 @@ export default function HomeScreen() {
 
   const homeSections = useMemo(() => getHomeLayoutSections(appConfig), [appConfig]);
   const sectionItems = useMemo(
-    () => homeSections.map((section) => ({ section, items: deriveLayoutSectionItems(feed, section) })),
+    () => homeSections.map((section) => ({ section, items: deriveLayoutSectionItems(feed, section, 'home') })),
     [homeSections, feed],
   );
 
@@ -301,7 +292,10 @@ export default function HomeScreen() {
               <SectionLabel
                 title={section.title}
                 actionLabel={section.actionLabel}
-                onAction={() => router.push((DESTINATION_ROUTES[section.destinationTab] ?? APP_ROUTES.tabs.home) as never)}
+                onAction={() => router.push({
+                  pathname: APP_ROUTES.section.detail,
+                  params: { sectionId: section.id, screen: 'home', title: section.title },
+                } as never)}
               />
               <ContentRail
                 title=""

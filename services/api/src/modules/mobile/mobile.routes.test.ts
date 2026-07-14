@@ -26,3 +26,15 @@ describe('POST /v1/mobile/uploads/signed-url', () => {
     expect(anonymous.status).toBe(404);
   });
 });
+
+describe('GET /v1/mobile/sections/:sectionId', () => {
+  const app = createApp();
+
+  // requireMobileApiKey runs before any database access, so this is safe to
+  // assert without a live Postgres connection (see auth.service.test.ts for
+  // the same convention).
+  it('rejects requests without a valid mobile API key or web client header', async () => {
+    const res = await request(app).get('/v1/mobile/sections/nuggets-of-truth?screen=home');
+    expect(res.status).toBe(401);
+  });
+});

@@ -143,7 +143,7 @@ export default function LibraryScreen() {
 
   const librarySections = useMemo(() => getLibraryLayoutSections(appConfig), [appConfig]);
   const sectionItems = useMemo(
-    () => librarySections.map((section) => ({ section, items: deriveLayoutSectionItems(feed, section) })),
+    () => librarySections.map((section) => ({ section, items: deriveLayoutSectionItems(feed, section, 'library') })),
     [librarySections, feed],
   );
 

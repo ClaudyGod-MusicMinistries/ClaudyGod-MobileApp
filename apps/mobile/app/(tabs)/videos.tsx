@@ -10,7 +10,7 @@ import { useAppTheme } from '../../util/colorScheme';
 import { makeStyles } from '../../styles/makeStyles';
 import { useContentFeed } from '../../hooks/useContentFeed';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
-import { getVideoLayoutSections, deriveLayoutSectionItems, deriveLayoutSectionOverflow } from '../../util/mobileLayout';
+import { getVideoLayoutSections, deriveLayoutSectionItems, deriveLayoutSectionOverflowCount } from '../../util/mobileLayout';
 import { InlineErrorBanner } from '../../components/ui/InlineErrorBanner';
 import type { FeedCardItem } from '../../services/contentService';
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
@@ -114,8 +114,8 @@ export default function VideosScreen() {
   const sectionItems = useMemo(
     () => videoSections.map((section) => ({
       section,
-      items: deriveLayoutSectionItems(feed, section),
-      overflow: deriveLayoutSectionOverflow(feed, section),
+      items: deriveLayoutSectionItems(feed, section, 'videos'),
+      overflowCount: deriveLayoutSectionOverflowCount(feed, section, 'videos'),
     })),
     [videoSections, feed],
   );
@@ -234,23 +234,24 @@ export default function VideosScreen() {
       ) : null}
 
       {/* Configured video sections */}
-      {sectionItems.map(({ section, items, overflow }) => (
+      {sectionItems.map(({ section, items, overflowCount }) => (
         items.length > 0 ? (
           <View key={section.id} style={styles.gap12}>
-            <SectionLabel title={section.title} subtitle={section.subtitle} />
+            <SectionLabel
+              title={section.title}
+              subtitle={section.subtitle}
+              actionLabel={overflowCount > 0 ? 'See all' : undefined}
+              onAction={overflowCount > 0 ? () => router.push({
+                pathname: APP_ROUTES.section.detail,
+                params: { sectionId: section.id, screen: 'videos', title: section.title },
+              } as never) : undefined}
+            />
             <ContentRail
               title=""
               items={items}
               loading={loading}
               onPressItem={(item) => void openItem(item, `videos_${section.id}`)}
             />
-            {overflow.length > 0 ? (
-              <ContentList
-                title={`More ${section.title.toLowerCase()}`}
-                items={overflow}
-                onPressItem={(item) => void openItem(item, `videos_${section.id}_more`)}
-              />
-            ) : null}
           </View>
         ) : null
       ))}

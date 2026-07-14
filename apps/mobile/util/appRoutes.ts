@@ -16,6 +16,9 @@ export const APP_ROUTES = {
   live: {
     detail: '/live/[sessionId]',
   },
+  section: {
+    detail: '/section/[sectionId]',
+  },
   tabs: {
     home: '/(tabs)/home',
     player: '/(tabs)/player',

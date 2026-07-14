@@ -82,9 +82,11 @@
           <div class="space-y-2 pt-1 border-t border-border/60">
             <p class="text-xs font-medium text-ink-muted pt-3">App sections</p>
             <p class="text-[11px] text-ink-muted leading-snug">
-              Controls which mobile section this content appears in — must match a section's name in
-              Mobile config → Layout sections exactly (case-insensitive).
+              Controls which mobile section this content appears in. Pick from the sections
+              actually configured under Mobile config → Layout sections — the app will show
+              this content there automatically.
             </p>
+            <p v-if="!configStore.appConfig" class="text-[11px] text-ink-muted italic">Loading configured sections…</p>
 
             <div class="flex flex-wrap items-center gap-1.5 pt-1">
               <button
@@ -100,6 +102,7 @@
                 @click="toggleSection(s.value)"
               >
                 {{ s.label }}
+                <span v-if="s.screens.length" class="opacity-60">· {{ s.screens.join(', ') }}</span>
                 <span v-if="form.appSections.includes(s.value)" class="text-primary-soft/70">×</span>
               </button>
 
@@ -143,6 +146,7 @@
 import { ref, onMounted, computed, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useContentStore } from '@/stores/content.store';
+import { useConfigStore } from '@/stores/config.store';
 import { useUiStore } from '@/stores/ui.store';
 import type { ContentCreateInput, ContentUpdateInput } from '@/api/types';
 import AppCard from '@/components/ui/AppCard.vue';
@@ -157,24 +161,42 @@ import SectionHeading from '@/components/shared/SectionHeading.vue';
 const route = useRoute();
 const router = useRouter();
 const store = useContentStore();
+const configStore = useConfigStore();
 const ui = useUiStore();
 
 const isNew = computed(() => route.name === 'content-new');
 const id = computed(() => isNew.value ? null : route.params.id as string);
 const previewOpen = ref(false);
 
-const SECTION_OPTIONS = [
-  { value: 'video',            label: 'Videos' },
-  { value: 'music',            label: 'Music' },
-  { value: 'audio',            label: 'Audio' },
-  { value: 'live',             label: 'Live' },
-  { value: 'nuggets-of-truth', label: 'Nuggets of Truth' },
-  { value: 'teachings',        label: 'Teachings' },
-  { value: 'teens',            label: 'Teens' },
-  { value: 'speaks',           label: 'Speaks' },
-  { value: 'playlist',         label: 'Playlists' },
-  { value: 'announcement',     label: 'Announcements' },
+// The only real source of truth for "what sections exist" is the mobile
+// config's own Layout sections (config store) — not a hand-maintained list
+// here. A hardcoded list previously let this picker drift out of sync with
+// whatever sections MobileConfigView actually defines, which was the root
+// cause of content landing in the wrong (or no) section on mobile.
+const LAYOUT_GROUPS: { key: 'homeSections' | 'videoSections' | 'playerSections' | 'librarySections'; label: string }[] = [
+  { key: 'homeSections', label: 'Home' },
+  { key: 'videoSections', label: 'Videos' },
+  { key: 'playerSections', label: 'Player' },
+  { key: 'librarySections', label: 'Library' },
 ];
+
+const configuredSectionOptions = computed(() => {
+  const byId = new Map<string, { value: string; label: string; screens: string[] }>();
+  const layout = configStore.appConfig?.layout;
+  if (layout) {
+    for (const group of LAYOUT_GROUPS) {
+      for (const section of layout[group.key] ?? []) {
+        const existing = byId.get(section.id);
+        if (existing) {
+          existing.screens.push(group.label);
+        } else {
+          byId.set(section.id, { value: section.id, label: section.title, screens: [group.label] });
+        }
+      }
+    }
+  }
+  return [...byId.values()];
+});
 
 interface FormState {
   title: string;
@@ -206,15 +228,15 @@ const emptyForm = (): FormState => ({
 
 const form = ref<FormState>(emptyForm());
 
-// One flowing picker: the fixed quick-pick list plus any free-typed section
+// One flowing picker: the real configured sections plus any free-typed section
 // names already on this item, all toggled the same way — no separate
 // "applied tags" row duplicating what's already shown as a selected pill.
 const sectionPills = computed(() => {
-  const known = new Set(SECTION_OPTIONS.map((s) => s.value));
+  const known = new Set(configuredSectionOptions.value.map((s) => s.value));
   const custom = form.value.appSections
     .filter((tag) => !known.has(tag))
-    .map((tag) => ({ value: tag, label: tag }));
-  return [...SECTION_OPTIONS, ...custom];
+    .map((tag) => ({ value: tag, label: tag, screens: [] as string[] }));
+  return [...configuredSectionOptions.value, ...custom];
 });
 
 function toggleSection(value: string): void {
@@ -274,6 +296,10 @@ function onUrlTyped(): void {
 }
 
 onMounted(async () => {
+  if (!configStore.appConfig) {
+    void configStore.fetchAppConfig();
+  }
+
   if (!isNew.value && id.value) {
     await store.fetchOne(id.value);
     const c = store.current;
