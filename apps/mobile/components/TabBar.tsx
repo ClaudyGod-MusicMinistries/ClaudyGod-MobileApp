@@ -124,7 +124,7 @@ function SidebarTabBar({
                     : theme.colors.subtleFill,
                 }}>
                   <MaterialIcons
-                    name={item.center ? 'play-arrow' : item.icon}
+                    name={item.icon}
                     size={isTV ? 20 : 17}
                     color={item.center ? '#FFFFFF' : (focused ? theme.colors.primary : theme.colors.textMuted)}
                   />
@@ -367,7 +367,7 @@ function BottomPillTabBar({
                   : 'rgba(255,255,255,0.10)',
               }}
             >
-              <MaterialIcons name="play-arrow" size={compact ? 28 : 32} color="#FFFFFF" />
+              <MaterialIcons name={centerItem.icon} size={compact ? 28 : 32} color="#FFFFFF" />
             </View>
           </View>
 
@@ -410,10 +410,8 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
       return {
         routeName,
         key: existing?.key ?? `synthetic-${routeName}`,
-        label: fallback.center ? fallback.label : (dynamic?.label ?? fallback.label),
-        icon: fallback.center
-          ? fallback.icon
-          : ((dynamic?.icon as React.ComponentProps<typeof MaterialIcons>['name']) || fallback.icon),
+        label: dynamic?.label ?? fallback.label,
+        icon: (dynamic?.icon as React.ComponentProps<typeof MaterialIcons>['name']) || fallback.icon,
         center: fallback.center,
       } satisfies FooterItem;
     }).filter(Boolean) as FooterItem[];

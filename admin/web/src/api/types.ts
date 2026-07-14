@@ -221,7 +221,8 @@ export interface SearchShortcut {
 
 export type SettingsDestination =
   | 'tabs.home' | 'tabs.player' | 'tabs.videos' | 'tabs.live' | 'tabs.library' | 'tabs.search' | 'tabs.settings'
-  | 'profile' | 'settings.privacy' | 'settings.donate' | 'settings.help' | 'settings.about' | 'settings.rate';
+  | 'profile' | 'settings.privacy' | 'settings.donate' | 'settings.help' | 'settings.about' | 'settings.rate'
+  | 'settings.referral';
 
 export interface SettingsHubItem {
   id: string;
@@ -286,6 +287,18 @@ export interface DonatePlan {
   icon: string;
 }
 
+export interface ReferralStep {
+  icon: string;
+  title: string;
+  body: string;
+}
+
+export interface ReferralRewardTier {
+  icon: string;
+  threshold: number;
+  reward: string;
+}
+
 export interface AppConfig {
   version: number;
   privacy: {
@@ -313,11 +326,16 @@ export interface AppConfig {
     methods: DonateMethod[];
     plans: DonatePlan[];
     impactBreakdown: Array<{ label: string; value: number; icon: string }>;
+    scriptures: string[];
   };
   rate: {
     iosStoreUrl: string;
     androidStoreUrl: string;
     feedbackRoute: string;
+  };
+  referral: {
+    howItWorks: ReferralStep[];
+    rewardTiers: ReferralRewardTier[];
   };
   hero: {
     fallbackTitle: string;

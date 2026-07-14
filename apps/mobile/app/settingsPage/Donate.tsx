@@ -54,7 +54,9 @@ const IMPACT_ITEMS = [
   { icon: 'build'   as const, label: 'Operations',        pct: 8  },
 ];
 
-const SCRIPTURES = [
+// Fallback-only — used before admin config has loaded, or if it's ever empty.
+// Mirrors the same defaults now configurable via admin's Mobile config → Giving quotes.
+const DEFAULT_SCRIPTURES = [
   '"Give, and it will be given to you." — Luke 6:38',
   '"Each of you should give what you have decided in your heart to give." — 2 Cor 9:7',
   '"Bring the whole tithe into the storehouse." — Malachi 3:10',
@@ -267,8 +269,9 @@ export default function Donate() {
   const activeAmounts  = useMemo(() => quickByCurrency[selectedCurrency] ?? quickAmounts, [quickByCurrency, quickAmounts, selectedCurrency]);
   const selectedMethod = useMemo(() => configMethods.find((m) => m.id === selectedMethodId) ?? configMethods[0] ?? null, [configMethods, selectedMethodId]);
 
-  const scriptureIndex = useMemo(() => Math.floor(Date.now() / 86400000) % SCRIPTURES.length, []);
-  const scripture      = SCRIPTURES[scriptureIndex] ?? SCRIPTURES[0]!;
+  const scriptures      = config?.donate?.scriptures?.length ? config.donate.scriptures : DEFAULT_SCRIPTURES;
+  const scriptureIndex  = useMemo(() => Math.floor(Date.now() / 86400000) % scriptures.length, [scriptures.length]);
+  const scripture       = scriptures[scriptureIndex] ?? scriptures[0]!;
 
   const supportEmail   = config?.privacy?.contactEmail ?? 'support@claudygod.org';
   const [showComingSoon, setShowComingSoon] = useState(false);
