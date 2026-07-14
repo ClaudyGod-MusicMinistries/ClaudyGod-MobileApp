@@ -180,6 +180,12 @@ YOUTUBE_MAX_RESULTS=12
 
 # Admin access
 ADMIN_SIGNUP_CODE=ci-admin-invitation-code
+
+# Observability (Prometheus + Grafana)
+METRICS_TOKEN=ci-metrics-token
+GRAFANA_DOMAIN=grafana.example.com
+GRAFANA_ADMIN_USER=admin
+GRAFANA_ADMIN_PASSWORD=ci-grafana-admin-password
 EOF
 
 echo "CI environment files created at $ROOT_DIR/.env.development and $ROOT_DIR/.env.production"

@@ -8,6 +8,7 @@ type ExtraConfig = {
   EXPO_PUBLIC_SUPABASE_ANON_KEY?: string;
   EXPO_PUBLIC_MOBILE_API_KEY?: string;
   EXPO_PUBLIC_EAS_PROJECT_ID?: string;
+  EXPO_PUBLIC_SENTRY_DSN?: string;
   eas?: { projectId?: string };
 };
 type PublicEnvKey =
@@ -16,7 +17,8 @@ type PublicEnvKey =
   | 'EXPO_PUBLIC_SUPABASE_KEY'
   | 'EXPO_PUBLIC_SUPABASE_ANON_KEY'
   | 'EXPO_PUBLIC_MOBILE_API_KEY'
-  | 'EXPO_PUBLIC_EAS_PROJECT_ID';
+  | 'EXPO_PUBLIC_EAS_PROJECT_ID'
+  | 'EXPO_PUBLIC_SENTRY_DSN';
 
 const manifestExtra = (Constants.manifest as { extra?: ExtraConfig } | null | undefined)?.extra;
 
@@ -41,6 +43,8 @@ const getProcessEnv = (key: PublicEnvKey): string | undefined => {
       return process.env.EXPO_PUBLIC_MOBILE_API_KEY;
     case 'EXPO_PUBLIC_EAS_PROJECT_ID':
       return process.env.EXPO_PUBLIC_EAS_PROJECT_ID;
+    case 'EXPO_PUBLIC_SENTRY_DSN':
+      return process.env.EXPO_PUBLIC_SENTRY_DSN;
     default:
       return undefined;
   }
@@ -192,4 +196,5 @@ export const ENV = {
   ),
   mobileApiKey: getEnv('EXPO_PUBLIC_MOBILE_API_KEY', ''),
   easProjectId: getEnv('EXPO_PUBLIC_EAS_PROJECT_ID', extra.eas?.projectId ?? ''),
+  sentryDsn: getEnv('EXPO_PUBLIC_SENTRY_DSN', ''),
 };

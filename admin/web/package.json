@@ -10,6 +10,7 @@
     "typecheck": "vue-tsc --noEmit"
   },
   "dependencies": {
+    "@sentry/vue": "^8.55.0",
     "@vueuse/core": "^11.3.0",
     "axios": "^1.7.7",
     "lucide-vue-next": "^1.0.0",

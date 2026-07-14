@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useAppTheme } from '../util/colorScheme';
 import { makeStyles } from '../styles/makeStyles';
+import { reportException } from '../lib/sentry';
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
@@ -140,6 +141,10 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('[ErrorBoundary] Caught error:', error);
     console.error('[ErrorBoundary] Component stack:', errorInfo.componentStack);
+    reportException(error, {
+      contexts: { react: { componentStack: errorInfo.componentStack } },
+      tags: { boundaryContext: this.props.context ?? 'unknown' },
+    });
   }
 
   resetError = () => {

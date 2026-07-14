@@ -198,11 +198,11 @@ function NewContentBanner({ item, onPress }: { item: FeedCardItem; onPress: () =
               ) : null}
             </View>
           </View>
-          <View style={{ width: artSize, flexShrink: 0 }}>
+          <View style={{ width: artSize, height: artSize, alignSelf: 'center', flexShrink: 0 }}>
             <Image
               source={{ uri: item.imageUrl || DEFAULT_CONTENT_IMAGE_URI }}
               resizeMode="cover"
-              style={{ width: artSize, height: '100%' } as ImageStyle}
+              style={{ width: artSize, height: artSize } as ImageStyle}
             />
           </View>
         </View>

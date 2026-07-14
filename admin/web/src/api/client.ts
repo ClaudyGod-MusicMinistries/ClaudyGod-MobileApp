@@ -56,6 +56,17 @@ client.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 client.interceptors.response.use(
   (response) => response,
   async (error) => {
+    // The API always responds with a real, human-readable reason in its JSON body
+    // ({ message, error, code, ... } — see services/api/src/middleware/errorHandler.ts)
+    // but axios's own error.message defaults to a generic "Request failed with status
+    // code 403"-style string. Surface the backend's actual message here, once,
+    // centrally — every existing `e.message` toast across the app benefits instead
+    // of each call site needing to know to reach into `error.response.data`.
+    const backendMessage = error.response?.data?.message || error.response?.data?.error;
+    if (typeof backendMessage === 'string' && backendMessage.trim()) {
+      error.message = backendMessage;
+    }
+
     const original = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
     if (error.response?.status !== 401 || original._retry) {

@@ -1,3 +1,4 @@
+import { isSentryEnabled, reportException, Sentry } from '../lib/sentry';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -25,13 +26,16 @@ import { WordOfDayProvider } from '../context/WordOfDayContext';
 import { APP_ROUTES } from '../util/appRoutes';
 import { AppLoadingScreen } from '../components/Exp/AppLoading';
 import { useWordOfDay } from '../hooks/useWordOfDay';
+import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { ErrorBoundary } from '../components/ErrorBoundary';
+import { OfflineScreen } from '../components/OfflineScreen';
 
 // Global unhandled JS error handler — active in production builds only.
 if (!__DEV__) {
   const ErrorUtils = (globalThis as unknown as { ErrorUtils?: { setGlobalHandler: (_handler: (_error: Error, _isFatal?: boolean) => void) => void } }).ErrorUtils;
   ErrorUtils?.setGlobalHandler((error, isFatal) => {
     console.error(`[GlobalError] ${isFatal ? 'fatal' : 'non-fatal'}:`, error?.message ?? error);
+    reportException(error, { tags: { fatal: String(Boolean(isFatal)) } });
   });
 }
 
@@ -64,12 +68,16 @@ function RootLayoutInner() {
   const [bootDelayDone, setBootDelayDone] = useState(false);
   const [wordModalVisible, setWordModalVisible] = useState(false);
   const { bibleVerse, adminWord } = useWordOfDay();
+  const { isOffline, recheck } = useNetworkStatus();
 
   const firstSegment = segments[0];
   const isOnTabs = firstSegment === '(tabs)';
 
   useEffect(() => {
-    const timer = setTimeout(() => setBootDelayDone(true), 1500);
+    // Long enough for AppLoadingScreen's full choreographed entrance (logo, name,
+    // tagline reveal in sequence) to finish and settle for a beat — a deliberate
+    // brand moment, not a flash that's gone before it registers.
+    const timer = setTimeout(() => setBootDelayDone(true), 2200);
     return () => clearTimeout(timer);
   }, []);
 
@@ -103,6 +111,10 @@ function RootLayoutInner() {
 
   if (!fontsLoaded || !bootDelayDone) {
     return <AppLoadingScreen />;
+  }
+
+  if (isOffline) {
+    return <OfflineScreen onRetry={recheck} />;
   }
 
   return (
@@ -150,7 +162,7 @@ function RootLayoutInner() {
   );
 }
 
-export default function RootLayout() {
+function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <QueryClientProvider client={queryClient}>
@@ -184,3 +196,5 @@ export default function RootLayout() {
     </GestureHandlerRootView>
   );
 }
+
+export default isSentryEnabled() ? Sentry.wrap(RootLayout) : RootLayout;
