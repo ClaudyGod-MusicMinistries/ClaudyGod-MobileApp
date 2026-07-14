@@ -57,17 +57,24 @@ export function matchesLayoutSection(item: FeedCardItem, section: MobileLayoutSe
   );
 }
 
-export function deriveLayoutSectionItems(feed: FeedBundle, section: MobileLayoutSection): FeedCardItem[] {
+function resolveLayoutSectionPool(feed: FeedBundle, section: MobileLayoutSection): FeedCardItem[] {
   const pool = buildCuratedPool(feed);
   const curated = pool.filter((item) => matchesLayoutSection(item, section));
   if (curated.length > 0) {
-    return curated.slice(0, section.maxItems);
+    return curated;
   }
 
   // No content has been tagged into this section yet (e.g. it was just created) —
   // fall back to a type-based sample so the section isn't a blank gap.
-  const typeFallback = pool.filter(
-    (item) => item.type !== 'ad' && section.contentTypes.includes(item.type),
-  );
-  return typeFallback.slice(0, section.maxItems);
+  return pool.filter((item) => item.type !== 'ad' && section.contentTypes.includes(item.type));
+}
+
+export function deriveLayoutSectionItems(feed: FeedBundle, section: MobileLayoutSection): FeedCardItem[] {
+  return resolveLayoutSectionPool(feed, section).slice(0, section.maxItems);
+}
+
+// The rest of the matched pool beyond maxItems — used to show a real "See all"
+// overflow list instead of a button that claims there's more without proving it.
+export function deriveLayoutSectionOverflow(feed: FeedBundle, section: MobileLayoutSection): FeedCardItem[] {
+  return resolveLayoutSectionPool(feed, section).slice(section.maxItems);
 }

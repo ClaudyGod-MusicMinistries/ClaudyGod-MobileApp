@@ -267,6 +267,13 @@ export default function LiveScreen() {
                 <ScheduleCard key={item.id} item={item} onNotify={() => void followLive(item)} />
               ))}
             </View>
+            {upcomingCards.length > upcomingLimit ? (
+              <ContentList
+                title="More upcoming sessions"
+                items={upcomingCards.slice(upcomingLimit)}
+                onPressItem={(item) => void openSession(item, 'live_upcoming_more')}
+              />
+            ) : null}
           </View>
         </FadeIn>
       ) : null}

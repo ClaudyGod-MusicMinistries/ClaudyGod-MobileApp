@@ -21,6 +21,7 @@ import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
 import { buildPlayerRoute, isDirectPlayableAudioUrl, isYouTubeAudioItem, routeParamToString, shouldOpenVideoScreen } from '../../util/playerRoute';
 import {
   CompactContentRow,
+  ContentList,
   ContentRail,
   EmptyState,
   PremiumHero,
@@ -387,13 +388,20 @@ export default function PlaySection() {
 
       {/* ── Most played trending ─────────────────────────────────────────── */}
       {feed.mostPlayed.length > 0 ? (
-        <TrendingList
-          title="Most played"
-          items={feed.mostPlayed.slice(0, 8)}
-          onPressItem={(item) => void openItem(item, 'music_trending')}
-          actionLabel="See all"
-          onAction={() => {}}
-        />
+        <>
+          <TrendingList
+            title="Most played"
+            items={feed.mostPlayed.slice(0, 8)}
+            onPressItem={(item) => void openItem(item, 'music_trending')}
+          />
+          {feed.mostPlayed.length > 8 ? (
+            <ContentList
+              title="More frequently played"
+              items={feed.mostPlayed.slice(8)}
+              onPressItem={(item) => void openItem(item, 'music_trending_more')}
+            />
+          ) : null}
+        </>
       ) : null}
 
       {!loading && !allQueue.length && !hasSectionItems ? (
