@@ -10,7 +10,7 @@ import { useAppTheme } from '../../util/colorScheme';
 import { makeStyles } from '../../styles/makeStyles';
 import { useContentFeed } from '../../hooks/useContentFeed';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
-import { getVideoLayoutSections, deriveLayoutSectionItems } from '../../util/mobileLayout';
+import { getVideoLayoutSections, deriveLayoutSectionItems, deriveLayoutSectionOverflow } from '../../util/mobileLayout';
 import { InlineErrorBanner } from '../../components/ui/InlineErrorBanner';
 import type { FeedCardItem } from '../../services/contentService';
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
@@ -112,7 +112,11 @@ export default function VideosScreen() {
 
   const videoSections = useMemo(() => getVideoLayoutSections(appConfig), [appConfig]);
   const sectionItems = useMemo(
-    () => videoSections.map((section) => ({ section, items: deriveLayoutSectionItems(feed, section) })),
+    () => videoSections.map((section) => ({
+      section,
+      items: deriveLayoutSectionItems(feed, section),
+      overflow: deriveLayoutSectionOverflow(feed, section),
+    })),
     [videoSections, feed],
   );
 
@@ -197,8 +201,6 @@ export default function VideosScreen() {
           title="Latest videos"
           accent="Watch"
           subtitle="Messages, sessions, clips, and replays"
-          actionLabel="See all"
-          onAction={() => {}}
         />
         <ContentRail
           title=""
@@ -213,12 +215,7 @@ export default function VideosScreen() {
       {/* Live & replays */}
       {feed.live.length > 0 ? (
         <View style={styles.gap12}>
-          <SectionLabel
-            title="Live & replays"
-            accent="Ministry"
-            actionLabel="See all"
-            onAction={() => {}}
-          />
+          <SectionLabel title="Live & replays" accent="Ministry" />
           <ContentRail
             title=""
             items={feed.live.slice(0, 10)}
@@ -226,20 +223,34 @@ export default function VideosScreen() {
             loading={loading}
             onPressItem={(item) => void openItem(item, 'videos_live')}
           />
+          {feed.live.length > 10 ? (
+            <ContentList
+              title="More live & replays"
+              items={feed.live.slice(10)}
+              onPressItem={(item) => void openItem(item, 'videos_live_more')}
+            />
+          ) : null}
         </View>
       ) : null}
 
       {/* Configured video sections */}
-      {sectionItems.map(({ section, items }) => (
+      {sectionItems.map(({ section, items, overflow }) => (
         items.length > 0 ? (
           <View key={section.id} style={styles.gap12}>
-            <SectionLabel title={section.title} subtitle={section.subtitle} actionLabel={section.actionLabel} onAction={() => {}} />
+            <SectionLabel title={section.title} subtitle={section.subtitle} />
             <ContentRail
               title=""
               items={items}
               loading={loading}
               onPressItem={(item) => void openItem(item, `videos_${section.id}`)}
             />
+            {overflow.length > 0 ? (
+              <ContentList
+                title={`More ${section.title.toLowerCase()}`}
+                items={overflow}
+                onPressItem={(item) => void openItem(item, `videos_${section.id}_more`)}
+              />
+            ) : null}
           </View>
         ) : null
       ))}
