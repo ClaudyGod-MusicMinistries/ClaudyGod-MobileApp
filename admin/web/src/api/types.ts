@@ -185,10 +185,8 @@ export interface AiAdCopyResponse {
 
 // ─── App Config ───────────────────────────────────────────────────────────────
 // Mirrors services/api's mobileAppConfigSchema field-for-field. The PUT endpoint
-// requires the ENTIRE object every save (fully .strict() + required) — the admin
-// UI only exposes editing for layout/discovery/settingsHub/monetization, so the
-// rest (privacy/help/about/donate/rate/navigation/intelligence) is round-tripped
-// untouched: loaded on GET, held in local state, sent back as-is on PUT.
+// requires the ENTIRE object every save (fully .strict() + required) — MobileConfigView.vue
+// exposes editing for every section here.
 
 export type MobileContentType = 'audio' | 'video' | 'playlist' | 'announcement' | 'live';
 export type MobileTabId = 'home' | 'videos' | 'player' | 'live' | 'library' | 'search';

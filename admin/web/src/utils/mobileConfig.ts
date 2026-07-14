@@ -101,3 +101,48 @@ export function createReferralStep(): Record<string, unknown> {
 export function createReferralTier(): Record<string, unknown> {
   return { icon: 'workspace-premium', threshold: 1, reward: 'Describe the reward for this tier.' };
 }
+
+export function createHelpContact(): Record<string, unknown> {
+  return { id: makeId('contact'), icon: 'info', title: 'New contact option', desc: 'Describe this contact channel.', actionUrl: 'https://' };
+}
+
+export function createFaq(): Record<string, unknown> {
+  return { id: makeId('faq'), q: 'New question?', a: 'Answer this question.' };
+}
+
+export function createHeroStat(): Record<string, unknown> {
+  return { label: 'New stat', value: '—' };
+}
+
+export function createFeatureChip(): Record<string, unknown> {
+  return { icon: 'star', label: 'New feature' };
+}
+
+export function createTeamMember(): Record<string, unknown> {
+  return { name: 'New team member', role: 'Role', desc: 'Describe their role.' };
+}
+
+export function createSocialLink(): Record<string, unknown> {
+  return { icon: 'public', label: 'New link', url: 'https://' };
+}
+
+export function createCurrencyOption(): Record<string, unknown> {
+  return { code: 'USD', label: 'US Dollar', symbol: '$' };
+}
+
+export function createDonateMethod(): Record<string, unknown> {
+  return { id: makeId('method'), icon: 'payments', label: 'New payment method', subtitle: 'Describe this method.' };
+}
+
+export function createDonatePlan(): Record<string, unknown> {
+  return { id: makeId('plan'), name: 'New plan', amount: '$10', period: 'monthly', note: 'Describe this plan.', icon: 'favorite-border' };
+}
+
+export function createImpactItem(): Record<string, unknown> {
+  return { label: 'New category', value: 10, icon: 'pie-chart' };
+}
+
+export const DONATE_PLAN_PERIOD_OPTIONS = [
+  { value: 'once', label: 'One-time' },
+  { value: 'monthly', label: 'Monthly' },
+] as const;
