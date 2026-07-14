@@ -1,4 +1,4 @@
-import { isSentryEnabled, Sentry } from '../lib/sentry';
+import { isSentryEnabled, reportException, Sentry } from '../lib/sentry';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -35,7 +35,7 @@ if (!__DEV__) {
   const ErrorUtils = (globalThis as unknown as { ErrorUtils?: { setGlobalHandler: (_handler: (_error: Error, _isFatal?: boolean) => void) => void } }).ErrorUtils;
   ErrorUtils?.setGlobalHandler((error, isFatal) => {
     console.error(`[GlobalError] ${isFatal ? 'fatal' : 'non-fatal'}:`, error?.message ?? error);
-    Sentry.captureException(error, { tags: { fatal: String(Boolean(isFatal)) } });
+    reportException(error, { tags: { fatal: String(Boolean(isFatal)) } });
   });
 }
 

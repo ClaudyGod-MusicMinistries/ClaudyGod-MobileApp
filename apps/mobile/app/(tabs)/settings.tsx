@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Switch, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -15,10 +15,23 @@ import { useDeviceClass } from '../../util/deviceClassConfig';
 import { APP_ROUTES } from '../../util/appRoutes';
 import { useUserAccount } from '../../context/UserAccountContext';
 import { useAccountSheet } from '../../context/AccountSheetContext';
+import { fetchMePreferences, updateMePreferences, type MePreferences } from '../../services/userFlowService';
+import { getPreference, setPreference } from '../../lib/localUserStorage';
+import { setDiagnosticsAllowed } from '../../lib/sentry';
 import {
   PremiumPage,
   SectionLabel,
 } from '../../components/feed';
+
+type TogglePreferenceKey = 'notificationsEnabled' | 'autoplayEnabled' | 'highQualityEnabled' | 'personalizationEnabled' | 'diagnosticsEnabled';
+
+const GUEST_DEFAULTS: Record<TogglePreferenceKey, boolean> = {
+  notificationsEnabled: true,
+  autoplayEnabled: true,
+  highQualityEnabled: false,
+  personalizationEnabled: true,
+  diagnosticsEnabled: true,
+};
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -248,11 +261,71 @@ export default function SettingsScreen() {
   const [autoPlay,        setAutoPlay]         = useState(true);
   const [highQuality,     setHighQuality]      = useState(false);
   const [personalization, setPersonalization]  = useState(true);
+  const [diagnostics,      setDiagnostics]     = useState(true);
+
+  // These toggles used to be local-only `useState` that reset on every restart and
+  // never reached the server — the backend already reads notificationsEnabled and
+  // personalizationEnabled to decide real behavior (push delivery, recommendations),
+  // so a UI toggle that didn't persist was silently lying to the user. Signed-in
+  // users now read/write the real /v1/me/preferences record; guests (no account to
+  // attach a server preference to) get the same persistence locally.
+  useEffect(() => {
+    let cancelled = false;
+
+    const applyValues = (prefs: Record<TogglePreferenceKey, boolean>) => {
+      if (cancelled) return;
+      setNotifications(prefs.notificationsEnabled);
+      setAutoPlay(prefs.autoplayEnabled);
+      setHighQuality(prefs.highQualityEnabled);
+      setPersonalization(prefs.personalizationEnabled);
+      setDiagnostics(prefs.diagnosticsEnabled);
+      setDiagnosticsAllowed(prefs.diagnosticsEnabled);
+    };
+
+    if (isSignedIn) {
+      fetchMePreferences()
+        .then(({ preferences }) => applyValues(preferences))
+        .catch(() => { /* keep defaults on failure */ });
+    } else {
+      Promise.all(
+        (Object.keys(GUEST_DEFAULTS) as TogglePreferenceKey[]).map(async (key) => [
+          key,
+          await getPreference(key, GUEST_DEFAULTS[key]),
+        ] as const),
+      ).then((entries) => applyValues(Object.fromEntries(entries) as Record<TogglePreferenceKey, boolean>));
+    }
+
+    return () => { cancelled = true; };
+  }, [isSignedIn]);
+
+  const persistPreference = useCallback(async (key: TogglePreferenceKey, value: boolean) => {
+    // Mirrored to local storage regardless of account status, so lib/sentry.ts's
+    // boot-time read always has the latest value without needing an account.
+    await setPreference(key, value);
+    if (key === 'diagnosticsEnabled') setDiagnosticsAllowed(value);
+    if (isSignedIn) {
+      await updateMePreferences({ [key]: value } as Partial<MePreferences>);
+    }
+  }, [isSignedIn]);
 
   const handleAppearanceChange = useCallback((value: ThemePreference) => {
     setThemePreference(value);
     showModal({ title: 'Appearance updated', message: value === 'system' ? 'Using your device setting.' : `Using ${value} mode.`, tone: 'success', icon: 'palette' });
   }, [setThemePreference, showModal]);
+
+  const makeToggleHandler = useCallback(
+    (key: TogglePreferenceKey, apply: (_value: boolean) => void, messages: { on: string; off: string; title: string; icon: React.ComponentProps<typeof MaterialIcons>['name'] }) =>
+      (value: boolean) => {
+        apply(value);
+        persistPreference(key, value)
+          .then(() => showModal({ title: messages.title, message: value ? messages.on : messages.off, tone: 'info', icon: messages.icon }))
+          .catch(() => {
+            apply(!value);
+            showModal({ title: 'Update failed', message: 'Could not save this setting. Please try again.', tone: 'error', icon: messages.icon });
+          });
+      },
+    [persistPreference, showModal],
+  );
 
   const playbackSettings: SettingItem[] = useMemo(() => [
     {
@@ -261,7 +334,7 @@ export default function SettingsScreen() {
       hint: 'Continue to the next song or message automatically.',
       value: autoPlay,
       accent: theme.colors.primary,
-      onToggle: (v) => { setAutoPlay(v); showModal({ title: 'Playback updated', message: v ? 'Auto-play is on.' : 'Auto-play is off.', tone: 'info', icon: 'play-circle-outline' }); },
+      onToggle: makeToggleHandler('autoplayEnabled', setAutoPlay, { title: 'Playback updated', on: 'Auto-play is on.', off: 'Auto-play is off.', icon: 'play-circle-outline' }),
     },
     {
       icon: 'high-quality',
@@ -269,9 +342,9 @@ export default function SettingsScreen() {
       hint: 'Use more data for richer listening when available.',
       value: highQuality,
       accent: theme.colors.info,
-      onToggle: (v) => { setHighQuality(v); showModal({ title: 'Audio quality updated', message: v ? 'Higher quality audio is enabled.' : 'Standard quality audio is enabled.', tone: 'info', icon: 'high-quality' }); },
+      onToggle: makeToggleHandler('highQualityEnabled', setHighQuality, { title: 'Audio quality updated', on: 'Higher quality audio is enabled.', off: 'Standard quality audio is enabled.', icon: 'high-quality' }),
     },
-  ], [autoPlay, highQuality, showModal, theme]);
+  ], [autoPlay, highQuality, makeToggleHandler, theme]);
 
   const experienceSettings: SettingItem[] = useMemo(() => [
     {
@@ -280,7 +353,7 @@ export default function SettingsScreen() {
       hint: 'Receive live alerts and release reminders.',
       value: notifications,
       accent: theme.colors.warning,
-      onToggle: (v) => { setNotifications(v); showModal({ title: 'Notifications updated', message: v ? 'Alerts are on.' : 'Alerts are off.', tone: 'info', icon: 'notifications-none' }); },
+      onToggle: makeToggleHandler('notificationsEnabled', setNotifications, { title: 'Notifications updated', on: 'Alerts are on.', off: 'Alerts are off.', icon: 'notifications-none' }),
     },
     {
       icon: 'auto-awesome',
@@ -288,9 +361,17 @@ export default function SettingsScreen() {
       hint: 'Use listening activity to improve suggestions.',
       value: personalization,
       accent: theme.colors.success,
-      onToggle: (v) => { setPersonalization(v); showModal({ title: 'Recommendations updated', message: v ? 'Recommendations are personalized.' : 'Personalization is off.', tone: 'info', icon: 'auto-awesome' }); },
+      onToggle: makeToggleHandler('personalizationEnabled', setPersonalization, { title: 'Recommendations updated', on: 'Recommendations are personalized.', off: 'Personalization is off.', icon: 'auto-awesome' }),
     },
-  ], [notifications, personalization, showModal, theme]);
+    {
+      icon: 'bug-report',
+      label: 'Diagnostics',
+      hint: 'Share crash and error reports to help us fix problems faster.',
+      value: diagnostics,
+      accent: theme.colors.textSecondary,
+      onToggle: makeToggleHandler('diagnosticsEnabled', setDiagnostics, { title: 'Diagnostics updated', on: 'Crash reports are shared.', off: 'Crash reports are off.', icon: 'bug-report' }),
+    },
+  ], [notifications, personalization, diagnostics, makeToggleHandler, theme]);
 
   const isWideLayout = device.isDesktop || device.isTV;
   const accountPad   = device.isTV ? 20 : 16;
