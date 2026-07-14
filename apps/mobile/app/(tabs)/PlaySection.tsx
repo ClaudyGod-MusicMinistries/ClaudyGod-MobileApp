@@ -84,15 +84,6 @@ const useStyles = makeStyles((theme) => ({
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const DESTINATION_ROUTES: Record<string, string> = {
-  home: APP_ROUTES.tabs.home,
-  videos: APP_ROUTES.tabs.videos,
-  player: APP_ROUTES.tabs.player,
-  live: APP_ROUTES.tabs.live,
-  library: APP_ROUTES.tabs.library,
-  search: APP_ROUTES.tabs.search,
-};
-
 type AudioFilter = 'all' | 'songs' | 'messages' | 'playlists';
 
 function parseRouteItem(params: {
@@ -175,7 +166,7 @@ export default function PlaySection() {
 
   const playerSections = useMemo(() => getPlayerLayoutSections(appConfig), [appConfig]);
   const sectionItems = useMemo(
-    () => playerSections.map((section) => ({ section, items: deriveLayoutSectionItems(feed, section) })),
+    () => playerSections.map((section) => ({ section, items: deriveLayoutSectionItems(feed, section, 'player') })),
     [playerSections, feed],
   );
   const hasSectionItems = sectionItems.some(({ items }) => items.length > 0);
@@ -371,7 +362,10 @@ export default function PlaySection() {
                 <SectionLabel
                   title={section.title}
                   actionLabel={section.actionLabel}
-                  onAction={() => router.push((DESTINATION_ROUTES[section.destinationTab] ?? APP_ROUTES.tabs.player) as never)}
+                  onAction={() => router.push({
+                    pathname: APP_ROUTES.section.detail,
+                    params: { sectionId: section.id, screen: 'player', title: section.title },
+                  } as never)}
                 />
                 <ContentRail
                   title=""
