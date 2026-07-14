@@ -41,6 +41,7 @@ JWT_REFRESH_TTL_DAYS=30
 CORS_ORIGIN=https://admin.validation.example,https://app.validation.example
 MOBILE_API_KEY=validation-mobile-api-key
 DATA_ENCRYPTION_KEY=0000000000000000000000000000000000000000000000000000000000000000
+METRICS_TOKEN=validation-metrics-token
 AUTH_PUBLIC_BASE_URL=https://app.validation.example
 AUTH_SESSION_COOKIE_NAME=claudygod_session
 AUTH_REFRESH_COOKIE_NAME=claudygod_refresh_session
@@ -64,6 +65,7 @@ ADMIN_DOMAIN=admin.validation.example
 APP_DOMAIN=app.validation.example
 TRAEFIK_PUBLIC_NETWORK=traefik-public
 TRAEFIK_CERT_RESOLVER=letsencrypt
+GRAFANA_ADMIN_PASSWORD=validation-grafana-password
 EOF
 
 # Use .env.development if it exists; fall back to .env.example for CI/hook environments.
