@@ -74,7 +74,10 @@ function RootLayoutInner() {
   const isOnTabs = firstSegment === '(tabs)';
 
   useEffect(() => {
-    const timer = setTimeout(() => setBootDelayDone(true), 1500);
+    // Long enough for AppLoadingScreen's full choreographed entrance (logo, name,
+    // tagline reveal in sequence) to finish and settle for a beat — a deliberate
+    // brand moment, not a flash that's gone before it registers.
+    const timer = setTimeout(() => setBootDelayDone(true), 2200);
     return () => clearTimeout(timer);
   }, []);
 
