@@ -10,7 +10,7 @@ import { createDonationIntentSchema } from '../me/me.schema';
 import { createPublicDonationIntent, saveMeLibraryItem } from '../me/me.service';
 import { youtubeListQuerySchema } from '../youtube/youtube.schema';
 import { fetchYouTubeVideos } from '../youtube/youtube.service';
-import { buildMobileFeed } from './mobile.service';
+import { buildMobileFeed, getMobileSectionDetail } from './mobile.service';
 
 const guestFavoriteItemSchema = z.object({
   id:       z.string().min(1),
@@ -49,10 +49,31 @@ mobileRouter.get(
       type: parsed.type,
       status: parsed.status,
       visibility: parsed.visibility,
+      section: parsed.section,
       search: parsed.search,
       updatedAfter: parsed.updatedAfter,
     };
     const data = await listPublicContent(query);
+    res.status(200).json(data);
+  }),
+);
+
+const sectionDetailQuerySchema = z.object({
+  screen: z.enum(['home', 'videos', 'player', 'library']).default('home'),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+});
+
+mobileRouter.get(
+  '/sections/:sectionId',
+  requireMobileApiKey,
+  asyncHandler(async (req, res) => {
+    const { screen, page, limit } = validateSchema(sectionDetailQuerySchema, req.query);
+    const data = await getMobileSectionDetail({ screen, sectionId: req.params.sectionId, page, limit });
+    if (!data) {
+      res.status(404).json({ message: 'Section not found' });
+      return;
+    }
     res.status(200).json(data);
   }),
 );
