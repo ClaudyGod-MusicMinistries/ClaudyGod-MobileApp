@@ -424,6 +424,22 @@ export async function fetchSearchResults(query: string, type?: ContentType): Pro
   }
 }
 
+interface TrendingSearchesResponse {
+  items: { query: string; count: number }[];
+}
+
+// Real usage, not a static list: aggregated from the same search log every
+// search already writes to server-side (services/api search.service.ts
+// getTrendingSearches). Used for the search screen's no-query state.
+export async function fetchTrendingSearches(limit = 8): Promise<string[]> {
+  try {
+    const response = await apiFetch<TrendingSearchesResponse>(`/v1/search/trending?limit=${limit}`);
+    return response.items.map((item) => item.query);
+  } catch {
+    return [];
+  }
+}
+
 async function fetchYouTubeFeed(): Promise<{
   videos: FeedCardItem[];
   music: FeedCardItem[];
