@@ -15,6 +15,7 @@ import { useContentFeed } from '../../hooks/useContentFeed';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import { getLibraryLayoutSections, deriveLayoutSectionItems } from '../../util/mobileLayout';
 import { InlineErrorBanner } from '../../components/ui/InlineErrorBanner';
+import { SignInPromptBanner } from '../../components/ui/SignInPromptBanner';
 import { useToast } from '../../context/ToastContext';
 import { useLocalContent } from '../../hooks/useLocalContent';
 import type { FeedCardItem } from '../../services/contentService';
@@ -202,6 +203,8 @@ export default function LibraryScreen() {
         onRefresh={() => refresh()}
       >
         <LibTabs active={activeTab} onChange={setActiveTab} counts={counts} />
+
+        <SignInPromptBanner message="Sign in so your favourites and history sync across every device." />
 
         {error ? <InlineErrorBanner message={error} onRetry={() => void refresh()} /> : null}
 

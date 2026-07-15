@@ -14,6 +14,7 @@ export const healthRouter = Router();
 const capabilities = () => ({
   youtube: env.YOUTUBE_ENABLED,
   supabase: env.SUPABASE_ENABLED,
+  s3: env.S3_ENABLED,
   databaseTarget: /supabase\./i.test(env.DATABASE_URL)
     ? 'supabase-postgres'
     : 'external-postgres',

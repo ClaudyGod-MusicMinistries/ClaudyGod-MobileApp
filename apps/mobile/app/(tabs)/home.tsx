@@ -8,6 +8,7 @@ import { CustomText } from '../../components/CustomText';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { SupportMinistryCard } from '../../components/ui/SupportMinistryCard';
 import { InlineErrorBanner } from '../../components/ui/InlineErrorBanner';
+import { SignInPromptBanner } from '../../components/ui/SignInPromptBanner';
 import { useContentFeed } from '../../hooks/useContentFeed';
 import { useWordOfDay } from '../../hooks/useWordOfDay';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
@@ -23,6 +24,7 @@ import {
   ContentRail,
   EmptyState,
   GreetingBanner,
+  isRedundantSubtitle,
   LiveNowBanner,
   PremiumHero,
   PremiumPage,
@@ -174,7 +176,7 @@ function NewContentBanner({ item, onPress }: { item: FeedCardItem; onPress: () =
             >
               {item.title}
             </CustomText>
-            {item.subtitle ? (
+            {item.subtitle && !isRedundantSubtitle(item.title, item.subtitle) ? (
               <CustomText style={styles.bannerSub} numberOfLines={1}>{item.subtitle}</CustomText>
             ) : null}
             <View style={styles.bannerPlayRow}>
@@ -219,8 +221,8 @@ export default function HomeScreen() {
   const liveSessions = useMemo(() => feed.live.filter((item) => item.isLive), [feed.live]);
 
   const continueItems = useMemo(
-    () => dedupe([...feed.recent, ...feed.recommendations]).slice(0, 8),
-    [feed.recent, feed.recommendations],
+    () => dedupe(feed.continueListening).slice(0, 8),
+    [feed.continueListening],
   );
 
   const allContent = useMemo(
@@ -277,8 +279,22 @@ export default function HomeScreen() {
         <LiveNowBanner item={liveSessions[0]} onPress={() => void openItem(liveSessions[0]!, 'home_live_banner')} />
       ) : null}
 
-      {feed.recent.length > 0 ? (
+      {feed.continueListening.length > 0 ? (
         <ContinueRow items={continueItems} onPress={(item) => void openItem(item, 'home_continue')} />
+      ) : null}
+
+      <SignInPromptBanner />
+
+      {feed.recommendations.length > 0 ? (
+        <View style={styles.sectionRow}>
+          <SectionLabel title="For You" accent="Picked for you" />
+          <ContentRail
+            title=""
+            items={feed.recommendations.slice(0, 12)}
+            onPressItem={(item) => void openItem(item, 'home_for_you')}
+            cardVariant="portrait"
+          />
+        </View>
       ) : null}
 
       {newRelease ? (
