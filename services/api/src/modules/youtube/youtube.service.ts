@@ -3,7 +3,7 @@ import { pool } from '../../db/pool';
 import { BadRequestError, HttpError, NotFoundError } from '../../lib/errors';
 import { createLogger } from '../../lib/logger';
 import { buildPublicObjectUrl, putObjectBuffer } from '../../infra/s3';
-import type { ContentVisibility } from '../content/content.types';
+import type { ContentType, ContentVisibility } from '../content/content.types';
 
 const log = createLogger('youtube.service');
 
@@ -448,6 +448,10 @@ async function upsertYouTubeVideoToContent(params: {
   visibility: ContentVisibility;
   appSections: string[];
   tags: string[];
+  // Admin-chosen at import time (bulk import / "Send to Content" only — the
+  // unattended full-channel sync has no human present to ask, so it keeps
+  // defaulting to 'video' and can be corrected afterward via Content edit).
+  contentType?: Extract<ContentType, 'audio' | 'video'>;
 }): Promise<{ created: boolean; contentId: string }> {
   const existing = await pool.query<{ id: string }>(
     `SELECT id FROM content_items WHERE external_source_id = $1 OR media_url = $2 LIMIT 1`,
@@ -502,12 +506,13 @@ async function upsertYouTubeVideoToContent(params: {
        author_id, title, description, content_type, media_url, thumbnail_url, visibility,
        source_kind, external_source_id, channel_name, duration_label, app_sections, tags
      )
-     VALUES ($1, $2, $3, 'video', $4, $5, $6, 'youtube', $7, $8, $9, $10::text[], $11::text[])
+     VALUES ($1, $2, $3, $4, $5, $6, $7, 'youtube', $8, $9, $10, $11::text[], $12::text[])
      RETURNING id`,
     [
       params.actorUserId,
       title,
       description || 'Imported from YouTube channel feed.',
+      params.contentType ?? 'video',
       params.url,
       hostedThumbnailUrl,
       params.visibility,
@@ -685,6 +690,7 @@ export async function importYouTubeSelectionsToContent(params: {
     visibility: ContentVisibility;
     appSections?: string[];
     tags?: string[];
+    contentType?: Extract<ContentType, 'audio' | 'video'>;
   }>;
 }): Promise<{
   summary: { created: number; updated: number; skipped: number };
@@ -705,6 +711,7 @@ export async function importYouTubeSelectionsToContent(params: {
       thumbnailUrl: selection.thumbnailUrl,
       duration: selection.duration,
       visibility: selection.visibility,
+      contentType: selection.contentType,
       appSections: normalizeTextList(selection.appSections),
       tags: normalizeTextList(selection.tags),
     });

@@ -1,4 +1,4 @@
-import { cleanFeedText, isValidDuration, formatFeedMeta, dedupeFeedItems, getFeaturedItem } from './utils';
+import { cleanFeedText, isValidDuration, formatFeedMeta, dedupeFeedItems, getFeaturedItem, isRedundantSubtitle } from './utils';
 import type { FeedCardItem } from '../../services/contentService';
 
 function makeItem(overrides: Partial<FeedCardItem> = {}): FeedCardItem {
@@ -61,6 +61,25 @@ describe('formatFeedMeta', () => {
 
   it('omits an empty subtitle', () => {
     expect(formatFeedMeta(makeItem({ subtitle: '', duration: '4:20' }))).toBe('4:20');
+  });
+});
+
+describe('isRedundantSubtitle', () => {
+  it('flags a subtitle already embedded in the title', () => {
+    expect(isRedundantSubtitle('Worship Hour! Day 78 - ClaudyGOD Music & Ministries', 'ClaudyGOD Music & Ministries')).toBe(true);
+  });
+
+  it('flags an exact match, case/whitespace-insensitive', () => {
+    expect(isRedundantSubtitle('  ClaudyGod  ', 'claudygod')).toBe(true);
+  });
+
+  it('treats an empty subtitle as redundant (nothing to show)', () => {
+    expect(isRedundantSubtitle('Title', '')).toBe(true);
+    expect(isRedundantSubtitle('Title', null)).toBe(true);
+  });
+
+  it('does not flag a genuinely distinct subtitle', () => {
+    expect(isRedundantSubtitle('Not Be Moved', 'ClaudyGod Music & Ministries')).toBe(false);
   });
 });
 

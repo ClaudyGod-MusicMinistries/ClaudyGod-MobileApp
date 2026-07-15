@@ -48,22 +48,24 @@ describe('matchesConfiguredSection', () => {
 });
 
 describe('buildLayoutSectionResult', () => {
-  it('is curated and only returns tagged items when at least one item is tagged into the section', () => {
+  it('only returns tagged items when at least one item is tagged into the section', () => {
     const tagged = makeItem({ id: 'tagged', type: 'video', appSections: ['nuggets-of-truth'] });
     const untaggedSameType = makeItem({ id: 'untagged', type: 'video', appSections: [] });
     const result = buildLayoutSectionResult([tagged, untaggedSameType], section);
 
-    expect(result.isCurated).toBe(true);
     expect(result.items.map((i) => i.id)).toEqual(['tagged']);
   });
 
-  it('falls back to a type-based sample and reports isCurated: false when nothing is tagged', () => {
+  // No type-based fallback: a section with nothing tagged into it returns an
+  // empty pool (rather than a generic same-type sample), so it disappears from
+  // the app instead of showing filler indistinguishable from real curation.
+  it('returns an empty pool when nothing is tagged into the section, regardless of matching content type', () => {
     const matchingType = makeItem({ id: 'a', type: 'video', appSections: [] });
     const wrongType = makeItem({ id: 'b', type: 'playlist', appSections: [] });
     const result = buildLayoutSectionResult([matchingType, wrongType], section);
 
-    expect(result.isCurated).toBe(false);
-    expect(result.items.map((i) => i.id)).toEqual(['a']);
+    expect(result.items).toEqual([]);
+    expect(result.overflowCount).toBe(0);
   });
 
   it('caps items at maxItems and reports the remainder as overflowCount', () => {
@@ -74,13 +76,5 @@ describe('buildLayoutSectionResult', () => {
 
     expect(result.items).toHaveLength(2);
     expect(result.overflowCount).toBe(2);
-  });
-
-  it('excludes ad items from the fallback sample', () => {
-    const ad = makeItem({ id: 'ad', type: 'ad', appSections: [] });
-    const result = buildLayoutSectionResult([ad], section);
-
-    expect(result.isCurated).toBe(false);
-    expect(result.items).toHaveLength(0);
   });
 });

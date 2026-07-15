@@ -19,6 +19,27 @@ export function formatFeedMeta(item: FeedCardItem) {
   return [cleanFeedText(item.subtitle), isValidDuration(item.duration) ? item.duration : null].filter(Boolean).join(' · ');
 }
 
+function normalizeForComparison(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
+// Admin-entered titles often already embed the channel/ministry name (e.g. "Worship
+// Hour... ClaudyGOD Music & Ministries"), and subtitle independently defaults to the
+// same channel name — rendering both then visibly repeats the same phrase.
+export function isRedundantSubtitle(title?: string | null, subtitle?: string | null): boolean {
+  const normalizedSubtitle = normalizeForComparison(cleanFeedText(subtitle));
+  if (!normalizedSubtitle) return true;
+
+  const normalizedTitle = normalizeForComparison(cleanFeedText(title));
+  if (!normalizedTitle) return false;
+
+  return (
+    normalizedTitle === normalizedSubtitle ||
+    normalizedTitle.includes(normalizedSubtitle) ||
+    normalizedSubtitle.includes(normalizedTitle)
+  );
+}
+
 export function dedupeFeedItems(items: FeedCardItem[]): FeedCardItem[] {
   const seen = new Set<string>();
   const result: FeedCardItem[] = [];

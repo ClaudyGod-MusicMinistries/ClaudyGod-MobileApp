@@ -47,14 +47,3 @@ export function deriveLayoutSectionOverflowCount(
 ): number {
   return findResolvedSection(feed, screen, section)?.overflowCount ?? 0;
 }
-
-// False when this section has no admin-tagged content yet and is showing a
-// type-based sample instead — lets the UI label it honestly (e.g. "Suggested")
-// rather than presenting a fallback as if it were curated.
-export function isLayoutSectionCurated(
-  feed: FeedBundle,
-  section: MobileLayoutSection,
-  screen: LayoutScreen,
-): boolean {
-  return findResolvedSection(feed, screen, section)?.isCurated ?? true;
-}

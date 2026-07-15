@@ -401,6 +401,33 @@ const envSchema = z
       });
     }
 
+    // Admin media uploads (images/video/audio) go through Supabase's S3-compatible
+    // storage endpoint — without these, every upload silently 503s at request time
+    // instead of failing loudly here at startup.
+    if (!value.SUPABASE_S3_ENDPOINT || isPlaceholderSupabaseHost(value.SUPABASE_S3_ENDPOINT)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['SUPABASE_S3_ENDPOINT'],
+        message: 'SUPABASE_S3_ENDPOINT must use your real Supabase S3 endpoint in production',
+      });
+    }
+
+    if (!value.SUPABASE_S3_ACCESS_KEY_ID || /your-supabase/i.test(value.SUPABASE_S3_ACCESS_KEY_ID)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['SUPABASE_S3_ACCESS_KEY_ID'],
+        message: 'SUPABASE_S3_ACCESS_KEY_ID is required in production',
+      });
+    }
+
+    if (!value.SUPABASE_S3_SECRET_ACCESS_KEY || /your-supabase/i.test(value.SUPABASE_S3_SECRET_ACCESS_KEY)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['SUPABASE_S3_SECRET_ACCESS_KEY'],
+        message: 'SUPABASE_S3_SECRET_ACCESS_KEY is required in production',
+      });
+    }
+
     if (!value.AUTH_PUBLIC_BASE_URL || !value.AUTH_PUBLIC_BASE_URL.startsWith('https://')) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,

@@ -32,7 +32,6 @@ interface MobileFeedApiLayoutSection {
   maxItems: number;
   items: MobileFeedApiItem[];
   overflowCount: number;
-  isCurated: boolean;
 }
 
 interface MobileFeedApiLayoutSections {
@@ -158,7 +157,6 @@ export interface FeedLayoutSection {
   maxItems: number;
   items: FeedCardItem[];
   overflowCount: number;
-  isCurated: boolean;
 }
 
 export type LayoutScreen = 'home' | 'videos' | 'player' | 'library';
@@ -173,6 +171,10 @@ export interface FeedBundle {
   announcements: FeedCardItem[];
   mostPlayed: FeedCardItem[];
   recent: FeedCardItem[];
+  // Real per-user play history only (never a generic "latest releases"
+  // substitute) — empty when the signed-in user hasn't played anything yet,
+  // so "Continue listening" can honestly hide instead of showing filler.
+  continueListening: FeedCardItem[];
   recommendations: FeedCardItem[];
   topCategories: string[];
   layoutSections: Record<LayoutScreen, FeedLayoutSection[]>;
@@ -197,6 +199,7 @@ const DEFAULT_BUNDLE: FeedBundle = {
   announcements: [],
   mostPlayed: [],
   recent: [],
+  continueListening: [],
   recommendations: [],
   topCategories: ['All', 'Music', 'Videos', 'Live', 'Playlists'],
   layoutSections: EMPTY_LAYOUT_SECTIONS,
@@ -578,7 +581,6 @@ function normalizeLayoutSections(
       maxItems: section.maxItems,
       items: section.items.map(normalizeFeedItem),
       overflowCount: section.overflowCount,
-      isCurated: section.isCurated,
     }));
 
   return {
@@ -650,7 +652,6 @@ interface MobileSectionDetailApiResponse {
   limit: number;
   total: number;
   hasMore: boolean;
-  isCurated: boolean;
 }
 
 export interface MobileSectionDetail {
@@ -660,7 +661,6 @@ export interface MobileSectionDetail {
   limit: number;
   total: number;
   hasMore: boolean;
-  isCurated: boolean;
 }
 
 export async function fetchMobileSectionDetail(
@@ -771,7 +771,7 @@ export async function fetchFeedBundle(): Promise<FeedBundle> {
 
   return {
     ...baseBundle,
-    recent: recentlyPlayed.length ? recentlyPlayed : baseBundle.recent,
+    continueListening: recentlyPlayed,
     mostPlayed: personalizedMostPlayed.length ? personalizedMostPlayed : baseBundle.mostPlayed,
     recommendations,
   };
@@ -788,6 +788,7 @@ export function emptyFeedBundle(): FeedBundle {
     announcements: [],
     mostPlayed: [],
     recent: [],
+    continueListening: [],
     recommendations: [],
     topCategories: [...DEFAULT_BUNDLE.topCategories],
     layoutSections: { home: [], videos: [], player: [], library: [] },

@@ -13,7 +13,7 @@ import { useDeviceClass } from '../../util/deviceClassConfig';
 import { useAppTheme } from '../../util/colorScheme';
 import type { FeedCardItem } from '../../services/contentService';
 import { useFeedStyles } from './styles';
-import { cleanFeedText, isValidDuration } from './utils';
+import { cleanFeedText, isRedundantSubtitle, isValidDuration } from './utils';
 
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
@@ -75,7 +75,7 @@ export const ContentCard = React.memo(function ContentCard({ item, onPress, comp
               <MaterialIcons name="more-vert" size={16} color={theme.colors.textMuted} />
             </Pressable>
           </View>
-          {item.subtitle ? (
+          {item.subtitle && !isRedundantSubtitle(item.title, item.subtitle) ? (
             <CustomText variant="caption" style={styles.cardSubtitle} numberOfLines={1}>{cleanFeedText(item.subtitle)}</CustomText>
           ) : null}
         </View>

@@ -1,4 +1,4 @@
-export { formatFeedMeta, dedupeFeedItems, getFeaturedItem } from './utils';
+export { formatFeedMeta, dedupeFeedItems, getFeaturedItem, isRedundantSubtitle } from './utils';
 
 export { PremiumPage } from './PremiumPage';
 export { PremiumHero } from './PremiumHero';

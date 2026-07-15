@@ -118,30 +118,18 @@ export const matchesConfiguredSection = (item: MobileFeedItem, section: MobileLa
   return item.appSections.some((value) => tokens.has(normalizeSectionToken(value)));
 };
 
-// Ranked items matching this section's tag; if none are tagged yet, fall back
-// to a type-based sample so a freshly-created section isn't a blank gap. The
-// caller is told which case applies via `isCurated` rather than silently
-// blending the two.
-const resolveConfiguredSectionPool = (
-  ranked: MobileFeedItem[],
-  section: MobileLayoutSection,
-): { pool: MobileFeedItem[]; isCurated: boolean } => {
-  const matched = ranked.filter((item) => matchesConfiguredSection(item, section));
-  if (matched.length > 0) {
-    return { pool: matched, isCurated: true };
-  }
-
-  return {
-    pool: ranked.filter((item) => item.type !== 'ad' && section.contentTypes.includes(item.type)),
-    isCurated: false,
-  };
-};
+// Ranked items actually tagged into this section. No type-based fallback: a
+// section with nothing tagged into it returns an empty pool rather than a
+// generic sample, so every mobile screen's existing "hide when empty" guard
+// keeps it off-screen until admin curates real content into it.
+const resolveConfiguredSectionPool = (ranked: MobileFeedItem[], section: MobileLayoutSection): MobileFeedItem[] =>
+  ranked.filter((item) => matchesConfiguredSection(item, section));
 
 export const buildLayoutSectionResult = (
   ranked: MobileFeedItem[],
   section: MobileLayoutSection,
 ): MobileLayoutSectionResult => {
-  const { pool: sectionPool, isCurated } = resolveConfiguredSectionPool(ranked, section);
+  const sectionPool = resolveConfiguredSectionPool(ranked, section);
 
   return {
     id: section.id,
@@ -152,7 +140,6 @@ export const buildLayoutSectionResult = (
     maxItems: section.maxItems,
     items: sectionPool.slice(0, section.maxItems),
     overflowCount: Math.max(0, sectionPool.length - section.maxItems),
-    isCurated,
   };
 };
 
@@ -517,7 +504,7 @@ export const getMobileSectionDetail = async (params: {
     return null;
   }
 
-  const { pool: sectionPool, isCurated } = resolveConfiguredSectionPool(ranked, section);
+  const sectionPool = resolveConfiguredSectionPool(ranked, section);
   const offset = (params.page - 1) * params.limit;
   const items = sectionPool.slice(offset, offset + params.limit);
 
@@ -535,6 +522,5 @@ export const getMobileSectionDetail = async (params: {
     limit: params.limit,
     total: sectionPool.length,
     hasMore: offset + items.length < sectionPool.length,
-    isCurated,
   };
 };
