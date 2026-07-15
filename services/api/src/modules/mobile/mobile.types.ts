@@ -43,7 +43,6 @@ export interface MobileLayoutSectionResult {
   maxItems: number;
   items: MobileFeedItem[];
   overflowCount: number;
-  isCurated: boolean;
 }
 
 export interface MobileFeedResponse {
@@ -68,5 +67,4 @@ export interface MobileSectionDetailResponse {
   limit: number;
   total: number;
   hasMore: boolean;
-  isCurated: boolean;
 }

@@ -110,6 +110,7 @@ const youtubeImportSelectionSchema = z
     visibility: visibilitySchema.default('draft'),
     appSections: optionalSectionsSchema,
     tags: optionalTagsSchema,
+    contentType: z.enum(['audio', 'video']).default('video'),
   })
   .strict();
 

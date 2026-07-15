@@ -34,12 +34,6 @@ const useStyles = makeStyles((theme) => ({
   headerTextWrap: { flex: 1, minWidth: 0 },
   headerTitle: { color: theme.colors.text },
   headerMeta: { color: theme.colors.textSecondary, marginTop: 2 },
-  suggestedNote: {
-    borderRadius: 10, borderWidth: 1, borderColor: theme.colors.border,
-    backgroundColor: theme.colors.subtleFill, padding: 12,
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-  },
-  suggestedText: { color: theme.colors.textSecondary, flex: 1 },
   loadingWrap: { alignItems: 'center', paddingVertical: 60 },
   errorPad: { padding: theme.spacing.lg, gap: 10 },
   errorTitle: { color: theme.colors.text },
@@ -152,15 +146,6 @@ export default function SectionDetailScreen() {
                 <CustomText variant="caption" style={styles.errorBody}>{error}</CustomText>
                 <AppButton title="Try again" variant="secondary" onPress={() => void load(1)} />
               </SurfaceCard>
-            ) : null}
-
-            {detail && !detail.isCurated ? (
-              <View style={styles.suggestedNote}>
-                <MaterialIcons name="auto-awesome" size={16} color={theme.colors.textSecondary} />
-                <CustomText variant="caption" style={styles.suggestedText}>
-                  Nothing has been uploaded yet. Sorry for the inconvenience.
-                </CustomText>
-              </View>
             ) : null}
 
             {!loading && !error && items.length > 0 ? (

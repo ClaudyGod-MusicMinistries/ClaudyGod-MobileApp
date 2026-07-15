@@ -36,6 +36,7 @@ export interface YouTubeImportSelection {
   appSections: string[];
   tags: string[];
   visibility?: 'draft' | 'published';
+  contentType?: 'audio' | 'video';
 }
 
 export async function importVideos(selections: YouTubeImportSelection[]): Promise<{ imported: number }> {

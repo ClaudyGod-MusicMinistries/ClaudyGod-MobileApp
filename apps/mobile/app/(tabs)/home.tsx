@@ -23,6 +23,7 @@ import {
   ContentRail,
   EmptyState,
   GreetingBanner,
+  isRedundantSubtitle,
   LiveNowBanner,
   PremiumHero,
   PremiumPage,
@@ -174,7 +175,7 @@ function NewContentBanner({ item, onPress }: { item: FeedCardItem; onPress: () =
             >
               {item.title}
             </CustomText>
-            {item.subtitle ? (
+            {item.subtitle && !isRedundantSubtitle(item.title, item.subtitle) ? (
               <CustomText style={styles.bannerSub} numberOfLines={1}>{item.subtitle}</CustomText>
             ) : null}
             <View style={styles.bannerPlayRow}>
@@ -219,8 +220,8 @@ export default function HomeScreen() {
   const liveSessions = useMemo(() => feed.live.filter((item) => item.isLive), [feed.live]);
 
   const continueItems = useMemo(
-    () => dedupe([...feed.recent, ...feed.recommendations]).slice(0, 8),
-    [feed.recent, feed.recommendations],
+    () => dedupe(feed.continueListening).slice(0, 8),
+    [feed.continueListening],
   );
 
   const allContent = useMemo(
@@ -277,7 +278,7 @@ export default function HomeScreen() {
         <LiveNowBanner item={liveSessions[0]} onPress={() => void openItem(liveSessions[0]!, 'home_live_banner')} />
       ) : null}
 
-      {feed.recent.length > 0 ? (
+      {feed.continueListening.length > 0 ? (
         <ContinueRow items={continueItems} onPress={(item) => void openItem(item, 'home_continue')} />
       ) : null}
 

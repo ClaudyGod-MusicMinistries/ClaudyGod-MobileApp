@@ -55,6 +55,20 @@
         <div v-if="selected.size" class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-primary/10 border border-primary/20 rounded-xl">
           <div class="flex flex-wrap items-center gap-3">
             <p class="text-sm font-semibold text-primary-soft">{{ selected.size }} video{{ selected.size > 1 ? 's' : '' }} selected</p>
+            <!-- Global content type for batch — determines whether these land in the
+                 mobile Music tab (audio) or Video tab (video); YouTube import has no
+                 way to guess this correctly, so it's an explicit admin choice. -->
+            <div class="flex items-center gap-1.5 bg-white/6 border border-border rounded-lg px-2 py-1">
+              <span class="text-[10px] text-ink-muted font-medium">Import as:</span>
+              <select
+                v-model="globalContentType"
+                class="text-[10px] font-semibold bg-transparent text-ink focus:outline-none cursor-pointer"
+                @click.stop
+              >
+                <option value="video">Video</option>
+                <option value="audio">Audio</option>
+              </select>
+            </div>
             <!-- Global visibility for batch -->
             <div class="flex items-center gap-1.5 bg-white/6 border border-border rounded-lg px-2 py-1">
               <span class="text-[10px] text-ink-muted font-medium">Visibility:</span>
@@ -296,6 +310,7 @@
           </div>
         </div>
 
+        <AppSelect v-model="sendModalContentType" label="Content type" :options="[{ value: 'video', label: 'Video' }, { value: 'audio', label: 'Audio' }]" />
         <AppSelect v-model="sendModalVisibility" label="Visibility" :options="[{ value: 'published', label: 'Published' }, { value: 'draft', label: 'Draft' }]" />
       </div>
 
@@ -372,6 +387,7 @@ const videos        = ref<YouTubeVideoItem[]>([]);
 const selected      = ref(new Set<string>());
 const searchQuery   = ref('');
 const globalVisibility = ref<'published' | 'draft'>('published');
+const globalContentType = ref<'video' | 'audio'>('video');
 const nextPageToken = ref<string | null>(null);
 
 // Send-to-Content modal (single-video, deliberate review before it lands in Content)
@@ -379,6 +395,7 @@ const sendModalOpen = ref(false);
 const sendModalVideo = ref<YouTubeVideoItem | null>(null);
 const sendModalSections = ref<string[]>([]);
 const sendModalVisibility = ref<'draft' | 'published'>('published');
+const sendModalContentType = ref<'video' | 'audio'>('video');
 const sendModalSaving = ref(false);
 
 const isLoading     = ref(false);
@@ -483,6 +500,7 @@ async function importSelected(): Promise<void> {
         appSections: v.suggestedAppSections,
         tags: v.suggestedTags,
         visibility: globalVisibility.value,
+        contentType: globalContentType.value,
       }));
     const { imported } = await importVideos(selections);
     ui.addToast({
@@ -521,6 +539,7 @@ function openSendModal(video: YouTubeVideoItem): void {
   sendModalVideo.value = video;
   sendModalSections.value = [...video.suggestedAppSections];
   sendModalVisibility.value = 'published';
+  sendModalContentType.value = 'video';
   sendModalOpen.value = true;
 }
 
@@ -556,6 +575,7 @@ async function confirmSendToContent(): Promise<void> {
       appSections: sendModalSections.value,
       tags: video.suggestedTags,
       visibility: sendModalVisibility.value,
+      contentType: sendModalContentType.value,
     }]);
     ui.addToast({
       tone: 'success',
