@@ -5,6 +5,12 @@ import {
   restoreMobileSession,
   subscribeToMobileAuthStateChange,
 } from '../services/authService';
+import { saveMeLibraryItem } from '../services/userFlowService';
+import {
+  getFavorites,
+  hasMigratedFavoritesToServer,
+  markFavoritesMigratedToServer,
+} from '../lib/localUserStorage';
 
 interface UserAccountContextValue {
   account: MobileAuthUser | null;
@@ -18,6 +24,35 @@ const UserAccountContext = createContext<UserAccountContextValue>({
   signOut: async () => {},
 });
 
+// Best-effort, one-time push of any local guest favorites up to the real
+// account once signed in — the local copy stays in place afterward as a
+// harmless guest-mode fallback rather than being deleted, so a partially
+// failed migration never loses data.
+async function migrateLocalFavoritesToServer(): Promise<void> {
+  if (await hasMigratedFavoritesToServer()) return;
+
+  try {
+    const localFavorites = await getFavorites();
+    await Promise.all(
+      localFavorites.map((item) =>
+        saveMeLibraryItem({
+          bucket: 'liked',
+          contentId: item.id,
+          contentType: item.type,
+          title: item.title,
+          subtitle: item.subtitle,
+          description: item.description,
+          imageUrl: item.imageUrl || undefined,
+          mediaUrl: item.mediaUrl,
+          duration: item.duration,
+        }).catch(() => { /* best-effort per item — a single bad item shouldn't block the rest */ }),
+      ),
+    );
+  } finally {
+    await markFavoritesMigratedToServer();
+  }
+}
+
 export function UserAccountProvider({ children }: { children: ReactNode }) {
   const [account, setAccount] = useState<MobileAuthUser | null>(null);
 
@@ -30,6 +65,12 @@ export function UserAccountProvider({ children }: { children: ReactNode }) {
       setAccount(snapshot.user);
     });
   }, []);
+
+  useEffect(() => {
+    if (account) {
+      void migrateLocalFavoritesToServer();
+    }
+  }, [account]);
 
   const signOut = async () => {
     await clearMobileSession();

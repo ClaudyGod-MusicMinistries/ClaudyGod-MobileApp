@@ -3,12 +3,23 @@ import { asyncHandler } from '../../lib/asyncHandler';
 import { validateSchema } from '../../lib/validation';
 import { authenticate } from '../../middleware/authenticate';
 import { requireMobileApiKey } from '../../middleware/requireMobileApiKey';
-import { searchClickSchema, searchQuerySchema } from './search.schema';
-import { recordSearchClick, searchContent } from './search.service';
+import { searchClickSchema, searchQuerySchema, trendingSearchQuerySchema } from './search.schema';
+import { getTrendingSearches, recordSearchClick, searchContent } from './search.service';
 
 export const searchRouter = Router();
 
 searchRouter.use(requireMobileApiKey);
+
+// Public (no `authenticate`) — aggregate query popularity, not personal data,
+// and useful to show guests before they've ever signed in or typed anything.
+searchRouter.get(
+  '/trending',
+  asyncHandler(async (req, res) => {
+    const query = validateSchema(trendingSearchQuerySchema, req.query);
+    const result = await getTrendingSearches(query.limit);
+    res.status(200).json(result);
+  }),
+);
 
 searchRouter.get(
   '/',

@@ -18,5 +18,10 @@ export const searchClickSchema = z.object({
   contentId: z.string().uuid(),
 });
 
+export const trendingSearchQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(20).default(8),
+});
+
 export type SearchQuery = z.infer<typeof searchQuerySchema>;
 export type SearchClick = z.infer<typeof searchClickSchema>;
+export type TrendingSearchQuery = z.infer<typeof trendingSearchQuerySchema>;
