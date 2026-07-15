@@ -783,11 +783,6 @@ const migrationStatements = [
    )`,
   `CREATE INDEX IF NOT EXISTS idx_user_search_events_user_searched_at
      ON user_search_events (user_id, searched_at DESC)`,
-  // Supports the trending-searches aggregation (GROUP BY query over a recent
-  // time window) — the index above is keyed by user_id first, which doesn't
-  // help a query that spans all users.
-  `CREATE INDEX IF NOT EXISTS idx_user_search_events_searched_at_query
-     ON user_search_events (searched_at DESC, query)`,
 
   /* ── Phase 6: User devices ───────────────────────────────────────────────── */
   `CREATE TABLE IF NOT EXISTS user_devices (
@@ -1026,6 +1021,14 @@ const migrationStatements = [
   `CREATE INDEX IF NOT EXISTS idx_content_items_external_source_id
      ON content_items (external_source_id)
      WHERE external_source_id IS NOT NULL`,
+
+  /* ── Trending searches: supports GROUP BY query over a recent time window —
+         the existing (user_id, searched_at DESC) index doesn't help an
+         aggregation spanning all users. Migrations are strictly append-only
+         (each id is just its array position, checksummed against what's
+         already applied in production) — this MUST stay the last entry. */
+  `CREATE INDEX IF NOT EXISTS idx_user_search_events_searched_at_query
+     ON user_search_events (searched_at DESC, query)`,
 ];
 
 const MIGRATION_LOCK_ID = 7_246_130_001;
