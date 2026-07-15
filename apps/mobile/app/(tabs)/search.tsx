@@ -14,7 +14,7 @@ import { InlineErrorBanner } from '../../components/ui/InlineErrorBanner';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import { useDeviceClass } from '../../util/deviceClassConfig';
 import { makeStyles } from '../../styles/makeStyles';
-import { fetchSearchResults, type ContentType, type FeedCardItem } from '../../services/contentService';
+import { fetchSearchResults, fetchTrendingSearches, type ContentType, type FeedCardItem } from '../../services/contentService';
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
 import { buildPlayerRoute } from '../../util/playerRoute';
 import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
@@ -202,6 +202,7 @@ export default function Search() {
   const [remoteResults, setRemoteResults] = useState<FeedCardItem[] | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
+  const [trendingSearches, setTrendingSearches] = useState<string[]>([]);
   const focusProgress = useRef(new Animated.Value(0)).current;
   const { feed, loading, error, refresh } = useContentFeed();
   const queryClient = useQueryClient();
@@ -278,6 +279,22 @@ export default function Search() {
       useNativeDriver: false,
     }).start();
   }, [focusProgress, searchFocused]);
+
+  useEffect(() => {
+    let active = true;
+    void fetchTrendingSearches(8).then((items) => {
+      if (active) setTrendingSearches(items);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const applyTrendingSearch = (term: string) => {
+    setQuery(term);
+    setActiveCategory('All');
+    setRemoteResults(null);
+  };
 
   const animatedSearchStyle = {
     transform: [{ scale: focusProgress.interpolate({ inputRange: [0, 1], outputRange: [1, 1.012] }) }],
@@ -361,6 +378,26 @@ export default function Search() {
 
       {error && !hasQuery ? <InlineErrorBanner message={error} onRetry={() => void refresh()} /> : null}
 
+      {/* ── Trending searches — real, aggregated from what people actually search ── */}
+      {!hasQuery && trendingSearches.length > 0 ? (
+        <View style={styles.shortcutGap}>
+          <SectionLabel title="Trending searches" accent="Popular" subtitle="What people are searching for right now" />
+          <View style={styles.shortcutRow}>
+            {trendingSearches.map((term) => (
+              <TVTouchable
+                key={term}
+                onPress={() => applyTrendingSearch(term)}
+                showFocusBorder={false}
+                style={styles.shortcutChip}
+              >
+                <MaterialIcons name="trending-up" size={14} color={theme.colors.primary} />
+                <CustomText style={styles.shortcutText}>{term}</CustomText>
+              </TVTouchable>
+            ))}
+          </View>
+        </View>
+      ) : null}
+
       {/* ── Quick discovery shortcuts ── */}
       {!hasQuery && shortcuts.length > 0 ? (
         <View style={styles.shortcutGap}>
@@ -406,7 +443,7 @@ export default function Search() {
           </View>
 
           <View style={styles.sectionGap}>
-            <SectionLabel title="Popular music" accent="Trending" actionLabel="See all" onAction={() => router.push('/player')} />
+            <SectionLabel title="Popular music" accent="Worship" actionLabel="See all" onAction={() => router.push('/player')} />
             <ContentRail
               title=""
               items={feed.music.slice(0, device.isTV ? 12 : 10)}
