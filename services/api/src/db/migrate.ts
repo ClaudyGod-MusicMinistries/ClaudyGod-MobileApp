@@ -783,6 +783,11 @@ const migrationStatements = [
    )`,
   `CREATE INDEX IF NOT EXISTS idx_user_search_events_user_searched_at
      ON user_search_events (user_id, searched_at DESC)`,
+  // Supports the trending-searches aggregation (GROUP BY query over a recent
+  // time window) — the index above is keyed by user_id first, which doesn't
+  // help a query that spans all users.
+  `CREATE INDEX IF NOT EXISTS idx_user_search_events_searched_at_query
+     ON user_search_events (searched_at DESC, query)`,
 
   /* ── Phase 6: User devices ───────────────────────────────────────────────── */
   `CREATE TABLE IF NOT EXISTS user_devices (

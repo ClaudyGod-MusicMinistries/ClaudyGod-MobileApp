@@ -481,10 +481,13 @@ async function fetchMostPlayed(): Promise<FeedCardItem[]> {
   }
 }
 
-async function fetchMeRecentlyPlayed(): Promise<FeedCardItem[]> {
+// Exported: also used by useLocalContent.ts to source the Library screen's
+// "History" tab for signed-in users, which wants more items than the home
+// feed's internal limit of 12.
+export async function fetchMeRecentlyPlayed(limit = 12): Promise<FeedCardItem[]> {
   try {
     const response = await apiFetchWithMobileSession<EngagementFeedResponse>(
-      '/v1/me/engagement/recently-played?limit=12',
+      `/v1/me/engagement/recently-played?limit=${limit}`,
     );
     return response.items.map(normalizeFeedItem);
   } catch {

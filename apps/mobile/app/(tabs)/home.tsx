@@ -8,6 +8,7 @@ import { CustomText } from '../../components/CustomText';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { SupportMinistryCard } from '../../components/ui/SupportMinistryCard';
 import { InlineErrorBanner } from '../../components/ui/InlineErrorBanner';
+import { SignInPromptBanner } from '../../components/ui/SignInPromptBanner';
 import { useContentFeed } from '../../hooks/useContentFeed';
 import { useWordOfDay } from '../../hooks/useWordOfDay';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
@@ -280,6 +281,20 @@ export default function HomeScreen() {
 
       {feed.continueListening.length > 0 ? (
         <ContinueRow items={continueItems} onPress={(item) => void openItem(item, 'home_continue')} />
+      ) : null}
+
+      <SignInPromptBanner />
+
+      {feed.recommendations.length > 0 ? (
+        <View style={styles.sectionRow}>
+          <SectionLabel title="For You" accent="Picked for you" />
+          <ContentRail
+            title=""
+            items={feed.recommendations.slice(0, 12)}
+            onPressItem={(item) => void openItem(item, 'home_for_you')}
+            cardVariant="portrait"
+          />
+        </View>
       ) : null}
 
       {newRelease ? (

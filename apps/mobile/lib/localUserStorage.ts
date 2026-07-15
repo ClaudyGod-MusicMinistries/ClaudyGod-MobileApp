@@ -75,6 +75,19 @@ export async function setPreference(key: string, value: unknown): Promise<void> 
   await writeJSON(KEYS.preferences, { ...prefs, [key]: value });
 }
 
+// Guards the one-time "push local guest favorites up to the server" migration
+// (see UserAccountContext.tsx) so it doesn't re-run on every app launch once
+// it's already succeeded for this device.
+const FAVORITES_MIGRATION_KEY = 'favoritesMigratedToServer';
+
+export async function hasMigratedFavoritesToServer(): Promise<boolean> {
+  return getPreference<boolean>(FAVORITES_MIGRATION_KEY, false);
+}
+
+export async function markFavoritesMigratedToServer(): Promise<void> {
+  await setPreference(FAVORITES_MIGRATION_KEY, true);
+}
+
 // ── Downloads ──────────────────────────────────────────────────────────────
 
 export interface LocalDownload {
