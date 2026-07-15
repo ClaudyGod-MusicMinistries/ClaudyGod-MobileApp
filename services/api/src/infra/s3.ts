@@ -21,6 +21,16 @@ function getClient(): S3Client {
         secretAccessKey: env.SUPABASE_S3_SECRET_ACCESS_KEY,
       },
       forcePathStyle: true,
+      // AWS SDK v3's "default integrity protections" (>=3.729) auto-attach a
+      // CRC32 checksum to every request, including presigned URLs — computed
+      // against an empty body since the real file isn't known at presign
+      // time. The browser's later PUT of the actual file then fails signature
+      // validation against S3-compatible gateways (Supabase, R2, MinIO) that
+      // don't special-case this the way real AWS S3 does, producing a 401 on
+      // upload with no server-side error at all. Restore pre-3.729 behavior:
+      // only add checksums when an API actually requires them.
+      requestChecksumCalculation: 'WHEN_REQUIRED',
+      responseChecksumValidation: 'WHEN_REQUIRED',
     });
     logger.info('[s3] client initialized', {
       region: env.SUPABASE_S3_REGION,
