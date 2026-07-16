@@ -213,10 +213,7 @@ export default function HomeScreen() {
   const { bibleVerse, adminWord }  = useWordOfDay();
   const { config: appConfig } = useMobileAppConfig();
 
-  const featured = useMemo(
-    () => feed.featured ?? feed.live[0] ?? feed.music[0] ?? feed.videos[0] ?? feed.recommendations[0] ?? null,
-    [feed.featured, feed.live, feed.music, feed.recommendations, feed.videos],
-  );
+  const featured = feed.featured ?? null;
 
   const liveSessions = useMemo(() => feed.live.filter((item) => item.isLive), [feed.live]);
 
@@ -237,8 +234,14 @@ export default function HomeScreen() {
   );
 
   const newRelease = useMemo(() => {
-    const candidates = [...feed.videos, ...feed.music];
-    return candidates.find((item) => item.id !== featured?.id) ?? null;
+    const candidates = [...feed.videos, ...feed.music]
+      .filter((item) => item.id !== featured?.id)
+      .sort((a, b) => {
+        const aTime = a.createdAt ? Date.parse(a.createdAt) : 0;
+        const bTime = b.createdAt ? Date.parse(b.createdAt) : 0;
+        return bTime - aTime;
+      });
+    return candidates[0] ?? null;
   }, [feed.videos, feed.music, featured]);
 
   const openItem = async (item: FeedCardItem, source: string) => {
@@ -269,10 +272,7 @@ export default function HomeScreen() {
           featured?.type === 'video' ? 'smart-display' :
           featured ? 'play-arrow' : 'play-circle-outline'
         }
-        secondaryLabel="Search"
-        secondaryIcon="search"
         onPrimary={featured ? () => void openItem(featured, 'home_hero') : () => router.push(APP_ROUTES.tabs.player)}
-        onSecondary={() => router.push(APP_ROUTES.tabs.search)}
       />
 
       {liveSessions[0] ? (
