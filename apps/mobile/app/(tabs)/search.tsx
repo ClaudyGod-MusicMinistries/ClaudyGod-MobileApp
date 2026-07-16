@@ -17,6 +17,7 @@ import { makeStyles } from '../../styles/makeStyles';
 import { fetchSearchResults, fetchTrendingSearches, type ContentType, type FeedCardItem } from '../../services/contentService';
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
 import { buildPlayerRoute } from '../../util/playerRoute';
+import { APP_ROUTES } from '../../util/appRoutes';
 import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
 import {
   ContentList,
@@ -422,7 +423,7 @@ export default function Search() {
       {hasQuery ? (
         <>
           <ContentList title={`Results for "${query.trim()}"`} items={filtered} onPressItem={(item) => void openResult(item)} />
-          {!loading && !filtered.length ? (
+          {!loading && !isSearching && !filtered.length ? (
             <EmptyState
               title="No results found"
               message="Try another title, artist, topic, or category."
@@ -443,7 +444,7 @@ export default function Search() {
           </View>
 
           <View style={styles.sectionGap}>
-            <SectionLabel title="Popular music" accent="Worship" actionLabel="See all" onAction={() => router.push('/player')} />
+            <SectionLabel title="Popular music" accent="Worship" actionLabel="See all" onAction={() => router.push(APP_ROUTES.tabs.player)} />
             <ContentRail
               title=""
               items={feed.music.slice(0, device.isTV ? 12 : 10)}
@@ -454,7 +455,7 @@ export default function Search() {
           </View>
 
           <View style={styles.sectionGap}>
-            <SectionLabel title="Latest videos" accent="Watch" actionLabel="See all" onAction={() => router.push('/videos')} />
+            <SectionLabel title="Latest videos" accent="Watch" actionLabel="See all" onAction={() => router.push(APP_ROUTES.tabs.videos)} />
             <ContentRail
               title=""
               items={feed.videos.slice(0, device.isTV ? 12 : 10)}

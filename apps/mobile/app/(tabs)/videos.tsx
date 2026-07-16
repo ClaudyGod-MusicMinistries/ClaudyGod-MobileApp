@@ -157,7 +157,7 @@ export default function VideosScreen() {
   };
 
   return (
-    <PremiumPage title="Videos" eyebrow="Watch" noBack refreshing={loading} onRefresh={refresh}>
+    <PremiumPage title="Videos" eyebrow="Watch" noBack refreshing={loading} onRefresh={refresh} scrollToTopKey={activeId}>
       {/* Player or Hero */}
       {active && canInlinePlay && active.mediaUrl ? (
         <VideoPlayer title={active.title} sourceUri={active.mediaUrl} height={playerHeight} />
