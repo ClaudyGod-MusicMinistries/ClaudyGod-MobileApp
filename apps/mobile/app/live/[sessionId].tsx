@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Image, RefreshControl, ScrollView, TextInput, View, type ImageStyle } from 'react-native';
+import { AppState, Image, RefreshControl, ScrollView, TextInput, View, type AppStateStatus, type ImageStyle } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -18,6 +18,8 @@ import { makeStyles } from '../../styles/makeStyles';
 import { useDeviceClass } from '../../util/deviceClassConfig';
 import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
 import { useAppModal } from '../../context/AppModalContext';
+import { ENV } from '../../services/config';
+import { getStoredMobileSession } from '../../services/authService';
 import {
   fetchLiveSessionDetail,
   postLiveSessionMessage,
@@ -209,6 +211,58 @@ export default function LiveSessionScreen() {
   }, [sessionId]);
 
   useEffect(() => { void refresh(); }, [refresh]);
+
+  // Real-time chat: the backend already broadcasts new messages to channel
+  // `live:${sessionId}` over its WebSocket server whenever one is posted — this
+  // was previously never consumed, so chat only ever updated on manual
+  // pull-to-refresh. Reconnects (and backfills via `refresh()`) on foreground,
+  // since RN suspends sockets while backgrounded. Dedupes by message id since
+  // the sender's own optimistic prepend in `submitMessage` below will also
+  // arrive back over this same socket.
+  useEffect(() => {
+    if (!sessionId) return;
+    let ws: WebSocket | null = null;
+    let cancelled = false;
+
+    const connect = async () => {
+      const { accessToken } = await getStoredMobileSession();
+      if (cancelled) return;
+      const wsBase = ENV.apiUrl.replace(/^http/, 'ws');
+      const url = `${wsBase}/ws${accessToken ? `?token=${encodeURIComponent(accessToken)}` : ''}`;
+      ws = new WebSocket(url);
+      ws.onopen = () => {
+        ws?.send(JSON.stringify({ type: 'subscribe', channel: `live:${sessionId}` }));
+      };
+      ws.onmessage = (event) => {
+        try {
+          const frame = JSON.parse(String(event.data)) as { type?: string; channel?: string; payload?: unknown };
+          if (frame.type === 'message' && frame.channel === `live:${sessionId}`) {
+            const incoming = frame.payload as LiveSessionDetail['messages'][0];
+            setSession((current) => {
+              if (!current || current.messages.some((m) => m.id === incoming.id)) return current;
+              return { ...current, messageCount: current.messageCount + 1, messages: [incoming, ...current.messages] };
+            });
+          }
+        } catch {
+          // Malformed frame — ignore silently.
+        }
+      };
+    };
+
+    void connect();
+
+    const subscription = AppState.addEventListener('change', (state: AppStateStatus) => {
+      if (state !== 'active') return;
+      if (ws?.readyState !== WebSocket.OPEN) void connect();
+      void refresh();
+    });
+
+    return () => {
+      cancelled = true;
+      subscription.remove();
+      ws?.close();
+    };
+  }, [sessionId, refresh]);
 
   const activeMediaUrl = useMemo(() => session?.streamUrl || session?.playbackUrl, [session]);
   const coverImageUrl  = session?.coverImageUrl || DEFAULT_CONTENT_IMAGE_URI;
