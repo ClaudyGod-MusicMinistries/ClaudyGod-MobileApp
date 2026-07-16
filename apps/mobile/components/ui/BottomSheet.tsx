@@ -79,6 +79,10 @@ export function BottomSheet({
       onClosed?.();
     }, EXIT_DURATION);
     return () => clearTimeout(timeout);
+    // onClosed intentionally excluded: it's a caller-supplied inline callback,
+    // and this effect must only re-run on visible/shared-value transitions —
+    // not every time the caller re-renders with a new function reference.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, translateY, backdropOpacity]);
 
   const requestClose = () => {
