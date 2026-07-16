@@ -63,6 +63,27 @@ to boot if these vars are missing or still contain placeholder values (same trea
 `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY`) — a misconfigured deploy fails loudly at
 `docker compose up` rather than silently 503ing on the first upload attempt.
 
+**The bucket itself is not created by any code path** — `SUPABASE_STORAGE_BUCKET`
+(`infra/s3.ts`, `storage.service.ts`, `youtube.service.ts`) is just a name the app
+assumes already exists. If it doesn't, the presigned PUT URL is still issued
+successfully (env vars are fine, `S3_ENABLED` is true), but the browser's actual upload
+to it 404s directly from Supabase's storage gateway. Before the first upload on a new
+Supabase project, create a bucket in the dashboard (Storage → New bucket) with the exact
+name in `SUPABASE_STORAGE_BUCKET` (default `mobile-uploads`), and mark it **Public** —
+`buildPublicObjectUrl` (`infra/s3.ts`) constructs `/storage/v1/object/public/...` URLs to
+serve uploaded media directly, which requires the bucket to be public rather than
+gated behind signed reads.
+
+**Also watch for AWS SDK default-checksum breakage**: `@aws-sdk/client-s3` versions from
+around 3.729 onward attach a CRC32 integrity checksum to every request by default,
+including presigned URLs — signed against an empty body since the real file isn't known
+at presign time. The browser's later PUT of the actual bytes then fails signature
+validation against S3-compatible gateways (Supabase, R2, MinIO) with a 401, even though
+nothing is misconfigured. Fixed by setting `requestChecksumCalculation: 'WHEN_REQUIRED'`
+and `responseChecksumValidation: 'WHEN_REQUIRED'` on the `S3Client` (`infra/s3.ts`) to
+restore pre-default-checksum behavior — re-check this if the SDK is ever upgraded and
+uploads start 401ing again with a valid, present configuration.
+
 ## `requireMobileApiKey` — not a security boundary
 
 `services/api/src/middleware/requireMobileApiKey.ts` accepts either a matching

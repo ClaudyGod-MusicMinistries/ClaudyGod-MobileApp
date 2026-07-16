@@ -1024,11 +1024,19 @@ const migrationStatements = [
 
   /* ── Trending searches: supports GROUP BY query over a recent time window —
          the existing (user_id, searched_at DESC) index doesn't help an
-         aggregation spanning all users. Migrations are strictly append-only
-         (each id is just its array position, checksummed against what's
-         already applied in production) — this MUST stay the last entry. */
+         aggregation spanning all users. */
   `CREATE INDEX IF NOT EXISTS idx_user_search_events_searched_at_query
      ON user_search_events (searched_at DESC, query)`,
+
+  /* ── Content items: admin-assigned "Featured" (mobile Home hero) — replaces
+         an algorithmic ranked[0] pick with an explicit admin choice. Migrations
+         are strictly append-only (each id is just its array position,
+         checksummed against what's already applied in production) — this
+         MUST stay the last entry. */
+  `ALTER TABLE content_items ADD COLUMN IF NOT EXISTS is_featured BOOLEAN NOT NULL DEFAULT false`,
+  `CREATE INDEX IF NOT EXISTS idx_content_items_is_featured
+     ON content_items (updated_at DESC)
+     WHERE is_featured = true`,
 ];
 
 const MIGRATION_LOCK_ID = 7_246_130_001;

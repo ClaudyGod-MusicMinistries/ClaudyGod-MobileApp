@@ -284,6 +284,45 @@ const loadPublishedContent = async (limit = 120): Promise<MobileFeedItem[]> => {
   return result.rows.map(toMobileFeedItem);
 };
 
+// The Home hero is admin-assigned (content.isFeatured), not algorithmically
+// ranked — if admin hasn't featured anything, this returns null and the
+// mobile app shows its existing empty-state hero rather than guessing.
+const loadFeaturedContent = async (): Promise<MobileFeedItem | null> => {
+  let result;
+  try {
+    result = await pool.query<PublishedContentRow>(
+      `SELECT
+         c.id,
+         c.title,
+         c.description,
+         c.content_type,
+         c.media_url,
+         c.thumbnail_url,
+         c.source_kind,
+         c.channel_name,
+         c.duration_label,
+         c.app_sections,
+         c.tags,
+         c.created_at,
+         c.updated_at,
+         u.display_name AS author_display_name
+       FROM content_items c
+       INNER JOIN app_users u ON u.id = c.author_id
+       WHERE c.visibility = 'published' AND c.deleted_at IS NULL AND c.is_featured = true
+       ORDER BY c.updated_at DESC
+       LIMIT 1`,
+    );
+  } catch (error) {
+    if (isMissingDatabaseStructureError(error) || isDatabaseConnectivityError(error)) {
+      return null;
+    }
+    throw error;
+  }
+
+  const row = result.rows[0];
+  return row ? toMobileFeedItem(row) : null;
+};
+
 const loadLiveSessions = async (limit = 24): Promise<MobileFeedItem[]> => {
   let result;
   try {
@@ -439,9 +478,10 @@ const loadUnifiedContentPool = async (): Promise<UnifiedContentPool> => {
 };
 
 export const buildMobileFeed = async (): Promise<MobileFeedResponse> => {
-  const [{ pool: unifiedPool, ranked, trending }, mobileConfigResult] = await Promise.all([
+  const [{ pool: unifiedPool, ranked, trending }, mobileConfigResult, featured] = await Promise.all([
     loadUnifiedContentPool(),
     getMobileAppConfig(),
+    loadFeaturedContent(),
   ]);
 
   const live = unifiedPool.filter((item) => classifyRail(item) === 'live');
@@ -469,7 +509,7 @@ export const buildMobileFeed = async (): Promise<MobileFeedResponse> => {
 
   return {
     generatedAt: new Date().toISOString(),
-    featured: ranked[0] ?? null,
+    featured,
     rails,
     layoutSections: buildAllLayoutSections(ranked, mobileConfigResult.config),
     topCategories: rails
