@@ -17,6 +17,7 @@ import { useUserAccount } from '../../context/UserAccountContext';
 import { useAccountSheet } from '../../context/AccountSheetContext';
 import { fetchMePreferences, updateMePreferences, type MePreferences } from '../../services/userFlowService';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
+import { usePushNotifications } from '../../hooks/usePushNotify';
 import { getSettingsHubSections } from '../../util/mobileExperienceConfig';
 import { getPreference, setPreference } from '../../lib/localUserStorage';
 import { setDiagnosticsAllowed } from '../../lib/sentry';
@@ -285,6 +286,7 @@ export default function SettingsScreen() {
   const { account, isSignedIn, signOut } = useUserAccount();
   const { openAccountSheet } = useAccountSheet();
   const { config: appConfig } = useMobileAppConfig();
+  const { toggleNotifications, hasPermission: pushPermissionGranted, isLoading: pushLoading } = usePushNotifications();
 
   const settingsHubSections = useMemo(() => {
     const configured = getSettingsHubSections(appConfig);
@@ -296,6 +298,7 @@ export default function SettingsScreen() {
   const [highQuality,     setHighQuality]      = useState(false);
   const [personalization, setPersonalization]  = useState(true);
   const [diagnostics,      setDiagnostics]     = useState(true);
+  const [awaitingPushPermission, setAwaitingPushPermission] = useState(false);
 
   // These toggles used to be local-only `useState` that reset on every restart and
   // never reached the server — the backend already reads notificationsEnabled and
@@ -342,6 +345,27 @@ export default function SettingsScreen() {
     }
   }, [isSignedIn]);
 
+  // Fires only right after the user explicitly turns notifications on (armed by
+  // `awaitingPushPermission` in that toggle's handler below) — not a passive
+  // watcher, since `hasPermission` starts false for every fresh install until
+  // the OS prompt has actually been answered, and we don't want to silently
+  // flip a brand-new user's default-on preference back off before they've
+  // ever been asked.
+  useEffect(() => {
+    if (!awaitingPushPermission || pushLoading) return;
+    setAwaitingPushPermission(false);
+    if (!pushPermissionGranted) {
+      setNotifications(false);
+      void persistPreference('notificationsEnabled', false);
+      showModal({
+        title: 'Permission needed',
+        message: 'Enable notifications for ClaudyGod in your device settings to receive alerts.',
+        tone: 'warning',
+        icon: 'notifications-none',
+      });
+    }
+  }, [awaitingPushPermission, pushLoading, pushPermissionGranted, persistPreference, showModal]);
+
   const handleAppearanceChange = useCallback((value: ThemePreference) => {
     setThemePreference(value);
     showModal({ title: 'Appearance updated', message: value === 'system' ? 'Using your device setting.' : `Using ${value} mode.`, tone: 'success', icon: 'palette' });
@@ -387,7 +411,11 @@ export default function SettingsScreen() {
       hint: 'Receive live alerts and release reminders.',
       value: notifications,
       accent: theme.colors.warning,
-      onToggle: makeToggleHandler('notificationsEnabled', setNotifications, { title: 'Notifications updated', on: 'Alerts are on.', off: 'Alerts are off.', icon: 'notifications-none' }),
+      onToggle: (value: boolean) => {
+        makeToggleHandler('notificationsEnabled', setNotifications, { title: 'Notifications updated', on: 'Alerts are on.', off: 'Alerts are off.', icon: 'notifications-none' })(value);
+        if (value) setAwaitingPushPermission(true);
+        void toggleNotifications(value);
+      },
     },
     {
       icon: 'auto-awesome',
@@ -405,7 +433,7 @@ export default function SettingsScreen() {
       accent: theme.colors.textSecondary,
       onToggle: makeToggleHandler('diagnosticsEnabled', setDiagnostics, { title: 'Diagnostics updated', on: 'Crash reports are shared.', off: 'Crash reports are off.', icon: 'bug-report' }),
     },
-  ], [notifications, personalization, diagnostics, makeToggleHandler, theme]);
+  ], [notifications, personalization, diagnostics, makeToggleHandler, theme, toggleNotifications]);
 
   const isWideLayout = device.isDesktop || device.isTV;
   const accountPad   = device.isTV ? 20 : 16;

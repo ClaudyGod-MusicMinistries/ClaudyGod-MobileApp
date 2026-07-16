@@ -6,10 +6,14 @@ import {
   subscribeToMobileAuthStateChange,
 } from '../services/authService';
 import { saveMeLibraryItem } from '../services/userFlowService';
+import { trackPlayEvent } from '../services/supabaseAnalytics';
 import {
   getFavorites,
+  getHistory,
   hasMigratedFavoritesToServer,
   markFavoritesMigratedToServer,
+  hasMigratedHistoryToServer,
+  markHistoryMigratedToServer,
 } from '../lib/localUserStorage';
 
 interface UserAccountContextValue {
@@ -53,6 +57,31 @@ async function migrateLocalFavoritesToServer(): Promise<void> {
   }
 }
 
+// Same one-time, tolerant, non-destructive migration as favorites above, but
+// for guest listening history — closes the gap where the sign-in prompt
+// promises "picks based on what you actually play" but only favorites ever
+// made it to the server. `trackPlayEvent` already swallows its own errors,
+// so a single bad item can't block the rest.
+async function migrateLocalHistoryToServer(): Promise<void> {
+  if (await hasMigratedHistoryToServer()) return;
+
+  try {
+    const localHistory = await getHistory();
+    await Promise.all(
+      localHistory.map((item) =>
+        trackPlayEvent({
+          contentId: item.id,
+          contentType: item.type,
+          title: item.title,
+          source: 'guest_migration',
+        }),
+      ),
+    );
+  } finally {
+    await markHistoryMigratedToServer();
+  }
+}
+
 export function UserAccountProvider({ children }: { children: ReactNode }) {
   const [account, setAccount] = useState<MobileAuthUser | null>(null);
 
@@ -69,6 +98,7 @@ export function UserAccountProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (account) {
       void migrateLocalFavoritesToServer();
+      void migrateLocalHistoryToServer();
     }
   }, [account]);
 
