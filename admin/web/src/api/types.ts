@@ -66,6 +66,7 @@ export interface ContentItem {
   tags: string[];
   metadata: Record<string, unknown>;
   visibility: ContentVisibility;
+  isFeatured: boolean;
   createdAt: string;
   updatedAt: string;
   author: { id: string; displayName: string; email: string; role: string };
@@ -99,6 +100,7 @@ export interface ContentCreateInput {
   tags?: string[];
   metadata?: Record<string, unknown>;
   visibility?: ContentVisibility;
+  isFeatured?: boolean;
 }
 
 export interface ContentUpdateInput extends Partial<ContentCreateInput> {

@@ -90,6 +90,7 @@ export const createContentSchema = z
     tags: optionalStringArraySchema(20, 40),
     metadata: optionalJsonRecordSchema,
     visibility: visibilitySchema.default('draft'),
+    isFeatured: z.boolean().optional(),
   })
   .strict()
   .superRefine((value, ctx) => {
@@ -183,6 +184,7 @@ export const updateContentSchema = z
     tags: optionalStringArraySchema(20, 40),
     metadata: optionalJsonRecordSchema,
     visibility: visibilitySchema.optional(),
+    isFeatured: z.boolean().optional(),
   })
   .strict()
   .refine((value) => Object.keys(value).length > 0, { message: 'At least one field is required' })

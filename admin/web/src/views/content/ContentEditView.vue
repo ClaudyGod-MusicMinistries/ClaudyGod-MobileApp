@@ -78,6 +78,17 @@
           <SectionHeading icon="publish" label="Publishing" />
           <AppSelect v-model="form.visibility" label="Visibility" :options="visibilityOptions" />
 
+          <div class="flex items-center justify-between pt-1 border-t border-border/60 mt-1">
+            <div class="pt-3">
+              <p class="text-xs font-medium text-ink-muted">Feature on Home screen</p>
+              <p class="text-[11px] text-ink-muted leading-snug mt-0.5">
+                Shown as the main hero on the mobile Home tab. If more than one item is
+                featured, the most recently updated one wins.
+              </p>
+            </div>
+            <AppToggle v-model="form.isFeatured" class="mt-3" />
+          </div>
+
           <!-- App sections -->
           <div class="space-y-2 pt-1 border-t border-border/60">
             <p class="text-xs font-medium text-ink-muted pt-3">App sections</p>
@@ -153,6 +164,7 @@ import AppCard from '@/components/ui/AppCard.vue';
 import AppInput from '@/components/ui/AppInput.vue';
 import AppTextarea from '@/components/ui/AppTextarea.vue';
 import AppSelect from '@/components/ui/AppSelect.vue';
+import AppToggle from '@/components/ui/AppToggle.vue';
 import AppButton from '@/components/ui/AppButton.vue';
 import FileDropzone from '@/components/shared/FileDropzone.vue';
 import MobilePreviewPanel from '@/components/shared/MobilePreviewPanel.vue';
@@ -210,6 +222,7 @@ interface FormState {
   tags: string;
   appSections: string[];
   visibility: 'draft' | 'published';
+  isFeatured: boolean;
 }
 
 const emptyForm = (): FormState => ({
@@ -224,6 +237,7 @@ const emptyForm = (): FormState => ({
   tags: '',
   appSections: [],
   visibility: 'draft',
+  isFeatured: false,
 });
 
 const form = ref<FormState>(emptyForm());
@@ -316,6 +330,7 @@ onMounted(async () => {
         tags: c.tags.join(', '),
         appSections: c.appSections ?? [],
         visibility: c.visibility,
+        isFeatured: c.isFeatured ?? false,
       };
     }
   }
@@ -365,6 +380,7 @@ async function onSave(overrideVisibility?: 'draft' | 'published'): Promise<void>
     appSections: form.value.appSections,
     tags,
     visibility,
+    isFeatured: form.value.isFeatured,
   };
 
   try {
