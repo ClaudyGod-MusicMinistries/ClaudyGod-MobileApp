@@ -1,23 +1,20 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Animated,
   Keyboard,
   KeyboardAvoidingView,
-  Modal,
   Platform,
   TextInput,
-  TouchableWithoutFeedback,
   View,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAppTheme } from '../../util/colorScheme';
 import { makeStyles } from '../../styles/makeStyles';
 import { CustomText } from '../CustomText';
 import { AppButton } from '../ui/AppButton';
 import { TVTouchable } from '../ui/TVTouchable';
+import { BottomSheet } from '../ui/BottomSheet';
 import {
   loginMobileUser,
   loginMobileUserWithGoogle,
@@ -31,23 +28,7 @@ type EmailMode = 'signin' | 'signup';
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const useStyles = makeStyles((theme) => ({
-  flex1:          { flex: 1 },
-  backdrop:       { flex: 1, backgroundColor: 'rgba(0,0,0,0.60)', justifyContent: 'flex-end' },
-
-  sheetCard: {
-    backgroundColor:      theme.colors.surface,
-    borderTopLeftRadius:  theme.radius.xxl,
-    borderTopRightRadius: theme.radius.xxl,
-    borderTopWidth:       1,
-    borderColor:          theme.colors.border,
-    paddingTop:           12,
-    paddingHorizontal:    20,
-  },
-  dragHandle: {
-    alignSelf: 'center', width: 36, height: 4,
-    borderRadius: 2, backgroundColor: theme.colors.border,
-    marginBottom: 20,
-  },
+  flex1: { flex: 1 },
 
   sheetHeader: {
     flexDirection: 'row', alignItems: 'flex-start',
@@ -296,7 +277,6 @@ function EmailForm({
 export function AccountSheet() {
   const styles = useStyles();
   const theme  = useAppTheme();
-  const insets = useSafeAreaInsets();
   const { isSheetOpen, closeAccountSheet } = useAccountSheet();
 
   const [step, setStep]             = useState<SheetStep>('choose');
@@ -308,8 +288,6 @@ export function AccountSheet() {
   const [loading, setLoading]       = useState(false);
   const [signedInName, setSignedInName] = useState('');
 
-  const slideAnim = useRef(new Animated.Value(700)).current;
-
   useEffect(() => {
     if (isSheetOpen) {
       setStep('choose');
@@ -319,11 +297,8 @@ export function AccountSheet() {
       setEmail('');
       setPassword('');
       setLoading(false);
-      Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, tension: 70, friction: 12 }).start();
-    } else {
-      Animated.timing(slideAnim, { toValue: 700, duration: 220, useNativeDriver: true }).start();
     }
-  }, [isSheetOpen, slideAnim]);
+  }, [isSheetOpen]);
 
   const handleGoogle = async () => {
     setLoading(true);
@@ -370,85 +345,64 @@ export function AccountSheet() {
   };
 
   return (
-    <Modal
-      visible={isSheetOpen}
-      transparent
-      animationType="none"
-      onRequestClose={dismiss}
-      statusBarTranslucent
-    >
+    <BottomSheet visible={isSheetOpen} onClose={dismiss} dismissible={!loading}>
       <KeyboardAvoidingView style={styles.flex1} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <TouchableWithoutFeedback onPress={dismiss}>
-          <View style={styles.backdrop}>
-            <TouchableWithoutFeedback onPress={() => {}}>
-              <Animated.View
-                style={[
-                  styles.sheetCard,
-                  { transform: [{ translateY: slideAnim }], paddingBottom: insets.bottom + 20 },
-                ]}
-              >
-                <View style={styles.dragHandle} />
+        {step === 'success' ? (
+          <SuccessState displayName={signedInName} />
+        ) : (
+          <>
+            <View style={styles.sheetHeader}>
+              <View style={styles.titleContainer}>
+                <CustomText style={styles.titleText}>
+                  {step === 'email'
+                    ? (mode === 'signin' ? 'Welcome back' : 'Create account')
+                    : 'Sync your library'}
+                </CustomText>
+                <CustomText style={styles.subtitleText}>
+                  {step === 'email'
+                    ? (mode === 'signin'
+                      ? 'Sign in to access your saved content across devices.'
+                      : 'Save your music and favourites across all your devices.')
+                    : 'Keep your favourites and listening history — no subscription needed.'}
+                </CustomText>
+              </View>
+              <TVTouchable onPress={dismiss} showFocusBorder={false} style={styles.closeBtn}>
+                <MaterialIcons name="close" size={18} color={theme.colors.textMuted} />
+              </TVTouchable>
+            </View>
 
-                {step === 'success' ? (
-                  <SuccessState displayName={signedInName} />
-                ) : (
-                  <>
-                    <View style={styles.sheetHeader}>
-                      <View style={styles.titleContainer}>
-                        <CustomText style={styles.titleText}>
-                          {step === 'email'
-                            ? (mode === 'signin' ? 'Welcome back' : 'Create account')
-                            : 'Sync your library'}
-                        </CustomText>
-                        <CustomText style={styles.subtitleText}>
-                          {step === 'email'
-                            ? (mode === 'signin'
-                              ? 'Sign in to access your saved content across devices.'
-                              : 'Save your music and favourites across all your devices.')
-                            : 'Keep your favourites and listening history — no subscription needed.'}
-                        </CustomText>
-                      </View>
-                      <TVTouchable onPress={dismiss} showFocusBorder={false} style={styles.closeBtn}>
-                        <MaterialIcons name="close" size={18} color={theme.colors.textMuted} />
-                      </TVTouchable>
-                    </View>
+            {error ? (
+              <View style={styles.errorBanner}>
+                <MaterialIcons name="error-outline" size={16} color={theme.colors.danger} style={styles.errorIconShift} />
+                <CustomText style={styles.errorText}>{error}</CustomText>
+              </View>
+            ) : null}
 
-                    {error ? (
-                      <View style={styles.errorBanner}>
-                        <MaterialIcons name="error-outline" size={16} color={theme.colors.danger} style={styles.errorIconShift} />
-                        <CustomText style={styles.errorText}>{error}</CustomText>
-                      </View>
-                    ) : null}
-
-                    {step === 'choose' ? (
-                      <ChooseMethod
-                        onGoogle={() => void handleGoogle()}
-                        onEmail={() => { setStep('email'); setMode('signin'); setError(''); }}
-                        onSkip={dismiss}
-                        loading={loading}
-                      />
-                    ) : (
-                      <EmailForm
-                        mode={mode}
-                        name={name}
-                        email={email}
-                        password={password}
-                        loading={loading}
-                        onChangeName={setName}
-                        onChangeEmail={setEmail}
-                        onChangePassword={setPassword}
-                        onSubmit={() => void handleEmailSubmit()}
-                        onToggleMode={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setError(''); }}
-                        onBack={() => { setStep('choose'); setError(''); }}
-                      />
-                    )}
-                  </>
-                )}
-              </Animated.View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
+            {step === 'choose' ? (
+              <ChooseMethod
+                onGoogle={() => void handleGoogle()}
+                onEmail={() => { setStep('email'); setMode('signin'); setError(''); }}
+                onSkip={dismiss}
+                loading={loading}
+              />
+            ) : (
+              <EmailForm
+                mode={mode}
+                name={name}
+                email={email}
+                password={password}
+                loading={loading}
+                onChangeName={setName}
+                onChangeEmail={setEmail}
+                onChangePassword={setPassword}
+                onSubmit={() => void handleEmailSubmit()}
+                onToggleMode={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setError(''); }}
+                onBack={() => { setStep('choose'); setError(''); }}
+              />
+            )}
+          </>
+        )}
       </KeyboardAvoidingView>
-    </Modal>
+    </BottomSheet>
   );
 }
