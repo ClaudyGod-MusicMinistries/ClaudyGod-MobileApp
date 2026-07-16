@@ -31,11 +31,6 @@ import {
   clearTrustedDeviceToken,
 } from '../../lib/trustedDevice';
 
-// The two Modal-based sheets must never be visible at once, and BottomSheet's
-// exit animation (internal, not exported) takes ~220ms — this outlasts it so
-// AccountSheet is fully gone before TrustDeviceSheet mounts.
-const SHEET_HANDOFF_DELAY_MS = 260;
-
 type SheetStep = 'choose' | 'email' | 'success' | 'trustedUnlock';
 type EmailMode = 'signin' | 'signup';
 
@@ -354,6 +349,10 @@ export function AccountSheet() {
   const [loading, setLoading]       = useState(false);
   const [signedInName, setSignedInName] = useState('');
   const [pendingTrust, setPendingTrust] = useState<{ accessToken: string; displayName: string } | null>(null);
+  // Queued as soon as we decide to offer it, but not shown until BottomSheet's
+  // onClosed confirms this sheet's exit animation has actually finished — no
+  // more guessing at a delay that has to outlast an internal animation constant.
+  const [queuedTrust, setQueuedTrust] = useState<{ accessToken: string; displayName: string } | null>(null);
   const [trustedToken, setTrustedToken] = useState<{ token: string; deviceLabel: string } | null>(null);
   const [biometricIcon, setBiometricIcon] = useState<React.ComponentProps<typeof MaterialIcons>['name']>('fingerprint');
   const [biometricLabel, setBiometricLabel] = useState('Biometrics');
@@ -416,8 +415,8 @@ export function AccountSheet() {
     const canOfferTrust = Boolean(accessToken) && isTrustedDeviceSupported() && (await getBiometricType()) !== 'none';
     if (canOfferTrust && accessToken) {
       setTimeout(() => {
+        setQueuedTrust({ accessToken, displayName });
         closeAccountSheet();
-        setTimeout(() => setPendingTrust({ accessToken, displayName }), SHEET_HANDOFF_DELAY_MS);
       }, 1200);
     } else {
       setTimeout(() => closeAccountSheet(), 1800);
@@ -466,7 +465,17 @@ export function AccountSheet() {
 
   return (
     <>
-    <BottomSheet visible={isSheetOpen} onClose={dismiss} dismissible={!loading}>
+    <BottomSheet
+      visible={isSheetOpen}
+      onClose={dismiss}
+      dismissible={!loading}
+      onClosed={() => {
+        if (queuedTrust) {
+          setPendingTrust(queuedTrust);
+          setQueuedTrust(null);
+        }
+      }}
+    >
       <KeyboardAvoidingView style={styles.flex1} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         {step === 'success' ? (
           <SuccessState displayName={signedInName} />
