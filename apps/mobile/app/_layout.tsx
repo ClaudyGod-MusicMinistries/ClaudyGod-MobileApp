@@ -28,6 +28,7 @@ import { APP_ROUTES } from '../util/appRoutes';
 import { AppLoadingScreen } from '../components/Exp/AppLoading';
 import { useWordOfDay } from '../hooks/useWordOfDay';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
+import { usePushNotifications } from '../hooks/usePushNotify';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { OfflineScreen } from '../components/OfflineScreen';
 
@@ -70,6 +71,12 @@ function RootLayoutInner() {
   const [wordModalVisible, setWordModalVisible] = useState(false);
   const { bibleVerse, adminWord } = useWordOfDay();
   const { isOffline, recheck } = useNetworkStatus();
+  // Mounted here (not just in settings.tsx) so a returning user who already
+  // granted permission gets their Expo push token re-validated/re-registered
+  // on every launch — tokens can rotate (reinstall, eas update, expiry), and
+  // without this the server keeps a stale token with nothing ever surfacing
+  // the failure to the user.
+  usePushNotifications();
 
   const firstSegment = segments[0];
   const isOnTabs = firstSegment === '(tabs)';

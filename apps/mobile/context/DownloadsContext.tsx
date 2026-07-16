@@ -43,10 +43,22 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let active = true;
-    void getDownloads().then((saved) => {
+    void getDownloads().then(async (saved) => {
+      // The sandboxed document directory can change (reinstall, iOS app
+      // update) or a file can otherwise go missing — without this check, a
+      // stale record would still show as "downloaded" and only fail when the
+      // user actually taps to play it. Verify each file still exists on disk
+      // before trusting the saved metadata, and quietly clean up any that don't.
+      const checked = await Promise.all(saved.map(async (d) => {
+        const info = await FileSystem.getInfoAsync(d.localUri);
+        return { d, exists: info.exists };
+      }));
       if (!active) return;
+
       const initial: Record<string, DownloadState> = {};
-      saved.forEach((d) => {
+      const stale: string[] = [];
+      checked.forEach(({ d, exists }) => {
+        if (!exists) { stale.push(d.contentId); return; }
         initial[d.contentId] = {
           status: 'done',
           progress: 100,
@@ -57,6 +69,7 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
         };
       });
       setDownloads(initial);
+      await Promise.all(stale.map((contentId) => removeDownload(contentId)));
     });
     return () => { active = false; };
   }, []);
