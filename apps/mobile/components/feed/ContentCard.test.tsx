@@ -3,6 +3,7 @@ import { render, fireEvent, screen } from '@testing-library/react-native';
 
 import { ContentCard } from './ContentCard';
 import { ThemeProvider } from '../../context/ThemeProvider';
+import { DownloadsProvider } from '../../context/DownloadsContext';
 import type { FeedCardItem } from '../../services/contentService';
 
 function makeItem(overrides: Partial<FeedCardItem> = {}): FeedCardItem {
@@ -19,7 +20,11 @@ function makeItem(overrides: Partial<FeedCardItem> = {}): FeedCardItem {
 }
 
 function withTheme(children: React.ReactNode) {
-  return <ThemeProvider>{children}</ThemeProvider>;
+  return (
+    <ThemeProvider>
+      <DownloadsProvider>{children}</DownloadsProvider>
+    </ThemeProvider>
+  );
 }
 
 describe('ContentCard', () => {

@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useAppTheme } from '../util/colorScheme';
 import { makeStyles } from '../styles/makeStyles';
-import { reportException } from '../lib/sentry';
+import { reportException, reportBreadcrumb } from '../lib/sentry';
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
@@ -51,11 +51,13 @@ function ErrorUI({
   isDev,
   contextLabel,
   onRetry,
+  onDismiss,
 }: {
   error: Error;
   isDev: boolean;
   contextLabel: string;
   onRetry: () => void;
+  onDismiss: () => void;
 }) {
   const styles = useStyles();
   const theme  = useAppTheme();
@@ -100,7 +102,7 @@ function ErrorUI({
             <Text style={styles.retryText}>Try Again</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={onRetry} style={styles.dismissBtn}>
+          <TouchableOpacity onPress={onDismiss} style={styles.dismissBtn}>
             <Text style={styles.dismissText}>Dismiss Error</Text>
           </TouchableOpacity>
         </View>
@@ -151,6 +153,21 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     this.setState({ hasError: false, error: null, errorCount: this.state.errorCount + 1 });
   };
 
+  // Functionally the same reset as "Try Again" — the boundary sits above the
+  // router in the tree, so there's no clean "navigate home instead" available
+  // here. The real distinction is in the telemetry: this breadcrumb lets us
+  // tell a user who gave up (dismissed) apart from one who tried again, which
+  // "Try Again" reusing the same handler as "Dismiss" used to erase entirely.
+  dismissError = () => {
+    reportBreadcrumb({
+      category: 'error_boundary',
+      message: 'User dismissed error without retrying',
+      level: 'info',
+      data: { context: this.props.context ?? 'unknown' },
+    });
+    this.setState({ hasError: false, error: null, errorCount: this.state.errorCount + 1 });
+  };
+
   render() {
     if (this.state.hasError && this.state.error) {
       const contextLabel = this.props.context ? ` while loading ${this.props.context}` : '';
@@ -160,6 +177,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
           isDev={this.state.isDev}
           contextLabel={contextLabel}
           onRetry={this.resetError}
+          onDismiss={this.dismissError}
         />
       );
     }

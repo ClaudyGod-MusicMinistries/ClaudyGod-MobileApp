@@ -15,12 +15,19 @@ import { CustomText } from '../CustomText';
 import { AppButton } from '../ui/AppButton';
 import { TVTouchable } from '../ui/TVTouchable';
 import { BottomSheet } from '../ui/BottomSheet';
+import { TrustDeviceSheet } from './TrustDeviceSheet';
 import {
   loginMobileUser,
   loginMobileUserWithGoogle,
   registerMobileUser,
 } from '../../services/authService';
 import { useAccountSheet } from '../../context/AccountSheetContext';
+import { isTrustedDeviceSupported, getBiometricType } from '../../lib/trustedDevice';
+
+// The two Modal-based sheets must never be visible at once, and BottomSheet's
+// exit animation (internal, not exported) takes ~220ms — this outlasts it so
+// AccountSheet is fully gone before TrustDeviceSheet mounts.
+const SHEET_HANDOFF_DELAY_MS = 260;
 
 type SheetStep = 'choose' | 'email' | 'success';
 type EmailMode = 'signin' | 'signup';
@@ -287,6 +294,7 @@ export function AccountSheet() {
   const [error, setError]           = useState('');
   const [loading, setLoading]       = useState(false);
   const [signedInName, setSignedInName] = useState('');
+  const [pendingTrust, setPendingTrust] = useState<{ accessToken: string; displayName: string } | null>(null);
 
   useEffect(() => {
     if (isSheetOpen) {
@@ -300,14 +308,29 @@ export function AccountSheet() {
     }
   }, [isSheetOpen]);
 
+  // After a successful sign-in, offer biometric quick-sign-in next time if the
+  // device supports it — otherwise fall back to the previous plain auto-close.
+  const finishSignIn = async (accessToken: string | undefined, displayName: string) => {
+    setSignedInName(displayName);
+    setStep('success');
+
+    const canOfferTrust = Boolean(accessToken) && isTrustedDeviceSupported() && (await getBiometricType()) !== 'none';
+    if (canOfferTrust && accessToken) {
+      setTimeout(() => {
+        closeAccountSheet();
+        setTimeout(() => setPendingTrust({ accessToken, displayName }), SHEET_HANDOFF_DELAY_MS);
+      }, 1200);
+    } else {
+      setTimeout(() => closeAccountSheet(), 1800);
+    }
+  };
+
   const handleGoogle = async () => {
     setLoading(true);
     setError('');
     try {
       const result = await loginMobileUserWithGoogle();
-      setSignedInName(result.user.displayName);
-      setStep('success');
-      setTimeout(() => closeAccountSheet(), 1800);
+      await finishSignIn(result.accessToken, result.user.displayName);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Google sign-in failed. Please try again.');
     } finally {
@@ -324,13 +347,11 @@ export function AccountSheet() {
     try {
       if (mode === 'signup') {
         const result = await registerMobileUser({ email, password, displayName: name });
-        setSignedInName(result.user.displayName);
+        await finishSignIn(result.accessToken, result.user.displayName);
       } else {
         const result = await loginMobileUser({ email, password });
-        setSignedInName(result.user.displayName);
+        await finishSignIn(result.accessToken, result.user.displayName);
       }
-      setStep('success');
-      setTimeout(() => closeAccountSheet(), 1800);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong. Try again.');
     } finally {
@@ -345,6 +366,7 @@ export function AccountSheet() {
   };
 
   return (
+    <>
     <BottomSheet visible={isSheetOpen} onClose={dismiss} dismissible={!loading}>
       <KeyboardAvoidingView style={styles.flex1} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         {step === 'success' ? (
@@ -404,5 +426,13 @@ export function AccountSheet() {
         )}
       </KeyboardAvoidingView>
     </BottomSheet>
+
+    <TrustDeviceSheet
+      visible={pendingTrust !== null}
+      accessToken={pendingTrust?.accessToken ?? ''}
+      displayName={pendingTrust?.displayName ?? ''}
+      onDismiss={() => setPendingTrust(null)}
+    />
+    </>
   );
 }

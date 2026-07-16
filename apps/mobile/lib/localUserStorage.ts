@@ -88,6 +88,18 @@ export async function markFavoritesMigratedToServer(): Promise<void> {
   await setPreference(FAVORITES_MIGRATION_KEY, true);
 }
 
+// Guards the one-time "replay local guest history up to the server" migration
+// (see UserAccountContext.tsx), mirroring the favorites guard above.
+const HISTORY_MIGRATION_KEY = 'historyMigratedToServer';
+
+export async function hasMigratedHistoryToServer(): Promise<boolean> {
+  return getPreference<boolean>(HISTORY_MIGRATION_KEY, false);
+}
+
+export async function markHistoryMigratedToServer(): Promise<void> {
+  await setPreference(HISTORY_MIGRATION_KEY, true);
+}
+
 // ── Downloads ──────────────────────────────────────────────────────────────
 
 export interface LocalDownload {

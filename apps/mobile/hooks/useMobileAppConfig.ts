@@ -1,26 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { fetchMobileAppConfig, type MobileAppExperienceConfig } from '../services/userFlowService';
 
 export function useMobileAppConfig() {
-  const [config, setConfig] = useState<MobileAppExperienceConfig | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data, isLoading } = useQuery({
+    queryKey: ['mobileAppConfig'],
+    queryFn: async (): Promise<MobileAppExperienceConfig> => (await fetchMobileAppConfig()).config,
+  });
 
-  useEffect(() => {
-    let active = true;
-    void fetchMobileAppConfig()
-      .then((response) => {
-        if (!active) return;
-        setConfig(response.config);
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  return { config, loading };
+  return { config: data ?? null, loading: isLoading };
 }

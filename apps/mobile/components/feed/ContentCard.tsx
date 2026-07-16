@@ -12,6 +12,7 @@ import { AppImage } from '../ui/AppImage';
 import { useDeviceClass } from '../../util/deviceClassConfig';
 import { useAppTheme } from '../../util/colorScheme';
 import type { FeedCardItem } from '../../services/contentService';
+import { useDownloads } from '../../context/DownloadsContext';
 import { useFeedStyles } from './styles';
 import { cleanFeedText, isRedundantSubtitle, isValidDuration } from './utils';
 
@@ -33,12 +34,17 @@ export const ContentCard = React.memo(function ContentCard({ item, onPress, comp
   const device = useDeviceClass();
   const pressScale = useRef(new Animated.Value(1)).current;
   const [menuOpen, setMenuOpen] = useState(false);
+  const { downloadContent, deleteDownload, getDownloadStatus } = useDownloads();
+  const downloadStatus = getDownloadStatus(item.id);
 
   const menuActions: ActionSheetAction[] = [
     { key: 'play', label: item.type === 'video' ? 'Watch now' : 'Play now', icon: item.type === 'video' ? 'play-circle-filled' : 'play-arrow', tone: 'accent', onPress: () => { setMenuOpen(false); onPress(); } },
-    { key: 'queue', label: 'Add to queue', icon: 'queue-music', onPress: () => setMenuOpen(false) },
     { key: 'share', label: 'Share', icon: 'share', onPress: () => { setMenuOpen(false); void Share.share({ title: item.title, message: item.subtitle ? `${item.title} — ${item.subtitle}` : item.title }); } },
-    { key: 'details', label: 'View details', icon: 'info-outline', onPress: () => setMenuOpen(false) },
+    ...(item.mediaUrl ? [
+      downloadStatus === 'done'
+        ? { key: 'download', label: 'Remove download', icon: 'delete-outline' as const, tone: 'destructive' as const, onPress: () => { setMenuOpen(false); void deleteDownload(item.id); } }
+        : { key: 'download', label: downloadStatus === 'downloading' ? 'Downloading…' : 'Download', icon: 'file-download' as const, onPress: () => { setMenuOpen(false); void downloadContent(item); } },
+    ] : []),
   ];
 
   const cardWidth = fixedWidth ?? (compact ? 170 : device.isTV ? 280 : device.isDesktop ? 220 : 196);

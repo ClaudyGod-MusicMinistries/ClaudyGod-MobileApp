@@ -4,6 +4,7 @@ import { env } from '../../config/env';
 import { BadRequestError, ForbiddenError, NotFoundError } from '../../lib/errors';
 import { sendLiveStartPushNotifications } from '../../infra/push';
 import { queueEmailJob } from '../../infra/transactionalEmails';
+import { broadcastToLiveSession } from './live.websocket';
 import type { UserRole } from '../auth/auth.types';
 import type {
   CreateLiveMessageInput,
@@ -650,5 +651,7 @@ export const createLiveSessionMessage = async (
     [sessionId, actor.sub, actor.displayName, input.kind, input.message.trim(), actor.email, actor.role],
   );
 
-  return toLiveMessage(inserted.rows[0]!);
+  const created = toLiveMessage(inserted.rows[0]!);
+  broadcastToLiveSession(sessionId, { type: 'message', payload: created as unknown as Record<string, unknown> });
+  return created;
 };

@@ -13,6 +13,7 @@ import { makeStyles } from '../styles/makeStyles';
 import { FontProvider, FontContext } from '../context/FontContext';
 import { AppProvider } from '../context/AppContext';
 import { UserAccountProvider } from '../context/UserAccountContext';
+import { DownloadsProvider } from '../context/DownloadsContext';
 import { AccountSheetProvider } from '../context/AccountSheetContext';
 import { AccountSheet } from '../components/auth/AccountSheet';
 import { PlayerProvider, usePlayer } from '../context/PlayerContext';
@@ -144,6 +145,10 @@ function RootLayoutInner() {
           name="live/[sessionId]"
           options={{ animation: 'slide_from_right' }}
         />
+        <Stack.Screen
+          name="section/[sectionId]"
+          options={{ animation: 'slide_from_right' }}
+        />
       </Stack>
 
       <MinimizedFloatingPlayer />
@@ -173,18 +178,20 @@ function RootLayout() {
                 <ToastProvider>
                   <AppProvider>
                     <UserAccountProvider>
-                      <AccountSheetProvider>
-                        <PlayerProgressProvider>
-                          <PlayerProvider>
-                            <WordOfDayProvider>
-                              <AppModalProvider>
-                                <RootLayoutInner />
-                                <AccountSheet />
-                              </AppModalProvider>
-                            </WordOfDayProvider>
-                          </PlayerProvider>
-                        </PlayerProgressProvider>
-                      </AccountSheetProvider>
+                      <DownloadsProvider>
+                        <AccountSheetProvider>
+                          <PlayerProgressProvider>
+                            <PlayerProvider>
+                              <WordOfDayProvider>
+                                <AppModalProvider>
+                                  <RootLayoutInner />
+                                  <AccountSheet />
+                                </AppModalProvider>
+                              </WordOfDayProvider>
+                            </PlayerProvider>
+                          </PlayerProgressProvider>
+                        </AccountSheetProvider>
+                      </DownloadsProvider>
                     </UserAccountProvider>
                   </AppProvider>
                 </ToastProvider>
