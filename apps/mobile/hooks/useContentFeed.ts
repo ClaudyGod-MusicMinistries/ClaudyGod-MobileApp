@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { emptyFeedBundle, fetchFeedBundle, type FeedBundle } from '../services/contentService';
 import { getHistory } from '../lib/localUserStorage';
+import { getStoredMobileSession } from '../services/authService';
 
 async function loadFeed(): Promise<FeedBundle> {
   const nextFeed = await fetchFeedBundle();
@@ -17,14 +18,20 @@ async function loadFeed(): Promise<FeedBundle> {
   // Guests never get server-side recommendations (gated behind sign-in on the
   // backend) — offer a modest local-history-based "similar to what you've
   // played" rail instead of nothing, mirroring the backfill above rather than
-  // building real similarity scoring.
+  // building real similarity scoring. Signed-in-only: a signed-in user with
+  // genuinely no play history yet should see the honest "no recommendations
+  // yet" empty state, not a synthetic rail under a "For You" label that
+  // implies real personalization.
   if (nextFeed.recommendations.length === 0 && nextFeed.recent.length > 0) {
-    const recentTypes = new Set(nextFeed.recent.slice(0, 3).map((item) => item.type));
-    const historyIds = new Set(nextFeed.recent.map((item) => item.id));
-    const candidates = [...nextFeed.music, ...nextFeed.videos]
-      .filter((item) => recentTypes.has(item.type) && !historyIds.has(item.id));
-    if (candidates.length > 0) {
-      nextFeed.recommendations = candidates.slice(0, 12);
+    const { user } = await getStoredMobileSession();
+    if (!user) {
+      const recentTypes = new Set(nextFeed.recent.slice(0, 3).map((item) => item.type));
+      const historyIds = new Set(nextFeed.recent.map((item) => item.id));
+      const candidates = [...nextFeed.music, ...nextFeed.videos]
+        .filter((item) => recentTypes.has(item.type) && !historyIds.has(item.id));
+      if (candidates.length > 0) {
+        nextFeed.recommendations = candidates.slice(0, 12);
+      }
     }
   }
 
