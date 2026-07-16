@@ -87,6 +87,15 @@ const useStyles = makeStyles((theme) => ({
   // Saved-tab responsive grid
   gridWrap:     { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   gridItem:     { minWidth: 130 },
+
+  // Downloads-in-progress rows
+  downloadingCard: { padding: theme.spacing.md, gap: 10 },
+  downloadingRow:  { gap: 6 },
+  downloadingTop:  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
+  downloadingTitle:{ color: theme.colors.text, flexShrink: 1 },
+  downloadingPct:  { color: theme.colors.textMuted },
+  progressTrack:   { height: 4, borderRadius: 2, backgroundColor: theme.colors.subtleFill, overflow: 'hidden' },
+  progressFill:    { height: 4, borderRadius: 2, backgroundColor: theme.colors.primary },
 }));
 
 // ─── LibTabs ──────────────────────────────────────────────────────────────────
@@ -170,6 +179,13 @@ export default function LibraryScreen() {
         mediaUrl: d.localUri ?? undefined,
         type: (d.contentType ?? 'audio') as ContentType,
       })),
+    [downloads],
+  );
+
+  const downloadingItems = useMemo(
+    () => Object.entries(downloads)
+      .filter(([, d]) => d.status === 'downloading')
+      .map(([contentId, d]) => ({ contentId, title: d.title ?? 'Downloading…', progress: d.progress })),
     [downloads],
   );
 
@@ -332,6 +348,22 @@ export default function LibraryScreen() {
 
         {activeTab === 'downloads' ? (
           <View style={styles.sectionGap}>
+            {downloadingItems.length > 0 ? (
+              <SurfaceCard tone="subtle" style={styles.downloadingCard}>
+                {downloadingItems.map((item) => (
+                  <View key={item.contentId} style={styles.downloadingRow}>
+                    <View style={styles.downloadingTop}>
+                      <CustomText variant="label" style={styles.downloadingTitle} numberOfLines={1}>{item.title}</CustomText>
+                      <CustomText variant="caption" style={styles.downloadingPct}>{item.progress}%</CustomText>
+                    </View>
+                    <View style={styles.progressTrack}>
+                      <View style={[styles.progressFill, { width: `${item.progress}%` }]} />
+                    </View>
+                  </View>
+                ))}
+              </SurfaceCard>
+            ) : null}
+
             <SectionLabel title="Downloaded" accent="Offline" subtitle="Available without a connection" />
             <ContentRail
               title=""
