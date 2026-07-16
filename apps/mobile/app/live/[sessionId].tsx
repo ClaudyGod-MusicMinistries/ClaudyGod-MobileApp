@@ -223,6 +223,23 @@ export default function LiveSessionScreen() {
     if (!sessionId) return;
     let ws: WebSocket | null = null;
     let cancelled = false;
+    let reconnectAttempt = 0;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const clearReconnectTimer = () => {
+      if (reconnectTimer) {
+        clearTimeout(reconnectTimer);
+        reconnectTimer = null;
+      }
+    };
+
+    const scheduleReconnect = () => {
+      if (cancelled) return;
+      clearReconnectTimer();
+      const delay = Math.min(1000 * 2 ** reconnectAttempt, 20000);
+      reconnectAttempt += 1;
+      reconnectTimer = setTimeout(() => void connect(), delay);
+    };
 
     const connect = async () => {
       const { accessToken } = await getStoredMobileSession();
@@ -231,6 +248,7 @@ export default function LiveSessionScreen() {
       const url = `${wsBase}/ws${accessToken ? `?token=${encodeURIComponent(accessToken)}` : ''}`;
       ws = new WebSocket(url);
       ws.onopen = () => {
+        reconnectAttempt = 0;
         ws?.send(JSON.stringify({ type: 'subscribe', channel: `live:${sessionId}` }));
       };
       ws.onmessage = (event) => {
@@ -247,20 +265,35 @@ export default function LiveSessionScreen() {
           // Malformed frame — ignore silently.
         }
       };
+      // Without these, a refused/dropped connection (backend not yet deployed,
+      // network blip) failed completely silently — chat just never went
+      // live-time and nothing ever tried again until the app happened to be
+      // backgrounded and foregrounded. Reconnect with capped exponential
+      // backoff instead of relying solely on the AppState listener below.
+      ws.onerror = () => { /* onclose fires right after and drives the retry */ };
+      ws.onclose = () => { if (!cancelled) scheduleReconnect(); };
     };
 
     void connect();
 
     const subscription = AppState.addEventListener('change', (state: AppStateStatus) => {
       if (state !== 'active') return;
-      if (ws?.readyState !== WebSocket.OPEN) void connect();
+      if (ws?.readyState !== WebSocket.OPEN) {
+        reconnectAttempt = 0;
+        clearReconnectTimer();
+        void connect();
+      }
       void refresh();
     });
 
     return () => {
       cancelled = true;
+      clearReconnectTimer();
       subscription.remove();
-      ws?.close();
+      if (ws) {
+        ws.onclose = null;
+        ws.close();
+      }
     };
   }, [sessionId, refresh]);
 
