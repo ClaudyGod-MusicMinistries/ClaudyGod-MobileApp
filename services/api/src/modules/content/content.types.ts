@@ -28,6 +28,7 @@ export interface ContentItem {
   tags?: string[];
   metadata?: Record<string, unknown>;
   visibility: ContentVisibility;
+  isFeatured: boolean;
   createdAt: string;
   updatedAt: string;
   author: ContentAuthor;
@@ -73,6 +74,7 @@ export interface CreateContentInput {
   tags?: string[];
   metadata?: Record<string, unknown>;
   visibility: ContentVisibility;
+  isFeatured?: boolean;
 }
 
 export interface CreateContentRequestInput {
@@ -110,6 +112,7 @@ export interface UpdateContentInput {
   tags?: string[];
   metadata?: Record<string, unknown>;
   visibility?: ContentVisibility;
+  isFeatured?: boolean;
 }
 
 export interface ContentListQuery {

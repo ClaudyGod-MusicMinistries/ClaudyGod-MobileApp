@@ -5,11 +5,12 @@
  * validates the token, the biometric check is entirely on-device.
  */
 import React, { useState, useEffect } from 'react';
-import { View, Modal, Animated, StyleSheet, Dimensions, Platform } from 'react-native';
+import { View, Platform } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../CustomText';
 import { AppButton } from '../ui/AppButton';
 import { TVTouchable } from '../ui/TVTouchable';
+import { BottomSheet } from '../ui/BottomSheet';
 import { useAppTheme } from '../../util/colorScheme';
 import { makeStyles } from '../../styles/makeStyles';
 import {
@@ -18,8 +19,6 @@ import {
   isTrustedDeviceSupported,
 } from '../../lib/trustedDevice';
 import { registerTrustedDeviceToken } from '../../services/authService';
-
-const { height } = Dimensions.get('window');
 
 interface Props {
   visible: boolean;
@@ -31,19 +30,7 @@ interface Props {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const useStyles = makeStyles((theme) => ({
-  sheet: {
-    position: 'absolute',
-    bottom: 0, left: 0, right: 0,
-    borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    paddingHorizontal: 24, paddingTop: 14, paddingBottom: 40,
-    alignItems: 'center', borderTopWidth: 1,
-    backgroundColor: theme.colors.elevated,
-    borderTopColor: theme.colors.primaryBorder,
-  },
-  handle: {
-    width: 36, height: 4, borderRadius: 2,
-    backgroundColor: 'rgba(255,255,255,0.20)', marginBottom: 24,
-  },
+  content: { alignItems: 'center' },
   iconWrap: {
     width: 72, height: 72, borderRadius: 20, borderWidth: 1,
     alignItems: 'center', justifyContent: 'center', marginBottom: 16,
@@ -61,7 +48,6 @@ const useStyles = makeStyles((theme) => ({
   actions:   { width: '100%', gap: 10 },
   skipBtn:   { alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 16 },
   skipLabel: { fontSize: 13, fontWeight: '600', color: theme.colors.textMuted },
-  backdropInner: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)' },
 }));
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -71,28 +57,10 @@ export function TrustDeviceSheet({ visible, accessToken, displayName, onDismiss 
   const theme  = useAppTheme();
   const [biometricType, setBiometricType] = useState<'face' | 'fingerprint' | 'none'>('none');
   const [saving, setSaving] = useState(false);
-  const slideAnim = React.useRef(new Animated.Value(height)).current;
 
   useEffect(() => {
     getBiometricType().then(setBiometricType);
   }, []);
-
-  useEffect(() => {
-    if (visible) {
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        useNativeDriver: Platform.OS !== 'web',
-        tension: 65,
-        friction: 11,
-      }).start();
-    } else {
-      Animated.timing(slideAnim, {
-        toValue: height,
-        duration: 260,
-        useNativeDriver: Platform.OS !== 'web',
-      }).start();
-    }
-  }, [visible, slideAnim]);
 
   const biometricLabel = biometricType === 'face' ? 'Face ID' : biometricType === 'fingerprint' ? 'Touch ID / Fingerprint' : 'Biometrics';
   const biometricIcon  = biometricType === 'face' ? 'face' : 'fingerprint';
@@ -122,26 +90,8 @@ export function TrustDeviceSheet({ visible, accessToken, displayName, onDismiss 
   if (!isTrustedDeviceSupported() || biometricType === 'none') return null;
 
   return (
-    <Modal
-      transparent
-      visible={visible}
-      animationType="none"
-      onRequestClose={onDismiss}
-      statusBarTranslucent
-    >
-      {/* Backdrop */}
-      <TVTouchable
-        onPress={onDismiss}
-        showFocusBorder={false}
-        style={StyleSheet.absoluteFillObject}
-      >
-        <View style={styles.backdropInner} />
-      </TVTouchable>
-
-      {/* Sheet */}
-      <Animated.View style={[styles.sheet, { transform: [{ translateY: slideAnim }] }]}>
-        <View style={styles.handle} />
-
+    <BottomSheet visible={visible} onClose={onDismiss}>
+      <View style={styles.content}>
         <View style={styles.iconWrap}>
           <MaterialIcons name={biometricIcon} size={36} color={theme.colors.primary} />
         </View>
@@ -167,7 +117,7 @@ export function TrustDeviceSheet({ visible, accessToken, displayName, onDismiss 
             <CustomText style={styles.skipLabel}>Not now</CustomText>
           </TVTouchable>
         </View>
-      </Animated.View>
-    </Modal>
+      </View>
+    </BottomSheet>
   );
 }

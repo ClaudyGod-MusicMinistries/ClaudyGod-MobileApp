@@ -40,6 +40,7 @@ interface ContentRow {
   media_upload_session_id: string | null;
   thumbnail_upload_session_id: string | null;
   visibility: ContentVisibility;
+  is_featured: boolean;
   deleted_at: string | Date | null;
   created_at: string | Date;
   updated_at: string | Date;
@@ -106,6 +107,7 @@ const toContentItem = (row: ContentRow): ContentItem => ({
   tags: row.tags ?? [],
   metadata: row.metadata ?? {},
   visibility: row.visibility,
+  isFeatured: row.is_featured,
   createdAt: toIsoDate(row.created_at),
   updatedAt: toIsoDate(row.updated_at),
   author: {
@@ -375,6 +377,7 @@ const selectContentByIdSql = `SELECT
   c.media_upload_session_id,
   c.thumbnail_upload_session_id,
   c.visibility,
+  c.is_featured,
   c.deleted_at,
   c.created_at,
   c.updated_at,
@@ -562,6 +565,7 @@ export const listPublicContent = async (query: ContentListQuery): Promise<Conten
           c.tags,
           c.metadata,
           c.visibility,
+          c.is_featured,
           c.created_at,
           c.updated_at,
           u.display_name AS author_display_name,
@@ -679,6 +683,7 @@ export const listManagedContent = async (
             c.tags,
             c.metadata,
             c.visibility,
+            c.is_featured,
             c.created_at,
             c.updated_at,
             u.display_name AS author_display_name,
@@ -1092,11 +1097,11 @@ export const createContent = async (requester: JwtClaims, input: CreateContentIn
       `INSERT INTO content_items (
          author_id, title, description, content_type, media_url, thumbnail_url, source_kind,
          external_source_id, channel_name, duration_label, app_sections, tags, metadata, visibility,
-         media_upload_session_id, thumbnail_upload_session_id
+         media_upload_session_id, thumbnail_upload_session_id, is_featured
        )
        VALUES (
          $1, $2, $3, $4, $5, $6, $7,
-         $8, $9, $10, $11::text[], $12::text[], $13::jsonb, $14, $15, $16
+         $8, $9, $10, $11::text[], $12::text[], $13::jsonb, $14, $15, $16, $17
        )
        RETURNING id`,
       [
@@ -1116,6 +1121,7 @@ export const createContent = async (requester: JwtClaims, input: CreateContentIn
         input.visibility,
         mediaUpload?.sessionId ?? null,
         thumbnailUpload?.sessionId ?? null,
+        input.isFeatured ?? false,
       ],
     );
 
@@ -1250,6 +1256,7 @@ export const updateContent = async ({
          visibility = COALESCE($14, visibility),
          media_upload_session_id = COALESCE($15, media_upload_session_id),
          thumbnail_upload_session_id = COALESCE($16, thumbnail_upload_session_id),
+         is_featured = COALESCE($17, is_featured),
          updated_at = NOW()
        WHERE id = $1`,
       [
@@ -1269,6 +1276,7 @@ export const updateContent = async ({
         input.visibility ?? null,
         mediaUpload?.sessionId ?? null,
         thumbnailUpload?.sessionId ?? null,
+        input.isFeatured ?? null,
       ],
     );
 
@@ -1377,6 +1385,7 @@ export const updateContentVisibility = async ({
       updated.tags,
       updated.metadata,
       updated.visibility,
+      updated.is_featured,
       updated.created_at,
       updated.updated_at,
       u.display_name AS author_display_name,
@@ -1525,6 +1534,7 @@ export const listDeletedContent = async (
           c.tags,
           c.metadata,
           c.visibility,
+          c.is_featured,
           c.created_at,
           c.updated_at,
           u.display_name AS author_display_name,
