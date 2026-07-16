@@ -79,7 +79,6 @@ export function BottomSheet({
       onClosed?.();
     }, EXIT_DURATION);
     return () => clearTimeout(timeout);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, translateY, backdropOpacity]);
 
   const requestClose = () => {
