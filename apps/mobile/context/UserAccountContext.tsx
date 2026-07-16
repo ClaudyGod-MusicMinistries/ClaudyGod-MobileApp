@@ -28,12 +28,27 @@ const UserAccountContext = createContext<UserAccountContextValue>({
   signOut: async () => {},
 });
 
+// In-memory locks, not persisted guards — the `[account]` effect below can
+// re-fire before a prior migration's AsyncStorage guard flag has finished
+// writing (its check-then-act isn't atomic against a second concurrent call),
+// which would otherwise let both calls pass the "already migrated?" check and
+// double-post every item. These close that specific race within one app
+// session; cross-session/cross-device double-migration was already an
+// accepted, non-destructive risk (duplicate play/favorite events, not data
+// loss) and remains so.
+let favoritesMigrationInFlight = false;
+let historyMigrationInFlight = false;
+
 // Best-effort, one-time push of any local guest favorites up to the real
 // account once signed in — the local copy stays in place afterward as a
 // harmless guest-mode fallback rather than being deleted, so a partially
-// failed migration never loses data.
+// failed migration never loses data. Only marked complete after the local
+// read + upload attempts actually finish — if `getFavorites()` itself throws,
+// migration is left unmarked so a later app open retries instead of silently
+// giving up forever.
 async function migrateLocalFavoritesToServer(): Promise<void> {
-  if (await hasMigratedFavoritesToServer()) return;
+  if (favoritesMigrationInFlight || await hasMigratedFavoritesToServer()) return;
+  favoritesMigrationInFlight = true;
 
   try {
     const localFavorites = await getFavorites();
@@ -52,8 +67,11 @@ async function migrateLocalFavoritesToServer(): Promise<void> {
         }).catch(() => { /* best-effort per item — a single bad item shouldn't block the rest */ }),
       ),
     );
-  } finally {
     await markFavoritesMigratedToServer();
+  } catch {
+    // Local read failed — leave unmigrated so a later app open retries.
+  } finally {
+    favoritesMigrationInFlight = false;
   }
 }
 
@@ -63,7 +81,8 @@ async function migrateLocalFavoritesToServer(): Promise<void> {
 // made it to the server. `trackPlayEvent` already swallows its own errors,
 // so a single bad item can't block the rest.
 async function migrateLocalHistoryToServer(): Promise<void> {
-  if (await hasMigratedHistoryToServer()) return;
+  if (historyMigrationInFlight || await hasMigratedHistoryToServer()) return;
+  historyMigrationInFlight = true;
 
   try {
     const localHistory = await getHistory();
@@ -77,8 +96,11 @@ async function migrateLocalHistoryToServer(): Promise<void> {
         }),
       ),
     );
-  } finally {
     await markHistoryMigratedToServer();
+  } catch {
+    // Local read failed — leave unmigrated so a later app open retries.
+  } finally {
+    historyMigrationInFlight = false;
   }
 }
 
