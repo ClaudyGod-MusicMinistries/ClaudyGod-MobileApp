@@ -12,12 +12,13 @@ import { SignInPromptBanner } from '../../components/ui/SignInPromptBanner';
 import { useContentFeed } from '../../hooks/useContentFeed';
 import { useWordOfDay } from '../../hooks/useWordOfDay';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
+import { useUserAccount } from '../../context/UserAccountContext';
 import { getHomeLayoutSections, deriveLayoutSectionItems } from '../../util/mobileLayout';
 import { useAppTheme } from '../../util/colorScheme';
 import { makeStyles } from '../../styles/makeStyles';
 import { APP_ROUTES } from '../../util/appRoutes';
 import { buildPlayerRoute } from '../../util/playerRoute';
-import type { ContentType, FeedCardItem } from '../../services/contentService';
+import type { FeedCardItem } from '../../services/contentService';
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
 import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
 import {
@@ -78,13 +79,11 @@ const useStyles = makeStyles((theme) => ({
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-type SectionContentType = Exclude<ContentType, 'ad'>;
-
-function isSectionContentType(type: ContentType): type is SectionContentType {
-  return type !== 'ad';
-}
-
-void isSectionContentType;
+// Without this, "NEW" would stick to whatever the single most-recent item
+// happens to be forever, even if it was actually published months ago because
+// nothing newer has been added since — a stale "NEW" badge is exactly the
+// kind of thing that undermines an admin-curated, honest content surface.
+const NEW_RELEASE_WINDOW_MS = 1000 * 60 * 60 * 24 * 21; // 21 days
 
 function dedupe(items: FeedCardItem[]): FeedCardItem[] {
   const seen = new Set<string>();
@@ -106,7 +105,6 @@ function HomeSearchBar({ onPress }: { onPress: () => void }) {
       <View style={styles.searchBar}>
         <MaterialIcons name="search" size={20} color={theme.colors.textMuted} />
         <CustomText style={styles.searchText}>Search songs, videos, messages...</CustomText>
-        <MaterialIcons name="mic" size={18} color={theme.colors.textMuted} />
       </View>
     </TVTouchable>
   );
@@ -212,6 +210,7 @@ export default function HomeScreen() {
   const { feed, loading, error, refresh } = useContentFeed();
   const { bibleVerse, adminWord }  = useWordOfDay();
   const { config: appConfig } = useMobileAppConfig();
+  const { account } = useUserAccount();
 
   const featured = feed.featured ?? null;
 
@@ -223,8 +222,12 @@ export default function HomeScreen() {
   );
 
   const allContent = useMemo(
-    () => dedupe([...feed.recommendations, ...feed.mostPlayed, ...feed.recent, ...feed.music, ...feed.videos, ...feed.live]),
-    [feed.live, feed.mostPlayed, feed.music, feed.recent, feed.recommendations, feed.videos],
+    () => dedupe([
+      ...feed.recommendations, ...feed.mostPlayed, ...feed.recent,
+      ...feed.music, ...feed.videos, ...feed.live,
+      ...feed.playlists, ...feed.announcements,
+    ]),
+    [feed.live, feed.mostPlayed, feed.music, feed.recent, feed.recommendations, feed.videos, feed.playlists, feed.announcements],
   );
 
   const homeSections = useMemo(() => getHomeLayoutSections(appConfig), [appConfig]);
@@ -232,6 +235,13 @@ export default function HomeScreen() {
     () => homeSections.map((section) => ({ section, items: deriveLayoutSectionItems(feed, section, 'home') })),
     [homeSections, feed],
   );
+
+  // The narrow `allContent` pool above misses admin-curated layout sections
+  // entirely — without this, a home feed built only from those sections would
+  // show real content up top and a contradictory "nothing to play" message
+  // at the bottom simultaneously.
+  const hasAnyContent = Boolean(featured) || allContent.length > 0
+    || sectionItems.some(({ items }) => items.length > 0);
 
   const newRelease = useMemo(() => {
     const candidates = [...feed.videos, ...feed.music]
@@ -241,7 +251,10 @@ export default function HomeScreen() {
         const bTime = b.createdAt ? Date.parse(b.createdAt) : 0;
         return bTime - aTime;
       });
-    return candidates[0] ?? null;
+    const candidate = candidates[0] ?? null;
+    if (!candidate?.createdAt) return null;
+    const isActuallyRecent = Date.now() - Date.parse(candidate.createdAt) <= NEW_RELEASE_WINDOW_MS;
+    return isActuallyRecent ? candidate : null;
   }, [feed.videos, feed.music, featured]);
 
   const openItem = async (item: FeedCardItem, source: string) => {
@@ -251,7 +264,10 @@ export default function HomeScreen() {
 
   return (
     <PremiumPage title="Home" eyebrow="Home" noBack refreshing={loading} onRefresh={() => void refresh()}>
-      <GreetingBanner />
+      <GreetingBanner
+        name={account?.displayName}
+        onNotificationsPress={() => router.push(APP_ROUTES.tabs.settings)}
+      />
 
       <HomeSearchBar onPress={() => router.push(APP_ROUTES.tabs.search)} />
 
@@ -337,16 +353,24 @@ export default function HomeScreen() {
       ) : null}
 
       {bibleVerse ? (
-        <WordOfDayCard word={bibleVerse} onPress={() => router.push(APP_ROUTES.settingsPages.word)} />
+        <WordOfDayCard
+          word={bibleVerse}
+          label="Daily Scripture"
+          onPress={() => router.push(APP_ROUTES.settingsPages.word)}
+        />
       ) : null}
 
       {adminWord && adminWord.id !== bibleVerse?.id ? (
-        <WordOfDayCard word={adminWord} onPress={() => router.push(APP_ROUTES.settingsPages.word)} />
+        <WordOfDayCard
+          word={adminWord}
+          label="ClaudyGod Message"
+          onPress={() => router.push(APP_ROUTES.settingsPages.word)}
+        />
       ) : null}
 
       <SupportMinistryCard onPress={() => router.push(APP_ROUTES.settingsPages.donate)} />
 
-      {!loading && !allContent.length ? (
+      {!loading && !hasAnyContent ? (
         <EmptyState
           title="Nothing to play yet"
           message="We couldn't find any content. Check your connection or search for something specific."
