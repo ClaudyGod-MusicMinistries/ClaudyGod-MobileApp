@@ -1,5 +1,5 @@
-import React, { useRef } from 'react';
-import { Animated, Image, RefreshControl, View, useWindowDimensions, type ImageSourcePropType } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { Animated, Image, RefreshControl, ScrollView, View, useWindowDimensions, type ImageSourcePropType } from 'react-native';
 
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -28,6 +28,11 @@ type PremiumPageProps = {
   backgroundImage?: ImageSourcePropType;
   showFooter?: boolean;
   noBack?: boolean;
+  // Changing this value scrolls the page back to top — for screens where
+  // tapping something in a list updates content further up the page (e.g.
+  // Videos' inline player) with no other visible confirmation that the tap
+  // actually did anything.
+  scrollToTopKey?: string | number;
 };
 
 export function PremiumPage({
@@ -41,6 +46,7 @@ export function PremiumPage({
   backgroundImage,
   showFooter = true,
   noBack = false,
+  scrollToTopKey,
 }: PremiumPageProps) {
   const styles = useFeedStyles();
   const theme  = useAppTheme();
@@ -51,7 +57,14 @@ export function PremiumPage({
   const showBack = !noBack && title !== 'ClaudyGod' && router.canGoBack();
   const bottomPadding = isSidebarMode ? 40 : theme.layout.tabBarContentPadding;
 
+  const scrollRef = useRef<ScrollView>(null);
   const scrollY = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (scrollToTopKey !== undefined) {
+      scrollRef.current?.scrollTo({ y: 0, animated: true });
+    }
+  }, [scrollToTopKey]);
   const bgRgba  = theme.colors.backgroundRgba;
   const headerBg = scrollY.interpolate({
     inputRange: [0, 60],
@@ -62,6 +75,7 @@ export function PremiumPage({
   return (
     <TabScreenWrapper backgroundImage={backgroundImage} backgroundHeight={compact ? 240 : 320}>
       <Animated.ScrollView
+        ref={scrollRef}
         style={styles.pageScroll}
         showsVerticalScrollIndicator={false}
         bounces={Boolean(onRefresh)}

@@ -3,6 +3,7 @@ import { asyncHandler } from '../../lib/asyncHandler';
 import { ForbiddenError } from '../../lib/errors';
 import { validateSchema } from '../../lib/validation';
 import { authenticate } from '../../middleware/authenticate';
+import { hasMinRole } from '../../middleware/rbac';
 import { generateAdCopySchema } from './ai.schema';
 import { generateAdCopySuggestion } from './ai.service';
 
@@ -13,7 +14,7 @@ adminAiRouter.use(authenticate);
 adminAiRouter.post(
   '/ad-copy',
   asyncHandler(async (req, res) => {
-    if (!req.user || req.user.role !== 'ADMIN') {
+    if (!req.user || !hasMinRole(req.user.role, 'ADMIN')) {
       throw new ForbiddenError('Admin role required', 'ADMIN_REQUIRED');
     }
 
