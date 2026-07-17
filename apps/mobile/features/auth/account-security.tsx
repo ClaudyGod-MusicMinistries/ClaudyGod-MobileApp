@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { TextInput, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -13,8 +13,7 @@ import { CustomText } from '../../components/CustomText';
 import { useAppTheme } from '../../util/colorScheme';
 import { useDeviceClass } from '../../util/deviceClassConfig';
 import { APP_ROUTES } from '../../util/appRoutes';
-import { useRequireMobileSession } from './useRequireMobileSession';
-import { useAuth } from './AuthContext';
+import { useUserAccount } from '../../context/UserAccountContext';
 import { useToast } from '../../context/ToastContext';
 import { clearMobileSession } from '../../services/authService';
 import {
@@ -101,9 +100,12 @@ export default function AccountSecurity() {
   const router = useRouter();
   const device = useDeviceClass();
   const params = useLocalSearchParams<{ token?: string; action?: string }>();
-  const isAuthorized = useRequireMobileSession();
-  const { user } = useAuth();
+  const { account: user, isSignedIn } = useUserAccount();
   const { showToast } = useToast();
+
+  useEffect(() => {
+    if (!isSignedIn) router.replace(APP_ROUTES.auth.signIn);
+  }, [isSignedIn, router]);
 
   const [newEmail, setNewEmail]               = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
@@ -120,7 +122,7 @@ export default function AccountSecurity() {
   const canRequestPasswordChange = currentPassword.length >= 8;
   const isTwoCol = device.isDesktop || device.isTV;
 
-  if (!isAuthorized) {
+  if (!isSignedIn) {
     return <View style={{ flex: 1, backgroundColor: theme.colors.background }} />;
   }
 

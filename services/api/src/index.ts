@@ -16,6 +16,9 @@ import { contentQueue } from './queues/contentQueue';
 import { emailQueue } from './queues/emailQueue';
 import { statsQueue } from './queues/statsQueue';
 import { trendingQueue } from './queues/trendingQueue';
+import { broadcastViewerCount } from './modules/live/live.websocket';
+
+const LIVE_CHANNEL_PREFIX = 'live:';
 
 const log = createLogger('api');
 
@@ -34,7 +37,11 @@ const boot = async (): Promise<void> => {
     });
   });
 
-  initWsServer(server);
+  initWsServer(server, (channel, count) => {
+    if (!channel.startsWith(LIVE_CHANNEL_PREFIX)) return;
+    const sessionId = channel.slice(LIVE_CHANNEL_PREFIX.length);
+    broadcastViewerCount(sessionId, count);
+  });
 
   const shutdown = async (signal: string): Promise<void> => {
     log.info('Shutdown initiated', { signal });

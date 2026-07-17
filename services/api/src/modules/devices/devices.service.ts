@@ -94,4 +94,17 @@ export async function revokeDevice(userId: string, deviceId: string): Promise<vo
        AND revoked_at IS NULL`,
     [deviceId, userId],
   );
+
+  // The actual fix: revoking a device used to only mark user_devices as
+  // revoked while its refresh session kept working (the two were entirely
+  // unlinked). Now that auth_refresh_sessions carries a device_id, this
+  // cascades to invalidate any active session that device is actually using.
+  await pool.query(
+    `UPDATE auth_refresh_sessions
+     SET revoked_at = NOW()
+     WHERE device_id = $1
+       AND user_id = $2
+       AND revoked_at IS NULL`,
+    [deviceId, userId],
+  );
 }

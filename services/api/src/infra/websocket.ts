@@ -24,11 +24,17 @@ export class WsServer {
   private readonly wss: WebSocketServer;
   private readonly clients = new Map<string, Set<AuthenticatedClient>>();
   private pingInterval: NodeJS.Timeout | null = null;
+  // Fired whenever a channel's subscriber count changes, so callers (the
+  // composition root, not this generic infra class) can turn "N sockets
+  // subscribed to live:<sessionId>" into a real, automatic viewer count
+  // instead of one an admin has to type in by hand.
+  private readonly onSubscriptionChange?: (channel: string, count: number) => void;
 
-  constructor(httpServer: Server) {
+  constructor(httpServer: Server, onSubscriptionChange?: (channel: string, count: number) => void) {
     this.wss = new WebSocketServer({ server: httpServer, path: '/ws' });
     this.wss.on('connection', (socket, request) => this.onConnection(socket as AuthenticatedClient, request));
     this.pingInterval = setInterval(() => this.heartbeat(), PING_INTERVAL_MS) as unknown as NodeJS.Timeout;
+    this.onSubscriptionChange = onSubscriptionChange;
     log.info('WebSocket server initialized');
   }
 
@@ -96,16 +102,19 @@ export class WsServer {
     }
     this.clients.get(channel)!.add(socket);
     socket.send(JSON.stringify({ type: 'subscribed', channel }));
+    this.onSubscriptionChange?.(channel, this.clients.get(channel)!.size);
   }
 
   private unsubscribe(socket: AuthenticatedClient, channel: string): void {
     socket.subscriptions.delete(channel);
     this.clients.get(channel)?.delete(socket);
+    this.onSubscriptionChange?.(channel, this.clients.get(channel)?.size ?? 0);
   }
 
   private onClose(socket: AuthenticatedClient): void {
     for (const channel of socket.subscriptions) {
       this.clients.get(channel)?.delete(socket);
+      this.onSubscriptionChange?.(channel, this.clients.get(channel)?.size ?? 0);
     }
     log.info('WebSocket disconnected', { userId: socket.userId ?? 'anonymous' });
   }
@@ -152,13 +161,20 @@ export class WsServer {
   get clientCount(): number {
     return this.wss.clients.size;
   }
+
+  getChannelSubscriberCount(channel: string): number {
+    return this.clients.get(channel)?.size ?? 0;
+  }
 }
 
 let wssInstance: WsServer | null = null;
 
 export const getWsServer = (): WsServer | null => wssInstance;
 
-export const initWsServer = (httpServer: Server): WsServer => {
-  wssInstance = new WsServer(httpServer);
+export const initWsServer = (
+  httpServer: Server,
+  onSubscriptionChange?: (channel: string, count: number) => void,
+): WsServer => {
+  wssInstance = new WsServer(httpServer, onSubscriptionChange);
   return wssInstance;
 };

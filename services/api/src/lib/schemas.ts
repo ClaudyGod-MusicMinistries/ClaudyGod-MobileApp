@@ -20,6 +20,14 @@ export const paginationSchema = z.object({
 // ============ Auth Schemas ============
 const displayNameSchema = z.string().min(2, 'Display name must be at least 2 characters').max(100).trim();
 
+// Optional device identity carried by clients so a new session can be linked
+// to a real user_devices row (see authSession.service.ts's AuthSessionContext).
+export const deviceIdentitySchema = z.object({
+  deviceFingerprint: z.string().min(8).max(256).optional(),
+  deviceName: z.string().max(120).optional(),
+  platform: z.string().max(32).optional(),
+});
+
 export const signUpSchema = z
   .object({
     email: emailSchema,
@@ -28,6 +36,7 @@ export const signUpSchema = z
     displayName: displayNameSchema.optional(),
     role: z.enum(['CLIENT', 'CREATOR', 'MODERATOR', 'ADMIN', 'SUPER_ADMIN']).optional(),
     adminSignupCode: z.string().trim().min(8).max(128).optional(),
+    ...deviceIdentitySchema.shape,
   })
   .transform((value) => ({
     email: value.email,
@@ -35,6 +44,9 @@ export const signUpSchema = z
     username: (value.username ?? value.displayName ?? '').trim(),
     role: value.role,
     adminSignupCode: value.adminSignupCode,
+    deviceFingerprint: value.deviceFingerprint,
+    deviceName: value.deviceName,
+    platform: value.platform,
   }))
   .refine((value) => value.username.length >= 2, {
     path: ['username'],
@@ -44,6 +56,7 @@ export const signUpSchema = z
 export const signInSchema = z.object({
   email: emailSchema,
   password: z.string().min(1, 'Password required'),
+  ...deviceIdentitySchema.shape,
 });
 
 export const verifyEmailSchema = z

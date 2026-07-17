@@ -4,6 +4,7 @@ import { env } from '../../config/env';
 import { pool } from '../../db/pool';
 import { ForbiddenError, UnauthorizedError } from '../../lib/errors';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../../utils/jwt';
+import { registerDevice } from '../devices/devices.service';
 import type { AuthResponse, SafeUser, UserRole, UserTier } from './auth.types';
 
 interface QueryRunner {
@@ -29,11 +30,19 @@ interface RefreshSessionRow {
   refresh_token_hash: string;
   revoked_at: string | Date | null;
   expires_at: string | Date;
+  device_id: string | null;
 }
 
 export interface AuthSessionContext {
   requestIp?: string;
   userAgent?: string;
+  // When present, the session gets linked to a real user_devices row (created
+  // or updated via the same upsert the explicit device-registration endpoint
+  // uses) so that revoking that device can actually invalidate this session —
+  // previously the two were entirely unlinked.
+  deviceFingerprint?: string;
+  deviceName?: string;
+  platform?: string;
 }
 
 const toIsoDate = (value: string | Date): string => new Date(value).toISOString();
@@ -100,6 +109,7 @@ const insertRefreshSession = async ({
   sessionId,
   sessionFamilyId,
   rotatedFromSessionId,
+  carriedDeviceId,
   runner = pool,
 }: {
   user: SafeUser;
@@ -107,6 +117,11 @@ const insertRefreshSession = async ({
   sessionId?: string;
   sessionFamilyId?: string;
   rotatedFromSessionId?: string | null;
+  // Set when rotating an existing session (refreshAuthSession) — refresh
+  // requests never resend a device fingerprint, so without this the device
+  // link would silently drop on every single token refresh instead of only
+  // being resolved once at initial sign-in.
+  carriedDeviceId?: string | null;
   runner?: QueryRunner;
 }): Promise<AuthResponse> => {
   const nextSessionId = sessionId ?? randomUUID();
@@ -118,6 +133,21 @@ const insertRefreshSession = async ({
     type: 'refresh',
   });
   const expiresAt = getRefreshExpiryDate();
+
+  // Resolves (creates or updates) the user_devices row for this login and
+  // links it to the session being created — the upsert is idempotent and
+  // independent of whatever transaction `runner` may be part of, so it always
+  // goes through the plain pool rather than `runner`.
+  let deviceId: string | null = carriedDeviceId ?? null;
+  if (deviceId === null && context?.deviceFingerprint) {
+    const device = await registerDevice(user.id, {
+      deviceFingerprint: context.deviceFingerprint,
+      deviceName: context.deviceName,
+      deviceType: 'mobile',
+      platform: context.platform,
+    });
+    deviceId = device.id;
+  }
 
   await runner.query(
     `INSERT INTO auth_refresh_sessions (
@@ -131,9 +161,10 @@ const insertRefreshSession = async ({
        created_user_agent,
        last_used_ip,
        last_used_user_agent,
-       last_used_at
+       last_used_at,
+       device_id
      )
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $7, $8, NOW())`,
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $7, $8, NOW(), $9)`,
     [
       nextSessionId,
       user.id,
@@ -143,6 +174,7 @@ const insertRefreshSession = async ({
       expiresAt.toISOString(),
       context?.requestIp ?? null,
       context?.userAgent ?? null,
+      deviceId,
     ],
   );
 
@@ -222,7 +254,7 @@ export const refreshAuthSession = async (
     await client.query('BEGIN');
 
     const sessionResult = await client.query<RefreshSessionRow>(
-      `SELECT id, user_id, session_family_id, refresh_token_hash, revoked_at, expires_at
+      `SELECT id, user_id, session_family_id, refresh_token_hash, revoked_at, expires_at, device_id
        FROM auth_refresh_sessions
        WHERE id = $1
        LIMIT 1
@@ -263,6 +295,7 @@ export const refreshAuthSession = async (
       context,
       sessionFamilyId: session.session_family_id,
       rotatedFromSessionId: session.id,
+      carriedDeviceId: session.device_id,
       runner: client,
     });
 
