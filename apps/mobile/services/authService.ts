@@ -1,34 +1,50 @@
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { ApiError, apiFetch } from './apiClient';
 import { authSessionStorage } from '../lib/authSessionStorage';
 import { assertSupabaseConfigured, supabase } from '../lib/supabase';
 
-let sessionDeviceFingerprint: string | null = null;
+// Same AsyncStorage key context/AppContext.tsx uses for its stable per-install
+// device id — reading it here (rather than generating a session-only value)
+// means the fingerprint survives app restarts, so a device's session can
+// actually be looked up/revoked as "this device" instead of a new one per launch.
+const DEVICE_ID_KEY = 'claudygod.device.id';
+let cachedDeviceFingerprint: string | null = null;
 
-function getDeviceFingerprint(): string {
-  if (!sessionDeviceFingerprint) {
-    const id = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
-      ? crypto.randomUUID()
-      : `${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`;
-    sessionDeviceFingerprint = `${Platform.OS}:${String(Platform.Version ?? 'unknown')}:${id}`;
+async function getDeviceFingerprint(): Promise<string> {
+  if (cachedDeviceFingerprint) {
+    return cachedDeviceFingerprint;
   }
-  return sessionDeviceFingerprint;
+
+  const stored = await AsyncStorage.getItem(DEVICE_ID_KEY);
+  if (stored) {
+    cachedDeviceFingerprint = stored;
+    return stored;
+  }
+
+  const generated = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+    ? crypto.randomUUID()
+    : `${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`;
+  await AsyncStorage.setItem(DEVICE_ID_KEY, generated);
+  cachedDeviceFingerprint = generated;
+  return generated;
 }
 
 function registerDeviceFireAndForget(accessToken: string): void {
-  const fingerprint = getDeviceFingerprint();
-  apiFetch<unknown>('/v1/me/devices/register', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${accessToken}` },
-    body: JSON.stringify({
-      deviceFingerprint: fingerprint,
-      deviceType: Platform.OS === 'web' ? 'web' : 'mobile',
-      platform: Platform.OS,
-      appVersion: '1.0.0',
+  getDeviceFingerprint().then((fingerprint) =>
+    apiFetch<unknown>('/v1/me/devices/register', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({
+        deviceFingerprint: fingerprint,
+        deviceType: Platform.OS === 'web' ? 'web' : 'mobile',
+        platform: Platform.OS,
+        appVersion: '1.0.0',
+      }),
     }),
-  }).catch(() => {
+  ).catch(() => {
     // Fire-and-forget — device registration failure must never block auth.
   });
 }
@@ -324,11 +340,14 @@ export async function loginMobileUser(input: {
   email: string;
   password: string;
 }): Promise<MobileAuthResponse> {
+  const deviceFingerprint = await getDeviceFingerprint();
   const response = await apiFetch<MobileAuthResponse>('/v1/auth/sign-in', {
     method: 'POST',
     body: JSON.stringify({
       email: input.email.trim().toLowerCase(),
       password: input.password,
+      deviceFingerprint,
+      platform: Platform.OS,
     }),
   });
 
@@ -480,6 +499,7 @@ export async function loginMobileUserWithFacebook(): Promise<MobileAuthResponse>
 }
 
 export async function registerMobileUser(input: RegisterMobileUserInput): Promise<MobileAuthResponse> {
+  const deviceFingerprint = await getDeviceFingerprint();
   const response = await apiFetch<RegisterMobileResponse>('/v1/auth/register', {
     method: 'POST',
     body: JSON.stringify({
@@ -487,6 +507,8 @@ export async function registerMobileUser(input: RegisterMobileUserInput): Promis
       password: input.password,
       username: input.displayName.trim(),
       role: 'CLIENT',
+      deviceFingerprint,
+      platform: Platform.OS,
     }),
   });
 
@@ -701,12 +723,15 @@ export async function requestEmailOtp(email: string): Promise<void> {
 }
 
 export async function verifyEmailOtp(email: string, code: string): Promise<MobileAuthResponse> {
+  const deviceFingerprint = await getDeviceFingerprint();
   const response = await apiFetch<MobileAuthResponse>('/v1/auth/otp/verify', {
     method: 'POST',
     body: JSON.stringify({
       email: email.trim().toLowerCase(),
       code: code.trim(),
       purpose: 'sign_in',
+      deviceFingerprint,
+      platform: Platform.OS,
     }),
   });
   if (!response.user) throw new Error('Sign-in completed without a user session');

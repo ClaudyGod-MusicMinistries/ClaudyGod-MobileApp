@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { listSessions, createSession, updateSession, deleteSession, getSessionDetail, updateMessageStatus } from '@/api/live';
-import type { LiveSession, LiveSessionDetail, LiveSessionInput } from '@/api/types';
+import type { LiveSession, LiveSessionDetail, LiveSessionInput, LiveMessage } from '@/api/types';
+import type { LiveSocketFrame } from '@/composables/useLiveSocket';
 
 export const useLiveStore = defineStore('live', () => {
   const sessions = ref<LiveSession[]>([]);
@@ -72,8 +73,52 @@ export const useLiveStore = defineStore('live', () => {
     activeDetail.value = null;
   }
 
+  // Applies a WebSocket frame from useLiveSocket to both the sessions list row
+  // and the open chat modal (if it's the same session) — same "patch both if
+  // id matches" shape moderateMessage already uses for REST-driven updates.
+  function applyRealtimeEvent(sessionId: string, event: LiveSocketFrame): void {
+    if (event.type === 'viewer_count') {
+      const { count } = event.payload as { count: number };
+      sessions.value = sessions.value.map((s) => (s.id === sessionId ? { ...s, viewerCount: count } : s));
+      if (activeDetail.value?.id === sessionId) {
+        activeDetail.value = { ...activeDetail.value, viewerCount: count };
+      }
+      return;
+    }
+
+    if (event.type === 'session_update') {
+      const update = event.payload as Partial<LiveSession>;
+      sessions.value = sessions.value.map((s) => (s.id === sessionId ? { ...s, ...update } : s));
+      if (activeDetail.value?.id === sessionId) {
+        activeDetail.value = { ...activeDetail.value, ...update };
+      }
+      return;
+    }
+
+    if (activeDetail.value?.id !== sessionId) return;
+
+    if (event.type === 'message') {
+      const incoming = event.payload as LiveMessage;
+      if (activeDetail.value.messages.some((m) => m.id === incoming.id)) return;
+      activeDetail.value = {
+        ...activeDetail.value,
+        messageCount: activeDetail.value.messageCount + 1,
+        messages: [incoming, ...activeDetail.value.messages],
+      };
+      return;
+    }
+
+    if (event.type === 'message_status') {
+      const { id, status } = event.payload as { id: string; status: 'visible' | 'hidden' };
+      activeDetail.value = {
+        ...activeDetail.value,
+        messages: activeDetail.value.messages.map((m) => (m.id === id ? { ...m, visibility: status } : m)),
+      };
+    }
+  }
+
   return {
     sessions, total, isLoading, error, isSaving, fetchSessions, create, update, remove,
-    activeDetail, detailLoading, loadDetail, moderateMessage, clearDetail,
+    activeDetail, detailLoading, loadDetail, moderateMessage, clearDetail, applyRealtimeEvent,
   };
 });

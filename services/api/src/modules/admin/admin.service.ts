@@ -4,10 +4,12 @@ import { pool } from '../../db/pool';
 import { emailTransportInfo, verifyEmailTransport } from '../../infra/email';
 import { queueEmailJob } from '../../infra/transactionalEmails';
 import { BadRequestError, NotFoundError } from '../../lib/errors';
-import { isMissingDatabaseStructureError } from '../../lib/postgres';
+import { isDatabaseConnectivityError, isMissingDatabaseStructureError } from '../../lib/postgres';
 import type { UserRole } from '../auth/auth.types';
 import type { ContentRequestStatus, ContentVisibility } from '../content/content.types';
 import { getMobileAppConfig } from '../appConfig/appConfig.service';
+import { getMeLibrary, getMeMetrics, getMeMostPlayed, getMeRecentlyPlayed } from '../me/me.service';
+import { listUserDevices, revokeDevice } from '../devices/devices.service';
 
 interface SummaryRow {
   total_users: string;
@@ -1775,4 +1777,85 @@ export const getAdminContentSectionSuggestions = async (contentId: string) => {
     contentId,
     suggestions,
   };
+};
+
+// ── Admin per-user detail view ────────────────────────────────────────────────
+// Resolves a target member's own JwtClaims-shaped identity so the existing
+// self-service /me/* engagement queries can be reused verbatim against
+// someone other than the requesting admin, instead of duplicating their logic.
+const resolveTargetUserClaims = async (userId: string): Promise<JwtClaims> => {
+  const result = await pool.query<{
+    id: string; email: string; display_name: string; role: UserRole;
+  }>(
+    `SELECT id, email, display_name, role FROM app_users WHERE id = $1 LIMIT 1`,
+    [userId],
+  );
+
+  if (result.rowCount === 0) {
+    throw new NotFoundError('User not found', 'USER_NOT_FOUND');
+  }
+
+  const row = result.rows[0]!;
+  return { sub: row.id, email: row.email, displayName: row.display_name, role: row.role };
+};
+
+export const getAdminUserEngagement = async (userId: string) => {
+  const targetUser = await resolveTargetUserClaims(userId);
+
+  const [metrics, recentlyPlayed, mostPlayed, library] = await Promise.all([
+    getMeMetrics(targetUser),
+    getMeRecentlyPlayed(targetUser, {}),
+    getMeMostPlayed(targetUser, {}),
+    getMeLibrary(targetUser),
+  ]);
+
+  return { metrics, recentlyPlayed: recentlyPlayed.items, mostPlayed: mostPlayed.items, library };
+};
+
+interface SearchHistoryRow {
+  query: string;
+  results_count: number;
+  clicked_id: string | null;
+  searched_at: string | Date;
+}
+
+export const getAdminUserSearchHistory = async (userId: string, limit: number) => {
+  await resolveTargetUserClaims(userId);
+
+  let result;
+  try {
+    result = await pool.query<SearchHistoryRow>(
+      `SELECT query, results_count, clicked_id, searched_at
+       FROM user_search_events
+       WHERE user_id = $1
+       ORDER BY searched_at DESC
+       LIMIT $2`,
+      [userId, limit],
+    );
+  } catch (error) {
+    if (isMissingDatabaseStructureError(error) || isDatabaseConnectivityError(error)) {
+      return { items: [] };
+    }
+    throw error;
+  }
+
+  return {
+    items: result.rows.map((row) => ({
+      query: row.query,
+      resultsCount: row.results_count,
+      clickedId: row.clicked_id,
+      searchedAt: new Date(row.searched_at).toISOString(),
+    })),
+  };
+};
+
+export const getAdminUserDevices = async (userId: string) => {
+  await resolveTargetUserClaims(userId);
+  const devices = await listUserDevices(userId);
+  return { devices };
+};
+
+export const revokeAdminUserDevice = async (userId: string, deviceId: string): Promise<void> => {
+  await resolveTargetUserClaims(userId);
+  await revokeDevice(userId, deviceId);
 };

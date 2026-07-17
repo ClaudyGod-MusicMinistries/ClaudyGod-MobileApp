@@ -1,9 +1,9 @@
 import { createHash, randomBytes, createVerify } from 'crypto';
-import { pool } from '../../db/pool.js';
-import { createLogger } from '../../lib/logger.js';
-import { BadRequestError, NotFoundError, UnauthorizedError } from '../../lib/errors.js';
-import { signAccessToken, signRefreshToken } from '../../utils/jwt.js';
-import type { AuthResponse } from './auth.types.js';
+import { pool } from '../../db/pool';
+import { createLogger } from '../../lib/logger';
+import { BadRequestError, NotFoundError, UnauthorizedError } from '../../lib/errors';
+import { issueAuthSession, type AuthSessionContext } from './authSession.service';
+import type { AuthResponse, SafeUser, UserRole, UserTier } from './auth.types';
 
 const logger = createLogger('biometric.service');
 
@@ -79,6 +79,7 @@ export async function createBiometricChallenge(
 export async function verifyBiometricSignature(
   challengeId: string,
   signature: string,
+  context?: AuthSessionContext,
 ): Promise<AuthResponse> {
   const row = await pool.query<{
     user_id: string; device_id: string; challenge: string; expires_at: Date;
@@ -137,52 +138,29 @@ export async function verifyBiometricSignature(
     [data.user_id],
   );
 
-  const sessionId = randomBytes(16).toString('hex');
-  const sessionFamilyId = randomBytes(16).toString('hex');
-
-  const accessToken = signAccessToken({
-    sub: data.user_id,
+  const safeUser: SafeUser = {
+    id: data.user_id,
     email: data.user_email,
-    role: data.user_role as never,
     displayName: data.user_display_name,
-    tier: (data.user_tier ?? 'free') as never,
+    role: data.user_role as UserRole,
+    tier: (data.user_tier ?? 'free') as UserTier,
     mfaEnabled: data.user_mfa_enabled,
-  });
+    createdAt: new Date().toISOString(),
+    emailVerifiedAt: data.user_email_verified_at,
+  };
 
-  const refreshToken = signRefreshToken({
-    sub: data.user_id,
-    sessionId,
-    sessionFamilyId,
-    type: 'refresh',
+  // The biometric challenge is already scoped to a specific device_id (the
+  // same identifier user_biometric_credentials keys on), so it doubles as
+  // the device fingerprint for linking this session to a user_devices row.
+  const session = await issueAuthSession(safeUser, {
+    ...context,
+    deviceFingerprint: context?.deviceFingerprint ?? data.device_id,
+    userAgent: context?.userAgent ?? 'biometric',
   });
-
-  await pool.query(
-    `INSERT INTO auth_sessions (user_id, session_id, session_family_id, refresh_token_hash, expires_at, ip_address, user_agent)
-     VALUES ($1, $2, $3, $4, NOW() + INTERVAL '30 days', NULL, 'biometric')`,
-    [
-      data.user_id,
-      sessionId,
-      sessionFamilyId,
-      createHash('sha256').update(refreshToken).digest('hex'),
-    ],
-  );
 
   logger.info('Biometric authentication successful', { userId: data.user_id, deviceId: data.device_id });
 
-  return {
-    accessToken,
-    refreshToken,
-    user: {
-      id: data.user_id,
-      email: data.user_email,
-      displayName: data.user_display_name,
-      role: data.user_role as never,
-      tier: (data.user_tier ?? 'free') as never,
-      mfaEnabled: data.user_mfa_enabled,
-      createdAt: new Date().toISOString(),
-      emailVerifiedAt: data.user_email_verified_at,
-    },
-  };
+  return session;
 }
 
 export async function revokeBiometric(userId: string, deviceId: string): Promise<void> {

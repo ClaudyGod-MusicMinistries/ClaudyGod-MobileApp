@@ -40,6 +40,9 @@
           <template #cell-createdAt="{ value }">
             <span class="text-xs text-ink-muted">{{ formatDate(String(value)) }}</span>
           </template>
+          <template #actions="{ row }">
+            <AppButton variant="secondary" size="xs" @click="viewUser(row as unknown as UserRecord)">View</AppButton>
+          </template>
         </AppResponsiveTable>
       </AppCard>
 
@@ -75,6 +78,8 @@
         </AppResponsiveTable>
       </AppCard>
     </template>
+
+    <UserDetailModal v-model="detailModalOpen" :user="selectedUser" />
   </div>
 </template>
 
@@ -84,6 +89,7 @@ import { useUsersStore } from '@/stores/users.store';
 import { useUiStore } from '@/stores/ui.store';
 import { ASSIGNABLE_ROLE_OPTIONS, ROLE_LABELS, roleRank } from '@/utils/constants';
 import type { AssignableRoleValue } from '@/utils/constants';
+import type { UserRecord } from '@/api/types';
 import AppCard from '@/components/ui/AppCard.vue';
 import AppResponsiveTable from '@/components/ui/AppResponsiveTable.vue';
 import AppBadge from '@/components/ui/AppBadge.vue';
@@ -94,11 +100,19 @@ import StatusBadge from '@/components/shared/StatusBadge.vue';
 import SearchInput from '@/components/shared/SearchInput.vue';
 import UserAvatar from '@/components/shared/UserAvatar.vue';
 import PageHeader from '@/components/shared/PageHeader.vue';
+import UserDetailModal from './UserDetailModal.vue';
 
 const store = useUsersStore();
 const ui = useUiStore();
 const activeTab = ref('users');
 const supportFilter = ref('');
+const detailModalOpen = ref(false);
+const selectedUser = ref<UserRecord | null>(null);
+
+function viewUser(user: UserRecord): void {
+  selectedUser.value = user;
+  detailModalOpen.value = true;
+}
 
 const tabs = [
   { id: 'users', label: 'Users' },

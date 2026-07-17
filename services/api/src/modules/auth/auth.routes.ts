@@ -63,11 +63,18 @@ authRouter.use((_req, res, next) => {
   next();
 });
 
+interface DeviceIdentityInput {
+  deviceFingerprint?: string;
+  deviceName?: string;
+  platform?: string;
+}
+
 const buildSessionPayload = async (
   authPayload: Pick<AuthResponse, 'user' | 'message'>,
   req: Request,
+  device?: DeviceIdentityInput,
 ): Promise<AuthResponse> => {
-  const session = await issueAuthSession(authPayload.user, getAuthRequestContext(req));
+  const session = await issueAuthSession(authPayload.user, getAuthRequestContext(req, device));
   return {
     ...session,
     message: authPayload.message,
@@ -100,10 +107,13 @@ async function resolveSessionFromRefresh(req: Request) {
   return { token: session.accessToken, user: session.user, refreshedSession: session };
 }
 
-function getAuthRequestContext(req: Request) {
+function getAuthRequestContext(req: Request, device?: DeviceIdentityInput) {
   return {
     requestIp: req.ip,
     userAgent: req.header('user-agent') || undefined,
+    deviceFingerprint: device?.deviceFingerprint,
+    deviceName: device?.deviceName,
+    platform: device?.platform,
   };
 }
 
@@ -117,7 +127,7 @@ async function handleSignIn(req: Request, res: Response) {
     });
     return;
   }
-  const session = await buildSessionPayload(result, req);
+  const session = await buildSessionPayload(result, req, req.validated);
   respondWithAuthSession(req, res, session, 200);
 }
 
@@ -142,7 +152,7 @@ authRouter.post(
       return;
     }
 
-    const session = await buildSessionPayload(result as AuthResponse, req);
+    const session = await buildSessionPayload(result as AuthResponse, req, req.validated);
     respondWithAuthSession(req, res, session, 201);
   }),
 );
@@ -402,6 +412,9 @@ const otpVerifySchema = z.object({
   email:   z.string().email(),
   code:    z.string().trim().length(6, 'Code must be 6 digits'),
   purpose: z.enum(['sign_in', 'sign_up']).default('sign_in'),
+  deviceFingerprint: z.string().min(8).max(256).optional(),
+  deviceName: z.string().max(120).optional(),
+  platform: z.string().max(32).optional(),
 });
 
 authRouter.post(
@@ -418,7 +431,7 @@ authRouter.post(
   '/otp/verify',
   authLimiter,
   asyncHandler(async (req, res) => {
-    const { email, code, purpose } = validateSchema(otpVerifySchema, req.body);
+    const { email, code, purpose, deviceFingerprint, deviceName, platform } = validateSchema(otpVerifySchema, req.body);
     const { email: resolvedEmail } = await verifyEmailOtp(email, code, purpose);
 
     const userResult = await pool.query<{
@@ -444,7 +457,10 @@ authRouter.post(
       emailVerifiedAt: u.email_verified_at,
     };
 
-    const session = await issueAuthSession(safeUser, getAuthRequestContext(req));
+    const session = await issueAuthSession(
+      safeUser,
+      getAuthRequestContext(req, { deviceFingerprint, deviceName, platform }),
+    );
     respondWithAuthSession(req, res, session, 200);
   }),
 );

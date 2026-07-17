@@ -6,7 +6,9 @@ import { authenticate } from '../../middleware/authenticate';
 import {
   adminContentIdParamsSchema,
   adminUnassignedContentQuerySchema,
+  adminUserDeviceParamsSchema,
   adminUserIdParamsSchema,
+  adminUserSearchHistoryQuerySchema,
   approveAccessRequestSchema,
   createInvitationSchema,
   invitationIdParamsSchema,
@@ -21,9 +23,13 @@ import {
   getAdminContentSectionSuggestions,
   getAdminEmailDiagnostics,
   getAdminDashboard,
+  getAdminUserDevices,
+  getAdminUserEngagement,
+  getAdminUserSearchHistory,
   listAdminSupportRequests,
   listAdminUnassignedContent,
   listAdminUsers,
+  revokeAdminUserDevice,
   sendAdminTestEmail,
   updateAdminUserRole,
   updateAdminSupportRequestStatus,
@@ -146,6 +152,47 @@ adminRouter.patch(
       actor,
     });
     res.status(200).json(result);
+  }),
+);
+
+adminRouter.get(
+  '/users/:id/engagement',
+  asyncHandler(async (req, res) => {
+    requireAdmin(req);
+    const params = validateSchema(adminUserIdParamsSchema, req.params);
+    const result = await getAdminUserEngagement(params.id);
+    res.status(200).json(result);
+  }),
+);
+
+adminRouter.get(
+  '/users/:id/search-history',
+  asyncHandler(async (req, res) => {
+    requireAdmin(req);
+    const params = validateSchema(adminUserIdParamsSchema, req.params);
+    const query = validateSchema(adminUserSearchHistoryQuerySchema, req.query);
+    const result = await getAdminUserSearchHistory(params.id, query.limit);
+    res.status(200).json(result);
+  }),
+);
+
+adminRouter.get(
+  '/users/:id/devices',
+  asyncHandler(async (req, res) => {
+    requireAdmin(req);
+    const params = validateSchema(adminUserIdParamsSchema, req.params);
+    const result = await getAdminUserDevices(params.id);
+    res.status(200).json(result);
+  }),
+);
+
+adminRouter.post(
+  '/users/:id/devices/:deviceId/revoke',
+  asyncHandler(async (req, res) => {
+    requireAdmin(req);
+    const params = validateSchema(adminUserDeviceParamsSchema, req.params);
+    await revokeAdminUserDevice(params.id, params.deviceId);
+    res.status(200).json({ message: 'Device revoked' });
   }),
 );
 

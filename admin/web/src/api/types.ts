@@ -456,6 +456,56 @@ export interface UserRecord {
   createdAt: string;
 }
 
+export interface UserEngagementItem {
+  id: string;
+  title: string;
+  description: string;
+  subtitle: string;
+  type: string;
+  imageUrl: string;
+  mediaUrl?: string;
+  duration?: string;
+  createdAt: string;
+  updatedAt: string;
+  playCount?: number;
+  lastPlayedAt?: string;
+}
+
+export interface UserEngagementDetail {
+  metrics: {
+    email: string;
+    displayName: string;
+    totalPlays: number;
+    liveSubscriptions: number;
+  };
+  recentlyPlayed: UserEngagementItem[];
+  mostPlayed: UserEngagementItem[];
+  library: {
+    liked: Record<string, unknown>[];
+    downloaded: Record<string, unknown>[];
+    playlists: { name: string; items: Record<string, unknown>[] }[];
+  };
+}
+
+export interface UserSearchHistoryEntry {
+  query: string;
+  resultsCount: number;
+  clickedId: string | null;
+  searchedAt: string;
+}
+
+export interface UserDevice {
+  id: string;
+  deviceFingerprint: string;
+  deviceName: string | null;
+  deviceType: string;
+  platform: string | null;
+  appVersion: string | null;
+  isTrusted: boolean;
+  lastSeenAt: string;
+  registeredAt: string;
+}
+
 export interface SupportRequest {
   id: string;
   subject: string;

@@ -2,6 +2,7 @@ import { createHash, randomBytes } from 'crypto';
 import { pool } from '../../db/pool';
 import { BadRequestError } from '../../lib/errors';
 import { createLogger } from '../../lib/logger';
+import { queueOtpEmail } from '../../infra/transactionalEmails';
 
 const logger = createLogger('emailOtp.service');
 
@@ -52,8 +53,6 @@ export async function requestEmailOtp(email: string, purpose: 'sign_in' | 'sign_
 
   logger.info('Email OTP requested', { email: normalizedEmail, purpose });
 
-  // Lazy import to avoid circular deps
-  const { queueOtpEmail } = await import('../../infra/transactionalEmails.js');
   await queueOtpEmail({ toEmail: normalizedEmail, code, expiresInMinutes: OTP_TTL_MINUTES });
 }
 

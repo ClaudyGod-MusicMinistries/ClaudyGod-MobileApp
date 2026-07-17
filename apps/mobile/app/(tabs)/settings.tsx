@@ -498,16 +498,25 @@ export default function SettingsScreen() {
 
         <View style={[styles.accountBtnWrap, { flexDirection: isWideLayout ? 'row' : 'column' }]}>
           {isSignedIn ? (
-            <AppButton
-              title="Sign out"
-              variant="outline"
-              size="sm"
-              onPress={() => {
-                void signOut();
-                showModal({ title: 'Signed out', message: 'Your local library is still saved on this device.', tone: 'info', icon: 'logout' });
-              }}
-              leftIcon={<MaterialIcons name="logout" size={14} color={theme.colors.primary} />}
-            />
+            <>
+              <AppButton
+                title="Account security"
+                variant="secondary"
+                size="sm"
+                onPress={() => router.push(APP_ROUTES.accountSecurity as never)}
+                leftIcon={<MaterialIcons name="shield" size={14} color={theme.colors.text} />}
+              />
+              <AppButton
+                title="Sign out"
+                variant="outline"
+                size="sm"
+                onPress={() => {
+                  void signOut();
+                  showModal({ title: 'Signed out', message: 'Your local library is still saved on this device.', tone: 'info', icon: 'logout' });
+                }}
+                leftIcon={<MaterialIcons name="logout" size={14} color={theme.colors.primary} />}
+              />
+            </>
           ) : (
             <AppButton
               title="Sync your library"
