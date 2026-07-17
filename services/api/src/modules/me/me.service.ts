@@ -1050,11 +1050,17 @@ export const getMeLibrary = async (user: JwtClaims): Promise<{
   downloaded: Array<Record<string, unknown>>;
   playlists: Array<{ name: string; items: Array<Record<string, unknown>> }>;
 }> => {
+  // This endpoint returns a full library snapshot (liked/downloaded/playlists
+  // grouped together, not a paged feed) — the mobile client and /me/bootstrap
+  // both expect the complete set. The unqualified query had no LIMIT at all
+  // though, so a generous safety cap is applied to bound worst-case response
+  // size without truncating any realistic personal library.
   const result = await pool.query<SavedItemRow>(
     `SELECT *
      FROM user_saved_items
      WHERE user_id = $1
-     ORDER BY updated_at DESC, created_at DESC`,
+     ORDER BY updated_at DESC, created_at DESC
+     LIMIT 1000`,
     [user.sub],
   );
 

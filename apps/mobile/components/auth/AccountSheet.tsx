@@ -15,14 +15,23 @@ import { CustomText } from '../CustomText';
 import { AppButton } from '../ui/AppButton';
 import { TVTouchable } from '../ui/TVTouchable';
 import { BottomSheet } from '../ui/BottomSheet';
+import { TrustDeviceSheet } from './TrustDeviceSheet';
 import {
   loginMobileUser,
   loginMobileUserWithGoogle,
   registerMobileUser,
+  signInWithTrustedDeviceToken,
 } from '../../services/authService';
 import { useAccountSheet } from '../../context/AccountSheetContext';
+import {
+  isTrustedDeviceSupported,
+  getBiometricType,
+  getTrustedDeviceToken,
+  promptBiometric,
+  clearTrustedDeviceToken,
+} from '../../lib/trustedDevice';
 
-type SheetStep = 'choose' | 'email' | 'success';
+type SheetStep = 'choose' | 'email' | 'success' | 'trustedUnlock';
 type EmailMode = 'signin' | 'signup';
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -99,6 +108,15 @@ const useStyles = makeStyles((theme) => ({
   toggleModeAccent: { color: theme.colors.primary, fontWeight: '700' },
   backBtn:  { flexDirection: 'row', alignItems: 'center', gap: 4, justifyContent: 'center', paddingBottom: 4 },
   backText: { color: theme.colors.textMuted, fontSize: 12 },
+
+  trustedContainer: { alignItems: 'center', paddingVertical: 12, gap: 16 },
+  trustedIcon: {
+    width: 72, height: 72, borderRadius: 36,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  trustedTitle:    { color: theme.colors.text, fontSize: 20, fontWeight: '800', textAlign: 'center' },
+  trustedSubtitle: { color: theme.colors.textSecondary, fontSize: 13.5, textAlign: 'center', lineHeight: 20 },
+  trustedActions:  { width: '100%', gap: 10, marginTop: 4 },
 }));
 
 // ─── SuccessState ─────────────────────────────────────────────────────────────
@@ -120,6 +138,49 @@ function SuccessState({ displayName }: { displayName?: string }) {
       <CustomText style={styles.successSubtitle}>
         Your library will now sync across all your devices.
       </CustomText>
+    </View>
+  );
+}
+
+// ─── TrustedUnlock ────────────────────────────────────────────────────────────
+
+function TrustedUnlock({
+  biometricIcon, biometricLabel, loading, onUnlock, onUseAnotherWay,
+}: {
+  biometricIcon: React.ComponentProps<typeof MaterialIcons>['name'];
+  biometricLabel: string;
+  loading: boolean;
+  onUnlock: () => void;
+  onUseAnotherWay: () => void;
+}) {
+  const styles = useStyles();
+  const theme  = useAppTheme();
+  return (
+    <View style={styles.trustedContainer}>
+      <View style={[styles.trustedIcon, {
+        backgroundColor: theme.colors.primarySurface,
+        borderWidth: 1, borderColor: theme.colors.primaryBorder,
+      }]}>
+        <MaterialIcons name={biometricIcon} size={32} color={theme.colors.primary} />
+      </View>
+      <CustomText style={styles.trustedTitle}>Welcome back</CustomText>
+      <CustomText style={styles.trustedSubtitle}>
+        Use {biometricLabel} to sign in instantly on this device.
+      </CustomText>
+      <View style={styles.trustedActions}>
+        <AppButton
+          title={`Sign in with ${biometricLabel}`}
+          size="lg"
+          fullWidth
+          loading={loading}
+          loadingLabel="Verifying…"
+          leftIcon={<MaterialIcons name={biometricIcon} size={18} color={theme.colors.onPrimary} />}
+          onPress={onUnlock}
+        />
+        <TVTouchable onPress={onUseAnotherWay} showFocusBorder={false} style={styles.skipBtn}>
+          <CustomText style={styles.skipText}>Use another way</CustomText>
+        </TVTouchable>
+      </View>
     </View>
   );
 }
@@ -287,6 +348,14 @@ export function AccountSheet() {
   const [error, setError]           = useState('');
   const [loading, setLoading]       = useState(false);
   const [signedInName, setSignedInName] = useState('');
+  const [pendingTrust, setPendingTrust] = useState<{ accessToken: string; displayName: string } | null>(null);
+  // Queued as soon as we decide to offer it, but not shown until BottomSheet's
+  // onClosed confirms this sheet's exit animation has actually finished — no
+  // more guessing at a delay that has to outlast an internal animation constant.
+  const [queuedTrust, setQueuedTrust] = useState<{ accessToken: string; displayName: string } | null>(null);
+  const [trustedToken, setTrustedToken] = useState<{ token: string; deviceLabel: string } | null>(null);
+  const [biometricIcon, setBiometricIcon] = useState<React.ComponentProps<typeof MaterialIcons>['name']>('fingerprint');
+  const [biometricLabel, setBiometricLabel] = useState('Biometrics');
 
   useEffect(() => {
     if (isSheetOpen) {
@@ -297,17 +366,69 @@ export function AccountSheet() {
       setEmail('');
       setPassword('');
       setLoading(false);
+      setTrustedToken(null);
+
+      // A registered trusted-device token was previously write-only here — it
+      // got stored after sign-in but nothing ever checked for one on a later
+      // open, so returning users always saw the full form again. Check once,
+      // every time the sheet opens, and offer a biometric shortcut instead.
+      void (async () => {
+        const stored = await getTrustedDeviceToken();
+        if (!stored) return;
+        const type = await getBiometricType();
+        if (!isTrustedDeviceSupported() || type === 'none') return;
+        setBiometricIcon(type === 'face' ? 'face' : 'fingerprint');
+        setBiometricLabel(type === 'face' ? 'Face ID' : 'Touch ID / Fingerprint');
+        setTrustedToken({ token: stored.token, deviceLabel: stored.deviceLabel });
+        setStep('trustedUnlock');
+      })();
     }
   }, [isSheetOpen]);
+
+  const handleTrustedUnlock = async () => {
+    if (!trustedToken) return;
+    const confirmed = await promptBiometric("Confirm it's you to sign in");
+    if (!confirmed) return;
+    setLoading(true);
+    setError('');
+    try {
+      const result = await signInWithTrustedDeviceToken(trustedToken.token);
+      setSignedInName(result.user.displayName);
+      setStep('success');
+      setTimeout(() => closeAccountSheet(), 1400);
+    } catch {
+      await clearTrustedDeviceToken();
+      setTrustedToken(null);
+      setStep('choose');
+      setError('Your trusted session has expired. Please sign in again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // After a successful sign-in, offer biometric quick-sign-in next time if the
+  // device supports it — otherwise fall back to the previous plain auto-close.
+  const finishSignIn = async (accessToken: string | undefined, displayName: string) => {
+    setSignedInName(displayName);
+    setStep('success');
+
+    const canOfferTrust = Boolean(accessToken) && isTrustedDeviceSupported() && (await getBiometricType()) !== 'none';
+    if (canOfferTrust && accessToken) {
+      setTimeout(() => {
+        setQueuedTrust({ accessToken, displayName });
+        closeAccountSheet();
+      }, 1200);
+    } else {
+      setTimeout(() => closeAccountSheet(), 1800);
+    }
+  };
 
   const handleGoogle = async () => {
     setLoading(true);
     setError('');
     try {
       const result = await loginMobileUserWithGoogle();
-      setSignedInName(result.user.displayName);
-      setStep('success');
-      setTimeout(() => closeAccountSheet(), 1800);
+      await finishSignIn(result.accessToken, result.user.displayName);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Google sign-in failed. Please try again.');
     } finally {
@@ -324,13 +445,11 @@ export function AccountSheet() {
     try {
       if (mode === 'signup') {
         const result = await registerMobileUser({ email, password, displayName: name });
-        setSignedInName(result.user.displayName);
+        await finishSignIn(result.accessToken, result.user.displayName);
       } else {
         const result = await loginMobileUser({ email, password });
-        setSignedInName(result.user.displayName);
+        await finishSignIn(result.accessToken, result.user.displayName);
       }
-      setStep('success');
-      setTimeout(() => closeAccountSheet(), 1800);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong. Try again.');
     } finally {
@@ -345,10 +464,29 @@ export function AccountSheet() {
   };
 
   return (
-    <BottomSheet visible={isSheetOpen} onClose={dismiss} dismissible={!loading}>
+    <>
+    <BottomSheet
+      visible={isSheetOpen}
+      onClose={dismiss}
+      dismissible={!loading}
+      onClosed={() => {
+        if (queuedTrust) {
+          setPendingTrust(queuedTrust);
+          setQueuedTrust(null);
+        }
+      }}
+    >
       <KeyboardAvoidingView style={styles.flex1} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         {step === 'success' ? (
           <SuccessState displayName={signedInName} />
+        ) : step === 'trustedUnlock' ? (
+          <TrustedUnlock
+            biometricIcon={biometricIcon}
+            biometricLabel={biometricLabel}
+            loading={loading}
+            onUnlock={() => void handleTrustedUnlock()}
+            onUseAnotherWay={() => { setTrustedToken(null); setError(''); setStep('choose'); }}
+          />
         ) : (
           <>
             <View style={styles.sheetHeader}>
@@ -404,5 +542,13 @@ export function AccountSheet() {
         )}
       </KeyboardAvoidingView>
     </BottomSheet>
+
+    <TrustDeviceSheet
+      visible={pendingTrust !== null}
+      accessToken={pendingTrust?.accessToken ?? ''}
+      displayName={pendingTrust?.displayName ?? ''}
+      onDismiss={() => setPendingTrust(null)}
+    />
+    </>
   );
 }

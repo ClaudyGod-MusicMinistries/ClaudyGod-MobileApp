@@ -69,3 +69,18 @@ export const authenticate: RequestHandler = async (req, _res, next) => {
     }
   }
 };
+
+// Same resolution as `authenticate` (including the silent refresh-on-expiry
+// path, so returning members still get recognized) but never rejects — a
+// missing or invalid session just falls through with `req.user` unset,
+// instead of blocking the request. For routes that should work for guests
+// but personalize when a real session is present (e.g. search).
+export const optionalAuthenticate: RequestHandler = (req, res, next) => {
+  void authenticate(req, res, (err?: unknown) => {
+    if (err instanceof UnauthorizedError) {
+      next();
+      return;
+    }
+    next(err);
+  });
+};

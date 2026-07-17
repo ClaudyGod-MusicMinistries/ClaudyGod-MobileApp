@@ -1,4 +1,4 @@
-import { createHash, randomBytes, randomInt } from 'crypto';
+import { createHash, randomBytes, randomInt, timingSafeEqual } from 'crypto';
 import type { UserTier } from './auth.types';
 import type { PoolClient } from 'pg';
 import { pool } from '../../db/pool';
@@ -45,6 +45,17 @@ import type {
 } from './auth.types';
 
 type AuthTokenType = 'email_verification' | 'password_reset' | 'mfa_step_up';
+
+// Plain `!==` on a shared secret leaks its length/content through response
+// timing. `timingSafeEqual` requires equal-length buffers, so a length
+// mismatch is checked separately first (that alone doesn't leak anything
+// timing-sensitive about the secret's actual content).
+function constantTimeEquals(a: string, b: string): boolean {
+  const bufferA = Buffer.from(a);
+  const bufferB = Buffer.from(b);
+  if (bufferA.length !== bufferB.length) return false;
+  return timingSafeEqual(bufferA, bufferB);
+}
 
 interface QueryRunner {
   query: PoolClient['query'];
@@ -528,7 +539,7 @@ export const registerUser = async (
     if (!env.ADMIN_SIGNUP_CODE) {
       throw new ForbiddenError('Admin signup is disabled', 'AUTH_ADMIN_DISABLED');
     }
-    if (!providedCode || providedCode !== env.ADMIN_SIGNUP_CODE) {
+    if (!providedCode || !constantTimeEquals(providedCode, env.ADMIN_SIGNUP_CODE)) {
       throw new ForbiddenError('Invalid admin signup code', 'AUTH_ADMIN_CODE_INVALID');
     }
   }

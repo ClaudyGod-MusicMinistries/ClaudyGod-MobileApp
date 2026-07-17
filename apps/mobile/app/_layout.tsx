@@ -13,6 +13,7 @@ import { makeStyles } from '../styles/makeStyles';
 import { FontProvider, FontContext } from '../context/FontContext';
 import { AppProvider } from '../context/AppContext';
 import { UserAccountProvider } from '../context/UserAccountContext';
+import { DownloadsProvider } from '../context/DownloadsContext';
 import { AccountSheetProvider } from '../context/AccountSheetContext';
 import { AccountSheet } from '../components/auth/AccountSheet';
 import { PlayerProvider, usePlayer } from '../context/PlayerContext';
@@ -27,6 +28,7 @@ import { APP_ROUTES } from '../util/appRoutes';
 import { AppLoadingScreen } from '../components/Exp/AppLoading';
 import { useWordOfDay } from '../hooks/useWordOfDay';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
+import { usePushNotifications } from '../hooks/usePushNotify';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { OfflineScreen } from '../components/OfflineScreen';
 
@@ -69,6 +71,12 @@ function RootLayoutInner() {
   const [wordModalVisible, setWordModalVisible] = useState(false);
   const { bibleVerse, adminWord } = useWordOfDay();
   const { isOffline, recheck } = useNetworkStatus();
+  // Mounted here (not just in settings.tsx) so a returning user who already
+  // granted permission gets their Expo push token re-validated/re-registered
+  // on every launch — tokens can rotate (reinstall, eas update, expiry), and
+  // without this the server keeps a stale token with nothing ever surfacing
+  // the failure to the user.
+  usePushNotifications();
 
   const firstSegment = segments[0];
   const isOnTabs = firstSegment === '(tabs)';
@@ -144,6 +152,10 @@ function RootLayoutInner() {
           name="live/[sessionId]"
           options={{ animation: 'slide_from_right' }}
         />
+        <Stack.Screen
+          name="section/[sectionId]"
+          options={{ animation: 'slide_from_right' }}
+        />
       </Stack>
 
       <MinimizedFloatingPlayer />
@@ -173,18 +185,20 @@ function RootLayout() {
                 <ToastProvider>
                   <AppProvider>
                     <UserAccountProvider>
-                      <AccountSheetProvider>
-                        <PlayerProgressProvider>
-                          <PlayerProvider>
-                            <WordOfDayProvider>
-                              <AppModalProvider>
-                                <RootLayoutInner />
-                                <AccountSheet />
-                              </AppModalProvider>
-                            </WordOfDayProvider>
-                          </PlayerProvider>
-                        </PlayerProgressProvider>
-                      </AccountSheetProvider>
+                      <DownloadsProvider>
+                        <AccountSheetProvider>
+                          <PlayerProgressProvider>
+                            <PlayerProvider>
+                              <WordOfDayProvider>
+                                <AppModalProvider>
+                                  <RootLayoutInner />
+                                  <AccountSheet />
+                                </AppModalProvider>
+                              </WordOfDayProvider>
+                            </PlayerProvider>
+                          </PlayerProgressProvider>
+                        </AccountSheetProvider>
+                      </DownloadsProvider>
                     </UserAccountProvider>
                   </AppProvider>
                 </ToastProvider>

@@ -7,13 +7,11 @@ import { CustomText } from '../CustomText';
 import { TVTouchable } from '../ui/TVTouchable';
 import { FadeIn } from '../ui/FadeIn';
 import { useAppTheme } from '../../util/colorScheme';
-import { useAppModal } from '../../context/AppModalContext';
 import { useFeedStyles } from './styles';
 
-export function GreetingBanner({ name }: { name?: string | null; newCount?: number }) {
+export function GreetingBanner({ name, onNotificationsPress }: { name?: string | null; onNotificationsPress: () => void }) {
   const styles = useFeedStyles();
   const theme  = useAppTheme();
-  const { showModal } = useAppModal();
   const hour   = new Date().getHours();
   const greeting = hour < 5 ? 'Still up' : hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
   const firstName = name ? name.split(' ')[0] : null;
@@ -28,7 +26,7 @@ export function GreetingBanner({ name }: { name?: string | null; newCount?: numb
           </CustomText>
           <CustomText style={styles.greetingDate}>{dateStr}</CustomText>
         </View>
-        <TVTouchable onPress={() => showModal({ title: 'Coming soon', message: 'Notifications are on the way.', tone: 'info', primaryAction: { label: 'Got it' } })} showFocusBorder={false} style={styles.greetingNotifBtn}>
+        <TVTouchable onPress={onNotificationsPress} showFocusBorder={false} style={styles.greetingNotifBtn}>
           <MaterialIcons name="notifications-none" size={20} color={theme.colors.text} />
         </TVTouchable>
       </View>

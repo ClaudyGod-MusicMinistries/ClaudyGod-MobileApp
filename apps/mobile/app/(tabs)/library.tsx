@@ -18,10 +18,12 @@ import { InlineErrorBanner } from '../../components/ui/InlineErrorBanner';
 import { SignInPromptBanner } from '../../components/ui/SignInPromptBanner';
 import { useToast } from '../../context/ToastContext';
 import { useLocalContent } from '../../hooks/useLocalContent';
-import type { FeedCardItem } from '../../services/contentService';
+import { useDownloads } from '../../context/DownloadsContext';
+import type { FeedCardItem, ContentType } from '../../services/contentService';
 import { APP_ROUTES } from '../../util/appRoutes';
 import { buildPlayerRoute } from '../../util/playerRoute';
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
+import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
 import {
   ContentList,
   ContentRail,
@@ -32,11 +34,12 @@ import {
   dedupeFeedItems,
 } from '../../components/feed';
 
-type LibTab = 'saved' | 'history';
+type LibTab = 'saved' | 'history' | 'downloads';
 
 const TABS: { id: LibTab; label: string; icon: React.ComponentProps<typeof MaterialIcons>['name'] }[] = [
-  { id: 'saved',   label: 'Saved',   icon: 'bookmark' },
-  { id: 'history', label: 'History', icon: 'history' },
+  { id: 'saved',     label: 'Saved',     icon: 'bookmark' },
+  { id: 'history',   label: 'History',   icon: 'history' },
+  { id: 'downloads', label: 'Downloads', icon: 'download-done' },
 ];
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -84,6 +87,15 @@ const useStyles = makeStyles((theme) => ({
   // Saved-tab responsive grid
   gridWrap:     { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   gridItem:     { minWidth: 130 },
+
+  // Downloads-in-progress rows
+  downloadingCard: { padding: theme.spacing.md, gap: 10 },
+  downloadingRow:  { gap: 6 },
+  downloadingTop:  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
+  downloadingTitle:{ color: theme.colors.text, flexShrink: 1 },
+  downloadingPct:  { color: theme.colors.textMuted },
+  progressTrack:   { height: 4, borderRadius: 2, backgroundColor: theme.colors.subtleFill, overflow: 'hidden' },
+  progressFill:    { height: 4, borderRadius: 2, backgroundColor: theme.colors.primary },
 }));
 
 // ─── LibTabs ──────────────────────────────────────────────────────────────────
@@ -137,6 +149,7 @@ export default function LibraryScreen() {
   const { feed, loading, error, refresh } = useContentFeed();
   const { config: appConfig } = useMobileAppConfig();
   const { favorites, history, loaded, removeFromFavorites } = useLocalContent();
+  const { downloads } = useDownloads();
   const [activeTab, setActiveTab] = useState<LibTab>('saved');
   const [removingId, setRemovingId]     = useState<string | null>(null);
   const [removeTarget, setRemoveTarget] = useState<FeedCardItem | null>(null);
@@ -153,7 +166,30 @@ export default function LibraryScreen() {
     [favorites, feed.music, feed.playlists, feed.recent],
   );
 
-  const counts: Record<LibTab, number> = { saved: favorites.length, history: history.length };
+  const downloadedItems = useMemo(
+    () => Object.entries(downloads)
+      .filter(([, d]) => d.status === 'done')
+      .map(([contentId, d]): FeedCardItem => ({
+        id: contentId,
+        title: d.title ?? 'Downloaded item',
+        subtitle: 'Available offline',
+        description: '',
+        duration: '--:--',
+        imageUrl: d.imageUrl ?? DEFAULT_CONTENT_IMAGE_URI,
+        mediaUrl: d.localUri ?? undefined,
+        type: (d.contentType ?? 'audio') as ContentType,
+      })),
+    [downloads],
+  );
+
+  const downloadingItems = useMemo(
+    () => Object.entries(downloads)
+      .filter(([, d]) => d.status === 'downloading')
+      .map(([contentId, d]) => ({ contentId, title: d.title ?? 'Downloading…', progress: d.progress })),
+    [downloads],
+  );
+
+  const counts: Record<LibTab, number> = { saved: favorites.length, history: history.length, downloads: downloadedItems.length };
 
   const featured   = favorites[0] ?? null;
   const numCols    = device.isTV ? 5 : device.isLargeDesktop ? 4 : device.isDesktop ? 3 : device.isTablet ? 3 : 2;
@@ -306,6 +342,35 @@ export default function LibraryScreen() {
               onPressItem={(item) => void openItem(item, 'library_history')}
               emptyTitle="No history yet"
               emptyMessage="Your recently played tracks will appear here."
+            />
+          </View>
+        ) : null}
+
+        {activeTab === 'downloads' ? (
+          <View style={styles.sectionGap}>
+            {downloadingItems.length > 0 ? (
+              <SurfaceCard tone="subtle" style={styles.downloadingCard}>
+                {downloadingItems.map((item) => (
+                  <View key={item.contentId} style={styles.downloadingRow}>
+                    <View style={styles.downloadingTop}>
+                      <CustomText variant="label" style={styles.downloadingTitle} numberOfLines={1}>{item.title}</CustomText>
+                      <CustomText variant="caption" style={styles.downloadingPct}>{item.progress}%</CustomText>
+                    </View>
+                    <View style={styles.progressTrack}>
+                      <View style={[styles.progressFill, { width: `${item.progress}%` }]} />
+                    </View>
+                  </View>
+                ))}
+              </SurfaceCard>
+            ) : null}
+
+            <SectionLabel title="Downloaded" accent="Offline" subtitle="Available without a connection" />
+            <ContentRail
+              title=""
+              items={downloadedItems}
+              onPressItem={(item) => void openItem(item, 'library_downloads')}
+              emptyTitle="No downloads yet"
+              emptyMessage="Download songs and videos to watch or listen offline."
             />
           </View>
         ) : null}

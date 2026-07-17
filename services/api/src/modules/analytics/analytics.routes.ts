@@ -3,6 +3,7 @@ import { asyncHandler } from '../../lib/asyncHandler';
 import { ForbiddenError } from '../../lib/errors';
 import { validateSchema } from '../../lib/validation';
 import { authenticate } from '../../middleware/authenticate';
+import { hasMinRole } from '../../middleware/rbac';
 import { adminContentInsightsQuerySchema, mostPlayedQuerySchema } from './analytics.schema';
 import {
   getAdminCommunityInsights,
@@ -32,8 +33,8 @@ adminAnalyticsRouter.use(authenticate);
 adminAnalyticsRouter.get(
   '/overview',
   asyncHandler(async (req, res) => {
-    if (!req.user || req.user.role !== 'ADMIN') {
-      throw new ForbiddenError('Admin role required', 'ADMIN_REQUIRED');
+    if (!req.user || !hasMinRole(req.user.role, 'MODERATOR')) {
+      throw new ForbiddenError('Moderator role or higher required', 'MODERATOR_REQUIRED');
     }
     const result = await getAdminEngagementOverview();
     res.status(200).json(result);
@@ -43,8 +44,8 @@ adminAnalyticsRouter.get(
 adminAnalyticsRouter.get(
   '/content-insights',
   asyncHandler(async (req, res) => {
-    if (!req.user || req.user.role !== 'ADMIN') {
-      throw new ForbiddenError('Admin role required', 'ADMIN_REQUIRED');
+    if (!req.user || !hasMinRole(req.user.role, 'MODERATOR')) {
+      throw new ForbiddenError('Moderator role or higher required', 'MODERATOR_REQUIRED');
     }
     const query = validateSchema(adminContentInsightsQuerySchema, req.query);
     const result = await getAdminContentInsights(query.limit);
@@ -55,8 +56,8 @@ adminAnalyticsRouter.get(
 adminAnalyticsRouter.get(
   '/community',
   asyncHandler(async (req, res) => {
-    if (!req.user || req.user.role !== 'ADMIN') {
-      throw new ForbiddenError('Admin role required', 'ADMIN_REQUIRED');
+    if (!req.user || !hasMinRole(req.user.role, 'MODERATOR')) {
+      throw new ForbiddenError('Moderator role or higher required', 'MODERATOR_REQUIRED');
     }
     const result = await getAdminCommunityInsights();
     res.status(200).json(result);

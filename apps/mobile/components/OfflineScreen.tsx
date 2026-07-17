@@ -47,7 +47,7 @@ export function OfflineScreen({ onRetry }: { onRetry: () => void }) {
         </View>
         <Text style={styles.title}>You&apos;re Offline</Text>
         <Text style={styles.body}>
-          Check your internet connection. ClaudyGod will reconnect automatically once you&apos;re back online.
+          Check your internet connection. We will reconnect automatically once you&apos;re back online.
         </Text>
         <TouchableOpacity onPress={onRetry} style={styles.retryBtn}>
           <Text style={styles.retryText}>Try Again</Text>

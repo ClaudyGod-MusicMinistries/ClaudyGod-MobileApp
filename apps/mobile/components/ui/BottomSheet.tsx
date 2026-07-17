@@ -25,6 +25,11 @@ interface BottomSheetProps {
   title?: string;
   description?: string;
   dismissible?: boolean;
+  // Fires once the exit animation has actually finished and the Modal has
+  // unmounted — lets a caller that needs to hand off to another sheet do so
+  // without hardcoding a second copy of this component's exit duration to
+  // guess when it's safe (see AccountSheet.tsx's TrustDeviceSheet handoff).
+  onClosed?: () => void;
 }
 
 const useStyles = makeStyles((theme) => ({
@@ -50,6 +55,7 @@ export function BottomSheet({
   title,
   description,
   dismissible = true,
+  onClosed,
 }: BottomSheetProps) {
   const styles = useStyles();
   const insets = useSafeAreaInsets();
@@ -68,8 +74,15 @@ export function BottomSheet({
 
     translateY.value = withTiming(SCREEN_HEIGHT, { duration: EXIT_DURATION });
     backdropOpacity.value = withTiming(0, { duration: EXIT_DURATION });
-    const timeout = setTimeout(() => setModalVisible(false), EXIT_DURATION);
+    const timeout = setTimeout(() => {
+      setModalVisible(false);
+      onClosed?.();
+    }, EXIT_DURATION);
     return () => clearTimeout(timeout);
+    // onClosed intentionally excluded: it's a caller-supplied inline callback,
+    // and this effect must only re-run on visible/shared-value transitions —
+    // not every time the caller re-renders with a new function reference.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, translateY, backdropOpacity]);
 
   const requestClose = () => {

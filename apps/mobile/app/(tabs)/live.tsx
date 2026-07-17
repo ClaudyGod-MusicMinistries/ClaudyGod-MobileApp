@@ -8,6 +8,7 @@ import { AppButton } from '../../components/ui/AppButton';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { FadeIn } from '../../components/ui/FadeIn';
+import { InlineErrorBanner } from '../../components/ui/InlineErrorBanner';
 import { CustomText } from '../../components/CustomText';
 import { useAppTheme } from '../../util/colorScheme';
 import { useDeviceClass } from '../../util/deviceClassConfig';
@@ -163,12 +164,13 @@ export default function LiveScreen() {
   const device = useDeviceClass();
   const { showToast } = useToast();
   const { feed } = useContentFeed();
-  const { data, isLoading: loading, refetch } = useQuery({
+  const { data, isLoading: loading, error, refetch } = useQuery({
     queryKey: ['liveSessions', 'all'],
     queryFn: async () => (await fetchLiveSessions('all')).items,
   });
   const sessions = data ?? EMPTY_SESSIONS;
   const refresh = () => refetch();
+  const errorMessage = error instanceof Error ? error.message : error ? 'Unable to load live sessions' : null;
 
   const liveCards     = useMemo(() => sessions.filter((s) => s.status === 'live').map(toFeedCard), [sessions]);
   const upcomingCards = useMemo(() => sessions.filter((s) => s.status === 'scheduled').map(toFeedCard), [sessions]);
@@ -234,6 +236,8 @@ export default function LiveScreen() {
           </SurfaceCard>
         </FadeIn>
       ) : null}
+
+      {errorMessage ? <InlineErrorBanner message={errorMessage} onRetry={() => void refresh()} /> : null}
 
       {/* Featured hero */}
       <PremiumHero

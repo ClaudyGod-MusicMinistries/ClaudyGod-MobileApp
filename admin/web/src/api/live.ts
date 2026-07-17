@@ -1,5 +1,5 @@
 import client from './client';
-import type { LiveSession, LiveSessionInput, PaginatedResponse } from './types';
+import type { LiveMessage, LiveSession, LiveSessionDetail, LiveSessionInput, PaginatedResponse } from './types';
 
 export interface LiveListParams {
   status?: string;
@@ -14,6 +14,16 @@ export async function listSessions(params?: LiveListParams): Promise<PaginatedRe
 
 export async function getSession(id: string): Promise<LiveSession> {
   const { data } = await client.get<LiveSession>(`/v1/live/manage/${id}`);
+  return data;
+}
+
+export async function getSessionDetail(id: string): Promise<LiveSessionDetail> {
+  const { data } = await client.get<LiveSessionDetail>(`/v1/live/manage/${id}`);
+  return data;
+}
+
+export async function updateMessageStatus(sessionId: string, messageId: string, status: 'visible' | 'hidden'): Promise<LiveMessage> {
+  const { data } = await client.patch<LiveMessage>(`/v1/live/manage/${sessionId}/messages/${messageId}`, { status });
   return data;
 }
 

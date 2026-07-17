@@ -7,8 +7,7 @@ import {
   type ReactNode,
 } from 'react';
 import type { MobileAuthUser } from '../../services/authService';
-import { restoreMobileSession, subscribeToMobileAuthStateChange , apiFetchWithMobileSession } from '../../services/authService';
-import { exportForAccountSync, clearAllGuestData } from '../../lib/guestStorage';
+import { restoreMobileSession, subscribeToMobileAuthStateChange } from '../../services/authService';
 
 type AuthContextValue = {
   accessToken: string | null;
@@ -18,20 +17,6 @@ type AuthContextValue = {
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
-
-async function syncGuestDataToAccount() {
-  try {
-    const payload = await exportForAccountSync();
-    if (!payload.favorites.length && !payload.historyIds.length) return;
-    await apiFetchWithMobileSession('/v1/mobile/guest-sync', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    });
-    await clearAllGuestData();
-  } catch {
-    // Best-effort — don't block sign-in if sync fails
-  }
-}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [accessToken, setAccessToken] = useState<string | null>(null);
@@ -55,13 +40,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const unsubscribe = subscribeToMobileAuthStateChange((nextSession) => {
       const nextUserId = nextSession.user?.id ?? null;
-      const wasGuest = prevUserId.current === null;
-      const isNowSignedIn = nextUserId !== null;
-
-      if (wasGuest && isNowSignedIn) {
-        // Transition: guest → signed in. Sync then clear guest data.
-        void syncGuestDataToAccount();
-      }
 
       prevUserId.current = nextUserId;
       setAccessToken(nextSession.accessToken);

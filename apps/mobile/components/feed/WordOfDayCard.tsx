@@ -16,7 +16,7 @@ type WordOfDayData = {
   reflection?: string | null;
 };
 
-export function WordOfDayCard({ word, onPress }: { word: WordOfDayData; onPress: () => void }) {
+export function WordOfDayCard({ word, onPress, label = 'Word for today' }: { word: WordOfDayData; onPress: () => void; label?: string }) {
   const styles = useFeedStyles();
   const theme  = useAppTheme();
 
@@ -28,7 +28,7 @@ export function WordOfDayCard({ word, onPress }: { word: WordOfDayData; onPress:
           <View style={styles.wordContent}>
             <View style={styles.wordLabelRow}>
               <MaterialIcons name="auto-stories" size={14} color={theme.colors.warning} />
-              <CustomText variant="caption" style={styles.wordLabel}>Word for today</CustomText>
+              <CustomText variant="caption" style={styles.wordLabel}>{label}</CustomText>
             </View>
             <CustomText variant="title" style={styles.wordTitle} numberOfLines={2}>{word.title ?? word.passage}</CustomText>
             {(word.verse ?? word.reflection) ? (

@@ -7,6 +7,7 @@ import {
   adminContentIdParamsSchema,
   adminUnassignedContentQuerySchema,
   adminUserIdParamsSchema,
+  approveAccessRequestSchema,
   createInvitationSchema,
   invitationIdParamsSchema,
   listAdminSupportRequestsQuerySchema,
@@ -62,7 +63,7 @@ function requireAuthenticated(req: Request) {
 adminRouter.get(
   '/dashboard',
   asyncHandler(async (req, res) => {
-    const actor = requireAuthenticated(req);
+    const actor = requireAdmin(req);
     const result = await getAdminDashboard(actor);
     res.status(200).json(result);
   }),
@@ -235,8 +236,7 @@ adminRouter.post(
   asyncHandler(async (req, res) => {
     const actor = requireSuperAdmin(req);
     const { id } = req.params as { id: string };
-    const body = req.body as { role?: string };
-    const role = body.role ?? 'MODERATOR';
+    const { role } = validateSchema(approveAccessRequestSchema, req.body ?? {});
 
     const invite = await approveAdminAccessRequest(id, {
       id: actor.sub,
