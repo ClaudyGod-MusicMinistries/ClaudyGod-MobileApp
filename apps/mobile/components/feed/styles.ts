@@ -45,20 +45,24 @@ export const useFeedStyles = makeStyles((theme) => ({
     borderWidth: 1,
     borderColor: theme.colors.border,
     alignItems: 'center',
-    paddingVertical: 28,
+    paddingVertical: 32,
     paddingHorizontal: 24,
   },
   heroEmptyCircle1: { position: 'absolute', top: -50, right: -50, width: 200, height: 200, borderRadius: 100, backgroundColor: `${theme.colors.primary}16` },
   heroEmptyCircle2: { position: 'absolute', bottom: -60, left: -40, width: 160, height: 160, borderRadius: 80, backgroundColor: `${theme.colors.primary}0D` },
-  heroEmptyIconBox: {
-    width: 68, height: 68, borderRadius: 34,
-    alignItems: 'center', justifyContent: 'center',
-    backgroundColor: theme.colors.primarySurface,
-    borderWidth: 1.5, borderColor: theme.colors.primaryBorder,
-    marginBottom: 16,
+  // Shadow on the outer wrap, gradient-clip on the inner circle — same
+  // overflow:hidden-clips-shadow reason as artworkShadowWrap above.
+  heroEmptyIconShadowWrap: {
+    width: 72, height: 72, borderRadius: 36,
+    marginBottom: 18,
     shadowColor: theme.colors.primary,
-    shadowOpacity: 0.28, shadowRadius: 16, shadowOffset: { width: 0, height: 6 },
-    elevation: 6,
+    shadowOpacity: 0.36, shadowRadius: 18, shadowOffset: { width: 0, height: 8 },
+    elevation: 8,
+  },
+  heroEmptyIconBox: {
+    width: 72, height: 72, borderRadius: 36,
+    alignItems: 'center', justifyContent: 'center',
+    overflow: 'hidden',
   },
   heroEmptyTitle:    { color: theme.colors.text, textAlign: 'center' },
   heroEmptySubtitle: { color: theme.colors.textSecondary, textAlign: 'center', marginTop: 6, maxWidth: 320 },
@@ -83,30 +87,47 @@ export const useFeedStyles = makeStyles((theme) => ({
   quickWideLabel:    { color: theme.colors.text, fontSize: 13.5, fontWeight: '600' },
   quickWideHint:     { color: theme.colors.textMuted, marginTop: 2 },
 
-  // ContentCard
+  // ContentCard — bigger, fewer per row, real depth instead of a flat tile.
+  // Shadow lives on the outer wrap (no overflow) so it isn't clipped by the
+  // inner container's overflow:hidden, which is what actually rounds the image.
+  artworkShadowWrap: {
+    borderRadius: 20,
+    shadowColor: '#000000',
+    shadowOpacity: 0.22, shadowRadius: 14, shadowOffset: { width: 0, height: 8 },
+    elevation: 6,
+  },
   artworkContainer: {
-    borderRadius: 10, overflow: 'hidden',
+    borderRadius: 20, overflow: 'hidden',
     backgroundColor: theme.colors.surfaceAlt,
   },
+  cardPlayBadge: {
+    position: 'absolute', top: 10, right: 10,
+    width: 32, height: 32, borderRadius: 16,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.42)',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.22)',
+  },
   liveBadge: {
-    position: 'absolute', top: 7, left: 7,
-    borderRadius: 999, backgroundColor: 'rgba(239,68,68,0.92)',
-    paddingHorizontal: 7, paddingVertical: 3,
-    flexDirection: 'row', alignItems: 'center', gap: 4,
+    position: 'absolute', top: 10, left: 10,
+    borderRadius: 999, backgroundColor: 'rgba(239,68,68,0.94)',
+    paddingHorizontal: 9, paddingVertical: 4,
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    shadowColor: '#EF4444', shadowOpacity: 0.4, shadowRadius: 6, shadowOffset: { width: 0, height: 2 },
   },
-  liveBadgeDot:    { width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#FFFFFF' },
-  liveBadgeText:   { color: '#FFFFFF', fontSize: 9, fontWeight: '700', letterSpacing: 0.5 },
+  liveBadgeDot:    { width: 6, height: 6, borderRadius: 3, backgroundColor: '#FFFFFF' },
+  liveBadgeText:   { color: '#FFFFFF', fontSize: 10, fontWeight: '700', letterSpacing: 0.5 },
   durationPill: {
-    position: 'absolute', right: 7, bottom: 7,
-    borderRadius: 5, backgroundColor: 'rgba(0,0,0,0.72)',
-    paddingHorizontal: 5, paddingVertical: 2,
+    position: 'absolute', right: 10, bottom: 10,
+    borderRadius: 999, backgroundColor: 'rgba(0,0,0,0.72)',
+    paddingHorizontal: 8, paddingVertical: 3,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)',
   },
-  durationText:    { color: '#FFFFFF', fontSize: 9, fontWeight: '500' },
-  cardTextArea:    { gap: 3, paddingTop: 1 },
+  durationText:    { color: '#FFFFFF', fontSize: 10, fontWeight: '600' },
+  cardTextArea:    { gap: 3, paddingTop: 3 },
   cardTitleRow:    { flexDirection: 'row', alignItems: 'flex-start', gap: 4 },
-  cardTitle:       { color: theme.colors.text, fontSize: 13, lineHeight: 18, fontWeight: '600', flex: 1 },
+  cardTitle:       { color: theme.colors.text, fontSize: 15, lineHeight: 20, fontWeight: '700', letterSpacing: -0.2, flex: 1 },
   cardMoreBtn:     { paddingTop: 2 },
-  cardSubtitle:    { color: theme.colors.textMuted, fontSize: 11 },
+  cardSubtitle:    { color: theme.colors.textMuted, fontSize: 12.5 },
 
   // ContentRail
   railGap:         { gap: 12 },

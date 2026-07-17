@@ -54,11 +54,25 @@ export function PremiumHero({
     return (
       <FadeIn delay={30} duration={400}>
         <View style={styles.heroEmptyCard}>
+          <LinearGradient
+            colors={[`${theme.colors.primary}14`, 'transparent']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={common.fill}
+          />
           <View style={styles.heroEmptyCircle1} />
           <View style={styles.heroEmptyCircle2} />
 
-          <View style={styles.heroEmptyIconBox}>
-            <MaterialIcons name={emptyIcon} size={32} color={theme.colors.primary} />
+          <View style={styles.heroEmptyIconShadowWrap}>
+            <View style={styles.heroEmptyIconBox}>
+              <LinearGradient
+                colors={[theme.colors.primary, theme.colors.secondary]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={common.fill}
+              />
+              <MaterialIcons name={emptyIcon} size={32} color={theme.colors.onPrimary} />
+            </View>
           </View>
 
           <CustomText variant="heading" style={styles.heroEmptyTitle} numberOfLines={1}>
@@ -73,17 +87,19 @@ export function PremiumHero({
               {primaryAction ? (
                 <AppButton
                   title={resolvedPrimaryLabel}
+                  variant="gradient"
                   onPress={primaryAction}
-                  size="md"
-                  leftIcon={<MaterialIcons name={primaryIcon} size={17} color={theme.colors.onPrimary} />}
+                  size="lg"
+                  leftIcon={<MaterialIcons name={primaryIcon} size={18} color={theme.colors.onPrimary} />}
                 />
               ) : null}
               {secondaryLabel && secondaryAction ? (
                 <AppButton
                   title={secondaryLabel}
                   variant="secondary"
-                  size="md"
+                  size="lg"
                   onPress={secondaryAction}
+                  style={{ borderRadius: 999 }}
                   leftIcon={<MaterialIcons name={secondaryIcon} size={16} color={theme.colors.text} />}
                 />
               ) : null}

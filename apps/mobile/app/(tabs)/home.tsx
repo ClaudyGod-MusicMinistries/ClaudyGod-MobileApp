@@ -37,38 +37,64 @@ import {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const useStyles = makeStyles((theme) => ({
-  // HomeSearchBar
+  // HomeSearchBar — pill-shaped, lifted off the background instead of a flat bordered box.
   searchBar: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    paddingHorizontal: 16, paddingVertical: 14,
-    borderRadius: 10, backgroundColor: theme.colors.surface,
+    paddingHorizontal: 18, paddingVertical: 15,
+    borderRadius: 999, backgroundColor: theme.colors.surface,
     borderWidth: 1, borderColor: theme.colors.border,
+    shadowColor: '#000000', shadowOpacity: 0.12, shadowRadius: 10, shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
   searchText:       { color: theme.colors.textMuted, fontSize: 15, flex: 1 },
 
   // ContinueRow
   continueGap:          { gap: 16 },
   continueScrollContent:{ gap: 12, paddingVertical: 2, paddingRight: 8 },
+  // Shadow lives on the outer wrapper (no clipping) so it isn't cut off by
+  // the inner view's overflow:hidden, which is what actually rounds the image.
+  continueTileShadowWrap: {
+    borderRadius: 16,
+    shadowColor: '#000000', shadowOpacity: 0.18, shadowRadius: 10, shadowOffset: { width: 0, height: 6 },
+    elevation: 4,
+  },
   continueTileImg: {
-    borderRadius: 8, overflow: 'hidden', backgroundColor: theme.colors.surfaceAlt,
+    borderRadius: 16, overflow: 'hidden', backgroundColor: theme.colors.surfaceAlt,
   },
   continuePlayBtn: {
+    // No shadow here deliberately — combined with overflow:hidden (needed to
+    // clip the gradient fill into a circle) it would silently disappear on
+    // iOS, since shadow rendering is clipped by the same overflow that clips
+    // the content. Not worth a second wrapper view for a 30px badge.
     position: 'absolute', right: 8, bottom: 8,
-    width: 28, height: 28, borderRadius: 14,
-    backgroundColor: theme.colors.primary,
+    width: 30, height: 30, borderRadius: 15, overflow: 'hidden',
     alignItems: 'center', justifyContent: 'center',
   },
   continueTileTitle: { color: theme.colors.text, fontWeight: '600', lineHeight: 16 },
 
-  // NewContentBanner
-  bannerCard:       { borderRadius: 10, overflow: 'hidden', backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border },
+  // NewContentBanner — bigger radius, real shadow, gradient badge/CTA instead
+  // of flat tinted rectangles. Shadow on the outer wrapper, same reason as
+  // continueTileShadowWrap above.
+  bannerShadowWrap: {
+    borderRadius: 22,
+    shadowColor: '#000000', shadowOpacity: 0.16, shadowRadius: 16, shadowOffset: { width: 0, height: 8 },
+    elevation: 5,
+  },
+  bannerCard: {
+    borderRadius: 22, overflow: 'hidden', backgroundColor: theme.colors.surface,
+    borderWidth: 1, borderColor: theme.colors.border,
+  },
   bannerRow:        { flexDirection: 'row', alignItems: 'stretch' },
-  bannerBadge:      { alignSelf: 'flex-start', borderRadius: 4, backgroundColor: theme.colors.primarySurface, borderWidth: 1, borderColor: theme.colors.primaryBorder, paddingHorizontal: 8, paddingVertical: 3 },
-  bannerBadgeText:  { color: theme.colors.primary, fontSize: 9.5, fontWeight: '700', letterSpacing: 1 },
+  bannerBadge:      { alignSelf: 'flex-start', borderRadius: 999, overflow: 'hidden', paddingHorizontal: 10, paddingVertical: 4 },
+  bannerBadgeText:  { color: '#FFFFFF', fontSize: 9.5, fontWeight: '800', letterSpacing: 1 },
   bannerSub:        { color: theme.colors.textSecondary, fontSize: 12 },
-  bannerPlayRow:    { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
-  bannerPlayBtn:    { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: theme.colors.primary, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 7 },
-  bannerPlayText:   { color: '#fff', fontSize: 12, fontWeight: '700' },
+  bannerPlayRow:    { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 },
+  // Same overflow:hidden-clips-shadow reason as continuePlayBtn above.
+  bannerPlayBtn:    {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    borderRadius: 999, overflow: 'hidden', paddingHorizontal: 14, paddingVertical: 8,
+  },
+  bannerPlayText:   { color: '#fff', fontSize: 12.5, fontWeight: '700' },
   bannerDuration:   { color: theme.colors.textMuted },
   bannerTitleBase:  { color: theme.colors.text, fontWeight: '800', letterSpacing: -0.3 },
 
@@ -114,6 +140,7 @@ function HomeSearchBar({ onPress }: { onPress: () => void }) {
 
 function ContinueRow({ items, onPress }: { items: FeedCardItem[]; onPress: (_item: FeedCardItem) => void }) {
   const styles = useStyles();
+  const theme  = useAppTheme();
   const { width } = useWindowDimensions();
   const compact  = width < 430;
   const tileSize = compact ? 118 : 136;
@@ -131,14 +158,22 @@ function ContinueRow({ items, onPress }: { items: FeedCardItem[]; onPress: (_ite
         {items.slice(0, 8).map((item) => (
           <TVTouchable key={item.id} onPress={() => onPress(item)} showFocusBorder={false}>
             <View style={{ width: tileSize, gap: 8 }}>
-              <View style={[styles.continueTileImg, { width: tileSize, height: tileSize }]}>
-                <Image source={{ uri: item.imageUrl || DEFAULT_CONTENT_IMAGE_URI }} resizeMode="cover" style={StyleSheet.absoluteFillObject} />
-                <LinearGradient
-                  colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.62)']}
-                  style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: tileSize * 0.5 }}
-                />
-                <View style={styles.continuePlayBtn}>
-                  <MaterialIcons name="play-arrow" size={17} color="#fff" />
+              <View style={[styles.continueTileShadowWrap, { width: tileSize, height: tileSize }]}>
+                <View style={[styles.continueTileImg, StyleSheet.absoluteFillObject]}>
+                  <Image source={{ uri: item.imageUrl || DEFAULT_CONTENT_IMAGE_URI }} resizeMode="cover" style={StyleSheet.absoluteFillObject} />
+                  <LinearGradient
+                    colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.62)']}
+                    style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: tileSize * 0.5 }}
+                  />
+                  <View style={styles.continuePlayBtn}>
+                    <LinearGradient
+                      colors={[theme.colors.primary, theme.colors.secondary]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={StyleSheet.absoluteFillObject}
+                    />
+                    <MaterialIcons name="play-arrow" size={17} color="#fff" />
+                  </View>
                 </View>
               </View>
               <CustomText variant="label" style={styles.continueTileTitle} numberOfLines={2}>
@@ -156,20 +191,28 @@ function ContinueRow({ items, onPress }: { items: FeedCardItem[]; onPress: (_ite
 
 function NewContentBanner({ item, onPress }: { item: FeedCardItem; onPress: () => void }) {
   const styles = useStyles();
+  const theme  = useAppTheme();
   const { width } = useWindowDimensions();
   const compact = width < 430;
-  const artSize = compact ? 100 : 120;
+  const artSize = compact ? 108 : 128;
 
   return (
     <TVTouchable onPress={onPress} showFocusBorder={false}>
+      <View style={styles.bannerShadowWrap}>
       <View style={styles.bannerCard}>
         <View style={styles.bannerRow}>
-          <View style={{ flex: 1, padding: compact ? 14 : 18, gap: 6, justifyContent: 'center' }}>
+          <View style={{ flex: 1, padding: compact ? 16 : 20, gap: 7, justifyContent: 'center' }}>
             <View style={styles.bannerBadge}>
+              <LinearGradient
+                colors={[theme.colors.primary, theme.colors.secondary]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={StyleSheet.absoluteFillObject}
+              />
               <CustomText style={styles.bannerBadgeText}>NEW</CustomText>
             </View>
             <CustomText
-              style={[styles.bannerTitleBase, { fontSize: compact ? 15 : 17, lineHeight: compact ? 21 : 24 }]}
+              style={[styles.bannerTitleBase, { fontSize: compact ? 16 : 18, lineHeight: compact ? 22 : 25 }]}
               numberOfLines={2}
             >
               {item.title}
@@ -179,7 +222,13 @@ function NewContentBanner({ item, onPress }: { item: FeedCardItem; onPress: () =
             ) : null}
             <View style={styles.bannerPlayRow}>
               <View style={styles.bannerPlayBtn}>
-                <MaterialIcons name="play-arrow" size={14} color="#fff" />
+                <LinearGradient
+                  colors={[theme.colors.primary, theme.colors.secondary]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={StyleSheet.absoluteFillObject}
+                />
+                <MaterialIcons name="play-arrow" size={15} color="#fff" />
                 <CustomText style={styles.bannerPlayText}>
                   {item.type === 'video' ? 'Watch' : 'Play'}
                 </CustomText>
@@ -189,7 +238,7 @@ function NewContentBanner({ item, onPress }: { item: FeedCardItem; onPress: () =
               ) : null}
             </View>
           </View>
-          <View style={{ width: artSize, height: artSize, alignSelf: 'center', flexShrink: 0 }}>
+          <View style={{ width: artSize, height: artSize, alignSelf: 'center', flexShrink: 0, borderRadius: 18, overflow: 'hidden', margin: 10 }}>
             <Image
               source={{ uri: item.imageUrl || DEFAULT_CONTENT_IMAGE_URI }}
               resizeMode="cover"
@@ -197,6 +246,7 @@ function NewContentBanner({ item, onPress }: { item: FeedCardItem; onPress: () =
             />
           </View>
         </View>
+      </View>
       </View>
     </TVTouchable>
   );
