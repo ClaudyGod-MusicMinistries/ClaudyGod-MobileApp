@@ -47,7 +47,7 @@ export const ContentCard = React.memo(function ContentCard({ item, onPress, comp
     ] : []),
   ];
 
-  const cardWidth = fixedWidth ?? (compact ? 170 : device.isTV ? 280 : device.isDesktop ? 220 : 196);
+  const cardWidth = fixedWidth ?? (compact ? 208 : device.isTV ? 300 : device.isDesktop ? 240 : 236);
   const cardHeight = variant === 'portrait' ? Math.round(cardWidth * 1.45) : variant === 'landscape' ? Math.round(cardWidth * 0.62) : cardWidth;
   const scrimHeight = variant === 'portrait' ? Math.round(cardHeight * 0.55) : variant === 'landscape' ? Math.round(cardHeight * 0.60) : Math.round(cardHeight * 0.50);
   const title = cleanFeedText(item.title);
@@ -58,20 +58,25 @@ export const ContentCard = React.memo(function ContentCard({ item, onPress, comp
   return (
     <TVTouchable onPress={onPress} onPressIn={handlePressIn} onPressOut={handlePressOut} showFocusBorder={false} style={{ width: cardWidth }}>
       <Animated.View style={{ gap: 7, transform: [{ scale: pressScale }] }}>
-        <View style={[styles.artworkContainer, { width: cardWidth, height: cardHeight }]}>
-          <AppImage uri={item.imageUrl} resizeMode="cover" style={StyleSheet.absoluteFillObject} />
-          <LinearGradient colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.68)']} style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: scrimHeight }} />
-          {item.isLive ? (
-            <View style={styles.liveBadge}>
-              <View style={styles.liveBadgeDot} />
-              <CustomText style={styles.liveBadgeText}>LIVE</CustomText>
+        <View style={[styles.artworkShadowWrap, { width: cardWidth, height: cardHeight }]}>
+          <View style={[styles.artworkContainer, StyleSheet.absoluteFillObject]}>
+            <AppImage uri={item.imageUrl} resizeMode="cover" style={StyleSheet.absoluteFillObject} />
+            <LinearGradient colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.68)']} style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: scrimHeight }} />
+            <View style={styles.cardPlayBadge}>
+              <MaterialIcons name="play-arrow" size={18} color="#FFFFFF" />
             </View>
-          ) : null}
-          {isValidDuration(item.duration) && !item.isLive ? (
-            <View style={styles.durationPill}>
-              <CustomText style={styles.durationText}>{item.duration}</CustomText>
-            </View>
-          ) : null}
+            {item.isLive ? (
+              <View style={styles.liveBadge}>
+                <View style={styles.liveBadgeDot} />
+                <CustomText style={styles.liveBadgeText}>LIVE</CustomText>
+              </View>
+            ) : null}
+            {isValidDuration(item.duration) && !item.isLive ? (
+              <View style={styles.durationPill}>
+                <CustomText style={styles.durationText}>{item.duration}</CustomText>
+              </View>
+            ) : null}
+          </View>
         </View>
 
         <View style={styles.cardTextArea}>

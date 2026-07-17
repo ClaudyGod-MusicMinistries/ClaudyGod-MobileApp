@@ -49,6 +49,12 @@ const useStyles = makeStyles((theme) => ({
   // button everywhere else so this doesn't ripple into every screen unasked.
   btnGradient: {
     borderRadius: 999,
+  },
+  // Shadow lives on a separate outer wrapper (see render below) — combined
+  // with the button's own overflow:hidden (needed to clip the gradient fill
+  // into a pill) it would silently disappear on iOS.
+  btnGradientShadowWrap: {
+    borderRadius: 999,
     shadowColor: theme.colors.primary,
     shadowOpacity: 0.34,
     shadowRadius: 14,
@@ -227,7 +233,7 @@ export function AppButton({
                       : isOutline   ? styles.btnOutline
                       :               styles.btnGhost;
 
-  return (
+  const button = (
     <TVTouchable
       {...props}
       accessible
@@ -252,10 +258,9 @@ export function AppButton({
       style={[
         styles.btnBase,
         sizeStyle,
-        isGradient ? { borderRadius: 999 } : null,
         variantStyle,
         isDisabled ? styles.btnDisabled : null,
-        fullWidth   ? styles.btnStretch  : styles.btnFlex,
+        !isGradient ? (fullWidth ? styles.btnStretch : styles.btnFlex) : null,
         style,
       ]}
       showFocusBorder={false}
@@ -270,5 +275,15 @@ export function AppButton({
       ) : null}
       {content}
     </TVTouchable>
+  );
+
+  if (!isGradient) {
+    return button;
+  }
+
+  return (
+    <View style={[styles.btnGradientShadowWrap, fullWidth ? styles.btnStretch : styles.btnFlex]}>
+      {button}
+    </View>
   );
 }

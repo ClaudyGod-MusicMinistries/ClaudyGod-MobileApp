@@ -23,16 +23,16 @@ function RailSkeleton() {
   const { width } = useWindowDimensions();
   const compact   = width < 430;
   const isDesktop = width >= 1024;
-  const cardWidth = compact ? 170 : isDesktop ? 220 : 196;
+  const cardWidth = compact ? 208 : isDesktop ? 240 : 236;
 
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 14, paddingRight: 20 }}>
-      {[0, 1, 2, 3].map((i) => (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 16, paddingRight: 20 }}>
+      {[0, 1, 2].map((i) => (
         <View key={i} style={{ width: cardWidth, gap: 10 }}>
-          <SkeletonLoader width={cardWidth} height={Math.round(cardWidth * 1.45)} borderRadius={10} />
+          <SkeletonLoader width={cardWidth} height={Math.round(cardWidth * 1.45)} borderRadius={20} />
           <View style={{ gap: 7, paddingHorizontal: 2 }}>
-            <SkeletonLoader width="80%" height={13} borderRadius={999} />
-            <SkeletonLoader width="52%" height={11} borderRadius={999} />
+            <SkeletonLoader width="80%" height={14} borderRadius={999} />
+            <SkeletonLoader width="52%" height={12} borderRadius={999} />
           </View>
         </View>
       ))}
@@ -67,7 +67,7 @@ function railCardHeight(cardWidth: number, variant: CardVariant): number {
     variant === 'portrait' ? Math.round(cardWidth * 1.45)
     : variant === 'landscape' ? Math.round(cardWidth * 0.62)
     : cardWidth;
-  const textAreaHeight = 61; // gap + 2-line title + subtitle, per ContentCard's own layout
+  const textAreaHeight = 70; // gap + 2-line title + subtitle, per ContentCard's own layout
   return artworkHeight + textAreaHeight;
 }
 
@@ -103,7 +103,7 @@ function ContentRailInner({ items, title, onPressItem, isCompact, cardVariant = 
     );
   }
 
-  const cardWidth = isCompact ? 170 : 196;
+  const cardWidth = isCompact ? 208 : 236;
 
   return (
     <View style={{ marginHorizontal: -device.contentGutter, height: railCardHeight(cardWidth, cardVariant) }}>
@@ -113,7 +113,7 @@ function ContentRailInner({ items, title, onPressItem, isCompact, cardVariant = 
         showsHorizontalScrollIndicator={false}
         keyExtractor={keyExtractor}
         renderItem={renderItem}
-        ItemSeparatorComponent={() => <View style={{ width: 14 }} />}
+        ItemSeparatorComponent={() => <View style={{ width: 16 }} />}
         contentContainerStyle={{ paddingLeft: device.contentGutter, paddingRight: device.contentGutter + 8 }}
       />
     </View>
