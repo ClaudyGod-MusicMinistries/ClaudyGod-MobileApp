@@ -1042,6 +1042,15 @@ const migrationStatements = [
          admin panel's reject flow already collects this in the UI, but had
          nowhere to persist it. MUST stay the last entry (see comment above). */
   `ALTER TABLE content_submission_requests ADD COLUMN IF NOT EXISTS review_notes TEXT`,
+
+  /* ── Device/session unification — links a refresh session to the device
+         that created it, so "revoke a device" can actually invalidate that
+         device's session instead of only marking user_devices as revoked
+         while the session keeps working. MUST stay the last entry. */
+  `ALTER TABLE auth_refresh_sessions ADD COLUMN IF NOT EXISTS device_id UUID REFERENCES user_devices(id) ON DELETE SET NULL`,
+  `CREATE INDEX IF NOT EXISTS idx_auth_refresh_sessions_device_id
+     ON auth_refresh_sessions (device_id)
+     WHERE revoked_at IS NULL`,
 ];
 
 const MIGRATION_LOCK_ID = 7_246_130_001;

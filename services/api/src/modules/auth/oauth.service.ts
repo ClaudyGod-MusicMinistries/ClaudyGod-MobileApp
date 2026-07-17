@@ -1,10 +1,9 @@
-import { createHash, randomBytes } from 'crypto';
 import { pool } from '../../db/pool.js';
 import { env } from '../../config/env.js';
 import { createLogger } from '../../lib/logger.js';
 import { BadRequestError, UnauthorizedError } from '../../lib/errors.js';
-import { signAccessToken, signRefreshToken } from '../../utils/jwt.js';
-import type { AuthResponse } from './auth.types.js';
+import { issueAuthSession, type AuthSessionContext } from './authSession.service.js';
+import type { AuthResponse, SafeUser, UserRole, UserTier } from './auth.types.js';
 
 const logger = createLogger('oauth.service');
 
@@ -99,6 +98,7 @@ async function upsertOAuthUser(
   provider: OAuthProvider,
   info: OAuthUserInfo,
   displayNameHint?: string,
+  context?: AuthSessionContext,
 ): Promise<AuthResponse> {
   const existing = await pool.query<{
     id: string; email: string; display_name: string; role: string;
@@ -202,62 +202,41 @@ async function upsertOAuthUser(
     }
   }
 
-  const sessionId = randomBytes(16).toString('hex');
-  const sessionFamilyId = randomBytes(16).toString('hex');
-
-  const accessToken = signAccessToken({
-    sub: userId,
+  const safeUser: SafeUser = {
+    id: userId,
     email: userEmail,
-    role: userRole as never,
     displayName: userDisplayName,
-    tier: userTier as never,
-    mfaEnabled,
-  });
+    role: userRole as UserRole,
+    tier: (userTier ?? 'free') as UserTier,
+    mfaEnabled: mfaEnabled ?? false,
+    createdAt: new Date().toISOString(),
+    emailVerifiedAt,
+  };
 
-  const refreshToken = signRefreshToken({
-    sub: userId,
-    sessionId,
-    sessionFamilyId,
-    type: 'refresh',
+  const session = await issueAuthSession(safeUser, {
+    ...context,
+    userAgent: context?.userAgent ?? `oauth:${provider}`,
   });
-
-  await pool.query(
-    `INSERT INTO auth_sessions (user_id, session_id, session_family_id, refresh_token_hash, expires_at, ip_address, user_agent)
-     VALUES ($1, $2, $3, $4, NOW() + INTERVAL '30 days', $5, $6)`,
-    [
-      userId,
-      sessionId,
-      sessionFamilyId,
-      createHash('sha256').update(refreshToken).digest('hex'),
-      null,
-      `oauth:${provider}`,
-    ],
-  );
 
   logger.info('OAuth sign-in successful', { userId, provider });
 
-  return {
-    accessToken,
-    refreshToken,
-    user: {
-      id: userId,
-      email: userEmail,
-      displayName: userDisplayName,
-      role: userRole as never,
-      tier: (userTier ?? 'free') as never,
-      mfaEnabled: mfaEnabled ?? false,
-      createdAt: new Date().toISOString(),
-      emailVerifiedAt,
-    },
-  };
+  return session;
 }
 
-export async function signInWithGoogle(idToken: string, displayNameHint?: string): Promise<AuthResponse> {
+export async function signInWithGoogle(
+  idToken: string,
+  displayNameHint?: string,
+  context?: AuthSessionContext,
+): Promise<AuthResponse> {
   const userInfo = await verifyGoogleIdToken(idToken);
-  return upsertOAuthUser('google', userInfo, displayNameHint);
+  return upsertOAuthUser('google', userInfo, displayNameHint, context);
 }
 
-export async function signInWithApple(idToken: string, displayNameHint?: string): Promise<AuthResponse> {
+export async function signInWithApple(
+  idToken: string,
+  displayNameHint?: string,
+  context?: AuthSessionContext,
+): Promise<AuthResponse> {
   const userInfo = await verifyAppleIdToken(idToken);
-  return upsertOAuthUser('apple', userInfo, displayNameHint);
+  return upsertOAuthUser('apple', userInfo, displayNameHint, context);
 }

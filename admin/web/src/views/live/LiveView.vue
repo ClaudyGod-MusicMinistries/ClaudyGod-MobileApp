@@ -107,9 +107,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted, watch } from 'vue';
 import { useLiveStore } from '@/stores/live.store';
 import { useUiStore } from '@/stores/ui.store';
+import { useLiveSocket } from '@/composables/useLiveSocket';
 import AppCard from '@/components/ui/AppCard.vue';
 import AppResponsiveTable from '@/components/ui/AppResponsiveTable.vue';
 import AppButton from '@/components/ui/AppButton.vue';
@@ -145,7 +146,43 @@ const columns = [
   { key: 'scheduledAt', label: 'Scheduled', align: 'right' as const },
 ];
 
-onMounted(() => { void store.fetchSessions(activeTab.value); });
+const { subscribe } = useLiveSocket();
+const sessionUnsubscribers = new Map<string, () => void>();
+
+// Subscribes to every session currently in view so viewer counts/status update
+// live and the chat modal (if open for one of these sessions) streams new
+// messages without a manual refresh — mirrors the per-session channel the
+// mobile live screen already subscribes to against this same backend.
+function syncSocketSubscriptions(): void {
+  const liveIds = new Set(store.sessions.map((s) => s.id));
+
+  for (const [id, unsubscribe] of sessionUnsubscribers) {
+    if (!liveIds.has(id)) {
+      unsubscribe();
+      sessionUnsubscribers.delete(id);
+    }
+  }
+
+  for (const id of liveIds) {
+    if (sessionUnsubscribers.has(id)) continue;
+    sessionUnsubscribers.set(
+      id,
+      subscribe(`live:${id}`, (frame) => store.applyRealtimeEvent(id, frame)),
+    );
+  }
+}
+
+watch(() => store.sessions.map((s) => s.id).join(','), syncSocketSubscriptions);
+
+onMounted(async () => {
+  await store.fetchSessions(activeTab.value);
+  syncSocketSubscriptions();
+});
+
+onUnmounted(() => {
+  for (const unsubscribe of sessionUnsubscribers.values()) unsubscribe();
+  sessionUnsubscribers.clear();
+});
 
 function openCreate(): void {
   editTarget.value = null;

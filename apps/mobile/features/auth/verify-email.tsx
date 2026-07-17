@@ -10,7 +10,7 @@ import { AuthTextField } from '../../components/auth/AuthTextField';
 import { AppButton } from '../../components/ui/AppButton';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { getEmailValidationMessage, isLikelyValidEmail, normalizeEmail } from './authValidation';
-import { useAuth } from './AuthContext';
+import { useUserAccount } from '../../context/UserAccountContext';
 import { useToast } from '../../context/ToastContext';
 import { requestVerificationEmail, verifyMobileEmail } from '../../services/authService';
 import { APP_ROUTES } from '../../util/appRoutes';
@@ -19,7 +19,7 @@ const getParam = (value: string | string[] | undefined) => (Array.isArray(value)
 
 export default function VerifyEmailScreen() {
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const { isSignedIn } = useUserAccount();
   const { showToast } = useToast();
   const params = useLocalSearchParams<{ email?: string | string[]; notice?: string | string[]; token?: string | string[]; token_hash?: string | string[] }>();
 
@@ -43,14 +43,14 @@ export default function VerifyEmailScreen() {
   const olderLinkNoticeShown = useRef(false);
 
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isSignedIn) return;
 
     setErrorMessage('');
     setSuccessMessage('Email verified successfully. Redirecting...');
     const timer = setTimeout(() => router.replace(APP_ROUTES.tabs.home), 600);
 
     return () => clearTimeout(timer);
-  }, [isAuthenticated, router]);
+  }, [isSignedIn, router]);
 
   useEffect(() => {
     if (resendCooldown <= 0) return;

@@ -1,5 +1,12 @@
 import client from './client';
-import type { UserRecord, SupportRequest, PaginatedResponse } from './types';
+import type {
+  UserRecord,
+  SupportRequest,
+  PaginatedResponse,
+  UserEngagementDetail,
+  UserSearchHistoryEntry,
+  UserDevice,
+} from './types';
 import type { AssignableRoleValue, UserRoleValue } from '@/utils/constants';
 
 export interface UserListParams {
@@ -33,4 +40,23 @@ export async function listSupportRequests(params?: SupportRequestListParams): Pr
 export async function updateSupportRequestStatus(id: string, status: string): Promise<SupportRequest> {
   const { data } = await client.patch<SupportRequest>(`/v1/admin/support-requests/${id}/status`, { status });
   return data;
+}
+
+export async function getUserEngagement(userId: string): Promise<UserEngagementDetail> {
+  const { data } = await client.get<UserEngagementDetail>(`/v1/admin/users/${userId}/engagement`);
+  return data;
+}
+
+export async function getUserSearchHistory(userId: string): Promise<UserSearchHistoryEntry[]> {
+  const { data } = await client.get<{ items: UserSearchHistoryEntry[] }>(`/v1/admin/users/${userId}/search-history`);
+  return data.items;
+}
+
+export async function getUserDevices(userId: string): Promise<UserDevice[]> {
+  const { data } = await client.get<{ devices: UserDevice[] }>(`/v1/admin/users/${userId}/devices`);
+  return data.devices;
+}
+
+export async function revokeUserDevice(userId: string, deviceId: string): Promise<void> {
+  await client.post(`/v1/admin/users/${userId}/devices/${deviceId}/revoke`);
 }

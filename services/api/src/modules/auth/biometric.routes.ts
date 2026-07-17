@@ -28,6 +28,8 @@ const challengeSchema = z.object({
 const verifySchema = z.object({
   challengeId: z.string().trim().min(16),
   signature: z.string().trim().min(10),
+  deviceName: z.string().max(120).optional(),
+  platform: z.string().max(32).optional(),
 });
 
 const revokeSchema = z.object({
@@ -57,8 +59,13 @@ biometricRouter.post(
 biometricRouter.post(
   '/verify',
   asyncHandler(async (req, res) => {
-    const { challengeId, signature } = validateSchema(verifySchema, req.body);
-    const result = await verifyBiometricSignature(challengeId, signature);
+    const { challengeId, signature, deviceName, platform } = validateSchema(verifySchema, req.body);
+    const result = await verifyBiometricSignature(challengeId, signature, {
+      requestIp: req.ip,
+      userAgent: req.header('user-agent') || undefined,
+      deviceName,
+      platform,
+    });
     res.status(200).json(result);
   }),
 );

@@ -89,3 +89,16 @@ export const approveAccessRequestSchema = z
     role: z.enum(['CREATOR', 'MODERATOR', 'ADMIN']).default('MODERATOR'),
   })
   .strict();
+
+export const adminUserDeviceParamsSchema = z
+  .object({
+    id: z.string().uuid(),
+    deviceId: z.string().uuid(),
+  })
+  .strict();
+
+export const adminUserSearchHistoryQuerySchema = z
+  .object({
+    limit: z.coerce.number().int().min(1).max(100).default(25),
+  })
+  .strict();

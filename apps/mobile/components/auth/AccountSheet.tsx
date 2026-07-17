@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 
 import { useAppTheme } from '../../util/colorScheme';
 import { makeStyles } from '../../styles/makeStyles';
@@ -23,6 +24,7 @@ import {
   signInWithTrustedDeviceToken,
 } from '../../services/authService';
 import { useAccountSheet } from '../../context/AccountSheetContext';
+import { APP_ROUTES } from '../../util/appRoutes';
 import {
   isTrustedDeviceSupported,
   getBiometricType,
@@ -188,10 +190,11 @@ function TrustedUnlock({
 // ─── ChooseMethod ─────────────────────────────────────────────────────────────
 
 function ChooseMethod({
-  onGoogle, onEmail, onSkip, loading,
+  onGoogle, onEmail, onOneTimeCode, onSkip, loading,
 }: {
   onGoogle: () => void;
   onEmail: () => void;
+  onOneTimeCode: () => void;
   onSkip: () => void;
   loading: boolean;
 }) {
@@ -233,6 +236,10 @@ function ChooseMethod({
         leftIcon={<MaterialIcons name="email" size={17} color={theme.colors.primary} />}
       />
 
+      <TVTouchable onPress={onOneTimeCode} showFocusBorder={false} style={styles.skipBtn}>
+        <CustomText style={styles.skipText}>Sign in with a one-time code instead</CustomText>
+      </TVTouchable>
+
       <TVTouchable onPress={onSkip} showFocusBorder={false} style={styles.skipBtn}>
         <CustomText style={styles.skipText}>Skip for now</CustomText>
       </TVTouchable>
@@ -245,7 +252,7 @@ function ChooseMethod({
 function EmailForm({
   mode, name, email, password, loading,
   onChangeName, onChangeEmail, onChangePassword,
-  onSubmit, onToggleMode, onBack,
+  onSubmit, onToggleMode, onBack, onForgotPassword,
 }: {
   mode: EmailMode;
   name: string;
@@ -258,6 +265,7 @@ function EmailForm({
   onSubmit: () => void;
   onToggleMode: () => void;
   onBack: () => void;
+  onForgotPassword: () => void;
 }) {
   const styles = useStyles();
   const theme  = useAppTheme();
@@ -305,6 +313,12 @@ function EmailForm({
         onSubmitEditing={onSubmit}
       />
 
+      {mode === 'signin' ? (
+        <TVTouchable onPress={onForgotPassword} showFocusBorder={false} style={styles.toggleModeBtn}>
+          <CustomText style={styles.toggleModeText}>Forgot password?</CustomText>
+        </TVTouchable>
+      ) : null}
+
       <View style={styles.submitMargin}>
         <AppButton
           title={loading ? '' : (mode === 'signin' ? 'Sign in' : 'Create account')}
@@ -338,6 +352,7 @@ function EmailForm({
 export function AccountSheet() {
   const styles = useStyles();
   const theme  = useAppTheme();
+  const router = useRouter();
   const { isSheetOpen, closeAccountSheet } = useAccountSheet();
 
   const [step, setStep]             = useState<SheetStep>('choose');
@@ -445,6 +460,16 @@ export function AccountSheet() {
     try {
       if (mode === 'signup') {
         const result = await registerMobileUser({ email, password, displayName: name });
+        if (result.requiresEmailVerification) {
+          // The account was created but has no session yet — routing to the
+          // real success screen here (instead of finishSignIn) would have
+          // shown "You're signed in" with no session behind it and no way
+          // back to actually verify, a dead end confirmed via code read.
+          const pendingEmail = result.user.email;
+          closeAccountSheet();
+          router.push({ pathname: APP_ROUTES.auth.verifyEmail, params: { email: pendingEmail } });
+          return;
+        }
         await finishSignIn(result.accessToken, result.user.displayName);
       } else {
         const result = await loginMobileUser({ email, password });
@@ -461,6 +486,17 @@ export function AccountSheet() {
     if (loading) return;
     Keyboard.dismiss();
     closeAccountSheet();
+  };
+
+  const goToForgotPassword = () => {
+    const currentEmail = email.trim().toLowerCase();
+    closeAccountSheet();
+    router.push(currentEmail ? { pathname: APP_ROUTES.auth.forgotPassword, params: { email: currentEmail } } : APP_ROUTES.auth.forgotPassword);
+  };
+
+  const goToOneTimeCode = () => {
+    closeAccountSheet();
+    router.push(APP_ROUTES.auth.emailOtp);
   };
 
   return (
@@ -520,6 +556,7 @@ export function AccountSheet() {
               <ChooseMethod
                 onGoogle={() => void handleGoogle()}
                 onEmail={() => { setStep('email'); setMode('signin'); setError(''); }}
+                onOneTimeCode={goToOneTimeCode}
                 onSkip={dismiss}
                 loading={loading}
               />
@@ -536,6 +573,7 @@ export function AccountSheet() {
                 onSubmit={() => void handleEmailSubmit()}
                 onToggleMode={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setError(''); }}
                 onBack={() => { setStep('choose'); setError(''); }}
+                onForgotPassword={goToForgotPassword}
               />
             )}
           </>
