@@ -1,10 +1,10 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { asyncHandler } from '../../lib/asyncHandler.js';
-import { validateSchema } from '../../lib/validation.js';
-import { signInWithGoogle, signInWithApple } from './oauth.service.js';
+import { asyncHandler } from '../../lib/asyncHandler';
+import { validateSchema } from '../../lib/validation';
+import { signInWithGoogle, signInWithApple } from './oauth.service';
 import type { Request } from 'express';
-import type { AuthSessionContext } from './authSession.service.js';
+import type { AuthSessionContext } from './authSession.service';
 
 export const oauthRouter = Router();
 

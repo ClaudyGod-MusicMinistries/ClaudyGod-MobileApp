@@ -6,7 +6,7 @@ import {
   scryptSync,
   timingSafeEqual,
 } from 'crypto';
-import { env } from '../config/env.js';
+import { env } from '../config/env';
 
 const ALGORITHM = 'aes-256-gcm';
 const IV_BYTES = 16;

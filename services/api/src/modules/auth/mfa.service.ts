@@ -1,10 +1,10 @@
 import { randomBytes, createHash } from 'crypto';
 import { generateSecret, generateURI, verifySync } from 'otplib';
-import { pool } from '../../db/pool.js';
-import { env } from '../../config/env.js';
-import { createLogger } from '../../lib/logger.js';
-import { BadRequestError, NotFoundError, UnauthorizedError } from '../../lib/errors.js';
-import type { JwtClaims } from '../../utils/jwt.js';
+import { pool } from '../../db/pool';
+import { env } from '../../config/env';
+import { createLogger } from '../../lib/logger';
+import { BadRequestError, NotFoundError, UnauthorizedError } from '../../lib/errors';
+import type { JwtClaims } from '../../utils/jwt';
 
 const logger = createLogger('mfa.service');
 
