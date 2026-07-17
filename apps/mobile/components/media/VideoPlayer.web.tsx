@@ -14,6 +14,13 @@ const useStyles = makeStyles((theme) => ({
   },
   titlePad:  { padding: theme.spacing.md },
   titleText: { color: theme.colors.text },
+  fallbackRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingHorizontal: theme.spacing.md,
+    paddingTop: theme.spacing.sm,
+  },
+  fallbackLink: { color: theme.colors.primary },
 }));
 
 interface VideoPlayerProps {
@@ -99,6 +106,20 @@ export function VideoPlayer({
             },
           })}
 
+      {embedUrl ? (
+        // Cross-origin iframes can't report playback failures (region/privacy
+        // restrictions, deleted/private videos) back to this parent page — if
+        // the embed silently fails for any reason we can't detect, this is the
+        // user's only way to actually reach the video instead of a dead black box.
+        <View style={styles.fallbackRow}>
+          {React.createElement(
+            'a',
+            { href: sourceUri, target: '_blank', rel: 'noopener noreferrer' },
+            React.createElement(CustomText, { variant: 'caption', style: styles.fallbackLink }, 'Open original video ↗'),
+          )}
+        </View>
+      ) : null}
+
       {title ? (
         <View style={styles.titlePad}>
           <CustomText variant="subtitle" style={styles.titleText}>
@@ -116,23 +137,31 @@ function buildEmbedUrl(sourceUri: string): string | null {
     return null;
   }
 
+  // YouTube validates the embedding page against `origin` — omitting it is a
+  // real, documented cause of embeds that load (200 on /embed/<id>) but then
+  // fail to initialize/play inside the iframe. `playsinline`/`rel`/
+  // `modestbranding` match what the native player already sends via its
+  // YouTube IFrame API bootstrap; the plain <iframe> path here had none of them.
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+  const youtubeParams = `rel=0&modestbranding=1&playsinline=1${origin ? `&origin=${encodeURIComponent(origin)}` : ''}`;
+
   try {
     const url = new URL(value);
     const host = url.hostname.toLowerCase();
 
     if (host.includes('youtu.be')) {
       const id = url.pathname.replace(/^\/+/, '').split('/')[0];
-      return id ? `https://www.youtube.com/embed/${id}` : null;
+      return id ? `https://www.youtube.com/embed/${id}?${youtubeParams}` : null;
     }
 
     if (host.includes('youtube.com')) {
       const id = url.searchParams.get('v') || url.pathname.split('/').filter(Boolean).pop();
-      return id ? `https://www.youtube.com/embed/${id}` : null;
+      return id ? `https://www.youtube.com/embed/${id}?${youtubeParams}` : null;
     }
 
     if (host.includes('vimeo.com')) {
       const id = url.pathname.split('/').filter(Boolean).pop();
-      return id ? `https://player.vimeo.com/video/${id}` : null;
+      return id ? `https://player.vimeo.com/video/${id}?playsinline=1` : null;
     }
   } catch {
     return null;
