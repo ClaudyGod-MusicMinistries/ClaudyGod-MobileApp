@@ -39,6 +39,7 @@ const useStyles = makeStyles((theme) => ({
   errorTitle: { color: theme.colors.text },
   errorBody: { color: theme.colors.textSecondary },
   outerPad: { gap: theme.spacing.lg, paddingTop: theme.layout.sectionGap },
+  loadMoreRow: { alignItems: 'center' },
   scrollFill: { flex: 1, backgroundColor: 'transparent' },
   scrollContent: { paddingBottom: theme.layout.tabBarContentPadding },
 }));
@@ -164,12 +165,21 @@ export default function SectionDetailScreen() {
             ) : null}
 
             {detail?.hasMore ? (
-              <AppButton
-                title={loadingMore ? 'Loading...' : 'Load more'}
-                variant="secondary"
-                loading={loadingMore}
-                onPress={() => void load((detail.page ?? 1) + 1)}
-              />
+              <View style={styles.loadMoreRow}>
+                <AppButton
+                  title={loadingMore ? 'Loading...' : 'Load more'}
+                  variant="outline"
+                  size="lg"
+                  loading={loadingMore}
+                  style={{ borderRadius: 999 }}
+                  rightIcon={
+                    loadingMore ? undefined : (
+                      <MaterialIcons name="expand-more" size={18} color={theme.colors.primary} />
+                    )
+                  }
+                  onPress={() => void load((detail.page ?? 1) + 1)}
+                />
+              </View>
             ) : null}
           </View>
         </Screen>
