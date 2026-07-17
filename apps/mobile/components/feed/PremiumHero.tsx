@@ -63,14 +63,16 @@ export function PremiumHero({
           <View style={styles.heroEmptyCircle1} />
           <View style={styles.heroEmptyCircle2} />
 
-          <View style={styles.heroEmptyIconBox}>
-            <LinearGradient
-              colors={[theme.colors.primary, theme.colors.secondary]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={common.fill}
-            />
-            <MaterialIcons name={emptyIcon} size={32} color={theme.colors.onPrimary} />
+          <View style={styles.heroEmptyIconShadowWrap}>
+            <View style={styles.heroEmptyIconBox}>
+              <LinearGradient
+                colors={[theme.colors.primary, theme.colors.secondary]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={common.fill}
+              />
+              <MaterialIcons name={emptyIcon} size={32} color={theme.colors.onPrimary} />
+            </View>
           </View>
 
           <CustomText variant="heading" style={styles.heroEmptyTitle} numberOfLines={1}>
