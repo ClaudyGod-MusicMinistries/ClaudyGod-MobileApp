@@ -1,14 +1,14 @@
 import { Router } from 'express';
-import { asyncHandler } from '../../lib/asyncHandler.js';
-import { validateSchema } from '../../lib/validation.js';
-import { authenticate } from '../../middleware/authenticate.js';
-import { UnauthorizedError } from '../../lib/errors.js';
+import { asyncHandler } from '../../lib/asyncHandler';
+import { validateSchema } from '../../lib/validation';
+import { authenticate } from '../../middleware/authenticate';
+import { UnauthorizedError } from '../../lib/errors';
 import {
   setupMfa,
   verifyMfaSetup,
   disableMfa,
   regenerateBackupCodes,
-} from './mfa.service.js';
+} from './mfa.service';
 import { z } from 'zod';
 
 export const mfaRouter = Router();

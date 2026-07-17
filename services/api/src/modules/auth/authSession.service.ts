@@ -5,6 +5,7 @@ import { pool } from '../../db/pool';
 import { ForbiddenError, UnauthorizedError } from '../../lib/errors';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../../utils/jwt';
 import { registerDevice } from '../devices/devices.service';
+import { queueNewSignInEmail } from '../../infra/transactionalEmails';
 import type { AuthResponse, SafeUser, UserRole, UserTier } from './auth.types';
 
 interface QueryRunner {
@@ -223,7 +224,6 @@ export const issueAuthSession = async (
     ).then(async (check) => {
       const isNewDevice = parseInt(check.rows[0]?.count ?? '0', 10) === 0;
       if (isNewDevice) {
-        const { queueNewSignInEmail } = await import('../../infra/transactionalEmails.js');
         await queueNewSignInEmail({
           toEmail: user.email,
           displayName: user.displayName || user.email,

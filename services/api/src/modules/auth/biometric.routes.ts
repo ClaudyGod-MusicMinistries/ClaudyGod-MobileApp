@@ -1,15 +1,15 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { asyncHandler } from '../../lib/asyncHandler.js';
-import { validateSchema } from '../../lib/validation.js';
-import { authenticate } from '../../middleware/authenticate.js';
-import { UnauthorizedError } from '../../lib/errors.js';
+import { asyncHandler } from '../../lib/asyncHandler';
+import { validateSchema } from '../../lib/validation';
+import { authenticate } from '../../middleware/authenticate';
+import { UnauthorizedError } from '../../lib/errors';
 import {
   registerBiometric,
   createBiometricChallenge,
   verifyBiometricSignature,
   revokeBiometric,
-} from './biometric.service.js';
+} from './biometric.service';
 
 export const biometricRouter = Router();
 

@@ -1,9 +1,9 @@
 import { createHash, randomBytes, createVerify } from 'crypto';
-import { pool } from '../../db/pool.js';
-import { createLogger } from '../../lib/logger.js';
-import { BadRequestError, NotFoundError, UnauthorizedError } from '../../lib/errors.js';
-import { issueAuthSession, type AuthSessionContext } from './authSession.service.js';
-import type { AuthResponse, SafeUser, UserRole, UserTier } from './auth.types.js';
+import { pool } from '../../db/pool';
+import { createLogger } from '../../lib/logger';
+import { BadRequestError, NotFoundError, UnauthorizedError } from '../../lib/errors';
+import { issueAuthSession, type AuthSessionContext } from './authSession.service';
+import type { AuthResponse, SafeUser, UserRole, UserTier } from './auth.types';
 
 const logger = createLogger('biometric.service');
 

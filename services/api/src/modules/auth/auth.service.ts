@@ -494,6 +494,17 @@ const completePendingPasswordReset = async ({
       [pendingReset.user_id],
     );
 
+    // A successful reset proves account ownership just as well as a correct
+    // password would — without this, a user who got locked out by mistyping
+    // their old password and then did the right thing (reset it) would still
+    // be unable to sign in until the lockout timer ran out on its own.
+    await client.query(
+      `UPDATE user_account_security
+       SET failed_login_attempts = 0, locked_until = NULL, last_failed_at = NULL
+       WHERE user_id = $1`,
+      [pendingReset.user_id],
+    );
+
     await client.query('COMMIT');
   } catch (error) {
     await client.query('ROLLBACK');

@@ -1,7 +1,7 @@
-import { pool } from '../../db/pool.js';
-import { env } from '../../config/env.js';
-import { createLogger } from '../../lib/logger.js';
-import { UnauthorizedError } from '../../lib/errors.js';
+import { pool } from '../../db/pool';
+import { env } from '../../config/env';
+import { createLogger } from '../../lib/logger';
+import { UnauthorizedError } from '../../lib/errors';
 
 const logger = createLogger('accountSecurity.service');
 

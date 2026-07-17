@@ -1,9 +1,9 @@
-import { pool } from '../../db/pool.js';
-import { env } from '../../config/env.js';
-import { createLogger } from '../../lib/logger.js';
-import { BadRequestError, UnauthorizedError } from '../../lib/errors.js';
-import { issueAuthSession, type AuthSessionContext } from './authSession.service.js';
-import type { AuthResponse, SafeUser, UserRole, UserTier } from './auth.types.js';
+import { pool } from '../../db/pool';
+import { env } from '../../config/env';
+import { createLogger } from '../../lib/logger';
+import { BadRequestError, UnauthorizedError } from '../../lib/errors';
+import { issueAuthSession, type AuthSessionContext } from './authSession.service';
+import type { AuthResponse, SafeUser, UserRole, UserTier } from './auth.types';
 
 const logger = createLogger('oauth.service');
 
