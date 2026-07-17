@@ -130,6 +130,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/auth.store';
+import { useUiStore } from '@/stores/ui.store';
 import { listAccessRequests, approveAccessRequest, rejectAccessRequest } from '@/api/auth';
 import type { AccessRequest } from '@/api/auth';
 import { roleRank } from '@/utils/constants';
@@ -141,6 +142,7 @@ import RolePill from '@/components/shared/RolePill.vue';
 import PageHeader from '@/components/shared/PageHeader.vue';
 
 const auth = useAuthStore();
+const ui = useUiStore();
 
 const ROLE_OPTIONS = [
   { value: 'ADMIN' as const,     label: 'Admin',     desc: 'Full access' },
@@ -166,7 +168,9 @@ async function loadRequests() {
   try {
     const res = await listAccessRequests();
     requests.value = res.requests;
-  } catch { /* silently fail */ }
+  } catch (e) {
+    ui.addToast({ tone: 'danger', title: 'Failed to load access requests', message: e instanceof Error ? e.message : undefined });
+  }
   finally { isLoading.value = false; }
 }
 
@@ -203,7 +207,9 @@ async function reject(req: AccessRequest) {
     requests.value = requests.value.map(r =>
       r.id === req.id ? { ...r, status: 'rejected' as const } : r,
     );
-  } catch { /* silently fail */ }
+  } catch (e) {
+    ui.addToast({ tone: 'danger', title: 'Failed to dismiss request', message: e instanceof Error ? e.message : undefined });
+  }
   finally { actingOn.value = ''; }
 }
 

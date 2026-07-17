@@ -81,3 +81,11 @@ export const adminContentIdParamsSchema = z
     id: z.string().uuid(),
   })
   .strict();
+
+// SUPER_ADMIN is provisioned separately and deliberately not assignable here —
+// matches CODE_GATED_ROLES in auth.service.ts's self-registration path.
+export const approveAccessRequestSchema = z
+  .object({
+    role: z.enum(['CREATOR', 'MODERATOR', 'ADMIN']).default('MODERATOR'),
+  })
+  .strict();

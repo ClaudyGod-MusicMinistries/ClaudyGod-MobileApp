@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { type Request, type Response, Router } from 'express';
 import { pool } from '../../db/pool';
 import { asyncHandler } from '../../lib/asyncHandler';
+import { UnauthorizedError } from '../../lib/errors';
 import { validateSchema } from '../../lib/validation';
 import { validateBody } from '../../lib/validationMiddleware';
 import {
@@ -132,6 +133,7 @@ async function handleResetPassword(req: Request, res: Response) {
 
 authRouter.post(
   '/register',
+  authLimiter,
   validateBody(signUpSchema),
   asyncHandler(async (req, res) => {
     const result = await registerUser(req.validated, getAuthRequestContext(req));
@@ -215,12 +217,14 @@ authRouter.post(
 
 authRouter.post(
   '/reset-password',
+  passwordResetLimiter,
   validateBody(resetPasswordSchema),
   asyncHandler(handleResetPassword),
 );
 
 authRouter.post(
   '/password/reset',
+  passwordResetLimiter,
   validateBody(resetPasswordSchema),
   asyncHandler(handleResetPassword),
 );
@@ -233,8 +237,7 @@ authRouter.post(
 
     if (!refreshToken) {
       clearAuthSessionCookie(res);
-      res.status(401).json({ message: 'Session expired. Sign in again.' });
-      return;
+      throw new UnauthorizedError('Session expired. Sign in again.', 'SESSION_EXPIRED');
     }
 
     const session = await refreshAuthSession(refreshToken, getAuthRequestContext(req));
@@ -463,7 +466,7 @@ authRouter.post(
   asyncHandler(async (req, res) => {
     const authHeader = req.header('authorization');
     const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7).trim() : null;
-    if (!token) { res.status(401).json({ message: 'Authentication required' }); return; }
+    if (!token) { throw new UnauthorizedError('Authentication required'); }
 
     const identity = await resolveAuthenticatedUser(token);
     const input = validateSchema(trustedDeviceRegisterSchema, req.body);
@@ -490,8 +493,7 @@ authRouter.post(
 
     const u = userResult.rows[0];
     if (!u || !u.is_active) {
-      res.status(401).json({ message: 'Account not found or inactive', code: 'USER_INACTIVE' });
-      return;
+      throw new UnauthorizedError('Account not found or inactive', 'USER_INACTIVE');
     }
 
     const safeUser = {
@@ -511,7 +513,7 @@ authRouter.get(
   asyncHandler(async (req, res) => {
     const authHeader = req.header('authorization');
     const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7).trim() : null;
-    if (!token) { res.status(401).json({ message: 'Authentication required' }); return; }
+    if (!token) { throw new UnauthorizedError('Authentication required'); }
     const identity = await resolveAuthenticatedUser(token);
     const devices = await listTrustedDevices(identity.sub);
     res.status(200).json({ devices });
@@ -523,7 +525,7 @@ authRouter.delete(
   asyncHandler(async (req, res) => {
     const authHeader = req.header('authorization');
     const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7).trim() : null;
-    if (!token) { res.status(401).json({ message: 'Authentication required' }); return; }
+    if (!token) { throw new UnauthorizedError('Authentication required'); }
     const identity = await resolveAuthenticatedUser(token);
     await revokeTrustedDevice(identity.sub, req.params.id!);
     res.status(204).send();

@@ -15,6 +15,7 @@ import {
   createContentRequestSchema,
   listContentQuerySchema,
   reorderContentSchema,
+  trendingContentQuerySchema,
   updateContentRequestStatusSchema,
   updateContentSchema,
   updateVisibilitySchema,
@@ -205,6 +206,7 @@ contentRouter.patch(
     const item = await updateContentRequestStatus({
       requestId: params.id,
       status: payload.status,
+      adminNotes: payload.adminNotes,
       requester: actor,
     });
     res.status(200).json(item);
@@ -296,13 +298,7 @@ contentRouter.patch(
 contentRouter.get(
   '/trending',
   asyncHandler(async (req, res) => {
-    const period = (req.query.period as string) || 'daily';
-    const limit = Math.min(Number(req.query.limit) || 20, 50);
-
-    if (!['hourly', 'daily', 'weekly'].includes(period)) {
-      res.status(400).json({ message: 'Invalid period. Use hourly, daily, or weekly.' });
-      return;
-    }
+    const { period, limit } = validateSchema(trendingContentQuerySchema, req.query);
 
     const cacheKey = `trending:${period}:${limit}`;
     const cached = await CacheService.get<unknown[]>('feed', cacheKey);

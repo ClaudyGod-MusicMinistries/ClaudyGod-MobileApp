@@ -69,6 +69,24 @@
               <FileDropzone label="Upload media file" accept="audio/*,video/*" @uploaded="onMediaUploaded" />
             </div>
           </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1 border-t border-border/60 mt-1">
+            <AppInput v-model="form.channelName" label="Channel / artist" placeholder="ClaudyGod Music" hint="Shown on the mobile content card" class="mt-3" />
+            <AppInput v-model="form.duration" label="Duration" placeholder="4:32" hint="Manually-uploaded content doesn't auto-detect this" class="mt-3" />
+          </div>
+        </AppCard>
+
+        <!-- Advanced -->
+        <AppCard class="p-5 space-y-3">
+          <SectionHeading icon="info" label="Advanced" />
+          <AppTextarea
+            v-model="form.metadata"
+            label="Custom metadata (JSON)"
+            placeholder="{}"
+            :rows="4"
+            hint="Optional structured data for custom mobile/admin logic. Leave blank if not needed."
+          />
+          <p v-if="metadataError" class="text-[11px] text-danger">{{ metadataError }}</p>
         </AppCard>
       </div>
 
@@ -219,10 +237,13 @@ interface FormState {
   mediaUploadSessionId: string | undefined;
   thumbnailUploadSessionId: string | undefined;
   sourceKind: 'upload' | 'external';
+  channelName: string;
+  duration: string;
   tags: string;
   appSections: string[];
   visibility: 'draft' | 'published';
   isFeatured: boolean;
+  metadata: string;
 }
 
 const emptyForm = (): FormState => ({
@@ -234,13 +255,17 @@ const emptyForm = (): FormState => ({
   mediaUploadSessionId: undefined,
   thumbnailUploadSessionId: undefined,
   sourceKind: 'upload',
+  channelName: '',
+  duration: '',
   tags: '',
   appSections: [],
   visibility: 'draft',
   isFeatured: false,
+  metadata: '',
 });
 
 const form = ref<FormState>(emptyForm());
+const metadataError = ref('');
 
 // One flowing picker: the real configured sections plus any free-typed section
 // names already on this item, all toggled the same way — no separate
@@ -327,10 +352,13 @@ onMounted(async () => {
         mediaUploadSessionId: undefined,
         thumbnailUploadSessionId: undefined,
         sourceKind: c.sourceKind === 'upload' ? 'upload' : 'external',
+        channelName: c.channelName ?? '',
+        duration: c.duration ?? '',
         tags: c.tags.join(', '),
         appSections: c.appSections ?? [],
         visibility: c.visibility,
         isFeatured: c.isFeatured ?? false,
+        metadata: c.metadata && Object.keys(c.metadata).length ? JSON.stringify(c.metadata, null, 2) : '',
       };
     }
   }
@@ -366,6 +394,22 @@ async function onSave(overrideVisibility?: 'draft' | 'published'): Promise<void>
     return;
   }
 
+  metadataError.value = '';
+  let metadata: Record<string, unknown> | undefined;
+  if (form.value.metadata.trim()) {
+    try {
+      const parsed = JSON.parse(form.value.metadata);
+      if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+        throw new Error('Metadata must be a JSON object, e.g. {"key": "value"}');
+      }
+      metadata = parsed as Record<string, unknown>;
+    } catch (e) {
+      metadataError.value = e instanceof Error ? e.message : 'Invalid JSON';
+      ui.addToast({ tone: 'danger', title: 'Custom metadata is not valid JSON' });
+      return;
+    }
+  }
+
   const tags = form.value.tags.split(',').map((t) => t.trim()).filter(Boolean);
   const visibility = overrideVisibility ?? form.value.visibility;
   const base = {
@@ -377,10 +421,13 @@ async function onSave(overrideVisibility?: 'draft' | 'published'): Promise<void>
     mediaUploadSessionId: form.value.mediaUploadSessionId,
     thumbnailUploadSessionId: form.value.thumbnailUploadSessionId,
     sourceKind: form.value.sourceKind,
+    channelName: form.value.channelName.trim() || undefined,
+    duration: form.value.duration.trim() || undefined,
     appSections: form.value.appSections,
     tags,
     visibility,
     isFeatured: form.value.isFeatured,
+    metadata,
   };
 
   try {
