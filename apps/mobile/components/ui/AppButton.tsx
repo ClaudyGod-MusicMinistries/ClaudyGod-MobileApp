@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import { LinearGradient } from 'expo-linear-gradient';
 import { CustomText } from '../CustomText';
 import { useAppTheme } from '../../util/colorScheme';
 import { makeStyles } from '../../styles/makeStyles';
@@ -43,6 +44,17 @@ const useStyles = makeStyles((theme) => ({
   btnSecondary: { backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border },
   btnOutline:   { backgroundColor: 'transparent', borderWidth: 1, borderColor: theme.colors.primary },
   btnGhost:     { backgroundColor: 'transparent' },
+  // Pill-shaped gradient CTA — used for the app's premium/hero calls to action
+  // rather than the flatter default `primary`, which stays as the workhorse
+  // button everywhere else so this doesn't ripple into every screen unasked.
+  btnGradient: {
+    borderRadius: 999,
+    shadowColor: theme.colors.primary,
+    shadowOpacity: 0.34,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
+  },
   // States
   btnDisabled:  { opacity: 0.5 },
   btnStretch:   { alignSelf: 'stretch' },
@@ -111,7 +123,7 @@ function BubblePulse({ color, label }: { color: string; label?: string }) {
 
 interface AppButtonProps extends TouchableOpacityProps {
   title: string;
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'gradient';
   size?: 'sm' | 'md' | 'lg';
   icon?: ReactNode;
   leftIcon?: ReactNode;
@@ -156,15 +168,16 @@ export function AppButton({
   const isSecondary = variant === 'secondary';
   const isOutline   = variant === 'outline';
   const isGhost     = variant === 'ghost';
+  const isGradient  = variant === 'gradient';
   const isDisabled  = loading || disabled;
   const hasTitle    = title && title.trim().length > 0;
 
   const handlePressIn = useCallback(() => {
     pressedRef.current = true;
     void Haptics.impactAsync(
-      isPrimary ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light,
+      isPrimary || isGradient ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light,
     );
-  }, [isPrimary]);
+  }, [isPrimary, isGradient]);
 
   const handlePressOut = useCallback(() => {
     pressedRef.current = false;
@@ -172,7 +185,7 @@ export function AppButton({
 
   const resolvedTextColor =
     textColor ??
-    (isPrimary
+    (isPrimary || isGradient
       ? theme.colors.onPrimary
       : isOutline
         ? theme.colors.primary
@@ -208,7 +221,8 @@ export function AppButton({
   })();
 
   const sizeStyle     = size === 'sm' ? styles.btnSm : size === 'lg' ? styles.btnLg : styles.btnMd;
-  const variantStyle  = isPrimary   ? styles.btnPrimary
+  const variantStyle  = isGradient  ? styles.btnGradient
+                      : isPrimary   ? styles.btnPrimary
                       : isSecondary ? styles.btnSecondary
                       : isOutline   ? styles.btnOutline
                       :               styles.btnGhost;
@@ -238,6 +252,7 @@ export function AppButton({
       style={[
         styles.btnBase,
         sizeStyle,
+        isGradient ? { borderRadius: 999 } : null,
         variantStyle,
         isDisabled ? styles.btnDisabled : null,
         fullWidth   ? styles.btnStretch  : styles.btnFlex,
@@ -245,6 +260,14 @@ export function AppButton({
       ]}
       showFocusBorder={false}
     >
+      {isGradient ? (
+        <LinearGradient
+          colors={[theme.colors.primary, theme.colors.secondary]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+      ) : null}
       {content}
     </TVTouchable>
   );
