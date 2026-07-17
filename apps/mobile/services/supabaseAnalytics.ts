@@ -13,6 +13,14 @@ export interface PlayEventInput {
 }
 
 export async function trackPlayEvent(input: PlayEventInput): Promise<void> {
+  // Guests have no session to attach this to — on web, apiFetchWithMobileSession
+  // relies entirely on a session cookie and skips the "signed in?" check native
+  // does, so without this guard every single guest play fired a doomed 401
+  // request (silently caught here, but still a real network call and a visible
+  // console error for every anonymous listener, the majority of traffic).
+  const { user } = await getStoredMobileSession();
+  if (!user) return;
+
   try {
     await trackMePlayEvent({
       contentId: input.contentId,
@@ -24,6 +32,9 @@ export async function trackPlayEvent(input: PlayEventInput): Promise<void> {
 }
 
 export async function subscribeToLiveAlerts(channelId: string): Promise<void> {
+  const { user } = await getStoredMobileSession();
+  if (!user) return;
+
   try {
     await subscribeToLiveAlertsBackend(channelId);
   } catch {}
