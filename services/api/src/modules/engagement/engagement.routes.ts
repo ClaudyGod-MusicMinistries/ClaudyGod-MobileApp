@@ -1,10 +1,8 @@
 import { Router, type Request } from 'express';
 import { asyncHandler } from '../../lib/asyncHandler';
 import { UnauthorizedError } from '../../lib/errors';
-import { validateSchema } from '../../lib/validation';
 import { authenticate } from '../../middleware/authenticate';
 import { pool } from '../../db/pool';
-import { engagementListQuerySchema } from '../me/me.schema';
 import {
   getMeMetrics,
   getMeRecentlyPlayed,
@@ -97,7 +95,6 @@ router.get(
       totalMinutesListened: sessionMinutes,
       contentCreated: Number(context.content_count),
       contentViews: metrics.totalPlays,
-      followers: 0,
       following: metrics.liveSubscriptions,
       engagementScore: score,
       retentionScore: retentionScore(metrics.totalPlays, recommendations.items.length),
@@ -170,71 +167,11 @@ router.get(
   }),
 );
 
-router.get(
-  '/overview',
-  asyncHandler(async (req, res) => {
-    const user = requireUser(req);
-    const query = validateSchema(engagementListQuerySchema, req.query);
-    const windowDays = query.windowDays ?? 30;
-
-    const [metrics, week, month, weekMinutes, monthMinutes] = await Promise.all([
-      getMeMetrics(user),
-      getMeRecentlyPlayed(user, { limit: 50, windowDays: 7 }),
-      getMeRecentlyPlayed(user, { limit: 50, windowDays: windowDays }),
-      getSessionMinutes(user.sub, 7),
-      getSessionMinutes(user.sub, windowDays),
-    ]);
-
-    const score = engagementScore(metrics.totalPlays, metrics.liveSubscriptions);
-    res.status(200).json({
-      userId: user.sub,
-      thisWeek: {
-        minutesListened: weekMinutes,
-        itemsPlayed: week.items.length,
-        newFollowers: 0,
-      },
-      thisMonth: {
-        minutesListened: monthMinutes,
-        itemsPlayed: month.items.length,
-        newFollowers: 0,
-      },
-      trends: {
-        listeningTrend: Math.max(-50, Math.min(50, week.items.length - Math.ceil(month.items.length / 4))),
-        followerTrend: 0,
-        engagementTrend: Math.max(-50, Math.min(50, score - 50)),
-      },
-    });
-  }),
-);
-
-router.get(
-  '/community',
-  asyncHandler(async (req, res) => {
-    const user = requireUser(req);
-    const metrics = await getMeMetrics(user);
-
-    res.status(200).json({
-      userId: user.sub,
-      followers: {
-        total: 0,
-        newThisMonth: 0,
-        topCountries: [],
-      },
-      following: {
-        total: metrics.liveSubscriptions,
-        categories: {
-          worship: 0,
-          teaching: 0,
-          music: 0,
-          live: metrics.liveSubscriptions,
-        },
-      },
-      engagementRanking: {
-        position: 0,
-        percentile: engagementScore(metrics.totalPlays, metrics.liveSubscriptions),
-      },
-    });
-  }),
-);
+// `/overview` and `/community` used to live here — both were fabricating a
+// social/followers system with no backing data model (no `followers` table
+// exists anywhere in the schema, every follower-shaped field was a hardcoded
+// zero) and had zero real callers. Removed rather than left as latent fake
+// data. `/metrics` and `/insights` above are genuine, computed from real
+// engagement data, and stay.
 
 export default router;

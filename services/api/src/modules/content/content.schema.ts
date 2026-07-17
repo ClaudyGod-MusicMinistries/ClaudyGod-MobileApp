@@ -222,6 +222,13 @@ export const listContentQuerySchema = z
     limit: value.pageSize ?? value.limit ?? 20,
   }));
 
+export const trendingContentQuerySchema = z
+  .object({
+    period: z.enum(['hourly', 'daily', 'weekly']).default('daily'),
+    limit: z.coerce.number().int().min(1).max(50).default(20),
+  })
+  .strict();
+
 export const contentIdParamsSchema = z
   .object({
     id: z.string().uuid(),
@@ -272,5 +279,6 @@ export const assignContentSectionsSchema = z
 export const updateContentRequestStatusSchema = z
   .object({
     status: contentRequestStatusSchema,
+    adminNotes: z.preprocess((value) => (typeof value === 'string' && value.trim() === '' ? undefined : value), z.string().trim().max(2000).optional()) as unknown as z.ZodType<string | undefined>,
   })
   .strict();

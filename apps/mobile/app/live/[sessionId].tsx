@@ -254,12 +254,33 @@ export default function LiveSessionScreen() {
       ws.onmessage = (event) => {
         try {
           const frame = JSON.parse(String(event.data)) as { type?: string; channel?: string; payload?: unknown };
-          if (frame.type === 'message' && frame.channel === `live:${sessionId}`) {
+          if (frame.channel !== `live:${sessionId}`) return;
+
+          if (frame.type === 'message') {
             const incoming = frame.payload as LiveSessionDetail['messages'][0];
             setSession((current) => {
               if (!current || current.messages.some((m) => m.id === incoming.id)) return current;
               return { ...current, messageCount: current.messageCount + 1, messages: [incoming, ...current.messages] };
             });
+          } else if (frame.type === 'message_status') {
+            const { id, status } = frame.payload as { id: string; status: 'visible' | 'hidden' };
+            if (status === 'hidden') {
+              // Moderated out — the REST fetch already only ever returns
+              // visible messages, so this only matters for someone with the
+              // chat open at the moment it's hidden.
+              setSession((current) => {
+                if (!current || !current.messages.some((m) => m.id === id)) return current;
+                return {
+                  ...current,
+                  messageCount: Math.max(0, current.messageCount - 1),
+                  messages: current.messages.filter((m) => m.id !== id),
+                };
+              });
+            } else {
+              // Restored — we don't have the full message payload here, so
+              // pull the authoritative list rather than guess where it goes.
+              void refresh();
+            }
           }
         } catch {
           // Malformed frame — ignore silently.

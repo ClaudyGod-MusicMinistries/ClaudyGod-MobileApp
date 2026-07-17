@@ -221,7 +221,7 @@ export default function DashboardScreen() {
                   <>
                     <View style={{ flex: 1, flexDirection: 'column', gap: 12 }}>
                       <MetricCard icon="headphones"     label="Hours listened" value={hoursListened}           accent="#8B5CF6" />
-                      <MetricCard icon="people"         label="Followers"      value={metrics?.followers ?? '--'} accent="#60A5FA" />
+                      <MetricCard icon="live-tv"        label="Following"      value={metrics?.following ?? '--'} accent="#60A5FA" />
                     </View>
                     <View style={{ flex: 1, flexDirection: 'column', gap: 12 }}>
                       <MetricCard icon="visibility"     label="Content views"  value={contentViews}            accent="#34D399" />
@@ -232,7 +232,7 @@ export default function DashboardScreen() {
                   <>
                     <MetricCard icon="headphones"    label="Hours listened" value={hoursListened}              accent="#8B5CF6" />
                     <MetricCard icon="visibility"    label="Content views"  value={contentViews}               accent="#34D399" />
-                    <MetricCard icon="people"        label="Followers"      value={metrics?.followers ?? '--'}  accent="#60A5FA" />
+                    <MetricCard icon="live-tv"       label="Following"      value={metrics?.following ?? '--'}  accent="#60A5FA" />
                     <MetricCard icon="library-music" label="Saved content"  value={metrics?.contentCreated ?? '--'} accent="#FBBF24" />
                   </>
                 )}

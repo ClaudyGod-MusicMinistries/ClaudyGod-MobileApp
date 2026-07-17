@@ -1037,6 +1037,11 @@ const migrationStatements = [
   `CREATE INDEX IF NOT EXISTS idx_content_items_is_featured
      ON content_items (updated_at DESC)
      WHERE is_featured = true`,
+
+  /* ── Content requests: admin review notes (e.g. rejection reason) — the
+         admin panel's reject flow already collects this in the UI, but had
+         nowhere to persist it. MUST stay the last entry (see comment above). */
+  `ALTER TABLE content_submission_requests ADD COLUMN IF NOT EXISTS review_notes TEXT`,
 ];
 
 const MIGRATION_LOCK_ID = 7_246_130_001;

@@ -3,6 +3,7 @@ import { asyncHandler } from '../../lib/asyncHandler';
 import { ForbiddenError } from '../../lib/errors';
 import { validateSchema } from '../../lib/validation';
 import { authenticate } from '../../middleware/authenticate';
+import { hasMinRole } from '../../middleware/rbac';
 import {
   createWordOfDayEntry,
   deleteWordOfDayEntry,
@@ -28,8 +29,8 @@ adminWordOfDayRouter.get(
   '/',
   authenticate,
   asyncHandler(async (req, res) => {
-    if (!req.user || req.user.role !== 'ADMIN') {
-      throw new ForbiddenError('Admin role required', 'ADMIN_REQUIRED');
+    if (!req.user || !hasMinRole(req.user.role, 'MODERATOR')) {
+      throw new ForbiddenError('Moderator role or higher required', 'MODERATOR_REQUIRED');
     }
 
     const query = validateSchema(wordOfDayListQuerySchema, req.query);
@@ -42,8 +43,8 @@ adminWordOfDayRouter.put(
   '/current',
   authenticate,
   asyncHandler(async (req, res) => {
-    if (!req.user || req.user.role !== 'ADMIN') {
-      throw new ForbiddenError('Admin role required', 'ADMIN_REQUIRED');
+    if (!req.user || !hasMinRole(req.user.role, 'MODERATOR')) {
+      throw new ForbiddenError('Moderator role or higher required', 'MODERATOR_REQUIRED');
     }
 
     const payload = validateSchema(upsertWordOfDaySchema, req.body);
@@ -59,8 +60,8 @@ adminWordOfDayRouter.post(
   '/',
   authenticate,
   asyncHandler(async (req, res) => {
-    if (!req.user || req.user.role !== 'ADMIN') {
-      throw new ForbiddenError('Admin role required', 'ADMIN_REQUIRED');
+    if (!req.user || !hasMinRole(req.user.role, 'MODERATOR')) {
+      throw new ForbiddenError('Moderator role or higher required', 'MODERATOR_REQUIRED');
     }
 
     const payload = validateSchema(upsertWordOfDaySchema, req.body);
@@ -73,8 +74,8 @@ adminWordOfDayRouter.put(
   '/:id',
   authenticate,
   asyncHandler(async (req, res) => {
-    if (!req.user || req.user.role !== 'ADMIN') {
-      throw new ForbiddenError('Admin role required', 'ADMIN_REQUIRED');
+    if (!req.user || !hasMinRole(req.user.role, 'MODERATOR')) {
+      throw new ForbiddenError('Moderator role or higher required', 'MODERATOR_REQUIRED');
     }
 
     const params = validateSchema(wordOfDayIdParamsSchema, req.params);
@@ -88,8 +89,8 @@ adminWordOfDayRouter.delete(
   '/:id',
   authenticate,
   asyncHandler(async (req, res) => {
-    if (!req.user || req.user.role !== 'ADMIN') {
-      throw new ForbiddenError('Admin role required', 'ADMIN_REQUIRED');
+    if (!req.user || !hasMinRole(req.user.role, 'MODERATOR')) {
+      throw new ForbiddenError('Moderator role or higher required', 'MODERATOR_REQUIRED');
     }
 
     const params = validateSchema(wordOfDayIdParamsSchema, req.params);

@@ -112,9 +112,11 @@ export interface ContentRequest {
   title: string;
   type: ContentType;
   status: ContentRequestStatus;
-  requestedBy: { id: string; email: string; displayName: string | null };
-  notes: string | null;
-  adminNotes: string | null;
+  requester: { id: string; email: string; displayName: string; role: string };
+  requestNotes?: string;
+  reviewNotes?: string;
+  createdContentId?: string;
+  createdContentTitle?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -139,6 +141,22 @@ export interface LiveSessionInput {
   description?: string;
   visibility?: string;
   scheduledAt?: string;
+}
+
+export interface LiveMessage {
+  id: string;
+  liveSessionId: string;
+  kind: 'comment' | 'suggestion';
+  visibility: 'visible' | 'hidden';
+  message: string;
+  createdAt: string;
+  updatedAt: string;
+  author: { id?: string; displayName: string; email?: string; role?: string };
+}
+
+export interface LiveSessionDetail extends LiveSession {
+  messages: LiveMessage[];
+  messageCount: number;
 }
 
 // ─── Ads ──────────────────────────────────────────────────────────────────────

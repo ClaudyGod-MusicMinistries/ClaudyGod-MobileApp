@@ -1,7 +1,7 @@
 import { getWsServer } from '../../infra/websocket';
 
 export interface LiveEvent {
-  type: 'message' | 'session_update' | 'viewer_count';
+  type: 'message' | 'message_status' | 'session_update' | 'viewer_count';
   payload: Record<string, unknown>;
 }
 

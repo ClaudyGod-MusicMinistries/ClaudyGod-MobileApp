@@ -113,3 +113,16 @@ export const createLiveMessageSchema = z
     message: z.string().trim().min(2).max(1200),
   })
   .strict();
+
+export const liveMessageIdParamsSchema = z
+  .object({
+    id: z.string().uuid(),
+    messageId: z.string().uuid(),
+  })
+  .strict();
+
+export const updateLiveMessageStatusSchema = z
+  .object({
+    status: liveMessageVisibilitySchema,
+  })
+  .strict();

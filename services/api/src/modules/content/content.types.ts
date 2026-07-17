@@ -49,6 +49,7 @@ export interface ContentSubmissionRequest {
   tags?: string[];
   metadata?: Record<string, unknown>;
   requestNotes?: string;
+  reviewNotes?: string;
   requestedVisibility: ContentVisibility;
   status: ContentRequestStatus;
   createdContentId?: string;

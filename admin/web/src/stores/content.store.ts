@@ -9,6 +9,7 @@ import {
   bulkUpdateContent,
   listRequests,
   updateRequestStatus,
+  createDraftFromRequest,
   listTrash,
   restoreContent as restoreContentApi,
   permanentlyDeleteContent as permanentlyDeleteContentApi,
@@ -131,6 +132,15 @@ export const useContentStore = defineStore('content', () => {
     requests.value = requests.value.map((r) => (r.id === id ? updated : r));
   }
 
+  // The real "approve" action — creates the content draft and marks the
+  // request fulfilled in one atomic backend call, rather than just flipping
+  // a status field that never produced any actual content.
+  async function approveRequest(id: string): Promise<ContentItem> {
+    const { request, content } = await createDraftFromRequest(id);
+    requests.value = requests.value.map((r) => (r.id === id ? request : r));
+    return content;
+  }
+
   function resetCurrent(): void {
     current.value = null;
     saveError.value = null;
@@ -167,7 +177,7 @@ export const useContentStore = defineStore('content', () => {
     requests, requestsTotal, requestsLoading,
     trashItems, trashTotal, trashLoading, trashError,
     fetchContent, fetchOne, save, remove, bulkAction,
-    fetchRequests, updateRequest, resetCurrent,
+    fetchRequests, updateRequest, approveRequest, resetCurrent,
     fetchTrash, restore, permanentlyDelete,
   };
 });

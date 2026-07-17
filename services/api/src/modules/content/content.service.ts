@@ -75,6 +75,7 @@ interface ContentSubmissionRequestRow {
   tags: string[] | null;
   metadata: Record<string, unknown> | null;
   request_notes: string | null;
+  review_notes: string | null;
   requested_visibility: ContentVisibility;
   request_status: ContentRequestStatus;
   media_upload_session_id: string | null;
@@ -133,6 +134,7 @@ const toContentSubmissionRequest = (row: ContentSubmissionRequestRow): ContentSu
   tags: row.tags ?? [],
   metadata: row.metadata ?? {},
   requestNotes: row.request_notes ?? undefined,
+  reviewNotes: row.review_notes ?? undefined,
   requestedVisibility: row.requested_visibility,
   status: row.request_status,
   createdContentId: row.created_content_id ?? undefined,
@@ -405,6 +407,7 @@ const selectContentRequestByIdSql = `SELECT
   r.tags,
   r.metadata,
   r.request_notes,
+  r.review_notes,
   r.requested_visibility,
   r.request_status,
   r.media_upload_session_id,
@@ -761,6 +764,7 @@ export const listContentRequests = async (requester: JwtClaims): Promise<Content
          r.tags,
          r.metadata,
          r.request_notes,
+         r.review_notes,
          r.requested_visibility,
          r.request_status,
          r.media_upload_session_id,
@@ -904,10 +908,12 @@ export const createContentRequest = async (
 export const updateContentRequestStatus = async ({
   requestId,
   status,
+  adminNotes,
   requester,
 }: {
   requestId: string;
   status: ContentRequestStatus;
+  adminNotes?: string;
   requester: JwtClaims;
 }): Promise<ContentSubmissionRequest> => {
   if (!hasMinRole(requester.role, 'ADMIN')) {
@@ -925,9 +931,10 @@ export const updateContentRequestStatus = async ({
   await pool.query(
     `UPDATE content_submission_requests
      SET request_status = $2,
+         review_notes = COALESCE($3, review_notes),
          updated_at = NOW()
      WHERE id = $1`,
-    [requestId, status],
+    [requestId, status, adminNotes ?? null],
   );
 
   const updated = await loadContentRequestRowById(pool, requestId);
@@ -1430,17 +1437,27 @@ export const bulkUpdateContentVisibility = async ({
   visibility: ContentVisibility;
   requester: JwtClaims;
 }): Promise<{ updated: number; failed: Array<{ id: string; message: string }> }> => {
+  // Not collapsed into one batched SQL UPDATE (unlike reorderContent's
+  // unnest() pattern) — each item still needs its own publish-validation
+  // (ensurePublishableContent), event-queue entry, and publish email, so a
+  // single blind UPDATE would silently skip real per-item side effects. What
+  // was fixable here is the *serial* awaiting: running every item's full
+  // update concurrently instead of one at a time cuts wall-clock time for a
+  // large bulk action without losing any of that per-item work.
+  const results = await Promise.allSettled(
+    ids.map((contentId) => updateContentVisibility({ contentId, visibility, requester })),
+  );
+
   let updated = 0;
   const failed: Array<{ id: string; message: string }> = [];
-
-  for (const contentId of ids) {
-    try {
-      await updateContentVisibility({ contentId, visibility, requester });
+  results.forEach((result, index) => {
+    if (result.status === 'fulfilled') {
       updated += 1;
-    } catch (error) {
-      failed.push({ id: contentId, message: error instanceof Error ? error.message : 'Update failed' });
+    } else {
+      const error = result.reason;
+      failed.push({ id: ids[index]!, message: error instanceof Error ? error.message : 'Update failed' });
     }
-  }
+  });
 
   return { updated, failed };
 };

@@ -86,6 +86,13 @@ export async function updateRequestStatus(
   status: string,
   adminNotes?: string,
 ): Promise<ContentRequest> {
-  const { data } = await client.patch<ContentRequest>(`/v1/content/requests/${id}`, { status, adminNotes });
+  const { data } = await client.patch<ContentRequest>(`/v1/content/requests/${id}/status`, { status, adminNotes });
+  return data;
+}
+
+// The only endpoint that actually turns a submitted request into real content
+// — creates the draft and marks the request fulfilled in one transaction.
+export async function createDraftFromRequest(id: string): Promise<{ request: ContentRequest; content: ContentItem }> {
+  const { data } = await client.post<{ request: ContentRequest; content: ContentItem }>(`/v1/content/requests/${id}/create-draft`);
   return data;
 }

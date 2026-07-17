@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { asyncHandler } from '../../lib/asyncHandler';
+import { NotFoundError } from '../../lib/errors';
 import { validateSchema } from '../../lib/validation';
 import { authenticate } from '../../middleware/authenticate';
 import { requireMobileApiKey } from '../../middleware/requireMobileApiKey';
@@ -71,8 +72,7 @@ mobileRouter.get(
     const { screen, page, limit } = validateSchema(sectionDetailQuerySchema, req.query);
     const data = await getMobileSectionDetail({ screen, sectionId: req.params.sectionId, page, limit });
     if (!data) {
-      res.status(404).json({ message: 'Section not found' });
-      return;
+      throw new NotFoundError('Section not found', 'SECTION_NOT_FOUND');
     }
     res.status(200).json(data);
   }),

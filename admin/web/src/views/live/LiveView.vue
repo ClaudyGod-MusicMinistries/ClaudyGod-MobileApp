@@ -37,6 +37,9 @@
           <div class="flex items-center gap-1 justify-end">
             <AppButton v-if="row.status === 'scheduled'" size="xs" variant="secondary" class="text-danger" :loading="actionLoading" @click="startSession(row)">Go Live</AppButton>
             <AppButton v-if="row.status === 'live'" size="xs" variant="secondary" class="text-ink-soft" :loading="actionLoading" @click="endSession(row)">End</AppButton>
+            <AppButton size="xs" variant="ghost" @click="openChat(row)">
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+            </AppButton>
             <AppButton size="xs" variant="ghost" @click="openEdit(row)">
               <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
             </AppButton>
@@ -47,6 +50,43 @@
         </template>
       </AppResponsiveTable>
     </AppCard>
+
+    <!-- Chat moderation modal -->
+    <AppModal v-model="chatModalOpen" :title="`Chat — ${store.activeDetail?.title ?? ''}`" size="md">
+      <div class="space-y-3 max-h-[60vh] overflow-y-auto">
+        <p v-if="store.detailLoading" class="text-sm text-ink-soft">Loading messages…</p>
+        <p v-else-if="!store.activeDetail?.messages.length" class="text-sm text-ink-soft">No messages in this session yet.</p>
+        <div
+          v-for="msg in store.activeDetail?.messages"
+          :key="msg.id"
+          class="flex items-start justify-between gap-3 p-3 rounded-lg border border-border"
+          :class="msg.visibility === 'hidden' ? 'opacity-50' : ''"
+        >
+          <div class="min-w-0">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-medium text-ink">{{ msg.author.displayName }}</span>
+              <AppBadge v-if="msg.kind === 'suggestion'" tone="neutral">Suggestion</AppBadge>
+              <AppBadge v-if="msg.visibility === 'hidden'" tone="danger">Hidden</AppBadge>
+            </div>
+            <p class="text-sm text-ink-soft mt-1 break-words">{{ msg.message }}</p>
+          </div>
+          <AppButton
+            size="xs"
+            variant="ghost"
+            :class="msg.visibility === 'hidden' ? 'text-success' : 'text-danger'"
+            :loading="moderatingId === msg.id"
+            @click="toggleMessageVisibility(msg)"
+          >
+            {{ msg.visibility === 'hidden' ? 'Show' : 'Hide' }}
+          </AppButton>
+        </div>
+      </div>
+      <template #footer>
+        <div class="flex gap-2 justify-end">
+          <AppButton variant="secondary" size="sm" @click="chatModalOpen = false">Close</AppButton>
+        </div>
+      </template>
+    </AppModal>
 
     <!-- Create / Edit modal -->
     <AppModal v-model="modalOpen" :title="editTarget ? 'Edit session' : 'New live session'">
@@ -77,15 +117,19 @@ import AppModal from '@/components/ui/AppModal.vue';
 import AppInput from '@/components/ui/AppInput.vue';
 import AppTextarea from '@/components/ui/AppTextarea.vue';
 import AppSelect from '@/components/ui/AppSelect.vue';
+import AppBadge from '@/components/ui/AppBadge.vue';
 import StatusBadge from '@/components/shared/StatusBadge.vue';
 import PageHeader from '@/components/shared/PageHeader.vue';
+import type { LiveMessage } from '@/api/types';
 
 const store = useLiveStore();
 const ui = useUiStore();
 const activeTab = ref('scheduled');
 const modalOpen = ref(false);
+const chatModalOpen = ref(false);
 const editTarget = ref<Record<string, unknown> | null>(null);
 const actionLoading = ref(false);
+const moderatingId = ref<string | null>(null);
 const form = ref({ title: '', description: '', scheduledAt: '', visibility: 'published' });
 
 const tabs = [
@@ -147,6 +191,28 @@ async function deleteSession(row: Record<string, unknown>): Promise<void> {
   if (!ok) return;
   await store.remove(row.id as string);
   ui.addToast({ tone: 'success', title: 'Session deleted' });
+}
+
+async function openChat(row: Record<string, unknown>): Promise<void> {
+  chatModalOpen.value = true;
+  store.clearDetail();
+  try {
+    await store.loadDetail(row.id as string);
+  } catch (e) {
+    ui.addToast({ tone: 'danger', title: 'Failed to load chat', message: e instanceof Error ? e.message : undefined });
+  }
+}
+
+async function toggleMessageVisibility(msg: LiveMessage): Promise<void> {
+  const nextStatus = msg.visibility === 'hidden' ? 'visible' : 'hidden';
+  moderatingId.value = msg.id;
+  try {
+    await store.moderateMessage(msg.liveSessionId, msg.id, nextStatus);
+  } catch (e) {
+    ui.addToast({ tone: 'danger', title: 'Failed to update message', message: e instanceof Error ? e.message : undefined });
+  } finally {
+    moderatingId.value = null;
+  }
 }
 
 function formatDate(iso: string): string {

@@ -24,7 +24,7 @@
         <template #cell-type="{ value }">
           <AppBadge tone="neutral">{{ value }}</AppBadge>
         </template>
-        <template #cell-requestedBy="{ value }">
+        <template #cell-requester="{ value }">
           <span class="text-xs text-ink-soft">{{ getEmail(value) }}</span>
         </template>
         <template #cell-createdAt="{ value }">
@@ -102,7 +102,7 @@ const tabs = [
 const columns = [
   { key: 'title', label: 'Title' },
   { key: 'type', label: 'Type' },
-  { key: 'requestedBy', label: 'Requested by' },
+  { key: 'requester', label: 'Requested by' },
   { key: 'status', label: 'Status' },
   { key: 'createdAt', label: 'Date', align: 'right' as const },
 ];
@@ -121,8 +121,10 @@ onMounted(() => { void store.fetchRequests(); });
 async function approve(row: Record<string, unknown>): Promise<void> {
   actionLoading.value = true;
   try {
-    await store.updateRequest(row.id as string, 'approved');
-    ui.addToast({ tone: 'success', title: 'Request approved' });
+    await store.approveRequest(row.id as string);
+    ui.addToast({ tone: 'success', title: 'Request approved', message: 'A content draft was created — publish it from Content when ready.' });
+  } catch (e) {
+    ui.addToast({ tone: 'danger', title: 'Failed to approve request', message: e instanceof Error ? e.message : undefined });
   } finally {
     actionLoading.value = false;
   }
@@ -141,6 +143,8 @@ async function confirmReject(): Promise<void> {
     await store.updateRequest(rejectTarget.value.id as string, 'rejected', rejectReason.value || undefined);
     ui.addToast({ tone: 'info', title: 'Request rejected' });
     rejectModal.value = false;
+  } catch (e) {
+    ui.addToast({ tone: 'danger', title: 'Failed to reject request', message: e instanceof Error ? e.message : undefined });
   } finally {
     actionLoading.value = false;
   }
@@ -153,6 +157,6 @@ function formatDate(iso: string): string {
 }
 
 function getEmail(v: unknown): string {
-  return ((v as Record<string, string>).email) ?? '';
+  return (v as { email?: string } | undefined)?.email ?? '';
 }
 </script>

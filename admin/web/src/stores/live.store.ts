@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { listSessions, createSession, updateSession, deleteSession } from '@/api/live';
-import type { LiveSession, LiveSessionInput } from '@/api/types';
+import { listSessions, createSession, updateSession, deleteSession, getSessionDetail, updateMessageStatus } from '@/api/live';
+import type { LiveSession, LiveSessionDetail, LiveSessionInput } from '@/api/types';
 
 export const useLiveStore = defineStore('live', () => {
   const sessions = ref<LiveSession[]>([]);
@@ -9,6 +9,8 @@ export const useLiveStore = defineStore('live', () => {
   const isLoading = ref(false);
   const error = ref<string | null>(null);
   const isSaving = ref(false);
+  const activeDetail = ref<LiveSessionDetail | null>(null);
+  const detailLoading = ref(false);
 
   async function fetchSessions(status?: string): Promise<void> {
     isLoading.value = true;
@@ -47,5 +49,31 @@ export const useLiveStore = defineStore('live', () => {
     total.value = Math.max(0, total.value - 1);
   }
 
-  return { sessions, total, isLoading, error, isSaving, fetchSessions, create, update, remove };
+  async function loadDetail(id: string): Promise<void> {
+    detailLoading.value = true;
+    try {
+      activeDetail.value = await getSessionDetail(id);
+    } finally {
+      detailLoading.value = false;
+    }
+  }
+
+  async function moderateMessage(sessionId: string, messageId: string, status: 'visible' | 'hidden'): Promise<void> {
+    const updated = await updateMessageStatus(sessionId, messageId, status);
+    if (activeDetail.value?.id === sessionId) {
+      activeDetail.value = {
+        ...activeDetail.value,
+        messages: activeDetail.value.messages.map((m) => (m.id === messageId ? updated : m)),
+      };
+    }
+  }
+
+  function clearDetail(): void {
+    activeDetail.value = null;
+  }
+
+  return {
+    sessions, total, isLoading, error, isSaving, fetchSessions, create, update, remove,
+    activeDetail, detailLoading, loadDetail, moderateMessage, clearDetail,
+  };
 });

@@ -3,13 +3,16 @@ import { asyncHandler } from '../../lib/asyncHandler';
 import { ForbiddenError, UnauthorizedError } from '../../lib/errors';
 import { validateSchema } from '../../lib/validation';
 import { authenticate } from '../../middleware/authenticate';
+import { hasMinRole } from '../../middleware/rbac';
 import {
   createLiveMessageSchema,
   createLiveSessionSchema,
   endLiveSessionSchema,
   listAdminLiveSessionsQuerySchema,
   listLiveSessionsQuerySchema,
+  liveMessageIdParamsSchema,
   liveSessionIdParamsSchema,
+  updateLiveMessageStatusSchema,
   updateLiveSessionSchema,
 } from './live.schema';
 import {
@@ -23,6 +26,7 @@ import {
   listPublicLiveSessions,
   startLiveSession,
   updateLiveSession,
+  updateLiveSessionMessageStatus,
 } from './live.service';
 
 export const liveRouter = Router();
@@ -34,10 +38,13 @@ function requireUser(req: Request) {
   return req.user;
 }
 
+// Named requireAdmin for historical reasons, but the actual threshold matches
+// the admin panel's own nav config (`minRole: Role.MODERATOR` for /live) —
+// moderators are meant to manage live sessions, not just admins.
 function requireAdmin(req: Request) {
   const user = requireUser(req);
-  if (user.role !== 'ADMIN') {
-    throw new ForbiddenError('Admin access required', 'ADMIN_REQUIRED');
+  if (!hasMinRole(user.role, 'MODERATOR')) {
+    throw new ForbiddenError('Moderator role or higher required', 'MODERATOR_REQUIRED');
   }
   return user;
 }
@@ -147,6 +154,18 @@ liveRouter.post(
     const params = validateSchema(liveSessionIdParamsSchema, req.params);
     const payload = validateSchema(endLiveSessionSchema, req.body);
     const result = await endLiveSession(actor, params.id, payload);
+    res.status(200).json(result);
+  }),
+);
+
+liveRouter.patch(
+  '/manage/:id/messages/:messageId',
+  authenticate,
+  asyncHandler(async (req, res) => {
+    const actor = requireAdmin(req);
+    const params = validateSchema(liveMessageIdParamsSchema, req.params);
+    const payload = validateSchema(updateLiveMessageStatusSchema, req.body);
+    const result = await updateLiveSessionMessageStatus(actor, params.id, params.messageId, payload.status);
     res.status(200).json(result);
   }),
 );
