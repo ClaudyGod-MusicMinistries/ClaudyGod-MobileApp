@@ -4,6 +4,7 @@ import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import { ENV } from './config';
 import { removeDevicePushToken, saveDevicePushToken } from './userFlowService';
+import { getStoredMobileSession } from './authService';
 
 // Type-safe notification handler
 const notificationHandler: Notifications.NotificationHandler = {
@@ -91,6 +92,13 @@ export class PushNotificationService {
   }
 
   private async storePushToken(token: string): Promise<void> {
+    // Same guest-mode gap as trackPlayEvent: saveDevicePushToken hits an
+    // authenticated /v1/me/* route, and on web apiFetchWithMobileSession relies
+    // solely on a session cookie — with no signed-in check here, every guest
+    // who grants notification permission fires a doomed 401 on every app launch.
+    const { user } = await getStoredMobileSession();
+    if (!user) return;
+
     try {
       await saveDevicePushToken({
         expoPushToken: token,
@@ -164,6 +172,9 @@ export class PushNotificationService {
 
   async removePushToken(): Promise<void> {
     try {
+      const { user } = await getStoredMobileSession();
+      if (!user) return;
+
       const token = await this.getPushToken();
       if (!token) {
         return;
