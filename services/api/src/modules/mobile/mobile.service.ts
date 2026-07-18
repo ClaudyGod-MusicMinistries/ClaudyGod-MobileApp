@@ -284,6 +284,71 @@ const loadPublishedContent = async (limit = 120): Promise<MobileFeedItem[]> => {
   return result.rows.map(toMobileFeedItem);
 };
 
+// Admin-curated sections must surface every published item tagged into them,
+// not just whatever survives loadPublishedContent's recency-capped LIMIT —
+// otherwise a section stops rendering the moment its tagged content ages out
+// of the top of that list, even though the tag is still there.
+const loadContentTaggedIntoSections = async (tokens: string[]): Promise<MobileFeedItem[]> => {
+  if (!tokens.length) {
+    return [];
+  }
+
+  let result;
+  try {
+    result = await pool.query<PublishedContentRow>(
+      `SELECT
+         c.id,
+         c.title,
+         c.description,
+         c.content_type,
+         c.media_url,
+         c.thumbnail_url,
+         c.source_kind,
+         c.channel_name,
+         c.duration_label,
+         c.app_sections,
+         c.tags,
+         c.created_at,
+         c.updated_at,
+         u.display_name AS author_display_name
+       FROM content_items c
+       INNER JOIN app_users u ON u.id = c.author_id
+       WHERE c.visibility = 'published' AND c.deleted_at IS NULL
+         AND EXISTS (
+           SELECT 1 FROM unnest(c.app_sections) AS tag
+           WHERE lower(trim(tag)) = ANY($1::text[])
+         )
+       ORDER BY c.sort_order NULLS LAST, c.updated_at DESC, c.created_at DESC`,
+      [tokens],
+    );
+  } catch (error) {
+    if (isMissingDatabaseStructureError(error) || isDatabaseConnectivityError(error)) {
+      return [];
+    }
+    throw error;
+  }
+
+  return result.rows.map(toMobileFeedItem);
+};
+
+// Every id/title token (normalized the same way matchesConfiguredSection
+// compares them) across all four screens' configured sections, so a single
+// extra query can back-fill any tagged content the capped pool missed.
+const collectSectionTokens = (config: MobileAppConfig): string[] => {
+  const sections = [
+    ...config.layout.homeSections,
+    ...config.layout.videoSections,
+    ...config.layout.playerSections,
+    ...config.layout.librarySections,
+  ];
+  const tokens = new Set<string>();
+  for (const section of sections) {
+    tokens.add(normalizeSectionToken(section.id));
+    tokens.add(normalizeSectionToken(section.title));
+  }
+  return [...tokens];
+};
+
 // The Home hero is admin-assigned (content.isFeatured), not algorithmically
 // ranked — if admin hasn't featured anything, this returns null and the
 // mobile app shows its existing empty-state hero rather than guessing.
@@ -423,9 +488,10 @@ interface UnifiedContentPool {
   trending: MobileFeedItem[];
 }
 
-const loadUnifiedContentPool = async (): Promise<UnifiedContentPool> => {
-  const [publishedContent, liveSessions, mostPlayedResult, youtubeResult] = await Promise.all([
+const loadUnifiedContentPool = async (sectionTokens: string[] = []): Promise<UnifiedContentPool> => {
+  const [publishedContent, taggedContent, liveSessions, mostPlayedResult, youtubeResult] = await Promise.all([
     loadPublishedContent(),
+    loadContentTaggedIntoSections(sectionTokens),
     loadLiveSessions(),
     listMostPlayedContent({ limit: 12, windowDays: 90 }),
     fetchYouTubeVideos({ maxResults: 20 }).catch(() => ({
@@ -461,7 +527,7 @@ const loadUnifiedContentPool = async (): Promise<UnifiedContentPool> => {
     } satisfies MobileFeedItem;
   });
 
-  const pool = dedupeItems([...liveSessions, ...publishedContent, ...youtubeItems, ...trending]);
+  const pool = dedupeItems([...liveSessions, ...publishedContent, ...taggedContent, ...youtubeItems, ...trending]);
 
   const ranked = [...pool].sort((left, right) => {
     const scoreDiff =
@@ -478,9 +544,11 @@ const loadUnifiedContentPool = async (): Promise<UnifiedContentPool> => {
 };
 
 export const buildMobileFeed = async (): Promise<MobileFeedResponse> => {
-  const [{ pool: unifiedPool, ranked, trending }, mobileConfigResult, featured] = await Promise.all([
-    loadUnifiedContentPool(),
-    getMobileAppConfig(),
+  const mobileConfigResult = await getMobileAppConfig();
+  const sectionTokens = collectSectionTokens(mobileConfigResult.config);
+
+  const [{ pool: unifiedPool, ranked, trending }, featured] = await Promise.all([
+    loadUnifiedContentPool(sectionTokens),
     loadFeaturedContent(),
   ]);
 
@@ -532,17 +600,18 @@ export const getMobileSectionDetail = async (params: {
   page: number;
   limit: number;
 }): Promise<MobileSectionDetailResponse | null> => {
-  const [{ ranked }, mobileConfigResult] = await Promise.all([
-    loadUnifiedContentPool(),
-    getMobileAppConfig(),
-  ]);
-
+  const mobileConfigResult = await getMobileAppConfig();
   const section = SECTIONS_BY_SCREEN(mobileConfigResult.config)[params.screen].find(
     (candidate) => candidate.id === params.sectionId,
   );
   if (!section) {
     return null;
   }
+
+  const { ranked } = await loadUnifiedContentPool([
+    normalizeSectionToken(section.id),
+    normalizeSectionToken(section.title),
+  ]);
 
   const sectionPool = resolveConfiguredSectionPool(ranked, section);
   const offset = (params.page - 1) * params.limit;
