@@ -479,7 +479,7 @@ deploy: deploy-pull deploy-migrate deploy-up
 # Pull latest images from GHCR (does NOT restart running containers yet)
 deploy-pull:
 	@printf "$(BLUE)Pulling latest images from GHCR...$(NC)\n"
-	$(COMPOSE_PROD) pull --ignore-pull-failures api worker admin-web mobile-web postfix-relay
+	$(COMPOSE_PROD) pull --ignore-pull-failures cgm-api worker admin-web mobile-web postfix-relay
 
 # Run any pending database migrations
 deploy-migrate:
@@ -508,7 +508,7 @@ deploy-status:
 rollback:
 	@[ -n "$(SHA)" ] || (printf "$(RED)Usage: make rollback SHA=<git-sha>$(NC)\n" && exit 1)
 	@printf "$(YELLOW)Rolling back all services to SHA=$(SHA)...$(NC)\n"
-	IMAGE_TAG=$(SHA) $(COMPOSE_PROD) pull --ignore-pull-failures api worker admin-web mobile-web postfix-relay
+	IMAGE_TAG=$(SHA) $(COMPOSE_PROD) pull --ignore-pull-failures cgm-api worker admin-web mobile-web postfix-relay
 	IMAGE_TAG=$(SHA) $(COMPOSE_PROD) up -d --remove-orphans --wait
 	@printf "$(GREEN)✓ Rolled back to $(SHA)$(NC)\n"
 
@@ -530,7 +530,7 @@ setup-admin:
 	  exit 1; \
 	fi
 	@printf "$(BLUE)Creating SUPER_ADMIN: $(EMAIL)...$(NC)\n"
-	@$(COMPOSE_PROD) exec api node -e " \
+	@$(COMPOSE_PROD) exec cgm-api node -e " \
 	  const { Pool } = require('pg'); \
 	  const bcrypt = require('bcryptjs'); \
 	  (async () => { \
@@ -560,5 +560,5 @@ clean-legacy:
 	@docker rm   claudygod_api claudygod_web claudygod_redis claudygod_grafana 2>/dev/null || true
 	@printf "$(GREEN)✓ Legacy containers removed$(NC)\n"
 	@printf "$(BLUE)Restarting production API so Traefik refreshes routing...$(NC)\n"
-	@$(COMPOSE_PROD) restart api worker
+	@$(COMPOSE_PROD) restart cgm-api worker
 	@printf "$(GREEN)✓ Production API restarted — routing is clean$(NC)\n"

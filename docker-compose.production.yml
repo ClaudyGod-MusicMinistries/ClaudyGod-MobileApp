@@ -166,7 +166,12 @@ services:
       - internal
 
   # ── API (HTTP — exposed via Traefik as cgm-api) ───────────────────────────
-  api:
+  # Service key itself (not just the Traefik router name) is namespaced so its
+  # default alias on the shared traefik-public network can't collide with
+  # another project's own "api" service (confirmed collision with
+  # ClaudyGodweb-Infrastructure's api service — Docker's embedded DNS was
+  # non-deterministically round-robining between both containers).
+  cgm-api:
     image: ghcr.io/${GHCR_OWNER:-claudygod-musicministries}/claudygod-api:${IMAGE_TAG:-latest}
     build:
       context: ./services/api
@@ -246,7 +251,7 @@ services:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
-      api:
+      cgm-api:
         condition: service_healthy
     healthcheck:
       disable: true
@@ -281,13 +286,16 @@ services:
       retries: 5
       start_period: 15s
     depends_on:
-      api:
+      cgm-api:
         condition: service_healthy
     networks:
       - internal
 
   # ── Grafana (HTTP — exposed via Traefik as cgm-grafana; has its own login) ──
-  grafana:
+  # Service key namespaced for the same reason as cgm-api above — both this
+  # project and ClaudyGodweb-Infrastructure run a "grafana" service on the
+  # shared traefik-public network.
+  cgm-grafana:
     image: grafana/grafana:latest
     restart: unless-stopped
     security_opt:
