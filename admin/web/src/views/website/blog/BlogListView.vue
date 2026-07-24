@@ -59,6 +59,43 @@
         <AppInput :model-value="form.title" label="Title" required @update:model-value="onTitleInput" />
         <AppInput :model-value="form.slug" label="Slug" required hint="URL-friendly, e.g. my-first-post" @update:model-value="onSlugInput" />
         <AppInput v-model="form.authorName" label="Author" />
+
+        <div>
+          <p class="text-xs font-semibold text-ink-soft uppercase tracking-wide mb-1.5">Category</p>
+          <div class="flex items-center gap-2">
+            <AppSelect v-model="form.categoryId" :options="categoryOptions" placeholder="No category" class="flex-1" />
+            <AppButton variant="secondary" size="sm" @click="newCategoryOpen = !newCategoryOpen">+ New</AppButton>
+          </div>
+          <div v-if="newCategoryOpen" class="flex items-center gap-2 mt-2">
+            <AppInput v-model="newCategoryName" placeholder="Category name" class="flex-1" size="sm" />
+            <AppButton size="sm" :loading="creatingCategory" @click="createCategory">Add</AppButton>
+          </div>
+        </div>
+
+        <div>
+          <p class="text-xs font-semibold text-ink-soft uppercase tracking-wide mb-1.5">Tags</p>
+          <div class="flex flex-wrap gap-1.5">
+            <button
+              v-for="tag in store.tags"
+              :key="tag.id"
+              type="button"
+              :class="[
+                'px-2.5 py-1 rounded-full text-xs font-medium border transition-colors',
+                form.tagIds.includes(tag.id)
+                  ? 'bg-primary/15 border-primary/30 text-primary-soft'
+                  : 'bg-white/3 border-border text-ink-muted hover:text-ink-soft',
+              ]"
+              @click="toggleTag(tag.id)"
+            >
+              {{ tag.name }}
+            </button>
+          </div>
+          <div class="flex items-center gap-2 mt-2">
+            <AppInput v-model="newTagName" placeholder="New tag name" class="flex-1" size="sm" />
+            <AppButton variant="secondary" size="sm" :loading="creatingTag" @click="createTag">Add tag</AppButton>
+          </div>
+        </div>
+
         <AppTextarea v-model="form.excerpt" label="Excerpt" :rows="2" hint="Short summary shown on the Journal listing" />
         <AppTextarea v-model="form.content" label="Content" required :rows="14" />
         <div v-if="!editingId" class="flex items-center gap-2.5">
@@ -99,7 +136,12 @@ import WebPageHeader from '@/components/shared/WebPageHeader.vue';
 const store = useBlogStore();
 const ui = useUiStore();
 
-onMounted(() => { void store.fetchPosts(); });
+onMounted(() => {
+  void store.fetchPosts();
+  void store.fetchTaxonomy();
+});
+
+const categoryOptions = computed(() => store.categories.map((c) => ({ value: c.id, label: c.name })));
 
 const rows = computed(() => store.posts as unknown as Record<string, unknown>[]);
 
@@ -138,6 +180,8 @@ interface BlogFormState {
   content: string;
   excerpt: string;
   authorName: string;
+  categoryId: string;
+  tagIds: string[];
   publish: boolean;
 }
 
@@ -147,10 +191,54 @@ const emptyForm = (): BlogFormState => ({
   content: '',
   excerpt: '',
   authorName: '',
+  categoryId: '',
+  tagIds: [],
   publish: false,
 });
 
 const form = reactive<BlogFormState>(emptyForm());
+
+const newCategoryOpen = ref(false);
+const newCategoryName = ref('');
+const creatingCategory = ref(false);
+
+async function createCategory(): Promise<void> {
+  if (!newCategoryName.value.trim()) return;
+  creatingCategory.value = true;
+  try {
+    const category = await store.addCategory(newCategoryName.value.trim());
+    form.categoryId = category.id;
+    newCategoryName.value = '';
+    newCategoryOpen.value = false;
+  } catch (e) {
+    ui.addToast({ tone: 'danger', title: 'Failed to create category', message: e instanceof Error ? e.message : 'Please try again' });
+  } finally {
+    creatingCategory.value = false;
+  }
+}
+
+const newTagName = ref('');
+const creatingTag = ref(false);
+
+function toggleTag(id: string): void {
+  const idx = form.tagIds.indexOf(id);
+  if (idx === -1) form.tagIds.push(id);
+  else form.tagIds.splice(idx, 1);
+}
+
+async function createTag(): Promise<void> {
+  if (!newTagName.value.trim()) return;
+  creatingTag.value = true;
+  try {
+    const tag = await store.addTag(newTagName.value.trim());
+    form.tagIds.push(tag.id);
+    newTagName.value = '';
+  } catch (e) {
+    ui.addToast({ tone: 'danger', title: 'Failed to create tag', message: e instanceof Error ? e.message : 'Please try again' });
+  } finally {
+    creatingTag.value = false;
+  }
+}
 
 function slugify(title: string): string {
   return title
@@ -185,12 +273,21 @@ async function openEdit(post: BlogPost): Promise<void> {
     const detail = await store.fetchPostDetail(post.slug);
     editingId.value = detail.id;
     slugManuallyEdited.value = true;
+    // BlogPostDetailDto's `tags` is a list of tag NAMES (matches the public
+    // read shape), but selecting/toggling in this form works by tag id — map
+    // back to ids via the loaded taxonomy. Relies on tag names being unique,
+    // which SlugHelper-derived slugs + the taxonomy list already assume.
+    const tagIds = detail.tags
+      .map((name) => store.tags.find((t) => t.name === name)?.id)
+      .filter((id): id is string => Boolean(id));
     Object.assign(form, {
       title: detail.title,
       slug: detail.slug,
       content: detail.content,
       excerpt: detail.excerpt ?? '',
       authorName: detail.authorName ?? '',
+      categoryId: detail.categoryId ?? '',
+      tagIds,
       publish: detail.status === 'Published',
     });
     modalOpen.value = true;
@@ -212,6 +309,8 @@ async function save(): Promise<void> {
       content: form.content,
       excerpt: form.excerpt || null,
       authorName: form.authorName || null,
+      categoryId: form.categoryId || null,
+      tagIds: form.tagIds,
       publish: form.publish,
     };
     await store.savePost(payload, editingId.value ?? undefined);
