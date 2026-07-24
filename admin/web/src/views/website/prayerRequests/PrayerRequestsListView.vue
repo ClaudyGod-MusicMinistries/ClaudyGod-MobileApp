@@ -75,6 +75,8 @@ import AppModal from '@/components/ui/AppModal.vue';
 import AppBadge from '@/components/ui/AppBadge.vue';
 import AppPagination from '@/components/ui/AppPagination.vue';
 import WebPageHeader from '@/components/shared/WebPageHeader.vue';
+import DetailModalHeader from '@/components/shared/DetailModalHeader.vue';
+import DetailChip from '@/components/shared/DetailChip.vue';
 
 const store = usePrayerRequestsStore();
 const ui = useUiStore();
