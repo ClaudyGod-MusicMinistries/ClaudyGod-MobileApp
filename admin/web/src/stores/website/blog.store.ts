@@ -1,7 +1,18 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { listBlogPosts, getBlogPost, createBlogPost, updateBlogPost, deleteBlogPost, updateBlogPostStatus } from '@/api/website';
-import type { BlogPost, BlogPostDetail, BlogPostInput } from '@/api/websiteTypes';
+import {
+  listBlogPosts,
+  getBlogPost,
+  createBlogPost,
+  updateBlogPost,
+  deleteBlogPost,
+  updateBlogPostStatus,
+  listBlogCategories,
+  createBlogCategory,
+  listBlogTags,
+  createBlogTag,
+} from '@/api/website';
+import type { BlogPost, BlogPostDetail, BlogPostInput, BlogCategory, BlogTag } from '@/api/websiteTypes';
 
 const PAGE_SIZE = 20;
 
@@ -12,6 +23,8 @@ export const useBlogStore = defineStore('websiteBlog', () => {
   const statusFilter = ref<string | undefined>(undefined);
   const isLoading = ref(false);
   const error = ref<string | null>(null);
+  const categories = ref<BlogCategory[]>([]);
+  const tags = ref<BlogTag[]>([]);
 
   async function fetchPosts(): Promise<void> {
     isLoading.value = true;
@@ -61,6 +74,26 @@ export const useBlogStore = defineStore('websiteBlog', () => {
     await fetchPosts();
   }
 
+  async function fetchTaxonomy(): Promise<void> {
+    const [c, t] = await Promise.all([listBlogCategories(), listBlogTags()]);
+    categories.value = c;
+    tags.value = t;
+  }
+
+  async function addCategory(name: string): Promise<BlogCategory> {
+    const { id } = await createBlogCategory(name);
+    const category = { id, name };
+    categories.value.push(category);
+    return category;
+  }
+
+  async function addTag(name: string): Promise<BlogTag> {
+    const { id } = await createBlogTag(name);
+    const tag = { id, name };
+    tags.value.push(tag);
+    return tag;
+  }
+
   return {
     posts,
     total,
@@ -68,11 +101,16 @@ export const useBlogStore = defineStore('websiteBlog', () => {
     statusFilter,
     isLoading,
     error,
+    categories,
+    tags,
     pageSize: PAGE_SIZE,
     fetchPosts,
     setPage,
     setStatusFilter,
     fetchPostDetail,
+    fetchTaxonomy,
+    addCategory,
+    addTag,
     savePost,
     removePost,
     changeStatus,
