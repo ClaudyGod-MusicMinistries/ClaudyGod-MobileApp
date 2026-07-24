@@ -188,7 +188,7 @@ const router = createRouter({
         {
           path: 'albums',
           name: 'web-albums',
-          component: () => import('@/views/website/WebComingSoonView.vue'),
+          component: () => import('@/views/website/albums/AlbumsListView.vue'),
           meta: { minRole: Role.ADMIN, title: 'Albums' },
         },
         {
