@@ -21,6 +21,11 @@ const capabilities = () => ({
   smtp: env.SMTP_ENABLED,
   smtpProvider: env.SMTP_PROVIDER_LABEL,
   mobileApiKeyConfigured: Boolean(env.MOBILE_API_KEY && env.MOBILE_API_KEY !== 'dev-mobile-api-key'),
+  // Web Studio's /v1/website/* module proxies to CGM-Backend using these —
+  // deploying the code doesn't set the values, so this is the fast way to
+  // confirm whether that's actually configured on a given environment
+  // without needing an authenticated request to hit the 503 indirectly.
+  websiteApiConfigured: env.CGM_ENABLED,
 });
 
 const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number, timeoutMessage: string): Promise<T> => {
