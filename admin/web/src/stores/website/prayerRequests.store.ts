@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { listPrayerRequests } from '@/api/website';
+import { listPrayerRequests, deletePrayerRequest } from '@/api/website';
 import type { PrayerRequestItem } from '@/api/websiteTypes';
 
 const PAGE_SIZE = 20;
@@ -31,5 +31,10 @@ export const usePrayerRequestsStore = defineStore('websitePrayerRequests', () =>
     void fetchPrayerRequests();
   }
 
-  return { items, total, page, isLoading, error, pageSize: PAGE_SIZE, fetchPrayerRequests, setPage };
+  async function removePrayerRequest(id: string): Promise<void> {
+    await deletePrayerRequest(id);
+    await fetchPrayerRequests();
+  }
+
+  return { items, total, page, isLoading, error, pageSize: PAGE_SIZE, fetchPrayerRequests, setPage, removePrayerRequest };
 });

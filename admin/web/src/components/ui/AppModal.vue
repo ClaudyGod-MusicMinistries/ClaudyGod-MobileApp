@@ -31,7 +31,7 @@
             <button
               v-if="!persistent"
               type="button"
-              class="p-1.5 rounded-lg hover:bg-white/8 text-ink-muted transition-colors"
+              class="p-1.5 rounded-lg hover:bg-surface-hover text-ink-muted transition-colors"
               @click="$emit('update:modelValue', false)"
             >
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">

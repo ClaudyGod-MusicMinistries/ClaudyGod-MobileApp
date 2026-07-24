@@ -216,6 +216,14 @@ websiteRouter.patch(
   }),
 );
 
+websiteRouter.delete(
+  '/events/:id',
+  asyncHandler(async (req, res) => {
+    const actor = requireAdmin(req);
+    res.status(200).json(await cgmRequest('DELETE', `/events/${req.params.id}`, actor));
+  }),
+);
+
 // ─── Blog ────────────────────────────────────────────────────────────────────
 
 websiteRouter.get(
@@ -324,7 +332,15 @@ websiteRouter.patch(
   }),
 );
 
-// ─── Contact messages (inbox — list only) ───────────────────────────────────
+websiteRouter.delete(
+  '/bookings/:id',
+  asyncHandler(async (req, res) => {
+    const actor = requireAdmin(req);
+    res.status(200).json(await cgmRequest('DELETE', `/bookings/${req.params.id}`, actor));
+  }),
+);
+
+// ─── Contact messages (inbox — list + move-to-trash) ────────────────────────
 
 websiteRouter.get(
   '/contacts',
@@ -334,7 +350,15 @@ websiteRouter.get(
   }),
 );
 
-// ─── Volunteer applications (inbox — list only) ─────────────────────────────
+websiteRouter.delete(
+  '/contacts/:id',
+  asyncHandler(async (req, res) => {
+    const actor = requireAdmin(req);
+    res.status(200).json(await cgmRequest('DELETE', `/contacts/${req.params.id}`, actor));
+  }),
+);
+
+// ─── Volunteer applications (inbox — list + move-to-trash) ──────────────────
 
 websiteRouter.get(
   '/volunteers',
@@ -344,7 +368,15 @@ websiteRouter.get(
   }),
 );
 
-// ─── Prayer requests (inbox — list only) ────────────────────────────────────
+websiteRouter.delete(
+  '/volunteers/:id',
+  asyncHandler(async (req, res) => {
+    const actor = requireAdmin(req);
+    res.status(200).json(await cgmRequest('DELETE', `/volunteers/${req.params.id}`, actor));
+  }),
+);
+
+// ─── Prayer requests (inbox — list + move-to-trash) ─────────────────────────
 
 websiteRouter.get(
   '/prayer-requests',
@@ -356,7 +388,15 @@ websiteRouter.get(
   }),
 );
 
-// ─── Ticket reservations (inbox — list only) ────────────────────────────────
+websiteRouter.delete(
+  '/prayer-requests/:id',
+  asyncHandler(async (req, res) => {
+    const actor = requireAdmin(req);
+    res.status(200).json(await cgmRequest('DELETE', `/prayer-requests/${req.params.id}`, actor));
+  }),
+);
+
+// ─── Ticket reservations (inbox — list + move-to-trash) ─────────────────────
 
 websiteRouter.get(
   '/tickets',
@@ -366,8 +406,16 @@ websiteRouter.get(
   }),
 );
 
-// ─── Newsletter subscribers (inbox — list only; unsubscribe is a public,
-// token-driven action on the website itself, not an admin action here) ──────
+websiteRouter.delete(
+  '/tickets/:id',
+  asyncHandler(async (req, res) => {
+    const actor = requireAdmin(req);
+    res.status(200).json(await cgmRequest('DELETE', `/tickets/${req.params.id}`, actor));
+  }),
+);
+
+// ─── Newsletter subscribers (inbox — list + move-to-trash; unsubscribe is a
+// public, token-driven action on the website itself, not this admin route) ──
 
 websiteRouter.get(
   '/subscribers',
@@ -376,5 +424,83 @@ websiteRouter.get(
     res
       .status(200)
       .json(await cgmRequest('GET', '/subscribers', actor, { query: req.query as Record<string, string> }));
+  }),
+);
+
+websiteRouter.delete(
+  '/subscribers/:id',
+  asyncHandler(async (req, res) => {
+    const actor = requireAdmin(req);
+    res.status(200).json(await cgmRequest('DELETE', `/subscribers/${req.params.id}`, actor));
+  }),
+);
+
+// ─── Journal comment moderation (public create/read/like lives directly on
+// the website, proxied straight to CGM-Backend without going through admin
+// auth at all — see website2.0's own lib/data/client.ts. This is only the
+// admin moderation surface: list/approve/reject/delete.) ────────────────────
+
+websiteRouter.get(
+  '/comments',
+  asyncHandler(async (req, res) => {
+    const actor = requireAdmin(req);
+    const { page, pageSize, status } = req.query as Record<string, string | undefined>;
+    res.status(200).json(await cgmRequest('GET', '/comments', actor, { query: { page, pageSize, status } }));
+  }),
+);
+
+websiteRouter.patch(
+  '/comments/:id/status',
+  asyncHandler(async (req, res) => {
+    const actor = requireAdmin(req);
+    res.status(200).json(await cgmRequest('PATCH', `/comments/${req.params.id}/status`, actor, { body: req.body }));
+  }),
+);
+
+websiteRouter.delete(
+  '/comments/:id',
+  asyncHandler(async (req, res) => {
+    const actor = requireAdmin(req);
+    res.status(200).json(await cgmRequest('DELETE', `/comments/${req.params.id}`, actor));
+  }),
+);
+
+// ─── Trash / Recycle Bin — cuts across every resource above. CGM-Backend does
+// the actual soft-delete-listing/restore/purge (see TrashController.cs); this
+// is a thin proxy, same shape as everything else in this file. 30-day
+// retention is enforced lazily on the backend (purged on read, no scheduler).
+
+websiteRouter.get(
+  '/trash',
+  asyncHandler(async (req, res) => {
+    const actor = requireAdmin(req);
+    const { entityType, page, pageSize } = req.query as Record<string, string | undefined>;
+    res.status(200).json(await cgmRequest('GET', '/trash', actor, { query: { entityType, page, pageSize } }));
+  }),
+);
+
+websiteRouter.post(
+  '/trash/:entityType/:id/restore',
+  asyncHandler(async (req, res) => {
+    const actor = requireAdmin(req);
+    res
+      .status(200)
+      .json(await cgmRequest('POST', `/trash/${req.params.entityType}/${req.params.id}/restore`, actor));
+  }),
+);
+
+websiteRouter.delete(
+  '/trash/:entityType/:id',
+  asyncHandler(async (req, res) => {
+    const actor = requireAdmin(req);
+    res.status(200).json(await cgmRequest('DELETE', `/trash/${req.params.entityType}/${req.params.id}`, actor));
+  }),
+);
+
+websiteRouter.delete(
+  '/trash',
+  asyncHandler(async (req, res) => {
+    const actor = requireAdmin(req);
+    res.status(200).json(await cgmRequest('DELETE', '/trash', actor));
   }),
 );

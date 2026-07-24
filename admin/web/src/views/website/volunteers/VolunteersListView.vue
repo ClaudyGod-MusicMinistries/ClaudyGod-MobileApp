@@ -20,7 +20,10 @@
           <AppBadge :tone="value ? 'success' : 'neutral'">{{ value ? 'Approved' : 'Pending' }}</AppBadge>
         </template>
         <template #cell-createdAt="{ value }">
-          <span class="text-xs text-ink-muted">{{ formatDate(value as string) }}</span>
+          <span class="text-xs text-ink-muted" :title="exactDateTime(value as string)">{{ relativeTime(value as string) }}</span>
+        </template>
+        <template #actions="{ row }">
+          <AppButton variant="danger" size="xs" @click="confirmTrash(row as unknown as Volunteer)">Move to trash</AppButton>
         </template>
       </AppResponsiveTable>
     </AppCard>
@@ -33,13 +36,18 @@
 import { computed, onMounted } from 'vue';
 import { HandHeart } from 'lucide-vue-next';
 import { useVolunteersStore } from '@/stores/website/volunteers.store';
+import { useUiStore } from '@/stores/ui.store';
+import { relativeTime, exactDateTime } from '@/utils/relativeTime';
+import type { Volunteer } from '@/api/websiteTypes';
 import AppCard from '@/components/ui/AppCard.vue';
 import AppResponsiveTable from '@/components/ui/AppResponsiveTable.vue';
+import AppButton from '@/components/ui/AppButton.vue';
 import AppBadge from '@/components/ui/AppBadge.vue';
 import AppPagination from '@/components/ui/AppPagination.vue';
 import WebPageHeader from '@/components/shared/WebPageHeader.vue';
 
 const store = useVolunteersStore();
+const ui = useUiStore();
 
 onMounted(() => { void store.fetchVolunteers(); });
 
@@ -53,9 +61,19 @@ const columns = [
   { key: 'createdAt', label: 'Applied', align: 'right' as const },
 ];
 
-function formatDate(iso: string): string {
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return '—';
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+async function confirmTrash(volunteer: Volunteer): Promise<void> {
+  const ok = await ui.confirm({
+    title: 'Move to trash',
+    message: `Move the application from "${volunteer.firstName} ${volunteer.lastName}" to Trash? You can restore it anytime within 30 days.`,
+    confirmLabel: 'Move to trash',
+    tone: 'danger',
+  });
+  if (!ok) return;
+  try {
+    await store.removeVolunteer(volunteer.id);
+    ui.addToast({ tone: 'success', title: 'Moved to trash' });
+  } catch (e) {
+    ui.addToast({ tone: 'danger', title: 'Move to trash failed', message: e instanceof Error ? e.message : 'Please try again' });
+  }
 }
 </script>

@@ -45,7 +45,7 @@
     <RouterLink
       to="/choose-workspace"
       :class="[
-        'flex items-center gap-3 mx-2 mt-3 px-2.5 py-2 rounded-lg text-xs font-medium text-ink-soft hover:bg-white/6 hover:text-ink transition-colors border border-border',
+        'flex items-center gap-3 mx-2 mt-3 px-2.5 py-2 rounded-lg text-xs font-medium text-ink-soft hover:bg-surface-hover hover:text-ink transition-colors border border-border',
         !showExpanded && 'justify-center',
       ]"
       :title="!showExpanded ? 'Switch workspace' : undefined"
@@ -68,7 +68,7 @@
             'relative flex items-center gap-3 pl-3 pr-2.5 py-2 rounded-lg text-sm font-medium transition-all duration-150 group',
             route.path.startsWith(item.to)
               ? 'bg-primary/10 text-primary-soft'
-              : 'text-ink-soft hover:bg-white/6 hover:text-ink',
+              : 'text-ink-soft hover:bg-surface-hover hover:text-ink',
           ]"
           :title="!showExpanded ? item.label : undefined"
           @click="ui.closeMobileDrawer()"
@@ -89,13 +89,11 @@
     <div class="border-t border-border px-2 py-3 space-y-1">
       <button
         type="button"
-        :class="['hidden lg:flex items-center gap-3 px-2.5 py-2 w-full rounded-xl text-xs font-medium text-ink-soft hover:bg-white/6 hover:text-ink transition-colors', !showExpanded && 'justify-center']"
+        :class="['hidden lg:flex items-center gap-3 px-2.5 py-2 w-full rounded-xl text-xs font-medium text-ink-soft hover:bg-surface-hover hover:text-ink transition-colors', !showExpanded && 'justify-center']"
         :title="!showExpanded ? 'Toggle sidebar' : undefined"
         @click="ui.toggleSidebar()"
       >
-        <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h7" />
-        </svg>
+        <component :is="showExpanded ? PanelLeftClose : PanelLeft" class="w-4 h-4 flex-shrink-0" />
         <Transition name="fade"><span v-if="showExpanded">Collapse</span></Transition>
       </button>
       <button
@@ -104,9 +102,7 @@
         :title="!showExpanded ? 'Sign out' : undefined"
         @click="auth.logout()"
       >
-        <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-        </svg>
+        <LogOut class="w-4 h-4 flex-shrink-0" />
         <Transition name="fade"><span v-if="showExpanded">Sign out</span></Transition>
       </button>
     </div>
@@ -119,6 +115,7 @@ import { useRoute } from 'vue-router';
 import {
   LayoutDashboard, Disc3, ShoppingBag, Film, HelpCircle, CalendarDays, Newspaper,
   ClipboardList, Mail, HandHeart, HeartHandshake, Ticket, Users2, ArrowLeftRight,
+  MessageSquare, Trash2, PanelLeftClose, PanelLeft, LogOut,
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/auth.store';
 import { useUiStore } from '@/stores/ui.store';
@@ -168,11 +165,18 @@ const NAV_GROUPS = [
     label: 'Inbox',
     items: [
       { to: '/web/bookings', label: 'Bookings', icon: ClipboardList, minRole: Role.ADMIN },
+      { to: '/web/comments', label: 'Journal comments', icon: MessageSquare, minRole: Role.ADMIN },
       { to: '/web/contacts', label: 'Contact messages', icon: Mail, minRole: Role.ADMIN },
       { to: '/web/volunteers', label: 'Volunteers', icon: HandHeart, minRole: Role.ADMIN },
       { to: '/web/prayer-requests', label: 'Prayer requests', icon: HeartHandshake, minRole: Role.ADMIN },
       { to: '/web/tickets', label: 'Tickets', icon: Ticket, minRole: Role.ADMIN },
       { to: '/web/subscribers', label: 'Subscribers', icon: Users2, minRole: Role.ADMIN },
+    ],
+  },
+  {
+    label: 'Trash',
+    items: [
+      { to: '/web/trash', label: 'Trash', icon: Trash2, minRole: Role.ADMIN },
     ],
   },
 ];

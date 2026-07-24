@@ -3,6 +3,7 @@ import { createPinia } from 'pinia';
 import * as Sentry from '@sentry/vue';
 import App from './App.vue';
 import router from './router';
+import { usePreferencesStore } from './stores/preferences.store';
 import './assets/styles/main.css';
 
 const pinia = createPinia();
@@ -24,7 +25,10 @@ if (sentryDsn) {
 app.use(pinia);
 app.use(router);
 
-// Attempt to restore session from saved refresh token before mounting.
+// Apply the persisted/system theme before the first paint so there's no flash of
+// the wrong theme, then attempt to restore session from the saved refresh token.
+usePreferencesStore().init();
+
 import('./stores/auth.store').then(({ useAuthStore }) => {
   const auth = useAuthStore();
   auth.restoreSession().finally(() => {

@@ -61,6 +61,27 @@
         <AppInput v-model="form.authorName" label="Author" />
 
         <div>
+          <p class="text-xs font-semibold text-ink-soft uppercase tracking-wide mb-1.5">Featured image</p>
+          <div class="flex items-start gap-3">
+            <div class="w-24 h-24 rounded-xl overflow-hidden bg-white/5 border border-border flex-shrink-0 flex items-center justify-center">
+              <img
+                v-if="form.featuredImageUrl"
+                :src="form.featuredImageUrl"
+                alt=""
+                class="w-full h-full object-cover"
+              />
+              <ImageIcon v-else class="w-6 h-6 text-ink-muted" />
+            </div>
+            <AppInput
+              v-model="form.featuredImageUrl"
+              placeholder="https://…"
+              hint="Paste an image URL — shown on the Journal card and post header"
+              class="flex-1"
+            />
+          </div>
+        </div>
+
+        <div>
           <p class="text-xs font-semibold text-ink-soft uppercase tracking-wide mb-1.5">Category</p>
           <div class="flex items-center gap-2">
             <AppSelect v-model="form.categoryId" :options="categoryOptions" placeholder="No category" class="flex-1" />
@@ -118,7 +139,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, reactive } from 'vue';
-import { Newspaper, Plus } from 'lucide-vue-next';
+import { Newspaper, Plus, Image as ImageIcon } from 'lucide-vue-next';
 import { useBlogStore } from '@/stores/website/blog.store';
 import { useUiStore } from '@/stores/ui.store';
 import type { BlogPost, BlogPostInput } from '@/api/websiteTypes';
@@ -182,6 +203,7 @@ interface BlogFormState {
   authorName: string;
   categoryId: string;
   tagIds: string[];
+  featuredImageUrl: string;
   publish: boolean;
 }
 
@@ -193,6 +215,7 @@ const emptyForm = (): BlogFormState => ({
   authorName: '',
   categoryId: '',
   tagIds: [],
+  featuredImageUrl: '',
   publish: false,
 });
 
@@ -288,6 +311,7 @@ async function openEdit(post: BlogPost): Promise<void> {
       authorName: detail.authorName ?? '',
       categoryId: detail.categoryId ?? '',
       tagIds,
+      featuredImageUrl: detail.featuredImagePath ?? '',
       publish: detail.status === 'Published',
     });
     modalOpen.value = true;
@@ -311,6 +335,7 @@ async function save(): Promise<void> {
       authorName: form.authorName || null,
       categoryId: form.categoryId || null,
       tagIds: form.tagIds,
+      featuredImageUrl: form.featuredImageUrl || null,
       publish: form.publish,
     };
     await store.savePost(payload, editingId.value ?? undefined);

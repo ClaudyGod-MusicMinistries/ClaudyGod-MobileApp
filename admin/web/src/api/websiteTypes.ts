@@ -225,6 +225,7 @@ export interface BlogPostInput {
   authorName?: string | null;
   categoryId?: string | null;
   tagIds?: string[];
+  featuredImageUrl?: string | null;
   // Only read on create (CreateBlogPostRequest.Publish) — status changes after
   // creation go through PATCH /blog/:id/status instead. Harmless no-op if sent
   // on an update call (UpdateBlogPostRequest has no Publish field, and ASP.NET
@@ -324,4 +325,47 @@ export interface Subscriber {
   email: string;
   isActive: boolean;
   createdAt: string;
+}
+
+// ─── Journal comments (moderation) ─────────────────────────────────────────────
+
+export interface AdminComment {
+  id: string;
+  blogPostId: string;
+  blogPostTitle: string;
+  blogPostSlug: string;
+  parentCommentId: string | null;
+  authorName: string;
+  authorEmail: string;
+  content: string;
+  status: string;
+  createdAt: string;
+}
+
+// ─── Trash / Recycle Bin ───────────────────────────────────────────────────────
+
+// Matches CGM-Backend's TrashEntityType enum member names exactly (PascalCase —
+// TrashItemDto.EntityType is a plain string, not enum-typed, so it bypasses the
+// backend's global camelCase JSON enum converter).
+export type TrashEntityType =
+  | 'Album'
+  | 'Product'
+  | 'MediaItem'
+  | 'FAQ'
+  | 'Event'
+  | 'BlogPost'
+  | 'Booking'
+  | 'ContactMessage'
+  | 'Volunteer'
+  | 'PrayerRequest'
+  | 'TicketReservation'
+  | 'Subscriber'
+  | 'Comment';
+
+export interface TrashItem {
+  id: string;
+  entityType: TrashEntityType;
+  title: string;
+  subtitle: string;
+  deletedAt: string;
 }

@@ -42,7 +42,10 @@
           />
         </template>
         <template #actions="{ row }">
-          <AppButton variant="secondary" size="xs" @click="openDetail(row as unknown as Booking)">View</AppButton>
+          <div class="flex items-center justify-end gap-1.5">
+            <AppButton variant="secondary" size="xs" @click="openDetail(row as unknown as Booking)">View</AppButton>
+            <AppButton variant="danger" size="xs" @click="confirmTrash(row as unknown as Booking)">Move to trash</AppButton>
+          </div>
         </template>
       </AppResponsiveTable>
     </AppCard>
@@ -50,26 +53,33 @@
     <AppPagination :page="store.page" :page-size="store.pageSize" :total="store.total" @change="store.setPage" />
 
     <AppModal v-model="detailOpen" title="Booking request" size="md">
-      <div v-if="selected" class="space-y-3 text-sm">
-        <div>
-          <p class="text-xs font-semibold text-ink-soft uppercase tracking-wide">Contact</p>
-          <p class="text-ink">{{ selected.firstName }} {{ selected.lastName }} — {{ selected.email }} — {{ selected.phone }}</p>
+      <div v-if="selected" class="space-y-4">
+        <DetailModalHeader
+          :name="`${selected.firstName} ${selected.lastName}`"
+          :subtitle="selected.email"
+          :timestamp="selected.createdAt"
+        />
+
+        <div class="rounded-xl bg-bg-1 border border-border p-4">
+          <p class="text-xs font-semibold text-ink-soft uppercase tracking-wide mb-1.5">Event details</p>
+          <p class="text-sm text-ink-soft leading-relaxed whitespace-pre-wrap">{{ selected.eventDetails }}</p>
         </div>
-        <div>
-          <p class="text-xs font-semibold text-ink-soft uppercase tracking-wide">Organization</p>
-          <p class="text-ink">{{ selected.organization }}</p>
+
+        <div class="flex flex-wrap gap-1.5">
+          <DetailChip label="Phone" :value="selected.phone" />
+          <DetailChip label="Organization" :value="selected.organization" />
+          <DetailChip label="Event" :value="selected.eventType" />
+          <DetailChip label="Date" :value="formatDate(selected.eventDate)" />
+          <DetailChip label="Status" :value="selected.status" />
         </div>
-        <div>
-          <p class="text-xs font-semibold text-ink-soft uppercase tracking-wide">Event</p>
-          <p class="text-ink">{{ selected.eventType }} — {{ formatDate(selected.eventDate) }}</p>
+
+        <div v-if="selected.adminNotes" class="rounded-xl bg-white/5 border border-border p-4">
+          <p class="text-xs font-semibold text-ink-soft uppercase tracking-wide mb-1.5">Admin notes</p>
+          <p class="text-sm text-ink-soft leading-relaxed whitespace-pre-wrap">{{ selected.adminNotes }}</p>
         </div>
-        <div>
-          <p class="text-xs font-semibold text-ink-soft uppercase tracking-wide">Details</p>
-          <p class="text-ink-soft whitespace-pre-wrap">{{ selected.eventDetails }}</p>
-        </div>
-        <div v-if="selected.adminNotes">
-          <p class="text-xs font-semibold text-ink-soft uppercase tracking-wide">Admin notes</p>
-          <p class="text-ink-soft whitespace-pre-wrap">{{ selected.adminNotes }}</p>
+
+        <div class="pt-1">
+          <AppButton size="sm" tag="a" :href="`mailto:${selected.email}`">Reply by email</AppButton>
         </div>
       </div>
     </AppModal>
@@ -89,6 +99,8 @@ import AppModal from '@/components/ui/AppModal.vue';
 import AppSelect from '@/components/ui/AppSelect.vue';
 import AppPagination from '@/components/ui/AppPagination.vue';
 import WebPageHeader from '@/components/shared/WebPageHeader.vue';
+import DetailModalHeader from '@/components/shared/DetailModalHeader.vue';
+import DetailChip from '@/components/shared/DetailChip.vue';
 
 const store = useBookingsStore();
 const ui = useUiStore();
@@ -120,6 +132,44 @@ async function changeStatus(booking: Booking, status: string | number): Promise<
     ui.addToast({ tone: 'success', title: 'Status updated' });
   } catch (e) {
     ui.addToast({ tone: 'danger', title: 'Status update failed', message: e instanceof Error ? e.message : 'Please try again' });
+    return;
+  }
+
+  // Status change always applies above — this only offers the *optional*
+  // extra step of also moving it to Trash. Canceling here never undoes the
+  // status change that already happened.
+  if (String(status) === 'Declined') {
+    const alsoTrash = await ui.confirm({
+      title: 'Move to trash?',
+      message: `Booking for "${booking.firstName} ${booking.lastName}" was declined. Move it to Trash as well? You can restore it anytime within 30 days.`,
+      confirmLabel: 'Move to trash',
+      cancelLabel: 'Keep in Bookings',
+      tone: 'danger',
+    });
+    if (alsoTrash) {
+      try {
+        await store.removeBooking(booking.id);
+        ui.addToast({ tone: 'success', title: 'Moved to trash' });
+      } catch (e) {
+        ui.addToast({ tone: 'danger', title: 'Move to trash failed', message: e instanceof Error ? e.message : 'Please try again' });
+      }
+    }
+  }
+}
+
+async function confirmTrash(booking: Booking): Promise<void> {
+  const ok = await ui.confirm({
+    title: 'Move to trash',
+    message: `Move the booking from "${booking.firstName} ${booking.lastName}" to Trash? You can restore it anytime within 30 days.`,
+    confirmLabel: 'Move to trash',
+    tone: 'danger',
+  });
+  if (!ok) return;
+  try {
+    await store.removeBooking(booking.id);
+    ui.addToast({ tone: 'success', title: 'Moved to trash' });
+  } catch (e) {
+    ui.addToast({ tone: 'danger', title: 'Move to trash failed', message: e instanceof Error ? e.message : 'Please try again' });
   }
 }
 

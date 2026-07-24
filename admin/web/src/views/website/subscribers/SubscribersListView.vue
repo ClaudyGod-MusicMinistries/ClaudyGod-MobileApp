@@ -14,7 +14,10 @@
           <AppBadge :tone="value ? 'success' : 'neutral'">{{ value ? 'Active' : 'Unsubscribed' }}</AppBadge>
         </template>
         <template #cell-createdAt="{ value }">
-          <span class="text-xs text-ink-muted">{{ formatDate(value as string) }}</span>
+          <span class="text-xs text-ink-muted" :title="exactDateTime(value as string)">{{ relativeTime(value as string) }}</span>
+        </template>
+        <template #actions="{ row }">
+          <AppButton variant="danger" size="xs" @click="confirmTrash(row as unknown as Subscriber)">Move to trash</AppButton>
         </template>
       </AppResponsiveTable>
     </AppCard>
@@ -27,13 +30,18 @@
 import { computed, onMounted } from 'vue';
 import { Users2 } from 'lucide-vue-next';
 import { useSubscribersStore } from '@/stores/website/subscribers.store';
+import { useUiStore } from '@/stores/ui.store';
+import { relativeTime, exactDateTime } from '@/utils/relativeTime';
+import type { Subscriber } from '@/api/websiteTypes';
 import AppCard from '@/components/ui/AppCard.vue';
 import AppResponsiveTable from '@/components/ui/AppResponsiveTable.vue';
+import AppButton from '@/components/ui/AppButton.vue';
 import AppBadge from '@/components/ui/AppBadge.vue';
 import AppPagination from '@/components/ui/AppPagination.vue';
 import WebPageHeader from '@/components/shared/WebPageHeader.vue';
 
 const store = useSubscribersStore();
+const ui = useUiStore();
 
 onMounted(() => { void store.fetchSubscribers(); });
 
@@ -46,9 +54,19 @@ const columns = [
   { key: 'createdAt', label: 'Subscribed', align: 'right' as const },
 ];
 
-function formatDate(iso: string): string {
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return '—';
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+async function confirmTrash(subscriber: Subscriber): Promise<void> {
+  const ok = await ui.confirm({
+    title: 'Move to trash',
+    message: `Move "${subscriber.name || subscriber.email}" to Trash? You can restore it anytime within 30 days.`,
+    confirmLabel: 'Move to trash',
+    tone: 'danger',
+  });
+  if (!ok) return;
+  try {
+    await store.removeSubscriber(subscriber.id);
+    ui.addToast({ tone: 'success', title: 'Moved to trash' });
+  } catch (e) {
+    ui.addToast({ tone: 'danger', title: 'Move to trash failed', message: e instanceof Error ? e.message : 'Please try again' });
+  }
 }
 </script>

@@ -228,6 +228,12 @@ const router = createRouter({
           meta: { minRole: Role.ADMIN, title: 'Bookings' },
         },
         {
+          path: 'comments',
+          name: 'web-comments',
+          component: () => import('@/views/website/comments/CommentsListView.vue'),
+          meta: { minRole: Role.ADMIN, title: 'Journal comments' },
+        },
+        {
           path: 'contacts',
           name: 'web-contacts',
           component: () => import('@/views/website/contacts/ContactsListView.vue'),
@@ -256,6 +262,12 @@ const router = createRouter({
           name: 'web-subscribers',
           component: () => import('@/views/website/subscribers/SubscribersListView.vue'),
           meta: { minRole: Role.ADMIN, title: 'Subscribers' },
+        },
+        {
+          path: 'trash',
+          name: 'web-trash',
+          component: () => import('@/views/website/trash/TrashListView.vue'),
+          meta: { minRole: Role.ADMIN, title: 'Trash' },
         },
       ],
     },
