@@ -192,7 +192,12 @@ async function onLogin(): Promise<void> {
       mfaRequired.value = true;
       return;
     }
-    await router.push('/dashboard');
+    // Every fresh login lands on the workspace chooser now — Mobile Studio and
+    // Web Studio are two separate shells with nothing meaningfully in common,
+    // so there's no single "the dashboard" to jump straight back into anymore
+    // (this used to hardcode '/dashboard', a leftover from before Web Studio
+    // existed).
+    await router.push('/choose-workspace');
   } catch {
     // auth.error is set by the store — the template already displays it
   }
@@ -201,7 +206,7 @@ async function onLogin(): Promise<void> {
 async function onMfa(): Promise<void> {
   try {
     await auth.completeMfa(mfaToken.value, mfaCode.value);
-    await router.push('/dashboard');
+    await router.push('/choose-workspace');
   } catch {
     // auth.error is set by the store — the template already displays it
   }
