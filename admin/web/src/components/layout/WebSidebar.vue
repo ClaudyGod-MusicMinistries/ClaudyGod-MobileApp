@@ -119,6 +119,7 @@ import { useRoute } from 'vue-router';
 import {
   LayoutDashboard, Disc3, ShoppingBag, Film, HelpCircle, CalendarDays, Newspaper,
   ClipboardList, Mail, HandHeart, HeartHandshake, Ticket, Users2, ArrowLeftRight,
+  MessageSquare,
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/auth.store';
 import { useUiStore } from '@/stores/ui.store';
@@ -168,6 +169,7 @@ const NAV_GROUPS = [
     label: 'Inbox',
     items: [
       { to: '/web/bookings', label: 'Bookings', icon: ClipboardList, minRole: Role.ADMIN },
+      { to: '/web/comments', label: 'Journal comments', icon: MessageSquare, minRole: Role.ADMIN },
       { to: '/web/contacts', label: 'Contact messages', icon: Mail, minRole: Role.ADMIN },
       { to: '/web/volunteers', label: 'Volunteers', icon: HandHeart, minRole: Role.ADMIN },
       { to: '/web/prayer-requests', label: 'Prayer requests', icon: HeartHandshake, minRole: Role.ADMIN },

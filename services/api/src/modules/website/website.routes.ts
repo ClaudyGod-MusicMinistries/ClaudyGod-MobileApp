@@ -378,3 +378,33 @@ websiteRouter.get(
       .json(await cgmRequest('GET', '/subscribers', actor, { query: req.query as Record<string, string> }));
   }),
 );
+
+// ─── Journal comment moderation (public create/read/like lives directly on
+// the website, proxied straight to CGM-Backend without going through admin
+// auth at all — see website2.0's own lib/data/client.ts. This is only the
+// admin moderation surface: list/approve/reject/delete.) ────────────────────
+
+websiteRouter.get(
+  '/comments',
+  asyncHandler(async (req, res) => {
+    const actor = requireAdmin(req);
+    const { page, pageSize, status } = req.query as Record<string, string | undefined>;
+    res.status(200).json(await cgmRequest('GET', '/comments', actor, { query: { page, pageSize, status } }));
+  }),
+);
+
+websiteRouter.patch(
+  '/comments/:id/status',
+  asyncHandler(async (req, res) => {
+    const actor = requireAdmin(req);
+    res.status(200).json(await cgmRequest('PATCH', `/comments/${req.params.id}/status`, actor, { body: req.body }));
+  }),
+);
+
+websiteRouter.delete(
+  '/comments/:id',
+  asyncHandler(async (req, res) => {
+    const actor = requireAdmin(req);
+    res.status(200).json(await cgmRequest('DELETE', `/comments/${req.params.id}`, actor));
+  }),
+);
