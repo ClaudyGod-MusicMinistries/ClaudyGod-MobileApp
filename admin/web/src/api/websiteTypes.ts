@@ -225,6 +225,7 @@ export interface BlogPostInput {
   authorName?: string | null;
   categoryId?: string | null;
   tagIds?: string[];
+  featuredImageUrl?: string | null;
   // Only read on create (CreateBlogPostRequest.Publish) — status changes after
   // creation go through PATCH /blog/:id/status instead. Harmless no-op if sent
   // on an update call (UpdateBlogPostRequest has no Publish field, and ASP.NET
@@ -323,5 +324,20 @@ export interface Subscriber {
   name: string;
   email: string;
   isActive: boolean;
+  createdAt: string;
+}
+
+// ─── Journal comments (moderation) ─────────────────────────────────────────────
+
+export interface AdminComment {
+  id: string;
+  blogPostId: string;
+  blogPostTitle: string;
+  blogPostSlug: string;
+  parentCommentId: string | null;
+  authorName: string;
+  authorEmail: string;
+  content: string;
+  status: string;
   createdAt: string;
 }

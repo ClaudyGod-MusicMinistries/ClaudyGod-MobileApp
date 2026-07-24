@@ -228,6 +228,12 @@ const router = createRouter({
           meta: { minRole: Role.ADMIN, title: 'Bookings' },
         },
         {
+          path: 'comments',
+          name: 'web-comments',
+          component: () => import('@/views/website/comments/CommentsListView.vue'),
+          meta: { minRole: Role.ADMIN, title: 'Journal comments' },
+        },
+        {
           path: 'contacts',
           name: 'web-contacts',
           component: () => import('@/views/website/contacts/ContactsListView.vue'),

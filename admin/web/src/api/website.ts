@@ -24,6 +24,7 @@ import type {
   PrayerRequestItem,
   Ticket,
   Subscriber,
+  AdminComment,
 } from './websiteTypes';
 
 // Every function here calls through services/api's /v1/website/* module (not
@@ -267,4 +268,21 @@ export async function listSubscribers(params?: { page?: number; pageSize?: numbe
 > {
   const { data } = await client.get<WebsitePaginated<Subscriber>>('/v1/website/subscribers', { params });
   return data;
+}
+
+// ─── Journal comments (moderation) ─────────────────────────────────────────────
+
+export async function listComments(params?: { page?: number; pageSize?: number; status?: string }): Promise<
+  WebsitePaginated<AdminComment>
+> {
+  const { data } = await client.get<WebsitePaginated<AdminComment>>('/v1/website/comments', { params });
+  return data;
+}
+
+export async function updateCommentStatus(id: string, status: string): Promise<void> {
+  await client.patch(`/v1/website/comments/${id}/status`, { status });
+}
+
+export async function deleteComment(id: string): Promise<void> {
+  await client.delete(`/v1/website/comments/${id}`);
 }
