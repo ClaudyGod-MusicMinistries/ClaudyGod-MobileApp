@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { listTickets } from '@/api/website';
+import { listTickets, deleteTicket } from '@/api/website';
 import type { Ticket } from '@/api/websiteTypes';
 
 const PAGE_SIZE = 20;
@@ -31,5 +31,10 @@ export const useTicketsStore = defineStore('websiteTickets', () => {
     void fetchTickets();
   }
 
-  return { items, total, page, isLoading, error, pageSize: PAGE_SIZE, fetchTickets, setPage };
+  async function removeTicket(id: string): Promise<void> {
+    await deleteTicket(id);
+    await fetchTickets();
+  }
+
+  return { items, total, page, isLoading, error, pageSize: PAGE_SIZE, fetchTickets, setPage, removeTicket };
 });

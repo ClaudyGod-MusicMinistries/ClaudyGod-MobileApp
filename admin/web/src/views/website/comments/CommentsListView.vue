@@ -124,6 +124,29 @@ async function changeStatus(comment: AdminComment, status: string | number): Pro
     ui.addToast({ tone: 'success', title: 'Status updated' });
   } catch (e) {
     ui.addToast({ tone: 'danger', title: 'Status update failed', message: e instanceof Error ? e.message : 'Please try again' });
+    return;
+  }
+
+  // Status change already applied above — this only offers the *optional*
+  // extra step of also moving it to Trash. Canceling here never undoes the
+  // status change, and the explicit Delete button below stays as the
+  // one-click path regardless of status.
+  if (String(status) === 'Rejected') {
+    const alsoTrash = await ui.confirm({
+      title: 'Move to trash?',
+      message: `This comment from ${comment.authorName} was rejected. Move it to Trash as well? You can restore it anytime within 30 days.`,
+      confirmLabel: 'Move to trash',
+      cancelLabel: 'Keep in Comments',
+      tone: 'danger',
+    });
+    if (alsoTrash) {
+      try {
+        await store.removeComment(comment.id);
+        ui.addToast({ tone: 'success', title: 'Moved to trash' });
+      } catch (e) {
+        ui.addToast({ tone: 'danger', title: 'Move to trash failed', message: e instanceof Error ? e.message : 'Please try again' });
+      }
+    }
   }
 }
 

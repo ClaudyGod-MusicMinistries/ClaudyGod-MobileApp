@@ -341,3 +341,31 @@ export interface AdminComment {
   status: string;
   createdAt: string;
 }
+
+// ─── Trash / Recycle Bin ───────────────────────────────────────────────────────
+
+// Matches CGM-Backend's TrashEntityType enum member names exactly (PascalCase —
+// TrashItemDto.EntityType is a plain string, not enum-typed, so it bypasses the
+// backend's global camelCase JSON enum converter).
+export type TrashEntityType =
+  | 'Album'
+  | 'Product'
+  | 'MediaItem'
+  | 'FAQ'
+  | 'Event'
+  | 'BlogPost'
+  | 'Booking'
+  | 'ContactMessage'
+  | 'Volunteer'
+  | 'PrayerRequest'
+  | 'TicketReservation'
+  | 'Subscriber'
+  | 'Comment';
+
+export interface TrashItem {
+  id: string;
+  entityType: TrashEntityType;
+  title: string;
+  subtitle: string;
+  deletedAt: string;
+}

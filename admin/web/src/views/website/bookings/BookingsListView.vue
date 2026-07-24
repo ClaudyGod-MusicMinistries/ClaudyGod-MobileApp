@@ -42,7 +42,10 @@
           />
         </template>
         <template #actions="{ row }">
-          <AppButton variant="secondary" size="xs" @click="openDetail(row as unknown as Booking)">View</AppButton>
+          <div class="flex items-center justify-end gap-1.5">
+            <AppButton variant="secondary" size="xs" @click="openDetail(row as unknown as Booking)">View</AppButton>
+            <AppButton variant="danger" size="xs" @click="confirmTrash(row as unknown as Booking)">Move to trash</AppButton>
+          </div>
         </template>
       </AppResponsiveTable>
     </AppCard>
@@ -120,6 +123,44 @@ async function changeStatus(booking: Booking, status: string | number): Promise<
     ui.addToast({ tone: 'success', title: 'Status updated' });
   } catch (e) {
     ui.addToast({ tone: 'danger', title: 'Status update failed', message: e instanceof Error ? e.message : 'Please try again' });
+    return;
+  }
+
+  // Status change always applies above — this only offers the *optional*
+  // extra step of also moving it to Trash. Canceling here never undoes the
+  // status change that already happened.
+  if (String(status) === 'Declined') {
+    const alsoTrash = await ui.confirm({
+      title: 'Move to trash?',
+      message: `Booking for "${booking.firstName} ${booking.lastName}" was declined. Move it to Trash as well? You can restore it anytime within 30 days.`,
+      confirmLabel: 'Move to trash',
+      cancelLabel: 'Keep in Bookings',
+      tone: 'danger',
+    });
+    if (alsoTrash) {
+      try {
+        await store.removeBooking(booking.id);
+        ui.addToast({ tone: 'success', title: 'Moved to trash' });
+      } catch (e) {
+        ui.addToast({ tone: 'danger', title: 'Move to trash failed', message: e instanceof Error ? e.message : 'Please try again' });
+      }
+    }
+  }
+}
+
+async function confirmTrash(booking: Booking): Promise<void> {
+  const ok = await ui.confirm({
+    title: 'Move to trash',
+    message: `Move the booking from "${booking.firstName} ${booking.lastName}" to Trash? You can restore it anytime within 30 days.`,
+    confirmLabel: 'Move to trash',
+    tone: 'danger',
+  });
+  if (!ok) return;
+  try {
+    await store.removeBooking(booking.id);
+    ui.addToast({ tone: 'success', title: 'Moved to trash' });
+  } catch (e) {
+    ui.addToast({ tone: 'danger', title: 'Move to trash failed', message: e instanceof Error ? e.message : 'Please try again' });
   }
 }
 

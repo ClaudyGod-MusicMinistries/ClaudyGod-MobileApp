@@ -25,6 +25,8 @@ import type {
   Ticket,
   Subscriber,
   AdminComment,
+  TrashItem,
+  TrashEntityType,
 } from './websiteTypes';
 
 // Every function here calls through services/api's /v1/website/* module (not
@@ -155,6 +157,10 @@ export async function updateEventStatus(id: string, status: string): Promise<voi
   await client.patch(`/v1/website/events/${id}/status`, { status });
 }
 
+export async function deleteEvent(id: string): Promise<void> {
+  await client.delete(`/v1/website/events/${id}`);
+}
+
 // ─── Blog / Journal ─────────────────────────────────────────────────────────────
 
 export interface BlogListParams {
@@ -225,6 +231,10 @@ export async function updateBookingStatus(id: string, status: string, adminNotes
   await client.patch(`/v1/website/bookings/${id}/status`, { status, adminNotes });
 }
 
+export async function deleteBooking(id: string): Promise<void> {
+  await client.delete(`/v1/website/bookings/${id}`);
+}
+
 // ─── Contact messages (inbox) ─────────────────────────────────────────────────
 
 export async function listContacts(params?: { page?: number; pageSize?: number; isRead?: boolean }): Promise<
@@ -232,6 +242,10 @@ export async function listContacts(params?: { page?: number; pageSize?: number; 
 > {
   const { data } = await client.get<WebsitePaginated<ContactMessage>>('/v1/website/contacts', { params });
   return data;
+}
+
+export async function deleteContact(id: string): Promise<void> {
+  await client.delete(`/v1/website/contacts/${id}`);
 }
 
 // ─── Volunteers (inbox) ───────────────────────────────────────────────────────
@@ -243,6 +257,10 @@ export async function listVolunteers(params?: { page?: number; pageSize?: number
   return data;
 }
 
+export async function deleteVolunteer(id: string): Promise<void> {
+  await client.delete(`/v1/website/volunteers/${id}`);
+}
+
 // ─── Prayer requests (inbox) ──────────────────────────────────────────────────
 
 export async function listPrayerRequests(params?: { page?: number; pageSize?: number; status?: string }): Promise<
@@ -250,6 +268,10 @@ export async function listPrayerRequests(params?: { page?: number; pageSize?: nu
 > {
   const { data } = await client.get<WebsitePaginated<PrayerRequestItem>>('/v1/website/prayer-requests', { params });
   return data;
+}
+
+export async function deletePrayerRequest(id: string): Promise<void> {
+  await client.delete(`/v1/website/prayer-requests/${id}`);
 }
 
 // ─── Tickets (inbox) ──────────────────────────────────────────────────────────
@@ -261,6 +283,10 @@ export async function listTickets(params?: { page?: number; pageSize?: number; s
   return data;
 }
 
+export async function deleteTicket(id: string): Promise<void> {
+  await client.delete(`/v1/website/tickets/${id}`);
+}
+
 // ─── Subscribers (inbox) ──────────────────────────────────────────────────────
 
 export async function listSubscribers(params?: { page?: number; pageSize?: number }): Promise<
@@ -268,6 +294,10 @@ export async function listSubscribers(params?: { page?: number; pageSize?: numbe
 > {
   const { data } = await client.get<WebsitePaginated<Subscriber>>('/v1/website/subscribers', { params });
   return data;
+}
+
+export async function deleteSubscriber(id: string): Promise<void> {
+  await client.delete(`/v1/website/subscribers/${id}`);
 }
 
 // ─── Journal comments (moderation) ─────────────────────────────────────────────
@@ -285,4 +315,27 @@ export async function updateCommentStatus(id: string, status: string): Promise<v
 
 export async function deleteComment(id: string): Promise<void> {
   await client.delete(`/v1/website/comments/${id}`);
+}
+
+// ─── Trash / Recycle Bin ───────────────────────────────────────────────────────
+
+export async function listTrash(params?: {
+  entityType?: TrashEntityType;
+  page?: number;
+  pageSize?: number;
+}): Promise<WebsitePaginated<TrashItem>> {
+  const { data } = await client.get<WebsitePaginated<TrashItem>>('/v1/website/trash', { params });
+  return data;
+}
+
+export async function restoreTrashItem(entityType: TrashEntityType, id: string): Promise<void> {
+  await client.post(`/v1/website/trash/${entityType}/${id}/restore`);
+}
+
+export async function permanentlyDeleteTrashItem(entityType: TrashEntityType, id: string): Promise<void> {
+  await client.delete(`/v1/website/trash/${entityType}/${id}`);
+}
+
+export async function emptyTrash(): Promise<void> {
+  await client.delete('/v1/website/trash');
 }

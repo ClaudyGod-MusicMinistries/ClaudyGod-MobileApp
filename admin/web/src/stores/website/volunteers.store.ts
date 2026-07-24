@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { listVolunteers } from '@/api/website';
+import { listVolunteers, deleteVolunteer } from '@/api/website';
 import type { Volunteer } from '@/api/websiteTypes';
 
 const PAGE_SIZE = 20;
@@ -31,5 +31,10 @@ export const useVolunteersStore = defineStore('websiteVolunteers', () => {
     void fetchVolunteers();
   }
 
-  return { items, total, page, isLoading, error, pageSize: PAGE_SIZE, fetchVolunteers, setPage };
+  async function removeVolunteer(id: string): Promise<void> {
+    await deleteVolunteer(id);
+    await fetchVolunteers();
+  }
+
+  return { items, total, page, isLoading, error, pageSize: PAGE_SIZE, fetchVolunteers, setPage, removeVolunteer };
 });

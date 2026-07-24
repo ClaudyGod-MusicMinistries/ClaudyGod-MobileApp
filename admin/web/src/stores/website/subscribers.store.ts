@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { listSubscribers } from '@/api/website';
+import { listSubscribers, deleteSubscriber } from '@/api/website';
 import type { Subscriber } from '@/api/websiteTypes';
 
 const PAGE_SIZE = 20;
@@ -31,5 +31,10 @@ export const useSubscribersStore = defineStore('websiteSubscribers', () => {
     void fetchSubscribers();
   }
 
-  return { items, total, page, isLoading, error, pageSize: PAGE_SIZE, fetchSubscribers, setPage };
+  async function removeSubscriber(id: string): Promise<void> {
+    await deleteSubscriber(id);
+    await fetchSubscribers();
+  }
+
+  return { items, total, page, isLoading, error, pageSize: PAGE_SIZE, fetchSubscribers, setPage, removeSubscriber };
 });

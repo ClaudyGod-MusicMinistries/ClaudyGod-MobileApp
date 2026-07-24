@@ -23,7 +23,10 @@
           <span class="text-xs text-ink-muted">{{ formatDate(value as string) }}</span>
         </template>
         <template #actions="{ row }">
-          <AppButton variant="secondary" size="xs" @click="openDetail(row as unknown as PrayerRequestItem)">View</AppButton>
+          <div class="flex items-center justify-end gap-1.5">
+            <AppButton variant="secondary" size="xs" @click="openDetail(row as unknown as PrayerRequestItem)">View</AppButton>
+            <AppButton variant="danger" size="xs" @click="confirmTrash(row as unknown as PrayerRequestItem)">Move to trash</AppButton>
+          </div>
         </template>
       </AppResponsiveTable>
     </AppCard>
@@ -61,6 +64,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { HeartHandshake } from 'lucide-vue-next';
 import { usePrayerRequestsStore } from '@/stores/website/prayerRequests.store';
+import { useUiStore } from '@/stores/ui.store';
 import type { PrayerRequestItem } from '@/api/websiteTypes';
 import AppCard from '@/components/ui/AppCard.vue';
 import AppResponsiveTable from '@/components/ui/AppResponsiveTable.vue';
@@ -71,6 +75,7 @@ import AppPagination from '@/components/ui/AppPagination.vue';
 import WebPageHeader from '@/components/shared/WebPageHeader.vue';
 
 const store = usePrayerRequestsStore();
+const ui = useUiStore();
 
 onMounted(() => { void store.fetchPrayerRequests(); });
 
@@ -89,6 +94,22 @@ const selected = ref<PrayerRequestItem | null>(null);
 function openDetail(item: PrayerRequestItem): void {
   selected.value = item;
   detailOpen.value = true;
+}
+
+async function confirmTrash(item: PrayerRequestItem): Promise<void> {
+  const ok = await ui.confirm({
+    title: 'Move to trash',
+    message: `Move the prayer request from "${item.name}" to Trash? You can restore it anytime within 30 days.`,
+    confirmLabel: 'Move to trash',
+    tone: 'danger',
+  });
+  if (!ok) return;
+  try {
+    await store.removePrayerRequest(item.id);
+    ui.addToast({ tone: 'success', title: 'Moved to trash' });
+  } catch (e) {
+    ui.addToast({ tone: 'danger', title: 'Move to trash failed', message: e instanceof Error ? e.message : 'Please try again' });
+  }
 }
 
 function formatDate(iso: string): string {
