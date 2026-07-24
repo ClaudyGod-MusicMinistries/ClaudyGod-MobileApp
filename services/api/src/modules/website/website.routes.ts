@@ -229,6 +229,42 @@ websiteRouter.get(
   }),
 );
 
+// Categories/tags registered ahead of the /blog/:slug catch-all below —
+// Express matches routes in registration order (unlike ASP.NET's specificity
+// routing on the CGM-Backend side), so "categories"/"tags" would otherwise be
+// swallowed by :slug.
+websiteRouter.get(
+  '/blog/categories',
+  asyncHandler(async (req, res) => {
+    const actor = requireAdmin(req);
+    res.status(200).json(await cgmRequest('GET', '/blog/categories', actor));
+  }),
+);
+
+websiteRouter.post(
+  '/blog/categories',
+  asyncHandler(async (req, res) => {
+    const actor = requireAdmin(req);
+    res.status(201).json(await cgmRequest('POST', '/blog/categories', actor, { body: req.body }));
+  }),
+);
+
+websiteRouter.get(
+  '/blog/tags',
+  asyncHandler(async (req, res) => {
+    const actor = requireAdmin(req);
+    res.status(200).json(await cgmRequest('GET', '/blog/tags', actor));
+  }),
+);
+
+websiteRouter.post(
+  '/blog/tags',
+  asyncHandler(async (req, res) => {
+    const actor = requireAdmin(req);
+    res.status(201).json(await cgmRequest('POST', '/blog/tags', actor, { body: req.body }));
+  }),
+);
+
 websiteRouter.get(
   '/blog/:slug',
   asyncHandler(async (req, res) => {

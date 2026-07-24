@@ -16,6 +16,8 @@ import type {
   BlogPost,
   BlogPostDetail,
   BlogPostInput,
+  BlogCategory,
+  BlogTag,
   Booking,
   ContactMessage,
   Volunteer,
@@ -187,6 +189,26 @@ export async function deleteBlogPost(id: string): Promise<void> {
 
 export async function updateBlogPostStatus(id: string, status: string): Promise<void> {
   await client.patch(`/v1/website/blog/${id}/status`, { status });
+}
+
+export async function listBlogCategories(): Promise<BlogCategory[]> {
+  const { data } = await client.get<BlogCategory[]>('/v1/website/blog/categories');
+  return data;
+}
+
+export async function createBlogCategory(name: string, description?: string): Promise<{ id: string }> {
+  const { data } = await client.post<{ id: string }>('/v1/website/blog/categories', { name, description });
+  return data;
+}
+
+export async function listBlogTags(): Promise<BlogTag[]> {
+  const { data } = await client.get<BlogTag[]>('/v1/website/blog/tags');
+  return data;
+}
+
+export async function createBlogTag(name: string): Promise<{ id: string }> {
+  const { data } = await client.post<{ id: string }>('/v1/website/blog/tags', { name });
+  return data;
 }
 
 // ─── Bookings (inbox) ────────────────────────────────────────────────────────
