@@ -185,6 +185,14 @@ const envSchema = z
 
     MOBILE_API_KEY: z.string().min(16, 'MOBILE_API_KEY must contain at least 16 characters'),
 
+    // The real .NET website backend (CGM-Backend) — the website module proxies
+    // admin actions here, attaching this key server-to-server the same way
+    // MOBILE_API_KEY protects the mobile-facing surface. Left optional (empty
+    // default) so this deploys additively — routes under /v1/website/* return
+    // a clear 503 if unset rather than the whole app failing to boot.
+    CGM_API_BASE_URL: optionalUrl(),
+    CGM_API_KEY: z.string().optional().default(''),
+
     MAIL_FROM: z.string().default('ClaudyGod <noreply@claudygod.example>'),
     MAIL_REPLY_TO: z.string().optional().default(''),
     EMAIL_BRAND_NAME: z.string().trim().min(2).max(80).default('ClaudyGod'),
@@ -602,6 +610,7 @@ export const env = {
         ? 'Postfix Relay'
         : 'Generic SMTP',
   YOUTUBE_ENABLED: Boolean(raw.YOUTUBE_API_KEY && raw.YOUTUBE_CHANNEL_ID),
+  CGM_ENABLED: Boolean(raw.CGM_API_BASE_URL && raw.CGM_API_KEY),
   ADMIN_SIGNUP_ENABLED: Boolean(raw.ADMIN_SIGNUP_CODE),
   ADMIN_WEB_URL: raw.ADMIN_WEB_URL?.trim() || '',
   ADMIN_INVITE_TTL_HOURS: Number(raw.ADMIN_INVITE_TTL_HOURS ?? 72),
