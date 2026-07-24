@@ -194,19 +194,19 @@ const router = createRouter({
         {
           path: 'products',
           name: 'web-products',
-          component: () => import('@/views/website/WebComingSoonView.vue'),
+          component: () => import('@/views/website/products/ProductsListView.vue'),
           meta: { minRole: Role.ADMIN, title: 'Store products' },
         },
         {
           path: 'media',
           name: 'web-media',
-          component: () => import('@/views/website/WebComingSoonView.vue'),
+          component: () => import('@/views/website/media/MediaListView.vue'),
           meta: { minRole: Role.ADMIN, title: 'Videos' },
         },
         {
           path: 'faqs',
           name: 'web-faqs',
-          component: () => import('@/views/website/WebComingSoonView.vue'),
+          component: () => import('@/views/website/faqs/FaqsListView.vue'),
           meta: { minRole: Role.ADMIN, title: 'FAQs' },
         },
         {
