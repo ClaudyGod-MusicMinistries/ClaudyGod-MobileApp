@@ -42,7 +42,7 @@
           />
         </template>
         <template #cell-createdAt="{ value }">
-          <span class="text-xs text-ink-muted">{{ formatDate(value as string) }}</span>
+          <span class="text-xs text-ink-muted" :title="exactDateTime(value as string)">{{ relativeTime(value as string) }}</span>
         </template>
         <template #actions="{ row }">
           <div class="flex items-center justify-end gap-1.5">
@@ -85,6 +85,7 @@ import { ref, computed, onMounted } from 'vue';
 import { MessageSquare, CornerDownRight as ReplyIcon } from 'lucide-vue-next';
 import { useCommentsStore } from '@/stores/website/comments.store';
 import { useUiStore } from '@/stores/ui.store';
+import { relativeTime, exactDateTime } from '@/utils/relativeTime';
 import type { AdminComment } from '@/api/websiteTypes';
 import AppCard from '@/components/ui/AppCard.vue';
 import AppResponsiveTable from '@/components/ui/AppResponsiveTable.vue';
@@ -172,11 +173,5 @@ async function confirmDelete(comment: AdminComment): Promise<void> {
   } catch (e) {
     ui.addToast({ tone: 'danger', title: 'Delete failed', message: e instanceof Error ? e.message : 'Please try again' });
   }
-}
-
-function formatDate(iso: string): string {
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return '—';
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 }
 </script>
