@@ -57,7 +57,7 @@
     <AppModal v-model="modalOpen" :title="editingId ? 'Edit post' : 'New post'" size="xl">
       <div class="grid grid-cols-1 gap-4">
         <AppInput :model-value="form.title" label="Title" required @update:model-value="onTitleInput" />
-        <AppInput v-model="form.slug" label="Slug" required hint="URL-friendly, e.g. my-first-post" />
+        <AppInput :model-value="form.slug" label="Slug" required hint="URL-friendly, e.g. my-first-post" @update:model-value="onSlugInput" />
         <AppInput v-model="form.authorName" label="Author" />
         <AppTextarea v-model="form.excerpt" label="Excerpt" :rows="2" hint="Short summary shown on the Journal listing" />
         <AppTextarea v-model="form.content" label="Content" required :rows="14" />
@@ -166,6 +166,11 @@ function onTitleInput(value: string): void {
   if (!slugManuallyEdited.value) {
     form.slug = slugify(form.title);
   }
+}
+
+function onSlugInput(value: string): void {
+  form.slug = value;
+  slugManuallyEdited.value = true;
 }
 
 function openCreate(): void {
