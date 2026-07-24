@@ -4,13 +4,11 @@
     <div class="flex items-center gap-3 min-w-0">
       <button
         type="button"
-        class="lg:hidden -ml-1 p-2 rounded-xl text-ink-muted hover:text-ink hover:bg-white/8 transition-colors flex-shrink-0"
+        class="lg:hidden -ml-1 p-2 rounded-xl text-ink-muted hover:text-ink hover:bg-surface-hover transition-colors flex-shrink-0"
         aria-label="Open navigation menu"
         @click="ui.toggleMobileDrawer()"
       >
-        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-        </svg>
+        <Menu class="w-5 h-5" />
       </button>
 
       <div class="min-w-0">
@@ -25,17 +23,39 @@
 
     <!-- Right actions -->
     <div class="flex items-center gap-2.5 flex-shrink-0">
+      <!-- Replay onboarding tour for this page -->
+      <button
+        v-if="tour.hasCurrentTour()"
+        type="button"
+        class="p-2 rounded-xl text-ink-muted hover:text-ink hover:bg-surface-hover transition-colors"
+        aria-label="Show a guided tour of this page"
+        title="Show a guided tour of this page"
+        @click="tour.replayCurrentTour()"
+      >
+        <HelpCircle class="w-4 h-4" />
+      </button>
+
+      <!-- Theme toggle -->
+      <button
+        type="button"
+        class="p-2 rounded-xl text-ink-muted hover:text-ink hover:bg-surface-hover transition-colors"
+        :aria-label="preferences.theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
+        :title="preferences.theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
+        @click="preferences.toggleTheme()"
+      >
+        <Sun v-if="preferences.theme === 'dark'" class="w-4 h-4" />
+        <Moon v-else class="w-4 h-4" />
+      </button>
+
       <!-- User menu -->
       <div class="relative" ref="menuRef">
         <button
           type="button"
-          class="flex items-center gap-2 p-1 rounded-xl hover:bg-white/8 transition-colors"
+          class="flex items-center gap-2 p-1 rounded-xl hover:bg-surface-hover transition-colors"
           @click="menuOpen = !menuOpen"
         >
           <UserAvatar :name="auth.user?.displayName ?? undefined" :email="auth.user?.email ?? undefined" size="sm" />
-          <svg class="w-3 h-3 text-ink-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-          </svg>
+          <ChevronDown class="w-3 h-3 text-ink-muted" />
         </button>
 
         <Transition name="dropdown">
@@ -49,9 +69,7 @@
               class="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-danger hover:bg-danger/8 transition-colors"
               @click="() => { menuOpen = false; auth.logout(); }"
             >
-              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
+              <LogOut class="w-4 h-4" />
               Sign out
             </button>
           </div>
@@ -65,13 +83,18 @@
 import { ref, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { onClickOutside } from '@vueuse/core';
+import { Menu, HelpCircle, Sun, Moon, ChevronDown, LogOut } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/auth.store';
 import { useUiStore } from '@/stores/ui.store';
+import { usePreferencesStore } from '@/stores/preferences.store';
+import { useOnboardingTour } from '@/composables/useOnboardingTour';
 import UserAvatar from '@/components/shared/UserAvatar.vue';
 
 const route = useRoute();
 const auth = useAuthStore();
 const ui = useUiStore();
+const preferences = usePreferencesStore();
+const tour = useOnboardingTour();
 
 const menuOpen = ref(false);
 const menuRef = ref<HTMLElement | null>(null);
