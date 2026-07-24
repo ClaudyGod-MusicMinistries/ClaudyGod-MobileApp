@@ -28,6 +28,7 @@ import { liveRouter } from './modules/live/live.routes';
 import { meRouter } from './modules/me/me.routes';
 import { mobileRouter } from './modules/mobile/mobile.routes';
 import { youtubeRouter } from './modules/youtube/youtube.routes';
+import { websiteRouter } from './modules/website/website.routes';
 import { adminWordOfDayRouter, mobileWordOfDayRouter } from './modules/wordOfDay/wordOfDay.routes';
 import engagementRouter from './modules/engagement/engagement.routes';
 import { searchRouter } from './modules/search/search.routes';
@@ -211,6 +212,7 @@ export const createApp = () => {
   app.use('/v1/admin/word-of-day', adminWordOfDayRouter);
   app.use('/v1/admin/analytics', adminAnalyticsRouter);
   app.use('/v1/youtube', youtubeRouter);
+  app.use('/v1/website', websiteRouter);
   app.use('/v1/search', searchRouter);
   app.use('/v1/me/devices', devicesRouter);
 
