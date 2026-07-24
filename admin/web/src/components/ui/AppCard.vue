@@ -15,6 +15,6 @@ const props = withDefaults(defineProps<{
 const toneClass = computed(() => ({
   default: 'bg-surface border-border',
   strong: 'bg-surface-strong border-border-strong',
-  subtle: 'bg-white/3 border-border',
+  subtle: 'bg-surface-hover border-border',
 }[props.tone]));
 </script>

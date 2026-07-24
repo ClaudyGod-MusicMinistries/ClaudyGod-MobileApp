@@ -17,7 +17,7 @@
           <AppBadge :tone="value ? 'neutral' : 'primary'">{{ value ? 'Read' : 'Unread' }}</AppBadge>
         </template>
         <template #cell-createdAt="{ value }">
-          <span class="text-xs text-ink-muted">{{ formatDate(value as string) }}</span>
+          <span class="text-xs text-ink-muted" :title="exactDateTime(value as string)">{{ relativeTime(value as string) }}</span>
         </template>
         <template #actions="{ row }">
           <div class="flex items-center justify-end gap-1.5">
@@ -31,16 +31,18 @@
     <AppPagination :page="store.page" :page-size="store.pageSize" :total="store.total" @change="store.setPage" />
 
     <AppModal v-model="detailOpen" title="Contact message" size="md">
-      <div v-if="selected" class="space-y-3 text-sm">
-        <div>
-          <p class="text-xs font-semibold text-ink-soft uppercase tracking-wide">From</p>
-          <p class="text-ink">{{ selected.name }} — {{ selected.email }}</p>
+      <div v-if="selected" class="space-y-4">
+        <DetailModalHeader :name="selected.name" :subtitle="selected.email" :timestamp="selected.createdAt" />
+
+        <div class="rounded-xl bg-bg-1 border border-border p-4">
+          <p class="text-sm text-ink-soft leading-relaxed whitespace-pre-wrap">{{ selected.message }}</p>
         </div>
-        <div>
-          <p class="text-xs font-semibold text-ink-soft uppercase tracking-wide">Message</p>
-          <p class="text-ink-soft whitespace-pre-wrap">{{ selected.message }}</p>
+
+        <div class="flex flex-wrap gap-1.5">
+          <DetailChip label="Status" :value="selected.isRead ? 'Read' : 'Unread'" />
         </div>
-        <div class="pt-2">
+
+        <div class="pt-1">
           <AppButton size="sm" tag="a" :href="`mailto:${selected.email}`">Reply by email</AppButton>
         </div>
       </div>
@@ -53,6 +55,7 @@ import { ref, computed, onMounted } from 'vue';
 import { Mail } from 'lucide-vue-next';
 import { useContactsStore } from '@/stores/website/contacts.store';
 import { useUiStore } from '@/stores/ui.store';
+import { relativeTime, exactDateTime } from '@/utils/relativeTime';
 import type { ContactMessage } from '@/api/websiteTypes';
 import AppCard from '@/components/ui/AppCard.vue';
 import AppResponsiveTable from '@/components/ui/AppResponsiveTable.vue';
@@ -61,6 +64,8 @@ import AppModal from '@/components/ui/AppModal.vue';
 import AppBadge from '@/components/ui/AppBadge.vue';
 import AppPagination from '@/components/ui/AppPagination.vue';
 import WebPageHeader from '@/components/shared/WebPageHeader.vue';
+import DetailModalHeader from '@/components/shared/DetailModalHeader.vue';
+import DetailChip from '@/components/shared/DetailChip.vue';
 
 const store = useContactsStore();
 const ui = useUiStore();
@@ -100,9 +105,4 @@ async function confirmTrash(message: ContactMessage): Promise<void> {
   }
 }
 
-function formatDate(iso: string): string {
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return '—';
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-}
 </script>

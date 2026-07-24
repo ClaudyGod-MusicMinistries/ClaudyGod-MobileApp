@@ -18,6 +18,6 @@ const toneClass = computed(() => ({
   danger: 'bg-danger/15 text-danger',
   warning: 'bg-amber/15 text-amber',
   info: 'bg-info/15 text-info',
-  neutral: 'bg-white/8 text-ink-soft',
+  neutral: 'bg-surface-hover text-ink-soft',
 }[props.tone]));
 </script>

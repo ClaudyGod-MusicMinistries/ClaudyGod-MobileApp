@@ -3,18 +3,82 @@
 @tailwind utilities;
 
 /* ─── Brand CSS custom properties ─────────────────────────────────────────────
-   Only the values actually consumed below (body's background + font-family) live
-   here. Everything else (colors, radius, shadows) has one source of truth:
-   tailwind.config.ts — use Tailwind utility classes, not a second var(--x) system. */
+   Single source of truth for every color tailwind.config.ts exposes (bg/surface/
+   primary/ink/border/danger/success/amber/info) — the Tailwind config only maps
+   token names to var() lookups, the actual values live here, once per theme.
+   Light is the default (unclassed :root); dark overrides under :root.dark, toggled
+   by src/stores/preferences.store.ts via a class on <html>. Triplets are stored as
+   space-separated "R G B" so Tailwind's <alpha-value> opacity modifiers keep working
+   (e.g. bg-primary/10); tokens that were always used at one fixed alpha (surface,
+   border, the *-muted variants) bake the alpha directly into the var instead. */
 :root {
-  --bg-1: #05040a;
-  --bg-2: #0d0c14;
-  --bg-3: #171523;
-  --ink: #f7f4ff;
-  --primary-rgb: 141, 99, 255;
-  --primary-soft-rgb: 197, 181, 255;
+  --bg-1: 250 250 252;
+  --bg-2: 244 243 250;
+  --bg-3: 237 235 247;
+
+  --surface: 255 255 255 / 0.72;
+  --surface-strong: 255 255 255 / 0.92;
+  --surface-hover: 17 12 36 / 0.05;
+
+  --primary: 141 99 255;
+  --primary-soft: 109 66 214;
+  --primary-muted: 141 99 255 / 0.14;
+
+  --ink: 23 20 38;
+  --ink-soft: 90 84 120;
+  --ink-muted: 130 124 158;
+
+  --border: 141 99 255 / 0.14;
+  --border-strong: 141 99 255 / 0.24;
+
+  --danger: 194 65 65;
+  --danger-muted: 194 65 65 / 0.12;
+  --success: 4 120 87;
+  --success-muted: 4 120 87 / 0.12;
+  --amber: 180 83 9;
+  --amber-muted: 180 83 9 / 0.12;
+  --info: 37 99 235;
+  --info-muted: 37 99 235 / 0.12;
+
   --font-body: "Inter", "Aptos", "Segoe UI Variable", "SF Pro Text", system-ui, -apple-system, sans-serif;
 }
+
+:root.dark {
+  --bg-1: 5 4 10;
+  --bg-2: 13 12 20;
+  --bg-3: 23 21 35;
+
+  --surface: 12 10 20 / 0.86;
+  --surface-strong: 18 16 28 / 0.94;
+  --surface-hover: 255 255 255 / 0.06;
+
+  --primary: 141 99 255;
+  --primary-soft: 197 181 255;
+  --primary-muted: 141 99 255 / 0.14;
+
+  --ink: 247 244 255;
+  --ink-soft: 170 163 197;
+  --ink-muted: 139 132 166;
+
+  --border: 141 99 255 / 0.14;
+  --border-strong: 141 99 255 / 0.28;
+
+  --danger: 225 109 109;
+  --danger-muted: 225 109 109 / 0.14;
+  --success: 52 211 153;
+  --success-muted: 52 211 153 / 0.14;
+  --amber: 245 158 11;
+  --amber-muted: 245 158 11 / 0.14;
+  --info: 96 165 250;
+  --info-muted: 96 165 250 / 0.14;
+}
+
+/* ─── Typography discipline ────────────────────────────────────────────────────
+   Body/UI text: font-normal at text-sm/text-xs. Headers: font-bold for page
+   titles, font-semibold for section/card headers. font-black (900) is reserved
+   for large numeric stat displays (AppStatCard) only — everywhere else it reads
+   as heavy/shouty rather than premium. This is a convention, not enforced by a
+   lint rule; keep new views consistent with it by eye. */
 
 /* ─── Base reset ───────────────────────────────────────────────────────────── */
 *, *::before, *::after {
@@ -33,30 +97,29 @@ html, body, #root {
 
 body {
   margin: 0;
-  color: var(--ink);
+  color: rgb(var(--ink));
   font-family: var(--font-body);
   background:
-    linear-gradient(170deg, rgba(5, 4, 10, 0.98), rgba(12, 10, 20, 0.98)),
-    radial-gradient(920px 560px at 6% -8%, rgba(var(--primary-rgb), 0.16), transparent 60%),
-    radial-gradient(860px 560px at 100% -4%, rgba(var(--primary-soft-rgb), 0.1), transparent 62%),
-    linear-gradient(180deg, var(--bg-1) 0%, var(--bg-2) 48%, var(--bg-3) 100%);
+    radial-gradient(920px 560px at 6% -8%, rgb(var(--primary) / 0.16), transparent 60%),
+    linear-gradient(180deg, rgb(var(--bg-1)) 0%, rgb(var(--bg-2)) 48%, rgb(var(--bg-3)) 100%);
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
   background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 /* ─── Scrollbar ────────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(141,99,255,0.22); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(141,99,255,0.40); }
+::-webkit-scrollbar-thumb { background: rgb(var(--primary) / 0.22); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgb(var(--primary) / 0.40); }
 
 /* ─── Focus ring ───────────────────────────────────────────────────────────── */
 :focus-visible {
-  outline: 2px solid rgba(141,99,255,0.6);
+  outline: 2px solid rgb(var(--primary) / 0.6);
   outline-offset: 2px;
 }
 

@@ -20,7 +20,7 @@
           <AppBadge tone="neutral">{{ value }}</AppBadge>
         </template>
         <template #cell-createdAt="{ value }">
-          <span class="text-xs text-ink-muted">{{ formatDate(value as string) }}</span>
+          <span class="text-xs text-ink-muted" :title="exactDateTime(value as string)">{{ relativeTime(value as string) }}</span>
         </template>
         <template #actions="{ row }">
           <div class="flex items-center justify-end gap-1.5">
@@ -34,25 +34,26 @@
     <AppPagination :page="store.page" :page-size="store.pageSize" :total="store.total" @change="store.setPage" />
 
     <AppModal v-model="detailOpen" title="Prayer request" size="md">
-      <div v-if="selected" class="space-y-3 text-sm">
+      <div v-if="selected" class="space-y-4">
         <AppBadge v-if="selected.isConfidential" tone="warning">Confidential — handle with care</AppBadge>
-        <div>
-          <p class="text-xs font-semibold text-ink-soft uppercase tracking-wide">From</p>
-          <p class="text-ink">{{ selected.name }} — {{ selected.email }}</p>
+
+        <DetailModalHeader :name="selected.name" :subtitle="selected.email" :timestamp="selected.createdAt" />
+
+        <div class="rounded-xl bg-bg-1 border border-border p-4">
+          <p class="text-sm text-ink-soft leading-relaxed whitespace-pre-wrap">{{ selected.requestText }}</p>
         </div>
-        <div>
-          <p class="text-xs font-semibold text-ink-soft uppercase tracking-wide">Subject</p>
-          <p class="text-ink">{{ selected.subject }}</p>
+
+        <div class="flex flex-wrap gap-1.5">
+          <DetailChip label="Subject" :value="selected.subject" />
+          <DetailChip label="Status" :value="selected.status" />
         </div>
-        <div>
-          <p class="text-xs font-semibold text-ink-soft uppercase tracking-wide">Request</p>
-          <p class="text-ink-soft whitespace-pre-wrap">{{ selected.requestText }}</p>
+
+        <div v-if="selected.adminResponse" class="rounded-xl bg-white/5 border border-border p-4">
+          <p class="text-xs font-semibold text-ink-soft uppercase tracking-wide mb-1.5">Response sent</p>
+          <p class="text-sm text-ink-soft leading-relaxed whitespace-pre-wrap">{{ selected.adminResponse }}</p>
         </div>
-        <div v-if="selected.adminResponse">
-          <p class="text-xs font-semibold text-ink-soft uppercase tracking-wide">Response sent</p>
-          <p class="text-ink-soft whitespace-pre-wrap">{{ selected.adminResponse }}</p>
-        </div>
-        <div class="pt-2">
+
+        <div class="pt-1">
           <AppButton size="sm" tag="a" :href="`mailto:${selected.email}`">Reply by email</AppButton>
         </div>
       </div>
@@ -65,6 +66,7 @@ import { ref, computed, onMounted } from 'vue';
 import { HeartHandshake } from 'lucide-vue-next';
 import { usePrayerRequestsStore } from '@/stores/website/prayerRequests.store';
 import { useUiStore } from '@/stores/ui.store';
+import { relativeTime, exactDateTime } from '@/utils/relativeTime';
 import type { PrayerRequestItem } from '@/api/websiteTypes';
 import AppCard from '@/components/ui/AppCard.vue';
 import AppResponsiveTable from '@/components/ui/AppResponsiveTable.vue';
@@ -112,9 +114,4 @@ async function confirmTrash(item: PrayerRequestItem): Promise<void> {
   }
 }
 
-function formatDate(iso: string): string {
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return '—';
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-}
 </script>

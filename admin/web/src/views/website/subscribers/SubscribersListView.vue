@@ -14,7 +14,7 @@
           <AppBadge :tone="value ? 'success' : 'neutral'">{{ value ? 'Active' : 'Unsubscribed' }}</AppBadge>
         </template>
         <template #cell-createdAt="{ value }">
-          <span class="text-xs text-ink-muted">{{ formatDate(value as string) }}</span>
+          <span class="text-xs text-ink-muted" :title="exactDateTime(value as string)">{{ relativeTime(value as string) }}</span>
         </template>
         <template #actions="{ row }">
           <AppButton variant="danger" size="xs" @click="confirmTrash(row as unknown as Subscriber)">Move to trash</AppButton>
@@ -31,6 +31,7 @@ import { computed, onMounted } from 'vue';
 import { Users2 } from 'lucide-vue-next';
 import { useSubscribersStore } from '@/stores/website/subscribers.store';
 import { useUiStore } from '@/stores/ui.store';
+import { relativeTime, exactDateTime } from '@/utils/relativeTime';
 import type { Subscriber } from '@/api/websiteTypes';
 import AppCard from '@/components/ui/AppCard.vue';
 import AppResponsiveTable from '@/components/ui/AppResponsiveTable.vue';
@@ -52,12 +53,6 @@ const columns = [
   { key: 'isActive', label: 'Status' },
   { key: 'createdAt', label: 'Subscribed', align: 'right' as const },
 ];
-
-function formatDate(iso: string): string {
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return '—';
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-}
 
 async function confirmTrash(subscriber: Subscriber): Promise<void> {
   const ok = await ui.confirm({

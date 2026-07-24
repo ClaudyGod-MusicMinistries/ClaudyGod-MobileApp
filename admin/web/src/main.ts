@@ -24,7 +24,12 @@ if (sentryDsn) {
 app.use(pinia);
 app.use(router);
 
-// Attempt to restore session from saved refresh token before mounting.
+// Apply the persisted/system theme before the first paint so there's no flash of
+// the wrong theme, then attempt to restore session from the saved refresh token.
+import('./stores/preferences.store').then(({ usePreferencesStore }) => {
+  usePreferencesStore().init();
+});
+
 import('./stores/auth.store').then(({ useAuthStore }) => {
   const auth = useAuthStore();
   auth.restoreSession().finally(() => {

@@ -8,6 +8,8 @@ export const REFRESH_TOKEN_KEY = 'claudy_admin_refresh_token';
 // Reserved for a future per-browser preview URL override (e.g. staging) — not built
 // yet; the mobile preview panel uses MOBILE_PREVIEW_DEFAULT_URL directly for now.
 export const MOBILE_PREVIEW_URL_KEY = 'claudy_admin_mobile_preview_url';
+export const THEME_STORAGE_KEY = 'claudy_admin_theme';
+export const TOUR_SEEN_STORAGE_KEY = 'claudy_admin_tour_seen';
 export const MOBILE_PREVIEW_DEFAULT_URL = 'https://mobileapp.claudygod.org';
 export const BRAND_LOGO_URL = '/brand/claudy-logo.png';
 export const GOOGLE_LOGIN_URL = import.meta.env.VITE_GOOGLE_LOGIN_URL || '';
