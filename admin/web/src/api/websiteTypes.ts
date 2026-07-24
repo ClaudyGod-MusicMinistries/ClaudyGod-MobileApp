@@ -232,6 +232,16 @@ export interface BlogPostInput {
   publish?: boolean;
 }
 
+export interface BlogCategory {
+  id: string;
+  name: string;
+}
+
+export interface BlogTag {
+  id: string;
+  name: string;
+}
+
 // ─── Bookings ─────────────────────────────────────────────────────────────────
 
 export interface Booking {
