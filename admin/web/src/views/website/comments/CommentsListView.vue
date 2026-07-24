@@ -56,23 +56,21 @@
     <AppPagination :page="store.page" :page-size="store.pageSize" :total="store.total" @change="store.setPage" />
 
     <AppModal v-model="detailOpen" title="Comment" size="md">
-      <div v-if="selected" class="space-y-3 text-sm">
-        <div>
-          <p class="text-xs font-semibold text-ink-soft uppercase tracking-wide">From</p>
-          <p class="text-ink">{{ selected.authorName }} — {{ selected.authorEmail }}</p>
+      <div v-if="selected" class="space-y-4">
+        <AppBadge v-if="selected.parentCommentId" tone="neutral">Reply to another comment</AppBadge>
+
+        <DetailModalHeader :name="selected.authorName" :subtitle="selected.authorEmail" :timestamp="selected.createdAt" />
+
+        <div class="rounded-xl bg-bg-1 border border-border p-4">
+          <p class="text-sm text-ink-soft leading-relaxed whitespace-pre-wrap">{{ selected.content }}</p>
         </div>
-        <div>
-          <p class="text-xs font-semibold text-ink-soft uppercase tracking-wide">Post</p>
-          <p class="text-ink">{{ selected.blogPostTitle }}</p>
+
+        <div class="flex flex-wrap gap-1.5">
+          <DetailChip label="Post" :value="selected.blogPostTitle" />
+          <DetailChip label="Status" :value="selected.status" />
         </div>
-        <div v-if="selected.parentCommentId">
-          <AppBadge tone="neutral">Reply to another comment</AppBadge>
-        </div>
-        <div>
-          <p class="text-xs font-semibold text-ink-soft uppercase tracking-wide">Comment</p>
-          <p class="text-ink-soft whitespace-pre-wrap">{{ selected.content }}</p>
-        </div>
-        <div class="pt-2">
+
+        <div class="pt-1">
           <AppButton size="sm" tag="a" :href="`mailto:${selected.authorEmail}`">Reply by email</AppButton>
         </div>
       </div>
@@ -95,6 +93,8 @@ import AppSelect from '@/components/ui/AppSelect.vue';
 import AppBadge from '@/components/ui/AppBadge.vue';
 import AppPagination from '@/components/ui/AppPagination.vue';
 import WebPageHeader from '@/components/shared/WebPageHeader.vue';
+import DetailModalHeader from '@/components/shared/DetailModalHeader.vue';
+import DetailChip from '@/components/shared/DetailChip.vue';
 
 const store = useCommentsStore();
 const ui = useUiStore();
