@@ -185,6 +185,10 @@ export async function deleteBlogPost(id: string): Promise<void> {
   await client.delete(`/v1/website/blog/${id}`);
 }
 
+export async function updateBlogPostStatus(id: string, status: string): Promise<void> {
+  await client.patch(`/v1/website/blog/${id}/status`, { status });
+}
+
 // ─── Bookings (inbox) ────────────────────────────────────────────────────────
 
 export async function listBookings(params?: { page?: number; pageSize?: number; status?: string }): Promise<

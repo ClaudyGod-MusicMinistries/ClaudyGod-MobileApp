@@ -212,7 +212,7 @@ const router = createRouter({
         {
           path: 'events',
           name: 'web-events',
-          component: () => import('@/views/website/WebComingSoonView.vue'),
+          component: () => import('@/views/website/events/EventsListView.vue'),
           meta: { minRole: Role.ADMIN, title: 'Events' },
         },
         {
