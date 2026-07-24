@@ -263,6 +263,12 @@ const router = createRouter({
           component: () => import('@/views/website/subscribers/SubscribersListView.vue'),
           meta: { minRole: Role.ADMIN, title: 'Subscribers' },
         },
+        {
+          path: 'trash',
+          name: 'web-trash',
+          component: () => import('@/views/website/trash/TrashListView.vue'),
+          meta: { minRole: Role.ADMIN, title: 'Trash' },
+        },
       ],
     },
 

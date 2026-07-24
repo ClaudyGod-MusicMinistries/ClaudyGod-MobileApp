@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { listBookings, updateBookingStatus } from '@/api/website';
+import { listBookings, updateBookingStatus, deleteBooking } from '@/api/website';
 import type { Booking } from '@/api/websiteTypes';
 
 const PAGE_SIZE = 20;
@@ -43,5 +43,10 @@ export const useBookingsStore = defineStore('websiteBookings', () => {
     await fetchBookings();
   }
 
-  return { items, total, page, statusFilter, isLoading, error, pageSize: PAGE_SIZE, fetchBookings, setPage, setStatusFilter, changeStatus };
+  async function removeBooking(id: string): Promise<void> {
+    await deleteBooking(id);
+    await fetchBookings();
+  }
+
+  return { items, total, page, statusFilter, isLoading, error, pageSize: PAGE_SIZE, fetchBookings, setPage, setStatusFilter, changeStatus, removeBooking };
 });

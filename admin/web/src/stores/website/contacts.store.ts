@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { listContacts } from '@/api/website';
+import { listContacts, deleteContact } from '@/api/website';
 import type { ContactMessage } from '@/api/websiteTypes';
 
 const PAGE_SIZE = 20;
@@ -31,5 +31,10 @@ export const useContactsStore = defineStore('websiteContacts', () => {
     void fetchContacts();
   }
 
-  return { items, total, page, isLoading, error, pageSize: PAGE_SIZE, fetchContacts, setPage };
+  async function removeContact(id: string): Promise<void> {
+    await deleteContact(id);
+    await fetchContacts();
+  }
+
+  return { items, total, page, isLoading, error, pageSize: PAGE_SIZE, fetchContacts, setPage, removeContact };
 });

@@ -20,7 +20,10 @@
           <span class="text-xs text-ink-muted">{{ formatDate(value as string) }}</span>
         </template>
         <template #actions="{ row }">
-          <AppButton variant="secondary" size="xs" @click="openDetail(row as unknown as ContactMessage)">View</AppButton>
+          <div class="flex items-center justify-end gap-1.5">
+            <AppButton variant="secondary" size="xs" @click="openDetail(row as unknown as ContactMessage)">View</AppButton>
+            <AppButton variant="danger" size="xs" @click="confirmTrash(row as unknown as ContactMessage)">Move to trash</AppButton>
+          </div>
         </template>
       </AppResponsiveTable>
     </AppCard>
@@ -49,6 +52,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { Mail } from 'lucide-vue-next';
 import { useContactsStore } from '@/stores/website/contacts.store';
+import { useUiStore } from '@/stores/ui.store';
 import type { ContactMessage } from '@/api/websiteTypes';
 import AppCard from '@/components/ui/AppCard.vue';
 import AppResponsiveTable from '@/components/ui/AppResponsiveTable.vue';
@@ -59,6 +63,7 @@ import AppPagination from '@/components/ui/AppPagination.vue';
 import WebPageHeader from '@/components/shared/WebPageHeader.vue';
 
 const store = useContactsStore();
+const ui = useUiStore();
 
 onMounted(() => { void store.fetchContacts(); });
 
@@ -77,6 +82,22 @@ const selected = ref<ContactMessage | null>(null);
 function openDetail(message: ContactMessage): void {
   selected.value = message;
   detailOpen.value = true;
+}
+
+async function confirmTrash(message: ContactMessage): Promise<void> {
+  const ok = await ui.confirm({
+    title: 'Move to trash',
+    message: `Move the message from "${message.name}" to Trash? You can restore it anytime within 30 days.`,
+    confirmLabel: 'Move to trash',
+    tone: 'danger',
+  });
+  if (!ok) return;
+  try {
+    await store.removeContact(message.id);
+    ui.addToast({ tone: 'success', title: 'Moved to trash' });
+  } catch (e) {
+    ui.addToast({ tone: 'danger', title: 'Move to trash failed', message: e instanceof Error ? e.message : 'Please try again' });
+  }
 }
 
 function formatDate(iso: string): string {
