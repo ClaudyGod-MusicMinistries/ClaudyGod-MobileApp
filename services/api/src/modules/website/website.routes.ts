@@ -261,6 +261,14 @@ websiteRouter.delete(
   }),
 );
 
+websiteRouter.patch(
+  '/blog/:id/status',
+  asyncHandler(async (req, res) => {
+    const actor = requireAdmin(req);
+    res.status(200).json(await cgmRequest('PATCH', `/blog/${req.params.id}/status`, actor, { body: req.body }));
+  }),
+);
+
 // ─── Bookings (inbox — list + status only, no create/delete from the admin
 // side; bookings are submitted by the public through the website itself) ────
 

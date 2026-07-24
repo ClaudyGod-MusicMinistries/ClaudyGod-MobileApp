@@ -225,6 +225,11 @@ export interface BlogPostInput {
   authorName?: string | null;
   categoryId?: string | null;
   tagIds?: string[];
+  // Only read on create (CreateBlogPostRequest.Publish) — status changes after
+  // creation go through PATCH /blog/:id/status instead. Harmless no-op if sent
+  // on an update call (UpdateBlogPostRequest has no Publish field, and ASP.NET
+  // model binding ignores unrecognized JSON properties).
+  publish?: boolean;
 }
 
 // ─── Bookings ─────────────────────────────────────────────────────────────────
