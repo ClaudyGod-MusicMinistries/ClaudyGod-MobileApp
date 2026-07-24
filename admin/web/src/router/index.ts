@@ -218,19 +218,19 @@ const router = createRouter({
         {
           path: 'blog',
           name: 'web-blog',
-          component: () => import('@/views/website/WebComingSoonView.vue'),
+          component: () => import('@/views/website/blog/BlogListView.vue'),
           meta: { minRole: Role.ADMIN, title: 'Journal' },
         },
         {
           path: 'bookings',
           name: 'web-bookings',
-          component: () => import('@/views/website/WebComingSoonView.vue'),
+          component: () => import('@/views/website/bookings/BookingsListView.vue'),
           meta: { minRole: Role.ADMIN, title: 'Bookings' },
         },
         {
           path: 'contacts',
           name: 'web-contacts',
-          component: () => import('@/views/website/WebComingSoonView.vue'),
+          component: () => import('@/views/website/contacts/ContactsListView.vue'),
           meta: { minRole: Role.ADMIN, title: 'Contact messages' },
         },
         {
