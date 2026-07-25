@@ -122,6 +122,19 @@ websiteRouter.post(
   }),
 );
 
+// Real uploaded files (audio/video/photo) — distinct from the link-based POST
+// /media above. The client must have already completed the request-upload ->
+// PUT -> confirm round-trip (see website-storage.routes.ts) and pass the
+// resulting sessionId; CGM-Backend pulls file metadata from that confirmed
+// session rather than trusting anything else in the request body.
+websiteRouter.post(
+  '/media/from-upload',
+  asyncHandler(async (req, res) => {
+    const actor = requireAdmin(req);
+    res.status(201).json(await cgmRequest('POST', '/media', actor, { body: req.body }));
+  }),
+);
+
 websiteRouter.put(
   '/media/:id',
   asyncHandler(async (req, res) => {
