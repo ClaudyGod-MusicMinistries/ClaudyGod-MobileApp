@@ -1,6 +1,7 @@
 import axios from 'axios';
 import type { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import { resolveApiUrl, REFRESH_TOKEN_KEY } from '@/utils/constants';
+import { useAuthStore } from '@/stores/auth.store';
 import type { RefreshResponse } from './types';
 
 export const API_URL = resolveApiUrl();
@@ -96,11 +97,14 @@ client.interceptors.response.use(
       original.headers.Authorization = `Bearer ${_accessToken}`;
       return client(original);
     } catch {
-      // Refresh failed — trigger logout via auth store.
+      // Refresh failed — trigger logout via auth store. useAuthStore is a plain
+      // function reference at import time (Pinia doesn't run the store's setup
+      // body until first call), and this call itself only ever fires at request
+      // time — well after the module graph has finished initializing — so the
+      // static circular import with auth.store.ts (which imports token helpers
+      // from this file) is safe.
       clearAccessToken();
       clearRefreshToken();
-      // Dynamically import to avoid circular dep with the store.
-      const { useAuthStore } = await import('@/stores/auth.store');
       useAuthStore().logout();
       return Promise.reject(error as Error);
     }

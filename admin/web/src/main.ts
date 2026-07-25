@@ -4,6 +4,7 @@ import * as Sentry from '@sentry/vue';
 import App from './App.vue';
 import router from './router';
 import { usePreferencesStore } from './stores/preferences.store';
+import { useAuthStore } from './stores/auth.store';
 import './assets/styles/main.css';
 
 const pinia = createPinia();
@@ -29,9 +30,6 @@ app.use(router);
 // the wrong theme, then attempt to restore session from the saved refresh token.
 usePreferencesStore().init();
 
-import('./stores/auth.store').then(({ useAuthStore }) => {
-  const auth = useAuthStore();
-  auth.restoreSession().finally(() => {
-    app.mount('#root');
-  });
+useAuthStore().restoreSession().finally(() => {
+  app.mount('#root');
 });

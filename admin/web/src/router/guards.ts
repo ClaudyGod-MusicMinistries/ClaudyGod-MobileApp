@@ -1,11 +1,11 @@
 import type { Router } from 'vue-router';
 import { Role } from '@/utils/constants';
+import { useAuthStore } from '@/stores/auth.store';
 
 const AUTH_ROUTE_NAMES = new Set(['landing', 'login', 'register', 'request-access']);
 
 export function setupGuards(router: Router): void {
-  router.beforeEach(async (to, _from) => {
-    const { useAuthStore } = await import('@/stores/auth.store');
+  router.beforeEach((to, _from) => {
     const auth = useAuthStore();
 
     // Public routes — allow access.
