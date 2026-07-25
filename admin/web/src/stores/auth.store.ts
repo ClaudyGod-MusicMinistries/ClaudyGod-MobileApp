@@ -9,6 +9,7 @@ import {
   setRefreshToken,
   clearRefreshToken,
 } from '@/api/client';
+import { router } from '@/router';
 import { Role, INACTIVITY_TIMEOUT_MS, roleRank } from '@/utils/constants';
 import type { AdminUser, LoginResponse, LoginSuccessResponse } from '@/api/types';
 
@@ -113,8 +114,7 @@ export const useAuthStore = defineStore('auth', () => {
     clearRefreshToken();
     user.value = null;
     stopIdleWatcher();
-    // Redirect is handled by the router guard watching isAuthenticated.
-    void import('@/router').then(({ router }) => { void router.push('/login'); });
+    void router.push('/login');
   }
 
   function applyExternalSession(res: LoginSuccessResponse): void {
