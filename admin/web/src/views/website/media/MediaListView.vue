@@ -58,7 +58,12 @@
         <AppInput v-model="form.title" label="Title" required />
         <AppSelect v-model="form.type" label="Type" :options="mediaTypeOptions" required />
         <AppInput v-model="form.externalUrl" label="External URL (YouTube, etc.)" required placeholder="https://youtu.be/…" />
-        <AppInput v-model="form.thumbnailUrl" label="Thumbnail URL" hint="Optional — defaults to the platform's own thumbnail" />
+        <div class="space-y-2">
+          <p class="text-xs font-medium text-ink-soft">Thumbnail <span class="text-ink-muted">(optional — defaults to the platform's own thumbnail)</span></p>
+          <img v-if="form.thumbnailUrl" :src="form.thumbnailUrl" alt="" class="w-24 h-14 rounded-lg object-cover bg-white/5" />
+          <FileDropzone label="Upload thumbnail" accept="image/*" :max-mb="5" pipeline="website"
+            @uploaded="onThumbnailUploaded" />
+        </div>
         <AppTextarea v-model="form.description" label="Description" :rows="3" />
       </div>
 
@@ -90,6 +95,7 @@ import AppSelect from '@/components/ui/AppSelect.vue';
 import AppBadge from '@/components/ui/AppBadge.vue';
 import AppPagination from '@/components/ui/AppPagination.vue';
 import WebPageHeader from '@/components/shared/WebPageHeader.vue';
+import FileDropzone from '@/components/shared/FileDropzone.vue';
 
 const store = useMediaStore();
 const ui = useUiStore();
@@ -142,6 +148,10 @@ const emptyForm = (): MediaFormState => ({
 });
 
 const form = reactive<MediaFormState>(emptyForm());
+
+function onThumbnailUploaded(payload: { url: string; sessionId: string }): void {
+  form.thumbnailUrl = payload.url;
+}
 
 function openCreate(): void {
   editingId.value = null;

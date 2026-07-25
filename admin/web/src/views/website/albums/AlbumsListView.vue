@@ -42,7 +42,12 @@
     <AppModal v-model="modalOpen" :title="editingId ? 'Edit album' : 'New album'" size="lg">
       <form class="grid grid-cols-1 sm:grid-cols-2 gap-4" @submit.prevent="save">
         <AppInput v-model="form.title" label="Title" required class="sm:col-span-2" />
-        <AppInput v-model="form.imageUrl" label="Cover image URL" class="sm:col-span-2" />
+        <div class="sm:col-span-2 space-y-2">
+          <p class="text-xs font-medium text-ink-soft">Cover image</p>
+          <img v-if="form.imageUrl" :src="form.imageUrl" alt="" class="w-16 h-16 rounded-lg object-cover bg-white/5" />
+          <FileDropzone label="Upload cover image" accept="image/*" :max-mb="5" pipeline="website"
+            @uploaded="onCoverUploaded" />
+        </div>
         <AppInput v-model="form.spotifyUrl" label="Spotify URL" />
         <AppInput v-model="form.appleUrl" label="Apple Music URL" />
         <AppInput v-model="form.youtubeUrl" label="YouTube URL" />
@@ -76,6 +81,7 @@ import AppButton from '@/components/ui/AppButton.vue';
 import AppModal from '@/components/ui/AppModal.vue';
 import AppInput from '@/components/ui/AppInput.vue';
 import WebPageHeader from '@/components/shared/WebPageHeader.vue';
+import FileDropzone from '@/components/shared/FileDropzone.vue';
 
 const store = useAlbumsStore();
 const ui = useUiStore();
@@ -122,6 +128,10 @@ const emptyForm = (): AlbumFormState => ({
 });
 
 const form = reactive<AlbumFormState>(emptyForm());
+
+function onCoverUploaded(payload: { url: string; sessionId: string }): void {
+  form.imageUrl = payload.url;
+}
 
 function openCreate(): void {
   editingId.value = null;
