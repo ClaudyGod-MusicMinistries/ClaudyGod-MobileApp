@@ -190,6 +190,7 @@ export interface EventInput {
   state?: string | null;
   country?: string | null;
   zipCode?: string | null;
+  flyerImagePath?: string | null;
 }
 
 // ─── Blog / Journal ─────────────────────────────────────────────────────────────

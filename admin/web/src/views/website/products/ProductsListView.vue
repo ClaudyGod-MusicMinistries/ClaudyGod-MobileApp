@@ -45,7 +45,12 @@
       <form class="grid grid-cols-1 sm:grid-cols-2 gap-4" @submit.prevent="save">
         <AppInput v-model="form.title" label="Title" required class="sm:col-span-2" />
         <AppTextarea v-model="form.description" label="Description" required class="sm:col-span-2" :rows="3" />
-        <AppInput v-model="form.image" label="Image URL" required class="sm:col-span-2" />
+        <div class="sm:col-span-2 space-y-2">
+          <p class="text-xs font-medium text-ink-soft">Product image</p>
+          <img v-if="form.image" :src="form.image" alt="" class="w-16 h-16 rounded-lg object-cover bg-white/5" />
+          <FileDropzone label="Upload product image" accept="image/*" :max-mb="5" pipeline="website"
+            @uploaded="onImageUploaded" />
+        </div>
         <AppInput v-model="form.category" label="Category" required placeholder="clothing, accessories, music…" />
         <AppInput v-model="form.price" type="number" label="Price (USD)" required min="0" step="0.01" />
         <AppInput v-model="form.quantity" type="number" label="Quantity" hint="Leave blank if unlimited" />
@@ -83,6 +88,7 @@ import AppTextarea from '@/components/ui/AppTextarea.vue';
 import AppToggle from '@/components/ui/AppToggle.vue';
 import AppBadge from '@/components/ui/AppBadge.vue';
 import WebPageHeader from '@/components/shared/WebPageHeader.vue';
+import FileDropzone from '@/components/shared/FileDropzone.vue';
 
 const store = useProductsStore();
 const ui = useUiStore();
@@ -125,6 +131,10 @@ const emptyForm = (): ProductFormState => ({
 });
 
 const form = reactive<ProductFormState>(emptyForm());
+
+function onImageUploaded(payload: { url: string; sessionId: string }): void {
+  form.image = payload.url;
+}
 
 function openCreate(): void {
   editingId.value = null;

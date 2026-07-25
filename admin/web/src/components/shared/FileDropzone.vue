@@ -94,13 +94,15 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { uploadFile } from '@/api/uploads';
+import { uploadFile, type UploadPipeline } from '@/api/uploads';
 
 const props = withDefaults(defineProps<{
   label: string;
   accept?: string;
   maxMb?: number;
-}>(), { accept: '*', maxMb: 500 });
+  /** Which presigned-S3 pipeline/bucket this dropzone uploads through — Mobile Studio vs Web Studio use entirely separate ones. */
+  pipeline?: UploadPipeline;
+}>(), { accept: '*', maxMb: 500, pipeline: 'mobile' });
 
 const emit = defineEmits<{
   (e: 'uploaded', payload: { url: string; sessionId: string }): void;
@@ -164,7 +166,7 @@ async function handleFile(file: File): Promise<void> {
       if (pct < 30) uploadStage.value = isMedia ? 'Requesting upload URL…' : 'Uploading…';
       else if (pct < 95) uploadStage.value = 'Uploading file…';
       else uploadStage.value = 'Verifying…';
-    });
+    }, props.pipeline);
     progress.value = 100;
     uploadStage.value = 'Done!';
     uploadedFile.value = { name: file.name, size: file.size };

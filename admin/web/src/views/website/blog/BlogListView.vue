@@ -72,11 +72,13 @@
               />
               <ImageIcon v-else class="w-6 h-6 text-ink-muted" />
             </div>
-            <AppInput
-              v-model="form.featuredImageUrl"
-              placeholder="https://…"
-              hint="Paste an image URL — shown on the Journal card and post header"
+            <FileDropzone
+              label="Upload featured image"
+              accept="image/*"
+              :max-mb="5"
+              pipeline="website"
               class="flex-1"
+              @uploaded="onFeaturedImageUploaded"
             />
           </div>
         </div>
@@ -153,6 +155,7 @@ import AppSelect from '@/components/ui/AppSelect.vue';
 import AppToggle from '@/components/ui/AppToggle.vue';
 import AppPagination from '@/components/ui/AppPagination.vue';
 import WebPageHeader from '@/components/shared/WebPageHeader.vue';
+import FileDropzone from '@/components/shared/FileDropzone.vue';
 
 const store = useBlogStore();
 const ui = useUiStore();
@@ -282,6 +285,10 @@ function onTitleInput(value: string): void {
 function onSlugInput(value: string): void {
   form.slug = value;
   slugManuallyEdited.value = true;
+}
+
+function onFeaturedImageUploaded(payload: { url: string; sessionId: string }): void {
+  form.featuredImageUrl = payload.url;
 }
 
 function openCreate(): void {

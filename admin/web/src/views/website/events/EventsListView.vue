@@ -65,6 +65,13 @@
         </div>
         <AppInput v-if="!form.isFree" v-model="form.ticketPrice" type="number" label="Ticket price (USD)" min="0" step="0.01" />
 
+        <div class="sm:col-span-2 space-y-2">
+          <p class="text-xs font-medium text-ink-soft">Flyer image</p>
+          <img v-if="form.flyerImagePath" :src="form.flyerImagePath" alt="" class="w-24 h-24 rounded-lg object-cover bg-white/5" />
+          <FileDropzone label="Upload flyer image" accept="image/*" :max-mb="5" pipeline="website"
+            @uploaded="onFlyerUploaded" />
+        </div>
+
         <p class="sm:col-span-2 text-xs font-semibold text-ink-soft uppercase tracking-wide -mb-2 mt-2">Location (optional)</p>
         <AppInput v-model="form.addressLine1" label="Address" class="sm:col-span-2" />
         <AppInput v-model="form.city" label="City" />
@@ -101,6 +108,7 @@ import AppSelect from '@/components/ui/AppSelect.vue';
 import AppToggle from '@/components/ui/AppToggle.vue';
 import AppPagination from '@/components/ui/AppPagination.vue';
 import WebPageHeader from '@/components/shared/WebPageHeader.vue';
+import FileDropzone from '@/components/shared/FileDropzone.vue';
 
 const store = useEventsStore();
 const ui = useUiStore();
@@ -154,6 +162,7 @@ interface EventFormState {
   state: string;
   country: string;
   zipCode: string;
+  flyerImagePath: string;
 }
 
 const emptyForm = (): EventFormState => ({
@@ -170,6 +179,7 @@ const emptyForm = (): EventFormState => ({
   state: '',
   country: '',
   zipCode: '',
+  flyerImagePath: '',
 });
 
 const form = reactive<EventFormState>(emptyForm());
@@ -191,6 +201,10 @@ function fromDatetimeLocal(value: string): string | null {
   const d = new Date(value);
   if (isNaN(d.getTime())) return null;
   return d.toISOString();
+}
+
+function onFlyerUploaded(payload: { url: string; sessionId: string }): void {
+  form.flyerImagePath = payload.url;
 }
 
 function openCreate(): void {
@@ -219,6 +233,7 @@ async function openEdit(event: EventSummary): Promise<void> {
       state: detail.locationState ?? '',
       country: detail.locationCountry ?? '',
       zipCode: '',
+      flyerImagePath: detail.flyerImagePath ?? '',
     });
     modalOpen.value = true;
   } catch (e) {
@@ -252,6 +267,7 @@ async function save(): Promise<void> {
       state: form.state || null,
       country: form.country || null,
       zipCode: form.zipCode || null,
+      flyerImagePath: form.flyerImagePath || null,
     };
     await store.saveEvent(payload, editingId.value ?? undefined);
     ui.addToast({ tone: 'success', title: editingId.value ? 'Event updated' : 'Event created' });
