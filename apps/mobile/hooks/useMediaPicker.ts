@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
 import { useToast } from '../context/ToastContext';
 
 export interface PickedMedia {
@@ -90,15 +91,19 @@ export function useMediaPicker() {
   );
 
   const pickAudioFile = useCallback(async (): Promise<PickedMedia | null> => {
-    if (!(await requestGalleryPermission())) return null;
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: 'videos',
-      allowsEditing: false,
-      quality: 1,
+    const result = await DocumentPicker.getDocumentAsync({
+      type: 'audio/*',
+      copyToCacheDirectory: true,
+      multiple: false,
     });
-    if (result.canceled || !result.assets[0]) return null;
-    return assetToPickedMedia(result.assets[0], true);
-  }, [requestGalleryPermission]);
+    const asset = result.assets?.[0];
+    if (result.canceled || !asset) return null;
+    return {
+      uri: asset.uri,
+      mimeType: asset.mimeType || 'audio/mpeg',
+      fileName: asset.name || `audio_${Date.now()}.mp3`,
+    };
+  }, []);
 
   return { pickFromGallery, captureFromCamera, pickAudioFile };
 }

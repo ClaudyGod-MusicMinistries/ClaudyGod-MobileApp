@@ -23,9 +23,21 @@ async function readJSON<T>(key: string, fallback: T): Promise<T> {
 }
 
 async function writeJSON<T>(key: string, value: T): Promise<void> {
-  try {
-    await AsyncStorage.setItem(key, JSON.stringify(value));
-  } catch { /* storage quota or unavailable — best-effort */ }
+  await AsyncStorage.setItem(key, JSON.stringify(value));
+}
+
+let storageMutationQueue: Promise<void> = Promise.resolve();
+
+async function updateJSON<T>(key: string, fallback: T, update: (_current: T) => T): Promise<T> {
+  let result = fallback;
+  const operation = async () => {
+    const current = await readJSON<T>(key, fallback);
+    result = update(current);
+    await writeJSON(key, result);
+  };
+  storageMutationQueue = storageMutationQueue.then(operation, operation);
+  await storageMutationQueue;
+  return result;
 }
 
 // ── Favourites ─────────────────────────────────────────────────────────────
@@ -35,15 +47,13 @@ export async function getFavorites(): Promise<FeedCardItem[]> {
 }
 
 export async function addFavorite(item: FeedCardItem): Promise<void> {
-  const current = await getFavorites();
-  if (current.some((f) => f.id === item.id)) return;
-  const updated = [item, ...current].slice(0, MAX_FAVORITES);
-  await writeJSON(KEYS.favorites, updated);
+  await updateJSON<FeedCardItem[]>(KEYS.favorites, [], (current) => current.some((entry) => entry.id === item.id)
+    ? current
+    : [item, ...current].slice(0, MAX_FAVORITES));
 }
 
 export async function removeFavorite(contentId: string): Promise<void> {
-  const current = await getFavorites();
-  await writeJSON(KEYS.favorites, current.filter((f) => f.id !== contentId));
+  await updateJSON<FeedCardItem[]>(KEYS.favorites, [], (current) => current.filter((entry) => entry.id !== contentId));
 }
 
 export async function isFavorited(contentId: string): Promise<boolean> {
@@ -58,9 +68,7 @@ export async function getHistory(): Promise<FeedCardItem[]> {
 }
 
 export async function addHistory(item: FeedCardItem): Promise<void> {
-  const current = await getHistory();
-  const updated = [item, ...current.filter((h) => h.id !== item.id)].slice(0, MAX_HISTORY);
-  await writeJSON(KEYS.history, updated);
+  await updateJSON<FeedCardItem[]>(KEYS.history, [], (current) => [item, ...current.filter((entry) => entry.id !== item.id)].slice(0, MAX_HISTORY));
 }
 
 // ── Preferences ────────────────────────────────────────────────────────────
@@ -71,8 +79,7 @@ export async function getPreference<T>(key: string, fallback: T): Promise<T> {
 }
 
 export async function setPreference(key: string, value: unknown): Promise<void> {
-  const prefs = await readJSON<Record<string, unknown>>(KEYS.preferences, {});
-  await writeJSON(KEYS.preferences, { ...prefs, [key]: value });
+  await updateJSON<Record<string, unknown>>(KEYS.preferences, {}, (current) => ({ ...current, [key]: value }));
 }
 
 // Guards the one-time "push local guest favorites up to the server" migration
@@ -108,6 +115,9 @@ export interface LocalDownload {
   localUri: string;
   contentType: string;
   imageUrl?: string;
+  subtitle?: string;
+  description?: string;
+  duration?: string;
   savedAt: string;
 }
 
@@ -116,23 +126,18 @@ export async function getDownloads(): Promise<LocalDownload[]> {
 }
 
 export async function saveDownload(download: LocalDownload): Promise<void> {
-  const current = await getDownloads();
-  const updated = [
+  await updateJSON<LocalDownload[]>(KEYS.downloads, [], (current) => [
     download,
-    ...current.filter((d) => d.contentId !== download.contentId),
-  ];
-  await writeJSON(KEYS.downloads, updated);
+    ...current.filter((entry) => entry.contentId !== download.contentId),
+  ]);
 }
 
 export async function removeDownload(contentId: string): Promise<void> {
-  const current = await getDownloads();
-  await writeJSON(KEYS.downloads, current.filter((d) => d.contentId !== contentId));
+  await updateJSON<LocalDownload[]>(KEYS.downloads, [], (current) => current.filter((entry) => entry.contentId !== contentId));
 }
 
 // ── Clear all ──────────────────────────────────────────────────────────────
 
 export async function clearAllLocalData(): Promise<void> {
-  try {
-    await AsyncStorage.multiRemove(Object.values(KEYS));
-  } catch { /* best-effort */ }
+  await AsyncStorage.multiRemove(Object.values(KEYS));
 }

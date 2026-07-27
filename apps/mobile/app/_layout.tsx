@@ -13,6 +13,7 @@ import { makeStyles } from '../styles/makeStyles';
 import { FontProvider, FontContext } from '../context/FontContext';
 import { AppProvider } from '../context/AppContext';
 import { DownloadsProvider } from '../context/DownloadsContext';
+import { LocalContentProvider } from '../context/LocalContentContext';
 import { PlayerProvider, usePlayer } from '../context/PlayerContext';
 import { PlayerProgressProvider } from '../context/PlayerProgressContext';
 import { ToastProvider } from '../context/ToastContext';
@@ -181,8 +182,9 @@ function RootLayout() {
               <ErrorBoundary context="the app">
                 <ToastProvider>
                   <AppProvider>
-                    <DownloadsProvider>
-                      <PlayerProgressProvider>
+                    <LocalContentProvider>
+                      <DownloadsProvider>
+                        <PlayerProgressProvider>
                         <PlayerProvider>
                           <WordOfDayProvider>
                             <AppModalProvider>
@@ -190,8 +192,9 @@ function RootLayout() {
                             </AppModalProvider>
                           </WordOfDayProvider>
                         </PlayerProvider>
-                      </PlayerProgressProvider>
-                    </DownloadsProvider>
+                        </PlayerProgressProvider>
+                      </DownloadsProvider>
+                    </LocalContentProvider>
                   </AppProvider>
                 </ToastProvider>
               </ErrorBoundary>

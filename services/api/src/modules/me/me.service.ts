@@ -1112,20 +1112,22 @@ export const saveMeLibraryItem = async (
   },
 ): Promise<{ saved: true }> => {
   await pool.query(
-    `DELETE FROM user_saved_items
-     WHERE user_id = $1
-       AND bucket = $2
-       AND content_id = $3
-       AND COALESCE(playlist_name, '') = COALESCE($4, '')`,
-    [user.sub, input.bucket, input.contentId, input.playlistName ?? null],
-  );
-
-  await pool.query(
     `INSERT INTO user_saved_items (
        user_id, bucket, playlist_name, content_id, content_type, title, subtitle, description,
        image_url, media_url, duration, metadata
      )
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12::jsonb)`,
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12::jsonb)
+     ON CONFLICT (user_id, bucket, content_id, (COALESCE(playlist_name, '')))
+     DO UPDATE SET
+       content_type = EXCLUDED.content_type,
+       title = EXCLUDED.title,
+       subtitle = EXCLUDED.subtitle,
+       description = EXCLUDED.description,
+       image_url = EXCLUDED.image_url,
+       media_url = EXCLUDED.media_url,
+       duration = EXCLUDED.duration,
+       metadata = EXCLUDED.metadata,
+       updated_at = NOW()`,
     [
       user.sub,
       input.bucket,
