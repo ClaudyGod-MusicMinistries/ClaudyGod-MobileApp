@@ -19,7 +19,7 @@
         <!-- Panel -->
         <div
           :class="[
-            'relative z-10 w-full bg-bg-2 border border-border rounded-3xl shadow-panel flex flex-col max-h-[90vh] overflow-hidden',
+            'relative z-10 w-full bg-surface-strong border border-border-strong rounded-xl shadow-panel flex flex-col max-h-[90vh] overflow-hidden',
             sizeClass,
           ]"
         >

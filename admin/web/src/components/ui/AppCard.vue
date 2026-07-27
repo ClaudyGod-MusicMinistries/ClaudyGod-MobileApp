@@ -1,5 +1,5 @@
 <template>
-  <div :class="['border rounded-2xl backdrop-blur-xs transition-all duration-150', toneClass, props.class]">
+  <div :class="['border rounded-lg transition-colors duration-150', toneClass, props.class]">
     <slot />
   </div>
 </template>

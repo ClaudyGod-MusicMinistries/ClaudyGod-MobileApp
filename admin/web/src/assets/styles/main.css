@@ -12,12 +12,12 @@
    (e.g. bg-primary/10); tokens that were always used at one fixed alpha (surface,
    border, the *-muted variants) bake the alpha directly into the var instead. */
 :root {
-  --bg-1: 250 250 252;
-  --bg-2: 244 243 250;
-  --bg-3: 237 235 247;
+  --bg-1: 247 248 250;
+  --bg-2: 242 244 247;
+  --bg-3: 235 238 242;
 
-  --surface: 255 255 255 / 0.72;
-  --surface-strong: 255 255 255 / 0.92;
+  --surface: 255 255 255 / 0.96;
+  --surface-strong: 255 255 255 / 1;
   --surface-hover: 17 12 36 / 0.05;
 
   --primary: 141 99 255;
@@ -28,8 +28,8 @@
   --ink-soft: 90 84 120;
   --ink-muted: 130 124 158;
 
-  --border: 141 99 255 / 0.14;
-  --border-strong: 141 99 255 / 0.24;
+  --border: 37 32 54 / 0.10;
+  --border-strong: 37 32 54 / 0.18;
 
   --danger: 194 65 65;
   --danger-muted: 194 65 65 / 0.12;
@@ -48,8 +48,8 @@
   --bg-2: 13 12 20;
   --bg-3: 23 21 35;
 
-  --surface: 12 10 20 / 0.86;
-  --surface-strong: 18 16 28 / 0.94;
+  --surface: 15 14 21 / 0.98;
+  --surface-strong: 20 18 28 / 1;
   --surface-hover: 255 255 255 / 0.06;
 
   --primary: 141 99 255;
@@ -60,8 +60,8 @@
   --ink-soft: 170 163 197;
   --ink-muted: 139 132 166;
 
-  --border: 141 99 255 / 0.14;
-  --border-strong: 141 99 255 / 0.28;
+  --border: 255 255 255 / 0.09;
+  --border-strong: 255 255 255 / 0.16;
 
   --danger: 225 109 109;
   --danger-muted: 225 109 109 / 0.14;
@@ -99,16 +99,20 @@ body {
   margin: 0;
   color: rgb(var(--ink));
   font-family: var(--font-body);
-  background:
-    radial-gradient(920px 560px at 6% -8%, rgb(var(--primary) / 0.16), transparent 60%),
-    linear-gradient(180deg, rgb(var(--bg-1)) 0%, rgb(var(--bg-2)) 48%, rgb(var(--bg-3)) 100%);
+  background: rgb(var(--bg-1));
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+button, input, select, textarea { font: inherit; }
+
+::selection {
+  color: rgb(var(--ink));
+  background: rgb(var(--primary) / 0.18);
 }
 
 /* ─── Scrollbar ────────────────────────────────────────────────────────────── */

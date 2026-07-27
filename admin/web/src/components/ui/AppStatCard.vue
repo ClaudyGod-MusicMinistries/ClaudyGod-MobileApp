@@ -1,7 +1,7 @@
 <template>
-  <AppCard class="p-5 flex flex-col gap-3">
-    <div class="flex items-start justify-between gap-3">
-      <div :class="['w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0', iconBg]">
+  <AppCard class="p-4 min-h-[116px] flex flex-col justify-between gap-4">
+    <div class="flex items-center justify-between gap-3">
+      <div :class="['w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0', iconBg]">
         <slot name="icon" />
       </div>
       <span v-if="trend !== undefined" :class="['text-xs font-bold flex items-center gap-0.5', trend >= 0 ? 'text-success' : 'text-danger']">
@@ -15,8 +15,8 @@
       </span>
     </div>
     <div>
-      <p class="text-2xl font-bold text-ink tabular-nums">{{ formattedValue }}</p>
-      <p class="text-xs text-ink-muted mt-0.5">{{ label }}</p>
+      <p class="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-muted">{{ label }}</p>
+      <p class="text-2xl font-bold text-ink tabular-nums mt-1">{{ formattedValue }}</p>
     </div>
     <p v-if="caption" class="text-xs text-ink-muted border-t border-border pt-2">{{ caption }}</p>
   </AppCard>
