@@ -1,10 +1,10 @@
 <template>
-  <header class="flex items-center justify-between gap-4 px-4 sm:px-6 py-3.5 border-b border-border bg-surface/80 backdrop-blur-sm flex-shrink-0 min-h-[64px]">
+  <header class="flex items-center justify-between gap-4 px-4 sm:px-6 lg:px-8 py-3 border-b border-border bg-surface-strong flex-shrink-0 min-h-[68px]">
     <!-- Hamburger (mobile/tablet only) + Breadcrumb + title -->
     <div class="flex items-center gap-3 min-w-0">
       <button
         type="button"
-        class="lg:hidden -ml-1 p-2 rounded-xl text-ink-muted hover:text-ink hover:bg-surface-hover transition-colors flex-shrink-0"
+        class="lg:hidden -ml-1 p-2 rounded-md text-ink-muted hover:text-ink hover:bg-surface-hover transition-colors flex-shrink-0"
         aria-label="Open navigation menu"
         @click="ui.toggleMobileDrawer()"
       >
@@ -12,12 +12,8 @@
       </button>
 
       <div class="min-w-0">
-        <div class="flex items-center gap-1.5 text-xs text-ink-muted mb-0.5">
-          <span>Admin Studio</span>
-          <span>›</span>
-          <span class="text-ink-soft font-medium">{{ pageTitle }}</span>
-        </div>
-        <h1 class="text-base font-bold text-ink truncate">{{ pageTitle }}</h1>
+        <p class="text-[10px] font-semibold uppercase tracking-[0.1em] text-ink-muted">Mobile workspace</p>
+        <h1 class="text-[15px] font-semibold text-ink truncate mt-0.5">{{ pageTitle }}</h1>
       </div>
     </div>
 
@@ -33,7 +29,7 @@
       <button
         v-if="tour.hasCurrentTour()"
         type="button"
-        class="p-2 rounded-xl text-ink-muted hover:text-ink hover:bg-surface-hover transition-colors"
+        class="p-2 rounded-md text-ink-muted hover:text-ink hover:bg-surface-hover transition-colors"
         aria-label="Show a guided tour of this page"
         title="Show a guided tour of this page"
         @click="tour.replayCurrentTour()"
@@ -44,7 +40,7 @@
       <!-- Theme toggle -->
       <button
         type="button"
-        class="p-2 rounded-xl text-ink-muted hover:text-ink hover:bg-surface-hover transition-colors"
+        class="p-2 rounded-md text-ink-muted hover:text-ink hover:bg-surface-hover transition-colors"
         :aria-label="preferences.theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
         :title="preferences.theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
         @click="preferences.toggleTheme()"
@@ -57,7 +53,7 @@
       <div class="relative" ref="menuRef">
         <button
           type="button"
-          class="flex items-center gap-2 p-1 rounded-xl hover:bg-surface-hover transition-colors"
+          class="flex items-center gap-2 p-1 rounded-md hover:bg-surface-hover transition-colors"
           @click="menuOpen = !menuOpen"
         >
           <UserAvatar :name="auth.user?.displayName ?? undefined" :email="auth.user?.email ?? undefined" size="sm" />
@@ -65,7 +61,7 @@
         </button>
 
         <Transition name="dropdown">
-          <div v-if="menuOpen" class="absolute right-0 mt-2 w-52 bg-bg-2 border border-border rounded-2xl shadow-panel z-50 overflow-hidden">
+          <div v-if="menuOpen" class="absolute right-0 mt-2 w-56 bg-surface-strong border border-border-strong rounded-lg shadow-panel z-50 overflow-hidden">
             <div class="px-4 py-3 border-b border-border">
               <p class="text-xs font-semibold text-ink truncate">{{ auth.user?.displayName || auth.user?.email }}</p>
               <p class="text-xs text-ink-muted truncate">{{ auth.user?.email }}</p>
