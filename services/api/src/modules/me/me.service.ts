@@ -74,6 +74,7 @@ interface SavedItemRow {
   image_url: string | null;
   media_url: string | null;
   duration: string | null;
+  metadata: Record<string, unknown> | null;
   created_at: string | Date;
   updated_at: string | Date;
 }
@@ -1073,6 +1074,7 @@ export const getMeLibrary = async (user: JwtClaims): Promise<{
     imageUrl: row.image_url ?? undefined,
     mediaUrl: row.media_url ?? undefined,
     duration: row.duration ?? undefined,
+    metadata: row.metadata ?? {},
     createdAt: toIso(row.created_at),
     updatedAt: toIso(row.updated_at),
   });
@@ -1111,6 +1113,7 @@ export const saveMeLibraryItem = async (
     metadata?: Record<string, unknown>;
   },
 ): Promise<{ saved: true }> => {
+  await ensureUserScaffold(user.sub, user.displayName, user.email);
   await pool.query(
     `INSERT INTO user_saved_items (
        user_id, bucket, playlist_name, content_id, content_type, title, subtitle, description,

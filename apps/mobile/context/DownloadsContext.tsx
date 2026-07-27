@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import * as FileSystem from 'expo-file-system/legacy';
 import type { FeedCardItem } from '../services/contentService';
 import { getDownloads, saveDownload, removeDownload } from '../lib/localUserStorage';
@@ -19,7 +19,7 @@ interface DownloadState {
 
 interface DownloadsContextValue {
   downloads: Record<string, DownloadState>;
-  downloadContent: (_item: FeedCardItem) => Promise<void>;
+  downloadContent: (_item: FeedCardItem) => Promise<boolean>;
   deleteDownload: (_contentId: string) => Promise<void>;
   getDownloadStatus: (_contentId: string) => DownloadStatus;
   getDownloadedUri: (_contentId: string) => string | null;
@@ -27,9 +27,11 @@ interface DownloadsContextValue {
 
 const DownloadsContext = createContext<DownloadsContextValue | null>(null);
 
-const DOWNLOAD_DIR = `${FileSystem.documentDirectory ?? ''}claudygod-downloads/`;
+const DOWNLOAD_ROOT = FileSystem.documentDirectory;
+const DOWNLOAD_DIR = DOWNLOAD_ROOT ? `${DOWNLOAD_ROOT}claudygod-downloads/` : null;
 
 async function ensureDir() {
+  if (!DOWNLOAD_DIR) throw new Error('Downloads are not available on this device.');
   const info = await FileSystem.getInfoAsync(DOWNLOAD_DIR);
   if (!info.exists) {
     await FileSystem.makeDirectoryAsync(DOWNLOAD_DIR, { intermediates: true });
@@ -43,6 +45,7 @@ async function ensureDir() {
 // provider fixes that.
 export function DownloadsProvider({ children }: { children: ReactNode }) {
   const [downloads, setDownloads] = useState<Record<string, DownloadState>>({});
+  const inFlight = useRef(new Set<string>());
 
   useEffect(() => {
     let active = true;
@@ -90,9 +93,11 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
     [downloads],
   );
 
-  const downloadContent = useCallback(async (item: FeedCardItem): Promise<void> => {
-    if (!item.mediaUrl) return;
-    if (downloads[item.id]?.status === 'downloading' || downloads[item.id]?.status === 'done') return;
+  const downloadContent = useCallback(async (item: FeedCardItem): Promise<boolean> => {
+    if (!item.mediaUrl || !DOWNLOAD_DIR) return false;
+    if (inFlight.current.has(item.id) || downloads[item.id]?.status === 'downloading') return false;
+    if (downloads[item.id]?.status === 'done') return true;
+    inFlight.current.add(item.id);
 
     setDownloads((prev) => ({
       ...prev,
@@ -125,12 +130,13 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
         },
       );
 
-      await dl.downloadAsync();
+      const result = await dl.downloadAsync();
+      if (!result?.uri) throw new Error('The download did not complete.');
 
       await saveDownload({
         contentId: item.id,
         title: item.title,
-        localUri,
+        localUri: result.uri,
         contentType: item.type,
         imageUrl: item.imageUrl ?? undefined,
         subtitle: item.subtitle,
@@ -142,16 +148,20 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
       setDownloads((prev) => ({
         ...prev,
         [item.id]: {
-          status: 'done', progress: 100, localUri,
+          status: 'done', progress: 100, localUri: result.uri,
           title: item.title, imageUrl: item.imageUrl, contentType: item.type,
           subtitle: item.subtitle, description: item.description, duration: item.duration,
         },
       }));
+      return true;
     } catch {
       setDownloads((prev) => ({
         ...prev,
         [item.id]: { ...prev[item.id], status: 'error', progress: 0, localUri: null },
       }));
+      return false;
+    } finally {
+      inFlight.current.delete(item.id);
     }
   }, [downloads]);
 

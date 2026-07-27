@@ -13,6 +13,7 @@ import { useDeviceClass } from '../../util/deviceClassConfig';
 import { useAppTheme } from '../../util/colorScheme';
 import type { FeedCardItem } from '../../services/contentService';
 import { useDownloads } from '../../context/DownloadsContext';
+import { useToast } from '../../context/ToastContext';
 import { useFeedStyles } from './styles';
 import { cleanFeedText, isRedundantSubtitle, isValidDuration } from './utils';
 
@@ -35,6 +36,7 @@ export const ContentCard = React.memo(function ContentCard({ item, onPress, comp
   const pressScale = useRef(new Animated.Value(1)).current;
   const [menuOpen, setMenuOpen] = useState(false);
   const { downloadContent, deleteDownload, getDownloadStatus } = useDownloads();
+  const { showToast } = useToast();
   const downloadStatus = getDownloadStatus(item.id);
 
   const menuActions: ActionSheetAction[] = [
@@ -43,7 +45,14 @@ export const ContentCard = React.memo(function ContentCard({ item, onPress, comp
     ...(item.mediaUrl ? [
       downloadStatus === 'done'
         ? { key: 'download', label: 'Remove download', icon: 'delete-outline' as const, tone: 'destructive' as const, onPress: () => { setMenuOpen(false); void deleteDownload(item.id); } }
-        : { key: 'download', label: downloadStatus === 'downloading' ? 'Downloading…' : 'Download', icon: 'file-download' as const, onPress: () => { setMenuOpen(false); void downloadContent(item); } },
+        : { key: 'download', label: downloadStatus === 'downloading' ? 'Downloading…' : 'Download', icon: 'file-download' as const, onPress: () => {
+          setMenuOpen(false);
+          void downloadContent(item).then((saved) => {
+            showToast(saved
+              ? { title: 'Available offline', message: `${title} was downloaded.`, tone: 'success' }
+              : { title: 'Download unavailable', message: 'Check your connection and available storage, then try again.', tone: 'error' });
+          });
+        } },
     ] : []),
   ];
 
