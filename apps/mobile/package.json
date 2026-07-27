@@ -21,7 +21,6 @@
     "check:deps": "node ./scripts/check-dependencies.js",
     "check:pre-commit": "node ./scripts/check-dependencies.js && lint-staged",
     "check:pre-push": "node ./scripts/check-all.js",
-    "test": "jest",
     "hooks:install": "lefthook install",
     "postinstall": "node ./scripts/postinstall.js"
   },
@@ -81,18 +80,15 @@
   },
   "devDependencies": {
     "@babel/core": "^7.25.0",
-    "@testing-library/react-native": "^14.0.1",
     "@types/react": "~19.1.0",
     "@types/react-native-vector-icons": "^6.4.18",
     "babel-preset-expo": "~54.0.10",
     "cross-env": "^10.1.0",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
-    "jest-expo": "~54.0.17",
     "lefthook": "^1.7.15",
     "lint-staged": "^15.2.10",
     "sharp": "^0.35.2",
-    "test-renderer": "^1.2.0",
     "typescript": "~5.9.2"
   },
   "lint-staged": {

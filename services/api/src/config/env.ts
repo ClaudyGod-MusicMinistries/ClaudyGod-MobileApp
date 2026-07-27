@@ -531,6 +531,14 @@ const envSchema = z
       });
     }
 
+    if (!value.METRICS_TOKEN || value.METRICS_TOKEN.length < 32) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['METRICS_TOKEN'],
+        message: 'METRICS_TOKEN must be a strong secret in production',
+      });
+    }
+
     if (value.AUTH_REQUIRE_EMAIL_VERIFICATION && !value.SMTP_HOST) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,

@@ -1,4 +1,5 @@
 import { pool } from '../../db/pool';
+import { NotFoundError } from '../../lib/errors';
 import type { RegisterDeviceInput } from './devices.schema';
 
 export interface UserDevice {
@@ -86,25 +87,35 @@ export async function registerDevice(
 }
 
 export async function revokeDevice(userId: string, deviceId: string): Promise<void> {
-  await pool.query(
-    `UPDATE user_devices
-     SET revoked_at = NOW()
-     WHERE id = $1
-       AND user_id = $2
-       AND revoked_at IS NULL`,
-    [deviceId, userId],
-  );
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const device = await client.query(
+      `UPDATE user_devices
+       SET revoked_at = NOW()
+       WHERE id = $1
+         AND user_id = $2
+         AND revoked_at IS NULL
+       RETURNING id`,
+      [deviceId, userId],
+    );
+    if ((device.rowCount ?? 0) === 0) {
+      throw new NotFoundError('Device not found', 'DEVICE_NOT_FOUND');
+    }
 
-  // The actual fix: revoking a device used to only mark user_devices as
-  // revoked while its refresh session kept working (the two were entirely
-  // unlinked). Now that auth_refresh_sessions carries a device_id, this
-  // cascades to invalidate any active session that device is actually using.
-  await pool.query(
-    `UPDATE auth_refresh_sessions
-     SET revoked_at = NOW()
-     WHERE device_id = $1
-       AND user_id = $2
-       AND revoked_at IS NULL`,
-    [deviceId, userId],
-  );
+    await client.query(
+      `UPDATE auth_refresh_sessions
+       SET revoked_at = NOW()
+       WHERE device_id = $1
+         AND user_id = $2
+         AND revoked_at IS NULL`,
+      [deviceId, userId],
+    );
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 }
