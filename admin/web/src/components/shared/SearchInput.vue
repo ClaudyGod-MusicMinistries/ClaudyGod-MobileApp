@@ -12,7 +12,7 @@
 </template>
 
 <script setup lang="ts">
-import { useThrottleFn } from '@vueuse/core';
+import { useDebounceFn } from '@vueuse/core';
 import { Search } from 'lucide-vue-next';
 
 const props = withDefaults(defineProps<{
@@ -23,9 +23,9 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits<{ (e: 'update:modelValue', v: string): void }>();
 
-const emitThrottled = useThrottleFn((v: string) => emit('update:modelValue', v), props.debounceMs);
+const emitDebounced = useDebounceFn((v: string) => emit('update:modelValue', v), props.debounceMs);
 
 function onInput(evt: Event): void {
-  emitThrottled((evt.target as HTMLInputElement).value);
+  emitDebounced((evt.target as HTMLInputElement).value);
 }
 </script>
