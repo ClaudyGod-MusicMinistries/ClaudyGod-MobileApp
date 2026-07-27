@@ -8,11 +8,9 @@ import { CustomText } from '../../components/CustomText';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { SupportMinistryCard } from '../../components/ui/SupportMinistryCard';
 import { InlineErrorBanner } from '../../components/ui/InlineErrorBanner';
-import { SignInPromptBanner } from '../../components/ui/SignInPromptBanner';
 import { useContentFeed } from '../../hooks/useContentFeed';
 import { useWordOfDay } from '../../hooks/useWordOfDay';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
-import { useUserAccount } from '../../context/UserAccountContext';
 import { getHomeLayoutSections, deriveLayoutSectionItems } from '../../util/mobileLayout';
 import { useAppTheme } from '../../util/colorScheme';
 import { makeStyles } from '../../styles/makeStyles';
@@ -260,7 +258,6 @@ export default function HomeScreen() {
   const { feed, loading, error, refresh } = useContentFeed();
   const { bibleVerse, adminWord }  = useWordOfDay();
   const { config: appConfig } = useMobileAppConfig();
-  const { account } = useUserAccount();
 
   const featured = feed.featured ?? null;
 
@@ -315,8 +312,7 @@ export default function HomeScreen() {
   return (
     <PremiumPage title="Home" eyebrow="Home" noBack refreshing={loading} onRefresh={() => void refresh()}>
       <GreetingBanner
-        name={account?.displayName}
-        onNotificationsPress={() => router.push(APP_ROUTES.tabs.settings)}
+        onPreferencesPress={() => router.push(APP_ROUTES.tabs.settings)}
       />
 
       <HomeSearchBar onPress={() => router.push(APP_ROUTES.tabs.search)} />
@@ -349,7 +345,6 @@ export default function HomeScreen() {
         <ContinueRow items={continueItems} onPress={(item) => void openItem(item, 'home_continue')} />
       ) : null}
 
-      <SignInPromptBanner />
 
       {feed.recommendations.length > 0 ? (
         <View style={styles.sectionRow}>

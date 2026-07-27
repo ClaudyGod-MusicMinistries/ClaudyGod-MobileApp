@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Linking, Modal, Platform, TouchableWithoutFeedback, View, useWindowDimensions } from 'react-native';
+import { Animated, Linking, Platform, View, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { CustomText } from '../../components/CustomText';
 import { AppButton } from '../../components/ui/AppButton';
+import { ConfirmModal } from '../../components/ui/ConfirmModal';
 import { SettingsScaffold } from '../../components/layout/SettingsScaffold';
 import { useAppTheme } from '../../util/colorScheme';
 import { makeStyles } from '../../styles/makeStyles';
@@ -306,40 +307,17 @@ export default function Donate() {
 
   return (
     <>
-      {/* Coming soon modal */}
-      <Modal
+      <ConfirmModal
         visible={showComingSoon}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowComingSoon(false)}
-        statusBarTranslucent
-      >
-        <TouchableWithoutFeedback onPress={() => setShowComingSoon(false)}>
-          <View style={styles.modalOverlay}>
-            <TouchableWithoutFeedback onPress={() => {}}>
-              <View style={styles.modalCard}>
-                <View style={styles.modalIcon}>
-                  <MaterialIcons name="volunteer-activism" size={32} color={theme.colors.primary} />
-                </View>
-                <CustomText style={styles.modalTitle}>Give by reaching out</CustomText>
-                <CustomText variant="body" style={styles.modalSubtitle}>
-                  Online giving is on its way. For now, our team is glad to help you give directly — just reach out.
-                </CustomText>
-                <AppButton
-                  title="Contact us to give"
-                  size="md"
-                  fullWidth
-                  onPress={() => { setShowComingSoon(false); contactSupport(); }}
-                  leftIcon={<MaterialIcons name="support-agent" size={17} color="#FFFFFF" />}
-                />
-                <TVTouchable onPress={() => setShowComingSoon(false)} showFocusBorder={false} style={styles.modalClose}>
-                  <CustomText variant="subtitle" style={styles.modalCloseText}>Close</CustomText>
-                </TVTouchable>
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
+        icon="volunteer-activism"
+        title="Complete your giving"
+        body="Online processing is being prepared. Contact the ministry team to receive the approved giving instructions."
+        primaryLabel="Contact giving team"
+        secondaryLabel="Not now"
+        onPrimary={() => { setShowComingSoon(false); contactSupport(); }}
+        onSecondary={() => setShowComingSoon(false)}
+        onDismiss={() => setShowComingSoon(false)}
+      />
 
       <SettingsScaffold
         title="Giving"

@@ -212,19 +212,12 @@ function TabItem({
           color={focused ? theme.colors.primary : theme.colors.textMuted}
         />
       </View>
-      {focused ? (
-        <CustomText style={{ color: theme.colors.text_accent, fontSize: compact ? 8.5 : 9, lineHeight: 11, fontWeight: '700' }} numberOfLines={1}>
-          {item.label}
-        </CustomText>
-      ) : null}
-      <View
-        style={{
-          width: focused ? 14 : 0,
-          height: 3,
-          borderRadius: theme.radius.pill,
-          backgroundColor: focused ? theme.colors.primary : 'transparent',
-        }}
-      />
+      <CustomText
+        style={{ color: focused ? theme.colors.text : theme.colors.textMuted, fontSize: compact ? 9 : 10, lineHeight: 12, fontWeight: focused ? '700' : '500' }}
+        numberOfLines={1}
+      >
+        {item.label}
+      </CustomText>
     </TVTouchable>
   );
 }
@@ -247,19 +240,11 @@ function BottomPillTabBar({
   const insets = useSafeAreaInsets();
   const isTablet = width >= 768;
 
-  const BAR_HEIGHT   = compact ? 62 : 70;
-  const CENTER_SIZE  = compact ? 56 : 64;
-  const CENTER_RISE  = 18;
+  const BAR_HEIGHT   = compact ? 64 : 70;
   const BAR_MARGIN_H = isTablet ? Math.max(16, (width - Math.min(680, width - 32)) / 2) : 16;
   const BOTTOM_INSET = Math.max(insets.bottom, 10);
 
-  const centerBtnBottom = BOTTOM_INSET + BAR_HEIGHT / 2 - CENTER_SIZE / 2 + CENTER_RISE;
-
   const currentRouteName = state.routes[state.index]?.name;
-  const leftItems   = footerItems.filter((i) => !i.center).slice(0, 2);
-  const rightItems  = footerItems.filter((i) => !i.center).slice(2);
-  const centerItem  = footerItems.find((i) => i.center) ?? null;
-  const centerFocused = currentRouteName === centerItem?.routeName;
 
   const navigateTo = (item: FooterItem) => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -273,7 +258,7 @@ function BottomPillTabBar({
       style={{
         position: 'absolute',
         left: 0, right: 0, bottom: 0,
-        height: BOTTOM_INSET + BAR_HEIGHT + CENTER_RISE + CENTER_SIZE / 2,
+        height: BOTTOM_INSET + BAR_HEIGHT + 8,
         pointerEvents: 'box-none',
       }}
     >
@@ -285,31 +270,18 @@ function BottomPillTabBar({
           right: BAR_MARGIN_H,
           bottom: BOTTOM_INSET,
           height: BAR_HEIGHT,
-          borderRadius: BAR_HEIGHT / 2,
+          borderRadius: theme.radius.xl,
           backgroundColor: theme.colors.tabBarBg,
           borderWidth: 1,
           borderColor: theme.colors.primaryBorder,
-          ...theme.shadows.xxl,
+          ...theme.shadows.lg,
           flexDirection: 'row',
           alignItems: 'center',
           paddingHorizontal: 6,
           overflow: 'hidden',
         }}
       >
-        {leftItems.map((item) => (
-          <TabItem
-            key={item.key}
-            item={item}
-            focused={currentRouteName === item.routeName}
-            compact={compact}
-            onPress={() => navigateTo(item)}
-          />
-        ))}
-
-        {/* Transparent gap where the center button floats */}
-        <View style={{ width: CENTER_SIZE + 20 }} />
-
-        {rightItems.map((item) => (
+        {footerItems.map((item) => (
           <TabItem
             key={item.key}
             item={item}
@@ -319,72 +291,6 @@ function BottomPillTabBar({
           />
         ))}
       </View>
-
-      {/* ── Floating center button ──────────────────────────────────────── */}
-      {centerItem ? (
-        <TVTouchable
-          accessibilityRole="button"
-          accessibilityLabel={centerItem.label}
-          accessibilityState={{ selected: centerFocused }}
-          onPress={() => navigateTo(centerItem)}
-          showFocusBorder={false}
-          style={{
-            position: 'absolute',
-            alignSelf: 'center',
-            bottom: centerBtnBottom,
-            alignItems: 'center',
-            gap: 4,
-          }}
-        >
-          <View
-            style={{
-              width: CENTER_SIZE + 10,
-              height: CENTER_SIZE + 10,
-              borderRadius: (CENTER_SIZE + 10) / 2,
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: centerFocused
-                ? `rgba(${theme.colors.accentRgba},0.28)`
-                : `rgba(${theme.colors.accentRgba},0.14)`,
-              shadowColor: theme.colors.primary,
-              shadowOffset: { width: 0, height: 8 },
-              shadowOpacity: centerFocused ? 0.65 : 0.35,
-              shadowRadius: centerFocused ? 22 : 14,
-              elevation: 18,
-            }}
-          >
-            <View
-              style={{
-                width: CENTER_SIZE,
-                height: CENTER_SIZE,
-                borderRadius: CENTER_SIZE / 2,
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: centerFocused ? theme.colors.primary : `${theme.colors.primary}DD`,
-                borderWidth: 2,
-                borderColor: centerFocused
-                  ? 'rgba(255,255,255,0.22)'
-                  : 'rgba(255,255,255,0.10)',
-              }}
-            >
-              <MaterialIcons name={centerItem.icon} size={compact ? 28 : 32} color="#FFFFFF" />
-            </View>
-          </View>
-
-          <CustomText
-            style={{
-              color: centerFocused ? theme.colors.text_accent : theme.colors.textMuted,
-              fontSize: compact ? 8.5 : 9,
-              lineHeight: 11,
-              fontWeight: '700',
-              letterSpacing: 0.2,
-            }}
-            numberOfLines={1}
-          >
-            {centerItem.label}
-          </CustomText>
-        </TVTouchable>
-      ) : null}
     </View>
   );
 }

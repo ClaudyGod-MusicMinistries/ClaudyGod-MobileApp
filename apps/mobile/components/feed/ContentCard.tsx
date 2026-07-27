@@ -47,8 +47,8 @@ export const ContentCard = React.memo(function ContentCard({ item, onPress, comp
     ] : []),
   ];
 
-  const cardWidth = fixedWidth ?? (compact ? 208 : device.isTV ? 300 : device.isDesktop ? 240 : 236);
-  const cardHeight = variant === 'portrait' ? Math.round(cardWidth * 1.45) : variant === 'landscape' ? Math.round(cardWidth * 0.62) : cardWidth;
+  const cardWidth = fixedWidth ?? (compact ? 176 : device.isTV ? 260 : device.isDesktop ? 218 : 184);
+  const cardHeight = variant === 'portrait' ? Math.round(cardWidth * 1.32) : variant === 'landscape' ? Math.round(cardWidth * 0.62) : cardWidth;
   const scrimHeight = variant === 'portrait' ? Math.round(cardHeight * 0.55) : variant === 'landscape' ? Math.round(cardHeight * 0.60) : Math.round(cardHeight * 0.50);
   const title = cleanFeedText(item.title);
 
@@ -56,7 +56,15 @@ export const ContentCard = React.memo(function ContentCard({ item, onPress, comp
   const handlePressOut = () => Animated.spring(pressScale, { toValue: 1, useNativeDriver: USE_NATIVE_DRIVER, friction: 7, tension: 70 }).start();
 
   return (
-    <TVTouchable onPress={onPress} onPressIn={handlePressIn} onPressOut={handlePressOut} showFocusBorder={false} style={{ width: cardWidth }}>
+    <TVTouchable
+      onPress={onPress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      showFocusBorder={false}
+      style={{ width: cardWidth }}
+      accessibilityRole="button"
+      accessibilityLabel={`${item.type === 'video' ? 'Watch' : 'Play'} ${title}`}
+    >
       <Animated.View style={{ gap: 7, transform: [{ scale: pressScale }] }}>
         <View style={[styles.artworkShadowWrap, { width: cardWidth, height: cardHeight }]}>
           <View style={[styles.artworkContainer, StyleSheet.absoluteFillObject]}>
@@ -82,7 +90,13 @@ export const ContentCard = React.memo(function ContentCard({ item, onPress, comp
         <View style={styles.cardTextArea}>
           <View style={styles.cardTitleRow}>
             <CustomText variant="label" style={styles.cardTitle} numberOfLines={2}>{title}</CustomText>
-            <Pressable onPress={(e) => { e.stopPropagation?.(); setMenuOpen(true); }} hitSlop={{ top: 8, right: 8, bottom: 8, left: 4 }} style={styles.cardMoreBtn}>
+            <Pressable
+              onPress={(e) => { e.stopPropagation?.(); setMenuOpen(true); }}
+              hitSlop={{ top: 8, right: 8, bottom: 8, left: 4 }}
+              style={styles.cardMoreBtn}
+              accessibilityRole="button"
+              accessibilityLabel={`More options for ${title}`}
+            >
               <MaterialIcons name="more-vert" size={16} color={theme.colors.textMuted} />
             </Pressable>
           </View>

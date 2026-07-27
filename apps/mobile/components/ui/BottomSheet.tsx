@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Dimensions, Modal, Pressable, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   runOnJS,
@@ -12,7 +12,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CustomText } from '../CustomText';
 import { makeStyles } from '../../styles/makeStyles';
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const DISMISS_DISTANCE = 120;
 const DISMISS_VELOCITY = 800;
 const EXIT_DURATION = 220;
@@ -34,12 +33,13 @@ interface BottomSheetProps {
 
 const useStyles = makeStyles((theme) => ({
   backdrop:    { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(5, 6, 14, 0.72)' },
-  sheetWrap:   { flex: 1, justifyContent: 'flex-end' },
+  sheetWrap:   { flex: 1, justifyContent: 'flex-end', alignItems: 'center' },
   sheet: {
     borderTopLeftRadius: theme.radius.xxl, borderTopRightRadius: theme.radius.xxl,
     borderTopWidth: 1, borderColor: theme.colors.border,
     backgroundColor: theme.colors.elevated,
     paddingHorizontal: theme.spacing.lg,
+    width: '100%', maxWidth: 600,
   },
   dragArea:    { paddingTop: theme.spacing.sm, paddingBottom: theme.spacing.xs, alignItems: 'center' },
   dragHandle:  { width: 36, height: 4, borderRadius: 2, backgroundColor: theme.colors.border },
@@ -59,9 +59,10 @@ export function BottomSheet({
 }: BottomSheetProps) {
   const styles = useStyles();
   const insets = useSafeAreaInsets();
+  const { width, height } = useWindowDimensions();
   const [modalVisible, setModalVisible] = useState(visible);
 
-  const translateY = useSharedValue(SCREEN_HEIGHT);
+  const translateY = useSharedValue(height);
   const backdropOpacity = useSharedValue(0);
 
   useEffect(() => {
@@ -72,7 +73,7 @@ export function BottomSheet({
       return undefined;
     }
 
-    translateY.value = withTiming(SCREEN_HEIGHT, { duration: EXIT_DURATION });
+    translateY.value = withTiming(height, { duration: EXIT_DURATION });
     backdropOpacity.value = withTiming(0, { duration: EXIT_DURATION });
     const timeout = setTimeout(() => {
       setModalVisible(false);
@@ -83,7 +84,7 @@ export function BottomSheet({
     // and this effect must only re-run on visible/shared-value transitions —
     // not every time the caller re-renders with a new function reference.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible, translateY, backdropOpacity]);
+  }, [visible, height, translateY, backdropOpacity]);
 
   const requestClose = () => {
     if (!dismissible) return;
@@ -98,7 +99,7 @@ export function BottomSheet({
     .onEnd((event) => {
       const shouldDismiss = event.translationY > DISMISS_DISTANCE || event.velocityY > DISMISS_VELOCITY;
       if (shouldDismiss) {
-        translateY.value = withTiming(SCREEN_HEIGHT, { duration: EXIT_DURATION });
+        translateY.value = withTiming(height, { duration: EXIT_DURATION });
         backdropOpacity.value = withTiming(0, { duration: EXIT_DURATION });
         runOnJS(requestClose)();
       } else {
@@ -118,12 +119,24 @@ export function BottomSheet({
 
   return (
     <Modal visible={modalVisible} transparent animationType="none" statusBarTranslucent onRequestClose={requestClose}>
-      <View style={styles.sheetWrap}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.sheetWrap}>
         <Animated.View style={[styles.backdrop, backdropStyle]}>
           <Pressable style={StyleSheet.absoluteFill} onPress={requestClose} />
         </Animated.View>
 
-        <Animated.View style={[styles.sheet, { paddingBottom: insets.bottom + 20 }, sheetStyle]}>
+        <Animated.View
+          accessibilityViewIsModal
+          style={[
+            styles.sheet,
+            {
+              maxHeight: height * 0.86,
+              paddingBottom: insets.bottom + 20,
+              borderTopLeftRadius: width >= 640 ? 20 : undefined,
+              borderTopRightRadius: width >= 640 ? 20 : undefined,
+            },
+            sheetStyle,
+          ]}
+        >
           <GestureDetector gesture={pan}>
             <View>
               <View style={styles.dragArea}>
@@ -143,7 +156,7 @@ export function BottomSheet({
 
           {children}
         </Animated.View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

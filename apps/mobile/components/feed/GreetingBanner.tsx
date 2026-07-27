@@ -9,7 +9,7 @@ import { FadeIn } from '../ui/FadeIn';
 import { useAppTheme } from '../../util/colorScheme';
 import { useFeedStyles } from './styles';
 
-export function GreetingBanner({ name, onNotificationsPress }: { name?: string | null; onNotificationsPress: () => void }) {
+export function GreetingBanner({ name, onPreferencesPress }: { name?: string | null; onPreferencesPress: () => void }) {
   const styles = useFeedStyles();
   const theme  = useAppTheme();
   const hour   = new Date().getHours();
@@ -26,8 +26,14 @@ export function GreetingBanner({ name, onNotificationsPress }: { name?: string |
           </CustomText>
           <CustomText style={styles.greetingDate}>{dateStr}</CustomText>
         </View>
-        <TVTouchable onPress={onNotificationsPress} showFocusBorder={false} style={styles.greetingNotifBtn}>
-          <MaterialIcons name="notifications-none" size={20} color={theme.colors.text} />
+        <TVTouchable
+          onPress={onPreferencesPress}
+          showFocusBorder={false}
+          style={styles.greetingNotifBtn}
+          accessibilityRole="button"
+          accessibilityLabel="Open preferences"
+        >
+          <MaterialIcons name="tune" size={19} color={theme.colors.text} />
         </TVTouchable>
       </View>
     </FadeIn>

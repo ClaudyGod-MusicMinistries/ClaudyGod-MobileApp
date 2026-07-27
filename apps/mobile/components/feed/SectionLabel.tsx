@@ -23,7 +23,13 @@ export function SectionLabel({ title, accent: _accent, subtitle, actionLabel, on
       <View style={styles.sectionLabelRow}>
         <CustomText variant="heading" style={styles.sectionLabelTitle} numberOfLines={1}>{title}</CustomText>
         {actionLabel && onAction ? (
-          <TVTouchable onPress={onAction} showFocusBorder={false} style={styles.sectionActionBtn}>
+          <TVTouchable
+            onPress={onAction}
+            showFocusBorder={false}
+            style={styles.sectionActionBtn}
+            accessibilityRole="button"
+            accessibilityLabel={`${actionLabel}: ${title}`}
+          >
             <CustomText style={styles.sectionActionText}>{actionLabel}</CustomText>
             <MaterialIcons name="chevron-right" size={15} color={theme.colors.primary} />
           </TVTouchable>

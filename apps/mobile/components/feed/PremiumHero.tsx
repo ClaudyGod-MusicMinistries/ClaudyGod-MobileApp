@@ -111,14 +111,14 @@ export function PremiumHero({
   }
 
   const isLarge = device.isDesktop || device.isTV;
-  const heroHeight = height ?? (device.isTV ? 540 : device.isLargeDesktop ? 480 : isLarge ? 420 : isWide ? 360 : 310);
+  const heroHeight = height ?? (device.isTV ? 500 : device.isLargeDesktop ? 440 : isLarge ? 380 : isWide ? 330 : 272);
   const imageUrl = item.imageUrl || DEFAULT_CONTENT_IMAGE_URI;
   const isLiveItem = item.isLive;
 
   return (
     <FadeIn delay={30} duration={500}>
       <View style={[styles.heroContainer, { height: heroHeight }]}>
-        <Image source={{ uri: imageUrl }} resizeMode="cover" style={common.fill} />
+        <Image source={{ uri: imageUrl }} resizeMode="cover" style={common.fill} accessibilityIgnoresInvertColors />
 
         <LinearGradient
           colors={isWide
@@ -152,7 +152,7 @@ export function PremiumHero({
                 color: '#FFFFFF',
                 fontSize: device.isTV ? 42 : device.isLargeDesktop ? 36 : isLarge ? 30 : isWide ? 25 : 21,
                 lineHeight: device.isTV ? 52 : device.isLargeDesktop ? 44 : isLarge ? 38 : isWide ? 32 : 28,
-                fontWeight: '800', letterSpacing: -0.5,
+                fontWeight: '800', letterSpacing: 0,
               }}
               numberOfLines={2}
             >
