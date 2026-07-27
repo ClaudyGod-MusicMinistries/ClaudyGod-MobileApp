@@ -43,7 +43,7 @@
           class="space-y-2"
         >
           <template #item="{ element }: { element: ContentItem }">
-            <div class="flex items-center gap-3 p-3 rounded-xl border border-border bg-surface">
+            <div class="flex items-center gap-3 p-3 rounded-md border border-border bg-surface-strong">
               <span class="drag-handle cursor-grab text-ink-muted shrink-0" title="Drag to reorder">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 8h16M4 16h16"/></svg>
               </span>
@@ -60,8 +60,17 @@
 
     <template v-else>
     <!-- Filters -->
-    <AppCard class="p-4">
-      <div class="flex flex-wrap gap-3 items-end">
+    <AppCard class="overflow-hidden">
+      <div class="px-4 py-3 border-b border-border flex items-center justify-between gap-3">
+        <div>
+          <p class="text-xs font-semibold text-ink">Filter library</p>
+          <p class="text-[11px] text-ink-muted mt-0.5">Search and narrow the publishing inventory</p>
+        </div>
+        <button v-if="hasActiveFilters" type="button" class="text-xs font-semibold text-primary hover:text-primary-soft" @click="resetFilters">
+          Clear filters
+        </button>
+      </div>
+      <div class="flex flex-wrap gap-3 items-end p-4">
         <div class="flex-1 min-w-48">
           <SearchInput :model-value="store.filters.search ?? ''" placeholder="Search content…" @update:model-value="store.filters.search = $event || undefined" />
         </div>
@@ -79,13 +88,20 @@
           class="w-36"
           @update:model-value="store.filters.status = $event || undefined"
         />
-        <AppButton variant="secondary" size="sm" @click="resetFilters">Reset</AppButton>
       </div>
     </AppCard>
 
+    <div v-if="store.error" class="flex items-center justify-between gap-4 px-4 py-3 rounded-lg border border-danger/20 bg-danger/8">
+      <div class="flex items-center gap-2 min-w-0">
+        <AlertCircle class="w-4 h-4 text-danger shrink-0" />
+        <p class="text-xs text-danger truncate">{{ store.error }}</p>
+      </div>
+      <AppButton variant="secondary" size="xs" @click="store.fetchContent()">Retry</AppButton>
+    </div>
+
     <!-- Bulk toolbar -->
     <Transition name="slide-down">
-      <div v-if="selectedIds.length" class="flex items-center gap-3 px-4 py-3 bg-primary/10 border border-primary/25 rounded-2xl">
+      <div v-if="selectedIds.length" class="flex items-center gap-3 px-4 py-3 bg-primary/10 border border-primary/20 rounded-lg">
         <span class="text-sm font-semibold text-ink">{{ selectedIds.length }} selected</span>
         <div class="flex gap-2 ml-auto">
           <AppButton size="xs" variant="secondary" :loading="bulkLoading" @click="bulkAction('published')">Publish</AppButton>
@@ -109,15 +125,24 @@
       >
         <template #cell-title="{ row }">
           <div class="flex items-center gap-3">
-            <div class="w-9 h-9 rounded-lg bg-white/8 overflow-hidden flex-shrink-0">
+            <div class="w-12 h-12 rounded-md bg-bg-2 border border-border overflow-hidden flex-shrink-0">
               <img v-if="row.thumbnailUrl" :src="row.thumbnailUrl as string" alt="" class="w-full h-full object-cover" />
               <div v-else class="w-full h-full flex items-center justify-center">
-                <svg class="w-4 h-4 text-ink-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/></svg>
+                <component :is="contentIcon(String(row.type))" class="w-5 h-5 text-ink-muted" :stroke-width="1.7" />
               </div>
             </div>
-            <RouterLink :to="`/content/${row.id}`" class="text-sm font-medium text-ink hover:text-primary transition-colors line-clamp-1">
-              {{ row.title }}
-            </RouterLink>
+            <div class="min-w-0">
+              <RouterLink :to="`/content/${row.id}`" class="text-sm font-semibold text-ink hover:text-primary transition-colors line-clamp-1">
+                {{ row.title }}
+              </RouterLink>
+              <p class="text-[11px] text-ink-muted mt-1 truncate max-w-md">
+                {{ row.channelName || row.description || 'No supporting details' }}
+              </p>
+              <div class="flex items-center gap-2 mt-1.5 text-[10px] text-ink-muted">
+                <span v-if="row.duration">{{ row.duration }}</span>
+                <span v-if="row.isFeatured" class="text-primary font-semibold">Featured</span>
+              </div>
+            </div>
           </div>
         </template>
         <template #cell-type="{ value }">
@@ -147,6 +172,13 @@
         </template>
         <template #cell-visibility="{ value }">
           <StatusBadge :status="String(value)" />
+        </template>
+        <template #cell-appSections="{ value }">
+          <div class="flex flex-wrap gap-1 max-w-48">
+            <AppBadge v-for="section in (value as string[]).slice(0, 2)" :key="section" tone="neutral">{{ section }}</AppBadge>
+            <span v-if="(value as string[]).length > 2" class="text-[11px] text-ink-muted">+{{ (value as string[]).length - 2 }}</span>
+            <span v-if="!(value as string[]).length" class="text-xs text-ink-muted">Unassigned</span>
+          </div>
         </template>
         <template #cell-createdAt="{ value }">
           <span class="text-xs text-ink-muted">{{ formatDate(String(value)) }}</span>
@@ -182,7 +214,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue';
+import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue';
+import { watchDebounced } from '@vueuse/core';
+import { AlertCircle, FileText, ListMusic, Music2, Video } from 'lucide-vue-next';
 import draggable from 'vuedraggable';
 import { useContentStore } from '@/stores/content.store';
 import { useUiStore } from '@/stores/ui.store';
@@ -214,6 +248,7 @@ const columns = [
   { key: 'title', label: 'Title' },
   { key: 'type', label: 'Type' },
   { key: 'sourceKind', label: 'Source' },
+  { key: 'appSections', label: 'App sections' },
   { key: 'visibility', label: 'Status' },
   { key: 'createdAt', label: 'Created', sortable: true, align: 'right' as const },
 ];
@@ -231,11 +266,18 @@ const statusOptions = [
 ];
 
 onMounted(() => { void store.fetchContent(); });
+onBeforeUnmount(() => store.cancelContentFetch());
 
-watch(() => [store.filters.type, store.filters.status, store.filters.search], () => {
+watchDebounced(() => [store.filters.type, store.filters.status, store.filters.search], () => {
   store.filters.page = 1;
   void store.fetchContent();
-}, { debounce: 300 } as never);
+}, { debounce: 250, maxWait: 700 });
+
+const hasActiveFilters = computed(() => Boolean(store.filters.type || store.filters.status || store.filters.search));
+
+function contentIcon(type: string) {
+  return { audio: Music2, video: Video, playlist: ListMusic, announcement: FileText }[type] ?? FileText;
+}
 
 function onSort(key: string, dir: 'asc' | 'desc'): void {
   store.filters.sort = key;
@@ -326,10 +368,24 @@ async function bulkDelete(): Promise<void> {
   const ok = await ui.confirm({ title: 'Delete selected', message: `Delete ${selectedIds.value.length} items? They will be moved to Trash and can be restored later.`, tone: 'danger', confirmLabel: 'Delete all' });
   if (!ok) return;
   bulkLoading.value = true;
-  for (const id of selectedIds.value) { await store.remove(id); }
-  selectedIds.value = [];
-  bulkLoading.value = false;
-  ui.addToast({ tone: 'success', title: 'Moved selected items to Trash' });
+  const ids = [...selectedIds.value];
+  try {
+    const results = await Promise.allSettled(ids.map((id) => store.remove(id)));
+    const failed = results.filter((result) => result.status === 'rejected').length;
+    selectedIds.value = failed ? ids.filter((_, index) => results[index]?.status === 'rejected') : [];
+
+    if (failed) {
+      ui.addToast({
+        tone: 'danger',
+        title: `${failed} item${failed === 1 ? '' : 's'} could not be deleted`,
+        message: 'Failed items remain selected so you can retry.',
+      });
+    } else {
+      ui.addToast({ tone: 'success', title: `Moved ${ids.length} item${ids.length === 1 ? '' : 's'} to Trash` });
+    }
+  } finally {
+    bulkLoading.value = false;
+  }
 }
 
 function formatDate(iso: string): string {

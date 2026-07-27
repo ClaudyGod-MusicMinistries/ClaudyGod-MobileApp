@@ -29,6 +29,8 @@ export const useContentStore = defineStore('content', () => {
   const total = ref(0);
   const isLoading = ref(false);
   const error = ref<string | null>(null);
+  let contentRequestId = 0;
+  let contentAbortController: AbortController | null = null;
 
   const filters = reactive<ContentListParams>({
     type: undefined,
@@ -58,17 +60,33 @@ export const useContentStore = defineStore('content', () => {
   const trashError = ref<string | null>(null);
 
   async function fetchContent(): Promise<void> {
+    const requestId = ++contentRequestId;
+    contentAbortController?.abort();
+    contentAbortController = new AbortController();
     isLoading.value = true;
     error.value = null;
     try {
-      const res: PaginatedResponse<ContentItem> = await listContent(filters);
+      const params = { ...filters };
+      const res: PaginatedResponse<ContentItem> = await listContent(params, contentAbortController.signal);
+      if (requestId !== contentRequestId) return;
       items.value = res.items;
       total.value = res.total;
     } catch (e) {
+      if (requestId !== contentRequestId || (e instanceof Error && e.name === 'CanceledError')) return;
       error.value = e instanceof Error ? e.message : 'Failed to load content';
     } finally {
-      isLoading.value = false;
+      if (requestId === contentRequestId) {
+        isLoading.value = false;
+        contentAbortController = null;
+      }
     }
+  }
+
+  function cancelContentFetch(): void {
+    contentRequestId += 1;
+    contentAbortController?.abort();
+    contentAbortController = null;
+    isLoading.value = false;
   }
 
   async function fetchOne(id: string): Promise<void> {
@@ -176,7 +194,7 @@ export const useContentStore = defineStore('content', () => {
     items, total, isLoading, error, filters, current, isSaving, saveError,
     requests, requestsTotal, requestsLoading,
     trashItems, trashTotal, trashLoading, trashError,
-    fetchContent, fetchOne, save, remove, bulkAction,
+    fetchContent, cancelContentFetch, fetchOne, save, remove, bulkAction,
     fetchRequests, updateRequest, approveRequest, resetCurrent,
     fetchTrash, restore, permanentlyDelete,
   };

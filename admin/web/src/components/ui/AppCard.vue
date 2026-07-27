@@ -1,5 +1,5 @@
 <template>
-  <div :class="['border rounded-lg transition-colors duration-150', toneClass, props.class]">
+  <div :class="['app-card border rounded-lg transition-colors duration-150', toneClass, props.class]">
     <slot />
   </div>
 </template>

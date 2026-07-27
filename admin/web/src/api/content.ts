@@ -18,8 +18,8 @@ export interface ContentListParams {
   sortDir?: 'asc' | 'desc';
 }
 
-export async function listContent(params?: ContentListParams): Promise<PaginatedResponse<ContentItem>> {
-  const { data } = await client.get<PaginatedResponse<ContentItem>>('/v1/content/manage', { params });
+export async function listContent(params?: ContentListParams, signal?: AbortSignal): Promise<PaginatedResponse<ContentItem>> {
+  const { data } = await client.get<PaginatedResponse<ContentItem>>('/v1/content/manage', { params, signal });
   return data;
 }
 
