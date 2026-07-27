@@ -64,7 +64,6 @@ type SettingItem = {
   label: string;
   hint?: string;
   value: boolean;
-  accent?: string;
   onToggle: (_value: boolean) => void;
 };
 
@@ -121,7 +120,7 @@ function SettingRow({ item }: { item: SettingItem }) {
   const styles = useStyles();
   const theme  = useAppTheme();
   const device = useDeviceClass();
-  const accentColor = item.accent ?? theme.colors.primary;
+  const accentColor = theme.colors.primary;
 
   return (
     <TVTouchable
@@ -338,7 +337,6 @@ export default function SettingsScreen() {
       label: 'Auto-play',
       hint: 'Continue to the next song or message automatically.',
       value: autoPlay,
-      accent: theme.colors.primary,
       onToggle: makeToggleHandler('autoplayEnabled', setAutoPlay, { title: 'Playback updated', on: 'Auto-play is on.', off: 'Auto-play is off.', icon: 'play-circle-outline' }),
     },
     {
@@ -346,10 +344,9 @@ export default function SettingsScreen() {
       label: 'High quality audio',
       hint: 'Use more data for richer listening when available.',
       value: highQuality,
-      accent: theme.colors.info,
       onToggle: makeToggleHandler('highQualityEnabled', setHighQuality, { title: 'Audio quality updated', on: 'Higher quality audio is enabled.', off: 'Standard quality audio is enabled.', icon: 'high-quality' }),
     },
-  ], [autoPlay, highQuality, makeToggleHandler, theme]);
+  ], [autoPlay, highQuality, makeToggleHandler]);
 
   const experienceSettings: SettingItem[] = useMemo(() => [
     {
@@ -357,7 +354,6 @@ export default function SettingsScreen() {
       label: 'Notifications',
       hint: 'Receive live alerts and release reminders.',
       value: notifications,
-      accent: theme.colors.warning,
       onToggle: (value: boolean) => {
         makeToggleHandler('notificationsEnabled', setNotifications, { title: 'Notifications updated', on: 'Alerts are on.', off: 'Alerts are off.', icon: 'notifications-none' })(value);
         if (value) setAwaitingPushPermission(true);
@@ -369,7 +365,6 @@ export default function SettingsScreen() {
       label: 'Recommendations',
       hint: 'Use listening activity to improve suggestions.',
       value: personalization,
-      accent: theme.colors.success,
       onToggle: makeToggleHandler('personalizationEnabled', setPersonalization, { title: 'Recommendations updated', on: 'Recommendations are personalized.', off: 'Personalization is off.', icon: 'auto-awesome' }),
     },
     {
@@ -377,10 +372,9 @@ export default function SettingsScreen() {
       label: 'Diagnostics',
       hint: 'Share crash and error reports to help us fix problems faster.',
       value: diagnostics,
-      accent: theme.colors.textSecondary,
       onToggle: makeToggleHandler('diagnosticsEnabled', setDiagnostics, { title: 'Diagnostics updated', on: 'Crash reports are shared.', off: 'Crash reports are off.', icon: 'bug-report' }),
     },
-  ], [notifications, personalization, diagnostics, makeToggleHandler, theme, toggleNotifications]);
+  ], [notifications, personalization, diagnostics, makeToggleHandler, toggleNotifications]);
 
   const isWideLayout = device.isDesktop || device.isTV;
   const quickItems = settingsHubSections.flatMap((section) => section.items);

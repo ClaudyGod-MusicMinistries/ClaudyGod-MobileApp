@@ -12,6 +12,9 @@ interface DownloadState {
   title?: string;
   imageUrl?: string;
   contentType?: string;
+  subtitle?: string;
+  description?: string;
+  duration?: string;
 }
 
 interface DownloadsContextValue {
@@ -66,6 +69,9 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
           title: d.title,
           imageUrl: d.imageUrl,
           contentType: d.contentType,
+          subtitle: d.subtitle,
+          description: d.description,
+          duration: d.duration,
         };
       });
       setDownloads(initial);
@@ -93,13 +99,16 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
       [item.id]: {
         status: 'downloading', progress: 0, localUri: null,
         title: item.title, imageUrl: item.imageUrl, contentType: item.type,
+        subtitle: item.subtitle, description: item.description, duration: item.duration,
       },
     }));
 
     try {
       await ensureDir();
-      const ext = item.mediaUrl.split('?')[0]?.split('.').pop() ?? 'mp3';
-      const localUri = `${DOWNLOAD_DIR}${item.id}.${ext}`;
+      const rawExt = item.mediaUrl.split('?')[0]?.split('.').pop()?.toLowerCase() ?? 'mp3';
+      const ext = /^[a-z0-9]{2,5}$/.test(rawExt) ? rawExt : 'mp3';
+      const safeId = item.id.replace(/[^a-zA-Z0-9_-]/g, '_');
+      const localUri = `${DOWNLOAD_DIR}${safeId}.${ext}`;
 
       const dl = FileSystem.createDownloadResumable(
         item.mediaUrl,
@@ -124,6 +133,9 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
         localUri,
         contentType: item.type,
         imageUrl: item.imageUrl ?? undefined,
+        subtitle: item.subtitle,
+        description: item.description,
+        duration: item.duration,
         savedAt: new Date().toISOString(),
       });
 
@@ -132,6 +144,7 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
         [item.id]: {
           status: 'done', progress: 100, localUri,
           title: item.title, imageUrl: item.imageUrl, contentType: item.type,
+          subtitle: item.subtitle, description: item.description, duration: item.duration,
         },
       }));
     } catch {

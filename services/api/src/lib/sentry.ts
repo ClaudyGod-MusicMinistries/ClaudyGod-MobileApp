@@ -1,5 +1,4 @@
 import * as Sentry from '@sentry/node';
-import { nodeProfilingIntegration } from '@sentry/profiling-node';
 import { createLogger } from './logger';
 
 const log = createLogger('sentry');
@@ -17,9 +16,7 @@ export function initSentry(): void {
   Sentry.init({
     dsn,
     environment: process.env.NODE_ENV || 'development',
-    integrations: [nodeProfilingIntegration()],
     tracesSampleRate: 0.2,
-    profilesSampleRate: 0.2,
   });
 
   log.info('Sentry initialized');

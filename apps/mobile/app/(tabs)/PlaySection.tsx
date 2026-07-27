@@ -10,6 +10,7 @@ import { TVTouchable } from '../../components/ui/TVTouchable';
 import { useToast } from '../../context/ToastContext';
 import { useAppTheme } from '../../util/colorScheme';
 import { useContentFeed } from '../../hooks/useContentFeed';
+import { useLocalContent } from '../../hooks/useLocalContent';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import { getPlayerLayoutSections, deriveLayoutSectionItems } from '../../util/mobileLayout';
 import { InlineErrorBanner } from '../../components/ui/InlineErrorBanner';
@@ -160,7 +161,7 @@ export default function PlaySection() {
   const { feed, loading, error, refresh } = useContentFeed();
   const { config: appConfig } = useMobileAppConfig();
   const [filter, setFilter] = useState<AudioFilter>('all');
-  const [isFavorite, setIsFavorite] = useState(false);
+  const { checkIsFavorited, toggleFavorite, recordHistory } = useLocalContent();
   const [shuffleEnabled, setShuffleEnabled] = useState(false);
   const [repeatMode, setRepeatMode] = useState<RepeatMode>('off');
 
@@ -196,11 +197,26 @@ export default function PlaySection() {
     (active.mediaUrl && isDirectPlayableAudioUrl(active.mediaUrl)) ||
     isYouTubeAudioItem(active)
   ));
+  const isFavorite = active ? checkIsFavorited(active.id) : false;
+
+  const handleFavoriteToggle = async () => {
+    if (!active) return;
+    try {
+      await toggleFavorite(active);
+      showToast({
+        title: isFavorite ? 'Removed from saved' : 'Saved to Library',
+        message: active.title,
+        tone: 'info',
+      });
+    } catch {
+      showToast({ title: 'Library update failed', message: 'Please try again.', tone: 'warning' });
+    }
+  };
 
   const openItem = async (item: FeedCardItem, source: string) => {
     if (isYouTubeAudioItem(item)) {
       setActiveId(item.id);
-      setIsFavorite(false);
+      await recordHistory(item);
       await trackPlayEvent({ contentId: item.id, contentType: item.type, title: item.title, source });
       return;
     }
@@ -214,7 +230,7 @@ export default function PlaySection() {
       return;
     }
     setActiveId(item.id);
-    setIsFavorite(false);
+    await recordHistory(item);
     await trackPlayEvent({ contentId: item.id, contentType: item.type, title: item.title, source });
   };
 
@@ -268,7 +284,7 @@ export default function PlaySection() {
             canGoPrevious={canGoPrevious}
             canGoNext={canGoNext}
             isFavorite={isFavorite}
-            onFavoriteToggle={() => setIsFavorite((f) => !f)}
+            onFavoriteToggle={() => { void handleFavoriteToggle(); }}
             currentTrackNumber={activeIndex >= 0 ? activeIndex + 1 : undefined}
             totalTracks={allQueue.length}
           />
@@ -282,7 +298,7 @@ export default function PlaySection() {
             canGoPrevious={canGoPrevious}
             canGoNext={canGoNext}
             isFavorite={isFavorite}
-            onFavoriteToggle={() => setIsFavorite((f) => !f)}
+            onFavoriteToggle={() => { void handleFavoriteToggle(); }}
             currentTrackNumber={activeIndex >= 0 ? activeIndex + 1 : undefined}
             totalTracks={allQueue.length}
             shuffleEnabled={shuffleEnabled}

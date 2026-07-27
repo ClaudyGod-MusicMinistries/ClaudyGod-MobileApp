@@ -171,9 +171,9 @@ export default function LibraryScreen() {
       .map(([contentId, d]): FeedCardItem => ({
         id: contentId,
         title: d.title ?? 'Downloaded item',
-        subtitle: 'Available offline',
-        description: '',
-        duration: '--:--',
+        subtitle: d.subtitle ?? 'Available offline',
+        description: d.description ?? '',
+        duration: d.duration ?? '--:--',
         imageUrl: d.imageUrl ?? DEFAULT_CONTENT_IMAGE_URI,
         mediaUrl: d.localUri ?? undefined,
         type: (d.contentType ?? 'audio') as ContentType,
