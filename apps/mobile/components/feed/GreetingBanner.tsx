@@ -1,9 +1,8 @@
 import React from 'react';
 import { View } from 'react-native';
 
-import { MaterialIcons } from '@expo/vector-icons';
-
 import { CustomText } from '../CustomText';
+import { AppIcon } from '../ui/AppIcon';
 import { TVTouchable } from '../ui/TVTouchable';
 import { FadeIn } from '../ui/FadeIn';
 import { useAppTheme } from '../../util/colorScheme';
@@ -33,7 +32,7 @@ export function GreetingBanner({ name, onPreferencesPress }: { name?: string | n
           accessibilityRole="button"
           accessibilityLabel="Open preferences"
         >
-          <MaterialIcons name="tune" size={19} color={theme.colors.text} />
+          <AppIcon name="tune" size={18} color={theme.colors.text} />
         </TVTouchable>
       </View>
     </FadeIn>

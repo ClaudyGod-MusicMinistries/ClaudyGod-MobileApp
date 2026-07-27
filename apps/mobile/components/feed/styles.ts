@@ -178,16 +178,35 @@ export const useFeedStyles = makeStyles((theme) => ({
   compactSubtitle:   { color: theme.colors.textSecondary, marginTop: 3 },
 
   // EmptyState
-  emptyContainer:    { alignItems: 'center', paddingVertical: 40, paddingHorizontal: 24 },
+  emptyOuter: { alignSelf: 'stretch' },
+  emptyContainer: {
+    alignItems: 'flex-start', gap: 14,
+    paddingVertical: 18, paddingHorizontal: 18,
+    borderRadius: theme.radius.card,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1, borderColor: theme.colors.border,
+  },
+  emptyContainerWide: { flexDirection: 'row', alignItems: 'center', paddingVertical: 20, paddingHorizontal: 22 },
   emptyIcon: {
-    width: 56, height: 56, borderRadius: 28,
+    width: 46, height: 46, borderRadius: theme.radius.md,
     alignItems: 'center', justifyContent: 'center',
     backgroundColor: theme.colors.primarySurface,
     borderWidth: 1, borderColor: theme.colors.primaryBorder,
-    marginBottom: 16,
+    flexShrink: 0,
   },
-  emptyTitle:    { color: theme.colors.text, textAlign: 'center', fontSize: 15, fontWeight: '700' },
-  emptyMessage:  { color: theme.colors.textMuted, textAlign: 'center', marginTop: 8, lineHeight: 20, fontSize: 13, maxWidth: 300 },
+  emptyCopy: { flex: 1, minWidth: 0 },
+  emptyTitle:    { color: theme.colors.text, fontSize: 15, fontWeight: '700' },
+  emptyMessage:  { color: theme.colors.textMuted, marginTop: 4, lineHeight: 19, fontSize: 13, maxWidth: 520 },
+  emptyActions: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0 },
+  emptyActionsStacked: { alignSelf: 'stretch', flexWrap: 'wrap' },
+  emptyAction: {
+    minHeight: 40, paddingHorizontal: 14, borderRadius: theme.radius.md,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7,
+  },
+  emptyActionPrimary: { backgroundColor: theme.colors.primary },
+  emptyActionSecondary: { backgroundColor: theme.colors.subtleFill, borderWidth: 1, borderColor: theme.colors.border },
+  emptyActionPrimaryText: { color: theme.colors.onPrimary, fontWeight: '700' },
+  emptyActionSecondaryText: { color: theme.colors.text, fontWeight: '600' },
 
   // TrendingList
   trendingHeader:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

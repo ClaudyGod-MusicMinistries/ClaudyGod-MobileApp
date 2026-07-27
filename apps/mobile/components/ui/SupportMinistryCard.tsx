@@ -1,9 +1,9 @@
 import React from 'react';
 import { View, useWindowDimensions } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../CustomText';
 import { makeStyles } from '../../styles/makeStyles';
 import { TVTouchable } from './TVTouchable';
+import { AppIcon } from './AppIcon';
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
@@ -55,7 +55,7 @@ export function SupportMinistryCard({ onPress }: SupportCardProps) {
 
       <View style={styles.row}>
         <View style={styles.iconBox}>
-          <MaterialIcons name="volunteer-activism" size={20} color="#FFFFFF" />
+          <AppIcon name="volunteer-activism" size={20} color="#FFFFFF" />
         </View>
 
         <View style={styles.textFill}>
@@ -86,7 +86,7 @@ export function SupportMinistryCard({ onPress }: SupportCardProps) {
               Give support
             </CustomText>
           ) : null}
-          <MaterialIcons name="arrow-forward" size={16} color="#FFFFFF" />
+          <AppIcon name="arrow-forward" size={16} color="#FFFFFF" />
         </TVTouchable>
       </View>
     </View>

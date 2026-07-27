@@ -10,6 +10,7 @@ export { SearchBar } from './SearchBar';
 export { SectionHeader } from './SectionHeader';
 export { SkeletonLoader } from './SkeletonLoader';
 export { SupportMinistryCard } from './SupportMinistryCard';
+export { AppIcon, type AppIconName } from './AppIcon';
 export { SurfaceCard } from './SurfaceCard';
 export { TVTouchable } from './TVTouchable';
 export { ToastViewport } from './ToastViewport';

@@ -268,9 +268,13 @@ export default function VideosScreen() {
       {!loading && !allQueue.length ? (
         <EmptyState
           title="No videos right now"
-          message="Try Music, Live, or Search for more content."
-          actionLabel="Search"
-          onAction={() => router.push(APP_ROUTES.tabs.search)}
+          message="New sessions will appear here when they are published. Explore music now or search the full library."
+          actionLabel="Browse music"
+          actionIcon="headphones"
+          onAction={() => router.push(APP_ROUTES.tabs.player)}
+          secondaryActionLabel="Search library"
+          secondaryActionIcon="search"
+          onSecondaryAction={() => router.push(APP_ROUTES.tabs.search)}
           icon="smart-display"
         />
       ) : null}

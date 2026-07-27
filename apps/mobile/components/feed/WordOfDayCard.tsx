@@ -1,9 +1,8 @@
 import React from 'react';
 import { View } from 'react-native';
 
-import { MaterialIcons } from '@expo/vector-icons';
-
 import { CustomText } from '../CustomText';
+import { AppIcon } from '../ui/AppIcon';
 import { TVTouchable } from '../ui/TVTouchable';
 import { FadeIn } from '../ui/FadeIn';
 import { useAppTheme } from '../../util/colorScheme';
@@ -27,7 +26,7 @@ export function WordOfDayCard({ word, onPress, label = 'Word for today' }: { wor
           <View style={styles.wordAccentBar} />
           <View style={styles.wordContent}>
             <View style={styles.wordLabelRow}>
-              <MaterialIcons name="auto-stories" size={14} color={theme.colors.warning} />
+              <AppIcon name="auto-stories" size={15} color={theme.colors.warning} />
               <CustomText variant="caption" style={styles.wordLabel}>{label}</CustomText>
             </View>
             <CustomText variant="title" style={styles.wordTitle} numberOfLines={2}>{word.title ?? word.passage}</CustomText>
@@ -36,7 +35,7 @@ export function WordOfDayCard({ word, onPress, label = 'Word for today' }: { wor
             ) : null}
             <View style={styles.wordReadMore}>
               <CustomText variant="caption" style={styles.wordReadMoreText}>Read full message</CustomText>
-              <MaterialIcons name="arrow-forward" size={13} color={theme.colors.primary} />
+              <AppIcon name="arrow-forward" size={14} color={theme.colors.primary} />
             </View>
           </View>
         </View>
