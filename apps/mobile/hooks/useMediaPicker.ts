@@ -35,6 +35,10 @@ function assetToPickedMedia(asset: ImagePicker.ImagePickerAsset, forceAudio = fa
 export function useMediaPicker() {
   const { showToast } = useToast();
 
+  const showPickerError = useCallback((message: string) => {
+    showToast({ title: 'Media unavailable', message, tone: 'error' });
+  }, [showToast]);
+
   const requestGalleryPermission = useCallback(async (): Promise<boolean> => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
@@ -63,47 +67,62 @@ export function useMediaPicker() {
 
   const pickFromGallery = useCallback(
     async (type: 'image' | 'video'): Promise<PickedMedia | null> => {
-      if (!(await requestGalleryPermission())) return null;
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: type === 'image' ? 'images' : 'videos',
-        allowsEditing: type === 'image',
-        quality: 0.85,
-      });
-      if (result.canceled || !result.assets[0]) return null;
-      return assetToPickedMedia(result.assets[0]);
+      try {
+        if (!(await requestGalleryPermission())) return null;
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: type === 'image' ? 'images' : 'videos',
+          allowsEditing: type === 'image',
+          quality: 0.85,
+        });
+        if (result.canceled || !result.assets[0]) return null;
+        return assetToPickedMedia(result.assets[0]);
+      } catch {
+        showPickerError('The media library could not be opened. Check device settings and try again.');
+        return null;
+      }
     },
-    [requestGalleryPermission],
+    [requestGalleryPermission, showPickerError],
   );
 
   const captureFromCamera = useCallback(
     async (type: 'image' | 'video'): Promise<PickedMedia | null> => {
-      if (!(await requestCameraPermission())) return null;
-      const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: type === 'image' ? 'images' : 'videos',
-        allowsEditing: type === 'image',
-        quality: 0.85,
-        videoMaxDuration: 300,
-      });
-      if (result.canceled || !result.assets[0]) return null;
-      return assetToPickedMedia(result.assets[0]);
+      try {
+        if (!(await requestCameraPermission())) return null;
+        const result = await ImagePicker.launchCameraAsync({
+          mediaTypes: type === 'image' ? 'images' : 'videos',
+          allowsEditing: type === 'image',
+          quality: 0.85,
+          videoMaxDuration: 300,
+        });
+        if (result.canceled || !result.assets[0]) return null;
+        return assetToPickedMedia(result.assets[0]);
+      } catch {
+        showPickerError('The camera could not be opened. Check device settings and try again.');
+        return null;
+      }
     },
-    [requestCameraPermission],
+    [requestCameraPermission, showPickerError],
   );
 
   const pickAudioFile = useCallback(async (): Promise<PickedMedia | null> => {
-    const result = await DocumentPicker.getDocumentAsync({
-      type: 'audio/*',
-      copyToCacheDirectory: true,
-      multiple: false,
-    });
-    const asset = result.assets?.[0];
-    if (result.canceled || !asset) return null;
-    return {
-      uri: asset.uri,
-      mimeType: asset.mimeType || 'audio/mpeg',
-      fileName: asset.name || `audio_${Date.now()}.mp3`,
-    };
-  }, []);
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'audio/*',
+        copyToCacheDirectory: true,
+        multiple: false,
+      });
+      const asset = result.assets?.[0];
+      if (result.canceled || !asset) return null;
+      return {
+        uri: asset.uri,
+        mimeType: asset.mimeType || 'audio/mpeg',
+        fileName: asset.name || `audio_${Date.now()}.mp3`,
+      };
+    } catch {
+      showPickerError('The file browser could not be opened. Check device settings and try again.');
+      return null;
+    }
+  }, [showPickerError]);
 
   return { pickFromGallery, captureFromCamera, pickAudioFile };
 }

@@ -212,6 +212,7 @@ export interface MeLibraryItem {
   imageUrl?: string;
   mediaUrl?: string;
   duration?: string;
+  metadata?: JsonRecord;
   createdAt: string;
   updatedAt: string;
 }
