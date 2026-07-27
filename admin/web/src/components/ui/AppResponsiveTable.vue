@@ -20,12 +20,12 @@
   </AppTable>
 
   <!-- Mobile / narrow tablet: card list, same data and slots, no horizontal scroll. -->
-  <div v-else class="space-y-3">
+  <div v-else class="divide-y divide-border">
     <!-- Sort control — table headers aren't available to click in card mode. -->
-    <div v-if="sortableColumns.length" class="flex items-center gap-2">
-      <label class="text-xs font-semibold text-ink-muted uppercase tracking-wide">Sort by</label>
+    <div v-if="sortableColumns.length" class="flex items-center gap-2 py-3">
+      <label class="text-xs font-medium text-ink-muted">Sort by</label>
       <select
-        class="flex-1 h-9 px-2.5 text-xs rounded-lg bg-bg-1 border border-border text-ink focus:outline-none focus:border-primary/50"
+        class="flex-1 h-9 px-2.5 text-xs rounded-md bg-surface-strong border border-border text-ink focus:outline-none focus:border-primary/50"
         :value="sortKey ?? ''"
         @change="onSortSelect(($event.target as HTMLSelectElement).value)"
       >
@@ -35,7 +35,7 @@
       <button
         v-if="sortKey"
         type="button"
-        class="h-9 w-9 shrink-0 flex items-center justify-center rounded-lg border border-border text-ink-muted hover:text-ink transition-colors"
+        class="h-9 w-9 shrink-0 flex items-center justify-center rounded-md border border-border text-ink-muted hover:text-ink transition-colors"
         :aria-label="sortDir === 'asc' ? 'Sorted ascending' : 'Sorted descending'"
         @click="emit('sort', sortKey!, sortDir === 'asc' ? 'desc' : 'asc')"
       >
@@ -45,14 +45,14 @@
     </div>
 
     <!-- Select-all, only when there's something to select -->
-    <label v-if="selectable && rows.length" class="flex items-center gap-2 text-xs text-ink-muted px-1">
+    <label v-if="selectable && rows.length" class="flex items-center gap-2 text-xs text-ink-muted py-3">
       <input type="checkbox" class="rounded border-border accent-primary" :checked="allSelected" @change="toggleAll" />
       {{ allSelected ? 'Deselect all' : 'Select all' }}
     </label>
 
     <!-- Loading skeleton -->
     <template v-if="loading">
-      <div v-for="i in skeletonRows" :key="i" class="rounded-2xl border border-border p-4 space-y-2">
+      <div v-for="i in skeletonRows" :key="i" class="py-4 space-y-2">
         <div class="h-4 rounded bg-white/8 animate-pulse" style="width: 60%" />
         <div class="h-3 rounded bg-white/8 animate-pulse" style="width: 35%" />
       </div>
@@ -71,8 +71,8 @@
         v-for="(row, idx) in rows"
         :key="rowKey(row, idx)"
         :class="[
-          'rounded-2xl border p-4 space-y-3 transition-colors',
-          selected.has(rowKey(row, idx)) ? 'bg-primary-muted/20 border-primary/30' : 'border-border',
+          'py-4 space-y-3 transition-colors',
+          selected.has(rowKey(row, idx)) ? 'bg-primary-muted/20' : '',
         ]"
       >
         <div class="flex items-start justify-between gap-3">
@@ -97,7 +97,7 @@
 
         <div v-if="secondaryColumns.length" class="grid grid-cols-2 gap-x-3 gap-y-2">
           <div v-for="col in secondaryColumns" :key="col.key" class="min-w-0">
-            <p class="text-[10px] font-semibold text-ink-muted uppercase tracking-wide">{{ col.label }}</p>
+            <p class="text-[10px] font-semibold text-ink-muted uppercase tracking-[0.06em]">{{ col.label }}</p>
             <div class="text-xs text-ink-soft truncate">
               <slot :name="`cell-${col.key}`" :row="row" :value="row[col.key]">
                 {{ row[col.key] ?? '—' }}

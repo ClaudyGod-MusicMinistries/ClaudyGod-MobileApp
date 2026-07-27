@@ -7,7 +7,7 @@
       <button
         type="button"
         :disabled="page <= 1"
-        class="px-2.5 py-1.5 rounded-lg text-xs font-medium text-ink-soft hover:bg-white/8 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        class="h-8 px-2.5 rounded-md text-xs font-medium text-ink-soft hover:bg-surface-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         @click="$emit('change', page - 1)"
       >
         ← Prev
@@ -17,8 +17,8 @@
         :key="p"
         type="button"
         :class="[
-          'w-7 h-7 rounded-lg text-xs font-semibold transition-colors',
-          p === page ? 'bg-primary text-white' : 'text-ink-soft hover:bg-white/8',
+          'w-8 h-8 rounded-md text-xs font-semibold transition-colors',
+          p === page ? 'bg-primary text-white' : 'text-ink-soft hover:bg-surface-hover',
         ]"
         @click="p !== '…' && $emit('change', p as number)"
       >
@@ -27,7 +27,7 @@
       <button
         type="button"
         :disabled="page >= totalPages"
-        class="px-2.5 py-1.5 rounded-lg text-xs font-medium text-ink-soft hover:bg-white/8 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        class="h-8 px-2.5 rounded-md text-xs font-medium text-ink-soft hover:bg-surface-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         @click="$emit('change', page + 1)"
       >
         Next →

@@ -1,9 +1,9 @@
 <template>
-  <div class="overflow-hidden rounded-2xl border border-border">
+  <div class="overflow-hidden">
     <div class="overflow-x-auto">
       <table class="w-full text-sm border-collapse">
         <thead>
-          <tr class="border-b border-border bg-white/3">
+          <tr class="border-b border-border bg-bg-2/50">
             <th v-if="selectable" class="w-10 px-4 py-3">
               <input
                 type="checkbox"
@@ -17,7 +17,7 @@
               v-for="col in columns"
               :key="col.key"
               :class="[
-                'px-4 py-3 text-left text-xs font-semibold text-ink-soft uppercase tracking-wide whitespace-nowrap',
+                'px-4 py-2.5 text-left text-[11px] font-semibold text-ink-muted uppercase tracking-[0.06em] whitespace-nowrap',
                 col.sortable ? 'cursor-pointer select-none hover:text-ink transition-colors' : '',
                 col.align === 'right' ? 'text-right' : '',
                 col.class ?? '',
@@ -69,7 +69,7 @@
               :key="rowKey(row, idx)"
               :class="[
                 'border-b border-border/50 transition-colors duration-100',
-                'hover:bg-primary-muted/20',
+                'hover:bg-surface-hover',
                 selected.has(rowKey(row, idx)) ? 'bg-primary-muted/30' : '',
               ]"
             >
@@ -84,7 +84,7 @@
               <td
                 v-for="col in columns"
                 :key="col.key"
-                :class="['px-4 py-3 text-ink-soft', col.align === 'right' ? 'text-right' : '', col.class ?? '']"
+                :class="['px-4 py-3.5 text-ink-soft', col.align === 'right' ? 'text-right' : '', col.class ?? '']"
               >
                 <slot :name="`cell-${col.key}`" :row="row" :value="row[col.key]">
                   <span class="text-sm">{{ row[col.key] ?? '—' }}</span>
