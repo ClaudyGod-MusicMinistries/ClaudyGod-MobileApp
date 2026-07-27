@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col gap-1.5">
-    <label v-if="label" :for="id" class="text-xs font-semibold text-ink-soft uppercase tracking-wide">
+    <label v-if="label" :for="id" class="text-xs font-medium text-ink-soft">
       {{ label }}<span v-if="required" class="text-danger ml-0.5">*</span>
     </label>
     <select
@@ -9,7 +9,7 @@
       :disabled="disabled"
       :required="required"
       :class="[
-        'w-full bg-bg-1 border rounded-xl text-ink text-sm px-3.5 py-2.5 appearance-none transition-all duration-150 cursor-pointer',
+        'w-full h-10 bg-surface-strong border rounded-md text-ink text-sm px-3 appearance-none transition-colors duration-fast cursor-pointer',
         'focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/25',
         'disabled:opacity-50 disabled:cursor-not-allowed',
         error ? 'border-danger/60' : 'border-border',

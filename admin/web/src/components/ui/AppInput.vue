@@ -3,7 +3,7 @@
     <label
       v-if="label"
       :for="id"
-      class="text-xs font-semibold text-ink-soft uppercase tracking-wide"
+      class="text-xs font-medium text-ink-soft"
     >
       {{ label }}<span v-if="required" class="text-danger ml-0.5">*</span>
     </label>
@@ -23,12 +23,11 @@
         :disabled="disabled"
         :required="required"
         :class="[
-          'w-full border rounded-2xl text-sm transition-all duration-150',
+          'w-full h-10 border rounded-md text-sm transition-colors duration-fast',
           'focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed',
           $slots['prefix'] ? 'pl-9' : 'pl-4',
           $slots['suffix'] ? 'pr-9' : 'pr-4',
-          'py-3',
-          'bg-bg-1 border-border text-ink placeholder:text-ink-muted focus:border-primary/60 focus:ring-primary/25',
+          'bg-surface-strong border-border text-ink placeholder:text-ink-muted focus:border-primary/60 focus:ring-primary/15',
           error
             ? 'border-danger/60 focus:ring-danger/20'
             : '',

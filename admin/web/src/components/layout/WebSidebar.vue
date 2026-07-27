@@ -13,15 +13,15 @@
   <aside
     :class="[
       'flex flex-col h-full bg-surface-strong border-r border-border transition-all duration-200',
-      'fixed inset-y-0 left-0 z-40 w-64',
+      'fixed inset-y-0 left-0 z-40 w-[272px]',
       'lg:relative lg:z-auto lg:flex-shrink-0',
-      ui.sidebarOpen ? 'lg:w-64' : 'lg:w-16',
+      ui.sidebarOpen ? 'lg:w-[272px]' : 'lg:w-[72px]',
       ui.mobileDrawerOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
     ]"
   >
     <!-- Brand -->
-    <div class="flex items-center gap-3 px-4 py-4 border-b border-border min-h-[64px]">
-      <img :src="BRAND_LOGO_URL" alt="ClaudyGod" class="w-8 h-8 rounded-lg flex-shrink-0 object-contain" />
+    <div class="flex items-center gap-3 px-4 py-4 border-b border-border min-h-[68px]">
+      <img :src="BRAND_LOGO_URL" alt="ClaudyGod" class="w-9 h-9 rounded-md flex-shrink-0 object-contain border border-border" />
       <Transition name="fade">
         <div v-if="showExpanded" class="overflow-hidden">
           <p class="text-[10px] font-semibold text-ink-muted uppercase tracking-widest">ClaudyGod</p>
@@ -45,7 +45,7 @@
     <RouterLink
       to="/choose-workspace"
       :class="[
-        'flex items-center gap-3 mx-2 mt-3 px-2.5 py-2 rounded-lg text-xs font-medium text-ink-soft hover:bg-surface-hover hover:text-ink transition-colors border border-border',
+        'flex items-center gap-3 mx-2 mt-3 px-2.5 py-2 rounded-md text-xs font-medium text-ink-soft hover:bg-surface-hover hover:text-ink transition-colors border border-border',
         !showExpanded && 'justify-center',
       ]"
       :title="!showExpanded ? 'Switch workspace' : undefined"
@@ -65,7 +65,7 @@
           :key="item.to"
           :to="item.to"
           :class="[
-            'relative flex items-center gap-3 pl-3 pr-2.5 py-2 rounded-lg text-sm font-medium transition-all duration-150 group',
+            'relative flex items-center gap-3 pl-3 pr-2.5 py-2.5 rounded-md text-[13px] font-medium transition-colors duration-150 group',
             route.path.startsWith(item.to)
               ? 'bg-primary/10 text-primary-soft'
               : 'text-ink-soft hover:bg-surface-hover hover:text-ink',
@@ -75,7 +75,7 @@
         >
           <span
             v-if="route.path.startsWith(item.to)"
-            class="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-full bg-primary"
+            class="absolute left-0 top-2 bottom-2 w-0.5 rounded-full bg-primary"
           />
           <component :is="item.icon" class="w-5 h-5 flex-shrink-0" />
           <Transition name="fade">
@@ -89,7 +89,7 @@
     <div class="border-t border-border px-2 py-3 space-y-1">
       <button
         type="button"
-        :class="['hidden lg:flex items-center gap-3 px-2.5 py-2 w-full rounded-xl text-xs font-medium text-ink-soft hover:bg-surface-hover hover:text-ink transition-colors', !showExpanded && 'justify-center']"
+        :class="['hidden lg:flex items-center gap-3 px-2.5 py-2 w-full rounded-md text-xs font-medium text-ink-soft hover:bg-surface-hover hover:text-ink transition-colors', !showExpanded && 'justify-center']"
         :title="!showExpanded ? 'Toggle sidebar' : undefined"
         @click="ui.toggleSidebar()"
       >
@@ -98,7 +98,7 @@
       </button>
       <button
         type="button"
-        :class="['flex items-center gap-3 px-2.5 py-2 w-full rounded-xl text-xs font-medium text-danger hover:bg-danger/8 transition-colors', !showExpanded && 'justify-center']"
+        :class="['flex items-center gap-3 px-2.5 py-2 w-full rounded-md text-xs font-medium text-danger hover:bg-danger/8 transition-colors', !showExpanded && 'justify-center']"
         :title="!showExpanded ? 'Sign out' : undefined"
         @click="auth.logout()"
       >
