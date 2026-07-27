@@ -37,13 +37,12 @@ Bible Integration - Scripture references with songs
 | **Language**             | TypeScript |
 | **State Management**     | React Context (see `context/`) |
 | **Database**             | Postgres via the Claudy API (Supabase-hosted) |
-| **Authentication**       | Claudy API JWT + email verification/reset (currently guest-first — see `features/auth/README.md`) |
+| **Authentication**       | Private device-local release; Claudy API account authentication is reserved for a future release |
 | **File Storage**         | Supabase Storage (via the Claudy API's admin upload pipeline) |
 | **Audio Streaming**      | expo-audio |
 | **Video Streaming**      | expo-video |
 | **Push Notifications**   | Expo Notifications |
 | **Code Quality**         | ESLint |
-| **Testing**              | Jest (`jest-expo` preset) |
 | **Deployment**           | EAS (Expo Application Services) |
 
 ---

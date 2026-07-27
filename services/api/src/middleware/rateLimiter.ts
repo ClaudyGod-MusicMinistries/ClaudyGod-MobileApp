@@ -24,14 +24,8 @@ const rejectionHandler = (name: string) =>
 // been rate limited. Each limiter gets its own key prefix so they don't
 // share counters with each other.
 //
-// Omitted entirely under Jest: RedisStore's constructor eagerly loads its Lua
-// scripts into Redis the moment it's created (before any request happens),
-// and this test environment has no reachable Redis (REDIS_URL in the repo's
-// .env.development points at the `redis` Docker Compose hostname, which
-// doesn't resolve outside Docker — the same pre-existing condition
-// jest.config.js already documents for BullMQ). Falling back to
-// express-rate-limit's default in-memory store under test matches exactly
-// how these limiters already behaved before this change.
+// External test harnesses can set NODE_ENV=test to avoid opening Redis
+// connections during module loading and use the in-memory limiter store.
 const redisStore = (prefix: string): RedisStore | undefined =>
   process.env.NODE_ENV === 'test'
     ? undefined

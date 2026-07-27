@@ -46,21 +46,17 @@ const getUserContext = async (userId: string): Promise<UserContextRow> => {
 };
 
 const getSessionMinutes = async (userId: string, windowDays?: number): Promise<number> => {
-  try {
-    const result = await pool.query<SessionMinutesRow>(
-      windowDays
-        ? `SELECT COALESCE(ROUND(SUM(LEAST(COALESCE(position_ms, 0), COALESCE(duration_ms, 0)))::numeric / 60000), 0)::text AS minutes
-           FROM user_playback_sessions
-           WHERE user_id = $1 AND started_at >= NOW() - ($2::text || ' days')::interval`
-        : `SELECT COALESCE(ROUND(SUM(LEAST(COALESCE(position_ms, 0), COALESCE(duration_ms, 0)))::numeric / 60000), 0)::text AS minutes
-           FROM user_playback_sessions
-           WHERE user_id = $1`,
-      windowDays ? [userId, windowDays] : [userId],
-    );
-    return Number(result.rows[0]?.minutes ?? '0');
-  } catch {
-    return 0;
-  }
+  const result = await pool.query<SessionMinutesRow>(
+    windowDays
+      ? `SELECT COALESCE(ROUND(SUM(LEAST(COALESCE(position_ms, 0), COALESCE(duration_ms, 0)))::numeric / 60000), 0)::text AS minutes
+         FROM user_playback_sessions
+         WHERE user_id = $1 AND started_at >= NOW() - ($2::text || ' days')::interval`
+      : `SELECT COALESCE(ROUND(SUM(LEAST(COALESCE(position_ms, 0), COALESCE(duration_ms, 0)))::numeric / 60000), 0)::text AS minutes
+         FROM user_playback_sessions
+         WHERE user_id = $1`,
+    windowDays ? [userId, windowDays] : [userId],
+  );
+  return Number(result.rows[0]?.minutes ?? '0');
 };
 
 function engagementScore(totalPlays: number, liveSubscriptions: number): number {
