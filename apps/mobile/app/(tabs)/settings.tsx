@@ -13,9 +13,6 @@ import { useAppTheme, useThemeContext } from '../../util/colorScheme';
 import { makeStyles } from '../../styles/makeStyles';
 import { useDeviceClass } from '../../util/deviceClassConfig';
 import { APP_ROUTES, APP_ROUTE_BY_ID, type AppRouteId } from '../../util/appRoutes';
-import { useUserAccount } from '../../context/UserAccountContext';
-import { useAccountSheet } from '../../context/AccountSheetContext';
-import { fetchMePreferences, updateMePreferences, type MePreferences } from '../../services/userFlowService';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import { usePushNotifications } from '../../hooks/usePushNotify';
 import { getSettingsHubSections } from '../../util/mobileExperienceConfig';
@@ -28,7 +25,7 @@ import {
 
 type TogglePreferenceKey = 'notificationsEnabled' | 'autoplayEnabled' | 'highQualityEnabled' | 'personalizationEnabled' | 'diagnosticsEnabled';
 
-const GUEST_DEFAULTS: Record<TogglePreferenceKey, boolean> = {
+const DEVICE_DEFAULTS: Record<TogglePreferenceKey, boolean> = {
   notificationsEnabled: true,
   autoplayEnabled: true,
   highQualityEnabled: false,
@@ -283,8 +280,6 @@ export default function SettingsScreen() {
   const { themePreference, setThemePreference } = useThemeContext();
   const router = useRouter();
   const { showModal } = useAppModal();
-  const { account, isSignedIn, signOut } = useUserAccount();
-  const { openAccountSheet } = useAccountSheet();
   const { config: appConfig } = useMobileAppConfig();
   const { toggleNotifications, hasPermission: pushPermissionGranted, isLoading: pushLoading } = usePushNotifications();
 
@@ -300,12 +295,7 @@ export default function SettingsScreen() {
   const [diagnostics,      setDiagnostics]     = useState(true);
   const [awaitingPushPermission, setAwaitingPushPermission] = useState(false);
 
-  // These toggles used to be local-only `useState` that reset on every restart and
-  // never reached the server — the backend already reads notificationsEnabled and
-  // personalizationEnabled to decide real behavior (push delivery, recommendations),
-  // so a UI toggle that didn't persist was silently lying to the user. Signed-in
-  // users now read/write the real /v1/me/preferences record; guests (no account to
-  // attach a server preference to) get the same persistence locally.
+  // The mobile app has no public account system. Preferences are device-local.
   useEffect(() => {
     let cancelled = false;
 
@@ -319,31 +309,22 @@ export default function SettingsScreen() {
       setDiagnosticsAllowed(prefs.diagnosticsEnabled);
     };
 
-    if (isSignedIn) {
-      fetchMePreferences()
-        .then(({ preferences }) => applyValues(preferences))
-        .catch(() => { /* keep defaults on failure */ });
-    } else {
-      Promise.all(
-        (Object.keys(GUEST_DEFAULTS) as TogglePreferenceKey[]).map(async (key) => [
-          key,
-          await getPreference(key, GUEST_DEFAULTS[key]),
-        ] as const),
-      ).then((entries) => applyValues(Object.fromEntries(entries) as Record<TogglePreferenceKey, boolean>));
-    }
+    Promise.all(
+      (Object.keys(DEVICE_DEFAULTS) as TogglePreferenceKey[]).map(async (key) => [
+        key,
+        await getPreference(key, DEVICE_DEFAULTS[key]),
+      ] as const),
+    ).then((entries) => applyValues(Object.fromEntries(entries) as Record<TogglePreferenceKey, boolean>));
 
     return () => { cancelled = true; };
-  }, [isSignedIn]);
+  }, []);
 
   const persistPreference = useCallback(async (key: TogglePreferenceKey, value: boolean) => {
     // Mirrored to local storage regardless of account status, so lib/sentry.ts's
     // boot-time read always has the latest value without needing an account.
     await setPreference(key, value);
     if (key === 'diagnosticsEnabled') setDiagnosticsAllowed(value);
-    if (isSignedIn) {
-      await updateMePreferences({ [key]: value } as Partial<MePreferences>);
-    }
-  }, [isSignedIn]);
+  }, []);
 
   // Fires only right after the user explicitly turns notifications on (armed by
   // `awaitingPushPermission` in that toggle's handler below) — not a passive
@@ -474,58 +455,28 @@ export default function SettingsScreen() {
             style={{
               width: avatarSize, height: avatarSize, borderRadius: avatarRadius,
               alignItems: 'center', justifyContent: 'center',
-              backgroundColor: isSignedIn ? theme.colors.primarySurface : theme.colors.primarySurface,
+              backgroundColor: theme.colors.primarySurface,
               borderWidth: 2,
               borderColor: theme.colors.primaryBorder,
               ...theme.shadows.sm,
             }}
           >
             <MaterialIcons
-              name={isSignedIn ? 'person' : 'headphones'}
+              name="headphones"
               size={device.isTV ? 36 : 28}
               color={theme.colors.primary}
             />
           </View>
           <View style={styles.identityWrap}>
             <CustomText style={[styles.identityName, { fontSize: nameSize + 1 }]}>
-              {isSignedIn ? account!.displayName : 'ClaudyGod Listener'}
+              Your ClaudyGod Experience
             </CustomText>
             <CustomText style={[styles.identitySub, { fontSize: subSize }]}>
-              {isSignedIn ? account!.email : 'Worship freely — no account required'}
+              Personalize how you listen, watch, and connect
             </CustomText>
           </View>
         </View>
 
-        <View style={[styles.accountBtnWrap, { flexDirection: isWideLayout ? 'row' : 'column' }]}>
-          {isSignedIn ? (
-            <>
-              <AppButton
-                title="Account security"
-                variant="secondary"
-                size="sm"
-                onPress={() => router.push(APP_ROUTES.accountSecurity as never)}
-                leftIcon={<MaterialIcons name="shield" size={14} color={theme.colors.text} />}
-              />
-              <AppButton
-                title="Sign out"
-                variant="outline"
-                size="sm"
-                onPress={() => {
-                  void signOut();
-                  showModal({ title: 'Signed out', message: 'Your local library is still saved on this device.', tone: 'info', icon: 'logout' });
-                }}
-                leftIcon={<MaterialIcons name="logout" size={14} color={theme.colors.primary} />}
-              />
-            </>
-          ) : (
-            <AppButton
-              title="Sync your library"
-              size="sm"
-              onPress={openAccountSheet}
-              leftIcon={<MaterialIcons name="sync" size={14} color="#FFFFFF" />}
-            />
-          )}
-        </View>
       </SurfaceCard>
 
       {/* Quick links — driven by admin's Mobile config → Settings hub */}

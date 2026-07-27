@@ -37,6 +37,20 @@ export async function getMe(): Promise<AdminUser> {
   return data;
 }
 
+export async function requestPasswordReset(email: string): Promise<{ message: string }> {
+  const { data } = await client.post<{ message: string }>('/v1/auth/forgot-password', { email });
+  return data;
+}
+
+export async function resetPassword(input: {
+  token: string;
+  email?: string;
+  newPassword: string;
+}): Promise<{ message: string }> {
+  const { data } = await client.post<{ message: string }>('/v1/auth/reset-password', input);
+  return data;
+}
+
 export async function verifyEmail(code: string, email: string): Promise<void> {
   await client.post('/v1/auth/email/verify', { code, email });
 }

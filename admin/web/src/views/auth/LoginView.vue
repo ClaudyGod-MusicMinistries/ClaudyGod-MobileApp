@@ -49,6 +49,15 @@
         </template>
       </AppInput>
 
+      <div class="flex justify-end -mt-2">
+        <RouterLink
+          :to="{ name: 'forgot-password', query: { email } }"
+          class="text-xs font-semibold text-primary-soft hover:text-primary transition-colors"
+        >
+          Forgot password?
+        </RouterLink>
+      </div>
+
       <AppButton
         type="submit"
         variant="gradient"
@@ -165,7 +174,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import { useRouter, RouterLink } from 'vue-router';
+import { useRoute, useRouter, RouterLink } from 'vue-router';
 import { ArrowLeft, ShieldCheck } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/auth.store';
 import { GOOGLE_LOGIN_URL, FACEBOOK_LOGIN_URL } from '@/api/auth';
@@ -174,9 +183,10 @@ import AppInput from '@/components/ui/AppInput.vue';
 import AppButton from '@/components/ui/AppButton.vue';
 
 const auth = useAuthStore();
+const route = useRoute();
 const router = useRouter();
 
-const email = ref('');
+const email = ref(typeof route.query.email === 'string' ? route.query.email : '');
 const password = ref('');
 const mfaCode = ref('');
 const mfaRequired = ref(false);

@@ -8,6 +8,8 @@ import WebAdminShell from '@/components/layout/WebAdminShell.vue';
 // flash on page refresh (the main cause of "scaffolding" visible during route init).
 import LandingView from '@/views/auth/LandingView.vue';
 import LoginView from '@/views/auth/LoginView.vue';
+import ForgotPasswordView from '@/views/auth/ForgotPasswordView.vue';
+import ResetPasswordView from '@/views/auth/ResetPasswordView.vue';
 import RegisterView from '@/views/auth/RegisterView.vue';
 import RequestAccessView from '@/views/auth/RequestAccessView.vue';
 import ChooseWorkspaceView from '@/views/auth/ChooseWorkspaceView.vue';
@@ -37,6 +39,18 @@ const router = createRouter({
       name: 'login',
       component: LoginView,
       meta: { public: true, title: 'Sign in' },
+    },
+    {
+      path: '/forgot-password',
+      name: 'forgot-password',
+      component: ForgotPasswordView,
+      meta: { public: true, title: 'Recover access' },
+    },
+    {
+      path: '/reset-password',
+      name: 'reset-password',
+      component: ResetPasswordView,
+      meta: { public: true, title: 'Reset password' },
     },
     {
       path: '/register',

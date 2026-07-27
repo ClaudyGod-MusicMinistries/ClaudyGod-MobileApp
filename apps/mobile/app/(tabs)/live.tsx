@@ -201,7 +201,7 @@ export default function LiveScreen() {
       await subscribeToLiveAlertsBackend(item.notificationChannelId || item.id, item.title);
       showToast({ title: 'Live alerts enabled', message: 'You will be notified before the session starts.', tone: 'success' });
     } catch {
-      showToast({ title: 'Sign in to receive alerts', message: 'Create an account or sign in to follow live sessions.', tone: 'warning' });
+      showToast({ title: 'Unable to enable alerts', message: 'Check notification permissions and try again.', tone: 'warning' });
     }
   };
 

@@ -40,7 +40,13 @@ export function QuickActionGrid({ actions }: { actions: QuickAction[] }) {
           {actions.map((action) => {
             const accent = getActionAccent(action.icon, theme);
             return (
-              <TVTouchable key={action.label} onPress={action.onPress} showFocusBorder={false}>
+              <TVTouchable
+                key={action.label}
+                onPress={action.onPress}
+                showFocusBorder={false}
+                accessibilityRole="button"
+                accessibilityLabel={action.hint ? `${action.label}. ${action.hint}` : action.label}
+              >
                 <View style={styles.quickCompactItem}>
                   <View style={styles.quickCompactCircle}>
                     <MaterialIcons name={action.icon} size={26} color={accent} />
@@ -63,7 +69,14 @@ export function QuickActionGrid({ actions }: { actions: QuickAction[] }) {
         {actions.map((action) => {
           const accent = getActionAccent(action.icon, theme);
           return (
-            <TVTouchable key={action.label} onPress={action.onPress} showFocusBorder={false} style={{ flex: 1 }}>
+            <TVTouchable
+              key={action.label}
+              onPress={action.onPress}
+              showFocusBorder={false}
+              style={{ flex: 1 }}
+              accessibilityRole="button"
+              accessibilityLabel={action.hint ? `${action.label}. ${action.hint}` : action.label}
+            >
               <View style={styles.quickWideCard}>
                 <View style={{ width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: `${accent}1A` }}>
                   <MaterialIcons name={action.icon} size={20} color={accent} />

@@ -12,10 +12,7 @@ import { useThemeContext, useAppTheme } from '../util/colorScheme';
 import { makeStyles } from '../styles/makeStyles';
 import { FontProvider, FontContext } from '../context/FontContext';
 import { AppProvider } from '../context/AppContext';
-import { UserAccountProvider } from '../context/UserAccountContext';
 import { DownloadsProvider } from '../context/DownloadsContext';
-import { AccountSheetProvider } from '../context/AccountSheetContext';
-import { AccountSheet } from '../components/auth/AccountSheet';
 import { PlayerProvider, usePlayer } from '../context/PlayerContext';
 import { PlayerProgressProvider } from '../context/PlayerProgressContext';
 import { ToastProvider } from '../context/ToastContext';
@@ -184,22 +181,17 @@ function RootLayout() {
               <ErrorBoundary context="the app">
                 <ToastProvider>
                   <AppProvider>
-                    <UserAccountProvider>
-                      <DownloadsProvider>
-                        <AccountSheetProvider>
-                          <PlayerProgressProvider>
-                            <PlayerProvider>
-                              <WordOfDayProvider>
-                                <AppModalProvider>
-                                  <RootLayoutInner />
-                                  <AccountSheet />
-                                </AppModalProvider>
-                              </WordOfDayProvider>
-                            </PlayerProvider>
-                          </PlayerProgressProvider>
-                        </AccountSheetProvider>
-                      </DownloadsProvider>
-                    </UserAccountProvider>
+                    <DownloadsProvider>
+                      <PlayerProgressProvider>
+                        <PlayerProvider>
+                          <WordOfDayProvider>
+                            <AppModalProvider>
+                              <RootLayoutInner />
+                            </AppModalProvider>
+                          </WordOfDayProvider>
+                        </PlayerProvider>
+                      </PlayerProgressProvider>
+                    </DownloadsProvider>
                   </AppProvider>
                 </ToastProvider>
               </ErrorBoundary>

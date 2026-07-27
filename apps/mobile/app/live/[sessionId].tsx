@@ -336,7 +336,7 @@ export default function LiveSessionScreen() {
       setDraftMessage('');
       showModal({ title: 'Message sent', message: messageKind === 'comment' ? 'Your comment has been added.' : 'Your suggestion has been sent.', tone: 'success', primaryAction: { label: 'Done' } });
     } catch (err) {
-      showModal({ title: 'Unable to send', message: err instanceof Error ? err.message : 'Sign in to join the live conversation.', tone: 'error', primaryAction: { label: 'Try again' } });
+      showModal({ title: 'Unable to send', message: err instanceof Error ? err.message : 'Your message could not be sent. Please try again.', tone: 'error', primaryAction: { label: 'Try again' } });
     } finally {
       setSaving(false);
     }

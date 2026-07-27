@@ -1,12 +1,7 @@
-// NOTE: `auth.*` (password reset, email verify, email OTP) and `accountSecurity` are
-// now routable — real files exist under `app/` re-exporting their `features/auth/`
-// implementations, wired into AccountSheet.tsx and settings.tsx. `profile` (and the
-// rest of features/auth's screens not listed under `auth.*`/`accountSecurity`: sign-in,
-// sign-up, dashboard, upload) remain reserved for a future batch (see
-// apps/mobile/features/auth/README.md) — no real file exists under `app/` for those yet,
-// so do not navigate to them from live code until a corresponding file lands.
 export const APP_ROUTES = {
   landing: '/',
+  // Reserved for the planned account release. These paths are not routable until
+  // matching files are intentionally added under app/ and the full flow is enabled.
   auth: {
     signIn: '/sign-in',
     signUp: '/sign-up',

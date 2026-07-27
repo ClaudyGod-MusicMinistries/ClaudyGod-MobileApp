@@ -6,9 +6,9 @@ import { makeStyles } from '../../styles/makeStyles';
 export const useFeedStyles = makeStyles((theme) => ({
   // PremiumPage
   pageScroll:         { flex: 1, backgroundColor: 'transparent' },
-  pageContent:        { paddingTop: theme.layout.headerVerticalPadding, gap: theme.layout.sectionGap },
+  pageContent:        { paddingTop: theme.layout.headerVerticalPadding, gap: 24 },
   headerLeft:         { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 },
-  headerTitle:        { color: theme.colors.text, fontWeight: '700', letterSpacing: -0.3 },
+  headerTitle:        { color: theme.colors.text, fontWeight: '700', letterSpacing: 0 },
   headerSubtitle:     { color: theme.colors.textSecondary, marginTop: 2, maxWidth: 720, fontSize: 12 },
   headerRight:        { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0 },
 
@@ -91,13 +91,14 @@ export const useFeedStyles = makeStyles((theme) => ({
   // Shadow lives on the outer wrap (no overflow) so it isn't clipped by the
   // inner container's overflow:hidden, which is what actually rounds the image.
   artworkShadowWrap: {
-    borderRadius: 20,
+    borderRadius: theme.radius.card,
     shadowColor: '#000000',
-    shadowOpacity: 0.22, shadowRadius: 14, shadowOffset: { width: 0, height: 8 },
-    elevation: 6,
+    shadowOpacity: 0.14, shadowRadius: 8, shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
+    borderWidth: 1, borderColor: theme.colors.border,
   },
   artworkContainer: {
-    borderRadius: 20, overflow: 'hidden',
+    borderRadius: theme.radius.card, overflow: 'hidden',
     backgroundColor: theme.colors.surfaceAlt,
   },
   cardPlayBadge: {
@@ -125,7 +126,7 @@ export const useFeedStyles = makeStyles((theme) => ({
   durationText:    { color: '#FFFFFF', fontSize: 10, fontWeight: '600' },
   cardTextArea:    { gap: 3, paddingTop: 3 },
   cardTitleRow:    { flexDirection: 'row', alignItems: 'flex-start', gap: 4 },
-  cardTitle:       { color: theme.colors.text, fontSize: 15, lineHeight: 20, fontWeight: '700', letterSpacing: -0.2, flex: 1 },
+  cardTitle:       { color: theme.colors.text, fontSize: 14, lineHeight: 19, fontWeight: '700', letterSpacing: 0, flex: 1 },
   cardMoreBtn:     { paddingTop: 2 },
   cardSubtitle:    { color: theme.colors.textMuted, fontSize: 12.5 },
 
@@ -133,7 +134,7 @@ export const useFeedStyles = makeStyles((theme) => ({
   railGap:         { gap: 12 },
   railHeader:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   railTitleWrap:   { flex: 1, minWidth: 0 },
-  railTitle:       { color: theme.colors.text, fontSize: 17, fontWeight: '800', letterSpacing: -0.4 },
+  railTitle:       { color: theme.colors.text, fontSize: 17, fontWeight: '800', letterSpacing: 0 },
   railSubtitle:    { color: theme.colors.textMuted, marginTop: 3, fontSize: 12.5 },
   railActionBtn:   { flexDirection: 'row', alignItems: 'center', gap: 3, paddingVertical: 6, paddingLeft: 12 },
   railActionText:  { color: theme.colors.primary, fontSize: 12.5, fontWeight: '600' },
@@ -153,7 +154,7 @@ export const useFeedStyles = makeStyles((theme) => ({
   inlineEmptyMessage: { color: theme.colors.textSecondary, marginTop: 3 },
 
   // ContentList
-  listTitle:     { color: theme.colors.text, marginBottom: 12, fontWeight: '700', letterSpacing: -0.2 },
+  listTitle:     { color: theme.colors.text, marginBottom: 12, fontWeight: '700', letterSpacing: 0 },
   listItemThumb: {
     borderRadius: 12, overflow: 'hidden',
     backgroundColor: theme.colors.surfaceAlt, flexShrink: 0,
@@ -190,7 +191,7 @@ export const useFeedStyles = makeStyles((theme) => ({
 
   // TrendingList
   trendingHeader:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  trendingTitle:    { color: theme.colors.text, fontSize: 18, fontWeight: '800', letterSpacing: -0.4 },
+  trendingTitle:    { color: theme.colors.text, fontSize: 18, fontWeight: '800', letterSpacing: 0 },
   trendingActionBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 3,
     paddingHorizontal: 10, paddingVertical: 5,
@@ -261,7 +262,7 @@ export const useFeedStyles = makeStyles((theme) => ({
   // GreetingBanner
   greetingRow:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 2 },
   greetingLeft:      { gap: 4, flex: 1, minWidth: 0 },
-  greetingTitle:     { color: theme.colors.text, fontSize: 24, fontWeight: '800', letterSpacing: -0.6, lineHeight: 30 },
+  greetingTitle:     { color: theme.colors.text, fontSize: 23, fontWeight: '800', letterSpacing: 0, lineHeight: 30 },
   greetingDate:      { color: theme.colors.textMuted, fontSize: 13, fontWeight: '400', lineHeight: 19 },
   greetingNotifBtn: {
     width: 40, height: 40, borderRadius: 20,
@@ -312,7 +313,7 @@ export const useFeedStyles = makeStyles((theme) => ({
 
   // SectionLabel
   sectionLabelRow:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  sectionLabelTitle: { color: theme.colors.text, fontSize: 17, fontWeight: '800', letterSpacing: -0.4, flex: 1 },
+  sectionLabelTitle: { color: theme.colors.text, fontSize: 17, fontWeight: '700', letterSpacing: 0, flex: 1 },
   sectionActionBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 3,
     paddingVertical: 6, paddingLeft: 12, paddingRight: 2,

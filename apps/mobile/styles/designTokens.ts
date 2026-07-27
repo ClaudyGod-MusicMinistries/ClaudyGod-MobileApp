@@ -16,9 +16,9 @@ export const radius = {
   sm:   6,    // small elements, badges
   md:   8,    // buttons, input fields, chips
   lg:   10,   // content cards
-  card: 12,   // standard card/tile radius
-  xl:   14,   // modal headers, feature cards
-  xxl:  20,   // bottom sheets, large modals
+  card: 8,    // standard card/tile radius
+  xl:   12,   // modal headers, feature cards
+  xxl:  16,   // bottom sheets, large modals
   pill: 999,  // fully rounded / circle
 };
 

@@ -34,7 +34,7 @@ describe('ContentCard', () => {
 
     expect(screen.getByText('Sunday Service')).toBeTruthy();
 
-    await fireEvent.press(screen.getByRole('button'));
+    await fireEvent.press(screen.getByRole('button', { name: 'Play Sunday Service' }));
     expect(onPress).toHaveBeenCalledTimes(1);
   });
 
