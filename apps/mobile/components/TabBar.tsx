@@ -1,7 +1,6 @@
 import React, { useMemo } from 'react';
 import { Image, Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { useAppTheme } from '../util/colorScheme';
@@ -11,6 +10,7 @@ import { getSidebarWidth } from '../util/sidebarConfig';
 import { TVTouchable } from './ui/TVTouchable';
 import { CustomText } from './CustomText';
 import { BRAND_LOGO_ASSET } from '../util/brandAssets';
+import { AppIcon, type AppIconName } from './ui/AppIcon';
 
 // layout.tabBarContentPadding is a structural constant (not theme-varying).
 // It must live at module level so non-component code can import it without hooks.
@@ -22,18 +22,18 @@ type FooterItem = {
   routeName: TabRouteName;
   key: string;
   label: string;
-  icon: React.ComponentProps<typeof MaterialIcons>['name'];
+  icon: AppIconName;
   center?: boolean;
 };
 
 const FOOTER_ORDER: TabRouteName[] = ['home', 'player', 'videos', 'library', 'settings'];
 
 const FOOTER_CONFIG: Record<TabRouteName, Omit<FooterItem, 'routeName' | 'key'>> = {
-  home:     { icon: 'home'               as const, label: 'Home' },
-  player:   { icon: 'headphones'         as const, label: 'Music' },
-  videos:   { icon: 'play-circle-filled' as const, label: 'Videos', center: true },
-  library:  { icon: 'library-music'      as const, label: 'Library' },
-  settings: { icon: 'tune'              as const, label: 'Settings' },
+  home:     { icon: 'home', label: 'Home' },
+  player:   { icon: 'headphones', label: 'Music' },
+  videos:   { icon: 'smart-display', label: 'Videos', center: true },
+  library:  { icon: 'library-music', label: 'Library' },
+  settings: { icon: 'tune', label: 'Settings' },
 };
 
 function routeExists(routes: BottomTabBarProps['state']['routes'], routeName: string) {
@@ -110,23 +110,23 @@ function SidebarTabBar({
                   gap: isTV ? 14 : 12,
                   paddingVertical: isTV ? 13 : 11,
                   paddingHorizontal: isTV ? 14 : 12,
-                  borderRadius: theme.radius.xl,
+                  borderRadius: theme.radius.md,
                   backgroundColor: focused ? `rgba(${theme.colors.accentRgba},0.12)` : 'transparent',
                   borderWidth: focused ? 1 : 0,
                   borderColor: focused ? theme.colors.primaryBorder : 'transparent',
                 }}
               >
                 <View style={{
-                  width: isTV ? 36 : 30, height: isTV ? 36 : 30, borderRadius: theme.radius.card,
+                  width: isTV ? 36 : 30, height: isTV ? 36 : 30, borderRadius: theme.radius.md,
                   alignItems: 'center', justifyContent: 'center',
                   backgroundColor: focused
-                    ? (item.center ? theme.colors.primary : `rgba(${theme.colors.accentRgba},0.17)`)
-                    : theme.colors.subtleFill,
+                    ? `rgba(${theme.colors.accentRgba},0.15)`
+                    : 'transparent',
                 }}>
-                  <MaterialIcons
+                  <AppIcon
                     name={item.icon}
-                    size={isTV ? 20 : 17}
-                    color={item.center ? '#FFFFFF' : (focused ? theme.colors.primary : theme.colors.textMuted)}
+                    size={isTV ? 21 : 18}
+                    color={focused ? theme.colors.primary : theme.colors.textMuted}
                   />
                 </View>
                 <CustomText style={{ color: focused ? theme.colors.text : theme.colors.textMuted, fontSize: isTV ? 15 : 13.5, fontWeight: focused ? '700' : '500', flex: 1 }}>
@@ -158,8 +158,8 @@ function SidebarTabBar({
                 : 'transparent',
             }}
           >
-            <View style={{ width: isTV ? 36 : 30, height: isTV ? 36 : 30, borderRadius: theme.radius.card, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.subtleFill }}>
-              <MaterialIcons name="tune" size={isTV ? 18 : 16} color={currentRouteName === 'settings' ? theme.colors.primary : theme.colors.textMuted} />
+            <View style={{ width: isTV ? 36 : 30, height: isTV ? 36 : 30, borderRadius: theme.radius.md, alignItems: 'center', justifyContent: 'center' }}>
+              <AppIcon name="tune" size={isTV ? 20 : 18} color={currentRouteName === 'settings' ? theme.colors.primary : theme.colors.textMuted} />
             </View>
             <CustomText style={{ color: currentRouteName === 'settings' ? theme.colors.text : theme.colors.textMuted, fontSize: isTV ? 14 : 13, fontWeight: currentRouteName === 'settings' ? '700' : '500' }}>
               Settings
@@ -206,7 +206,7 @@ function TabItem({
           backgroundColor: focused ? `rgba(${theme.colors.accentRgba},0.18)` : 'transparent',
         }}
       >
-        <MaterialIcons
+        <AppIcon
           name={item.icon}
           size={focused ? (compact ? 20 : 22) : (compact ? 18 : 20)}
           color={focused ? theme.colors.primary : theme.colors.textMuted}
@@ -317,7 +317,7 @@ const TabBar = ({ state, navigation }: BottomTabBarProps) => {
         routeName,
         key: existing?.key ?? `synthetic-${routeName}`,
         label: dynamic?.label ?? fallback.label,
-        icon: (dynamic?.icon as React.ComponentProps<typeof MaterialIcons>['name']) || fallback.icon,
+        icon: dynamic?.icon || fallback.icon,
         center: fallback.center,
       } satisfies FooterItem;
     }).filter(Boolean) as FooterItem[];

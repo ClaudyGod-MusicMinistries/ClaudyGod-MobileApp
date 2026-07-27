@@ -2,9 +2,8 @@ import React from 'react';
 import { Image, Platform, View } from 'react-native';
 
 import { LinearGradient } from 'expo-linear-gradient';
-import { MaterialIcons } from '@expo/vector-icons';
-
 import { CustomText } from '../CustomText';
+import { AppIcon, type AppIconName } from '../ui/AppIcon';
 import { AppButton } from '../ui/AppButton';
 import { FadeIn } from '../ui/FadeIn';
 import { useDeviceClass } from '../../util/deviceClassConfig';
@@ -22,11 +21,11 @@ type PremiumHeroProps = {
   eyebrow?: string;
   actionLabel?: string;
   primaryLabel?: string;
-  primaryIcon?: React.ComponentProps<typeof MaterialIcons>['name'];
+  primaryIcon?: AppIconName;
   /** Icon shown in the empty/no-item prompt card. Ignored once `item` is set. */
-  emptyIcon?: React.ComponentProps<typeof MaterialIcons>['name'];
+  emptyIcon?: AppIconName;
   secondaryLabel?: string;
-  secondaryIcon?: React.ComponentProps<typeof MaterialIcons>['name'];
+  secondaryIcon?: AppIconName;
   onPrimaryPress?: () => void;
   onPrimary?: () => void;
   onSecondaryPress?: () => void;
@@ -71,7 +70,7 @@ export function PremiumHero({
                 end={{ x: 1, y: 1 }}
                 style={common.fill}
               />
-              <MaterialIcons name={emptyIcon} size={32} color={theme.colors.onPrimary} />
+              <AppIcon name={emptyIcon} size={30} color={theme.colors.onPrimary} />
             </View>
           </View>
 
@@ -90,7 +89,7 @@ export function PremiumHero({
                   variant="gradient"
                   onPress={primaryAction}
                   size="lg"
-                  leftIcon={<MaterialIcons name={primaryIcon} size={18} color={theme.colors.onPrimary} />}
+                  leftIcon={<AppIcon name={primaryIcon} size={17} color={theme.colors.onPrimary} />}
                 />
               ) : null}
               {secondaryLabel && secondaryAction ? (
@@ -100,7 +99,7 @@ export function PremiumHero({
                   size="lg"
                   onPress={secondaryAction}
                   style={{ borderRadius: 999 }}
-                  leftIcon={<MaterialIcons name={secondaryIcon} size={16} color={theme.colors.text} />}
+                  leftIcon={<AppIcon name={secondaryIcon} size={16} color={theme.colors.text} />}
                 />
               ) : null}
             </View>
@@ -173,7 +172,7 @@ export function PremiumHero({
                   title={resolvedPrimaryLabel}
                   onPress={primaryAction}
                   size="md"
-                  leftIcon={<MaterialIcons name={primaryIcon} size={18} color={theme.colors.textInverse} />}
+                  leftIcon={<AppIcon name={primaryIcon} size={17} color={theme.colors.textInverse} />}
                   style={{ flex: 1 }}
                 />
               ) : null}
@@ -184,7 +183,7 @@ export function PremiumHero({
                   size="md"
                   onPress={secondaryAction}
                   textColor="#FFFFFF"
-                  leftIcon={<MaterialIcons name={secondaryIcon} size={17} color="#FFFFFF" />}
+                  leftIcon={<AppIcon name={secondaryIcon} size={16} color="#FFFFFF" />}
                   style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.14)', borderColor: 'rgba(255,255,255,0.22)' }}
                 />
               ) : null}

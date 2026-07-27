@@ -1,9 +1,8 @@
 import React from 'react';
 import { ScrollView, View, useWindowDimensions } from 'react-native';
 
-import { MaterialIcons } from '@expo/vector-icons';
-
 import { CustomText } from '../CustomText';
+import { AppIcon, type AppIconName } from '../ui/AppIcon';
 import { TVTouchable } from '../ui/TVTouchable';
 import { FadeIn } from '../ui/FadeIn';
 import { useAppTheme } from '../../util/colorScheme';
@@ -13,7 +12,7 @@ import { useFeedStyles } from './styles';
 export type QuickAction = {
   label: string;
   hint?: string;
-  icon: React.ComponentProps<typeof MaterialIcons>['name'];
+  icon: AppIconName;
   onPress: () => void;
 };
 
@@ -49,7 +48,7 @@ export function QuickActionGrid({ actions }: { actions: QuickAction[] }) {
               >
                 <View style={styles.quickCompactItem}>
                   <View style={styles.quickCompactCircle}>
-                    <MaterialIcons name={action.icon} size={26} color={accent} />
+                    <AppIcon name={action.icon} size={23} color={accent} />
                   </View>
                   <CustomText variant="caption" style={styles.quickCompactLabel} numberOfLines={1}>
                     {action.label}
@@ -79,7 +78,7 @@ export function QuickActionGrid({ actions }: { actions: QuickAction[] }) {
             >
               <View style={styles.quickWideCard}>
                 <View style={{ width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: `${accent}1A` }}>
-                  <MaterialIcons name={action.icon} size={20} color={accent} />
+                  <AppIcon name={action.icon} size={19} color={accent} />
                 </View>
                 <View style={common.flex1}>
                   <CustomText variant="label" style={styles.quickWideLabel} numberOfLines={1}>{action.label}</CustomText>

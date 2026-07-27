@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router';
 
 import { CustomText } from '../../components/CustomText';
 import { TVTouchable } from '../../components/ui/TVTouchable';
+import { AppIcon } from '../../components/ui/AppIcon';
 import { SupportMinistryCard } from '../../components/ui/SupportMinistryCard';
 import { InlineErrorBanner } from '../../components/ui/InlineErrorBanner';
 import { useContentFeed } from '../../hooks/useContentFeed';
@@ -21,7 +22,6 @@ import { trackPlayEvent } from '../../services/supabaseAnalytics';
 import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
 import {
   ContentRail,
-  EmptyState,
   GreetingBanner,
   isRedundantSubtitle,
   LiveNowBanner,
@@ -127,7 +127,7 @@ function HomeSearchBar({ onPress }: { onPress: () => void }) {
   return (
     <TVTouchable onPress={onPress} showFocusBorder={false}>
       <View style={styles.searchBar}>
-        <MaterialIcons name="search" size={20} color={theme.colors.textMuted} />
+        <AppIcon name="search" size={19} color={theme.colors.textMuted} />
         <CustomText style={styles.searchText}>Search songs, videos, messages...</CustomText>
       </View>
     </TVTouchable>
@@ -268,27 +268,11 @@ export default function HomeScreen() {
     [feed.continueListening],
   );
 
-  const allContent = useMemo(
-    () => dedupe([
-      ...feed.recommendations, ...feed.mostPlayed, ...feed.recent,
-      ...feed.music, ...feed.videos, ...feed.live,
-      ...feed.playlists, ...feed.announcements,
-    ]),
-    [feed.live, feed.mostPlayed, feed.music, feed.recent, feed.recommendations, feed.videos, feed.playlists, feed.announcements],
-  );
-
   const homeSections = useMemo(() => getHomeLayoutSections(appConfig), [appConfig]);
   const sectionItems = useMemo(
     () => homeSections.map((section) => ({ section, items: deriveLayoutSectionItems(feed, section, 'home') })),
     [homeSections, feed],
   );
-
-  // The narrow `allContent` pool above misses admin-curated layout sections
-  // entirely — without this, a home feed built only from those sections would
-  // show real content up top and a contradictory "nothing to play" message
-  // at the bottom simultaneously.
-  const hasAnyContent = Boolean(featured) || allContent.length > 0
-    || sectionItems.some(({ items }) => items.length > 0);
 
   const newRelease = useMemo(() => {
     const candidates = [...feed.videos, ...feed.music]
@@ -335,6 +319,9 @@ export default function HomeScreen() {
           featured ? 'play-arrow' : 'play-circle-outline'
         }
         onPrimary={featured ? () => void openItem(featured, 'home_hero') : () => router.push(APP_ROUTES.tabs.player)}
+        secondaryLabel={featured ? undefined : 'Search library'}
+        secondaryIcon="search"
+        onSecondary={featured ? undefined : () => router.push(APP_ROUTES.tabs.search)}
       />
 
       {liveSessions[0] ? (
@@ -415,15 +402,6 @@ export default function HomeScreen() {
 
       <SupportMinistryCard onPress={() => router.push(APP_ROUTES.settingsPages.donate)} />
 
-      {!loading && !hasAnyContent ? (
-        <EmptyState
-          title="Nothing to play yet"
-          message="We couldn't find any content. Check your connection or search for something specific."
-          icon="wifi-off"
-          actionLabel="Search"
-          onAction={() => router.push(APP_ROUTES.tabs.search)}
-        />
-      ) : null}
     </PremiumPage>
   );
 }
