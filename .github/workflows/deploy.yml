@@ -244,7 +244,11 @@ jobs:
               exit 1
             fi
 
-            git pull origin main
+            # Deploy the immutable workflow revision, not a merge result from a
+            # mutable branch. A dirty deployment checkout is an operational
+            # error and checkout will refuse to overwrite it.
+            git fetch --prune origin main
+            git checkout --detach "$DEPLOY_SHA"
             echo "$GHCR_DEPLOY_TOKEN" | docker login ghcr.io -u peter4tech --password-stdin
             IMAGE_TAG="$DEPLOY_SHA" make deploy
             docker image prune -f
