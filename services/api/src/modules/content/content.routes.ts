@@ -8,19 +8,28 @@ import { authenticate } from '../../middleware/authenticate';
 import { contentRequestLimiter } from '../../middleware/rateLimiter';
 import {
   assignContentSectionsSchema,
+  bulkUpdateVisibilitySchema,
   contentIdParamsSchema,
   contentRequestIdParamsSchema,
   createContentSchema,
   createContentRequestSchema,
   listContentQuerySchema,
+  reorderContentSchema,
+  trendingContentQuerySchema,
   updateContentRequestStatusSchema,
   updateContentSchema,
   updateVisibilitySchema,
 } from './content.schema';
 import {
+  bulkUpdateContentVisibility,
   createContentRequest,
   deleteContent,
   createDraftFromContentRequest,
+  getManagedContentById,
+  listDeletedContent,
+  permanentlyDeleteContent,
+  restoreContent,
+  reorderContent,
   updateContent,
   updateContentSections,
   createContent,
@@ -59,8 +68,11 @@ contentRouter.get(
       type: parsed.type,
       status: parsed.status,
       visibility: parsed.visibility,
+      section: parsed.section,
       search: parsed.search,
       updatedAfter: parsed.updatedAfter,
+      sort: parsed.sort,
+      sortDir: parsed.sortDir,
     };
     const data = await listPublicContent(query);
     res.status(200).json(data);
@@ -82,11 +94,78 @@ contentRouter.get(
       type: parsed.type,
       status: parsed.status,
       visibility: parsed.visibility,
+      section: parsed.section,
       search: parsed.search,
       updatedAfter: parsed.updatedAfter,
+      sort: parsed.sort,
+      sortDir: parsed.sortDir,
     };
     const data = await listManagedContent(req.user!, query);
     res.status(200).json(data);
+  }),
+);
+
+contentRouter.get(
+  '/manage/trash',
+  authenticate,
+  asyncHandler(async (req, res) => {
+    if (!req.user) {
+      throw new UnauthorizedError('Unauthorized', 'AUTH_REQUIRED');
+    }
+    const parsed = validateSchema(listContentQuerySchema, req.query);
+    const query = {
+      page: parsed.page ?? 1,
+      limit: parsed.limit ?? 20,
+      type: parsed.type,
+      status: parsed.status,
+      visibility: parsed.visibility,
+      section: parsed.section,
+      search: parsed.search,
+      updatedAfter: parsed.updatedAfter,
+      sort: parsed.sort,
+      sortDir: parsed.sortDir,
+    };
+    const result = await listDeletedContent(req.user, query);
+    res.status(200).json(result);
+  }),
+);
+
+contentRouter.get(
+  '/manage/:id',
+  authenticate,
+  asyncHandler(async (req, res) => {
+    if (!req.user) {
+      throw new UnauthorizedError('Unauthorized', 'AUTH_REQUIRED');
+    }
+    const params = validateSchema(contentIdParamsSchema, req.params);
+    const item = await getManagedContentById(req.user, params.id);
+    res.status(200).json(item);
+  }),
+);
+
+contentRouter.patch(
+  '/manage/bulk',
+  authenticate,
+  asyncHandler(async (req, res) => {
+    const actor = requireAdmin(req.user);
+    const payload = validateSchema(bulkUpdateVisibilitySchema, req.body);
+    const result = await bulkUpdateContentVisibility({
+      ids: payload.ids,
+      visibility: payload.visibility,
+      requester: actor,
+    });
+    res.status(200).json(result);
+  }),
+);
+
+contentRouter.patch(
+  '/manage/reorder',
+  authenticate,
+  asyncHandler(async (req, res) => {
+    requireAdmin(req.user);
+    const payload = validateSchema(reorderContentSchema, req.body);
+    const result = await reorderContent(payload.items);
+    res.status(200).json(result);
   }),
 );
 
@@ -127,6 +206,7 @@ contentRouter.patch(
     const item = await updateContentRequestStatus({
       requestId: params.id,
       status: payload.status,
+      adminNotes: payload.adminNotes,
       requester: actor,
     });
     res.status(200).json(item);
@@ -149,7 +229,7 @@ contentRouter.post(
 );
 
 contentRouter.post(
-  '/',
+  '/manage',
   authenticate,
   asyncHandler(async (req, res) => {
     const actor = requireAdmin(req.user);
@@ -165,7 +245,7 @@ contentRouter.post(
 );
 
 contentRouter.patch(
-  '/:id',
+  '/manage/:id',
   authenticate,
   asyncHandler(async (req, res) => {
     const actor = requireAdmin(req.user);
@@ -218,13 +298,7 @@ contentRouter.patch(
 contentRouter.get(
   '/trending',
   asyncHandler(async (req, res) => {
-    const period = (req.query.period as string) || 'daily';
-    const limit = Math.min(Number(req.query.limit) || 20, 50);
-
-    if (!['hourly', 'daily', 'weekly'].includes(period)) {
-      res.status(400).json({ message: 'Invalid period. Use hourly, daily, or weekly.' });
-      return;
-    }
+    const { period, limit } = validateSchema(trendingContentQuerySchema, req.query);
 
     const cacheKey = `trending:${period}:${limit}`;
     const cached = await CacheService.get<unknown[]>('feed', cacheKey);
@@ -243,6 +317,7 @@ contentRouter.get(
        INNER JOIN content_items ci ON ci.id = ts.content_id
        WHERE ts.period = $1
          AND ci.visibility = 'published'
+         AND ci.deleted_at IS NULL
        ORDER BY ts.content_id, ts.calculated_at DESC, ts.score DESC
        LIMIT $2`,
       [period, limit],
@@ -255,13 +330,43 @@ contentRouter.get(
 );
 
 contentRouter.delete(
-  '/:id',
+  '/manage/:id',
   authenticate,
   asyncHandler(async (req, res) => {
     const actor = requireAdmin(req.user);
 
     const params = validateSchema(contentIdParamsSchema, req.params);
     const result = await deleteContent({
+      contentId: params.id,
+      requester: actor,
+    });
+    res.status(200).json(result);
+  }),
+);
+
+contentRouter.post(
+  '/manage/:id/restore',
+  authenticate,
+  asyncHandler(async (req, res) => {
+    const actor = requireAdmin(req.user);
+
+    const params = validateSchema(contentIdParamsSchema, req.params);
+    const result = await restoreContent({
+      contentId: params.id,
+      requester: actor,
+    });
+    res.status(200).json(result);
+  }),
+);
+
+contentRouter.delete(
+  '/manage/:id/permanent',
+  authenticate,
+  asyncHandler(async (req, res) => {
+    const actor = requireAdmin(req.user);
+
+    const params = validateSchema(contentIdParamsSchema, req.params);
+    const result = await permanentlyDeleteContent({
       contentId: params.id,
       requester: actor,
     });

@@ -28,7 +28,6 @@ Node.js + TypeScript backend for the Claudy admin portal and mobile app content 
 - `POST /v1/youtube/sync` (admin auth)
 - `GET /v1/mobile/content`
 - `GET /v1/mobile/youtube/videos`
-- `POST /v1/mobile/uploads/signed-url` (requires `x-mobile-api-key`)
 
 ## Environment
 Set these in the repo root `.env.development` for local work or `.env.production` for deployment (do not commit secrets):
@@ -56,14 +55,13 @@ SMTP notes:
 1. Create the repo root `.env.development`
 2. Set `DATABASE_URL` to your Supabase Postgres connection string, set `DATABASE_SSL=true`, and add `SUPABASE_SERVICE_ROLE_KEY`
 3. Replace the placeholder password in `DATABASE_URL` with your real Supabase database password from the Supabase dashboard
-4. `npm install`
-5. `npm run dev`
-6. `npm run dev:worker`
+4. `yarn install`
+5. `yarn dev`
+6. `yarn dev:worker`
 
 Startup note:
-- The API auto-runs migrations on boot.
 - Create admin accounts through the approved admin registration flow using `ADMIN_SIGNUP_CODE`.
-- Run `npm run migrate` before starting the API so the database schema is ready.
+- Run `yarn migrate` as an explicit deployment step before starting the API.
 
 Production note:
 - The repo now includes `docker-compose.production.yml` with Traefik at the edge, Redis for queues, the API and worker behind the proxy, the admin and mobile web apps as static nginx-served builds, and a Postfix relay container for transactional email delivery through Brevo.

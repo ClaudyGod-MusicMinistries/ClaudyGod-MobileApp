@@ -7,7 +7,11 @@ CI_DATABASE_URL="${CI_DATABASE_URL:-postgresql://postgres:ci-password@db.your-pr
 CI_SUPABASE_URL="${CI_SUPABASE_URL:-https://your-project.supabase.co}"
 CI_SUPABASE_PUBLISHABLE_KEY="${CI_SUPABASE_PUBLISHABLE_KEY:-sb_publishable__ci_placeholder_key}"
 CI_SUPABASE_SERVICE_ROLE_KEY="${CI_SUPABASE_SERVICE_ROLE_KEY:-ci-supabase-service-role-key}"
-CI_YOUTUBE_API_KEY="${CI_YOUTUBE_API_KEY:-ci-youtube-api-key-placeholder}"
+
+# YOUTUBE_API_KEY validates as either empty or a real "AIza..." key (see
+# services/api/src/config/env.ts) — an arbitrary placeholder string satisfies
+# neither and crashes env validation, so fall back to empty, not a placeholder.
+CI_YOUTUBE_API_KEY="${CI_YOUTUBE_API_KEY:-}"
 CI_YOUTUBE_CHANNEL_ID="${CI_YOUTUBE_CHANNEL_ID:-https://www.youtube.com/@YourChannel}"
 CI_POSTFIX_SMTP_USERNAME="${CI_POSTFIX_SMTP_USERNAME:-ci-brevo-username}"
 CI_POSTFIX_SMTP_PASSWORD="${CI_POSTFIX_SMTP_PASSWORD:-ci-brevo-password}"
@@ -144,6 +148,10 @@ EAS_PROJECT_ID=00000000-0000-0000-0000-000000000000
 SUPABASE_URL=${CI_SUPABASE_URL}
 SUPABASE_SERVICE_ROLE_KEY=${CI_SUPABASE_SERVICE_ROLE_KEY}
 SUPABASE_STORAGE_BUCKET=mobile-uploads
+SUPABASE_S3_ENDPOINT=https://ci-project.storage.supabase.co/storage/v1/s3
+SUPABASE_S3_REGION=eu-west-1
+SUPABASE_S3_ACCESS_KEY_ID=ci-s3-access-key-id
+SUPABASE_S3_SECRET_ACCESS_KEY=ci-s3-secret-access-key
 
 # Email
 EMAIL_BRAND_NAME=ClaudyGod
@@ -176,6 +184,12 @@ YOUTUBE_MAX_RESULTS=12
 
 # Admin access
 ADMIN_SIGNUP_CODE=ci-admin-invitation-code
+
+# Observability (Prometheus + Grafana)
+METRICS_TOKEN=ci-metrics-token
+GRAFANA_DOMAIN=grafana.example.com
+GRAFANA_ADMIN_USER=admin
+GRAFANA_ADMIN_PASSWORD=ci-grafana-admin-password
 EOF
 
 echo "CI environment files created at $ROOT_DIR/.env.development and $ROOT_DIR/.env.production"

@@ -28,6 +28,7 @@ export interface ContentItem {
   tags?: string[];
   metadata?: Record<string, unknown>;
   visibility: ContentVisibility;
+  isFeatured: boolean;
   createdAt: string;
   updatedAt: string;
   author: ContentAuthor;
@@ -48,6 +49,7 @@ export interface ContentSubmissionRequest {
   tags?: string[];
   metadata?: Record<string, unknown>;
   requestNotes?: string;
+  reviewNotes?: string;
   requestedVisibility: ContentVisibility;
   status: ContentRequestStatus;
   createdContentId?: string;
@@ -73,6 +75,7 @@ export interface CreateContentInput {
   tags?: string[];
   metadata?: Record<string, unknown>;
   visibility: ContentVisibility;
+  isFeatured?: boolean;
 }
 
 export interface CreateContentRequestInput {
@@ -110,6 +113,7 @@ export interface UpdateContentInput {
   tags?: string[];
   metadata?: Record<string, unknown>;
   visibility?: ContentVisibility;
+  isFeatured?: boolean;
 }
 
 export interface ContentListQuery {
@@ -118,13 +122,18 @@ export interface ContentListQuery {
   type?: ContentFilterType;
   status?: ContentVisibility;
   visibility?: ContentVisibility;
+  section?: string;
   search?: string;
   updatedAfter?: string;
+  sort?: 'createdAt' | 'updatedAt' | 'title' | 'sortOrder';
+  sortDir?: 'asc' | 'desc';
 }
 
 export interface ContentListResponse {
   page: number;
   limit: number;
+  pageSize: number;
   total: number;
+  hasMore: boolean;
   items: ContentItem[];
 }

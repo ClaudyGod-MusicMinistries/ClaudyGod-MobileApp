@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const supportRequestStatusSchema = z.enum(['open', 'in_progress', 'resolved', 'closed']);
-export const adminUserRoleSchema = z.enum(['CLIENT', 'ADMIN']);
+export const adminUserRoleSchema = z.enum(['CLIENT', 'CREATOR', 'MODERATOR', 'ADMIN']);
 export const invitableRoleSchema = z.enum(['CREATOR', 'MODERATOR', 'ADMIN']);
 
 export const createInvitationSchema = z
@@ -54,8 +54,51 @@ export const adminUnassignedContentQuerySchema = z
   })
   .strict();
 
+const optionalTrimmedSearchSchema = z.preprocess(
+  (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
+  z.string().trim().max(160).optional(),
+) as unknown as z.ZodType<string | undefined>;
+
+export const listAdminUsersQuerySchema = z
+  .object({
+    search: optionalTrimmedSearchSchema,
+    role: z.enum(['CLIENT', 'CREATOR', 'MODERATOR', 'ADMIN', 'SUPER_ADMIN']).optional(),
+    page: z.coerce.number().int().min(1).default(1),
+    pageSize: z.coerce.number().int().min(1).max(100).default(25),
+  })
+  .strict();
+
+export const listAdminSupportRequestsQuerySchema = z
+  .object({
+    status: supportRequestStatusSchema.optional(),
+    page: z.coerce.number().int().min(1).default(1),
+    pageSize: z.coerce.number().int().min(1).max(100).default(25),
+  })
+  .strict();
+
 export const adminContentIdParamsSchema = z
   .object({
     id: z.string().uuid(),
+  })
+  .strict();
+
+// SUPER_ADMIN is provisioned separately and deliberately not assignable here —
+// matches CODE_GATED_ROLES in auth.service.ts's self-registration path.
+export const approveAccessRequestSchema = z
+  .object({
+    role: z.enum(['CREATOR', 'MODERATOR', 'ADMIN']).default('MODERATOR'),
+  })
+  .strict();
+
+export const adminUserDeviceParamsSchema = z
+  .object({
+    id: z.string().uuid(),
+    deviceId: z.string().uuid(),
+  })
+  .strict();
+
+export const adminUserSearchHistoryQuerySchema = z
+  .object({
+    limit: z.coerce.number().int().min(1).max(100).default(25),
   })
   .strict();

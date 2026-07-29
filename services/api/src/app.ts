@@ -10,7 +10,7 @@ import { errorHandler } from './middleware/errorHandler';
 import { notFoundHandler } from './middleware/notFoundHandler';
 import { requestTrackingMiddleware } from './middleware/requestTracking';
 import { apiLimiter } from './middleware/rateLimiter';
-import { analyticsRouter } from './modules/analytics/analytics.routes';
+import { adminAnalyticsRouter, analyticsRouter } from './modules/analytics/analytics.routes';
 import { adminRouter } from './modules/admin/admin.routes';
 import { adminStorageRouter } from './modules/admin/storage.routes';
 import { adminAiRouter } from './modules/ai/ai.routes';
@@ -23,11 +23,13 @@ import { biometricRouter } from './modules/auth/biometric.routes';
 import { accountSecurityRouter } from './modules/auth/accountSecurity.routes';
 import { contentRouter } from './modules/content/content.routes';
 import { healthRouter } from './modules/health/health.routes';
+import { legalRouter } from './modules/legal/legal.routes';
 import { liveRouter } from './modules/live/live.routes';
 import { meRouter } from './modules/me/me.routes';
 import { mobileRouter } from './modules/mobile/mobile.routes';
-import { uploadsRouter } from './modules/uploads/uploads.routes';
 import { youtubeRouter } from './modules/youtube/youtube.routes';
+import { websiteRouter } from './modules/website/website.routes';
+import { websiteStorageRouter } from './modules/website/website-storage.routes';
 import { adminWordOfDayRouter, mobileWordOfDayRouter } from './modules/wordOfDay/wordOfDay.routes';
 import engagementRouter from './modules/engagement/engagement.routes';
 import { searchRouter } from './modules/search/search.routes';
@@ -176,8 +178,8 @@ export const createApp = () => {
   // Health check (no auth needed)
   app.use('/', healthRouter);
 
-  // Legacy auth routes (keep compatible with /v1/auth contract)
-  app.use('/api/auth', authRouter);
+  // Public legal pages (no auth needed) — required for App Store/Play Store submission.
+  app.use('/', legalRouter);
 
   // Auth routes (have their own rate limiting)
   app.use('/v1/auth', authRouter);
@@ -200,7 +202,6 @@ export const createApp = () => {
   app.use('/v1/content', contentRouter);
   app.use('/v1/analytics', analyticsRouter);
   app.use('/v1/engagement', engagementRouter);
-  app.use('/v1/uploads', uploadsRouter);
   app.use('/v1/mobile', mobileRouter);
   app.use('/v1/mobile/app', mobileAppConfigRouter);
   app.use('/v1/mobile/word-of-day', mobileWordOfDayRouter);
@@ -210,7 +211,10 @@ export const createApp = () => {
   app.use('/v1/admin/ai', adminAiRouter);
   app.use('/v1/admin/app-config', adminAppConfigRouter);
   app.use('/v1/admin/word-of-day', adminWordOfDayRouter);
+  app.use('/v1/admin/analytics', adminAnalyticsRouter);
   app.use('/v1/youtube', youtubeRouter);
+  app.use('/v1/website', websiteRouter);
+  app.use('/v1/website/storage', websiteStorageRouter);
   app.use('/v1/search', searchRouter);
   app.use('/v1/me/devices', devicesRouter);
 

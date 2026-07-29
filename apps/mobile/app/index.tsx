@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Image,
@@ -14,11 +14,19 @@ import { MaterialIcons } from '@expo/vector-icons';
 
 import { CustomText } from '../components/CustomText';
 import { TVTouchable } from '../components/ui/TVTouchable';
+import { AppLoadingScreen } from '../components/Exp/AppLoading';
 import { useAppTheme } from '../util/colorScheme';
 import { makeStyles } from '../styles/makeStyles';
 import { APP_ROUTES } from '../util/appRoutes';
 import { BRAND_WORSHIP_ASSET } from '../util/brandAssets';
 import { useDeviceClass } from '../util/deviceClassConfig';
+import { getPreference, setPreference } from '../lib/localUserStorage';
+
+// Native-only — the web build already has its own marketing landing page (below)
+// gated on nothing, but native first-launch users were dropped straight into the
+// tabs with no introduction at all. One-time flag, same key convention as the
+// rest of localUserStorage's getPreference/setPreference usage.
+const ONBOARDING_SEEN_KEY = 'onboarding.hasSeenIntro';
 
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
@@ -68,12 +76,17 @@ function FeatureChip({ icon, label }: { icon: React.ComponentProps<typeof Materi
   );
 }
 
-// ─── Landing Page ─────────────────────────────────────────────────────────────
+// ─── Brand intro (shared by the web landing page and native first-launch onboarding) ──
 
-function LandingPage() {
+function BrandIntroScreen({
+  onContinue,
+  ctaLabel = 'Explore now',
+}: {
+  onContinue: () => void;
+  ctaLabel?: string;
+}) {
   const styles = useStyles();
   const theme = useAppTheme();
-  const router = useRouter();
   const device = useDeviceClass();
   const { width, height } = useWindowDimensions();
   const isPhone = !device.isDesktop && !device.isTV;
@@ -167,12 +180,12 @@ function LandingPage() {
             </View>
 
             <TVTouchable
-              onPress={() => router.replace(APP_ROUTES.tabs.home)}
+              onPress={onContinue}
               showFocusBorder={false}
               style={styles.ctaBtn}
             >
               <MaterialIcons name="explore" size={20} color={theme.colors.onPrimary ?? '#fff'} />
-              <CustomText style={styles.ctaText}>Explore now</CustomText>
+              <CustomText style={styles.ctaText}>{ctaLabel}</CustomText>
             </TVTouchable>
           </Animated.View>
         </View>
@@ -181,9 +194,42 @@ function LandingPage() {
   );
 }
 
+// ─── Web landing page ─────────────────────────────────────────────────────────
+
+function LandingPage() {
+  const router = useRouter();
+  return <BrandIntroScreen onContinue={() => router.replace(APP_ROUTES.tabs.home)} />;
+}
+
+// ─── Native first-launch onboarding ────────────────────────────────────────────
+
+function NativeEntry() {
+  const router = useRouter();
+  const [status, setStatus] = useState<'checking' | 'show' | 'done'>('checking');
+
+  useEffect(() => {
+    let cancelled = false;
+    getPreference(ONBOARDING_SEEN_KEY, false).then((seen) => {
+      if (!cancelled) setStatus(seen ? 'done' : 'show');
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleContinue = () => {
+    void setPreference(ONBOARDING_SEEN_KEY, true);
+    router.replace(APP_ROUTES.tabs.home);
+  };
+
+  if (status === 'checking') return <AppLoadingScreen />;
+  if (status === 'done') return <Redirect href="/(tabs)/home" />;
+  return <BrandIntroScreen onContinue={handleContinue} ctaLabel="Get started" />;
+}
+
 export default function Index() {
   if (Platform.OS !== 'web') {
-    return <Redirect href="/(tabs)/home" />;
+    return <NativeEntry />;
   }
   return <LandingPage />;
 }

@@ -1,22 +1,19 @@
 ﻿<template>
   <div class="space-y-5">
-    <div class="flex items-center justify-between">
-      <h2 class="text-base font-bold text-ink">Content requests</h2>
-      <div class="flex gap-2">
-        <AppButton
-          v-for="tab in tabs"
-          :key="tab.value"
-          :variant="activeTab === tab.value ? 'primary' : 'secondary'"
-          size="sm"
-          @click="activeTab = tab.value"
-        >
-          {{ tab.label }}
-        </AppButton>
-      </div>
-    </div>
+    <PageHeader icon="requests" title="Content requests">
+      <AppButton
+        v-for="tab in tabs"
+        :key="tab.value"
+        :variant="activeTab === tab.value ? 'primary' : 'secondary'"
+        size="sm"
+        @click="activeTab = tab.value"
+      >
+        {{ tab.label }}
+      </AppButton>
+    </PageHeader>
 
     <AppCard>
-      <AppTable
+      <AppResponsiveTable
         :columns="columns"
         :rows="filteredRequests as Record<string, unknown>[]"
         :loading="store.requestsLoading"
@@ -27,7 +24,7 @@
         <template #cell-type="{ value }">
           <AppBadge tone="neutral">{{ value }}</AppBadge>
         </template>
-        <template #cell-requestedBy="{ value }">
+        <template #cell-requester="{ value }">
           <span class="text-xs text-ink-soft">{{ getEmail(value) }}</span>
         </template>
         <template #cell-createdAt="{ value }">
@@ -55,7 +52,7 @@
             </AppButton>
           </div>
         </template>
-      </AppTable>
+      </AppResponsiveTable>
     </AppCard>
 
     <!-- Reject modal -->
@@ -79,12 +76,13 @@ import { ref, computed, onMounted } from 'vue';
 import { useContentStore } from '@/stores/content.store';
 import { useUiStore } from '@/stores/ui.store';
 import AppCard from '@/components/ui/AppCard.vue';
-import AppTable from '@/components/ui/AppTable.vue';
+import AppResponsiveTable from '@/components/ui/AppResponsiveTable.vue';
 import AppBadge from '@/components/ui/AppBadge.vue';
 import AppButton from '@/components/ui/AppButton.vue';
 import AppModal from '@/components/ui/AppModal.vue';
 import AppTextarea from '@/components/ui/AppTextarea.vue';
 import StatusBadge from '@/components/shared/StatusBadge.vue';
+import PageHeader from '@/components/shared/PageHeader.vue';
 
 const store = useContentStore();
 const ui = useUiStore();
@@ -104,7 +102,7 @@ const tabs = [
 const columns = [
   { key: 'title', label: 'Title' },
   { key: 'type', label: 'Type' },
-  { key: 'requestedBy', label: 'Requested by' },
+  { key: 'requester', label: 'Requested by' },
   { key: 'status', label: 'Status' },
   { key: 'createdAt', label: 'Date', align: 'right' as const },
 ];
@@ -123,8 +121,10 @@ onMounted(() => { void store.fetchRequests(); });
 async function approve(row: Record<string, unknown>): Promise<void> {
   actionLoading.value = true;
   try {
-    await store.updateRequest(row.id as string, 'approved');
-    ui.addToast({ tone: 'success', title: 'Request approved' });
+    await store.approveRequest(row.id as string);
+    ui.addToast({ tone: 'success', title: 'Request approved', message: 'A content draft was created — publish it from Content when ready.' });
+  } catch (e) {
+    ui.addToast({ tone: 'danger', title: 'Failed to approve request', message: e instanceof Error ? e.message : undefined });
   } finally {
     actionLoading.value = false;
   }
@@ -143,6 +143,8 @@ async function confirmReject(): Promise<void> {
     await store.updateRequest(rejectTarget.value.id as string, 'rejected', rejectReason.value || undefined);
     ui.addToast({ tone: 'info', title: 'Request rejected' });
     rejectModal.value = false;
+  } catch (e) {
+    ui.addToast({ tone: 'danger', title: 'Failed to reject request', message: e instanceof Error ? e.message : undefined });
   } finally {
     actionLoading.value = false;
   }
@@ -155,6 +157,6 @@ function formatDate(iso: string): string {
 }
 
 function getEmail(v: unknown): string {
-  return ((v as Record<string, string>).email) ?? '';
+  return (v as { email?: string } | undefined)?.email ?? '';
 }
 </script>

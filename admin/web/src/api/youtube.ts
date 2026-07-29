@@ -7,7 +7,9 @@ export async function getSyncStatus(): Promise<YouTubeSyncStatus> {
 }
 
 export async function triggerSync(limit?: number): Promise<{ queued: number }> {
-  const { data } = await client.post<{ queued: number }>('/v1/youtube/sync', { limit });
+  // Sync now walks the entire channel (paginated) in one request, which can take
+  // well past the client's default 20s timeout for larger channels.
+  const { data } = await client.post<{ queued: number }>('/v1/youtube/sync', { limit }, { timeout: 120_000 });
   return data;
 }
 
@@ -16,12 +18,28 @@ export async function listImportQueue(): Promise<YouTubeImportItem[]> {
   return data;
 }
 
-export async function fetchChannelVideos(params?: { maxResults?: number; channelId?: string }): Promise<YouTubeVideosResponse> {
+export async function fetchChannelVideos(params?: { maxResults?: number; channelId?: string; pageToken?: string }): Promise<YouTubeVideosResponse> {
   const { data } = await client.get<YouTubeVideosResponse>('/v1/youtube/videos', { params });
   return data;
 }
 
-export async function importVideos(selections: Array<{ youtubeVideoId: string; appSections: string[]; visibility?: string; playAsAudio?: boolean }>): Promise<{ imported: number }> {
+export interface YouTubeImportSelection {
+  youtubeVideoId: string;
+  title: string;
+  description: string;
+  channelTitle: string;
+  publishedAt: string;
+  thumbnailUrl: string;
+  url: string;
+  duration: string;
+  isLive: boolean;
+  appSections: string[];
+  tags: string[];
+  visibility?: 'draft' | 'published';
+  contentType?: 'audio' | 'video';
+}
+
+export async function importVideos(selections: YouTubeImportSelection[]): Promise<{ imported: number }> {
   const { data } = await client.post<{ imported: number }>('/v1/youtube/import', { selections });
   return data;
 }

@@ -7,6 +7,7 @@ import { contentQueue, type ContentEventType } from '../../queues/contentQueue';
 import { env } from '../../config/env';
 import { queueEmailJob } from '../../infra/transactionalEmails';
 import type { UserRole } from '../auth/auth.types';
+import { hasMinRole } from '../auth/auth.types';
 import type {
   ContentItem,
   ContentListQuery,
@@ -39,6 +40,8 @@ interface ContentRow {
   media_upload_session_id: string | null;
   thumbnail_upload_session_id: string | null;
   visibility: ContentVisibility;
+  is_featured: boolean;
+  deleted_at: string | Date | null;
   created_at: string | Date;
   updated_at: string | Date;
   author_display_name: string;
@@ -72,6 +75,7 @@ interface ContentSubmissionRequestRow {
   tags: string[] | null;
   metadata: Record<string, unknown> | null;
   request_notes: string | null;
+  review_notes: string | null;
   requested_visibility: ContentVisibility;
   request_status: ContentRequestStatus;
   media_upload_session_id: string | null;
@@ -104,6 +108,7 @@ const toContentItem = (row: ContentRow): ContentItem => ({
   tags: row.tags ?? [],
   metadata: row.metadata ?? {},
   visibility: row.visibility,
+  isFeatured: row.is_featured,
   createdAt: toIsoDate(row.created_at),
   updatedAt: toIsoDate(row.updated_at),
   author: {
@@ -129,6 +134,7 @@ const toContentSubmissionRequest = (row: ContentSubmissionRequestRow): ContentSu
   tags: row.tags ?? [],
   metadata: row.metadata ?? {},
   requestNotes: row.request_notes ?? undefined,
+  reviewNotes: row.review_notes ?? undefined,
   requestedVisibility: row.requested_visibility,
   status: row.request_status,
   createdContentId: row.created_content_id ?? undefined,
@@ -218,7 +224,9 @@ const enqueuePublishEmail = async (item: ContentItem, actor: JwtClaims): Promise
 const buildListResponse = (rows: ContentRow[], total: number, query: ContentListQuery): ContentListResponse => ({
   page: query.page,
   limit: query.limit,
+  pageSize: query.limit,
   total,
+  hasMore: query.page * query.limit < total,
   items: rows.map(toContentItem),
 });
 
@@ -294,7 +302,7 @@ const loadValidatedUploadSession = async ({
   if (session.channel !== 'admin') {
     throw new BadRequestError('Referenced upload session is not valid for admin content');
   }
-  if (requester.role !== 'ADMIN' && session.requested_by !== requester.sub) {
+  if (!hasMinRole(requester.role, 'ADMIN') && session.requested_by !== requester.sub) {
     throw new ForbiddenError('You can only attach files uploaded from your own session');
   }
   if (session.status === 'failed') {
@@ -371,6 +379,8 @@ const selectContentByIdSql = `SELECT
   c.media_upload_session_id,
   c.thumbnail_upload_session_id,
   c.visibility,
+  c.is_featured,
+  c.deleted_at,
   c.created_at,
   c.updated_at,
   u.display_name AS author_display_name,
@@ -378,7 +388,7 @@ const selectContentByIdSql = `SELECT
   u.role AS author_role
  FROM content_items c
  INNER JOIN app_users u ON u.id = c.author_id
- WHERE c.id = $1
+ WHERE c.id = $1 AND c.deleted_at IS NULL
  LIMIT 1`;
 
 const selectContentRequestByIdSql = `SELECT
@@ -397,6 +407,7 @@ const selectContentRequestByIdSql = `SELECT
   r.tags,
   r.metadata,
   r.request_notes,
+  r.review_notes,
   r.requested_visibility,
   r.request_status,
   r.media_upload_session_id,
@@ -419,22 +430,31 @@ function normalizeListQuery(query: ContentListQuery): {
   limit: number;
   type?: ContentType;
   visibility?: ContentVisibility;
+  section?: string;
   search?: string;
   updatedAfter?: string;
+  sort?: ContentListQuery['sort'];
+  sortDir?: ContentListQuery['sortDir'];
   unsupportedTypeRequested: boolean;
 } {
   const visibility = query.visibility ?? query.status;
   const requestedType = query.type;
+  const section = query.section?.trim() ? query.section.trim() : undefined;
   const search = query.search?.trim() ? query.search.trim() : undefined;
   const updatedAfter = query.updatedAfter;
+  const sort = query.sort;
+  const sortDir = query.sortDir;
 
   if (!requestedType) {
     return {
       page: query.page,
       limit: query.limit,
       visibility,
+      section,
       search,
       updatedAfter,
+      sort,
+      sortDir,
       unsupportedTypeRequested: false,
     };
   }
@@ -444,8 +464,11 @@ function normalizeListQuery(query: ContentListQuery): {
       page: query.page,
       limit: query.limit,
       visibility,
+      section,
       search,
       updatedAfter,
+      sort,
+      sortDir,
       unsupportedTypeRequested: true,
     };
   }
@@ -455,10 +478,29 @@ function normalizeListQuery(query: ContentListQuery): {
     limit: query.limit,
     type: requestedType as ContentType,
     visibility,
+    section,
     search,
     updatedAfter,
+    sort,
+    sortDir,
     unsupportedTypeRequested: false,
   };
+}
+
+const CONTENT_SORT_COLUMNS: Record<NonNullable<ContentListQuery['sort']>, string> = {
+  createdAt: 'c.created_at',
+  updatedAt: 'c.updated_at',
+  title: 'c.title',
+  sortOrder: 'c.sort_order',
+};
+
+function buildContentOrderByClause(sort?: ContentListQuery['sort'], sortDir?: ContentListQuery['sortDir']): string {
+  if (!sort) {
+    return 'ORDER BY c.sort_order NULLS LAST, c.updated_at DESC, c.created_at DESC';
+  }
+  const column = CONTENT_SORT_COLUMNS[sort];
+  const direction = sortDir === 'asc' ? 'ASC' : 'DESC';
+  return `ORDER BY ${column} ${direction}`;
 }
 
 export const listPublicContent = async (query: ContentListQuery): Promise<ContentListResponse> => {
@@ -468,18 +510,25 @@ export const listPublicContent = async (query: ContentListQuery): Promise<Conten
     return {
       page: query.page,
       limit: query.limit,
+      pageSize: query.limit,
       total: 0,
+      hasMore: false,
       items: [],
     };
   }
 
   const offset = (normalized.page - 1) * normalized.limit;
-  const conditions = [`c.visibility = 'published'`];
+  const conditions = [`c.visibility = 'published'`, `c.deleted_at IS NULL`];
   const values: unknown[] = [];
 
   if (normalized.type) {
     values.push(normalized.type);
     conditions.push(`c.content_type = $${values.length}`);
+  }
+
+  if (normalized.section) {
+    values.push(normalized.section);
+    conditions.push(`$${values.length} = ANY(c.app_sections)`);
   }
 
   if (normalized.search) {
@@ -519,6 +568,7 @@ export const listPublicContent = async (query: ContentListQuery): Promise<Conten
           c.tags,
           c.metadata,
           c.visibility,
+          c.is_featured,
           c.created_at,
           c.updated_at,
           u.display_name AS author_display_name,
@@ -527,7 +577,7 @@ export const listPublicContent = async (query: ContentListQuery): Promise<Conten
          FROM content_items c
          INNER JOIN app_users u ON u.id = c.author_id
          WHERE ${whereClause}
-         ORDER BY c.updated_at DESC, c.created_at DESC
+         ORDER BY c.sort_order NULLS LAST, c.updated_at DESC, c.created_at DESC
          LIMIT $${limitParam}
          OFFSET $${offsetParam}`,
         values,
@@ -544,7 +594,9 @@ export const listPublicContent = async (query: ContentListQuery): Promise<Conten
       return {
         page: query.page,
         limit: query.limit,
+        pageSize: query.limit,
         total: 0,
+        hasMore: false,
         items: [],
       };
     }
@@ -564,14 +616,16 @@ export const listManagedContent = async (
     return {
       page: query.page,
       limit: query.limit,
+      pageSize: query.limit,
       total: 0,
+      hasMore: false,
       items: [],
     };
   }
 
   const offset = (normalized.page - 1) * normalized.limit;
-  const isAdmin = requester.role === 'ADMIN';
-  const conditions: string[] = [];
+  const isAdmin = hasMinRole(requester.role, 'ADMIN');
+  const conditions: string[] = [`c.deleted_at IS NULL`];
   const values: unknown[] = [];
 
   if (!isAdmin) {
@@ -589,6 +643,11 @@ export const listManagedContent = async (
     conditions.push(`c.visibility = $${values.length}`);
   }
 
+  if (normalized.section) {
+    values.push(normalized.section);
+    conditions.push(`$${values.length} = ANY(c.app_sections)`);
+  }
+
   if (normalized.search) {
     values.push(`%${normalized.search}%`);
     conditions.push(`(c.title ILIKE $${values.length} OR c.description ILIKE $${values.length})`);
@@ -600,6 +659,7 @@ export const listManagedContent = async (
   }
 
   const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+  const orderByClause = buildContentOrderByClause(normalized.sort, normalized.sortDir);
 
   values.push(normalized.limit, offset);
   const limitParam = values.length - 1;
@@ -626,6 +686,7 @@ export const listManagedContent = async (
             c.tags,
             c.metadata,
             c.visibility,
+            c.is_featured,
             c.created_at,
             c.updated_at,
             u.display_name AS author_display_name,
@@ -634,7 +695,7 @@ export const listManagedContent = async (
          FROM content_items c
          INNER JOIN app_users u ON u.id = c.author_id
          ${whereClause}
-         ORDER BY c.updated_at DESC, c.created_at DESC
+         ${orderByClause}
          LIMIT $${limitParam}
          OFFSET $${offsetParam}`,
         values,
@@ -651,7 +712,9 @@ export const listManagedContent = async (
       return {
         page: query.page,
         limit: query.limit,
+        pageSize: query.limit,
         total: 0,
+        hasMore: false,
         items: [],
       };
     }
@@ -661,11 +724,22 @@ export const listManagedContent = async (
   return buildListResponse(dataResult.rows, Number(countResult.rows[0]!.count), query);
 };
 
+export const getManagedContentById = async (requester: JwtClaims, contentId: string): Promise<ContentItem> => {
+  const row = await loadContentRowById(pool, contentId);
+  if (!row) {
+    throw new NotFoundError('Content not found');
+  }
+  if (!hasMinRole(requester.role, 'ADMIN') && row.author_id !== requester.sub) {
+    throw new ForbiddenError('You can only view your own content');
+  }
+  return toContentItem(row);
+};
+
 export const listContentRequests = async (requester: JwtClaims): Promise<ContentSubmissionRequest[]> => {
   const values: unknown[] = [];
   const conditions: string[] = [];
 
-  if (requester.role !== 'ADMIN') {
+  if (!hasMinRole(requester.role, 'ADMIN')) {
     values.push(requester.sub);
     conditions.push(`r.requester_id = $${values.length}`);
   }
@@ -690,6 +764,7 @@ export const listContentRequests = async (requester: JwtClaims): Promise<Content
          r.tags,
          r.metadata,
          r.request_notes,
+         r.review_notes,
          r.requested_visibility,
          r.request_status,
          r.media_upload_session_id,
@@ -833,13 +908,15 @@ export const createContentRequest = async (
 export const updateContentRequestStatus = async ({
   requestId,
   status,
+  adminNotes,
   requester,
 }: {
   requestId: string;
   status: ContentRequestStatus;
+  adminNotes?: string;
   requester: JwtClaims;
 }): Promise<ContentSubmissionRequest> => {
-  if (requester.role !== 'ADMIN') {
+  if (!hasMinRole(requester.role, 'ADMIN')) {
     throw new ForbiddenError('Admin access required to update content requests');
   }
 
@@ -854,9 +931,10 @@ export const updateContentRequestStatus = async ({
   await pool.query(
     `UPDATE content_submission_requests
      SET request_status = $2,
+         review_notes = COALESCE($3, review_notes),
          updated_at = NOW()
      WHERE id = $1`,
-    [requestId, status],
+    [requestId, status, adminNotes ?? null],
   );
 
   const updated = await loadContentRequestRowById(pool, requestId);
@@ -874,7 +952,7 @@ export const createDraftFromContentRequest = async ({
   requestId: string;
   requester: JwtClaims;
 }): Promise<{ request: ContentSubmissionRequest; content: ContentItem }> => {
-  if (requester.role !== 'ADMIN') {
+  if (!hasMinRole(requester.role, 'ADMIN')) {
     throw new ForbiddenError('Admin access required to create content drafts from requests');
   }
 
@@ -1026,11 +1104,11 @@ export const createContent = async (requester: JwtClaims, input: CreateContentIn
       `INSERT INTO content_items (
          author_id, title, description, content_type, media_url, thumbnail_url, source_kind,
          external_source_id, channel_name, duration_label, app_sections, tags, metadata, visibility,
-         media_upload_session_id, thumbnail_upload_session_id
+         media_upload_session_id, thumbnail_upload_session_id, is_featured
        )
        VALUES (
          $1, $2, $3, $4, $5, $6, $7,
-         $8, $9, $10, $11::text[], $12::text[], $13::jsonb, $14, $15, $16
+         $8, $9, $10, $11::text[], $12::text[], $13::jsonb, $14, $15, $16, $17
        )
        RETURNING id`,
       [
@@ -1050,6 +1128,7 @@ export const createContent = async (requester: JwtClaims, input: CreateContentIn
         input.visibility,
         mediaUpload?.sessionId ?? null,
         thumbnailUpload?.sessionId ?? null,
+        input.isFeatured ?? false,
       ],
     );
 
@@ -1108,7 +1187,7 @@ export const updateContent = async ({
     throw new NotFoundError('Content not found');
   }
 
-  if (requester.role !== 'ADMIN' && existing.author_id !== requester.sub) {
+  if (!hasMinRole(requester.role, 'ADMIN') && existing.author_id !== requester.sub) {
     throw new ForbiddenError('You can only update your own content');
   }
   const client = await pool.connect();
@@ -1184,6 +1263,7 @@ export const updateContent = async ({
          visibility = COALESCE($14, visibility),
          media_upload_session_id = COALESCE($15, media_upload_session_id),
          thumbnail_upload_session_id = COALESCE($16, thumbnail_upload_session_id),
+         is_featured = COALESCE($17, is_featured),
          updated_at = NOW()
        WHERE id = $1`,
       [
@@ -1203,6 +1283,7 @@ export const updateContent = async ({
         input.visibility ?? null,
         mediaUpload?.sessionId ?? null,
         thumbnailUpload?.sessionId ?? null,
+        input.isFeatured ?? null,
       ],
     );
 
@@ -1273,7 +1354,7 @@ export const updateContentVisibility = async ({
     throw new NotFoundError('Content not found');
   }
 
-  if (requester.role !== 'ADMIN') {
+  if (!hasMinRole(requester.role, 'ADMIN')) {
     if (existing.author_id !== requester.sub) {
       throw new ForbiddenError('You can only update visibility for your own content');
     }
@@ -1311,6 +1392,7 @@ export const updateContentVisibility = async ({
       updated.tags,
       updated.metadata,
       updated.visibility,
+      updated.is_featured,
       updated.created_at,
       updated.updated_at,
       u.display_name AS author_display_name,
@@ -1346,6 +1428,57 @@ export const updateContentVisibility = async ({
   return item;
 };
 
+export const bulkUpdateContentVisibility = async ({
+  ids,
+  visibility,
+  requester,
+}: {
+  ids: string[];
+  visibility: ContentVisibility;
+  requester: JwtClaims;
+}): Promise<{ updated: number; failed: Array<{ id: string; message: string }> }> => {
+  // Not collapsed into one batched SQL UPDATE (unlike reorderContent's
+  // unnest() pattern) — each item still needs its own publish-validation
+  // (ensurePublishableContent), event-queue entry, and publish email, so a
+  // single blind UPDATE would silently skip real per-item side effects. What
+  // was fixable here is the *serial* awaiting: running every item's full
+  // update concurrently instead of one at a time cuts wall-clock time for a
+  // large bulk action without losing any of that per-item work.
+  const results = await Promise.allSettled(
+    ids.map((contentId) => updateContentVisibility({ contentId, visibility, requester })),
+  );
+
+  let updated = 0;
+  const failed: Array<{ id: string; message: string }> = [];
+  results.forEach((result, index) => {
+    if (result.status === 'fulfilled') {
+      updated += 1;
+    } else {
+      const error = result.reason;
+      failed.push({ id: ids[index]!, message: error instanceof Error ? error.message : 'Update failed' });
+    }
+  });
+
+  return { updated, failed };
+};
+
+export const reorderContent = async (
+  items: Array<{ id: string; sortOrder: number }>,
+): Promise<{ updated: number }> => {
+  const ids = items.map((item) => item.id);
+  const sortOrders = items.map((item) => item.sortOrder);
+
+  const result = await pool.query(
+    `UPDATE content_items
+     SET sort_order = v.sort_order, updated_at = NOW()
+     FROM (SELECT unnest($1::uuid[]) AS id, unnest($2::int[]) AS sort_order) AS v
+     WHERE content_items.id = v.id`,
+    [ids, sortOrders],
+  );
+
+  return { updated: result.rowCount ?? 0 };
+};
+
 export const deleteContent = async ({
   contentId,
   requester,
@@ -1359,11 +1492,11 @@ export const deleteContent = async ({
   }
 
   const existingRow = existing.rows[0]!;
-  if (requester.role !== 'ADMIN' && existingRow.author_id !== requester.sub) {
+  if (!hasMinRole(requester.role, 'ADMIN') && existingRow.author_id !== requester.sub) {
     throw new ForbiddenError('You can only delete your own content');
   }
 
-  await pool.query(`DELETE FROM content_items WHERE id = $1`, [contentId]);
+  await pool.query(`UPDATE content_items SET deleted_at = NOW() WHERE id = $1`, [contentId]);
 
   await enqueueContentEvent({
     contentId,
@@ -1376,6 +1509,118 @@ export const deleteContent = async ({
       type: existingRow.content_type,
     },
   });
+
+  return { deleted: true, id: contentId };
+};
+
+export const listDeletedContent = async (
+  requester: JwtClaims,
+  query: ContentListQuery,
+): Promise<ContentListResponse> => {
+  const normalized = normalizeListQuery(query);
+  const offset = (normalized.page - 1) * normalized.limit;
+  const isAdmin = hasMinRole(requester.role, 'ADMIN');
+  const conditions: string[] = [`c.deleted_at IS NOT NULL`];
+  const values: unknown[] = [];
+
+  if (!isAdmin) {
+    values.push(requester.sub);
+    conditions.push(`c.author_id = $${values.length}`);
+  }
+
+  const whereClause = `WHERE ${conditions.join(' AND ')}`;
+  values.push(normalized.limit, offset);
+  const limitParam = values.length - 1;
+  const offsetParam = values.length;
+
+  const [dataResult, countResult] = await Promise.all([
+    pool.query<ContentRow>(
+      `SELECT
+          c.id,
+          c.author_id,
+          c.title,
+          c.description,
+          c.content_type,
+          c.media_url,
+          c.thumbnail_url,
+          c.source_kind,
+          c.external_source_id,
+          c.channel_name,
+          c.duration_label,
+          c.app_sections,
+          c.tags,
+          c.metadata,
+          c.visibility,
+          c.is_featured,
+          c.created_at,
+          c.updated_at,
+          u.display_name AS author_display_name,
+          u.email AS author_email,
+          u.role AS author_role
+       FROM content_items c
+       INNER JOIN app_users u ON u.id = c.author_id
+       ${whereClause}
+       ORDER BY c.deleted_at DESC
+       LIMIT $${limitParam}
+       OFFSET $${offsetParam}`,
+      values,
+    ),
+    pool.query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM content_items c ${whereClause}`,
+      values.slice(0, values.length - 2),
+    ),
+  ]);
+
+  return buildListResponse(dataResult.rows, Number(countResult.rows[0]!.count), query);
+};
+
+export const restoreContent = async ({
+  contentId,
+  requester,
+}: {
+  contentId: string;
+  requester: JwtClaims;
+}): Promise<ContentItem> => {
+  const existing = await pool.query<Pick<ContentRow, 'author_id' | 'deleted_at'>>(
+    `SELECT c.author_id, c.deleted_at FROM content_items c WHERE c.id = $1 LIMIT 1`,
+    [contentId],
+  );
+  if (existing.rowCount === 0 || !existing.rows[0]!.deleted_at) {
+    throw new NotFoundError('Deleted content not found');
+  }
+  if (!hasMinRole(requester.role, 'ADMIN') && existing.rows[0]!.author_id !== requester.sub) {
+    throw new ForbiddenError('You can only restore your own content');
+  }
+
+  await pool.query(`UPDATE content_items SET deleted_at = NULL WHERE id = $1`, [contentId]);
+
+  const restored = await loadContentRowById(pool, contentId);
+  if (!restored) {
+    throw new NotFoundError('Content not found');
+  }
+  return toContentItem(restored);
+};
+
+export const permanentlyDeleteContent = async ({
+  contentId,
+  requester,
+}: {
+  contentId: string;
+  requester: JwtClaims;
+}): Promise<{ deleted: true; id: string }> => {
+  if (!hasMinRole(requester.role, 'ADMIN')) {
+    throw new ForbiddenError('Admin access required to permanently delete content');
+  }
+
+  const existing = await pool.query<Pick<ContentRow, 'deleted_at'>>(
+    `SELECT deleted_at FROM content_items WHERE id = $1 LIMIT 1`,
+    [contentId],
+  );
+  if (existing.rowCount === 0 || !existing.rows[0]!.deleted_at) {
+    throw new NotFoundError('Deleted content not found');
+  }
+
+  await pool.query(`DELETE FROM content_items WHERE id = $1`, [contentId]);
 
   return { deleted: true, id: contentId };
 };

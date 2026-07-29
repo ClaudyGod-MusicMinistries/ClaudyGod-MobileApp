@@ -1,12 +1,14 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useQuery } from '@tanstack/react-query';
 
 import { AppButton } from '../../components/ui/AppButton';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { FadeIn } from '../../components/ui/FadeIn';
+import { InlineErrorBanner } from '../../components/ui/InlineErrorBanner';
 import { CustomText } from '../../components/CustomText';
 import { useAppTheme } from '../../util/colorScheme';
 import { useDeviceClass } from '../../util/deviceClassConfig';
@@ -27,7 +29,10 @@ import {
   PremiumPage,
   SectionLabel,
   dedupeFeedItems,
-} from '../../components/Exp/PremiumContent';
+} from '../../components/feed';
+
+// Stable reference so `sessions` doesn't change identity on every render while loading.
+const EMPTY_SESSIONS: LiveSessionSummary[] = [];
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
@@ -118,7 +123,7 @@ function LivePulse({ viewerCount }: { viewerCount: number }) {
       </View>
       {viewerCount > 0 ? (
         <View style={styles.viewerPill}>
-          <MaterialIcons name="people" size={13} color={undefined} style={{ tintColor: undefined }} />
+          <MaterialIcons name="people" size={13} />
           <CustomText variant="caption" style={styles.viewerText}>
             {viewerCount >= 1000 ? `${(viewerCount / 1000).toFixed(1)}K` : viewerCount} watching
           </CustomText>
@@ -159,22 +164,13 @@ export default function LiveScreen() {
   const device = useDeviceClass();
   const { showToast } = useToast();
   const { feed } = useContentFeed();
-  const [sessions, setSessions] = useState<LiveSessionSummary[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const refresh = async () => {
-    setLoading(true);
-    try {
-      const response = await fetchLiveSessions('all');
-      setSessions(response.items);
-    } catch {
-      setSessions([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => { void refresh(); }, []);
+  const { data, isLoading: loading, error, refetch } = useQuery({
+    queryKey: ['liveSessions', 'all'],
+    queryFn: async () => (await fetchLiveSessions('all')).items,
+  });
+  const sessions = data ?? EMPTY_SESSIONS;
+  const refresh = () => refetch();
+  const errorMessage = error instanceof Error ? error.message : error ? 'Unable to load live sessions' : null;
 
   const liveCards     = useMemo(() => sessions.filter((s) => s.status === 'live').map(toFeedCard), [sessions]);
   const upcomingCards = useMemo(() => sessions.filter((s) => s.status === 'scheduled').map(toFeedCard), [sessions]);
@@ -205,7 +201,7 @@ export default function LiveScreen() {
       await subscribeToLiveAlertsBackend(item.notificationChannelId || item.id, item.title);
       showToast({ title: 'Live alerts enabled', message: 'You will be notified before the session starts.', tone: 'success' });
     } catch {
-      showToast({ title: 'Sign in to receive alerts', message: 'Create an account or sign in to follow live sessions.', tone: 'warning' });
+      showToast({ title: 'Unable to enable alerts', message: 'Check notification permissions and try again.', tone: 'warning' });
     }
   };
 
@@ -241,11 +237,14 @@ export default function LiveScreen() {
         </FadeIn>
       ) : null}
 
+      {errorMessage ? <InlineErrorBanner message={errorMessage} onRetry={() => void refresh()} /> : null}
+
       {/* Featured hero */}
       <PremiumHero
         item={featuredCard}
         title={featuredCard?.title ?? 'Live sessions'}
         subtitle={featuredCard?.description || 'Follow upcoming services and rewatch recent ministry moments.'}
+        emptyIcon="sensors"
         eyebrow={featuredCard?.isLive ? 'Live now' : featuredCard ? 'Upcoming' : 'Ministry'}
         primaryLabel={featuredCard?.isLive ? 'Watch live' : featuredCard?.mediaUrl ? 'Watch replay' : 'Notify me'}
         primaryIcon={featuredCard?.isLive || featuredCard?.mediaUrl ? 'live-tv' : 'notifications-active'}
@@ -272,6 +271,13 @@ export default function LiveScreen() {
                 <ScheduleCard key={item.id} item={item} onNotify={() => void followLive(item)} />
               ))}
             </View>
+            {upcomingCards.length > upcomingLimit ? (
+              <ContentList
+                title="More upcoming sessions"
+                items={upcomingCards.slice(upcomingLimit)}
+                onPressItem={(item) => void openSession(item, 'live_upcoming_more')}
+              />
+            ) : null}
           </View>
         </FadeIn>
       ) : null}

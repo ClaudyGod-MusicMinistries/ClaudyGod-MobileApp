@@ -1,4 +1,4 @@
-import { createHash, randomBytes, randomInt } from 'crypto';
+import { createHash, randomBytes, randomInt, timingSafeEqual } from 'crypto';
 import type { UserTier } from './auth.types';
 import type { PoolClient } from 'pg';
 import { pool } from '../../db/pool';
@@ -44,7 +44,18 @@ import type {
   VerifyEmailInput,
 } from './auth.types';
 
-type AuthTokenType = 'email_verification' | 'password_reset';
+type AuthTokenType = 'email_verification' | 'password_reset' | 'mfa_step_up';
+
+// Plain `!==` on a shared secret leaks its length/content through response
+// timing. `timingSafeEqual` requires equal-length buffers, so a length
+// mismatch is checked separately first (that alone doesn't leak anything
+// timing-sensitive about the secret's actual content).
+function constantTimeEquals(a: string, b: string): boolean {
+  const bufferA = Buffer.from(a);
+  const bufferB = Buffer.from(b);
+  if (bufferA.length !== bufferB.length) return false;
+  return timingSafeEqual(bufferA, bufferB);
+}
 
 interface QueryRunner {
   query: PoolClient['query'];
@@ -483,6 +494,17 @@ const completePendingPasswordReset = async ({
       [pendingReset.user_id],
     );
 
+    // A successful reset proves account ownership just as well as a correct
+    // password would — without this, a user who got locked out by mistyping
+    // their old password and then did the right thing (reset it) would still
+    // be unable to sign in until the lockout timer ran out on its own.
+    await client.query(
+      `UPDATE user_account_security
+       SET failed_login_attempts = 0, locked_until = NULL, last_failed_at = NULL
+       WHERE user_id = $1`,
+      [pendingReset.user_id],
+    );
+
     await client.query('COMMIT');
   } catch (error) {
     await client.query('ROLLBACK');
@@ -498,7 +520,22 @@ export const registerUser = async (
 ): Promise<AuthResponse | RegisterResponse> => {
   const email = input.email.trim().toLowerCase();
   const displayName = input.username.trim();
-  const requestedRole: UserRole = input.role === 'ADMIN' ? 'ADMIN' : 'CLIENT';
+
+  // Roles a caller may self-assign via signup code. SUPER_ADMIN is deliberately excluded —
+  // it must only ever be granted through the invite flow, never a shared-code self-signup.
+  const CODE_GATED_ROLES: readonly UserRole[] = ['ADMIN', 'MODERATOR', 'CREATOR'];
+
+  let requestedRole: UserRole;
+  if (!input.role || input.role === 'CLIENT') {
+    requestedRole = 'CLIENT';
+  } else if (CODE_GATED_ROLES.includes(input.role)) {
+    requestedRole = input.role;
+  } else {
+    throw new ForbiddenError(
+      `Self-registration is not permitted for role ${input.role}`,
+      'AUTH_ROLE_NOT_SELF_REGISTERABLE',
+    );
+  }
 
   const existing = await pool.query<UserRow>(
     `SELECT id, email, password_hash, display_name, role, is_active, created_at, email_verified_at
@@ -508,12 +545,12 @@ export const registerUser = async (
     [email],
   );
 
-  if (requestedRole === 'ADMIN') {
+  if (CODE_GATED_ROLES.includes(requestedRole)) {
     const providedCode = input.adminSignupCode?.trim();
     if (!env.ADMIN_SIGNUP_CODE) {
       throw new ForbiddenError('Admin signup is disabled', 'AUTH_ADMIN_DISABLED');
     }
-    if (!providedCode || providedCode !== env.ADMIN_SIGNUP_CODE) {
+    if (!providedCode || !constantTimeEquals(providedCode, env.ADMIN_SIGNUP_CODE)) {
       throw new ForbiddenError('Invalid admin signup code', 'AUTH_ADMIN_CODE_INVALID');
     }
   }
@@ -760,6 +797,41 @@ export const loginUser = async (input: LoginInput, context: AuthRequestContext =
     accessToken: buildAccessToken(safeUser),
     user: safeUser,
   };
+};
+
+export const verifyMfaLogin = async (
+  input: { mfaToken: string; code: string },
+  context: AuthRequestContext = {},
+): Promise<Pick<AuthResponse, 'user' | 'message'>> => {
+  const { user_id: userId } = await consumeAuthActionToken({
+    rawToken: input.mfaToken,
+    tokenType: 'mfa_step_up',
+  });
+
+  const isMfaValid = await validateMfaCode(userId, input.code);
+  if (!isMfaValid) {
+    await recordSecurityEvent(userId, 'login_mfa_failed', {
+      ip: context.requestIp, userAgent: context.userAgent,
+    });
+    throw new UnauthorizedError('Invalid MFA code', 'MFA_INVALID_CODE');
+  }
+
+  const safeUser = await getUserById(userId);
+
+  await Promise.all([
+    clearFailedLogins(userId),
+    pool.query(`UPDATE app_users SET last_login_at = NOW() WHERE id = $1`, [userId]),
+    recordAuthActivity({
+      userId: safeUser.id, email: safeUser.email,
+      eventKey: 'login_success', status: 'success',
+      requestIp: context.requestIp, userAgent: context.userAgent,
+    }),
+    recordSecurityEvent(safeUser.id, 'login_success', {
+      ip: context.requestIp, userAgent: context.userAgent,
+    }),
+  ]);
+
+  return { user: safeUser };
 };
 
 export const verifyEmail = async (input: VerifyEmailInput, context: AuthRequestContext = {}): Promise<AuthResponse> => {

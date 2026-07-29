@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Linking, Modal, Platform, ScrollView, TouchableWithoutFeedback, View, useWindowDimensions } from 'react-native';
+import { Animated, Linking, Platform, View, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { CustomText } from '../../components/CustomText';
 import { AppButton } from '../../components/ui/AppButton';
+import { ConfirmModal } from '../../components/ui/ConfirmModal';
+import { SettingsScaffold } from '../../components/layout/SettingsScaffold';
 import { useAppTheme } from '../../util/colorScheme';
 import { makeStyles } from '../../styles/makeStyles';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
@@ -22,19 +22,25 @@ type DonateMethod = {
   badge?: string;
 };
 
-type DonatePlan = {
-  id: string;
-  name: string;
-  amount: string;
-  period: DonateFrequency | 'once';
-  note: string;
-  featured?: boolean;
-  icon: React.ComponentProps<typeof MaterialIcons>['name'];
-};
-
 // ─── Defaults ────────────────────────────────────────────────────────────────
 
 const DEFAULT_AMOUNTS = ['10', '25', '50', '100', '250', '500'];
+
+const DEFAULT_CURRENCY_OPTIONS: { code: string; label: string; symbol?: string }[] = [
+  { code: 'USD', label: 'US Dollar',        symbol: '$' },
+  { code: 'NGN', label: 'Nigerian Naira',   symbol: '₦' },
+  { code: 'GBP', label: 'British Pound',    symbol: '£' },
+  { code: 'EUR', label: 'Euro',             symbol: '€' },
+];
+
+// Amounts scale very differently by currency (10 USD vs. 10 NGN are not
+// comparable) — give each default currency its own sensible quick-pick scale.
+const DEFAULT_AMOUNTS_BY_CURRENCY: Record<string, string[]> = {
+  USD: DEFAULT_AMOUNTS,
+  GBP: DEFAULT_AMOUNTS,
+  EUR: DEFAULT_AMOUNTS,
+  NGN: ['1000', '2500', '5000', '10000', '25000', '50000'],
+};
 
 const DEFAULT_METHODS: DonateMethod[] = [
   { id: 'bank',   icon: 'account-balance', label: 'Bank Transfer',  subtitle: 'Direct to ministry account' },
@@ -49,7 +55,9 @@ const IMPACT_ITEMS = [
   { icon: 'build'   as const, label: 'Operations',        pct: 8  },
 ];
 
-const SCRIPTURES = [
+// Fallback-only — used before admin config has loaded, or if it's ever empty.
+// Mirrors the same defaults now configurable via admin's Mobile config → Giving quotes.
+const DEFAULT_SCRIPTURES = [
   '"Give, and it will be given to you." — Luke 6:38',
   '"Each of you should give what you have decided in your heart to give." — 2 Cor 9:7',
   '"Bring the whole tithe into the storehouse." — Malachi 3:10',
@@ -62,15 +70,6 @@ function frequencyLabel(v: DonateFrequency) {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const useStyles = makeStyles((theme) => ({
-  root:             { flex: 1, backgroundColor: theme.colors.background },
-
-  // Header
-  header:           { paddingHorizontal: 20, paddingBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 12 },
-  headerBack:       { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.surface },
-  headerWrap:       { flex: 1 },
-  headerTitle:      { color: theme.colors.text, fontSize: 17, fontWeight: '800', letterSpacing: -0.3 },
-  headerSub:        { color: theme.colors.textMuted, fontSize: 12, marginTop: 1 },
-
   // Hero
   heroBg:           { backgroundColor: theme.colors.accent, borderRadius: 28, padding: 22, overflow: 'hidden' },
   heroCircle1:      { position: 'absolute', top: -30, right: -30, width: 120, height: 120, borderRadius: 60, backgroundColor: 'rgba(255,255,255,0.07)' },
@@ -79,7 +78,7 @@ const useStyles = makeStyles((theme) => ({
   heroIconCircle:   { width: 52, height: 52, borderRadius: 26, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
   heroTitleWrap:    { flex: 1 },
   heroLabel:        { color: 'rgba(255,255,255,0.75)', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.9 },
-  heroTitle:        { color: theme.colors.onPrimary, fontSize: 18, fontWeight: '800', marginTop: 3, letterSpacing: -0.3 },
+  heroTitle:        { color: theme.colors.onPrimary, fontWeight: '800', marginTop: 3, letterSpacing: -0.3 },
   pillRow:          { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
   pill:             { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.16)', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7, flex: 1, minWidth: 80 },
   pillText:         { color: theme.colors.onPrimary, fontSize: 11, fontWeight: '600', flex: 1 },
@@ -94,21 +93,21 @@ const useStyles = makeStyles((theme) => ({
 
   // Currency
   currencyRow:      { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  currencyBase:     { borderRadius: 999, paddingHorizontal: 14, paddingVertical: 9 },
-  currencyActive:   { backgroundColor: theme.colors.primary },
-  currencyInactive: { backgroundColor: theme.colors.surface },
-  currencyTxtActive:   { color: theme.colors.onPrimary, fontSize: 13, fontWeight: '600' },
-  currencyTxtInactive: { color: theme.colors.textMuted,   fontSize: 13, fontWeight: '600' },
+  currencyBase:     { borderRadius: 999, paddingHorizontal: 16, paddingVertical: 10, borderWidth: 1.5, minWidth: 76, alignItems: 'center' },
+  currencyActive:   { backgroundColor: theme.colors.primary, borderColor: 'transparent', ...theme.shadows.sm },
+  currencyInactive: { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+  currencyTxtActive:   { color: theme.colors.onPrimary, fontSize: 13.5, fontWeight: '700' },
+  currencyTxtInactive: { color: theme.colors.textSecondary, fontSize: 13.5, fontWeight: '600' },
 
   // Amount
   amountGrid:       { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  amountBase:       { minHeight: 64, borderRadius: 16, alignItems: 'center', justifyContent: 'center', gap: 2 },
-  amountActive:     { backgroundColor: theme.colors.primary, borderWidth: 1, borderColor: 'transparent' },
-  amountInactive:   { backgroundColor: theme.colors.surface,  borderWidth: 1, borderColor: theme.colors.border },
-  amountValActive:  { color: theme.colors.onPrimary,          fontSize: 20, fontWeight: '800' },
-  amountValInactive:{ color: theme.colors.text,               fontSize: 20, fontWeight: '800' },
-  amountCurActive:  { color: 'rgba(255,255,255,0.75)',         fontSize: 10, fontWeight: '600' },
-  amountCurInactive:{ color: theme.colors.textMuted,           fontSize: 10, fontWeight: '600' },
+  amountBase:       { minHeight: 72, borderRadius: 16, alignItems: 'center', justifyContent: 'center', gap: 2 },
+  amountActive:     { backgroundColor: theme.colors.primary, borderWidth: 1.5, borderColor: theme.colors.primary, ...theme.shadows.sm },
+  amountInactive:   { backgroundColor: theme.colors.surface,  borderWidth: 1.5, borderColor: theme.colors.border },
+  amountValActive:  { color: theme.colors.onPrimary,          fontSize: 21, fontWeight: '800' },
+  amountValInactive:{ color: theme.colors.text,               fontSize: 21, fontWeight: '800' },
+  amountCurActive:  { color: 'rgba(255,255,255,0.75)',         fontSize: 10.5, fontWeight: '700', letterSpacing: 0.4 },
+  amountCurInactive:{ color: theme.colors.textMuted,           fontSize: 10.5, fontWeight: '700', letterSpacing: 0.4 },
 
   // Frequency
   freqBase:         { flex: 1, minHeight: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center', gap: 3 },
@@ -136,23 +135,21 @@ const useStyles = makeStyles((theme) => ({
   impactCard:       { backgroundColor: theme.colors.primarySurface, borderRadius: 14, borderWidth: 1, borderColor: theme.colors.primaryBorder, padding: 14, gap: 8 },
   impactRow:        { flexDirection: 'row', alignItems: 'center', gap: 8 },
   impactPct:        { color: theme.colors.primary, fontSize: 20, fontWeight: '800' },
-  impactLabel:      { color: theme.colors.textMuted, fontSize: 11, lineHeight: 16 },
+  impactLabel:      { color: theme.colors.textMuted, lineHeight: 16 },
 
   // CTA
   ctaWrap:          { gap: 10, paddingTop: 4 },
   trustRow:         { flexDirection: 'row', alignItems: 'center', gap: 8, justifyContent: 'center', paddingTop: 4 },
-  trustText:        { color: theme.colors.textMuted, fontSize: 11, textAlign: 'center' },
-  flex1:            { flex: 1 },
-  scrollContent:    { paddingHorizontal: 16, gap: 16 },
+  trustText:        { color: theme.colors.textMuted, textAlign: 'center' },
 
   // Coming-soon modal
   modalOverlay:     { flex: 1, backgroundColor: 'rgba(0,0,0,0.65)', alignItems: 'center', justifyContent: 'center', padding: 24 },
   modalCard:        { backgroundColor: theme.colors.surface, borderRadius: 24, borderWidth: 1, borderColor: theme.colors.border, padding: 28, alignItems: 'center', gap: 14, maxWidth: 340, width: '100%' },
   modalIcon:        { width: 68, height: 68, borderRadius: 34, backgroundColor: theme.colors.primarySurface, borderWidth: 1, borderColor: theme.colors.primaryBorder, alignItems: 'center', justifyContent: 'center' },
   modalTitle:       { color: theme.colors.text, fontSize: 20, fontWeight: '800', textAlign: 'center', letterSpacing: -0.3 },
-  modalSubtitle:    { color: theme.colors.textSecondary, fontSize: 14, textAlign: 'center', lineHeight: 21 },
+  modalSubtitle:    { color: theme.colors.textSecondary, textAlign: 'center' },
   modalClose:       { paddingVertical: 6 },
-  modalCloseText:   { color: theme.colors.textMuted, fontSize: 13, fontWeight: '500' },
+  modalCloseText:   { color: theme.colors.textMuted, fontWeight: '500' },
 }));
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -196,7 +193,7 @@ function HeroBanner({
           </View>
           <View style={styles.heroTitleWrap}>
             <CustomText style={styles.heroLabel}>Support the ministry</CustomText>
-            <CustomText style={styles.heroTitle}>Give with purpose</CustomText>
+            <CustomText variant="heading" style={styles.heroTitle}>Give with purpose</CustomText>
           </View>
         </View>
 
@@ -235,9 +232,7 @@ function SectionCard({ title, subtitle, children }: { title: string; subtitle?: 
 export default function Donate() {
   const styles = useStyles();
   const theme  = useAppTheme();
-  const router = useRouter();
   const { width } = useWindowDimensions();
-  const insets = useSafeAreaInsets();
   const { config } = useMobileAppConfig();
 
   const isCompact = width < 390;
@@ -245,8 +240,14 @@ export default function Donate() {
   const donateConfig = config?.donate;
 
   const quickAmounts    = useMemo(() => donateConfig?.quickAmounts?.length ? donateConfig.quickAmounts : DEFAULT_AMOUNTS, [donateConfig]);
-  const quickByCurrency = useMemo(() => donateConfig?.quickAmountsByCurrency ?? {}, [donateConfig]);
-  const currencyOptions = useMemo(() => donateConfig?.currencyOptions ?? [], [donateConfig]);
+  const quickByCurrency = useMemo(
+    () => ({ ...DEFAULT_AMOUNTS_BY_CURRENCY, ...(donateConfig?.quickAmountsByCurrency ?? {}) }),
+    [donateConfig],
+  );
+  const currencyOptions = useMemo(
+    () => (donateConfig?.currencyOptions?.length ? donateConfig.currencyOptions : DEFAULT_CURRENCY_OPTIONS),
+    [donateConfig],
+  );
   const configMethods   = useMemo<DonateMethod[]>(() =>
     donateConfig?.methods?.length
       ? donateConfig.methods.map((m) => ({ id: m.id, icon: m.icon as DonateMethod['icon'], label: m.label, subtitle: m.subtitle, badge: m.badge }))
@@ -269,8 +270,9 @@ export default function Donate() {
   const activeAmounts  = useMemo(() => quickByCurrency[selectedCurrency] ?? quickAmounts, [quickByCurrency, quickAmounts, selectedCurrency]);
   const selectedMethod = useMemo(() => configMethods.find((m) => m.id === selectedMethodId) ?? configMethods[0] ?? null, [configMethods, selectedMethodId]);
 
-  const scriptureIndex = useMemo(() => Math.floor(Date.now() / 86400000) % SCRIPTURES.length, []);
-  const scripture      = SCRIPTURES[scriptureIndex] ?? SCRIPTURES[0]!;
+  const scriptures      = config?.donate?.scriptures?.length ? config.donate.scriptures : DEFAULT_SCRIPTURES;
+  const scriptureIndex  = useMemo(() => Math.floor(Date.now() / 86400000) % scriptures.length, [scriptures.length]);
+  const scripture       = scriptures[scriptureIndex] ?? scriptures[0]!;
 
   const supportEmail   = config?.privacy?.contactEmail ?? 'support@claudygod.org';
   const [showComingSoon, setShowComingSoon] = useState(false);
@@ -304,66 +306,33 @@ export default function Donate() {
   const impactWidth = isCompact ? '100%' : isTablet ? '23%' : '47%';
 
   return (
-    <View style={styles.root}>
-      {/* Coming soon modal */}
-      <Modal
+    <>
+      <ConfirmModal
         visible={showComingSoon}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowComingSoon(false)}
-        statusBarTranslucent
+        icon="volunteer-activism"
+        title="Complete your giving"
+        body="Online processing is being prepared. Contact the ministry team to receive the approved giving instructions."
+        primaryLabel="Contact giving team"
+        secondaryLabel="Not now"
+        onPrimary={() => { setShowComingSoon(false); contactSupport(); }}
+        onSecondary={() => setShowComingSoon(false)}
+        onDismiss={() => setShowComingSoon(false)}
+      />
+
+      <SettingsScaffold
+        title="Giving"
+        subtitle="Partner with the ministry"
+        icon="volunteer-activism"
+        hero={
+          <HeroBanner
+            selectedAmount={selectedAmount}
+            selectedCurrency={selectedCurrency}
+            selectedFrequency={selectedFrequency}
+            selectedMethod={selectedMethod}
+            scripture={scripture}
+          />
+        }
       >
-        <TouchableWithoutFeedback onPress={() => setShowComingSoon(false)}>
-          <View style={styles.modalOverlay}>
-            <TouchableWithoutFeedback onPress={() => {}}>
-              <View style={styles.modalCard}>
-                <View style={styles.modalIcon}>
-                  <MaterialIcons name="volunteer-activism" size={32} color={theme.colors.primary} />
-                </View>
-                <CustomText style={styles.modalTitle}>Coming soon</CustomText>
-                <CustomText style={styles.modalSubtitle}>
-                  Online giving is being set up for launch. In the meantime, you can reach us directly to give.
-                </CustomText>
-                <AppButton
-                  title="Contact us to give"
-                  size="md"
-                  fullWidth
-                  onPress={() => { setShowComingSoon(false); contactSupport(); }}
-                  leftIcon={<MaterialIcons name="support-agent" size={17} color="#FFFFFF" />}
-                />
-                <TVTouchable onPress={() => setShowComingSoon(false)} showFocusBorder={false} style={styles.modalClose}>
-                  <CustomText style={styles.modalCloseText}>Close</CustomText>
-                </TVTouchable>
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
-
-      {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-        <TVTouchable onPress={() => router.back()} showFocusBorder={false} style={styles.headerBack}>
-          <MaterialIcons name="arrow-back" size={18} color={theme.colors.text} />
-        </TVTouchable>
-        <View style={styles.headerWrap}>
-          <CustomText style={styles.headerTitle}>Giving</CustomText>
-          <CustomText style={styles.headerSub}>Partner with the ministry</CustomText>
-        </View>
-      </View>
-
-      <ScrollView
-        style={styles.flex1}
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 24 }]}
-        showsVerticalScrollIndicator={false}
-      >
-        <HeroBanner
-          selectedAmount={selectedAmount}
-          selectedCurrency={selectedCurrency}
-          selectedFrequency={selectedFrequency}
-          selectedMethod={selectedMethod}
-          scripture={scripture}
-        />
-
         {/* Currency selector */}
         {currencyOptions.length > 1 ? (
           <SectionCard title="Currency">
@@ -477,7 +446,7 @@ export default function Donate() {
                   <MaterialIcons name={item.icon} size={16} color={theme.colors.primary} />
                   <CustomText style={styles.impactPct}>{item.pct}%</CustomText>
                 </View>
-                <CustomText style={styles.impactLabel}>{item.label}</CustomText>
+                <CustomText variant="caption" style={styles.impactLabel}>{item.label}</CustomText>
               </View>
             ))}
           </View>
@@ -505,9 +474,9 @@ export default function Donate() {
 
         <View style={styles.trustRow}>
           <MaterialIcons name="verified-user" size={13} color={theme.colors.textMuted} />
-          <CustomText style={styles.trustText}>Secure giving • All transactions are encrypted</CustomText>
+          <CustomText variant="caption" style={styles.trustText}>Secure giving • All transactions are encrypted</CustomText>
         </View>
-      </ScrollView>
-    </View>
+      </SettingsScaffold>
+    </>
   );
 }

@@ -1,18 +1,14 @@
 <template>
   <div class="space-y-5">
 
-    <div class="flex items-center justify-between">
-      <div>
-        <h2 class="text-base font-bold text-ink">Access requests</h2>
-        <p class="text-xs text-ink-muted mt-0.5">People requesting admin portal access. Send an invite to approve.</p>
-      </div>
+    <PageHeader icon="accessReqs" title="Access requests" subtitle="People requesting admin portal access. Send an invite to approve.">
       <AppButton variant="secondary" size="sm" :loading="isLoading" @click="loadRequests">
         <template #icon-left>
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
         </template>
         Refresh
       </AppButton>
-    </div>
+    </PageHeader>
 
     <!-- Loading -->
     <div v-if="isLoading && !requests.length" class="flex items-center justify-center py-20">
@@ -42,7 +38,7 @@
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2 flex-wrap">
             <p class="text-sm font-semibold text-ink truncate">{{ req.name }}</p>
-            <RolePill :role="roleValue(req.role)" />
+            <RolePill :role="roleRank(req.role)" />
             <span
               :class="[
                 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide',
@@ -134,16 +130,19 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/auth.store';
+import { useUiStore } from '@/stores/ui.store';
 import { listAccessRequests, approveAccessRequest, rejectAccessRequest } from '@/api/auth';
 import type { AccessRequest } from '@/api/auth';
-import { Role } from '@/utils/constants';
+import { roleRank } from '@/utils/constants';
 import AppButton from '@/components/ui/AppButton.vue';
 import AppCard from '@/components/ui/AppCard.vue';
 import AppSpinner from '@/components/ui/AppSpinner.vue';
 import UserAvatar from '@/components/shared/UserAvatar.vue';
 import RolePill from '@/components/shared/RolePill.vue';
+import PageHeader from '@/components/shared/PageHeader.vue';
 
 const auth = useAuthStore();
+const ui = useUiStore();
 
 const ROLE_OPTIONS = [
   { value: 'ADMIN' as const,     label: 'Admin',     desc: 'Full access' },
@@ -160,16 +159,6 @@ const approveRole = ref<'ADMIN' | 'MODERATOR' | 'CREATOR'>('MODERATOR');
 const approving = ref(false);
 const approveError = ref('');
 
-function roleValue(role: string): Role {
-  const map: Record<string, Role> = {
-    SUPER_ADMIN: Role.SUPER_ADMIN,
-    ADMIN: Role.ADMIN,
-    MODERATOR: Role.MODERATOR,
-    CREATOR: Role.CREATOR,
-  };
-  return map[role] ?? Role.CLIENT;
-}
-
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
@@ -179,7 +168,9 @@ async function loadRequests() {
   try {
     const res = await listAccessRequests();
     requests.value = res.requests;
-  } catch { /* silently fail */ }
+  } catch (e) {
+    ui.addToast({ tone: 'danger', title: 'Failed to load access requests', message: e instanceof Error ? e.message : undefined });
+  }
   finally { isLoading.value = false; }
 }
 
@@ -216,7 +207,9 @@ async function reject(req: AccessRequest) {
     requests.value = requests.value.map(r =>
       r.id === req.id ? { ...r, status: 'rejected' as const } : r,
     );
-  } catch { /* silently fail */ }
+  } catch (e) {
+    ui.addToast({ tone: 'danger', title: 'Failed to dismiss request', message: e instanceof Error ? e.message : undefined });
+  }
   finally { actingOn.value = ''; }
 }
 

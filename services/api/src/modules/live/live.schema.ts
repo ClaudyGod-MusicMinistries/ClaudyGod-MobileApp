@@ -99,9 +99,30 @@ export const listLiveSessionsQuerySchema = z
   })
   .strict();
 
+export const listAdminLiveSessionsQuerySchema = z
+  .object({
+    status: liveSessionStatusSchema.optional(),
+    page: z.coerce.number().int().min(1).default(1),
+    pageSize: z.coerce.number().int().min(1).max(100).default(50),
+  })
+  .strict();
+
 export const createLiveMessageSchema = z
   .object({
     kind: liveMessageKindSchema.default('comment'),
     message: z.string().trim().min(2).max(1200),
+  })
+  .strict();
+
+export const liveMessageIdParamsSchema = z
+  .object({
+    id: z.string().uuid(),
+    messageId: z.string().uuid(),
+  })
+  .strict();
+
+export const updateLiveMessageStatusSchema = z
+  .object({
+    status: liveMessageVisibilitySchema,
   })
   .strict();

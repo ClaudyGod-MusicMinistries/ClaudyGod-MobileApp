@@ -16,9 +16,9 @@ export const radius = {
   sm:   6,    // small elements, badges
   md:   8,    // buttons, input fields, chips
   lg:   10,   // content cards
-  card: 12,   // standard card/tile radius
-  xl:   14,   // modal headers, feature cards
-  xxl:  20,   // bottom sheets, large modals
+  card: 8,    // standard card/tile radius
+  xl:   12,   // modal headers, feature cards
+  xxl:  16,   // bottom sheets, large modals
   pill: 999,  // fully rounded / circle
 };
 
@@ -86,16 +86,6 @@ export const shadows = {
 
 // ─── Blur ────────────────────────────────────────────────────────────────────
 export const blur = { glass: 12 };
-
-// ─── Typography scale (numeric values only; use CustomText variant prop instead)
-export const typography = {
-  hero:     26,
-  headline: 20,
-  title:    15,
-  body:     14,
-  label:    12,
-  caption:  11,
-};
 
 // ─── Animation timing (ms) ───────────────────────────────────────────────────
 export const timing = {

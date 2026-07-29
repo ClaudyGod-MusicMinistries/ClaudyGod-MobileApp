@@ -1,7 +1,10 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
+import type { AppTone } from '@/utils/constants';
 
-export type ToastTone = 'success' | 'error' | 'warning' | 'info';
+// Toasts don't need the full AppTone vocabulary (no "primary"/"neutral" toast) but
+// use the same words for the tones they share — "danger", never "error".
+export type ToastTone = Exclude<AppTone, 'primary' | 'neutral'>;
 
 export interface Toast {
   id: string;
@@ -9,6 +12,7 @@ export interface Toast {
   message?: string;
   tone: ToastTone;
   duration?: number;
+  action?: { label: string; to: string };
 }
 
 export interface ConfirmOptions {
@@ -22,6 +26,9 @@ export interface ConfirmOptions {
 export const useUiStore = defineStore('ui', () => {
   const toasts = ref<Toast[]>([]);
   const sidebarOpen = ref(true);
+  // Independent from sidebarOpen (desktop rail collapse) — this drives the off-canvas
+  // drawer below the `lg` breakpoint so the two behaviors never fight each other.
+  const mobileDrawerOpen = ref(false);
   const confirmOptions = ref<ConfirmOptions | null>(null);
   let _confirmResolve: ((ok: boolean) => void) | null = null;
 
@@ -42,6 +49,14 @@ export const useUiStore = defineStore('ui', () => {
     sidebarOpen.value = !sidebarOpen.value;
   }
 
+  function toggleMobileDrawer(): void {
+    mobileDrawerOpen.value = !mobileDrawerOpen.value;
+  }
+
+  function closeMobileDrawer(): void {
+    mobileDrawerOpen.value = false;
+  }
+
   function confirm(options: ConfirmOptions): Promise<boolean> {
     confirmOptions.value = options;
     return new Promise((resolve) => {
@@ -58,10 +73,13 @@ export const useUiStore = defineStore('ui', () => {
   return {
     toasts,
     sidebarOpen,
+    mobileDrawerOpen,
     confirmOptions,
     addToast,
     removeToast,
     toggleSidebar,
+    toggleMobileDrawer,
+    closeMobileDrawer,
     confirm,
     resolveConfirm,
   };

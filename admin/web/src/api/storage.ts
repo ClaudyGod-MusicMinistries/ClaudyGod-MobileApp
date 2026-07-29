@@ -26,7 +26,7 @@ export interface ConfirmUploadResponse {
   session: StorageUploadSession;
 }
 
-export type AssetKind = 'audio' | 'video' | 'image' | 'document';
+export type AssetKind = 'thumbnail' | 'audio' | 'video';
 
 export async function requestUpload(params: {
   fileName: string;
@@ -70,8 +70,8 @@ export async function getDownloadUrl(sessionId: string): Promise<{ url: string }
 export function mimeToAssetKind(mimeType: string): AssetKind {
   if (mimeType.startsWith('audio/')) return 'audio';
   if (mimeType.startsWith('video/')) return 'video';
-  if (mimeType.startsWith('image/')) return 'image';
-  return 'document';
+  // Images and any other small file (e.g. documents) share the thumbnail policy/folder.
+  return 'thumbnail';
 }
 
 export async function uploadMediaFile(

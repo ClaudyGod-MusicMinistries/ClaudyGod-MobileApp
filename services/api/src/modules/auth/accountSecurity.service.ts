@@ -1,7 +1,7 @@
-import { pool } from '../../db/pool.js';
-import { env } from '../../config/env.js';
-import { createLogger } from '../../lib/logger.js';
-import { UnauthorizedError } from '../../lib/errors.js';
+import { pool } from '../../db/pool';
+import { env } from '../../config/env';
+import { createLogger } from '../../lib/logger';
+import { UnauthorizedError } from '../../lib/errors';
 
 const logger = createLogger('accountSecurity.service');
 
@@ -193,7 +193,7 @@ export async function revokeAllSessions(userId: string, except?: string): Promis
      SET revoked_at = NOW()
      WHERE user_id = $1
        AND revoked_at IS NULL
-       ${except ? 'AND session_id != $2' : ''}`,
+       ${except ? 'AND id != $2' : ''}`,
     except ? [userId, except] : [userId],
   );
   await recordSecurityEvent(userId, 'session_revoked', { metadata: { revokedCount: result.rowCount } });

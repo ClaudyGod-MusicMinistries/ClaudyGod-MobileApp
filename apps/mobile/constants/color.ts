@@ -62,7 +62,7 @@ export const colors = {
     warningBorder:  'rgba(180,83,9,0.16)',
 
     // ── Tab bar ───────────────────────────────────────────────────────────────
-    tabBarBg: 'rgba(10,6,18,0.97)',
+    tabBarBg: 'rgba(28,18,48,0.97)',
 
     // ── Player ───────────────────────────────────────────────────────────────
     playerGlass: 'rgba(255,255,255,0.94)',
@@ -70,14 +70,16 @@ export const colors = {
 
   dark: {
     // ── Backgrounds ──────────────────────────────────────────────────────────
-    background:     '#07050C',
-    backgroundRgba: '7,5,12',
-    surface:        '#0F0C18',
-    surfaceAlt:     '#141020',
-    elevated:       '#141020',
-    card:           '#141020',
-    cardHover:      '#1A1525',
-    inputBg:        '#0F0C18',
+    // Matches brand/logo-master.svg's tile color — keep in sync with
+    // app.config.js's splashBgColor/androidAdaptiveIconBgColor.
+    background:     '#09090B',
+    backgroundRgba: '9,9,11',
+    surface:        '#121216',
+    surfaceAlt:     '#18181D',
+    elevated:       '#1C1C22',
+    card:           '#15151A',
+    cardHover:      '#202027',
+    inputBg:        '#121216',
 
     // ── Scheme-aware fills ───────────────────────────────────────────────────
     subtleFill:       'rgba(255,255,255,0.05)',
@@ -85,27 +87,27 @@ export const colors = {
     subtleFillStrong: 'rgba(255,255,255,0.12)',
 
     // ── Glass / overlay ───────────────────────────────────────────────────────
-    glass:        'rgba(7,5,12,0.72)',
-    glassStrong:  'rgba(7,5,12,0.94)',
+    glass:        'rgba(18,18,22,0.78)',
+    glassStrong:  'rgba(18,18,22,0.96)',
     overlay:      'rgba(0,0,0,0.72)',
     overlayLight: 'rgba(0,0,0,0.48)',
     scrim:        'rgba(0,0,0,0.80)',
 
     // ── Dividers / borders ────────────────────────────────────────────────────
-    divider:      'rgba(139,92,246,0.10)',
-    border:       'rgba(255,255,255,0.08)',
-    borderStrong: 'rgba(255,255,255,0.14)',
-    muted:        '#0F0C18',
+    divider:      'rgba(255,255,255,0.07)',
+    border:       'rgba(255,255,255,0.09)',
+    borderStrong: 'rgba(255,255,255,0.16)',
+    muted:        '#232329',
     shadow:       '#000000',
 
     // ── Text ─────────────────────────────────────────────────────────────────
-    text:           '#F7F2FF',
-    textSecondary:  '#B8B0CC',
-    textMuted:      'rgba(247,242,255,0.42)',
-    text_primary:   '#F7F2FF',
-    text_secondary: '#B8B0CC',
-    text_accent:    '#D8CAFF',
-    textInverse:    '#07050C',
+    text:           '#FAFAFA',
+    textSecondary:  '#B5B5BE',
+    textMuted:      '#777781',
+    text_primary:   '#FAFAFA',
+    text_secondary: '#B5B5BE',
+    text_accent:    '#DDD3FF',
+    textInverse:    '#111114',
     onPrimary:      '#FFFFFF',
 
     // ── Brand / semantic ──────────────────────────────────────────────────────
@@ -131,15 +133,11 @@ export const colors = {
     warningBorder:  'rgba(251,191,36,0.18)',
 
     // ── Tab bar ───────────────────────────────────────────────────────────────
-    tabBarBg: 'rgba(7,4,13,0.97)',
+    tabBarBg: 'rgba(20,20,24,0.98)',
 
     // ── Player ───────────────────────────────────────────────────────────────
-    playerGlass: 'rgba(7,5,12,0.92)',
+    playerGlass: 'rgba(18,18,22,0.94)',
   },
 };
 
 export type ColorScheme = 'light' | 'dark';
-
-// Legacy aliases kept for older imports in the project.
-export const colors_light = colors.dark;
-export const colors_dark = colors.light;

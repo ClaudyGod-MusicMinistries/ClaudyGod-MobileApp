@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Linking, ScrollView, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { AudioPlayer } from '../../components/media/AudioPlayer';
+import { AudioPlayer, type RepeatMode } from '../../components/media/AudioPlayer';
 import { YouTubeAudioPlayer } from '../../components/media/YouTubeAudioPlayer';
 import { CustomText } from '../../components/CustomText';
 import { AppButton } from '../../components/ui/AppButton';
@@ -10,14 +10,19 @@ import { TVTouchable } from '../../components/ui/TVTouchable';
 import { useToast } from '../../context/ToastContext';
 import { useAppTheme } from '../../util/colorScheme';
 import { useContentFeed } from '../../hooks/useContentFeed';
+import { useLocalContent } from '../../hooks/useLocalContent';
+import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
+import { getPlayerLayoutSections, deriveLayoutSectionItems } from '../../util/mobileLayout';
+import { InlineErrorBanner } from '../../components/ui/InlineErrorBanner';
 import { makeStyles } from '../../styles/makeStyles';
-import type { ContentType, FeedBundle, FeedCardItem } from '../../services/contentService';
+import type { FeedCardItem } from '../../services/contentService';
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
 import { APP_ROUTES } from '../../util/appRoutes';
 import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
 import { buildPlayerRoute, isDirectPlayableAudioUrl, isYouTubeAudioItem, routeParamToString, shouldOpenVideoScreen } from '../../util/playerRoute';
 import {
   CompactContentRow,
+  ContentList,
   ContentRail,
   EmptyState,
   PremiumHero,
@@ -25,7 +30,7 @@ import {
   SectionLabel,
   TrendingList,
   dedupeFeedItems,
-} from '../../components/Exp/PremiumContent';
+} from '../../components/feed';
 import { WorshipTogetherBar } from '../../components/worship/WorshipTogetherBar';
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -56,7 +61,7 @@ const useStyles = makeStyles((theme) => ({
   queueTitle:       { color: theme.colors.text, fontSize: 14, fontWeight: '800', letterSpacing: -0.2 },
   queueCountPill:   { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 999, backgroundColor: theme.colors.primarySurface },
   queueCountText:   { color: theme.colors.primary, fontSize: 10, fontWeight: '700' },
-  queueClearText:   { color: theme.colors.primary, fontSize: 12, fontWeight: '600' },
+  queueClearText:   { color: theme.colors.primary, fontWeight: '600' },
   queueItemCard: {
     borderRadius: theme.radius.md, backgroundColor: theme.colors.subtleFill,
     borderWidth: 0.5, borderColor: theme.colors.border, marginBottom: 2,
@@ -79,37 +84,6 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function dedupeItems(items: FeedCardItem[]): FeedCardItem[] {
-  const seen = new Set<string>();
-  return items.filter((item) => {
-    const key = item.mediaUrl?.trim() ? `media:${item.mediaUrl.trim()}` : `id:${item.id}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-}
-
-function buildMusicSections(feed: FeedBundle, limit = 12) {
-  const pool = dedupeItems([...feed.music, ...feed.videos, ...feed.playlists, ...feed.live]);
-  const used = new Set<string>();
-
-  function take(sectionId: string, fallbackTypes: ContentType[]): FeedCardItem[] {
-    const available = pool.filter((item) => !used.has(item.id));
-    const tagged = available.filter((item) => item.appSections?.includes(sectionId));
-    const candidates = tagged.length >= 2 ? tagged : available.filter((item) => (fallbackTypes as string[]).includes(item.type));
-    const sliced = candidates.slice(0, limit);
-    sliced.forEach((item) => used.add(item.id));
-    return sliced;
-  }
-
-  return {
-    music:   take('music', ['audio']),
-    audio:   take('audio', ['audio', 'playlist']),
-    nuggets: take('nuggets-of-truth', ['video']),
-    teens:   take('teens', ['video', 'playlist']),
-  };
-}
 
 type AudioFilter = 'all' | 'songs' | 'messages' | 'playlists';
 
@@ -184,12 +158,19 @@ export default function PlaySection() {
     duration?: string | string[];
     mediaUrl?: string | string[];
   }>();
-  const { feed, loading, refresh } = useContentFeed();
+  const { feed, loading, error, refresh } = useContentFeed();
+  const { config: appConfig } = useMobileAppConfig();
   const [filter, setFilter] = useState<AudioFilter>('all');
-  const [isFavorite, setIsFavorite] = useState(false);
+  const { checkIsFavorited, toggleFavorite, recordHistory } = useLocalContent();
+  const [shuffleEnabled, setShuffleEnabled] = useState(false);
+  const [repeatMode, setRepeatMode] = useState<RepeatMode>('off');
 
-  const { music: musicItems, audio: audioItems, nuggets: nuggetsItems, teens: teensItems } =
-    useMemo(() => buildMusicSections(feed), [feed]);
+  const playerSections = useMemo(() => getPlayerLayoutSections(appConfig), [appConfig]);
+  const sectionItems = useMemo(
+    () => playerSections.map((section) => ({ section, items: deriveLayoutSectionItems(feed, section, 'player') })),
+    [playerSections, feed],
+  );
+  const hasSectionItems = sectionItems.some(({ items }) => items.length > 0);
 
   const routeItem = useMemo(() => parseRouteItem(params), [params]);
   const allQueue = useMemo(
@@ -209,17 +190,33 @@ export default function PlaySection() {
   const [activeId, setActiveId] = useState(routeItem?.id ?? allQueue[0]?.id ?? '');
   const active = allQueue.find((item) => item.id === activeId) ?? routeItem ?? allQueue[0] ?? null;
   const activeIndex = active ? allQueue.findIndex((item) => item.id === active.id) : -1;
-  const canGoPrevious = activeIndex > 0;
-  const canGoNext = activeIndex >= 0 && activeIndex < allQueue.length - 1;
+  const canWrapQueue = (repeatMode === 'all' || shuffleEnabled) && allQueue.length > 1;
+  const canGoPrevious = activeIndex > 0 || canWrapQueue;
+  const canGoNext = (activeIndex >= 0 && activeIndex < allQueue.length - 1) || canWrapQueue;
   const hasInlineAudio = Boolean(active && (
     (active.mediaUrl && isDirectPlayableAudioUrl(active.mediaUrl)) ||
     isYouTubeAudioItem(active)
   ));
+  const isFavorite = active ? checkIsFavorited(active.id) : false;
+
+  const handleFavoriteToggle = async () => {
+    if (!active) return;
+    try {
+      await toggleFavorite(active);
+      showToast({
+        title: isFavorite ? 'Removed from saved' : 'Saved to Library',
+        message: active.title,
+        tone: 'info',
+      });
+    } catch {
+      showToast({ title: 'Library update failed', message: 'Please try again.', tone: 'warning' });
+    }
+  };
 
   const openItem = async (item: FeedCardItem, source: string) => {
     if (isYouTubeAudioItem(item)) {
       setActiveId(item.id);
-      setIsFavorite(false);
+      await recordHistory(item);
       await trackPlayEvent({ contentId: item.id, contentType: item.type, title: item.title, source });
       return;
     }
@@ -233,12 +230,29 @@ export default function PlaySection() {
       return;
     }
     setActiveId(item.id);
-    setIsFavorite(false);
+    await recordHistory(item);
     await trackPlayEvent({ contentId: item.id, contentType: item.type, title: item.title, source });
   };
 
-  const goPrevious = () => { const prev = canGoPrevious ? allQueue[activeIndex - 1] : null; if (prev) void openItem(prev, 'music_prev'); };
-  const goNext    = () => { const next = canGoNext ? allQueue[activeIndex + 1] : null; if (next) void openItem(next, 'music_next'); };
+  const pickRandomOther = () => {
+    const candidates = allQueue.filter((item) => item.id !== active?.id);
+    if (candidates.length === 0) return null;
+    return candidates[Math.floor(Math.random() * candidates.length)] ?? null;
+  };
+
+  const goPrevious = () => {
+    if (!canGoPrevious || allQueue.length === 0) return;
+    const prev = shuffleEnabled ? pickRandomOther() : allQueue[(activeIndex - 1 + allQueue.length) % allQueue.length];
+    if (prev) void openItem(prev, 'music_prev');
+  };
+  const goNext = () => {
+    if (!canGoNext || allQueue.length === 0) return;
+    const next = shuffleEnabled ? pickRandomOther() : allQueue[(activeIndex + 1) % allQueue.length];
+    if (next) void openItem(next, 'music_next');
+  };
+
+  const toggleShuffle = () => setShuffleEnabled((v) => !v);
+  const cycleRepeat = () => setRepeatMode((m) => (m === 'off' ? 'all' : m === 'all' ? 'one' : 'off'));
 
   const upNext = filteredQueue.filter((item) => item.id !== active?.id).slice(0, 8);
 
@@ -261,8 +275,8 @@ export default function PlaySection() {
       }
     >
       {/* ── Now Playing card ─────────────────────────────────────────────── */}
-      <View style={styles.nowPlayingCard}>
-        {active && hasInlineAudio && isYouTubeAudioItem(active) && active.youtubeVideoId ? (
+      {active && hasInlineAudio && isYouTubeAudioItem(active) && active.youtubeVideoId ? (
+        <View style={styles.nowPlayingCard}>
           <YouTubeAudioPlayer
             track={{ id: active.id, title: active.title, artist: active.subtitle, youtubeVideoId: active.youtubeVideoId, duration: active.duration, imageUrl: active.imageUrl }}
             onPrevious={goPrevious}
@@ -270,11 +284,13 @@ export default function PlaySection() {
             canGoPrevious={canGoPrevious}
             canGoNext={canGoNext}
             isFavorite={isFavorite}
-            onFavoriteToggle={() => setIsFavorite((f) => !f)}
+            onFavoriteToggle={() => { void handleFavoriteToggle(); }}
             currentTrackNumber={activeIndex >= 0 ? activeIndex + 1 : undefined}
             totalTracks={allQueue.length}
           />
-        ) : active && hasInlineAudio && active.mediaUrl ? (
+        </View>
+      ) : active && hasInlineAudio && active.mediaUrl ? (
+        <View style={styles.nowPlayingCard}>
           <AudioPlayer
             track={{ id: active.id, title: active.title, artist: active.subtitle, uri: active.mediaUrl, duration: active.duration, imageUrl: active.imageUrl }}
             onPrevious={goPrevious}
@@ -282,21 +298,28 @@ export default function PlaySection() {
             canGoPrevious={canGoPrevious}
             canGoNext={canGoNext}
             isFavorite={isFavorite}
-            onFavoriteToggle={() => setIsFavorite((f) => !f)}
+            onFavoriteToggle={() => { void handleFavoriteToggle(); }}
             currentTrackNumber={activeIndex >= 0 ? activeIndex + 1 : undefined}
             totalTracks={allQueue.length}
+            shuffleEnabled={shuffleEnabled}
+            onToggleShuffle={allQueue.length > 1 ? toggleShuffle : undefined}
+            repeatMode={repeatMode}
+            onCycleRepeat={allQueue.length > 0 ? cycleRepeat : undefined}
           />
-        ) : (
-          <PremiumHero
-            item={active}
-            title={active?.title ?? 'Choose something to play'}
-            subtitle={active?.description || 'Select a song, message, or playlist to begin listening.'}
-            primaryLabel={active?.mediaUrl ? 'Open' : 'Browse music'}
-            primaryIcon={active?.mediaUrl ? 'open-in-new' : 'graphic-eq'}
-            onPrimary={() => (active ? void openItem(active, 'music_hero') : undefined)}
-          />
-        )}
-      </View>
+        </View>
+      ) : (
+        <PremiumHero
+          item={active}
+          title={active?.title ?? 'Choose something to play'}
+          subtitle={active?.description || 'Select a song, message, or playlist to begin listening.'}
+          emptyIcon="library-music"
+          primaryLabel={active?.mediaUrl ? 'Open' : 'Browse music'}
+          primaryIcon={active?.mediaUrl ? 'open-in-new' : 'queue-music'}
+          onPrimary={() => (active ? void openItem(active, 'music_hero') : undefined)}
+        />
+      )}
+
+      {error ? <InlineErrorBanner message={error} onRetry={() => void refresh()} /> : null}
 
       {/* ── Worship Together live count ───────────────────────────────────── */}
       {active ? <WorshipTogetherBar contentId={active.id} /> : null}
@@ -316,7 +339,7 @@ export default function PlaySection() {
               </View>
             </View>
             <TVTouchable onPress={() => setFilter(filter === 'all' ? 'songs' : 'all')} showFocusBorder={false}>
-              <CustomText style={styles.queueClearText}>
+              <CustomText variant="label" style={styles.queueClearText}>
                 {filter === 'all' ? 'Filter' : 'Clear filter'}
               </CustomText>
             </TVTouchable>
@@ -338,7 +361,7 @@ export default function PlaySection() {
       ) : null}
 
       {/* ── Section separator ────────────────────────────────────────────── */}
-      {(musicItems.length > 0 || audioItems.length > 0 || nuggetsItems.length > 0 || teensItems.length > 0) ? (
+      {hasSectionItems ? (
         <View style={styles.browseRow}>
           <View style={styles.browseLine} />
           <CustomText style={styles.browseLabel}>BROWSE</CustomText>
@@ -346,51 +369,52 @@ export default function PlaySection() {
         </View>
       ) : null}
 
-      {/* ── 4 branded content sections ───────────────────────────────────── */}
-      {(musicItems.length > 0 || audioItems.length > 0 || nuggetsItems.length > 0 || teensItems.length > 0) ? (
+      {/* ── Configured content sections ──────────────────────────────────── */}
+      {hasSectionItems ? (
         <View style={styles.sectionsGap}>
-          {musicItems.length > 0 ? (
-            <View style={styles.sectionRow}>
-              <SectionLabel title="ClaudyGod Music" actionLabel="See all" onAction={() => router.push(APP_ROUTES.tabs.player)} />
-              <ContentRail title="" items={musicItems} loading={loading} onPressItem={(item) => void openItem(item, 'player_music')} cardVariant="portrait" />
-            </View>
-          ) : null}
-
-          {audioItems.length > 0 ? (
-            <View style={styles.sectionRow}>
-              <SectionLabel title="ClaudyGod Audio" actionLabel="See all" onAction={() => router.push(APP_ROUTES.tabs.player)} />
-              <ContentRail title="" items={audioItems} loading={loading} onPressItem={(item) => void openItem(item, 'player_audio')} cardVariant="portrait" />
-            </View>
-          ) : null}
-
-          {nuggetsItems.length > 0 ? (
-            <View style={styles.sectionRow}>
-              <SectionLabel title="Nuggets of Truth" actionLabel="See all" onAction={() => router.push(APP_ROUTES.tabs.videos)} />
-              <ContentRail title="" items={nuggetsItems} loading={loading} onPressItem={(item) => void openItem(item, 'player_nuggets')} cardVariant="landscape" />
-            </View>
-          ) : null}
-
-          {teensItems.length > 0 ? (
-            <View style={styles.sectionRow}>
-              <SectionLabel title="ClaudyGod Teens" actionLabel="See all" onAction={() => router.push(APP_ROUTES.tabs.videos)} />
-              <ContentRail title="" items={teensItems} loading={loading} onPressItem={(item) => void openItem(item, 'player_teens')} cardVariant="landscape" />
-            </View>
-          ) : null}
+          {sectionItems.map(({ section, items }, index) => (
+            items.length > 0 ? (
+              <View key={section.id} style={styles.sectionRow}>
+                <SectionLabel
+                  title={section.title}
+                  actionLabel={section.actionLabel}
+                  onAction={() => router.push({
+                    pathname: APP_ROUTES.section.detail,
+                    params: { sectionId: section.id, screen: 'player', title: section.title },
+                  } as never)}
+                />
+                <ContentRail
+                  title=""
+                  items={items}
+                  loading={loading}
+                  onPressItem={(item) => void openItem(item, `player_${section.id}`)}
+                  cardVariant={index % 2 === 0 ? 'portrait' : 'landscape'}
+                />
+              </View>
+            ) : null
+          ))}
         </View>
       ) : null}
 
       {/* ── Most played trending ─────────────────────────────────────────── */}
       {feed.mostPlayed.length > 0 ? (
-        <TrendingList
-          title="Most played"
-          items={feed.mostPlayed.slice(0, 8)}
-          onPressItem={(item) => void openItem(item, 'music_trending')}
-          actionLabel="See all"
-          onAction={() => {}}
-        />
+        <>
+          <TrendingList
+            title="Most played"
+            items={feed.mostPlayed.slice(0, 8)}
+            onPressItem={(item) => void openItem(item, 'music_trending')}
+          />
+          {feed.mostPlayed.length > 8 ? (
+            <ContentList
+              title="More frequently played"
+              items={feed.mostPlayed.slice(8)}
+              onPressItem={(item) => void openItem(item, 'music_trending_more')}
+            />
+          ) : null}
+        </>
       ) : null}
 
-      {!loading && !allQueue.length && !musicItems.length && !audioItems.length && !nuggetsItems.length && !teensItems.length ? (
+      {!loading && !allQueue.length && !hasSectionItems ? (
         <EmptyState
           title="No music right now"
           message="Try Videos, Live, or Search for something to play."

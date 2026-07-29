@@ -74,6 +74,7 @@ interface SavedItemRow {
   image_url: string | null;
   media_url: string | null;
   duration: string | null;
+  metadata: Record<string, unknown> | null;
   created_at: string | Date;
   updated_at: string | Date;
 }
@@ -1050,11 +1051,17 @@ export const getMeLibrary = async (user: JwtClaims): Promise<{
   downloaded: Array<Record<string, unknown>>;
   playlists: Array<{ name: string; items: Array<Record<string, unknown>> }>;
 }> => {
+  // This endpoint returns a full library snapshot (liked/downloaded/playlists
+  // grouped together, not a paged feed) — the mobile client and /me/bootstrap
+  // both expect the complete set. The unqualified query had no LIMIT at all
+  // though, so a generous safety cap is applied to bound worst-case response
+  // size without truncating any realistic personal library.
   const result = await pool.query<SavedItemRow>(
     `SELECT *
      FROM user_saved_items
      WHERE user_id = $1
-     ORDER BY updated_at DESC, created_at DESC`,
+     ORDER BY updated_at DESC, created_at DESC
+     LIMIT 1000`,
     [user.sub],
   );
 
@@ -1067,6 +1074,7 @@ export const getMeLibrary = async (user: JwtClaims): Promise<{
     imageUrl: row.image_url ?? undefined,
     mediaUrl: row.media_url ?? undefined,
     duration: row.duration ?? undefined,
+    metadata: row.metadata ?? {},
     createdAt: toIso(row.created_at),
     updatedAt: toIso(row.updated_at),
   });
@@ -1105,21 +1113,24 @@ export const saveMeLibraryItem = async (
     metadata?: Record<string, unknown>;
   },
 ): Promise<{ saved: true }> => {
-  await pool.query(
-    `DELETE FROM user_saved_items
-     WHERE user_id = $1
-       AND bucket = $2
-       AND content_id = $3
-       AND COALESCE(playlist_name, '') = COALESCE($4, '')`,
-    [user.sub, input.bucket, input.contentId, input.playlistName ?? null],
-  );
-
+  await ensureUserScaffold(user.sub, user.displayName, user.email);
   await pool.query(
     `INSERT INTO user_saved_items (
        user_id, bucket, playlist_name, content_id, content_type, title, subtitle, description,
        image_url, media_url, duration, metadata
      )
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12::jsonb)`,
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12::jsonb)
+     ON CONFLICT (user_id, bucket, content_id, (COALESCE(playlist_name, '')))
+     DO UPDATE SET
+       content_type = EXCLUDED.content_type,
+       title = EXCLUDED.title,
+       subtitle = EXCLUDED.subtitle,
+       description = EXCLUDED.description,
+       image_url = EXCLUDED.image_url,
+       media_url = EXCLUDED.media_url,
+       duration = EXCLUDED.duration,
+       metadata = EXCLUDED.metadata,
+       updated_at = NOW()`,
     [
       user.sub,
       input.bucket,

@@ -9,6 +9,10 @@ import {
   bulkUpdateContent,
   listRequests,
   updateRequestStatus,
+  createDraftFromRequest,
+  listTrash,
+  restoreContent as restoreContentApi,
+  permanentlyDeleteContent as permanentlyDeleteContentApi,
 } from '@/api/content';
 import type {
   ContentItem,
@@ -25,6 +29,8 @@ export const useContentStore = defineStore('content', () => {
   const total = ref(0);
   const isLoading = ref(false);
   const error = ref<string | null>(null);
+  let contentRequestId = 0;
+  let contentAbortController: AbortController | null = null;
 
   const filters = reactive<ContentListParams>({
     type: undefined,
@@ -47,18 +53,40 @@ export const useContentStore = defineStore('content', () => {
   const requestsTotal = ref(0);
   const requestsLoading = ref(false);
 
+  // Trash
+  const trashItems = ref<ContentItem[]>([]);
+  const trashTotal = ref(0);
+  const trashLoading = ref(false);
+  const trashError = ref<string | null>(null);
+
   async function fetchContent(): Promise<void> {
+    const requestId = ++contentRequestId;
+    contentAbortController?.abort();
+    contentAbortController = new AbortController();
     isLoading.value = true;
     error.value = null;
     try {
-      const res: PaginatedResponse<ContentItem> = await listContent(filters);
+      const params = { ...filters };
+      const res: PaginatedResponse<ContentItem> = await listContent(params, contentAbortController.signal);
+      if (requestId !== contentRequestId) return;
       items.value = res.items;
       total.value = res.total;
     } catch (e) {
+      if (requestId !== contentRequestId || (e instanceof Error && e.name === 'CanceledError')) return;
       error.value = e instanceof Error ? e.message : 'Failed to load content';
     } finally {
-      isLoading.value = false;
+      if (requestId === contentRequestId) {
+        isLoading.value = false;
+        contentAbortController = null;
+      }
     }
+  }
+
+  function cancelContentFetch(): void {
+    contentRequestId += 1;
+    contentAbortController?.abort();
+    contentAbortController = null;
+    isLoading.value = false;
   }
 
   async function fetchOne(id: string): Promise<void> {
@@ -122,15 +150,52 @@ export const useContentStore = defineStore('content', () => {
     requests.value = requests.value.map((r) => (r.id === id ? updated : r));
   }
 
+  // The real "approve" action — creates the content draft and marks the
+  // request fulfilled in one atomic backend call, rather than just flipping
+  // a status field that never produced any actual content.
+  async function approveRequest(id: string): Promise<ContentItem> {
+    const { request, content } = await createDraftFromRequest(id);
+    requests.value = requests.value.map((r) => (r.id === id ? request : r));
+    return content;
+  }
+
   function resetCurrent(): void {
     current.value = null;
     saveError.value = null;
   }
 
+  async function fetchTrash(): Promise<void> {
+    trashLoading.value = true;
+    trashError.value = null;
+    try {
+      const res = await listTrash({ page: 1, pageSize: 100 });
+      trashItems.value = res.items;
+      trashTotal.value = res.total;
+    } catch (e) {
+      trashError.value = e instanceof Error ? e.message : 'Failed to load trash';
+    } finally {
+      trashLoading.value = false;
+    }
+  }
+
+  async function restore(id: string): Promise<void> {
+    await restoreContentApi(id);
+    trashItems.value = trashItems.value.filter((i) => i.id !== id);
+    trashTotal.value = Math.max(0, trashTotal.value - 1);
+  }
+
+  async function permanentlyDelete(id: string): Promise<void> {
+    await permanentlyDeleteContentApi(id);
+    trashItems.value = trashItems.value.filter((i) => i.id !== id);
+    trashTotal.value = Math.max(0, trashTotal.value - 1);
+  }
+
   return {
     items, total, isLoading, error, filters, current, isSaving, saveError,
     requests, requestsTotal, requestsLoading,
-    fetchContent, fetchOne, save, remove, bulkAction,
-    fetchRequests, updateRequest, resetCurrent,
+    trashItems, trashTotal, trashLoading, trashError,
+    fetchContent, cancelContentFetch, fetchOne, save, remove, bulkAction,
+    fetchRequests, updateRequest, approveRequest, resetCurrent,
+    fetchTrash, restore, permanentlyDelete,
   };
 });

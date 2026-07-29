@@ -1,12 +1,16 @@
 import React, { useEffect, useRef } from 'react';
 import {
   Animated,
+  KeyboardAvoidingView,
   Modal,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   View,
+  useWindowDimensions,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CustomText } from '../CustomText';
 import { AppButton } from './AppButton';
@@ -35,7 +39,7 @@ export interface ConfirmModalProps {
 
 const useStyles = makeStyles((theme) => ({
   backdrop:    { backgroundColor: 'rgba(2,1,6,0.70)' },
-  centerWrap:  { flex: 1, justifyContent: 'center', paddingHorizontal: 24 },
+  centerWrap:  { flex: 1, justifyContent: 'center', paddingHorizontal: 20 },
   animContent: { width: '100%', maxWidth: 420, alignSelf: 'center' },
   card: {
     borderRadius: 16, borderWidth: 1,
@@ -75,12 +79,14 @@ export function ConfirmModal({
 }: ConfirmModalProps) {
   const styles = useStyles();
   const theme = useAppTheme();
-  const scale = useRef(new Animated.Value(0.88)).current;
+  const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
+  const scale = useRef(new Animated.Value(0.96)).current;
   const opacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (!visible) {
-      scale.setValue(0.88);
+      scale.setValue(0.96);
       opacity.setValue(0);
       return;
     }
@@ -120,11 +126,22 @@ export function ConfirmModal({
           style={[StyleSheet.absoluteFill, styles.backdrop]}
         />
 
-        <View style={styles.centerWrap} pointerEvents="box-none">
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={[styles.centerWrap, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 }]}
+          pointerEvents="box-none"
+        >
           <Animated.View
             style={[styles.animContent, { transform: [{ scale }], opacity }]}
+            accessibilityViewIsModal
           >
-            <View style={styles.card}>
+            <ScrollView
+              style={{ maxHeight: Math.max(280, height - insets.top - insets.bottom - 40) }}
+              contentContainerStyle={styles.card}
+              bounces={false}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
               <View style={styles.iconCenter}>
                 <View
                   style={[
@@ -169,9 +186,9 @@ export function ConfirmModal({
                   />
                 ) : null}
               </View>
-            </View>
+            </ScrollView>
           </Animated.View>
-        </View>
+        </KeyboardAvoidingView>
       </View>
     </Modal>
   );

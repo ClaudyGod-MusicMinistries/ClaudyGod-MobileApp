@@ -1002,6 +1002,55 @@ const migrationStatements = [
      WHERE revoked_at IS NULL`,
   `CREATE INDEX IF NOT EXISTS idx_trusted_device_tokens_hash
      ON trusted_device_tokens (token_hash)`,
+
+  /* ── Auth action tokens: allow MFA step-up tokens (login already issues these) ─ */
+  `ALTER TABLE auth_action_tokens DROP CONSTRAINT IF EXISTS auth_action_tokens_token_type_check`,
+  `ALTER TABLE auth_action_tokens ADD CONSTRAINT auth_action_tokens_token_type_check
+     CHECK (token_type IN ('email_verification', 'password_reset', 'mfa_step_up'))`,
+
+  /* ── Content items: admin-controlled manual ordering ──────────────────────── */
+  `ALTER TABLE content_items ADD COLUMN IF NOT EXISTS sort_order INTEGER`,
+  `CREATE INDEX IF NOT EXISTS idx_content_items_sort_order ON content_items (sort_order)`,
+
+  /* ── Content items: soft-delete (trash/restore) ────────────────────────────── */
+  `ALTER TABLE content_items ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ`,
+  `CREATE INDEX IF NOT EXISTS idx_content_items_deleted_at ON content_items (deleted_at)`,
+
+  /* ── Content items: fast YouTube video id lookup for the Browse & Import
+         "already in Content" cross-reference join ────────────────────────────── */
+  `CREATE INDEX IF NOT EXISTS idx_content_items_external_source_id
+     ON content_items (external_source_id)
+     WHERE external_source_id IS NOT NULL`,
+
+  /* ── Trending searches: supports GROUP BY query over a recent time window —
+         the existing (user_id, searched_at DESC) index doesn't help an
+         aggregation spanning all users. */
+  `CREATE INDEX IF NOT EXISTS idx_user_search_events_searched_at_query
+     ON user_search_events (searched_at DESC, query)`,
+
+  /* ── Content items: admin-assigned "Featured" (mobile Home hero) — replaces
+         an algorithmic ranked[0] pick with an explicit admin choice. Migrations
+         are strictly append-only (each id is just its array position,
+         checksummed against what's already applied in production) — this
+         MUST stay the last entry. */
+  `ALTER TABLE content_items ADD COLUMN IF NOT EXISTS is_featured BOOLEAN NOT NULL DEFAULT false`,
+  `CREATE INDEX IF NOT EXISTS idx_content_items_is_featured
+     ON content_items (updated_at DESC)
+     WHERE is_featured = true`,
+
+  /* ── Content requests: admin review notes (e.g. rejection reason) — the
+         admin panel's reject flow already collects this in the UI, but had
+         nowhere to persist it. MUST stay the last entry (see comment above). */
+  `ALTER TABLE content_submission_requests ADD COLUMN IF NOT EXISTS review_notes TEXT`,
+
+  /* ── Device/session unification — links a refresh session to the device
+         that created it, so "revoke a device" can actually invalidate that
+         device's session instead of only marking user_devices as revoked
+         while the session keeps working. MUST stay the last entry. */
+  `ALTER TABLE auth_refresh_sessions ADD COLUMN IF NOT EXISTS device_id UUID REFERENCES user_devices(id) ON DELETE SET NULL`,
+  `CREATE INDEX IF NOT EXISTS idx_auth_refresh_sessions_device_id
+     ON auth_refresh_sessions (device_id)
+     WHERE revoked_at IS NULL`,
 ];
 
 const MIGRATION_LOCK_ID = 7_246_130_001;

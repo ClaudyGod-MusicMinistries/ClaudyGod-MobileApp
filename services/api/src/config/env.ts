@@ -185,6 +185,14 @@ const envSchema = z
 
     MOBILE_API_KEY: z.string().min(16, 'MOBILE_API_KEY must contain at least 16 characters'),
 
+    // The real .NET website backend (CGM-Backend) — the website module proxies
+    // admin actions here, attaching this key server-to-server the same way
+    // MOBILE_API_KEY protects the mobile-facing surface. Left optional (empty
+    // default) so this deploys additively — routes under /v1/website/* return
+    // a clear 503 if unset rather than the whole app failing to boot.
+    CGM_API_BASE_URL: optionalUrl(),
+    CGM_API_KEY: z.string().optional().default(''),
+
     MAIL_FROM: z.string().default('ClaudyGod <noreply@claudygod.example>'),
     MAIL_REPLY_TO: z.string().optional().default(''),
     EMAIL_BRAND_NAME: z.string().trim().min(2).max(80).default('ClaudyGod'),
@@ -237,6 +245,7 @@ const envSchema = z
 
     METRICS_TOKEN: z.string().optional().default(''),
     OTEL_EXPORTER_OTLP_ENDPOINT: z.string().optional().default(''),
+    SENTRY_DSN: z.string().optional().default(''),
 
     GOOGLE_CLIENT_ID: z.string().optional().default(''),
     GOOGLE_CLIENT_SECRET: z.string().optional().default(''),
@@ -400,6 +409,33 @@ const envSchema = z
       });
     }
 
+    // Admin media uploads (images/video/audio) go through Supabase's S3-compatible
+    // storage endpoint — without these, every upload silently 503s at request time
+    // instead of failing loudly here at startup.
+    if (!value.SUPABASE_S3_ENDPOINT || isPlaceholderSupabaseHost(value.SUPABASE_S3_ENDPOINT)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['SUPABASE_S3_ENDPOINT'],
+        message: 'SUPABASE_S3_ENDPOINT must use your real Supabase S3 endpoint in production',
+      });
+    }
+
+    if (!value.SUPABASE_S3_ACCESS_KEY_ID || /your-supabase/i.test(value.SUPABASE_S3_ACCESS_KEY_ID)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['SUPABASE_S3_ACCESS_KEY_ID'],
+        message: 'SUPABASE_S3_ACCESS_KEY_ID is required in production',
+      });
+    }
+
+    if (!value.SUPABASE_S3_SECRET_ACCESS_KEY || /your-supabase/i.test(value.SUPABASE_S3_SECRET_ACCESS_KEY)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['SUPABASE_S3_SECRET_ACCESS_KEY'],
+        message: 'SUPABASE_S3_SECRET_ACCESS_KEY is required in production',
+      });
+    }
+
     if (!value.AUTH_PUBLIC_BASE_URL || !value.AUTH_PUBLIC_BASE_URL.startsWith('https://')) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -495,6 +531,14 @@ const envSchema = z
       });
     }
 
+    if (!value.METRICS_TOKEN || value.METRICS_TOKEN.length < 32) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['METRICS_TOKEN'],
+        message: 'METRICS_TOKEN must be a strong secret in production',
+      });
+    }
+
     if (value.AUTH_REQUIRE_EMAIL_VERIFICATION && !value.SMTP_HOST) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -574,6 +618,7 @@ export const env = {
         ? 'Postfix Relay'
         : 'Generic SMTP',
   YOUTUBE_ENABLED: Boolean(raw.YOUTUBE_API_KEY && raw.YOUTUBE_CHANNEL_ID),
+  CGM_ENABLED: Boolean(raw.CGM_API_BASE_URL && raw.CGM_API_KEY),
   ADMIN_SIGNUP_ENABLED: Boolean(raw.ADMIN_SIGNUP_CODE),
   ADMIN_WEB_URL: raw.ADMIN_WEB_URL?.trim() || '',
   ADMIN_INVITE_TTL_HOURS: Number(raw.ADMIN_INVITE_TTL_HOURS ?? 72),

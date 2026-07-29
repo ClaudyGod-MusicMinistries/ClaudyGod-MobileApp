@@ -23,6 +23,15 @@ x-backend-env: &backend-env
   MOBILE_API_KEY: ${MOBILE_API_KEY:?MOBILE_API_KEY is required}
   DATA_ENCRYPTION_KEY: ${DATA_ENCRYPTION_KEY:?DATA_ENCRYPTION_KEY is required}
 
+  # Web Studio (/v1/website/*) proxies to CGM-Backend (the .NET website API)
+  # using these — left optional (not :?required) to match env.ts: an unset
+  # value degrades that one module to a clear 503 instead of failing the
+  # whole container's boot. Same x-api-key CGM-Backend's own ApiKeyMiddleware
+  # expects — the value already used as INTERNAL_API_KEY in the website's own
+  # ClaudyGodweb-Infrastructure .env.
+  CGM_API_BASE_URL: ${CGM_API_BASE_URL:-}
+  CGM_API_KEY: ${CGM_API_KEY:-}
+
   AUTH_PUBLIC_BASE_URL: ${AUTH_PUBLIC_BASE_URL:?AUTH_PUBLIC_BASE_URL is required}
   AUTH_VERIFY_EMAIL_PATH: ${AUTH_VERIFY_EMAIL_PATH:-/verify-email}
   AUTH_RESET_PASSWORD_PATH: ${AUTH_RESET_PASSWORD_PATH:-/reset-password}
@@ -37,6 +46,10 @@ x-backend-env: &backend-env
   SUPABASE_URL: ${SUPABASE_URL:?SUPABASE_URL is required}
   SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:?SUPABASE_SERVICE_ROLE_KEY is required}
   SUPABASE_STORAGE_BUCKET: ${SUPABASE_STORAGE_BUCKET:-mobile-uploads}
+  SUPABASE_S3_ENDPOINT: ${SUPABASE_S3_ENDPOINT:?SUPABASE_S3_ENDPOINT is required}
+  SUPABASE_S3_REGION: ${SUPABASE_S3_REGION:-eu-west-1}
+  SUPABASE_S3_ACCESS_KEY_ID: ${SUPABASE_S3_ACCESS_KEY_ID:?SUPABASE_S3_ACCESS_KEY_ID is required}
+  SUPABASE_S3_SECRET_ACCESS_KEY: ${SUPABASE_S3_SECRET_ACCESS_KEY:?SUPABASE_S3_SECRET_ACCESS_KEY is required}
 
   MAIL_FROM: ${MAIL_FROM:?MAIL_FROM is required}
   MAIL_REPLY_TO: ${MAIL_REPLY_TO:-}
@@ -68,6 +81,9 @@ x-backend-env: &backend-env
   YOUTUBE_MAX_RESULTS: ${YOUTUBE_MAX_RESULTS:-12}
 
   ADMIN_SIGNUP_CODE: ${ADMIN_SIGNUP_CODE:-}
+
+  METRICS_TOKEN: ${METRICS_TOKEN:?METRICS_TOKEN is required}
+  SENTRY_DSN: ${SENTRY_DSN:-}
 
 # ─── Services ─────────────────────────────────────────────────────────────────
 services:
@@ -159,7 +175,12 @@ services:
       - internal
 
   # ── API (HTTP — exposed via Traefik as cgm-api) ───────────────────────────
-  api:
+  # Service key itself (not just the Traefik router name) is namespaced so its
+  # default alias on the shared traefik-public network can't collide with
+  # another project's own "api" service (confirmed collision with
+  # ClaudyGodweb-Infrastructure's api service — Docker's embedded DNS was
+  # non-deterministically round-robining between both containers).
+  cgm-api:
     image: ghcr.io/${GHCR_OWNER:-claudygod-musicministries}/claudygod-api:${IMAGE_TAG:-latest}
     build:
       context: ./services/api
@@ -239,7 +260,7 @@ services:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
-      api:
+      cgm-api:
         condition: service_healthy
     healthcheck:
       disable: true
@@ -248,6 +269,92 @@ services:
       - 8.8.8.8
     networks:
       - internal
+
+  # ── Prometheus (internal only — never exposed via Traefik; Grafana reads it) ─
+  prometheus:
+    image: prom/prometheus:latest
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=false"
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      METRICS_TOKEN: ${METRICS_TOKEN:?METRICS_TOKEN is required}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        sed "s|__METRICS_TOKEN__|$${METRICS_TOKEN}|" /etc/prometheus/prometheus.yml.template > /etc/prometheus/prometheus.yml &&
+        exec /bin/prometheus --config.file=/etc/prometheus/prometheus.yml --storage.tsdb.path=/prometheus --storage.tsdb.retention.time=30d
+    volumes:
+      - ./ops/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml.template:ro
+      - prometheus_data:/prometheus
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:9090/-/healthy >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    depends_on:
+      cgm-api:
+        condition: service_healthy
+    networks:
+      - internal
+
+  # ── Grafana (HTTP — exposed via Traefik as cgm-grafana; has its own login) ──
+  # Service key namespaced for the same reason as cgm-api above — both this
+  # project and ClaudyGodweb-Infrastructure run a "grafana" service on the
+  # shared traefik-public network.
+  cgm-grafana:
+    image: grafana/grafana:latest
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD is required}
+      GF_SERVER_ROOT_URL: https://${GRAFANA_DOMAIN}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./ops/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./ops/grafana/provisioning/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    expose:
+      - "3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/health >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
+    networks:
+      - edge
+      - internal
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=${TRAEFIK_PUBLIC_NETWORK:-traefik-public}"
+      # Router
+      - "traefik.http.routers.cgm-grafana.rule=Host(`${GRAFANA_DOMAIN}`)"
+      - "traefik.http.routers.cgm-grafana.entrypoints=websecure"
+      - "traefik.http.routers.cgm-grafana.tls=true"
+      - "traefik.http.routers.cgm-grafana.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-letsencrypt}"
+      - "traefik.http.routers.cgm-grafana.middlewares=cgm-grafana-compress,cgm-grafana-headers"
+      # Middlewares
+      - "traefik.http.middlewares.cgm-grafana-compress.compress=true"
+      - "traefik.http.middlewares.cgm-grafana-headers.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.cgm-grafana-headers.headers.browserXssFilter=true"
+      - "traefik.http.middlewares.cgm-grafana-headers.headers.frameDeny=true"
+      - "traefik.http.middlewares.cgm-grafana-headers.headers.referrerPolicy=strict-origin-when-cross-origin"
+      - "traefik.http.middlewares.cgm-grafana-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.cgm-grafana-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.cgm-grafana-headers.headers.stsPreload=true"
+      # Service
+      - "traefik.http.services.cgm-grafana.loadbalancer.server.port=3000"
 
   # ── Admin web (HTTP — exposed via Traefik as cgm-admin) ───────────────────
   admin-web:
@@ -350,6 +457,8 @@ services:
 # ─── Volumes ──────────────────────────────────────────────────────────────────
 volumes:
   redis_data:
+  prometheus_data:
+  grafana_data:
 
 # ─── Networks ─────────────────────────────────────────────────────────────────
 networks:

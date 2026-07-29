@@ -3,6 +3,7 @@ import { asyncHandler } from '../../lib/asyncHandler';
 import { ForbiddenError } from '../../lib/errors';
 import { validateSchema } from '../../lib/validation';
 import { authenticate } from '../../middleware/authenticate';
+import { hasMinRole } from '../../middleware/rbac';
 import { createAdCampaignSchema, listAdCampaignsQuerySchema, updateAdCampaignSchema } from './ads.schema';
 import { createAdCampaign, listAdCampaigns, updateAdCampaign } from './ads.service';
 
@@ -13,20 +14,26 @@ adminAdsRouter.use(authenticate);
 adminAdsRouter.get(
   '/',
   asyncHandler(async (req, res) => {
-    if (!req.user || req.user.role !== 'ADMIN') {
+    if (!req.user || !hasMinRole(req.user.role, 'ADMIN')) {
       throw new ForbiddenError('Admin role required', 'ADMIN_REQUIRED');
     }
 
     const query = validateSchema(listAdCampaignsQuerySchema, req.query);
     const items = await listAdCampaigns(query);
-    res.status(200).json({ items });
+    res.status(200).json({
+      items,
+      total: items.length,
+      page: 1,
+      pageSize: items.length,
+      hasMore: false,
+    });
   }),
 );
 
 adminAdsRouter.post(
   '/',
   asyncHandler(async (req, res) => {
-    if (!req.user || req.user.role !== 'ADMIN') {
+    if (!req.user || !hasMinRole(req.user.role, 'ADMIN')) {
       throw new ForbiddenError('Admin role required', 'ADMIN_REQUIRED');
     }
 
@@ -39,7 +46,7 @@ adminAdsRouter.post(
 adminAdsRouter.patch(
   '/:id',
   asyncHandler(async (req, res) => {
-    if (!req.user || req.user.role !== 'ADMIN') {
+    if (!req.user || !hasMinRole(req.user.role, 'ADMIN')) {
       throw new ForbiddenError('Admin role required', 'ADMIN_REQUIRED');
     }
 

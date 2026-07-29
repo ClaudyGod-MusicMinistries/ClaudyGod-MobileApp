@@ -13,6 +13,16 @@ type TableRow = {
   table_name: string;
 };
 
+function describeError(error: unknown): string {
+  if (error instanceof Error && 'errors' in error && Array.isArray((error as Error & { errors?: unknown[] }).errors)) {
+    const nested = ((error as Error & { errors: unknown[] }).errors)
+      .map((entry) => entry instanceof Error ? entry.message : String(entry))
+      .filter(Boolean);
+    return nested.length ? nested.join('; ') : 'Multiple database connection attempts failed';
+  }
+  return error instanceof Error ? error.message : String(error);
+}
+
 const run = async (): Promise<void> => {
   try {
     const ledgerExists = await pool.query<{ exists: boolean }>(`
@@ -57,9 +67,11 @@ const run = async (): Promise<void> => {
 };
 
 if (require.main === module) {
-  run().catch(async (error) => {
-    await closePool();
-    log.error('Migration status check failed', { error });
+  run().catch((error: unknown) => {
+    log.error('Migration status check failed', {
+      reason: describeError(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     process.exit(1);
   });
 }

@@ -2,8 +2,10 @@ import type { JwtClaims } from '../../utils/jwt';
 import { pool } from '../../db/pool';
 import { env } from '../../config/env';
 import { BadRequestError, ForbiddenError, NotFoundError } from '../../lib/errors';
+import { hasMinRole } from '../../middleware/rbac';
 import { sendLiveStartPushNotifications } from '../../infra/push';
 import { queueEmailJob } from '../../infra/transactionalEmails';
+import { broadcastToLiveSession, broadcastSessionUpdate } from './live.websocket';
 import type { UserRole } from '../auth/auth.types';
 import type {
   CreateLiveMessageInput,
@@ -254,9 +256,11 @@ const notifySubscribersThatSessionIsLive = async (session: LiveSession): Promise
   return recipients.length;
 };
 
+// Matches live.routes.ts's requireAdmin: named for history, actual threshold
+// is MODERATOR to match the admin panel's own nav config for /live.
 const assertAdmin = (actor: JwtClaims) => {
-  if (actor.role !== 'ADMIN') {
-    throw new ForbiddenError('Admin access required', 'ADMIN_REQUIRED');
+  if (!hasMinRole(actor.role, 'MODERATOR')) {
+    throw new ForbiddenError('Moderator role or higher required', 'MODERATOR_REQUIRED');
   }
 };
 
@@ -276,8 +280,15 @@ const getLiveSessionRowById = async (sessionId: string): Promise<LiveSessionRow>
   return result.rows[0]!;
 };
 
-export const listAdminLiveSessions = async (actor: JwtClaims): Promise<{
+export const listAdminLiveSessions = async (
+  actor: JwtClaims,
+  params: { status?: 'scheduled' | 'live' | 'ended' | 'cancelled'; page: number; pageSize: number },
+): Promise<{
   items: LiveSession[];
+  total: number;
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
   summary: {
     total: number;
     live: number;
@@ -288,23 +299,60 @@ export const listAdminLiveSessions = async (actor: JwtClaims): Promise<{
 }> => {
   assertAdmin(actor);
 
-  const result = await pool.query<LiveSessionRow>(
-    `${liveSessionBaseSelect}
-     ${liveSessionGroupBy}
-     ${liveSessionOrder}`,
+  const whereClause = params.status ? 'WHERE ls.status = $1' : '';
+  const offset = (params.page - 1) * params.pageSize;
+  const values: unknown[] = params.status ? [params.status, params.pageSize, offset] : [params.pageSize, offset];
+  const limitParam = params.status ? 2 : 1;
+  const offsetParam = params.status ? 3 : 2;
+
+  const [dataResult, countResult, summaryResult] = await Promise.all([
+    pool.query<LiveSessionRow>(
+      `${liveSessionBaseSelect}
+       ${whereClause}
+       ${liveSessionGroupBy}
+       ${liveSessionOrder}
+       LIMIT $${limitParam}
+       OFFSET $${offsetParam}`,
+      values,
+    ),
+    pool.query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM live_sessions ls ${whereClause}`,
+      params.status ? [params.status] : [],
+    ),
+    pool.query<{ status: string; count: string }>(
+      `SELECT status, COUNT(*)::text AS count FROM live_sessions GROUP BY status`,
+    ),
+  ]);
+
+  const items = dataResult.rows.map(toLiveSession);
+  const total = Number(countResult.rows[0]?.count ?? 0);
+  const summaryByStatus = new Map(summaryResult.rows.map((row) => [row.status, Number(row.count)]));
+  const totalMessagesResult = await pool.query<{ count: string }>(
+    `SELECT COUNT(*)::text AS count FROM live_session_messages WHERE status = 'visible'`,
   );
 
-  const items = result.rows.map(toLiveSession);
   return {
     items,
+    total,
+    page: params.page,
+    pageSize: params.pageSize,
+    hasMore: params.page * params.pageSize < total,
     summary: {
-      total: items.length,
-      live: items.filter((item) => item.status === 'live').length,
-      upcoming: items.filter((item) => item.status === 'scheduled').length,
-      archive: items.filter((item) => item.status === 'ended').length,
-      totalMessages: items.reduce((sum, item) => sum + item.messageCount, 0),
+      total: Array.from(summaryByStatus.values()).reduce((sum, n) => sum + n, 0),
+      live: summaryByStatus.get('live') ?? 0,
+      upcoming: summaryByStatus.get('scheduled') ?? 0,
+      archive: summaryByStatus.get('ended') ?? 0,
+      totalMessages: Number(totalMessagesResult.rows[0]?.count ?? 0),
     },
   };
+};
+
+export const deleteAdminLiveSession = async (actor: JwtClaims, sessionId: string): Promise<void> => {
+  assertAdmin(actor);
+  const result = await pool.query(`DELETE FROM live_sessions WHERE id = $1`, [sessionId]);
+  if ((result.rowCount ?? 0) === 0) {
+    throw new NotFoundError('Live session not found', 'LIVE_SESSION_NOT_FOUND');
+  }
 };
 
 export const getAdminLiveSessionDetail = async (actor: JwtClaims, sessionId: string): Promise<LiveSessionDetail> => {
@@ -541,6 +589,8 @@ export const startLiveSession = async (actor: JwtClaims, sessionId: string): Pro
     }
   }
 
+  broadcastSessionUpdate(sessionId, { status: session.status, startedAt: session.startedAt });
+
   return {
     session,
     notifiedSubscribers,
@@ -568,7 +618,9 @@ export const endLiveSession = async (
     [sessionId, input.playbackUrl ?? null, input.viewerCount ?? null, actor.sub],
   );
 
-  return toLiveSession(await getLiveSessionRowById(sessionId));
+  const session = toLiveSession(await getLiveSessionRowById(sessionId));
+  broadcastSessionUpdate(sessionId, { status: session.status, endedAt: session.endedAt });
+  return session;
 };
 
 export const createLiveSessionMessage = async (
@@ -606,5 +658,50 @@ export const createLiveSessionMessage = async (
     [sessionId, actor.sub, actor.displayName, input.kind, input.message.trim(), actor.email, actor.role],
   );
 
-  return toLiveMessage(inserted.rows[0]!);
+  const created = toLiveMessage(inserted.rows[0]!);
+  broadcastToLiveSession(sessionId, { type: 'message', payload: created as unknown as Record<string, unknown> });
+  return created;
+};
+
+export const updateLiveSessionMessageStatus = async (
+  actor: JwtClaims,
+  sessionId: string,
+  messageId: string,
+  status: 'visible' | 'hidden',
+): Promise<LiveMessage> => {
+  assertAdmin(actor);
+
+  const updated = await pool.query<LiveMessageRow>(
+    `WITH updated AS (
+       UPDATE live_session_messages
+       SET status = $3, updated_at = NOW()
+       WHERE id = $2 AND live_session_id = $1
+       RETURNING *
+     )
+     SELECT
+       updated.id,
+       updated.live_session_id,
+       updated.kind,
+       updated.status,
+       updated.message,
+       updated.created_at,
+       updated.updated_at,
+       author.id AS author_id,
+       author.display_name AS author_display_name,
+       author.email AS author_email,
+       author.role AS author_role
+     FROM updated
+     LEFT JOIN app_users author ON author.id = updated.user_id`,
+    [sessionId, messageId, status],
+  );
+
+  if (updated.rowCount === 0) {
+    throw new NotFoundError('Live session message not found', 'LIVE_MESSAGE_NOT_FOUND');
+  }
+
+  const message = toLiveMessage(updated.rows[0]!);
+  // So anyone already in the chat sees a hidden message disappear immediately
+  // rather than only on next pull-to-refresh.
+  broadcastToLiveSession(sessionId, { type: 'message_status', payload: { id: message.id, status: message.visibility } });
+  return message;
 };

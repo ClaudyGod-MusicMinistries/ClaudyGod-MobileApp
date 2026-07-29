@@ -94,17 +94,18 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { uploadFile } from '@/api/uploads';
+import { uploadFile, type UploadPipeline } from '@/api/uploads';
 
 const props = withDefaults(defineProps<{
   label: string;
   accept?: string;
-  folder?: string;
   maxMb?: number;
-}>(), { accept: '*', folder: 'content', maxMb: 500 });
+  /** Which presigned-S3 pipeline/bucket this dropzone uploads through — Mobile Studio vs Web Studio use entirely separate ones. */
+  pipeline?: UploadPipeline;
+}>(), { accept: '*', maxMb: 500, pipeline: 'mobile' });
 
 const emit = defineEmits<{
-  (e: 'uploaded', url: string): void;
+  (e: 'uploaded', payload: { url: string; sessionId: string }): void;
   (e: 'reset'): void;
 }>();
 
@@ -160,16 +161,16 @@ async function handleFile(file: File): Promise<void> {
 
   try {
     uploadStage.value = isMedia ? 'Requesting upload URL…' : 'Uploading…';
-    const { publicUrl } = await uploadFile(file, props.folder, (pct) => {
+    const { publicUrl, sessionId } = await uploadFile(file, (pct) => {
       progress.value = pct;
       if (pct < 30) uploadStage.value = isMedia ? 'Requesting upload URL…' : 'Uploading…';
       else if (pct < 95) uploadStage.value = 'Uploading file…';
       else uploadStage.value = 'Verifying…';
-    });
+    }, props.pipeline);
     progress.value = 100;
     uploadStage.value = 'Done!';
     uploadedFile.value = { name: file.name, size: file.size };
-    emit('uploaded', publicUrl);
+    emit('uploaded', { url: publicUrl, sessionId });
   } catch (e) {
     uploadError.value = e instanceof Error ? e.message : 'Upload failed — please try again';
     pendingFile.value = null;

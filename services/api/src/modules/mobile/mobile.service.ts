@@ -8,7 +8,16 @@ import type { AdPlacementScreen, MobileAppConfig } from '../appConfig/appConfig.
 import type { ContentSourceKind, ContentType } from '../content/content.types';
 import type { LiveSessionStatus } from '../live/live.types';
 import { fetchYouTubeVideos, type YouTubeVideoItem } from '../youtube/youtube.service';
-import type { MobileFeedItem, MobileFeedRail, MobileFeedResponse } from './mobile.types';
+import type {
+  MobileFeedItem,
+  MobileFeedRail,
+  MobileFeedResponse,
+  MobileLayoutScreen,
+  MobileLayoutSectionResult,
+  MobileSectionDetailResponse,
+} from './mobile.types';
+
+type MobileLayoutSection = MobileAppConfig['layout']['homeSections'][number];
 
 interface PublishedContentRow {
   id: string;
@@ -98,6 +107,51 @@ const classifyRail = (item: MobileFeedItem): 'music' | 'video' | 'playlist' | 'a
 
   return 'video';
 };
+
+const normalizeSectionToken = (value: string): string => value.trim().toLowerCase();
+
+// Content is tagged into a section by the admin's own id or title (see
+// admin/web ContentEditView.vue) — match either so a legacy title-based tag
+// still resolves after a section is renamed.
+export const matchesConfiguredSection = (item: MobileFeedItem, section: MobileLayoutSection): boolean => {
+  const tokens = new Set([normalizeSectionToken(section.id), normalizeSectionToken(section.title)]);
+  return item.appSections.some((value) => tokens.has(normalizeSectionToken(value)));
+};
+
+// Ranked items actually tagged into this section. No type-based fallback: a
+// section with nothing tagged into it returns an empty pool rather than a
+// generic sample, so every mobile screen's existing "hide when empty" guard
+// keeps it off-screen until admin curates real content into it.
+const resolveConfiguredSectionPool = (ranked: MobileFeedItem[], section: MobileLayoutSection): MobileFeedItem[] =>
+  ranked.filter((item) => matchesConfiguredSection(item, section));
+
+export const buildLayoutSectionResult = (
+  ranked: MobileFeedItem[],
+  section: MobileLayoutSection,
+): MobileLayoutSectionResult => {
+  const sectionPool = resolveConfiguredSectionPool(ranked, section);
+
+  return {
+    id: section.id,
+    title: section.title,
+    subtitle: section.subtitle,
+    actionLabel: section.actionLabel,
+    destinationTab: section.destinationTab,
+    maxItems: section.maxItems,
+    items: sectionPool.slice(0, section.maxItems),
+    overflowCount: Math.max(0, sectionPool.length - section.maxItems),
+  };
+};
+
+const buildAllLayoutSections = (
+  ranked: MobileFeedItem[],
+  config: MobileAppConfig,
+): MobileFeedResponse['layoutSections'] => ({
+  home: config.layout.homeSections.map((section) => buildLayoutSectionResult(ranked, section)),
+  videos: config.layout.videoSections.map((section) => buildLayoutSectionResult(ranked, section)),
+  player: config.layout.playerSections.map((section) => buildLayoutSectionResult(ranked, section)),
+  library: config.layout.librarySections.map((section) => buildLayoutSectionResult(ranked, section)),
+});
 
 const buildRankScore = (item: MobileFeedItem, playCount: number): number => {
   const updatedAt = Date.parse(item.updatedAt || item.createdAt || '');
@@ -215,8 +269,8 @@ const loadPublishedContent = async (limit = 120): Promise<MobileFeedItem[]> => {
          u.display_name AS author_display_name
        FROM content_items c
        INNER JOIN app_users u ON u.id = c.author_id
-       WHERE c.visibility = 'published'
-       ORDER BY c.updated_at DESC, c.created_at DESC
+       WHERE c.visibility = 'published' AND c.deleted_at IS NULL
+       ORDER BY c.sort_order NULLS LAST, c.updated_at DESC, c.created_at DESC
        LIMIT $1`,
       [limit],
     );
@@ -228,6 +282,110 @@ const loadPublishedContent = async (limit = 120): Promise<MobileFeedItem[]> => {
   }
 
   return result.rows.map(toMobileFeedItem);
+};
+
+// Admin-curated sections must surface every published item tagged into them,
+// not just whatever survives loadPublishedContent's recency-capped LIMIT —
+// otherwise a section stops rendering the moment its tagged content ages out
+// of the top of that list, even though the tag is still there.
+const loadContentTaggedIntoSections = async (tokens: string[]): Promise<MobileFeedItem[]> => {
+  if (!tokens.length) {
+    return [];
+  }
+
+  let result;
+  try {
+    result = await pool.query<PublishedContentRow>(
+      `SELECT
+         c.id,
+         c.title,
+         c.description,
+         c.content_type,
+         c.media_url,
+         c.thumbnail_url,
+         c.source_kind,
+         c.channel_name,
+         c.duration_label,
+         c.app_sections,
+         c.tags,
+         c.created_at,
+         c.updated_at,
+         u.display_name AS author_display_name
+       FROM content_items c
+       INNER JOIN app_users u ON u.id = c.author_id
+       WHERE c.visibility = 'published' AND c.deleted_at IS NULL
+         AND EXISTS (
+           SELECT 1 FROM unnest(c.app_sections) AS tag
+           WHERE lower(trim(tag)) = ANY($1::text[])
+         )
+       ORDER BY c.sort_order NULLS LAST, c.updated_at DESC, c.created_at DESC`,
+      [tokens],
+    );
+  } catch (error) {
+    if (isMissingDatabaseStructureError(error) || isDatabaseConnectivityError(error)) {
+      return [];
+    }
+    throw error;
+  }
+
+  return result.rows.map(toMobileFeedItem);
+};
+
+// Every id/title token (normalized the same way matchesConfiguredSection
+// compares them) across all four screens' configured sections, so a single
+// extra query can back-fill any tagged content the capped pool missed.
+const collectSectionTokens = (config: MobileAppConfig): string[] => {
+  const sections = [
+    ...config.layout.homeSections,
+    ...config.layout.videoSections,
+    ...config.layout.playerSections,
+    ...config.layout.librarySections,
+  ];
+  const tokens = new Set<string>();
+  for (const section of sections) {
+    tokens.add(normalizeSectionToken(section.id));
+    tokens.add(normalizeSectionToken(section.title));
+  }
+  return [...tokens];
+};
+
+// The Home hero is admin-assigned (content.isFeatured), not algorithmically
+// ranked — if admin hasn't featured anything, this returns null and the
+// mobile app shows its existing empty-state hero rather than guessing.
+const loadFeaturedContent = async (): Promise<MobileFeedItem | null> => {
+  let result;
+  try {
+    result = await pool.query<PublishedContentRow>(
+      `SELECT
+         c.id,
+         c.title,
+         c.description,
+         c.content_type,
+         c.media_url,
+         c.thumbnail_url,
+         c.source_kind,
+         c.channel_name,
+         c.duration_label,
+         c.app_sections,
+         c.tags,
+         c.created_at,
+         c.updated_at,
+         u.display_name AS author_display_name
+       FROM content_items c
+       INNER JOIN app_users u ON u.id = c.author_id
+       WHERE c.visibility = 'published' AND c.deleted_at IS NULL AND c.is_featured = true
+       ORDER BY c.updated_at DESC
+       LIMIT 1`,
+    );
+  } catch (error) {
+    if (isMissingDatabaseStructureError(error) || isDatabaseConnectivityError(error)) {
+      return null;
+    }
+    throw error;
+  }
+
+  const row = result.rows[0];
+  return row ? toMobileFeedItem(row) : null;
 };
 
 const loadLiveSessions = async (limit = 24): Promise<MobileFeedItem[]> => {
@@ -324,9 +482,16 @@ const buildSponsoredRails = async (
     .filter((rail) => rail.items.length > 0);
 };
 
-export const buildMobileFeed = async (): Promise<MobileFeedResponse> => {
-  const [publishedContent, liveSessions, mostPlayedResult, youtubeResult, mobileConfigResult] = await Promise.all([
+interface UnifiedContentPool {
+  pool: MobileFeedItem[];
+  ranked: MobileFeedItem[];
+  trending: MobileFeedItem[];
+}
+
+const loadUnifiedContentPool = async (sectionTokens: string[] = []): Promise<UnifiedContentPool> => {
+  const [publishedContent, taggedContent, liveSessions, mostPlayedResult, youtubeResult] = await Promise.all([
     loadPublishedContent(),
+    loadContentTaggedIntoSections(sectionTokens),
     loadLiveSessions(),
     listMostPlayedContent({ limit: 12, windowDays: 90 }),
     fetchYouTubeVideos({ maxResults: 20 }).catch(() => ({
@@ -334,7 +499,6 @@ export const buildMobileFeed = async (): Promise<MobileFeedResponse> => {
       fetchedAt: new Date().toISOString(),
       items: [] as YouTubeVideoItem[],
     })),
-    getMobileAppConfig(),
   ]);
 
   const youtubeItems = youtubeResult.items.map(toYouTubeFeedItem);
@@ -363,9 +527,9 @@ export const buildMobileFeed = async (): Promise<MobileFeedResponse> => {
     } satisfies MobileFeedItem;
   });
 
-  const unifiedPool = dedupeItems([...liveSessions, ...publishedContent, ...youtubeItems, ...trending]);
+  const pool = dedupeItems([...liveSessions, ...publishedContent, ...taggedContent, ...youtubeItems, ...trending]);
 
-  const ranked = [...unifiedPool].sort((left, right) => {
+  const ranked = [...pool].sort((left, right) => {
     const scoreDiff =
       buildRankScore(right, playCountById.get(right.id) ?? 0) -
       buildRankScore(left, playCountById.get(left.id) ?? 0);
@@ -375,6 +539,18 @@ export const buildMobileFeed = async (): Promise<MobileFeedResponse> => {
 
     return Date.parse(right.updatedAt || right.createdAt) - Date.parse(left.updatedAt || left.createdAt);
   });
+
+  return { pool, ranked, trending };
+};
+
+export const buildMobileFeed = async (): Promise<MobileFeedResponse> => {
+  const mobileConfigResult = await getMobileAppConfig();
+  const sectionTokens = collectSectionTokens(mobileConfigResult.config);
+
+  const [{ pool: unifiedPool, ranked, trending }, featured] = await Promise.all([
+    loadUnifiedContentPool(sectionTokens),
+    loadFeaturedContent(),
+  ]);
 
   const live = unifiedPool.filter((item) => classifyRail(item) === 'live');
   const music = unifiedPool.filter((item) => classifyRail(item) === 'music');
@@ -401,11 +577,59 @@ export const buildMobileFeed = async (): Promise<MobileFeedResponse> => {
 
   return {
     generatedAt: new Date().toISOString(),
-    featured: ranked[0] ?? null,
+    featured,
     rails,
+    layoutSections: buildAllLayoutSections(ranked, mobileConfigResult.config),
     topCategories: rails
       .filter((rail) => !rail.id.startsWith('sponsored-'))
       .map((rail) => rail.title)
       .slice(0, 5),
+  };
+};
+
+const SECTIONS_BY_SCREEN = (config: MobileAppConfig): Record<MobileLayoutScreen, MobileLayoutSection[]> => ({
+  home: config.layout.homeSections,
+  videos: config.layout.videoSections,
+  player: config.layout.playerSections,
+  library: config.layout.librarySections,
+});
+
+export const getMobileSectionDetail = async (params: {
+  screen: MobileLayoutScreen;
+  sectionId: string;
+  page: number;
+  limit: number;
+}): Promise<MobileSectionDetailResponse | null> => {
+  const mobileConfigResult = await getMobileAppConfig();
+  const section = SECTIONS_BY_SCREEN(mobileConfigResult.config)[params.screen].find(
+    (candidate) => candidate.id === params.sectionId,
+  );
+  if (!section) {
+    return null;
+  }
+
+  const { ranked } = await loadUnifiedContentPool([
+    normalizeSectionToken(section.id),
+    normalizeSectionToken(section.title),
+  ]);
+
+  const sectionPool = resolveConfiguredSectionPool(ranked, section);
+  const offset = (params.page - 1) * params.limit;
+  const items = sectionPool.slice(offset, offset + params.limit);
+
+  return {
+    section: {
+      id: section.id,
+      title: section.title,
+      subtitle: section.subtitle,
+      actionLabel: section.actionLabel,
+      destinationTab: section.destinationTab,
+      maxItems: section.maxItems,
+    },
+    items,
+    page: params.page,
+    limit: params.limit,
+    total: sectionPool.length,
+    hasMore: offset + items.length < sectionPool.length,
   };
 };

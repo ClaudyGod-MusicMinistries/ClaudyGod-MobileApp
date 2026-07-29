@@ -23,10 +23,29 @@ interface MobileFeedApiRail {
   items: MobileFeedApiItem[];
 }
 
+interface MobileFeedApiLayoutSection {
+  id: string;
+  title: string;
+  subtitle: string;
+  actionLabel: string;
+  destinationTab: string;
+  maxItems: number;
+  items: MobileFeedApiItem[];
+  overflowCount: number;
+}
+
+interface MobileFeedApiLayoutSections {
+  home: MobileFeedApiLayoutSection[];
+  videos: MobileFeedApiLayoutSection[];
+  player: MobileFeedApiLayoutSection[];
+  library: MobileFeedApiLayoutSection[];
+}
+
 interface MobileFeedApiResponse {
   generatedAt: string;
   featured: MobileFeedApiItem | null;
   rails: MobileFeedApiRail[];
+  layoutSections?: MobileFeedApiLayoutSections;
   topCategories: string[];
 }
 
@@ -129,6 +148,19 @@ export interface FeedCardItem {
   playAsAudio?: boolean;
 }
 
+export interface FeedLayoutSection {
+  id: string;
+  title: string;
+  subtitle: string;
+  actionLabel: string;
+  destinationTab: string;
+  maxItems: number;
+  items: FeedCardItem[];
+  overflowCount: number;
+}
+
+export type LayoutScreen = 'home' | 'videos' | 'player' | 'library';
+
 export interface FeedBundle {
   featured: FeedCardItem | null;
   music: FeedCardItem[];
@@ -139,11 +171,23 @@ export interface FeedBundle {
   announcements: FeedCardItem[];
   mostPlayed: FeedCardItem[];
   recent: FeedCardItem[];
+  // Real per-user play history only (never a generic "latest releases"
+  // substitute) — empty when the signed-in user hasn't played anything yet,
+  // so "Continue listening" can honestly hide instead of showing filler.
+  continueListening: FeedCardItem[];
   recommendations: FeedCardItem[];
   topCategories: string[];
+  layoutSections: Record<LayoutScreen, FeedLayoutSection[]>;
 }
 
 const FALLBACK_IMAGE = DEFAULT_CONTENT_IMAGE_URI;
+
+const EMPTY_LAYOUT_SECTIONS: Record<LayoutScreen, FeedLayoutSection[]> = {
+  home: [],
+  videos: [],
+  player: [],
+  library: [],
+};
 
 const DEFAULT_BUNDLE: FeedBundle = {
   featured: null,
@@ -155,8 +199,10 @@ const DEFAULT_BUNDLE: FeedBundle = {
   announcements: [],
   mostPlayed: [],
   recent: [],
+  continueListening: [],
   recommendations: [],
   topCategories: ['All', 'Music', 'Videos', 'Live', 'Playlists'],
+  layoutSections: EMPTY_LAYOUT_SECTIONS,
 };
 
 type QueryValue = string | number | boolean | null | undefined;
@@ -378,6 +424,22 @@ export async function fetchSearchResults(query: string, type?: ContentType): Pro
   }
 }
 
+interface TrendingSearchesResponse {
+  items: { query: string; count: number }[];
+}
+
+// Real usage, not a static list: aggregated from the same search log every
+// search already writes to server-side (services/api search.service.ts
+// getTrendingSearches). Used for the search screen's no-query state.
+export async function fetchTrendingSearches(limit = 8): Promise<string[]> {
+  try {
+    const response = await apiFetch<TrendingSearchesResponse>(`/v1/search/trending?limit=${limit}`);
+    return response.items.map((item) => item.query);
+  } catch {
+    return [];
+  }
+}
+
 async function fetchYouTubeFeed(): Promise<{
   videos: FeedCardItem[];
   music: FeedCardItem[];
@@ -435,10 +497,13 @@ async function fetchMostPlayed(): Promise<FeedCardItem[]> {
   }
 }
 
-async function fetchMeRecentlyPlayed(): Promise<FeedCardItem[]> {
+// Exported: also used by useLocalContent.ts to source the Library screen's
+// "History" tab for signed-in users, which wants more items than the home
+// feed's internal limit of 12.
+export async function fetchMeRecentlyPlayed(limit = 12): Promise<FeedCardItem[]> {
   try {
     const response = await apiFetchWithMobileSession<EngagementFeedResponse>(
-      '/v1/me/engagement/recently-played?limit=12',
+      `/v1/me/engagement/recently-played?limit=${limit}`,
     );
     return response.items.map(normalizeFeedItem);
   } catch {
@@ -518,6 +583,33 @@ function getSponsoredItems(rails: { id: string; items: FeedCardItem[] }[]): Feed
   return sponsoredItems;
 }
 
+function normalizeLayoutSections(
+  layoutSections: MobileFeedApiLayoutSections | undefined,
+): Record<LayoutScreen, FeedLayoutSection[]> {
+  if (!layoutSections) {
+    return EMPTY_LAYOUT_SECTIONS;
+  }
+
+  const normalizeScreen = (sections: MobileFeedApiLayoutSection[]): FeedLayoutSection[] =>
+    sections.map((section) => ({
+      id: section.id,
+      title: section.title,
+      subtitle: section.subtitle,
+      actionLabel: section.actionLabel,
+      destinationTab: section.destinationTab,
+      maxItems: section.maxItems,
+      items: section.items.map(normalizeFeedItem),
+      overflowCount: section.overflowCount,
+    }));
+
+  return {
+    home: normalizeScreen(layoutSections.home ?? []),
+    videos: normalizeScreen(layoutSections.videos ?? []),
+    player: normalizeScreen(layoutSections.player ?? []),
+    library: normalizeScreen(layoutSections.library ?? []),
+  };
+}
+
 function bundleFromApiFeed(response: MobileFeedApiResponse): FeedBundle {
   const apiRails: MobileFeedApiRail[] = Array.isArray(response.rails) ? response.rails : [];
 
@@ -561,6 +653,46 @@ function bundleFromApiFeed(response: MobileFeedApiResponse): FeedBundle {
       Array.isArray(response.topCategories) && response.topCategories.length > 0
         ? response.topCategories
         : DEFAULT_BUNDLE.topCategories,
+    layoutSections: normalizeLayoutSections(response.layoutSections),
+  };
+}
+
+interface MobileSectionDetailApiResponse {
+  section: {
+    id: string;
+    title: string;
+    subtitle: string;
+    actionLabel: string;
+    destinationTab: string;
+    maxItems: number;
+  };
+  items: MobileFeedApiItem[];
+  page: number;
+  limit: number;
+  total: number;
+  hasMore: boolean;
+}
+
+export interface MobileSectionDetail {
+  section: MobileSectionDetailApiResponse['section'];
+  items: FeedCardItem[];
+  page: number;
+  limit: number;
+  total: number;
+  hasMore: boolean;
+}
+
+export async function fetchMobileSectionDetail(
+  sectionId: string,
+  screen: LayoutScreen,
+  page = 1,
+  limit = 20,
+): Promise<MobileSectionDetail> {
+  const qs = buildQueryString({ screen, page, limit });
+  const response = await apiFetch<MobileSectionDetailApiResponse>(`/v1/mobile/sections/${encodeURIComponent(sectionId)}?${qs}`);
+  return {
+    ...response,
+    items: response.items.map(normalizeFeedItem),
   };
 }
 
@@ -658,7 +790,7 @@ export async function fetchFeedBundle(): Promise<FeedBundle> {
 
   return {
     ...baseBundle,
-    recent: recentlyPlayed.length ? recentlyPlayed : baseBundle.recent,
+    continueListening: recentlyPlayed,
     mostPlayed: personalizedMostPlayed.length ? personalizedMostPlayed : baseBundle.mostPlayed,
     recommendations,
   };
@@ -675,7 +807,9 @@ export function emptyFeedBundle(): FeedBundle {
     announcements: [],
     mostPlayed: [],
     recent: [],
+    continueListening: [],
     recommendations: [],
     topCategories: [...DEFAULT_BUNDLE.topCategories],
+    layoutSections: { home: [], videos: [], player: [], library: [] },
   };
 }

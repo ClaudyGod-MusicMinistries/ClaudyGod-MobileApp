@@ -3,18 +3,15 @@ import { ref } from 'vue';
 import {
   getAppConfig,
   updateAppConfig,
-  getWordOfDay,
-  updateWordOfDay,
   listWordsOfDay,
   createWordOfDay,
   updateWordOfDayById,
   deleteWordOfDay,
 } from '@/api/config';
-import type { AppConfig, WordOfDay } from '@/api/types';
+import type { AppConfig, WordOfDay, WordOfDayInput } from '@/api/types';
 
 export const useConfigStore = defineStore('config', () => {
   const appConfig = ref<AppConfig | null>(null);
-  const wordOfDay = ref<WordOfDay | null>(null);
   const wordSchedule = ref<WordOfDay[]>([]);
   const isLoading = ref(false);
   const isSaving = ref(false);
@@ -41,24 +38,6 @@ export const useConfigStore = defineStore('config', () => {
     }
   }
 
-  async function fetchWordOfDay(): Promise<void> {
-    isLoading.value = true;
-    try {
-      wordOfDay.value = await getWordOfDay();
-    } finally {
-      isLoading.value = false;
-    }
-  }
-
-  async function saveWordOfDay(input: WordOfDay): Promise<void> {
-    isSaving.value = true;
-    try {
-      wordOfDay.value = await updateWordOfDay(input);
-    } finally {
-      isSaving.value = false;
-    }
-  }
-
   async function fetchWordSchedule(): Promise<void> {
     isLoading.value = true;
     error.value = null;
@@ -72,19 +51,19 @@ export const useConfigStore = defineStore('config', () => {
     }
   }
 
-  async function addWordEntry(input: Omit<WordOfDay, 'id' | 'createdAt' | 'updatedAt'>): Promise<WordOfDay> {
+  async function addWordEntry(input: WordOfDayInput): Promise<WordOfDay> {
     const created = await createWordOfDay(input);
     wordSchedule.value = [...wordSchedule.value, created].sort(
-      (a, b) => new Date(a.publishedDate).getTime() - new Date(b.publishedDate).getTime(),
+      (a, b) => new Date(a.messageDate).getTime() - new Date(b.messageDate).getTime(),
     );
     return created;
   }
 
-  async function editWordEntry(id: string, input: Omit<WordOfDay, 'id' | 'createdAt' | 'updatedAt'>): Promise<WordOfDay> {
+  async function editWordEntry(id: string, input: WordOfDayInput): Promise<WordOfDay> {
     const updated = await updateWordOfDayById(id, input);
     wordSchedule.value = wordSchedule.value
       .map((w) => (w.id === id ? updated : w))
-      .sort((a, b) => new Date(a.publishedDate).getTime() - new Date(b.publishedDate).getTime());
+      .sort((a, b) => new Date(a.messageDate).getTime() - new Date(b.messageDate).getTime());
     return updated;
   }
 
@@ -94,10 +73,9 @@ export const useConfigStore = defineStore('config', () => {
   }
 
   return {
-    appConfig, wordOfDay, wordSchedule,
+    appConfig, wordSchedule,
     isLoading, isSaving, error,
     fetchAppConfig, saveAppConfig,
-    fetchWordOfDay, saveWordOfDay,
     fetchWordSchedule, addWordEntry, editWordEntry, removeWordEntry,
   };
 });

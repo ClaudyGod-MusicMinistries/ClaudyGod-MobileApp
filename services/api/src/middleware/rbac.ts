@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
-import { ForbiddenError, UnauthorizedError } from '../lib/errors.js';
-import { hasMinRole, ROLE_HIERARCHY } from '../modules/auth/auth.types.js';
-import type { UserRole } from '../modules/auth/auth.types.js';
+import { ForbiddenError, UnauthorizedError } from '../lib/errors';
+import { hasMinRole, ROLE_HIERARCHY } from '../modules/auth/auth.types';
+import type { UserRole } from '../modules/auth/auth.types';
 
 export function requireRole(minRole: UserRole) {
   return (req: Request, _res: Response, next: NextFunction): void => {

@@ -90,6 +90,7 @@ export const createContentSchema = z
     tags: optionalStringArraySchema(20, 40),
     metadata: optionalJsonRecordSchema,
     visibility: visibilitySchema.default('draft'),
+    isFeatured: z.boolean().optional(),
   })
   .strict()
   .superRefine((value, ctx) => {
@@ -183,6 +184,7 @@ export const updateContentSchema = z
     tags: optionalStringArraySchema(20, 40),
     metadata: optionalJsonRecordSchema,
     visibility: visibilitySchema.optional(),
+    isFeatured: z.boolean().optional(),
   })
   .strict()
   .refine((value) => Object.keys(value).length > 0, { message: 'At least one field is required' })
@@ -197,15 +199,33 @@ export const updateContentSchema = z
     }
   });
 
+const contentSortFieldSchema = z.enum(['createdAt', 'updatedAt', 'title', 'sortOrder']);
+const sortDirSchema = z.enum(['asc', 'desc']);
+
 export const listContentQuerySchema = z
   .object({
     page: z.coerce.number().int().min(1).default(1),
-    limit: z.coerce.number().int().min(1).max(100).default(20),
+    limit: z.coerce.number().int().min(1).max(100).optional(),
+    pageSize: z.coerce.number().int().min(1).max(100).optional(),
     type: contentFilterTypeSchema.optional(),
     status: visibilitySchema.optional(),
     visibility: visibilitySchema.optional(),
+    section: optionalTrimmedSearchSchema,
     search: optionalTrimmedSearchSchema,
     updatedAfter: optionalUpdatedAfterSchema,
+    sort: contentSortFieldSchema.optional(),
+    sortDir: sortDirSchema.optional(),
+  })
+  .strict()
+  .transform((value) => ({
+    ...value,
+    limit: value.pageSize ?? value.limit ?? 20,
+  }));
+
+export const trendingContentQuerySchema = z
+  .object({
+    period: z.enum(['hourly', 'daily', 'weekly']).default('daily'),
+    limit: z.coerce.number().int().min(1).max(50).default(20),
   })
   .strict();
 
@@ -227,6 +247,29 @@ export const updateVisibilitySchema = z
   })
   .strict();
 
+export const bulkUpdateVisibilitySchema = z
+  .object({
+    ids: z.array(z.string().uuid()).min(1).max(200),
+    visibility: visibilitySchema,
+  })
+  .strict();
+
+export const reorderContentSchema = z
+  .object({
+    items: z
+      .array(
+        z
+          .object({
+            id: z.string().uuid(),
+            sortOrder: z.number().int(),
+          })
+          .strict(),
+      )
+      .min(1)
+      .max(200),
+  })
+  .strict();
+
 export const assignContentSectionsSchema = z
   .object({
     appSections: z.array(sectionNameSchema).max(12),
@@ -236,5 +279,6 @@ export const assignContentSectionsSchema = z
 export const updateContentRequestStatusSchema = z
   .object({
     status: contentRequestStatusSchema,
+    adminNotes: z.preprocess((value) => (typeof value === 'string' && value.trim() === '' ? undefined : value), z.string().trim().max(2000).optional()) as unknown as z.ZodType<string | undefined>,
   })
   .strict();

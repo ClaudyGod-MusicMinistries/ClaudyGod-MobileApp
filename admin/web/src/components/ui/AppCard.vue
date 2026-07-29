@@ -1,5 +1,5 @@
 <template>
-  <div :class="['border rounded-2xl backdrop-blur-xs transition-all duration-150', toneClass, props.class]">
+  <div :class="['app-card border rounded-lg transition-colors duration-150', toneClass, props.class]">
     <slot />
   </div>
 </template>
@@ -15,6 +15,6 @@ const props = withDefaults(defineProps<{
 const toneClass = computed(() => ({
   default: 'bg-surface border-border',
   strong: 'bg-surface-strong border-border-strong',
-  subtle: 'bg-white/3 border-border',
+  subtle: 'bg-surface-hover border-border',
 }[props.tone]));
 </script>

@@ -1,14 +1,13 @@
 ﻿<template>
   <div class="space-y-5">
-    <div class="flex items-center justify-between">
-      <h2 class="text-base font-bold text-ink">System health</h2>
+    <PageHeader icon="system" title="System health">
       <AppButton variant="secondary" size="sm" :loading="isLoading" @click="refresh">
         <template #icon-left>
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
         </template>
         Refresh
       </AppButton>
-    </div>
+    </PageHeader>
 
     <div v-if="isLoading && !health" class="flex items-center justify-center py-20">
       <AppSpinner size="lg" />
@@ -83,6 +82,7 @@ import AppButton from '@/components/ui/AppButton.vue';
 import AppSpinner from '@/components/ui/AppSpinner.vue';
 import AppEmptyState from '@/components/ui/AppEmptyState.vue';
 import StatusBadge from '@/components/shared/StatusBadge.vue';
+import PageHeader from '@/components/shared/PageHeader.vue';
 
 const health = ref<HealthCheck | null>(null);
 const isLoading = ref(false);

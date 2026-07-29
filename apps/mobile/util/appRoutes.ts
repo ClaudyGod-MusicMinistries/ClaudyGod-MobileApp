@@ -1,5 +1,7 @@
 export const APP_ROUTES = {
   landing: '/',
+  // Reserved for the planned account release. These paths are not routable until
+  // matching files are intentionally added under app/ and the full flow is enabled.
   auth: {
     signIn: '/sign-in',
     signUp: '/sign-up',
@@ -10,6 +12,9 @@ export const APP_ROUTES = {
   },
   live: {
     detail: '/live/[sessionId]',
+  },
+  section: {
+    detail: '/section/[sectionId]',
   },
   tabs: {
     home: '/(tabs)/home',

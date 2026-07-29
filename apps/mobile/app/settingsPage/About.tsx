@@ -76,6 +76,7 @@ export default function About() {
     <SettingsScaffold
       title="About ClaudyGod"
       subtitle="The mission, experience, and ways to connect."
+      icon="info-outline"
       hero={
         <FadeIn>
           <SurfaceCard tone="strong" style={styles.heroPad}>

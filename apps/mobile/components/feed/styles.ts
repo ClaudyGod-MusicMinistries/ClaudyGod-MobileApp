@@ -1,0 +1,342 @@
+import { makeStyles } from '../../styles/makeStyles';
+
+// Shared style factory for every components/feed/* file — kept as one factory
+// (rather than one per file) since these components were split out of a single
+// PremiumContent.tsx and the visual language across them is one system.
+export const useFeedStyles = makeStyles((theme) => ({
+  // PremiumPage
+  pageScroll:         { flex: 1, backgroundColor: 'transparent' },
+  pageContent:        { paddingTop: theme.layout.headerVerticalPadding, gap: 24 },
+  headerLeft:         { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 },
+  headerTitle:        { color: theme.colors.text, fontWeight: '700', letterSpacing: 0 },
+  headerSubtitle:     { color: theme.colors.textSecondary, marginTop: 2, maxWidth: 720, fontSize: 12 },
+  headerRight:        { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0 },
+
+  // NavIconButton
+  navIconBtn: {
+    borderRadius: theme.radius.md,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: theme.colors.subtleFillMed,
+    borderWidth: 1,
+  },
+
+  // PremiumHero
+  heroContainer: {
+    borderRadius: theme.radius.xl,
+    overflow: 'hidden',
+    backgroundColor: theme.colors.surface,
+  },
+  heroBadge: {
+    alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 5,
+    borderRadius: 999, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 4,
+    marginBottom: 10,
+  },
+  heroBadgeDot:      { width: 6, height: 6, borderRadius: 3 },
+  heroMetaText:      { color: 'rgba(255,255,255,0.52)', fontSize: 11, marginTop: 5, letterSpacing: 0.2 },
+  heroSubtitle:      { color: 'rgba(255,255,255,0.76)', marginTop: 6, maxWidth: 520, lineHeight: 20 },
+  heroButtons:       { flexDirection: 'row', gap: 8, marginTop: 14 },
+
+  // PremiumHero — empty/no-item state (compact, icon-led, single cohesive card —
+  // deliberately NOT the tall photo-hero shell, which needs a photo to work).
+  heroEmptyCard: {
+    borderRadius: theme.radius.xl,
+    overflow: 'hidden',
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    alignItems: 'center',
+    paddingVertical: 32,
+    paddingHorizontal: 24,
+  },
+  heroEmptyCircle1: { position: 'absolute', top: -50, right: -50, width: 200, height: 200, borderRadius: 100, backgroundColor: `${theme.colors.primary}16` },
+  heroEmptyCircle2: { position: 'absolute', bottom: -60, left: -40, width: 160, height: 160, borderRadius: 80, backgroundColor: `${theme.colors.primary}0D` },
+  // Shadow on the outer wrap, gradient-clip on the inner circle — same
+  // overflow:hidden-clips-shadow reason as artworkShadowWrap above.
+  heroEmptyIconShadowWrap: {
+    width: 72, height: 72, borderRadius: 36,
+    marginBottom: 18,
+    shadowColor: theme.colors.primary,
+    shadowOpacity: 0.36, shadowRadius: 18, shadowOffset: { width: 0, height: 8 },
+    elevation: 8,
+  },
+  heroEmptyIconBox: {
+    width: 72, height: 72, borderRadius: 36,
+    alignItems: 'center', justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  heroEmptyTitle:    { color: theme.colors.text, textAlign: 'center' },
+  heroEmptySubtitle: { color: theme.colors.textSecondary, textAlign: 'center', marginTop: 6, maxWidth: 320 },
+  heroEmptyCtaRow:   { flexDirection: 'row', gap: 10, marginTop: 18, justifyContent: 'center' },
+
+  // QuickActionGrid
+  quickCompactItem:  { alignItems: 'center', gap: 8, width: 68 },
+  quickCompactCircle: {
+    width: 58, height: 58, borderRadius: 29,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: theme.colors.subtleFill,
+    borderWidth: 1, borderColor: theme.colors.border,
+  },
+  quickCompactLabel: { color: theme.colors.text, fontSize: 11, fontWeight: '500', textAlign: 'center' },
+  quickWideCard: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', gap: 11,
+    paddingHorizontal: 14, paddingVertical: 13,
+    borderRadius: theme.radius.card, borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.subtleFill,
+  },
+  quickWideLabel:    { color: theme.colors.text, fontSize: 13.5, fontWeight: '600' },
+  quickWideHint:     { color: theme.colors.textMuted, marginTop: 2 },
+
+  // ContentCard — bigger, fewer per row, real depth instead of a flat tile.
+  // Shadow lives on the outer wrap (no overflow) so it isn't clipped by the
+  // inner container's overflow:hidden, which is what actually rounds the image.
+  artworkShadowWrap: {
+    borderRadius: theme.radius.card,
+    shadowColor: '#000000',
+    shadowOpacity: 0.14, shadowRadius: 8, shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
+    borderWidth: 1, borderColor: theme.colors.border,
+  },
+  artworkContainer: {
+    borderRadius: theme.radius.card, overflow: 'hidden',
+    backgroundColor: theme.colors.surfaceAlt,
+  },
+  cardPlayBadge: {
+    position: 'absolute', top: 10, right: 10,
+    width: 32, height: 32, borderRadius: 16,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.42)',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.22)',
+  },
+  liveBadge: {
+    position: 'absolute', top: 10, left: 10,
+    borderRadius: 999, backgroundColor: 'rgba(239,68,68,0.94)',
+    paddingHorizontal: 9, paddingVertical: 4,
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    shadowColor: '#EF4444', shadowOpacity: 0.4, shadowRadius: 6, shadowOffset: { width: 0, height: 2 },
+  },
+  liveBadgeDot:    { width: 6, height: 6, borderRadius: 3, backgroundColor: '#FFFFFF' },
+  liveBadgeText:   { color: '#FFFFFF', fontSize: 10, fontWeight: '700', letterSpacing: 0.5 },
+  durationPill: {
+    position: 'absolute', right: 10, bottom: 10,
+    borderRadius: 999, backgroundColor: 'rgba(0,0,0,0.72)',
+    paddingHorizontal: 8, paddingVertical: 3,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)',
+  },
+  durationText:    { color: '#FFFFFF', fontSize: 10, fontWeight: '600' },
+  cardTextArea:    { gap: 3, paddingTop: 3 },
+  cardTitleRow:    { flexDirection: 'row', alignItems: 'flex-start', gap: 4 },
+  cardTitle:       { color: theme.colors.text, fontSize: 14, lineHeight: 19, fontWeight: '700', letterSpacing: 0, flex: 1 },
+  cardMoreBtn:     { paddingTop: 2 },
+  cardSubtitle:    { color: theme.colors.textMuted, fontSize: 12.5 },
+
+  // ContentRail
+  railGap:         { gap: 12 },
+  railHeader:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  railTitleWrap:   { flex: 1, minWidth: 0 },
+  railTitle:       { color: theme.colors.text, fontSize: 17, fontWeight: '800', letterSpacing: 0 },
+  railSubtitle:    { color: theme.colors.textMuted, marginTop: 3, fontSize: 12.5 },
+  railActionBtn:   { flexDirection: 'row', alignItems: 'center', gap: 3, paddingVertical: 6, paddingLeft: 12 },
+  railActionText:  { color: theme.colors.primary, fontSize: 12.5, fontWeight: '600' },
+
+  // InlineEmpty
+  inlineEmpty: {
+    minHeight: 96, borderRadius: 12,
+    backgroundColor: theme.colors.surfaceAlt,
+    padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12,
+  },
+  inlineEmptyIcon: {
+    width: 36, height: 36, borderRadius: 18,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: theme.colors.primarySurface,
+  },
+  inlineEmptyTitle:   { color: theme.colors.text },
+  inlineEmptyMessage: { color: theme.colors.textSecondary, marginTop: 3 },
+
+  // ContentList
+  listTitle:     { color: theme.colors.text, marginBottom: 12, fontWeight: '700', letterSpacing: 0 },
+  listItemThumb: {
+    borderRadius: 12, overflow: 'hidden',
+    backgroundColor: theme.colors.surfaceAlt, flexShrink: 0,
+  },
+  listItemImg:    { width: '100%', height: '100%' },
+  listDuration: {
+    position: 'absolute', right: 5, bottom: 5, borderRadius: 5,
+    backgroundColor: 'rgba(0,0,0,0.76)', paddingHorizontal: 5, paddingVertical: 2,
+  },
+  listDurationText:  { color: '#FFFFFF', fontSize: 9 },
+  listItemTitle:     { color: theme.colors.text, lineHeight: 18, fontWeight: '600' },
+  listItemSubtitle:  { color: theme.colors.textSecondary, marginTop: 4 },
+
+  // CompactContentRow
+  compactRow:        { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 11 },
+  compactThumb: {
+    width: 56, height: 56, borderRadius: 12,
+    overflow: 'hidden', backgroundColor: theme.colors.surfaceAlt, flexShrink: 0,
+  },
+  compactTitle:      { color: theme.colors.text, fontWeight: '600' },
+  compactSubtitle:   { color: theme.colors.textSecondary, marginTop: 3 },
+
+  // EmptyState
+  emptyOuter: { alignSelf: 'stretch' },
+  emptyContainer: {
+    alignItems: 'flex-start', gap: 14,
+    paddingVertical: 18, paddingHorizontal: 18,
+    borderRadius: theme.radius.card,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1, borderColor: theme.colors.border,
+  },
+  emptyContainerWide: { flexDirection: 'row', alignItems: 'center', paddingVertical: 20, paddingHorizontal: 22 },
+  emptyIcon: {
+    width: 46, height: 46, borderRadius: theme.radius.md,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: theme.colors.primarySurface,
+    borderWidth: 1, borderColor: theme.colors.primaryBorder,
+    flexShrink: 0,
+  },
+  emptyCopy: { flex: 1, minWidth: 0 },
+  emptyTitle:    { color: theme.colors.text, fontSize: 15, fontWeight: '700' },
+  emptyMessage:  { color: theme.colors.textMuted, marginTop: 4, lineHeight: 19, fontSize: 13, maxWidth: 520 },
+  emptyActions: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0 },
+  emptyActionsStacked: { alignSelf: 'stretch', flexWrap: 'wrap' },
+  emptyAction: {
+    minHeight: 40, paddingHorizontal: 14, borderRadius: theme.radius.md,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7,
+  },
+  emptyActionPrimary: { backgroundColor: theme.colors.primary },
+  emptyActionSecondary: { backgroundColor: theme.colors.subtleFill, borderWidth: 1, borderColor: theme.colors.border },
+  emptyActionPrimaryText: { color: theme.colors.onPrimary, fontWeight: '700' },
+  emptyActionSecondaryText: { color: theme.colors.text, fontWeight: '600' },
+
+  // TrendingList
+  trendingHeader:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  trendingTitle:    { color: theme.colors.text, fontSize: 18, fontWeight: '800', letterSpacing: 0 },
+  trendingActionBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 3,
+    paddingHorizontal: 10, paddingVertical: 5,
+    borderRadius: theme.radius.pill,
+    backgroundColor: theme.colors.subtleFill,
+    borderWidth: 1, borderColor: theme.colors.border,
+  },
+  trendingActionText: { color: theme.colors.primary, fontSize: 11.5, fontWeight: '600' },
+  trendingRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 12,
+    borderTopWidth: 1, borderTopColor: theme.colors.border,
+  },
+  trendingFirstRow:  { borderTopWidth: 0 },
+  trendingArtwork: {
+    width: 58, height: 58, borderRadius: 12,
+    overflow: 'hidden', backgroundColor: theme.colors.surfaceAlt, flexShrink: 0,
+  },
+  trendingItemTitle:    { color: theme.colors.text, fontWeight: '600' },
+  trendingItemSubtitle: { color: theme.colors.textSecondary, marginTop: 3 },
+  trendingPlayBtn: {
+    width: 32, height: 32, borderRadius: 16,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: theme.colors.primarySurface,
+    borderWidth: 1, borderColor: theme.colors.primaryBorder,
+  },
+
+  // FeaturedSectionCard
+  featuredHeader:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  featuredActionBtn: { flexDirection: 'row', alignItems: 'center', gap: 2, paddingVertical: 4, paddingLeft: 10 },
+  featuredActionText: { color: theme.colors.primary, fontSize: 13, fontWeight: '600' },
+  featuredCardShell: { borderRadius: 16, overflow: 'hidden', backgroundColor: theme.colors.surfaceAlt },
+  featuredLiveBadge: {
+    position: 'absolute', top: 14, left: 14,
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5,
+  },
+  featuredLiveDot:  { width: 6, height: 6, borderRadius: 3, backgroundColor: '#fff' },
+  featuredLiveText: { color: '#fff', fontSize: 10, fontWeight: '700', letterSpacing: 0.5 },
+  featuredPlayRow:  { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  featuredPlayBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8,
+  },
+  featuredSubText:  { color: 'rgba(255,255,255,0.55)', fontSize: 12 },
+
+  // StreamingBanner
+  streamingCard: {
+    borderRadius: 12, overflow: 'hidden',
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1, borderColor: theme.colors.border,
+  },
+  streamingInner:   { flexDirection: 'row', alignItems: 'stretch' },
+  streamingBadge: {
+    alignSelf: 'flex-start', borderRadius: 999,
+    backgroundColor: theme.colors.primarySurface,
+    borderWidth: 1, borderColor: theme.colors.primaryBorder,
+    paddingHorizontal: 9, paddingVertical: 3,
+  },
+  streamingBadgeText: { color: theme.colors.primary, fontSize: 9.5, fontWeight: '700', letterSpacing: 1 },
+  streamingSubtitle:  { color: theme.colors.textSecondary, lineHeight: 17 },
+  streamingCtaBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    paddingHorizontal: 12, paddingVertical: 6,
+    borderRadius: 999, backgroundColor: theme.colors.primary,
+  },
+  streamingCtaText: { color: theme.colors.textInverse, fontSize: 12, fontWeight: '700' },
+
+  // GreetingBanner
+  greetingRow:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 2 },
+  greetingLeft:      { gap: 4, flex: 1, minWidth: 0 },
+  greetingTitle:     { color: theme.colors.text, fontSize: 23, fontWeight: '800', letterSpacing: 0, lineHeight: 30 },
+  greetingDate:      { color: theme.colors.textMuted, fontSize: 13, fontWeight: '400', lineHeight: 19 },
+  greetingNotifBtn: {
+    width: 40, height: 40, borderRadius: 20,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: theme.colors.subtleFill,
+    borderWidth: 1, borderColor: theme.colors.border,
+    flexShrink: 0, marginLeft: 12,
+  },
+
+  // ContentShortcuts
+  shortcutItem:      { alignItems: 'center', gap: 8, paddingHorizontal: 2, minWidth: 70 },
+  shortcutLabel:     { color: theme.colors.textSecondary, fontSize: 11.5, fontWeight: '500', textAlign: 'center' },
+
+  // LiveNowBanner
+  liveCard:          { borderRadius: 12, overflow: 'hidden', backgroundColor: theme.colors.surface },
+  liveBgImage:       { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0.10 },
+  liveIndicator: {
+    width: 42, height: 42, borderRadius: 21,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: theme.colors.dangerSurface,
+    borderWidth: 1, borderColor: theme.colors.dangerBorder,
+  },
+  liveDot:           { width: 12, height: 12, borderRadius: 6, backgroundColor: theme.colors.danger },
+  liveLabel:         { color: theme.colors.danger, fontSize: 10, fontWeight: '700', letterSpacing: 1.4, textTransform: 'uppercase', marginBottom: 5 },
+  liveItemTitle:     { color: theme.colors.text, fontWeight: '700' },
+  liveItemSubtitle:  { color: theme.colors.textSecondary, marginTop: 4, fontSize: 12 },
+  liveJoinBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: 16, paddingVertical: 10,
+    borderRadius: 999, backgroundColor: theme.colors.danger,
+  },
+  liveJoinText:      { color: theme.colors.onPrimary, fontSize: 12.5, fontWeight: '700' },
+
+  // WordOfDayCard
+  wordCard: {
+    borderRadius: theme.radius.xl, overflow: 'hidden', borderWidth: 1,
+    borderColor: theme.colors.warningBorder,
+    backgroundColor: theme.colors.warningSurface,
+  },
+  wordAccentBar:     { position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, backgroundColor: theme.colors.warning },
+  wordContent:       { padding: 18, paddingLeft: 20 },
+  wordLabelRow:      { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 10 },
+  wordLabel:         { color: theme.colors.warning, fontWeight: '700', letterSpacing: 0.9, textTransform: 'uppercase', fontSize: 10 },
+  wordTitle:         { color: theme.colors.text, fontWeight: '700', fontSize: 16, lineHeight: 23 },
+  wordBody:          { color: theme.colors.textSecondary, marginTop: 8, lineHeight: 19, fontSize: 13 },
+  wordReadMore:      { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 12 },
+  wordReadMoreText:  { color: theme.colors.primary, fontWeight: '600' },
+
+  // SectionLabel
+  sectionLabelRow:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  sectionLabelTitle: { color: theme.colors.text, fontSize: 17, fontWeight: '700', letterSpacing: 0, flex: 1 },
+  sectionActionBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 3,
+    paddingVertical: 6, paddingLeft: 12, paddingRight: 2,
+  },
+  sectionActionText: { color: theme.colors.primary, fontSize: 12.5, fontWeight: '600' },
+  sectionSubtitle:   { color: theme.colors.textMuted, marginTop: 3, fontSize: 12.5 },
+}));

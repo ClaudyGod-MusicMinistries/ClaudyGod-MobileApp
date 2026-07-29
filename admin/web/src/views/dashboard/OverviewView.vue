@@ -1,19 +1,40 @@
 ﻿<template>
-  <div class="space-y-6">
-    <!-- Greeting -->
-    <div class="mb-2">
-      <h1 class="text-2xl font-black text-ink tracking-tight">{{ greeting }}, {{ auth.user?.displayName || 'there' }}.</h1>
-      <p class="text-sm text-ink-muted mt-1">Here's what's happening across your ministry today.</p>
+  <div class="space-y-5">
+    <div class="flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-primary">Operations overview</p>
+        <h2 class="text-xl font-bold text-ink mt-1">{{ greeting }}, {{ firstName }}</h2>
+        <p class="text-sm text-ink-muted mt-1">Monitor publishing, audience activity, and items requiring attention.</p>
+      </div>
+      <AppButton variant="secondary" size="sm" :loading="dashboard.isLoading" @click="dashboard.fetchDashboard()">
+        <RefreshCw class="w-4 h-4" />
+        Refresh data
+      </AppButton>
     </div>
 
-    <!-- Quick actions -->
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+    <!-- Signals — real, computed operational insights, not decoration -->
+    <div v-if="signals.length" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+      <div
+        v-for="signal in signals"
+        :key="signal.id"
+        :class="['flex items-start gap-3 p-3.5 rounded-lg border', signalClass(signal.tone)]"
+      >
+        <component :is="signalIcon(signal.tone)" class="w-4 h-4 mt-0.5 shrink-0" />
+        <div class="min-w-0">
+          <p class="text-xs font-bold leading-tight">{{ signal.title }}</p>
+          <p class="text-[11px] mt-0.5 text-ink-muted leading-snug">{{ signal.detail }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Command bar -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 bg-surface-strong border border-border rounded-lg overflow-hidden divide-y sm:divide-y-0 sm:divide-x divide-border">
       <RouterLink
         to="/content/new"
-        class="flex items-center gap-3 p-4 rounded-2xl bg-primary/10 border border-primary/20 hover:bg-primary/15 transition-colors group"
+        class="flex items-center gap-3 p-4 hover:bg-surface-hover transition-colors group"
       >
-        <div class="w-9 h-9 rounded-xl bg-primary/20 flex items-center justify-center shrink-0">
-          <Plus class="w-5 h-5 text-primary" />
+        <div class="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
+          <Plus class="w-4 h-4 text-primary" />
         </div>
         <div class="min-w-0">
           <p class="text-sm font-bold text-ink leading-none mb-0.5">Add content</p>
@@ -23,10 +44,10 @@
 
       <RouterLink
         to="/youtube"
-        class="flex items-center gap-3 p-4 rounded-2xl bg-danger/10 border border-danger/20 hover:bg-danger/15 transition-colors group"
+        class="flex items-center gap-3 p-4 hover:bg-surface-hover transition-colors group"
       >
-        <div class="w-9 h-9 rounded-xl bg-danger/20 flex items-center justify-center shrink-0">
-          <Youtube class="w-5 h-5 text-danger" />
+        <div class="w-8 h-8 rounded-md bg-danger/10 flex items-center justify-center shrink-0">
+          <Youtube class="w-4 h-4 text-danger" />
         </div>
         <div class="min-w-0">
           <p class="text-sm font-bold text-ink leading-none mb-0.5">YouTube import</p>
@@ -36,10 +57,10 @@
 
       <RouterLink
         to="/config"
-        class="flex items-center gap-3 p-4 rounded-2xl bg-info/10 border border-info/20 hover:bg-info/15 transition-colors group"
+        class="flex items-center gap-3 p-4 hover:bg-surface-hover transition-colors group"
       >
-        <div class="w-9 h-9 rounded-xl bg-info/20 flex items-center justify-center shrink-0">
-          <Smartphone class="w-5 h-5 text-info" />
+        <div class="w-8 h-8 rounded-md bg-info/10 flex items-center justify-center shrink-0">
+          <Smartphone class="w-4 h-4 text-info" />
         </div>
         <div class="min-w-0">
           <p class="text-sm font-bold text-ink leading-none mb-0.5">Mobile config</p>
@@ -49,10 +70,10 @@
 
       <RouterLink
         to="/users"
-        class="flex items-center gap-3 p-4 rounded-2xl bg-success/10 border border-success/20 hover:bg-success/15 transition-colors group"
+        class="flex items-center gap-3 p-4 hover:bg-surface-hover transition-colors group"
       >
-        <div class="w-9 h-9 rounded-xl bg-success/20 flex items-center justify-center shrink-0">
-          <Users2 class="w-5 h-5 text-success" />
+        <div class="w-8 h-8 rounded-md bg-success/10 flex items-center justify-center shrink-0">
+          <Users2 class="w-4 h-4 text-success" />
         </div>
         <div class="min-w-0">
           <p class="text-sm font-bold text-ink leading-none mb-0.5">Manage users</p>
@@ -62,38 +83,41 @@
     </div>
 
     <!-- Stat cards -->
-    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+    <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3">
       <AppStatCard label="Total users" :value="summary.totalUsers" icon-bg="bg-primary/15">
-        <template #icon><Users class="w-5 h-5 text-primary" /></template>
+        <template #icon><Users class="w-4 h-4 text-primary" /></template>
       </AppStatCard>
       <AppStatCard label="New (7 days)" :value="summary.newUsersLast7Days" icon-bg="bg-success/15">
-        <template #icon><TrendingUp class="w-5 h-5 text-success" /></template>
+        <template #icon><TrendingUp class="w-4 h-4 text-success" /></template>
       </AppStatCard>
       <AppStatCard label="Verified" :value="summary.verifiedUsers" icon-bg="bg-info/15">
-        <template #icon><BadgeCheck class="w-5 h-5 text-info" /></template>
+        <template #icon><BadgeCheck class="w-4 h-4 text-info" /></template>
       </AppStatCard>
       <AppStatCard label="Content items" :value="summary.totalContent" icon-bg="bg-primary/15">
-        <template #icon><FileText class="w-5 h-5 text-primary-soft" /></template>
+        <template #icon><FileText class="w-4 h-4 text-primary-soft" /></template>
       </AppStatCard>
       <AppStatCard label="Live sessions" :value="summary.liveSessions" icon-bg="bg-danger/15">
-        <template #icon><Radio class="w-5 h-5 text-danger" /></template>
+        <template #icon><Radio class="w-4 h-4 text-danger" /></template>
       </AppStatCard>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-5">
       <!-- Latest content -->
-      <div class="lg:col-span-2 space-y-3">
+      <section class="xl:col-span-2 space-y-3">
         <div class="flex items-center justify-between">
-          <h2 class="text-sm font-bold text-ink">Latest content</h2>
-          <RouterLink to="/content" class="text-xs text-primary hover:underline">View all →</RouterLink>
+          <div>
+            <h2 class="text-sm font-semibold text-ink">Latest content</h2>
+            <p class="text-xs text-ink-muted mt-0.5">Recently created publishing records</p>
+          </div>
+          <RouterLink to="/content" class="text-xs font-semibold text-primary hover:text-primary-soft">View content</RouterLink>
         </div>
         <AppCard>
-          <AppTable
+          <AppResponsiveTable
             :columns="contentCols"
             :rows="latestContent"
             :loading="dashboard.isLoading"
           >
-            <template #cell-status="{ value }">
+            <template #cell-visibility="{ value }">
               <StatusBadge :status="String(value)" />
             </template>
             <template #cell-type="{ value }">
@@ -102,15 +126,15 @@
             <template #cell-createdAt="{ value }">
               <span class="text-xs text-ink-muted">{{ formatDate(String(value)) }}</span>
             </template>
-          </AppTable>
+          </AppResponsiveTable>
         </AppCard>
-      </div>
+      </section>
 
       <!-- Right column -->
-      <div class="space-y-4">
+      <aside class="space-y-4">
         <!-- Request status board -->
         <div>
-          <h2 class="text-sm font-bold text-ink mb-3">Content review</h2>
+          <h2 class="text-sm font-semibold text-ink mb-3">Review queue</h2>
           <AppCard class="p-4 space-y-2">
             <div
               v-for="item in requestBoard"
@@ -126,9 +150,8 @@
           </AppCard>
         </div>
 
-        <!-- Pending review callout -->
         <div>
-          <AppCard class="p-4 flex items-center justify-between gap-4">
+          <AppCard class="p-4 flex items-center justify-between gap-4" tone="subtle">
             <div>
               <p class="text-[11px] font-bold text-ink-muted uppercase tracking-wider">Pending review</p>
               <p class="text-2xl font-black text-ink tabular-nums mt-1">{{ summary.pendingRequests }}</p>
@@ -141,18 +164,19 @@
             </AppButton>
           </AppCard>
         </div>
-      </div>
+      </aside>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted } from 'vue';
-import { BadgeCheck, FileText, Plus, Radio, Smartphone, TrendingUp, Users, Users2, Youtube } from 'lucide-vue-next';
+import { AlertTriangle, BadgeCheck, CheckCircle2, FileText, Info, Plus, Radio, RefreshCw, Smartphone, TrendingUp, Users, Users2, Youtube } from 'lucide-vue-next';
 import { useDashboardStore } from '@/stores/dashboard.store';
 import { useAuthStore } from '@/stores/auth.store';
+import type { DashboardSignal } from '@/api/types';
 import AppCard from '@/components/ui/AppCard.vue';
-import AppTable from '@/components/ui/AppTable.vue';
+import AppResponsiveTable from '@/components/ui/AppResponsiveTable.vue';
 import AppBadge from '@/components/ui/AppBadge.vue';
 import AppButton from '@/components/ui/AppButton.vue';
 import AppStatCard from '@/components/ui/AppStatCard.vue';
@@ -161,6 +185,7 @@ import StatusBadge from '@/components/shared/StatusBadge.vue';
 
 const dashboard = useDashboardStore();
 const auth = useAuthStore();
+const firstName = computed(() => auth.user?.displayName?.trim().split(/\s+/)[0] || 'Administrator');
 
 const greeting = computed(() => {
   const h = new Date().getHours();
@@ -178,11 +203,24 @@ const summary = computed(() => dashboard.data?.summary ?? {
 
 const latestContent = computed(() => (dashboard.data?.overview.latestContent ?? []) as Record<string, unknown>[]);
 const requestBoard = computed(() => dashboard.data?.overview.requestStatusBoard ?? []);
+const signals = computed(() => dashboard.data?.smartInsights ?? []);
+
+function signalClass(tone: DashboardSignal['tone']): string {
+  return {
+    warning: 'bg-amber/10 border-amber/20 text-amber',
+    info: 'bg-info/10 border-info/20 text-info',
+    success: 'bg-success/10 border-success/20 text-success',
+  }[tone];
+}
+
+function signalIcon(tone: DashboardSignal['tone']) {
+  return { warning: AlertTriangle, info: Info, success: CheckCircle2 }[tone];
+}
 
 const contentCols = [
   { key: 'title', label: 'Title' },
   { key: 'type', label: 'Type' },
-  { key: 'status', label: 'Status' },
+  { key: 'visibility', label: 'Status' },
   { key: 'createdAt', label: 'Added', align: 'right' as const },
 ];
 

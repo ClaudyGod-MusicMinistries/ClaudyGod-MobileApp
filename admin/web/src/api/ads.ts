@@ -1,13 +1,9 @@
 import client from './client';
 import type { AdCampaign, AdCampaignInput, AiAdCopyResponse, PaginatedResponse } from './types';
+import type { AdCampaignPlacement } from '@/utils/constants';
 
-export async function listCampaigns(params?: { status?: string; page?: number }): Promise<PaginatedResponse<AdCampaign>> {
+export async function listCampaigns(params?: { status?: string; placement?: string }): Promise<PaginatedResponse<AdCampaign>> {
   const { data } = await client.get<PaginatedResponse<AdCampaign>>('/v1/admin/ads', { params });
-  return data;
-}
-
-export async function getCampaign(id: string): Promise<AdCampaign> {
-  const { data } = await client.get<AdCampaign>(`/v1/admin/ads/${id}`);
   return data;
 }
 
@@ -21,7 +17,13 @@ export async function updateCampaign(id: string, input: Partial<AdCampaignInput>
   return data;
 }
 
-export async function generateAdCopy(prompt: string): Promise<AiAdCopyResponse> {
-  const { data } = await client.post<AiAdCopyResponse>('/v1/admin/ai/ad-copy', { prompt });
+export interface AdCopyRequest {
+  sponsorName: string;
+  placement: AdCampaignPlacement;
+  objective: string;
+}
+
+export async function generateAdCopy(input: AdCopyRequest): Promise<AiAdCopyResponse> {
+  const { data } = await client.post<AiAdCopyResponse>('/v1/admin/ai/ad-copy', input);
   return data;
 }

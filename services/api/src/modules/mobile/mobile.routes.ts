@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { asyncHandler } from '../../lib/asyncHandler';
+import { NotFoundError } from '../../lib/errors';
 import { validateSchema } from '../../lib/validation';
 import { authenticate } from '../../middleware/authenticate';
 import { requireMobileApiKey } from '../../middleware/requireMobileApiKey';
@@ -8,11 +9,9 @@ import { listContentQuerySchema } from '../content/content.schema';
 import { listPublicContent } from '../content/content.service';
 import { createDonationIntentSchema } from '../me/me.schema';
 import { createPublicDonationIntent, saveMeLibraryItem } from '../me/me.service';
-import { signedUploadRequestSchema, uploadPoliciesResponse } from '../uploads/uploads.schema';
-import { requestSignedUploadUrl } from '../uploads/uploads.service';
 import { youtubeListQuerySchema } from '../youtube/youtube.schema';
 import { fetchYouTubeVideos } from '../youtube/youtube.service';
-import { buildMobileFeed } from './mobile.service';
+import { buildMobileFeed, getMobileSectionDetail } from './mobile.service';
 
 const guestFavoriteItemSchema = z.object({
   id:       z.string().min(1),
@@ -51,10 +50,30 @@ mobileRouter.get(
       type: parsed.type,
       status: parsed.status,
       visibility: parsed.visibility,
+      section: parsed.section,
       search: parsed.search,
       updatedAfter: parsed.updatedAfter,
     };
     const data = await listPublicContent(query);
+    res.status(200).json(data);
+  }),
+);
+
+const sectionDetailQuerySchema = z.object({
+  screen: z.enum(['home', 'videos', 'player', 'library']).default('home'),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+});
+
+mobileRouter.get(
+  '/sections/:sectionId',
+  requireMobileApiKey,
+  asyncHandler(async (req, res) => {
+    const { screen, page, limit } = validateSchema(sectionDetailQuerySchema, req.query);
+    const data = await getMobileSectionDetail({ screen, sectionId: req.params.sectionId, page, limit });
+    if (!data) {
+      throw new NotFoundError('Section not found', 'SECTION_NOT_FOUND');
+    }
     res.status(200).json(data);
   }),
 );
@@ -70,45 +89,12 @@ mobileRouter.get(
 );
 
 mobileRouter.post(
-  '/uploads/signed-url',
-  requireMobileApiKey,
-  authenticate,
-  asyncHandler(async (req, res) => {
-    if (!req.user) {
-      res.status(401).json({ message: 'Sign in required to upload files.' });
-      return;
-    }
-
-    const parsed = validateSchema(signedUploadRequestSchema, req.body);
-    const payload = {
-      ...parsed,
-      folder: parsed.folder ?? 'mobile-content',
-    };
-    const result = await requestSignedUploadUrl({
-      ...payload,
-      channel: 'mobile',
-      requestedByUserId: req.user.sub,
-    });
-
-    res.status(201).json(result);
-  }),
-);
-
-mobileRouter.post(
   '/donation-intents',
   requireMobileApiKey,
   asyncHandler(async (req, res) => {
     const payload = validateSchema(createDonationIntentSchema, req.body);
     const result = await createPublicDonationIntent(payload);
     res.status(201).json(result);
-  }),
-);
-
-mobileRouter.get(
-  '/uploads/policies',
-  requireMobileApiKey,
-  asyncHandler(async (_req, res) => {
-    res.status(200).json(uploadPoliciesResponse);
   }),
 );
 

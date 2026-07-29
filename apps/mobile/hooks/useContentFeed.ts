@@ -1,39 +1,34 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { emptyFeedBundle, fetchFeedBundle, type FeedBundle } from '../services/contentService';
-import { getHistory } from '../lib/localUserStorage';
+import { useLocalContent } from './useLocalContent';
+
+async function loadFeed(): Promise<FeedBundle> {
+  return fetchFeedBundle();
+}
 
 export function useContentFeed() {
-  const [feed, setFeed] = useState<FeedBundle>(emptyFeedBundle());
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { history } = useLocalContent();
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ['feed'],
+    queryFn: loadFeed,
+  });
 
-  const refresh = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  const feed = useMemo(() => {
+    const base = data ?? emptyFeedBundle();
+    if (history.length === 0) return base;
 
-    try {
-      const nextFeed = await fetchFeedBundle();
+    const localIds = new Set(history.map((item) => item.id));
+    return {
+      ...base,
+      recent: [...history, ...base.recent.filter((item) => !localIds.has(item.id))].slice(0, 100),
+    };
+  }, [data, history]);
 
-      // Inject local playback history into feed.recent so "Continue listening"
-      // always works, even when the server returns an empty history.
-      if (nextFeed.recent.length === 0) {
-        const localHistory = await getHistory();
-        if (localHistory.length > 0) {
-          nextFeed.recent = localHistory;
-        }
-      }
-
-      setFeed(nextFeed);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to load feed');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
-
-  return { feed, loading, error, refresh };
+  return {
+    feed,
+    loading: isLoading,
+    error: error instanceof Error ? error.message : error ? 'Unable to load feed' : null,
+    refresh: refetch,
+  };
 }

@@ -1,7 +1,13 @@
 import { pool } from '../../db/pool';
 import { CacheService, CacheTTL } from '../../lib/cache';
 import type { CursorPage } from '../../lib/pagination';
+import { isDatabaseConnectivityError, isMissingDatabaseStructureError } from '../../lib/postgres';
 import type { SearchQuery } from './search.schema';
+
+export interface TrendingSearchTerm {
+  query: string;
+  count: number;
+}
 
 export interface SearchResultItem {
   id: string;
@@ -162,4 +168,32 @@ export async function recordSearchClick(
      WHERE id = $1`,
     [searchEventId, contentId],
   );
+}
+
+// Real usage, not a static guess: aggregates the same user_search_events log
+// every search already writes to, over a recent window, excluding queries that
+// returned nothing (not worth surfacing as a "trending" suggestion).
+const TRENDING_WINDOW_DAYS = 7;
+
+export async function getTrendingSearches(limit: number): Promise<{ items: TrendingSearchTerm[] }> {
+  let result;
+  try {
+    result = await pool.query<{ query: string; count: string }>(
+      `SELECT query, COUNT(*)::text AS count
+       FROM user_search_events
+       WHERE searched_at >= NOW() - ($2::text || ' days')::interval
+         AND results_count > 0
+       GROUP BY query
+       ORDER BY COUNT(*) DESC, MAX(searched_at) DESC
+       LIMIT $1`,
+      [limit, TRENDING_WINDOW_DAYS],
+    );
+  } catch (error) {
+    if (isMissingDatabaseStructureError(error) || isDatabaseConnectivityError(error)) {
+      return { items: [] };
+    }
+    throw error;
+  }
+
+  return { items: result.rows.map((row) => ({ query: row.query, count: Number(row.count) })) };
 }

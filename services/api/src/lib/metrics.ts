@@ -44,6 +44,12 @@ export const wsConnectionsGauge = new Gauge({
   help: 'Number of active WebSocket connections',
 });
 
+export const rateLimitRejectedTotal = new Counter({
+  name: 'rate_limit_rejected_total',
+  help: 'Number of requests rejected by a rate limiter, by limiter name',
+  labelNames: ['limiter'] as const,
+});
+
 export async function getMetricsOutput(): Promise<string> {
   return register.metrics();
 }

@@ -6,9 +6,14 @@ import { authenticate } from '../../middleware/authenticate';
 import {
   adminContentIdParamsSchema,
   adminUnassignedContentQuerySchema,
+  adminUserDeviceParamsSchema,
   adminUserIdParamsSchema,
+  adminUserSearchHistoryQuerySchema,
+  approveAccessRequestSchema,
   createInvitationSchema,
   invitationIdParamsSchema,
+  listAdminSupportRequestsQuerySchema,
+  listAdminUsersQuerySchema,
   sendAdminTestEmailSchema,
   supportRequestIdParamsSchema,
   updateAdminUserRoleSchema,
@@ -18,7 +23,13 @@ import {
   getAdminContentSectionSuggestions,
   getAdminEmailDiagnostics,
   getAdminDashboard,
+  getAdminUserDevices,
+  getAdminUserEngagement,
+  getAdminUserSearchHistory,
+  listAdminSupportRequests,
   listAdminUnassignedContent,
+  listAdminUsers,
+  revokeAdminUserDevice,
   sendAdminTestEmail,
   updateAdminUserRole,
   updateAdminSupportRequestStatus,
@@ -58,7 +69,7 @@ function requireAuthenticated(req: Request) {
 adminRouter.get(
   '/dashboard',
   asyncHandler(async (req, res) => {
-    const actor = requireAuthenticated(req);
+    const actor = requireAdmin(req);
     const result = await getAdminDashboard(actor);
     res.status(200).json(result);
   }),
@@ -109,6 +120,26 @@ adminRouter.post(
   }),
 );
 
+adminRouter.get(
+  '/users',
+  asyncHandler(async (req, res) => {
+    requireAdmin(req);
+    const query = validateSchema(listAdminUsersQuerySchema, req.query);
+    const result = await listAdminUsers(query);
+    res.status(200).json(result);
+  }),
+);
+
+adminRouter.get(
+  '/support-requests',
+  asyncHandler(async (req, res) => {
+    requireAdmin(req);
+    const query = validateSchema(listAdminSupportRequestsQuerySchema, req.query);
+    const result = await listAdminSupportRequests(query);
+    res.status(200).json(result);
+  }),
+);
+
 adminRouter.patch(
   '/users/:id/role',
   asyncHandler(async (req, res) => {
@@ -121,6 +152,47 @@ adminRouter.patch(
       actor,
     });
     res.status(200).json(result);
+  }),
+);
+
+adminRouter.get(
+  '/users/:id/engagement',
+  asyncHandler(async (req, res) => {
+    requireAdmin(req);
+    const params = validateSchema(adminUserIdParamsSchema, req.params);
+    const result = await getAdminUserEngagement(params.id);
+    res.status(200).json(result);
+  }),
+);
+
+adminRouter.get(
+  '/users/:id/search-history',
+  asyncHandler(async (req, res) => {
+    requireAdmin(req);
+    const params = validateSchema(adminUserIdParamsSchema, req.params);
+    const query = validateSchema(adminUserSearchHistoryQuerySchema, req.query);
+    const result = await getAdminUserSearchHistory(params.id, query.limit);
+    res.status(200).json(result);
+  }),
+);
+
+adminRouter.get(
+  '/users/:id/devices',
+  asyncHandler(async (req, res) => {
+    requireAdmin(req);
+    const params = validateSchema(adminUserIdParamsSchema, req.params);
+    const result = await getAdminUserDevices(params.id);
+    res.status(200).json(result);
+  }),
+);
+
+adminRouter.post(
+  '/users/:id/devices/:deviceId/revoke',
+  asyncHandler(async (req, res) => {
+    requireAdmin(req);
+    const params = validateSchema(adminUserDeviceParamsSchema, req.params);
+    await revokeAdminUserDevice(params.id, params.deviceId);
+    res.status(200).json({ message: 'Device revoked' });
   }),
 );
 
@@ -211,8 +283,7 @@ adminRouter.post(
   asyncHandler(async (req, res) => {
     const actor = requireSuperAdmin(req);
     const { id } = req.params as { id: string };
-    const body = req.body as { role?: string };
-    const role = body.role ?? 'MODERATOR';
+    const { role } = validateSchema(approveAccessRequestSchema, req.body ?? {});
 
     const invite = await approveAdminAccessRequest(id, {
       id: actor.sub,

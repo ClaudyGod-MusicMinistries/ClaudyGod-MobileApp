@@ -385,7 +385,7 @@ async function submitInvite() {
     const session = await acceptInvite({ token: inviteToken.value, name: inviteForm.value.name, displayName: inviteForm.value.displayName, password: inviteForm.value.password });
     authStore.applyExternalSession(session);
     phase.value = 'success';
-    setTimeout(() => void router.replace('/dashboard'), 1400);
+    setTimeout(() => void router.replace('/choose-workspace'), 1400);
   } catch (e: unknown) {
     const code = (e as { response?: { data?: { code?: string } } })?.response?.data?.code ?? '';
     if (['INVITE_EXPIRED','INVITE_USED','INVITE_REVOKED'].includes(code)) { inviteError.value = code; phase.value = 'invalid'; return; }
@@ -401,7 +401,7 @@ async function submitCode() {
     if (!session.accessToken) { verifyEmail.value = codeForm.value.email; phase.value = 'verify-email'; return; }
     authStore.applyExternalSession(session);
     phase.value = 'success';
-    setTimeout(() => void router.replace('/dashboard'), 1400);
+    setTimeout(() => void router.replace('/choose-workspace'), 1400);
   } catch (e: unknown) {
     const code = (e as { response?: { data?: { code?: string } } })?.response?.data?.code ?? '';
     if (code === 'AUTH_ADMIN_CODE_INVALID') { codeErrors.value.adminSignupCode = 'Invalid access code'; return; }

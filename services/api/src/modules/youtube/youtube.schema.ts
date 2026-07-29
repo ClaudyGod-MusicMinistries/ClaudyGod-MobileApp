@@ -81,6 +81,7 @@ export const youtubeListQuerySchema = z
   .object({
     channelId: optionalChannelIdentifierSchema,
     maxResults: z.coerce.number().int().min(1).max(50).optional(),
+    pageToken: z.string().trim().min(1).max(255).optional(),
   })
   .strict();
 
@@ -109,6 +110,7 @@ const youtubeImportSelectionSchema = z
     visibility: visibilitySchema.default('draft'),
     appSections: optionalSectionsSchema,
     tags: optionalTagsSchema,
+    contentType: z.enum(['audio', 'video']).default('video'),
   })
   .strict();
 

@@ -1,53 +1,45 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Animated,
   Keyboard,
   KeyboardAvoidingView,
-  Modal,
   Platform,
   TextInput,
-  TouchableWithoutFeedback,
   View,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 
 import { useAppTheme } from '../../util/colorScheme';
 import { makeStyles } from '../../styles/makeStyles';
 import { CustomText } from '../CustomText';
 import { AppButton } from '../ui/AppButton';
 import { TVTouchable } from '../ui/TVTouchable';
+import { BottomSheet } from '../ui/BottomSheet';
+import { TrustDeviceSheet } from './TrustDeviceSheet';
 import {
   loginMobileUser,
   loginMobileUserWithGoogle,
   registerMobileUser,
+  signInWithTrustedDeviceToken,
 } from '../../services/authService';
-import { useUserAccount } from '../../context/UserAccountContext';
+import { useAccountSheet } from '../../context/AccountSheetContext';
+import { APP_ROUTES } from '../../util/appRoutes';
+import {
+  isTrustedDeviceSupported,
+  getBiometricType,
+  getTrustedDeviceToken,
+  promptBiometric,
+  clearTrustedDeviceToken,
+} from '../../lib/trustedDevice';
 
-type SheetStep = 'choose' | 'email' | 'success';
+type SheetStep = 'choose' | 'email' | 'success' | 'trustedUnlock';
 type EmailMode = 'signin' | 'signup';
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const useStyles = makeStyles((theme) => ({
-  flex1:          { flex: 1 },
-  backdrop:       { flex: 1, backgroundColor: 'rgba(0,0,0,0.60)', justifyContent: 'flex-end' },
-
-  sheetCard: {
-    backgroundColor:      theme.colors.surface,
-    borderTopLeftRadius:  theme.radius.xxl,
-    borderTopRightRadius: theme.radius.xxl,
-    borderTopWidth:       1,
-    borderColor:          theme.colors.border,
-    paddingTop:           12,
-    paddingHorizontal:    20,
-  },
-  dragHandle: {
-    alignSelf: 'center', width: 36, height: 4,
-    borderRadius: 2, backgroundColor: theme.colors.border,
-    marginBottom: 20,
-  },
+  flex1: { flex: 1 },
 
   sheetHeader: {
     flexDirection: 'row', alignItems: 'flex-start',
@@ -118,6 +110,15 @@ const useStyles = makeStyles((theme) => ({
   toggleModeAccent: { color: theme.colors.primary, fontWeight: '700' },
   backBtn:  { flexDirection: 'row', alignItems: 'center', gap: 4, justifyContent: 'center', paddingBottom: 4 },
   backText: { color: theme.colors.textMuted, fontSize: 12 },
+
+  trustedContainer: { alignItems: 'center', paddingVertical: 12, gap: 16 },
+  trustedIcon: {
+    width: 72, height: 72, borderRadius: 36,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  trustedTitle:    { color: theme.colors.text, fontSize: 20, fontWeight: '800', textAlign: 'center' },
+  trustedSubtitle: { color: theme.colors.textSecondary, fontSize: 13.5, textAlign: 'center', lineHeight: 20 },
+  trustedActions:  { width: '100%', gap: 10, marginTop: 4 },
 }));
 
 // ─── SuccessState ─────────────────────────────────────────────────────────────
@@ -143,13 +144,57 @@ function SuccessState({ displayName }: { displayName?: string }) {
   );
 }
 
+// ─── TrustedUnlock ────────────────────────────────────────────────────────────
+
+function TrustedUnlock({
+  biometricIcon, biometricLabel, loading, onUnlock, onUseAnotherWay,
+}: {
+  biometricIcon: React.ComponentProps<typeof MaterialIcons>['name'];
+  biometricLabel: string;
+  loading: boolean;
+  onUnlock: () => void;
+  onUseAnotherWay: () => void;
+}) {
+  const styles = useStyles();
+  const theme  = useAppTheme();
+  return (
+    <View style={styles.trustedContainer}>
+      <View style={[styles.trustedIcon, {
+        backgroundColor: theme.colors.primarySurface,
+        borderWidth: 1, borderColor: theme.colors.primaryBorder,
+      }]}>
+        <MaterialIcons name={biometricIcon} size={32} color={theme.colors.primary} />
+      </View>
+      <CustomText style={styles.trustedTitle}>Welcome back</CustomText>
+      <CustomText style={styles.trustedSubtitle}>
+        Use {biometricLabel} to sign in instantly on this device.
+      </CustomText>
+      <View style={styles.trustedActions}>
+        <AppButton
+          title={`Sign in with ${biometricLabel}`}
+          size="lg"
+          fullWidth
+          loading={loading}
+          loadingLabel="Verifying…"
+          leftIcon={<MaterialIcons name={biometricIcon} size={18} color={theme.colors.onPrimary} />}
+          onPress={onUnlock}
+        />
+        <TVTouchable onPress={onUseAnotherWay} showFocusBorder={false} style={styles.skipBtn}>
+          <CustomText style={styles.skipText}>Use another way</CustomText>
+        </TVTouchable>
+      </View>
+    </View>
+  );
+}
+
 // ─── ChooseMethod ─────────────────────────────────────────────────────────────
 
 function ChooseMethod({
-  onGoogle, onEmail, onSkip, loading,
+  onGoogle, onEmail, onOneTimeCode, onSkip, loading,
 }: {
   onGoogle: () => void;
   onEmail: () => void;
+  onOneTimeCode: () => void;
   onSkip: () => void;
   loading: boolean;
 }) {
@@ -191,6 +236,10 @@ function ChooseMethod({
         leftIcon={<MaterialIcons name="email" size={17} color={theme.colors.primary} />}
       />
 
+      <TVTouchable onPress={onOneTimeCode} showFocusBorder={false} style={styles.skipBtn}>
+        <CustomText style={styles.skipText}>Sign in with a one-time code instead</CustomText>
+      </TVTouchable>
+
       <TVTouchable onPress={onSkip} showFocusBorder={false} style={styles.skipBtn}>
         <CustomText style={styles.skipText}>Skip for now</CustomText>
       </TVTouchable>
@@ -203,7 +252,7 @@ function ChooseMethod({
 function EmailForm({
   mode, name, email, password, loading,
   onChangeName, onChangeEmail, onChangePassword,
-  onSubmit, onToggleMode, onBack,
+  onSubmit, onToggleMode, onBack, onForgotPassword,
 }: {
   mode: EmailMode;
   name: string;
@@ -216,6 +265,7 @@ function EmailForm({
   onSubmit: () => void;
   onToggleMode: () => void;
   onBack: () => void;
+  onForgotPassword: () => void;
 }) {
   const styles = useStyles();
   const theme  = useAppTheme();
@@ -263,6 +313,12 @@ function EmailForm({
         onSubmitEditing={onSubmit}
       />
 
+      {mode === 'signin' ? (
+        <TVTouchable onPress={onForgotPassword} showFocusBorder={false} style={styles.toggleModeBtn}>
+          <CustomText style={styles.toggleModeText}>Forgot password?</CustomText>
+        </TVTouchable>
+      ) : null}
+
       <View style={styles.submitMargin}>
         <AppButton
           title={loading ? '' : (mode === 'signin' ? 'Sign in' : 'Create account')}
@@ -296,8 +352,8 @@ function EmailForm({
 export function AccountSheet() {
   const styles = useStyles();
   const theme  = useAppTheme();
-  const insets = useSafeAreaInsets();
-  const { isSheetOpen, closeAccountSheet } = useUserAccount();
+  const router = useRouter();
+  const { isSheetOpen, closeAccountSheet } = useAccountSheet();
 
   const [step, setStep]             = useState<SheetStep>('choose');
   const [mode, setMode]             = useState<EmailMode>('signin');
@@ -307,8 +363,14 @@ export function AccountSheet() {
   const [error, setError]           = useState('');
   const [loading, setLoading]       = useState(false);
   const [signedInName, setSignedInName] = useState('');
-
-  const slideAnim = useRef(new Animated.Value(700)).current;
+  const [pendingTrust, setPendingTrust] = useState<{ accessToken: string; displayName: string } | null>(null);
+  // Queued as soon as we decide to offer it, but not shown until BottomSheet's
+  // onClosed confirms this sheet's exit animation has actually finished — no
+  // more guessing at a delay that has to outlast an internal animation constant.
+  const [queuedTrust, setQueuedTrust] = useState<{ accessToken: string; displayName: string } | null>(null);
+  const [trustedToken, setTrustedToken] = useState<{ token: string; deviceLabel: string } | null>(null);
+  const [biometricIcon, setBiometricIcon] = useState<React.ComponentProps<typeof MaterialIcons>['name']>('fingerprint');
+  const [biometricLabel, setBiometricLabel] = useState('Biometrics');
 
   useEffect(() => {
     if (isSheetOpen) {
@@ -319,20 +381,69 @@ export function AccountSheet() {
       setEmail('');
       setPassword('');
       setLoading(false);
-      Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, tension: 70, friction: 12 }).start();
-    } else {
-      Animated.timing(slideAnim, { toValue: 700, duration: 220, useNativeDriver: true }).start();
+      setTrustedToken(null);
+
+      // A registered trusted-device token was previously write-only here — it
+      // got stored after sign-in but nothing ever checked for one on a later
+      // open, so returning users always saw the full form again. Check once,
+      // every time the sheet opens, and offer a biometric shortcut instead.
+      void (async () => {
+        const stored = await getTrustedDeviceToken();
+        if (!stored) return;
+        const type = await getBiometricType();
+        if (!isTrustedDeviceSupported() || type === 'none') return;
+        setBiometricIcon(type === 'face' ? 'face' : 'fingerprint');
+        setBiometricLabel(type === 'face' ? 'Face ID' : 'Touch ID / Fingerprint');
+        setTrustedToken({ token: stored.token, deviceLabel: stored.deviceLabel });
+        setStep('trustedUnlock');
+      })();
     }
-  }, [isSheetOpen, slideAnim]);
+  }, [isSheetOpen]);
+
+  const handleTrustedUnlock = async () => {
+    if (!trustedToken) return;
+    const confirmed = await promptBiometric("Confirm it's you to sign in");
+    if (!confirmed) return;
+    setLoading(true);
+    setError('');
+    try {
+      const result = await signInWithTrustedDeviceToken(trustedToken.token);
+      setSignedInName(result.user.displayName);
+      setStep('success');
+      setTimeout(() => closeAccountSheet(), 1400);
+    } catch {
+      await clearTrustedDeviceToken();
+      setTrustedToken(null);
+      setStep('choose');
+      setError('Your trusted session has expired. Please sign in again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // After a successful sign-in, offer biometric quick-sign-in next time if the
+  // device supports it — otherwise fall back to the previous plain auto-close.
+  const finishSignIn = async (accessToken: string | undefined, displayName: string) => {
+    setSignedInName(displayName);
+    setStep('success');
+
+    const canOfferTrust = Boolean(accessToken) && isTrustedDeviceSupported() && (await getBiometricType()) !== 'none';
+    if (canOfferTrust && accessToken) {
+      setTimeout(() => {
+        setQueuedTrust({ accessToken, displayName });
+        closeAccountSheet();
+      }, 1200);
+    } else {
+      setTimeout(() => closeAccountSheet(), 1800);
+    }
+  };
 
   const handleGoogle = async () => {
     setLoading(true);
     setError('');
     try {
       const result = await loginMobileUserWithGoogle();
-      setSignedInName(result.user.displayName);
-      setStep('success');
-      setTimeout(() => closeAccountSheet(), 1800);
+      await finishSignIn(result.accessToken, result.user.displayName);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Google sign-in failed. Please try again.');
     } finally {
@@ -349,13 +460,21 @@ export function AccountSheet() {
     try {
       if (mode === 'signup') {
         const result = await registerMobileUser({ email, password, displayName: name });
-        setSignedInName(result.user.displayName);
+        if (result.requiresEmailVerification) {
+          // The account was created but has no session yet — routing to the
+          // real success screen here (instead of finishSignIn) would have
+          // shown "You're signed in" with no session behind it and no way
+          // back to actually verify, a dead end confirmed via code read.
+          const pendingEmail = result.user.email;
+          closeAccountSheet();
+          router.push({ pathname: APP_ROUTES.auth.verifyEmail, params: { email: pendingEmail } });
+          return;
+        }
+        await finishSignIn(result.accessToken, result.user.displayName);
       } else {
         const result = await loginMobileUser({ email, password });
-        setSignedInName(result.user.displayName);
+        await finishSignIn(result.accessToken, result.user.displayName);
       }
-      setStep('success');
-      setTimeout(() => closeAccountSheet(), 1800);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong. Try again.');
     } finally {
@@ -369,86 +488,105 @@ export function AccountSheet() {
     closeAccountSheet();
   };
 
+  const goToForgotPassword = () => {
+    const currentEmail = email.trim().toLowerCase();
+    closeAccountSheet();
+    router.push(currentEmail ? { pathname: APP_ROUTES.auth.forgotPassword, params: { email: currentEmail } } : APP_ROUTES.auth.forgotPassword);
+  };
+
+  const goToOneTimeCode = () => {
+    closeAccountSheet();
+    router.push(APP_ROUTES.auth.emailOtp);
+  };
+
   return (
-    <Modal
+    <>
+    <BottomSheet
       visible={isSheetOpen}
-      transparent
-      animationType="none"
-      onRequestClose={dismiss}
-      statusBarTranslucent
+      onClose={dismiss}
+      dismissible={!loading}
+      onClosed={() => {
+        if (queuedTrust) {
+          setPendingTrust(queuedTrust);
+          setQueuedTrust(null);
+        }
+      }}
     >
       <KeyboardAvoidingView style={styles.flex1} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <TouchableWithoutFeedback onPress={dismiss}>
-          <View style={styles.backdrop}>
-            <TouchableWithoutFeedback onPress={() => {}}>
-              <Animated.View
-                style={[
-                  styles.sheetCard,
-                  { transform: [{ translateY: slideAnim }], paddingBottom: insets.bottom + 20 },
-                ]}
-              >
-                <View style={styles.dragHandle} />
+        {step === 'success' ? (
+          <SuccessState displayName={signedInName} />
+        ) : step === 'trustedUnlock' ? (
+          <TrustedUnlock
+            biometricIcon={biometricIcon}
+            biometricLabel={biometricLabel}
+            loading={loading}
+            onUnlock={() => void handleTrustedUnlock()}
+            onUseAnotherWay={() => { setTrustedToken(null); setError(''); setStep('choose'); }}
+          />
+        ) : (
+          <>
+            <View style={styles.sheetHeader}>
+              <View style={styles.titleContainer}>
+                <CustomText style={styles.titleText}>
+                  {step === 'email'
+                    ? (mode === 'signin' ? 'Welcome back' : 'Create account')
+                    : 'Sync your library'}
+                </CustomText>
+                <CustomText style={styles.subtitleText}>
+                  {step === 'email'
+                    ? (mode === 'signin'
+                      ? 'Sign in to access your saved content across devices.'
+                      : 'Save your music and favourites across all your devices.')
+                    : 'Keep your favourites and listening history — no subscription needed.'}
+                </CustomText>
+              </View>
+              <TVTouchable onPress={dismiss} showFocusBorder={false} style={styles.closeBtn}>
+                <MaterialIcons name="close" size={18} color={theme.colors.textMuted} />
+              </TVTouchable>
+            </View>
 
-                {step === 'success' ? (
-                  <SuccessState displayName={signedInName} />
-                ) : (
-                  <>
-                    <View style={styles.sheetHeader}>
-                      <View style={styles.titleContainer}>
-                        <CustomText style={styles.titleText}>
-                          {step === 'email'
-                            ? (mode === 'signin' ? 'Welcome back' : 'Create account')
-                            : 'Sync your library'}
-                        </CustomText>
-                        <CustomText style={styles.subtitleText}>
-                          {step === 'email'
-                            ? (mode === 'signin'
-                              ? 'Sign in to access your saved content across devices.'
-                              : 'Save your music and favourites across all your devices.')
-                            : 'Keep your favourites and listening history — no subscription needed.'}
-                        </CustomText>
-                      </View>
-                      <TVTouchable onPress={dismiss} showFocusBorder={false} style={styles.closeBtn}>
-                        <MaterialIcons name="close" size={18} color={theme.colors.textMuted} />
-                      </TVTouchable>
-                    </View>
+            {error ? (
+              <View style={styles.errorBanner}>
+                <MaterialIcons name="error-outline" size={16} color={theme.colors.danger} style={styles.errorIconShift} />
+                <CustomText style={styles.errorText}>{error}</CustomText>
+              </View>
+            ) : null}
 
-                    {error ? (
-                      <View style={styles.errorBanner}>
-                        <MaterialIcons name="error-outline" size={16} color={theme.colors.danger} style={styles.errorIconShift} />
-                        <CustomText style={styles.errorText}>{error}</CustomText>
-                      </View>
-                    ) : null}
-
-                    {step === 'choose' ? (
-                      <ChooseMethod
-                        onGoogle={() => void handleGoogle()}
-                        onEmail={() => { setStep('email'); setMode('signin'); setError(''); }}
-                        onSkip={dismiss}
-                        loading={loading}
-                      />
-                    ) : (
-                      <EmailForm
-                        mode={mode}
-                        name={name}
-                        email={email}
-                        password={password}
-                        loading={loading}
-                        onChangeName={setName}
-                        onChangeEmail={setEmail}
-                        onChangePassword={setPassword}
-                        onSubmit={() => void handleEmailSubmit()}
-                        onToggleMode={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setError(''); }}
-                        onBack={() => { setStep('choose'); setError(''); }}
-                      />
-                    )}
-                  </>
-                )}
-              </Animated.View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
+            {step === 'choose' ? (
+              <ChooseMethod
+                onGoogle={() => void handleGoogle()}
+                onEmail={() => { setStep('email'); setMode('signin'); setError(''); }}
+                onOneTimeCode={goToOneTimeCode}
+                onSkip={dismiss}
+                loading={loading}
+              />
+            ) : (
+              <EmailForm
+                mode={mode}
+                name={name}
+                email={email}
+                password={password}
+                loading={loading}
+                onChangeName={setName}
+                onChangeEmail={setEmail}
+                onChangePassword={setPassword}
+                onSubmit={() => void handleEmailSubmit()}
+                onToggleMode={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setError(''); }}
+                onBack={() => { setStep('choose'); setError(''); }}
+                onForgotPassword={goToForgotPassword}
+              />
+            )}
+          </>
+        )}
       </KeyboardAvoidingView>
-    </Modal>
+    </BottomSheet>
+
+    <TrustDeviceSheet
+      visible={pendingTrust !== null}
+      accessToken={pendingTrust?.accessToken ?? ''}
+      displayName={pendingTrust?.displayName ?? ''}
+      onDismiss={() => setPendingTrust(null)}
+    />
+    </>
   );
 }

@@ -25,6 +25,7 @@ export const SETTINGS_DESTINATION_OPTIONS = [
   { value: 'settings.help', label: 'Help' },
   { value: 'settings.about', label: 'About' },
   { value: 'settings.rate', label: 'Rate app' },
+  { value: 'settings.referral', label: 'Invite friends' },
 ] as const;
 
 export const AD_PLACEMENT_SCREEN_OPTIONS = [
@@ -37,8 +38,10 @@ export const AD_PLACEMENT_SCREEN_OPTIONS = [
   { value: 'search', label: 'Search' },
 ] as const;
 
+export type LayoutGroupKey = 'homeSections' | 'videoSections' | 'playerSections' | 'librarySections';
+
 export interface LayoutGroupMeta {
-  key: string;
+  key: LayoutGroupKey;
   title: string;
   description: string;
   defaultActionLabel: string;
@@ -61,7 +64,7 @@ export function cloneMobileConfig<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
-export function createLayoutSection(group: string): Record<string, unknown> {
+export function createLayoutSection(group: LayoutGroupKey): Record<string, unknown> {
   const meta = MOBILE_LAYOUT_GROUPS.find((e) => e.key === group);
   const baseName = meta ? meta.title.toLowerCase() : 'section';
   return {
@@ -90,3 +93,56 @@ export function createSettingsHubItem(): Record<string, unknown> {
 export function createAdPlacement(): Record<string, unknown> {
   return { id: makeId('placement'), title: 'Sponsored placement', subtitle: 'Promoted slot inside the mobile app experience.', screen: 'home', enabled: true, maxItems: 1 };
 }
+
+export function createReferralStep(): Record<string, unknown> {
+  return { icon: 'star', title: 'New step', body: 'Describe this step of the referral flow.' };
+}
+
+export function createReferralTier(): Record<string, unknown> {
+  return { icon: 'workspace-premium', threshold: 1, reward: 'Describe the reward for this tier.' };
+}
+
+export function createHelpContact(): Record<string, unknown> {
+  return { id: makeId('contact'), icon: 'info', title: 'New contact option', desc: 'Describe this contact channel.', actionUrl: 'https://' };
+}
+
+export function createFaq(): Record<string, unknown> {
+  return { id: makeId('faq'), q: 'New question?', a: 'Answer this question.' };
+}
+
+export function createHeroStat(): Record<string, unknown> {
+  return { label: 'New stat', value: '—' };
+}
+
+export function createFeatureChip(): Record<string, unknown> {
+  return { icon: 'star', label: 'New feature' };
+}
+
+export function createTeamMember(): Record<string, unknown> {
+  return { name: 'New team member', role: 'Role', desc: 'Describe their role.' };
+}
+
+export function createSocialLink(): Record<string, unknown> {
+  return { icon: 'public', label: 'New link', url: 'https://' };
+}
+
+export function createCurrencyOption(): Record<string, unknown> {
+  return { code: 'USD', label: 'US Dollar', symbol: '$' };
+}
+
+export function createDonateMethod(): Record<string, unknown> {
+  return { id: makeId('method'), icon: 'payments', label: 'New payment method', subtitle: 'Describe this method.' };
+}
+
+export function createDonatePlan(): Record<string, unknown> {
+  return { id: makeId('plan'), name: 'New plan', amount: '$10', period: 'monthly', note: 'Describe this plan.', icon: 'favorite-border' };
+}
+
+export function createImpactItem(): Record<string, unknown> {
+  return { label: 'New category', value: 10, icon: 'pie-chart' };
+}
+
+export const DONATE_PLAN_PERIOD_OPTIONS = [
+  { value: 'once', label: 'One-time' },
+  { value: 'monthly', label: 'Monthly' },
+] as const;
