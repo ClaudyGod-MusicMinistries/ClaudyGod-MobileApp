@@ -13,7 +13,7 @@
     "axios": "^1.18.0"
   },
   "scripts": {
-    "lefthook": "node ./apps/mobile/node_modules/lefthook/bin/index.js",
+    "lefthook": "lefthook",
     "hooks:install": "yarn lefthook install",
     "api:build": "yarn --cwd ./services/api build",
     "api:migrate": "yarn --cwd ./services/api migrate",
