@@ -120,7 +120,7 @@ help:
 	@printf "\n"
 	@printf "$(CYAN)$(BOLD)Git$(NC)\n"
 	@printf "  $(GREEN)%-30s$(NC) %s\n" "make status"              "git status"
-	@printf "  $(GREEN)%-30s$(NC) %s\n" "make pull"                "git pull origin main"
+	@printf "  $(GREEN)%-30s$(NC) %s\n" "make pull"                "safe fast-forward from origin/main"
 	@printf "  $(GREEN)%-30s$(NC) %s\n" "make push"                "git push origin main"
 	@printf "\n"
 	@printf "$(CYAN)$(BOLD)GHCR / CI-CD  (GHCR_OWNER=$(GHCR_OWNER), IMAGE_TAG=$(IMAGE_TAG))$(NC)\n"
@@ -383,7 +383,7 @@ status:
 
 pull:
 	@printf "$(BLUE)Pulling from origin/main...$(NC)\n"
-	git pull origin main
+	git pull --ff-only origin main
 
 push:
 	@printf "$(BLUE)Pushing to origin/main...$(NC)\n"
