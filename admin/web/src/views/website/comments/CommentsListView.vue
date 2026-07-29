@@ -17,7 +17,7 @@
     </AppCard>
 
     <AppCard>
-      <AppResponsiveTable :columns="columns" :rows="rows" :loading="store.isLoading">
+      <AppResponsiveTable :columns="columns" :rows="rows" :loading="store.isLoading" :error="store.error" @retry="store.fetchComments">
         <template #cell-author="{ row }">
           <div>
             <p class="text-sm font-medium text-ink">{{ row.authorName }}</p>

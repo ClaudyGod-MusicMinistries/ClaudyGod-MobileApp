@@ -23,14 +23,10 @@ x-backend-env: &backend-env
   MOBILE_API_KEY: ${MOBILE_API_KEY:?MOBILE_API_KEY is required}
   DATA_ENCRYPTION_KEY: ${DATA_ENCRYPTION_KEY:?DATA_ENCRYPTION_KEY is required}
 
-  # Web Studio (/v1/website/*) proxies to CGM-Backend (the .NET website API)
-  # using these — left optional (not :?required) to match env.ts: an unset
-  # value degrades that one module to a clear 503 instead of failing the
-  # whole container's boot. Same x-api-key CGM-Backend's own ApiKeyMiddleware
-  # expects — the value already used as INTERNAL_API_KEY in the website's own
-  # ClaudyGodweb-Infrastructure .env.
-  CGM_API_BASE_URL: ${CGM_API_BASE_URL:-}
-  CGM_API_KEY: ${CGM_API_KEY:-}
+  # Web Studio is a production-critical integration. Refuse to render a
+  # misleading empty admin workspace when its backend connection is absent.
+  CGM_API_BASE_URL: ${CGM_API_BASE_URL:?CGM_API_BASE_URL is required}
+  CGM_API_KEY: ${CGM_API_KEY:?CGM_API_KEY is required}
 
   AUTH_PUBLIC_BASE_URL: ${AUTH_PUBLIC_BASE_URL:?AUTH_PUBLIC_BASE_URL is required}
   AUTH_VERIFY_EMAIL_PATH: ${AUTH_VERIFY_EMAIL_PATH:-/verify-email}

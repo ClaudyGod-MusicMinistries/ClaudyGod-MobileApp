@@ -292,6 +292,22 @@ const envSchema = z
 
     if (value.NODE_ENV !== 'production') return;
 
+    if (!value.CGM_API_BASE_URL) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['CGM_API_BASE_URL'],
+        message: 'CGM_API_BASE_URL is required for the production Web Studio',
+      });
+    }
+
+    if (!value.CGM_API_KEY || value.CGM_API_KEY.trim().length < 32) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['CGM_API_KEY'],
+        message: 'CGM_API_KEY must match the backend admin gateway key and contain at least 32 characters',
+      });
+    }
+
     const parsedDatabaseUrl = parseDatabaseUrl(value.DATABASE_URL);
     const parsedRedisUrl = parseRedisUrl(value.REDIS_URL);
 

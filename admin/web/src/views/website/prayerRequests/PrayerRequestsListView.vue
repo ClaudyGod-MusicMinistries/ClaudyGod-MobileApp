@@ -3,7 +3,7 @@
     <WebPageHeader :icon="HeartHandshake" title="Prayer requests" subtitle="Submitted through the Prayer page" />
 
     <AppCard>
-      <AppResponsiveTable :columns="columns" :rows="rows" :loading="store.isLoading">
+      <AppResponsiveTable :columns="columns" :rows="rows" :loading="store.isLoading" :error="store.error" @retry="store.fetchPrayerRequests">
         <template #cell-name="{ row }">
           <div>
             <p class="text-sm font-medium text-ink">{{ row.name }}</p>

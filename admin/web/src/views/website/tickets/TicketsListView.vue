@@ -3,7 +3,7 @@
     <WebPageHeader :icon="Ticket" title="Tickets" subtitle="Reservations made against events" />
 
     <AppCard>
-      <AppResponsiveTable :columns="columns" :rows="rows" :loading="store.isLoading">
+      <AppResponsiveTable :columns="columns" :rows="rows" :loading="store.isLoading" :error="store.error" @retry="store.fetchTickets">
         <template #cell-attendee="{ row }">
           <div>
             <p class="text-sm font-medium text-ink">{{ row.attendeeFirstName }} {{ row.attendeeLastName }}</p>

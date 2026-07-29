@@ -6,6 +6,16 @@
       <p class="text-sm text-ink-muted mt-1">Here's what's happening on claudygod.org today.</p>
     </div>
 
+    <AppCard v-if="dashboard.error" class="border-danger/30 bg-danger/10">
+      <AppEmptyState title="Website data is unavailable" :message="dashboard.error">
+        <template #action>
+          <button type="button" class="text-xs font-semibold text-primary hover:text-primary-soft" @click="dashboard.fetchDashboard">
+            Try again
+          </button>
+        </template>
+      </AppEmptyState>
+    </AppCard>
+
     <!-- Pending-attention signals — only shown when something actually needs a look -->
     <div v-if="signals.length" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
       <div
@@ -67,7 +77,7 @@
             {{ item.count }}
           </span>
         </div>
-        <AppEmptyState v-if="!dashboard.data && !dashboard.isLoading" title="Unable to load inbox counts" />
+        <AppEmptyState v-if="!dashboard.data && !dashboard.isLoading && !dashboard.error" title="No dashboard data available" />
       </AppCard>
     </div>
   </div>

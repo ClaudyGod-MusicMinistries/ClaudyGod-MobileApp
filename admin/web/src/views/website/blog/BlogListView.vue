@@ -22,7 +22,7 @@
     </AppCard>
 
     <AppCard>
-      <AppResponsiveTable :columns="columns" :rows="rows" :loading="store.isLoading">
+      <AppResponsiveTable :columns="columns" :rows="rows" :loading="store.isLoading" :error="store.error" @retry="store.fetchPosts">
         <template #cell-title="{ row }">
           <div>
             <p class="text-sm font-medium text-ink max-w-sm truncate">{{ row.title }}</p>

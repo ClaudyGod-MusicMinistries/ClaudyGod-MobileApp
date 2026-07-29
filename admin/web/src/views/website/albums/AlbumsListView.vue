@@ -8,7 +8,7 @@
     </WebPageHeader>
 
     <AppCard>
-      <AppResponsiveTable :columns="columns" :rows="rows" :loading="store.isLoading">
+      <AppResponsiveTable :columns="columns" :rows="rows" :loading="store.isLoading" :error="store.error" @retry="store.fetchAlbums">
         <template #cell-title="{ row }">
           <div class="flex items-center gap-3">
             <img
