@@ -16,6 +16,15 @@ interface CgmEnvelope<T> {
   fieldErrors?: Record<string, string[]>;
 }
 
+interface CgmProblemDetails {
+  title?: string;
+  detail?: string;
+  status?: number;
+  code?: string;
+  correlationId?: string;
+  errors?: Record<string, string[]>;
+}
+
 export interface CgmActor {
   id: string;
   email: string;
@@ -41,23 +50,47 @@ export async function cgmRequest<T>(
   ensureConfigured();
 
   const url = new URL(`${env.CGM_API_BASE_URL}/api/v1.0${path}`);
+  const correlationId = crypto.randomUUID();
   if (options.query) {
     for (const [key, value] of Object.entries(options.query)) {
       if (value !== undefined && value !== '') url.searchParams.set(key, value);
     }
   }
 
-  const response = await fetch(url, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-      'x-api-key': env.CGM_API_KEY,
-      'x-actor-id': actor.id,
-      'x-actor-email': actor.email,
-    },
-    body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15_000);
+  let response: Response;
+
+  try {
+    response = await fetch(url, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'x-api-key': env.CGM_API_KEY,
+        'x-actor-id': actor.id,
+        'x-actor-email': actor.email,
+        'x-correlation-id': correlationId,
+      },
+      body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      log.error('CGM-Backend request timed out', { method, path, correlationId });
+      throw new HttpError(504, 'The website backend took too long to respond', { correlationId });
+    }
+
+    log.error('CGM-Backend request failed', {
+      method,
+      path,
+      correlationId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    throw new HttpError(502, 'The website backend could not be reached', { correlationId });
+  } finally {
+    clearTimeout(timeout);
+  }
 
   const contentType = response.headers.get('content-type') ?? '';
   if (!contentType.includes('json')) {
@@ -66,13 +99,32 @@ export async function cgmRequest<T>(
     throw new HttpError(502, 'The website backend returned an unexpected response');
   }
 
-  const envelope = (await response.json()) as CgmEnvelope<T>;
+  const payload = (await response.json()) as CgmEnvelope<T> | CgmProblemDetails;
+
+  if (!('success' in payload)) {
+    const problem = payload as CgmProblemDetails;
+    throw new HttpError(
+      response.status >= 400 ? response.status : 502,
+      problem.detail || problem.title || 'The website backend rejected the request',
+      {
+        code: problem.code,
+        correlationId: problem.correlationId || response.headers.get('x-correlation-id') || correlationId,
+        fieldErrors: problem.errors,
+      },
+    );
+  }
+
+  const envelope = payload as CgmEnvelope<T>;
 
   if (!response.ok || !envelope.success) {
     throw new HttpError(
       response.status >= 400 ? response.status : 502,
       envelope.message || 'The website backend rejected the request',
-      { errors: envelope.errors, fieldErrors: envelope.fieldErrors },
+      {
+        errors: envelope.errors,
+        fieldErrors: envelope.fieldErrors,
+        correlationId: response.headers.get('x-correlation-id') || correlationId,
+      },
     );
   }
 
