@@ -20,7 +20,7 @@
       >
         <template #cell-title="{ row }">
           <div class="flex items-center gap-3">
-            <div class="w-9 h-9 rounded-lg bg-white/8 overflow-hidden flex-shrink-0">
+            <div class="w-9 h-9 rounded-lg bg-surface-hover overflow-hidden flex-shrink-0">
               <img v-if="row.thumbnailUrl" :src="row.thumbnailUrl as string" alt="" class="w-full h-full object-cover" />
               <div v-else class="w-full h-full flex items-center justify-center">
                 <svg class="w-4 h-4 text-ink-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/></svg>

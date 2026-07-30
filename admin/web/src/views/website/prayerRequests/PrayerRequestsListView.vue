@@ -3,7 +3,7 @@
     <WebPageHeader :icon="HeartHandshake" title="Prayer requests" subtitle="Submitted through the Prayer page" />
 
     <AppCard>
-      <AppResponsiveTable :columns="columns" :rows="rows" :loading="store.isLoading">
+      <AppResponsiveTable :columns="columns" :rows="rows" :loading="store.isLoading" :error="store.error" @retry="store.fetchPrayerRequests">
         <template #cell-name="{ row }">
           <div>
             <p class="text-sm font-medium text-ink">{{ row.name }}</p>
@@ -48,7 +48,7 @@
           <DetailChip label="Status" :value="selected.status" />
         </div>
 
-        <div v-if="selected.adminResponse" class="rounded-xl bg-white/5 border border-border p-4">
+        <div v-if="selected.adminResponse" class="rounded-xl bg-surface-hover border border-border p-4">
           <p class="text-xs font-semibold text-ink-soft uppercase tracking-wide mb-1.5">Response sent</p>
           <p class="text-sm text-ink-soft leading-relaxed whitespace-pre-wrap">{{ selected.adminResponse }}</p>
         </div>

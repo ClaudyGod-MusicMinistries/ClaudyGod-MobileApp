@@ -3,7 +3,7 @@
     <WebPageHeader :icon="Users2" title="Subscribers" subtitle="Newsletter subscribers from the site's signup form" />
 
     <AppCard>
-      <AppResponsiveTable :columns="columns" :rows="rows" :loading="store.isLoading">
+      <AppResponsiveTable :columns="columns" :rows="rows" :loading="store.isLoading" :error="store.error" @retry="store.fetchSubscribers">
         <template #cell-name="{ row }">
           <p class="text-sm font-medium text-ink">{{ row.name || '—' }}</p>
         </template>

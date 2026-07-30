@@ -9,7 +9,7 @@
       :disabled="disabled"
       :required="required"
       :class="[
-        'w-full h-10 bg-surface-strong border rounded-md text-ink text-sm px-3 appearance-none transition-colors duration-fast cursor-pointer',
+        'w-full h-10 bg-surface-strong border rounded-[var(--radius-control)] text-ink text-sm px-3 appearance-none transition-base cursor-pointer',
         'focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/25',
         'disabled:opacity-50 disabled:cursor-not-allowed',
         error ? 'border-danger/60' : 'border-border',

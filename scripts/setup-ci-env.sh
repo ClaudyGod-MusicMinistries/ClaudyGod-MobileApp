@@ -18,6 +18,8 @@ CI_POSTFIX_SMTP_PASSWORD="${CI_POSTFIX_SMTP_PASSWORD:-ci-brevo-password}"
 CI_REDIS_PASSWORD="${CI_REDIS_PASSWORD:-ci-redis-password-with-at-least-thirty-two-characters}"
 CI_JWT_ACCESS_SECRET="${CI_JWT_ACCESS_SECRET:-ci-access-secret-with-at-least-thirty-two-characters}"
 CI_JWT_REFRESH_SECRET="${CI_JWT_REFRESH_SECRET:-ci-refresh-secret-with-at-least-thirty-two-characters}"
+CI_CGM_API_BASE_URL="${CI_CGM_API_BASE_URL:-https://cgm-api.example.com}"
+CI_CGM_API_KEY="${CI_CGM_API_KEY:-ci-cgm-admin-gateway-key-with-at-least-thirty-two-characters}"
 
 cat > "$ROOT_DIR/.env.development" <<EOF
 # Runtime
@@ -47,6 +49,10 @@ AUTH_VERIFICATION_TOKEN_TTL_MINUTES=1440
 AUTH_PASSWORD_RESET_TOKEN_TTL_MINUTES=30
 AUTH_REQUIRE_EMAIL_VERIFICATION=false
 CORS_ORIGIN=https://admin.dev.example.com,https://app.dev.example.com
+
+# Server-to-server CGM backend integration (CI-only validation values)
+CGM_API_BASE_URL=${CI_CGM_API_BASE_URL}
+CGM_API_KEY=${CI_CGM_API_KEY}
 
 # Admin web
 VITE_API_URL=https://api.dev.example.com
@@ -131,6 +137,10 @@ AUTH_VERIFICATION_TOKEN_TTL_MINUTES=1440
 AUTH_PASSWORD_RESET_TOKEN_TTL_MINUTES=30
 AUTH_REQUIRE_EMAIL_VERIFICATION=true
 CORS_ORIGIN=https://admin.example.com,https://app.example.com
+
+# Server-to-server CGM backend integration (CI-only validation values)
+CGM_API_BASE_URL=${CI_CGM_API_BASE_URL}
+CGM_API_KEY=${CI_CGM_API_KEY}
 
 # Admin web
 VITE_API_URL=https://api.example.com

@@ -101,6 +101,27 @@ export async function cgmRequest<T>(
 
   const payload = (await response.json()) as CgmEnvelope<T> | CgmProblemDetails;
 
+  // These statuses come from the server-to-server CGM authentication boundary,
+  // not from the administrator's browser session. Passing them through as 401/403
+  // makes the Axios client refresh/logout the admin and hides the real deployment
+  // fault. Report an upstream gateway failure instead.
+  if (response.status === 401 || response.status === 403) {
+    const upstreamMessage = 'success' in payload
+      ? payload.message
+      : payload.detail || payload.title;
+    log.error('CGM-Backend rejected admin gateway credentials', {
+      status: response.status,
+      path,
+      correlationId: response.headers.get('x-correlation-id') || correlationId,
+      upstreamMessage,
+    });
+    throw new HttpError(
+      502,
+      'The website backend rejected the admin gateway credentials. Check the shared gateway key and backend deployment.',
+      { correlationId: response.headers.get('x-correlation-id') || correlationId },
+    );
+  }
+
   if (!('success' in payload)) {
     const problem = payload as CgmProblemDetails;
     throw new HttpError(

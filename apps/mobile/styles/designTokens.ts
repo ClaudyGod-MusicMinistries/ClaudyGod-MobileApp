@@ -89,15 +89,28 @@ export const blur = { glass: 12 };
 
 // ─── Animation timing (ms) ───────────────────────────────────────────────────
 export const timing = {
-  fast:     150,
-  base:     250,
-  moderate: 350,
-  slow:     500,
+  instant:  100,
+  fast:     140,
+  base:     220,
+  moderate: 300,
+  slow:     420,
+};
+
+// Motion is deliberately restrained. Navigation and overlays use deterministic
+// easing; spring physics are reserved for direct manipulation such as dragging.
+export const motion = {
+  pressScale: 0.985,
+  modalInitialScale: 0.975,
+  modalEnterDuration: 220,
+  modalExitDuration: 180,
+  sheetEnterDuration: 280,
+  sheetExitDuration: 220,
+  contentEnterDistance: 8,
 };
 
 // ─── Interaction constants ────────────────────────────────────────────────────
 export const interaction = {
-  pressScale:      0.98,
+  pressScale:      motion.pressScale,
   hoverOpacity:    0.8,
   activeOpacity:   0.7,
   disabledOpacity: 0.5,

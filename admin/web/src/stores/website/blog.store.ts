@@ -13,6 +13,7 @@ import {
   createBlogTag,
 } from '@/api/website';
 import type { BlogPost, BlogPostDetail, BlogPostInput, BlogCategory, BlogTag } from '@/api/websiteTypes';
+import { useLatestRequest } from '@/composables/useLatestRequest';
 
 const PAGE_SIZE = 20;
 
@@ -21,23 +22,15 @@ export const useBlogStore = defineStore('websiteBlog', () => {
   const total = ref(0);
   const page = ref(1);
   const statusFilter = ref<string | undefined>(undefined);
-  const isLoading = ref(false);
-  const error = ref<string | null>(null);
+  const { isLoading, error, execute } = useLatestRequest();
   const categories = ref<BlogCategory[]>([]);
   const tags = ref<BlogTag[]>([]);
 
   async function fetchPosts(): Promise<void> {
-    isLoading.value = true;
-    error.value = null;
-    try {
-      const result = await listBlogPosts({ page: page.value, pageSize: PAGE_SIZE, status: statusFilter.value });
-      posts.value = result.items;
-      total.value = result.totalCount;
-    } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Failed to load posts';
-    } finally {
-      isLoading.value = false;
-    }
+    await execute(
+      () => listBlogPosts({ page: page.value, pageSize: PAGE_SIZE, status: statusFilter.value }),
+      (result) => { posts.value = result.items; total.value = result.totalCount; },
+    );
   }
 
   function setPage(p: number): void {

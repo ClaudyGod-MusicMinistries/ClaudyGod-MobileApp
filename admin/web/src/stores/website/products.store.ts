@@ -2,22 +2,14 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { listProducts, createProduct, updateProduct, deleteProduct } from '@/api/website';
 import type { Product, ProductInput } from '@/api/websiteTypes';
+import { useLatestRequest } from '@/composables/useLatestRequest';
 
 export const useProductsStore = defineStore('websiteProducts', () => {
   const products = ref<Product[]>([]);
-  const isLoading = ref(false);
-  const error = ref<string | null>(null);
+  const { isLoading, error, execute } = useLatestRequest();
 
   async function fetchProducts(category?: string): Promise<void> {
-    isLoading.value = true;
-    error.value = null;
-    try {
-      products.value = await listProducts(category);
-    } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Failed to load products';
-    } finally {
-      isLoading.value = false;
-    }
+    await execute(() => listProducts(category), (result) => { products.value = result; });
   }
 
   async function saveProduct(input: ProductInput, id?: string): Promise<void> {

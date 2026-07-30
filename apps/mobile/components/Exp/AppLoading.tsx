@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Image, Platform, StatusBar, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Animated, Easing, Image, Platform, StatusBar, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppTheme } from '../../util/colorScheme';
 import { makeStyles } from '../../styles/makeStyles';
@@ -79,15 +79,15 @@ export function AppLoadingScreen() {
     Animated.sequence([
       Animated.parallel([
         Animated.timing(logoOpacity, { toValue: 1, duration: 550, useNativeDriver: USE_NATIVE_DRIVER }),
-        Animated.spring(logoScale,   { toValue: 1, tension: 46, friction: 8, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.timing(logoScale, { toValue: 1, duration: 420, easing: Easing.out(Easing.cubic), useNativeDriver: USE_NATIVE_DRIVER }),
       ]),
       Animated.parallel([
         Animated.timing(nameOpacity, { toValue: 1, duration: 480, useNativeDriver: USE_NATIVE_DRIVER }),
-        Animated.spring(nameSlide,   { toValue: 0, tension: 60, friction: 10, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.timing(nameSlide, { toValue: 0, duration: 300, easing: Easing.out(Easing.cubic), useNativeDriver: USE_NATIVE_DRIVER }),
       ]),
       Animated.parallel([
         Animated.timing(taglineOpacity, { toValue: 1, duration: 420, useNativeDriver: USE_NATIVE_DRIVER }),
-        Animated.spring(taglineSlide,   { toValue: 0, tension: 60, friction: 10, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.timing(taglineSlide, { toValue: 0, duration: 280, easing: Easing.out(Easing.cubic), useNativeDriver: USE_NATIVE_DRIVER }),
       ]),
     ]).start(() => {
       Animated.loop(

@@ -1,7 +1,7 @@
 <template>
-  <AppCard class="p-4 min-h-[116px] flex flex-col justify-between gap-4">
+  <AppCard class="p-4 min-h-[124px] flex flex-col justify-between gap-4" interactive>
     <div class="flex items-center justify-between gap-3">
-      <div :class="['w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0', iconBg]">
+      <div :class="['w-9 h-9 rounded-[var(--radius-control)] flex items-center justify-center flex-shrink-0', iconBg]">
         <slot name="icon" />
       </div>
       <span v-if="trend !== undefined" :class="['text-xs font-bold flex items-center gap-0.5', trend >= 0 ? 'text-success' : 'text-danger']">

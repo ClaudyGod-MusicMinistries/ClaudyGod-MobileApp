@@ -76,7 +76,7 @@
                     'px-3 py-1.5 rounded-full text-xs font-medium border transition-colors',
                     section.contentTypes.includes(ct)
                       ? 'bg-primary/20 border-primary/40 text-primary-soft'
-                      : 'bg-white/4 border-border text-ink-muted hover:border-primary/30 hover:text-ink',
+                      : 'bg-surface-hover border-border text-ink-muted hover:border-primary/30 hover:text-ink',
                   ]"
                   @click="toggleContentType(section, ct)"
                 >

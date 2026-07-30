@@ -34,8 +34,8 @@
               @click="ui.removeToast(toast.id)"
             >{{ toast.action.label }} &rarr;</RouterLink>
           </div>
-          <button type="button" class="p-1 rounded-lg hover:bg-white/10 transition-colors text-ink-muted" @click="ui.removeToast(toast.id)">
-            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+          <button type="button" class="p-1 rounded-lg hover:bg-surface-hover transition-base text-ink-muted hover:text-ink" aria-label="Dismiss notification" data-tooltip="Dismiss" @click="ui.removeToast(toast.id)">
+            <X class="w-3.5 h-3.5" />
           </button>
         </div>
       </TransitionGroup>
@@ -46,6 +46,7 @@
 <script setup lang="ts">
 import { useUiStore } from '@/stores/ui.store';
 import type { ToastTone } from '@/stores/ui.store';
+import { X } from 'lucide-vue-next';
 
 const ui = useUiStore();
 

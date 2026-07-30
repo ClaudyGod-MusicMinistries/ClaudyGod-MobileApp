@@ -22,7 +22,7 @@
     </AppCard>
 
     <AppCard>
-      <AppResponsiveTable :columns="columns" :rows="rows" :loading="store.isLoading">
+      <AppResponsiveTable :columns="columns" :rows="rows" :loading="store.isLoading" :error="store.error" @retry="store.fetchEvents">
         <template #cell-title="{ row }">
           <div>
             <p class="text-sm font-medium text-ink">{{ row.title }}</p>
@@ -67,7 +67,7 @@
 
         <div class="sm:col-span-2 space-y-2">
           <p class="text-xs font-medium text-ink-soft">Flyer image</p>
-          <img v-if="form.flyerImagePath" :src="form.flyerImagePath" alt="" class="w-24 h-24 rounded-lg object-cover bg-white/5" />
+          <img v-if="form.flyerImagePath" :src="form.flyerImagePath" alt="" class="w-24 h-24 rounded-lg object-cover bg-surface-hover" />
           <FileDropzone label="Upload flyer image" accept="image/*" :max-mb="5" pipeline="website"
             @uploaded="onFlyerUploaded" />
         </div>

@@ -13,14 +13,14 @@
   <aside
     :class="[
       'flex flex-col h-full bg-surface-strong border-r border-border transition-all duration-200',
-      'fixed inset-y-0 left-0 z-40 w-[272px]',
+      'fixed inset-y-0 left-0 z-40 w-[var(--layout-sidebar)]',
       'lg:relative lg:z-auto lg:flex-shrink-0',
-      ui.sidebarOpen ? 'lg:w-[272px]' : 'lg:w-[72px]',
+      ui.sidebarOpen ? 'lg:w-[var(--layout-sidebar)]' : 'lg:w-[var(--layout-sidebar-rail)]',
       ui.mobileDrawerOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
     ]"
   >
     <!-- Brand -->
-    <div class="flex items-center gap-3 px-4 py-4 border-b border-border min-h-[68px]">
+    <div class="flex items-center gap-3 px-4 py-4 border-b border-border min-h-[var(--layout-topbar)]">
       <img :src="BRAND_LOGO_URL" alt="ClaudyGod" class="w-9 h-9 rounded-md flex-shrink-0 object-contain border border-border" />
       <Transition name="fade">
         <div v-if="showExpanded" class="overflow-hidden">
@@ -48,7 +48,9 @@
         'flex items-center gap-3 mx-2 mt-3 px-2.5 py-2 rounded-md text-xs font-medium text-ink-soft hover:bg-surface-hover hover:text-ink transition-colors border border-border',
         !showExpanded && 'justify-center',
       ]"
-      :title="!showExpanded ? 'Switch workspace' : undefined"
+      :aria-label="!showExpanded ? 'Switch workspace' : undefined"
+      :data-tooltip="!showExpanded ? 'Switch workspace' : undefined"
+      data-tooltip-side="right"
     >
       <ArrowLeftRight class="w-4 h-4 flex-shrink-0" />
       <Transition name="fade"><span v-if="showExpanded">Switch workspace</span></Transition>
@@ -70,7 +72,9 @@
               ? 'bg-primary/10 text-primary-soft'
               : 'text-ink-soft hover:bg-surface-hover hover:text-ink',
           ]"
-          :title="!showExpanded ? item.label : undefined"
+          :aria-label="!showExpanded ? item.label : undefined"
+          :data-tooltip="!showExpanded ? item.label : undefined"
+          data-tooltip-side="right"
           @click="ui.closeMobileDrawer()"
         >
           <span
@@ -90,7 +94,9 @@
       <button
         type="button"
         :class="['hidden lg:flex items-center gap-3 px-2.5 py-2 w-full rounded-md text-xs font-medium text-ink-soft hover:bg-surface-hover hover:text-ink transition-colors', !showExpanded && 'justify-center']"
-        :title="!showExpanded ? 'Toggle sidebar' : undefined"
+        :aria-label="!showExpanded ? 'Toggle sidebar' : undefined"
+        :data-tooltip="!showExpanded ? 'Toggle sidebar' : undefined"
+        data-tooltip-side="right"
         @click="ui.toggleSidebar()"
       >
         <component :is="showExpanded ? PanelLeftClose : PanelLeft" class="w-4 h-4 flex-shrink-0" />
@@ -99,7 +105,9 @@
       <button
         type="button"
         :class="['flex items-center gap-3 px-2.5 py-2 w-full rounded-md text-xs font-medium text-danger hover:bg-danger/8 transition-colors', !showExpanded && 'justify-center']"
-        :title="!showExpanded ? 'Sign out' : undefined"
+        :aria-label="!showExpanded ? 'Sign out' : undefined"
+        :data-tooltip="!showExpanded ? 'Sign out' : undefined"
+        data-tooltip-side="right"
         @click="auth.logout()"
       >
         <LogOut class="w-4 h-4 flex-shrink-0" />

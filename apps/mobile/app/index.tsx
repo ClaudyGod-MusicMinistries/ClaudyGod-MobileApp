@@ -13,7 +13,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 
 import { CustomText } from '../components/CustomText';
-import { TVTouchable } from '../components/ui/TVTouchable';
+import { AppButton } from '../components/ui/AppButton';
 import { AppLoadingScreen } from '../components/Exp/AppLoading';
 import { useAppTheme } from '../util/colorScheme';
 import { makeStyles } from '../styles/makeStyles';
@@ -44,33 +44,28 @@ const useStyles = makeStyles((theme) => ({
   flex1:     { flex: 1 },
   featureChip: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
-    paddingVertical: 6, paddingHorizontal: 11, borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.10)', borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.16)',
+    paddingVertical: 6, paddingHorizontal: 11, borderRadius: theme.radius.pill,
+    backgroundColor: theme.colors.mediaControl, borderWidth: 1,
+    borderColor: theme.colors.mediaBorder,
   },
-  featureChipText: { color: 'rgba(255,255,255,0.80)', fontSize: 12, fontWeight: '600' },
+  featureChipText: { color: theme.colors.mediaTextMuted, fontSize: 12, fontWeight: '600' },
   brandLabel: {
-    color: 'rgba(255,255,255,0.50)', fontSize: 11, fontWeight: '700',
+    color: theme.colors.mediaTextSubtle, fontSize: 11, fontWeight: '700',
     letterSpacing: 2.5, textTransform: 'uppercase', marginBottom: 10,
   },
-  headlineBase:  { color: '#FFFFFF', fontWeight: '700', letterSpacing: -0.8, marginBottom: 12 },
+  headlineBase:  { color: theme.colors.mediaText, fontWeight: '700', letterSpacing: -0.8, marginBottom: 12 },
+  introCopy: { color: theme.colors.mediaTextMuted },
   chipsRowBase:  { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  ctaBtn: {
-    width: '100%', height: 54, borderRadius: 14,
-    backgroundColor: theme.colors.primary,
-    alignItems: 'center', justifyContent: 'center',
-    flexDirection: 'row', gap: 10,
-  },
-  ctaText: { color: theme.colors.onPrimary, fontSize: 16, fontWeight: '700', letterSpacing: -0.2 },
 }));
 
 // ─── Sub-component ────────────────────────────────────────────────────────────
 
 function FeatureChip({ icon, label }: { icon: React.ComponentProps<typeof MaterialIcons>['name']; label: string }) {
   const styles = useStyles();
+  const theme = useAppTheme();
   return (
     <View style={styles.featureChip}>
-      <MaterialIcons name={icon} size={13} color="rgba(255,255,255,0.80)" />
+      <MaterialIcons name={icon} size={13} color={theme.colors.mediaTextMuted} />
       <CustomText style={styles.featureChipText}>{label}</CustomText>
     </View>
   );
@@ -97,17 +92,17 @@ function BrandIntroScreen({
   const maxWidth = isPhone ? Math.min(width - gutter * 2, 400) : Math.min(520, width - gutter * 2);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(24)).current;
+  const slideAnim = useRef(new Animated.Value(theme.motion.contentEnterDistance)).current;
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(fadeAnim, { toValue: 1, duration: 600, delay: 120, useNativeDriver: USE_NATIVE_DRIVER }),
-      Animated.timing(slideAnim, { toValue: 0, duration: 500, delay: 120, useNativeDriver: USE_NATIVE_DRIVER }),
+      Animated.timing(fadeAnim, { toValue: 1, duration: theme.timing.moderate, delay: 80, useNativeDriver: USE_NATIVE_DRIVER }),
+      Animated.timing(slideAnim, { toValue: 0, duration: theme.timing.moderate, delay: 80, useNativeDriver: USE_NATIVE_DRIVER }),
     ]).start();
-  }, [fadeAnim, slideAnim]);
+  }, [fadeAnim, slideAnim, theme.timing.moderate]);
 
   return (
-    <View style={{ width, height, backgroundColor: '#0a0a0f' }}>
+    <View style={{ width, height, backgroundColor: theme.colors.background }}>
       <Image
         source={BRAND_WORSHIP_ASSET}
         style={{ position: 'absolute', top: 0, left: 0, width, height }}
@@ -115,7 +110,7 @@ function BrandIntroScreen({
       />
 
       <LinearGradient
-        colors={['rgba(5,4,12,0.0)', 'rgba(5,4,12,0.55)', 'rgba(5,4,12,0.92)']}
+        colors={['transparent', theme.colors.mediaScrim, theme.colors.mediaScrimStrong]}
         locations={[0, 0.45, 1]}
         style={StyleSheet.absoluteFillObject}
       />
@@ -158,7 +153,7 @@ function BrandIntroScreen({
             <CustomText
               variant="body"
               style={{
-                color: 'rgba(255,255,255,0.48)',
+                color: theme.colors.mediaTextMuted,
                 fontSize: isPhone ? 14 : 15,
                 lineHeight: isPhone ? 21 : 24,
                 textAlign: isPhone ? 'center' : 'left',
@@ -179,14 +174,15 @@ function BrandIntroScreen({
               ))}
             </View>
 
-            <TVTouchable
+            <AppButton
+              title={ctaLabel}
               onPress={onContinue}
-              showFocusBorder={false}
-              style={styles.ctaBtn}
-            >
-              <MaterialIcons name="explore" size={20} color={theme.colors.onPrimary ?? '#fff'} />
-              <CustomText style={styles.ctaText}>{ctaLabel}</CustomText>
-            </TVTouchable>
+              variant="gradient"
+              size="lg"
+              fullWidth
+              leftIcon={<MaterialIcons name="explore" size={20} color={theme.colors.onPrimary} />}
+              style={{ width: '100%', minHeight: 54 }}
+            />
           </Animated.View>
         </View>
       </SafeAreaView>

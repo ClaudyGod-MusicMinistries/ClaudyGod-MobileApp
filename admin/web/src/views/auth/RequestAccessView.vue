@@ -4,9 +4,9 @@
     <template #panel>
       <div class="max-w-[380px]">
         <p class="text-[11px] font-bold uppercase tracking-[0.2em] mb-5 text-primary-soft/80">Access request</p>
-        <h1 class="font-black leading-[1.06] mb-6 text-ink" style="font-size: clamp(2.2rem, 3.2vw, 2.9rem)">
+        <h1 class="text-display font-bold leading-[1.06] mb-6 text-ink">
           How access<br/>
-          <span style="background: linear-gradient(92deg, #c4b5fd 0%, #818cf8 55%, #8b5cf6 100%); -webkit-background-clip: text; background-clip: text; color: transparent">
+          <span class="text-brand-gradient">
             works.
           </span>
         </h1>
@@ -16,8 +16,7 @@
 
         <div class="space-y-5">
           <div v-for="(step, i) in STEPS" :key="i" class="flex items-start gap-3">
-            <div class="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
-              style="background: rgba(141,99,255,0.15); border: 1px solid rgba(141,99,255,0.30)">
+            <div class="auth-logo w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
               <span class="text-primary-soft text-[11px] font-bold">{{ i + 1 }}</span>
             </div>
             <div>
@@ -35,8 +34,7 @@
       <!-- REQUEST FORM -->
       <div v-if="phase === 'form'" key="form" class="space-y-6">
 
-        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full"
-          style="background: rgba(141,99,255,0.10); border: 1px solid rgba(141,99,255,0.22)">
+        <div class="auth-pill inline-flex items-center gap-2 px-3 py-1.5 rounded-full">
           <svg class="w-3.5 h-3.5 text-primary-soft" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
           </svg>
@@ -86,7 +84,7 @@
                   'flex flex-col items-center gap-1.5 p-3 rounded-xl border text-center transition-all',
                   form.role === r.value
                     ? 'bg-primary/15 border-primary/40 text-primary-soft'
-                    : 'bg-white/3 border-border text-ink-muted hover:border-border-strong hover:text-ink-soft',
+                    : 'bg-surface-hover border-border text-ink-muted hover:border-border-strong hover:text-ink-soft',
                 ]"
                 @click="form.role = r.value"
               >
@@ -112,8 +110,7 @@
 
           <!-- Error -->
           <div v-if="submitError"
-            class="flex items-start gap-3 p-3.5 rounded-xl border"
-            style="background: rgba(225,109,109,0.08); border-color: rgba(225,109,109,0.22)">
+            class="feedback-danger flex items-start gap-3 p-3.5 rounded-xl border">
             <svg class="w-4 h-4 text-danger flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01"/></svg>
             <p class="text-danger text-sm leading-snug">{{ submitError }}</p>
           </div>
@@ -121,8 +118,7 @@
           <button
             type="submit"
             :disabled="isSubmitting"
-            class="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold text-white transition-all mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
-            style="background: linear-gradient(135deg, #7c3aed, #6d28d9); box-shadow: 0 8px 24px rgba(109,40,217,0.25)"
+            class="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold text-white bg-primary hover:bg-primary/90 shadow-glow transition-base mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
           >
             <span v-if="isSubmitting" class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             {{ isSubmitting ? 'Sending request…' : 'Send access request' }}
@@ -141,8 +137,7 @@
 
       <!-- SUCCESS -->
       <div v-else-if="phase === 'success'" key="success" class="text-center py-10 space-y-5">
-        <div class="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto"
-          style="background: rgba(52,211,153,0.10); border: 1px solid rgba(52,211,153,0.22)">
+        <div class="feedback-success w-16 h-16 rounded-2xl flex items-center justify-center mx-auto">
           <svg class="w-8 h-8 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         </div>
         <div>
@@ -152,8 +147,7 @@
             <span class="text-primary-soft font-semibold">{{ form.email }}</span> with a link to set up your account.
           </p>
         </div>
-        <div class="p-4 rounded-xl border text-left max-w-xs mx-auto"
-          style="background: rgba(141,99,255,0.08); border-color: rgba(141,99,255,0.18)">
+        <div class="auth-pill p-4 rounded-xl border text-left max-w-xs mx-auto">
           <p class="text-xs text-ink-muted leading-relaxed">
             <strong class="text-ink-soft">What happens next:</strong><br />
             The Super Admin will review your request and send an invite link to your email. Check your inbox (and spam folder) within 24–48 hours.

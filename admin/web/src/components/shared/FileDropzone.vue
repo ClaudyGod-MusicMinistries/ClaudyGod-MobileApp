@@ -3,8 +3,8 @@
     <!-- Drop zone -->
     <div
       :class="[
-        'relative border-2 border-dashed rounded-xl transition-all cursor-pointer select-none',
-        isDragging  ? 'border-primary bg-primary/6 scale-[1.01]' : 'border-border hover:border-primary/40 hover:bg-white/2',
+        'relative border-2 border-dashed rounded-[var(--radius-card)] transition-base cursor-pointer select-none',
+        isDragging  ? 'border-primary bg-primary/10 scale-[1.01]' : 'border-border hover:border-primary/40 hover:bg-surface-hover',
         isUploading ? 'pointer-events-none' : '',
       ]"
       @dragover.prevent="isDragging = true"
@@ -22,10 +22,8 @@
 
       <!-- Idle state -->
       <div v-if="!isUploading && !uploadedFile" class="p-6 flex flex-col items-center gap-2 text-center">
-        <div class="w-10 h-10 rounded-xl bg-white/6 flex items-center justify-center mb-1">
-          <svg class="w-5 h-5 text-ink-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-          </svg>
+        <div class="w-10 h-10 rounded-xl bg-surface-hover flex items-center justify-center mb-1">
+          <UploadCloud class="w-5 h-5 text-ink-muted" />
         </div>
         <p class="text-sm font-medium text-ink-muted">{{ label }}</p>
         <p class="text-xs text-ink-muted/60">Drop file here or click to browse</p>
@@ -49,7 +47,7 @@
           <span class="text-xs font-bold text-primary tabular-nums">{{ progress }}%</span>
         </div>
         <!-- Progress bar -->
-        <div class="h-1.5 bg-white/8 rounded-full overflow-hidden">
+        <div class="h-1.5 bg-surface-hover rounded-full overflow-hidden">
           <div
             class="h-full bg-gradient-to-r from-primary to-primary-soft rounded-full transition-all duration-300"
             :style="{ width: `${progress}%` }"
@@ -60,10 +58,8 @@
 
       <!-- Uploaded state -->
       <div v-else-if="uploadedFile" class="p-4 flex items-center gap-3">
-        <div class="w-8 h-8 rounded-lg bg-green-500/12 flex items-center justify-center shrink-0">
-          <svg class="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-          </svg>
+        <div class="w-8 h-8 rounded-lg bg-success/10 flex items-center justify-center shrink-0">
+          <Check class="w-4 h-4 text-success" />
         </div>
         <div class="flex-1 min-w-0">
           <p class="text-xs font-semibold text-ink truncate">{{ uploadedFile.name }}</p>
@@ -71,13 +67,12 @@
         </div>
         <button
           type="button"
-          class="p-1.5 rounded-lg hover:bg-white/8 text-ink-muted hover:text-ink transition-colors"
-          title="Replace file"
+          class="p-1.5 rounded-lg hover:bg-surface-hover text-ink-muted hover:text-ink transition-base"
+          aria-label="Replace file"
+          data-tooltip="Replace file"
           @click.stop="reset"
         >
-          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
+          <RefreshCw class="w-3.5 h-3.5" />
         </button>
       </div>
     </div>
@@ -95,6 +90,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { uploadFile, type UploadPipeline } from '@/api/uploads';
+import { Check, RefreshCw, UploadCloud } from 'lucide-vue-next';
 
 const props = withDefaults(defineProps<{
   label: string;

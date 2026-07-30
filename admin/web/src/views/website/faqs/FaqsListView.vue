@@ -8,7 +8,7 @@
     </WebPageHeader>
 
     <AppCard>
-      <AppResponsiveTable :columns="columns" :rows="rows" :loading="store.isLoading">
+      <AppResponsiveTable :columns="columns" :rows="rows" :loading="store.isLoading" :error="store.error" @retry="store.fetchFaqs">
         <template #cell-question="{ row }">
           <p class="text-sm font-medium text-ink max-w-md truncate">{{ row.question }}</p>
         </template>

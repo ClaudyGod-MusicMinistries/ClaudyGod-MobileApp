@@ -8,16 +8,16 @@
     </WebPageHeader>
 
     <AppCard>
-      <AppResponsiveTable :columns="columns" :rows="rows" :loading="store.isLoading">
+      <AppResponsiveTable :columns="columns" :rows="rows" :loading="store.isLoading" :error="store.error" @retry="store.fetchProducts">
         <template #cell-title="{ row }">
           <div class="flex items-center gap-3">
             <img
               v-if="row.image"
               :src="row.image as string"
               alt=""
-              class="w-9 h-9 rounded-lg object-cover flex-shrink-0 bg-white/5"
+              class="w-9 h-9 rounded-lg object-cover flex-shrink-0 bg-surface-hover"
             />
-            <div v-else class="w-9 h-9 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0">
+            <div v-else class="w-9 h-9 rounded-lg bg-surface-hover flex items-center justify-center flex-shrink-0">
               <ShoppingBag class="w-4 h-4 text-ink-muted" />
             </div>
             <p class="text-sm font-medium text-ink">{{ row.title }}</p>
@@ -47,7 +47,7 @@
         <AppTextarea v-model="form.description" label="Description" required class="sm:col-span-2" :rows="3" />
         <div class="sm:col-span-2 space-y-2">
           <p class="text-xs font-medium text-ink-soft">Product image</p>
-          <img v-if="form.image" :src="form.image" alt="" class="w-16 h-16 rounded-lg object-cover bg-white/5" />
+          <img v-if="form.image" :src="form.image" alt="" class="w-16 h-16 rounded-lg object-cover bg-surface-hover" />
           <FileDropzone label="Upload product image" accept="image/*" :max-mb="5" pipeline="website"
             @uploaded="onImageUploaded" />
         </div>

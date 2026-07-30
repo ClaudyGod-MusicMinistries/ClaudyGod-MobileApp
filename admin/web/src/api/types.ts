@@ -44,6 +44,7 @@ export type LoginResponse = LoginSuccessResponse | LoginMfaRequiredResponse;
 export interface RefreshResponse {
   accessToken: string;
   refreshToken: string;
+  user: AdminUser;
 }
 
 // ─── Content ──────────────────────────────────────────────────────────────────

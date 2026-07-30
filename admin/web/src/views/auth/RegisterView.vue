@@ -4,9 +4,9 @@
     <template #panel>
       <div class="max-w-[380px]">
         <p class="text-[11px] font-bold uppercase tracking-[0.2em] mb-5 text-primary-soft/80">Admin workspace</p>
-        <h1 class="font-black leading-[1.06] mb-6 text-ink" style="font-size: clamp(2.2rem, 3.2vw, 2.9rem)">
+        <h1 class="text-display font-bold leading-[1.06] mb-6 text-ink">
           Manage your<br/>
-          <span style="background: linear-gradient(92deg, #c4b5fd 0%, #818cf8 55%, #8b5cf6 100%); -webkit-background-clip: text; background-clip: text; color: transparent">
+          <span class="text-brand-gradient">
             ministry content.
           </span>
         </h1>
@@ -16,8 +16,7 @@
 
         <div class="space-y-4">
           <div v-for="feat in panelFeatures" :key="feat.label" class="flex items-start gap-3">
-            <div class="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
-              style="background: rgba(141,99,255,0.15); border: 1px solid rgba(141,99,255,0.28)">
+            <div class="auth-logo w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
               <component :is="feat.icon" class="w-3.5 h-3.5 text-primary-soft" />
             </div>
             <div>
@@ -40,8 +39,7 @@
 
       <!-- INVALID INVITE -->
       <div v-else-if="phase === 'invalid'" key="invalid" class="space-y-6">
-        <div class="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto"
-          style="background: rgba(225,109,109,0.10); border: 1px solid rgba(225,109,109,0.22)">
+        <div class="feedback-danger w-16 h-16 rounded-2xl flex items-center justify-center mx-auto">
           <AlertTriangle class="w-8 h-8 text-danger" />
         </div>
         <div class="text-center">
@@ -62,8 +60,7 @@
 
       <!-- INVITE FORM -->
       <div v-else-if="phase === 'invite-form'" key="invite-form" class="space-y-6">
-        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full"
-          style="background: rgba(141,99,255,0.10); border: 1px solid rgba(141,99,255,0.22)">
+        <div class="auth-pill inline-flex items-center gap-2 px-3 py-1.5 rounded-full">
           <Mail class="w-3.5 h-3.5 text-primary-soft" />
           <span class="text-primary-soft text-xs font-medium">Invited by {{ invite?.inviterName || 'your admin' }}</span>
         </div>
@@ -124,7 +121,7 @@
                   'flex flex-col items-center gap-1.5 p-3 rounded-xl border text-center transition-all',
                   codeForm.role === r.value
                     ? 'bg-primary/15 border-primary/40 text-primary-soft'
-                    : 'bg-white/3 border-border text-ink-muted hover:border-border-strong hover:text-ink-soft',
+                    : 'bg-surface-hover border-border text-ink-muted hover:border-border-strong hover:text-ink-soft',
                 ]"
                 @click="codeForm.role = r.value"
               >
@@ -176,8 +173,7 @@
 
       <!-- SUCCESS -->
       <div v-else-if="phase === 'success'" key="success" class="text-center py-10 space-y-5">
-        <div class="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto"
-          style="background: rgba(52,211,153,0.10); border: 1px solid rgba(52,211,153,0.22)">
+        <div class="feedback-success w-16 h-16 rounded-2xl flex items-center justify-center mx-auto">
           <CheckCircle2 class="w-8 h-8 text-success" />
         </div>
         <div>
@@ -189,8 +185,7 @@
 
       <!-- VERIFY EMAIL -->
       <div v-else-if="phase === 'verify-email'" key="verify-email" class="text-center py-10 space-y-5">
-        <div class="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto"
-          style="background: rgba(141,99,255,0.10); border: 1px solid rgba(141,99,255,0.22)">
+        <div class="auth-logo w-16 h-16 rounded-2xl flex items-center justify-center mx-auto">
           <MailOpen class="w-8 h-8 text-primary-soft" />
         </div>
         <div>
@@ -324,7 +319,7 @@ const PasswordFields = defineComponent({
 const ErrorBanner = defineComponent({
   props: { message: { type: String, required: true } },
   setup(props) {
-    return () => h('div',{class:'flex items-start gap-3 p-3.5 rounded-xl border',style:'background:rgba(225,109,109,0.08);border-color:rgba(225,109,109,0.22)'},[
+    return () => h('div',{class:'feedback-danger flex items-start gap-3 p-3.5 rounded-xl border'},[
       h('svg',{class:'w-4 h-4 text-danger flex-shrink-0 mt-0.5',fill:'none',viewBox:'0 0 24 24',stroke:'currentColor','stroke-width':2},[h('circle',{cx:'12',cy:'12',r:'10'}),h('path',{'stroke-linecap':'round','stroke-linejoin':'round',d:'M12 8v4m0 4h.01'})]),
       h('p',{class:'text-danger text-sm leading-snug'},props.message),
     ]);
@@ -334,7 +329,7 @@ const ErrorBanner = defineComponent({
 const SubmitButton = defineComponent({
   props: { loading: Boolean, label: { type: String, required: true } },
   setup(props) {
-    return () => h('button',{type:'submit',disabled:props.loading,class:'w-full flex items-center justify-center gap-2 py-2.5 rounded-xl disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-bold transition-all mt-2',style:'background:linear-gradient(135deg,#7c3aed,#6d28d9);box-shadow:0 8px 24px rgba(109,40,217,0.25)'},[
+    return () => h('button',{type:'submit',disabled:props.loading,class:'w-full flex items-center justify-center gap-2 py-2.5 rounded-xl disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-bold bg-primary hover:bg-primary/90 shadow-glow transition-base mt-2'},[
       props.loading?h('span',{class:'w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin'}):null,
       h('span',{},props.loading?'Creating account…':props.label),
     ]);

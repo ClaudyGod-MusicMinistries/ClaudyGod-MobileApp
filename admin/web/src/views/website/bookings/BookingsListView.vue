@@ -17,7 +17,7 @@
     </AppCard>
 
     <AppCard>
-      <AppResponsiveTable :columns="columns" :rows="rows" :loading="store.isLoading">
+      <AppResponsiveTable :columns="columns" :rows="rows" :loading="store.isLoading" :error="store.error" @retry="store.fetchBookings">
         <template #cell-name="{ row }">
           <div>
             <p class="text-sm font-medium text-ink">{{ row.firstName }} {{ row.lastName }}</p>
@@ -73,7 +73,7 @@
           <DetailChip label="Status" :value="selected.status" />
         </div>
 
-        <div v-if="selected.adminNotes" class="rounded-xl bg-white/5 border border-border p-4">
+        <div v-if="selected.adminNotes" class="rounded-xl bg-surface-hover border border-border p-4">
           <p class="text-xs font-semibold text-ink-soft uppercase tracking-wide mb-1.5">Admin notes</p>
           <p class="text-sm text-ink-soft leading-relaxed whitespace-pre-wrap">{{ selected.adminNotes }}</p>
         </div>

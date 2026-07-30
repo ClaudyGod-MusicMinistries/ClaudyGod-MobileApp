@@ -18,16 +18,16 @@
     </AppCard>
 
     <AppCard>
-      <AppResponsiveTable :columns="columns" :rows="rows" :loading="store.isLoading">
+      <AppResponsiveTable :columns="columns" :rows="rows" :loading="store.isLoading" :error="store.error" @retry="store.fetchMedia">
         <template #cell-title="{ row }">
           <div class="flex items-center gap-3">
             <img
               v-if="row.thumbnailPath"
               :src="row.thumbnailPath as string"
               alt=""
-              class="w-14 h-9 rounded-lg object-cover flex-shrink-0 bg-white/5"
+              class="w-14 h-9 rounded-lg object-cover flex-shrink-0 bg-surface-hover"
             />
-            <div v-else class="w-14 h-9 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0">
+            <div v-else class="w-14 h-9 rounded-lg bg-surface-hover flex items-center justify-center flex-shrink-0">
               <Film class="w-4 h-4 text-ink-muted" />
             </div>
             <p class="text-sm font-medium text-ink max-w-xs truncate">{{ row.title }}</p>
@@ -60,7 +60,7 @@
         <AppInput v-model="form.externalUrl" label="External URL (YouTube, etc.)" required placeholder="https://youtu.be/…" />
         <div class="space-y-2">
           <p class="text-xs font-medium text-ink-soft">Thumbnail <span class="text-ink-muted">(optional — defaults to the platform's own thumbnail)</span></p>
-          <img v-if="form.thumbnailUrl" :src="form.thumbnailUrl" alt="" class="w-24 h-14 rounded-lg object-cover bg-white/5" />
+          <img v-if="form.thumbnailUrl" :src="form.thumbnailUrl" alt="" class="w-24 h-14 rounded-lg object-cover bg-surface-hover" />
           <FileDropzone label="Upload thumbnail" accept="image/*" :max-mb="5" pipeline="website"
             @uploaded="onThumbnailUploaded" />
         </div>

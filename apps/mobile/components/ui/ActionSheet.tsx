@@ -31,7 +31,7 @@ interface ActionSheetProps {
 const useStyles = makeStyles((theme) => ({
   actionsList: {
     borderRadius: theme.radius.lg, overflow: 'hidden', borderWidth: 1,
-    borderColor: theme.colors.border, backgroundColor: 'rgba(255,255,255,0.02)',
+    borderColor: theme.colors.border, backgroundColor: theme.colors.surface,
     marginBottom: theme.spacing.md,
   },
   actionRowBase: {
@@ -71,13 +71,13 @@ export function ActionSheet({
       <View style={styles.actionsList}>
         {actions.map((action, index) => {
           const toneColor =
-            action.tone === 'destructive' ? '#F2A7B6' :
+            action.tone === 'destructive' ? theme.colors.danger :
             action.tone === 'accent'      ? theme.colors.primary :
                                            theme.colors.text;
 
           const iconBg =
-            action.tone === 'destructive' ? 'rgba(242, 167, 182, 0.12)' :
-            action.tone === 'accent'      ? 'rgba(139, 92, 246, 0.14)' :
+            action.tone === 'destructive' ? theme.colors.dangerSurface :
+            action.tone === 'accent'      ? theme.colors.primarySurface :
                                            theme.colors.surfaceAlt;
 
           return (

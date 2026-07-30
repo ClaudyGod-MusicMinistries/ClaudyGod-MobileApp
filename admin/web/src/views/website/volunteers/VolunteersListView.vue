@@ -3,7 +3,7 @@
     <WebPageHeader :icon="HandHeart" title="Volunteers" subtitle="Applications submitted through the Volunteer page" />
 
     <AppCard>
-      <AppResponsiveTable :columns="columns" :rows="rows" :loading="store.isLoading">
+      <AppResponsiveTable :columns="columns" :rows="rows" :loading="store.isLoading" :error="store.error" @retry="store.fetchVolunteers">
         <template #cell-name="{ row }">
           <div>
             <p class="text-sm font-medium text-ink">{{ row.firstName }} {{ row.lastName }}</p>

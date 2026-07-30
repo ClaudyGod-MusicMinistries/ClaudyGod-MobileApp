@@ -235,7 +235,7 @@
           class="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/70"
           @click.self="deleteTarget = null"
         >
-          <div class="w-full max-w-sm bg-[#14111f] border border-border rounded-2xl p-6 space-y-4 shadow-2xl">
+          <div class="w-full max-w-sm bg-surface-strong border border-border-strong rounded-[var(--radius-panel)] p-6 space-y-4 shadow-panel">
             <p class="text-base font-bold text-ink">Delete this entry?</p>
             <p class="text-sm text-ink-muted">
               The word for <strong class="text-ink">{{ formatFullDate(deleteTarget.messageDate) }}</strong>

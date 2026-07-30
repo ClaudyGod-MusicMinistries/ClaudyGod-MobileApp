@@ -8,16 +8,16 @@
     </WebPageHeader>
 
     <AppCard>
-      <AppResponsiveTable :columns="columns" :rows="rows" :loading="store.isLoading">
+      <AppResponsiveTable :columns="columns" :rows="rows" :loading="store.isLoading" :error="store.error" @retry="store.fetchAlbums">
         <template #cell-title="{ row }">
           <div class="flex items-center gap-3">
             <img
               v-if="row.imageUrl"
               :src="row.imageUrl as string"
               alt=""
-              class="w-9 h-9 rounded-lg object-cover flex-shrink-0 bg-white/5"
+              class="w-9 h-9 rounded-lg object-cover flex-shrink-0 bg-surface-hover"
             />
-            <div v-else class="w-9 h-9 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0">
+            <div v-else class="w-9 h-9 rounded-lg bg-surface-hover flex items-center justify-center flex-shrink-0">
               <Disc3 class="w-4 h-4 text-ink-muted" />
             </div>
             <p class="text-sm font-medium text-ink">{{ row.title }}</p>
@@ -44,7 +44,7 @@
         <AppInput v-model="form.title" label="Title" required class="sm:col-span-2" />
         <div class="sm:col-span-2 space-y-2">
           <p class="text-xs font-medium text-ink-soft">Cover image</p>
-          <img v-if="form.imageUrl" :src="form.imageUrl" alt="" class="w-16 h-16 rounded-lg object-cover bg-white/5" />
+          <img v-if="form.imageUrl" :src="form.imageUrl" alt="" class="w-16 h-16 rounded-lg object-cover bg-surface-hover" />
           <FileDropzone label="Upload cover image" accept="image/*" :max-mb="5" pipeline="website"
             @uploaded="onCoverUploaded" />
         </div>

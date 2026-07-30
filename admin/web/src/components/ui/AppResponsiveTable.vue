@@ -1,9 +1,21 @@
 <template>
+  <AppEmptyState
+    v-if="error"
+    title="Unable to load data"
+    :message="error"
+  >
+    <template #action>
+      <button type="button" class="text-xs font-semibold text-primary hover:text-primary-soft" @click="emit('retry')">
+        Try again
+      </button>
+    </template>
+  </AppEmptyState>
+
   <!-- Desktop / tablet: the real table, completely unchanged. All slots are
        forwarded through dynamically so call sites don't need to know this
        wrapper exists. -->
   <AppTable
-    v-if="isDesktop"
+    v-else-if="isDesktop"
     :columns="columns"
     :rows="rows"
     :loading="loading"
@@ -53,8 +65,8 @@
     <!-- Loading skeleton -->
     <template v-if="loading">
       <div v-for="i in skeletonRows" :key="i" class="py-4 space-y-2">
-        <div class="h-4 rounded bg-white/8 animate-pulse" style="width: 60%" />
-        <div class="h-3 rounded bg-white/8 animate-pulse" style="width: 35%" />
+        <div class="h-4 w-3/5 rounded bg-surface-hover animate-pulse" />
+        <div class="h-3 w-1/3 rounded bg-surface-hover animate-pulse" />
       </div>
     </template>
 
@@ -120,6 +132,7 @@ const props = withDefaults(defineProps<{
   columns: TableColumn[];
   rows: Record<string, unknown>[];
   loading?: boolean;
+  error?: string | null;
   skeletonRows?: number;
   selectable?: boolean;
   sortKey?: string;
@@ -129,6 +142,7 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
   (e: 'sort', key: string, dir: 'asc' | 'desc'): void;
   (e: 'select', ids: (string | number)[]): void;
+  (e: 'retry'): void;
 }>();
 
 const { isDesktop } = useAdminBreakpoints();

@@ -7,7 +7,7 @@
     </div>
     <span
       v-if="timestamp"
-      class="shrink-0 rounded-full bg-white/8 px-2.5 py-1 text-[10px] font-medium text-ink-muted whitespace-nowrap"
+      class="shrink-0 rounded-full bg-surface-hover px-2.5 py-1 text-[10px] font-medium text-ink-muted whitespace-nowrap"
       :title="exactDateTime(timestamp)"
     >
       {{ relativeTime(timestamp) }}

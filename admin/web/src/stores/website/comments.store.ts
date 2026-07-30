@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { listComments, updateCommentStatus, deleteComment } from '@/api/website';
 import type { AdminComment } from '@/api/websiteTypes';
+import { useLatestRequest } from '@/composables/useLatestRequest';
 
 const PAGE_SIZE = 20;
 
@@ -10,21 +11,13 @@ export const useCommentsStore = defineStore('websiteComments', () => {
   const total = ref(0);
   const page = ref(1);
   const statusFilter = ref<string | undefined>('Pending');
-  const isLoading = ref(false);
-  const error = ref<string | null>(null);
+  const { isLoading, error, execute } = useLatestRequest();
 
   async function fetchComments(): Promise<void> {
-    isLoading.value = true;
-    error.value = null;
-    try {
-      const result = await listComments({ page: page.value, pageSize: PAGE_SIZE, status: statusFilter.value });
-      items.value = result.items;
-      total.value = result.totalCount;
-    } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Failed to load comments';
-    } finally {
-      isLoading.value = false;
-    }
+    await execute(
+      () => listComments({ page: page.value, pageSize: PAGE_SIZE, status: statusFilter.value }),
+      (result) => { items.value = result.items; total.value = result.totalCount; },
+    );
   }
 
   function setPage(p: number): void {

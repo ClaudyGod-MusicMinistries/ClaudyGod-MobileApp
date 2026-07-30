@@ -22,7 +22,7 @@
     </AppCard>
 
     <AppCard>
-      <AppResponsiveTable :columns="columns" :rows="rows" :loading="store.isLoading">
+      <AppResponsiveTable :columns="columns" :rows="rows" :loading="store.isLoading" :error="store.error" @retry="store.fetchPosts">
         <template #cell-title="{ row }">
           <div>
             <p class="text-sm font-medium text-ink max-w-sm truncate">{{ row.title }}</p>
@@ -63,7 +63,7 @@
         <div>
           <p class="text-xs font-semibold text-ink-soft uppercase tracking-wide mb-1.5">Featured image</p>
           <div class="flex items-start gap-3">
-            <div class="w-24 h-24 rounded-xl overflow-hidden bg-white/5 border border-border flex-shrink-0 flex items-center justify-center">
+            <div class="w-24 h-24 rounded-xl overflow-hidden bg-surface-hover border border-border flex-shrink-0 flex items-center justify-center">
               <img
                 v-if="form.featuredImageUrl"
                 :src="form.featuredImageUrl"
@@ -106,7 +106,7 @@
                 'px-2.5 py-1 rounded-full text-xs font-medium border transition-colors',
                 form.tagIds.includes(tag.id)
                   ? 'bg-primary/15 border-primary/30 text-primary-soft'
-                  : 'bg-white/3 border-border text-ink-muted hover:text-ink-soft',
+                  : 'bg-surface-hover border-border text-ink-muted hover:text-ink-soft',
               ]"
               @click="toggleTag(tag.id)"
             >

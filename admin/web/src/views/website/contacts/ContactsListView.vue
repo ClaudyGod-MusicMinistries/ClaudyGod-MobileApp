@@ -3,7 +3,7 @@
     <WebPageHeader :icon="Mail" title="Contact messages" subtitle="Submissions from the Contact page" />
 
     <AppCard>
-      <AppResponsiveTable :columns="columns" :rows="rows" :loading="store.isLoading">
+      <AppResponsiveTable :columns="columns" :rows="rows" :loading="store.isLoading" :error="store.error" @retry="store.fetchContacts">
         <template #cell-name="{ row }">
           <div>
             <p class="text-sm font-medium text-ink">{{ row.name }}</p>

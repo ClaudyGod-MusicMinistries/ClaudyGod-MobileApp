@@ -9,8 +9,7 @@
       </div>
 
       <div v-if="auth.error"
-        class="flex items-start gap-3 p-3.5 rounded-2xl text-sm text-danger font-medium"
-        style="background: rgba(225,109,109,0.08); border: 1px solid rgba(225,109,109,0.22)">
+        class="feedback-danger flex items-start gap-3 p-3.5 rounded-2xl text-sm text-danger font-medium">
         <svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="10"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01"/>
         </svg>
@@ -82,10 +81,9 @@
           :href="googleLoginUrl || '#'"
           :class="[
             'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl text-sm font-semibold transition-colors duration-150',
-            'text-ink-soft hover:text-ink border border-border hover:border-border-strong',
+            'bg-surface-hover text-ink-soft hover:text-ink border border-border hover:border-border-strong',
             !googleLoginUrl && 'opacity-50 pointer-events-none',
           ]"
-          style="background: rgba(255,255,255,0.04)"
         >
           <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="currentColor">
             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -98,10 +96,9 @@
         <a
           :href="facebookLoginUrl || '#'"
           :class="[
-            'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl text-sm font-semibold text-white transition-colors duration-150 hover:opacity-90',
+            'social-facebook flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl text-sm font-semibold text-white transition-base hover:brightness-110',
             !facebookLoginUrl && 'opacity-50 pointer-events-none',
           ]"
-          style="background: #1877F2"
         >
           <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="currentColor">
             <path d="M24 12.073C24 5.404 18.627 0 12 0S0 5.404 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.792-4.697 4.533-4.697 1.313 0 2.686.236 2.686.236v2.97h-1.513c-1.491 0-1.956.93-1.956 1.883v2.27h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/>
@@ -121,8 +118,7 @@
     <!-- Step 2: MFA ──────────────────────────────────────────────────────────── -->
     <form v-else class="space-y-5" @submit.prevent="onMfa">
       <div class="text-center mb-6">
-        <div class="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3"
-          style="background: rgba(141,99,255,0.12); border: 1px solid rgba(141,99,255,0.28)">
+        <div class="auth-logo w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3">
           <ShieldCheck class="w-6 h-6 text-primary-soft" />
         </div>
         <h2 class="text-xl font-black text-ink tracking-tight">Verification code</h2>
@@ -130,8 +126,7 @@
       </div>
 
       <div v-if="auth.error"
-        class="flex items-start gap-3 p-3.5 rounded-2xl text-sm text-danger font-medium"
-        style="background: rgba(225,109,109,0.08); border: 1px solid rgba(225,109,109,0.22)">
+        class="feedback-danger flex items-start gap-3 p-3.5 rounded-2xl text-sm text-danger font-medium">
         <svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="10"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01"/>
         </svg>

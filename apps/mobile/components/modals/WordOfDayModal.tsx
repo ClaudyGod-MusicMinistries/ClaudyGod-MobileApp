@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef } from 'react';
 import {
   Animated,
+  Easing,
   Modal,
   Platform,
   Pressable,
@@ -21,9 +22,6 @@ import type { WordOfDayItem } from '../../services/wordOfDayService';
 
 const SHOWN_DATE_KEY = 'claudygod.word_modal.last_shown';
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
-
-const PRIMARY_FAINT = 'rgba(139,92,246,0.12)';
-const PRIMARY_LIGHT = 'rgba(139,92,246,0.22)';
 
 function todayDateString(): string {
   const d = new Date();
@@ -57,7 +55,7 @@ function formatDate(date = new Date()): string {
 
 const useStyles = makeStyles((theme) => ({
   // Backdrop
-  backdrop:            { ...fillAbsolute, backgroundColor: 'rgba(7,5,12,0.80)' },
+  backdrop:            { ...fillAbsolute, backgroundColor: theme.colors.scrim },
   backfill:            { ...fillAbsolute },
 
   // Layout
@@ -70,21 +68,17 @@ const useStyles = makeStyles((theme) => ({
     borderWidth:     1,
     borderColor:     theme.colors.border,
     overflow:        'hidden',
-    shadowColor:     '#000',
-    shadowOffset:    { width: 0, height: 8 },
-    shadowOpacity:   0.28,
-    shadowRadius:    20,
-    elevation:       12,
+    ...theme.shadows.xl,
   },
   accentBar:           { height: 4, backgroundColor: theme.colors.primary },
-  scrollContent:       { padding: 24, gap: 20 },
+  scrollContent:       { padding: theme.spacing.lg, gap: theme.spacing.lg },
 
   // Modal header
   headerWrapper:       { alignItems: 'center', gap: 4 },
   headerIcon: {
     width: 48, height: 48, borderRadius: 15,
-    backgroundColor: PRIMARY_FAINT,
-    borderWidth: 1.5, borderColor: 'rgba(139,92,246,0.26)',
+    backgroundColor: theme.colors.primarySurface,
+    borderWidth: 1, borderColor: theme.colors.primaryBorder,
     alignItems: 'center', justifyContent: 'center',
     marginBottom: 8,
   },
@@ -123,8 +117,8 @@ const useStyles = makeStyles((theme) => ({
   verseLabelRow:       { flexDirection: 'row', alignItems: 'center', gap: 7 },
   verseIconBox: {
     width: 28, height: 28, borderRadius: 8,
-    backgroundColor: PRIMARY_FAINT,
-    borderWidth: 1, borderColor: PRIMARY_LIGHT,
+    backgroundColor: theme.colors.primarySurface,
+    borderWidth: 1, borderColor: theme.colors.primaryBorder,
     alignItems: 'center', justifyContent: 'center',
   },
   verseLabel: {
@@ -137,8 +131,8 @@ const useStyles = makeStyles((theme) => ({
   },
   versePassagePill: {
     alignSelf: 'flex-start', paddingVertical: 4, paddingHorizontal: 11,
-    borderRadius: 20, backgroundColor: PRIMARY_FAINT,
-    borderWidth: 1, borderColor: PRIMARY_LIGHT,
+    borderRadius: theme.radius.pill, backgroundColor: theme.colors.primarySurface,
+    borderWidth: 1, borderColor: theme.colors.primaryBorder,
   },
   versePassageText:    { color: theme.colors.primary, fontSize: 11.5, fontWeight: '700', letterSpacing: 0.3 },
   verseQuoteBar:       { borderLeftWidth: 3, borderLeftColor: theme.colors.primary, paddingLeft: 12 },
@@ -146,7 +140,7 @@ const useStyles = makeStyles((theme) => ({
     color: theme.colors.text, fontSize: 14, lineHeight: 22,
     fontStyle: 'italic', fontWeight: '500',
   },
-  verseReflectionBox:    { backgroundColor: PRIMARY_FAINT, borderRadius: theme.radius.card, padding: 12 },
+  verseReflectionBox:    { backgroundColor: theme.colors.primarySurface, borderRadius: theme.radius.card, padding: theme.spacing.sm },
   verseReflectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 6 },
   verseReflectionLabel: {
     color: theme.colors.primary, fontSize: 9, fontWeight: '800',
@@ -225,27 +219,27 @@ export function WordOfDayModal({
   const { width, height } = useWindowDimensions();
 
   const backdropOpacity = useRef(new Animated.Value(0)).current;
-  const cardScale      = useRef(new Animated.Value(0.88)).current;
+  const cardScale      = useRef(new Animated.Value(theme.motion.modalInitialScale)).current;
   const cardOpacity    = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     let anim: Animated.CompositeAnimation;
     if (visible) {
       anim = Animated.parallel([
-        Animated.timing(backdropOpacity, { toValue: 1, duration: 240, useNativeDriver: USE_NATIVE_DRIVER }),
-        Animated.spring(cardScale, { toValue: 1, friction: 7, tension: 58, useNativeDriver: USE_NATIVE_DRIVER }),
-        Animated.timing(cardOpacity, { toValue: 1, duration: 200, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.timing(backdropOpacity, { toValue: 1, duration: theme.timing.base, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.timing(cardScale, { toValue: 1, duration: theme.motion.modalEnterDuration, easing: Easing.out(Easing.cubic), useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.timing(cardOpacity, { toValue: 1, duration: theme.motion.modalEnterDuration, easing: Easing.out(Easing.cubic), useNativeDriver: USE_NATIVE_DRIVER }),
       ]);
     } else {
-      cardScale.setValue(0.88);
+      cardScale.setValue(theme.motion.modalInitialScale);
       anim = Animated.parallel([
-        Animated.timing(backdropOpacity, { toValue: 0, duration: 180, useNativeDriver: USE_NATIVE_DRIVER }),
-        Animated.timing(cardOpacity, { toValue: 0, duration: 140, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.timing(backdropOpacity, { toValue: 0, duration: theme.motion.modalExitDuration, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.timing(cardOpacity, { toValue: 0, duration: theme.motion.modalExitDuration, useNativeDriver: USE_NATIVE_DRIVER }),
       ]);
     }
     anim.start();
     return () => anim.stop();
-  }, [visible, backdropOpacity, cardOpacity, cardScale]);
+  }, [visible, backdropOpacity, cardOpacity, cardScale, theme.motion.modalEnterDuration, theme.motion.modalExitDuration, theme.motion.modalInitialScale, theme.timing.base]);
 
   const handleReadMore = useCallback(() => {
     onClose();
@@ -265,7 +259,7 @@ export function WordOfDayModal({
       statusBarTranslucent
       onRequestClose={onClose}
     >
-      <StatusBar backgroundColor="rgba(7,5,12,0.85)" barStyle="light-content" />
+      <StatusBar backgroundColor={theme.colors.background} barStyle={theme.scheme === 'dark' ? 'light-content' : 'dark-content'} />
 
       <Animated.View style={[styles.backdrop, { opacity: backdropOpacity }]}>
         <Pressable style={styles.backfill} onPress={onClose} />

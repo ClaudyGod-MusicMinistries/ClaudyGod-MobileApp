@@ -2,22 +2,14 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { listAlbums, createAlbum, updateAlbum, deleteAlbum } from '@/api/website';
 import type { Album, AlbumInput } from '@/api/websiteTypes';
+import { useLatestRequest } from '@/composables/useLatestRequest';
 
 export const useAlbumsStore = defineStore('websiteAlbums', () => {
   const albums = ref<Album[]>([]);
-  const isLoading = ref(false);
-  const error = ref<string | null>(null);
+  const { isLoading, error, execute } = useLatestRequest();
 
   async function fetchAlbums(): Promise<void> {
-    isLoading.value = true;
-    error.value = null;
-    try {
-      albums.value = await listAlbums();
-    } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Failed to load albums';
-    } finally {
-      isLoading.value = false;
-    }
+    await execute(listAlbums, (result) => { albums.value = result; });
   }
 
   async function saveAlbum(input: AlbumInput, id?: string): Promise<void> {

@@ -10,15 +10,12 @@ import {
   TextInput,
   StyleSheet,
   Animated,
-  Platform,
   type StyleProp,
   type ViewStyle,
   TextInputProps as RNTextInputProps,
 } from 'react-native';
 import { useAppTheme } from '../../util/colorScheme';
 import { CustomText } from '../CustomText';
-
-const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
 interface ModernInputProps extends RNTextInputProps {
   label?: string;
@@ -39,35 +36,22 @@ export const ModernInput: React.FC<ModernInputProps> = ({
   const theme = useAppTheme();
   const [value, setValue] = useState('');
   const focusAnim = React.useRef(new Animated.Value(0)).current;
-  const scaleAnim = React.useRef(new Animated.Value(1)).current;
 
   const handleFocus = () => {
-    Animated.parallel([
-      Animated.timing(focusAnim, {
-        toValue: 1,
-        duration: 200,
-        useNativeDriver: false,
-      }),
-      Animated.spring(scaleAnim, {
-        toValue: 1.02,
-        useNativeDriver: USE_NATIVE_DRIVER,
-      }),
-    ]).start();
+    Animated.timing(focusAnim, {
+      toValue: 1,
+      duration: theme.timing.fast,
+      useNativeDriver: false,
+    }).start();
   };
 
   const handleBlur = () => {
     if (!value) {
-      Animated.parallel([
-        Animated.timing(focusAnim, {
-          toValue: 0,
-          duration: 200,
-          useNativeDriver: false,
-        }),
-        Animated.spring(scaleAnim, {
-          toValue: 1,
-          useNativeDriver: USE_NATIVE_DRIVER,
-        }),
-      ]).start();
+      Animated.timing(focusAnim, {
+        toValue: 0,
+        duration: theme.timing.fast,
+        useNativeDriver: false,
+      }).start();
     }
   };
 
@@ -110,7 +94,6 @@ export const ModernInput: React.FC<ModernInputProps> = ({
           variantStyles[variant],
           {
             borderColor: variant === 'outlined' || variant === 'flat' ? borderColor : undefined,
-            transform: [{ scale: scaleAnim }],
             shadowColor: theme.colors.primary,
             shadowOpacity,
             shadowRadius: 8,
