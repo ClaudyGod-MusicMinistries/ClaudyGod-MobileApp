@@ -1,16 +1,17 @@
 ﻿<template>
-  <div class="space-y-5">
-    <div class="flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-primary">Operations overview</p>
-        <h2 class="text-xl font-bold text-ink mt-1">{{ greeting }}, {{ firstName }}</h2>
-        <p class="text-sm text-ink-muted mt-1">Monitor publishing, audience activity, and items requiring attention.</p>
-      </div>
+  <AppPage eyebrow="Mobile operations" :title="`${greeting}, ${firstName}`" description="Monitor publishing, audience activity, and items requiring attention across the mobile experience.">
+    <template #actions>
       <AppButton variant="secondary" size="sm" :loading="dashboard.isLoading" @click="dashboard.fetchDashboard()">
         <RefreshCw class="w-4 h-4" />
         Refresh data
       </AppButton>
-    </div>
+    </template>
+
+    <AppCard v-if="dashboard.error" class="border-danger/30 bg-danger/10">
+      <AppEmptyState title="Mobile dashboard is unavailable" :message="dashboard.error">
+        <template #action><AppButton size="sm" variant="secondary" @click="dashboard.fetchDashboard">Try again</AppButton></template>
+      </AppEmptyState>
+    </AppCard>
 
     <!-- Signals — real, computed operational insights, not decoration -->
     <div v-if="signals.length" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
@@ -166,7 +167,7 @@
         </div>
       </aside>
     </div>
-  </div>
+  </AppPage>
 </template>
 
 <script setup lang="ts">
@@ -181,6 +182,7 @@ import AppBadge from '@/components/ui/AppBadge.vue';
 import AppButton from '@/components/ui/AppButton.vue';
 import AppStatCard from '@/components/ui/AppStatCard.vue';
 import AppEmptyState from '@/components/ui/AppEmptyState.vue';
+import AppPage from '@/components/ui/AppPage.vue';
 import StatusBadge from '@/components/shared/StatusBadge.vue';
 
 const dashboard = useDashboardStore();

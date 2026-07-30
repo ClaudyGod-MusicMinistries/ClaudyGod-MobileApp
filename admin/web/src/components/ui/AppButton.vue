@@ -9,6 +9,8 @@
       { 'w-full': fullWidth },
     ]"
     :disabled="disabled || loading"
+    :aria-label="ariaLabel || tooltip || undefined"
+    :data-tooltip="tooltip || undefined"
     @click="$emit('click', $event)"
   >
     <AppSpinner v-if="loading" size="sm" />
@@ -31,6 +33,8 @@ const props = withDefaults(defineProps<{
   fullWidth?: boolean;
   href?: string;
   tag?: string;
+  tooltip?: string;
+  ariaLabel?: string;
 }>(), { variant: 'primary', size: 'md' });
 
 defineEmits<{ (e: 'click', evt: MouseEvent): void }>();
@@ -39,10 +43,10 @@ const tag = computed(() => props.href ? 'a' : (props.tag || 'button'));
 const tagProps = computed(() => props.href ? { href: props.href } : { type: 'button' });
 
 const sizeClass = computed(() => ({
-  xs: 'h-8 px-2.5 text-xs rounded-md',
-  sm: 'h-9 px-3 text-[13px] rounded-md',
-  md: 'h-10 px-4 text-sm rounded-md',
-  lg: 'h-11 px-5 text-sm rounded-lg',
+  xs: 'h-8 px-2.5 text-xs rounded-[var(--radius-control)]',
+  sm: 'h-9 px-3 text-[13px] rounded-[var(--radius-control)]',
+  md: 'h-10 px-4 text-sm rounded-[var(--radius-control)]',
+  lg: 'h-11 px-5 text-sm rounded-[var(--radius-control)]',
 }[props.size]));
 
 const variantClass = computed(() => ({

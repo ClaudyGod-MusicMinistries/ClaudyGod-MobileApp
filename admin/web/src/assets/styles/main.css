@@ -40,7 +40,7 @@
   --info: 37 99 235;
   --info-muted: 37 99 235 / 0.12;
 
-  --font-body: "Inter", "Aptos", "Segoe UI Variable", "SF Pro Text", system-ui, -apple-system, sans-serif;
+  --font-body: "Aptos", "Segoe UI Variable", "SF Pro Text", Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   --shadow-card: 0 1px 2px rgb(16 24 40 / 0.04), 0 8px 24px rgb(16 24 40 / 0.035);
   --shadow-raised: 0 12px 36px rgb(16 24 40 / 0.10), 0 2px 8px rgb(16 24 40 / 0.05);
   --shadow-overlay: 0 32px 80px rgb(16 24 40 / 0.24), 0 8px 24px rgb(16 24 40 / 0.12);
@@ -131,6 +131,14 @@ body {
 }
 
 button, input, select, textarea { font: inherit; }
+button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-body);
+  text-wrap: balance;
+}
+
+p { text-wrap: pretty; }
 
 ::selection {
   color: rgb(var(--ink));
@@ -181,6 +189,38 @@ button, input, select, textarea { font: inherit; }
   gap: 1.25rem;
   align-items: start;
 }
+
+/* Lightweight automatic tooltip for repeated icon/navigation controls. Complex
+   or dynamic content uses AppTooltip; this form keeps collapsed rails consistent. */
+[data-tooltip] { position: relative; }
+[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  z-index: 90;
+  left: 50%;
+  top: calc(100% + .5rem);
+  width: max-content;
+  max-width: 15rem;
+  transform: translate(-50%, -.2rem) scale(.98);
+  padding: .4rem .625rem;
+  border: 1px solid rgb(var(--border-strong));
+  border-radius: .5rem;
+  color: rgb(var(--ink));
+  background: rgb(var(--surface-strong));
+  box-shadow: var(--shadow-raised);
+  font-size: .75rem;
+  font-weight: 600;
+  line-height: 1.25rem;
+  white-space: normal;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--motion-fast) var(--ease-standard), transform var(--motion-fast) var(--ease-standard);
+}
+[data-tooltip]:hover::after, [data-tooltip]:focus-visible::after {
+  opacity: 1;
+  transform: translate(-50%, 0) scale(1);
+}
+[data-tooltip=""]::after { display: none; }
 
 @media (max-width: 1279px) {
   .app-grid-dashboard { grid-template-columns: minmax(0, 1fr); }

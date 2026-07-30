@@ -47,9 +47,9 @@
         <tbody>
           <template v-if="loading">
             <tr v-for="i in skeletonRows" :key="i" class="border-b border-border/50">
-              <td v-if="selectable" class="px-4 py-3"><div class="w-4 h-4 rounded bg-white/8 animate-pulse" /></td>
+              <td v-if="selectable" class="px-4 py-3"><div class="w-4 h-4 rounded bg-surface-hover animate-pulse" /></td>
               <td v-for="col in columns" :key="col.key" :class="['px-4 py-3', col.align === 'right' ? 'text-right' : '']">
-                <div class="h-4 rounded bg-white/8 animate-pulse" :style="{ width: `${Math.random() * 40 + 40}%` }" />
+                <div class="h-4 rounded bg-surface-hover animate-pulse" :style="{ width: `${Math.random() * 40 + 40}%` }" />
               </td>
               <td v-if="$slots.actions" class="px-4 py-3" />
             </tr>

@@ -23,7 +23,7 @@
         :disabled="disabled"
         :required="required"
         :class="[
-          'w-full h-10 border rounded-md text-sm transition-colors duration-fast',
+          'w-full h-10 border rounded-[var(--radius-control)] text-sm transition-base',
           'focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed',
           $slots['prefix'] ? 'pl-9' : 'pl-4',
           $slots['suffix'] ? 'pr-9' : 'pr-4',

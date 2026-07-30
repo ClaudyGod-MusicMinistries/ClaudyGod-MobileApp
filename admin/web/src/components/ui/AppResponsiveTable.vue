@@ -65,8 +65,8 @@
     <!-- Loading skeleton -->
     <template v-if="loading">
       <div v-for="i in skeletonRows" :key="i" class="py-4 space-y-2">
-        <div class="h-4 rounded bg-white/8 animate-pulse" style="width: 60%" />
-        <div class="h-3 rounded bg-white/8 animate-pulse" style="width: 35%" />
+        <div class="h-4 rounded bg-surface-hover animate-pulse" style="width: 60%" />
+        <div class="h-3 rounded bg-surface-hover animate-pulse" style="width: 35%" />
       </div>
     </template>
 
