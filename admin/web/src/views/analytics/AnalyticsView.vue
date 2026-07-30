@@ -44,7 +44,7 @@
             </template>
             <template #cell-avgCompletionPct="{ value }">
               <div class="flex items-center gap-2">
-                <div class="flex-1 bg-white/8 rounded-full h-1.5 max-w-20">
+                <div class="flex-1 bg-surface-hover rounded-full h-1.5 max-w-20">
                   <div class="bg-primary h-1.5 rounded-full" :style="{ width: `${Math.min(Number(value), 100)}%` }" />
                 </div>
                 <span class="text-xs text-ink-muted tabular-nums">{{ (Number(value)).toFixed(0) }}%</span>
@@ -118,6 +118,6 @@ onMounted(async () => {
 });
 
 function trendBg(trend: string): string {
-  return { up: 'bg-success/15', down: 'bg-danger/15', stable: 'bg-white/8' }[trend] ?? 'bg-white/8';
+  return { up: 'bg-success/15', down: 'bg-danger/15', stable: 'bg-surface-hover' }[trend] ?? 'bg-surface-hover';
 }
 </script>

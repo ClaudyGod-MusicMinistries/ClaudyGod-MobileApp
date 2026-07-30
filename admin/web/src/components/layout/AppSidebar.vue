@@ -57,7 +57,9 @@
               ? 'bg-primary/10 text-primary-soft'
               : 'text-ink-soft hover:bg-surface-hover hover:text-ink',
           ]"
-          :title="!showExpanded ? item.label : undefined"
+          :aria-label="!showExpanded ? item.label : undefined"
+          :data-tooltip="!showExpanded ? item.label : undefined"
+          data-tooltip-side="right"
           @click="ui.closeMobileDrawer()"
         >
           <span
@@ -77,7 +79,9 @@
       <button
         type="button"
         :class="['hidden lg:flex items-center gap-3 px-2.5 py-2 w-full rounded-md text-xs font-medium text-ink-soft hover:bg-surface-hover hover:text-ink transition-colors', !showExpanded && 'justify-center']"
-        :title="!showExpanded ? 'Toggle sidebar' : undefined"
+        :aria-label="!showExpanded ? 'Toggle sidebar' : undefined"
+        :data-tooltip="!showExpanded ? 'Toggle sidebar' : undefined"
+        data-tooltip-side="right"
         @click="ui.toggleSidebar()"
       >
         <component :is="showExpanded ? PanelLeftClose : PanelLeft" class="w-4 h-4 flex-shrink-0" />
@@ -86,7 +90,9 @@
       <button
         type="button"
         :class="['flex items-center gap-3 px-2.5 py-2 w-full rounded-md text-xs font-medium text-danger hover:bg-danger/8 transition-colors', !showExpanded && 'justify-center']"
-        :title="!showExpanded ? 'Sign out' : undefined"
+        :aria-label="!showExpanded ? 'Sign out' : undefined"
+        :data-tooltip="!showExpanded ? 'Sign out' : undefined"
+        data-tooltip-side="right"
         @click="auth.logout()"
       >
         <LogOut class="w-4 h-4 flex-shrink-0" />
@@ -186,6 +192,6 @@ const NAV_GROUPS = [
 </script>
 
 <style scoped>
-.fade-enter-active, .fade-leave-active { transition: opacity 0.15s ease; }
-.fade-enter-from, .fade-leave-to { opacity: 0; }
+.fade-enter-active, .fade-leave-active { transition: opacity var(--motion-base) var(--ease-standard), transform var(--motion-base) var(--ease-standard); }
+.fade-enter-from, .fade-leave-to { opacity: 0; transform: translateX(-3px); }
 </style>

@@ -2,7 +2,7 @@
   <div class="max-w-4xl mx-auto space-y-6">
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div class="flex items-center gap-3">
-        <RouterLink to="/content" class="p-2 rounded-xl hover:bg-white/8 text-ink-muted transition-colors">
+        <RouterLink to="/content" class="p-2 rounded-xl hover:bg-surface-hover text-ink-muted transition-base">
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
         </RouterLink>
         <div class="flex items-center gap-2.5">
@@ -126,7 +126,7 @@
                   'px-3 py-1.5 rounded-full text-xs font-medium border transition-colors inline-flex items-center gap-1',
                   form.appSections.includes(s.value)
                     ? 'bg-primary/20 border-primary/40 text-primary-soft'
-                    : 'bg-white/4 border-border text-ink-muted hover:border-primary/30 hover:text-ink',
+                    : 'bg-surface-hover border-border text-ink-muted hover:border-primary/30 hover:text-ink',
                 ]"
                 @click="toggleSection(s.value)"
               >
@@ -150,7 +150,7 @@
                 v-model="newSectionTag"
                 type="text"
                 placeholder="Section name…"
-                class="px-3 py-1.5 rounded-full text-xs font-medium bg-white/4 border border-primary/40 text-ink placeholder:text-ink-muted focus:outline-none w-32"
+                class="px-3 py-1.5 rounded-full text-xs font-medium bg-surface-hover border border-primary/40 text-ink placeholder:text-ink-muted focus:outline-none w-32"
                 @keydown.enter.prevent="addSectionTag"
                 @blur="addSectionTag"
               />

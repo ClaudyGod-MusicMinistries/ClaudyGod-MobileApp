@@ -47,7 +47,7 @@
               <span class="drag-handle cursor-grab text-ink-muted shrink-0" title="Drag to reorder">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 8h16M4 16h16"/></svg>
               </span>
-              <div class="w-9 h-9 rounded-lg bg-white/8 overflow-hidden flex-shrink-0">
+              <div class="w-9 h-9 rounded-lg bg-surface-hover overflow-hidden flex-shrink-0">
                 <img v-if="element.thumbnailUrl" :src="element.thumbnailUrl" alt="" class="w-full h-full object-cover" />
               </div>
               <p class="text-sm font-medium text-ink truncate flex-1 min-w-0">{{ element.title }}</p>

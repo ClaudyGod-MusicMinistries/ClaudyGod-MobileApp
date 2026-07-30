@@ -221,6 +221,14 @@ p { text-wrap: pretty; }
   transform: translate(-50%, 0) scale(1);
 }
 [data-tooltip=""]::after { display: none; }
+[data-tooltip-side="right"]::after {
+  left: calc(100% + .5rem);
+  top: 50%;
+  transform: translate(-.2rem, -50%) scale(.98);
+}
+[data-tooltip-side="right"]:hover::after, [data-tooltip-side="right"]:focus-visible::after {
+  transform: translate(0, -50%) scale(1);
+}
 
 @media (max-width: 1279px) {
   .app-grid-dashboard { grid-template-columns: minmax(0, 1fr); }

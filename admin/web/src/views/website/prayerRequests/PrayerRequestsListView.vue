@@ -48,7 +48,7 @@
           <DetailChip label="Status" :value="selected.status" />
         </div>
 
-        <div v-if="selected.adminResponse" class="rounded-xl bg-white/5 border border-border p-4">
+        <div v-if="selected.adminResponse" class="rounded-xl bg-surface-hover border border-border p-4">
           <p class="text-xs font-semibold text-ink-soft uppercase tracking-wide mb-1.5">Response sent</p>
           <p class="text-sm text-ink-soft leading-relaxed whitespace-pre-wrap">{{ selected.adminResponse }}</p>
         </div>
