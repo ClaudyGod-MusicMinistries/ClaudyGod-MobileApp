@@ -1,53 +1,27 @@
 import axios from 'axios';
 import type { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
-import { resolveApiUrl, REFRESH_TOKEN_KEY } from '@/utils/constants';
-import { useAuthStore } from '@/stores/auth.store';
-import type { RefreshResponse } from './types';
+import { resolveApiUrl } from '@/utils/constants';
+import { normalizeApiError } from './apiError';
+import { getAccessToken, notifySessionExpired, refreshSession } from './session';
+
+export { clearAccessToken, clearRefreshToken, getAccessToken, getRefreshToken, refreshSession, setAccessToken, setRefreshToken } from './session';
 
 export const API_URL = resolveApiUrl();
 
 export const client: AxiosInstance = axios.create({
   baseURL: API_URL,
   timeout: 20_000,
-  headers: { 'Content-Type': 'application/json' },
+  headers: { Accept: 'application/json' },
 });
 
 // In-memory access token — never written to localStorage.
-let _accessToken = '';
-let _refreshing: Promise<string> | null = null;
-
-export function setAccessToken(token: string): void {
-  _accessToken = token;
-}
-
-export function getAccessToken(): string {
-  return _accessToken;
-}
-
-export function clearAccessToken(): void {
-  _accessToken = '';
-}
-
-export function getRefreshToken(): string {
-  try { return localStorage.getItem(REFRESH_TOKEN_KEY) || ''; }
-  catch { return ''; }
-}
-
-export function setRefreshToken(token: string): void {
-  try { localStorage.setItem(REFRESH_TOKEN_KEY, token); }
-  catch { /* storage blocked */ }
-}
-
-export function clearRefreshToken(): void {
-  try { localStorage.removeItem(REFRESH_TOKEN_KEY); }
-  catch { /* storage blocked */ }
-}
-
 // ─── Request interceptor ─────────────────────────────────────────────────────
 
 client.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  if (_accessToken) {
-    config.headers.Authorization = `Bearer ${_accessToken}`;
+  config.headers['X-Request-ID'] = crypto.randomUUID();
+  const token = getAccessToken();
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
@@ -63,50 +37,21 @@ client.interceptors.response.use(
     // code 403"-style string. Surface the backend's actual message here, once,
     // centrally — every existing `e.message` toast across the app benefits instead
     // of each call site needing to know to reach into `error.response.data`.
-    const backendMessage = error.response?.data?.message || error.response?.data?.error;
-    if (typeof backendMessage === 'string' && backendMessage.trim()) {
-      error.message = backendMessage;
-    }
-
     const original = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
     if (error.response?.status !== 401 || original._retry) {
-      return Promise.reject(error as Error);
+      return Promise.reject(normalizeApiError(error));
     }
 
     original._retry = true;
 
     try {
-      // Deduplicate concurrent 401s — only one refresh flight at a time.
-      if (!_refreshing) {
-        _refreshing = (async () => {
-          const rt = getRefreshToken();
-          if (!rt) throw new Error('No refresh token');
-          const { data } = await axios.post<RefreshResponse>(
-            `${API_URL}/v1/auth/refresh`,
-            { refreshToken: rt },
-          );
-          setAccessToken(data.accessToken);
-          setRefreshToken(data.refreshToken);
-          return data.accessToken;
-        })().finally(() => { _refreshing = null; });
-      }
-
-      await _refreshing;
-
-      original.headers.Authorization = `Bearer ${_accessToken}`;
+      const session = await refreshSession();
+      original.headers.Authorization = `Bearer ${session.accessToken}`;
       return client(original);
     } catch {
-      // Refresh failed — trigger logout via auth store. useAuthStore is a plain
-      // function reference at import time (Pinia doesn't run the store's setup
-      // body until first call), and this call itself only ever fires at request
-      // time — well after the module graph has finished initializing — so the
-      // static circular import with auth.store.ts (which imports token helpers
-      // from this file) is safe.
-      clearAccessToken();
-      clearRefreshToken();
-      useAuthStore().logout();
-      return Promise.reject(error as Error);
+      notifySessionExpired();
+      return Promise.reject(normalizeApiError(error));
     }
   },
 );

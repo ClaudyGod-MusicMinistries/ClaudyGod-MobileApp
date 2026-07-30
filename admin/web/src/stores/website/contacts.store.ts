@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { listContacts, deleteContact } from '@/api/website';
 import type { ContactMessage } from '@/api/websiteTypes';
+import { useLatestRequest } from '@/composables/useLatestRequest';
 
 const PAGE_SIZE = 20;
 
@@ -9,21 +10,13 @@ export const useContactsStore = defineStore('websiteContacts', () => {
   const items = ref<ContactMessage[]>([]);
   const total = ref(0);
   const page = ref(1);
-  const isLoading = ref(false);
-  const error = ref<string | null>(null);
+  const { isLoading, error, execute } = useLatestRequest();
 
   async function fetchContacts(): Promise<void> {
-    isLoading.value = true;
-    error.value = null;
-    try {
-      const result = await listContacts({ page: page.value, pageSize: PAGE_SIZE });
-      items.value = result.items;
-      total.value = result.totalCount;
-    } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Failed to load contact messages';
-    } finally {
-      isLoading.value = false;
-    }
+    await execute(
+      () => listContacts({ page: page.value, pageSize: PAGE_SIZE }),
+      (result) => { items.value = result.items; total.value = result.totalCount; },
+    );
   }
 
   function setPage(p: number): void {

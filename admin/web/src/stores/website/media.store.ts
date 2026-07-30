@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { listMedia, createMediaLink, updateMediaLink, deleteMedia } from '@/api/website';
 import type { MediaItem, MediaLinkInput } from '@/api/websiteTypes';
+import { useLatestRequest } from '@/composables/useLatestRequest';
 
 const PAGE_SIZE = 20;
 
@@ -10,21 +11,13 @@ export const useMediaStore = defineStore('websiteMedia', () => {
   const total = ref(0);
   const page = ref(1);
   const typeFilter = ref<string | undefined>(undefined);
-  const isLoading = ref(false);
-  const error = ref<string | null>(null);
+  const { isLoading, error, execute } = useLatestRequest();
 
   async function fetchMedia(): Promise<void> {
-    isLoading.value = true;
-    error.value = null;
-    try {
-      const result = await listMedia({ page: page.value, pageSize: PAGE_SIZE, type: typeFilter.value });
-      items.value = result.items;
-      total.value = result.totalCount;
-    } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Failed to load media';
-    } finally {
-      isLoading.value = false;
-    }
+    await execute(
+      () => listMedia({ page: page.value, pageSize: PAGE_SIZE, type: typeFilter.value }),
+      (result) => { items.value = result.items; total.value = result.totalCount; },
+    );
   }
 
   function setPage(p: number): void {

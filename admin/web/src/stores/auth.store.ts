@@ -1,22 +1,20 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { useIdle } from '@vueuse/core';
-import { login as apiLogin, loginWithMfa, logout as apiLogout, getMe } from '@/api/auth';
+import { login as apiLogin, loginWithMfa, logout as apiLogout } from '@/api/auth';
 import {
   setAccessToken,
   clearAccessToken,
   getRefreshToken,
   setRefreshToken,
   clearRefreshToken,
+  refreshSession,
 } from '@/api/client';
+import { onSessionExpired } from '@/api/session';
+import { getErrorMessage } from '@/api/apiError';
 import { router } from '@/router';
 import { Role, INACTIVITY_TIMEOUT_MS, roleRank } from '@/utils/constants';
 import type { AdminUser, LoginResponse, LoginSuccessResponse } from '@/api/types';
-
-function _extractMessage(e: unknown): string {
-  if (e instanceof Error) return e.message;
-  return 'Something went wrong';
-}
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<AdminUser | null>(null);
@@ -62,7 +60,7 @@ export const useAuthStore = defineStore('auth', () => {
       }
       return res;
     } catch (e) {
-      error.value = _extractMessage(e);
+      error.value = getErrorMessage(e);
       throw e;
     } finally {
       isLoading.value = false;
@@ -76,7 +74,7 @@ export const useAuthStore = defineStore('auth', () => {
       const res = await loginWithMfa(mfaToken, code);
       _applySession(res);
     } catch (e) {
-      error.value = _extractMessage(e);
+      error.value = getErrorMessage(e);
       throw e;
     } finally {
       isLoading.value = false;
@@ -96,11 +94,13 @@ export const useAuthStore = defineStore('auth', () => {
     const rt = getRefreshToken();
     if (!rt) return;
     try {
-      // Try to get current user — the client interceptor will refresh the token if needed.
-      const me = await getMe();
-      user.value = me;
+      // Restore explicitly instead of intentionally generating a 401 first.
+      // The refresh response rotates both tokens and contains the canonical user.
+      const session = await refreshSession();
+      user.value = session.user;
       startIdleWatcher();
     } catch {
+      clearAccessToken();
       clearRefreshToken();
     }
   }
@@ -116,6 +116,14 @@ export const useAuthStore = defineStore('auth', () => {
     stopIdleWatcher();
     void router.push('/login');
   }
+
+  // Transport reports expiration through this boundary; it never imports Pinia
+  // or the router. This keeps the dependency direction UI -> API, not circular.
+  onSessionExpired(() => {
+    user.value = null;
+    stopIdleWatcher();
+    if (router.currentRoute.value.path !== '/login') void router.push('/login');
+  });
 
   function applyExternalSession(res: LoginSuccessResponse): void {
     _applySession(res);

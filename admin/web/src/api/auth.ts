@@ -33,7 +33,7 @@ export async function logout(refreshToken: string): Promise<void> {
 }
 
 export async function getMe(): Promise<AdminUser> {
-  const { data } = await client.get<AdminUser>('/v1/me');
+  const { data } = await client.get<AdminUser>('/v1/me/profile');
   return data;
 }
 

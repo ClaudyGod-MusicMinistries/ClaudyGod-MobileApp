@@ -2,22 +2,14 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { listFaqs, createFaq, updateFaq, deleteFaq } from '@/api/website';
 import type { Faq, FaqInput } from '@/api/websiteTypes';
+import { useLatestRequest } from '@/composables/useLatestRequest';
 
 export const useFaqsStore = defineStore('websiteFaqs', () => {
   const faqs = ref<Faq[]>([]);
-  const isLoading = ref(false);
-  const error = ref<string | null>(null);
+  const { isLoading, error, execute } = useLatestRequest();
 
   async function fetchFaqs(): Promise<void> {
-    isLoading.value = true;
-    error.value = null;
-    try {
-      faqs.value = await listFaqs();
-    } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Failed to load FAQs';
-    } finally {
-      isLoading.value = false;
-    }
+    await execute(() => listFaqs(), (result) => { faqs.value = result; });
   }
 
   async function saveFaq(input: FaqInput, id?: string): Promise<void> {
