@@ -70,7 +70,7 @@ const spotlightStyle = computed(() => {
     left: `${r.left - SPOTLIGHT_PADDING}px`,
     width: `${r.width + SPOTLIGHT_PADDING * 2}px`,
     height: `${r.height + SPOTLIGHT_PADDING * 2}px`,
-    boxShadow: '0 0 0 9999px rgba(0,0,0,0.6)',
+    boxShadow: '0 0 0 9999px rgb(var(--overlay) / 0.66)',
   };
 });
 </script>

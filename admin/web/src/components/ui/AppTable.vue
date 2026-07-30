@@ -50,7 +50,7 @@
             <tr v-for="i in skeletonRows" :key="i" class="border-b border-border/50">
               <td v-if="selectable" class="px-4 py-3"><div class="w-4 h-4 rounded bg-surface-hover animate-pulse" /></td>
               <td v-for="col in columns" :key="col.key" :class="['px-4 py-3', col.align === 'right' ? 'text-right' : '']">
-                <div class="h-4 rounded bg-surface-hover animate-pulse" :style="{ width: `${Math.random() * 40 + 40}%` }" />
+                <div :class="['h-4 rounded bg-surface-hover animate-pulse', skeletonWidth(columns.indexOf(col))]" />
               </td>
               <td v-if="$slots.actions" class="px-4 py-3" />
             </tr>
@@ -162,5 +162,9 @@ function toggleAll(): void {
 function onSort(key: string): void {
   const newDir = props.sortKey === key && props.sortDir === 'asc' ? 'desc' : 'asc';
   emit('sort', key, newDir);
+}
+
+function skeletonWidth(index: number): string {
+  return ['w-3/5', 'w-2/5', 'w-4/5'][index % 3]!;
 }
 </script>

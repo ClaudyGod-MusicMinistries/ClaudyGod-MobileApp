@@ -25,10 +25,9 @@
           :aria-labelledby="title ? titleId : undefined"
           tabindex="-1"
           :class="[
-            'relative z-10 w-full bg-surface-strong border border-border-strong rounded-[var(--radius-panel)] flex flex-col max-h-[min(90vh,56rem)] overflow-hidden',
+            'app-overlay-shadow relative z-10 w-full bg-surface-strong border border-border-strong rounded-[var(--radius-panel)] flex flex-col max-h-[min(90vh,56rem)] overflow-hidden',
             sizeClass,
           ]"
-          style="box-shadow: var(--shadow-overlay)"
           @keydown="onKeydown"
         >
           <!-- Header -->

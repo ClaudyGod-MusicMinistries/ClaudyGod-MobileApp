@@ -16,7 +16,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, type Component } from 'vue';
 import {
   BarChart3, BookOpen, FileText, Inbox, KeyRound, Megaphone,
   Radio, Server, Settings, Smartphone, Trash2, Users, Youtube,
@@ -39,7 +39,7 @@ const ICONS = {
 };
 
 const props = withDefaults(defineProps<{
-  icon: keyof typeof ICONS;
+  icon: keyof typeof ICONS | Component;
   title: string;
   subtitle?: string;
   // 'youtube' is a deliberate one-off: it references the actual YouTube brand
@@ -48,7 +48,7 @@ const props = withDefaults(defineProps<{
   tone?: 'primary' | 'danger' | 'youtube';
 }>(), { tone: 'primary' });
 
-const iconComponent = computed(() => ICONS[props.icon]);
+const iconComponent = computed(() => typeof props.icon === 'string' ? ICONS[props.icon] : props.icon);
 
 const badgeClass = computed(() => ({
   primary: 'bg-primary/10 text-primary border-primary/15',

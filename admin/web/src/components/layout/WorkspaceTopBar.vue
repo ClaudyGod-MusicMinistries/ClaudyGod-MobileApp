@@ -1,5 +1,5 @@
 <template>
-  <header class="flex min-h-[68px] shrink-0 items-center justify-between gap-4 border-b border-border bg-surface-strong/95 px-4 py-3 backdrop-blur sm:px-6 lg:px-8">
+  <header class="flex min-h-[var(--layout-topbar)] shrink-0 items-center justify-between gap-4 border-b border-border bg-surface-strong/95 px-4 py-3 backdrop-blur sm:px-6 lg:px-8">
     <div class="flex min-w-0 items-center gap-3">
       <button type="button" class="-ml-1 rounded-[var(--radius-control)] p-2 text-ink-muted transition-base hover:bg-surface-hover hover:text-ink lg:hidden" aria-label="Open navigation menu" @click="ui.toggleMobileDrawer()">
         <Menu class="h-5 w-5" />

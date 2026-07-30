@@ -13,14 +13,14 @@
   <aside
     :class="[
       'flex flex-col h-full bg-surface-strong border-r border-border transition-all duration-200',
-      'fixed inset-y-0 left-0 z-40 w-[272px]',
+      'fixed inset-y-0 left-0 z-40 w-[var(--layout-sidebar)]',
       'lg:relative lg:z-auto lg:flex-shrink-0',
-      ui.sidebarOpen ? 'lg:w-[272px]' : 'lg:w-[72px]',
+      ui.sidebarOpen ? 'lg:w-[var(--layout-sidebar)]' : 'lg:w-[var(--layout-sidebar-rail)]',
       ui.mobileDrawerOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
     ]"
   >
     <!-- Brand -->
-    <div class="flex items-center gap-3 px-4 py-4 border-b border-border min-h-[68px]">
+    <div class="flex items-center gap-3 px-4 py-4 border-b border-border min-h-[var(--layout-topbar)]">
       <img :src="BRAND_LOGO_URL" alt="ClaudyGod" class="w-9 h-9 rounded-md flex-shrink-0 object-contain border border-border" />
       <Transition name="fade">
         <div v-if="showExpanded" class="overflow-hidden">
