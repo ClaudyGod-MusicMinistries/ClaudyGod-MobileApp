@@ -5,17 +5,16 @@ import Animated, {
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
-  withSpring,
   withTiming,
+  Easing,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CustomText } from '../CustomText';
 import { makeStyles } from '../../styles/makeStyles';
+import { useAppTheme } from '../../util/colorScheme';
 
 const DISMISS_DISTANCE = 120;
 const DISMISS_VELOCITY = 800;
-const EXIT_DURATION = 220;
-const OPEN_SPRING = { damping: 20, stiffness: 220 };
 
 interface BottomSheetProps {
   visible: boolean;
@@ -32,7 +31,7 @@ interface BottomSheetProps {
 }
 
 const useStyles = makeStyles((theme) => ({
-  backdrop:    { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(5, 6, 14, 0.72)' },
+  backdrop:    { ...StyleSheet.absoluteFillObject, backgroundColor: theme.colors.scrim },
   sheetWrap:   { flex: 1, justifyContent: 'flex-end', alignItems: 'center' },
   sheet: {
     borderTopLeftRadius: theme.radius.xxl, borderTopRightRadius: theme.radius.xxl,
@@ -58,6 +57,7 @@ export function BottomSheet({
   onClosed,
 }: BottomSheetProps) {
   const styles = useStyles();
+  const theme = useAppTheme();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const [modalVisible, setModalVisible] = useState(visible);
@@ -68,23 +68,23 @@ export function BottomSheet({
   useEffect(() => {
     if (visible) {
       setModalVisible(true);
-      translateY.value = withSpring(0, OPEN_SPRING);
-      backdropOpacity.value = withTiming(1, { duration: 200 });
+      translateY.value = withTiming(0, { duration: theme.motion.sheetEnterDuration, easing: Easing.out(Easing.cubic) });
+      backdropOpacity.value = withTiming(1, { duration: theme.timing.base });
       return undefined;
     }
 
-    translateY.value = withTiming(height, { duration: EXIT_DURATION });
-    backdropOpacity.value = withTiming(0, { duration: EXIT_DURATION });
+    translateY.value = withTiming(height, { duration: theme.motion.sheetExitDuration, easing: Easing.in(Easing.cubic) });
+    backdropOpacity.value = withTiming(0, { duration: theme.motion.sheetExitDuration });
     const timeout = setTimeout(() => {
       setModalVisible(false);
       onClosed?.();
-    }, EXIT_DURATION);
+    }, theme.motion.sheetExitDuration);
     return () => clearTimeout(timeout);
     // onClosed intentionally excluded: it's a caller-supplied inline callback,
     // and this effect must only re-run on visible/shared-value transitions —
     // not every time the caller re-renders with a new function reference.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible, height, translateY, backdropOpacity]);
+  }, [visible, height, translateY, backdropOpacity, theme.motion.sheetEnterDuration, theme.motion.sheetExitDuration, theme.timing.base]);
 
   const requestClose = () => {
     if (!dismissible) return;
@@ -99,11 +99,11 @@ export function BottomSheet({
     .onEnd((event) => {
       const shouldDismiss = event.translationY > DISMISS_DISTANCE || event.velocityY > DISMISS_VELOCITY;
       if (shouldDismiss) {
-        translateY.value = withTiming(height, { duration: EXIT_DURATION });
-        backdropOpacity.value = withTiming(0, { duration: EXIT_DURATION });
+        translateY.value = withTiming(height, { duration: theme.motion.sheetExitDuration, easing: Easing.in(Easing.cubic) });
+        backdropOpacity.value = withTiming(0, { duration: theme.motion.sheetExitDuration });
         runOnJS(requestClose)();
       } else {
-        translateY.value = withSpring(0, OPEN_SPRING);
+        translateY.value = withTiming(0, { duration: theme.timing.base, easing: Easing.out(Easing.cubic) });
       }
     });
 

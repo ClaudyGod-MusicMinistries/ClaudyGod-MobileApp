@@ -21,6 +21,14 @@ export const colors = {
     overlay:      'rgba(0,0,0,0.48)',
     overlayLight: 'rgba(0,0,0,0.24)',
     scrim:        'rgba(0,0,0,0.60)',
+    mediaScrim:       'rgba(5,4,12,0.56)',
+    mediaScrimStrong: 'rgba(5,4,12,0.94)',
+    mediaControl:     'rgba(5,4,12,0.58)',
+    mediaBorder:      'rgba(255,255,255,0.22)',
+    mediaText:        '#FFFFFF',
+    mediaTextMuted:   'rgba(255,255,255,0.76)',
+    mediaTextSubtle:  'rgba(255,255,255,0.58)',
+    liveSurface:      'rgba(220,38,38,0.94)',
 
     // ── Dividers / borders ────────────────────────────────────────────────────
     divider:      'rgba(0,0,0,0.07)',
@@ -32,7 +40,7 @@ export const colors = {
     // ── Text ─────────────────────────────────────────────────────────────────
     text:           '#0D0D0D',
     textSecondary:  '#4A4A4A',
-    textMuted:      '#8A8A8A',
+    textMuted:      '#666671',
     text_primary:   '#0D0D0D',
     text_secondary: '#4A4A4A',
     text_accent:    '#6D28D9',
@@ -58,8 +66,12 @@ export const colors = {
     // ── Semantic tints ────────────────────────────────────────────────────────
     dangerSurface: 'rgba(220,38,38,0.07)',
     dangerBorder:  'rgba(220,38,38,0.22)',
+    successSurface: 'rgba(22,163,74,0.08)',
+    successBorder:  'rgba(22,163,74,0.22)',
     warningSurface: 'rgba(217,119,6,0.06)',
     warningBorder:  'rgba(180,83,9,0.16)',
+    infoSurface: 'rgba(37,99,235,0.08)',
+    infoBorder:  'rgba(37,99,235,0.20)',
 
     // ── Tab bar ───────────────────────────────────────────────────────────────
     tabBarBg: 'rgba(28,18,48,0.97)',
@@ -92,6 +104,14 @@ export const colors = {
     overlay:      'rgba(0,0,0,0.72)',
     overlayLight: 'rgba(0,0,0,0.48)',
     scrim:        'rgba(0,0,0,0.80)',
+    mediaScrim:       'rgba(5,4,12,0.62)',
+    mediaScrimStrong: 'rgba(5,4,12,0.96)',
+    mediaControl:     'rgba(5,4,12,0.64)',
+    mediaBorder:      'rgba(255,255,255,0.22)',
+    mediaText:        '#FFFFFF',
+    mediaTextMuted:   'rgba(255,255,255,0.78)',
+    mediaTextSubtle:  'rgba(255,255,255,0.62)',
+    liveSurface:      'rgba(244,63,94,0.94)',
 
     // ── Dividers / borders ────────────────────────────────────────────────────
     divider:      'rgba(255,255,255,0.07)',
@@ -103,7 +123,7 @@ export const colors = {
     // ── Text ─────────────────────────────────────────────────────────────────
     text:           '#FAFAFA',
     textSecondary:  '#B5B5BE',
-    textMuted:      '#777781',
+    textMuted:      '#A0A0AC',
     text_primary:   '#FAFAFA',
     text_secondary: '#B5B5BE',
     text_accent:    '#DDD3FF',
@@ -129,8 +149,12 @@ export const colors = {
     // ── Semantic tints ────────────────────────────────────────────────────────
     dangerSurface: 'rgba(244,63,94,0.10)',
     dangerBorder:  'rgba(244,63,94,0.28)',
+    successSurface: 'rgba(34,197,94,0.10)',
+    successBorder:  'rgba(34,197,94,0.26)',
     warningSurface: 'rgba(245,158,11,0.06)',
     warningBorder:  'rgba(251,191,36,0.18)',
+    infoSurface: 'rgba(96,165,250,0.10)',
+    infoBorder:  'rgba(96,165,250,0.24)',
 
     // ── Tab bar ───────────────────────────────────────────────────────────────
     tabBarBg: 'rgba(20,20,24,0.98)',

@@ -6,30 +6,27 @@ import { CustomText } from '../CustomText';
 import { TVTouchable } from './TVTouchable';
 import { type ToastItem, useToast } from '../../context/ToastContext';
 import { makeStyles } from '../../styles/makeStyles';
+import { useAppTheme } from '../../util/colorScheme';
 
 // ─── Static styles (no theme) ─────────────────────────────────────────────────
 
 const ss = StyleSheet.create({
   toastCard: {
     width: '100%', maxWidth: 420, alignSelf: 'center',
-    borderRadius: 12, borderWidth: 1,
+    borderWidth: 1,
     paddingHorizontal: 16, paddingVertical: 15,
     flexDirection: 'row', alignItems: 'flex-start', gap: 10,
-    shadowColor: '#000000', shadowOpacity: 0.28, shadowRadius: 26,
-    shadowOffset: { width: 0, height: 16 },
   },
   iconOffset: { marginTop: 1 },
   textCol:    { flex: 1 },
-  toastMsg:   { color: 'rgba(223,217,239,0.84)', marginTop: 4 },
   dismissBtn: {
     width: 28, height: 28, borderRadius: 14,
     alignItems: 'center', justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.04)',
   },
   viewport: {
     position: 'absolute', top: 0, right: 0, bottom: 0, left: 0,
-    zIndex: 100, justifyContent: 'center',
-    paddingHorizontal: 16, backgroundColor: 'rgba(2,1,6,0.34)', gap: 10,
+    zIndex: 100, justifyContent: 'flex-start',
+    paddingHorizontal: 16, gap: 10,
   },
 });
 
@@ -37,6 +34,9 @@ const ss = StyleSheet.create({
 
 const useStyles = makeStyles((theme) => ({
   toastTitle: { color: theme.colors.text },
+  toastCard: { borderRadius: theme.radius.xl, backgroundColor: theme.colors.elevated, ...theme.shadows.xl },
+  toastMsg: { color: theme.colors.textSecondary, marginTop: 4 },
+  dismissBtn: { backgroundColor: theme.colors.subtleFillMed },
 }));
 
 // ─── ToastCard ────────────────────────────────────────────────────────────────
@@ -49,6 +49,7 @@ function ToastCard({
   onDismiss: (_id: string) => void;
 }) {
   const styles   = useStyles();
+  const theme = useAppTheme();
   const translateY = useRef(new Animated.Value(14)).current;
   const opacity    = useRef(new Animated.Value(0)).current;
 
@@ -61,18 +62,18 @@ function ToastCard({
 
   const palette =
     toast.tone === 'success'
-      ? { accent: '#56D28E', border: 'rgba(86,210,142,0.28)',   bg: 'rgba(17,44,31,0.92)',   icon: 'check-circle'   as const }
+      ? { accent: theme.colors.success, border: theme.colors.successBorder, icon: 'check-circle' as const }
       : toast.tone === 'error'
-        ? { accent: '#FF8E8E', border: 'rgba(255,142,142,0.24)', bg: 'rgba(55,18,24,0.94)',   icon: 'error-outline'  as const }
+        ? { accent: theme.colors.danger, border: theme.colors.dangerBorder, icon: 'error-outline' as const }
         : toast.tone === 'warning'
-          ? { accent: '#FBBF24', border: 'rgba(251,191,36,0.24)', bg: 'rgba(51,37,12,0.94)',   icon: 'priority-high'  as const }
-          : { accent: '#94AEFF', border: 'rgba(148,174,255,0.24)', bg: 'rgba(20,24,52,0.94)',   icon: 'info-outline'   as const };
+          ? { accent: theme.colors.warning, border: theme.colors.warningBorder, icon: 'priority-high' as const }
+          : { accent: theme.colors.info, border: theme.colors.infoBorder, icon: 'info-outline' as const };
 
   return (
     <Animated.View
       style={[
-        ss.toastCard,
-        { opacity, transform: [{ translateY }], borderColor: palette.border, backgroundColor: palette.bg },
+        ss.toastCard, styles.toastCard,
+        { opacity, transform: [{ translateY }], borderColor: palette.border },
       ]}
     >
       <MaterialIcons name={palette.icon} size={18} color={palette.accent} style={ss.iconOffset} />
@@ -80,12 +81,12 @@ function ToastCard({
       <View style={ss.textCol}>
         <CustomText variant="label" style={styles.toastTitle}>{toast.title}</CustomText>
         {toast.message ? (
-          <CustomText variant="caption" style={ss.toastMsg}>{toast.message}</CustomText>
+          <CustomText variant="caption" style={styles.toastMsg}>{toast.message}</CustomText>
         ) : null}
       </View>
 
-      <TVTouchable onPress={() => onDismiss(toast.id)} showFocusBorder={false} style={ss.dismissBtn}>
-        <MaterialIcons name="close" size={16} color="rgba(235,232,244,0.9)" />
+      <TVTouchable accessibilityRole="button" accessibilityLabel="Dismiss notification" onPress={() => onDismiss(toast.id)} showFocusBorder={false} style={[ss.dismissBtn, styles.dismissBtn]}>
+        <MaterialIcons name="close" size={16} color={theme.colors.textSecondary} />
       </TVTouchable>
     </Animated.View>
   );

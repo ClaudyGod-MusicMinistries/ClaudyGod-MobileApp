@@ -48,12 +48,12 @@ function resolveIcon(
   return 'info-outline';
 }
 
-function resolveIconColor(tone: AppModalTone, primary: string, danger: string): string {
-  if (tone === 'success')  return '#56D28E';
-  if (tone === 'error')    return '#FF8E8E';
-  if (tone === 'warning')  return '#FBBF24';
-  if (tone === 'danger')   return danger;
-  return primary;
+function resolveIconColor(tone: AppModalTone, colors: ReturnType<typeof useAppTheme>['colors']): string {
+  if (tone === 'success') return colors.success;
+  if (tone === 'error' || tone === 'danger') return colors.danger;
+  if (tone === 'warning') return colors.warning;
+  if (tone === 'info') return colors.info;
+  return colors.primary;
 }
 
 export function AppModalProvider({ children }: { children: ReactNode }) {
@@ -82,7 +82,7 @@ export function AppModalProvider({ children }: { children: ReactNode }) {
         <ConfirmModal
           visible
           icon={resolveIcon(tone, modal.icon)}
-          iconColor={resolveIconColor(tone, theme.colors.primary, theme.colors.danger)}
+          iconColor={resolveIconColor(tone, theme.colors)}
           title={modal.title}
           body={modal.message}
           primaryLabel={modal.primaryAction?.label ?? 'Done'}

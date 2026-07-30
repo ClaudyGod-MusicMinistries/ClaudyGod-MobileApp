@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import {
   Animated,
+  Easing,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -38,16 +39,15 @@ export interface ConfirmModalProps {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const useStyles = makeStyles((theme) => ({
-  backdrop:    { backgroundColor: 'rgba(2,1,6,0.70)' },
+  backdrop:    { backgroundColor: theme.colors.scrim },
   centerWrap:  { flex: 1, justifyContent: 'center', paddingHorizontal: 20 },
   animContent: { width: '100%', maxWidth: 420, alignSelf: 'center' },
   card: {
-    borderRadius: 16, borderWidth: 1,
+    borderRadius: theme.radius.xxl, borderWidth: 1,
     borderColor: theme.colors.borderStrong,
     backgroundColor: theme.colors.elevated,
-    padding: 24, gap: 20,
-    shadowColor: '#000', shadowOpacity: 0.24, shadowRadius: 20,
-    shadowOffset: { width: 0, height: 8 }, elevation: 12,
+    padding: theme.spacing.lg, gap: theme.spacing.lg,
+    ...theme.shadows.xl,
   },
   iconCenter:  { alignItems: 'center' },
   iconRingBase: {
@@ -81,29 +81,30 @@ export function ConfirmModal({
   const theme = useAppTheme();
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
-  const scale = useRef(new Animated.Value(0.96)).current;
+  const scale = useRef(new Animated.Value(theme.motion.modalInitialScale)).current;
   const opacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (!visible) {
-      scale.setValue(0.96);
+      scale.setValue(theme.motion.modalInitialScale);
       opacity.setValue(0);
       return;
     }
     Animated.parallel([
-      Animated.spring(scale, {
+      Animated.timing(scale, {
         toValue: 1,
+        duration: theme.motion.modalEnterDuration,
+        easing: Easing.out(Easing.cubic),
         useNativeDriver: USE_NATIVE_DRIVER,
-        damping: 18,
-        stiffness: 240,
       }),
       Animated.timing(opacity, {
         toValue: 1,
-        duration: 180,
+        duration: theme.motion.modalEnterDuration,
+        easing: Easing.out(Easing.cubic),
         useNativeDriver: USE_NATIVE_DRIVER,
       }),
     ]).start();
-  }, [opacity, scale, visible]);
+  }, [opacity, scale, theme.motion.modalEnterDuration, theme.motion.modalInitialScale, visible]);
 
   const isDanger = primaryTone === 'danger';
   const accentColor = isDanger ? theme.colors.danger : theme.colors.primary;

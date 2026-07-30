@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Animated, Platform, Pressable, Share, StyleSheet, View } from 'react-native';
+import { Animated, Easing, Platform, Pressable, Share, StyleSheet, View } from 'react-native';
 
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -61,8 +61,14 @@ export const ContentCard = React.memo(function ContentCard({ item, onPress, comp
   const scrimHeight = variant === 'portrait' ? Math.round(cardHeight * 0.55) : variant === 'landscape' ? Math.round(cardHeight * 0.60) : Math.round(cardHeight * 0.50);
   const title = cleanFeedText(item.title);
 
-  const handlePressIn  = () => Animated.spring(pressScale, { toValue: 0.94, useNativeDriver: USE_NATIVE_DRIVER, friction: 10, tension: 120 }).start();
-  const handlePressOut = () => Animated.spring(pressScale, { toValue: 1, useNativeDriver: USE_NATIVE_DRIVER, friction: 7, tension: 70 }).start();
+  const animatePress = (toValue: number, duration: number) => Animated.timing(pressScale, {
+    toValue,
+    duration,
+    easing: Easing.out(Easing.cubic),
+    useNativeDriver: USE_NATIVE_DRIVER,
+  }).start();
+  const handlePressIn  = () => animatePress(theme.motion.pressScale, theme.timing.instant);
+  const handlePressOut = () => animatePress(1, theme.timing.fast);
 
   return (
     <TVTouchable
@@ -78,9 +84,9 @@ export const ContentCard = React.memo(function ContentCard({ item, onPress, comp
         <View style={[styles.artworkShadowWrap, { width: cardWidth, height: cardHeight }]}>
           <View style={[styles.artworkContainer, StyleSheet.absoluteFillObject]}>
             <AppImage uri={item.imageUrl} resizeMode="cover" style={StyleSheet.absoluteFillObject} />
-            <LinearGradient colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.68)']} style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: scrimHeight }} />
+            <LinearGradient colors={['transparent', theme.colors.mediaScrimStrong]} style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: scrimHeight }} />
             <View style={styles.cardPlayBadge}>
-              <MaterialIcons name="play-arrow" size={18} color="#FFFFFF" />
+              <MaterialIcons name="play-arrow" size={18} color={theme.colors.mediaText} />
             </View>
             {item.isLive ? (
               <View style={styles.liveBadge}>

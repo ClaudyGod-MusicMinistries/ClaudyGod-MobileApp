@@ -120,9 +120,7 @@ export function PremiumHero({
         <Image source={{ uri: imageUrl }} resizeMode="cover" style={common.fill} accessibilityIgnoresInvertColors />
 
         <LinearGradient
-          colors={isWide
-            ? ['rgba(5,4,10,0.10)', 'rgba(5,4,10,0.50)', 'rgba(5,4,10,0.96)']
-            : ['rgba(5,4,10,0.06)', 'rgba(5,4,10,0.60)', 'rgba(5,4,10,0.98)']}
+          colors={['transparent', theme.colors.mediaScrim, theme.colors.mediaScrimStrong]}
           start={{ x: 0, y: 0 }}
           end={{ x: isWide ? 0.7 : 0, y: 1 }}
           style={[common.fill, Platform.OS === 'web' ? { pointerEvents: 'none' } : {}]}
@@ -132,12 +130,12 @@ export function PremiumHero({
           <View style={{ maxWidth: isWide ? 580 : undefined }}>
             {(isLiveItem || eyebrow) ? (
               <View style={[styles.heroBadge, {
-                borderColor: isLiveItem ? 'rgba(244,63,94,0.5)' : 'rgba(255,255,255,0.28)',
-                backgroundColor: isLiveItem ? 'rgba(244,63,94,0.18)' : 'rgba(0,0,0,0.52)',
+                borderColor: isLiveItem ? theme.colors.dangerBorder : theme.colors.mediaBorder,
+                backgroundColor: isLiveItem ? theme.colors.dangerSurface : theme.colors.mediaControl,
               }]}>
                 {isLiveItem ? <View style={[styles.heroBadgeDot, { backgroundColor: theme.colors.danger }]} /> : null}
                 <CustomText style={{
-                  color: isLiveItem ? theme.colors.danger : 'rgba(255,255,255,0.9)',
+                  color: isLiveItem ? theme.colors.danger : theme.colors.mediaText,
                   fontSize: 10, fontWeight: '600', letterSpacing: 0.8, textTransform: 'uppercase',
                 }}>
                   {isLiveItem ? 'Live now' : eyebrow ?? (item.type === 'video' ? 'Featured video' : 'Featured')}
@@ -148,7 +146,7 @@ export function PremiumHero({
             <CustomText
               variant="display"
               style={{
-                color: '#FFFFFF',
+                color: theme.colors.mediaText,
                 fontSize: device.isTV ? 42 : device.isLargeDesktop ? 36 : isLarge ? 30 : isWide ? 25 : 21,
                 lineHeight: device.isTV ? 52 : device.isLargeDesktop ? 44 : isLarge ? 38 : isWide ? 32 : 28,
                 fontWeight: '800', letterSpacing: 0,
@@ -182,9 +180,9 @@ export function PremiumHero({
                   variant="secondary"
                   size="md"
                   onPress={secondaryAction}
-                  textColor="#FFFFFF"
-                  leftIcon={<AppIcon name={secondaryIcon} size={16} color="#FFFFFF" />}
-                  style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.14)', borderColor: 'rgba(255,255,255,0.22)' }}
+                  textColor={theme.colors.mediaText}
+                  leftIcon={<AppIcon name={secondaryIcon} size={16} color={theme.colors.mediaText} />}
+                  style={{ flex: 1, backgroundColor: theme.colors.mediaControl, borderColor: theme.colors.mediaBorder }}
                 />
               ) : null}
             </View>
