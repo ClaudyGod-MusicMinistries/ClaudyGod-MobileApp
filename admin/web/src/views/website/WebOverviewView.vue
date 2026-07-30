@@ -1,138 +1,96 @@
 <template>
-  <div class="space-y-6">
-    <!-- Greeting -->
-    <div>
-      <h1 class="text-2xl font-black text-ink tracking-tight">{{ greeting }}, {{ auth.user?.displayName || 'there' }}.</h1>
-      <p class="text-sm text-ink-muted mt-1">Here's what's happening on claudygod.org today.</p>
-    </div>
+  <AppPage
+    eyebrow="Website operations"
+    :title="`${greeting}, ${firstName}`"
+    description="Publish website content, monitor incoming requests, and handle everything requiring attention from one workspace."
+  >
+    <template #actions>
+      <AppButton variant="secondary" size="sm" :loading="dashboard.isLoading" @click="dashboard.fetchDashboard()">
+        <RefreshCw class="h-4 w-4" /> Refresh data
+      </AppButton>
+    </template>
 
     <AppCard v-if="dashboard.error" class="border-danger/30 bg-danger/10">
       <AppEmptyState title="Website data is unavailable" :message="dashboard.error">
-        <template #action>
-          <button type="button" class="text-xs font-semibold text-primary hover:text-primary-soft" @click="dashboard.fetchDashboard">
-            Try again
-          </button>
-        </template>
+        <template #action><AppButton size="sm" variant="secondary" @click="dashboard.fetchDashboard">Try again</AppButton></template>
       </AppEmptyState>
     </AppCard>
 
-    <!-- Pending-attention signals — only shown when something actually needs a look -->
-    <div v-if="signals.length" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-      <div
-        v-for="signal in signals"
-        :key="signal.id"
-        class="flex items-start gap-3 p-3.5 rounded-xl border bg-warning/10 border-warning/20 text-warning"
-      >
-        <AlertTriangle class="w-4 h-4 mt-0.5 shrink-0" />
-        <div class="min-w-0">
-          <p class="text-xs font-bold leading-tight">{{ signal.title }}</p>
-          <p class="text-[11px] mt-0.5 text-ink-muted leading-snug">{{ signal.detail }}</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Quick actions -->
-    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-      <RouterLink
-        v-for="action in quickActions"
-        :key="action.to"
-        :to="action.to"
-        class="flex flex-col items-start gap-2.5 p-4 rounded-2xl bg-primary/10 border border-primary/20 hover:bg-primary/15 transition-colors"
-      >
-        <div class="w-9 h-9 rounded-xl bg-primary/20 flex items-center justify-center shrink-0">
-          <component :is="action.icon" class="w-5 h-5 text-primary" />
-        </div>
-        <p class="text-sm font-bold text-ink leading-tight">{{ action.label }}</p>
+    <div v-if="signals.length" class="app-grid-auto" aria-label="Items requiring attention">
+      <RouterLink v-for="signal in signals" :key="signal.id" :to="signal.to" class="flex items-start gap-3 rounded-[var(--radius-card)] border border-amber/20 bg-amber/10 p-4 text-amber transition-base hover:-translate-y-0.5 hover:border-amber/35">
+        <AlertTriangle class="mt-0.5 h-4 w-4 shrink-0" />
+        <div class="min-w-0"><p class="text-xs font-semibold leading-tight">{{ signal.title }}</p><p class="mt-1 text-xs leading-5 text-ink-muted">{{ signal.detail }}</p></div>
       </RouterLink>
     </div>
 
-    <!-- Stat cards — real counts from CGM-Backend's admin dashboard endpoint -->
-    <div v-if="dashboard.data" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-      <AppStatCard label="Albums &amp; media" :value="dashboard.data.totalMediaItems" icon-bg="bg-primary/15">
-        <template #icon><Film class="w-5 h-5 text-primary" /></template>
-      </AppStatCard>
-      <AppStatCard label="Upcoming events" :value="dashboard.data.upcomingEvents" icon-bg="bg-info/15">
-        <template #icon><CalendarDays class="w-5 h-5 text-info" /></template>
-      </AppStatCard>
-      <AppStatCard label="Published posts" :value="dashboard.data.publishedBlogPosts" icon-bg="bg-success/15">
-        <template #icon><Newspaper class="w-5 h-5 text-success" /></template>
-      </AppStatCard>
-      <AppStatCard label="Active subscribers" :value="dashboard.data.activeSubscribers" icon-bg="bg-primary/15">
-        <template #icon><Users2 class="w-5 h-5 text-primary-soft" /></template>
-      </AppStatCard>
-      <AppStatCard label="Tickets reserved" :value="dashboard.data.totalTickets" icon-bg="bg-warning/15">
-        <template #icon><Ticket class="w-5 h-5 text-warning" /></template>
-      </AppStatCard>
-    </div>
+    <AppSection title="Quick actions" description="Jump directly to the most common publishing workflows.">
+      <div class="app-grid-auto">
+        <AppActionTile v-for="action in quickActions" :key="action.to" :to="action.to" :label="action.label" :description="action.description">
+          <template #icon><component :is="action.icon" class="h-5 w-5" /></template>
+        </AppActionTile>
+      </div>
+    </AppSection>
 
-    <!-- Inbox status board -->
-    <div>
-      <h2 class="text-sm font-bold text-ink mb-3">Inbox — needs a look</h2>
-      <AppCard class="p-4 space-y-2">
-        <div v-for="item in inboxBoard" :key="item.label" class="flex items-center justify-between py-1.5">
-          <RouterLink :to="item.to" class="text-sm text-ink-soft hover:text-ink transition-colors">
-            {{ item.label }}
-          </RouterLink>
-          <span :class="['text-sm font-bold tabular-nums', item.count > 0 ? 'text-warning' : 'text-ink-muted']">
-            {{ item.count }}
-          </span>
-        </div>
-        <AppEmptyState v-if="!dashboard.data && !dashboard.isLoading && !dashboard.error" title="No dashboard data available" />
-      </AppCard>
-    </div>
-  </div>
+    <AppSection title="Website performance" description="Live operational totals from the website source of truth.">
+      <div v-if="dashboard.data" class="app-grid-auto">
+        <AppStatCard label="Albums & media" :value="dashboard.data.totalMediaItems" icon-bg="bg-primary/15"><template #icon><Film class="h-5 w-5 text-primary" /></template></AppStatCard>
+        <AppStatCard label="Upcoming events" :value="dashboard.data.upcomingEvents" icon-bg="bg-info/15"><template #icon><CalendarDays class="h-5 w-5 text-info" /></template></AppStatCard>
+        <AppStatCard label="Published posts" :value="dashboard.data.publishedBlogPosts" icon-bg="bg-success/15"><template #icon><Newspaper class="h-5 w-5 text-success" /></template></AppStatCard>
+        <AppStatCard label="Active subscribers" :value="dashboard.data.activeSubscribers" icon-bg="bg-primary/15"><template #icon><Users2 class="h-5 w-5 text-primary-soft" /></template></AppStatCard>
+        <AppStatCard label="Tickets reserved" :value="dashboard.data.totalTickets" icon-bg="bg-amber/15"><template #icon><Ticket class="h-5 w-5 text-amber" /></template></AppStatCard>
+      </div>
+      <div v-else-if="dashboard.isLoading" class="app-grid-auto" aria-label="Loading website statistics">
+        <div v-for="n in 5" :key="n" class="h-32 animate-pulse rounded-[var(--radius-card)] border border-border bg-surface" />
+      </div>
+    </AppSection>
+
+    <AppSection title="Inbox requiring attention" description="Prioritized requests submitted through the public website." padded>
+      <div v-for="item in inboxBoard" :key="item.label" class="flex items-center justify-between gap-4 rounded-lg px-2 py-2.5 transition-base hover:bg-surface-hover">
+        <RouterLink :to="item.to" class="text-sm font-medium text-ink-soft hover:text-primary-soft">{{ item.label }}</RouterLink>
+        <span :class="['min-w-8 rounded-full px-2 py-0.5 text-center text-xs font-bold tabular-nums', item.count > 0 ? 'bg-amber/10 text-amber' : 'bg-surface-hover text-ink-muted']">{{ item.count }}</span>
+      </div>
+      <AppEmptyState v-if="!dashboard.data && !dashboard.isLoading && !dashboard.error" title="No dashboard data available" />
+    </AppSection>
+  </AppPage>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted } from 'vue';
-import {
-  AlertTriangle, Disc3, ShoppingBag, Film, HelpCircle, CalendarDays, Newspaper,
-  Users2, Ticket,
-} from 'lucide-vue-next';
+import { AlertTriangle, CalendarDays, Disc3, Film, HelpCircle, Newspaper, RefreshCw, ShoppingBag, Ticket, Users2 } from 'lucide-vue-next';
 import { useWebDashboardStore } from '@/stores/website/webDashboard.store';
 import { useAuthStore } from '@/stores/auth.store';
+import AppActionTile from '@/components/ui/AppActionTile.vue';
+import AppButton from '@/components/ui/AppButton.vue';
 import AppCard from '@/components/ui/AppCard.vue';
-import AppStatCard from '@/components/ui/AppStatCard.vue';
 import AppEmptyState from '@/components/ui/AppEmptyState.vue';
+import AppPage from '@/components/ui/AppPage.vue';
+import AppSection from '@/components/ui/AppSection.vue';
+import AppStatCard from '@/components/ui/AppStatCard.vue';
 
 const dashboard = useWebDashboardStore();
 const auth = useAuthStore();
-
-const greeting = computed(() => {
-  const h = new Date().getHours();
-  if (h < 12) return 'Good morning';
-  if (h < 17) return 'Good afternoon';
-  return 'Good evening';
-});
-
+const firstName = computed(() => auth.user?.displayName?.trim().split(/\s+/)[0] || 'Administrator');
+const greeting = computed(() => { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'; });
 onMounted(() => { void dashboard.fetchDashboard(); });
 
 const quickActions = [
-  { to: '/web/albums', label: 'Albums', icon: Disc3 },
-  { to: '/web/products', label: 'Store products', icon: ShoppingBag },
-  { to: '/web/media', label: 'Videos', icon: Film },
-  { to: '/web/faqs', label: 'FAQs', icon: HelpCircle },
-  { to: '/web/events', label: 'Events', icon: CalendarDays },
-  { to: '/web/blog', label: 'Journal', icon: Newspaper },
+  { to: '/web/albums', label: 'Albums', description: 'Manage music releases', icon: Disc3 },
+  { to: '/web/products', label: 'Store products', description: 'Update the catalogue', icon: ShoppingBag },
+  { to: '/web/media', label: 'Videos', description: 'Publish linked media', icon: Film },
+  { to: '/web/faqs', label: 'FAQs', description: 'Maintain help content', icon: HelpCircle },
+  { to: '/web/events', label: 'Events', description: 'Plan upcoming events', icon: CalendarDays },
+  { to: '/web/blog', label: 'Journal', description: 'Write and publish posts', icon: Newspaper },
 ];
 
 const signals = computed(() => {
   const d = dashboard.data;
   if (!d) return [];
-  const list: Array<{ id: string; title: string; detail: string }> = [];
-  if (d.pendingBookings > 0) {
-    list.push({ id: 'bookings', title: `${d.pendingBookings} pending booking${d.pendingBookings === 1 ? '' : 's'}`, detail: 'Awaiting a response' });
-  }
-  if (d.unreadMessages > 0) {
-    list.push({ id: 'contacts', title: `${d.unreadMessages} unread message${d.unreadMessages === 1 ? '' : 's'}`, detail: 'From the contact form' });
-  }
-  if (d.pendingVolunteers > 0) {
-    list.push({ id: 'volunteers', title: `${d.pendingVolunteers} volunteer application${d.pendingVolunteers === 1 ? '' : 's'}`, detail: 'Awaiting approval' });
-  }
-  if (d.pendingPrayerRequests > 0) {
-    list.push({ id: 'prayer', title: `${d.pendingPrayerRequests} prayer request${d.pendingPrayerRequests === 1 ? '' : 's'}`, detail: 'Not yet responded to' });
-  }
-  return list;
+  return [
+    { id: 'bookings', count: d.pendingBookings, title: `${d.pendingBookings} pending booking${d.pendingBookings === 1 ? '' : 's'}`, detail: 'Awaiting a response', to: '/web/bookings' },
+    { id: 'contacts', count: d.unreadMessages, title: `${d.unreadMessages} unread message${d.unreadMessages === 1 ? '' : 's'}`, detail: 'Submitted through the contact form', to: '/web/contacts' },
+    { id: 'volunteers', count: d.pendingVolunteers, title: `${d.pendingVolunteers} volunteer application${d.pendingVolunteers === 1 ? '' : 's'}`, detail: 'Awaiting approval', to: '/web/volunteers' },
+    { id: 'prayer', count: d.pendingPrayerRequests, title: `${d.pendingPrayerRequests} prayer request${d.pendingPrayerRequests === 1 ? '' : 's'}`, detail: 'Not yet responded to', to: '/web/prayer-requests' },
+  ].filter((item) => item.count > 0);
 });
 
 const inboxBoard = computed(() => {
