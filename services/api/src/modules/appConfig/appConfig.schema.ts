@@ -295,7 +295,25 @@ export const mobileAppConfigSchema = z
         playerSections: z.array(mobileLayoutSectionSchema).min(1).max(16),
         librarySections: z.array(mobileLayoutSectionSchema).min(1).max(16),
       })
-      .strict(),
+      .strict()
+      .superRefine((layout, ctx) => {
+        const groups = [layout.homeSections, layout.videoSections, layout.playerSections, layout.librarySections];
+        const byId = new Map<string, { title: string; contentTypes: string[] }>();
+        for (const section of groups.flat()) {
+          const existing = byId.get(section.id);
+          if (!existing) {
+            byId.set(section.id, { title: section.title, contentTypes: [...section.contentTypes].sort() });
+            continue;
+          }
+          const nextTypes = [...section.contentTypes].sort();
+          if (existing.title !== section.title || existing.contentTypes.join('|') !== nextTypes.join('|')) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: `Section id "${section.id}" must have the same title and content types on every screen`,
+            });
+          }
+        }
+      }),
     navigation: z
       .object({
         tabs: z.array(mobileNavigationTabSchema).length(5),

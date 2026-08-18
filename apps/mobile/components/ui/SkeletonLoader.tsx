@@ -1,9 +1,12 @@
 // components/ui/SkeletonLoader.tsx
-import React, { useEffect, useRef } from 'react';
-import { Animated, Platform, StyleSheet, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Animated, Easing, Platform, StyleSheet, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { makeStyles } from '../../styles/makeStyles';
+import { useAppTheme } from '../../util/colorScheme';
 
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
+const SHIMMER_DURATION = 1100;
 
 interface SkeletonLoaderProps {
   width?: number | string;
@@ -40,23 +43,52 @@ function SkeletonLoaderComponent({
   style,
 }: SkeletonLoaderProps) {
   const styles = useStyles();
+  const theme = useAppTheme();
   const shimmer = useRef(new Animated.Value(0)).current;
+  const [measuredWidth, setMeasuredWidth] = useState(0);
 
   useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(shimmer, { toValue: 1, duration: 1500, useNativeDriver: USE_NATIVE_DRIVER }),
-        Animated.timing(shimmer, { toValue: 0, duration: 1500, useNativeDriver: USE_NATIVE_DRIVER }),
-      ]),
-    ).start();
+    const loop = Animated.loop(
+      Animated.timing(shimmer, {
+        toValue: 1,
+        duration: SHIMMER_DURATION,
+        easing: Easing.inOut(Easing.ease),
+        useNativeDriver: USE_NATIVE_DRIVER,
+      }),
+    );
+    loop.start();
+    return () => loop.stop();
   }, [shimmer]);
 
-  const opacity = shimmer.interpolate({ inputRange: [0, 1], outputRange: [0.5, 0.8] });
+  // A translating highlight reads as "loading" — a slow opacity dim reads as
+  // "something is wrong". The sweep is sized off the shimmer's own measured
+  // width so it works for both fixed-px and percentage widths.
+  const sweepWidth = Math.max(measuredWidth * 0.7, 60);
+  const translateX = shimmer.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-sweepWidth, Math.max(measuredWidth, sweepWidth)],
+  });
+  const highlightColor = theme.scheme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.55)';
 
   return (
-    <Animated.View
-      style={[styles.shimmerBg, { width, height, borderRadius, opacity }, style]}
-    />
+    <View
+      onLayout={(e) => setMeasuredWidth(e.nativeEvent.layout.width)}
+      style={[styles.shimmerBg, { width, height, borderRadius, overflow: 'hidden' }, style]}
+    >
+      {measuredWidth > 0 ? (
+        <Animated.View
+          pointerEvents="none"
+          style={[StyleSheet.absoluteFillObject, { width: sweepWidth, transform: [{ translateX }] }]}
+        >
+          <LinearGradient
+            colors={['transparent', highlightColor, 'transparent']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={StyleSheet.absoluteFillObject}
+          />
+        </Animated.View>
+      ) : null}
+    </View>
   );
 }
 

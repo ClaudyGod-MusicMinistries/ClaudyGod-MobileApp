@@ -31,7 +31,7 @@ const useStyles = makeStyles((theme) => ({
     overflow: 'hidden',
   },
   // Size variants
-  btnSm:  { height: 36, paddingHorizontal: 14 },
+  btnSm:  { minHeight: 44, paddingHorizontal: 14 },
   btnMd:  { height: 44, paddingHorizontal: 18 },
   btnLg:  { height: 50, paddingHorizontal: 22 },
   // Color variants
@@ -161,7 +161,6 @@ export function AppButton({
         {hasTitle ? (
           <CustomText
             variant="label"
-            allowFontScaling={false}
             numberOfLines={1}
             style={[styles.btnTextBase, textSizeStyle, { color: resolvedTextColor }, textStyle]}
           >

@@ -75,7 +75,7 @@ export const APP_ROUTE_BY_ID: Record<AppRouteId, string> = {
   'tabs.library': APP_ROUTES.tabs.library,
   'tabs.search': APP_ROUTES.tabs.search,
   'tabs.settings': APP_ROUTES.tabs.settings,
-  profile: APP_ROUTES.profile,
+  profile: APP_ROUTES.tabs.settings,
   'settings.privacy': APP_ROUTES.settingsPages.privacy,
   'settings.donate': APP_ROUTES.settingsPages.donate,
   'settings.payment': APP_ROUTES.settingsPages.payment,

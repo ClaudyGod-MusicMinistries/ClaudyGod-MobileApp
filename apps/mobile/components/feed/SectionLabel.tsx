@@ -8,7 +8,7 @@ import { TVTouchable } from '../ui/TVTouchable';
 import { useAppTheme } from '../../util/colorScheme';
 import { useFeedStyles } from './styles';
 
-export function SectionLabel({ title, accent: _accent, subtitle, actionLabel, onAction }: {
+export function SectionLabel({ title, accent, subtitle, actionLabel, onAction }: {
   title: string;
   accent?: string;
   subtitle?: string;
@@ -22,6 +22,11 @@ export function SectionLabel({ title, accent: _accent, subtitle, actionLabel, on
     <View>
       <View style={styles.sectionLabelRow}>
         <CustomText variant="heading" style={styles.sectionLabelTitle} numberOfLines={1}>{title}</CustomText>
+        {accent ? (
+          <View style={styles.sectionAccentPill}>
+            <CustomText style={styles.sectionAccentText} numberOfLines={1}>{accent}</CustomText>
+          </View>
+        ) : null}
         {actionLabel && onAction ? (
           <TVTouchable
             onPress={onAction}

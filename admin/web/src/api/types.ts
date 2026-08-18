@@ -240,7 +240,7 @@ export interface SearchShortcut {
 
 export type SettingsDestination =
   | 'tabs.home' | 'tabs.player' | 'tabs.videos' | 'tabs.live' | 'tabs.library' | 'tabs.search' | 'tabs.settings'
-  | 'profile' | 'settings.privacy' | 'settings.donate' | 'settings.help' | 'settings.about' | 'settings.rate'
+  | 'settings.privacy' | 'settings.donate' | 'settings.help' | 'settings.about' | 'settings.rate'
   | 'settings.referral';
 
 export interface SettingsHubItem {

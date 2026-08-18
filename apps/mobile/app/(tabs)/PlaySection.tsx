@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Linking, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { AudioPlayer, type RepeatMode } from '../../components/media/AudioPlayer';
@@ -20,6 +20,7 @@ import { trackPlayEvent } from '../../services/supabaseAnalytics';
 import { APP_ROUTES } from '../../util/appRoutes';
 import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
 import { buildPlayerRoute, isDirectPlayableAudioUrl, isYouTubeAudioItem, routeParamToString, shouldOpenVideoScreen } from '../../util/playerRoute';
+import { openExternalUrl } from '../../util/externalLinks';
 import {
   CompactContentRow,
   ContentList,
@@ -226,7 +227,7 @@ export default function PlaySection() {
     }
     if (!isDirectPlayableAudioUrl(item.mediaUrl)) {
       if (shouldOpenVideoScreen(item)) router.push(buildPlayerRoute(item));
-      else await Linking.openURL(item.mediaUrl);
+      else await openExternalUrl(item.mediaUrl);
       return;
     }
     setActiveId(item.id);

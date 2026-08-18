@@ -68,10 +68,12 @@ warn_step() {
 run_step  "API TypeScript — tsc --noEmit"          yarn --cwd ./services/api typecheck
 run_step  "API ESLint — zero warnings"             yarn --cwd ./services/api lint
 run_step  "API Build — compile to dist/"           yarn --cwd ./services/api build
+run_step  "API contract tests"                     yarn --cwd ./services/api test
 
 # ── Mobile ────────────────────────────────────────────────────────────────────
 warn_step "Mobile TypeScript — tsc --noEmit"       yarn --cwd ./apps/mobile typecheck
 warn_step "Mobile ESLint"                          yarn --cwd ./apps/mobile lint
+run_step  "Mobile release-contract tests"          yarn --cwd ./apps/mobile test
 
 # ── Infrastructure ────────────────────────────────────────────────────────────
 run_step  "Docker compose validation"              bash ./scripts/docker-validate.sh

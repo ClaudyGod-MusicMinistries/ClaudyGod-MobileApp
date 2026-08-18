@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Linking, ScrollView, useWindowDimensions, View } from 'react-native';
+import { ScrollView, useWindowDimensions, View } from 'react-native';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -17,6 +17,7 @@ import { trackPlayEvent } from '../../services/supabaseAnalytics';
 import { APP_ROUTES } from '../../util/appRoutes';
 import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
 import { isDirectPlayableVideoUrl, isHostedVideoUrl, routeParamToString, shouldOpenVideoScreen } from '../../util/playerRoute';
+import { openExternalUrl } from '../../util/externalLinks';
 import {
   CompactContentRow,
   ContentList,
@@ -196,7 +197,7 @@ export default function VideosScreen() {
           emptyIcon="smart-display"
           primaryLabel={active?.mediaUrl ? 'Open video' : 'Browse videos'}
           primaryIcon={active?.mediaUrl ? 'open-in-new' : 'smart-display'}
-          onPrimary={() => (active?.mediaUrl ? void Linking.openURL(active.mediaUrl) : undefined)}
+          onPrimary={() => (active?.mediaUrl ? void openExternalUrl(active.mediaUrl) : undefined)}
         />
       )}
 

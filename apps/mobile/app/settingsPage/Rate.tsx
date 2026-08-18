@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Linking, TextInput, View } from 'react-native';
+import { TextInput, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
@@ -14,6 +14,7 @@ import { TVTouchable } from '../../components/ui/TVTouchable';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import { createAppRating } from '../../services/userFlowService';
 import { useToast } from '../../context/ToastContext';
+import { openExternalUrl } from '../../util/externalLinks';
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
@@ -88,7 +89,7 @@ export default function Rate() {
 
     const storeUrl = iosStoreUrl || androidStoreUrl;
     if (storeUrl) {
-      void Linking.openURL(storeUrl);
+      void openExternalUrl(storeUrl);
       return;
     }
 

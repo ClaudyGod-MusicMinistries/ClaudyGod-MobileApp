@@ -1,5 +1,5 @@
-import React, { useRef, useState } from 'react';
-import { Animated, Easing, Platform, Pressable, Share, StyleSheet, View } from 'react-native';
+import React, { useState } from 'react';
+import { Pressable, Share, StyleSheet, View } from 'react-native';
 
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -15,11 +15,9 @@ import type { FeedCardItem } from '../../services/contentService';
 import { useDownloads } from '../../context/DownloadsContext';
 import { useToast } from '../../context/ToastContext';
 import { useFeedStyles } from './styles';
-import { cleanFeedText, isRedundantSubtitle, isValidDuration } from './utils';
+import { cleanFeedText, isRedundantSubtitle, isValidDuration, getContentCardWidth, getContentCardHeight, type CardVariant } from './utils';
 
-const USE_NATIVE_DRIVER = Platform.OS !== 'web';
-
-export type CardVariant = 'portrait' | 'landscape' | 'square';
+export type { CardVariant };
 
 type ContentCardProps = {
   item: FeedCardItem;
@@ -33,7 +31,6 @@ export const ContentCard = React.memo(function ContentCard({ item, onPress, comp
   const styles = useFeedStyles();
   const theme  = useAppTheme();
   const device = useDeviceClass();
-  const pressScale = useRef(new Animated.Value(1)).current;
   const [menuOpen, setMenuOpen] = useState(false);
   const { downloadContent, deleteDownload, getDownloadStatus } = useDownloads();
   const { showToast } = useToast();
@@ -56,31 +53,22 @@ export const ContentCard = React.memo(function ContentCard({ item, onPress, comp
     ] : []),
   ];
 
-  const cardWidth = fixedWidth ?? (compact ? 176 : device.isTV ? 260 : device.isDesktop ? 218 : 184);
-  const cardHeight = variant === 'portrait' ? Math.round(cardWidth * 1.32) : variant === 'landscape' ? Math.round(cardWidth * 0.62) : cardWidth;
+  const cardWidth = getContentCardWidth(device, compact, fixedWidth);
+  const cardHeight = getContentCardHeight(cardWidth, variant);
   const scrimHeight = variant === 'portrait' ? Math.round(cardHeight * 0.55) : variant === 'landscape' ? Math.round(cardHeight * 0.60) : Math.round(cardHeight * 0.50);
   const title = cleanFeedText(item.title);
-
-  const animatePress = (toValue: number, duration: number) => Animated.timing(pressScale, {
-    toValue,
-    duration,
-    easing: Easing.out(Easing.cubic),
-    useNativeDriver: USE_NATIVE_DRIVER,
-  }).start();
-  const handlePressIn  = () => animatePress(theme.motion.pressScale, theme.timing.instant);
-  const handlePressOut = () => animatePress(1, theme.timing.fast);
 
   return (
     <TVTouchable
       onPress={onPress}
-      onPressIn={handlePressIn}
-      onPressOut={handlePressOut}
+      pressScale={0.96}
+      haptics
       showFocusBorder={false}
       style={{ width: cardWidth }}
       accessibilityRole="button"
       accessibilityLabel={`${item.type === 'video' ? 'Watch' : 'Play'} ${title}`}
     >
-      <Animated.View style={{ gap: 7, transform: [{ scale: pressScale }] }}>
+      <View style={{ gap: 7 }}>
         <View style={[styles.artworkShadowWrap, { width: cardWidth, height: cardHeight }]}>
           <View style={[styles.artworkContainer, StyleSheet.absoluteFillObject]}>
             <AppImage uri={item.imageUrl} resizeMode="cover" style={StyleSheet.absoluteFillObject} />
@@ -119,7 +107,7 @@ export const ContentCard = React.memo(function ContentCard({ item, onPress, comp
             <CustomText variant="caption" style={styles.cardSubtitle} numberOfLines={1}>{cleanFeedText(item.subtitle)}</CustomText>
           ) : null}
         </View>
-      </Animated.View>
+      </View>
 
       <ActionSheet visible={menuOpen} title={title} description={item.subtitle ? cleanFeedText(item.subtitle) : undefined} actions={menuActions} onClose={() => setMenuOpen(false)} />
     </TVTouchable>

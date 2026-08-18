@@ -119,7 +119,7 @@
 
             <div class="flex flex-wrap items-center gap-1.5 pt-1">
               <button
-                v-for="s in sectionPills"
+                v-for="s in compatibleSectionOptions"
                 :key="s.value"
                 type="button"
                 :class="[
@@ -135,27 +135,11 @@
                 <span v-if="form.appSections.includes(s.value)" class="text-primary-soft/70">×</span>
               </button>
 
-              <!-- Inline custom-tag add -->
-              <button
-                v-if="!addingCustomTag"
-                type="button"
-                class="px-3 py-1.5 rounded-full text-xs font-medium border border-dashed border-border text-ink-muted hover:border-primary/40 hover:text-primary-soft transition-colors"
-                @click="startAddingCustomTag"
-              >
-                + Custom
-              </button>
-              <input
-                v-else
-                ref="customTagInputRef"
-                v-model="newSectionTag"
-                type="text"
-                placeholder="Section name…"
-                class="px-3 py-1.5 rounded-full text-xs font-medium bg-surface-hover border border-primary/40 text-ink placeholder:text-ink-muted focus:outline-none w-32"
-                @keydown.enter.prevent="addSectionTag"
-                @blur="addSectionTag"
-              />
             </div>
-            <p v-if="sectionTagError" class="text-[11px] text-danger">{{ sectionTagError }}</p>
+            <p v-if="compatibleSectionOptions.length === 0 && configStore.appConfig" class="text-[11px] text-danger">
+              No configured section accepts {{ form.type }} content. Create or update a compatible layout section before publishing.
+            </p>
+            <p v-if="assignmentError" class="text-[11px] text-danger">{{ assignmentError }}</p>
           </div>
         </AppCard>
 
@@ -172,7 +156,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, nextTick } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useContentStore } from '@/stores/content.store';
 import { useConfigStore } from '@/stores/config.store';
@@ -211,7 +195,7 @@ const LAYOUT_GROUPS: { key: 'homeSections' | 'videoSections' | 'playerSections' 
 ];
 
 const configuredSectionOptions = computed(() => {
-  const byId = new Map<string, { value: string; label: string; screens: string[] }>();
+  const byId = new Map<string, { value: string; label: string; screens: string[]; contentTypes: string[] }>();
   const layout = configStore.appConfig?.layout;
   if (layout) {
     for (const group of LAYOUT_GROUPS) {
@@ -219,8 +203,9 @@ const configuredSectionOptions = computed(() => {
         const existing = byId.get(section.id);
         if (existing) {
           existing.screens.push(group.label);
+          existing.contentTypes = [...new Set([...existing.contentTypes, ...section.contentTypes])];
         } else {
-          byId.set(section.id, { value: section.id, label: section.title, screens: [group.label] });
+          byId.set(section.id, { value: section.id, label: section.title, screens: [group.label], contentTypes: section.contentTypes });
         }
       }
     }
@@ -267,15 +252,16 @@ const emptyForm = (): FormState => ({
 const form = ref<FormState>(emptyForm());
 const metadataError = ref('');
 
-// One flowing picker: the real configured sections plus any free-typed section
-// names already on this item, all toggled the same way — no separate
-// "applied tags" row duplicating what's already shown as a selected pill.
-const sectionPills = computed(() => {
-  const known = new Set(configuredSectionOptions.value.map((s) => s.value));
-  const custom = form.value.appSections
-    .filter((tag) => !known.has(tag))
-    .map((tag) => ({ value: tag, label: tag, screens: [] as string[] }));
-  return [...configuredSectionOptions.value, ...custom];
+const compatibleSectionOptions = computed(() =>
+  configuredSectionOptions.value.filter((section) => section.contentTypes.includes(form.value.type)),
+);
+
+const assignmentError = computed(() => {
+  const compatibleIds = new Set(compatibleSectionOptions.value.map((section) => section.value));
+  const invalid = form.value.appSections.filter((sectionId) => !compatibleIds.has(sectionId));
+  return invalid.length
+    ? `Remove invalid or incompatible section assignments: ${invalid.join(', ')}`
+    : '';
 });
 
 function toggleSection(value: string): void {
@@ -285,35 +271,6 @@ function toggleSection(value: string): void {
   } else {
     form.value.appSections.splice(idx, 1);
   }
-}
-
-const newSectionTag = ref('');
-const sectionTagError = ref('');
-const addingCustomTag = ref(false);
-const customTagInputRef = ref<HTMLInputElement | null>(null);
-
-async function startAddingCustomTag(): Promise<void> {
-  addingCustomTag.value = true;
-  await nextTick();
-  customTagInputRef.value?.focus();
-}
-
-function addSectionTag(): void {
-  const value = newSectionTag.value.trim();
-  sectionTagError.value = '';
-  if (!value) {
-    addingCustomTag.value = false;
-    return;
-  }
-  if (value.length < 2 || value.length > 80) {
-    sectionTagError.value = 'Section names must be 2-80 characters';
-    return;
-  }
-  if (!form.value.appSections.some((s) => s.toLowerCase() === value.toLowerCase())) {
-    form.value.appSections.push(value);
-  }
-  newSectionTag.value = '';
-  addingCustomTag.value = false;
 }
 
 function onMediaUploaded(payload: { url: string; sessionId: string }): void {
@@ -385,6 +342,14 @@ async function onSave(overrideVisibility?: 'draft' | 'published'): Promise<void>
     return;
   }
   const requiresUrl = form.value.type === 'audio' || form.value.type === 'video';
+  if (assignmentError.value) {
+    ui.addToast({ tone: 'danger', title: 'Fix app section assignments', message: assignmentError.value });
+    return;
+  }
+  if ((overrideVisibility ?? form.value.visibility) === 'published' && form.value.appSections.length === 0) {
+    ui.addToast({ tone: 'danger', title: 'Choose at least one compatible app section before publishing' });
+    return;
+  }
   if (requiresUrl && !form.value.url?.trim()) {
     ui.addToast({ tone: 'danger', title: 'A media URL or uploaded file is required for audio/video' });
     return;

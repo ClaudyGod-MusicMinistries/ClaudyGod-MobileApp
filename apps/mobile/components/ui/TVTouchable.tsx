@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
 import { Platform, Pressable, PressableProps, StyleProp, ViewStyle } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming, Easing } from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
 import { useAppTheme } from '../../util/colorScheme';
+import { useReducedMotion } from '../../hooks/useReducedMotion';
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 interface TVTouchableProps extends Omit<PressableProps, 'style'> {
   style?: StyleProp<ViewStyle>;
@@ -10,6 +15,10 @@ interface TVTouchableProps extends Omit<PressableProps, 'style'> {
   disableTVFocusStyle?: boolean;
   disableHoverStyle?: boolean;
   activeOpacity?: number;
+  /** Scale applied on press-in, eased back out on release. Defaults to the theme's standard press feedback. */
+  pressScale?: number;
+  /** Fires a light selection haptic on press-in. Off by default — several call sites (e.g. AppButton, TabBar) already fire their own tuned haptic and would double-buzz. */
+  haptics?: boolean;
 }
 
 export function TVTouchable({
@@ -21,18 +30,34 @@ export function TVTouchable({
   disableHoverStyle = false,
   onFocus,
   onBlur,
+  onPressIn,
+  onPressOut,
   focusable,
   hitSlop,
   activeOpacity = 0.88,
+  pressScale,
+  haptics = false,
   children,
   ...props
 }: TVTouchableProps) {
   const theme = useAppTheme();
+  const reduceMotion = useReducedMotion();
   const isTV = Platform.isTV;
   const isWeb = Platform.OS === 'web';
   const [isFocused, setIsFocused] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-  const [isPressed, setIsPressed] = useState(false);
+  const resolvedPressScale = pressScale ?? theme.interaction.pressScale;
+
+  // Driven on the UI thread so the feedback stays smooth even while the JS
+  // thread is busy (navigation, list scroll) — a state-driven style swap
+  // snaps instantly instead of easing, which reads as cheap on anything
+  // larger than a small icon button.
+  const pressProgress = useSharedValue(0);
+
+  const pressedAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: 1 - pressProgress.value * (1 - resolvedPressScale) }],
+    opacity: 1 - pressProgress.value * (1 - activeOpacity),
+  }));
 
   const tvFocusStyle: ViewStyle | null =
     isTV && isFocused && !disableTVFocusStyle
@@ -51,7 +76,6 @@ export function TVTouchable({
   const hoverStyle: ViewStyle | null =
     isWeb && isHovered && !disableHoverStyle && !props.disabled
       ? {
-          opacity: 0.98,
           transform: [{ translateY: -1 }],
           shadowColor: '#000000',
           shadowOpacity: 0.08,
@@ -59,9 +83,6 @@ export function TVTouchable({
           shadowOffset: { width: 0, height: 4 },
         }
       : null;
-
-  const pressedStyle: ViewStyle | null =
-    isPressed && !props.disabled ? { opacity: activeOpacity, transform: [{ scale: 0.985 }] } : null;
 
   const webCursorStyle = isWeb
     ? ({
@@ -73,11 +94,11 @@ export function TVTouchable({
     : null;
 
   return (
-    <Pressable
+    <AnimatedPressable
       accessibilityRole="button"
       {...props}
       focusable={focusable ?? true}
-      hitSlop={hitSlop ?? (isTV ? theme.tv.hitSlop : undefined)}
+      hitSlop={hitSlop ?? (isTV ? theme.tv.hitSlop : 8)}
       onHoverIn={(event) => {
         setIsHovered(true);
         props.onHoverIn?.(event);
@@ -87,12 +108,15 @@ export function TVTouchable({
         props.onHoverOut?.(event);
       }}
       onPressIn={(event) => {
-        setIsPressed(true);
-        props.onPressIn?.(event);
+        if (!props.disabled) {
+          pressProgress.value = withTiming(1, { duration: reduceMotion ? 0 : theme.timing.instant, easing: Easing.out(Easing.cubic) });
+          if (haptics) void Haptics.selectionAsync();
+        }
+        onPressIn?.(event);
       }}
       onPressOut={(event) => {
-        setIsPressed(false);
-        props.onPressOut?.(event);
+        pressProgress.value = withTiming(0, { duration: reduceMotion ? 0 : theme.timing.fast, easing: Easing.out(Easing.cubic) });
+        onPressOut?.(event);
       }}
       onFocus={(event) => {
         setIsFocused(true);
@@ -102,9 +126,9 @@ export function TVTouchable({
         setIsFocused(false);
         onBlur?.(event);
       }}
-      style={[style, webCursorStyle, hoverStyle, pressedStyle, tvFocusStyle, isTV && isFocused ? focusStyle : null]}
+      style={[style, webCursorStyle, hoverStyle, pressedAnimatedStyle, tvFocusStyle, isTV && isFocused ? focusStyle : null]}
     >
       {children}
-    </Pressable>
+    </AnimatedPressable>
   );
 }

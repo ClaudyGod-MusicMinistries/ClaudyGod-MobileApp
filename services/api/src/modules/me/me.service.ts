@@ -1354,18 +1354,20 @@ const buildDonationInstructions = (params: {
 
   if (currency === 'NGN') {
     return {
-      title: 'Secure local payment',
+      title: 'Request approved local giving instructions',
       message:
-        'Continue with your preferred local provider. A secure payment link will be issued for your NGN donation.',
-      actionLabel: 'Continue to payment',
+        'No in-app payment processor is currently enabled. Contact the ministry team for approved NGN giving instructions and verify the donation reference before sending funds.',
+      actionLabel: supportEmail ? 'Contact giving team' : undefined,
+      actionUrl: supportEmail ? `mailto:${supportEmail}` : undefined,
     };
   }
 
   return {
-    title: 'Secure card payment',
+    title: 'Request approved giving instructions',
     message:
-      'Continue with the secure checkout to complete your donation. You can use card, Apple Pay, or Google Pay where available.',
-    actionLabel: 'Continue to payment',
+      'No card, Apple Pay, or Google Pay checkout is currently enabled in this app. Contact the ministry team for an approved giving route.',
+    actionLabel: supportEmail ? 'Contact giving team' : undefined,
+    actionUrl: supportEmail ? `mailto:${supportEmail}` : undefined,
   };
 };
 

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Linking, TextInput, View } from 'react-native';
+import { TextInput, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 
 import { SettingsScaffold } from '../../components/layout/SettingsScaffold';
@@ -19,6 +19,7 @@ import {
   requestPrivacyDeleteAccount,
   resetRecommendationHistory,
 } from '../../services/userFlowService';
+import { openExternalUrl } from '../../util/externalLinks';
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
@@ -216,7 +217,7 @@ export default function Privacy() {
             <PrivacyAction icon="password" title="Private access" description="Your current experience is available without account setup." onPress={() => showModal({ title: 'Private by design', message: 'For this release, activity and preferences remain on this device. Account synchronization can be enabled in a future release without changing how you use the app.', tone: 'info', primaryAction: { label: 'Got it' } })} />
             <PrivacyAction icon="download"          title="Export my data"          description="Request a copy of account and activity data."   onPress={() => void requestExport()} />
             <PrivacyAction icon="history-toggle-off" title="Reset recommendations"  description="Clear activity used for recommendations."       onPress={resetHistory} />
-            <PrivacyAction icon="email"             title="Contact privacy team"    description={contactEmail}                                   onPress={() => void Linking.openURL(`mailto:${contactEmail}`)} />
+            <PrivacyAction icon="email"             title="Contact privacy team"    description={contactEmail}                                   onPress={() => void openExternalUrl(`mailto:${contactEmail}`)} />
           </View>
         </SurfaceCard>
       </FadeIn>
@@ -225,8 +226,8 @@ export default function Privacy() {
         <SurfaceCard tone="subtle" style={styles.sectionPad}>
           <CustomText variant="heading" style={styles.sectionHead}>Legal</CustomText>
           <View style={styles.actionsList}>
-            <PrivacyAction icon="policy"    title="Privacy Policy"    description="How we collect and use your data." onPress={() => void Linking.openURL(`${ENV.apiUrl}/legal/privacy`)} />
-            <PrivacyAction icon="gavel"     title="Terms of Service"  description="The rules for using ClaudyGod."     onPress={() => void Linking.openURL(`${ENV.apiUrl}/legal/terms`)} />
+            <PrivacyAction icon="policy"    title="Privacy Policy"    description="How we collect and use your data." onPress={() => void openExternalUrl(`${ENV.apiUrl}/legal/privacy`)} />
+            <PrivacyAction icon="gavel"     title="Terms of Service"  description="The rules for using ClaudyGod."     onPress={() => void openExternalUrl(`${ENV.apiUrl}/legal/terms`)} />
           </View>
         </SurfaceCard>
       </FadeIn>

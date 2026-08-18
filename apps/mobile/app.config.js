@@ -78,7 +78,7 @@ const appScheme = getFileOrEnv('EXPO_APP_SCHEME', 'claudygod');
 const appVersion = getFileOrEnv('EXPO_APP_VERSION', '1.0.0');
 const appDescription = getFileOrEnv(
   'EXPO_APP_DESCRIPTION',
-  'ClaudyGod worship, ministry updates, and secure account access across mobile and web.',
+  'ClaudyGod worship music, videos, live sessions, and ministry updates.',
 );
 const uiStyle = getFileOrEnv('EXPO_USER_INTERFACE_STYLE', 'dark');
 // Canonical brand dark background — matches brand/logo-master.svg's tile color.
@@ -200,11 +200,6 @@ module.exports = {
       bundleIdentifier: iosBundleId,
       buildNumber: iosBuildNumber,
       icon: appIconAssetPath,
-      infoPlist: {
-        NSCameraUsageDescription: 'ClaudyGod uses your camera to update your profile photo.',
-        NSMicrophoneUsageDescription: 'ClaudyGod uses your microphone to record audio messages.',
-        NSPhotoLibraryUsageDescription: 'ClaudyGod accesses your photo library to let you choose a profile photo or upload content.',
-      },
       // Required since 2024 for App Store Connect uploads. Declares this app's own
       // "required reason" API usage; installed Expo/RN modules (async-storage,
       // secure-store, etc.) ship their own manifest fragments that autolinking
@@ -264,20 +259,6 @@ module.exports = {
       'expo-web-browser',
       'expo-notifications',
       'expo-updates',
-      [
-        'expo-camera',
-        {
-          cameraPermission: 'ClaudyGod uses your camera to update your profile photo.',
-          microphonePermission: 'ClaudyGod uses your microphone to record audio messages.',
-          recordAudioAndroid: true,
-        },
-      ],
-      [
-        'expo-image-picker',
-        {
-          photosPermission: 'ClaudyGod accesses your photo library to let you choose a profile photo or upload content.',
-        },
-      ],
       // No-op for local/dev builds without Sentry configured — only affects EAS builds
       // that set SENTRY_ORG/SENTRY_PROJECT/SENTRY_AUTH_TOKEN for source map upload.
       [

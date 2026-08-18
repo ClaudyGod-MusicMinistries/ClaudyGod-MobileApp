@@ -1,8 +1,8 @@
 import { isSentryEnabled, reportException, Sentry } from '../lib/sentry';
-import { Stack, useRouter, useSegments } from 'expo-router';
+import { Stack } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { useContext, useEffect, useState, type ReactNode } from 'react';
+import { useContext, type ReactNode } from 'react';
 import { StatusBar, View } from 'react-native';
 import { QueryClientProvider } from '@tanstack/react-query';
 
@@ -20,15 +20,13 @@ import { ToastProvider } from '../context/ToastContext';
 import { AppModalProvider } from '../context/AppModalContext';
 import { ToastViewport } from '../components/ui/ToastViewport';
 import { MinimizedFloatingPlayer } from '../components/player/MinimizedFloatingPlayer';
-import { WordOfDayModal, shouldShowWordModal, markWordModalShown } from '../components/modals/WordOfDayModal';
 import { WordOfDayProvider } from '../context/WordOfDayContext';
-import { APP_ROUTES } from '../util/appRoutes';
 import { AppLoadingScreen } from '../components/Exp/AppLoading';
-import { useWordOfDay } from '../hooks/useWordOfDay';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { usePushNotifications } from '../hooks/usePushNotify';
 import { ErrorBoundary } from '../components/ErrorBoundary';
-import { OfflineScreen } from '../components/OfflineScreen';
+import { OfflineBanner } from '../components/OfflineBanner';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 
 // Global unhandled JS error handler — active in production builds only.
 if (!__DEV__) {
@@ -62,13 +60,8 @@ function ThemedLayout({ children }: { children: ReactNode }) {
 function RootLayoutInner() {
   const { fontsLoaded } = useContext(FontContext);
   useThemeContext(); // Subscribes so this layout re-renders when the theme changes.
-  const router = useRouter();
-  const segments = useSegments();
-
-  const [bootDelayDone, setBootDelayDone] = useState(false);
-  const [wordModalVisible, setWordModalVisible] = useState(false);
-  const { bibleVerse, adminWord } = useWordOfDay();
   const { isOffline, recheck } = useNetworkStatus();
+  const reduceMotion = useReducedMotion();
   // Mounted here (not just in settings.tsx) so a returning user who already
   // granted permission gets their Expo push token re-validated/re-registered
   // on every launch — tokens can rotate (reinstall, eas update, expiry), and
@@ -76,51 +69,10 @@ function RootLayoutInner() {
   // the failure to the user.
   usePushNotifications();
 
-  const firstSegment = segments[0];
-  const isOnTabs = firstSegment === '(tabs)';
-
-  useEffect(() => {
-    // Long enough for AppLoadingScreen's full choreographed entrance (logo, name,
-    // tagline reveal in sequence) to finish and settle for a beat — a deliberate
-    // brand moment, not a flash that's gone before it registers.
-    const timer = setTimeout(() => setBootDelayDone(true), 2200);
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Show the Word for Today modal once per day, 2 s after landing on the main tabs.
-  useEffect(() => {
-    if (!bootDelayDone || !bibleVerse || !isOnTabs) return;
-    let cancelled = false;
-    const timer = setTimeout(async () => {
-      if (cancelled) return;
-      const shouldShow = await shouldShowWordModal();
-      if (!cancelled && shouldShow) {
-        setWordModalVisible(true);
-        await markWordModalShown();
-      }
-    }, 2000);
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  }, [bootDelayDone, bibleVerse, isOnTabs]);
-
-  // After boot, always navigate to home tab — there is no auth gate.
-  useEffect(() => {
-    if (!fontsLoaded || !bootDelayDone) return;
-    if (!firstSegment || firstSegment === 'index') {
-      router.replace(APP_ROUTES.tabs.home);
-    }
-  }, [bootDelayDone, firstSegment, fontsLoaded, router]);
-
   usePlayer(); // Subscribes so this layout re-renders on player identity changes (not progress ticks).
 
-  if (!fontsLoaded || !bootDelayDone) {
+  if (!fontsLoaded) {
     return <AppLoadingScreen />;
-  }
-
-  if (isOffline) {
-    return <OfflineScreen onRetry={recheck} />;
   }
 
   return (
@@ -130,8 +82,8 @@ function RootLayoutInner() {
       <Stack
         screenOptions={{
           headerShown: false,
-          animation: 'fade_from_bottom',
-          animationDuration: 240,
+          animation: reduceMotion ? 'none' : 'fade_from_bottom',
+          animationDuration: reduceMotion ? 0 : 200,
         }}
       >
         <Stack.Screen
@@ -157,17 +109,7 @@ function RootLayoutInner() {
       </Stack>
 
       <MinimizedFloatingPlayer />
-
-      <WordOfDayModal
-        visible={wordModalVisible}
-        bibleVerse={bibleVerse}
-        adminWord={adminWord}
-        onClose={() => setWordModalVisible(false)}
-        onReadMore={() => {
-          setWordModalVisible(false);
-          router.push(APP_ROUTES.settingsPages.word);
-        }}
-      />
+      {isOffline ? <OfflineBanner onRetry={recheck} /> : null}
     </ThemedLayout>
   );
 }

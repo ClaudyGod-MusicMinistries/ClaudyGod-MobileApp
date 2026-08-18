@@ -114,8 +114,12 @@ const normalizeSectionToken = (value: string): string => value.trim().toLowerCas
 // admin/web ContentEditView.vue) — match either so a legacy title-based tag
 // still resolves after a section is renamed.
 export const matchesConfiguredSection = (item: MobileFeedItem, section: MobileLayoutSection): boolean => {
+  if (item.type === 'ad') {
+    return false;
+  }
   const tokens = new Set([normalizeSectionToken(section.id), normalizeSectionToken(section.title)]);
-  return item.appSections.some((value) => tokens.has(normalizeSectionToken(value)));
+  return section.contentTypes.includes(item.type) &&
+    item.appSections.some((value) => tokens.has(normalizeSectionToken(value)));
 };
 
 // Ranked items actually tagged into this section. No type-based fallback: a

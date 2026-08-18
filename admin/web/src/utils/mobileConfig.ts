@@ -19,7 +19,6 @@ export const SETTINGS_DESTINATION_OPTIONS = [
   { value: 'tabs.library', label: 'Library tab' },
   { value: 'tabs.search', label: 'Search tab' },
   { value: 'tabs.settings', label: 'Settings tab' },
-  { value: 'profile', label: 'Profile' },
   { value: 'settings.privacy', label: 'Privacy' },
   { value: 'settings.donate', label: 'Donate' },
   { value: 'settings.help', label: 'Help' },

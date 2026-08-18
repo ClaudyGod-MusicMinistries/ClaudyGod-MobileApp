@@ -93,7 +93,7 @@ class CheckRunner {
 
   checkTests() {
     this.header('4️⃣  TESTS CHECK');
-    return this.runCheck('Test suite', 'yarn test', true);
+    return this.runCheck('Test suite', 'yarn test');
   }
 
   summary() {
@@ -133,7 +133,7 @@ class CheckRunner {
 
     hasFailures |= !this.checkTypeScript();
     hasFailures |= !this.checkLinting();
-    this.checkTests(); // Optional, doesn't affect result
+    hasFailures |= !this.checkTests();
 
     const summaryOk = this.summary();
 
@@ -143,8 +143,8 @@ class CheckRunner {
       return 1;
     }
 
-    this.log('✅ ALL CHECKS PASSED', 'green');
-    this.log('   Your code is ready!\n', 'green');
+    this.log('✅ STATIC QUALITY GATES PASSED', 'green');
+    this.log('   Native builds and device acceptance tests are still required before release.\n', 'yellow');
     return 0;
   }
 }

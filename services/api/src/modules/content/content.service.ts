@@ -21,6 +21,8 @@ import type {
   ContentType,
   UpdateContentInput,
 } from './content.types';
+import { assertConfirmedUploadSession, validateSectionAssignments } from './content.contracts';
+import { getMobileAppConfig } from '../appConfig/appConfig.service';
 
 interface ContentRow {
   id: string;
@@ -57,6 +59,7 @@ interface UploadSessionLinkRow {
   storage_bucket: string;
   storage_path: string;
   status: string;
+  attached_at: string | Date | null;
 }
 
 interface ContentSubmissionRequestRow {
@@ -233,6 +236,27 @@ const buildListResponse = (rows: ContentRow[], total: number, query: ContentList
 const normalizeTextList = (items?: string[]): string[] =>
   [...new Set((items ?? []).map((item) => item.trim()).filter(Boolean))];
 
+const validateConfiguredSectionAssignments = async (params: {
+  appSections?: string[];
+  type: ContentType;
+  publishing: boolean;
+}): Promise<string[]> => {
+  const { config } = await getMobileAppConfig();
+  const configuredSections = [
+    ...config.layout.homeSections,
+    ...config.layout.videoSections,
+    ...config.layout.playerSections,
+    ...config.layout.librarySections,
+  ];
+  const uniqueSections = [...new Map(configuredSections.map((section) => [section.id, section])).values()];
+  return validateSectionAssignments({
+    assignedSectionIds: params.appSections ?? [],
+    contentType: params.type,
+    configuredSections: uniqueSections,
+    publishing: params.publishing,
+  });
+};
+
 const ensurePublishableContent = (params: {
   type: ContentType;
   mediaUrl: string | null;
@@ -287,7 +311,7 @@ const loadValidatedUploadSession = async ({
   }
 
   const result = await client.query<UploadSessionLinkRow>(
-    `SELECT id, channel, requested_by, mime_type, storage_bucket, storage_path, status
+    `SELECT id, channel, requested_by, mime_type, storage_bucket, storage_path, status, attached_at
      FROM upload_sessions
      WHERE id = $1
      LIMIT 1`,
@@ -305,9 +329,7 @@ const loadValidatedUploadSession = async ({
   if (!hasMinRole(requester.role, 'ADMIN') && session.requested_by !== requester.sub) {
     throw new ForbiddenError('You can only attach files uploaded from your own session');
   }
-  if (session.status === 'failed') {
-    throw new BadRequestError('Referenced upload session failed and cannot be attached');
-  }
+  assertConfirmedUploadSession(session.status, session.attached_at);
   if (expectedMimePrefix && !session.mime_type.toLowerCase().startsWith(`${expectedMimePrefix}/`)) {
     throw new BadRequestError(`Referenced upload session is not a valid ${expectedMimePrefix} asset`);
   }
@@ -335,13 +357,34 @@ const markUploadSessionAttached = async ({
     return;
   }
 
-  await client.query(
+  const result = await client.query(
     `UPDATE upload_sessions
-     SET status = 'uploaded',
-         completed_at = COALESCE(completed_at, NOW()),
+     SET attached_at = COALESCE(attached_at, NOW()),
          updated_at = NOW()
-     WHERE id = $1`,
+     WHERE id = $1
+       AND status = 'uploaded'
+       AND attached_at IS NULL`,
     [sessionId],
+  );
+  if (result.rowCount !== 1) {
+    throw new BadRequestError(
+      'Upload session is already attached or is no longer available',
+      'UPLOAD_SESSION_NOT_ATTACHABLE',
+    );
+  }
+};
+
+const replaceContentSectionAssignments = async (params: {
+  client: PoolClient;
+  contentId: string;
+  sectionIds: string[];
+}): Promise<void> => {
+  await params.client.query(`DELETE FROM content_section_assignments WHERE content_id = $1`, [params.contentId]);
+  if (!params.sectionIds.length) return;
+  await params.client.query(
+    `INSERT INTO content_section_assignments (content_id, section_id)
+     SELECT $1, unnest($2::text[])`,
+    [params.contentId, params.sectionIds],
   );
 };
 
@@ -807,6 +850,11 @@ export const createContentRequest = async (
   requester: JwtClaims,
   input: CreateContentRequestInput,
 ): Promise<ContentSubmissionRequest> => {
+  const validatedSections = await validateConfiguredSectionAssignments({
+    appSections: input.appSections,
+    type: input.type,
+    publishing: input.requestedVisibility === 'published',
+  });
   const client = await pool.connect();
   let request: ContentSubmissionRequest;
 
@@ -875,7 +923,7 @@ export const createContentRequest = async (
         input.externalSourceId ?? null,
         input.channelName ?? null,
         input.duration ?? null,
-        normalizeTextList(input.appSections),
+        validatedSections,
         normalizeTextList(input.tags),
         JSON.stringify(input.metadata ?? {}),
         input.requestNotes ?? null,
@@ -1016,6 +1064,12 @@ export const createDraftFromContentRequest = async ({
       ],
     );
 
+    await replaceContentSectionAssignments({
+      client,
+      contentId: insertResult.rows[0]!.id,
+      sectionIds: existing.app_sections ?? [],
+    });
+
     await client.query(
       `UPDATE content_submission_requests
        SET request_status = 'fulfilled',
@@ -1058,6 +1112,11 @@ export const createDraftFromContentRequest = async ({
 };
 
 export const createContent = async (requester: JwtClaims, input: CreateContentInput): Promise<ContentItem> => {
+  const validatedSections = await validateConfiguredSectionAssignments({
+    appSections: input.appSections,
+    type: input.type,
+    publishing: input.visibility === 'published',
+  });
   const client = await pool.connect();
   let item: ContentItem;
   let mediaUploadSessionId: string | null = null;
@@ -1090,7 +1149,7 @@ export const createContent = async (requester: JwtClaims, input: CreateContentIn
       throw new BadRequestError(`A media URL is required for ${input.type} content`);
     }
 
-    const normalizedSections = normalizeTextList(input.appSections);
+    const normalizedSections = validatedSections;
     if (input.visibility === 'published') {
       ensurePublishableContent({
         type: input.type,
@@ -1131,6 +1190,12 @@ export const createContent = async (requester: JwtClaims, input: CreateContentIn
         input.isFeatured ?? false,
       ],
     );
+
+    await replaceContentSectionAssignments({
+      client,
+      contentId: insertResult.rows[0]!.id,
+      sectionIds: normalizedSections,
+    });
 
     mediaUploadSessionId = mediaUpload?.sessionId ?? null;
     thumbnailUploadSessionId = thumbnailUpload?.sessionId ?? null;
@@ -1190,6 +1255,13 @@ export const updateContent = async ({
   if (!hasMinRole(requester.role, 'ADMIN') && existing.author_id !== requester.sub) {
     throw new ForbiddenError('You can only update your own content');
   }
+  const validatedSections = await validateConfiguredSectionAssignments({
+    appSections: Object.prototype.hasOwnProperty.call(input, 'appSections')
+      ? input.appSections
+      : existing.app_sections ?? [],
+    type: input.type ?? existing.content_type,
+    publishing: (input.visibility ?? existing.visibility) === 'published',
+  });
   const client = await pool.connect();
   let item: ContentItem;
 
@@ -1228,9 +1300,7 @@ export const updateContent = async ({
     }
 
     const nextVisibility = input.visibility ?? existing.visibility;
-    const nextAppSections = Object.prototype.hasOwnProperty.call(input, 'appSections')
-      ? normalizeTextList(input.appSections)
-      : existing.app_sections ?? [];
+    const nextAppSections = validatedSections;
 
     if (nextVisibility === 'published') {
       ensurePublishableContent({
@@ -1286,6 +1356,8 @@ export const updateContent = async ({
         input.isFeatured ?? null,
       ],
     );
+
+    await replaceContentSectionAssignments({ client, contentId, sectionIds: nextAppSections });
 
     await markUploadSessionAttached({ client, sessionId: mediaUpload?.sessionId ?? null });
     await markUploadSessionAttached({ client, sessionId: thumbnailUpload?.sessionId ?? null });
@@ -1361,6 +1433,11 @@ export const updateContentVisibility = async ({
   }
 
   if (visibility === 'published') {
+    await validateConfiguredSectionAssignments({
+      appSections: existing.app_sections ?? [],
+      type: existing.content_type,
+      publishing: true,
+    });
     ensurePublishableContent({
       type: existing.content_type,
       mediaUrl: existing.media_url,

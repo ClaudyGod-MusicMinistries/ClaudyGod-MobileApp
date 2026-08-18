@@ -131,13 +131,19 @@ run_step "API ESLint — zero warnings allowed" \
 run_step "API Build — tsc compile to dist/" \
   yarn --cwd ./services/api build
 
+run_step "API contract tests" \
+  yarn --cwd ./services/api test
+
 # ── 6. Mobile TypeScript ──────────────────────────────────────────────────────
-warn_step "Mobile TypeScript — tsc --noEmit" \
+run_step "Mobile TypeScript — tsc --noEmit" \
   yarn --cwd ./apps/mobile typecheck
 
 # ── 7. Mobile ESLint ──────────────────────────────────────────────────────────
-warn_step "Mobile ESLint" \
+run_step "Mobile ESLint" \
   yarn --cwd ./apps/mobile lint
+
+run_step "Mobile release-contract tests" \
+  yarn --cwd ./apps/mobile test
 
 # ── 8. Dependency audit (high/critical) ──────────────────────────────────────
 step_start "Security audit — yarn audit (high+critical)"

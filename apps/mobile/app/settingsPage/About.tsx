@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Linking, View, useWindowDimensions } from 'react-native';
+import { View, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 
 import { SettingsScaffold } from '../../components/layout/SettingsScaffold';
@@ -13,6 +13,7 @@ import { AppButton } from '../../components/ui/AppButton';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import { APP_ROUTES } from '../../util/appRoutes';
 import { useRouter } from 'expo-router';
+import { openExternalUrl } from '../../util/externalLinks';
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
@@ -179,7 +180,7 @@ export default function About() {
               Connect
             </CustomText>
             {socials.map((item) => (
-              <TVTouchable key={item.label} onPress={() => void Linking.openURL(item.url)} showFocusBorder={false}>
+              <TVTouchable key={item.label} onPress={() => void openExternalUrl(item.url)} showFocusBorder={false}>
                 <SurfaceCard tone="subtle" style={styles.socialCard}>
                   <View style={styles.socialIconBox}>
                     <MaterialIcons name={item.icon as React.ComponentProps<typeof MaterialIcons>['name']} size={18} color={theme.colors.primary} />
