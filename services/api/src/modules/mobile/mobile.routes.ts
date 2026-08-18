@@ -4,7 +4,6 @@ import { asyncHandler } from '../../lib/asyncHandler';
 import { NotFoundError } from '../../lib/errors';
 import { validateSchema } from '../../lib/validation';
 import { authenticate } from '../../middleware/authenticate';
-import { requireMobileApiKey } from '../../middleware/requireMobileApiKey';
 import { listContentQuerySchema } from '../content/content.schema';
 import { listPublicContent } from '../content/content.service';
 import { createDonationIntentSchema } from '../me/me.schema';
@@ -32,7 +31,6 @@ export const mobileRouter = Router();
 
 mobileRouter.get(
   '/feed',
-  requireMobileApiKey,
   asyncHandler(async (_req, res) => {
     const data = await buildMobileFeed();
     res.status(200).json(data);
@@ -41,7 +39,6 @@ mobileRouter.get(
 
 mobileRouter.get(
   '/content',
-  requireMobileApiKey,
   asyncHandler(async (req, res) => {
     const parsed = validateSchema(listContentQuerySchema, req.query);
     const query = {
@@ -67,7 +64,6 @@ const sectionDetailQuerySchema = z.object({
 
 mobileRouter.get(
   '/sections/:sectionId',
-  requireMobileApiKey,
   asyncHandler(async (req, res) => {
     const { screen, page, limit } = validateSchema(sectionDetailQuerySchema, req.query);
     const data = await getMobileSectionDetail({ screen, sectionId: req.params.sectionId, page, limit });
@@ -80,7 +76,6 @@ mobileRouter.get(
 
 mobileRouter.get(
   '/youtube/videos',
-  requireMobileApiKey,
   asyncHandler(async (req, res) => {
     const query = validateSchema(youtubeListQuerySchema, req.query);
     const data = await fetchYouTubeVideos(query);
@@ -90,7 +85,6 @@ mobileRouter.get(
 
 mobileRouter.post(
   '/donation-intents',
-  requireMobileApiKey,
   asyncHandler(async (req, res) => {
     const payload = validateSchema(createDonationIntentSchema, req.body);
     const result = await createPublicDonationIntent(payload);
@@ -101,7 +95,6 @@ mobileRouter.post(
 // Syncs guest-session favourites to a newly signed-in account.
 mobileRouter.post(
   '/guest-sync',
-  requireMobileApiKey,
   authenticate,
   asyncHandler(async (req, res) => {
     if (!req.user) {

@@ -183,11 +183,8 @@ const envSchema = z
     SUPABASE_S3_ACCESS_KEY_ID: z.string().optional().default(''),
     SUPABASE_S3_SECRET_ACCESS_KEY: z.string().optional().default(''),
 
-    MOBILE_API_KEY: z.string().min(16, 'MOBILE_API_KEY must contain at least 16 characters'),
-
     // The real .NET website backend (CGM-Backend) — the website module proxies
-    // admin actions here, attaching this key server-to-server the same way
-    // MOBILE_API_KEY protects the mobile-facing surface. Left optional (empty
+    // admin actions here, attaching a server-only credential. Left optional (empty
     // default) so this deploys additively — routes under /v1/website/* return
     // a clear 503 if unset rather than the whole app failing to boot.
     CGM_API_BASE_URL: optionalUrl(),
@@ -536,14 +533,6 @@ const envSchema = z
         code: z.ZodIssueCode.custom,
         path: ['JWT_REFRESH_SECRET'],
         message: 'JWT_REFRESH_SECRET must be unique and rotated before production',
-      });
-    }
-
-    if (value.MOBILE_API_KEY === 'dev-mobile-api-key' || value.MOBILE_API_KEY.length < 32) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['MOBILE_API_KEY'],
-        message: 'MOBILE_API_KEY must be a strong non-default secret',
       });
     }
 

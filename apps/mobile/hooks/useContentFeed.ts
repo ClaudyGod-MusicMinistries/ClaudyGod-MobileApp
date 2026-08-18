@@ -9,7 +9,7 @@ async function loadFeed(): Promise<FeedBundle> {
 
 export function useContentFeed() {
   const { history } = useLocalContent();
-  const { data, isLoading, error, refetch } = useQuery({
+  const { data, isLoading, isRefetching, error, refetch } = useQuery({
     queryKey: ['feed'],
     queryFn: loadFeed,
   });
@@ -28,6 +28,12 @@ export function useContentFeed() {
   return {
     feed,
     loading: isLoading,
+    // Distinct from `loading` (first load, drives content skeletons) —
+    // React Query's `isLoading` is false on every refetch after the first
+    // success, so binding a RefreshControl's `refreshing` prop to it means
+    // pull-to-refresh visibly does nothing: the control snaps back instantly
+    // while the request is still in flight.
+    refreshing: isRefetching,
     error: error instanceof Error ? error.message : error ? 'Unable to load feed' : null,
     refresh: refetch,
   };

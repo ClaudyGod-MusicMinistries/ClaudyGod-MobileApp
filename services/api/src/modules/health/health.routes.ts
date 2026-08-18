@@ -20,7 +20,6 @@ const capabilities = () => ({
     : 'external-postgres',
   smtp: env.SMTP_ENABLED,
   smtpProvider: env.SMTP_PROVIDER_LABEL,
-  mobileApiKeyConfigured: Boolean(env.MOBILE_API_KEY && env.MOBILE_API_KEY !== 'dev-mobile-api-key'),
   // Web Studio's /v1/website/* module proxies to CGM-Backend using these —
   // deploying the code doesn't set the values, so this is the fast way to
   // confirm whether that's actually configured on a given environment

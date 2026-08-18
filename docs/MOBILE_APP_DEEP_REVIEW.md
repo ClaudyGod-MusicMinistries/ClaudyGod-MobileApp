@@ -176,7 +176,10 @@ Evidence:
 - `apps/mobile/services/config.ts:9,19,42,168-170,197`
 - `apps/mobile/services/apiClient.ts:72`
 
-Required fix: treat it only as a non-secret client identifier, rename it accordingly, and enforce real user/device authorization, attestation where justified, abuse controls, and rate limits server-side.
+Resolution: removed the embedded key and its server middleware. Public discovery
+routes are explicitly public; account and privileged routes continue to require JWT
+authentication and role authorization. Abuse protection belongs at the server/edge,
+not in a recoverable client secret.
 
 ### P1-08: External URLs are opened without validation or failure UX
 

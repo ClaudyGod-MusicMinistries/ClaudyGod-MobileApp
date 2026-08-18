@@ -6,6 +6,7 @@ import { CustomText } from '../CustomText';
 import { AppIcon, type AppIconName } from '../ui/AppIcon';
 import { AppButton } from '../ui/AppButton';
 import { FadeIn } from '../ui/FadeIn';
+import { SkeletonLoader } from '../ui/SkeletonLoader';
 import { useDeviceClass } from '../../util/deviceClassConfig';
 import { useAppTheme } from '../../util/colorScheme';
 import { common } from '../../styles/commonStyles';
@@ -16,6 +17,8 @@ import { isValidDuration } from './utils';
 
 type PremiumHeroProps = {
   item?: FeedCardItem | null;
+  /** True while the feed is still being fetched — shows a hero-shaped skeleton instead of jumping straight to the "nothing playing" empty state, which is wrong for the ~cold-start moment before data arrives. */
+  loading?: boolean;
   title?: string;
   subtitle?: string;
   eyebrow?: string;
@@ -34,7 +37,7 @@ type PremiumHeroProps = {
 };
 
 export function PremiumHero({
-  item, title, subtitle, eyebrow,
+  item, loading = false, title, subtitle, eyebrow,
   actionLabel, primaryLabel, primaryIcon = 'play-arrow',
   emptyIcon = 'auto-awesome',
   secondaryLabel, secondaryIcon = 'search',
@@ -48,10 +51,24 @@ export function PremiumHero({
   const primaryAction    = onPrimary ?? onPrimaryPress;
   const secondaryAction  = onSecondary ?? onSecondaryPress;
   const resolvedPrimaryLabel = primaryLabel ?? actionLabel ?? 'Play now';
+  const isLarge = device.isDesktop || device.isTV;
+  const heroHeight = height ?? (device.isTV ? 500 : device.isLargeDesktop ? 440 : isLarge ? 380 : isWide ? 330 : 272);
+
+  if (loading && !item) {
+    return (
+      <View style={[styles.heroContainer, { height: heroHeight }]}>
+        <SkeletonLoader width="100%" height="100%" borderRadius={0} />
+      </View>
+    );
+  }
 
   if (!item) {
     return (
-      <FadeIn delay={30} duration={400}>
+      // Keyed distinctly from the real-hero branch below so React remounts
+      // (and replays the entrance) when a featured item actually arrives,
+      // instead of silently updating this instance's children in place —
+      // which is what made the empty→real swap feel like an unannounced jolt.
+      <FadeIn key="hero-empty" delay={30} duration={400}>
         <View style={styles.heroEmptyCard}>
           <LinearGradient
             colors={[`${theme.colors.primary}14`, 'transparent']}
@@ -109,13 +126,11 @@ export function PremiumHero({
     );
   }
 
-  const isLarge = device.isDesktop || device.isTV;
-  const heroHeight = height ?? (device.isTV ? 500 : device.isLargeDesktop ? 440 : isLarge ? 380 : isWide ? 330 : 272);
   const imageUrl = item.imageUrl || DEFAULT_CONTENT_IMAGE_URI;
   const isLiveItem = item.isLive;
 
   return (
-    <FadeIn delay={30} duration={500}>
+    <FadeIn key={item.id} delay={30} duration={500}>
       <View style={[styles.heroContainer, { height: heroHeight }]}>
         <Image source={{ uri: imageUrl }} resizeMode="cover" style={common.fill} accessibilityIgnoresInvertColors />
 

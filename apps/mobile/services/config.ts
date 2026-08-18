@@ -6,7 +6,6 @@ type ExtraConfig = {
   EXPO_PUBLIC_SUPABASE_URL?: string;
   EXPO_PUBLIC_SUPABASE_KEY?: string;
   EXPO_PUBLIC_SUPABASE_ANON_KEY?: string;
-  EXPO_PUBLIC_MOBILE_API_KEY?: string;
   EXPO_PUBLIC_EAS_PROJECT_ID?: string;
   EXPO_PUBLIC_SENTRY_DSN?: string;
   eas?: { projectId?: string };
@@ -16,7 +15,6 @@ type PublicEnvKey =
   | 'EXPO_PUBLIC_SUPABASE_URL'
   | 'EXPO_PUBLIC_SUPABASE_KEY'
   | 'EXPO_PUBLIC_SUPABASE_ANON_KEY'
-  | 'EXPO_PUBLIC_MOBILE_API_KEY'
   | 'EXPO_PUBLIC_EAS_PROJECT_ID'
   | 'EXPO_PUBLIC_SENTRY_DSN';
 
@@ -39,8 +37,6 @@ const getProcessEnv = (key: PublicEnvKey): string | undefined => {
       return process.env.EXPO_PUBLIC_SUPABASE_KEY;
     case 'EXPO_PUBLIC_SUPABASE_ANON_KEY':
       return process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
-    case 'EXPO_PUBLIC_MOBILE_API_KEY':
-      return process.env.EXPO_PUBLIC_MOBILE_API_KEY;
     case 'EXPO_PUBLIC_EAS_PROJECT_ID':
       return process.env.EXPO_PUBLIC_EAS_PROJECT_ID;
     case 'EXPO_PUBLIC_SENTRY_DSN':
@@ -165,10 +161,6 @@ if (runtimeMode === 'production') {
   // If they are missing the app still loads and shows public content — auth features will
   // degrade gracefully rather than crashing with a blank screen.
   if (!isWebBrowser) {
-    if (!getEnv('EXPO_PUBLIC_MOBILE_API_KEY', '').trim()) {
-      throw new Error('Production mobile builds require EXPO_PUBLIC_MOBILE_API_KEY.');
-    }
-
     if (!getEnv('EXPO_PUBLIC_SUPABASE_URL', '').trim() || !getEnv(['EXPO_PUBLIC_SUPABASE_KEY', 'EXPO_PUBLIC_SUPABASE_ANON_KEY'], '').trim()) {
       throw new Error('Production mobile builds require Supabase public auth configuration.');
     }
@@ -194,7 +186,6 @@ export const ENV = {
     ['EXPO_PUBLIC_SUPABASE_ANON_KEY', 'EXPO_PUBLIC_SUPABASE_KEY'],
     '',
   ),
-  mobileApiKey: getEnv('EXPO_PUBLIC_MOBILE_API_KEY', ''),
   easProjectId: getEnv('EXPO_PUBLIC_EAS_PROJECT_ID', extra.eas?.projectId ?? ''),
   sentryDsn: getEnv('EXPO_PUBLIC_SENTRY_DSN', ''),
 };

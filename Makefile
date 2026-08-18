@@ -438,7 +438,6 @@ docker-build-mobile:
 		--build-arg EXPO_PUBLIC_API_URL="$(EXPO_PUBLIC_API_URL)" \
 		--build-arg EXPO_PUBLIC_SUPABASE_URL="$(EXPO_PUBLIC_SUPABASE_URL)" \
 		--build-arg EXPO_PUBLIC_SUPABASE_KEY="$(EXPO_PUBLIC_SUPABASE_KEY)" \
-		--build-arg EXPO_PUBLIC_MOBILE_API_KEY="$(EXPO_PUBLIC_MOBILE_API_KEY)" \
 		-t $(MOBILE_IMAGE):$(IMAGE_TAG) \
 		-t $(MOBILE_IMAGE):$(GIT_SHA) \
 		-f $(MOBILE_DIR)/Dockerfile.prod \

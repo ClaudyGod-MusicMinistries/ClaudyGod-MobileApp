@@ -8,6 +8,16 @@ interface FadeInProps extends ViewProps {
   delay?: number;
   from?: number;
   duration?: number;
+  /**
+   * Changing this value replays the animation. Without it, FadeIn only ever
+   * animates once at mount — for content gated behind a loading state (e.g.
+   * `{loading || items.length > 0 ? <FadeIn>...` where the wrapper mounts
+   * immediately to show a skeleton), that means the entrance plays against
+   * the empty placeholder and the real content just pops in with no
+   * transition once it arrives. Key this to something like a loading flag so
+   * it replays exactly when real content replaces the placeholder.
+   */
+  replayKey?: string | number;
 }
 
 export function FadeIn({
@@ -15,6 +25,7 @@ export function FadeIn({
   delay = 0,
   from = 8,
   duration = 300,
+  replayKey,
   style,
   ...props
 }: FadeInProps) {
@@ -29,6 +40,8 @@ export function FadeIn({
       translateY.setValue(0);
       return;
     }
+    opacity.setValue(0);
+    translateY.setValue(from);
     Animated.parallel([
       Animated.timing(opacity, {
         toValue: 1,
@@ -45,7 +58,7 @@ export function FadeIn({
         useNativeDriver: useNativeAnimations,
       }),
     ]).start();
-  }, [delay, duration, opacity, reduceMotion, translateY, useNativeAnimations]);
+  }, [delay, duration, from, opacity, reduceMotion, replayKey, translateY, useNativeAnimations]);
 
   return (
     <Animated.View

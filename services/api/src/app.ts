@@ -133,7 +133,6 @@ export const createApp = () => {
       'Authorization',
       'Content-Type',
       'X-Requested-With',
-      'X-Mobile-Api-Key',
       'X-Claudy-Client-Platform',
       'X-Claudy-Client-Version',
       'X-Request-ID',

@@ -50,45 +50,51 @@ export function SupportMinistryCard({ onPress }: SupportCardProps) {
   const compact = width < 390;
 
   return (
-    <View style={styles.card}>
-      <View style={styles.decoCircle} />
+    <TVTouchable
+      onPress={onPress}
+      showFocusBorder={false}
+      pressScale={0.98}
+      haptics
+      accessibilityRole="button"
+      accessibilityLabel="Partner with the ministry — give support"
+    >
+      <View style={styles.card}>
+        <View style={styles.decoCircle} />
 
-      <View style={styles.row}>
-        <View style={styles.iconBox}>
-          <AppIcon name="volunteer-activism" size={20} color="#FFFFFF" />
-        </View>
+        <View style={styles.row}>
+          <View style={styles.iconBox}>
+            <AppIcon name="volunteer-activism" size={20} color="#FFFFFF" />
+          </View>
 
-        <View style={styles.textFill}>
-          <CustomText variant="caption" style={styles.eyebrow}>Support</CustomText>
-          <CustomText variant="title" style={styles.titleText} numberOfLines={1}>
-            Partner with the ministry
-          </CustomText>
-          <CustomText variant="caption" style={styles.bodyText} numberOfLines={2}>
-            Help keep worship, messages, and live moments available to more people.
-          </CustomText>
-        </View>
-
-        <TVTouchable
-          onPress={onPress}
-          showFocusBorder={false}
-          style={[
-            styles.ctaBtnBase,
-            {
-              gap: compact ? 0 : 6,
-              width: compact ? 40 : undefined,
-              paddingHorizontal: compact ? 0 : 12,
-            },
-          ]}
-          accessibilityLabel="Give support"
-        >
-          {!compact ? (
-            <CustomText variant="label" style={styles.ctaLabel} numberOfLines={1}>
-              Give support
+          <View style={styles.textFill}>
+            <CustomText variant="caption" style={styles.eyebrow}>Support</CustomText>
+            <CustomText variant="title" style={styles.titleText} numberOfLines={1}>
+              Partner with the ministry
             </CustomText>
-          ) : null}
-          <AppIcon name="arrow-forward" size={16} color="#FFFFFF" />
-        </TVTouchable>
+            <CustomText variant="caption" style={styles.bodyText} numberOfLines={2}>
+              Help keep worship, messages, and live moments available to more people.
+            </CustomText>
+          </View>
+
+          <View
+            style={[
+              styles.ctaBtnBase,
+              {
+                gap: compact ? 0 : 6,
+                width: compact ? 40 : undefined,
+                paddingHorizontal: compact ? 0 : 12,
+              },
+            ]}
+          >
+            {!compact ? (
+              <CustomText variant="label" style={styles.ctaLabel} numberOfLines={1}>
+                Give support
+              </CustomText>
+            ) : null}
+            <AppIcon name="arrow-forward" size={16} color="#FFFFFF" />
+          </View>
+        </View>
       </View>
-    </View>
+    </TVTouchable>
   );
 }

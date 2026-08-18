@@ -1,12 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Image, RefreshControl, View, useWindowDimensions, type ImageSourcePropType , ScrollView } from 'react-native';
-import Animated, {
-  useAnimatedScrollHandler,
-  useAnimatedStyle,
-  useSharedValue,
-  interpolate,
-  Extrapolation,
-} from 'react-native-reanimated';
+import { Image, RefreshControl, View, useWindowDimensions, type ImageSourcePropType, ScrollView } from 'react-native';
 
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -23,6 +16,7 @@ import { common } from '../../styles/commonStyles';
 import { APP_ROUTES } from '../../util/appRoutes';
 import { BRAND_LOGO_ASSET } from '../../util/brandAssets';
 import { useFeedStyles } from './styles';
+import { useReducedMotion } from '../../hooks/useReducedMotion';
 
 type PremiumPageProps = {
   title: string;
@@ -40,6 +34,11 @@ type PremiumPageProps = {
   // Videos' inline player) with no other visible confirmation that the tap
   // actually did anything.
   scrollToTopKey?: string | number;
+  // Skips the logo/title/search/settings header row entirely — for screens
+  // (Home) that already surface their own greeting and search UI immediately
+  // below, where the generic title row is pure duplicate chrome rather than
+  // a screen identifier.
+  hideTitleRow?: boolean;
 };
 
 export function PremiumPage({
@@ -54,6 +53,7 @@ export function PremiumPage({
   showFooter = true,
   noBack = false,
   scrollToTopKey,
+  hideTitleRow = false,
 }: PremiumPageProps) {
   const styles = useFeedStyles();
   const theme  = useAppTheme();
@@ -61,6 +61,7 @@ export function PremiumPage({
   const { width } = useWindowDimensions();
   const compact = width < 430;
   const isSidebarMode = getSidebarWidth(width) > 0;
+  const reduceMotion = useReducedMotion();
   const showBack = !noBack && title !== 'ClaudyGod' && router.canGoBack();
   const bottomPadding = isSidebarMode ? 40 : theme.layout.tabBarContentPadding;
 
@@ -68,26 +69,13 @@ export function PremiumPage({
 
   useEffect(() => {
     if (scrollToTopKey !== undefined) {
-      scrollRef.current?.scrollTo({ y: 0, animated: true });
+      scrollRef.current?.scrollTo({ y: 0, animated: !reduceMotion });
     }
-  }, [scrollToTopKey]);
-
-  // The header lives above the ScrollView (not inside it) so back/search/
-  // settings stay reachable while scrolled — a plain sibling in the flex
-  // column, no absolute positioning needed. This hairline only exists to
-  // separate it from content once that content is actually scrolled under
-  // it; runs entirely on the UI thread so it costs nothing on the JS thread
-  // during scroll.
-  const scrollY = useSharedValue(0);
-  const scrollHandler = useAnimatedScrollHandler((event) => {
-    scrollY.value = event.contentOffset.y;
-  });
-  const headerDividerStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(scrollY.value, [0, 24], [0, 1], Extrapolation.CLAMP),
-  }));
+  }, [reduceMotion, scrollToTopKey]);
 
   return (
     <TabScreenWrapper backgroundImage={backgroundImage} backgroundHeight={compact ? 240 : 320}>
+      {!hideTitleRow ? (
       <Screen contentStyle={{ paddingTop: theme.layout.headerVerticalPadding, paddingBottom: 12 }}>
         <FadeIn>
           <View
@@ -145,16 +133,15 @@ export function PremiumPage({
             </View>
           </View>
         </FadeIn>
-        <Animated.View style={[{ height: 1, backgroundColor: theme.colors.border }, headerDividerStyle]} />
+        <View style={{ height: 1, backgroundColor: theme.colors.border }} />
       </Screen>
+      ) : null}
 
-      <Animated.ScrollView
+      <ScrollView
         ref={scrollRef}
         style={styles.pageScroll}
         showsVerticalScrollIndicator={false}
         bounces={Boolean(onRefresh)}
-        onScroll={scrollHandler}
-        scrollEventThrottle={16}
         refreshControl={
           onRefresh ? (
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />
@@ -168,7 +155,7 @@ export function PremiumPage({
             {showFooter ? <AppScreenFooter /> : null}
           </View>
         </Screen>
-      </Animated.ScrollView>
+      </ScrollView>
     </TabScreenWrapper>
   );
 }

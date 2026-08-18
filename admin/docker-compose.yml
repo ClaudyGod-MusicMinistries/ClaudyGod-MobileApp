@@ -30,7 +30,6 @@ services:
       - JWT_ACCESS_TTL=1d
       - BCRYPT_ROUNDS=12
       - CORS_ORIGIN=http://localhost:5173
-      - MOBILE_API_KEY=${MOBILE_API_KEY:-change-mobile-api-key}
       - SUPABASE_URL=${SUPABASE_URL:-}
       - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:-}
       - SUPABASE_STORAGE_BUCKET=${SUPABASE_STORAGE_BUCKET:-mobile-uploads}
@@ -63,7 +62,6 @@ services:
       - JWT_ACCESS_TTL=1d
       - BCRYPT_ROUNDS=12
       - CORS_ORIGIN=http://localhost:5173
-      - MOBILE_API_KEY=${MOBILE_API_KEY:-change-mobile-api-key}
       - SUPABASE_URL=${SUPABASE_URL:-}
       - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:-}
       - SUPABASE_STORAGE_BUCKET=${SUPABASE_STORAGE_BUCKET:-mobile-uploads}

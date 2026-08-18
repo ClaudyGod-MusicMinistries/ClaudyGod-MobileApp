@@ -17,9 +17,15 @@ cd "$ROOT_DIR"
 LOG_DIR="$ROOT_DIR/logs/git-hooks"
 mkdir -p "$LOG_DIR"
 TIMESTAMP=$(date '+%Y-%m-%d_%H-%M-%S')
-LOG_FILE="$LOG_DIR/review-${TIMESTAMP}.log"
+LOG_FILE="${CLAUDYGOD_REVIEW_LOG:-$LOG_DIR/review-${TIMESTAMP}.log}"
 
-exec > >(tee -a "$LOG_FILE") 2>&1
+# Re-run through a regular pipeline so logging works in restricted shells that
+# do not permit Bash process-substitution file descriptors under /dev/fd.
+if [ "${CLAUDYGOD_REVIEW_CAPTURED:-0}" != "1" ]; then
+  CLAUDYGOD_REVIEW_CAPTURED=1 CLAUDYGOD_REVIEW_LOG="$LOG_FILE" \
+    bash "$0" "$@" 2>&1 | tee -a "$LOG_FILE"
+  exit "${PIPESTATUS[0]}"
+fi
 
 ERRORS=0
 WARNINGS=0
@@ -83,8 +89,8 @@ step_start "Security audit — yarn audit (high+critical)"
 if yarn --cwd ./services/api audit --level high 2>&1; then
   echo "└─ [PASS] Security audit ($(step_elapsed)s)"
 else
-  echo "└─ [WARN] Security audit — review findings ($(step_elapsed)s)"
-  ((WARNINGS++)) || true
+  echo "└─ [FAIL] Security audit — high/critical findings or audit unavailable ($(step_elapsed)s)"
+  ((ERRORS++)) || true
 fi
 
 # ── Debug statement scan ──────────────────────────────────────────────────────

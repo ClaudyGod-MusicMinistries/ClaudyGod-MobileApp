@@ -34,7 +34,6 @@ services:
       JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-1d}
       BCRYPT_ROUNDS: ${BCRYPT_ROUNDS:-12}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173,http://localhost:19006,http://localhost:8081}
-      MOBILE_API_KEY: ${MOBILE_API_KEY:-dev-mobile-api-key}
       AUTH_SIGN_IN_PATH: ${AUTH_SIGN_IN_PATH:-/sign-in}
       AUTH_ACCOUNT_REVIEW_PATH: ${AUTH_ACCOUNT_REVIEW_PATH:-/settings/account}
       SUPABASE_URL: ${SUPABASE_URL:-}
@@ -101,7 +100,6 @@ services:
       JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-1d}
       BCRYPT_ROUNDS: ${BCRYPT_ROUNDS:-12}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173,http://localhost:19006,http://localhost:8081}
-      MOBILE_API_KEY: ${MOBILE_API_KEY:-dev-mobile-api-key}
       AUTH_SIGN_IN_PATH: ${AUTH_SIGN_IN_PATH:-/sign-in}
       AUTH_ACCOUNT_REVIEW_PATH: ${AUTH_ACCOUNT_REVIEW_PATH:-/settings/account}
       SUPABASE_URL: ${SUPABASE_URL:-}

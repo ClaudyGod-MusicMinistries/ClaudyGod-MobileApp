@@ -1,14 +1,14 @@
 import React from 'react';
-import { Image, View } from 'react-native';
+import { View } from 'react-native';
 
 import { MaterialIcons } from '@expo/vector-icons';
 
 import { CustomText } from '../CustomText';
 import { TVTouchable } from '../ui/TVTouchable';
 import { FadeIn } from '../ui/FadeIn';
+import { AppImage } from '../ui/AppImage';
 import { useAppTheme } from '../../util/colorScheme';
 import { common } from '../../styles/commonStyles';
-import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
 import type { FeedCardItem } from '../../services/contentService';
 import { useFeedStyles } from './styles';
 import { cleanFeedText, isValidDuration } from './utils';
@@ -44,7 +44,7 @@ export function TrendingList({ title, items, onPressItem, actionLabel, onAction 
             const rank   = index + 1;
             const isTop3 = rank <= 3;
             return (
-              <TVTouchable key={`trending-${item.id}`} onPress={() => onPressItem(item)} showFocusBorder={false}>
+              <TVTouchable key={`trending-${item.id}`} onPress={() => onPressItem(item)} showFocusBorder={false} pressScale={0.98} haptics>
                 <View style={[styles.trendingRow, index === 0 && styles.trendingFirstRow]}>
                   <CustomText variant="display" style={{
                     width: 30,
@@ -55,7 +55,7 @@ export function TrendingList({ title, items, onPressItem, actionLabel, onAction 
                     {rank}
                   </CustomText>
                   <View style={styles.trendingArtwork}>
-                    <Image source={{ uri: item.imageUrl || DEFAULT_CONTENT_IMAGE_URI }} resizeMode="cover" style={common.imgCover} />
+                    <AppImage uri={item.imageUrl} resizeMode="cover" style={common.imgCover} />
                   </View>
                   <View style={common.flex1}>
                     <CustomText variant="label" style={styles.trendingItemTitle} numberOfLines={1}>{cleanFeedText(item.title)}</CustomText>

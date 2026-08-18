@@ -84,16 +84,10 @@ and `responseChecksumValidation: 'WHEN_REQUIRED'` on the `S3Client` (`infra/s3.t
 restore pre-default-checksum behavior — re-check this if the SDK is ever upgraded and
 uploads start 401ing again with a valid, present configuration.
 
-## `requireMobileApiKey` — not a security boundary
+## Public mobile endpoints and authorization
 
-`services/api/src/middleware/requireMobileApiKey.ts` accepts either a matching
-`x-mobile-api-key` header (native app builds) **or** a self-reported
-`x-claudy-client-platform: web` header (web builds, which can't embed a secret in a
-public bundle). The second path is trivially spoofable by any HTTP client — it is a
-soft client-identification signal only.
-
-Real authorization for every sensitive route comes from `authenticate` (validates the
-bearer JWT) plus a role check via `hasMinRole`/`requireRole` from
-`services/api/src/middleware/rbac.ts`. Do not add a new route that relies on
-`requireMobileApiKey` alone to protect privileged data or actions — always pair it with
-`authenticate` and the appropriate role gate.
+The public catalog, feed, search, and donation-intent endpoints do not use an embedded
+application secret. Secrets shipped in a mobile or web bundle are extractable and are
+not an authentication boundary. Apply rate limiting and abuse monitoring to public
+routes. Every route that reads or mutates account data must use `authenticate`, plus
+the appropriate `hasMinRole`/`requireRole` check for privileged operations.
