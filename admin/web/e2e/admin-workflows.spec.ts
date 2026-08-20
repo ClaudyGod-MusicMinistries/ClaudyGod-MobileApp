@@ -1,4 +1,5 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
 
 const admin = {
   id: '11111111-1111-4111-8111-111111111111',
@@ -62,4 +63,29 @@ test('super admin can see and retry a failed media security job', async ({ page 
   await expect(page.getByText('Scanner unavailable')).toBeVisible();
   await page.getByRole('button', { name: 'Retry' }).click();
   await expect(page.getByText('sermon.mp3')).toBeVisible();
+});
+
+test('public authentication surface has no WCAG A/AA violations', async ({ page }) => {
+  await page.route('**/v1/auth/session', (route) => json(route, { authenticated: false, user: null }));
+  await page.goto('/login');
+  const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+  expect(results.violations, JSON.stringify(results.violations, null, 2)).toEqual([]);
+});
+
+test('initial admin shell stays inside the browser performance budget', async ({ page }) => {
+  await mockAuthenticatedSession(page);
+  const scriptBytes: number[] = [];
+  page.on('response', async (response) => {
+    if (response.request().resourceType() !== 'script') return;
+    const header = response.headers()['content-length'];
+    if (header) scriptBytes.push(Number(header));
+  });
+  await page.goto('/system');
+  await expect(page.getByRole('heading', { name: 'System health' })).toBeVisible();
+  const navigation = await page.evaluate(() => {
+    const entry = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+    return { domContentLoadedMs: entry.domContentLoadedEventEnd - entry.startTime };
+  });
+  expect(navigation.domContentLoadedMs).toBeLessThan(2500);
+  expect(scriptBytes.reduce((sum, bytes) => sum + bytes, 0)).toBeLessThan(750 * 1024);
 });

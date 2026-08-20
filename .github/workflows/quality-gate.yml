@@ -62,6 +62,15 @@ jobs:
       - name: Run full repository review
         run: bash ./scripts/review-all.sh
 
+      - name: Validate recovery automation syntax
+        run: bash -n ./scripts/backup-database.sh ./scripts/verify-database-restore.sh
+
+      - name: Install Playwright Chromium
+        run: yarn --cwd ./admin/web playwright install --with-deps chromium
+
+      - name: Run admin browser workflows
+        run: yarn --cwd ./admin/web test:e2e
+
   # ── Docker config + image build check (push events only) ────────────────────
   docker-dry-run:
     name: Docker Build Check

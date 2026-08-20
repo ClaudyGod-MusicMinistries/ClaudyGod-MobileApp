@@ -69,20 +69,20 @@
       </AppButton>
 
       <!-- Divider -->
-      <div class="relative flex items-center gap-3 my-1">
+      <div v-if="googleLoginUrl || facebookLoginUrl" class="relative flex items-center gap-3 my-1">
         <div class="flex-1 h-px bg-border"/>
-        <span class="text-xs text-ink-muted/70 whitespace-nowrap">or continue with</span>
+        <span class="text-xs text-ink-soft whitespace-nowrap">or continue with</span>
         <div class="flex-1 h-px bg-border"/>
       </div>
 
       <!-- Social buttons -->
-      <div class="flex gap-3">
+      <div v-if="googleLoginUrl || facebookLoginUrl" class="flex gap-3">
         <a
+          v-if="googleLoginUrl"
           :href="googleLoginUrl || '#'"
           :class="[
             'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl text-sm font-semibold transition-colors duration-150',
             'bg-surface-hover text-ink-soft hover:text-ink border border-border hover:border-border-strong',
-            !googleLoginUrl && 'opacity-50 pointer-events-none',
           ]"
         >
           <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="currentColor">
@@ -94,10 +94,10 @@
           Google
         </a>
         <a
+          v-if="facebookLoginUrl"
           :href="facebookLoginUrl || '#'"
           :class="[
             'social-facebook flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl text-sm font-semibold text-white transition-base hover:brightness-110',
-            !facebookLoginUrl && 'opacity-50 pointer-events-none',
           ]"
         >
           <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="currentColor">

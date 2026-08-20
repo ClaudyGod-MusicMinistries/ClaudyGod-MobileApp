@@ -156,6 +156,15 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
+# Browser test artifacts
+**/playwright-report/
+**/test-results/
+
+# Local encrypted recovery artifacts
+backups/
+*.dump.age
+*.dump.age.sha256
+
 # Local Docker command notes
 dockerSetup.ini
 
