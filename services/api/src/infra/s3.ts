@@ -9,6 +9,7 @@ import {
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { env } from '../config/env';
 import { logger } from '../lib/logger';
+import type { Readable } from 'node:stream';
 
 let _client: S3Client | null = null;
 
@@ -106,6 +107,14 @@ export async function headObject(params: {
 export async function deleteObject(params: { bucket: string; key: string }): Promise<void> {
   await getClient().send(new DeleteObjectCommand({ Bucket: params.bucket, Key: params.key }));
   logger.info('[s3] object deleted', { bucket: params.bucket, key: params.key });
+}
+
+export async function getObjectStream(params: { bucket: string; key: string }): Promise<Readable> {
+  const response = await getClient().send(new GetObjectCommand({ Bucket: params.bucket, Key: params.key }));
+  if (!response.Body || typeof (response.Body as { pipe?: unknown }).pipe !== 'function') {
+    throw new Error('Storage provider did not return a readable object stream');
+  }
+  return response.Body as Readable;
 }
 
 export async function checkBucketAccess(bucket: string): Promise<void> {

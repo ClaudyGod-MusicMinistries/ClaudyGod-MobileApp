@@ -184,6 +184,11 @@ const envSchema = z
     SUPABASE_S3_ACCESS_KEY_ID: z.string().optional().default(''),
     SUPABASE_S3_SECRET_ACCESS_KEY: z.string().optional().default(''),
 
+    CLAMAV_HOST: z.string().trim().min(1).default('127.0.0.1'),
+    CLAMAV_PORT: z.coerce.number().int().min(1).max(65535).default(3310),
+    CLAMAV_REQUIRED: toBoolean(false),
+    CLAMAV_TIMEOUT_MS: z.coerce.number().int().min(1000).max(300000).default(120000),
+
     // The real .NET website backend (CGM-Backend) — the website module proxies
     // admin actions here, attaching a server-only credential. Left optional (empty
     // default) so this deploys additively — routes under /v1/website/* return

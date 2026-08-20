@@ -44,11 +44,19 @@ export function validateSectionAssignments(params: {
   return normalized;
 }
 
-export function assertConfirmedUploadSession(status: string, attachedAt?: string | Date | null): void {
+export function assertConfirmedUploadSession(status: string, attachedAt?: string | Date | null, trustStatus?: string): void {
   if (status !== 'uploaded') {
     throw new BadRequestError(
       'Referenced upload session has not been confirmed as uploaded',
       'UPLOAD_SESSION_NOT_CONFIRMED',
+    );
+  }
+  if (trustStatus !== 'clean') {
+    throw new BadRequestError(
+      trustStatus === 'quarantined'
+        ? 'The uploaded file was quarantined and cannot be attached'
+        : 'The uploaded file has not completed security scanning',
+      trustStatus === 'quarantined' ? 'UPLOAD_QUARANTINED' : 'UPLOAD_SECURITY_SCAN_PENDING',
     );
   }
   if (attachedAt) {

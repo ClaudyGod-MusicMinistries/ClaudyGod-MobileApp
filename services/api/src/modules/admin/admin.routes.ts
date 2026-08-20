@@ -19,6 +19,9 @@ import {
   supportRequestIdParamsSchema,
   updateAdminUserRoleSchema,
   updateSupportRequestStatusSchema,
+  operationalJobsQuerySchema,
+  operationalJobParamsSchema,
+  securityAuditQuerySchema,
 } from './admin.schema';
 import {
   getAdminContentSectionSuggestions,
@@ -45,6 +48,7 @@ import {
 } from '../auth/auth.service';
 import { queueAdminInviteEmail } from '../../infra/transactionalEmails';
 import { env } from '../../config/env';
+import { listOperationalJobs, retryOperationalJob, listSecurityAuditEvents } from './operations.service';
 
 export const adminRouter = Router();
 
@@ -119,6 +123,15 @@ adminRouter.post(
       actor,
     });
     res.status(202).json(result);
+  }),
+);
+
+adminRouter.get(
+  '/operations/audit',
+  asyncHandler(async (req, res) => {
+    requireSuperAdmin(req);
+    const query = validateSchema(securityAuditQuerySchema, req.query);
+    res.status(200).json(await listSecurityAuditEvents(query.limit));
   }),
 );
 
@@ -273,6 +286,28 @@ function requireSuperAdmin(req: Request) {
   }
   return user;
 }
+
+adminRouter.get(
+  '/operations/jobs',
+  asyncHandler(async (req, res) => {
+    requireSuperAdmin(req);
+    const query = validateSchema(operationalJobsQuerySchema, req.query);
+    res.status(200).json(await listOperationalJobs(query));
+  }),
+);
+
+adminRouter.post(
+  '/operations/jobs/:kind/:id/retry',
+  asyncHandler(async (req, res) => {
+    requireSuperAdmin(req);
+    const params = validateSchema(operationalJobParamsSchema, req.params);
+    const result = await retryOperationalJob(params.kind, params.id);
+    res.status(202).json({
+      message: result.dispatch === 'queued' ? 'Job queued for retry' : 'Retry recorded and will dispatch when the queue recovers',
+      dispatch: result.dispatch,
+    });
+  }),
+);
 
 adminRouter.get(
   '/access-requests',

@@ -26,6 +26,14 @@ export interface ConfirmUploadResponse {
   session: StorageUploadSession;
 }
 
+interface UploadSecurityStatus {
+  id: string;
+  status: StorageUploadSession['status'];
+  trustStatus: 'pending' | 'scanning' | 'clean' | 'quarantined' | 'error' | 'legacy_unverified';
+  scanError: string | null;
+  ready: boolean;
+}
+
 export type AssetKind = 'thumbnail' | 'audio' | 'video';
 
 export async function requestUpload(params: {
@@ -60,6 +68,22 @@ export async function confirmUpload(sessionId: string): Promise<ConfirmUploadRes
   return data;
 }
 
+async function waitForSecurityScan(sessionId: string, signal?: AbortSignal): Promise<void> {
+  const deadline = Date.now() + 3 * 60_000;
+  while (Date.now() < deadline) {
+    if (signal?.aborted) throw new DOMException('Upload cancelled', 'AbortError');
+    const { data } = await client.get<UploadSecurityStatus>(`/v1/admin/storage/sessions/${sessionId}`, { signal });
+    if (data.ready) return;
+    if (data.trustStatus === 'quarantined') throw new Error('The file failed security scanning and was quarantined.');
+    if (data.trustStatus === 'error') throw new Error(data.scanError ?? 'Security scanning could not complete.');
+    await new Promise<void>((resolve, reject) => {
+      const timer = window.setTimeout(resolve, 1500);
+      signal?.addEventListener('abort', () => { window.clearTimeout(timer); reject(new DOMException('Upload cancelled', 'AbortError')); }, { once: true });
+    });
+  }
+  throw new Error('Security scanning is taking longer than expected. The upload remains quarantined from content until processing completes.');
+}
+
 export async function deleteUploadSession(sessionId: string): Promise<void> {
   await client.delete(`/v1/admin/storage/sessions/${sessionId}`);
 }
@@ -92,6 +116,7 @@ export async function uploadMediaFile(
     await uploadToStorage(session.upload.presignedUrl, file, onProgress, signal);
     if (signal?.aborted) throw new DOMException('Upload cancelled', 'AbortError');
     const confirmed = await confirmUpload(session.session.id);
+    await waitForSecurityScan(session.session.id, signal);
     return {
       publicUrl: confirmed.asset.publicUrl,
       sessionId: session.session.id,

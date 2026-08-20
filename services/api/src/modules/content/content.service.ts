@@ -3,7 +3,8 @@ import type { JwtClaims } from '../../utils/jwt';
 import { pool } from '../../db/pool';
 import { BadRequestError, ForbiddenError, InternalError, NotFoundError } from '../../lib/errors';
 import { isDatabaseConnectivityError, isMissingDatabaseStructureError } from '../../lib/postgres';
-import { contentQueue, type ContentEventType } from '../../queues/contentQueue';
+import type { ContentEventType } from '../../queues/contentQueue';
+import { dispatchContentJob } from '../../queues/contentOutbox';
 import { env } from '../../config/env';
 import { queueEmailJob } from '../../infra/transactionalEmails';
 import type { UserRole } from '../auth/auth.types';
@@ -23,6 +24,9 @@ import type {
 } from './content.types';
 import { assertConfirmedUploadSession, validateSectionAssignments } from './content.contracts';
 import { getMobileAppConfig } from '../appConfig/appConfig.service';
+import { createLogger } from '../../lib/logger';
+
+const log = createLogger('content.service');
 
 interface ContentRow {
   id: string;
@@ -59,6 +63,7 @@ interface UploadSessionLinkRow {
   storage_bucket: string;
   storage_path: string;
   status: string;
+  trust_status: string;
   attached_at: string | Date | null;
 }
 
@@ -179,19 +184,19 @@ const enqueueContentEvent = async ({
   );
 
   const jobRecordId = insertedJob.rows[0]!.id;
-  const queueJob = await contentQueue.add('content-event', {
-    jobRecordId,
-    contentId,
-    authorId,
-    eventType,
-  });
-
-  await pool.query(
-    `UPDATE content_jobs
-     SET queue_job_id = $2, updated_at = NOW()
-     WHERE id = $1`,
-    [jobRecordId, String(queueJob.id)],
-  );
+  try {
+    await dispatchContentJob({ id: jobRecordId, content_id: contentId, event_type: eventType, payload: { ...payload, authorId } });
+  } catch (error) {
+    // The database row is the durable source of truth. The worker's outbox
+    // reconciler will dispatch it when Redis recovers, so a completed content
+    // mutation is never reported as failed solely because the queue is down.
+    log.warn('Content event deferred to outbox reconciliation', {
+      jobRecordId,
+      contentId,
+      eventType,
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
 };
 
 const enqueuePublishEmail = async (item: ContentItem, actor: JwtClaims): Promise<void> => {
@@ -311,7 +316,7 @@ const loadValidatedUploadSession = async ({
   }
 
   const result = await client.query<UploadSessionLinkRow>(
-    `SELECT id, channel, requested_by, mime_type, storage_bucket, storage_path, status, attached_at
+    `SELECT id, channel, requested_by, mime_type, storage_bucket, storage_path, status, attached_at, trust_status
      FROM upload_sessions
      WHERE id = $1
      LIMIT 1`,
@@ -329,7 +334,7 @@ const loadValidatedUploadSession = async ({
   if (!hasMinRole(requester.role, 'ADMIN') && session.requested_by !== requester.sub) {
     throw new ForbiddenError('You can only attach files uploaded from your own session');
   }
-  assertConfirmedUploadSession(session.status, session.attached_at);
+  assertConfirmedUploadSession(session.status, session.attached_at, session.trust_status);
   if (expectedMimePrefix && !session.mime_type.toLowerCase().startsWith(`${expectedMimePrefix}/`)) {
     throw new BadRequestError(`Referenced upload session is not a valid ${expectedMimePrefix} asset`);
   }
@@ -363,6 +368,7 @@ const markUploadSessionAttached = async ({
          updated_at = NOW()
      WHERE id = $1
        AND status = 'uploaded'
+       AND trust_status = 'clean'
        AND attached_at IS NULL`,
     [sessionId],
   );

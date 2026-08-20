@@ -20,3 +20,38 @@ export async function getStorageHealth(): Promise<StorageHealth> {
   const { data } = await client.get<StorageHealth>('/v1/admin/storage/health');
   return data;
 }
+
+export interface OperationalJob {
+  id: string;
+  kind: 'content' | 'email' | 'media';
+  type: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'quarantined';
+  summary: string;
+  error: string | null;
+  createdAt: string;
+  processedAt: string | null;
+}
+
+export async function getOperationalJobs(status?: OperationalJob['status']): Promise<OperationalJob[]> {
+  const { data } = await client.get<{ jobs: OperationalJob[] }>('/v1/admin/operations/jobs', { params: { status, limit: 50 } });
+  return data.jobs;
+}
+
+export async function retryOperationalJob(job: Pick<OperationalJob, 'kind' | 'id'>): Promise<void> {
+  await client.post(`/v1/admin/operations/jobs/${job.kind}/${job.id}/retry`, {});
+}
+
+export interface SecurityAuditEvent {
+  id: string;
+  event: string;
+  actor: string | null;
+  actorEmail: string | null;
+  ipAddress: string | null;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+}
+
+export async function getSecurityAuditEvents(): Promise<SecurityAuditEvent[]> {
+  const { data } = await client.get<{ events: SecurityAuditEvent[] }>('/v1/admin/operations/audit', { params: { limit: 50 } });
+  return data.events;
+}

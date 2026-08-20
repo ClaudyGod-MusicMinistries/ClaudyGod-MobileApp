@@ -40,8 +40,10 @@ test('published content requires a section while drafts may remain unassigned', 
   }));
 });
 
-test('only confirmed, unattached upload sessions are attachable', () => {
-  assert.doesNotThrow(() => assertConfirmedUploadSession('uploaded', null));
-  assert.throws(() => assertConfirmedUploadSession('issued', null));
-  assert.throws(() => assertConfirmedUploadSession('uploaded', new Date()));
+test('only security-cleared, confirmed, unattached upload sessions are attachable', () => {
+  assert.doesNotThrow(() => assertConfirmedUploadSession('uploaded', null, 'clean'));
+  assert.throws(() => assertConfirmedUploadSession('issued', null, 'clean'));
+  assert.throws(() => assertConfirmedUploadSession('uploaded', new Date(), 'clean'));
+  assert.throws(() => assertConfirmedUploadSession('uploaded', null, 'pending'));
+  assert.throws(() => assertConfirmedUploadSession('uploaded', null, 'quarantined'));
 });

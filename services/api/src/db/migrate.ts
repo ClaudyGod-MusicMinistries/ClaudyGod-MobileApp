@@ -1057,6 +1057,28 @@ const migrationStatements = [
      promotes an unverified issued session. Append-only migration. */
   `ALTER TABLE upload_sessions ADD COLUMN IF NOT EXISTS attached_at TIMESTAMPTZ`,
   `ALTER TABLE upload_sessions ADD COLUMN IF NOT EXISTS file_size_bytes BIGINT`,
+  `ALTER TABLE upload_sessions ADD COLUMN IF NOT EXISTS trust_status TEXT NOT NULL DEFAULT 'pending'
+     CHECK (trust_status IN ('pending', 'scanning', 'clean', 'quarantined', 'error', 'legacy_unverified'))`,
+  `ALTER TABLE upload_sessions ADD COLUMN IF NOT EXISTS scan_result JSONB NOT NULL DEFAULT '{}'::jsonb`,
+  `ALTER TABLE upload_sessions ADD COLUMN IF NOT EXISTS scan_error TEXT`,
+  `ALTER TABLE upload_sessions ADD COLUMN IF NOT EXISTS scanned_at TIMESTAMPTZ`,
+  `UPDATE upload_sessions
+     SET trust_status = 'legacy_unverified'
+     WHERE status = 'uploaded' AND trust_status = 'pending' AND completed_at < NOW() - INTERVAL '1 minute'`,
+  `CREATE TABLE IF NOT EXISTS media_processing_jobs (
+    id BIGSERIAL PRIMARY KEY,
+    upload_session_id UUID NOT NULL UNIQUE REFERENCES upload_sessions(id) ON DELETE CASCADE,
+    queue_job_id TEXT,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'failed', 'quarantined')),
+    attempts INTEGER NOT NULL DEFAULT 0,
+    error TEXT,
+    result JSONB NOT NULL DEFAULT '{}'::jsonb,
+    processed_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_media_processing_jobs_pending
+     ON media_processing_jobs (created_at) WHERE status = 'pending'`,
   `CREATE INDEX IF NOT EXISTS idx_upload_sessions_unattached
      ON upload_sessions (created_at)
      WHERE status = 'uploaded' AND attached_at IS NULL`,

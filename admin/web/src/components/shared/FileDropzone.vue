@@ -196,10 +196,10 @@ async function handleFile(file: File): Promise<void> {
       progress.value = pct;
       if (pct < 30) uploadStage.value = isMedia ? 'Requesting upload URL…' : 'Uploading…';
       else if (pct < 95) uploadStage.value = 'Uploading file…';
-      else uploadStage.value = 'Verifying…';
+      else uploadStage.value = 'Uploading securely…';
     }, props.pipeline, uploadController.signal);
     progress.value = 100;
-    uploadStage.value = 'Done!';
+    uploadStage.value = 'Security scan passed';
     uploadedFile.value = { name: file.name, size: file.size };
     emit('uploaded', { url: publicUrl, sessionId });
   } catch (e) {

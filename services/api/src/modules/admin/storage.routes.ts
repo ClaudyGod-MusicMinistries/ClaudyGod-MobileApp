@@ -16,6 +16,7 @@ import {
   deleteAdminS3Upload,
   getPresignedDownloadUrl,
   getAdminStorageHealth,
+  getAdminUploadSession,
   listAdminStorageSessions,
   requestAdminS3Upload,
 } from './storage.service';
@@ -112,6 +113,15 @@ adminStorageRouter.get(
  * Returns a short-lived presigned GET URL for a confirmed upload.
  * Useful for admin preview before content is published.
  */
+adminStorageRouter.get(
+  '/sessions/:sessionId',
+  asyncHandler(async (req, res) => {
+    const actor = requireAdminActor(req);
+    const params = validateSchema(sessionIdParamsSchema, req.params);
+    res.status(200).json(await getAdminUploadSession({ sessionId: params.sessionId, requestedByUserId: actor.sub }));
+  }),
+);
+
 adminStorageRouter.get(
   '/sessions/:sessionId/download-url',
   asyncHandler(async (req, res) => {
