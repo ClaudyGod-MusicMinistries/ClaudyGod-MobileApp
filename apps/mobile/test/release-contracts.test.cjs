@@ -36,15 +36,15 @@ test('shared entrance motion honors reduced-motion preferences', () => {
   assert.match(source, /if \(reduceMotion\)/);
 });
 
-test('library is account-aware and does not silently ignore server synchronization', () => {
+test('library is explicitly device-local until authentication is implemented', () => {
   const layout = fs.readFileSync(path.join(root, 'app/_layout.tsx'), 'utf8');
   const libraryContext = fs.readFileSync(path.join(root, 'context/LocalContentContext.tsx'), 'utf8');
   const downloadsContext = fs.readFileSync(path.join(root, 'context/DownloadsContext.tsx'), 'utf8');
-  assert.match(layout, /<UserAccountProvider>[\s\S]*<LocalContentProvider>/);
-  assert.match(libraryContext, /fetchMeLibrary\(\)/);
-  assert.match(libraryContext, /saveMeLibraryItem/);
-  assert.match(libraryContext, /removeMeLibraryItem/);
-  assert.match(libraryContext, /clientEventId/);
-  assert.match(downloadsContext, /bucket: 'downloaded'/);
-  assert.match(downloadsContext, /syncError/);
+  assert.doesNotMatch(layout, /<UserAccountProvider>/);
+  assert.match(libraryContext, /getFavorites\(\)/);
+  assert.match(libraryContext, /addFavorite\(item\)/);
+  assert.match(libraryContext, /addHistory\(item\)/);
+  assert.doesNotMatch(libraryContext, /fetchMeLibrary|saveMeLibraryItem|removeMeLibraryItem/);
+  assert.match(downloadsContext, /getDownloads\(\)/);
+  assert.doesNotMatch(downloadsContext, /saveMeLibraryItem|removeMeLibraryItem/);
 });

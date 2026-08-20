@@ -732,18 +732,14 @@ export const recordMePlayEvent = async (
     contentType: MeContentType;
     title: string;
     source?: string;
-    clientEventId?: string;
     metadata?: Record<string, unknown>;
   },
 ): Promise<{ recorded: true }> => {
   await pool.query(
     `INSERT INTO user_play_events (
-       user_id, content_id, content_type, content_title, source_screen, metadata, client_event_id, played_at
+       user_id, content_id, content_type, content_title, source_screen, metadata, played_at
      )
-     VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, NOW())
-     ON CONFLICT (user_id, client_event_id)
-       WHERE client_event_id IS NOT NULL
-     DO NOTHING`,
+     VALUES ($1, $2, $3, $4, $5, $6::jsonb, NOW())`,
     [
       user.sub,
       input.contentId,
@@ -751,7 +747,6 @@ export const recordMePlayEvent = async (
       input.title,
       input.source ?? 'unknown',
       JSON.stringify(input.metadata ?? {}),
-      input.clientEventId ?? null,
     ],
   );
 

@@ -312,7 +312,6 @@ export async function trackMePlayEvent(input: {
   contentType: 'audio' | 'video' | 'playlist' | 'announcement' | 'live' | 'ad';
   title: string;
   source?: string;
-  clientEventId?: string;
   metadata?: JsonRecord;
 }): Promise<void> {
   await apiFetchWithMobileSession('/v1/me/engagement/play-events', {

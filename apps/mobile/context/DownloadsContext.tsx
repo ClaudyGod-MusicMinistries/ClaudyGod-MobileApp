@@ -2,8 +2,6 @@ import React, { createContext, useCallback, useContext, useEffect, useRef, useSt
 import * as FileSystem from 'expo-file-system/legacy';
 import type { FeedCardItem } from '../services/contentService';
 import { getDownloads, saveDownload, removeDownload } from '../lib/localUserStorage';
-import { removeMeLibraryItem, saveMeLibraryItem } from '../services/userFlowService';
-import { useUserAccount } from './UserAccountContext';
 
 type DownloadStatus = 'idle' | 'downloading' | 'done' | 'error';
 
@@ -52,7 +50,6 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
   const [syncError, setSyncError] = useState<string | null>(null);
   const inFlight = useRef(new Set<string>());
   const loadGeneration = useRef(0);
-  const { account } = useUserAccount();
 
   const refreshDownloads = useCallback(async () => {
     const generation = ++loadGeneration.current;
@@ -88,20 +85,12 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
       });
       setDownloads(initial);
       await Promise.all(stale.map((contentId) => removeDownload(contentId)));
-      if (account) {
-        await Promise.all(checked.filter(({ exists }) => exists).map(({ d }) => saveMeLibraryItem({
-          bucket: 'downloaded', contentId: d.contentId,
-          contentType: d.contentType as FeedCardItem['type'], title: d.title,
-          subtitle: d.subtitle, description: d.description, imageUrl: d.imageUrl,
-          duration: d.duration,
-        })));
-      }
     } catch (error) {
       if (generation === loadGeneration.current) {
         setSyncError(error instanceof Error ? error.message : 'Download synchronization failed.');
       }
     }
-  }, [account]);
+  }, []);
 
   useEffect(() => {
     void refreshDownloads();
@@ -170,19 +159,6 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
         savedAt: new Date().toISOString(),
       });
 
-      if (account) {
-        try {
-          await saveMeLibraryItem({
-            bucket: 'downloaded', contentId: item.id, contentType: item.type,
-            title: item.title, subtitle: item.subtitle, description: item.description,
-            imageUrl: item.imageUrl || undefined, duration: item.duration,
-          });
-          setSyncError(null);
-        } catch (error) {
-          setSyncError(error instanceof Error ? error.message : 'Download saved locally but account synchronization failed.');
-        }
-      }
-
       setDownloads((prev) => ({
         ...prev,
         [item.id]: {
@@ -201,10 +177,9 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
     } finally {
       inFlight.current.delete(item.id);
     }
-  }, [account, downloads]);
+  }, [downloads]);
 
   const deleteDownload = useCallback(async (contentId: string): Promise<void> => {
-    if (account) await removeMeLibraryItem({ bucket: 'downloaded', contentId });
     const localUri = downloads[contentId]?.localUri;
     if (localUri) {
       try { await FileSystem.deleteAsync(localUri, { idempotent: true }); } catch { /* ignore */ }
@@ -215,7 +190,7 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
       delete next[contentId];
       return next;
     });
-  }, [account, downloads]);
+  }, [downloads]);
 
   return (
     <DownloadsContext.Provider value={{ downloads, syncError, refreshDownloads, downloadContent, deleteDownload, getDownloadStatus, getDownloadedUri }}>

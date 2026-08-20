@@ -1219,10 +1219,6 @@ const migrationStatements = [
      setweight(to_tsvector('english'::regconfig, coalesce(array_to_string(tags, ' '), '')), 'C')`,
   `CREATE INDEX IF NOT EXISTS idx_live_sessions_search_vector
    ON live_sessions USING GIN (search_vector)`,
-  `ALTER TABLE user_play_events ADD COLUMN IF NOT EXISTS client_event_id TEXT`,
-  `CREATE UNIQUE INDEX IF NOT EXISTS idx_user_play_events_user_client_event
-   ON user_play_events (user_id, client_event_id)
-   WHERE client_event_id IS NOT NULL`,
 ];
 
 const MIGRATION_LOCK_ID = 7_246_130_001;

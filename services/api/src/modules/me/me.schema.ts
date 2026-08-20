@@ -79,7 +79,6 @@ export const trackPlayEventSchema = z
     contentType: contentTypeSchema,
     title: z.string().trim().min(1).max(240),
     source: optionalTrimmedString(80),
-    clientEventId: optionalTrimmedString(200),
     metadata: z.record(z.unknown()).optional(),
   })
   .strict();

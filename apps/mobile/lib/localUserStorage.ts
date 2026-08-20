@@ -56,10 +56,6 @@ export async function removeFavorite(contentId: string): Promise<void> {
   await updateJSON<FeedCardItem[]>(KEYS.favorites, [], (current) => current.filter((entry) => entry.id !== contentId));
 }
 
-export async function clearFavorites(): Promise<void> {
-  await writeJSON(KEYS.favorites, []);
-}
-
 export async function isFavorited(contentId: string): Promise<boolean> {
   const current = await getFavorites();
   return current.some((f) => f.id === contentId);
@@ -73,10 +69,6 @@ export async function getHistory(): Promise<FeedCardItem[]> {
 
 export async function addHistory(item: FeedCardItem): Promise<void> {
   await updateJSON<FeedCardItem[]>(KEYS.history, [], (current) => [item, ...current.filter((entry) => entry.id !== item.id)].slice(0, MAX_HISTORY));
-}
-
-export async function clearHistory(): Promise<void> {
-  await writeJSON(KEYS.history, []);
 }
 
 // ── Preferences ────────────────────────────────────────────────────────────

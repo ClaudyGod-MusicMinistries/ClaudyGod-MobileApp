@@ -75,24 +75,10 @@ VALUES (
   'Claudy Live', ARRAY['prayer', 'live'], 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
 );
 
-INSERT INTO user_play_events (
-  user_id, content_id, content_type, content_title, source_screen, client_event_id
-) VALUES (
-  'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'guest-item', 'audio',
-  'Guest item', 'guest_migration', 'guest:test-device:guest-item'
-) ON CONFLICT (user_id, client_event_id) WHERE client_event_id IS NOT NULL DO NOTHING;
-INSERT INTO user_play_events (
-  user_id, content_id, content_type, content_title, source_screen, client_event_id
-) VALUES (
-  'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'guest-item', 'audio',
-  'Guest item', 'guest_migration', 'guest:test-device:guest-item'
-) ON CONFLICT (user_id, client_event_id) WHERE client_event_id IS NOT NULL DO NOTHING;
-
 DO $$
 DECLARE title_matches integer;
 DECLARE channel_matches integer;
 DECLARE live_matches integer;
-DECLARE synced_play_events integer;
 BEGIN
   SELECT COUNT(*) INTO title_matches
   FROM content_items
@@ -106,12 +92,8 @@ BEGIN
   FROM live_sessions
   WHERE search_vector @@ websearch_to_tsquery('english', 'evening prayer');
 
-  SELECT COUNT(*) INTO synced_play_events
-  FROM user_play_events
-  WHERE client_event_id = 'guest:test-device:guest-item';
-
-  IF title_matches <> 1 OR channel_matches < 1 OR live_matches <> 1 OR synced_play_events <> 1 THEN
-    RAISE EXCEPTION 'Integration verification failed: title %, channel %, live %, synced plays %', title_matches, channel_matches, live_matches, synced_play_events;
+  IF title_matches <> 1 OR channel_matches < 1 OR live_matches <> 1 THEN
+    RAISE EXCEPTION 'Integration verification failed: title %, channel %, live %', title_matches, channel_matches, live_matches;
   END IF;
 END $$;
 
