@@ -1,5 +1,5 @@
 <template>
-  <component :is="as" :class="['app-card border rounded-[var(--radius-card)] transition-base', interactive && 'hover:-translate-y-0.5 hover:border-primary/25 hover:[box-shadow:var(--shadow-raised)]', toneClass, props.class]">
+  <component :is="as" :class="['app-card border rounded-[var(--radius-card)] transition-base', interactive && 'hover:border-primary/25 hover:[box-shadow:var(--shadow-raised)]', toneClass, props.class]">
     <slot />
   </component>
 </template>

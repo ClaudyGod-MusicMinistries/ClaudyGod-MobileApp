@@ -80,6 +80,12 @@ const router = createRouter({
       component: AdminShell,
       children: [
         {
+          path: 'security',
+          name: 'security-setup',
+          component: () => import('@/views/security/SecurityView.vue'),
+          meta: { minRole: Role.CREATOR, title: 'Account security' },
+        },
+        {
           path: 'dashboard',
           name: 'dashboard',
           component: () => import('@/views/dashboard/OverviewView.vue'),

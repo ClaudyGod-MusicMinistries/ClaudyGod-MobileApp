@@ -218,6 +218,9 @@ adminRouter.post(
   asyncHandler(async (req, res) => {
     const actor = requireAdmin(req);
     const payload = validateSchema(createInvitationSchema, req.body);
+    if (payload.role === 'ADMIN' && actor.role !== 'SUPER_ADMIN') {
+      throw new ForbiddenError('Only a Super Admin can invite another Admin', 'SUPER_ADMIN_REQUIRED');
+    }
     const invite = await createAdminInviteToken({
       email: payload.email,
       role: payload.role,

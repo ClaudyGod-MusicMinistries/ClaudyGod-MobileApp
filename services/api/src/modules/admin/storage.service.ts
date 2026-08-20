@@ -10,6 +10,7 @@ import {
   generatePresignedGetUrl,
   generatePresignedPutUrl,
   headObject,
+  checkBucketAccess,
   S3_GET_EXPIRY_SECONDS,
   S3_PUT_EXPIRY_SECONDS,
 } from '../../infra/s3';
@@ -24,6 +25,7 @@ interface UploadSessionRow {
   client_reference: string | null;
   original_file_name: string;
   mime_type: string;
+  file_size_bytes: string | number | null;
   storage_bucket: string;
   storage_path: string;
   status: 'issued' | 'uploaded' | 'expired' | 'failed';
@@ -146,12 +148,12 @@ export const requestAdminS3Upload = async ({
   const sessionResult = await pool.query<UploadSessionRow>(
     `INSERT INTO upload_sessions (
       channel, requested_by, client_reference, original_file_name,
-      mime_type, storage_bucket, storage_path, status, expires_at
+      mime_type, file_size_bytes, storage_bucket, storage_path, status, expires_at
     )
-    VALUES ('admin', $1, $2, $3, $4, $5, $6, 'issued', $7)
+    VALUES ('admin', $1, $2, $3, $4, $5, $6, $7, 'issued', $8)
     RETURNING id, channel, requested_by, client_reference, original_file_name,
-              mime_type, storage_bucket, storage_path, status, expires_at, created_at`,
-    [requestedByUserId, clientReference ?? null, fileName, mimeType, bucket, key, expiresAt.toISOString()],
+              mime_type, file_size_bytes, storage_bucket, storage_path, status, expires_at, created_at`,
+    [requestedByUserId, clientReference ?? null, fileName, mimeType, fileSizeBytes, bucket, key, expiresAt.toISOString()],
   );
 
   const session = sessionResult.rows[0];
@@ -210,7 +212,7 @@ export const confirmAdminS3Upload = async ({
 
   const sessionResult = await pool.query<UploadSessionRow>(
     `SELECT id, channel, requested_by, original_file_name, mime_type,
-            storage_bucket, storage_path, status, expires_at, completed_at, created_at
+            file_size_bytes, storage_bucket, storage_path, status, expires_at, completed_at, created_at
      FROM upload_sessions
      WHERE id = $1`,
     [sessionId],
@@ -267,6 +269,18 @@ export const confirmAdminS3Upload = async ({
     );
   }
 
+  const expectedSize = Number(session.file_size_bytes ?? 0);
+  const actualType = meta.contentType?.split(';')[0]?.trim().toLowerCase();
+  const expectedType = session.mime_type.trim().toLowerCase();
+  if ((expectedSize > 0 && meta.contentLength !== expectedSize) || (actualType && actualType !== expectedType)) {
+    await deleteObject({ bucket: session.storage_bucket, key: session.storage_path }).catch(() => undefined);
+    await pool.query(
+      `UPDATE upload_sessions SET status = 'failed', updated_at = NOW() WHERE id = $1`,
+      [sessionId],
+    );
+    throw new BadRequestError('Uploaded object metadata does not match the requested file', 'UPLOAD_METADATA_MISMATCH');
+  }
+
   const now = new Date();
   await pool.query(
     `UPDATE upload_sessions
@@ -296,6 +310,42 @@ export const confirmAdminS3Upload = async ({
       uploadedAt: meta.lastModified?.toISOString() ?? now.toISOString(),
     },
   };
+};
+
+export const getAdminStorageHealth = async (): Promise<{
+  configured: boolean;
+  reachable: boolean;
+  bucket: string | null;
+  endpointHost: string | null;
+  sessions: Record<'issued' | 'uploaded' | 'expired' | 'failed', number>;
+  lastConfirmedAt: string | null;
+  detail: string;
+}> => {
+  const statusResult = await pool.query<{ status: string; count: string; last_confirmed_at: string | null }>(
+    `SELECT status, COUNT(*)::text AS count, MAX(completed_at)::text AS last_confirmed_at
+     FROM upload_sessions WHERE channel = 'admin' GROUP BY status`,
+  );
+  const sessions = { issued: 0, uploaded: 0, expired: 0, failed: 0 };
+  let lastConfirmedAt: string | null = null;
+  for (const row of statusResult.rows) {
+    if (row.status in sessions) sessions[row.status as keyof typeof sessions] = Number(row.count);
+    if (row.last_confirmed_at && (!lastConfirmedAt || row.last_confirmed_at > lastConfirmedAt)) lastConfirmedAt = row.last_confirmed_at;
+  }
+
+  if (!env.S3_ENABLED) {
+    return { configured: false, reachable: false, bucket: null, endpointHost: null, sessions, lastConfirmedAt, detail: 'Mobile media storage credentials are incomplete.' };
+  }
+
+  const endpointHost = (() => {
+    try { return new URL(env.SUPABASE_S3_ENDPOINT).host; } catch { return null; }
+  })();
+  try {
+    await checkBucketAccess(env.SUPABASE_STORAGE_BUCKET);
+    return { configured: true, reachable: true, bucket: env.SUPABASE_STORAGE_BUCKET, endpointHost, sessions, lastConfirmedAt, detail: 'Credentials were accepted and the configured bucket is reachable.' };
+  } catch (error) {
+    logger.warn('[storage] bucket health check failed', { error: String(error) });
+    return { configured: true, reachable: false, bucket: env.SUPABASE_STORAGE_BUCKET, endpointHost, sessions, lastConfirmedAt, detail: 'Storage is configured, but the bucket could not be reached with the current credentials.' };
+  }
 };
 
 // ─── Delete ──────────────────────────────────────────────────────────────────

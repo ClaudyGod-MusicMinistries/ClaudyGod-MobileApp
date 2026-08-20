@@ -23,6 +23,7 @@ export interface AdminUser {
   displayName: string | null;
   role: UserRoleValue;
   isVerified: boolean;
+  mfaEnabled: boolean;
   createdAt: string;
 }
 

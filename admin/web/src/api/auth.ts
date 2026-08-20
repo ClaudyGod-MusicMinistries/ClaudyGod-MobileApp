@@ -37,6 +37,16 @@ export async function getMe(): Promise<AdminUser> {
   return data;
 }
 
+export async function setupMfa(): Promise<{ secret: string; otpauthUrl: string; qrDataUrl: string }> {
+  const { data } = await client.post('/v1/auth/mfa/setup', {});
+  return data;
+}
+
+export async function verifyMfaSetup(code: string): Promise<{ codes: string[] }> {
+  const { data } = await client.post('/v1/auth/mfa/verify-setup', { code });
+  return data;
+}
+
 export async function requestPasswordReset(email: string): Promise<{ message: string }> {
   const { data } = await client.post<{ message: string }>('/v1/auth/forgot-password', { email });
   return data;
@@ -86,17 +96,6 @@ export async function revokeAdminInvite(id: string): Promise<void> {
   await client.delete(`/v1/admin/invitations/${id}`);
 }
 
-export async function registerWithCode(input: {
-  email: string;
-  password: string;
-  username: string;
-  role: 'ADMIN' | 'MODERATOR' | 'CREATOR';
-  adminSignupCode: string;
-}): Promise<LoginSuccessResponse | { requiresEmailVerification: true; pendingEmail?: string; message: string }> {
-  const { data } = await client.post<LoginSuccessResponse | { requiresEmailVerification: true; pendingEmail?: string; message: string }>('/v1/auth/register', input);
-  return data;
-}
-
 export const GOOGLE_LOGIN_URL = import.meta.env.VITE_GOOGLE_LOGIN_URL || '';
 export const FACEBOOK_LOGIN_URL = import.meta.env.VITE_FACEBOOK_LOGIN_URL || '';
 
@@ -128,7 +127,7 @@ export async function listAccessRequests(): Promise<{ requests: AccessRequest[] 
   return data;
 }
 
-export async function approveAccessRequest(id: string, input: { role: string; invitedBy: string }): Promise<void> {
+export async function approveAccessRequest(id: string, input: { role: string }): Promise<void> {
   await client.post(`/v1/admin/access-requests/${id}/approve`, input);
 }
 

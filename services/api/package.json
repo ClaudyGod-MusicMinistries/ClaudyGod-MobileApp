@@ -13,6 +13,8 @@
     "migrate:prod": "node dist/db/migrate.js",
     "migrate:status": "ts-node-dev --exit-child --transpile-only src/db/migrationStatus.ts",
     "migrate:status:prod": "node dist/db/migrationStatus.js",
+    "admin:bootstrap": "ts-node-dev --exit-child --transpile-only src/cli/bootstrapSuperAdmin.ts",
+    "admin:bootstrap:prod": "node dist/cli/bootstrapSuperAdmin.js",
     "lint": "eslint src --max-warnings 0",
     "lint:fix": "eslint src --fix",
     "typecheck": "tsc --noEmit",

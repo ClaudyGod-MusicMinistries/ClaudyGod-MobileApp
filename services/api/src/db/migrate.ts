@@ -1056,6 +1056,7 @@ const migrationStatements = [
      states. A confirmed object may be attached once; content creation never
      promotes an unverified issued session. Append-only migration. */
   `ALTER TABLE upload_sessions ADD COLUMN IF NOT EXISTS attached_at TIMESTAMPTZ`,
+  `ALTER TABLE upload_sessions ADD COLUMN IF NOT EXISTS file_size_bytes BIGINT`,
   `CREATE INDEX IF NOT EXISTS idx_upload_sessions_unattached
      ON upload_sessions (created_at)
      WHERE status = 'uploaded' AND attached_at IS NULL`,

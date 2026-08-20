@@ -1,4 +1,4 @@
-import { createHash, randomBytes, randomInt, timingSafeEqual } from 'crypto';
+import { createHash, randomBytes, randomInt } from 'crypto';
 import type { UserTier } from './auth.types';
 import type { PoolClient } from 'pg';
 import { pool } from '../../db/pool';
@@ -45,17 +45,6 @@ import type {
 } from './auth.types';
 
 type AuthTokenType = 'email_verification' | 'password_reset' | 'mfa_step_up';
-
-// Plain `!==` on a shared secret leaks its length/content through response
-// timing. `timingSafeEqual` requires equal-length buffers, so a length
-// mismatch is checked separately first (that alone doesn't leak anything
-// timing-sensitive about the secret's actual content).
-function constantTimeEquals(a: string, b: string): boolean {
-  const bufferA = Buffer.from(a);
-  const bufferB = Buffer.from(b);
-  if (bufferA.length !== bufferB.length) return false;
-  return timingSafeEqual(bufferA, bufferB);
-}
 
 interface QueryRunner {
   query: PoolClient['query'];
@@ -521,21 +510,13 @@ export const registerUser = async (
   const email = input.email.trim().toLowerCase();
   const displayName = input.username.trim();
 
-  // Roles a caller may self-assign via signup code. SUPER_ADMIN is deliberately excluded —
-  // it must only ever be granted through the invite flow, never a shared-code self-signup.
-  const CODE_GATED_ROLES: readonly UserRole[] = ['ADMIN', 'MODERATOR', 'CREATOR'];
-
-  let requestedRole: UserRole;
-  if (!input.role || input.role === 'CLIENT') {
-    requestedRole = 'CLIENT';
-  } else if (CODE_GATED_ROLES.includes(input.role)) {
-    requestedRole = input.role;
-  } else {
+  if (input.role && input.role !== 'CLIENT') {
     throw new ForbiddenError(
-      `Self-registration is not permitted for role ${input.role}`,
-      'AUTH_ROLE_NOT_SELF_REGISTERABLE',
+      'Privileged accounts are invitation-only. Request access from a Super Admin.',
+      'AUTH_ADMIN_INVITE_REQUIRED',
     );
   }
+  const requestedRole: UserRole = 'CLIENT';
 
   const existing = await pool.query<UserRow>(
     `SELECT id, email, password_hash, display_name, role, is_active, created_at, email_verified_at
@@ -544,16 +525,6 @@ export const registerUser = async (
      LIMIT 1`,
     [email],
   );
-
-  if (CODE_GATED_ROLES.includes(requestedRole)) {
-    const providedCode = input.adminSignupCode?.trim();
-    if (!env.ADMIN_SIGNUP_CODE) {
-      throw new ForbiddenError('Admin signup is disabled', 'AUTH_ADMIN_DISABLED');
-    }
-    if (!providedCode || !constantTimeEquals(providedCode, env.ADMIN_SIGNUP_CODE)) {
-      throw new ForbiddenError('Invalid admin signup code', 'AUTH_ADMIN_CODE_INVALID');
-    }
-  }
 
   if ((existing.rowCount ?? 0) > 0) {
     const existingUser = existing.rows[0]!;

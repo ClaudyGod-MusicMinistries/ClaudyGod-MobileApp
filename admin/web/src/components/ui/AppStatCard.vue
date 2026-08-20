@@ -4,7 +4,7 @@
       <div :class="['w-9 h-9 rounded-[var(--radius-control)] flex items-center justify-center flex-shrink-0', iconBg]">
         <slot name="icon" />
       </div>
-      <span v-if="trend !== undefined" :class="['text-xs font-bold flex items-center gap-0.5', trend >= 0 ? 'text-success' : 'text-danger']">
+      <span v-if="trend !== undefined" :class="['text-xs font-medium flex items-center gap-0.5', trend >= 0 ? 'text-success' : 'text-danger']">
         <svg v-if="trend >= 0" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
           <path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7" />
         </svg>
@@ -15,8 +15,8 @@
       </span>
     </div>
     <div>
-      <p class="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-muted">{{ label }}</p>
-      <p class="text-2xl font-bold text-ink tabular-nums mt-1">{{ formattedValue }}</p>
+      <p class="text-[11px] font-medium uppercase tracking-[0.08em] text-ink-muted">{{ label }}</p>
+      <p class="text-2xl font-semibold text-ink tabular-nums mt-1">{{ formattedValue }}</p>
     </div>
     <p v-if="caption" class="text-xs text-ink-muted border-t border-border pt-2">{{ caption }}</p>
   </AppCard>

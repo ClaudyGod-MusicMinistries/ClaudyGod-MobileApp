@@ -14,6 +14,7 @@ import {
   confirmAdminS3Upload,
   deleteAdminS3Upload,
   getPresignedDownloadUrl,
+  getAdminStorageHealth,
   listAdminStorageSessions,
   requestAdminS3Upload,
 } from './storage.service';
@@ -31,6 +32,15 @@ function requireAdminActor(req: Request) {
   }
   return req.user;
 }
+
+adminStorageRouter.get(
+  '/health',
+  asyncHandler(async (req, res) => {
+    requireAdminActor(req);
+    const result = await getAdminStorageHealth();
+    res.status(200).json(result);
+  }),
+);
 
 /**
  * POST /v1/admin/storage/request-upload

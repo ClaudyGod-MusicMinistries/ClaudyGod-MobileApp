@@ -40,6 +40,24 @@
         </AppCard>
       </div>
 
+      <AppCard class="p-5 space-y-4">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-wide text-ink-muted">Mobile media storage</p>
+            <p class="mt-1 text-sm font-semibold text-ink">{{ storageHealth?.bucket || 'No bucket configured' }}</p>
+            <p class="mt-1 text-xs text-ink-muted">{{ storageHealth?.detail || storageError || 'Checking storage…' }}</p>
+          </div>
+          <StatusBadge :status="storageHealth?.reachable ? 'ok' : 'error'" />
+        </div>
+        <div v-if="storageHealth" class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div v-for="(count, status) in storageHealth.sessions" :key="status" class="rounded-xl border border-border bg-bg-1 p-3">
+            <p class="text-[10px] font-semibold uppercase tracking-wide text-ink-muted">{{ status }}</p>
+            <p class="mt-1 text-lg font-bold text-ink">{{ count }}</p>
+          </div>
+        </div>
+        <p v-if="storageHealth?.lastConfirmedAt" class="text-xs text-ink-muted">Last verified upload: {{ formatDate(storageHealth.lastConfirmedAt) }}</p>
+      </AppCard>
+
       <!-- Queue depths -->
       <div v-if="health.queues && Object.keys(health.queues).length" class="space-y-3">
         <h3 class="text-sm font-bold text-ink">Queue depths</h3>
@@ -75,7 +93,8 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { getHealth } from '@/api/system';
+import { getHealth, getStorageHealth } from '@/api/system';
+import type { StorageHealth } from '@/api/system';
 import type { HealthCheck } from '@/api/types';
 import AppCard from '@/components/ui/AppCard.vue';
 import AppButton from '@/components/ui/AppButton.vue';
@@ -88,14 +107,21 @@ const health = ref<HealthCheck | null>(null);
 const isLoading = ref(false);
 const loadError = ref('');
 const showRaw = ref(false);
+const storageHealth = ref<StorageHealth | null>(null);
+const storageError = ref('');
 
 onMounted(() => { void refresh(); });
 
 async function refresh(): Promise<void> {
   isLoading.value = true;
   loadError.value = '';
+  storageError.value = '';
   try {
-    health.value = await getHealth();
+    const [platform, storage] = await Promise.allSettled([getHealth(), getStorageHealth()]);
+    if (platform.status === 'rejected') throw platform.reason;
+    health.value = platform.value;
+    if (storage.status === 'fulfilled') storageHealth.value = storage.value;
+    else storageError.value = storage.reason instanceof Error ? storage.reason.message : 'Storage check failed';
   } catch (e) {
     loadError.value = e instanceof Error ? e.message : 'Health check failed';
   } finally {

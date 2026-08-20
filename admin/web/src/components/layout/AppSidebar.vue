@@ -25,7 +25,7 @@
       <Transition name="fade">
         <div v-if="showExpanded" class="overflow-hidden">
           <p class="text-[10px] font-semibold text-ink-muted uppercase tracking-widest">ClaudyGod</p>
-          <p class="text-sm font-bold text-ink leading-tight">Admin Studio</p>
+          <p class="text-sm font-semibold text-ink leading-tight">Admin Studio</p>
         </div>
       </Transition>
     </div>
@@ -44,7 +44,7 @@
     <!-- Navigation -->
     <nav class="flex-1 overflow-y-auto py-3 space-y-0.5 px-2">
       <template v-for="group in NAV_GROUPS" :key="group.label">
-        <p v-if="showExpanded" class="px-2.5 pt-4 pb-1.5 text-[9.5px] font-bold text-ink-muted/80 uppercase tracking-[0.12em] first:pt-1">
+        <p v-if="showExpanded" class="px-2.5 pt-4 pb-1.5 text-[9.5px] font-semibold text-ink-muted/80 uppercase tracking-[0.12em] first:pt-1">
           {{ group.label }}
         </p>
         <RouterLink

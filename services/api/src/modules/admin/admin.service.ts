@@ -3,7 +3,7 @@ import { env } from '../../config/env';
 import { pool } from '../../db/pool';
 import { emailTransportInfo, verifyEmailTransport } from '../../infra/email';
 import { queueEmailJob } from '../../infra/transactionalEmails';
-import { BadRequestError, NotFoundError } from '../../lib/errors';
+import { BadRequestError, ForbiddenError, NotFoundError } from '../../lib/errors';
 import { isDatabaseConnectivityError, isMissingDatabaseStructureError } from '../../lib/postgres';
 import type { UserRole } from '../auth/auth.types';
 import type { ContentRequestStatus, ContentVisibility } from '../content/content.types';
@@ -1358,6 +1358,14 @@ export const updateAdminUserRole = async (input: {
 
   const existing = existingResult.rows[0]!;
 
+  if (existing.role === 'SUPER_ADMIN' && input.actor.role !== 'SUPER_ADMIN') {
+    throw new ForbiddenError('Only a Super Admin can modify a Super Admin account', 'SUPER_ADMIN_REQUIRED');
+  }
+
+  if ((existing.role === 'ADMIN' || input.role === 'ADMIN') && input.actor.role !== 'SUPER_ADMIN') {
+    throw new ForbiddenError('Only a Super Admin can grant or remove Admin access', 'SUPER_ADMIN_REQUIRED');
+  }
+
   if (existing.role === input.role) {
     return {
       user: toAdminUserRecord(existing),
@@ -1374,6 +1382,15 @@ export const updateAdminUserRole = async (input: {
 
     if (Number(adminCountResult.rows[0]?.count || 0) <= 1) {
       throw new BadRequestError('At least one admin user must remain assigned', 'ADMIN_LAST_ADMIN');
+    }
+  }
+
+  if (existing.role === 'SUPER_ADMIN' && input.role !== 'SUPER_ADMIN') {
+    const superAdminCount = await pool.query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM app_users WHERE role = 'SUPER_ADMIN' AND is_active = TRUE`,
+    );
+    if (Number(superAdminCount.rows[0]?.count || 0) <= 1) {
+      throw new BadRequestError('The final active Super Admin cannot be demoted', 'ADMIN_LAST_SUPER_ADMIN');
     }
   }
 

@@ -3,7 +3,7 @@
     :is="tag"
     v-bind="tagProps"
     :class="[
-      'inline-flex items-center justify-center gap-2 font-semibold transition-base active:translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary/60 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none select-none whitespace-nowrap',
+      'inline-flex items-center justify-center gap-2 font-medium transition-base focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary/60 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none select-none whitespace-nowrap',
       sizeClass,
       variantClass,
       { 'w-full': fullWidth },

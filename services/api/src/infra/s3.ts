@@ -4,6 +4,7 @@ import {
   GetObjectCommand,
   HeadObjectCommand,
   DeleteObjectCommand,
+  HeadBucketCommand,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { env } from '../config/env';
@@ -105,6 +106,10 @@ export async function headObject(params: {
 export async function deleteObject(params: { bucket: string; key: string }): Promise<void> {
   await getClient().send(new DeleteObjectCommand({ Bucket: params.bucket, Key: params.key }));
   logger.info('[s3] object deleted', { bucket: params.bucket, key: params.key });
+}
+
+export async function checkBucketAccess(bucket: string): Promise<void> {
+  await getClient().send(new HeadBucketCommand({ Bucket: bucket }));
 }
 
 export async function putObjectBuffer(params: {
