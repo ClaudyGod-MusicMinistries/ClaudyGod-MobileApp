@@ -3,6 +3,7 @@ import { asyncHandler } from '../../lib/asyncHandler';
 import { ForbiddenError, UnauthorizedError } from '../../lib/errors';
 import { validateSchema } from '../../lib/validation';
 import { authenticate } from '../../middleware/authenticate';
+import { requirePrivilegedMfa } from '../../middleware/requirePrivilegedMfa';
 import {
   adminContentIdParamsSchema,
   adminUnassignedContentQuerySchema,
@@ -48,6 +49,7 @@ import { env } from '../../config/env';
 export const adminRouter = Router();
 
 adminRouter.use(authenticate);
+adminRouter.use(requirePrivilegedMfa);
 
 function requireAdmin(req: Request) {
   if (!req.user) {

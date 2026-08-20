@@ -46,6 +46,9 @@ function requireAdmin(req: Request) {
   if (!hasMinRole(user.role, 'MODERATOR')) {
     throw new ForbiddenError('Moderator role or higher required', 'MODERATOR_REQUIRED');
   }
+  if (!user.mfaEnabled) {
+    throw new ForbiddenError('Multi-factor authentication is required for live administration', 'MFA_ENROLLMENT_REQUIRED');
+  }
   return user;
 }
 

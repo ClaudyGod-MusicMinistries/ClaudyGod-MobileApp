@@ -55,6 +55,9 @@ function requireAdmin(user: unknown): JwtClaims {
   if (!hasMinRole(candidate.role, 'ADMIN')) {
     throw new ForbiddenError('Admin access required', 'ADMIN_REQUIRED');
   }
+  if (!candidate.mfaEnabled) {
+    throw new ForbiddenError('Multi-factor authentication is required for content administration', 'MFA_ENROLLMENT_REQUIRED');
+  }
   return candidate;
 }
 

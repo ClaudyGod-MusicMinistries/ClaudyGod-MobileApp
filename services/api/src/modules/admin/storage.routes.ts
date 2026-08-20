@@ -3,6 +3,7 @@ import { asyncHandler } from '../../lib/asyncHandler';
 import { ForbiddenError, UnauthorizedError } from '../../lib/errors';
 import { hasMinRole } from '../../middleware/rbac';
 import { authenticate } from '../../middleware/authenticate';
+import { requirePrivilegedMfa } from '../../middleware/requirePrivilegedMfa';
 import { validateSchema } from '../../lib/validation';
 import {
   confirmStorageUploadSchema,
@@ -22,6 +23,7 @@ import {
 export const adminStorageRouter = Router();
 
 adminStorageRouter.use(authenticate);
+adminStorageRouter.use(requirePrivilegedMfa);
 
 function requireAdminActor(req: Request) {
   if (!req.user) {

@@ -261,7 +261,8 @@ function validateInviteForm(): boolean {
   inviteErrors.value = {};
   if (!inviteForm.value.name.trim()) inviteErrors.value.name = 'Full name is required';
   if (!inviteForm.value.displayName.trim()) inviteErrors.value.displayName = 'Display name is required';
-  if (inviteForm.value.password.length < 8) inviteErrors.value.password = 'Password must be at least 8 characters';
+  if (inviteForm.value.password.length < 12) inviteErrors.value.password = 'Use at least 12 characters';
+  else if (!/[a-z]/.test(inviteForm.value.password) || !/[A-Z]/.test(inviteForm.value.password) || !/[0-9]/.test(inviteForm.value.password) || !/[^A-Za-z0-9]/.test(inviteForm.value.password)) inviteErrors.value.password = 'Include uppercase, lowercase, number, and symbol';
   if (inviteForm.value.password !== inviteForm.value.confirmPassword) inviteErrors.value.confirmPassword = 'Passwords do not match';
   return Object.keys(inviteErrors.value).length === 0;
 }

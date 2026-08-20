@@ -43,7 +43,7 @@
     </section>
 
     <!-- Requests table -->
-    <AppCard v-else class="overflow-hidden divide-y divide-border">
+    <AppCard v-if="requests.length" class="overflow-hidden divide-y divide-border">
       <div
         v-for="req in requests"
         :key="req.id"

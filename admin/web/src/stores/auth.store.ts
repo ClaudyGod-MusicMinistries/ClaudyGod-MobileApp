@@ -121,10 +121,6 @@ export const useAuthStore = defineStore('auth', () => {
     _applySession(res);
   }
 
-  function markMfaEnabled(): void {
-    if (user.value) user.value = { ...user.value, mfaEnabled: true };
-  }
-
   return {
     user,
     isLoading,
@@ -137,6 +133,5 @@ export const useAuthStore = defineStore('auth', () => {
     restoreSession,
     logout,
     applyExternalSession,
-    markMfaEnabled,
   };
 });

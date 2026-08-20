@@ -100,7 +100,6 @@ YOUTUBE_CHANNEL_ID=${CI_YOUTUBE_CHANNEL_ID}
 YOUTUBE_MAX_RESULTS=12
 
 # Admin access
-ADMIN_SIGNUP_CODE=ci-admin-invitation-code
 EOF
 
 cat > "$ROOT_DIR/.env.production" <<EOF
@@ -191,7 +190,6 @@ YOUTUBE_CHANNEL_ID=${CI_YOUTUBE_CHANNEL_ID}
 YOUTUBE_MAX_RESULTS=12
 
 # Admin access
-ADMIN_SIGNUP_CODE=ci-admin-invitation-code
 
 # Observability (Prometheus + Grafana)
 METRICS_TOKEN=ci-metrics-token

@@ -81,35 +81,38 @@ export async function verifyMfaSetup(user: JwtClaims, code: string): Promise<Bac
 
   const backupCodes = generateBackupCodes(env.MFA_BACKUP_CODES_COUNT);
 
-  await pool.query('BEGIN');
+  const client = await pool.connect();
   try {
-    await pool.query(
+    await client.query('BEGIN');
+    await client.query(
       `UPDATE user_mfa_factors SET is_verified = TRUE, updated_at = NOW() WHERE id = $1`,
       [id],
     );
 
-    await pool.query(
+    await client.query(
       `DELETE FROM user_backup_codes WHERE user_id = $1`,
       [user.sub],
     );
 
     for (const code of backupCodes) {
       const hash = createHash('sha256').update(code).digest('hex');
-      await pool.query(
+      await client.query(
         `INSERT INTO user_backup_codes (user_id, code_hash) VALUES ($1, $2)`,
         [user.sub, hash],
       );
     }
 
-    await pool.query(
+    await client.query(
       `UPDATE app_users SET mfa_enabled = TRUE, updated_at = NOW() WHERE id = $1`,
       [user.sub],
     );
 
-    await pool.query('COMMIT');
+    await client.query('COMMIT');
   } catch (err) {
-    await pool.query('ROLLBACK');
+    await client.query('ROLLBACK').catch(() => undefined);
     throw err;
+  } finally {
+    client.release();
   }
 
   logger.info('MFA TOTP verified and enabled', { userId: user.sub });
@@ -134,15 +137,18 @@ export async function disableMfa(user: JwtClaims, code: string): Promise<void> {
     throw new BadRequestError('Invalid TOTP code', 'MFA_INVALID_CODE');
   }
 
-  await pool.query('BEGIN');
+  const client = await pool.connect();
   try {
-    await pool.query(`UPDATE user_mfa_factors SET is_active = FALSE, updated_at = NOW() WHERE id = $1`, [id]);
-    await pool.query(`DELETE FROM user_backup_codes WHERE user_id = $1`, [user.sub]);
-    await pool.query(`UPDATE app_users SET mfa_enabled = FALSE, updated_at = NOW() WHERE id = $1`, [user.sub]);
-    await pool.query('COMMIT');
+    await client.query('BEGIN');
+    await client.query(`UPDATE user_mfa_factors SET is_active = FALSE, updated_at = NOW() WHERE id = $1`, [id]);
+    await client.query(`DELETE FROM user_backup_codes WHERE user_id = $1`, [user.sub]);
+    await client.query(`UPDATE app_users SET mfa_enabled = FALSE, updated_at = NOW() WHERE id = $1`, [user.sub]);
+    await client.query('COMMIT');
   } catch (err) {
-    await pool.query('ROLLBACK');
+    await client.query('ROLLBACK').catch(() => undefined);
     throw err;
+  } finally {
+    client.release();
   }
 
   logger.info('MFA disabled', { userId: user.sub });

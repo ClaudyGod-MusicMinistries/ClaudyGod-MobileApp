@@ -30,7 +30,6 @@ export interface RegisterInput {
   password: string;
   username: string;
   role?: UserRole;
-  adminSignupCode?: string;
 }
 
 export interface LoginInput {

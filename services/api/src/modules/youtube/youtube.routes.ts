@@ -3,6 +3,7 @@ import { asyncHandler } from '../../lib/asyncHandler';
 import { UnauthorizedError } from '../../lib/errors';
 import { validateSchema } from '../../lib/validation';
 import { authenticate } from '../../middleware/authenticate';
+import { requirePrivilegedMfa } from '../../middleware/requirePrivilegedMfa';
 import { youtubeImportSchema, youtubeListQuerySchema, youtubeSyncSchema } from './youtube.schema';
 import {
   fetchYouTubeVideos,
@@ -13,6 +14,7 @@ import {
 } from './youtube.service';
 
 export const youtubeRouter = Router();
+youtubeRouter.use(authenticate, requirePrivilegedMfa);
 
 youtubeRouter.get(
   '/status',

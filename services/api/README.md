@@ -60,8 +60,9 @@ SMTP notes:
 6. `yarn dev:worker`
 
 Startup note:
-- Create admin accounts through the approved admin registration flow using `ADMIN_SIGNUP_CODE`.
 - Run `yarn migrate` as an explicit deployment step before starting the API.
+- Bootstrap the first Super Admin once with `yarn admin:bootstrap` and the three `CLAUDYGOD_BOOTSTRAP_ADMIN_*` environment variables documented in `admin/README.md`.
+- Create every subsequent privileged account through a reviewed, expiring invitation. Shared admin signup codes are not supported.
 
 Production note:
 - The repo now includes `docker-compose.production.yml` with Traefik at the edge, Redis for queues, the API and worker behind the proxy, the admin and mobile web apps as static nginx-served builds, and a Postfix relay container for transactional email delivery through Brevo.

@@ -40,6 +40,7 @@
 import { ref } from 'vue';
 import { ShieldCheck } from 'lucide-vue-next';
 import { setupMfa, verifyMfaSetup } from '@/api/auth';
+import { refreshSession } from '@/api/client';
 import { useAuthStore } from '@/stores/auth.store';
 import AppPage from '@/components/ui/AppPage.vue';
 import AppCard from '@/components/ui/AppCard.vue';
@@ -66,7 +67,7 @@ async function verify() {
   try {
     const result = await verifyMfaSetup(code.value);
     backupCodes.value = result.codes;
-    auth.markMfaEnabled();
+    auth.applyExternalSession(await refreshSession());
   } catch (e) { error.value = e instanceof Error ? e.message : 'The verification code was rejected.'; }
   finally { loading.value = false; }
 }

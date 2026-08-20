@@ -24,7 +24,6 @@ export const registerSchema = z
     password: passwordSchema,
     username: usernameSchema,
     role: z.enum(['CLIENT', 'ADMIN']).optional(),
-    adminSignupCode: z.string().trim().min(8).max(128).optional(),
   })
   .strict();
 
