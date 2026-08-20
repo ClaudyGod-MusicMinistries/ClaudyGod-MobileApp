@@ -17,9 +17,13 @@ unset npm_config_version_commit_hooks npm_config_version_tag_prefix \
 LOG_DIR="$ROOT_DIR/logs/git-hooks"
 mkdir -p "$LOG_DIR"
 TIMESTAMP=$(date '+%Y-%m-%d_%H-%M-%S')
-LOG_FILE="$LOG_DIR/prepush-${TIMESTAMP}.log"
+LOG_FILE="${CLAUDYGOD_PREPUSH_LOG:-$LOG_DIR/prepush-${TIMESTAMP}.log}"
 
-exec > >(tee -a "$LOG_FILE") 2>&1
+if [ "${CLAUDYGOD_PREPUSH_CAPTURED:-0}" != "1" ]; then
+  CLAUDYGOD_PREPUSH_CAPTURED=1 CLAUDYGOD_PREPUSH_LOG="$LOG_FILE" \
+    bash "$0" "$@" 2>&1 | tee -a "$LOG_FILE"
+  exit "${PIPESTATUS[0]}"
+fi
 
 # ── Git context ───────────────────────────────────────────────────────────────
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
@@ -134,6 +138,9 @@ run_step "API Build — tsc compile to dist/" \
 run_step "API contract tests" \
   yarn --cwd ./services/api test
 
+run_step "PostgreSQL migration + search integration" \
+  bash ./scripts/test-database-integration.sh
+
 # ── 6. Mobile TypeScript ──────────────────────────────────────────────────────
 run_step "Mobile TypeScript — tsc --noEmit" \
   yarn --cwd ./apps/mobile typecheck
@@ -146,17 +153,8 @@ run_step "Mobile release-contract tests" \
   yarn --cwd ./apps/mobile test
 
 # ── 8. Dependency audit (high/critical) ──────────────────────────────────────
-step_start "Security audit — yarn audit (high+critical)"
-if yarn --cwd ./services/api audit --level high 2>&1; then
-  step_end "pass" "Security audit"
-else
-  AUDIT_EXIT=$?
-  if [ "$AUDIT_EXIT" -ge 16 ]; then
-    step_end "fail" "Security audit — critical vulnerabilities found"
-  else
-    step_end "warn" "Security audit — moderate vulnerabilities (review manually)"
-  fi
-fi
+run_step "Security audit — high/critical or unavailable is blocking" \
+  yarn --cwd ./services/api audit --level high
 
 # ── 9. Docker / compose validation ───────────────────────────────────────────
 step_start "Docker compose validation"

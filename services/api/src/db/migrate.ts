@@ -1172,6 +1172,57 @@ const migrationStatements = [
   `CREATE TRIGGER trg_sync_content_section_assignments
    AFTER INSERT OR UPDATE OF app_sections, content_type ON content_items
    FOR EACH ROW EXECUTE FUNCTION sync_content_section_assignments()`,
+  `CREATE OR REPLACE FUNCTION set_content_items_search_vector()
+   RETURNS trigger AS $$
+   BEGIN
+     NEW.search_vector :=
+       setweight(to_tsvector('english'::regconfig, coalesce(NEW.title, '')), 'A') ||
+       setweight(to_tsvector('english'::regconfig, coalesce(NEW.channel_name, '')), 'A') ||
+       setweight(to_tsvector('english'::regconfig, coalesce(NEW.description, '')), 'B') ||
+       setweight(to_tsvector('english'::regconfig, coalesce(array_to_string(NEW.tags, ' '), '')), 'C');
+     RETURN NEW;
+   END;
+   $$ LANGUAGE plpgsql`,
+  `DROP TRIGGER IF EXISTS trg_content_items_search_vector ON content_items`,
+  `CREATE TRIGGER trg_content_items_search_vector
+   BEFORE INSERT OR UPDATE OF title, channel_name, description, tags ON content_items
+   FOR EACH ROW EXECUTE FUNCTION set_content_items_search_vector()`,
+  `UPDATE content_items
+   SET search_vector =
+     setweight(to_tsvector('english'::regconfig, coalesce(title, '')), 'A') ||
+     setweight(to_tsvector('english'::regconfig, coalesce(channel_name, '')), 'A') ||
+     setweight(to_tsvector('english'::regconfig, coalesce(description, '')), 'B') ||
+     setweight(to_tsvector('english'::regconfig, coalesce(array_to_string(tags, ' '), '')), 'C')`,
+  `CREATE INDEX IF NOT EXISTS idx_user_search_events_query_lower_searched_at
+   ON user_search_events (LOWER(query), searched_at DESC)`,
+  `ALTER TABLE live_sessions ADD COLUMN IF NOT EXISTS search_vector tsvector`,
+  `CREATE OR REPLACE FUNCTION set_live_sessions_search_vector()
+   RETURNS trigger AS $$
+   BEGIN
+     NEW.search_vector :=
+       setweight(to_tsvector('english'::regconfig, coalesce(NEW.title, '')), 'A') ||
+       setweight(to_tsvector('english'::regconfig, coalesce(NEW.channel_id, '')), 'A') ||
+       setweight(to_tsvector('english'::regconfig, coalesce(NEW.description, '')), 'B') ||
+       setweight(to_tsvector('english'::regconfig, coalesce(array_to_string(NEW.tags, ' '), '')), 'C');
+     RETURN NEW;
+   END;
+   $$ LANGUAGE plpgsql`,
+  `DROP TRIGGER IF EXISTS trg_live_sessions_search_vector ON live_sessions`,
+  `CREATE TRIGGER trg_live_sessions_search_vector
+   BEFORE INSERT OR UPDATE OF title, channel_id, description, tags ON live_sessions
+   FOR EACH ROW EXECUTE FUNCTION set_live_sessions_search_vector()`,
+  `UPDATE live_sessions
+   SET search_vector =
+     setweight(to_tsvector('english'::regconfig, coalesce(title, '')), 'A') ||
+     setweight(to_tsvector('english'::regconfig, coalesce(channel_id, '')), 'A') ||
+     setweight(to_tsvector('english'::regconfig, coalesce(description, '')), 'B') ||
+     setweight(to_tsvector('english'::regconfig, coalesce(array_to_string(tags, ' '), '')), 'C')`,
+  `CREATE INDEX IF NOT EXISTS idx_live_sessions_search_vector
+   ON live_sessions USING GIN (search_vector)`,
+  `ALTER TABLE user_play_events ADD COLUMN IF NOT EXISTS client_event_id TEXT`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS idx_user_play_events_user_client_event
+   ON user_play_events (user_id, client_event_id)
+   WHERE client_event_id IS NOT NULL`,
 ];
 
 const MIGRATION_LOCK_ID = 7_246_130_001;

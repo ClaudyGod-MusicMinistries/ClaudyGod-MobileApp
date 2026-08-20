@@ -1,6 +1,7 @@
 import { apiFetch } from './apiClient';
 import { apiFetchWithMobileSession, getStoredMobileSession } from './authService';
 import { DEFAULT_CONTENT_IMAGE_URI } from '../util/brandAssets';
+import { reportException } from '../lib/sentry';
 
 export type ContentType = 'audio' | 'video' | 'playlist' | 'announcement' | 'live' | 'ad';
 
@@ -232,17 +233,13 @@ export async function fetchSearchResults(query: string, type?: ContentType): Pro
     return [];
   }
 
-  try {
-    const params: Record<string, QueryValue> = { q: trimmed, limit: 30 };
-    if (type) {
-      params.type = type;
-    }
-    const qs = buildQueryString(params);
-    const response = await apiFetch<SearchApiResponse>(`/v1/search?${qs}`);
-    return response.items.map(normalizeSearchItem);
-  } catch {
-    return [];
+  const params: Record<string, QueryValue> = { q: trimmed, limit: 30 };
+  if (type) {
+    params.type = type;
   }
+  const qs = buildQueryString(params);
+  const response = await apiFetch<SearchApiResponse>(`/v1/search?${qs}`);
+  return response.items.map(normalizeSearchItem);
 }
 
 interface TrendingSearchesResponse {
@@ -270,7 +267,11 @@ export async function fetchMeRecentlyPlayed(limit = 12): Promise<FeedCardItem[]>
       `/v1/me/engagement/recently-played?limit=${limit}`,
     );
     return response.items.map(normalizeFeedItem);
-  } catch {
+  } catch (error) {
+    // Silently returning [] here is indistinguishable from "this account
+    // genuinely has no history" — which is exactly what made a broken
+    // recording/fetch path look identical to a legitimate cold start.
+    reportException(error, { tags: { flow: 'engagement-recently-played' } });
     return [];
   }
 }
@@ -281,7 +282,8 @@ async function fetchMeMostPlayed(): Promise<FeedCardItem[]> {
       '/v1/me/engagement/most-played?limit=12',
     );
     return response.items.map(normalizeFeedItem);
-  } catch {
+  } catch (error) {
+    reportException(error, { tags: { flow: 'engagement-most-played' } });
     return [];
   }
 }
@@ -292,7 +294,8 @@ async function fetchMeRecommendations(): Promise<FeedCardItem[]> {
       '/v1/me/engagement/recommendations?limit=12',
     );
     return response.items.map(normalizeFeedItem);
-  } catch {
+  } catch (error) {
+    reportException(error, { tags: { flow: 'engagement-recommendations' } });
     return [];
   }
 }

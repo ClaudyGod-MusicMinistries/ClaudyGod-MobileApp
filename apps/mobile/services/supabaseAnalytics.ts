@@ -4,6 +4,7 @@ import {
   trackMePlayEvent,
 } from './userFlowService';
 import { getStoredMobileSession } from './authService';
+import { reportException, reportBreadcrumb } from '../lib/sentry';
 
 export interface PlayEventInput {
   contentId: string;
@@ -28,7 +29,16 @@ export async function trackPlayEvent(input: PlayEventInput): Promise<void> {
       title: input.title,
       source: input.source ?? 'unknown',
     });
-  } catch {}
+    reportBreadcrumb({ category: 'engagement', message: 'play-event recorded', level: 'info', data: { source: input.source } });
+  } catch (error) {
+    // This used to fail completely silently — a genuinely broken recording
+    // path (schema drift, expired session, validation mismatch) and a
+    // healthy one both looked identical from here, which is exactly what
+    // let recommendations/most-played/continue-listening silently degrade
+    // to their cold-start fallbacks for real, active accounts with no way
+    // to tell why. Reporting it is what makes that distinguishable.
+    reportException(error, { tags: { flow: 'play-event' } });
+  }
 }
 
 export async function subscribeToLiveAlerts(channelId: string): Promise<void> {
@@ -37,7 +47,9 @@ export async function subscribeToLiveAlerts(channelId: string): Promise<void> {
 
   try {
     await subscribeToLiveAlertsBackend(channelId);
-  } catch {}
+  } catch (error) {
+    reportException(error, { tags: { flow: 'live-subscription' } });
+  }
 }
 
 export async function fetchUserProfileMetrics() {

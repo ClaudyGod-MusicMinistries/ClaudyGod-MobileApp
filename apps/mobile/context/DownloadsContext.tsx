@@ -2,6 +2,8 @@ import React, { createContext, useCallback, useContext, useEffect, useRef, useSt
 import * as FileSystem from 'expo-file-system/legacy';
 import type { FeedCardItem } from '../services/contentService';
 import { getDownloads, saveDownload, removeDownload } from '../lib/localUserStorage';
+import { removeMeLibraryItem, saveMeLibraryItem } from '../services/userFlowService';
+import { useUserAccount } from './UserAccountContext';
 
 type DownloadStatus = 'idle' | 'downloading' | 'done' | 'error';
 
@@ -19,6 +21,8 @@ interface DownloadState {
 
 interface DownloadsContextValue {
   downloads: Record<string, DownloadState>;
+  syncError: string | null;
+  refreshDownloads: () => Promise<void>;
   downloadContent: (_item: FeedCardItem) => Promise<boolean>;
   deleteDownload: (_contentId: string) => Promise<void>;
   getDownloadStatus: (_contentId: string) => DownloadStatus;
@@ -45,11 +49,16 @@ async function ensureDir() {
 // provider fixes that.
 export function DownloadsProvider({ children }: { children: ReactNode }) {
   const [downloads, setDownloads] = useState<Record<string, DownloadState>>({});
+  const [syncError, setSyncError] = useState<string | null>(null);
   const inFlight = useRef(new Set<string>());
+  const loadGeneration = useRef(0);
+  const { account } = useUserAccount();
 
-  useEffect(() => {
-    let active = true;
-    void getDownloads().then(async (saved) => {
+  const refreshDownloads = useCallback(async () => {
+    const generation = ++loadGeneration.current;
+    setSyncError(null);
+    try {
+      const saved = await getDownloads();
       // The sandboxed document directory can change (reinstall, iOS app
       // update) or a file can otherwise go missing — without this check, a
       // stale record would still show as "downloaded" and only fail when the
@@ -59,7 +68,7 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
         const info = await FileSystem.getInfoAsync(d.localUri);
         return { d, exists: info.exists };
       }));
-      if (!active) return;
+      if (generation !== loadGeneration.current) return;
 
       const initial: Record<string, DownloadState> = {};
       const stale: string[] = [];
@@ -79,9 +88,25 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
       });
       setDownloads(initial);
       await Promise.all(stale.map((contentId) => removeDownload(contentId)));
-    });
-    return () => { active = false; };
-  }, []);
+      if (account) {
+        await Promise.all(checked.filter(({ exists }) => exists).map(({ d }) => saveMeLibraryItem({
+          bucket: 'downloaded', contentId: d.contentId,
+          contentType: d.contentType as FeedCardItem['type'], title: d.title,
+          subtitle: d.subtitle, description: d.description, imageUrl: d.imageUrl,
+          duration: d.duration,
+        })));
+      }
+    } catch (error) {
+      if (generation === loadGeneration.current) {
+        setSyncError(error instanceof Error ? error.message : 'Download synchronization failed.');
+      }
+    }
+  }, [account]);
+
+  useEffect(() => {
+    void refreshDownloads();
+    return () => { loadGeneration.current += 1; };
+  }, [refreshDownloads]);
 
   const getDownloadStatus = useCallback(
     (contentId: string): DownloadStatus => downloads[contentId]?.status ?? 'idle',
@@ -145,6 +170,19 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
         savedAt: new Date().toISOString(),
       });
 
+      if (account) {
+        try {
+          await saveMeLibraryItem({
+            bucket: 'downloaded', contentId: item.id, contentType: item.type,
+            title: item.title, subtitle: item.subtitle, description: item.description,
+            imageUrl: item.imageUrl || undefined, duration: item.duration,
+          });
+          setSyncError(null);
+        } catch (error) {
+          setSyncError(error instanceof Error ? error.message : 'Download saved locally but account synchronization failed.');
+        }
+      }
+
       setDownloads((prev) => ({
         ...prev,
         [item.id]: {
@@ -163,9 +201,10 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
     } finally {
       inFlight.current.delete(item.id);
     }
-  }, [downloads]);
+  }, [account, downloads]);
 
   const deleteDownload = useCallback(async (contentId: string): Promise<void> => {
+    if (account) await removeMeLibraryItem({ bucket: 'downloaded', contentId });
     const localUri = downloads[contentId]?.localUri;
     if (localUri) {
       try { await FileSystem.deleteAsync(localUri, { idempotent: true }); } catch { /* ignore */ }
@@ -176,10 +215,10 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
       delete next[contentId];
       return next;
     });
-  }, [downloads]);
+  }, [account, downloads]);
 
   return (
-    <DownloadsContext.Provider value={{ downloads, downloadContent, deleteDownload, getDownloadStatus, getDownloadedUri }}>
+    <DownloadsContext.Provider value={{ downloads, syncError, refreshDownloads, downloadContent, deleteDownload, getDownloadStatus, getDownloadedUri }}>
       {children}
     </DownloadsContext.Provider>
   );

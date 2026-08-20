@@ -29,7 +29,7 @@ export const pool = new Pool({
   max: 20,
   connectionTimeoutMillis: 5000,
   idleTimeoutMillis: 30000,
-  ssl: useSsl ? { rejectUnauthorized: false } : undefined,
+  ssl: useSsl ? { rejectUnauthorized: env.DATABASE_SSL_REJECT_UNAUTHORIZED } : undefined,
 });
 
 export const closePool = async (): Promise<void> => {

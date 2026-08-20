@@ -202,9 +202,11 @@ export default function Search() {
   const [activeCategory, setActiveCategory] = useState<SearchCategory>('All');
   const [remoteResults, setRemoteResults] = useState<FeedCardItem[] | null>(null);
   const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [searchFocused, setSearchFocused] = useState(false);
   const [trendingSearches, setTrendingSearches] = useState<string[]>([]);
   const focusProgress = useRef(new Animated.Value(0)).current;
+  const searchRequestId = useRef(0);
   const { feed, loading, error, refresh } = useContentFeed();
   const queryClient = useQueryClient();
 
@@ -243,21 +245,37 @@ export default function Search() {
       showToast({ title: 'Search is empty', message: 'Enter a title, artist, or topic.', tone: 'warning' });
       return;
     }
+    const requestId = ++searchRequestId.current;
     setIsSearching(true);
+    setSearchError(null);
     try {
       const type = activeCategory === 'All' ? undefined : activeCategory;
       const results = await queryClient.fetchQuery({
         queryKey: ['search', normalized, type ?? 'All'],
         queryFn: () => fetchSearchResults(normalized, type),
       });
-      setRemoteResults(results);
-      if (!results.length) showToast({ title: 'No matches', message: 'Try another word or category.', tone: 'info' });
+      if (requestId === searchRequestId.current) {
+        setRemoteResults(results);
+        if (!results.length) showToast({ title: 'No matches', message: 'Try another word or category.', tone: 'info' });
+      }
     } catch (error) {
-      showToast({ title: 'Search failed', message: error instanceof Error ? error.message : 'Unable to complete search.', tone: 'warning' });
+      if (requestId === searchRequestId.current) {
+        const message = error instanceof Error ? error.message : 'Unable to complete search.';
+        setRemoteResults([]);
+        setSearchError(message);
+        showToast({ title: 'Search failed', message, tone: 'warning' });
+      }
     } finally {
-      setIsSearching(false);
+      if (requestId === searchRequestId.current) setIsSearching(false);
     }
   }, [activeCategory, query, showToast, queryClient]);
+
+  const invalidateSearch = useCallback(() => {
+    searchRequestId.current += 1;
+    setRemoteResults(null);
+    setSearchError(null);
+    setIsSearching(false);
+  }, []);
 
   const openResult = async (item: FeedCardItem) => {
     await trackPlayEvent({ contentId: item.id, contentType: item.type, title: item.title, source: 'search' });
@@ -268,7 +286,7 @@ export default function Search() {
     const category = normalizeCategory(shortcut.category);
     setQuery(shortcut.query);
     if (category) setActiveCategory(category);
-    setRemoteResults(null);
+    invalidateSearch();
   };
 
   const hasQuery = query.trim().length > 0;
@@ -294,7 +312,7 @@ export default function Search() {
   const applyTrendingSearch = (term: string) => {
     setQuery(term);
     setActiveCategory('All');
-    setRemoteResults(null);
+    invalidateSearch();
   };
 
   const animatedSearchStyle = {
@@ -317,7 +335,7 @@ export default function Search() {
           <MaterialIcons name="search" size={device.isTV ? 22 : 18} color={theme.colors.textSecondary} />
           <TextInput
             value={query}
-            onChangeText={(value) => { setQuery(value); setRemoteResults(null); }}
+            onChangeText={(value) => { setQuery(value); invalidateSearch(); }}
             placeholder="Search songs, videos, live sessions"
             placeholderTextColor={theme.colors.textSecondary}
             autoCapitalize="none"
@@ -328,12 +346,13 @@ export default function Search() {
             style={[styles.searchInput, { minHeight: device.isTV ? 60 : 48, color: theme.colors.text, fontSize: device.isTV ? 16 : 13 }]}
           />
           {query.trim() ? (
-            <TVTouchable onPress={() => { setQuery(''); setRemoteResults(null); }} showFocusBorder={false} style={styles.clearBtn}>
+            <TVTouchable accessibilityLabel="Clear search" onPress={() => { setQuery(''); invalidateSearch(); }} showFocusBorder={false} style={styles.clearBtn}>
               <MaterialIcons name="close" size={18} color={theme.colors.textSecondary} />
             </TVTouchable>
           ) : null}
           <TVTouchable
             onPress={() => void runSearch()}
+            accessibilityLabel="Submit search"
             showFocusBorder={false}
             style={[
               styles.searchSubmitBtn,
@@ -356,7 +375,9 @@ export default function Search() {
             return (
               <TVTouchable
                 key={category}
-                onPress={() => { setActiveCategory(category); setRemoteResults(null); }}
+                onPress={() => { setActiveCategory(category); invalidateSearch(); }}
+                accessibilityLabel={`Search category: ${labelForCategory(category)}`}
+                accessibilityState={{ selected: active }}
                 showFocusBorder={false}
                 style={[
                   styles.categoryPillBase,
@@ -378,6 +399,7 @@ export default function Search() {
       </SurfaceCard>
 
       {error && !hasQuery ? <InlineErrorBanner message={error} onRetry={() => void refresh()} /> : null}
+      {searchError && hasQuery ? <InlineErrorBanner message={searchError} onRetry={() => void runSearch()} /> : null}
 
       {/* ── Trending searches — real, aggregated from what people actually search ── */}
       {!hasQuery && trendingSearches.length > 0 ? (
@@ -423,12 +445,12 @@ export default function Search() {
       {hasQuery ? (
         <>
           <ContentList title={`Results for "${query.trim()}"`} items={filtered} onPressItem={(item) => void openResult(item)} />
-          {!loading && !isSearching && !filtered.length ? (
+          {!loading && !isSearching && !searchError && !filtered.length ? (
             <EmptyState
               title="No results found"
               message="Try another title, artist, topic, or category."
               actionLabel="Clear search"
-              onAction={() => { setQuery(''); setRemoteResults(null); }}
+              onAction={() => { setQuery(''); invalidateSearch(); }}
               icon="search-off"
             />
           ) : null}

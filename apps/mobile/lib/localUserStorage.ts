@@ -56,6 +56,10 @@ export async function removeFavorite(contentId: string): Promise<void> {
   await updateJSON<FeedCardItem[]>(KEYS.favorites, [], (current) => current.filter((entry) => entry.id !== contentId));
 }
 
+export async function clearFavorites(): Promise<void> {
+  await writeJSON(KEYS.favorites, []);
+}
+
 export async function isFavorited(contentId: string): Promise<boolean> {
   const current = await getFavorites();
   return current.some((f) => f.id === contentId);
@@ -71,6 +75,10 @@ export async function addHistory(item: FeedCardItem): Promise<void> {
   await updateJSON<FeedCardItem[]>(KEYS.history, [], (current) => [item, ...current.filter((entry) => entry.id !== item.id)].slice(0, MAX_HISTORY));
 }
 
+export async function clearHistory(): Promise<void> {
+  await writeJSON(KEYS.history, []);
+}
+
 // ── Preferences ────────────────────────────────────────────────────────────
 
 export async function getPreference<T>(key: string, fallback: T): Promise<T> {
@@ -80,31 +88,6 @@ export async function getPreference<T>(key: string, fallback: T): Promise<T> {
 
 export async function setPreference(key: string, value: unknown): Promise<void> {
   await updateJSON<Record<string, unknown>>(KEYS.preferences, {}, (current) => ({ ...current, [key]: value }));
-}
-
-// Guards the one-time device-local favorites synchronization to an account
-// (see UserAccountContext.tsx) so it doesn't re-run on every app launch once
-// it's already succeeded for this device.
-const FAVORITES_MIGRATION_KEY = 'favoritesMigratedToServer';
-
-export async function hasMigratedFavoritesToServer(): Promise<boolean> {
-  return getPreference<boolean>(FAVORITES_MIGRATION_KEY, false);
-}
-
-export async function markFavoritesMigratedToServer(): Promise<void> {
-  await setPreference(FAVORITES_MIGRATION_KEY, true);
-}
-
-// Guards the one-time device-local history synchronization to an account
-// (see UserAccountContext.tsx), mirroring the favorites guard above.
-const HISTORY_MIGRATION_KEY = 'historyMigratedToServer';
-
-export async function hasMigratedHistoryToServer(): Promise<boolean> {
-  return getPreference<boolean>(HISTORY_MIGRATION_KEY, false);
-}
-
-export async function markHistoryMigratedToServer(): Promise<void> {
-  await setPreference(HISTORY_MIGRATION_KEY, true);
 }
 
 // ── Downloads ──────────────────────────────────────────────────────────────

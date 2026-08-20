@@ -75,6 +75,7 @@ run_step  "API TypeScript — tsc --noEmit"          yarn --cwd ./services/api t
 run_step  "API ESLint — zero warnings"             yarn --cwd ./services/api lint
 run_step  "API Build — compile to dist/"           yarn --cwd ./services/api build
 run_step  "API contract tests"                     yarn --cwd ./services/api test
+run_step  "PostgreSQL migration + search integration" bash ./scripts/test-database-integration.sh
 
 # ── Mobile ────────────────────────────────────────────────────────────────────
 warn_step "Mobile TypeScript — tsc --noEmit"       yarn --cwd ./apps/mobile typecheck

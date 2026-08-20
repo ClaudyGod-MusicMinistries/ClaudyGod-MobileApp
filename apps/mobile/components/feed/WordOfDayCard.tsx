@@ -21,7 +21,7 @@ export function WordOfDayCard({ word, onPress, label = 'Word for today' }: { wor
 
   return (
     <FadeIn delay={80}>
-      <TVTouchable onPress={onPress} showFocusBorder={false}>
+      <TVTouchable onPress={onPress} showFocusBorder={false} pressScale={0.98} haptics>
         <View style={styles.wordCard}>
           <View style={styles.wordAccentBar} />
           <View style={styles.wordContent}>

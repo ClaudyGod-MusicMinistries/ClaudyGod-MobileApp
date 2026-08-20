@@ -45,7 +45,8 @@ const useStyles = makeStyles((theme) => ({
     paddingHorizontal: 18, paddingVertical: 15,
     borderRadius: theme.radius.pill, backgroundColor: theme.colors.surface,
     borderWidth: 1, borderColor: theme.colors.border,
-    ...theme.shadows.sm,
+    shadowColor: '#000000', shadowOpacity: 0.12, shadowRadius: 10, shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
   searchText:       { color: theme.colors.textMuted, fontSize: 15, flex: 1 },
 
@@ -56,7 +57,8 @@ const useStyles = makeStyles((theme) => ({
   // the inner view's overflow:hidden, which is what actually rounds the image.
   continueTileShadowWrap: {
     borderRadius: theme.radius.xxl,
-    ...theme.shadows.md,
+    shadowColor: '#000000', shadowOpacity: 0.18, shadowRadius: 10, shadowOffset: { width: 0, height: 6 },
+    elevation: 4,
   },
   continueTileImg: {
     borderRadius: theme.radius.xxl, overflow: 'hidden', backgroundColor: theme.colors.surfaceAlt,
@@ -77,7 +79,8 @@ const useStyles = makeStyles((theme) => ({
   // continueTileShadowWrap above.
   bannerShadowWrap: {
     borderRadius: 22,
-    ...theme.shadows.lg,
+    shadowColor: '#000000', shadowOpacity: 0.16, shadowRadius: 16, shadowOffset: { width: 0, height: 8 },
+    elevation: 5,
   },
   bannerCard: {
     borderRadius: 22, overflow: 'hidden', backgroundColor: theme.colors.surface,
@@ -369,7 +372,7 @@ export default function HomeScreen() {
       ) : null}
 
       <View style={styles.sectionsGap}>
-        {sectionItems.map(({ section, items }, index) => (
+        {sectionItems.map(({ section, items }) => (
           (loading || items.length > 0) ? (
             <FadeIn key={section.id} replayKey={contentReadyKey} delay={nextEntranceDelay()}>
               <View style={styles.sectionRow}>

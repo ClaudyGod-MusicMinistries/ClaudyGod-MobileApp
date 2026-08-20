@@ -17,6 +17,7 @@
     "hooks:install": "yarn lefthook install",
     "api:build": "yarn --cwd ./services/api build",
     "api:migrate": "yarn --cwd ./services/api migrate",
+    "api:test:database": "bash ./scripts/test-database-integration.sh",
     "api:setup:local": "yarn --cwd ./services/api migrate",
     "admin:build": "yarn --cwd ./admin/web build",
     "mobile:lint": "yarn --cwd ./apps/mobile lint",

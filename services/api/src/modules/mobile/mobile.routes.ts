@@ -3,29 +3,13 @@ import { z } from 'zod';
 import { asyncHandler } from '../../lib/asyncHandler';
 import { NotFoundError } from '../../lib/errors';
 import { validateSchema } from '../../lib/validation';
-import { authenticate } from '../../middleware/authenticate';
 import { listContentQuerySchema } from '../content/content.schema';
 import { listPublicContent } from '../content/content.service';
 import { createDonationIntentSchema } from '../me/me.schema';
-import { createPublicDonationIntent, saveMeLibraryItem } from '../me/me.service';
+import { createPublicDonationIntent } from '../me/me.service';
 import { youtubeListQuerySchema } from '../youtube/youtube.schema';
 import { fetchYouTubeVideos } from '../youtube/youtube.service';
 import { buildMobileFeed, getMobileSectionDetail } from './mobile.service';
-
-const guestFavoriteItemSchema = z.object({
-  id:       z.string().min(1),
-  title:    z.string().min(1),
-  subtitle: z.string().optional(),
-  type:     z.enum(['audio', 'video', 'live', 'playlist']),
-  imageUrl: z.string().optional(),
-  mediaUrl: z.string().optional(),
-  duration: z.string().optional(),
-});
-
-const guestSyncSchema = z.object({
-  favorites:  z.array(guestFavoriteItemSchema).max(200).default([]),
-  historyIds: z.array(z.string()).max(100).default([]),
-});
 
 export const mobileRouter = Router();
 
@@ -89,39 +73,5 @@ mobileRouter.post(
     const payload = validateSchema(createDonationIntentSchema, req.body);
     const result = await createPublicDonationIntent(payload);
     res.status(201).json(result);
-  }),
-);
-
-// Syncs guest-session favourites to a newly signed-in account.
-mobileRouter.post(
-  '/guest-sync',
-  authenticate,
-  asyncHandler(async (req, res) => {
-    if (!req.user) {
-      res.status(401).json({ message: 'Sign in required.' });
-      return;
-    }
-
-    const { favorites } = validateSchema(guestSyncSchema, req.body);
-
-    const results = await Promise.allSettled(
-      favorites.map((item) =>
-        saveMeLibraryItem(req.user!, {
-          bucket: 'liked',
-          contentId: item.id,
-          contentType: item.type as 'audio' | 'video' | 'live' | 'playlist',
-          title: item.title,
-          subtitle: item.subtitle,
-          imageUrl: item.imageUrl,
-          mediaUrl: item.mediaUrl,
-          duration: item.duration,
-        }),
-      ),
-    );
-
-    const synced = results.filter((r) => r.status === 'fulfilled').length;
-    const failed = results.length - synced;
-
-    res.status(200).json({ synced, failed, total: favorites.length });
   }),
 );

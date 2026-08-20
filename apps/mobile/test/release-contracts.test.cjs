@@ -35,3 +35,16 @@ test('shared entrance motion honors reduced-motion preferences', () => {
   assert.match(source, /useReducedMotion/);
   assert.match(source, /if \(reduceMotion\)/);
 });
+
+test('library is account-aware and does not silently ignore server synchronization', () => {
+  const layout = fs.readFileSync(path.join(root, 'app/_layout.tsx'), 'utf8');
+  const libraryContext = fs.readFileSync(path.join(root, 'context/LocalContentContext.tsx'), 'utf8');
+  const downloadsContext = fs.readFileSync(path.join(root, 'context/DownloadsContext.tsx'), 'utf8');
+  assert.match(layout, /<UserAccountProvider>[\s\S]*<LocalContentProvider>/);
+  assert.match(libraryContext, /fetchMeLibrary\(\)/);
+  assert.match(libraryContext, /saveMeLibraryItem/);
+  assert.match(libraryContext, /removeMeLibraryItem/);
+  assert.match(libraryContext, /clientEventId/);
+  assert.match(downloadsContext, /bucket: 'downloaded'/);
+  assert.match(downloadsContext, /syncError/);
+});

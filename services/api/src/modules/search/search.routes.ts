@@ -39,7 +39,7 @@ searchRouter.post(
   authenticate,
   asyncHandler(async (req, res) => {
     const payload = validateSchema(searchClickSchema, req.body);
-    await recordSearchClick(payload.searchEventId, payload.contentId);
+    await recordSearchClick(payload.searchEventId, payload.contentId, req.user!.sub);
     res.status(204).send();
   }),
 );

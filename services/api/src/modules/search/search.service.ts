@@ -1,8 +1,8 @@
 import { pool } from '../../db/pool';
-import { CacheService, CacheTTL } from '../../lib/cache';
 import type { CursorPage } from '../../lib/pagination';
 import { isDatabaseConnectivityError, isMissingDatabaseStructureError } from '../../lib/postgres';
 import type { SearchQuery } from './search.schema';
+import { decodeSearchCursor, encodeSearchCursor, normalizeSearchText } from './search.contracts';
 
 export interface TrendingSearchTerm {
   query: string;
@@ -43,54 +43,71 @@ interface SearchEventRow {
   id: string;
 }
 
-const tsQuery = (q: string): string =>
-  q.trim().replace(/[^\w\s]/g, '').split(/\s+/).filter(Boolean).join(' & ');
-
 export async function searchContent(
   query: SearchQuery,
   userId?: string,
 ): Promise<CursorPage<SearchResultItem> & { searchEventId?: string }> {
-  const { q, type, tags, after, before, limit } = query;
-  const sanitized = tsQuery(q);
+  const { q, type, tags, cursor, limit } = query;
+  const normalized = normalizeSearchText(q);
 
-  if (!sanitized) {
+  if (!normalized) {
     return { items: [], nextCursor: null, prevCursor: null, hasMore: false };
   }
 
-  const cacheKey = `${sanitized}:${type ?? ''}:${(tags ?? []).join(',')}:${after ?? ''}:${before ?? ''}:${limit}`;
-  const cached = await CacheService.get<CursorPage<SearchResultItem>>('search', cacheKey);
+  const normalizedTags = [...(tags ?? [])].sort();
+  let page: CursorPage<SearchResultItem>;
+  {
+    const params: unknown[] = [normalized, limit + 1];
+    const conditions: string[] = ["ci.visibility = 'published'", "ci.search_vector @@ websearch_to_tsquery('english', $1)"];
+    const liveConditions: string[] = ["ls.status <> 'cancelled'", "ls.search_vector @@ websearch_to_tsquery('english', $1)"];
+    let paramIdx = 3;
 
-  const params: unknown[] = [sanitized, limit + 1];
-  const conditions: string[] = ["ci.visibility = 'published'", 'ci.search_vector @@ to_tsquery($1)'];
-  let paramIdx = 3;
+    if (type) {
+      conditions.push(`ci.content_type = $${paramIdx++}`);
+      params.push(type);
+    }
 
-  if (type) {
-    conditions.push(`ci.content_type = $${paramIdx}`);
-    params.push(type);
-    paramIdx++;
-  }
+    if (normalizedTags.length > 0) {
+      conditions.push(`ci.tags && $${paramIdx}::text[]`);
+      liveConditions.push(`ls.tags && $${paramIdx}::text[]`);
+      paramIdx++;
+      params.push(normalizedTags);
+    }
 
-  if (tags && tags.length > 0) {
-    conditions.push(`ci.tags && $${paramIdx}::text[]`);
-    params.push(tags);
-    paramIdx++;
-  }
+    const whereClause = conditions.map((condition, index) => `${index === 0 ? 'WHERE' : '  AND'} ${condition}`).join('\n');
+    const liveWhereClause = liveConditions.map((condition, index) => `${index === 0 ? 'WHERE' : '  AND'} ${condition}`).join('\n');
+    const liveUnion = !type || type === 'live'
+      ? `UNION ALL
+       SELECT
+         ls.id,
+         ls.title,
+         ls.description,
+         'live'::text AS content_type,
+         COALESCE(ls.playback_url, ls.stream_url) AS media_url,
+         ls.cover_image_url AS thumbnail_url,
+         ls.channel_id AS channel_name,
+         NULL::text AS duration_label,
+         ls.tags,
+         ls.created_at,
+         ts_headline(
+           'english', ls.title || ' ' || ls.description,
+           websearch_to_tsquery('english', $1),
+           'MaxWords=10, MinWords=5, ShortWord=3, HighlightAll=false'
+         ) AS highlight,
+         ts_rank_cd(ls.search_vector, websearch_to_tsquery('english', $1)) AS rank
+       FROM live_sessions ls
+       ${liveWhereClause}`
+      : '';
+    let cursorClause = '';
+    if (cursor) {
+      const decoded = decodeSearchCursor(cursor);
+      cursorClause = `WHERE (rank, created_at, id) < ($${paramIdx}::real, $${paramIdx + 1}::timestamptz, $${paramIdx + 2}::uuid)`;
+      params.push(decoded.rank, decoded.createdAt, decoded.id);
+    }
 
-  if (after) {
-    conditions.push(`ci.created_at > $${paramIdx}`);
-    params.push(after);
-    paramIdx++;
-  }
-
-  if (before) {
-    conditions.push(`ci.created_at < $${paramIdx}`);
-    params.push(before);
-  }
-
-  const whereClause = conditions.map((c, i) => (i === 0 ? `WHERE ${c}` : `  AND ${c}`)).join('\n');
-
-  const result = await pool.query<SearchRow>(
-    `SELECT
+    const result = await pool.query<SearchRow>(
+      `WITH ranked AS (
+       SELECT
        ci.id,
        ci.title,
        ci.description,
@@ -104,69 +121,69 @@ export async function searchContent(
        ts_headline(
          'english',
          ci.title || ' ' || ci.description,
-         to_tsquery($1),
+         websearch_to_tsquery('english', $1),
          'MaxWords=10, MinWords=5, ShortWord=3, HighlightAll=false'
        ) AS highlight,
-       ts_rank_cd(ci.search_vector, to_tsquery($1)) AS rank
+       ts_rank_cd(ci.search_vector, websearch_to_tsquery('english', $1)) AS rank
      FROM content_items ci
      ${whereClause}
-     ORDER BY rank DESC, ci.created_at DESC
+     ${liveUnion}
+     )
+     SELECT * FROM ranked
+     ${cursorClause}
+     ORDER BY rank DESC, created_at DESC, id DESC
      LIMIT $2`,
-    params,
-  );
+      params,
+    );
 
-  const rows = result.rows;
-  const hasMore = rows.length > limit;
-  const items = rows.slice(0, limit).map((row) => ({
-    id: row.id,
-    title: row.title,
-    description: row.description,
-    contentType: row.content_type,
-    mediaUrl: row.media_url,
-    thumbnailUrl: row.thumbnail_url,
-    channelName: row.channel_name,
-    durationLabel: row.duration_label,
-    tags: row.tags,
-    highlight: row.highlight,
-    rank: parseFloat(row.rank),
-    createdAt: new Date(row.created_at).toISOString(),
-  }));
-
-  const page: CursorPage<SearchResultItem> = {
-    items,
-    nextCursor: null,
-    prevCursor: null,
-    hasMore,
-  };
-
-  if (!cached) {
-    await CacheService.set('search', cacheKey, page, CacheTTL.SEARCH_RESULTS);
+    const hasMore = result.rows.length > limit;
+    const pageRows = result.rows.slice(0, limit);
+    const items = pageRows.map((row) => ({
+      id: row.id,
+      title: row.title,
+      description: row.description,
+      contentType: row.content_type,
+      mediaUrl: row.media_url,
+      thumbnailUrl: row.thumbnail_url,
+      channelName: row.channel_name,
+      durationLabel: row.duration_label,
+      tags: row.tags,
+      highlight: row.highlight,
+      rank: Number(row.rank),
+      createdAt: new Date(row.created_at).toISOString(),
+    }));
+    const last = items.at(-1);
+    page = {
+      items,
+      nextCursor: hasMore && last
+        ? encodeSearchCursor({ rank: last.rank, createdAt: last.createdAt, id: last.id })
+        : null,
+      prevCursor: null,
+      hasMore,
+    };
   }
 
-  let searchEventId: string | undefined;
-
-  if (userId) {
-    const eventResult = await pool.query<SearchEventRow>(
+  const eventResult = await pool.query<SearchEventRow>(
       `INSERT INTO user_search_events (user_id, query, results_count, searched_at)
        VALUES ($1, $2, $3, NOW())
        RETURNING id`,
-      [userId, q, items.length],
-    );
-    searchEventId = eventResult.rows[0]?.id;
-  }
+      [userId ?? null, normalized, page.items.length],
+  );
 
-  return { ...page, searchEventId };
+  return { ...page, searchEventId: eventResult.rows[0]?.id };
 }
 
 export async function recordSearchClick(
   searchEventId: string,
   contentId: string,
+  userId: string,
 ): Promise<void> {
   await pool.query(
     `UPDATE user_search_events
      SET clicked_id = $2
-     WHERE id = $1`,
-    [searchEventId, contentId],
+     WHERE id = $1
+       AND user_id = $3`,
+    [searchEventId, contentId, userId],
   );
 }
 
@@ -174,16 +191,26 @@ export async function recordSearchClick(
 // every search already writes to, over a recent window, excluding queries that
 // returned nothing (not worth surfacing as a "trending" suggestion).
 const TRENDING_WINDOW_DAYS = 7;
+const SEARCH_EVENT_RETENTION_DAYS = 90;
+
+export async function pruneExpiredSearchEvents(): Promise<number> {
+  const result = await pool.query(
+    `DELETE FROM user_search_events
+     WHERE searched_at < NOW() - ($1::text || ' days')::interval`,
+    [SEARCH_EVENT_RETENTION_DAYS],
+  );
+  return result.rowCount ?? 0;
+}
 
 export async function getTrendingSearches(limit: number): Promise<{ items: TrendingSearchTerm[] }> {
   let result;
   try {
     result = await pool.query<{ query: string; count: string }>(
-      `SELECT query, COUNT(*)::text AS count
+      `SELECT LOWER(query) AS query, COUNT(*)::text AS count
        FROM user_search_events
        WHERE searched_at >= NOW() - ($2::text || ' days')::interval
          AND results_count > 0
-       GROUP BY query
+       GROUP BY LOWER(query)
        ORDER BY COUNT(*) DESC, MAX(searched_at) DESC
        LIMIT $1`,
       [limit, TRENDING_WINDOW_DAYS],
