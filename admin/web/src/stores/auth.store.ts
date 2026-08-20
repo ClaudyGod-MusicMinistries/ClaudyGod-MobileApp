@@ -3,12 +3,8 @@ import { ref, computed } from 'vue';
 import { useIdle } from '@vueuse/core';
 import { login as apiLogin, loginWithMfa, logout as apiLogout } from '@/api/auth';
 import {
-  setAccessToken,
-  clearAccessToken,
-  getRefreshToken,
-  setRefreshToken,
-  clearRefreshToken,
-  refreshSession,
+  clearSession,
+  restoreSession as restoreApiSession,
 } from '@/api/client';
 import { onSessionExpired } from '@/api/session';
 import { getErrorMessage } from '@/api/apiError';
@@ -82,8 +78,6 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   function _applySession(res: LoginSuccessResponse): void {
-    setAccessToken(res.accessToken);
-    setRefreshToken(res.refreshToken);
     user.value = res.user;
     startIdleWatcher();
   }
@@ -91,30 +85,28 @@ export const useAuthStore = defineStore('auth', () => {
   // ─── Restore session on page load ───────────────────────────────────────────
 
   async function restoreSession(): Promise<void> {
-    const rt = getRefreshToken();
-    if (!rt) return;
     try {
-      // Restore explicitly instead of intentionally generating a 401 first.
-      // The refresh response rotates both tokens and contains the canonical user.
-      const session = await refreshSession();
-      user.value = session.user;
-      startIdleWatcher();
+      const session = await restoreApiSession();
+      user.value = session.authenticated ? session.user : null;
+      if (user.value) startIdleWatcher();
     } catch {
-      clearAccessToken();
-      clearRefreshToken();
+      clearSession();
     }
   }
 
   // ─── Logout ─────────────────────────────────────────────────────────────────
 
-  function logout(): void {
-    const rt = getRefreshToken();
-    if (rt) { void apiLogout(rt).catch(() => { /* best-effort */ }); }
-    clearAccessToken();
-    clearRefreshToken();
+  async function logout(): Promise<void> {
+    clearSession();
     user.value = null;
     stopIdleWatcher();
-    void router.push('/login');
+    try {
+      // Wait for the API to revoke the refresh session and expire both HttpOnly
+      // cookies before navigating, preventing a refresh from restoring logout.
+      await apiLogout();
+    } finally {
+      await router.push('/login');
+    }
   }
 
   // Transport reports expiration through this boundary; it never imports Pinia

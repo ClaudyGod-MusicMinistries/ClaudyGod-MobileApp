@@ -158,9 +158,9 @@ const NAV_GROUPS = [
     label: 'Workspace',
     items: [
       { to: '/dashboard', label: 'Overview', icon: ic.dashboard, minRole: Role.ADMIN },
-      { to: '/content', label: 'Content', icon: ic.content, minRole: Role.MODERATOR },
-      { to: '/content/trash', label: 'Trash', icon: ic.trash, minRole: Role.MODERATOR },
-      { to: '/requests', label: 'Requests', icon: ic.requests, minRole: Role.MODERATOR },
+      { to: '/content', label: 'Content', icon: ic.content, minRole: Role.ADMIN },
+      { to: '/content/trash', label: 'Trash', icon: ic.trash, minRole: Role.ADMIN },
+      { to: '/requests', label: 'Requests', icon: ic.requests, minRole: Role.ADMIN },
       { to: '/live', label: 'Live', icon: ic.live, minRole: Role.MODERATOR },
     ],
   },

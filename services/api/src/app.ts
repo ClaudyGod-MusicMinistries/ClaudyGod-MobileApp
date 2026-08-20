@@ -10,6 +10,7 @@ import { errorHandler } from './middleware/errorHandler';
 import { notFoundHandler } from './middleware/notFoundHandler';
 import { requestTrackingMiddleware } from './middleware/requestTracking';
 import { apiLimiter } from './middleware/rateLimiter';
+import { adminAuditMiddleware } from './middleware/adminAudit';
 import { adminAnalyticsRouter, analyticsRouter } from './modules/analytics/analytics.routes';
 import { adminRouter } from './modules/admin/admin.routes';
 import { adminStorageRouter } from './modules/admin/storage.routes';
@@ -173,6 +174,7 @@ export const createApp = () => {
 
   // Rate limiting
   app.use(apiLimiter);
+  app.use(adminAuditMiddleware);
 
   // Health check (no auth needed)
   app.use('/', healthRouter);

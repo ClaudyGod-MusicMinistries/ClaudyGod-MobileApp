@@ -393,7 +393,11 @@ async function submitCode() {
   isSubmitting.value = true; submitError.value = '';
   try {
     const session = await registerWithCode({ email: codeForm.value.email, password: codeForm.value.password, username: codeForm.value.username, role: codeForm.value.role, adminSignupCode: codeForm.value.adminSignupCode });
-    if (!session.accessToken) { verifyEmail.value = codeForm.value.email; phase.value = 'verify-email'; return; }
+    if (!('user' in session)) {
+      verifyEmail.value = session.pendingEmail ?? codeForm.value.email;
+      phase.value = 'verify-email';
+      return;
+    }
     authStore.applyExternalSession(session);
     phase.value = 'success';
     setTimeout(() => void router.replace('/choose-workspace'), 1400);

@@ -2,6 +2,7 @@ import type { IncomingMessage, Server } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import { verifyAccessToken } from '../utils/jwt';
 import { createLogger } from '../lib/logger';
+import { getAuthSessionCookieName } from '../modules/auth/authSessionCookie';
 
 const log = createLogger('websocket');
 
@@ -45,6 +46,19 @@ export class WsServer {
 
     const auth = request.headers.authorization;
     if (auth?.startsWith('Bearer ')) return auth.slice(7);
+
+    const cookieName = getAuthSessionCookieName();
+    const cookieHeader = request.headers.cookie ?? '';
+    for (const part of cookieHeader.split(';')) {
+      const [name, ...valueParts] = part.trim().split('=');
+      if (name === cookieName && valueParts.length > 0) {
+        try {
+          return decodeURIComponent(valueParts.join('='));
+        } catch {
+          return null;
+        }
+      }
+    }
 
     return null;
   }
@@ -96,6 +110,12 @@ export class WsServer {
   }
 
   private subscribe(socket: AuthenticatedClient, channel: string): void {
+    // User notification channels contain private account data and must never be
+    // observable by anonymous clients or by a different signed-in account.
+    if (channel.startsWith('notifications:') && channel !== `notifications:${socket.userId ?? ''}`) {
+      socket.close(1008, 'Channel access denied');
+      return;
+    }
     socket.subscriptions.add(channel);
     if (!this.clients.has(channel)) {
       this.clients.set(channel, new Set());

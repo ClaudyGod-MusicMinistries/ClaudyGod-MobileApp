@@ -41,9 +41,11 @@ export async function uploadToWebsiteStorage(
   presignedUrl: string,
   file: File,
   onProgress?: (pct: number) => void,
+  signal?: AbortSignal,
 ): Promise<void> {
   await axios.put(presignedUrl, file, {
     headers: { 'Content-Type': file.type },
+    signal,
     onUploadProgress: (evt) => {
       if (onProgress && evt.total) {
         onProgress(Math.round((evt.loaded / evt.total) * 100));
@@ -67,6 +69,7 @@ export function mimeToWebsiteAssetKind(mimeType: string): WebsiteAssetKind {
 export async function uploadWebsiteFile(
   file: File,
   onProgress?: (pct: number) => void,
+  signal?: AbortSignal,
 ): Promise<{ publicUrl: string; sessionId: string; key: string }> {
   const kind = mimeToWebsiteAssetKind(file.type);
   const session = await requestWebsiteUpload({
@@ -75,7 +78,8 @@ export async function uploadWebsiteFile(
     fileSizeBytes: file.size,
     kind,
   });
-  await uploadToWebsiteStorage(session.presignedUrl, file, onProgress);
+  await uploadToWebsiteStorage(session.presignedUrl, file, onProgress, signal);
+  if (signal?.aborted) throw new DOMException('Upload cancelled', 'AbortError');
   const confirmed = await confirmWebsiteUpload(session.sessionId);
   return {
     publicUrl: confirmed.publicUrl,

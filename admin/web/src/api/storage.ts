@@ -42,9 +42,11 @@ export async function uploadToStorage(
   presignedUrl: string,
   file: File,
   onProgress?: (pct: number) => void,
+  signal?: AbortSignal,
 ): Promise<void> {
   await axios.put(presignedUrl, file, {
     headers: { 'Content-Type': file.type },
+    signal,
     onUploadProgress: (evt) => {
       if (onProgress && evt.total) {
         onProgress(Math.round((evt.loaded / evt.total) * 100));
@@ -77,6 +79,7 @@ export function mimeToAssetKind(mimeType: string): AssetKind {
 export async function uploadMediaFile(
   file: File,
   onProgress?: (pct: number) => void,
+  signal?: AbortSignal,
 ): Promise<{ publicUrl: string; sessionId: string; key: string }> {
   const assetKind = mimeToAssetKind(file.type);
   const session = await requestUpload({
@@ -85,11 +88,18 @@ export async function uploadMediaFile(
     fileSizeBytes: file.size,
     assetKind,
   });
-  await uploadToStorage(session.upload.presignedUrl, file, onProgress);
-  const confirmed = await confirmUpload(session.session.id);
-  return {
-    publicUrl: confirmed.asset.publicUrl,
-    sessionId: session.session.id,
-    key: confirmed.asset.key,
-  };
+  try {
+    await uploadToStorage(session.upload.presignedUrl, file, onProgress, signal);
+    if (signal?.aborted) throw new DOMException('Upload cancelled', 'AbortError');
+    const confirmed = await confirmUpload(session.session.id);
+    return {
+      publicUrl: confirmed.asset.publicUrl,
+      sessionId: session.session.id,
+      key: confirmed.asset.key,
+    };
+  } catch (error) {
+    // Reconcile the server session and object on any failed/cancelled upload.
+    await deleteUploadSession(session.session.id).catch(() => undefined);
+    throw error;
+  }
 }

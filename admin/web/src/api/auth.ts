@@ -28,8 +28,8 @@ export async function loginWithMfa(mfaToken: string, code: string): Promise<Logi
   return data;
 }
 
-export async function logout(refreshToken: string): Promise<void> {
-  await client.post('/v1/auth/logout', { refreshToken });
+export async function logout(): Promise<void> {
+  await client.post('/v1/auth/logout', {});
 }
 
 export async function getMe(): Promise<AdminUser> {
@@ -92,8 +92,8 @@ export async function registerWithCode(input: {
   username: string;
   role: 'ADMIN' | 'MODERATOR' | 'CREATOR';
   adminSignupCode: string;
-}): Promise<LoginSuccessResponse> {
-  const { data } = await client.post<LoginSuccessResponse>('/v1/auth/register', input);
+}): Promise<LoginSuccessResponse | { requiresEmailVerification: true; pendingEmail?: string; message: string }> {
+  const { data } = await client.post<LoginSuccessResponse | { requiresEmailVerification: true; pendingEmail?: string; message: string }>('/v1/auth/register', input);
   return data;
 }
 

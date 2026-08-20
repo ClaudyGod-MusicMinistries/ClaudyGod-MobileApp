@@ -26,12 +26,12 @@ export interface AdminUser {
   createdAt: string;
 }
 
-export interface LoginSuccessResponse {
-  accessToken: string;
-  refreshToken: string;
+export interface AdminSessionResponse {
   user: AdminUser;
   mfaRequired?: false;
 }
+
+export type LoginSuccessResponse = AdminSessionResponse;
 
 export interface LoginMfaRequiredResponse {
   mfaRequired: true;
@@ -41,10 +41,9 @@ export interface LoginMfaRequiredResponse {
 
 export type LoginResponse = LoginSuccessResponse | LoginMfaRequiredResponse;
 
-export interface RefreshResponse {
-  accessToken: string;
-  refreshToken: string;
-  user: AdminUser;
+export interface SessionStatusResponse {
+  authenticated: boolean;
+  user: AdminUser | null;
 }
 
 // ─── Content ──────────────────────────────────────────────────────────────────

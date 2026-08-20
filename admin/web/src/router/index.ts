@@ -90,31 +90,31 @@ const router = createRouter({
           path: 'content',
           name: 'content',
           component: () => import('@/views/content/ContentListView.vue'),
-          meta: { minRole: Role.MODERATOR, title: 'Content' },
+          meta: { minRole: Role.ADMIN, title: 'Content' },
         },
         {
           path: 'content/new',
           name: 'content-new',
           component: () => import('@/views/content/ContentEditView.vue'),
-          meta: { minRole: Role.CREATOR, title: 'New content' },
+          meta: { minRole: Role.ADMIN, title: 'New content' },
         },
         {
           path: 'content/:id',
           name: 'content-edit',
           component: () => import('@/views/content/ContentEditView.vue'),
-          meta: { minRole: Role.CREATOR, title: 'Edit content' },
+          meta: { minRole: Role.ADMIN, title: 'Edit content' },
         },
         {
           path: 'content/trash',
           name: 'content-trash',
           component: () => import('@/views/content/ContentTrashView.vue'),
-          meta: { minRole: Role.MODERATOR, title: 'Trash' },
+          meta: { minRole: Role.ADMIN, title: 'Trash' },
         },
         {
           path: 'requests',
           name: 'requests',
           component: () => import('@/views/content/ContentRequestsView.vue'),
-          meta: { minRole: Role.MODERATOR, title: 'Content requests' },
+          meta: { minRole: Role.ADMIN, title: 'Content requests' },
         },
         // Live
         {
