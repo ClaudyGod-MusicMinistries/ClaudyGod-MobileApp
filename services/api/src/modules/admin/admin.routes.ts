@@ -4,6 +4,8 @@ import { ForbiddenError, UnauthorizedError } from '../../lib/errors';
 import { validateSchema } from '../../lib/validation';
 import { authenticate } from '../../middleware/authenticate';
 import { requirePrivilegedMfa } from '../../middleware/requirePrivilegedMfa';
+import { assertCapability } from '../../middleware/rbac';
+import type { Capability } from '../../security/capabilities';
 import {
   adminContentIdParamsSchema,
   adminUnassignedContentQuerySchema,
@@ -129,7 +131,7 @@ adminRouter.post(
 adminRouter.get(
   '/operations/audit',
   asyncHandler(async (req, res) => {
-    requireSuperAdmin(req);
+    requireSuperAdmin(req, 'operations.manage');
     const query = validateSchema(securityAuditQuerySchema, req.query);
     res.status(200).json(await listSecurityAuditEvents(query.limit));
   }),
@@ -279,18 +281,16 @@ adminRouter.delete(
 
 // ── Admin Access Requests ────────────────────────────────────────────────────
 
-function requireSuperAdmin(req: Request) {
+function requireSuperAdmin(req: Request, capability: Capability = 'admin_access.manage') {
   const user = requireAuthenticated(req);
-  if (user.role !== 'SUPER_ADMIN') {
-    throw new ForbiddenError('Super Admin access required', 'SUPER_ADMIN_REQUIRED');
-  }
+  assertCapability(user.role, capability);
   return user;
 }
 
 adminRouter.get(
   '/operations/jobs',
   asyncHandler(async (req, res) => {
-    requireSuperAdmin(req);
+    requireSuperAdmin(req, 'operations.manage');
     const query = validateSchema(operationalJobsQuerySchema, req.query);
     res.status(200).json(await listOperationalJobs(query));
   }),
@@ -299,7 +299,7 @@ adminRouter.get(
 adminRouter.post(
   '/operations/jobs/:kind/:id/retry',
   asyncHandler(async (req, res) => {
-    requireSuperAdmin(req);
+    requireSuperAdmin(req, 'operations.manage');
     const params = validateSchema(operationalJobParamsSchema, req.params);
     const result = await retryOperationalJob(params.kind, params.id);
     res.status(202).json({

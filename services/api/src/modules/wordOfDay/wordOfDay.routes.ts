@@ -3,7 +3,7 @@ import { asyncHandler } from '../../lib/asyncHandler';
 import { ForbiddenError } from '../../lib/errors';
 import { validateSchema } from '../../lib/validation';
 import { authenticate } from '../../middleware/authenticate';
-import { hasMinRole } from '../../middleware/rbac';
+import { assertCapability } from '../../middleware/rbac';
 import {
   createWordOfDayEntry,
   deleteWordOfDayEntry,
@@ -29,9 +29,10 @@ adminWordOfDayRouter.get(
   '/',
   authenticate,
   asyncHandler(async (req, res) => {
-    if (!req.user || !hasMinRole(req.user.role, 'MODERATOR')) {
+    if (!req.user) {
       throw new ForbiddenError('Moderator role or higher required', 'MODERATOR_REQUIRED');
     }
+    assertCapability(req.user.role, 'word_of_day.manage');
 
     const query = validateSchema(wordOfDayListQuerySchema, req.query);
     const result = await getAdminWordOfDayDashboard({ limit: query.limit });
@@ -43,9 +44,10 @@ adminWordOfDayRouter.put(
   '/current',
   authenticate,
   asyncHandler(async (req, res) => {
-    if (!req.user || !hasMinRole(req.user.role, 'MODERATOR')) {
+    if (!req.user) {
       throw new ForbiddenError('Moderator role or higher required', 'MODERATOR_REQUIRED');
     }
+    assertCapability(req.user.role, 'word_of_day.manage');
 
     const payload = validateSchema(upsertWordOfDaySchema, req.body);
     const result = await upsertWordOfDayEntry({
@@ -60,9 +62,10 @@ adminWordOfDayRouter.post(
   '/',
   authenticate,
   asyncHandler(async (req, res) => {
-    if (!req.user || !hasMinRole(req.user.role, 'MODERATOR')) {
+    if (!req.user) {
       throw new ForbiddenError('Moderator role or higher required', 'MODERATOR_REQUIRED');
     }
+    assertCapability(req.user.role, 'word_of_day.manage');
 
     const payload = validateSchema(upsertWordOfDaySchema, req.body);
     const result = await createWordOfDayEntry({ actor: req.user, input: payload });
@@ -74,9 +77,10 @@ adminWordOfDayRouter.put(
   '/:id',
   authenticate,
   asyncHandler(async (req, res) => {
-    if (!req.user || !hasMinRole(req.user.role, 'MODERATOR')) {
+    if (!req.user) {
       throw new ForbiddenError('Moderator role or higher required', 'MODERATOR_REQUIRED');
     }
+    assertCapability(req.user.role, 'word_of_day.manage');
 
     const params = validateSchema(wordOfDayIdParamsSchema, req.params);
     const payload = validateSchema(upsertWordOfDaySchema, req.body);
@@ -89,9 +93,10 @@ adminWordOfDayRouter.delete(
   '/:id',
   authenticate,
   asyncHandler(async (req, res) => {
-    if (!req.user || !hasMinRole(req.user.role, 'MODERATOR')) {
+    if (!req.user) {
       throw new ForbiddenError('Moderator role or higher required', 'MODERATOR_REQUIRED');
     }
+    assertCapability(req.user.role, 'word_of_day.manage');
 
     const params = validateSchema(wordOfDayIdParamsSchema, req.params);
     await deleteWordOfDayEntry(params.id);

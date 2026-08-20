@@ -24,12 +24,14 @@ if (sentryDsn) {
 }
 
 app.use(pinia);
-app.use(router);
 
 // Apply the persisted/system theme before the first paint so there's no flash of
-// the wrong theme, then attempt to restore session from the saved refresh token.
+// the wrong theme. Restore the HttpOnly session before installing Router: router
+// installation starts the first navigation immediately, and protected-route
+// guards must never race an authenticated session refresh.
 usePreferencesStore().init();
 
 useAuthStore().restoreSession().finally(() => {
+  app.use(router);
   app.mount('#root');
 });

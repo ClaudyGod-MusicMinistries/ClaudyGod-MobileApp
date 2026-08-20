@@ -11,6 +11,7 @@ import { getErrorMessage } from '@/api/apiError';
 import { router } from '@/router';
 import { Role, INACTIVITY_TIMEOUT_MS, roleRank } from '@/utils/constants';
 import type { AdminUser, LoginResponse, LoginSuccessResponse } from '@/api/types';
+import { hasCapability as roleHasCapability, type Capability } from '@/security/capabilities';
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<AdminUser | null>(null);
@@ -22,6 +23,10 @@ export const useAuthStore = defineStore('auth', () => {
 
   function hasMinRole(minRole: Role): boolean {
     return role.value >= minRole;
+  }
+
+  function hasCapability(capability: Capability): boolean {
+    return roleHasCapability(user.value?.role, capability);
   }
 
   // ─── Inactivity timer ───────────────────────────────────────────────────────
@@ -128,6 +133,7 @@ export const useAuthStore = defineStore('auth', () => {
     isAuthenticated,
     role,
     hasMinRole,
+    hasCapability,
     login,
     completeMfa,
     restoreSession,

@@ -1,7 +1,7 @@
 import { Router, type Request } from 'express';
 import { asyncHandler } from '../../lib/asyncHandler';
-import { ForbiddenError, UnauthorizedError } from '../../lib/errors';
-import { hasMinRole } from '../../middleware/rbac';
+import { UnauthorizedError } from '../../lib/errors';
+import { assertCapability } from '../../middleware/rbac';
 import { authenticate } from '../../middleware/authenticate';
 import { requirePrivilegedMfa } from '../../middleware/requirePrivilegedMfa';
 import { validateSchema } from '../../lib/validation';
@@ -30,9 +30,7 @@ function requireAdminActor(req: Request) {
   if (!req.user) {
     throw new UnauthorizedError('Unauthorized', 'AUTH_REQUIRED');
   }
-  if (!hasMinRole(req.user.role, 'ADMIN')) {
-    throw new ForbiddenError('Admin access required', 'ADMIN_REQUIRED');
-  }
+  assertCapability(req.user.role, 'storage.manage');
   return req.user;
 }
 
@@ -98,7 +96,7 @@ adminStorageRouter.get(
     const query = validateSchema(storageSessionQuerySchema, req.query);
     const result = await listAdminStorageSessions({
       requestedByUserId: actor.sub,
-      isAdmin: hasMinRole(actor.role, 'ADMIN'),
+      isAdmin: true,
       limit: query.limit,
       offset: query.offset,
       status: query.status,

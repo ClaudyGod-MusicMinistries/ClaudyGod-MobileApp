@@ -2,6 +2,23 @@ import type { Request, Response, NextFunction } from 'express';
 import { ForbiddenError, UnauthorizedError } from '../lib/errors';
 import { hasMinRole, ROLE_HIERARCHY } from '../modules/auth/auth.types';
 import type { UserRole } from '../modules/auth/auth.types';
+import { hasCapability, type Capability } from '../security/capabilities';
+
+export function requireCapability(capability: Capability) {
+  return (req: Request, _res: Response, next: NextFunction): void => {
+    if (!req.user) throw new UnauthorizedError('Authentication required', 'AUTH_REQUIRED');
+    if (!hasCapability(req.user.role, capability)) {
+      throw new ForbiddenError(`Missing required capability: ${capability}`, 'INSUFFICIENT_CAPABILITY');
+    }
+    next();
+  };
+}
+
+export function assertCapability(role: UserRole, capability: Capability): void {
+  if (!hasCapability(role, capability)) {
+    throw new ForbiddenError(`Missing required capability: ${capability}`, 'INSUFFICIENT_CAPABILITY');
+  }
+}
 
 export function requireRole(minRole: UserRole) {
   return (req: Request, _res: Response, next: NextFunction): void => {

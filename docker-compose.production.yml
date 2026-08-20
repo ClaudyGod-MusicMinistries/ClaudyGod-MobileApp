@@ -311,6 +311,7 @@ services:
         exec /bin/prometheus --config.file=/etc/prometheus/prometheus.yml --storage.tsdb.path=/prometheus --storage.tsdb.retention.time=30d
     volumes:
       - ./ops/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml.template:ro
+      - ./ops/prometheus/rules:/etc/prometheus/rules:ro
       - prometheus_data:/prometheus
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:9090/-/healthy >/dev/null || exit 1"]

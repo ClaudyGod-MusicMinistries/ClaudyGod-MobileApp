@@ -13,11 +13,13 @@ import ResetPasswordView from '@/views/auth/ResetPasswordView.vue';
 import RegisterView from '@/views/auth/RegisterView.vue';
 import RequestAccessView from '@/views/auth/RequestAccessView.vue';
 import ChooseWorkspaceView from '@/views/auth/ChooseWorkspaceView.vue';
+import type { Capability } from '@/security/capabilities';
 
 declare module 'vue-router' {
   interface RouteMeta {
     public?: boolean;
     minRole?: Role;
+    capability?: Capability;
     title?: string;
   }
 }
@@ -83,111 +85,111 @@ const router = createRouter({
           path: 'security',
           name: 'security-setup',
           component: () => import('@/views/security/SecurityView.vue'),
-          meta: { minRole: Role.CREATOR, title: 'Account security' },
+          meta: { minRole: Role.CREATOR, capability: 'security.self_manage', title: 'Account security' },
         },
         {
           path: 'dashboard',
           name: 'dashboard',
           component: () => import('@/views/dashboard/OverviewView.vue'),
-          meta: { minRole: Role.ADMIN, title: 'Overview' },
+          meta: { minRole: Role.ADMIN, capability: 'content.read', title: 'Overview' },
         },
         // Content
         {
           path: 'content',
           name: 'content',
           component: () => import('@/views/content/ContentListView.vue'),
-          meta: { minRole: Role.ADMIN, title: 'Content' },
+          meta: { minRole: Role.ADMIN, capability: 'content.read', title: 'Content' },
         },
         {
           path: 'content/new',
           name: 'content-new',
           component: () => import('@/views/content/ContentEditView.vue'),
-          meta: { minRole: Role.ADMIN, title: 'New content' },
+          meta: { minRole: Role.ADMIN, capability: 'content.manage', title: 'New content' },
         },
         {
           path: 'content/:id',
           name: 'content-edit',
           component: () => import('@/views/content/ContentEditView.vue'),
-          meta: { minRole: Role.ADMIN, title: 'Edit content' },
+          meta: { minRole: Role.ADMIN, capability: 'content.manage', title: 'Edit content' },
         },
         {
           path: 'content/trash',
           name: 'content-trash',
           component: () => import('@/views/content/ContentTrashView.vue'),
-          meta: { minRole: Role.ADMIN, title: 'Trash' },
+          meta: { minRole: Role.ADMIN, capability: 'content.manage', title: 'Trash' },
         },
         {
           path: 'requests',
           name: 'requests',
           component: () => import('@/views/content/ContentRequestsView.vue'),
-          meta: { minRole: Role.ADMIN, title: 'Content requests' },
+          meta: { minRole: Role.ADMIN, capability: 'content.manage', title: 'Content requests' },
         },
         // Live
         {
           path: 'live',
           name: 'live',
           component: () => import('@/views/live/LiveView.vue'),
-          meta: { minRole: Role.MODERATOR, title: 'Live sessions' },
+          meta: { minRole: Role.MODERATOR, capability: 'live.manage', title: 'Live sessions' },
         },
         // Config
         {
           path: 'config',
           name: 'config',
           component: () => import('@/views/config/MobileConfigView.vue'),
-          meta: { minRole: Role.ADMIN, title: 'Mobile config' },
+          meta: { minRole: Role.ADMIN, capability: 'mobile_config.manage', title: 'Mobile config' },
         },
         {
           path: 'word-of-day',
           name: 'word-of-day',
           component: () => import('@/views/config/WordOfDayView.vue'),
-          meta: { minRole: Role.MODERATOR, title: 'Word of the day' },
+          meta: { minRole: Role.MODERATOR, capability: 'word_of_day.manage', title: 'Word of the day' },
         },
         {
           path: 'preview',
           name: 'mobile-preview',
           component: () => import('@/views/preview/PreviewView.vue'),
-          meta: { minRole: Role.MODERATOR, title: 'Mobile preview' },
+          meta: { minRole: Role.MODERATOR, capability: 'mobile_preview.read', title: 'Mobile preview' },
         },
         // Ads
         {
           path: 'ads',
           name: 'ads',
           component: () => import('@/views/ads/AdsView.vue'),
-          meta: { minRole: Role.ADMIN, title: 'Ad campaigns' },
+          meta: { minRole: Role.ADMIN, capability: 'ads.manage', title: 'Ad campaigns' },
         },
         // Users
         {
           path: 'users',
           name: 'users',
           component: () => import('@/views/users/UsersView.vue'),
-          meta: { minRole: Role.ADMIN, title: 'Users' },
+          meta: { minRole: Role.ADMIN, capability: 'users.read', title: 'Users' },
         },
         {
           path: 'access-requests',
           name: 'access-requests',
           component: () => import('@/views/users/AccessRequestsView.vue'),
-          meta: { minRole: Role.SUPER_ADMIN, title: 'Access requests' },
+          meta: { minRole: Role.SUPER_ADMIN, capability: 'admin_access.manage', title: 'Access requests' },
         },
         // Analytics
         {
           path: 'analytics',
           name: 'analytics',
           component: () => import('@/views/analytics/AnalyticsView.vue'),
-          meta: { minRole: Role.MODERATOR, title: 'Analytics' },
+          meta: { minRole: Role.MODERATOR, capability: 'analytics.read', title: 'Analytics' },
         },
         // YouTube
         {
           path: 'youtube',
           name: 'youtube',
           component: () => import('@/views/youtube/YouTubeView.vue'),
-          meta: { minRole: Role.ADMIN, title: 'YouTube' },
+          meta: { minRole: Role.ADMIN, capability: 'youtube.manage', title: 'YouTube' },
         },
         // System
         {
           path: 'system',
           name: 'system',
           component: () => import('@/views/system/SystemView.vue'),
-          meta: { minRole: Role.SUPER_ADMIN, title: 'System' },
+          meta: { minRole: Role.SUPER_ADMIN, capability: 'operations.manage', title: 'System' },
         },
       ],
     },
@@ -198,6 +200,7 @@ const router = createRouter({
     {
       path: '/web',
       component: WebAdminShell,
+      meta: { capability: 'website.manage' },
       children: [
         {
           path: 'dashboard',

@@ -40,7 +40,7 @@ export function setupGuards(router: Router): void {
     // least Role.ADMIN, so bouncing a sub-ADMIN user to either would just fail
     // the same check again; the chooser itself has no minRole.
     const minRole = to.meta.minRole ?? Role.CLIENT;
-    if (auth.role < minRole) {
+    if (auth.role < minRole || (to.meta.capability && !auth.hasCapability(to.meta.capability))) {
       return { name: 'choose-workspace' };
     }
 

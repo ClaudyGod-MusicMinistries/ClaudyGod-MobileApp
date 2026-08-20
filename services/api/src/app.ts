@@ -35,7 +35,7 @@ import { adminWordOfDayRouter, mobileWordOfDayRouter } from './modules/wordOfDay
 import engagementRouter from './modules/engagement/engagement.routes';
 import { searchRouter } from './modules/search/search.routes';
 import { devicesRouter } from './modules/devices/devices.routes';
-import { getMetricsOutput, metricsContentType } from './lib/metrics';
+import { collectOperationalMetrics, getMetricsOutput, metricsContentType } from './lib/metrics';
 
 const parseCorsOrigin = (): true | string[] => {
   const origins = env.CORS_ORIGINS;
@@ -229,6 +229,7 @@ export const createApp = () => {
         return;
       }
     }
+    await collectOperationalMetrics();
     const output = await getMetricsOutput();
     res.setHeader('Content-Type', metricsContentType);
     res.status(200).send(output);
