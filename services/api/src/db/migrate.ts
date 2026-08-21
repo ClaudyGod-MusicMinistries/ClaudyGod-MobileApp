@@ -73,6 +73,17 @@ const migrationStatements = [
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`,
   `ALTER TABLE live_sessions ADD COLUMN IF NOT EXISTS search_vector TSVECTOR`,
+  `CREATE TABLE IF NOT EXISTS user_search_events (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES app_users(id) ON DELETE SET NULL,
+    query TEXT NOT NULL,
+    results_count INTEGER NOT NULL DEFAULT 0,
+    clicked_id UUID REFERENCES content_items(id) ON DELETE SET NULL,
+    searched_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_user_search_events_user_searched_at ON user_search_events (user_id, searched_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_user_search_events_searched_at_query ON user_search_events (searched_at DESC, query)`,
+  `CREATE INDEX IF NOT EXISTS idx_user_search_events_query_lower_searched_at ON user_search_events (LOWER(query), searched_at DESC)`,
   `CREATE OR REPLACE FUNCTION content_items_search_vector_update() RETURNS TRIGGER AS $$
   BEGIN
     NEW.search_vector := 
