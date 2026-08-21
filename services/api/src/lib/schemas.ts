@@ -35,7 +35,6 @@ export const signUpSchema = z
     username: displayNameSchema.optional(),
     displayName: displayNameSchema.optional(),
     role: z.enum(['CLIENT', 'CREATOR', 'MODERATOR', 'ADMIN', 'SUPER_ADMIN']).optional(),
-    adminSignupCode: z.string().trim().min(8).max(128).optional(),
     ...deviceIdentitySchema.shape,
   })
   .transform((value) => ({
@@ -43,7 +42,6 @@ export const signUpSchema = z
     password: value.password,
     username: (value.username ?? value.displayName ?? '').trim(),
     role: value.role,
-    adminSignupCode: value.adminSignupCode,
     deviceFingerprint: value.deviceFingerprint,
     deviceName: value.deviceName,
     platform: value.platform,

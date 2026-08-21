@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Linking, TextInput, View } from 'react-native';
+import { TextInput, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 
 import { SettingsScaffold } from '../../components/layout/SettingsScaffold';
@@ -12,6 +12,7 @@ import { createSupportRequest } from '../../services/userFlowService';
 import { useAppModal } from '../../context/AppModalContext';
 import { useAppTheme } from '../../util/colorScheme';
 import { makeStyles } from '../../styles/makeStyles';
+import { openExternalUrl } from '../../util/externalLinks';
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
@@ -144,7 +145,7 @@ export default function Help() {
             <AppButton
               title="Open support center"
               size="md"
-              onPress={() => void Linking.openURL(supportCenterUrl)}
+              onPress={() => void openExternalUrl(supportCenterUrl)}
               leftIcon={<MaterialIcons name="open-in-new" size={16} color={theme.colors.onPrimary} />}
             />
           </View>
@@ -159,7 +160,7 @@ export default function Help() {
               {contactOptions.map((item, index) => (
                 <TVTouchable
                   key={item.id}
-                  onPress={() => void Linking.openURL(item.actionUrl)}
+                  onPress={() => void openExternalUrl(item.actionUrl)}
                   showFocusBorder={false}
                   style={[styles.contactRowBase, styles.contactDivider, { borderTopWidth: index === 0 ? 0 : 1 }]}
                 >

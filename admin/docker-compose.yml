@@ -25,12 +25,12 @@ services:
       - API_HOST=0.0.0.0
       - DATABASE_URL=${DATABASE_URL}
       - DATABASE_SSL=${DATABASE_SSL:-true}
+      - DATABASE_SSL_REJECT_UNAUTHORIZED=${DATABASE_SSL_REJECT_UNAUTHORIZED:-true}
       - REDIS_URL=redis://redis:6379
       - JWT_ACCESS_SECRET=change-this-jwt-secret-before-production-please-123456789
       - JWT_ACCESS_TTL=1d
       - BCRYPT_ROUNDS=12
       - CORS_ORIGIN=http://localhost:5173
-      - MOBILE_API_KEY=${MOBILE_API_KEY:-change-mobile-api-key}
       - SUPABASE_URL=${SUPABASE_URL:-}
       - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:-}
       - SUPABASE_STORAGE_BUCKET=${SUPABASE_STORAGE_BUCKET:-mobile-uploads}
@@ -58,12 +58,12 @@ services:
       - API_HOST=0.0.0.0
       - DATABASE_URL=${DATABASE_URL}
       - DATABASE_SSL=${DATABASE_SSL:-true}
+      - DATABASE_SSL_REJECT_UNAUTHORIZED=${DATABASE_SSL_REJECT_UNAUTHORIZED:-true}
       - REDIS_URL=redis://redis:6379
       - JWT_ACCESS_SECRET=change-this-jwt-secret-before-production-please-123456789
       - JWT_ACCESS_TTL=1d
       - BCRYPT_ROUNDS=12
       - CORS_ORIGIN=http://localhost:5173
-      - MOBILE_API_KEY=${MOBILE_API_KEY:-change-mobile-api-key}
       - SUPABASE_URL=${SUPABASE_URL:-}
       - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:-}
       - SUPABASE_STORAGE_BUCKET=${SUPABASE_STORAGE_BUCKET:-mobile-uploads}

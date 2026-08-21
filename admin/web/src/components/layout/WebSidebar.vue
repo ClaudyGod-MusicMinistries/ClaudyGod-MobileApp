@@ -63,7 +63,7 @@
           {{ group.label }}
         </p>
         <RouterLink
-          v-for="item in group.items.filter(i => auth.hasMinRole(i.minRole))"
+          v-for="item in group.items.filter(i => auth.hasMinRole(i.minRole) && canNavigate(i.to))"
           :key="item.to"
           :to="item.to"
           :class="[
@@ -119,7 +119,7 @@
 
 <script setup lang="ts">
 import { computed, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import {
   LayoutDashboard, Disc3, ShoppingBag, Film, HelpCircle, CalendarDays, Newspaper,
   ClipboardList, Mail, HandHeart, HeartHandshake, Ticket, Users2, ArrowLeftRight,
@@ -133,7 +133,12 @@ import UserAvatar from '@/components/shared/UserAvatar.vue';
 import RolePill from '@/components/shared/RolePill.vue';
 
 const route = useRoute();
+const router = useRouter();
 const auth = useAuthStore();
+const canNavigate = (to: string): boolean => {
+  const capability = router.resolve(to).meta.capability;
+  return !capability || auth.hasCapability(capability);
+};
 const ui = useUiStore();
 const { isDesktop } = useAdminBreakpoints();
 

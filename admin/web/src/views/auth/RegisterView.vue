@@ -85,90 +85,21 @@
         </p>
       </div>
 
-      <!-- CODE REGISTRATION FORM -->
-      <div v-else-if="phase === 'code-form'" key="code-form" class="space-y-7">
-        <div>
-          <h2 class="text-ink text-2xl font-black tracking-tight mb-1">Create admin account</h2>
-          <p class="text-ink-muted text-sm">Enter your details and the access code from your administrator.</p>
+      <!-- INVITATION REQUIRED -->
+      <div v-else-if="phase === 'access-required'" key="access-required" class="space-y-6 text-center py-8">
+        <div class="auth-logo w-14 h-14 rounded-2xl flex items-center justify-center mx-auto">
+          <Shield class="w-7 h-7 text-primary-soft" />
         </div>
-
-        <form @submit.prevent="submitCode" novalidate class="space-y-6">
-
-          <!-- Account details -->
-          <div class="space-y-3">
-            <p class="text-[10px] font-bold text-ink-muted/50 uppercase tracking-widest">Your details</p>
-            <FieldGroup label="Email address" :error="codeErrors.email">
-              <FormInput v-model="codeForm.email" type="email" placeholder="you@example.com" autocomplete="email" :hasError="!!codeErrors.email">
-                <template #icon><Mail class="w-4 h-4" /></template>
-              </FormInput>
-            </FieldGroup>
-            <FieldGroup label="Display name" hint="visible in sidebar" :error="codeErrors.username">
-              <FormInput v-model="codeForm.username" type="text" placeholder="e.g. john_admin" autocomplete="username" :hasError="!!codeErrors.username">
-                <template #icon><User class="w-4 h-4" /></template>
-              </FormInput>
-            </FieldGroup>
-          </div>
-
-          <!-- Role picker -->
-          <div class="space-y-3">
-            <p class="text-[10px] font-bold text-ink-muted/50 uppercase tracking-widest">Access level</p>
-            <div class="grid grid-cols-3 gap-2">
-              <button
-                v-for="r in ROLE_OPTIONS"
-                :key="r.value"
-                type="button"
-                :class="[
-                  'flex flex-col items-center gap-1.5 p-3 rounded-xl border text-center transition-all',
-                  codeForm.role === r.value
-                    ? 'bg-primary/15 border-primary/40 text-primary-soft'
-                    : 'bg-surface-hover border-border text-ink-muted hover:border-border-strong hover:text-ink-soft',
-                ]"
-                @click="codeForm.role = r.value"
-              >
-                <component :is="r.icon" class="w-4 h-4" />
-                <span class="text-[11px] font-semibold leading-none mt-1">{{ r.label }}</span>
-                <span class="text-[9px] text-ink-muted/60 leading-none mt-0.5">{{ r.desc }}</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Password -->
-          <div class="space-y-3">
-            <p class="text-[10px] font-bold text-ink-muted/50 uppercase tracking-widest">Password</p>
-            <PasswordFields v-model:password="codeForm.password" v-model:confirm="codeForm.confirmPassword" :errors="codeErrors" />
-          </div>
-
-          <!-- Access code -->
-          <div class="space-y-3">
-            <p class="text-[10px] font-bold text-ink-muted/50 uppercase tracking-widest">Admin code</p>
-            <FieldGroup label="Admin access code" hint="provided by your administrator" :error="codeErrors.adminSignupCode">
-              <div class="relative">
-                <div class="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none">
-                  <KeyRound class="w-4 h-4" />
-                </div>
-                <input
-                  v-model="codeForm.adminSignupCode"
-                  type="password"
-                  placeholder="Enter your access code"
-                  autocomplete="off"
-                  :class="[
-                    'w-full pl-10 pr-4 py-2.5 rounded-xl bg-bg-1 border text-ink text-sm placeholder-ink-muted/40 font-mono tracking-widest',
-                    'focus:outline-none focus:ring-2 focus:ring-primary/25 transition-all',
-                    codeErrors.adminSignupCode ? 'border-danger/50' : 'border-border focus:border-primary/50',
-                  ]"
-                />
-              </div>
-            </FieldGroup>
-          </div>
-
-          <ErrorBanner v-if="submitError" :message="submitError" />
-          <SubmitButton :loading="isSubmitting" label="Create account" />
-        </form>
-
-        <p class="text-center text-xs text-ink-muted/50">
-          Already have an account?
-          <RouterLink to="/login" class="text-primary-soft hover:text-primary font-medium ml-1 transition-colors">Sign in</RouterLink>
-        </p>
+        <div>
+          <h2 class="text-ink text-xl font-bold mb-2">Invitation required</h2>
+          <p class="text-ink-soft text-sm leading-relaxed">
+            Privileged accounts cannot be created with a shared code. A Super Admin must review access and send a single-use invitation.
+          </p>
+        </div>
+        <div class="grid gap-2">
+          <RouterLink to="/request-access" class="w-full rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary/90 transition-base">Request access</RouterLink>
+          <RouterLink to="/login" class="w-full rounded-xl border border-border px-4 py-2.5 text-sm font-semibold text-ink-soft hover:bg-surface-hover transition-base">Back to sign in</RouterLink>
+        </div>
       </div>
 
       <!-- SUCCESS -->
@@ -183,24 +114,6 @@
         <div class="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin mx-auto" />
       </div>
 
-      <!-- VERIFY EMAIL -->
-      <div v-else-if="phase === 'verify-email'" key="verify-email" class="text-center py-10 space-y-5">
-        <div class="auth-logo w-16 h-16 rounded-2xl flex items-center justify-center mx-auto">
-          <MailOpen class="w-8 h-8 text-primary-soft" />
-        </div>
-        <div>
-          <h2 class="text-ink text-xl font-bold mb-1">Check your inbox</h2>
-          <p class="text-ink-soft text-sm leading-relaxed">
-            We sent a verification link to<br />
-            <span class="text-primary-soft font-semibold">{{ verifyEmail }}</span>
-          </p>
-        </div>
-        <RouterLink to="/login" class="inline-flex items-center gap-2 text-primary-soft hover:text-primary text-sm font-medium transition-colors">
-          <ArrowLeft class="w-4 h-4" />
-          Back to sign in
-        </RouterLink>
-      </div>
-
     </Transition>
 
   </AuthPageLayout>
@@ -211,21 +124,14 @@ import { ref, computed, onMounted, defineComponent, h } from 'vue';
 import { useRoute, useRouter, RouterLink } from 'vue-router';
 import {
   AlertTriangle, ArrowLeft, BarChart2, CheckCircle2,
-  FileText, KeyRound, Mail, MailOpen, PlayCircle,
-  Shield, User, Eye, Pencil,
+  FileText, Mail, PlayCircle, Shield,
 } from 'lucide-vue-next';
-import { validateInvite, acceptInvite, registerWithCode } from '@/api/auth';
+import { validateInvite, acceptInvite } from '@/api/auth';
 import type { InviteValidation } from '@/api/auth';
 import { useAuthStore } from '@/stores/auth.store';
 import AuthPageLayout from '@/components/layout/AuthPageLayout.vue';
 
-type Phase = 'loading' | 'invalid' | 'invite-form' | 'code-form' | 'success' | 'verify-email';
-
-const ROLE_OPTIONS = [
-  { value: 'ADMIN' as const,     label: 'Admin',     icon: Shield, desc: 'Full platform access' },
-  { value: 'MODERATOR' as const, label: 'Moderator', icon: Eye,    desc: 'Review content' },
-  { value: 'CREATOR' as const,   label: 'Creator',   icon: Pencil, desc: 'Create & upload' },
-];
+type Phase = 'loading' | 'invalid' | 'invite-form' | 'access-required' | 'success';
 
 const panelFeatures = [
   { label: 'Content management', desc: 'Upload music, sermons, and videos. Assign to sections instantly.', icon: FileText    },
@@ -345,12 +251,9 @@ const phase = ref<Phase>('loading');
 const invite = ref<InviteValidation | null>(null);
 const inviteError = ref('');
 const inviteToken = ref('');
-const verifyEmail = ref('');
 
 const inviteForm = ref({ name: '', displayName: '', password: '', confirmPassword: '' });
 const inviteErrors = ref<Record<string,string>>({});
-const codeForm = ref({ email: '', username: '', role: 'ADMIN' as 'ADMIN'|'MODERATOR'|'CREATOR', password: '', confirmPassword: '', adminSignupCode: '' });
-const codeErrors = ref<Record<string,string>>({});
 const submitError = ref('');
 const isSubmitting = ref(false);
 
@@ -358,19 +261,10 @@ function validateInviteForm(): boolean {
   inviteErrors.value = {};
   if (!inviteForm.value.name.trim()) inviteErrors.value.name = 'Full name is required';
   if (!inviteForm.value.displayName.trim()) inviteErrors.value.displayName = 'Display name is required';
-  if (inviteForm.value.password.length < 8) inviteErrors.value.password = 'Password must be at least 8 characters';
+  if (inviteForm.value.password.length < 12) inviteErrors.value.password = 'Use at least 12 characters';
+  else if (!/[a-z]/.test(inviteForm.value.password) || !/[A-Z]/.test(inviteForm.value.password) || !/[0-9]/.test(inviteForm.value.password) || !/[^A-Za-z0-9]/.test(inviteForm.value.password)) inviteErrors.value.password = 'Include uppercase, lowercase, number, and symbol';
   if (inviteForm.value.password !== inviteForm.value.confirmPassword) inviteErrors.value.confirmPassword = 'Passwords do not match';
   return Object.keys(inviteErrors.value).length === 0;
-}
-
-function validateCodeForm(): boolean {
-  codeErrors.value = {};
-  if (!codeForm.value.email.includes('@')) codeErrors.value.email = 'Valid email required';
-  if (codeForm.value.username.trim().length < 2) codeErrors.value.username = 'At least 2 characters';
-  if (codeForm.value.password.length < 8) codeErrors.value.password = 'Password must be at least 8 characters';
-  if (codeForm.value.password !== codeForm.value.confirmPassword) codeErrors.value.confirmPassword = 'Passwords do not match';
-  if (!codeForm.value.adminSignupCode.trim()) codeErrors.value.adminSignupCode = 'Access code is required';
-  return Object.keys(codeErrors.value).length === 0;
 }
 
 async function submitInvite() {
@@ -388,26 +282,9 @@ async function submitInvite() {
   } finally { isSubmitting.value = false; }
 }
 
-async function submitCode() {
-  if (!validateCodeForm()) return;
-  isSubmitting.value = true; submitError.value = '';
-  try {
-    const session = await registerWithCode({ email: codeForm.value.email, password: codeForm.value.password, username: codeForm.value.username, role: codeForm.value.role, adminSignupCode: codeForm.value.adminSignupCode });
-    if (!session.accessToken) { verifyEmail.value = codeForm.value.email; phase.value = 'verify-email'; return; }
-    authStore.applyExternalSession(session);
-    phase.value = 'success';
-    setTimeout(() => void router.replace('/choose-workspace'), 1400);
-  } catch (e: unknown) {
-    const code = (e as { response?: { data?: { code?: string } } })?.response?.data?.code ?? '';
-    if (code === 'AUTH_ADMIN_CODE_INVALID') { codeErrors.value.adminSignupCode = 'Invalid access code'; return; }
-    if (code === 'AUTH_ADMIN_DISABLED') { submitError.value = 'Admin self-registration is not enabled. Ask your administrator for an invite link.'; return; }
-    submitError.value = (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Something went wrong.';
-  } finally { isSubmitting.value = false; }
-}
-
 onMounted(async () => {
   const t = String(route.query.token ?? '').trim();
-  if (!t || t.length < 32) { phase.value = 'code-form'; return; }
+  if (!t || t.length < 32) { phase.value = 'access-required'; return; }
   inviteToken.value = t;
   try {
     invite.value = await validateInvite(t);

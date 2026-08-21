@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
-  Linking,
   Platform,
   Pressable,
   StyleSheet,
@@ -15,6 +14,7 @@ import { CustomText } from '../CustomText';
 import { isHostedVideoUrl } from '../../util/playerRoute';
 import { useAppTheme } from '../../util/colorScheme';
 import { makeStyles } from '../../styles/makeStyles';
+import { openExternalUrl } from '../../util/externalLinks';
 
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 const CONTROLS_HIDE_DELAY = 3500;
@@ -394,7 +394,7 @@ function EmbedPlayer({
             <MaterialIcons name="videocam-off" size={38} color={theme.colors.textMuted} />
             <CustomText style={styles.errorLabel}>Could not load video</CustomText>
             <Pressable
-              onPress={() => void Linking.openURL(sourceUri)}
+              onPress={() => void openExternalUrl(sourceUri)}
               style={styles.openExternalBtn}
             >
               <MaterialIcons name="open-in-new" size={14} color={theme.colors.primary} />
@@ -406,7 +406,7 @@ function EmbedPlayer({
         {/* Open externally — top-right pill, appears after load */}
         {loaded ? (
           <Pressable
-            onPress={() => void Linking.openURL(sourceUri)}
+            onPress={() => void openExternalUrl(sourceUri)}
             style={ss.externalPill}
           >
             <MaterialIcons name="open-in-new" size={12} color="rgba(255,255,255,0.85)" />
@@ -590,7 +590,7 @@ function YouTubeIframePlayer({
         <View style={[styles.errorShell, { height, position: 'relative' }]}>
           <MaterialIcons name="videocam-off" size={38} color={theme.colors.textMuted} />
           <CustomText style={styles.errorLabel}>Could not load video</CustomText>
-          <Pressable onPress={() => void Linking.openURL(sourceUri)} style={styles.openExternalBtn}>
+          <Pressable onPress={() => void openExternalUrl(sourceUri)} style={styles.openExternalBtn}>
             <MaterialIcons name="open-in-new" size={14} color={theme.colors.primary} />
             <CustomText style={styles.openExternalText}>Open on YouTube</CustomText>
           </Pressable>
@@ -675,7 +675,7 @@ function YouTubeIframePlayer({
             </View>
 
             {/* Minimal attribution — required for IFrame API compliance */}
-            <Pressable onPress={() => void Linking.openURL(sourceUri)} style={ss.externalPill}>
+            <Pressable onPress={() => void openExternalUrl(sourceUri)} style={ss.externalPill}>
               <MaterialIcons name="open-in-new" size={12} color="rgba(255,255,255,0.85)" />
               <CustomText style={ss.externalPillText}>YouTube</CustomText>
             </Pressable>

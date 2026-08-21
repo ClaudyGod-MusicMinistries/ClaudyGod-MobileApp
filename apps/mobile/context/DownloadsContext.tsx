@@ -19,6 +19,8 @@ interface DownloadState {
 
 interface DownloadsContextValue {
   downloads: Record<string, DownloadState>;
+  syncError: string | null;
+  refreshDownloads: () => Promise<void>;
   downloadContent: (_item: FeedCardItem) => Promise<boolean>;
   deleteDownload: (_contentId: string) => Promise<void>;
   getDownloadStatus: (_contentId: string) => DownloadStatus;
@@ -45,11 +47,15 @@ async function ensureDir() {
 // provider fixes that.
 export function DownloadsProvider({ children }: { children: ReactNode }) {
   const [downloads, setDownloads] = useState<Record<string, DownloadState>>({});
+  const [syncError, setSyncError] = useState<string | null>(null);
   const inFlight = useRef(new Set<string>());
+  const loadGeneration = useRef(0);
 
-  useEffect(() => {
-    let active = true;
-    void getDownloads().then(async (saved) => {
+  const refreshDownloads = useCallback(async () => {
+    const generation = ++loadGeneration.current;
+    setSyncError(null);
+    try {
+      const saved = await getDownloads();
       // The sandboxed document directory can change (reinstall, iOS app
       // update) or a file can otherwise go missing — without this check, a
       // stale record would still show as "downloaded" and only fail when the
@@ -59,7 +65,7 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
         const info = await FileSystem.getInfoAsync(d.localUri);
         return { d, exists: info.exists };
       }));
-      if (!active) return;
+      if (generation !== loadGeneration.current) return;
 
       const initial: Record<string, DownloadState> = {};
       const stale: string[] = [];
@@ -79,9 +85,17 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
       });
       setDownloads(initial);
       await Promise.all(stale.map((contentId) => removeDownload(contentId)));
-    });
-    return () => { active = false; };
+    } catch (error) {
+      if (generation === loadGeneration.current) {
+        setSyncError(error instanceof Error ? error.message : 'Download synchronization failed.');
+      }
+    }
   }, []);
+
+  useEffect(() => {
+    void refreshDownloads();
+    return () => { loadGeneration.current += 1; };
+  }, [refreshDownloads]);
 
   const getDownloadStatus = useCallback(
     (contentId: string): DownloadStatus => downloads[contentId]?.status ?? 'idle',
@@ -179,7 +193,7 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
   }, [downloads]);
 
   return (
-    <DownloadsContext.Provider value={{ downloads, downloadContent, deleteDownload, getDownloadStatus, getDownloadedUri }}>
+    <DownloadsContext.Provider value={{ downloads, syncError, refreshDownloads, downloadContent, deleteDownload, getDownloadStatus, getDownloadedUri }}>
       {children}
     </DownloadsContext.Provider>
   );

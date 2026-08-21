@@ -1,30 +1,12 @@
-import { resolveApiUrl, REFRESH_TOKEN_KEY } from '@/utils/constants';
-import type { RefreshResponse } from './types';
+import { resolveApiUrl } from '@/utils/constants';
+import type { AdminSessionResponse, SessionStatusResponse } from './types';
 
 const API_URL = resolveApiUrl();
-let accessToken = '';
-let refreshInFlight: Promise<RefreshResponse> | null = null;
+let refreshInFlight: Promise<AdminSessionResponse> | null = null;
 const expirationListeners = new Set<() => void>();
 
-export function getAccessToken(): string { return accessToken; }
-export function setAccessToken(token: string): void { accessToken = token; }
-export function clearAccessToken(): void { accessToken = ''; }
-
-export function getRefreshToken(): string {
-  try { return localStorage.getItem(REFRESH_TOKEN_KEY) || ''; } catch { return ''; }
-}
-
-export function setRefreshToken(token: string): void {
-  try { localStorage.setItem(REFRESH_TOKEN_KEY, token); } catch { /* private/blocked storage */ }
-}
-
-export function clearRefreshToken(): void {
-  try { localStorage.removeItem(REFRESH_TOKEN_KEY); } catch { /* private/blocked storage */ }
-}
-
 export function clearSession(): void {
-  clearAccessToken();
-  clearRefreshToken();
+  // Authentication cookies are HttpOnly and can only be cleared by the API.
 }
 
 export function onSessionExpired(listener: () => void): () => void {
@@ -37,29 +19,41 @@ export function notifySessionExpired(): void {
   expirationListeners.forEach((listener) => listener());
 }
 
-export function refreshSession(): Promise<RefreshResponse> {
-  if (refreshInFlight) return refreshInFlight;
-  const refreshToken = getRefreshToken();
-  if (!refreshToken) return Promise.reject(new Error('No refresh session is available.'));
-
+const sessionRequest = async <T>(path: string, method: 'GET' | 'POST'): Promise<T> => {
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), 15_000);
-  refreshInFlight = fetch(`${API_URL}/v1/auth/refresh`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ refreshToken }),
-    signal: controller.signal,
-  }).then(async (response) => {
+  try {
+    const response = await fetch(`${API_URL}${path}`, {
+      method,
+      credentials: 'include',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        'X-Claudy-Client-Platform': 'web',
+        'X-Request-ID': crypto.randomUUID(),
+      },
+      body: method === 'POST' ? '{}' : undefined,
+      signal: controller.signal,
+    });
     if (!response.ok) throw new Error('Your session has expired. Please sign in again.');
-    const session = await response.json() as RefreshResponse;
-    if (!session || typeof session.accessToken !== 'string' || typeof session.refreshToken !== 'string' || !session.user) {
+    return await response.json() as T;
+  } finally {
+    window.clearTimeout(timeout);
+  }
+};
+
+export function restoreSession(): Promise<SessionStatusResponse> {
+  return sessionRequest<SessionStatusResponse>('/v1/auth/session', 'GET');
+}
+
+export function refreshSession(): Promise<AdminSessionResponse> {
+  if (refreshInFlight) return refreshInFlight;
+  refreshInFlight = sessionRequest<AdminSessionResponse>('/v1/auth/refresh', 'POST').then((session) => {
+    if (!session?.user) {
       throw new Error('The server returned an invalid session. Please sign in again.');
     }
-    setAccessToken(session.accessToken);
-    setRefreshToken(session.refreshToken);
     return session;
   }).finally(() => {
-    window.clearTimeout(timeout);
     refreshInFlight = null;
   });
 

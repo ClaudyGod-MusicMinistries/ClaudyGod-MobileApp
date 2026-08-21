@@ -147,8 +147,8 @@ export default function LibraryScreen() {
   const { showToast } = useToast();
   const { feed, loading, error, refresh } = useContentFeed();
   const { config: appConfig } = useMobileAppConfig();
-  const { favorites, history, loaded, removeFromFavorites } = useLocalContent();
-  const { downloads } = useDownloads();
+  const { favorites, history, loaded, syncError, refreshLibrary, removeFromFavorites } = useLocalContent();
+  const { downloads, syncError: downloadSyncError, refreshDownloads } = useDownloads();
   const [activeTab, setActiveTab] = useState<LibTab>('saved');
   const [removingId, setRemovingId]     = useState<string | null>(null);
   const [removeTarget, setRemoveTarget] = useState<FeedCardItem | null>(null);
@@ -235,12 +235,14 @@ export default function LibraryScreen() {
         eyebrow="Saved"
         noBack
         refreshing={loading || !loaded}
-        onRefresh={() => refresh()}
+        onRefresh={() => Promise.all([refresh(), refreshLibrary(), refreshDownloads()]).then(() => undefined)}
       >
         <LibTabs active={activeTab} onChange={setActiveTab} counts={counts} />
 
 
         {error ? <InlineErrorBanner message={error} onRetry={() => void refresh()} /> : null}
+        {syncError ? <InlineErrorBanner message={syncError} onRetry={() => void refreshLibrary()} /> : null}
+        {downloadSyncError ? <InlineErrorBanner message={downloadSyncError} onRetry={() => void refreshDownloads()} /> : null}
 
         {activeTab === 'saved' ? (
           <>

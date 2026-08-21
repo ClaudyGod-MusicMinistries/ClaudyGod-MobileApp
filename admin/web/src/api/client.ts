@@ -2,27 +2,26 @@ import axios from 'axios';
 import type { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import { resolveApiUrl } from '@/utils/constants';
 import { normalizeApiError } from './apiError';
-import { getAccessToken, notifySessionExpired, refreshSession } from './session';
+import { notifySessionExpired, refreshSession } from './session';
 
-export { clearAccessToken, clearRefreshToken, getAccessToken, getRefreshToken, refreshSession, setAccessToken, setRefreshToken } from './session';
+export { clearSession, refreshSession, restoreSession } from './session';
 
 export const API_URL = resolveApiUrl();
 
 export const client: AxiosInstance = axios.create({
   baseURL: API_URL,
   timeout: 20_000,
-  headers: { Accept: 'application/json' },
+  withCredentials: true,
+  headers: {
+    Accept: 'application/json',
+    'X-Claudy-Client-Platform': 'web',
+  },
 });
 
-// In-memory access token — never written to localStorage.
 // ─── Request interceptor ─────────────────────────────────────────────────────
 
 client.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   config.headers['X-Request-ID'] = crypto.randomUUID();
-  const token = getAccessToken();
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
   return config;
 });
 
@@ -46,8 +45,7 @@ client.interceptors.response.use(
     original._retry = true;
 
     try {
-      const session = await refreshSession();
-      original.headers.Authorization = `Bearer ${session.accessToken}`;
+      await refreshSession();
       return client(original);
     } catch {
       notifySessionExpired();

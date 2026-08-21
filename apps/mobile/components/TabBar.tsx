@@ -102,6 +102,8 @@ function SidebarTabBar({
             return (
               <TVTouchable
                 key={item.key}
+                accessibilityLabel={item.label}
+                accessibilityState={{ selected: focused }}
                 onPress={() => navigateTo(item)}
                 showFocusBorder={false}
                 focusStyle={{ transform: [{ scale: 1.02 }] }}
@@ -145,6 +147,8 @@ function SidebarTabBar({
           <View style={{ height: 1, backgroundColor: theme.colors.border, marginHorizontal: 8 }} />
           <TVTouchable
             key={settingsItem.key}
+            accessibilityLabel="Settings"
+            accessibilityState={{ selected: currentRouteName === 'settings' }}
             onPress={() => navigateTo(settingsItem)}
             showFocusBorder={false}
             style={{

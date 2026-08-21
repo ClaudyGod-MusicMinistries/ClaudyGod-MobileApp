@@ -7,10 +7,16 @@
         isDragging  ? 'border-primary bg-primary/10 scale-[1.01]' : 'border-border hover:border-primary/40 hover:bg-surface-hover',
         isUploading ? 'pointer-events-none' : '',
       ]"
+      role="button"
+      :tabindex="isUploading ? -1 : 0"
+      :aria-disabled="isUploading"
+      :aria-label="`${label}. ${acceptLabel}. Maximum ${maxMb} megabytes.`"
       @dragover.prevent="isDragging = true"
       @dragleave.prevent="isDragging = false"
       @drop.prevent="onDrop"
       @click="!isUploading && triggerInput()"
+      @keydown.enter.prevent="!isUploading && triggerInput()"
+      @keydown.space.prevent="!isUploading && triggerInput()"
     >
       <input
         ref="inputRef"
@@ -33,7 +39,7 @@
       </div>
 
       <!-- Uploading state -->
-      <div v-else-if="isUploading" class="p-5 space-y-3">
+      <div v-else-if="isUploading" class="p-5 space-y-3" role="status" aria-live="polite">
         <div class="flex items-center gap-3">
           <div class="w-8 h-8 rounded-lg bg-primary/12 flex items-center justify-center shrink-0">
             <svg class="w-4 h-4 text-primary animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -45,6 +51,12 @@
             <p class="text-[10px] text-ink-muted">{{ formatBytes(pendingFile?.size ?? 0) }} · Uploading…</p>
           </div>
           <span class="text-xs font-bold text-primary tabular-nums">{{ progress }}%</span>
+          <button
+            type="button"
+            class="rounded-lg px-2 py-1 text-xs font-semibold text-danger hover:bg-danger/10"
+            aria-label="Cancel upload"
+            @click.stop="cancelUpload"
+          >Cancel</button>
         </div>
         <!-- Progress bar -->
         <div class="h-1.5 bg-surface-hover rounded-full overflow-hidden">
@@ -78,7 +90,7 @@
     </div>
 
     <!-- Error -->
-    <p v-if="uploadError" class="text-xs text-danger flex items-center gap-1.5 px-1">
+    <p v-if="uploadError" class="text-xs text-danger flex items-center gap-1.5 px-1" role="alert">
       <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
         <circle cx="12" cy="12" r="10"/><path stroke-linecap="round" d="M12 8v4m0 4h.01"/>
       </svg>
@@ -88,7 +100,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onBeforeUnmount } from 'vue';
 import { uploadFile, type UploadPipeline } from '@/api/uploads';
 import { Check, RefreshCw, UploadCloud } from 'lucide-vue-next';
 
@@ -113,6 +125,7 @@ const uploadError = ref('');
 const uploadStage = ref('Preparing…');
 const pendingFile = ref<File | null>(null);
 const uploadedFile = ref<{ name: string; size: number } | null>(null);
+let uploadController: AbortController | null = null;
 
 const acceptLabel = computed(() => {
   if (!props.accept || props.accept === '*') return 'Any file';
@@ -124,12 +137,29 @@ function triggerInput(): void {
 }
 
 function reset(): void {
+  cancelUpload();
   uploadedFile.value = null;
   uploadError.value = '';
   progress.value = 0;
   pendingFile.value = null;
   if (inputRef.value) inputRef.value.value = '';
   emit('reset');
+}
+
+function cancelUpload(): void {
+  uploadController?.abort();
+  uploadController = null;
+}
+
+function acceptsFile(file: File): boolean {
+  if (!props.accept || props.accept === '*') return true;
+  return props.accept.split(',').some((rawRule) => {
+    const rule = rawRule.trim().toLowerCase();
+    const mime = file.type.toLowerCase();
+    if (rule.startsWith('.')) return file.name.toLowerCase().endsWith(rule);
+    if (rule.endsWith('/*')) return mime.startsWith(rule.slice(0, -1));
+    return mime === rule;
+  });
 }
 
 function formatBytes(bytes: number): string {
@@ -141,6 +171,10 @@ function formatBytes(bytes: number): string {
 }
 
 async function handleFile(file: File): Promise<void> {
+  if (!file.type || !acceptsFile(file)) {
+    uploadError.value = `Unsupported file type. Allowed: ${acceptLabel.value}`;
+    return;
+  }
   const maxBytes = props.maxMb * 1024 * 1024;
   if (file.size > maxBytes) {
     uploadError.value = `File too large — max is ${props.maxMb >= 1000 ? `${props.maxMb / 1000} GB` : `${props.maxMb} MB`}`;
@@ -152,6 +186,7 @@ async function handleFile(file: File): Promise<void> {
   progress.value = 0;
   pendingFile.value = file;
   uploadedFile.value = null;
+  uploadController = new AbortController();
 
   const isMedia = file.type.startsWith('audio/') || file.type.startsWith('video/');
 
@@ -161,19 +196,24 @@ async function handleFile(file: File): Promise<void> {
       progress.value = pct;
       if (pct < 30) uploadStage.value = isMedia ? 'Requesting upload URL…' : 'Uploading…';
       else if (pct < 95) uploadStage.value = 'Uploading file…';
-      else uploadStage.value = 'Verifying…';
-    }, props.pipeline);
+      else uploadStage.value = 'Uploading securely…';
+    }, props.pipeline, uploadController.signal);
     progress.value = 100;
-    uploadStage.value = 'Done!';
+    uploadStage.value = 'Security scan passed';
     uploadedFile.value = { name: file.name, size: file.size };
     emit('uploaded', { url: publicUrl, sessionId });
   } catch (e) {
-    uploadError.value = e instanceof Error ? e.message : 'Upload failed — please try again';
+    uploadError.value = uploadController?.signal.aborted
+      ? 'Upload cancelled'
+      : e instanceof Error ? e.message : 'Upload failed — please try again';
     pendingFile.value = null;
   } finally {
+    uploadController = null;
     isUploading.value = false;
   }
 }
+
+onBeforeUnmount(cancelUpload);
 
 function onDrop(e: DragEvent): void {
   isDragging.value = false;

@@ -26,6 +26,14 @@ export interface ConfirmUploadResponse {
   session: StorageUploadSession;
 }
 
+interface UploadSecurityStatus {
+  id: string;
+  status: StorageUploadSession['status'];
+  trustStatus: 'pending' | 'scanning' | 'clean' | 'quarantined' | 'error' | 'legacy_unverified';
+  scanError: string | null;
+  ready: boolean;
+}
+
 export type AssetKind = 'thumbnail' | 'audio' | 'video';
 
 export async function requestUpload(params: {
@@ -42,9 +50,11 @@ export async function uploadToStorage(
   presignedUrl: string,
   file: File,
   onProgress?: (pct: number) => void,
+  signal?: AbortSignal,
 ): Promise<void> {
   await axios.put(presignedUrl, file, {
     headers: { 'Content-Type': file.type },
+    signal,
     onUploadProgress: (evt) => {
       if (onProgress && evt.total) {
         onProgress(Math.round((evt.loaded / evt.total) * 100));
@@ -56,6 +66,22 @@ export async function uploadToStorage(
 export async function confirmUpload(sessionId: string): Promise<ConfirmUploadResponse> {
   const { data } = await client.post<ConfirmUploadResponse>('/v1/admin/storage/confirm', { sessionId });
   return data;
+}
+
+async function waitForSecurityScan(sessionId: string, signal?: AbortSignal): Promise<void> {
+  const deadline = Date.now() + 3 * 60_000;
+  while (Date.now() < deadline) {
+    if (signal?.aborted) throw new DOMException('Upload cancelled', 'AbortError');
+    const { data } = await client.get<UploadSecurityStatus>(`/v1/admin/storage/sessions/${sessionId}`, { signal });
+    if (data.ready) return;
+    if (data.trustStatus === 'quarantined') throw new Error('The file failed security scanning and was quarantined.');
+    if (data.trustStatus === 'error') throw new Error(data.scanError ?? 'Security scanning could not complete.');
+    await new Promise<void>((resolve, reject) => {
+      const timer = window.setTimeout(resolve, 1500);
+      signal?.addEventListener('abort', () => { window.clearTimeout(timer); reject(new DOMException('Upload cancelled', 'AbortError')); }, { once: true });
+    });
+  }
+  throw new Error('Security scanning is taking longer than expected. The upload remains quarantined from content until processing completes.');
 }
 
 export async function deleteUploadSession(sessionId: string): Promise<void> {
@@ -77,6 +103,7 @@ export function mimeToAssetKind(mimeType: string): AssetKind {
 export async function uploadMediaFile(
   file: File,
   onProgress?: (pct: number) => void,
+  signal?: AbortSignal,
 ): Promise<{ publicUrl: string; sessionId: string; key: string }> {
   const assetKind = mimeToAssetKind(file.type);
   const session = await requestUpload({
@@ -85,11 +112,19 @@ export async function uploadMediaFile(
     fileSizeBytes: file.size,
     assetKind,
   });
-  await uploadToStorage(session.upload.presignedUrl, file, onProgress);
-  const confirmed = await confirmUpload(session.session.id);
-  return {
-    publicUrl: confirmed.asset.publicUrl,
-    sessionId: session.session.id,
-    key: confirmed.asset.key,
-  };
+  try {
+    await uploadToStorage(session.upload.presignedUrl, file, onProgress, signal);
+    if (signal?.aborted) throw new DOMException('Upload cancelled', 'AbortError');
+    const confirmed = await confirmUpload(session.session.id);
+    await waitForSecurityScan(session.session.id, signal);
+    return {
+      publicUrl: confirmed.asset.publicUrl,
+      sessionId: session.session.id,
+      key: confirmed.asset.key,
+    };
+  } catch (error) {
+    // Reconcile the server session and object on any failed/cancelled upload.
+    await deleteUploadSession(session.session.id).catch(() => undefined);
+    throw error;
+  }
 }

@@ -1,8 +1,11 @@
 import { Router, type Request } from 'express';
 import { asyncHandler } from '../../lib/asyncHandler';
-import { ForbiddenError, UnauthorizedError } from '../../lib/errors';
+import { UnauthorizedError } from '../../lib/errors';
 import { validateSchema } from '../../lib/validation';
 import { authenticate } from '../../middleware/authenticate';
+import { requirePrivilegedMfa } from '../../middleware/requirePrivilegedMfa';
+import { assertCapability } from '../../middleware/rbac';
+import type { Capability } from '../../security/capabilities';
 import {
   adminContentIdParamsSchema,
   adminUnassignedContentQuerySchema,
@@ -18,6 +21,11 @@ import {
   supportRequestIdParamsSchema,
   updateAdminUserRoleSchema,
   updateSupportRequestStatusSchema,
+  operationalJobsQuerySchema,
+  operationalJobParamsSchema,
+  securityAuditQuerySchema,
+  operationalSessionsQuerySchema,
+  operationalSessionParamsSchema,
 } from './admin.schema';
 import {
   getAdminContentSectionSuggestions,
@@ -44,18 +52,18 @@ import {
 } from '../auth/auth.service';
 import { queueAdminInviteEmail } from '../../infra/transactionalEmails';
 import { env } from '../../config/env';
+import { listOperationalJobs, retryOperationalJob, listSecurityAuditEvents, listOperationalSessions, revokeOperationalSession } from './operations.service';
 
 export const adminRouter = Router();
 
 adminRouter.use(authenticate);
+adminRouter.use(requirePrivilegedMfa);
 
-function requireAdmin(req: Request) {
+function requireAdmin(req: Request, capability: Capability) {
   if (!req.user) {
     throw new UnauthorizedError('Unauthorized', 'AUTH_REQUIRED');
   }
-  if (req.user.role !== 'ADMIN' && req.user.role !== 'SUPER_ADMIN') {
-    throw new ForbiddenError('Admin access required', 'ADMIN_REQUIRED');
-  }
+  assertCapability(req.user.role, capability);
   return req.user;
 }
 
@@ -69,7 +77,7 @@ function requireAuthenticated(req: Request) {
 adminRouter.get(
   '/dashboard',
   asyncHandler(async (req, res) => {
-    const actor = requireAdmin(req);
+    const actor = requireAdmin(req, 'content.read');
     const result = await getAdminDashboard(actor);
     res.status(200).json(result);
   }),
@@ -78,7 +86,7 @@ adminRouter.get(
 adminRouter.get(
   '/email/diagnostics',
   asyncHandler(async (req, res) => {
-    requireAdmin(req);
+    requireAdmin(req, 'email.manage');
     const result = await getAdminEmailDiagnostics();
     res.status(200).json(result);
   }),
@@ -87,7 +95,7 @@ adminRouter.get(
 adminRouter.get(
   '/content/unassigned',
   asyncHandler(async (req, res) => {
-    requireAdmin(req);
+    requireAdmin(req, 'content.read');
     const query = validateSchema(adminUnassignedContentQuerySchema, req.query);
     const result = await listAdminUnassignedContent({
       limit: query.limit,
@@ -100,7 +108,7 @@ adminRouter.get(
 adminRouter.get(
   '/content/:id/section-suggestions',
   asyncHandler(async (req, res) => {
-    requireAdmin(req);
+    requireAdmin(req, 'content.read');
     const params = validateSchema(adminContentIdParamsSchema, req.params);
     const result = await getAdminContentSectionSuggestions(params.id);
     res.status(200).json(result);
@@ -110,7 +118,7 @@ adminRouter.get(
 adminRouter.post(
   '/email/test',
   asyncHandler(async (req, res) => {
-    const actor = requireAdmin(req);
+    const actor = requireAdmin(req, 'email.manage');
     const payload = validateSchema(sendAdminTestEmailSchema, req.body);
     const result = await sendAdminTestEmail({
       recipient: payload.recipient,
@@ -121,9 +129,37 @@ adminRouter.post(
 );
 
 adminRouter.get(
+  '/operations/audit',
+  asyncHandler(async (req, res) => {
+    requireSuperAdmin(req, 'operations.manage');
+    const query = validateSchema(securityAuditQuerySchema, req.query);
+    res.status(200).json(await listSecurityAuditEvents(query.limit));
+  }),
+);
+
+adminRouter.get(
+  '/operations/sessions',
+  asyncHandler(async (req, res) => {
+    requireSuperAdmin(req, 'operations.manage');
+    const query = validateSchema(operationalSessionsQuerySchema, req.query);
+    res.status(200).json(await listOperationalSessions(query.limit));
+  }),
+);
+
+adminRouter.delete(
+  '/operations/sessions/:source/:id',
+  asyncHandler(async (req, res) => {
+    requireSuperAdmin(req, 'operations.manage');
+    const params = validateSchema(operationalSessionParamsSchema, req.params);
+    await revokeOperationalSession(params.source, params.id);
+    res.status(200).json({ message: 'Session revoked' });
+  }),
+);
+
+adminRouter.get(
   '/users',
   asyncHandler(async (req, res) => {
-    requireAdmin(req);
+    requireAdmin(req, 'users.read');
     const query = validateSchema(listAdminUsersQuerySchema, req.query);
     const result = await listAdminUsers(query);
     res.status(200).json(result);
@@ -133,7 +169,7 @@ adminRouter.get(
 adminRouter.get(
   '/support-requests',
   asyncHandler(async (req, res) => {
-    requireAdmin(req);
+    requireAdmin(req, 'support.manage');
     const query = validateSchema(listAdminSupportRequestsQuerySchema, req.query);
     const result = await listAdminSupportRequests(query);
     res.status(200).json(result);
@@ -143,7 +179,7 @@ adminRouter.get(
 adminRouter.patch(
   '/users/:id/role',
   asyncHandler(async (req, res) => {
-    const actor = requireAdmin(req);
+    const actor = requireAdmin(req, 'users.manage');
     const params = validateSchema(adminUserIdParamsSchema, req.params);
     const payload = validateSchema(updateAdminUserRoleSchema, req.body);
     const result = await updateAdminUserRole({
@@ -158,7 +194,7 @@ adminRouter.patch(
 adminRouter.get(
   '/users/:id/engagement',
   asyncHandler(async (req, res) => {
-    requireAdmin(req);
+    requireAdmin(req, 'users.read');
     const params = validateSchema(adminUserIdParamsSchema, req.params);
     const result = await getAdminUserEngagement(params.id);
     res.status(200).json(result);
@@ -168,7 +204,7 @@ adminRouter.get(
 adminRouter.get(
   '/users/:id/search-history',
   asyncHandler(async (req, res) => {
-    requireAdmin(req);
+    requireAdmin(req, 'users.read');
     const params = validateSchema(adminUserIdParamsSchema, req.params);
     const query = validateSchema(adminUserSearchHistoryQuerySchema, req.query);
     const result = await getAdminUserSearchHistory(params.id, query.limit);
@@ -179,7 +215,7 @@ adminRouter.get(
 adminRouter.get(
   '/users/:id/devices',
   asyncHandler(async (req, res) => {
-    requireAdmin(req);
+    requireAdmin(req, 'users.read');
     const params = validateSchema(adminUserIdParamsSchema, req.params);
     const result = await getAdminUserDevices(params.id);
     res.status(200).json(result);
@@ -189,7 +225,7 @@ adminRouter.get(
 adminRouter.post(
   '/users/:id/devices/:deviceId/revoke',
   asyncHandler(async (req, res) => {
-    requireAdmin(req);
+    requireAdmin(req, 'users.manage');
     const params = validateSchema(adminUserDeviceParamsSchema, req.params);
     await revokeAdminUserDevice(params.id, params.deviceId);
     res.status(200).json({ message: 'Device revoked' });
@@ -199,7 +235,7 @@ adminRouter.post(
 adminRouter.patch(
   '/support-requests/:id/status',
   asyncHandler(async (req, res) => {
-    requireAdmin(req);
+    requireAdmin(req, 'support.manage');
     const params = validateSchema(supportRequestIdParamsSchema, req.params);
     const payload = validateSchema(updateSupportRequestStatusSchema, req.body);
     const result = await updateAdminSupportRequestStatus({
@@ -216,8 +252,9 @@ adminRouter.patch(
 adminRouter.post(
   '/invitations',
   asyncHandler(async (req, res) => {
-    const actor = requireAdmin(req);
+    const actor = requireAdmin(req, 'admin_invites.manage');
     const payload = validateSchema(createInvitationSchema, req.body);
+    if (payload.role === 'ADMIN') assertCapability(actor.role, 'admin_access.manage');
     const invite = await createAdminInviteToken({
       email: payload.email,
       role: payload.role,
@@ -243,7 +280,7 @@ adminRouter.post(
 adminRouter.get(
   '/invitations',
   asyncHandler(async (req, res) => {
-    requireAdmin(req);
+    requireAdmin(req, 'admin_invites.manage');
     const invitations = await listAdminInvitations();
     res.status(200).json({ invitations });
   }),
@@ -252,7 +289,7 @@ adminRouter.get(
 adminRouter.delete(
   '/invitations/:id',
   asyncHandler(async (req, res) => {
-    requireAdmin(req);
+    requireAdmin(req, 'admin_invites.manage');
     const params = validateSchema(invitationIdParamsSchema, req.params);
     await revokeAdminInvitation(params.id);
     res.status(200).json({ message: 'Invitation revoked' });
@@ -261,13 +298,33 @@ adminRouter.delete(
 
 // ── Admin Access Requests ────────────────────────────────────────────────────
 
-function requireSuperAdmin(req: Request) {
+function requireSuperAdmin(req: Request, capability: Capability = 'admin_access.manage') {
   const user = requireAuthenticated(req);
-  if (user.role !== 'SUPER_ADMIN') {
-    throw new ForbiddenError('Super Admin access required', 'SUPER_ADMIN_REQUIRED');
-  }
+  assertCapability(user.role, capability);
   return user;
 }
+
+adminRouter.get(
+  '/operations/jobs',
+  asyncHandler(async (req, res) => {
+    requireSuperAdmin(req, 'operations.manage');
+    const query = validateSchema(operationalJobsQuerySchema, req.query);
+    res.status(200).json(await listOperationalJobs(query));
+  }),
+);
+
+adminRouter.post(
+  '/operations/jobs/:kind/:id/retry',
+  asyncHandler(async (req, res) => {
+    requireSuperAdmin(req, 'operations.manage');
+    const params = validateSchema(operationalJobParamsSchema, req.params);
+    const result = await retryOperationalJob(params.kind, params.id);
+    res.status(202).json({
+      message: result.dispatch === 'queued' ? 'Job queued for retry' : 'Retry recorded and will dispatch when the queue recovers',
+      dispatch: result.dispatch,
+    });
+  }),
+);
 
 adminRouter.get(
   '/access-requests',

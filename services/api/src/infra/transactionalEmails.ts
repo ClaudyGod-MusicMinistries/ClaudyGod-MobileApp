@@ -1,6 +1,9 @@
 import { pool } from '../db/pool';
-import { emailQueue } from '../queues/emailQueue';
+import { dispatchEmailJob } from '../queues/emailOutbox';
 import { env } from '../config/env';
+import { createLogger } from '../lib/logger';
+
+const log = createLogger('transactionalEmails');
 import {
   buildAccountEmailChangeTemplate,
   buildAdminInviteTemplate,
@@ -95,25 +98,10 @@ export const queueEmailJob = async (input: EmailJobInput): Promise<void> => {
   const emailJobId = emailInsert.rows[0]!.id;
 
   try {
-    const queueJob = await emailQueue.add('email-job', { emailJobId });
-
-    await pool.query(
-      `UPDATE email_jobs
-       SET queue_job_id = $2, updated_at = NOW()
-       WHERE id = $1`,
-      [emailJobId, String(queueJob.id)],
-    );
+    await dispatchEmailJob(emailJobId);
   } catch (error) {
     const reason = error instanceof Error ? error.message : 'Unknown email queue error';
-
-    await pool.query(
-      `UPDATE email_jobs
-       SET status = 'failed', error = $2, processed_at = NOW(), updated_at = NOW()
-       WHERE id = $1`,
-      [emailJobId, `Queue enqueue failed: ${reason}`],
-    );
-
-    throw error;
+    log.warn('Email delivery deferred to outbox reconciliation', { emailJobId, reason });
   }
 };
 

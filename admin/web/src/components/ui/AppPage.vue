@@ -4,7 +4,7 @@
       <slot name="header">
         <div class="min-w-0">
           <p v-if="eyebrow" class="text-[11px] font-semibold uppercase tracking-[0.12em] text-primary">{{ eyebrow }}</p>
-          <h1 class="mt-1 text-2xl font-bold tracking-[-0.025em] text-ink sm:text-[1.75rem]">{{ title }}</h1>
+          <h1 class="mt-1 text-2xl font-semibold tracking-[-0.02em] text-ink sm:text-[1.625rem]">{{ title }}</h1>
           <p v-if="description" class="mt-1.5 max-w-3xl text-sm leading-6 text-ink-muted">{{ description }}</p>
         </div>
       </slot>

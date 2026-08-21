@@ -152,6 +152,7 @@ const envSchema = z
 
     DATABASE_URL: z.string().trim().min(1),
     DATABASE_SSL: toBoolean(false),
+    DATABASE_SSL_REJECT_UNAUTHORIZED: toBoolean(true),
 
     REDIS_URL: z.string().trim().min(1),
 
@@ -183,11 +184,13 @@ const envSchema = z
     SUPABASE_S3_ACCESS_KEY_ID: z.string().optional().default(''),
     SUPABASE_S3_SECRET_ACCESS_KEY: z.string().optional().default(''),
 
-    MOBILE_API_KEY: z.string().min(16, 'MOBILE_API_KEY must contain at least 16 characters'),
+    CLAMAV_HOST: z.string().trim().min(1).default('127.0.0.1'),
+    CLAMAV_PORT: z.coerce.number().int().min(1).max(65535).default(3310),
+    CLAMAV_REQUIRED: toBoolean(false),
+    CLAMAV_TIMEOUT_MS: z.coerce.number().int().min(1000).max(300000).default(120000),
 
     // The real .NET website backend (CGM-Backend) — the website module proxies
-    // admin actions here, attaching this key server-to-server the same way
-    // MOBILE_API_KEY protects the mobile-facing surface. Left optional (empty
+    // admin actions here, attaching a server-only credential. Left optional (empty
     // default) so this deploys additively — routes under /v1/website/* return
     // a clear 503 if unset rather than the whole app failing to boot.
     CGM_API_BASE_URL: optionalUrl(),
@@ -231,7 +234,6 @@ const envSchema = z
     YOUTUBE_CHANNEL_ID: z.string().optional().default(''),
     YOUTUBE_MAX_RESULTS: z.coerce.number().int().min(1).max(50).default(12),
 
-    ADMIN_SIGNUP_CODE: z.string().optional().default(''),
     ADMIN_WEB_URL: z.string().optional().default(''),
     ADMIN_INVITE_TTL_HOURS: z.coerce.number().int().min(1).max(168).default(72),
 
@@ -275,18 +277,6 @@ const envSchema = z
         code: z.ZodIssueCode.custom,
         path: ['JWT_REFRESH_SECRET'],
         message: 'JWT_REFRESH_SECRET must be a signing secret, not a JWT token string',
-      });
-    }
-
-    if (
-      value.ADMIN_SIGNUP_CODE &&
-      value.ADMIN_SIGNUP_CODE.trim().length > 0 &&
-      value.ADMIN_SIGNUP_CODE.trim().length < 12
-    ) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['ADMIN_SIGNUP_CODE'],
-        message: 'ADMIN_SIGNUP_CODE should be at least 12 characters',
       });
     }
 
@@ -539,14 +529,6 @@ const envSchema = z
       });
     }
 
-    if (value.MOBILE_API_KEY === 'dev-mobile-api-key' || value.MOBILE_API_KEY.length < 32) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['MOBILE_API_KEY'],
-        message: 'MOBILE_API_KEY must be a strong non-default secret',
-      });
-    }
-
     if (!value.METRICS_TOKEN || value.METRICS_TOKEN.length < 32) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -635,7 +617,6 @@ export const env = {
         : 'Generic SMTP',
   YOUTUBE_ENABLED: Boolean(raw.YOUTUBE_API_KEY && raw.YOUTUBE_CHANNEL_ID),
   CGM_ENABLED: Boolean(raw.CGM_API_BASE_URL && raw.CGM_API_KEY),
-  ADMIN_SIGNUP_ENABLED: Boolean(raw.ADMIN_SIGNUP_CODE),
   ADMIN_WEB_URL: raw.ADMIN_WEB_URL?.trim() || '',
   ADMIN_INVITE_TTL_HOURS: Number(raw.ADMIN_INVITE_TTL_HOURS ?? 72),
 };

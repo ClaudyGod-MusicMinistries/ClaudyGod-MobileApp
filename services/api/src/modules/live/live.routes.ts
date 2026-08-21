@@ -3,7 +3,7 @@ import { asyncHandler } from '../../lib/asyncHandler';
 import { ForbiddenError, UnauthorizedError } from '../../lib/errors';
 import { validateSchema } from '../../lib/validation';
 import { authenticate } from '../../middleware/authenticate';
-import { hasMinRole } from '../../middleware/rbac';
+import { assertCapability } from '../../middleware/rbac';
 import {
   createLiveMessageSchema,
   createLiveSessionSchema,
@@ -43,8 +43,9 @@ function requireUser(req: Request) {
 // moderators are meant to manage live sessions, not just admins.
 function requireAdmin(req: Request) {
   const user = requireUser(req);
-  if (!hasMinRole(user.role, 'MODERATOR')) {
-    throw new ForbiddenError('Moderator role or higher required', 'MODERATOR_REQUIRED');
+  assertCapability(user.role, 'live.manage');
+  if (!user.mfaEnabled) {
+    throw new ForbiddenError('Multi-factor authentication is required for live administration', 'MFA_ENROLLMENT_REQUIRED');
   }
   return user;
 }

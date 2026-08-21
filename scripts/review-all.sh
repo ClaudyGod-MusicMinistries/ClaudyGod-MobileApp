@@ -17,9 +17,15 @@ cd "$ROOT_DIR"
 LOG_DIR="$ROOT_DIR/logs/git-hooks"
 mkdir -p "$LOG_DIR"
 TIMESTAMP=$(date '+%Y-%m-%d_%H-%M-%S')
-LOG_FILE="$LOG_DIR/review-${TIMESTAMP}.log"
+LOG_FILE="${CLAUDYGOD_REVIEW_LOG:-$LOG_DIR/review-${TIMESTAMP}.log}"
 
-exec > >(tee -a "$LOG_FILE") 2>&1
+# Re-run through a regular pipeline so logging works in restricted shells that
+# do not permit Bash process-substitution file descriptors under /dev/fd.
+if [ "${CLAUDYGOD_REVIEW_CAPTURED:-0}" != "1" ]; then
+  CLAUDYGOD_REVIEW_CAPTURED=1 CLAUDYGOD_REVIEW_LOG="$LOG_FILE" \
+    bash "$0" "$@" 2>&1 | tee -a "$LOG_FILE"
+  exit "${PIPESTATUS[0]}"
+fi
 
 ERRORS=0
 WARNINGS=0
@@ -68,21 +74,29 @@ warn_step() {
 run_step  "API TypeScript — tsc --noEmit"          yarn --cwd ./services/api typecheck
 run_step  "API ESLint — zero warnings"             yarn --cwd ./services/api lint
 run_step  "API Build — compile to dist/"           yarn --cwd ./services/api build
+run_step  "API contract tests"                     yarn --cwd ./services/api test
+run_step  "PostgreSQL migration + search integration" bash ./scripts/test-database-integration.sh
+
+# ── Admin portal ─────────────────────────────────────────────────────────────
+run_step  "Admin TypeScript + production build"       yarn --cwd ./admin/web build
 
 # ── Mobile ────────────────────────────────────────────────────────────────────
 warn_step "Mobile TypeScript — tsc --noEmit"       yarn --cwd ./apps/mobile typecheck
 warn_step "Mobile ESLint"                          yarn --cwd ./apps/mobile lint
+run_step  "Mobile release-contract tests"          yarn --cwd ./apps/mobile test
 
 # ── Infrastructure ────────────────────────────────────────────────────────────
 run_step  "Docker compose validation"              bash ./scripts/docker-validate.sh
+run_step  "Recovery automation syntax"             bash -n ./scripts/backup-database.sh ./scripts/verify-database-restore.sh
+run_step  "Transactional deployment contracts"     yarn release:contracts
 
 # ── Security audit ────────────────────────────────────────────────────────────
-step_start "Security audit — yarn audit (high+critical)"
-if yarn --cwd ./services/api audit --level high 2>&1; then
+step_start "Security audit — registry + verified vendor mitigations"
+if yarn security:audit 2>&1; then
   echo "└─ [PASS] Security audit ($(step_elapsed)s)"
 else
-  echo "└─ [WARN] Security audit — review findings ($(step_elapsed)s)"
-  ((WARNINGS++)) || true
+  echo "└─ [FAIL] Security audit — high/critical findings or audit unavailable ($(step_elapsed)s)"
+  ((ERRORS++)) || true
 fi
 
 # ── Debug statement scan ──────────────────────────────────────────────────────

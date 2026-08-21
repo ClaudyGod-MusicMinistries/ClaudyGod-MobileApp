@@ -8,6 +8,7 @@ export const useFeedStyles = makeStyles((theme) => ({
   pageScroll:         { flex: 1, backgroundColor: 'transparent' },
   pageContent:        { paddingTop: theme.layout.headerVerticalPadding, gap: 24 },
   headerLeft:         { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 },
+  headerEyebrow:      { color: theme.colors.primary, fontSize: 10.5, fontWeight: '700', letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 1 },
   headerTitle:        { color: theme.colors.text, fontWeight: '700', letterSpacing: 0 },
   headerSubtitle:     { color: theme.colors.textSecondary, marginTop: 2, maxWidth: 720, fontSize: 12 },
   headerRight:        { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0 },
@@ -339,4 +340,10 @@ export const useFeedStyles = makeStyles((theme) => ({
   },
   sectionActionText: { color: theme.colors.primary, fontSize: 12.5, fontWeight: '600' },
   sectionSubtitle:   { color: theme.colors.textMuted, marginTop: 3, fontSize: 12.5 },
+  sectionAccentPill: {
+    borderRadius: theme.radius.pill, backgroundColor: theme.colors.primarySurface,
+    borderWidth: 1, borderColor: theme.colors.primaryBorder,
+    paddingHorizontal: 9, paddingVertical: 3, marginLeft: 8, flexShrink: 0,
+  },
+  sectionAccentText: { color: theme.colors.primary, fontSize: 10.5, fontWeight: '700', letterSpacing: 0.4, textTransform: 'uppercase' },
 }));

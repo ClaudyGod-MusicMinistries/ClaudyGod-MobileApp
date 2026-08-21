@@ -1,8 +1,8 @@
 import type { JwtClaims } from '../../utils/jwt';
 import { pool } from '../../db/pool';
 import { env } from '../../config/env';
-import { BadRequestError, ForbiddenError, NotFoundError } from '../../lib/errors';
-import { hasMinRole } from '../../middleware/rbac';
+import { BadRequestError, NotFoundError } from '../../lib/errors';
+import { assertCapability } from '../../middleware/rbac';
 import { sendLiveStartPushNotifications } from '../../infra/push';
 import { queueEmailJob } from '../../infra/transactionalEmails';
 import { broadcastToLiveSession, broadcastSessionUpdate } from './live.websocket';
@@ -259,9 +259,7 @@ const notifySubscribersThatSessionIsLive = async (session: LiveSession): Promise
 // Matches live.routes.ts's requireAdmin: named for history, actual threshold
 // is MODERATOR to match the admin panel's own nav config for /live.
 const assertAdmin = (actor: JwtClaims) => {
-  if (!hasMinRole(actor.role, 'MODERATOR')) {
-    throw new ForbiddenError('Moderator role or higher required', 'MODERATOR_REQUIRED');
-  }
+  assertCapability(actor.role, 'live.manage');
 };
 
 const getLiveSessionRowById = async (sessionId: string): Promise<LiveSessionRow> => {

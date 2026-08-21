@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Linking, Platform, View, useWindowDimensions } from 'react-native';
+import { Animated, Platform, View, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { CustomText } from '../../components/CustomText';
@@ -9,6 +9,9 @@ import { SettingsScaffold } from '../../components/layout/SettingsScaffold';
 import { useAppTheme } from '../../util/colorScheme';
 import { makeStyles } from '../../styles/makeStyles';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
+import { createPublicDonationIntent } from '../../services/userFlowService';
+import { useToast } from '../../context/ToastContext';
+import { openExternalUrl } from '../../util/externalLinks';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -275,7 +278,9 @@ export default function Donate() {
   const scripture       = scriptures[scriptureIndex] ?? scriptures[0]!;
 
   const supportEmail   = config?.privacy?.contactEmail ?? 'support@claudygod.org';
-  const [showComingSoon, setShowComingSoon] = useState(false);
+  const { showToast } = useToast();
+  const [instructions, setInstructions] = useState<{ title: string; message: string; actionLabel?: string; actionUrl?: string } | null>(null);
+  const [isPreparing, setIsPreparing] = useState(false);
 
   useEffect(() => { setSelectedCurrency(defaultCurrency); }, [defaultCurrency]);
 
@@ -291,15 +296,37 @@ export default function Donate() {
     }
   }, [configMethods, selectedMethodId]);
 
-  const continueToReview = () => {
-    if (!selectedAmount) return;
-    setShowComingSoon(true);
+  const continueToReview = async () => {
+    if (!selectedAmount || !selectedMethod || isPreparing) return;
+    setIsPreparing(true);
+    try {
+      const result = await createPublicDonationIntent({
+        amount: selectedAmount,
+        currency: selectedCurrency,
+        mode: selectedFrequency,
+        methodId: selectedMethod.id,
+      });
+      setInstructions(result.donationIntent.instructions ?? {
+        title: 'Giving request created',
+        message: 'Contact the ministry giving team to receive the approved completion instructions.',
+        actionLabel: 'Contact giving team',
+        actionUrl: `mailto:${supportEmail}`,
+      });
+    } catch (error) {
+      showToast({
+        title: 'Unable to prepare giving instructions',
+        message: error instanceof Error ? error.message : 'Please try again.',
+        tone: 'error',
+      });
+    } finally {
+      setIsPreparing(false);
+    }
   };
 
   const contactSupport = () => {
     const subject = encodeURIComponent('Giving support request');
     const body    = encodeURIComponent('Hello, I need help with giving on the ClaudyGod app.');
-    void Linking.openURL(`mailto:${supportEmail}?subject=${subject}&body=${body}`);
+    void openExternalUrl(`mailto:${supportEmail}?subject=${subject}&body=${body}`);
   };
 
   const amountWidth = isCompact ? '47%' : isTablet ? '15%' : '30%';
@@ -308,15 +335,19 @@ export default function Donate() {
   return (
     <>
       <ConfirmModal
-        visible={showComingSoon}
+        visible={Boolean(instructions)}
         icon="volunteer-activism"
-        title="Complete your giving"
-        body="Online processing is being prepared. Contact the ministry team to receive the approved giving instructions."
-        primaryLabel="Contact giving team"
+        title={instructions?.title ?? 'Giving instructions'}
+        body={instructions?.message ?? ''}
+        primaryLabel={instructions?.actionLabel ?? 'Close'}
         secondaryLabel="Not now"
-        onPrimary={() => { setShowComingSoon(false); contactSupport(); }}
-        onSecondary={() => setShowComingSoon(false)}
-        onDismiss={() => setShowComingSoon(false)}
+        onPrimary={() => {
+          const actionUrl = instructions?.actionUrl;
+          setInstructions(null);
+          if (actionUrl) void openExternalUrl(actionUrl);
+        }}
+        onSecondary={() => setInstructions(null)}
+        onDismiss={() => setInstructions(null)}
       />
 
       <SettingsScaffold
@@ -406,8 +437,9 @@ export default function Donate() {
           </View>
         </SectionCard>
 
-        {/* Payment methods */}
-        <SectionCard title="Payment method" subtitle="Choose how you'd like to give">
+        {/* Giving routes — these collect a preference only; the server returns the
+            currently approved completion instructions and never claims a checkout exists. */}
+        <SectionCard title="Preferred giving route" subtitle="Choose the instructions you want to request">
           <View style={styles.methodsList}>
             {configMethods.map((method) => {
               const active = selectedMethod?.id === method.id;
@@ -455,12 +487,13 @@ export default function Donate() {
         {/* CTA */}
         <View style={styles.ctaWrap}>
           <AppButton
-            title={selectedAmount ? `Review giving · ${selectedCurrency} ${selectedAmount}/${frequencyLabel(selectedFrequency).toLowerCase()}` : 'Select an amount to continue'}
+            title={selectedAmount ? `Request instructions · ${selectedCurrency} ${selectedAmount}` : 'Select an amount to continue'}
             size="lg"
             fullWidth
             disabled={!selectedAmount}
+            loading={isPreparing}
             onPress={continueToReview}
-            leftIcon={<MaterialIcons name="lock-outline" size={18} color={theme.colors.textInverse} />}
+            leftIcon={<MaterialIcons name="contact-support" size={18} color={theme.colors.textInverse} />}
           />
           <AppButton
             title="Need help giving?"

@@ -13,9 +13,14 @@
     "migrate:prod": "node dist/db/migrate.js",
     "migrate:status": "ts-node-dev --exit-child --transpile-only src/db/migrationStatus.ts",
     "migrate:status:prod": "node dist/db/migrationStatus.js",
+    "admin:bootstrap": "ts-node-dev --exit-child --transpile-only src/cli/bootstrapSuperAdmin.ts",
+    "admin:bootstrap:prod": "node dist/cli/bootstrapSuperAdmin.js",
+    "integrations:certify": "ts-node-dev --exit-child --transpile-only src/cli/certifyIntegrations.ts",
+    "integrations:certify:prod": "node dist/cli/certifyIntegrations.js",
     "lint": "eslint src --max-warnings 0",
     "lint:fix": "eslint src --fix",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "yarn build && node --test test/*.test.cjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1075.0",

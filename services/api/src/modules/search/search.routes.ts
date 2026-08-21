@@ -2,13 +2,10 @@ import { Router } from 'express';
 import { asyncHandler } from '../../lib/asyncHandler';
 import { validateSchema } from '../../lib/validation';
 import { authenticate, optionalAuthenticate } from '../../middleware/authenticate';
-import { requireMobileApiKey } from '../../middleware/requireMobileApiKey';
 import { searchClickSchema, searchQuerySchema, trendingSearchQuerySchema } from './search.schema';
 import { getTrendingSearches, recordSearchClick, searchContent } from './search.service';
 
 export const searchRouter = Router();
-
-searchRouter.use(requireMobileApiKey);
 
 // Public (no `authenticate`) — aggregate query popularity, not personal data,
 // and useful to show guests before they've ever signed in or typed anything.
@@ -42,7 +39,7 @@ searchRouter.post(
   authenticate,
   asyncHandler(async (req, res) => {
     const payload = validateSchema(searchClickSchema, req.body);
-    await recordSearchClick(payload.searchEventId, payload.contentId);
+    await recordSearchClick(payload.searchEventId, payload.contentId, req.user!.sub);
     res.status(204).send();
   }),
 );

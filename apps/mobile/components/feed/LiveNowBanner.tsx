@@ -1,14 +1,14 @@
 import React from 'react';
-import { Image, View, useWindowDimensions } from 'react-native';
+import { View, useWindowDimensions } from 'react-native';
 
 import { MaterialIcons } from '@expo/vector-icons';
 
 import { CustomText } from '../CustomText';
 import { TVTouchable } from '../ui/TVTouchable';
 import { FadeIn } from '../ui/FadeIn';
+import { AppImage } from '../ui/AppImage';
 import { useAppTheme } from '../../util/colorScheme';
 import { common } from '../../styles/commonStyles';
-import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
 import type { FeedCardItem } from '../../services/contentService';
 import { useFeedStyles } from './styles';
 
@@ -20,9 +20,9 @@ export function LiveNowBanner({ item, onPress }: { item: FeedCardItem; onPress: 
 
   return (
     <FadeIn delay={40}>
-      <TVTouchable onPress={onPress} showFocusBorder={false}>
+      <TVTouchable onPress={onPress} showFocusBorder={false} pressScale={0.98} haptics>
         <View style={styles.liveCard}>
-          <Image source={{ uri: item.imageUrl || DEFAULT_CONTENT_IMAGE_URI }} resizeMode="cover" style={styles.liveBgImage} />
+          <AppImage uri={item.imageUrl} resizeMode="cover" style={styles.liveBgImage} showSkeleton={false} />
           <View style={{ flexDirection: 'row', alignItems: 'center', padding: compact ? 16 : 20, gap: 16 }}>
             <View style={styles.liveIndicator}>
               <View style={styles.liveDot} />

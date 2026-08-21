@@ -3,13 +3,14 @@ import { env } from '../../config/env';
 import { pool } from '../../db/pool';
 import { emailTransportInfo, verifyEmailTransport } from '../../infra/email';
 import { queueEmailJob } from '../../infra/transactionalEmails';
-import { BadRequestError, NotFoundError } from '../../lib/errors';
+import { BadRequestError, ForbiddenError, NotFoundError } from '../../lib/errors';
 import { isDatabaseConnectivityError, isMissingDatabaseStructureError } from '../../lib/postgres';
 import type { UserRole } from '../auth/auth.types';
 import type { ContentRequestStatus, ContentVisibility } from '../content/content.types';
 import { getMobileAppConfig } from '../appConfig/appConfig.service';
 import { getMeLibrary, getMeMetrics, getMeMostPlayed, getMeRecentlyPlayed } from '../me/me.service';
 import { listUserDevices, revokeDevice } from '../devices/devices.service';
+import { hasCapability } from '../../security/capabilities';
 
 interface SummaryRow {
   total_users: string;
@@ -377,7 +378,7 @@ const PUBLISHER_PORTAL_NAVIGATION = [
 ] as const;
 
 const getScopedContentSummaryResult = (requester: JwtClaims) => {
-  if (requester.role === 'ADMIN') {
+  if (hasCapability(requester.role, 'content.read')) {
     return pool.query<ContentSummaryRow>(
       `SELECT
          COUNT(*)::text AS total_managed_content,
@@ -399,7 +400,7 @@ const getScopedContentSummaryResult = (requester: JwtClaims) => {
 };
 
 const getScopedContentQueueSummaryResult = (requester: JwtClaims) => {
-  if (requester.role === 'ADMIN') {
+  if (hasCapability(requester.role, 'content.manage')) {
     return pool.query<ContentQueueSummaryRow>(
       `SELECT
          COUNT(*) FILTER (WHERE request_status IN ('submitted', 'in_review', 'changes_requested', 'approved'))::text AS active_requests,
@@ -421,7 +422,7 @@ const getScopedContentQueueSummaryResult = (requester: JwtClaims) => {
 };
 
 const getScopedContentQueuePreviewResult = (requester: JwtClaims) => {
-  if (requester.role === 'ADMIN') {
+  if (hasCapability(requester.role, 'content.manage')) {
     return pool.query<ContentQueuePreviewRow>(
       `SELECT
          id::text,
@@ -469,7 +470,7 @@ const getScopedContentQueuePreviewResult = (requester: JwtClaims) => {
 };
 
 const getScopedRecentManagedContentResult = (requester: JwtClaims) => {
-  if (requester.role === 'ADMIN') {
+  if (hasCapability(requester.role, 'content.read')) {
     return pool.query<RecentManagedContentRow>(
       `SELECT
          id::text,
@@ -503,7 +504,7 @@ const getScopedRecentManagedContentResult = (requester: JwtClaims) => {
 };
 
 const getScopedRecentAuthActivityResult = (requester: JwtClaims) => {
-  if (requester.role === 'ADMIN') {
+  if (hasCapability(requester.role, 'operations.manage')) {
     return pool.query<RecentAuthActivityRow>(
       `SELECT
          e.id::text,
@@ -545,7 +546,7 @@ const getScopedRecentAuthActivityResult = (requester: JwtClaims) => {
 };
 
 export const getAdminDashboard = async (requester: JwtClaims) => {
-  const isAdmin = requester.role === 'ADMIN';
+  const isAdmin = hasCapability(requester.role, 'users.read');
   const [
     userSummary,
     contentSummary,
@@ -1358,6 +1359,14 @@ export const updateAdminUserRole = async (input: {
 
   const existing = existingResult.rows[0]!;
 
+  if (existing.role === 'SUPER_ADMIN' && !hasCapability(input.actor.role, 'admin_access.manage')) {
+    throw new ForbiddenError('Only a Super Admin can modify a Super Admin account', 'SUPER_ADMIN_REQUIRED');
+  }
+
+  if ((existing.role === 'ADMIN' || input.role === 'ADMIN') && !hasCapability(input.actor.role, 'admin_access.manage')) {
+    throw new ForbiddenError('Only a Super Admin can grant or remove Admin access', 'SUPER_ADMIN_REQUIRED');
+  }
+
   if (existing.role === input.role) {
     return {
       user: toAdminUserRecord(existing),
@@ -1374,6 +1383,15 @@ export const updateAdminUserRole = async (input: {
 
     if (Number(adminCountResult.rows[0]?.count || 0) <= 1) {
       throw new BadRequestError('At least one admin user must remain assigned', 'ADMIN_LAST_ADMIN');
+    }
+  }
+
+  if (existing.role === 'SUPER_ADMIN' && input.role !== 'SUPER_ADMIN') {
+    const superAdminCount = await pool.query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM app_users WHERE role = 'SUPER_ADMIN' AND is_active = TRUE`,
+    );
+    if (Number(superAdminCount.rows[0]?.count || 0) <= 1) {
+      throw new BadRequestError('The final active Super Admin cannot be demoted', 'ADMIN_LAST_SUPER_ADMIN');
     }
   }
 

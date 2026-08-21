@@ -102,3 +102,26 @@ export const adminUserSearchHistoryQuerySchema = z
     limit: z.coerce.number().int().min(1).max(100).default(25),
   })
   .strict();
+
+export const operationalJobsQuerySchema = z.object({
+  status: z.enum(['pending', 'processing', 'completed', 'failed', 'quarantined']).optional(),
+  limit: z.coerce.number().int().min(1).max(200).default(50),
+}).strict();
+
+export const operationalJobParamsSchema = z.object({
+  kind: z.enum(['content', 'email', 'media']),
+  id: z.coerce.number().int().positive(),
+}).strict();
+
+export const securityAuditQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(200).default(50),
+}).strict();
+
+export const operationalSessionsQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(200).default(50),
+}).strict();
+
+export const operationalSessionParamsSchema = z.object({
+  source: z.enum(['refresh', 'oauth']),
+  id: z.string().min(1).max(160),
+}).strict();

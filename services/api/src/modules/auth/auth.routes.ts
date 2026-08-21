@@ -382,7 +382,11 @@ authRouter.get(
 
 const acceptInviteSchema = z.object({
   token:       z.string().min(32, 'Invalid invitation token'),
-  password:    z.string().min(8, 'Password must be at least 8 characters'),
+  password:    z.string().min(12, 'Password must be at least 12 characters').max(200)
+    .regex(/[a-z]/, 'Password must contain a lowercase letter')
+    .regex(/[A-Z]/, 'Password must contain an uppercase letter')
+    .regex(/[0-9]/, 'Password must contain a number')
+    .regex(/[^A-Za-z0-9]/, 'Password must contain a symbol'),
   name:        z.string().min(1).optional(),
   displayName: z.string().min(1).optional(),
 }).refine((d) => d.name ?? d.displayName, { message: 'name or displayName is required' });

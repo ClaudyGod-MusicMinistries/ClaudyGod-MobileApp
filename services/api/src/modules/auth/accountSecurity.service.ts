@@ -22,6 +22,7 @@ export type SecurityEvent =
   | 'account_unlocked'
   | 'token_refresh'
   | 'session_revoked'
+  | 'admin_mutation'
   | 'suspicious_activity';
 
 export async function recordSecurityEvent(

@@ -17,9 +17,13 @@ unset npm_config_version_commit_hooks npm_config_version_tag_prefix \
 LOG_DIR="$ROOT_DIR/logs/git-hooks"
 mkdir -p "$LOG_DIR"
 TIMESTAMP=$(date '+%Y-%m-%d_%H-%M-%S')
-LOG_FILE="$LOG_DIR/prepush-${TIMESTAMP}.log"
+LOG_FILE="${CLAUDYGOD_PREPUSH_LOG:-$LOG_DIR/prepush-${TIMESTAMP}.log}"
 
-exec > >(tee -a "$LOG_FILE") 2>&1
+if [ "${CLAUDYGOD_PREPUSH_CAPTURED:-0}" != "1" ]; then
+  CLAUDYGOD_PREPUSH_CAPTURED=1 CLAUDYGOD_PREPUSH_LOG="$LOG_FILE" \
+    bash "$0" "$@" 2>&1 | tee -a "$LOG_FILE"
+  exit "${PIPESTATUS[0]}"
+fi
 
 # ── Git context ───────────────────────────────────────────────────────────────
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
@@ -131,26 +135,32 @@ run_step "API ESLint — zero warnings allowed" \
 run_step "API Build — tsc compile to dist/" \
   yarn --cwd ./services/api build
 
+run_step "API contract tests" \
+  yarn --cwd ./services/api test
+
+run_step "PostgreSQL migration + search integration" \
+  bash ./scripts/test-database-integration.sh
+
+run_step "Admin TypeScript + production build" \
+  yarn --cwd ./admin/web build
+
 # ── 6. Mobile TypeScript ──────────────────────────────────────────────────────
-warn_step "Mobile TypeScript — tsc --noEmit" \
+run_step "Mobile TypeScript — tsc --noEmit" \
   yarn --cwd ./apps/mobile typecheck
 
 # ── 7. Mobile ESLint ──────────────────────────────────────────────────────────
-warn_step "Mobile ESLint" \
+run_step "Mobile ESLint" \
   yarn --cwd ./apps/mobile lint
 
+run_step "Mobile release-contract tests" \
+  yarn --cwd ./apps/mobile test
+
 # ── 8. Dependency audit (high/critical) ──────────────────────────────────────
-step_start "Security audit — yarn audit (high+critical)"
-if yarn --cwd ./services/api audit --level high 2>&1; then
-  step_end "pass" "Security audit"
-else
-  AUDIT_EXIT=$?
-  if [ "$AUDIT_EXIT" -ge 16 ]; then
-    step_end "fail" "Security audit — critical vulnerabilities found"
-  else
-    step_end "warn" "Security audit — moderate vulnerabilities (review manually)"
-  fi
-fi
+# This verifier still queries the live registry and fails every unknown
+# high/critical advisory. It additionally proves the exact vendored image-size
+# mitigation and exploit regressions required while upstream has no release.
+run_step "Security audit — registry + verified vendor mitigations" \
+  yarn security:audit
 
 # ── 9. Docker / compose validation ───────────────────────────────────────────
 step_start "Docker compose validation"
@@ -159,6 +169,12 @@ if bash ./scripts/docker-validate.sh 2>&1; then
 else
   step_end "fail" "Docker validation"
 fi
+
+run_step "Recovery automation syntax" \
+  bash -n ./scripts/backup-database.sh ./scripts/verify-database-restore.sh
+
+run_step "Transactional deployment contracts" \
+  yarn release:contracts
 
 # ── 10. Leftover console.log in API source ────────────────────────────────────
 step_start "Debug console.log scan — API src/"
@@ -173,7 +189,8 @@ fi
 
 # ── 11. TODO / FIXME / HACK in new code ───────────────────────────────────────
 step_start "TODO/FIXME scan (informational)"
-TODO_COUNT=$(git diff HEAD~1 HEAD 2>/dev/null | grep -cE '^\+.*\b(TODO|FIXME|HACK|XXX)\b' || echo 0)
+TODO_COUNT=$(git diff HEAD~1 HEAD 2>/dev/null | grep -cE '^\+.*\b(TODO|FIXME|HACK|XXX)\b' || true)
+TODO_COUNT=${TODO_COUNT:-0}
 if [ "$TODO_COUNT" -gt 0 ]; then
   echo "  Found $TODO_COUNT new TODO/FIXME/HACK markers in this push"
   step_end "warn" "TODO/FIXME markers ($TODO_COUNT new)"
@@ -186,7 +203,8 @@ step_start "Migration file check"
 MIGRATE_FILE="services/api/src/db/migrate.ts"
 if [[ -f "$MIGRATE_FILE" ]]; then
   # Detect duplicate SQL statement markers
-  DUP_COMMENTS=$(grep -c "Phase" "$MIGRATE_FILE" 2>/dev/null || echo 0)
+  DUP_COMMENTS=$(grep -c "Phase" "$MIGRATE_FILE" 2>/dev/null || true)
+  DUP_COMMENTS=${DUP_COMMENTS:-0}
   echo "  Migration phases found: $DUP_COMMENTS"
   step_end "pass" "Migration file present"
 else

@@ -10,6 +10,7 @@ x-backend-env: &backend-env
 
   DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
   DATABASE_SSL: ${DATABASE_SSL:-true}
+  DATABASE_SSL_REJECT_UNAUTHORIZED: ${DATABASE_SSL_REJECT_UNAUTHORIZED:-true}
 
   REDIS_URL: ${REDIS_URL:?REDIS_URL is required}
 
@@ -20,7 +21,6 @@ x-backend-env: &backend-env
 
   BCRYPT_ROUNDS: ${BCRYPT_ROUNDS:-12}
   CORS_ORIGIN: ${CORS_ORIGIN:?CORS_ORIGIN is required}
-  MOBILE_API_KEY: ${MOBILE_API_KEY:?MOBILE_API_KEY is required}
   DATA_ENCRYPTION_KEY: ${DATA_ENCRYPTION_KEY:?DATA_ENCRYPTION_KEY is required}
 
   # Web Studio is a production-critical integration. Refuse to render a
@@ -46,6 +46,10 @@ x-backend-env: &backend-env
   SUPABASE_S3_REGION: ${SUPABASE_S3_REGION:-eu-west-1}
   SUPABASE_S3_ACCESS_KEY_ID: ${SUPABASE_S3_ACCESS_KEY_ID:?SUPABASE_S3_ACCESS_KEY_ID is required}
   SUPABASE_S3_SECRET_ACCESS_KEY: ${SUPABASE_S3_SECRET_ACCESS_KEY:?SUPABASE_S3_SECRET_ACCESS_KEY is required}
+  CLAMAV_HOST: clamav
+  CLAMAV_PORT: 3310
+  CLAMAV_REQUIRED: "true"
+  CLAMAV_TIMEOUT_MS: ${CLAMAV_TIMEOUT_MS:-120000}
 
   MAIL_FROM: ${MAIL_FROM:?MAIL_FROM is required}
   MAIL_REPLY_TO: ${MAIL_REPLY_TO:-}
@@ -75,8 +79,6 @@ x-backend-env: &backend-env
   YOUTUBE_API_KEY: ${YOUTUBE_API_KEY:-}
   YOUTUBE_CHANNEL_ID: ${YOUTUBE_CHANNEL_ID:-}
   YOUTUBE_MAX_RESULTS: ${YOUTUBE_MAX_RESULTS:-12}
-
-  ADMIN_SIGNUP_CODE: ${ADMIN_SIGNUP_CODE:-}
 
   METRICS_TOKEN: ${METRICS_TOKEN:?METRICS_TOKEN is required}
   SENTRY_DSN: ${SENTRY_DSN:-}
@@ -239,6 +241,25 @@ services:
       # Service
       - "traefik.http.services.cgm-api.loadbalancer.server.port=4000"
 
+  # ── Malware scanner (internal only; fresh signatures persisted) ────────────
+  clamav:
+    image: clamav/clamav:1.4
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=false"
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - clamav_data:/var/lib/clamav
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/clamdcheck.sh"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 120s
+    networks:
+      - internal
+
   # ── Background worker (internal only — never exposed via Traefik) ──────────
   worker:
     image: ghcr.io/${GHCR_OWNER:-claudygod-musicministries}/claudygod-api:${IMAGE_TAG:-latest}
@@ -262,6 +283,8 @@ services:
       migrate:
         condition: service_completed_successfully
       cgm-api:
+        condition: service_healthy
+      clamav:
         condition: service_healthy
     healthcheck:
       disable: true
@@ -288,6 +311,7 @@ services:
         exec /bin/prometheus --config.file=/etc/prometheus/prometheus.yml --storage.tsdb.path=/prometheus --storage.tsdb.retention.time=30d
     volumes:
       - ./ops/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml.template:ro
+      - ./ops/prometheus/rules:/etc/prometheus/rules:ro
       - prometheus_data:/prometheus
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:9090/-/healthy >/dev/null || exit 1"]
@@ -416,7 +440,6 @@ services:
         EXPO_PUBLIC_API_URL: ${EXPO_PUBLIC_API_URL:?EXPO_PUBLIC_API_URL is required}
         EXPO_PUBLIC_SUPABASE_URL: ${EXPO_PUBLIC_SUPABASE_URL:?EXPO_PUBLIC_SUPABASE_URL is required}
         EXPO_PUBLIC_SUPABASE_KEY: ${EXPO_PUBLIC_SUPABASE_KEY:?EXPO_PUBLIC_SUPABASE_KEY is required}
-        EXPO_PUBLIC_MOBILE_API_KEY: ${EXPO_PUBLIC_MOBILE_API_KEY:?EXPO_PUBLIC_MOBILE_API_KEY is required}
         EAS_PROJECT_ID: ${EAS_PROJECT_ID:-}
     restart: unless-stopped
     security_opt:
@@ -457,6 +480,7 @@ services:
 
 # ─── Volumes ──────────────────────────────────────────────────────────────────
 volumes:
+  clamav_data:
   redis_data:
   prometheus_data:
   grafana_data:

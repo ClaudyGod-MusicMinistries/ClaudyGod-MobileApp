@@ -10,10 +10,12 @@ import {
   generatePresignedGetUrl,
   generatePresignedPutUrl,
   headObject,
+  checkBucketAccess,
   S3_GET_EXPIRY_SECONDS,
   S3_PUT_EXPIRY_SECONDS,
 } from '../../infra/s3';
 import { logger } from '../../lib/logger';
+import { dispatchMediaJob } from '../../queues/mediaOutbox';
 
 type AssetKind = keyof typeof uploadPolicies;
 
@@ -24,9 +26,11 @@ interface UploadSessionRow {
   client_reference: string | null;
   original_file_name: string;
   mime_type: string;
+  file_size_bytes: string | number | null;
   storage_bucket: string;
   storage_path: string;
   status: 'issued' | 'uploaded' | 'expired' | 'failed';
+  trust_status: 'pending' | 'scanning' | 'clean' | 'quarantined' | 'error' | 'legacy_unverified';
   expires_at: string | Date;
   completed_at: string | Date | null;
   created_at: string | Date;
@@ -146,12 +150,12 @@ export const requestAdminS3Upload = async ({
   const sessionResult = await pool.query<UploadSessionRow>(
     `INSERT INTO upload_sessions (
       channel, requested_by, client_reference, original_file_name,
-      mime_type, storage_bucket, storage_path, status, expires_at
+      mime_type, file_size_bytes, storage_bucket, storage_path, status, expires_at
     )
-    VALUES ('admin', $1, $2, $3, $4, $5, $6, 'issued', $7)
+    VALUES ('admin', $1, $2, $3, $4, $5, $6, $7, 'issued', $8)
     RETURNING id, channel, requested_by, client_reference, original_file_name,
-              mime_type, storage_bucket, storage_path, status, expires_at, created_at`,
-    [requestedByUserId, clientReference ?? null, fileName, mimeType, bucket, key, expiresAt.toISOString()],
+              mime_type, file_size_bytes, storage_bucket, storage_path, status, expires_at, created_at`,
+    [requestedByUserId, clientReference ?? null, fileName, mimeType, fileSizeBytes, bucket, key, expiresAt.toISOString()],
   );
 
   const session = sessionResult.rows[0];
@@ -196,7 +200,7 @@ export const confirmAdminS3Upload = async ({
   sessionId: string;
   requestedByUserId: string;
 }): Promise<{
-  session: { id: string; status: string; confirmedAt: string };
+  session: { id: string; status: string; trustStatus: string; confirmedAt: string };
   asset: {
     key: string;
     bucket: string;
@@ -210,7 +214,7 @@ export const confirmAdminS3Upload = async ({
 
   const sessionResult = await pool.query<UploadSessionRow>(
     `SELECT id, channel, requested_by, original_file_name, mime_type,
-            storage_bucket, storage_path, status, expires_at, completed_at, created_at
+            file_size_bytes, storage_bucket, storage_path, status, trust_status, expires_at, completed_at, created_at
      FROM upload_sessions
      WHERE id = $1`,
     [sessionId],
@@ -234,6 +238,7 @@ export const confirmAdminS3Upload = async ({
       session: {
         id: session.id,
         status: 'uploaded',
+        trustStatus: session.trust_status,
         confirmedAt: session.completed_at ? new Date(session.completed_at).toISOString() : new Date().toISOString(),
       },
       asset: {
@@ -267,13 +272,41 @@ export const confirmAdminS3Upload = async ({
     );
   }
 
+  const expectedSize = Number(session.file_size_bytes ?? 0);
+  const actualType = meta.contentType?.split(';')[0]?.trim().toLowerCase();
+  const expectedType = session.mime_type.trim().toLowerCase();
+  if ((expectedSize > 0 && meta.contentLength !== expectedSize) || (actualType && actualType !== expectedType)) {
+    await deleteObject({ bucket: session.storage_bucket, key: session.storage_path }).catch(() => undefined);
+    await pool.query(
+      `UPDATE upload_sessions SET status = 'failed', updated_at = NOW() WHERE id = $1`,
+      [sessionId],
+    );
+    throw new BadRequestError('Uploaded object metadata does not match the requested file', 'UPLOAD_METADATA_MISMATCH');
+  }
+
   const now = new Date();
-  await pool.query(
-    `UPDATE upload_sessions
-     SET status = 'uploaded', completed_at = $1, updated_at = $1
-     WHERE id = $2`,
-    [now.toISOString(), sessionId],
-  );
+  const client = await pool.connect();
+  let mediaJob: { id: number; upload_session_id: string };
+  try {
+    await client.query('BEGIN');
+    await client.query(
+      `UPDATE upload_sessions SET status = 'uploaded', trust_status = 'pending', completed_at = $1, updated_at = $1 WHERE id = $2`,
+      [now.toISOString(), sessionId],
+    );
+    const jobResult = await client.query<{ id: number; upload_session_id: string }>(
+      `INSERT INTO media_processing_jobs (upload_session_id) VALUES ($1)
+       ON CONFLICT (upload_session_id) DO UPDATE SET updated_at = media_processing_jobs.updated_at
+       RETURNING id, upload_session_id`, [sessionId],
+    );
+    mediaJob = jobResult.rows[0]!;
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally { client.release(); }
+  await dispatchMediaJob(mediaJob).catch((error) => {
+    logger.warn('[storage] media scan dispatch deferred', { sessionId, error: String(error) });
+  });
 
   logger.info('[storage] upload confirmed', {
     sessionId,
@@ -285,6 +318,7 @@ export const confirmAdminS3Upload = async ({
     session: {
       id: session.id,
       status: 'uploaded',
+      trustStatus: 'pending',
       confirmedAt: now.toISOString(),
     },
     asset: {
@@ -296,6 +330,90 @@ export const confirmAdminS3Upload = async ({
       uploadedAt: meta.lastModified?.toISOString() ?? now.toISOString(),
     },
   };
+};
+
+export const getAdminUploadSession = async ({ sessionId, requestedByUserId }: { sessionId: string; requestedByUserId: string }) => {
+  const result = await pool.query<UploadSessionRow>(
+    `SELECT id, channel, requested_by, original_file_name, mime_type, file_size_bytes, storage_bucket,
+            storage_path, status, trust_status, expires_at, completed_at, created_at
+     FROM upload_sessions WHERE id = $1`, [sessionId],
+  );
+  const session = result.rows[0];
+  if (!session) throw new NotFoundError('Upload session not found', 'SESSION_NOT_FOUND');
+  if (session.channel !== 'admin' || session.requested_by !== requestedByUserId) {
+    throw new ForbiddenError('You do not own this upload session', 'SESSION_FORBIDDEN');
+  }
+  return {
+    id: session.id,
+    status: session.status,
+    trustStatus: session.trust_status,
+    scanError: session.trust_status === 'error' ? 'Security scanning could not complete. Retry through Operations.' : null,
+    ready: session.status === 'uploaded' && session.trust_status === 'clean',
+  };
+};
+
+export const getAdminStorageHealth = async (): Promise<{
+  configured: boolean;
+  reachable: boolean;
+  bucket: string | null;
+  endpointHost: string | null;
+  sessions: Record<'issued' | 'uploaded' | 'expired' | 'failed', number>;
+  lastConfirmedAt: string | null;
+  detail: string;
+}> => {
+  const statusResult = await pool.query<{ status: string; count: string; last_confirmed_at: string | null }>(
+    `SELECT status, COUNT(*)::text AS count, MAX(completed_at)::text AS last_confirmed_at
+     FROM upload_sessions WHERE channel = 'admin' GROUP BY status`,
+  );
+  const sessions = { issued: 0, uploaded: 0, expired: 0, failed: 0 };
+  let lastConfirmedAt: string | null = null;
+  for (const row of statusResult.rows) {
+    if (row.status in sessions) sessions[row.status as keyof typeof sessions] = Number(row.count);
+    if (row.last_confirmed_at && (!lastConfirmedAt || row.last_confirmed_at > lastConfirmedAt)) lastConfirmedAt = row.last_confirmed_at;
+  }
+
+  if (!env.S3_ENABLED) {
+    return { configured: false, reachable: false, bucket: null, endpointHost: null, sessions, lastConfirmedAt, detail: 'Mobile media storage credentials are incomplete.' };
+  }
+
+  const endpointHost = (() => {
+    try { return new URL(env.SUPABASE_S3_ENDPOINT).host; } catch { return null; }
+  })();
+  try {
+    await checkBucketAccess(env.SUPABASE_STORAGE_BUCKET);
+    return { configured: true, reachable: true, bucket: env.SUPABASE_STORAGE_BUCKET, endpointHost, sessions, lastConfirmedAt, detail: 'Credentials were accepted and the configured bucket is reachable.' };
+  } catch (error) {
+    logger.warn('[storage] bucket health check failed', { error: String(error) });
+    return { configured: true, reachable: false, bucket: env.SUPABASE_STORAGE_BUCKET, endpointHost, sessions, lastConfirmedAt, detail: 'Storage is configured, but the bucket could not be reached with the current credentials.' };
+  }
+};
+
+export const reconcileExpiredAdminUploads = async (limit = 100): Promise<number> => {
+  const expired = await pool.query<Pick<UploadSessionRow, 'id' | 'storage_bucket' | 'storage_path'>>(
+    `SELECT id, storage_bucket, storage_path
+     FROM upload_sessions
+     WHERE channel = 'admin' AND status = 'issued' AND expires_at < NOW()
+     ORDER BY expires_at ASC
+     LIMIT $1`,
+    [limit],
+  );
+
+  let reconciled = 0;
+  for (const session of expired.rows) {
+    try {
+      await deleteObject({ bucket: session.storage_bucket, key: session.storage_path });
+    } catch (error) {
+      logger.warn('[storage] expired upload object cleanup failed', { sessionId: session.id, error: String(error) });
+    }
+    const result = await pool.query(
+      `UPDATE upload_sessions SET status = 'expired', updated_at = NOW()
+       WHERE id = $1 AND status = 'issued'`,
+      [session.id],
+    );
+    reconciled += result.rowCount ?? 0;
+  }
+  if (reconciled > 0) logger.info('[storage] expired upload sessions reconciled', { reconciled });
+  return reconciled;
 };
 
 // ─── Delete ──────────────────────────────────────────────────────────────────

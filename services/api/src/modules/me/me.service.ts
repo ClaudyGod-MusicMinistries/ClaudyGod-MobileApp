@@ -903,7 +903,7 @@ export const getMeRecommendations = async (
   }
 
   try {
-    const [tagRows, sectionRows] = await Promise.all([
+    const [tagRows, sectionRows, typeRows, playCountRow] = await Promise.all([
       pool.query<{ tag: string }>(
         `SELECT tag
          FROM (
@@ -934,18 +934,49 @@ export const getMeRecommendations = async (
          ) sections`,
         [user.sub, windowDays],
       ),
+      // A user's own content-type mix (audio vs video vs playlist vs
+      // announcement) is a signal that's always available straight from
+      // their play log — unlike tag/section overlap, it doesn't depend on
+      // admins having tagged the content they played. This is what keeps
+      // recommendations type-appropriate (not surfacing videos to someone
+      // who almost exclusively plays music) even when tags below are thin.
+      pool.query<{ content_type: string }>(
+        `SELECT content_type
+         FROM user_play_events
+         WHERE user_id = $1
+           AND played_at >= NOW() - ($2::text || ' days')::interval
+         GROUP BY content_type
+         ORDER BY COUNT(*) DESC
+         LIMIT 1`,
+        [user.sub, windowDays],
+      ),
+      pool.query<{ count: string }>(
+        `SELECT COUNT(*)::text AS count FROM user_play_events WHERE user_id = $1`,
+        [user.sub],
+      ),
     ]);
 
     const tags = tagRows.rows.map((row) => row.tag);
     const sections = sectionRows.rows.map((row) => row.section);
+    const preferredType = typeRows.rows[0]?.content_type ?? null;
+    const hasAnyPlayHistory = Number(playCountRow.rows[0]?.count ?? '0') > 0;
 
-    if (tags.length === 0 && sections.length === 0) {
+    // A true cold start — nothing in this account to personalize from at
+    // all — is the only case that falls back to undifferentiated global
+    // trending. Every other case (including "has plays, but nothing they
+    // played happens to be tagged") is handled by the scored query below,
+    // which degrades gracefully via the content-type signal instead of
+    // jumping straight to a list that's liable to just repeat what the
+    // Most Played rail already shows.
+    if (!hasAnyPlayHistory) {
       const fallback = await listMostPlayedContent({ limit, windowDays: 90 });
       return {
-        items: fallback.items.map((item) => ({
-          ...toMostPlayedEngagementItem(item),
-          lastPlayedAt: undefined,
-        })),
+        items: fallback.items
+          .filter((item) => item.visibility !== 'draft')
+          .map((item) => ({
+            ...toMostPlayedEngagementItem(item),
+            lastPlayedAt: undefined,
+          })),
       };
     }
 
@@ -966,19 +997,18 @@ export const getMeRecommendations = async (
          c.updated_at
        FROM content_items c
        WHERE c.visibility = 'published'
-         AND (
-           ($2::text[] <> '{}'::text[] AND c.tags && $2::text[])
-           OR ($3::text[] <> '{}'::text[] AND c.app_sections && $3::text[])
-         )
          AND c.id::text NOT IN (
            SELECT content_id FROM user_play_events WHERE user_id = $1
          )
        ORDER BY
-         COALESCE(array_length(ARRAY(SELECT unnest(c.tags) INTERSECT SELECT unnest($2::text[])), 1), 0)
-         + COALESCE(array_length(ARRAY(SELECT unnest(c.app_sections) INTERSECT SELECT unnest($3::text[])), 1), 0) DESC,
+         (
+           COALESCE(array_length(ARRAY(SELECT unnest(c.tags) INTERSECT SELECT unnest($2::text[])), 1), 0) * 3
+           + COALESCE(array_length(ARRAY(SELECT unnest(c.app_sections) INTERSECT SELECT unnest($3::text[])), 1), 0) * 3
+           + CASE WHEN $5::text IS NOT NULL AND c.content_type = $5::text THEN 5 ELSE 0 END
+         ) DESC,
          c.updated_at DESC
        LIMIT $4`,
-      [user.sub, tags, sections, limit],
+      [user.sub, tags, sections, limit, preferredType],
     );
 
     return { items: recResult.rows.map(toEngagementItem) };
@@ -1354,18 +1384,20 @@ const buildDonationInstructions = (params: {
 
   if (currency === 'NGN') {
     return {
-      title: 'Secure local payment',
+      title: 'Request approved local giving instructions',
       message:
-        'Continue with your preferred local provider. A secure payment link will be issued for your NGN donation.',
-      actionLabel: 'Continue to payment',
+        'No in-app payment processor is currently enabled. Contact the ministry team for approved NGN giving instructions and verify the donation reference before sending funds.',
+      actionLabel: supportEmail ? 'Contact giving team' : undefined,
+      actionUrl: supportEmail ? `mailto:${supportEmail}` : undefined,
     };
   }
 
   return {
-    title: 'Secure card payment',
+    title: 'Request approved giving instructions',
     message:
-      'Continue with the secure checkout to complete your donation. You can use card, Apple Pay, or Google Pay where available.',
-    actionLabel: 'Continue to payment',
+      'No card, Apple Pay, or Google Pay checkout is currently enabled in this app. Contact the ministry team for an approved giving route.',
+    actionLabel: supportEmail ? 'Contact giving team' : undefined,
+    actionUrl: supportEmail ? `mailto:${supportEmail}` : undefined,
   };
 };
 

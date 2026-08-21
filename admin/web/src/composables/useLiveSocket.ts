@@ -1,4 +1,4 @@
-import { getAccessToken, API_URL } from '@/api/client';
+import { API_URL } from '@/api/client';
 
 export interface LiveSocketFrame {
   type: 'message' | 'message_status' | 'session_update' | 'viewer_count';
@@ -38,10 +38,10 @@ function connectSocket(): void {
   connecting = true;
   cancelled = false;
 
-  const token = getAccessToken();
   const wsBase = API_URL.replace(/^http/, 'ws');
-  const url = `${wsBase}/ws${token ? `?token=${encodeURIComponent(token)}` : ''}`;
-  socket = new WebSocket(url);
+  // Browser WebSockets automatically send the API's HttpOnly session cookie.
+  // Never place bearer tokens in a URL: URLs leak into proxies and logs.
+  socket = new WebSocket(`${wsBase}/ws`);
 
   socket.onopen = () => {
     connecting = false;

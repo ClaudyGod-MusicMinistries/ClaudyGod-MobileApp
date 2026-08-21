@@ -1,5 +1,7 @@
 import { pool } from '../../db/pool';
 import { isMissingDatabaseStructureError } from '../../lib/postgres';
+import { BadRequestError } from '../../lib/errors';
+import type { PoolClient, QueryResult } from 'pg';
 import { DEFAULT_MOBILE_APP_CONFIG } from './appConfig.defaults';
 import { mobileAppConfigSchema, type MobileAppConfig } from './appConfig.schema';
 
@@ -9,6 +11,91 @@ interface AppConfigRow {
   config_value: unknown;
   updated_at: string | Date;
 }
+
+type SectionCatalogEntry = {
+  id: string;
+  title: string;
+  contentTypes: string[];
+  screens: string[];
+};
+
+const buildSectionCatalog = (config: MobileAppConfig): SectionCatalogEntry[] => {
+  const catalog = new Map<string, SectionCatalogEntry>();
+  const groups: Array<[string, MobileAppConfig['layout']['homeSections']]> = [
+    ['home', config.layout.homeSections],
+    ['videos', config.layout.videoSections],
+    ['player', config.layout.playerSections],
+    ['library', config.layout.librarySections],
+  ];
+  for (const [screen, sections] of groups) {
+    for (const section of sections) {
+      const existing = catalog.get(section.id);
+      if (existing) {
+        if (!existing.screens.includes(screen)) existing.screens.push(screen);
+      } else {
+        catalog.set(section.id, {
+          id: section.id,
+          title: section.title,
+          contentTypes: section.contentTypes,
+          screens: [screen],
+        });
+      }
+    }
+  }
+  return [...catalog.values()];
+};
+
+const syncMobileSectionCatalog = async (client: PoolClient, config: MobileAppConfig): Promise<void> => {
+  const catalog = buildSectionCatalog(config);
+  const ids = catalog.map((section) => section.id);
+  const inUseRemoved = await client.query<{ section_id: string }>(
+    `SELECT DISTINCT s.section_id
+       FROM mobile_sections s
+       JOIN content_section_assignments a ON a.section_id = s.section_id
+      WHERE s.active = TRUE AND NOT (s.section_id = ANY($1::text[]))
+      LIMIT 1`,
+    [ids],
+  );
+  if (inUseRemoved.rowCount) {
+    throw new BadRequestError(
+      `Section "${inUseRemoved.rows[0]!.section_id}" still has assigned content and cannot be removed`,
+      'SECTION_IN_USE',
+    );
+  }
+
+  for (const section of catalog) {
+    const incompatible = await client.query<{ content_type: string }>(
+      `SELECT c.content_type
+         FROM content_section_assignments a
+         JOIN content_items c ON c.id = a.content_id
+        WHERE a.section_id = $1
+          AND NOT (c.content_type = ANY($2::text[]))
+        LIMIT 1`,
+      [section.id, section.contentTypes],
+    );
+    if (incompatible.rowCount) {
+      throw new BadRequestError(
+        `Section "${section.title}" still contains ${incompatible.rows[0]!.content_type} content and cannot remove that content type`,
+        'SECTION_CONTENT_TYPE_IN_USE',
+      );
+    }
+  }
+
+  await client.query(`UPDATE mobile_sections SET active = FALSE, updated_at = NOW() WHERE active = TRUE`);
+  for (const section of catalog) {
+    await client.query(
+      `INSERT INTO mobile_sections (section_id, title, content_types, screens, active)
+       VALUES ($1, $2, $3::text[], $4::text[], TRUE)
+       ON CONFLICT (section_id) DO UPDATE SET
+         title = EXCLUDED.title,
+         content_types = EXCLUDED.content_types,
+         screens = EXCLUDED.screens,
+         active = TRUE,
+         updated_at = NOW()`,
+      [section.id, section.title, section.contentTypes, section.screens],
+    );
+  }
+};
 
 function normalizeNavigationTabs(
   tabs?: Partial<MobileAppConfig['navigation']['tabs']>,
@@ -131,14 +218,28 @@ export const getMobileAppConfig = async (): Promise<{
   }
 
   if (result.rowCount === 0) {
-    const inserted = await pool.query<AppConfigRow>(
-      `INSERT INTO app_config_store (config_key, config_value)
-       VALUES ($1, $2::jsonb)
-       RETURNING config_value, updated_at`,
-      [MOBILE_APP_CONFIG_KEY, JSON.stringify(DEFAULT_MOBILE_APP_CONFIG)],
-    );
+    const client = await pool.connect();
+    let inserted: QueryResult<AppConfigRow>;
+    try {
+      await client.query('BEGIN');
+      inserted = await client.query<AppConfigRow>(
+        `INSERT INTO app_config_store (config_key, config_value)
+         VALUES ($1, $2::jsonb)
+         ON CONFLICT (config_key) DO UPDATE SET config_value = app_config_store.config_value
+         RETURNING config_value, updated_at`,
+        [MOBILE_APP_CONFIG_KEY, JSON.stringify(DEFAULT_MOBILE_APP_CONFIG)],
+      );
+      const resolvedConfig = mergeWithDefaults(inserted.rows[0]!.config_value);
+      await syncMobileSectionCatalog(client, resolvedConfig);
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
     return {
-      config: DEFAULT_MOBILE_APP_CONFIG,
+      config: mergeWithDefaults(inserted.rows[0]!.config_value),
       meta: {
         key: MOBILE_APP_CONFIG_KEY,
         updatedAt: new Date(inserted.rows[0]!.updated_at).toISOString(),
@@ -163,18 +264,29 @@ export const updateMobileAppConfig = async (params: {
   meta: { key: string; updatedAt: string };
 }> => {
   const config = mergeWithDefaults(params.config);
-
-  const result = await pool.query<AppConfigRow>(
-    `INSERT INTO app_config_store (config_key, config_value, updated_by)
-     VALUES ($1, $2::jsonb, $3)
-     ON CONFLICT (config_key)
-     DO UPDATE SET
-       config_value = EXCLUDED.config_value,
-       updated_by = EXCLUDED.updated_by,
-       updated_at = NOW()
-     RETURNING config_value, updated_at`,
-    [MOBILE_APP_CONFIG_KEY, JSON.stringify(config), params.updatedByUserId],
-  );
+  const client = await pool.connect();
+  let result: QueryResult<AppConfigRow>;
+  try {
+    await client.query('BEGIN');
+    await syncMobileSectionCatalog(client, config);
+    result = await client.query<AppConfigRow>(
+      `INSERT INTO app_config_store (config_key, config_value, updated_by)
+       VALUES ($1, $2::jsonb, $3)
+       ON CONFLICT (config_key)
+       DO UPDATE SET
+         config_value = EXCLUDED.config_value,
+         updated_by = EXCLUDED.updated_by,
+         updated_at = NOW()
+       RETURNING config_value, updated_at`,
+      [MOBILE_APP_CONFIG_KEY, JSON.stringify(config), params.updatedByUserId],
+    );
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 
   return {
     config,

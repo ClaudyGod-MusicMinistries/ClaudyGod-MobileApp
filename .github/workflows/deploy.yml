@@ -61,8 +61,14 @@ jobs:
       - name: Install mobile dependencies
         run: yarn --cwd ./apps/mobile install --frozen-lockfile
 
+      - name: Install Playwright Chromium
+        run: yarn --cwd ./admin/web playwright install --with-deps chromium
+
       - name: Run full repository review
         run: bash ./scripts/review-all.sh
+
+      - name: Run admin browser workflows
+        run: yarn --cwd ./admin/web test:e2e
 
   # ── 2. Build all Docker images and push to GHCR ──────────────────────────────
   build-push:
@@ -73,6 +79,31 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Verify production public build configuration
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
+          VITE_SENTRY_DSN: ${{ vars.VITE_SENTRY_DSN }}
+          VITE_MOBILE_PREVIEW_URL: ${{ vars.VITE_MOBILE_PREVIEW_URL }}
+          EXPO_PUBLIC_API_URL: ${{ vars.EXPO_PUBLIC_API_URL }}
+          EXPO_PUBLIC_SUPABASE_URL: ${{ vars.EXPO_PUBLIC_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_KEY }}
+          EXPO_PUBLIC_MOBILE_API_KEY: ${{ secrets.EXPO_PUBLIC_MOBILE_API_KEY }}
+          EXPO_PUBLIC_SENTRY_DSN: ${{ vars.EXPO_PUBLIC_SENTRY_DSN }}
+          EAS_PROJECT_ID: ${{ vars.EAS_PROJECT_ID }}
+        run: |
+          set -euo pipefail
+          for name in VITE_API_URL VITE_SENTRY_DSN VITE_MOBILE_PREVIEW_URL EXPO_PUBLIC_API_URL EXPO_PUBLIC_SUPABASE_URL EXPO_PUBLIC_SUPABASE_KEY EXPO_PUBLIC_MOBILE_API_KEY EXPO_PUBLIC_SENTRY_DSN EAS_PROJECT_ID; do
+            value="${!name:-}"
+            if [ -z "$value" ] || printf '%s' "$value" | grep -Eqi 'placeholder|your_|example|validation'; then
+              echo "::error::$name is missing or contains a placeholder"
+              exit 1
+            fi
+          done
+          for name in VITE_API_URL VITE_SENTRY_DSN VITE_MOBILE_PREVIEW_URL EXPO_PUBLIC_API_URL EXPO_PUBLIC_SUPABASE_URL EXPO_PUBLIC_SENTRY_DSN; do
+            value="${!name}"
+            case "$value" in https://*) ;; *) echo "::error::$name must use HTTPS"; exit 1;; esac
+          done
 
       - name: Create CI environment files
         run: bash ./scripts/setup-ci-env.sh
@@ -228,12 +259,13 @@ jobs:
         env:
           GHCR_DEPLOY_TOKEN: ${{ secrets.GHCR_DEPLOY_TOKEN }}
           DEPLOY_SHA:        ${{ github.sha }}
+          API_DOMAIN:        ${{ vars.API_DOMAIN }}
         with:
           host:     ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key:      ${{ secrets.VPS_SSH_KEY }}
           port:     ${{ secrets.VPS_PORT }}
-          envs:     GHCR_DEPLOY_TOKEN,DEPLOY_SHA
+          envs:     GHCR_DEPLOY_TOKEN,DEPLOY_SHA,API_DOMAIN
           script_stop: true
           script: |
             set -euo pipefail
@@ -244,18 +276,58 @@ jobs:
               exit 1
             fi
 
+            previous_container=$(docker compose -f docker-compose.production.yml --env-file .env.production ps -q cgm-api)
+            previous_tag=""
+            if [ -n "$previous_container" ]; then
+              previous_image=$(docker inspect --format '{{.Config.Image}}' "$previous_container")
+              previous_tag=${previous_image##*:}
+            fi
+
+            rollback_previous_release() {
+              if printf '%s' "$previous_tag" | grep -Eq '^[0-9a-f]{40}$'; then
+                echo "Deployment verification failed; restoring immutable release $previous_tag"
+                IMAGE_TAG="$previous_tag" make rollback SHA="$previous_tag"
+              else
+                echo "::error::No immutable previous release SHA was available for automatic rollback."
+              fi
+            }
+
             # Deploy the immutable workflow revision, not a merge result from a
             # mutable branch. A dirty deployment checkout is an operational
             # error and checkout will refuse to overwrite it.
             git fetch --prune origin main
             git checkout --detach "$DEPLOY_SHA"
             echo "$GHCR_DEPLOY_TOKEN" | docker login ghcr.io -u peter4tech --password-stdin
-            IMAGE_TAG="$DEPLOY_SHA" make deploy
+
+            if ! IMAGE_TAG="$DEPLOY_SHA" make deploy; then
+              rollback_previous_release
+              exit 1
+            fi
+
+            if ! IMAGE_TAG="$DEPLOY_SHA" make certify-integrations; then
+              rollback_previous_release
+              exit 1
+            fi
+
+            public_ready=false
+            for i in $(seq 1 10); do
+              status=$(curl -s -o /dev/null -w '%{http_code}' "https://$API_DOMAIN/health" || echo "000")
+              if [ "$status" = "200" ]; then
+                public_ready=true
+                break
+              fi
+              echo "Public health check returned $status, retrying ($i/10)..."
+              sleep 6
+            done
+            if [ "$public_ready" != "true" ]; then
+              rollback_previous_release
+              exit 1
+            fi
+
             docker image prune -f
 
-      # The internal docker healthcheck (already enforced by `make deploy`'s
-      # `docker compose up --wait`) only proves the container is up — this proves DNS,
-      # TLS, and Traefik are actually routing real traffic to it.
+      # Independent confirmation from the Actions runner. The transactional
+      # server-side probe above already rolls back before this step can run.
       - name: Verify public API endpoint
         run: |
           for i in $(seq 1 10); do

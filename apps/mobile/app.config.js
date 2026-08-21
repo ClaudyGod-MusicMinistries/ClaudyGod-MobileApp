@@ -62,8 +62,6 @@ const resolvedEasProjectId =
   'fdb18cc3-e1d9-40e9-9a60-34b4a3b244b7'; // EAS project ID — not a secret
 const resolvedExpoOwner =
   fileEnv.EXPO_ACCOUNT_OWNER || process.env.EXPO_ACCOUNT_OWNER || 'peter4tech';
-const publicMobileApiKey =
-  fileEnv.EXPO_PUBLIC_MOBILE_API_KEY || process.env.EXPO_PUBLIC_MOBILE_API_KEY || '';
 const appIconAssetPath = './assets/icon.png';
 const appSplashAssetPath = './assets/splash-icon.png';
 const appAdaptiveIconAssetPath = './assets/adaptive-icon.png';
@@ -78,7 +76,7 @@ const appScheme = getFileOrEnv('EXPO_APP_SCHEME', 'claudygod');
 const appVersion = getFileOrEnv('EXPO_APP_VERSION', '1.0.0');
 const appDescription = getFileOrEnv(
   'EXPO_APP_DESCRIPTION',
-  'ClaudyGod worship, ministry updates, and secure account access across mobile and web.',
+  'ClaudyGod worship music, videos, live sessions, and ministry updates.',
 );
 const uiStyle = getFileOrEnv('EXPO_USER_INTERFACE_STYLE', 'dark');
 // Canonical brand dark background — matches brand/logo-master.svg's tile color.
@@ -114,9 +112,6 @@ const seedEnv = (key, value) => {
     case 'EXPO_PUBLIC_EAS_PROJECT_ID':
       process.env.EXPO_PUBLIC_EAS_PROJECT_ID = value;
       break;
-    case 'EXPO_PUBLIC_MOBILE_API_KEY':
-      process.env.EXPO_PUBLIC_MOBILE_API_KEY = value;
-      break;
     case 'EXPO_PUBLIC_SENTRY_DSN':
       process.env.EXPO_PUBLIC_SENTRY_DSN = value;
       break;
@@ -136,7 +131,6 @@ seedEnv('EXPO_PUBLIC_SUPABASE_URL', fileEnv.EXPO_PUBLIC_SUPABASE_URL);
 seedEnv('EXPO_PUBLIC_SUPABASE_KEY', publicSupabaseKey);
 seedEnv('EXPO_PUBLIC_SUPABASE_ANON_KEY', resolvedSupabaseAnonKey);
 seedEnv('EXPO_PUBLIC_EAS_PROJECT_ID', resolvedEasProjectId);
-seedEnv('EXPO_PUBLIC_MOBILE_API_KEY', publicMobileApiKey);
 seedEnv('EXPO_PUBLIC_SENTRY_DSN', fileEnv.EXPO_PUBLIC_SENTRY_DSN);
 seedEnv('CLAUDYGOD_ENV', fileEnv.CLAUDYGOD_ENV);
 seedEnv('NODE_ENV', fileEnv.NODE_ENV);
@@ -160,9 +154,6 @@ const getEnv = (keys, fallback = '') => {
         break;
       case 'EXPO_PUBLIC_EAS_PROJECT_ID':
         if (process.env.EXPO_PUBLIC_EAS_PROJECT_ID) return process.env.EXPO_PUBLIC_EAS_PROJECT_ID;
-        break;
-      case 'EXPO_PUBLIC_MOBILE_API_KEY':
-        if (process.env.EXPO_PUBLIC_MOBILE_API_KEY) return process.env.EXPO_PUBLIC_MOBILE_API_KEY;
         break;
       case 'EXPO_PUBLIC_SENTRY_DSN':
         if (process.env.EXPO_PUBLIC_SENTRY_DSN) return process.env.EXPO_PUBLIC_SENTRY_DSN;
@@ -200,11 +191,6 @@ module.exports = {
       bundleIdentifier: iosBundleId,
       buildNumber: iosBuildNumber,
       icon: appIconAssetPath,
-      infoPlist: {
-        NSCameraUsageDescription: 'ClaudyGod uses your camera to update your profile photo.',
-        NSMicrophoneUsageDescription: 'ClaudyGod uses your microphone to record audio messages.',
-        NSPhotoLibraryUsageDescription: 'ClaudyGod accesses your photo library to let you choose a profile photo or upload content.',
-      },
       // Required since 2024 for App Store Connect uploads. Declares this app's own
       // "required reason" API usage; installed Expo/RN modules (async-storage,
       // secure-store, etc.) ship their own manifest fragments that autolinking
@@ -248,7 +234,6 @@ module.exports = {
         '',
       ),
       EXPO_PUBLIC_EAS_PROJECT_ID: getEnv('EXPO_PUBLIC_EAS_PROJECT_ID', resolvedEasProjectId),
-      EXPO_PUBLIC_MOBILE_API_KEY: getEnv('EXPO_PUBLIC_MOBILE_API_KEY', publicMobileApiKey),
       EXPO_PUBLIC_SENTRY_DSN: getEnv('EXPO_PUBLIC_SENTRY_DSN', ''),
       ...(resolvedEasProjectId
         ? {
@@ -262,22 +247,30 @@ module.exports = {
       'expo-font',
       'expo-router',
       'expo-web-browser',
-      'expo-notifications',
-      'expo-updates',
       [
-        'expo-camera',
+        'expo-notifications',
         {
-          cameraPermission: 'ClaudyGod uses your camera to update your profile photo.',
-          microphonePermission: 'ClaudyGod uses your microphone to record audio messages.',
-          recordAudioAndroid: true,
+          color: '#6D3CEB',
+          defaultChannel: 'default',
+          enableBackgroundRemoteNotifications: false,
         },
       ],
       [
         'expo-image-picker',
         {
-          photosPermission: 'ClaudyGod accesses your photo library to let you choose a profile photo or upload content.',
+          photosPermission: 'Allow ClaudyGod to select worship media and profile images you choose to upload.',
+          cameraPermission: 'Allow ClaudyGod to use the camera only when you choose to capture media for an upload.',
+          microphonePermission: 'Allow ClaudyGod to record sound only when you choose to capture a video with audio.',
         },
       ],
+      [
+        'expo-audio',
+        {
+          microphonePermission: 'Allow ClaudyGod to use the microphone only when you choose to record audio.',
+          recordAudioAndroid: true,
+        },
+      ],
+      'expo-updates',
       // No-op for local/dev builds without Sentry configured — only affects EAS builds
       // that set SENTRY_ORG/SENTRY_PROJECT/SENTRY_AUTH_TOKEN for source map upload.
       [

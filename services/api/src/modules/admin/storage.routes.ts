@@ -1,8 +1,9 @@
 import { Router, type Request } from 'express';
 import { asyncHandler } from '../../lib/asyncHandler';
-import { ForbiddenError, UnauthorizedError } from '../../lib/errors';
-import { hasMinRole } from '../../middleware/rbac';
+import { UnauthorizedError } from '../../lib/errors';
+import { assertCapability } from '../../middleware/rbac';
 import { authenticate } from '../../middleware/authenticate';
+import { requirePrivilegedMfa } from '../../middleware/requirePrivilegedMfa';
 import { validateSchema } from '../../lib/validation';
 import {
   confirmStorageUploadSchema,
@@ -14,6 +15,8 @@ import {
   confirmAdminS3Upload,
   deleteAdminS3Upload,
   getPresignedDownloadUrl,
+  getAdminStorageHealth,
+  getAdminUploadSession,
   listAdminStorageSessions,
   requestAdminS3Upload,
 } from './storage.service';
@@ -21,16 +24,24 @@ import {
 export const adminStorageRouter = Router();
 
 adminStorageRouter.use(authenticate);
+adminStorageRouter.use(requirePrivilegedMfa);
 
 function requireAdminActor(req: Request) {
   if (!req.user) {
     throw new UnauthorizedError('Unauthorized', 'AUTH_REQUIRED');
   }
-  if (!hasMinRole(req.user.role, 'ADMIN')) {
-    throw new ForbiddenError('Admin access required', 'ADMIN_REQUIRED');
-  }
+  assertCapability(req.user.role, 'storage.manage');
   return req.user;
 }
+
+adminStorageRouter.get(
+  '/health',
+  asyncHandler(async (req, res) => {
+    requireAdminActor(req);
+    const result = await getAdminStorageHealth();
+    res.status(200).json(result);
+  }),
+);
 
 /**
  * POST /v1/admin/storage/request-upload
@@ -85,7 +96,7 @@ adminStorageRouter.get(
     const query = validateSchema(storageSessionQuerySchema, req.query);
     const result = await listAdminStorageSessions({
       requestedByUserId: actor.sub,
-      isAdmin: hasMinRole(actor.role, 'ADMIN'),
+      isAdmin: true,
       limit: query.limit,
       offset: query.offset,
       status: query.status,
@@ -100,6 +111,15 @@ adminStorageRouter.get(
  * Returns a short-lived presigned GET URL for a confirmed upload.
  * Useful for admin preview before content is published.
  */
+adminStorageRouter.get(
+  '/sessions/:sessionId',
+  asyncHandler(async (req, res) => {
+    const actor = requireAdminActor(req);
+    const params = validateSchema(sessionIdParamsSchema, req.params);
+    res.status(200).json(await getAdminUploadSession({ sessionId: params.sessionId, requestedByUserId: actor.sub }));
+  }),
+);
+
 adminStorageRouter.get(
   '/sessions/:sessionId/download-url',
   asyncHandler(async (req, res) => {

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
-import { Linking, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
@@ -13,6 +13,7 @@ import { makeStyles } from '../../styles/makeStyles';
 import { APP_ROUTES } from '../../util/appRoutes';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import { useToast } from '../../context/ToastContext';
+import { openExternalUrl } from '../../util/externalLinks';
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
@@ -100,7 +101,7 @@ export default function PaymentScreen() {
     const body = encodeURIComponent(
       `Hello, I want to complete this giving request.\n\nAmount: ${amount || 'Not selected'} ${currency}\nRhythm: ${titleCase(frequency)}\nMethod: ${methodLabel || 'Preferred giving method'}\n`,
     );
-    void Linking.openURL(`mailto:${supportEmail}?subject=${subject}&body=${body}`);
+    void openExternalUrl(`mailto:${supportEmail}?subject=${subject}&body=${body}`);
   };
 
   const completeReview = () => {

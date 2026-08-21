@@ -46,12 +46,12 @@ services:
       API_HOST: 0.0.0.0
       DATABASE_URL: ${DATABASE_URL}
       DATABASE_SSL: ${DATABASE_SSL:-true}
+      DATABASE_SSL_REJECT_UNAUTHORIZED: ${DATABASE_SSL_REJECT_UNAUTHORIZED:-true}
       REDIS_URL: redis://redis:6379
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-replace-this-jwt-secret-before-production-please-123456789}
       JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-1d}
       BCRYPT_ROUNDS: ${BCRYPT_ROUNDS:-12}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173,http://localhost:19006,http://localhost:8081}
-      MOBILE_API_KEY: ${MOBILE_API_KEY:-dev-mobile-api-key}
       AUTH_SIGN_IN_PATH: ${AUTH_SIGN_IN_PATH:-/sign-in}
       AUTH_ACCOUNT_REVIEW_PATH: ${AUTH_ACCOUNT_REVIEW_PATH:-/settings/account}
       SUPABASE_URL: ${SUPABASE_URL:-}
@@ -79,7 +79,6 @@ services:
       YOUTUBE_API_KEY: ${YOUTUBE_API_KEY:-}
       YOUTUBE_CHANNEL_ID: ${YOUTUBE_CHANNEL_ID:-}
       YOUTUBE_MAX_RESULTS: ${YOUTUBE_MAX_RESULTS:-12}
-      ADMIN_SIGNUP_CODE: ${ADMIN_SIGNUP_CODE:-}
       CHOKIDAR_USEPOLLING: "1"
     ports:
       - "4000:4000"
@@ -111,12 +110,12 @@ services:
       API_HOST: 0.0.0.0
       DATABASE_URL: ${DATABASE_URL}
       DATABASE_SSL: ${DATABASE_SSL:-true}
+      DATABASE_SSL_REJECT_UNAUTHORIZED: ${DATABASE_SSL_REJECT_UNAUTHORIZED:-true}
       REDIS_URL: redis://redis:6379
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-replace-this-jwt-secret-before-production-please-123456789}
       JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-1d}
       BCRYPT_ROUNDS: ${BCRYPT_ROUNDS:-12}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173,http://localhost:19006,http://localhost:8081}
-      MOBILE_API_KEY: ${MOBILE_API_KEY:-dev-mobile-api-key}
       AUTH_SIGN_IN_PATH: ${AUTH_SIGN_IN_PATH:-/sign-in}
       AUTH_ACCOUNT_REVIEW_PATH: ${AUTH_ACCOUNT_REVIEW_PATH:-/settings/account}
       SUPABASE_URL: ${SUPABASE_URL:-}
@@ -144,7 +143,6 @@ services:
       YOUTUBE_API_KEY: ${YOUTUBE_API_KEY:-}
       YOUTUBE_CHANNEL_ID: ${YOUTUBE_CHANNEL_ID:-}
       YOUTUBE_MAX_RESULTS: ${YOUTUBE_MAX_RESULTS:-12}
-      ADMIN_SIGNUP_CODE: ${ADMIN_SIGNUP_CODE:-}
       CHOKIDAR_USEPOLLING: "1"
     volumes:
       - ./services/api:/usr/src/app

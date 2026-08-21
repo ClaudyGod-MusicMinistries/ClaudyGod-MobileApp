@@ -13,23 +13,24 @@ import { useAppTheme } from '../../util/colorScheme';
 import { common } from '../../styles/commonStyles';
 import type { FeedCardItem } from '../../services/contentService';
 import { useFeedStyles } from './styles';
-import { ContentCard, type CardVariant } from './ContentCard';
+import { ContentCard } from './ContentCard';
+import { getContentCardWidth, getContentCardHeight, CARD_TEXT_AREA_HEIGHT, type CardVariant } from './utils';
 
 function keyExtractor(item: FeedCardItem) {
   return item.id;
 }
 
-function RailSkeleton() {
-  const { width } = useWindowDimensions();
-  const compact   = width < 430;
-  const isDesktop = width >= 1024;
-  const cardWidth = compact ? 208 : isDesktop ? 240 : 236;
+function RailSkeleton({ cardVariant = 'portrait' }: { cardVariant?: CardVariant }) {
+  const device = useDeviceClass();
+  const compact   = device.width < 430;
+  const cardWidth = getContentCardWidth(device, compact);
+  const cardHeight = getContentCardHeight(cardWidth, cardVariant);
 
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 16, paddingRight: 20 }}>
       {[0, 1, 2].map((i) => (
         <View key={i} style={{ width: cardWidth, gap: 10 }}>
-          <SkeletonLoader width={cardWidth} height={Math.round(cardWidth * 1.45)} borderRadius={20} />
+          <SkeletonLoader width={cardWidth} height={cardHeight} borderRadius={20} />
           <View style={{ gap: 7, paddingHorizontal: 2 }}>
             <SkeletonLoader width="80%" height={14} borderRadius={999} />
             <SkeletonLoader width="52%" height={12} borderRadius={999} />
@@ -60,15 +61,12 @@ function InlineEmpty({ title, message, icon = 'library-music' }: {
   );
 }
 
-// Matches ContentCard's own width/height formulas so the FlashList container
-// is sized precisely — FlashList needs a bounded cross-axis size when horizontal.
+// Delegates to ContentCard's own sizing formulas (via utils.ts) so the
+// FlashList container is sized precisely — FlashList needs a bounded
+// cross-axis size when horizontal, and any drift here reappears as dead
+// space under the rail.
 function railCardHeight(cardWidth: number, variant: CardVariant): number {
-  const artworkHeight =
-    variant === 'portrait' ? Math.round(cardWidth * 1.45)
-    : variant === 'landscape' ? Math.round(cardWidth * 0.62)
-    : cardWidth;
-  const textAreaHeight = 70; // gap + 2-line title + subtitle, per ContentCard's own layout
-  return artworkHeight + textAreaHeight;
+  return getContentCardHeight(cardWidth, variant) + CARD_TEXT_AREA_HEIGHT;
 }
 
 function ContentRailInner({ items, title, onPressItem, isCompact, cardVariant = 'portrait' }: {
@@ -80,12 +78,13 @@ function ContentRailInner({ items, title, onPressItem, isCompact, cardVariant = 
 }) {
   const device = useDeviceClass();
   const sidebarWidth = getSidebarWidth(device.width);
+  const mobileCardWidth = getContentCardWidth(device, isCompact);
 
   const renderItem = useCallback(
     ({ item }: ListRenderItemInfo<FeedCardItem>) => (
-      <ContentCard item={item} compact={isCompact} variant={cardVariant} onPress={() => onPressItem(item)} />
+      <ContentCard item={item} compact={isCompact} fixedWidth={mobileCardWidth} variant={cardVariant} onPress={() => onPressItem(item)} />
     ),
-    [isCompact, cardVariant, onPressItem],
+    [isCompact, mobileCardWidth, cardVariant, onPressItem],
   );
 
   if (device.isDesktop || device.isTV) {
@@ -103,10 +102,8 @@ function ContentRailInner({ items, title, onPressItem, isCompact, cardVariant = 
     );
   }
 
-  const cardWidth = isCompact ? 208 : 236;
-
   return (
-    <View style={{ marginHorizontal: -device.contentGutter, height: railCardHeight(cardWidth, cardVariant) }}>
+    <View style={{ marginHorizontal: -device.contentGutter, height: railCardHeight(mobileCardWidth, cardVariant) }}>
       <FlashList
         data={items}
         horizontal
@@ -167,7 +164,7 @@ export function ContentRail({
         </View>
       ) : null}
 
-      {loading ? <RailSkeleton />
+      {loading ? <RailSkeleton cardVariant={cardVariant} />
         : items.length > 0 ? <ContentRailInner items={items} title={title} onPressItem={onPressItem} isCompact={isCompact} cardVariant={cardVariant} />
         : hideWhenEmpty ? null : <InlineEmpty title={emptyTitle} message={emptyMessage} />}
     </View>

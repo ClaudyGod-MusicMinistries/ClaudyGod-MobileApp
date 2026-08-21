@@ -50,7 +50,7 @@ NC     := \033[0m
 	docker-push release \
 	deploy deploy-pull deploy-migrate deploy-up deploy-down \
 	deploy-logs deploy-status rollback update \
-	logs clean-legacy setup-admin
+	logs clean-legacy setup-admin certify-integrations
 
 # ─── Help ────────────────────────────────────────────────────────────────────
 
@@ -180,6 +180,9 @@ review:
 review-logs:
 	@printf "$(CYAN)Recent hook logs:$(NC)\n"
 	@ls -lt logs/git-hooks/ 2>/dev/null | head -10 || printf "$(YELLOW)No logs yet$(NC)\n"
+
+certify-integrations:
+	$(COMPOSE_PROD) exec -T cgm-api node dist/cli/certifyIntegrations.js
 
 # ─── Development ─────────────────────────────────────────────────────────────
 
@@ -438,7 +441,6 @@ docker-build-mobile:
 		--build-arg EXPO_PUBLIC_API_URL="$(EXPO_PUBLIC_API_URL)" \
 		--build-arg EXPO_PUBLIC_SUPABASE_URL="$(EXPO_PUBLIC_SUPABASE_URL)" \
 		--build-arg EXPO_PUBLIC_SUPABASE_KEY="$(EXPO_PUBLIC_SUPABASE_KEY)" \
-		--build-arg EXPO_PUBLIC_MOBILE_API_KEY="$(EXPO_PUBLIC_MOBILE_API_KEY)" \
 		-t $(MOBILE_IMAGE):$(IMAGE_TAG) \
 		-t $(MOBILE_IMAGE):$(GIT_SHA) \
 		-f $(MOBILE_DIR)/Dockerfile.prod \

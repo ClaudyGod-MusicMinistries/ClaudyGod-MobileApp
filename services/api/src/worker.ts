@@ -9,6 +9,11 @@ import { startEmailWorker } from './queues/emailWorker';
 import { startStatsWorker } from './queues/statsWorker';
 import { startTrendingWorker } from './queues/trendingWorker';
 import { scheduleTrendingJobs } from './queues/trendingQueue';
+import { reconcilePendingContentJobs } from './queues/contentOutbox';
+import { reconcilePendingEmailJobs } from './queues/emailOutbox';
+import { reconcileExpiredAdminUploads } from './modules/admin/storage.service';
+import { startMediaWorker } from './queues/mediaWorker';
+import { reconcilePendingMediaJobs } from './queues/mediaOutbox';
 
 const log = createLogger('worker');
 
@@ -58,12 +63,39 @@ const bootWorker = async (): Promise<void> => {
   const emailWorker = startEmailWorker();
   const statsWorker = startStatsWorker();
   const trendingWorker = startTrendingWorker();
+  const mediaWorker = startMediaWorker();
 
   await scheduleTrendingJobs();
+  await reconcilePendingContentJobs();
+  await reconcilePendingEmailJobs();
+  await reconcileExpiredAdminUploads();
+  await reconcilePendingMediaJobs();
+  const outboxTimer = setInterval(() => {
+    void reconcilePendingContentJobs().catch((error) => {
+      log.error('Content outbox reconciliation failed', { error: error instanceof Error ? error.message : String(error) });
+    });
+  }, 30_000);
+  const uploadReconciliationTimer = setInterval(() => {
+    void reconcileExpiredAdminUploads().catch((error) => {
+      log.error('Expired upload reconciliation failed', { error: error instanceof Error ? error.message : String(error) });
+    });
+  }, 5 * 60_000);
+  const emailOutboxTimer = setInterval(() => {
+    void reconcilePendingEmailJobs().catch((error) => {
+      log.error('Email outbox reconciliation failed', { error: error instanceof Error ? error.message : String(error) });
+    });
+  }, 30_000);
+  const mediaOutboxTimer = setInterval(() => {
+    void reconcilePendingMediaJobs().catch((error) => log.error('Media outbox reconciliation failed', { error: String(error) }));
+  }, 30_000);
 
-  log.info('Workers ready', { workers: ['content', 'email', 'stats', 'trending'], bootMs: Date.now() - bootStart });
+  log.info('Workers ready', { workers: ['content', 'email', 'stats', 'trending', 'media-security'], bootMs: Date.now() - bootStart });
 
   const shutdown = async (signal: string, error?: unknown): Promise<void> => {
+    clearInterval(outboxTimer);
+    clearInterval(uploadReconciliationTimer);
+    clearInterval(emailOutboxTimer);
+    clearInterval(mediaOutboxTimer);
     if (error) {
       log.error('Worker shutdown triggered by unhandled error', {
         signal,
@@ -74,7 +106,7 @@ const bootWorker = async (): Promise<void> => {
       log.info('Worker shutdown initiated', { signal });
     }
 
-    const workerResults = await Promise.allSettled([contentWorker.close(), emailWorker.close(), statsWorker.close(), trendingWorker.close()]);
+    const workerResults = await Promise.allSettled([contentWorker.close(), emailWorker.close(), statsWorker.close(), trendingWorker.close(), mediaWorker.close()]);
     const infraResults = await Promise.allSettled([closeRedis(), closePool()]);
     for (const result of [...workerResults, ...infraResults]) {
       if (result.status === 'rejected') {

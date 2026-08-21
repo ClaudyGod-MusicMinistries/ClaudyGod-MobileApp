@@ -22,7 +22,7 @@
       >
         <component :is="signalIcon(signal.tone)" class="w-4 h-4 mt-0.5 shrink-0" />
         <div class="min-w-0">
-          <p class="text-xs font-bold leading-tight">{{ signal.title }}</p>
+          <p class="text-xs font-semibold leading-tight">{{ signal.title }}</p>
           <p class="text-[11px] mt-0.5 text-ink-muted leading-snug">{{ signal.detail }}</p>
         </div>
       </div>
@@ -38,7 +38,7 @@
           <Plus class="w-4 h-4 text-primary" />
         </div>
         <div class="min-w-0">
-          <p class="text-sm font-bold text-ink leading-none mb-0.5">Add content</p>
+          <p class="text-sm font-semibold text-ink leading-none mb-0.5">Add content</p>
           <p class="text-[11px] text-ink-muted truncate">Upload audio or video</p>
         </div>
       </RouterLink>
@@ -51,7 +51,7 @@
           <Youtube class="w-4 h-4 text-danger" />
         </div>
         <div class="min-w-0">
-          <p class="text-sm font-bold text-ink leading-none mb-0.5">YouTube import</p>
+          <p class="text-sm font-semibold text-ink leading-none mb-0.5">YouTube import</p>
           <p class="text-[11px] text-ink-muted truncate">Assign videos to sections</p>
         </div>
       </RouterLink>
@@ -64,7 +64,7 @@
           <Smartphone class="w-4 h-4 text-info" />
         </div>
         <div class="min-w-0">
-          <p class="text-sm font-bold text-ink leading-none mb-0.5">Mobile config</p>
+          <p class="text-sm font-semibold text-ink leading-none mb-0.5">Mobile config</p>
           <p class="text-[11px] text-ink-muted truncate">Sections, giving, nav</p>
         </div>
       </RouterLink>
@@ -77,7 +77,7 @@
           <Users2 class="w-4 h-4 text-success" />
         </div>
         <div class="min-w-0">
-          <p class="text-sm font-bold text-ink leading-none mb-0.5">Manage users</p>
+          <p class="text-sm font-semibold text-ink leading-none mb-0.5">Manage users</p>
           <p class="text-[11px] text-ink-muted truncate">Roles & permissions</p>
         </div>
       </RouterLink>
@@ -145,7 +145,7 @@
               <div class="flex items-center gap-2">
                 <StatusBadge :status="item.status" />
               </div>
-              <span class="text-sm font-bold text-ink tabular-nums">{{ item.count }}</span>
+              <span class="text-sm font-semibold text-ink tabular-nums">{{ item.count }}</span>
             </div>
             <AppEmptyState v-if="!requestBoard.length" title="No requests" />
           </AppCard>

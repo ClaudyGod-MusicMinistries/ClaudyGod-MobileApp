@@ -1,0 +1,38 @@
+groups:
+  - name: claudygod-api
+    rules:
+      - alert: ClaudyGodApiDown
+        expr: up{job="claudygod-api"} == 0
+        for: 2m
+        labels: { severity: critical }
+        annotations:
+          summary: ClaudyGod API metrics endpoint is unreachable
+      - alert: ClaudyGodHighServerErrorRate
+        expr: sum(rate(http_requests_total{status_code=~"5.."}[5m])) / clamp_min(sum(rate(http_requests_total[5m])), 0.001) > 0.05
+        for: 10m
+        labels: { severity: critical }
+        annotations:
+          summary: API 5xx rate has exceeded 5 percent for ten minutes
+      - alert: ClaudyGodSlowApiP95
+        expr: histogram_quantile(0.95, sum by (le) (rate(http_request_duration_ms_bucket[5m]))) > 1000
+        for: 15m
+        labels: { severity: warning }
+        annotations:
+          summary: API p95 latency is above one second
+      - alert: ClaudyGodDurableJobBacklog
+        expr: durable_job_oldest_pending_age_seconds > 300
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          summary: A durable job has remained pending for more than five minutes
+      - alert: ClaudyGodMediaScanFailures
+        expr: durable_jobs_total{job_kind="media",status="failed"} > 0
+        for: 5m
+        labels: { severity: critical }
+        annotations:
+          summary: Media security scanning has failed jobs
+      - alert: ClaudyGodQuarantinedUpload
+        expr: increase(upload_sessions_trust_total{trust_status="quarantined"}[15m]) > 0
+        labels: { severity: warning }
+        annotations:
+          summary: A newly uploaded object was quarantined

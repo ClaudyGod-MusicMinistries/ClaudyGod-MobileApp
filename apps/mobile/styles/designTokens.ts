@@ -99,7 +99,10 @@ export const timing = {
 // Motion is deliberately restrained. Navigation and overlays use deterministic
 // easing; spring physics are reserved for direct manipulation such as dragging.
 export const motion = {
-  pressScale: 0.985,
+  // 0.985 reads as no feedback at all once eased rather than snapped — most
+  // touch targets on this screen are well under 200px, where anything
+  // subtler than ~0.97 is imperceptible.
+  pressScale: 0.97,
   modalInitialScale: 0.975,
   modalEnterDuration: 220,
   modalExitDuration: 180,

@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { FeedCardItem } from '../services/contentService';
 import { addFavorite, addHistory, getFavorites, getHistory, removeFavorite } from '../lib/localUserStorage';
 
@@ -6,6 +6,8 @@ interface LocalContentValue {
   favorites: FeedCardItem[];
   history: FeedCardItem[];
   loaded: boolean;
+  syncError: string | null;
+  refreshLibrary: () => Promise<void>;
   checkIsFavorited: (_contentId: string) => boolean;
   addToFavorites: (_item: FeedCardItem) => Promise<void>;
   removeFromFavorites: (_contentId: string) => Promise<void>;
@@ -19,17 +21,30 @@ export function LocalContentProvider({ children }: { children: ReactNode }) {
   const [favorites, setFavorites] = useState<FeedCardItem[]>([]);
   const [history, setHistory] = useState<FeedCardItem[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
+  const loadGeneration = useRef(0);
+
+  const refreshLibrary = useCallback(async () => {
+    const generation = ++loadGeneration.current;
+    setSyncError(null);
+    try {
+      const [localFavorites, localHistory] = await Promise.all([getFavorites(), getHistory()]);
+      if (generation !== loadGeneration.current) return;
+      setFavorites(localFavorites);
+      setHistory(localHistory);
+    } catch (error) {
+      if (generation !== loadGeneration.current) return;
+      setSyncError(error instanceof Error ? error.message : 'The device library could not be loaded.');
+    } finally {
+      if (generation === loadGeneration.current) setLoaded(true);
+    }
+  }, []);
 
   useEffect(() => {
-    let active = true;
-    void Promise.all([getFavorites(), getHistory()]).then(([saved, recent]) => {
-      if (!active) return;
-      setFavorites(saved);
-      setHistory(recent);
-      setLoaded(true);
-    });
-    return () => { active = false; };
-  }, []);
+    setLoaded(false);
+    void refreshLibrary();
+    return () => { loadGeneration.current += 1; };
+  }, [refreshLibrary]);
 
   const addToFavorites = useCallback(async (item: FeedCardItem) => {
     await addFavorite(item);
@@ -63,6 +78,8 @@ export function LocalContentProvider({ children }: { children: ReactNode }) {
       favorites,
       history,
       loaded,
+      syncError,
+      refreshLibrary,
       checkIsFavorited,
       addToFavorites,
       removeFromFavorites,

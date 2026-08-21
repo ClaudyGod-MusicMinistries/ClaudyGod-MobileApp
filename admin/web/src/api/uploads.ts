@@ -13,7 +13,10 @@ export async function uploadFile(
   file: File,
   onProgress?: (pct: number) => void,
   pipeline: UploadPipeline = 'mobile',
+  signal?: AbortSignal,
 ): Promise<{ key: string; publicUrl: string; sessionId: string }> {
-  const result = pipeline === 'website' ? await uploadWebsiteFile(file, onProgress) : await uploadMediaFile(file, onProgress);
+  const result = pipeline === 'website'
+    ? await uploadWebsiteFile(file, onProgress, signal)
+    : await uploadMediaFile(file, onProgress, signal);
   return { key: result.key, publicUrl: result.publicUrl, sessionId: result.sessionId };
 }

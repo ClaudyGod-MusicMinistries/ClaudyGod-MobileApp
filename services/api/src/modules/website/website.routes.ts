@@ -1,7 +1,9 @@
 import { Router, type Request } from 'express';
 import { asyncHandler } from '../../lib/asyncHandler';
-import { ForbiddenError, UnauthorizedError } from '../../lib/errors';
+import { UnauthorizedError } from '../../lib/errors';
 import { authenticate } from '../../middleware/authenticate';
+import { requirePrivilegedMfa } from '../../middleware/requirePrivilegedMfa';
+import { assertCapability } from '../../middleware/rbac';
 import { cgmRequest, type CgmActor } from './website.service';
 
 // One router for every claudygod.org content/inbox resource, proxied through
@@ -12,14 +14,13 @@ import { cgmRequest, type CgmActor } from './website.service';
 export const websiteRouter = Router();
 
 websiteRouter.use(authenticate);
+websiteRouter.use(requirePrivilegedMfa);
 
 function requireAdmin(req: Request): CgmActor {
   if (!req.user) {
     throw new UnauthorizedError('Unauthorized', 'AUTH_REQUIRED');
   }
-  if (req.user.role !== 'ADMIN' && req.user.role !== 'SUPER_ADMIN') {
-    throw new ForbiddenError('Admin access required', 'ADMIN_REQUIRED');
-  }
+  assertCapability(req.user.role, 'website.manage');
   return { id: req.user.sub, email: req.user.email };
 }
 

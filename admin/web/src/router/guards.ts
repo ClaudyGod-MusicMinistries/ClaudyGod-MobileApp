@@ -31,12 +31,16 @@ export function setupGuards(router: Router): void {
       return { name: 'landing', query: { redirect: to.fullPath } };
     }
 
+    if (!auth.user?.mfaEnabled && to.name !== 'security-setup') {
+      return { name: 'security-setup' };
+    }
+
     // Role check. Falls back to the workspace chooser rather than a specific
     // dashboard — both Mobile's /dashboard and every /web/* route require at
     // least Role.ADMIN, so bouncing a sub-ADMIN user to either would just fail
     // the same check again; the chooser itself has no minRole.
     const minRole = to.meta.minRole ?? Role.CLIENT;
-    if (auth.role < minRole) {
+    if (auth.role < minRole || (to.meta.capability && !auth.hasCapability(to.meta.capability))) {
       return { name: 'choose-workspace' };
     }
 

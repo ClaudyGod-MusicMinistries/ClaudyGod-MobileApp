@@ -3,6 +3,7 @@ import { pool } from '../db/pool';
 import { env } from '../config/env';
 import { createLogger } from '../lib/logger';
 import { TRENDING_QUEUE_NAME, type TrendingQueuePayload, type TrendingPeriod } from './trendingQueue';
+import { pruneExpiredSearchEvents } from '../modules/search/search.service';
 
 const log = createLogger('trendingWorker');
 
@@ -74,6 +75,10 @@ export const startTrendingWorker = (): Worker<TrendingQueuePayload> => {
     TRENDING_QUEUE_NAME,
     async (job) => {
       await recalculateTrending(job.data.period);
+      if (job.data.period === 'daily') {
+        const deleted = await pruneExpiredSearchEvents();
+        log.info('Expired search events pruned', { deleted, retentionDays: 90 });
+      }
     },
     {
       connection: {

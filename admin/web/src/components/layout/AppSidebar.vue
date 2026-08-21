@@ -25,7 +25,7 @@
       <Transition name="fade">
         <div v-if="showExpanded" class="overflow-hidden">
           <p class="text-[10px] font-semibold text-ink-muted uppercase tracking-widest">ClaudyGod</p>
-          <p class="text-sm font-bold text-ink leading-tight">Admin Studio</p>
+          <p class="text-sm font-semibold text-ink leading-tight">Admin Studio</p>
         </div>
       </Transition>
     </div>
@@ -44,11 +44,11 @@
     <!-- Navigation -->
     <nav class="flex-1 overflow-y-auto py-3 space-y-0.5 px-2">
       <template v-for="group in NAV_GROUPS" :key="group.label">
-        <p v-if="showExpanded" class="px-2.5 pt-4 pb-1.5 text-[9.5px] font-bold text-ink-muted/80 uppercase tracking-[0.12em] first:pt-1">
+        <p v-if="showExpanded" class="px-2.5 pt-4 pb-1.5 text-[9.5px] font-semibold text-ink-muted/80 uppercase tracking-[0.12em] first:pt-1">
           {{ group.label }}
         </p>
         <RouterLink
-          v-for="item in group.items.filter(i => auth.hasMinRole(i.minRole))"
+          v-for="item in group.items.filter(i => auth.hasMinRole(i.minRole) && canNavigate(i.to))"
           :key="item.to"
           :to="item.to"
           :class="[
@@ -104,7 +104,7 @@
 
 <script setup lang="ts">
 import { computed, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import {
   LayoutDashboard, FileText, Inbox, KeyRound, Radio, Settings, BookOpen,
   Smartphone, Trash2, Megaphone, Users, BarChart3, Youtube, Server,
@@ -118,7 +118,12 @@ import UserAvatar from '@/components/shared/UserAvatar.vue';
 import RolePill from '@/components/shared/RolePill.vue';
 
 const route = useRoute();
+const router = useRouter();
 const auth = useAuthStore();
+const canNavigate = (to: string): boolean => {
+  const capability = router.resolve(to).meta.capability;
+  return !capability || auth.hasCapability(capability);
+};
 const ui = useUiStore();
 const { isDesktop } = useAdminBreakpoints();
 
@@ -158,9 +163,9 @@ const NAV_GROUPS = [
     label: 'Workspace',
     items: [
       { to: '/dashboard', label: 'Overview', icon: ic.dashboard, minRole: Role.ADMIN },
-      { to: '/content', label: 'Content', icon: ic.content, minRole: Role.MODERATOR },
-      { to: '/content/trash', label: 'Trash', icon: ic.trash, minRole: Role.MODERATOR },
-      { to: '/requests', label: 'Requests', icon: ic.requests, minRole: Role.MODERATOR },
+      { to: '/content', label: 'Content', icon: ic.content, minRole: Role.ADMIN },
+      { to: '/content/trash', label: 'Trash', icon: ic.trash, minRole: Role.ADMIN },
+      { to: '/requests', label: 'Requests', icon: ic.requests, minRole: Role.ADMIN },
       { to: '/live', label: 'Live', icon: ic.live, minRole: Role.MODERATOR },
     ],
   },

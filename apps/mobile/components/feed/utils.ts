@@ -62,3 +62,30 @@ export function getFeaturedItem(...groups: (FeedCardItem[] | null | undefined)[]
   }
   return null;
 }
+
+// ─── Card sizing ──────────────────────────────────────────────────────────────
+// Single source of truth for ContentCard's dimensions. ContentRail (the
+// horizontal FlashList) needs to size its container to the exact pixel the
+// card will render at, or the list ends up with dead space below every rail —
+// so both read from these instead of keeping their own copies of the formula.
+
+export type CardVariant = 'portrait' | 'landscape' | 'square';
+
+// Approximate height of the text block under the artwork (gap + up to a
+// 2-line title + 1-line subtitle) — used only to size the FlashList
+// container, which needs a fixed cross-axis size when horizontal.
+export const CARD_TEXT_AREA_HEIGHT = 70;
+
+export function getContentCardWidth(
+  device: { isTV: boolean; isDesktop: boolean },
+  compact: boolean,
+  fixedWidth?: number,
+): number {
+  return fixedWidth ?? (compact ? 176 : device.isTV ? 260 : device.isDesktop ? 218 : 184);
+}
+
+export function getContentCardHeight(cardWidth: number, variant: CardVariant): number {
+  return variant === 'portrait' ? Math.round(cardWidth * 1.32)
+    : variant === 'landscape' ? Math.round(cardWidth * 0.62)
+    : cardWidth;
+}

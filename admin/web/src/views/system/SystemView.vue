@@ -40,6 +40,72 @@
         </AppCard>
       </div>
 
+      <section class="space-y-3">
+        <div class="flex items-end justify-between gap-3">
+          <div><h3 class="text-sm font-semibold text-ink">Operational jobs</h3><p class="mt-0.5 text-xs text-ink-muted">Durable content events, media security scans, and transactional email delivery.</p></div>
+          <select v-model="jobStatus" class="h-9 rounded-xl border border-border bg-surface-strong px-3 text-xs text-ink" @change="loadJobs">
+            <option value="">All states</option><option value="failed">Failed</option><option value="quarantined">Quarantined</option><option value="pending">Pending</option><option value="processing">Processing</option><option value="completed">Completed</option>
+          </select>
+        </div>
+        <AppCard class="overflow-hidden divide-y divide-border">
+          <div v-for="job in jobs" :key="`${job.kind}-${job.id}`" class="flex items-start gap-3 p-4">
+            <div class="min-w-0 flex-1">
+              <div class="flex flex-wrap items-center gap-2"><span class="text-[10px] font-medium uppercase tracking-wide text-ink-muted">{{ job.kind }}</span><StatusBadge :status="job.status" /><span class="text-xs text-ink-muted">{{ job.type }}</span></div>
+              <p class="mt-1 truncate text-sm font-medium text-ink">{{ job.summary }}</p>
+              <p v-if="job.error" class="mt-1 line-clamp-2 text-xs text-danger">{{ job.error }}</p>
+              <p class="mt-1 text-[10px] text-ink-muted">Created {{ formatDate(job.createdAt) }}</p>
+            </div>
+            <AppButton v-if="job.status === 'failed'" variant="secondary" size="xs" :loading="retryingJob === `${job.kind}-${job.id}`" @click="retryJob(job)">Retry</AppButton>
+          </div>
+          <p v-if="!jobs.length" class="p-8 text-center text-xs text-ink-muted">No jobs match this state.</p>
+        </AppCard>
+      </section>
+
+      <section class="space-y-3">
+        <div><h3 class="text-sm font-semibold text-ink">Security audit</h3><p class="mt-0.5 text-xs text-ink-muted">Recent authentication and privileged mutation evidence.</p></div>
+        <AppCard class="divide-y divide-border overflow-hidden">
+          <div v-for="event in auditEvents" :key="event.id" class="grid gap-2 p-4 sm:grid-cols-[minmax(0,1fr)_auto]">
+            <div class="min-w-0"><p class="text-sm font-medium text-ink">{{ readableEvent(event.event) }}</p><p class="mt-0.5 truncate text-xs text-ink-muted">{{ event.actor || event.actorEmail || 'System' }}<span v-if="event.ipAddress"> · {{ event.ipAddress }}</span></p></div>
+            <time class="text-[10px] text-ink-muted">{{ formatDate(event.createdAt) }}</time>
+            <details v-if="Object.keys(event.metadata).length" class="sm:col-span-2"><summary class="cursor-pointer text-xs text-ink-muted">Event details</summary><pre class="mt-2 overflow-x-auto rounded-lg bg-bg-1 p-3 text-[10px] text-ink-soft">{{ JSON.stringify(event.metadata, null, 2) }}</pre></details>
+          </div>
+          <p v-if="!auditEvents.length" class="p-8 text-center text-xs text-ink-muted">No audit events are available.</p>
+        </AppCard>
+      </section>
+
+      <section class="space-y-3">
+        <div><h3 class="text-sm font-semibold text-ink">Active sessions</h3><p class="mt-0.5 text-xs text-ink-muted">Authenticated devices across password, OAuth, and biometric session stores.</p></div>
+        <AppCard class="divide-y divide-border overflow-hidden">
+          <div v-for="session in sessions" :key="`${session.source}-${session.id}`" class="flex items-start gap-3 p-4">
+            <div class="min-w-0 flex-1">
+              <div class="flex flex-wrap items-center gap-2"><span class="text-sm font-medium text-ink">{{ session.displayName }}</span><StatusBadge :status="session.role" /><span class="text-[10px] uppercase tracking-wide text-ink-muted">{{ session.source }}</span></div>
+              <p class="mt-1 truncate text-xs text-ink-muted">{{ session.email }}<span v-if="session.ipAddress"> · {{ session.ipAddress }}</span></p>
+              <p class="mt-1 truncate text-[10px] text-ink-muted">Last active {{ formatDate(session.lastUsedAt || session.createdAt) }} · Expires {{ formatDate(session.expiresAt) }}</p>
+            </div>
+            <AppButton variant="secondary" size="xs" :loading="revokingSession === `${session.source}-${session.id}`" @click="revokeSession(session)">Revoke</AppButton>
+          </div>
+          <p v-if="!sessions.length" class="p-8 text-center text-xs text-ink-muted">No active sessions.</p>
+        </AppCard>
+      </section>
+
+      <AppCard class="p-5 space-y-4">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-wide text-ink-muted">Mobile media storage</p>
+            <p class="mt-1 text-sm font-semibold text-ink">{{ storageHealth?.bucket || 'No bucket configured' }}</p>
+            <p class="mt-1 text-xs text-ink-muted">{{ storageHealth?.detail || storageError || 'Checking storage…' }}</p>
+          </div>
+          <StatusBadge :status="storageHealth?.reachable ? 'ok' : 'error'" />
+        </div>
+        <div v-if="storageHealth" class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div v-for="(count, status) in storageHealth.sessions" :key="status" class="rounded-xl border border-border bg-bg-1 p-3">
+            <p class="text-[10px] font-semibold uppercase tracking-wide text-ink-muted">{{ status }}</p>
+            <p class="mt-1 text-lg font-bold text-ink">{{ count }}</p>
+          </div>
+        </div>
+        <p v-if="storageHealth?.lastConfirmedAt" class="text-xs text-ink-muted">Last verified upload: {{ formatDate(storageHealth.lastConfirmedAt) }}</p>
+      </AppCard>
+
       <!-- Queue depths -->
       <div v-if="health.queues && Object.keys(health.queues).length" class="space-y-3">
         <h3 class="text-sm font-bold text-ink">Queue depths</h3>
@@ -75,7 +141,9 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { getHealth } from '@/api/system';
+import { getHealth, getStorageHealth, getOperationalJobs, retryOperationalJob, getSecurityAuditEvents, getOperationalSessions, revokeOperationalSession } from '@/api/system';
+import type { StorageHealth, OperationalJob, SecurityAuditEvent, OperationalSession } from '@/api/system';
+import { useUiStore } from '@/stores/ui.store';
 import type { HealthCheck } from '@/api/types';
 import AppCard from '@/components/ui/AppCard.vue';
 import AppButton from '@/components/ui/AppButton.vue';
@@ -88,14 +156,31 @@ const health = ref<HealthCheck | null>(null);
 const isLoading = ref(false);
 const loadError = ref('');
 const showRaw = ref(false);
+const storageHealth = ref<StorageHealth | null>(null);
+const storageError = ref('');
+const jobs = ref<OperationalJob[]>([]);
+const jobStatus = ref<'' | OperationalJob['status']>('');
+const retryingJob = ref('');
+const auditEvents = ref<SecurityAuditEvent[]>([]);
+const sessions = ref<OperationalSession[]>([]);
+const revokingSession = ref('');
+const ui = useUiStore();
 
 onMounted(() => { void refresh(); });
 
 async function refresh(): Promise<void> {
   isLoading.value = true;
   loadError.value = '';
+  storageError.value = '';
   try {
-    health.value = await getHealth();
+    const [platform, storage, operations, audit, activeSessions] = await Promise.allSettled([getHealth(), getStorageHealth(), getOperationalJobs(jobStatus.value || undefined), getSecurityAuditEvents(), getOperationalSessions()]);
+    if (platform.status === 'rejected') throw platform.reason;
+    health.value = platform.value;
+    if (storage.status === 'fulfilled') storageHealth.value = storage.value;
+    else storageError.value = storage.reason instanceof Error ? storage.reason.message : 'Storage check failed';
+    if (operations.status === 'fulfilled') jobs.value = operations.value;
+    if (audit.status === 'fulfilled') auditEvents.value = audit.value;
+    if (activeSessions.status === 'fulfilled') sessions.value = activeSessions.value;
   } catch (e) {
     loadError.value = e instanceof Error ? e.message : 'Health check failed';
   } finally {
@@ -103,9 +188,33 @@ async function refresh(): Promise<void> {
   }
 }
 
+async function revokeSession(session: OperationalSession) {
+  const ok = await ui.confirm({ title: 'Revoke session', message: `Immediately sign out ${session.displayName} on this device?`, tone: 'danger', confirmLabel: 'Revoke session' });
+  if (!ok) return;
+  revokingSession.value = `${session.source}-${session.id}`;
+  try {
+    await revokeOperationalSession(session);
+    sessions.value = sessions.value.filter((item) => item.id !== session.id || item.source !== session.source);
+  } finally { revokingSession.value = ''; }
+}
+
+async function loadJobs() {
+  jobs.value = await getOperationalJobs(jobStatus.value || undefined);
+}
+
+async function retryJob(job: OperationalJob) {
+  retryingJob.value = `${job.kind}-${job.id}`;
+  try { await retryOperationalJob(job); await loadJobs(); }
+  finally { retryingJob.value = ''; }
+}
+
 function formatDate(iso: string): string {
   const d = new Date(iso);
   if (isNaN(d.getTime())) return '--';
   return d.toLocaleString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+function readableEvent(event: string): string {
+  return event.replace(/[_-]+/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 </script>

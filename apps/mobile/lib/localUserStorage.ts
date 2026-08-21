@@ -82,31 +82,6 @@ export async function setPreference(key: string, value: unknown): Promise<void> 
   await updateJSON<Record<string, unknown>>(KEYS.preferences, {}, (current) => ({ ...current, [key]: value }));
 }
 
-// Guards the one-time device-local favorites synchronization to an account
-// (see UserAccountContext.tsx) so it doesn't re-run on every app launch once
-// it's already succeeded for this device.
-const FAVORITES_MIGRATION_KEY = 'favoritesMigratedToServer';
-
-export async function hasMigratedFavoritesToServer(): Promise<boolean> {
-  return getPreference<boolean>(FAVORITES_MIGRATION_KEY, false);
-}
-
-export async function markFavoritesMigratedToServer(): Promise<void> {
-  await setPreference(FAVORITES_MIGRATION_KEY, true);
-}
-
-// Guards the one-time device-local history synchronization to an account
-// (see UserAccountContext.tsx), mirroring the favorites guard above.
-const HISTORY_MIGRATION_KEY = 'historyMigratedToServer';
-
-export async function hasMigratedHistoryToServer(): Promise<boolean> {
-  return getPreference<boolean>(HISTORY_MIGRATION_KEY, false);
-}
-
-export async function markHistoryMigratedToServer(): Promise<void> {
-  await setPreference(HISTORY_MIGRATION_KEY, true);
-}
-
 // ── Downloads ──────────────────────────────────────────────────────────────
 
 export interface LocalDownload {

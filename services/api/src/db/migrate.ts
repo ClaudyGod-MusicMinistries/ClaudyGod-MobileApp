@@ -1051,6 +1051,197 @@ const migrationStatements = [
   `CREATE INDEX IF NOT EXISTS idx_auth_refresh_sessions_device_id
      ON auth_refresh_sessions (device_id)
      WHERE revoked_at IS NULL`,
+
+  /* Upload lifecycle: confirmation and attachment are separate irreversible
+     states. A confirmed object may be attached once; content creation never
+     promotes an unverified issued session. Append-only migration. */
+  `ALTER TABLE upload_sessions ADD COLUMN IF NOT EXISTS attached_at TIMESTAMPTZ`,
+  `ALTER TABLE upload_sessions ADD COLUMN IF NOT EXISTS file_size_bytes BIGINT`,
+  `ALTER TABLE upload_sessions ADD COLUMN IF NOT EXISTS trust_status TEXT NOT NULL DEFAULT 'pending'
+     CHECK (trust_status IN ('pending', 'scanning', 'clean', 'quarantined', 'error', 'legacy_unverified'))`,
+  `ALTER TABLE upload_sessions ADD COLUMN IF NOT EXISTS scan_result JSONB NOT NULL DEFAULT '{}'::jsonb`,
+  `ALTER TABLE upload_sessions ADD COLUMN IF NOT EXISTS scan_error TEXT`,
+  `ALTER TABLE upload_sessions ADD COLUMN IF NOT EXISTS scanned_at TIMESTAMPTZ`,
+  `UPDATE upload_sessions
+     SET trust_status = 'legacy_unverified'
+     WHERE status = 'uploaded' AND trust_status = 'pending' AND completed_at < NOW() - INTERVAL '1 minute'`,
+  `CREATE TABLE IF NOT EXISTS media_processing_jobs (
+    id BIGSERIAL PRIMARY KEY,
+    upload_session_id UUID NOT NULL UNIQUE REFERENCES upload_sessions(id) ON DELETE CASCADE,
+    queue_job_id TEXT,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'failed', 'quarantined')),
+    attempts INTEGER NOT NULL DEFAULT 0,
+    error TEXT,
+    result JSONB NOT NULL DEFAULT '{}'::jsonb,
+    processed_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_media_processing_jobs_pending
+     ON media_processing_jobs (created_at) WHERE status = 'pending'`,
+  `CREATE INDEX IF NOT EXISTS idx_upload_sessions_unattached
+     ON upload_sessions (created_at)
+     WHERE status = 'uploaded' AND attached_at IS NULL`,
+
+  /* Durable mobile section catalog and relational assignments. The legacy
+     app_sections array remains as a response compatibility projection while
+     all new writes are validated and mirrored into this FK-backed model. */
+  `CREATE TABLE IF NOT EXISTS mobile_sections (
+     section_id TEXT PRIMARY KEY,
+     title TEXT NOT NULL,
+     content_types TEXT[] NOT NULL,
+     screens TEXT[] NOT NULL,
+     active BOOLEAN NOT NULL DEFAULT TRUE,
+     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+     CHECK (array_length(content_types, 1) > 0)
+   )`,
+  `CREATE TABLE IF NOT EXISTS content_section_assignments (
+     content_id UUID NOT NULL REFERENCES content_items(id) ON DELETE CASCADE,
+     section_id TEXT NOT NULL REFERENCES mobile_sections(section_id) ON DELETE RESTRICT,
+     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+     PRIMARY KEY (content_id, section_id)
+   )`,
+  `CREATE INDEX IF NOT EXISTS idx_content_section_assignments_section
+     ON content_section_assignments (section_id, content_id)`,
+  `WITH raw_sections AS (
+     SELECT section, 'home'::text AS screen
+       FROM app_config_store, LATERAL jsonb_array_elements(config_value #> '{layout,homeSections}') section
+      WHERE config_key = 'mobile_app_experience'
+     UNION ALL
+     SELECT section, 'videos'::text
+       FROM app_config_store, LATERAL jsonb_array_elements(config_value #> '{layout,videoSections}') section
+      WHERE config_key = 'mobile_app_experience'
+     UNION ALL
+     SELECT section, 'player'::text
+       FROM app_config_store, LATERAL jsonb_array_elements(config_value #> '{layout,playerSections}') section
+      WHERE config_key = 'mobile_app_experience'
+     UNION ALL
+     SELECT section, 'library'::text
+       FROM app_config_store, LATERAL jsonb_array_elements(config_value #> '{layout,librarySections}') section
+      WHERE config_key = 'mobile_app_experience'
+   ), normalized AS (
+     SELECT section->>'id' AS section_id,
+            MAX(section->>'title') AS title,
+            ARRAY_AGG(DISTINCT content_type) AS content_types,
+            ARRAY_AGG(DISTINCT screen) AS screens
+       FROM raw_sections
+       CROSS JOIN LATERAL jsonb_array_elements_text(section->'contentTypes') content_type
+      GROUP BY section->>'id'
+   )
+   INSERT INTO mobile_sections (section_id, title, content_types, screens, active)
+   SELECT section_id, title, content_types, screens, TRUE FROM normalized
+   ON CONFLICT (section_id) DO UPDATE SET
+     title = EXCLUDED.title,
+     content_types = EXCLUDED.content_types,
+     screens = EXCLUDED.screens,
+     active = TRUE,
+     updated_at = NOW()`,
+  `INSERT INTO content_section_assignments (content_id, section_id)
+   SELECT DISTINCT c.id, s.section_id
+     FROM content_items c
+     JOIN mobile_sections s ON s.section_id = ANY(c.app_sections)
+   ON CONFLICT DO NOTHING`,
+  `WITH unique_titles AS (
+     SELECT LOWER(title) AS normalized_title, MIN(section_id) AS section_id
+       FROM mobile_sections
+      GROUP BY LOWER(title)
+     HAVING COUNT(*) = 1
+   )
+   INSERT INTO content_section_assignments (content_id, section_id)
+   SELECT DISTINCT c.id, titles.section_id
+     FROM content_items c
+     CROSS JOIN LATERAL unnest(c.app_sections) legacy_section
+     JOIN unique_titles titles ON titles.normalized_title = LOWER(TRIM(legacy_section))
+   ON CONFLICT DO NOTHING`,
+  `UPDATE content_items c
+      SET app_sections = COALESCE(
+        (SELECT ARRAY_AGG(a.section_id ORDER BY a.section_id)
+           FROM content_section_assignments a
+          WHERE a.content_id = c.id),
+        '{}'::text[]
+      )
+    WHERE c.app_sections <> COALESCE(
+      (SELECT ARRAY_AGG(a.section_id ORDER BY a.section_id)
+         FROM content_section_assignments a
+        WHERE a.content_id = c.id),
+      '{}'::text[]
+    )`,
+  `CREATE OR REPLACE FUNCTION sync_content_section_assignments()
+   RETURNS TRIGGER AS $$
+   DECLARE invalid_section TEXT;
+   BEGIN
+     SELECT requested.section_id INTO invalid_section
+       FROM unnest(NEW.app_sections) AS requested(section_id)
+       LEFT JOIN mobile_sections s
+         ON s.section_id = requested.section_id
+        AND s.active = TRUE
+        AND NEW.content_type = ANY(s.content_types)
+      WHERE s.section_id IS NULL
+      LIMIT 1;
+     IF invalid_section IS NOT NULL THEN
+       RAISE EXCEPTION 'Invalid or incompatible mobile section assignment: %', invalid_section
+         USING ERRCODE = '23514';
+     END IF;
+
+     DELETE FROM content_section_assignments WHERE content_id = NEW.id;
+     INSERT INTO content_section_assignments (content_id, section_id)
+     SELECT NEW.id, section_id FROM unnest(NEW.app_sections) AS section_id
+     ON CONFLICT DO NOTHING;
+     RETURN NEW;
+   END;
+   $$ LANGUAGE plpgsql`,
+  `DROP TRIGGER IF EXISTS trg_sync_content_section_assignments ON content_items`,
+  `CREATE TRIGGER trg_sync_content_section_assignments
+   AFTER INSERT OR UPDATE OF app_sections, content_type ON content_items
+   FOR EACH ROW EXECUTE FUNCTION sync_content_section_assignments()`,
+  `CREATE OR REPLACE FUNCTION set_content_items_search_vector()
+   RETURNS trigger AS $$
+   BEGIN
+     NEW.search_vector :=
+       setweight(to_tsvector('english'::regconfig, coalesce(NEW.title, '')), 'A') ||
+       setweight(to_tsvector('english'::regconfig, coalesce(NEW.channel_name, '')), 'A') ||
+       setweight(to_tsvector('english'::regconfig, coalesce(NEW.description, '')), 'B') ||
+       setweight(to_tsvector('english'::regconfig, coalesce(array_to_string(NEW.tags, ' '), '')), 'C');
+     RETURN NEW;
+   END;
+   $$ LANGUAGE plpgsql`,
+  `DROP TRIGGER IF EXISTS trg_content_items_search_vector ON content_items`,
+  `CREATE TRIGGER trg_content_items_search_vector
+   BEFORE INSERT OR UPDATE OF title, channel_name, description, tags ON content_items
+   FOR EACH ROW EXECUTE FUNCTION set_content_items_search_vector()`,
+  `UPDATE content_items
+   SET search_vector =
+     setweight(to_tsvector('english'::regconfig, coalesce(title, '')), 'A') ||
+     setweight(to_tsvector('english'::regconfig, coalesce(channel_name, '')), 'A') ||
+     setweight(to_tsvector('english'::regconfig, coalesce(description, '')), 'B') ||
+     setweight(to_tsvector('english'::regconfig, coalesce(array_to_string(tags, ' '), '')), 'C')`,
+  `CREATE INDEX IF NOT EXISTS idx_user_search_events_query_lower_searched_at
+   ON user_search_events (LOWER(query), searched_at DESC)`,
+  `ALTER TABLE live_sessions ADD COLUMN IF NOT EXISTS search_vector tsvector`,
+  `CREATE OR REPLACE FUNCTION set_live_sessions_search_vector()
+   RETURNS trigger AS $$
+   BEGIN
+     NEW.search_vector :=
+       setweight(to_tsvector('english'::regconfig, coalesce(NEW.title, '')), 'A') ||
+       setweight(to_tsvector('english'::regconfig, coalesce(NEW.channel_id, '')), 'A') ||
+       setweight(to_tsvector('english'::regconfig, coalesce(NEW.description, '')), 'B') ||
+       setweight(to_tsvector('english'::regconfig, coalesce(array_to_string(NEW.tags, ' '), '')), 'C');
+     RETURN NEW;
+   END;
+   $$ LANGUAGE plpgsql`,
+  `DROP TRIGGER IF EXISTS trg_live_sessions_search_vector ON live_sessions`,
+  `CREATE TRIGGER trg_live_sessions_search_vector
+   BEFORE INSERT OR UPDATE OF title, channel_id, description, tags ON live_sessions
+   FOR EACH ROW EXECUTE FUNCTION set_live_sessions_search_vector()`,
+  `UPDATE live_sessions
+   SET search_vector =
+     setweight(to_tsvector('english'::regconfig, coalesce(title, '')), 'A') ||
+     setweight(to_tsvector('english'::regconfig, coalesce(channel_id, '')), 'A') ||
+     setweight(to_tsvector('english'::regconfig, coalesce(description, '')), 'B') ||
+     setweight(to_tsvector('english'::regconfig, coalesce(array_to_string(tags, ' '), '')), 'C')`,
+  `CREATE INDEX IF NOT EXISTS idx_live_sessions_search_vector
+   ON live_sessions USING GIN (search_vector)`,
 ];
 
 const MIGRATION_LOCK_ID = 7_246_130_001;

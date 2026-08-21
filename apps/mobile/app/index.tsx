@@ -21,6 +21,7 @@ import { APP_ROUTES } from '../util/appRoutes';
 import { BRAND_WORSHIP_ASSET } from '../util/brandAssets';
 import { useDeviceClass } from '../util/deviceClassConfig';
 import { getPreference, setPreference } from '../lib/localUserStorage';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 
 // Native-only — the web build already has its own marketing landing page (below)
 // gated on nothing, but native first-launch users were dropped straight into the
@@ -86,6 +87,7 @@ function BrandIntroScreen({
   const { width, height } = useWindowDimensions();
   const isPhone = !device.isDesktop && !device.isTV;
   const compact = height < 680;
+  const reduceMotion = useReducedMotion();
 
   const titleSize = isPhone ? (compact ? 30 : 36) : device.isTV ? 52 : 44;
   const gutter = isPhone ? 28 : device.isTV ? 80 : 64;
@@ -95,11 +97,16 @@ function BrandIntroScreen({
   const slideAnim = useRef(new Animated.Value(theme.motion.contentEnterDistance)).current;
 
   useEffect(() => {
+    if (reduceMotion) {
+      fadeAnim.setValue(1);
+      slideAnim.setValue(0);
+      return;
+    }
     Animated.parallel([
       Animated.timing(fadeAnim, { toValue: 1, duration: theme.timing.moderate, delay: 80, useNativeDriver: USE_NATIVE_DRIVER }),
       Animated.timing(slideAnim, { toValue: 0, duration: theme.timing.moderate, delay: 80, useNativeDriver: USE_NATIVE_DRIVER }),
     ]).start();
-  }, [fadeAnim, slideAnim, theme.timing.moderate]);
+  }, [fadeAnim, reduceMotion, slideAnim, theme.timing.moderate]);
 
   return (
     <View style={{ width, height, backgroundColor: theme.colors.background }}>
