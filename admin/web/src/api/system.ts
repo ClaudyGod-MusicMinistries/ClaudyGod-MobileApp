@@ -55,3 +55,18 @@ export async function getSecurityAuditEvents(): Promise<SecurityAuditEvent[]> {
   const { data } = await client.get<{ events: SecurityAuditEvent[] }>('/v1/admin/operations/audit', { params: { limit: 50 } });
   return data.events;
 }
+
+export interface OperationalSession {
+  id: string; source: 'refresh' | 'oauth'; userId: string; email: string; displayName: string;
+  role: string; ipAddress: string | null; userAgent: string | null; createdAt: string;
+  lastUsedAt: string | null; expiresAt: string;
+}
+
+export async function getOperationalSessions(): Promise<OperationalSession[]> {
+  const { data } = await client.get<{ sessions: OperationalSession[] }>('/v1/admin/operations/sessions', { params: { limit: 50 } });
+  return data.sessions;
+}
+
+export async function revokeOperationalSession(session: Pick<OperationalSession, 'source' | 'id'>): Promise<void> {
+  await client.delete(`/v1/admin/operations/sessions/${session.source}/${encodeURIComponent(session.id)}`);
+}

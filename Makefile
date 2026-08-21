@@ -50,7 +50,7 @@ NC     := \033[0m
 	docker-push release \
 	deploy deploy-pull deploy-migrate deploy-up deploy-down \
 	deploy-logs deploy-status rollback update \
-	logs clean-legacy setup-admin
+	logs clean-legacy setup-admin certify-integrations
 
 # ─── Help ────────────────────────────────────────────────────────────────────
 
@@ -180,6 +180,9 @@ review:
 review-logs:
 	@printf "$(CYAN)Recent hook logs:$(NC)\n"
 	@ls -lt logs/git-hooks/ 2>/dev/null | head -10 || printf "$(YELLOW)No logs yet$(NC)\n"
+
+certify-integrations:
+	$(COMPOSE_PROD) exec -T cgm-api node dist/cli/certifyIntegrations.js
 
 # ─── Development ─────────────────────────────────────────────────────────────
 

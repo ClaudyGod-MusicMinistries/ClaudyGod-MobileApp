@@ -10,6 +10,7 @@ import type { ContentRequestStatus, ContentVisibility } from '../content/content
 import { getMobileAppConfig } from '../appConfig/appConfig.service';
 import { getMeLibrary, getMeMetrics, getMeMostPlayed, getMeRecentlyPlayed } from '../me/me.service';
 import { listUserDevices, revokeDevice } from '../devices/devices.service';
+import { hasCapability } from '../../security/capabilities';
 
 interface SummaryRow {
   total_users: string;
@@ -377,7 +378,7 @@ const PUBLISHER_PORTAL_NAVIGATION = [
 ] as const;
 
 const getScopedContentSummaryResult = (requester: JwtClaims) => {
-  if (requester.role === 'ADMIN') {
+  if (hasCapability(requester.role, 'content.read')) {
     return pool.query<ContentSummaryRow>(
       `SELECT
          COUNT(*)::text AS total_managed_content,
@@ -399,7 +400,7 @@ const getScopedContentSummaryResult = (requester: JwtClaims) => {
 };
 
 const getScopedContentQueueSummaryResult = (requester: JwtClaims) => {
-  if (requester.role === 'ADMIN') {
+  if (hasCapability(requester.role, 'content.manage')) {
     return pool.query<ContentQueueSummaryRow>(
       `SELECT
          COUNT(*) FILTER (WHERE request_status IN ('submitted', 'in_review', 'changes_requested', 'approved'))::text AS active_requests,
@@ -421,7 +422,7 @@ const getScopedContentQueueSummaryResult = (requester: JwtClaims) => {
 };
 
 const getScopedContentQueuePreviewResult = (requester: JwtClaims) => {
-  if (requester.role === 'ADMIN') {
+  if (hasCapability(requester.role, 'content.manage')) {
     return pool.query<ContentQueuePreviewRow>(
       `SELECT
          id::text,
@@ -469,7 +470,7 @@ const getScopedContentQueuePreviewResult = (requester: JwtClaims) => {
 };
 
 const getScopedRecentManagedContentResult = (requester: JwtClaims) => {
-  if (requester.role === 'ADMIN') {
+  if (hasCapability(requester.role, 'content.read')) {
     return pool.query<RecentManagedContentRow>(
       `SELECT
          id::text,
@@ -503,7 +504,7 @@ const getScopedRecentManagedContentResult = (requester: JwtClaims) => {
 };
 
 const getScopedRecentAuthActivityResult = (requester: JwtClaims) => {
-  if (requester.role === 'ADMIN') {
+  if (hasCapability(requester.role, 'operations.manage')) {
     return pool.query<RecentAuthActivityRow>(
       `SELECT
          e.id::text,
@@ -545,7 +546,7 @@ const getScopedRecentAuthActivityResult = (requester: JwtClaims) => {
 };
 
 export const getAdminDashboard = async (requester: JwtClaims) => {
-  const isAdmin = requester.role === 'ADMIN';
+  const isAdmin = hasCapability(requester.role, 'users.read');
   const [
     userSummary,
     contentSummary,
@@ -1358,11 +1359,11 @@ export const updateAdminUserRole = async (input: {
 
   const existing = existingResult.rows[0]!;
 
-  if (existing.role === 'SUPER_ADMIN' && input.actor.role !== 'SUPER_ADMIN') {
+  if (existing.role === 'SUPER_ADMIN' && !hasCapability(input.actor.role, 'admin_access.manage')) {
     throw new ForbiddenError('Only a Super Admin can modify a Super Admin account', 'SUPER_ADMIN_REQUIRED');
   }
 
-  if ((existing.role === 'ADMIN' || input.role === 'ADMIN') && input.actor.role !== 'SUPER_ADMIN') {
+  if ((existing.role === 'ADMIN' || input.role === 'ADMIN') && !hasCapability(input.actor.role, 'admin_access.manage')) {
     throw new ForbiddenError('Only a Super Admin can grant or remove Admin access', 'SUPER_ADMIN_REQUIRED');
   }
 

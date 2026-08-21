@@ -247,7 +247,29 @@ module.exports = {
       'expo-font',
       'expo-router',
       'expo-web-browser',
-      'expo-notifications',
+      [
+        'expo-notifications',
+        {
+          color: '#6D3CEB',
+          defaultChannel: 'default',
+          enableBackgroundRemoteNotifications: false,
+        },
+      ],
+      [
+        'expo-image-picker',
+        {
+          photosPermission: 'Allow ClaudyGod to select worship media and profile images you choose to upload.',
+          cameraPermission: 'Allow ClaudyGod to use the camera only when you choose to capture media for an upload.',
+          microphonePermission: 'Allow ClaudyGod to record sound only when you choose to capture a video with audio.',
+        },
+      ],
+      [
+        'expo-audio',
+        {
+          microphonePermission: 'Allow ClaudyGod to use the microphone only when you choose to record audio.',
+          recordAudioAndroid: true,
+        },
+      ],
       'expo-updates',
       // No-op for local/dev builds without Sentry configured — only affects EAS builds
       // that set SENTRY_ORG/SENTRY_PROJECT/SENTRY_AUTH_TOKEN for source map upload.

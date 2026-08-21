@@ -3,6 +3,8 @@ const { spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 
+require('./apply-vendor-security-patches.cjs');
+
 const shouldSkipHooks = () => {
   const ciValue = String(process.env.CI || '').trim().toLowerCase();
   if (ciValue === '1' || ciValue === 'true') {

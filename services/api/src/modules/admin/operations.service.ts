@@ -122,3 +122,44 @@ export async function listSecurityAuditEvents(limit: number): Promise<{ events: 
     ipAddress: row.ip_address, metadata: row.metadata ?? {}, createdAt: new Date(row.created_at).toISOString(),
   })) };
 }
+
+export interface OperationalSession {
+  id: string; source: 'refresh' | 'oauth'; userId: string; email: string; displayName: string;
+  role: string; ipAddress: string | null; userAgent: string | null; createdAt: string;
+  lastUsedAt: string | null; expiresAt: string;
+}
+
+export async function listOperationalSessions(limit: number): Promise<{ sessions: OperationalSession[] }> {
+  const result = await pool.query<{
+    id: string; source: 'refresh' | 'oauth'; user_id: string; email: string; display_name: string;
+    role: string; ip_address: string | null; user_agent: string | null; created_at: string;
+    last_used_at: string | null; expires_at: string;
+  }>(`
+    SELECT * FROM (
+      SELECT s.id::text, 'refresh'::text source, s.user_id, u.email, u.display_name, u.role,
+             COALESCE(s.last_used_ip, s.created_ip) ip_address,
+             COALESCE(s.last_used_user_agent, s.created_user_agent) user_agent,
+             s.created_at, s.last_used_at, s.expires_at
+      FROM auth_refresh_sessions s JOIN app_users u ON u.id = s.user_id
+      WHERE s.revoked_at IS NULL AND s.expires_at > NOW()
+      UNION ALL
+      SELECT s.session_id, 'oauth'::text source, s.user_id, u.email, u.display_name, u.role,
+             s.ip_address, s.user_agent, s.created_at, NULL::timestamptz, s.expires_at
+      FROM auth_sessions s JOIN app_users u ON u.id = s.user_id
+      WHERE s.revoked_at IS NULL AND s.expires_at > NOW()
+    ) active_sessions ORDER BY COALESCE(last_used_at, created_at) DESC LIMIT $1
+  `, [limit]);
+  return { sessions: result.rows.map((row) => ({
+    id: row.id, source: row.source, userId: row.user_id, email: row.email, displayName: row.display_name,
+    role: row.role, ipAddress: row.ip_address, userAgent: row.user_agent,
+    createdAt: new Date(row.created_at).toISOString(), lastUsedAt: row.last_used_at ? new Date(row.last_used_at).toISOString() : null,
+    expiresAt: new Date(row.expires_at).toISOString(),
+  })) };
+}
+
+export async function revokeOperationalSession(source: 'refresh' | 'oauth', id: string): Promise<void> {
+  const result = source === 'refresh'
+    ? await pool.query(`UPDATE auth_refresh_sessions SET revoked_at = NOW(), updated_at = NOW() WHERE id = $1 AND revoked_at IS NULL`, [id])
+    : await pool.query(`UPDATE auth_sessions SET revoked_at = NOW() WHERE session_id = $1 AND revoked_at IS NULL`, [id]);
+  if (result.rowCount !== 1) throw new NotFoundError('Active session not found', 'SESSION_NOT_FOUND');
+}

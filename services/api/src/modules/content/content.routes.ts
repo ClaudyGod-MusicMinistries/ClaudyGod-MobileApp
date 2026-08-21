@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { asyncHandler } from '../../lib/asyncHandler';
 import { ForbiddenError, UnauthorizedError } from '../../lib/errors';
 import type { JwtClaims } from '../../utils/jwt';
-import { hasMinRole } from '../../middleware/rbac';
+import { assertCapability } from '../../middleware/rbac';
 import { validateSchema } from '../../lib/validation';
 import { authenticate } from '../../middleware/authenticate';
 import { contentRequestLimiter } from '../../middleware/rateLimiter';
@@ -52,9 +52,7 @@ function requireAdmin(user: unknown): JwtClaims {
   if (!candidate.sub || !candidate.email || !candidate.displayName) {
     throw new UnauthorizedError('Unauthorized', 'AUTH_REQUIRED');
   }
-  if (!hasMinRole(candidate.role, 'ADMIN')) {
-    throw new ForbiddenError('Admin access required', 'ADMIN_REQUIRED');
-  }
+  assertCapability(candidate.role, 'content.manage');
   if (!candidate.mfaEnabled) {
     throw new ForbiddenError('Multi-factor authentication is required for content administration', 'MFA_ENROLLMENT_REQUIRED');
   }

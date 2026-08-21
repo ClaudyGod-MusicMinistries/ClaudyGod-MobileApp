@@ -73,6 +73,21 @@
         </AppCard>
       </section>
 
+      <section class="space-y-3">
+        <div><h3 class="text-sm font-semibold text-ink">Active sessions</h3><p class="mt-0.5 text-xs text-ink-muted">Authenticated devices across password, OAuth, and biometric session stores.</p></div>
+        <AppCard class="divide-y divide-border overflow-hidden">
+          <div v-for="session in sessions" :key="`${session.source}-${session.id}`" class="flex items-start gap-3 p-4">
+            <div class="min-w-0 flex-1">
+              <div class="flex flex-wrap items-center gap-2"><span class="text-sm font-medium text-ink">{{ session.displayName }}</span><StatusBadge :status="session.role" /><span class="text-[10px] uppercase tracking-wide text-ink-muted">{{ session.source }}</span></div>
+              <p class="mt-1 truncate text-xs text-ink-muted">{{ session.email }}<span v-if="session.ipAddress"> · {{ session.ipAddress }}</span></p>
+              <p class="mt-1 truncate text-[10px] text-ink-muted">Last active {{ formatDate(session.lastUsedAt || session.createdAt) }} · Expires {{ formatDate(session.expiresAt) }}</p>
+            </div>
+            <AppButton variant="secondary" size="xs" :loading="revokingSession === `${session.source}-${session.id}`" @click="revokeSession(session)">Revoke</AppButton>
+          </div>
+          <p v-if="!sessions.length" class="p-8 text-center text-xs text-ink-muted">No active sessions.</p>
+        </AppCard>
+      </section>
+
       <AppCard class="p-5 space-y-4">
         <div class="flex items-start justify-between gap-4">
           <div>
@@ -126,8 +141,9 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { getHealth, getStorageHealth, getOperationalJobs, retryOperationalJob, getSecurityAuditEvents } from '@/api/system';
-import type { StorageHealth, OperationalJob, SecurityAuditEvent } from '@/api/system';
+import { getHealth, getStorageHealth, getOperationalJobs, retryOperationalJob, getSecurityAuditEvents, getOperationalSessions, revokeOperationalSession } from '@/api/system';
+import type { StorageHealth, OperationalJob, SecurityAuditEvent, OperationalSession } from '@/api/system';
+import { useUiStore } from '@/stores/ui.store';
 import type { HealthCheck } from '@/api/types';
 import AppCard from '@/components/ui/AppCard.vue';
 import AppButton from '@/components/ui/AppButton.vue';
@@ -146,6 +162,9 @@ const jobs = ref<OperationalJob[]>([]);
 const jobStatus = ref<'' | OperationalJob['status']>('');
 const retryingJob = ref('');
 const auditEvents = ref<SecurityAuditEvent[]>([]);
+const sessions = ref<OperationalSession[]>([]);
+const revokingSession = ref('');
+const ui = useUiStore();
 
 onMounted(() => { void refresh(); });
 
@@ -154,18 +173,29 @@ async function refresh(): Promise<void> {
   loadError.value = '';
   storageError.value = '';
   try {
-    const [platform, storage, operations, audit] = await Promise.allSettled([getHealth(), getStorageHealth(), getOperationalJobs(jobStatus.value || undefined), getSecurityAuditEvents()]);
+    const [platform, storage, operations, audit, activeSessions] = await Promise.allSettled([getHealth(), getStorageHealth(), getOperationalJobs(jobStatus.value || undefined), getSecurityAuditEvents(), getOperationalSessions()]);
     if (platform.status === 'rejected') throw platform.reason;
     health.value = platform.value;
     if (storage.status === 'fulfilled') storageHealth.value = storage.value;
     else storageError.value = storage.reason instanceof Error ? storage.reason.message : 'Storage check failed';
     if (operations.status === 'fulfilled') jobs.value = operations.value;
     if (audit.status === 'fulfilled') auditEvents.value = audit.value;
+    if (activeSessions.status === 'fulfilled') sessions.value = activeSessions.value;
   } catch (e) {
     loadError.value = e instanceof Error ? e.message : 'Health check failed';
   } finally {
     isLoading.value = false;
   }
+}
+
+async function revokeSession(session: OperationalSession) {
+  const ok = await ui.confirm({ title: 'Revoke session', message: `Immediately sign out ${session.displayName} on this device?`, tone: 'danger', confirmLabel: 'Revoke session' });
+  if (!ok) return;
+  revokingSession.value = `${session.source}-${session.id}`;
+  try {
+    await revokeOperationalSession(session);
+    sessions.value = sessions.value.filter((item) => item.id !== session.id || item.source !== session.source);
+  } finally { revokingSession.value = ''; }
 }
 
 async function loadJobs() {

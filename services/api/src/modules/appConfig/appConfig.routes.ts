@@ -3,7 +3,8 @@ import { asyncHandler } from '../../lib/asyncHandler';
 import { NotFoundError } from '../../lib/errors';
 import { validateSchema } from '../../lib/validation';
 import { authenticate } from '../../middleware/authenticate';
-import { requireRole } from '../../middleware/rbac';
+import { requireCapability } from '../../middleware/rbac';
+import { requirePrivilegedMfa } from '../../middleware/requirePrivilegedMfa';
 import { updateMobileAppConfigSchema } from './appConfig.schema';
 import {
   getMobileAppConfig,
@@ -49,7 +50,8 @@ mobileAppConfigRouter.get(
 adminAppConfigRouter.get(
   '/',
   authenticate,
-  requireRole('ADMIN'),
+  requirePrivilegedMfa,
+  requireCapability('mobile_config.manage'),
   asyncHandler(async (_req, res) => {
     const result = await getMobileAppConfig();
     res.status(200).json(result);
@@ -59,7 +61,8 @@ adminAppConfigRouter.get(
 adminAppConfigRouter.put(
   '/',
   authenticate,
-  requireRole('ADMIN'),
+  requirePrivilegedMfa,
+  requireCapability('mobile_config.manage'),
   asyncHandler(async (req, res) => {
     const payload = validateSchema(updateMobileAppConfigSchema, req.body);
     const result = await updateMobileAppConfig({

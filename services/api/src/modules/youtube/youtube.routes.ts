@@ -1,9 +1,9 @@
 import { Router } from 'express';
 import { asyncHandler } from '../../lib/asyncHandler';
-import { UnauthorizedError } from '../../lib/errors';
 import { validateSchema } from '../../lib/validation';
 import { authenticate } from '../../middleware/authenticate';
 import { requirePrivilegedMfa } from '../../middleware/requirePrivilegedMfa';
+import { requireCapability } from '../../middleware/rbac';
 import { youtubeImportSchema, youtubeListQuerySchema, youtubeSyncSchema } from './youtube.schema';
 import {
   fetchYouTubeVideos,
@@ -14,16 +14,11 @@ import {
 } from './youtube.service';
 
 export const youtubeRouter = Router();
-youtubeRouter.use(authenticate, requirePrivilegedMfa);
+youtubeRouter.use(authenticate, requirePrivilegedMfa, requireCapability('youtube.manage'));
 
 youtubeRouter.get(
   '/status',
-  authenticate,
-  asyncHandler(async (req, res) => {
-    if (!req.user) {
-      throw new UnauthorizedError('Unauthorized', 'AUTH_REQUIRED');
-    }
-
+  asyncHandler(async (_req, res) => {
     const result = await getYouTubeSyncStatus();
     res.status(200).json(result);
   }),
@@ -31,12 +26,7 @@ youtubeRouter.get(
 
 youtubeRouter.get(
   '/imports',
-  authenticate,
-  asyncHandler(async (req, res) => {
-    if (!req.user) {
-      throw new UnauthorizedError('Unauthorized', 'AUTH_REQUIRED');
-    }
-
+  asyncHandler(async (_req, res) => {
     const result = await listYouTubeImportQueue();
     res.status(200).json(result);
   }),
@@ -44,12 +34,7 @@ youtubeRouter.get(
 
 youtubeRouter.get(
   '/videos',
-  authenticate,
   asyncHandler(async (req, res) => {
-    if (!req.user) {
-      throw new UnauthorizedError('Unauthorized', 'AUTH_REQUIRED');
-    }
-
     const query = validateSchema(youtubeListQuerySchema, req.query);
     const result = await fetchYouTubeVideos(query);
     res.status(200).json(result);
@@ -58,15 +43,10 @@ youtubeRouter.get(
 
 youtubeRouter.post(
   '/sync',
-  authenticate,
   asyncHandler(async (req, res) => {
-    if (!req.user) {
-      throw new UnauthorizedError('Unauthorized', 'AUTH_REQUIRED');
-    }
-
     const payload = validateSchema(youtubeSyncSchema, req.body);
     const result = await syncYouTubeVideosToContent({
-      actorUserId: req.user.sub,
+      actorUserId: req.user!.sub,
       visibility: payload.visibility ?? 'draft',
       channelId: payload.channelId,
       maxResults: payload.maxResults,
@@ -79,15 +59,10 @@ youtubeRouter.post(
 
 youtubeRouter.post(
   '/import',
-  authenticate,
   asyncHandler(async (req, res) => {
-    if (!req.user) {
-      throw new UnauthorizedError('Unauthorized', 'AUTH_REQUIRED');
-    }
-
     const payload = validateSchema(youtubeImportSchema, req.body);
     const result = await importYouTubeSelectionsToContent({
-      actorUserId: req.user.sub,
+      actorUserId: req.user!.sub,
       selections: payload.selections,
     });
 

@@ -31,6 +31,12 @@ async function mockAuthenticatedSession(page: Page): Promise<void> {
     }] });
     if (path.endsWith('/v1/admin/operations/jobs/media/42/retry')) return json(route, { dispatch: 'queued' });
     if (path.endsWith('/v1/admin/operations/audit')) return json(route, { events: [] });
+    if (path.endsWith('/v1/admin/operations/sessions')) return json(route, { sessions: [{
+      id: '22222222-2222-4222-8222-222222222222', source: 'refresh', userId: admin.id,
+      email: admin.email, displayName: admin.displayName, role: admin.role, ipAddress: '203.0.113.10',
+      userAgent: 'Release browser', createdAt: new Date().toISOString(), lastUsedAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 86_400_000).toISOString(),
+    }] });
     if (path.endsWith('/health')) return json(route, { status: 'ok', services: {} });
     return json(route, {});
   });
@@ -63,6 +69,10 @@ test('super admin can see and retry a failed media security job', async ({ page 
   await expect(page.getByText('Scanner unavailable')).toBeVisible();
   await page.getByRole('button', { name: 'Retry' }).click();
   await expect(page.getByText('sermon.mp3')).toBeVisible();
+  await expect(page.getByText('203.0.113.10')).toBeVisible();
+  await page.getByRole('button', { name: 'Revoke' }).click();
+  await page.getByRole('button', { name: 'Revoke session' }).click();
+  await expect(page.getByText('203.0.113.10')).not.toBeVisible();
 });
 
 test('public authentication surface has no WCAG A/AA violations', async ({ page }) => {

@@ -18,6 +18,7 @@
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc --noEmit",
     "test": "node --test test/*.test.cjs",
+    "release:certify": "node ./scripts/certify-release.js",
     "check": "node ./scripts/check-all.js",
     "check:deps": "node ./scripts/check-dependencies.js",
     "check:pre-commit": "node ./scripts/check-dependencies.js && lint-staged",

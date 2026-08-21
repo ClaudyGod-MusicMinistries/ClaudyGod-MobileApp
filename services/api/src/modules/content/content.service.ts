@@ -8,7 +8,7 @@ import { dispatchContentJob } from '../../queues/contentOutbox';
 import { env } from '../../config/env';
 import { queueEmailJob } from '../../infra/transactionalEmails';
 import type { UserRole } from '../auth/auth.types';
-import { hasMinRole } from '../auth/auth.types';
+import { hasCapability } from '../../security/capabilities';
 import type {
   ContentItem,
   ContentListQuery,
@@ -241,6 +241,12 @@ const buildListResponse = (rows: ContentRow[], total: number, query: ContentList
 const normalizeTextList = (items?: string[]): string[] =>
   [...new Set((items ?? []).map((item) => item.trim()).filter(Boolean))];
 
+const requirePublishCapability = (requester: JwtClaims): void => {
+  if (!hasCapability(requester.role, 'content.publish')) {
+    throw new ForbiddenError('Publishing content requires the content.publish capability', 'INSUFFICIENT_CAPABILITY');
+  }
+};
+
 const validateConfiguredSectionAssignments = async (params: {
   appSections?: string[];
   type: ContentType;
@@ -331,7 +337,7 @@ const loadValidatedUploadSession = async ({
   if (session.channel !== 'admin') {
     throw new BadRequestError('Referenced upload session is not valid for admin content');
   }
-  if (!hasMinRole(requester.role, 'ADMIN') && session.requested_by !== requester.sub) {
+  if (!hasCapability(requester.role, 'content.manage') && session.requested_by !== requester.sub) {
     throw new ForbiddenError('You can only attach files uploaded from your own session');
   }
   assertConfirmedUploadSession(session.status, session.attached_at, session.trust_status);
@@ -673,7 +679,7 @@ export const listManagedContent = async (
   }
 
   const offset = (normalized.page - 1) * normalized.limit;
-  const isAdmin = hasMinRole(requester.role, 'ADMIN');
+  const isAdmin = hasCapability(requester.role, 'content.manage');
   const conditions: string[] = [`c.deleted_at IS NULL`];
   const values: unknown[] = [];
 
@@ -778,7 +784,7 @@ export const getManagedContentById = async (requester: JwtClaims, contentId: str
   if (!row) {
     throw new NotFoundError('Content not found');
   }
-  if (!hasMinRole(requester.role, 'ADMIN') && row.author_id !== requester.sub) {
+  if (!hasCapability(requester.role, 'content.manage') && row.author_id !== requester.sub) {
     throw new ForbiddenError('You can only view your own content');
   }
   return toContentItem(row);
@@ -788,7 +794,7 @@ export const listContentRequests = async (requester: JwtClaims): Promise<Content
   const values: unknown[] = [];
   const conditions: string[] = [];
 
-  if (!hasMinRole(requester.role, 'ADMIN')) {
+  if (!hasCapability(requester.role, 'content.manage')) {
     values.push(requester.sub);
     conditions.push(`r.requester_id = $${values.length}`);
   }
@@ -970,7 +976,7 @@ export const updateContentRequestStatus = async ({
   adminNotes?: string;
   requester: JwtClaims;
 }): Promise<ContentSubmissionRequest> => {
-  if (!hasMinRole(requester.role, 'ADMIN')) {
+  if (!hasCapability(requester.role, 'content.manage')) {
     throw new ForbiddenError('Admin access required to update content requests');
   }
 
@@ -1006,7 +1012,7 @@ export const createDraftFromContentRequest = async ({
   requestId: string;
   requester: JwtClaims;
 }): Promise<{ request: ContentSubmissionRequest; content: ContentItem }> => {
-  if (!hasMinRole(requester.role, 'ADMIN')) {
+  if (!hasCapability(requester.role, 'content.manage')) {
     throw new ForbiddenError('Admin access required to create content drafts from requests');
   }
 
@@ -1118,6 +1124,7 @@ export const createDraftFromContentRequest = async ({
 };
 
 export const createContent = async (requester: JwtClaims, input: CreateContentInput): Promise<ContentItem> => {
+  if (input.visibility === 'published') requirePublishCapability(requester);
   const validatedSections = await validateConfiguredSectionAssignments({
     appSections: input.appSections,
     type: input.type,
@@ -1258,7 +1265,9 @@ export const updateContent = async ({
     throw new NotFoundError('Content not found');
   }
 
-  if (!hasMinRole(requester.role, 'ADMIN') && existing.author_id !== requester.sub) {
+  if (input.visibility === 'published' && existing.visibility !== 'published') requirePublishCapability(requester);
+
+  if (!hasCapability(requester.role, 'content.manage') && existing.author_id !== requester.sub) {
     throw new ForbiddenError('You can only update your own content');
   }
   const validatedSections = await validateConfiguredSectionAssignments({
@@ -1432,7 +1441,9 @@ export const updateContentVisibility = async ({
     throw new NotFoundError('Content not found');
   }
 
-  if (!hasMinRole(requester.role, 'ADMIN')) {
+  if (visibility === 'published' && existing.visibility !== 'published') requirePublishCapability(requester);
+
+  if (!hasCapability(requester.role, 'content.manage')) {
     if (existing.author_id !== requester.sub) {
       throw new ForbiddenError('You can only update visibility for your own content');
     }
@@ -1575,7 +1586,7 @@ export const deleteContent = async ({
   }
 
   const existingRow = existing.rows[0]!;
-  if (!hasMinRole(requester.role, 'ADMIN') && existingRow.author_id !== requester.sub) {
+  if (!hasCapability(requester.role, 'content.manage') && existingRow.author_id !== requester.sub) {
     throw new ForbiddenError('You can only delete your own content');
   }
 
@@ -1602,7 +1613,7 @@ export const listDeletedContent = async (
 ): Promise<ContentListResponse> => {
   const normalized = normalizeListQuery(query);
   const offset = (normalized.page - 1) * normalized.limit;
-  const isAdmin = hasMinRole(requester.role, 'ADMIN');
+  const isAdmin = hasCapability(requester.role, 'content.manage');
   const conditions: string[] = [`c.deleted_at IS NOT NULL`];
   const values: unknown[] = [];
 
@@ -1671,7 +1682,7 @@ export const restoreContent = async ({
   if (existing.rowCount === 0 || !existing.rows[0]!.deleted_at) {
     throw new NotFoundError('Deleted content not found');
   }
-  if (!hasMinRole(requester.role, 'ADMIN') && existing.rows[0]!.author_id !== requester.sub) {
+  if (!hasCapability(requester.role, 'content.manage') && existing.rows[0]!.author_id !== requester.sub) {
     throw new ForbiddenError('You can only restore your own content');
   }
 
@@ -1691,7 +1702,7 @@ export const permanentlyDeleteContent = async ({
   contentId: string;
   requester: JwtClaims;
 }): Promise<{ deleted: true; id: string }> => {
-  if (!hasMinRole(requester.role, 'ADMIN')) {
+  if (!hasCapability(requester.role, 'content.manage')) {
     throw new ForbiddenError('Admin access required to permanently delete content');
   }
 

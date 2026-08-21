@@ -15,6 +15,8 @@
     "migrate:status:prod": "node dist/db/migrationStatus.js",
     "admin:bootstrap": "ts-node-dev --exit-child --transpile-only src/cli/bootstrapSuperAdmin.ts",
     "admin:bootstrap:prod": "node dist/cli/bootstrapSuperAdmin.js",
+    "integrations:certify": "ts-node-dev --exit-child --transpile-only src/cli/certifyIntegrations.ts",
+    "integrations:certify:prod": "node dist/cli/certifyIntegrations.js",
     "lint": "eslint src --max-warnings 0",
     "lint:fix": "eslint src --fix",
     "typecheck": "tsc --noEmit",
