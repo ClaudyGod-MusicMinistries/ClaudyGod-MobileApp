@@ -8,6 +8,8 @@ const log = createLogger('db.migrate');
 const migrationStatements = [
   `CREATE EXTENSION IF NOT EXISTS "pgcrypto"`,
   `CREATE EXTENSION IF NOT EXISTS pg_trgm`,
+  
+  // ============ APP USERS ============
   `CREATE TABLE IF NOT EXISTS app_users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     email TEXT NOT NULL UNIQUE,
@@ -29,6 +31,36 @@ const migrationStatements = [
   `ALTER TABLE app_users ADD COLUMN IF NOT EXISTS auth_provider TEXT NOT NULL DEFAULT 'local'
     CHECK (auth_provider IN ('local', 'supabase'))`,
   `ALTER TABLE app_users ADD COLUMN IF NOT EXISTS supabase_user_id UUID`,
+
+  // ============ USER PROFILES ============
+  `CREATE TABLE IF NOT EXISTS user_profiles (
+    user_id UUID PRIMARY KEY REFERENCES app_users(id) ON DELETE CASCADE,
+    display_name TEXT NOT NULL,
+    email TEXT NOT NULL,
+    avatar_url TEXT,
+    phone TEXT,
+    country TEXT,
+    locale TEXT NOT NULL DEFAULT 'en',
+    timezone TEXT,
+    bio TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+
+  // ============ USER PREFERENCES ============
+  `CREATE TABLE IF NOT EXISTS user_preferences (
+    user_id UUID PRIMARY KEY REFERENCES app_users(id) ON DELETE CASCADE,
+    notifications_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    autoplay_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    high_quality_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+    diagnostics_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+    personalization_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    theme_preference TEXT NOT NULL DEFAULT 'dark' CHECK (theme_preference IN ('system', 'light', 'dark')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+
+  // ============ CONTENT ITEMS ============
   `CREATE TABLE IF NOT EXISTS content_items (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     author_id UUID NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,
@@ -49,6 +81,8 @@ const migrationStatements = [
   `ALTER TABLE content_items ADD COLUMN IF NOT EXISTS tags TEXT[] NOT NULL DEFAULT '{}'`,
   `ALTER TABLE content_items ADD COLUMN IF NOT EXISTS metadata JSONB NOT NULL DEFAULT '{}'::jsonb`,
   `ALTER TABLE content_items ADD COLUMN IF NOT EXISTS search_vector TSVECTOR`,
+
+  // ============ LIVE SESSIONS ============
   `CREATE TABLE IF NOT EXISTS live_sessions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     title TEXT NOT NULL,
@@ -73,6 +107,8 @@ const migrationStatements = [
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`,
   `ALTER TABLE live_sessions ADD COLUMN IF NOT EXISTS search_vector TSVECTOR`,
+
+  // ============ USER SEARCH EVENTS ============
   `CREATE TABLE IF NOT EXISTS user_search_events (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES app_users(id) ON DELETE SET NULL,
@@ -84,6 +120,58 @@ const migrationStatements = [
   `CREATE INDEX IF NOT EXISTS idx_user_search_events_user_searched_at ON user_search_events (user_id, searched_at DESC)`,
   `CREATE INDEX IF NOT EXISTS idx_user_search_events_searched_at_query ON user_search_events (searched_at DESC, query)`,
   `CREATE INDEX IF NOT EXISTS idx_user_search_events_query_lower_searched_at ON user_search_events (LOWER(query), searched_at DESC)`,
+
+  // ============ USER PUSH TOKENS ============
+  `CREATE TABLE IF NOT EXISTS user_push_tokens (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,
+    expo_push_token TEXT NOT NULL,
+    device_type TEXT NOT NULL DEFAULT 'unknown',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (user_id, expo_push_token)
+  )`,
+
+  // ============ USER SAVED ITEMS ============
+  `CREATE TABLE IF NOT EXISTS user_saved_items (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,
+    bucket TEXT NOT NULL CHECK (bucket IN ('liked', 'downloaded', 'playlist')),
+    playlist_name TEXT,
+    content_id TEXT NOT NULL,
+    content_type TEXT NOT NULL,
+    title TEXT NOT NULL,
+    subtitle TEXT NOT NULL DEFAULT '',
+    description TEXT NOT NULL DEFAULT '',
+    image_url TEXT,
+    media_url TEXT,
+    duration TEXT,
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+
+  // ============ USER PLAY EVENTS ============
+  `CREATE TABLE IF NOT EXISTS user_play_events (
+    id BIGSERIAL PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,
+    content_id TEXT NOT NULL,
+    content_type TEXT NOT NULL,
+    content_title TEXT NOT NULL,
+    source_screen TEXT,
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    played_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  `ALTER TABLE user_play_events
+     ADD COLUMN IF NOT EXISTS duration_ms    INTEGER,
+     ADD COLUMN IF NOT EXISTS position_ms    INTEGER     DEFAULT 0,
+     ADD COLUMN IF NOT EXISTS skip_count     SMALLINT    DEFAULT 0,
+     ADD COLUMN IF NOT EXISTS source         TEXT        DEFAULT 'direct'
+       CHECK (source IN ('feed','search','recommendation','direct','playlist','autoplay')),
+     ADD COLUMN IF NOT EXISTS session_id     UUID`,
+
+  // ============ CONTENT SEARCH VECTOR ============
   `CREATE OR REPLACE FUNCTION content_items_search_vector_update() RETURNS TRIGGER AS $$
   BEGIN
     NEW.search_vector := 
@@ -99,6 +187,8 @@ const migrationStatements = [
     BEFORE INSERT OR UPDATE ON content_items
     FOR EACH ROW EXECUTE FUNCTION content_items_search_vector_update()`,
   `CREATE INDEX IF NOT EXISTS idx_content_items_search_vector ON content_items USING GIN (search_vector)`,
+
+  // ============ LIVE SESSIONS SEARCH VECTOR ============
   `CREATE OR REPLACE FUNCTION live_sessions_search_vector_update() RETURNS TRIGGER AS $$
   BEGIN
     NEW.search_vector := 
