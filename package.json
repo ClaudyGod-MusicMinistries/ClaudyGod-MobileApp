@@ -40,6 +40,7 @@
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/node": "^25.7.0",
+    "lefthook": "^1.7.15",
     "typescript": "~5.9.2"
   }
 }

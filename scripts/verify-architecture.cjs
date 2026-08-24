@@ -23,6 +23,7 @@ for (const file of removedLegacyFiles) {
 const rootPackage = JSON.parse(read('package.json'));
 assert.equal(rootPackage.workspaces, undefined, 'Root is an orchestrator, not a partial Yarn workspace');
 assert.equal(rootPackage.dependencies, undefined, 'Runtime dependencies belong to deployable applications');
+assert.equal(typeof rootPackage.devDependencies?.lefthook, 'string', 'Root Git hooks must own their Lefthook binary');
 
 for (const app of ['services/api', 'admin/web', 'apps/mobile']) {
   assert.equal(exists(`${app}/package.json`), true, `${app} must own a package manifest`);

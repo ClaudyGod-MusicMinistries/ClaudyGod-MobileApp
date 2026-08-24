@@ -90,6 +90,7 @@
     "eslint-config-expo": "~10.0.0",
     "lefthook": "^1.7.15",
     "lint-staged": "^15.2.10",
+    "react-refresh": "^0.17.0",
     "sharp": "^0.35.2",
     "typescript": "~5.9.2"
   },
