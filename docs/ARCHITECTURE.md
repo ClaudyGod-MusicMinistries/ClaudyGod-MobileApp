@@ -48,4 +48,4 @@ config -> validated process-specific environment
 
 ## Architecture gate
 
-Run `yarn architecture:check` or `make review`. The gate prevents legacy wrapper projects, unpinned container installs, duplicated BullMQ connection policy, and process lifecycle ownership inside shared logging code from returning.
+Run `yarn contracts:check` or `make review`. The gate prevents legacy wrapper projects, unpinned container installs, duplicated BullMQ connection policy, and process lifecycle ownership inside shared logging code from returning.

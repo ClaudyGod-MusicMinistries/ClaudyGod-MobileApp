@@ -186,8 +186,8 @@ fi
 run_step "Recovery automation syntax" \
   bash -n ./scripts/backup-database.sh ./scripts/verify-database-restore.sh
 
-run_step "Transactional deployment contracts" \
-  run_yarn release:contracts
+run_step "Architecture and deployment contracts" \
+  run_yarn contracts:check
 
 # ── 10. Leftover console.log in API source ────────────────────────────────────
 step_start "Debug console.log scan — API src/"

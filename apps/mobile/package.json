@@ -19,11 +19,6 @@
     "typecheck": "tsc --noEmit",
     "test": "node --test test/*.test.cjs",
     "release:certify": "node ./scripts/certify-release.js",
-    "check": "node ./scripts/check-all.js",
-    "check:deps": "node ./scripts/check-dependencies.js",
-    "check:pre-commit": "node ./scripts/check-dependencies.js && lint-staged",
-    "check:pre-push": "node ./scripts/check-all.js",
-    "hooks:install": "lefthook install",
     "postinstall": "node ./scripts/postinstall.js"
   },
   "dependencies": {
@@ -88,16 +83,9 @@
     "cross-env": "^10.1.0",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
-    "lefthook": "^1.7.15",
-    "lint-staged": "^15.2.10",
     "react-refresh": "^0.17.0",
     "sharp": "^0.35.2",
     "typescript": "~5.9.2"
-  },
-  "lint-staged": {
-    "*.{js,jsx,ts,tsx}": [
-      "eslint --cache --fix --max-warnings=0"
-    ]
   },
   "private": true
 }

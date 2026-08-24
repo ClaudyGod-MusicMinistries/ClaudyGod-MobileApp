@@ -30,10 +30,9 @@
     "docker:prod:down": "docker compose --env-file .env.production -f docker-compose.production.yml down",
     "docker:prod:logs": "docker compose --env-file .env.production -f docker-compose.production.yml logs -f",
     "brand:generate": "node brand/generate-assets.mjs",
-    "review:all": "bash ./scripts/review-all.sh",
+    "review": "bash ./scripts/prepush-all-checks.sh",
     "security:audit": "node ./scripts/security-audit.cjs",
-    "architecture:check": "node ./scripts/verify-architecture.cjs",
-    "release:contracts": "node ./scripts/verify-deployment-contracts.cjs",
+    "contracts:check": "node ./scripts/verify-contracts.cjs",
     "precommit:check": "bash ./scripts/precommit-all-staged.sh",
     "prepush:check": "bash ./scripts/prepush-all-checks.sh"
   },

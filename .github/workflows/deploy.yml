@@ -65,7 +65,7 @@ jobs:
         run: yarn --cwd ./admin/web playwright install --with-deps chromium
 
       - name: Run full repository review
-        run: bash ./scripts/review-all.sh
+        run: bash ./scripts/prepush-all-checks.sh
 
       - name: Run admin browser workflows
         run: yarn --cwd ./admin/web test:e2e

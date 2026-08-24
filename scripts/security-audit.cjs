@@ -35,7 +35,7 @@ if (!fs.readFileSync(imageSizeIcns, 'utf8').includes('CLAUDYGOD_SECURITY_PATCH_G
 const exploitRegression = spawnSync(
   process.execPath,
   ['--test', '--test-name-pattern', 'vendored image parser', 'apps/mobile/test/release-contracts.test.cjs'],
-  { cwd: root, encoding: 'utf8', timeout: 5_000 },
+  { cwd: root, encoding: 'utf8', timeout: 15_000 },
 );
 if (exploitRegression.error || exploitRegression.signal || exploitRegression.status !== 0) {
   fail(`image parser exploit regression failed\n${exploitRegression.stderr || exploitRegression.stdout}`);

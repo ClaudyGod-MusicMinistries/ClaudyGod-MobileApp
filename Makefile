@@ -176,7 +176,7 @@ hooks-install:
 
 review:
 	@printf "$(BOLD)$(BLUE)Running full repo review (same gate as pre-push)...$(NC)\n"
-	bash ./scripts/review-all.sh
+	bash ./scripts/prepush-all-checks.sh
 
 review-logs:
 	@printf "$(CYAN)Recent hook logs:$(NC)\n"

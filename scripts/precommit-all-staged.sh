@@ -183,7 +183,14 @@ fi
 # ── 8. Mobile ESLint ──────────────────────────────────────────────────────────
 if has_match '^apps/mobile/.*\.(ts|tsx|js|jsx)$'; then
   step_start "Mobile ESLint"
-  if bash ./scripts/precommit-mobile-staged.sh 2>&1; then
+  MOBILE_FILES=()
+  for file in "${STAGED[@]}"; do
+    if [[ "$file" =~ ^apps/mobile/.*\.(js|jsx|ts|tsx)$ ]]; then
+      MOBILE_FILES+=("${file#apps/mobile/}")
+    fi
+  done
+  if run_yarn --cwd ./apps/mobile eslint --cache --fix --max-warnings=0 "${MOBILE_FILES[@]}" 2>&1; then
+    for file in "${MOBILE_FILES[@]}"; do git add -- "apps/mobile/$file"; done
     step_pass "Mobile lint clean"
   else
     step_warn "Mobile lint issues (not blocking — fix before push)"
