@@ -13,6 +13,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
+source "$ROOT_DIR/scripts/lib/package-manager.sh"
 
 LOG_DIR="$ROOT_DIR/logs/git-hooks"
 mkdir -p "$LOG_DIR"
@@ -71,29 +72,29 @@ warn_step() {
 }
 
 # ── API ───────────────────────────────────────────────────────────────────────
-run_step  "API TypeScript — tsc --noEmit"          yarn --cwd ./services/api typecheck
-run_step  "API ESLint — zero warnings"             yarn --cwd ./services/api lint
-run_step  "API Build — compile to dist/"           yarn --cwd ./services/api build
-run_step  "API contract tests"                     yarn --cwd ./services/api test
+run_step  "API TypeScript — tsc --noEmit"          run_yarn --cwd ./services/api typecheck
+run_step  "API ESLint — zero warnings"             run_yarn --cwd ./services/api lint
+run_step  "API Build — compile to dist/"           run_yarn --cwd ./services/api build
+run_step  "API contract tests"                     run_yarn --cwd ./services/api test
 run_step  "PostgreSQL migration + search integration" bash ./scripts/test-database-integration.sh
 
 # ── Admin portal ─────────────────────────────────────────────────────────────
-run_step  "Admin TypeScript + production build"       yarn --cwd ./admin/web build
+run_step  "Admin TypeScript + production build"       run_yarn --cwd ./admin/web build
 
 # ── Mobile ────────────────────────────────────────────────────────────────────
-warn_step "Mobile TypeScript — tsc --noEmit"       yarn --cwd ./apps/mobile typecheck
-warn_step "Mobile ESLint"                          yarn --cwd ./apps/mobile lint
-run_step  "Mobile release-contract tests"          yarn --cwd ./apps/mobile test
+warn_step "Mobile TypeScript — tsc --noEmit"       run_yarn --cwd ./apps/mobile typecheck
+warn_step "Mobile ESLint"                          run_yarn --cwd ./apps/mobile lint
+run_step  "Mobile release-contract tests"          run_yarn --cwd ./apps/mobile test
 
 # ── Infrastructure ────────────────────────────────────────────────────────────
-run_step  "Architecture boundary contracts"         yarn architecture:check
+run_step  "Architecture boundary contracts"         run_yarn architecture:check
 run_step  "Docker compose validation"              bash ./scripts/docker-validate.sh
 run_step  "Recovery automation syntax"             bash -n ./scripts/backup-database.sh ./scripts/verify-database-restore.sh
-run_step  "Transactional deployment contracts"     yarn release:contracts
+run_step  "Transactional deployment contracts"     run_yarn release:contracts
 
 # ── Security audit ────────────────────────────────────────────────────────────
 step_start "Security audit — registry + verified vendor mitigations"
-if yarn security:audit 2>&1; then
+if run_yarn security:audit 2>&1; then
   echo "└─ [PASS] Security audit ($(step_elapsed)s)"
 else
   echo "└─ [FAIL] Security audit — high/critical findings or audit unavailable ($(step_elapsed)s)"

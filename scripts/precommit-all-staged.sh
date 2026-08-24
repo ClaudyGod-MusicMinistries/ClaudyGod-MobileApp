@@ -8,6 +8,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
+source "$ROOT_DIR/scripts/lib/package-manager.sh"
 
 # ── Silence npm lifecycle noise ───────────────────────────────────────────────
 unset npm_config_version_commit_hooks npm_config_version_tag_prefix \
@@ -146,7 +147,7 @@ fi
 # ── 5. API TypeScript type check ──────────────────────────────────────────────
 if has_match '^services/api/.*\.(ts|tsx|js|json)$'; then
   step_start "API TypeScript (tsc --noEmit)"
-  if yarn --cwd ./services/api typecheck 2>&1; then
+  if run_yarn --cwd ./services/api typecheck 2>&1; then
     step_pass "API typechecks clean"
   else
     step_fail "API TypeScript errors — commit blocked"
@@ -158,7 +159,7 @@ fi
 # ── 6. API ESLint ─────────────────────────────────────────────────────────────
 if has_match '^services/api/src/.*\.ts$'; then
   step_start "API ESLint"
-  if yarn --cwd ./services/api lint 2>&1; then
+  if run_yarn --cwd ./services/api lint 2>&1; then
     step_pass "API lint clean"
   else
     step_fail "API ESLint errors — commit blocked"
@@ -170,7 +171,7 @@ fi
 # ── 7. Mobile TypeScript ──────────────────────────────────────────────────────
 if has_match '^apps/mobile/.*\.(ts|tsx)$'; then
   step_start "Mobile TypeScript"
-  if yarn --cwd ./apps/mobile typecheck 2>&1; then
+  if run_yarn --cwd ./apps/mobile typecheck 2>&1; then
     step_pass "Mobile typechecks clean"
   else
     step_warn "Mobile TypeScript issues (not blocking — fix before push)"

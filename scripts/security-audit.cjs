@@ -13,9 +13,10 @@ function fail(message) {
   process.exit(1);
 }
 
-const imageSizePackage = path.join(root, 'node_modules/image-size/package.json');
-const imageSizeUtils = path.join(root, 'node_modules/image-size/dist/types/utils.js');
-const imageSizeIcns = path.join(root, 'node_modules/image-size/dist/types/icns.js');
+const mobileRoot = path.join(root, 'apps/mobile');
+const imageSizePackage = path.join(mobileRoot, 'node_modules/image-size/package.json');
+const imageSizeUtils = path.join(mobileRoot, 'node_modules/image-size/dist/types/utils.js');
+const imageSizeIcns = path.join(mobileRoot, 'node_modules/image-size/dist/types/icns.js');
 if (![imageSizePackage, imageSizeUtils, imageSizeIcns].every(fs.existsSync)) {
   fail('image-size dependency is missing; run a frozen dependency install first');
 }
@@ -40,39 +41,43 @@ if (exploitRegression.error || exploitRegression.signal || exploitRegression.sta
   fail(`image parser exploit regression failed\n${exploitRegression.stderr || exploitRegression.stdout}`);
 }
 
-const audit = spawnSync(
-  'yarn',
-  ['audit', '--groups', 'dependencies', '--level', 'high', '--json'],
-  { cwd: root, encoding: 'utf8', maxBuffer: 20 * 1024 * 1024 },
-);
-if (audit.error || audit.status === null) {
-  fail(`registry audit could not run: ${audit.error?.message || 'unknown process failure'}`);
-}
+const packageRoots = ['services/api', 'admin/web', 'apps/mobile'];
+const events = packageRoots.flatMap((packageRoot) => {
+  const audit = spawnSync(
+    'corepack',
+    ['yarn', 'audit', '--groups', 'dependencies', '--level', 'high', '--json'],
+    { cwd: path.join(root, packageRoot), encoding: 'utf8', maxBuffer: 20 * 1024 * 1024 },
+  );
+  if (audit.error || audit.status === null) {
+    fail(`${packageRoot} registry audit could not run: ${audit.error?.message || 'unknown process failure'}`);
+  }
 
-const events = audit.stdout
-  .split(/\r?\n/)
-  .filter(Boolean)
-  .map((line) => {
-    try { return JSON.parse(line); } catch { return null; }
-  })
-  .filter(Boolean);
-const summary = events.find((event) => event.type === 'auditSummary');
-if (!summary) {
-  fail(`registry did not return an audit summary${audit.stderr ? `: ${audit.stderr.trim()}` : ''}`);
-}
+  const packageEvents = audit.stdout
+    .split(/\r?\n/)
+    .filter(Boolean)
+    .map((line) => {
+      try { return { packageRoot, event: JSON.parse(line) }; } catch { return null; }
+    })
+    .filter(Boolean);
+  if (!packageEvents.some(({ event }) => event.type === 'auditSummary')) {
+    fail(`${packageRoot} registry did not return an audit summary${audit.stderr ? `: ${audit.stderr.trim()}` : ''}`);
+  }
+  return packageEvents;
+});
 
-const blocking = events.filter((event) => {
+const blocking = events.filter(({ event }) => {
   if (event.type !== 'auditAdvisory') return false;
   return ['high', 'critical'].includes(event.data?.advisory?.severity);
 });
 const seenMitigations = new Set();
 
-for (const event of blocking) {
+for (const { packageRoot, event } of blocking) {
   const advisory = event.data.advisory;
   const advisoryId = advisory.github_advisory_id;
   const findings = advisory.findings || [];
   const exactMitigation =
     expectedMitigations.has(advisoryId) &&
+    packageRoot === 'apps/mobile' &&
     advisory.module_name === 'image-size' &&
     findings.length > 0 &&
     findings.every((finding) =>
@@ -82,7 +87,7 @@ for (const event of blocking) {
     );
 
   if (!exactMitigation) {
-    fail(`${advisoryId || advisory.id} (${advisory.module_name}) remains high/critical and is not mitigated`);
+    fail(`${packageRoot}: ${advisoryId || advisory.id} (${advisory.module_name}) remains high/critical and is not mitigated`);
   }
   seenMitigations.add(advisoryId);
 }

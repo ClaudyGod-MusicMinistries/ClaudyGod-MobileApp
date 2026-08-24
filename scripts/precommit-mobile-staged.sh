@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$ROOT_DIR/scripts/lib/package-manager.sh"
+
 # Lint only staged mobile JS/TS files so existing warnings in untouched files
 # do not block commits.
 # Not using `mapfile` (bash 4+ only) — macOS ships bash 3.2, which lacks it.
@@ -23,7 +26,7 @@ for i in "${!files[@]}"; do
 done
 
 echo "Linting staged mobile files (${#files[@]})..."
-yarn --cwd apps/mobile eslint --cache --fix --max-warnings=0 "${files[@]}"
+run_yarn --cwd apps/mobile eslint --cache --fix --max-warnings=0 "${files[@]}"
 
 # Re-stage any formatter/eslint fixes so the commit contains the validated code.
 for file in "${files[@]}"; do
