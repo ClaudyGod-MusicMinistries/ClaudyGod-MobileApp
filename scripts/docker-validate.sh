@@ -30,6 +30,7 @@ validate_compose() {
 cat >"$PRODUCTION_CHECK_ENV" <<'EOF'
 NODE_ENV=production
 CLAUDYGOD_ENV=production
+IMAGE_TAG=0000000000000000000000000000000000000000
 DATABASE_URL=postgresql://postgres.validation:validation-password@db.validation.supabase.co:5432/postgres
 DATABASE_SSL=true
 REDIS_URL=redis://:validation-redis-password@redis:6379

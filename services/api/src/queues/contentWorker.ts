@@ -1,6 +1,6 @@
 import { Worker } from 'bullmq';
 import { pool } from '../db/pool';
-import { env } from '../config/env';
+import { bullmqConnection } from '../infra/bullmq';
 import { createLogger } from '../lib/logger';
 import { CacheService } from '../lib/cache';
 import { CONTENT_QUEUE_NAME, type ContentQueuePayload, type ContentEventType } from './contentQueue';
@@ -64,11 +64,7 @@ export const startContentWorker = (): Worker<ContentQueuePayload> => {
       }
     },
     {
-      connection: {
-        url: env.REDIS_URL,
-        maxRetriesPerRequest: null,
-        enableAutoPipelining: true,
-      },
+      connection: bullmqConnection,
       concurrency: 8,
     },
   );

@@ -1,6 +1,6 @@
 import dns from 'node:dns';
 import { Pool } from 'pg';
-import { env } from '../config/env';
+import { databaseEnv } from '../config/databaseEnv';
 
 // Prefer IPv4 first so Supabase hosts still work on servers without IPv6 routing.
 dns.setDefaultResultOrder('ipv4first');
@@ -22,14 +22,14 @@ const normalizeConnectionString = (value: string): string => {
   }
 };
 
-const useSsl = env.DATABASE_SSL || /supabase\./i.test(env.DATABASE_URL);
+const useSsl = databaseEnv.DATABASE_SSL || /supabase\./i.test(databaseEnv.DATABASE_URL);
 
 export const pool = new Pool({
-  connectionString: normalizeConnectionString(env.DATABASE_URL),
+  connectionString: normalizeConnectionString(databaseEnv.DATABASE_URL),
   max: 20,
   connectionTimeoutMillis: 5000,
   idleTimeoutMillis: 30000,
-  ssl: useSsl ? { rejectUnauthorized: env.DATABASE_SSL_REJECT_UNAUTHORIZED } : undefined,
+  ssl: useSsl ? { rejectUnauthorized: databaseEnv.DATABASE_SSL_REJECT_UNAUTHORIZED } : undefined,
 });
 
 export const closePool = async (): Promise<void> => {

@@ -5,6 +5,7 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const deploy = fs.readFileSync(path.join(root, '.github/workflows/deploy.yml'), 'utf8');
 const compose = fs.readFileSync(path.join(root, 'docker-compose.production.yml'), 'utf8');
+const makefile = fs.readFileSync(path.join(root, 'Makefile'), 'utf8');
 
 function position(source, token) {
   const index = source.indexOf(token);
@@ -30,6 +31,20 @@ assert.ok(rollbackCalls.length >= 4, 'Deploy, integration, and readiness failure
 assert.match(deploy, /envs:\s+GHCR_DEPLOY_TOKEN,DEPLOY_SHA,API_DOMAIN/);
 
 assert.match(compose, /cgm-api:[\s\S]*?healthcheck:[\s\S]*?\/health/);
-assert.match(compose, /image: ghcr\.io\/\$\{GHCR_OWNER[^\n]+\}\/claudygod-api:\$\{IMAGE_TAG:-latest\}/);
+assert.match(compose, /image: ghcr\.io\/\$\{GHCR_OWNER[^\n]+\}\/claudygod-api:\$\{IMAGE_TAG:\?IMAGE_TAG is required\}/);
+assert.doesNotMatch(compose, /IMAGE_TAG:-latest/, 'Production services must never silently deploy mutable latest images');
+
+const migrateService = compose.match(/\n  migrate:\n([\s\S]*?)\n  cgm-api:/)?.[1] || '';
+assert.match(migrateService, /<<: \*database-env/, 'Migrations must use the database-only environment');
+assert.doesNotMatch(migrateService, /<<: \*backend-env/, 'Migrations must not require the full API environment');
+assert.doesNotMatch(migrateService, /depends_on:/, 'Migrations must not wait for unrelated runtime services');
+
+assert.match(makefile, /^GIT_SHA\s*:=\s*\$\(shell git rev-parse HEAD/m);
+assert.match(makefile, /^IMAGE_TAG\s*\?=\s*\$\(GIT_SHA\)/m);
+assert.match(makefile, /^export IMAGE_TAG$/m);
+
+for (const [name, source] of [['deploy workflow', deploy], ['production compose', compose]]) {
+  assert.doesNotMatch(source, /MOBILE_API_KEY/, `${name} must not revive the obsolete public mobile API key`);
+}
 
 process.stdout.write('Deployment transaction contracts passed.\n');

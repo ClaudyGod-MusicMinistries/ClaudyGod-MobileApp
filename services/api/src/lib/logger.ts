@@ -1,9 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import winston from 'winston';
-import { env } from '../config/env';
-
-const isDevelopment = env.NODE_ENV === 'development';
+const isDevelopment = (process.env.NODE_ENV || 'development') === 'development';
 const logDirectoryCandidates = [
   process.env.LOG_DIR,
   path.resolve(process.cwd(), 'logs'),
@@ -95,16 +93,6 @@ export const logger = winston.createLogger({
   defaultMeta: { service: 'claudygod-api' },
   transports,
   exceptionHandlers,
-});
-
-// Handle unhandled rejections
-process.on('unhandledRejection', (reason, promise) => {
-  logger.error('Unhandled Rejection', { reason, promise });
-});
-
-process.on('uncaughtException', (error) => {
-  logger.error('Uncaught Exception', { error: error.message, stack: error.stack });
-  process.exit(1);
 });
 
 export type Logger = typeof logger;

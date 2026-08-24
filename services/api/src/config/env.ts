@@ -1,28 +1,7 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import dotenv from 'dotenv';
 import { z } from 'zod';
+import { loadEnvironment } from './loadEnvironment';
 
-const runtimeEnv =
-  process.env.CLAUDYGOD_ENV === 'production' || process.env.NODE_ENV === 'production'
-    ? 'production'
-    : 'development';
-
-const repoRoot = path.resolve(__dirname, '../../../../');
-const envFileName = `.env.${runtimeEnv}`;
-
-const envCandidates = [
-  path.resolve(process.cwd(), envFileName),
-  path.resolve(process.cwd(), '../..', envFileName),
-  path.resolve(repoRoot, envFileName),
-];
-
-for (const candidate of envCandidates) {
-  if (fs.existsSync(candidate)) {
-    dotenv.config({ path: candidate });
-    break;
-  }
-}
+loadEnvironment();
 
 const looksLikeJwtToken = (value: string): boolean => {
   const parts = value.split('.');

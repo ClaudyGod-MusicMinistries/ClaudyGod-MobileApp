@@ -10,8 +10,9 @@ ADMIN_DIR   := admin/web
 # ── GHCR / CI-CD config ───────────────────────────────────────────────────────
 GHCR_OWNER   ?= claudygod-musicministries
 REGISTRY     := ghcr.io/$(GHCR_OWNER)
-GIT_SHA      := $(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
-IMAGE_TAG    ?= latest
+GIT_SHA      := $(shell git rev-parse HEAD 2>/dev/null || echo unknown)
+IMAGE_TAG    ?= $(GIT_SHA)
+export IMAGE_TAG
 
 API_IMAGE    := $(REGISTRY)/claudygod-api
 ADMIN_IMAGE  := $(REGISTRY)/claudygod-admin

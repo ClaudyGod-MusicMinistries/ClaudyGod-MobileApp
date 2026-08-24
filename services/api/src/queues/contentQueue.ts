@@ -1,5 +1,5 @@
 import { Queue } from 'bullmq';
-import { env } from '../config/env';
+import { bullmqConnection } from '../infra/bullmq';
 
 export const CONTENT_QUEUE_NAME = 'content-events';
 
@@ -18,11 +18,7 @@ export interface ContentQueuePayload {
 }
 
 export const contentQueue = new Queue<ContentQueuePayload>(CONTENT_QUEUE_NAME, {
-  connection: {
-    url: env.REDIS_URL,
-    maxRetriesPerRequest: null,
-    enableAutoPipelining: true,
-  },
+  connection: bullmqConnection,
   defaultJobOptions: {
     attempts: 3,
     backoff: {

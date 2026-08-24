@@ -86,6 +86,7 @@ warn_step "Mobile ESLint"                          yarn --cwd ./apps/mobile lint
 run_step  "Mobile release-contract tests"          yarn --cwd ./apps/mobile test
 
 # ── Infrastructure ────────────────────────────────────────────────────────────
+run_step  "Architecture boundary contracts"         yarn architecture:check
 run_step  "Docker compose validation"              bash ./scripts/docker-validate.sh
 run_step  "Recovery automation syntax"             bash -n ./scripts/backup-database.sh ./scripts/verify-database-restore.sh
 run_step  "Transactional deployment contracts"     yarn release:contracts

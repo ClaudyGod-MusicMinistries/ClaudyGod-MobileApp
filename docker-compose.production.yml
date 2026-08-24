@@ -83,6 +83,13 @@ x-backend-env: &backend-env
   METRICS_TOKEN: ${METRICS_TOKEN:?METRICS_TOKEN is required}
   SENTRY_DSN: ${SENTRY_DSN:-}
 
+# One-shot database commands deliberately receive only database settings.
+# This keeps migrations independent from HTTP, cache, email, and storage config.
+x-database-env: &database-env
+  DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+  DATABASE_SSL: ${DATABASE_SSL:-true}
+  DATABASE_SSL_REJECT_UNAUTHORIZED: ${DATABASE_SSL_REJECT_UNAUTHORIZED:-true}
+
 # ─── Services ─────────────────────────────────────────────────────────────────
 services:
 
@@ -120,7 +127,7 @@ services:
 
   # ── Postfix relay (internal only — never exposed via Traefik) ──────────────
   postfix-relay:
-    image: ghcr.io/${GHCR_OWNER:-claudygod-musicministries}/claudygod-postfix:${IMAGE_TAG:-latest}
+    image: ghcr.io/${GHCR_OWNER:-claudygod-musicministries}/claudygod-postfix:${IMAGE_TAG:?IMAGE_TAG is required}
     build:
       context: ./ops/postfix
     restart: unless-stopped
@@ -148,7 +155,7 @@ services:
 
   # ── Database migrations (one-shot — never exposed via Traefik) ────────────
   migrate:
-    image: ghcr.io/${GHCR_OWNER:-claudygod-musicministries}/claudygod-api:${IMAGE_TAG:-latest}
+    image: ghcr.io/${GHCR_OWNER:-claudygod-musicministries}/claudygod-api:${IMAGE_TAG:?IMAGE_TAG is required}
     build:
       context: ./services/api
       dockerfile: Dockerfile
@@ -160,12 +167,7 @@ services:
     security_opt:
       - no-new-privileges:true
     environment:
-      <<: *backend-env
-    depends_on:
-      redis:
-        condition: service_healthy
-      postfix-relay:
-        condition: service_healthy
+      <<: *database-env
     dns:
       - 1.1.1.1
       - 8.8.8.8
@@ -179,7 +181,7 @@ services:
   # ClaudyGodweb-Infrastructure's api service — Docker's embedded DNS was
   # non-deterministically round-robining between both containers).
   cgm-api:
-    image: ghcr.io/${GHCR_OWNER:-claudygod-musicministries}/claudygod-api:${IMAGE_TAG:-latest}
+    image: ghcr.io/${GHCR_OWNER:-claudygod-musicministries}/claudygod-api:${IMAGE_TAG:?IMAGE_TAG is required}
     build:
       context: ./services/api
       dockerfile: Dockerfile
@@ -262,7 +264,7 @@ services:
 
   # ── Background worker (internal only — never exposed via Traefik) ──────────
   worker:
-    image: ghcr.io/${GHCR_OWNER:-claudygod-musicministries}/claudygod-api:${IMAGE_TAG:-latest}
+    image: ghcr.io/${GHCR_OWNER:-claudygod-musicministries}/claudygod-api:${IMAGE_TAG:?IMAGE_TAG is required}
     build:
       context: ./services/api
       dockerfile: Dockerfile
@@ -383,7 +385,7 @@ services:
 
   # ── Admin web (HTTP — exposed via Traefik as cgm-admin) ───────────────────
   admin-web:
-    image: ghcr.io/${GHCR_OWNER:-claudygod-musicministries}/claudygod-admin:${IMAGE_TAG:-latest}
+    image: ghcr.io/${GHCR_OWNER:-claudygod-musicministries}/claudygod-admin:${IMAGE_TAG:?IMAGE_TAG is required}
     build:
       context: ./admin/web
       dockerfile: Dockerfile
@@ -431,7 +433,7 @@ services:
 
   # ── Mobile web app (HTTP — exposed via Traefik as cgm-mobile) ─────────────
   mobile-web:
-    image: ghcr.io/${GHCR_OWNER:-claudygod-musicministries}/claudygod-mobile:${IMAGE_TAG:-latest}
+    image: ghcr.io/${GHCR_OWNER:-claudygod-musicministries}/claudygod-mobile:${IMAGE_TAG:?IMAGE_TAG is required}
     build:
       context: ./apps/mobile
       dockerfile: Dockerfile.prod

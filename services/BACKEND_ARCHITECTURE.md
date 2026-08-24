@@ -25,7 +25,7 @@ Routes validate untrusted input with Zod and delegate domain behavior to service
 
 ## Enforced Decisions
 
-- Production configuration fails fast for weak signing, mobile API, encryption, and metrics secrets.
+- Production API configuration fails fast for weak signing, encryption, and metrics secrets. Database commands validate only database settings.
 - SQL values are parameterized; dynamic identifiers must come from closed server-owned sets.
 - Multi-table security changes use transactions. Device revocation atomically revokes associated refresh sessions.
 - Missing migrations and database outages are errors, not valid empty analytics.
@@ -51,7 +51,7 @@ Before production rollout:
 
 1. Run `yarn migrate` against the target PostgreSQL instance.
 2. Run `yarn migrate:status` and require a clean result.
-3. Verify Redis and all four queues from both API and worker networks.
+3. Verify Redis and all five queues from both API and worker networks.
 4. Verify S3 write, confirm, read, delete, size limits, MIME policy, and CORS.
 5. Verify SMTP delivery, bounce handling, and password-reset links.
 6. Verify metrics authentication and observability exporters.
@@ -59,4 +59,4 @@ Before production rollout:
 
 ## Verification Policy
 
-All repository test files were removed by explicit product-owner request after the final existing suite passed. The remaining local gates are TypeScript, strict lint, builds, migration status, and environment smoke checks. This reduces automated behavioral regression protection; future CI should restore contract and integration coverage before high-frequency releases.
+Tests are organized around stable contracts rather than file-count targets. TypeScript, strict lint, builds, architecture contracts, deployment contracts, API contract tests, and database integration tests are release gates. Tests should be removed only when their behavior is obsolete or covered at a stronger boundary.

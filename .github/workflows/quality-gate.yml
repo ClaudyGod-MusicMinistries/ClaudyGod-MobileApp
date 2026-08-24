@@ -112,7 +112,6 @@ jobs:
             --build-arg EXPO_PUBLIC_API_URL=https://apimobile.claudygod.org \
             --build-arg EXPO_PUBLIC_SUPABASE_URL=https://gjqqajeavzucvafersio.supabase.co \
             --build-arg EXPO_PUBLIC_SUPABASE_KEY=sb_publishable_ci_placeholder \
-            --build-arg EXPO_PUBLIC_MOBILE_API_KEY=ci-mobile-api-key-placeholder-minimum-length \
             --build-arg EAS_PROJECT_ID=00000000-0000-0000-0000-000000000000 \
             -t claudygod-mobile:ci \
             ./apps/mobile
