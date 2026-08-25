@@ -88,6 +88,10 @@ jobs:
         run: bash ./scripts/setup-ci-env.sh
 
       - name: Validate production compose config
+        env:
+          # Compose intentionally has no `latest` fallback. A real workflow SHA
+          # proves interpolation while keeping production image tags immutable.
+          IMAGE_TAG: ${{ github.sha }}
         run: |
           docker compose \
             --env-file .env.production \

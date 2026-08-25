@@ -274,7 +274,10 @@ jobs:
               exit 1
             fi
 
-            previous_container=$(docker compose -f docker-compose.production.yml --env-file .env.production ps -q cgm-api)
+            # `docker compose ps` still interpolates the complete file. Supply
+            # the immutable candidate SHA even though this command only reads
+            # the currently running container.
+            previous_container=$(IMAGE_TAG="$DEPLOY_SHA" docker compose -f docker-compose.production.yml --env-file .env.production ps -q cgm-api)
             previous_tag=""
             if [ -n "$previous_container" ]; then
               previous_image=$(docker inspect --format '{{.Config.Image}}' "$previous_container")
