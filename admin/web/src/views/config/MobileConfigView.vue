@@ -450,6 +450,13 @@
               <AppInput v-model="method.subtitle" label="Subtitle" placeholder="Fast checkout with secure payment providers" />
               <AppInput v-model="method.badge" label="Badge (optional)" placeholder="Recommended" />
             </div>
+            <div class="flex items-center justify-between gap-4 rounded-xl border border-line p-3">
+              <div>
+                <p class="text-sm font-semibold text-ink">Available in the mobile giving flow</p>
+                <p class="text-xs text-ink-muted">Enable only after the completion route and reconciliation process are operational.</p>
+              </div>
+              <AppToggle :model-value="method.enabled" @update:model-value="(value) => (method.enabled = value)" />
+            </div>
           </AppCard>
         </div>
 

@@ -15,7 +15,7 @@ test('every active static route has a matching Expo Router file', () => {
     'app/(tabs)/settings.tsx', 'app/(tabs)/library.tsx',
     'app/settingsPage/Privacy.tsx', 'app/settingsPage/Donate.tsx',
     'app/settingsPage/PrivacyPolicy.tsx', 'app/settingsPage/Terms.tsx',
-    'app/settingsPage/Payment.tsx', 'app/settingsPage/help.tsx',
+    'app/settingsPage/help.tsx',
     'app/settingsPage/About.tsx', 'app/settingsPage/Rate.tsx',
     'app/settingsPage/Word.tsx', 'app/settingsPage/Referral.tsx',
     'app/live/[sessionId].tsx', 'app/section/[sectionId].tsx',
@@ -23,6 +23,7 @@ test('every active static route has a matching Expo Router file', () => {
   for (const relativePath of expected) {
     assert.equal(fs.existsSync(path.join(root, relativePath)), true, `Missing route ${relativePath}`);
   }
+  assert.equal(fs.existsSync(path.join(root, 'app/settingsPage/Payment.tsx')), false, 'Unverified parameter-only payment route must stay removed');
 });
 
 test('giving and legal workflows are backend-authoritative', () => {
@@ -30,6 +31,8 @@ test('giving and legal workflows are backend-authoritative', () => {
   const privacy = fs.readFileSync(path.join(root, 'app/settingsPage/Privacy.tsx'), 'utf8');
   const legal = fs.readFileSync(path.join(root, 'components/legal/LegalDocumentScreen.tsx'), 'utf8');
   assert.match(giving, /createPublicDonationIntent\(/);
+  assert.match(giving, /clientReference/);
+  assert.match(giving, /GivingCalendar/);
   assert.match(giving, /A request is not a completed payment|not a completed payment/i);
   assert.doesNotMatch(giving, /All transactions are encrypted|impactBreakdown/);
   assert.match(privacy, /isAuthenticated/);

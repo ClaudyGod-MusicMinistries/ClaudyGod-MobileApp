@@ -15,12 +15,38 @@ import { useToast } from '../../context/ToastContext';
 import { openExternalUrl } from '../../util/externalLinks';
 
 type Frequency = 'once' | 'weekly' | 'monthly';
-type Method = { id: string; label: string; subtitle: string; icon: React.ComponentProps<typeof MaterialIcons>['name'] };
+type Method = { id: string; label: string; subtitle: string; icon: React.ComponentProps<typeof MaterialIcons>['name']; enabled?: boolean };
 type CreatedIntent = { id: string; status: string; title: string; message: string; actionLabel?: string; actionUrl?: string };
+
+const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+const toLocalDateKey = (date: Date): string =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
+const fromLocalDateKey = (value: string): Date => {
+  const [year, month, day] = value.split('-').map(Number);
+  return new Date(year!, month! - 1, day!);
+};
+
+const defaultScheduleDate = (frequency: Frequency): Date => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (frequency === 'monthly' && today.getDate() > 28) {
+    return new Date(today.getFullYear(), today.getMonth() + 1, 1);
+  }
+  return today;
+};
+
+const formatScheduleDate = (value: string): string =>
+  fromLocalDateKey(value).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+
+const createGivingReference = (): string =>
+  `giving:${Date.now().toString(36)}:${Math.random().toString(36).slice(2, 12)}`;
 
 const FALLBACK_CURRENCIES = [{ code: 'USD', label: 'US Dollar', symbol: '$' }, { code: 'NGN', label: 'Nigerian Naira', symbol: '₦' }];
 const FALLBACK_AMOUNTS: Record<string, string[]> = { USD: ['10', '25', '50', '100'], NGN: ['1000', '2500', '5000', '10000'] };
-const FALLBACK_METHODS: Method[] = [{ id: 'bank', label: 'Bank transfer', subtitle: 'Receive the ministry’s approved bank instructions', icon: 'account-balance' }];
+const FALLBACK_METHODS: Method[] = [{ id: 'bank', label: 'Bank transfer', subtitle: 'Receive the ministry’s approved bank instructions', icon: 'account-balance', enabled: true }];
 
 const useStyles = makeStyles((theme) => ({
   intro: { padding: theme.spacing.xl, gap: 10 },
@@ -72,7 +98,55 @@ const useStyles = makeStyles((theme) => ({
   reviewValue: { color: theme.colors.text, flex: 1, textAlign: 'right', fontWeight: '700' },
   notice: { flexDirection: 'row', alignItems: 'flex-start', gap: 9, paddingTop: 4 },
   noticeText: { color: theme.colors.textSecondary, flex: 1, lineHeight: 19 },
+  scheduleSummary: { padding: theme.spacing.md, gap: 5, borderRadius: theme.radius.lg, backgroundColor: theme.colors.primarySurface, borderWidth: 1, borderColor: theme.colors.primaryBorder },
+  scheduleSummaryTitle: { color: theme.colors.text, fontWeight: '800' },
+  calendar: { gap: theme.spacing.sm, paddingTop: theme.spacing.xs },
+  calendarHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: theme.spacing.sm },
+  calendarNav: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center', borderRadius: theme.radius.lg, borderWidth: 1, borderColor: theme.colors.controlBorder, backgroundColor: theme.colors.controlSurface },
+  calendarMonth: { color: theme.colors.text, textAlign: 'center', flex: 1, fontWeight: '800' },
+  calendarGrid: { flexDirection: 'row', flexWrap: 'wrap' },
+  calendarWeekday: { width: '14.2857%', textAlign: 'center', color: theme.colors.textMuted, paddingVertical: 7, fontWeight: '700' },
+  calendarCell: { width: '14.2857%', aspectRatio: 1, padding: 3 },
+  calendarDay: { flex: 1, alignItems: 'center', justifyContent: 'center', borderRadius: theme.radius.lg, borderWidth: 1, borderColor: 'transparent' },
+  calendarDayCurrent: { borderColor: theme.colors.primaryBorder },
+  calendarDaySelected: { backgroundColor: theme.colors.controlSelectedSurface, borderColor: theme.colors.controlSelectedBorder },
+  calendarDayText: { color: theme.colors.text, fontWeight: '600' },
+  calendarDayTextSelected: { color: theme.colors.controlSelectedText, fontWeight: '800' },
+  calendarDayDisabled: { color: theme.colors.textMuted, opacity: 0.38 },
+  calendarHint: { color: theme.colors.textSecondary, lineHeight: 18 },
 }));
+
+function GivingCalendar({ frequency, value, onChange }: { frequency: Exclude<Frequency, 'once'>; value: string; onChange: (_value: string) => void }) {
+  const styles = useStyles();
+  const theme = useAppTheme();
+  const selected = fromLocalDateKey(value);
+  const [visibleMonth, setVisibleMonth] = useState(() => new Date(selected.getFullYear(), selected.getMonth(), 1));
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const latest = new Date(today.getTime() + 366 * DAY_MS);
+  const firstWeekday = visibleMonth.getDay();
+  const daysInMonth = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() + 1, 0).getDate();
+  const cells = Array.from({ length: 42 }, (_, index) => {
+    const day = index - firstWeekday + 1;
+    return day >= 1 && day <= daysInMonth ? new Date(visibleMonth.getFullYear(), visibleMonth.getMonth(), day) : null;
+  });
+  const previousMonthAllowed = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() + 1, 0) >= today;
+  const nextMonthAllowed = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() + 1, 1) <= latest;
+
+  return <View style={styles.calendar}>
+    <View style={styles.calendarHeader}>
+      <TVTouchable accessibilityLabel="Previous month" disabled={!previousMonthAllowed} onPress={() => setVisibleMonth((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1))} showFocusBorder={false} style={[styles.calendarNav, !previousMonthAllowed && { opacity: 0.35 }]}><MaterialIcons name="chevron-left" size={22} color={theme.colors.text} /></TVTouchable>
+      <CustomText variant="label" style={styles.calendarMonth}>{visibleMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</CustomText>
+      <TVTouchable accessibilityLabel="Next month" disabled={!nextMonthAllowed} onPress={() => setVisibleMonth((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1))} showFocusBorder={false} style={[styles.calendarNav, !nextMonthAllowed && { opacity: 0.35 }]}><MaterialIcons name="chevron-right" size={22} color={theme.colors.text} /></TVTouchable>
+    </View>
+    <View style={styles.calendarGrid}>{WEEKDAY_LABELS.map((label) => <CustomText key={label} variant="caption" style={styles.calendarWeekday}>{label}</CustomText>)}{cells.map((date, index) => {
+      if (!date) return <View key={`empty-${index}`} style={styles.calendarCell} />;
+      const dateKey = toLocalDateKey(date); const isSelected = dateKey === value; const isToday = dateKey === toLocalDateKey(today);
+      const disabled = date < today || date > latest || (frequency === 'monthly' && date.getDate() > 28);
+      return <View key={dateKey} style={styles.calendarCell}><TVTouchable accessibilityLabel={formatScheduleDate(dateKey)} accessibilityRole="radio" accessibilityState={{ selected: isSelected, disabled }} disabled={disabled} onPress={() => onChange(dateKey)} showFocusBorder={false} style={[styles.calendarDay, isToday && styles.calendarDayCurrent, isSelected && styles.calendarDaySelected]}><CustomText style={[styles.calendarDayText, disabled && styles.calendarDayDisabled, isSelected && styles.calendarDayTextSelected]}>{date.getDate()}</CustomText></TVTouchable></View>;
+    })}</View>
+    <CustomText variant="caption" style={styles.calendarHint}>{frequency === 'weekly' ? 'The requested cadence starts on this date and repeats every seven days after provider authorization.' : 'Monthly schedules use days 1–28 so every month has a valid occurrence after provider authorization.'}</CustomText>
+  </View>;
+}
 
 export default function Donate() {
   const styles = useStyles(); const theme = useAppTheme();
@@ -80,18 +154,37 @@ export default function Donate() {
   const { showToast } = useToast();
   const donate = config?.donate;
   const currencies = donate?.currencyOptions?.length ? donate.currencyOptions : FALLBACK_CURRENCIES;
-  const methods = useMemo<Method[]>(() => donate?.methods?.length ? donate.methods.map((method) => ({ ...method, icon: method.icon as Method['icon'] })) : FALLBACK_METHODS, [donate]);
+  const methods = useMemo<Method[]>(() => donate
+    ? (donate.methods ?? []).filter((method) => method.enabled).map((method) => ({ ...method, icon: method.icon as Method['icon'] }))
+    : FALLBACK_METHODS, [donate]);
   const [currency, setCurrency] = useState('USD');
   const [amount, setAmount] = useState('');
   const [frequency, setFrequency] = useState<Frequency>('once');
+  const [scheduleDate, setScheduleDate] = useState(() => toLocalDateKey(defaultScheduleDate('weekly')));
   const [methodId, setMethodId] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [intent, setIntent] = useState<CreatedIntent | null>(null);
-  const quickAmounts = donate?.quickAmountsByCurrency?.[currency] ?? FALLBACK_AMOUNTS[currency] ?? donate?.quickAmounts ?? [];
+  const [clientReference, setClientReference] = useState(createGivingReference);
+  const quickAmounts = (donate?.quickAmountsByCurrency?.[currency] ?? FALLBACK_AMOUNTS[currency] ?? donate?.quickAmounts ?? [])
+    .map((value) => String(value).replace(/[^0-9.,]/g, '').replace(',', '.'))
+    .filter((value, index, items) => /^\d+(\.\d{1,2})?$/.test(value) && Number(value) > 0 && items.indexOf(value) === index);
   const selectedCurrency = currencies.find((item) => item.code === currency) ?? currencies[0];
   const method = methods.find((item) => item.id === methodId) ?? null;
   const normalizedAmount = amount.trim().replace(',', '.');
   const amountValid = /^\d+(\.\d{1,2})?$/.test(normalizedAmount) && Number(normalizedAmount) > 0;
+  const schedule = frequency === 'once' ? undefined : (() => {
+    const selected = fromLocalDateKey(scheduleDate);
+    return {
+      startDate: scheduleDate,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+      recurrenceDay: frequency === 'weekly' ? selected.getDay() : selected.getDate(),
+    };
+  })();
+  const scheduleLabel = frequency === 'once'
+    ? 'One time'
+    : frequency === 'weekly'
+      ? `Every ${WEEKDAY_LABELS[fromLocalDateKey(scheduleDate).getDay()]} · starts ${formatScheduleDate(scheduleDate)}`
+      : `Day ${fromLocalDateKey(scheduleDate).getDate()} of each month · starts ${formatScheduleDate(scheduleDate)}`;
 
   useEffect(() => { const configured = (donate?.currency ?? currencies[0]?.code ?? 'USD').toUpperCase(); setCurrency(configured); }, [currencies, donate?.currency]);
   useEffect(() => { if (!methods.some((item) => item.id === methodId)) setMethodId(methods[0]?.id ?? ''); }, [methods, methodId]);
@@ -100,8 +193,9 @@ export default function Donate() {
     if (!amountValid || !method || submitting) return;
     setSubmitting(true);
     try {
-      const response = await createPublicDonationIntent({ amount: normalizedAmount, currency, mode: frequency, methodId: method.id, metadata: { source: 'mobile_giving_v2' } });
+      const response = await createPublicDonationIntent({ amount: normalizedAmount, currency, mode: frequency, methodId: method.id, clientReference, schedule, metadata: { source: 'mobile_giving_v3' } });
       const created = response.donationIntent;
+      setClientReference(createGivingReference());
       setIntent({ id: created.id, status: created.status, title: created.instructions?.title ?? 'Giving request ready', message: created.instructions?.message ?? 'Your request was recorded. Contact the giving team for the approved next step.', actionLabel: created.instructions?.actionLabel, actionUrl: created.instructions?.actionUrl });
     } catch (error) {
       showToast({ title: 'Giving request not created', message: error instanceof Error ? error.message : 'Please try again.', tone: 'error' });
@@ -132,26 +226,30 @@ export default function Donate() {
         </View>
         {amount.length > 0 && !amountValid ? <CustomText variant="caption" style={styles.error}>Enter a positive amount with no more than two decimal places.</CustomText> : null}
 
-        {quickAmounts.length ? <><View style={styles.quickHeader}><CustomText variant="label" style={styles.fieldLabel}>Quick amounts</CustomText><CustomText variant="caption" style={styles.quickHint}>Optional</CustomText></View><View style={styles.wrap}>{quickAmounts.map((value) => <TVTouchable key={value} accessibilityLabel={`${currency} ${value}`} onPress={() => setAmount(value)} showFocusBorder={false} style={[styles.chip, amount === value && styles.chipActive]}><CustomText style={[styles.chipText, amount === value && styles.chipTextActive]}>{selectedCurrency?.symbol ?? ''}{value}</CustomText></TVTouchable>)}</View></> : null}
+        {quickAmounts.length ? <><View style={styles.quickHeader}><CustomText variant="label" style={styles.fieldLabel}>Suggested amounts</CustomText><CustomText variant="caption" style={styles.quickHint}>Choose or enter your own</CustomText></View><View style={styles.wrap}>{quickAmounts.map((value) => <TVTouchable key={value} accessibilityLabel={`${currency} ${value}`} onPress={() => setAmount(value)} showFocusBorder={false} style={[styles.chip, amount === value && styles.chipActive]}><CustomText style={[styles.chipText, amount === value && styles.chipTextActive]}>{selectedCurrency?.symbol ?? ''}{value}</CustomText></TVTouchable>)}</View></> : null}
       </SurfaceCard>
 
       <SurfaceCard tone="subtle" style={styles.card}>
         <CustomText variant="heading" style={styles.title}>2. Giving schedule</CustomText>
-        <View style={styles.wrap}>{(['once', 'monthly', 'weekly'] as Frequency[]).map((value) => <TVTouchable key={value} accessibilityRole="radio" accessibilityState={{ selected: frequency === value }} onPress={() => setFrequency(value)} showFocusBorder={false} style={[styles.chip, frequency === value && styles.chipActive]}><CustomText style={[styles.chipText, frequency === value && styles.chipTextActive]}>{value === 'once' ? 'One time' : value[0]!.toUpperCase() + value.slice(1)}</CustomText></TVTouchable>)}</View>
+        <CustomText variant="body" style={styles.description}>Choose one time, or select the exact first date for a predictable recurring schedule.</CustomText>
+        <View style={styles.wrap}>{(['once', 'monthly', 'weekly'] as Frequency[]).map((value) => <TVTouchable key={value} accessibilityRole="radio" accessibilityState={{ selected: frequency === value }} onPress={() => { setFrequency(value); if (value !== 'once') setScheduleDate(toLocalDateKey(defaultScheduleDate(value))); }} showFocusBorder={false} style={[styles.chip, frequency === value && styles.chipActive]}><CustomText style={[styles.chipText, frequency === value && styles.chipTextActive]}>{value === 'once' ? 'One time' : value[0]!.toUpperCase() + value.slice(1)}</CustomText></TVTouchable>)}</View>
+        {frequency !== 'once' ? <GivingCalendar key={frequency} frequency={frequency} value={scheduleDate} onChange={setScheduleDate} /> : null}
+        <View style={styles.scheduleSummary}><CustomText variant="caption" style={styles.eyebrow}>Selected schedule</CustomText><CustomText variant="label" style={styles.scheduleSummaryTitle}>{scheduleLabel}</CustomText>{schedule ? <CustomText variant="caption" style={styles.description}>{schedule.timezone}</CustomText> : null}</View>
       </SurfaceCard>
 
       <SurfaceCard tone="subtle" style={styles.card}>
         <CustomText variant="heading" style={styles.title}>3. Completion route</CustomText>
         <CustomText variant="body" style={styles.description}>These options come from the current mobile configuration. Final instructions are returned only after backend validation.</CustomText>
+        {!configLoading && methods.length === 0 ? <View style={styles.notice}><MaterialIcons name="schedule" size={18} color={theme.colors.primary} /><CustomText variant="caption" style={styles.noticeText}>Giving routes are temporarily unavailable. No request can be created until an administrator enables a verified completion method.</CustomText></View> : null}
         {methods.map((item) => { const selected = methodId === item.id; return <TVTouchable key={item.id} accessibilityRole="radio" accessibilityState={{ selected }} onPress={() => setMethodId(item.id)} showFocusBorder={false} style={[styles.method, selected && styles.methodActive]}><View style={[styles.icon, selected && styles.methodIconActive]}><MaterialIcons name={item.icon} size={20} color={selected ? theme.colors.controlSelectedText : theme.colors.primary} /></View><View style={styles.methodCopy}><CustomText variant="label" style={[styles.methodTitle, selected && styles.methodTitleActive]}>{item.label}</CustomText><CustomText variant="caption" style={[styles.description, selected && styles.methodDescriptionActive]}>{item.subtitle}</CustomText></View>{selected ? <MaterialIcons name="check-circle" size={20} color={theme.colors.controlSelectedText} /> : null}</TVTouchable>; })}
       </SurfaceCard>
 
       <SurfaceCard tone="strong" style={styles.review}>
         <CustomText variant="heading">Review request</CustomText>
         <View style={styles.reviewRow}><CustomText style={styles.reviewLabel}>Amount</CustomText><CustomText style={styles.reviewValue}>{amountValid ? `${currency} ${normalizedAmount}` : 'Not entered'}</CustomText></View>
-        <View style={styles.reviewRow}><CustomText style={styles.reviewLabel}>Schedule</CustomText><CustomText style={styles.reviewValue}>{frequency === 'once' ? 'One time' : frequency}</CustomText></View>
+        <View style={styles.reviewRow}><CustomText style={styles.reviewLabel}>Schedule</CustomText><CustomText style={styles.reviewValue}>{scheduleLabel}</CustomText></View>
         <View style={styles.reviewRow}><CustomText style={styles.reviewLabel}>Route</CustomText><CustomText style={styles.reviewValue}>{method?.label ?? 'Unavailable'}</CustomText></View>
-        <View style={styles.notice}><MaterialIcons name="info-outline" size={18} color={theme.colors.primary} /><CustomText variant="caption" style={styles.noticeText}>This creates a tracked giving intent, not a completed payment. Follow only the approved instructions returned by the server.</CustomText></View>
+        <View style={styles.notice}><MaterialIcons name="info-outline" size={18} color={theme.colors.primary} /><CustomText variant="caption" style={styles.noticeText}>This creates a tracked giving intent and requested schedule, not a completed payment or active charge mandate. Recurring charges begin only after an approved provider confirms authorization.</CustomText></View>
         <AppButton title="Create giving request" variant="gradient" size="lg" fullWidth disabled={!amountValid || !method || configLoading} loading={submitting} loadingLabel="Validating request" onPress={() => void submit()} />
       </SurfaceCard>
     </PremiumPage>

@@ -133,7 +133,7 @@ export function createCurrencyOption(): Record<string, unknown> {
 }
 
 export function createDonateMethod(): Record<string, unknown> {
-  return { id: makeId('method'), icon: 'payments', label: 'New payment method', subtitle: 'Describe this method.' };
+  return { id: makeId('method'), icon: 'payments', label: 'New payment method', subtitle: 'Describe this method.', enabled: false };
 }
 
 export function createDonatePlan(): Record<string, unknown> {

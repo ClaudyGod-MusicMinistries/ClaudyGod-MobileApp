@@ -163,16 +163,53 @@ export const createRatingSchema = z
   })
   .strict();
 
+const donationScheduleSchema = z
+  .object({
+    startDate: z.string().date(),
+    timezone: z.string().trim().min(1).max(80),
+    recurrenceDay: z.coerce.number().int().min(0).max(28),
+  })
+  .strict();
+
 export const createDonationIntentSchema = z
   .object({
     amount: z.string().trim().min(1).max(32),
     mode: z.enum(['once', 'daily', 'weekly', 'monthly']),
     methodId: z.string().trim().min(1).max(80),
-    currency: z.string().trim().length(3).optional(),
+    currency: z.string().trim().regex(/^[A-Za-z]{3}$/).transform((value) => value.toUpperCase()),
+    clientReference: z.string().trim().min(16).max(120).regex(/^[A-Za-z0-9._:@-]+$/),
     planId: optionalTrimmedString(80),
-    metadata: z.record(z.unknown()).optional(),
+    schedule: donationScheduleSchema.optional(),
+    metadata: z.object({ source: z.string().trim().min(1).max(80) }).strict().optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((input, context) => {
+    const recurring = input.mode === 'weekly' || input.mode === 'monthly';
+    if (recurring && !input.schedule) {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ['schedule'], message: 'A recurring giving schedule is required.' });
+      return;
+    }
+    if (!recurring && input.schedule) {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ['schedule'], message: 'One-time giving cannot include a recurrence schedule.' });
+      return;
+    }
+    if (!input.schedule) return;
+
+    const start = new Date(`${input.schedule.startDate}T00:00:00.000Z`);
+    const today = new Date();
+    const todayUtc = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
+    const latestUtc = todayUtc + 366 * 24 * 60 * 60 * 1000;
+    if (start.getTime() < todayUtc || start.getTime() > latestUtc) {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ['schedule', 'startDate'], message: 'Start date must be within the next 366 days.' });
+    }
+    const expectedDay = input.mode === 'weekly' ? start.getUTCDay() : start.getUTCDate();
+    if (input.schedule.recurrenceDay !== expectedDay) {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ['schedule', 'recurrenceDay'], message: 'Recurrence day must match the selected start date.' });
+    }
+    if (input.mode === 'monthly' && input.schedule.recurrenceDay > 28) {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ['schedule', 'recurrenceDay'], message: 'Monthly giving must use day 1 through 28.' });
+    }
+  });
 
 export const engagementListQuerySchema = z
   .object({

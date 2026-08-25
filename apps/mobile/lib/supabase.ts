@@ -7,7 +7,24 @@ import { authSessionStorage } from './authSessionStorage';
 const supabaseUrl = ENV.supabaseUrl.trim();
 const supabasePublishableKey = ENV.supabasePublishableKey.trim();
 
-export const isSupabaseConfigured = Boolean(supabaseUrl && supabasePublishableKey);
+const containsPlaceholder = (value: string): boolean =>
+  /(?:^|[._/-])(your(?:_|-)?project|placeholder|example|validation|missing)(?:[._/-]|$)/i.test(value);
+
+const isValidSupabaseUrl = (value: string): boolean => {
+  if (!value || containsPlaceholder(value)) return false;
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === 'https:' && /^[a-z0-9-]+\.supabase\.co$/i.test(parsed.hostname);
+  } catch {
+    return false;
+  }
+};
+
+const isValidPublishableKey = (value: string): boolean =>
+  value.length >= 20 && !containsPlaceholder(value);
+
+export const isSupabaseConfigured =
+  isValidSupabaseUrl(supabaseUrl) && isValidPublishableKey(supabasePublishableKey);
 
 export function assertSupabaseConfigured(): void {
   if (!isSupabaseConfigured) {
@@ -16,17 +33,17 @@ export function assertSupabaseConfigured(): void {
 }
 
 export const supabase = createClient(
-  supabaseUrl || 'https://invalid.supabase.co',
-  supabasePublishableKey || 'missing-publishable-key',
+  isSupabaseConfigured ? supabaseUrl : 'https://unconfigured.supabase.co',
+  isSupabaseConfigured ? supabasePublishableKey : 'unconfigured-publishable-key',
   {
     auth: {
       storage: authSessionStorage,
-      persistSession: true,
-      autoRefreshToken: true,
+      persistSession: isSupabaseConfigured,
+      autoRefreshToken: isSupabaseConfigured,
       flowType: 'pkce',
       // Web email confirmation and recovery links arrive with auth state in the URL.
-      detectSessionInUrl: Platform.OS === 'web',
-      lock: Platform.OS === 'web' ? undefined : processLock,
+      detectSessionInUrl: isSupabaseConfigured && Platform.OS === 'web',
+      lock: isSupabaseConfigured && Platform.OS !== 'web' ? processLock : undefined,
     },
   },
 );

@@ -44,6 +44,7 @@ const donateMethodSchema = z
     label: shortTextSchema.max(120),
     subtitle: shortTextSchema,
     badge: z.string().trim().max(80).optional(),
+    enabled: z.boolean().default(false),
   })
   .strict();
 

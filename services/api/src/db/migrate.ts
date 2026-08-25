@@ -345,6 +345,24 @@ const migrationStatements = [
   )`,
   `ALTER TABLE donation_intents DROP CONSTRAINT IF EXISTS donation_intents_mode_check`,
   `ALTER TABLE donation_intents ADD CONSTRAINT donation_intents_mode_check CHECK (mode IN ('once', 'daily', 'weekly', 'monthly'))`,
+  `ALTER TABLE donation_intents ADD COLUMN IF NOT EXISTS schedule_start_date DATE`,
+  `ALTER TABLE donation_intents ADD COLUMN IF NOT EXISTS schedule_timezone TEXT`,
+  `ALTER TABLE donation_intents ADD COLUMN IF NOT EXISTS schedule_recurrence_day SMALLINT`,
+  `ALTER TABLE donation_intents ADD COLUMN IF NOT EXISTS client_reference TEXT`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS idx_donation_intents_client_reference
+    ON donation_intents (client_reference)
+    WHERE client_reference IS NOT NULL`,
+  `ALTER TABLE donation_intents DROP CONSTRAINT IF EXISTS donation_intents_schedule_check`,
+  `ALTER TABLE donation_intents ADD CONSTRAINT donation_intents_schedule_check CHECK (
+    (mode IN ('once', 'daily') AND schedule_start_date IS NULL AND schedule_timezone IS NULL AND schedule_recurrence_day IS NULL)
+    OR
+    (mode = 'weekly' AND schedule_start_date IS NOT NULL AND schedule_timezone IS NOT NULL AND schedule_recurrence_day BETWEEN 0 AND 6)
+    OR
+    (mode = 'monthly' AND schedule_start_date IS NOT NULL AND schedule_timezone IS NOT NULL AND schedule_recurrence_day BETWEEN 1 AND 28)
+  ) NOT VALID`,
+  `CREATE INDEX IF NOT EXISTS idx_donation_intents_schedule
+    ON donation_intents (status, schedule_start_date, mode)
+    WHERE schedule_start_date IS NOT NULL`,
   `CREATE TABLE IF NOT EXISTS app_config_store (
     config_key TEXT PRIMARY KEY,
     config_value JSONB NOT NULL,

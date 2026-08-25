@@ -294,6 +294,7 @@ export interface DonateMethod {
   label: string;
   subtitle: string;
   badge?: string;
+  enabled: boolean;
 }
 
 export interface DonatePlan {

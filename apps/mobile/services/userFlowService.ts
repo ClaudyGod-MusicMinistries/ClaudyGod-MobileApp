@@ -117,6 +117,7 @@ export interface MobileAppExperienceConfig {
       label: string;
       subtitle: string;
       badge?: string;
+      enabled: boolean;
     }[];
     plans: {
       id: string;
@@ -504,8 +505,10 @@ export async function createDonationIntent(input: {
   amount: string;
   mode: 'once' | 'daily' | 'weekly' | 'monthly';
   methodId: string;
-  currency?: string;
+  currency: string;
+  clientReference: string;
   planId?: string;
+  schedule?: { startDate: string; timezone: string; recurrenceDay: number };
   metadata?: JsonRecord;
 }) {
   return apiFetchWithMobileSession<{
@@ -516,6 +519,7 @@ export async function createDonationIntent(input: {
       currency: string;
       mode: 'once' | 'daily' | 'weekly' | 'monthly';
       methodId: string;
+      schedule?: { startDate: string; timezone: string; recurrenceDay: number };
       createdAt: string;
       instructions?: {
         title: string;
@@ -534,8 +538,10 @@ export async function createPublicDonationIntent(input: {
   amount: string;
   mode: 'once' | 'daily' | 'weekly' | 'monthly';
   methodId: string;
-  currency?: string;
+  currency: string;
+  clientReference: string;
   planId?: string;
+  schedule?: { startDate: string; timezone: string; recurrenceDay: number };
   metadata?: JsonRecord;
 }) {
   return apiFetch<{
@@ -546,6 +552,7 @@ export async function createPublicDonationIntent(input: {
       currency: string;
       mode: 'once' | 'daily' | 'weekly' | 'monthly';
       methodId: string;
+      schedule?: { startDate: string; timezone: string; recurrenceDay: number };
       createdAt: string;
       instructions?: {
         title: string;
