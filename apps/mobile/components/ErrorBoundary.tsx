@@ -1,10 +1,13 @@
 import React, { ReactNode } from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useAppTheme } from '../util/colorScheme';
 import { makeStyles } from '../styles/makeStyles';
 import { reportException, reportBreadcrumb } from '../lib/sentry';
+import { CustomText } from './CustomText';
+import { AppButton } from './ui/AppButton';
+import { FadeIn } from './ui/FadeIn';
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
@@ -31,17 +34,6 @@ const useStyles = makeStyles((theme) => ({
   stackText:      { fontSize: 10, color: theme.colors.textSecondary, fontFamily: 'monospace', lineHeight: 14 },
   spacer:         { flex: 1 },
   btnsGap:        { gap: 12 },
-  retryBtn: {
-    minHeight: 48, backgroundColor: theme.colors.primary,
-    borderRadius: theme.radius.card, alignItems: 'center', justifyContent: 'center',
-  },
-  retryText:      { color: theme.colors.onPrimary, fontWeight: '600', fontSize: 14 },
-  dismissBtn: {
-    minHeight: 48, backgroundColor: theme.colors.surface,
-    borderRadius: theme.radius.card, borderWidth: 1, borderColor: theme.colors.border,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  dismissText:    { color: theme.colors.text, fontWeight: '600', fontSize: 14 },
 }));
 
 // ─── Error UI (function component so it can use hooks) ────────────────────────
@@ -71,25 +63,25 @@ function ErrorUI({
         contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 20, paddingVertical: 24 }}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.iconBox}>
+        <FadeIn from={6} duration={260} style={styles.iconBox}>
           <MaterialIcons name="error-outline" size={32} color={theme.colors.danger} />
-        </View>
+        </FadeIn>
 
-        <View style={styles.messageWrap}>
-          <Text style={styles.errorTitle}>Oops! Something went wrong</Text>
-          <Text style={styles.errorBody}>
+        <FadeIn delay={50} from={6} duration={280} style={styles.messageWrap}>
+          <CustomText variant="heading" style={styles.errorTitle}>Something went wrong</CustomText>
+          <CustomText variant="body" style={styles.errorBody}>
             We ran into an unexpected error{contextLabel}. Please try again or contact support if the problem persists.
-          </Text>
-        </View>
+          </CustomText>
+        </FadeIn>
 
         {isDev ? (
           <View style={styles.devCard}>
-            <Text style={styles.devTitle}>Error Message</Text>
-            <Text style={styles.devMessage}>{errorMessage}</Text>
+            <CustomText variant="label" style={styles.devTitle}>Error message</CustomText>
+            <CustomText variant="caption" style={styles.devMessage}>{errorMessage}</CustomText>
             {stackTrace ? (
               <>
-                <Text style={styles.stackTitle}>Stack Trace</Text>
-                <Text style={styles.stackText} numberOfLines={8}>{stackTrace}</Text>
+                <CustomText variant="label" style={styles.stackTitle}>Stack trace</CustomText>
+                <CustomText variant="caption" style={styles.stackText} numberOfLines={8}>{stackTrace}</CustomText>
               </>
             ) : null}
           </View>
@@ -97,15 +89,10 @@ function ErrorUI({
 
         <View style={styles.spacer} />
 
-        <View style={styles.btnsGap}>
-          <TouchableOpacity onPress={onRetry} style={styles.retryBtn}>
-            <Text style={styles.retryText}>Try Again</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity onPress={onDismiss} style={styles.dismissBtn}>
-            <Text style={styles.dismissText}>Dismiss Error</Text>
-          </TouchableOpacity>
-        </View>
+        <FadeIn delay={90} from={6} duration={300} style={styles.btnsGap}>
+          <AppButton title="Try again" variant="gradient" size="lg" fullWidth onPress={onRetry} />
+          <AppButton title="Return to safety" variant="secondary" size="lg" fullWidth onPress={onDismiss} />
+        </FadeIn>
       </ScrollView>
     </SafeAreaView>
   );

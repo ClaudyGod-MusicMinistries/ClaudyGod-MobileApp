@@ -10,7 +10,7 @@ import { TVTouchable } from '../../components/ui/TVTouchable';
 import { useAppTheme } from '../../util/colorScheme';
 import { useToast } from '../../context/ToastContext';
 import { useContentFeed } from '../../hooks/useContentFeed';
-import { InlineErrorBanner } from '../../components/ui/InlineErrorBanner';
+import { ErrorState } from '../../components/ui/ErrorState';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import { useDeviceClass } from '../../util/deviceClassConfig';
 import { makeStyles } from '../../styles/makeStyles';
@@ -80,17 +80,17 @@ const useStyles = makeStyles((theme) => ({
   },
   discoveryOverlay:    { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 10 },
   discoveryTitlePill: {
-    borderRadius: 999, backgroundColor: 'rgba(0,0,0,0.62)',
+    borderRadius: 999, backgroundColor: theme.colors.mediaControl,
     alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 3,
   },
-  discoveryTitleText:  { color: '#FFFFFF', fontSize: 11, fontWeight: '600' },
+  discoveryTitleText:  { color: theme.colors.mediaText, fontSize: 11, fontWeight: '600' },
   discoveryLiveBadge: {
     position: 'absolute', top: 8, left: 8, borderRadius: 999,
-    backgroundColor: 'rgba(239,68,68,0.88)', paddingHorizontal: 7, paddingVertical: 3,
+    backgroundColor: theme.colors.liveSurface, paddingHorizontal: 7, paddingVertical: 3,
     flexDirection: 'row', alignItems: 'center', gap: 4,
   },
-  discoveryLiveDot:    { width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#FFFFFF' },
-  discoveryLiveText:   { color: '#FFFFFF', fontSize: 9.5, fontWeight: '700' },
+  discoveryLiveDot:    { width: 5, height: 5, borderRadius: 2.5, backgroundColor: theme.colors.mediaText },
+  discoveryLiveText:   { color: theme.colors.mediaText, fontSize: 9.5, fontWeight: '700' },
 
   // Section containers
   sectionGap:          { gap: 12 },
@@ -398,8 +398,8 @@ export default function Search() {
         </View>
       </SurfaceCard>
 
-      {error && !hasQuery ? <InlineErrorBanner message={error} onRetry={() => void refresh()} /> : null}
-      {searchError && hasQuery ? <InlineErrorBanner message={searchError} onRetry={() => void runSearch()} /> : null}
+      {error && !hasQuery ? <ErrorState message={error} onRetry={() => void refresh()} /> : null}
+      {searchError && hasQuery ? <ErrorState message={searchError} onRetry={() => void runSearch()} /> : null}
 
       {/* ── Trending searches — real, aggregated from what people actually search ── */}
       {!hasQuery && trendingSearches.length > 0 ? (

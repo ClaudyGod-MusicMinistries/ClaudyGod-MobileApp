@@ -4,6 +4,7 @@ import { CustomText } from '../CustomText';
 import { makeStyles } from '../../styles/makeStyles';
 import { TVTouchable } from './TVTouchable';
 import { AppIcon } from './AppIcon';
+import { useAppTheme } from '../../util/colorScheme';
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
@@ -16,26 +17,26 @@ const useStyles = makeStyles((theme) => ({
   decoCircle: {
     position: 'absolute', right: -22, top: -18,
     width: 104, height: 104, borderRadius: 52,
-    backgroundColor: 'rgba(255,255,255,0.10)',
+    backgroundColor: theme.colors.controlSelectedIconSurface,
   },
   row:      { flexDirection: 'row', alignItems: 'center', gap: 12 },
   iconBox: {
     width: 42, height: 42, borderRadius: 21,
     alignItems: 'center', justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.24)',
+    backgroundColor: theme.colors.controlSelectedIconSurface,
+    borderWidth: 1, borderColor: theme.colors.mediaBorder,
   },
   textFill:    { flex: 1, minWidth: 0 },
-  eyebrow:     { color: 'rgba(255,255,255,0.76)', textTransform: 'uppercase', letterSpacing: 0.72 },
-  titleText:   { color: '#FFFFFF', marginTop: 3 },
-  bodyText:    { color: 'rgba(255,255,255,0.78)', marginTop: 5, lineHeight: 17 },
+  eyebrow:     { color: theme.colors.mediaTextMuted, textTransform: 'uppercase', letterSpacing: 0.72 },
+  titleText:   { color: theme.colors.onPrimary, marginTop: 3 },
+  bodyText:    { color: theme.colors.mediaTextMuted, marginTop: 5, lineHeight: 17 },
   ctaBtnBase: {
     flexDirection: 'row', alignItems: 'center', alignSelf: 'center',
     minHeight: 38, borderRadius: 999, borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.34)', backgroundColor: 'rgba(255,255,255,0.16)',
+    borderColor: theme.colors.mediaBorder, backgroundColor: theme.colors.controlSelectedIconSurface,
     justifyContent: 'center', flexShrink: 0,
   },
-  ctaLabel: { color: '#FFFFFF' },
+  ctaLabel: { color: theme.colors.onPrimary },
 }));
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -46,6 +47,7 @@ interface SupportCardProps {
 
 export function SupportMinistryCard({ onPress }: SupportCardProps) {
   const styles = useStyles();
+  const theme = useAppTheme();
   const { width } = useWindowDimensions();
   const compact = width < 390;
 
@@ -63,7 +65,7 @@ export function SupportMinistryCard({ onPress }: SupportCardProps) {
 
         <View style={styles.row}>
           <View style={styles.iconBox}>
-            <AppIcon name="volunteer-activism" size={20} color="#FFFFFF" />
+            <AppIcon name="volunteer-activism" size={20} color={theme.colors.onPrimary} />
           </View>
 
           <View style={styles.textFill}>
@@ -91,7 +93,7 @@ export function SupportMinistryCard({ onPress }: SupportCardProps) {
                 Give support
               </CustomText>
             ) : null}
-            <AppIcon name="arrow-forward" size={16} color="#FFFFFF" />
+            <AppIcon name="arrow-forward" size={16} color={theme.colors.onPrimary} />
           </View>
         </View>
       </View>

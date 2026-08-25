@@ -2,6 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$ROOT_DIR/scripts/lib/package-manager.sh"
 CONTAINER_NAME="claudygod-postgres-integration"
 POSTGRES_PASSWORD="claudygod-integration-password"
 
@@ -55,7 +56,7 @@ HOST_PORT="$(docker port "$CONTAINER_NAME" 5432/tcp | awk -F: '{print $NF}')"
 DATABASE_URL="postgresql://postgres:${POSTGRES_PASSWORD}@127.0.0.1:${HOST_PORT}/postgres"
 
 echo "📦 Building API..."
-yarn --cwd "$ROOT_DIR/services/api" build >/dev/null 2>&1 || {
+run_yarn --cwd "$ROOT_DIR/services/api" build >/dev/null 2>&1 || {
   npm --prefix "$ROOT_DIR/services/api" run build >/dev/null 2>&1 || {
     echo "❌ Failed to build API"
     exit 1
@@ -71,7 +72,7 @@ run_migrations() {
   REDIS_URL=redis://127.0.0.1:6379 \
   JWT_ACCESS_SECRET=integration-access-secret-at-least-32-characters \
   JWT_REFRESH_SECRET=integration-refresh-secret-at-least-32-characters \
-  yarn --cwd "$ROOT_DIR/services/api" migrate:prod 2>&1
+  run_yarn --cwd "$ROOT_DIR/services/api" migrate:prod 2>&1
 }
 
 echo "🔄 Running migration (first pass)..."

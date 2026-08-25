@@ -6,6 +6,7 @@ import { AppIcon, type AppIconName } from '../ui/AppIcon';
 import { TVTouchable } from '../ui/TVTouchable';
 import { FadeIn } from '../ui/FadeIn';
 import { useFeedStyles } from './styles';
+import { useAppTheme } from '../../util/colorScheme';
 
 export type ContentShortcut = {
   id: string;
@@ -17,6 +18,7 @@ export type ContentShortcut = {
 
 export function ContentShortcuts({ shortcuts }: { shortcuts: ContentShortcut[] }) {
   const styles = useFeedStyles();
+  const theme = useAppTheme();
 
   return (
     <FadeIn delay={40}>
@@ -24,7 +26,7 @@ export function ContentShortcuts({ shortcuts }: { shortcuts: ContentShortcut[] }
         {shortcuts.map((item) => (
           <TVTouchable key={item.id} onPress={item.onPress} showFocusBorder={false}>
             <View style={styles.shortcutItem}>
-              <View style={{ width: 60, height: 60, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: `${item.color}14`, borderWidth: 1, borderColor: `${item.color}28` }}>
+              <View style={{ width: 60, height: 60, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.primarySurface, borderWidth: 1, borderColor: theme.colors.primaryBorder }}>
                 <AppIcon name={item.icon} size={23} color={item.color} />
               </View>
               <CustomText style={styles.shortcutLabel} numberOfLines={1}>{item.label}</CustomText>

@@ -125,6 +125,8 @@ const settingsDestinationSchema = z.enum([
   'tabs.settings',
   'profile',
   'settings.privacy',
+  'settings.privacyPolicy',
+  'settings.terms',
   'settings.donate',
   'settings.help',
   'settings.about',
@@ -271,8 +273,8 @@ export const mobileAppConfigSchema = z
       .strict(),
     rate: z
       .object({
-        iosStoreUrl: urlSchema,
-        androidStoreUrl: urlSchema,
+        iosStoreUrl: urlSchema.or(z.literal('')),
+        androidStoreUrl: urlSchema.or(z.literal('')),
         feedbackRoute: z.string().trim().min(1).max(120).default('/settingsPage/help'),
       })
       .strict(),

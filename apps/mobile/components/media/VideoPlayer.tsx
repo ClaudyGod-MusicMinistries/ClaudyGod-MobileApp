@@ -15,6 +15,9 @@ import { isHostedVideoUrl } from '../../util/playerRoute';
 import { useAppTheme } from '../../util/colorScheme';
 import { makeStyles } from '../../styles/makeStyles';
 import { openExternalUrl } from '../../util/externalLinks';
+import { AppButton } from '../ui/AppButton';
+import { useReducedMotion } from '../../hooks/useReducedMotion';
+import { mediaTokens } from '../../constants/color';
 
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 const CONTROLS_HIDE_DELAY = 3500;
@@ -84,7 +87,7 @@ export function VideoPlayer({
 const useStyles = makeStyles((theme) => ({
   container: {
     borderRadius: 18,
-    backgroundColor: '#000000',
+    backgroundColor: mediaTokens.canvas,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: theme.colors.primaryBorder,
@@ -118,29 +121,13 @@ const useStyles = makeStyles((theme) => ({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 12,
+    paddingHorizontal: 20,
     backgroundColor: theme.colors.background,
   },
   errorLabel: {
     fontSize: 13,
     fontWeight: '500',
     color: theme.colors.textMuted,
-  },
-  openExternalBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 18,
-    paddingVertical: 9,
-    borderRadius: 999,
-    borderWidth: 1,
-    marginTop: 4,
-    backgroundColor: theme.colors.primarySurface,
-    borderColor: theme.colors.primaryBorder,
-  },
-  openExternalText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: theme.colors.primary,
   },
   titleRow: {
     paddingHorizontal: 16,
@@ -174,15 +161,15 @@ const ss = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(0,0,0,0.60)',
+    backgroundColor: mediaTokens.overlay,
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
+    borderColor: mediaTokens.border,
   },
   externalPillText: {
-    color: 'rgba(255,255,255,0.85)',
+    color: mediaTokens.textMuted,
     fontSize: 11,
     fontWeight: '600',
   },
@@ -192,7 +179,7 @@ const ss = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.36)',
+    backgroundColor: mediaTokens.overlaySoft,
   },
   bufferingRing: {
     width: 52,
@@ -200,9 +187,9 @@ const ss = StyleSheet.create({
     borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.52)',
+    backgroundColor: mediaTokens.control,
     borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.16)',
+    borderColor: mediaTokens.border,
   },
 
   // Seek flash zones
@@ -214,7 +201,7 @@ const ss = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 12,
-    backgroundColor: 'rgba(139,92,246,0.22)', // seek flash overlay — intentionally violet on video
+    backgroundColor: mediaTokens.seekFlash,
   },
   seekFlashLeft:  { left: 0 },
   seekFlashRight: { right: 0 },
@@ -229,11 +216,11 @@ const ss = StyleSheet.create({
     paddingTop: 14,
   },
   overlayTitleText: {
-    color: '#FFFFFF', // on-video overlay — always white
+    color: mediaTokens.text,
     fontSize: 14,
     fontWeight: '700',
     letterSpacing: -0.2,
-    textShadowColor: 'rgba(0,0,0,0.6)',
+    textShadowColor: mediaTokens.overlay,
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
   },
@@ -252,9 +239,9 @@ const ss = StyleSheet.create({
     borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.38)',
+    backgroundColor: mediaTokens.overlaySoft,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
+    borderColor: mediaTokens.border,
   },
   playPauseBtn: {
     width: 70,
@@ -262,9 +249,9 @@ const ss = StyleSheet.create({
     borderRadius: 35,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.20)',
+    backgroundColor: mediaTokens.controlLight,
     borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.35)',
+    borderColor: mediaTokens.borderStrong,
   },
 
   // Bottom bar
@@ -280,7 +267,7 @@ const ss = StyleSheet.create({
     gap: 8,
   },
   timeText: {
-    color: 'rgba(255,255,255,0.88)', // on-video overlay — always white
+    color: mediaTokens.textMuted,
     fontSize: 11.5,
     fontWeight: '600',
     minWidth: 30,
@@ -302,7 +289,7 @@ const ss = StyleSheet.create({
   progressTrack: {
     height: 4,
     borderRadius: 2,
-    backgroundColor: 'rgba(255,255,255,0.24)',
+    backgroundColor: mediaTokens.progressTrack,
     overflow: 'visible',
   },
   progressThumb: {
@@ -312,8 +299,8 @@ const ss = StyleSheet.create({
     width: 14,
     height: 14,
     borderRadius: 7,
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
+    backgroundColor: mediaTokens.text,
+    shadowColor: mediaTokens.canvas,
     shadowOpacity: 0.35,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 1 },
@@ -338,6 +325,7 @@ function EmbedPlayer({
   const theme  = useAppTheme();
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
+  const reduceMotion = useReducedMotion();
   const shimmerOpacity = useRef(new Animated.Value(1)).current;
   const shimmerAnim = useRef<Animated.CompositeAnimation | null>(null);
 
@@ -346,6 +334,7 @@ function EmbedPlayer({
     setError(false);
     shimmerOpacity.setValue(1);
 
+    if (reduceMotion) return undefined;
     shimmerAnim.current = Animated.loop(
       Animated.sequence([
         Animated.timing(shimmerOpacity, { toValue: 0.45, duration: 900, useNativeDriver: USE_NATIVE_DRIVER }),
@@ -354,21 +343,21 @@ function EmbedPlayer({
     );
     shimmerAnim.current.start();
     return () => { shimmerAnim.current?.stop(); };
-  }, [shimmerOpacity, sourceUri]);
+  }, [reduceMotion, shimmerOpacity, sourceUri]);
 
   const handleLoaded = () => {
     shimmerAnim.current?.stop();
     setLoaded(true);
-    Animated.timing(shimmerOpacity, { toValue: 0, duration: 280, useNativeDriver: USE_NATIVE_DRIVER }).start();
+    Animated.timing(shimmerOpacity, { toValue: 0, duration: reduceMotion ? 0 : 280, useNativeDriver: USE_NATIVE_DRIVER }).start();
   };
 
   return (
     <View style={styles.container}>
-      <View style={{ height, backgroundColor: '#000' }}>
+      <View style={{ height, backgroundColor: mediaTokens.canvas }}>
         {!error ? (
           <WebView
             source={{ uri: embedUrl }}
-            style={{ width: '100%', height, backgroundColor: '#000' }}
+            style={{ width: '100%', height, backgroundColor: mediaTokens.canvas }}
             allowsFullscreenVideo
             allowsInlineMediaPlayback
             mediaPlaybackRequiresUserAction={false}
@@ -393,13 +382,7 @@ function EmbedPlayer({
           <View style={styles.errorShell}>
             <MaterialIcons name="videocam-off" size={38} color={theme.colors.textMuted} />
             <CustomText style={styles.errorLabel}>Could not load video</CustomText>
-            <Pressable
-              onPress={() => void openExternalUrl(sourceUri)}
-              style={styles.openExternalBtn}
-            >
-              <MaterialIcons name="open-in-new" size={14} color={theme.colors.primary} />
-              <CustomText style={styles.openExternalText}>Open on YouTube</CustomText>
-            </Pressable>
+            <AppButton title="Open on YouTube" variant="gradient" size="lg" fullWidth onPress={() => void openExternalUrl(sourceUri)} leftIcon={<MaterialIcons name="open-in-new" size={16} color={theme.colors.onPrimary} />} />
           </View>
         ) : null}
 
@@ -409,7 +392,7 @@ function EmbedPlayer({
             onPress={() => void openExternalUrl(sourceUri)}
             style={ss.externalPill}
           >
-            <MaterialIcons name="open-in-new" size={12} color="rgba(255,255,255,0.85)" />
+            <MaterialIcons name="open-in-new" size={12} color={mediaTokens.textMuted} />
             <CustomText style={ss.externalPillText}>YouTube</CustomText>
           </Pressable>
         ) : null}
@@ -435,7 +418,7 @@ interface YouTubeBridgeMessage {
 function buildYouTubeBootstrapHtml(videoId: string): string {
   return `<!DOCTYPE html><html><head>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<style>html,body,#player{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hidden;}</style>
+<style>html,body,#player{margin:0;padding:0;width:100%;height:100%;background:${mediaTokens.canvas};overflow:hidden;}</style>
 </head><body>
 <div id="player"></div>
 <script src="https://www.youtube.com/iframe_api"></script>
@@ -590,10 +573,7 @@ function YouTubeIframePlayer({
         <View style={[styles.errorShell, { height, position: 'relative' }]}>
           <MaterialIcons name="videocam-off" size={38} color={theme.colors.textMuted} />
           <CustomText style={styles.errorLabel}>Could not load video</CustomText>
-          <Pressable onPress={() => void openExternalUrl(sourceUri)} style={styles.openExternalBtn}>
-            <MaterialIcons name="open-in-new" size={14} color={theme.colors.primary} />
-            <CustomText style={styles.openExternalText}>Open on YouTube</CustomText>
-          </Pressable>
+          <AppButton title="Open on YouTube" variant="gradient" size="lg" fullWidth onPress={() => void openExternalUrl(sourceUri)} leftIcon={<MaterialIcons name="open-in-new" size={16} color={theme.colors.onPrimary} />} />
         </View>
         {title ? <TitleRow title={title} /> : null}
       </View>
@@ -606,7 +586,7 @@ function YouTubeIframePlayer({
         <WebView
           ref={webviewRef}
           source={{ html }}
-          style={{ width: '100%', height, backgroundColor: '#000' }}
+          style={{ width: '100%', height, backgroundColor: mediaTokens.canvas }}
           allowsFullscreenVideo
           allowsInlineMediaPlayback
           mediaPlaybackRequiresUserAction={false}
@@ -621,31 +601,31 @@ function YouTubeIframePlayer({
         {isBuffering ? (
           <View style={ss.bufferingShell}>
             <View style={ss.bufferingRing}>
-              <MaterialIcons name="hourglass-top" size={24} color="rgba(255,255,255,0.70)" />
+              <MaterialIcons name="hourglass-top" size={24} color={mediaTokens.textSubtle} />
             </View>
           </View>
         ) : null}
 
         {/* Seek flash — left */}
         <Animated.View style={[ss.seekFlashZone, ss.seekFlashLeft, { opacity: seekFlashL }]} pointerEvents="none">
-          <MaterialIcons name="replay-10" size={34} color="#FFFFFF" />
+          <MaterialIcons name="replay-10" size={34} color={mediaTokens.text} />
         </Animated.View>
 
         {/* Seek flash — right */}
         <Animated.View style={[ss.seekFlashZone, ss.seekFlashRight, { opacity: seekFlashR }]} pointerEvents="none">
-          <MaterialIcons name="forward-10" size={34} color="#FFFFFF" />
+          <MaterialIcons name="forward-10" size={34} color={mediaTokens.text} />
         </Animated.View>
 
         {/* Controls overlay */}
         {controlsShown ? (
           <Animated.View style={[StyleSheet.absoluteFill, { opacity: controlsOpacity }]} pointerEvents="box-none">
             <LinearGradient
-              colors={['rgba(0,0,0,0.75)', 'rgba(0,0,0,0)']}
+              colors={[mediaTokens.overlay, 'transparent']}
               style={[StyleSheet.absoluteFill, { bottom: '55%' }]}
               pointerEvents="none"
             />
             <LinearGradient
-              colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.88)']}
+              colors={['transparent', mediaTokens.overlayStrong]}
               style={[StyleSheet.absoluteFill, { top: '50%' }]}
               pointerEvents="none"
             />
@@ -658,13 +638,13 @@ function YouTubeIframePlayer({
 
             <View style={ss.centerRow} pointerEvents="box-none">
               <Pressable onPress={() => seekRelative(-10)} style={ss.sideSeekBtn}>
-                <MaterialIcons name="replay-10" size={28} color="#FFFFFF" />
+                <MaterialIcons name="replay-10" size={28} color={mediaTokens.text} />
               </Pressable>
               <Pressable onPress={togglePlay} style={ss.playPauseBtn}>
-                <MaterialIcons name={isPlaying ? 'pause' : 'play-arrow'} size={36} color="#FFFFFF" />
+                <MaterialIcons name={isPlaying ? 'pause' : 'play-arrow'} size={36} color={mediaTokens.text} />
               </Pressable>
               <Pressable onPress={() => seekRelative(10)} style={ss.sideSeekBtn}>
-                <MaterialIcons name="forward-10" size={28} color="#FFFFFF" />
+                <MaterialIcons name="forward-10" size={28} color={mediaTokens.text} />
               </Pressable>
             </View>
 
@@ -676,7 +656,7 @@ function YouTubeIframePlayer({
 
             {/* Minimal attribution — required for IFrame API compliance */}
             <Pressable onPress={() => void openExternalUrl(sourceUri)} style={ss.externalPill}>
-              <MaterialIcons name="open-in-new" size={12} color="rgba(255,255,255,0.85)" />
+              <MaterialIcons name="open-in-new" size={12} color={mediaTokens.textMuted} />
               <CustomText style={ss.externalPillText}>YouTube</CustomText>
             </Pressable>
           </Animated.View>
@@ -818,7 +798,7 @@ function NativeVideoPlayer({
         {isBuffering ? (
           <View style={ss.bufferingShell}>
             <View style={ss.bufferingRing}>
-              <MaterialIcons name="hourglass-top" size={24} color="rgba(255,255,255,0.70)" />
+              <MaterialIcons name="hourglass-top" size={24} color={mediaTokens.textSubtle} />
             </View>
           </View>
         ) : null}
@@ -828,7 +808,7 @@ function NativeVideoPlayer({
           style={[ss.seekFlashZone, ss.seekFlashLeft, { opacity: seekFlashL }]}
           pointerEvents="none"
         >
-          <MaterialIcons name="replay-10" size={34} color="#FFFFFF" />
+          <MaterialIcons name="replay-10" size={34} color={mediaTokens.text} />
         </Animated.View>
 
         {/* Seek flash — right */}
@@ -836,7 +816,7 @@ function NativeVideoPlayer({
           style={[ss.seekFlashZone, ss.seekFlashRight, { opacity: seekFlashR }]}
           pointerEvents="none"
         >
-          <MaterialIcons name="forward-10" size={34} color="#FFFFFF" />
+          <MaterialIcons name="forward-10" size={34} color={mediaTokens.text} />
         </Animated.View>
 
         {/* Controls overlay */}
@@ -847,13 +827,13 @@ function NativeVideoPlayer({
           >
             {/* Top gradient scrim */}
             <LinearGradient
-              colors={['rgba(0,0,0,0.75)', 'rgba(0,0,0,0)']}
+              colors={[mediaTokens.overlay, 'transparent']}
               style={[StyleSheet.absoluteFill, { bottom: '55%' }]}
               pointerEvents="none"
             />
             {/* Bottom gradient scrim */}
             <LinearGradient
-              colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.88)']}
+              colors={['transparent', mediaTokens.overlayStrong]}
               style={[StyleSheet.absoluteFill, { top: '50%' }]}
               pointerEvents="none"
             />
@@ -871,7 +851,7 @@ function NativeVideoPlayer({
             <View style={ss.centerRow} pointerEvents="box-none">
               {/* Rewind */}
               <Pressable onPress={() => seekRelative(-10)} style={ss.sideSeekBtn}>
-                <MaterialIcons name="replay-10" size={28} color="#FFFFFF" />
+                <MaterialIcons name="replay-10" size={28} color={mediaTokens.text} />
               </Pressable>
 
               {/* Play / Pause */}
@@ -879,13 +859,13 @@ function NativeVideoPlayer({
                 <MaterialIcons
                   name={isPlaying ? 'pause' : 'play-arrow'}
                   size={36}
-                  color="#FFFFFF"
+                  color={mediaTokens.text}
                 />
               </Pressable>
 
               {/* Forward */}
               <Pressable onPress={() => seekRelative(10)} style={ss.sideSeekBtn}>
-                <MaterialIcons name="forward-10" size={28} color="#FFFFFF" />
+                <MaterialIcons name="forward-10" size={28} color={mediaTokens.text} />
               </Pressable>
             </View>
 
@@ -904,7 +884,7 @@ function NativeVideoPlayer({
                 style={ss.fsBtn}
                 hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
               >
-                <MaterialIcons name="fullscreen" size={22} color="rgba(255,255,255,0.85)" />
+                <MaterialIcons name="fullscreen" size={22} color={mediaTokens.textMuted} />
               </Pressable>
             </View>
           </Animated.View>

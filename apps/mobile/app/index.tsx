@@ -52,11 +52,13 @@ const useStyles = makeStyles((theme) => ({
   featureChipText: { color: theme.colors.mediaTextMuted, fontSize: 12, fontWeight: '600' },
   brandLabel: {
     color: theme.colors.mediaTextSubtle, fontSize: 11, fontWeight: '700',
-    letterSpacing: 2.5, textTransform: 'uppercase', marginBottom: 10,
+    letterSpacing: 2.5, textTransform: 'uppercase',
   },
-  headlineBase:  { color: theme.colors.mediaText, fontWeight: '700', letterSpacing: -0.8, marginBottom: 12 },
+  headlineBase:  { color: theme.colors.mediaText, fontWeight: '700', letterSpacing: -0.8 },
   introCopy: { color: theme.colors.mediaTextMuted },
   chipsRowBase:  { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  copyGroup: { gap: theme.spacing.sm },
+  actionGroup: { gap: theme.spacing.lg },
 }));
 
 // ─── Sub-component ────────────────────────────────────────────────────────────
@@ -132,64 +134,68 @@ function BrandIntroScreen({
               maxWidth,
               alignSelf: isPhone ? 'center' : 'flex-start',
               paddingBottom: compact ? 24 : 44,
+              gap: compact ? theme.spacing.lg : theme.spacing.xl,
               opacity: fadeAnim,
               transform: [{ translateY: slideAnim }],
             }}
           >
-            <CustomText
-              style={[styles.brandLabel, { textAlign: isPhone ? 'center' : 'left' }]}
-            >
-              ClaudyGod
-            </CustomText>
+            <View style={styles.copyGroup}>
+              <CustomText
+                style={[styles.brandLabel, { textAlign: isPhone ? 'center' : 'left' }]}
+              >
+                ClaudyGod
+              </CustomText>
 
-            <CustomText
-              variant="display"
-              numberOfLines={3}
-              style={[
-                styles.headlineBase,
-                {
-                  fontSize: titleSize,
-                  lineHeight: Math.round(titleSize * 1.12),
+              <CustomText
+                variant="display"
+                numberOfLines={3}
+                style={[
+                  styles.headlineBase,
+                  {
+                    fontSize: titleSize,
+                    lineHeight: Math.round(titleSize * 1.12),
+                    textAlign: isPhone ? 'center' : 'left',
+                  },
+                ]}
+              >
+                {'Worship\nwithout limits.'}
+              </CustomText>
+
+              <CustomText
+                variant="body"
+                style={{
+                  color: theme.colors.mediaTextMuted,
+                  fontSize: isPhone ? 14 : 15,
+                  lineHeight: isPhone ? 21 : 24,
                   textAlign: isPhone ? 'center' : 'left',
-                },
-              ]}
-            >
-              {'Worship\nwithout limits.'}
-            </CustomText>
-
-            <CustomText
-              variant="body"
-              style={{
-                color: theme.colors.mediaTextMuted,
-                fontSize: isPhone ? 14 : 15,
-                lineHeight: isPhone ? 21 : 24,
-                textAlign: isPhone ? 'center' : 'left',
-                marginBottom: compact ? 20 : 26,
-              }}
-            >
-              {'Music, videos & live sessions — completely free.'}
-            </CustomText>
-
-            <View
-              style={[
-                styles.chipsRowBase,
-                { justifyContent: isPhone ? 'center' : 'flex-start', marginBottom: compact ? 22 : 30 },
-              ]}
-            >
-              {FEATURES.map((f) => (
-                <FeatureChip key={f.label} icon={f.icon} label={f.label} />
-              ))}
+                }}
+              >
+                {'Music, videos & live sessions — completely free.'}
+              </CustomText>
             </View>
 
-            <AppButton
-              title={ctaLabel}
-              onPress={onContinue}
-              variant="gradient"
-              size="lg"
-              fullWidth
-              leftIcon={<MaterialIcons name="explore" size={20} color={theme.colors.onPrimary} />}
-              style={{ width: '100%', minHeight: 54 }}
-            />
+            <View style={styles.actionGroup}>
+              <View
+                style={[
+                  styles.chipsRowBase,
+                  { justifyContent: isPhone ? 'center' : 'flex-start' },
+                ]}
+              >
+                {FEATURES.map((f) => (
+                  <FeatureChip key={f.label} icon={f.icon} label={f.label} />
+                ))}
+              </View>
+
+              <AppButton
+                title={ctaLabel}
+                onPress={onContinue}
+                variant="gradient"
+                size="lg"
+                fullWidth
+                leftIcon={<MaterialIcons name="explore" size={20} color={theme.colors.onPrimary} />}
+                style={{ width: '100%', minHeight: 54 }}
+              />
+            </View>
           </Animated.View>
         </View>
       </SafeAreaView>

@@ -150,3 +150,45 @@ export const contentRequestLimiter = rateLimit({
     return user?.sub ?? req.ip ?? 'unknown';
   },
 });
+
+export const guestSupportLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  message: 'Too many support requests. Please wait before trying again.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: redisStore('guest-support'),
+  handler: rejectionHandler('guest-support'),
+  skip: (_req: Request) => process.env.NODE_ENV === 'development',
+  keyGenerator: (req: Request) => {
+    return `${req.ip ?? 'unknown'}-${req.installation?.id ?? 'unverified'}`;
+  },
+});
+
+export const guestFeedbackLimiter = rateLimit({
+  windowMs: 24 * 60 * 60 * 1000,
+  max: 3,
+  message: 'Feedback has already been received from this installation. Please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: redisStore('guest-feedback'),
+  handler: rejectionHandler('guest-feedback'),
+  skip: (_req: Request) => process.env.NODE_ENV === 'development',
+  keyGenerator: (req: Request) => {
+    return `${req.ip ?? 'unknown'}-${req.installation?.id ?? 'unverified'}`;
+  },
+});
+
+export const referralLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 30,
+  message: 'Too many referral requests. Please wait before trying again.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: redisStore('mobile-referral'),
+  handler: rejectionHandler('mobile-referral'),
+  skip: (_req: Request) => process.env.NODE_ENV === 'development',
+  keyGenerator: (req: Request) => {
+    return `${req.ip ?? 'unknown'}-${req.installation?.id ?? 'unverified'}`;
+  },
+});

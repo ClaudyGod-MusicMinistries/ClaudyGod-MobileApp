@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
-import * as FileSystem from 'expo-file-system/legacy';
+import { Directory, File, Paths } from 'expo-file-system';
+import { fetch as expoFetch } from 'expo/fetch';
 import type { FeedCardItem } from '../services/contentService';
 import { getDownloads, saveDownload, removeDownload } from '../lib/localUserStorage';
 
@@ -29,14 +30,11 @@ interface DownloadsContextValue {
 
 const DownloadsContext = createContext<DownloadsContextValue | null>(null);
 
-const DOWNLOAD_ROOT = FileSystem.documentDirectory;
-const DOWNLOAD_DIR = DOWNLOAD_ROOT ? `${DOWNLOAD_ROOT}claudygod-downloads/` : null;
+const DOWNLOAD_DIR = new Directory(Paths.document, 'claudygod-downloads');
 
 async function ensureDir() {
-  if (!DOWNLOAD_DIR) throw new Error('Downloads are not available on this device.');
-  const info = await FileSystem.getInfoAsync(DOWNLOAD_DIR);
-  if (!info.exists) {
-    await FileSystem.makeDirectoryAsync(DOWNLOAD_DIR, { intermediates: true });
+  if (!DOWNLOAD_DIR.exists) {
+    DOWNLOAD_DIR.create({ intermediates: true, idempotent: true });
   }
 }
 
@@ -62,8 +60,8 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
       // user actually taps to play it. Verify each file still exists on disk
       // before trusting the saved metadata, and quietly clean up any that don't.
       const checked = await Promise.all(saved.map(async (d) => {
-        const info = await FileSystem.getInfoAsync(d.localUri);
-        return { d, exists: info.exists };
+        const file = new File(d.localUri);
+        return { d, exists: file.exists };
       }));
       if (generation !== loadGeneration.current) return;
 
@@ -108,7 +106,7 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
   );
 
   const downloadContent = useCallback(async (item: FeedCardItem): Promise<boolean> => {
-    if (!item.mediaUrl || !DOWNLOAD_DIR) return false;
+    if (!item.mediaUrl) return false;
     if (inFlight.current.has(item.id) || downloads[item.id]?.status === 'downloading') return false;
     if (downloads[item.id]?.status === 'done') return true;
     inFlight.current.add(item.id);
@@ -122,35 +120,57 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
       },
     }));
 
+    let partialFile: File | null = null;
     try {
       await ensureDir();
       const rawExt = item.mediaUrl.split('?')[0]?.split('.').pop()?.toLowerCase() ?? 'mp3';
       const ext = /^[a-z0-9]{2,5}$/.test(rawExt) ? rawExt : 'mp3';
       const safeId = item.id.replace(/[^a-zA-Z0-9_-]/g, '_');
-      const localUri = `${DOWNLOAD_DIR}${safeId}.${ext}`;
+      const destination = new File(DOWNLOAD_DIR, `${safeId}.${ext}`);
+      partialFile = destination;
+      const response = await expoFetch(item.mediaUrl);
+      if (!response.ok || !response.body) {
+        throw new Error(`Download failed with HTTP ${response.status}.`);
+      }
 
-      const dl = FileSystem.createDownloadResumable(
-        item.mediaUrl,
-        localUri,
-        {},
-        (progress) => {
-          const pct = progress.totalBytesExpectedToWrite > 0
-            ? Math.round((progress.totalBytesWritten / progress.totalBytesExpectedToWrite) * 100)
+      const expectedBytes = Number(response.headers.get('content-length')) || 0;
+      destination.create({ overwrite: true, intermediates: true });
+      const handle = destination.open();
+      const reader = response.body.getReader();
+      let writtenBytes = 0;
+      let lastReportedProgress = -1;
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          if (!value?.byteLength) continue;
+
+          handle.writeBytes(value);
+          writtenBytes += value.byteLength;
+          const pct = expectedBytes > 0
+            ? Math.min(99, Math.round((writtenBytes / expectedBytes) * 100))
             : 0;
+          if (pct === lastReportedProgress) continue;
+          lastReportedProgress = pct;
           setDownloads((prev) => ({
             ...prev,
             [item.id]: { ...prev[item.id], status: 'downloading', progress: pct, localUri: null },
           }));
-        },
-      );
+        }
+      } finally {
+        handle.close();
+      }
 
-      const result = await dl.downloadAsync();
-      if (!result?.uri) throw new Error('The download did not complete.');
+      if (writtenBytes === 0 || (expectedBytes > 0 && writtenBytes !== expectedBytes)) {
+        if (destination.exists) destination.delete();
+        throw new Error('The downloaded file was incomplete.');
+      }
 
       await saveDownload({
         contentId: item.id,
         title: item.title,
-        localUri: result.uri,
+        localUri: destination.uri,
         contentType: item.type,
         imageUrl: item.imageUrl ?? undefined,
         subtitle: item.subtitle,
@@ -162,13 +182,17 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
       setDownloads((prev) => ({
         ...prev,
         [item.id]: {
-          status: 'done', progress: 100, localUri: result.uri,
+          status: 'done', progress: 100, localUri: destination.uri,
           title: item.title, imageUrl: item.imageUrl, contentType: item.type,
           subtitle: item.subtitle, description: item.description, duration: item.duration,
         },
       }));
+      partialFile = null;
       return true;
     } catch {
+      if (partialFile?.exists) {
+        try { partialFile.delete(); } catch { /* ignore cleanup errors */ }
+      }
       setDownloads((prev) => ({
         ...prev,
         [item.id]: { ...prev[item.id], status: 'error', progress: 0, localUri: null },
@@ -182,7 +206,10 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
   const deleteDownload = useCallback(async (contentId: string): Promise<void> => {
     const localUri = downloads[contentId]?.localUri;
     if (localUri) {
-      try { await FileSystem.deleteAsync(localUri, { idempotent: true }); } catch { /* ignore */ }
+      try {
+        const file = new File(localUri);
+        if (file.exists) file.delete();
+      } catch { /* ignore */ }
     }
     await removeDownload(contentId);
     setDownloads((prev) => {

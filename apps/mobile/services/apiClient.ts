@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
 import { ENV } from './config';
 import { reportBreadcrumb } from '../lib/sentry';
+import { getInstallationSession } from '../lib/installationSessionStorage';
 
 export class ApiError extends Error {
   status: number;
@@ -61,6 +62,7 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
   }
 
   try {
+    const installationSession = await getInstallationSession();
     const response = await fetchWithTimeout(`${ENV.apiUrl}${path}`, {
       ...init,
       credentials: Platform.OS === 'web' ? 'include' : init?.credentials,
@@ -69,6 +71,7 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
         'X-Claudy-Client-Platform': Platform.OS,
         'X-Claudy-Client-Version': '1.0.0',
         'x-request-id': generateRequestId(),
+        ...(installationSession ? { 'X-Installation-Token': installationSession.credential } : {}),
         ...(init?.headers ?? {}),
       },
     });

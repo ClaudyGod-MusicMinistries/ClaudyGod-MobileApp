@@ -11,7 +11,8 @@ import { makeStyles } from '../../styles/makeStyles';
 import { useContentFeed } from '../../hooks/useContentFeed';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import { getVideoLayoutSections, deriveLayoutSectionItems, deriveLayoutSectionOverflowCount } from '../../util/mobileLayout';
-import { InlineErrorBanner } from '../../components/ui/InlineErrorBanner';
+import { ErrorState } from '../../components/ui/ErrorState';
+import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import type { FeedCardItem } from '../../services/contentService';
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
 import { APP_ROUTES } from '../../util/appRoutes';
@@ -37,6 +38,13 @@ const useStyles = makeStyles((theme) => ({
   chipLabelActive:  { color: theme.colors.text, fontSize: 13, fontWeight: '700' as const },
   chipLabelDefault: { color: theme.colors.textSecondary, fontSize: 13, fontWeight: '500' as const },
   gap12:        { gap: 12 },
+  stage: { padding: 12, gap: 12 },
+  stageHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingHorizontal: 4 },
+  stageCopy: { flex: 1 },
+  stageEyebrow: { color: theme.colors.primary, textTransform: 'uppercase', letterSpacing: 1 },
+  stageTitle: { color: theme.colors.text, marginTop: 2 },
+  stageBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: theme.colors.primarySurface, borderWidth: 1, borderColor: theme.colors.primaryBorder },
+  stageBadgeText: { color: theme.colors.text_accent, fontWeight: '700' },
 }));
 
 type VideoFilter = 'all' | 'sessions' | 'live' | 'shorts';
@@ -108,6 +116,7 @@ function FilterTabs({ options, active, onChange }: { options: VideoFilterOption[
 
 export default function VideosScreen() {
   const styles = useStyles();
+  const theme = useAppTheme();
   const router = useRouter();
   const { showToast } = useToast();
   const { width } = useWindowDimensions();
@@ -184,11 +193,22 @@ export default function VideosScreen() {
     await trackPlayEvent({ contentId: item.id, contentType: item.type, title: item.title, source });
   };
 
+  if (error && !allQueue.length) {
+    return (
+      <PremiumPage title="Videos" eyebrow="Watch" noBack refreshing={loading} onRefresh={refresh}>
+        <ErrorState variant="page" title="Videos could not be loaded" message={error} supportingText="Your saved content remains available in Library while we reconnect." onRetry={() => void refresh()} />
+      </PremiumPage>
+    );
+  }
+
   return (
     <PremiumPage title="Videos" eyebrow="Watch" noBack refreshing={loading} onRefresh={refresh} scrollToTopKey={activeId}>
       {/* Player or Hero */}
       {active && canInlinePlay && active.mediaUrl ? (
-        <VideoPlayer title={active.title} sourceUri={active.mediaUrl} height={playerHeight} />
+        <SurfaceCard tone="strong" style={styles.stage}>
+          <View style={styles.stageHeader}><View style={styles.stageCopy}><CustomText variant="caption" style={styles.stageEyebrow}>Now watching</CustomText><CustomText variant="heading" style={styles.stageTitle}>{active.title}</CustomText></View><View style={styles.stageBadge}><MaterialIcons name="high-quality" size={15} color={theme.colors.primary} /><CustomText variant="caption" style={styles.stageBadgeText}>Adaptive</CustomText></View></View>
+          <VideoPlayer title={active.title} sourceUri={active.mediaUrl} height={playerHeight} />
+        </SurfaceCard>
       ) : (
         <PremiumHero
           item={active}
@@ -201,7 +221,7 @@ export default function VideosScreen() {
         />
       )}
 
-      {error ? <InlineErrorBanner message={error} onRetry={() => void refresh()} /> : null}
+      {error ? <ErrorState message={error} onRetry={() => void refresh()} /> : null}
 
       {/* Filter chips */}
       {filterOptions.length > 1 ? <FilterTabs options={filterOptions} active={filter} onChange={setFilter} /> : null}

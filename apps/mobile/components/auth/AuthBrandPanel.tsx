@@ -31,10 +31,10 @@ const useStyles = makeStyles((theme) => ({
   // Full variant — static parts only
   chipsRow:          { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 20 },
   chip: {
-    borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.07)',
+    borderRadius: 999, backgroundColor: theme.colors.mediaBorder,
     paddingHorizontal: 12, paddingVertical: 5,
   },
-  chipText:          { color: '#7A7288', fontSize: 11, fontWeight: '400' },
+  chipText:          { color: theme.colors.mediaTextMuted, fontSize: 11, fontWeight: '400' },
 }));
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -74,7 +74,7 @@ export function AuthBrandPanel({ salutation, description, compact = false }: Aut
       <Image source={BRAND_WORSHIP_ASSET} resizeMode="cover" style={styles.bgImg} />
 
       <LinearGradient
-        colors={['rgba(7,5,12,0)', 'rgba(7,5,12,0.72)', 'rgba(7,5,12,0.98)']}
+        colors={['transparent', theme.colors.mediaScrim, theme.colors.mediaScrimStrong]}
         locations={[0, 0.55, 1]}
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 1 }}
@@ -96,13 +96,13 @@ export function AuthBrandPanel({ salutation, description, compact = false }: Aut
         <View style={{ maxWidth: device.isTV ? 500 : 400 }}>
           <CustomText
             variant="display"
-            style={{ color: '#F7F2FF', fontSize: titleSize, lineHeight: titleSize * 1.15, fontWeight: '700', letterSpacing: -0.5 }}
+            style={{ color: theme.colors.mediaText, fontSize: titleSize, lineHeight: titleSize * 1.15, fontWeight: '700', letterSpacing: -0.5 }}
           >
             {salutation}
           </CustomText>
           <CustomText
             variant="body"
-            style={{ color: '#9287AD', marginTop: 10, lineHeight: device.isTV ? 24 : 20, fontSize: device.isTV ? 14 : 13 }}
+            style={{ color: theme.colors.mediaTextMuted, marginTop: 10, lineHeight: device.isTV ? 24 : 20, fontSize: device.isTV ? 14 : 13 }}
           >
             {description}
           </CustomText>

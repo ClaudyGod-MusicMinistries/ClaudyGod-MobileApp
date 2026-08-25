@@ -48,14 +48,14 @@ export const Header: React.FC<HeaderProps> = ({
               {title}
             </CustomText>
             {subtitle && (
-              <CustomText variant="caption" style={[styles.subtitle, { color: 'rgba(255,255,255,0.78)' }]}>
+              <CustomText variant="caption" style={[styles.subtitle, { color: theme.colors.mediaTextMuted }]}>
                 {subtitle}
               </CustomText>
             )}
           </TitleContainer>
 
           <View style={[styles.actionContainer, styles.rightActionContainer]}>
-            {rightAction ?? <MaterialIcons name="keyboard-arrow-down" size={20} color="rgba(255,255,255,0.82)" />}
+            {rightAction ?? <MaterialIcons name="keyboard-arrow-down" size={20} color={theme.colors.mediaTextMuted} />}
           </View>
         </View>
       </SafeAreaView>
@@ -63,7 +63,7 @@ export const Header: React.FC<HeaderProps> = ({
       <View
         style={[
           styles.accentLine,
-          { backgroundColor: 'rgba(255,255,255,0.2)' },
+          { backgroundColor: theme.colors.controlSelectedIconSurface },
         ]}
       />
     </View>

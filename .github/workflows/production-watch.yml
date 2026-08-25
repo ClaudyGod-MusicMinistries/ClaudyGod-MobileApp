@@ -1,0 +1,77 @@
+name: Production Readiness Watch
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '7,37 * * * *'
+
+concurrency:
+  group: production-readiness-watch
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify-public-data-paths:
+    name: Verify API, feed, and mobile web
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      API_URL: ${{ vars.EXPO_PUBLIC_API_URL }}
+      MOBILE_URL: ${{ vars.VITE_MOBILE_PREVIEW_URL }}
+
+    steps:
+      - name: Validate monitor configuration
+        run: |
+          set -euo pipefail
+          for name in API_URL MOBILE_URL; do
+            value="${!name:-}"
+            if [ -z "$value" ] || ! printf '%s' "$value" | grep -Eq '^https://'; then
+              echo "::error::$name must be configured as a real HTTPS repository variable"
+              exit 1
+            fi
+            if printf '%s' "$value" | grep -Eqi 'localhost|placeholder|your_|example|validation'; then
+              echo "::error::$name contains a non-production value"
+              exit 1
+            fi
+          done
+
+      - name: Verify infrastructure readiness
+        run: |
+          set -euo pipefail
+          health_file="${RUNNER_TEMP}/claudygod-health.json"
+          curl --fail-with-body --silent --show-error \
+            --retry 4 --retry-all-errors --retry-delay 5 \
+            --connect-timeout 8 --max-time 20 \
+            "${API_URL%/}/health" -o "$health_file"
+          jq -e '
+            .status == "ok" and
+            .services.postgres == "up" and
+            .services.schema == "ready" and
+            .services.redis == "up"
+          ' "$health_file" >/dev/null
+
+      - name: Verify mobile feed contract and published data
+        run: |
+          set -euo pipefail
+          feed_file="${RUNNER_TEMP}/claudygod-feed.json"
+          curl --fail-with-body --silent --show-error \
+            --retry 4 --retry-all-errors --retry-delay 5 \
+            --connect-timeout 8 --max-time 30 \
+            "${API_URL%/}/v1/mobile/feed" -o "$feed_file"
+          jq -e '
+            (.rails | type == "array") and
+            ([.rails[]?.items[]?] | length > 0) and
+            ([.rails[]?.items[]? |
+              select((.id | type != "string") or (.title | type != "string"))
+            ] | length == 0)
+          ' "$feed_file" >/dev/null
+
+      - name: Verify mobile web is reachable
+        run: |
+          set -euo pipefail
+          curl --fail-with-body --silent --show-error \
+            --retry 4 --retry-all-errors --retry-delay 5 \
+            --connect-timeout 8 --max-time 20 \
+            "${MOBILE_URL%/}/" -o /dev/null

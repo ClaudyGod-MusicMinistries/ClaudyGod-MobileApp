@@ -6,6 +6,8 @@ import { ApiError, apiFetch } from './apiClient';
 import { authSessionStorage } from '../lib/authSessionStorage';
 import { assertSupabaseConfigured, supabase } from '../lib/supabase';
 
+WebBrowser.maybeCompleteAuthSession();
+
 // Same AsyncStorage key context/AppContext.tsx uses for its stable per-install
 // device id — reading it here (rather than generating a session-only value)
 // means the fingerprint survives app restarts, so a device's session can
@@ -228,23 +230,6 @@ const fetchCurrentMobileUser = async (): Promise<MobileSessionSnapshot> => {
   };
 };
 
-async function fetchMobileUserWithBearerToken(accessToken: string): Promise<MobileAuthUser> {
-  const response = await apiFetch<{ authenticated: boolean; user: MobileAuthUser | null }>(
-    '/v1/auth/session',
-    {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    },
-  );
-
-  if (!response.authenticated || !response.user) {
-    throw new Error('Secure sign-in completed without a user session');
-  }
-
-  return response.user;
-}
-
 const readStoredMobileSessionRecord = async (): Promise<StoredMobileSession | null> => {
   const storedSession = await authSessionStorage.getItem(MOBILE_AUTH_STORAGE_KEY);
   const parsed = parseStoredMobileSession(storedSession);
@@ -363,33 +348,36 @@ export async function loginMobileUser(input: {
   return createSessionSnapshot(response);
 }
 
-export async function loginMobileUserWithGoogle(): Promise<MobileAuthResponse> {
+export type MobileOAuthProvider = 'google' | 'apple';
+
+export async function fetchOAuthProviderAvailability() {
+  return apiFetch<{ providers: Record<MobileOAuthProvider, boolean> }>('/v1/auth/oauth/providers');
+}
+
+export async function loginMobileUserWithOAuth(provider: MobileOAuthProvider): Promise<MobileAuthResponse> {
   assertSupabaseConfigured();
 
   const redirectTo = resolveOAuthRedirectUrl();
   const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
+    provider,
     options: {
       redirectTo,
       skipBrowserRedirect: true,
-      queryParams: {
-        access_type: 'offline',
-        prompt: 'select_account',
-      },
+      queryParams: provider === 'google' ? { access_type: 'offline', prompt: 'select_account' } : undefined,
     },
   });
 
   if (error) {
-    throw new Error(error.message || 'Google sign-in is not available right now.');
+    throw new Error(error.message || `${provider === 'google' ? 'Google' : 'Apple'} sign-in is not available right now.`);
   }
 
   if (!data.url) {
-    throw new Error('Google sign-in is not configured for this application.');
+    throw new Error(`${provider === 'google' ? 'Google' : 'Apple'} sign-in is not configured for this application.`);
   }
 
   const browserResult = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
   if (browserResult.type !== 'success' || !browserResult.url) {
-    throw new Error('Google sign-in was cancelled.');
+    throw new Error(`${provider === 'google' ? 'Google' : 'Apple'} sign-in was cancelled.`);
   }
 
   const parsed = new URL(browserResult.url.replace('#', '?'));
@@ -400,14 +388,14 @@ export async function loginMobileUserWithGoogle(): Promise<MobileAuthResponse> {
   if (code && (!accessToken || !refreshToken)) {
     const { data: exchanged, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
     if (exchangeError) {
-      throw new Error(exchangeError.message || 'Unable to finish Google sign-in.');
+      throw new Error(exchangeError.message || 'Unable to finish OAuth sign-in.');
     }
     accessToken = exchanged.session?.access_token ?? '';
     refreshToken = exchanged.session?.refresh_token ?? '';
   }
 
   if (!accessToken || !refreshToken) {
-    throw new Error('Google sign-in did not return a secure session.');
+    throw new Error('OAuth sign-in did not return a secure identity session.');
   }
 
   const { error: sessionError } = code
@@ -418,85 +406,25 @@ export async function loginMobileUserWithGoogle(): Promise<MobileAuthResponse> {
       });
 
   if (sessionError) {
-    throw new Error(sessionError.message || 'Unable to finish Google sign-in.');
+    throw new Error(sessionError.message || 'Unable to finish OAuth sign-in.');
   }
 
-  const user = await fetchMobileUserWithBearerToken(accessToken);
-  const authResponse: MobileAuthResponse = {
-    accessToken,
-    refreshToken,
-    user,
-    requiresEmailVerification: false,
-  };
-
-  await persistMobileSession(authResponse);
-  return createSessionSnapshot(authResponse);
-}
-
-export async function loginMobileUserWithFacebook(): Promise<MobileAuthResponse> {
-  assertSupabaseConfigured();
-
-  const redirectTo = resolveOAuthRedirectUrl();
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'facebook',
-    options: {
-      redirectTo,
-      skipBrowserRedirect: true,
-      scopes: 'email,public_profile',
-    },
+  const deviceFingerprint = await getDeviceFingerprint();
+  const authResponse = await apiFetch<MobileAuthResponse>('/v1/auth/oauth/exchange', {
+    method: 'POST', headers: { Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify({ deviceFingerprint, platform: Platform.OS }),
   });
-
-  if (error) {
-    throw new Error(error.message || 'Facebook sign-in is not available right now.');
+  if (!authResponse.user || (!usesBrowserCookieSession && (!authResponse.accessToken || !authResponse.refreshToken))) {
+    throw new Error('OAuth exchange did not return a ClaudyGod application session.');
   }
-
-  if (!data.url) {
-    throw new Error('Facebook sign-in is not configured for this application.');
-  }
-
-  const browserResult = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
-  if (browserResult.type !== 'success' || !browserResult.url) {
-    throw new Error('Facebook sign-in was cancelled.');
-  }
-
-  const parsed = new URL(browserResult.url.replace('#', '?'));
-  const code = parsed.searchParams.get('code') ?? '';
-  let accessToken = parsed.searchParams.get('access_token') ?? '';
-  let refreshToken = parsed.searchParams.get('refresh_token') ?? '';
-
-  if (code && (!accessToken || !refreshToken)) {
-    const { data: exchanged, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-    if (exchangeError) {
-      throw new Error(exchangeError.message || 'Unable to finish Facebook sign-in.');
-    }
-    accessToken = exchanged.session?.access_token ?? '';
-    refreshToken = exchanged.session?.refresh_token ?? '';
-  }
-
-  if (!accessToken || !refreshToken) {
-    throw new Error('Facebook sign-in did not return a secure session.');
-  }
-
-  const { error: sessionError } = code
-    ? { error: null }
-    : await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
-
-  if (sessionError) {
-    throw new Error(sessionError.message || 'Unable to finish Facebook sign-in.');
-  }
-
-  const user = await fetchMobileUserWithBearerToken(accessToken);
-  const authResponse: MobileAuthResponse = {
-    accessToken,
-    refreshToken,
-    user,
-    requiresEmailVerification: false,
-  };
 
   await persistMobileSession(authResponse);
-  registerDeviceFireAndForget(accessToken);
+  await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
   return createSessionSnapshot(authResponse);
 }
+
+export const loginMobileUserWithGoogle = () => loginMobileUserWithOAuth('google');
+export const loginMobileUserWithApple = () => loginMobileUserWithOAuth('apple');
 
 export async function registerMobileUser(input: RegisterMobileUserInput): Promise<MobileAuthResponse> {
   const deviceFingerprint = await getDeviceFingerprint();

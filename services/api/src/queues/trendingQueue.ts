@@ -1,5 +1,5 @@
 import { Queue } from 'bullmq';
-import { env } from '../config/env';
+import { bullmqConnection } from '../infra/bullmq';
 
 export const TRENDING_QUEUE_NAME = 'trending-scores';
 
@@ -12,11 +12,7 @@ export interface TrendingQueuePayload {
 const FIFTEEN_MINUTES = 15 * 60 * 1000;
 
 export const trendingQueue = new Queue<TrendingQueuePayload>(TRENDING_QUEUE_NAME, {
-  connection: {
-    url: env.REDIS_URL,
-    maxRetriesPerRequest: null,
-    enableAutoPipelining: true,
-  },
+  connection: bullmqConnection,
   defaultJobOptions: {
     attempts: 2,
     backoff: { type: 'fixed', delay: 5000 },

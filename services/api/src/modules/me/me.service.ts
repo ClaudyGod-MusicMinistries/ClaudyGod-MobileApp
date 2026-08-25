@@ -1321,6 +1321,60 @@ export const createMeSupportRequest = async (
   };
 };
 
+export const getMeSupportRequests = async (user: JwtClaims) => {
+  const result = await pool.query<{
+    id: string; category: string; subject: string; status: string; priority: string;
+    created_at: string | Date; updated_at: string | Date;
+  }>(
+    `SELECT id, category, subject, status, priority, created_at, updated_at
+       FROM support_requests
+      WHERE user_id = $1
+      ORDER BY created_at DESC
+      LIMIT 10`,
+    [user.sub],
+  );
+  return {
+    tickets: result.rows.map((row) => ({
+      id: row.id, category: row.category, subject: row.subject, status: row.status,
+      priority: row.priority, createdAt: toIso(row.created_at), updatedAt: toIso(row.updated_at),
+    })),
+  };
+};
+
+export const createGuestSupportRequest = async (input: {
+  deviceId: string; contactEmail: string; category: string; subject: string; message: string;
+}) => {
+  const trackingToken = randomBytes(32).toString('base64url');
+  const trackingTokenHash = createHash('sha256').update(trackingToken).digest('hex');
+  const result = await pool.query<{ id: string; status: string; created_at: string | Date }>(
+    `INSERT INTO support_requests (user_id, category, subject, message, priority, metadata)
+     VALUES (NULL, $1, $2, $3, 'normal', $4::jsonb)
+     RETURNING id, status, created_at`,
+    [input.category, input.subject, input.message, JSON.stringify({ source: 'mobile_guest_support_v1', deviceId: input.deviceId, contactEmail: input.contactEmail, trackingTokenHash })],
+  );
+  const row = result.rows[0]!;
+  return { ticket: { id: row.id, status: row.status, createdAt: toIso(row.created_at), trackingToken } };
+};
+
+export const getGuestSupportRequestStatuses = async (input: {
+  deviceId: string; tickets: { id: string; trackingToken: string }[];
+}) => {
+  if (!input.tickets.length) return { tickets: [] };
+  const values: string[] = [input.deviceId];
+  const clauses = input.tickets.map((ticket) => {
+    values.push(ticket.id, createHash('sha256').update(ticket.trackingToken).digest('hex'));
+    const idParam = values.length - 1; const hashParam = values.length;
+    return `(id = $${idParam}::uuid AND metadata->>'trackingTokenHash' = $${hashParam})`;
+  });
+  const result = await pool.query<{ id: string; category: string; subject: string; status: string; priority: string; created_at: string | Date; updated_at: string | Date }>(
+    `SELECT id, category, subject, status, priority, created_at, updated_at
+       FROM support_requests
+      WHERE user_id IS NULL AND metadata->>'deviceId' = $1 AND (${clauses.join(' OR ')})
+      ORDER BY created_at DESC`, values,
+  );
+  return { tickets: result.rows.map((row) => ({ id: row.id, category: row.category, subject: row.subject, status: row.status, priority: row.priority, createdAt: toIso(row.created_at), updatedAt: toIso(row.updated_at) })) };
+};
+
 export const createMeRating = async (
   user: JwtClaims,
   input: {
@@ -1345,6 +1399,67 @@ export const createMeRating = async (
       createdAt: toIso(row.created_at),
     },
   };
+};
+
+export const createGuestRating = async (input: {
+  deviceId: string;
+  rating: number;
+  comment?: string;
+  channel: 'mobile';
+  metadata?: Record<string, unknown>;
+}) => {
+  const metadata = {
+    ...(input.metadata ?? {}),
+    source: 'mobile_guest_feedback_v1',
+    deviceId: input.deviceId,
+  };
+  const result = await pool.query<{ id: string; created_at: string | Date }>(
+    `INSERT INTO app_ratings (user_id, rating, channel, comment, metadata)
+     VALUES (NULL, $1, $2, $3, $4::jsonb)
+     RETURNING id, created_at`,
+    [input.rating, input.channel, input.comment ?? null, JSON.stringify(metadata)],
+  );
+  const row = result.rows[0]!;
+  return { rating: { id: row.id, value: input.rating, createdAt: toIso(row.created_at) } };
+};
+
+export const getOrCreateGuestReferral = async (deviceId: string) => {
+  const result = await pool.query<{ code: string; share_count: number; joined_count: number }>(
+    `INSERT INTO mobile_referrals (device_id, code)
+     VALUES ($1, 'CG' || UPPER(SUBSTRING(ENCODE(gen_random_bytes(6), 'hex') FROM 1 FOR 8)))
+     ON CONFLICT (device_id) DO UPDATE SET updated_at = NOW()
+     RETURNING code, share_count, joined_count`,
+    [deviceId],
+  );
+  const row = result.rows[0]!;
+  return { referral: { code: row.code, shareCount: row.share_count, joinedCount: row.joined_count } };
+};
+
+export const recordGuestReferralShare = async (deviceId: string) => {
+  await getOrCreateGuestReferral(deviceId);
+  const result = await pool.query<{ code: string; share_count: number; joined_count: number }>(
+    `UPDATE mobile_referrals
+        SET share_count = share_count + 1, updated_at = NOW()
+      WHERE device_id = $1
+      RETURNING code, share_count, joined_count`,
+    [deviceId],
+  );
+  const row = result.rows[0]!;
+  return { referral: { code: row.code, shareCount: row.share_count, joinedCount: row.joined_count } };
+};
+
+export const attributeGuestReferral = async (input: { deviceId: string; code: string }) => {
+  const result = await pool.query<{ referral_id: string }>(
+    `WITH matching_referral AS (
+       SELECT id FROM mobile_referrals WHERE code = $1 AND device_id <> $2
+     )
+     INSERT INTO mobile_referral_attributions (referral_id, joined_device_id, status)
+     SELECT id, $2, 'attributed' FROM matching_referral
+     ON CONFLICT (joined_device_id) DO NOTHING
+     RETURNING referral_id`,
+    [input.code, input.deviceId],
+  );
+  return { attributed: (result.rowCount ?? 0) > 0, status: result.rows[0] ? 'attributed' : null };
 };
 
 const parseAmountToCents = (amount: string): number => {

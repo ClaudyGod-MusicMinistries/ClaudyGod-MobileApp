@@ -3,8 +3,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const candidates = [
-  path.resolve(__dirname, '../../../node_modules/image-size'),
   path.resolve(__dirname, '../node_modules/image-size'),
+  path.resolve(__dirname, '../../../node_modules/image-size'),
 ];
 const packageRoot = candidates.find((candidate) => fs.existsSync(path.join(candidate, 'package.json')));
 

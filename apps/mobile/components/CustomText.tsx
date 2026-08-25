@@ -3,19 +3,7 @@ import React, { useContext, useMemo } from 'react';
 import { Platform, Text, TextProps, useWindowDimensions } from 'react-native';
 import { getResponsiveFontStyle, type FontVariantKey } from '../util/fonts';
 import { FontContext } from '../context/FontContext';
-
-const variantLineDefaults: Partial<Record<FontVariantKey, number>> = {
-  hero: 2,
-  display: 2,
-  heading: 1,
-  title: 1,
-  subheading: 2,
-  subtitle: 2,
-  body: 3,
-  label: 1,
-  meta: 1,
-  caption: 1,
-};
+import { useAppTheme } from '../util/colorScheme';
 
 interface CustomTextProps extends TextProps {
   variant?: FontVariantKey;
@@ -30,6 +18,7 @@ export const CustomText: React.FC<CustomTextProps> = ({
   ...props
 }) => {
   const { fontsLoaded } = useContext(FontContext);
+  const theme = useAppTheme();
   const { width } = useWindowDimensions();
   const variantStyle = useMemo(
     () => getResponsiveFontStyle(variant, width, Platform.isTV),
@@ -42,11 +31,11 @@ export const CustomText: React.FC<CustomTextProps> = ({
 
   return (
     <Text
-      style={[finalStyle, style]}
-      numberOfLines={numberOfLinesProp ?? variantLineDefaults[variant]}
-      ellipsizeMode={ellipsizeModeProp ?? 'tail'}
+      style={[{ color: theme.colors.text }, finalStyle, style]}
+      numberOfLines={numberOfLinesProp}
+      ellipsizeMode={ellipsizeModeProp}
       allowFontScaling={props.allowFontScaling ?? true}
-      maxFontSizeMultiplier={props.maxFontSizeMultiplier ?? 1.08}
+      maxFontSizeMultiplier={props.maxFontSizeMultiplier ?? 1.3}
       {...props}
     >
       {children}

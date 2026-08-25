@@ -1,7 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { AudioPlayer, type RepeatMode } from '../../components/media/AudioPlayer';
 import { YouTubeAudioPlayer } from '../../components/media/YouTubeAudioPlayer';
 import { CustomText } from '../../components/CustomText';
@@ -13,7 +13,7 @@ import { useContentFeed } from '../../hooks/useContentFeed';
 import { useLocalContent } from '../../hooks/useLocalContent';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import { getPlayerLayoutSections, deriveLayoutSectionItems } from '../../util/mobileLayout';
-import { InlineErrorBanner } from '../../components/ui/InlineErrorBanner';
+import { ErrorState } from '../../components/ui/ErrorState';
 import { makeStyles } from '../../styles/makeStyles';
 import type { FeedCardItem } from '../../services/contentService';
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
@@ -33,6 +33,7 @@ import {
   dedupeFeedItems,
 } from '../../components/feed';
 import { WorshipTogetherBar } from '../../components/worship/WorshipTogetherBar';
+import { getPreference } from '../../lib/localUserStorage';
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
@@ -42,16 +43,23 @@ const useStyles = makeStyles((theme) => ({
 
   // Now-playing card
   nowPlayingCard: {
-    borderRadius: 16, borderWidth: 1,
-    borderColor: theme.colors.primaryBorder, backgroundColor: theme.colors.primarySurface,
-    paddingHorizontal: 16, paddingTop: 20, paddingBottom: 24, overflow: 'hidden',
+    borderRadius: theme.radius.xl, borderWidth: 1,
+    borderColor: theme.colors.primaryBorder, backgroundColor: theme.colors.elevated,
+    padding: theme.spacing.lg, overflow: 'hidden', ...theme.shadows.lg,
   },
+  stageHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 18 },
+  stageHeading: { flex: 1 },
+  stageEyebrow: { color: theme.colors.primary, textTransform: 'uppercase', letterSpacing: 1 },
+  stageTitle: { color: theme.colors.text, marginTop: 2 },
+  stageStatus: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: theme.colors.successSurface, borderWidth: 1, borderColor: theme.colors.successBorder },
+  stageStatusDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: theme.colors.success },
+  stageStatusText: { color: theme.colors.success, fontWeight: '700' },
 
   // FilterChip
   filterChipBase:       { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingVertical: 9, borderRadius: 999, borderWidth: 1 },
-  filterChipActive:     { backgroundColor: theme.colors.primary, borderColor: 'transparent' },
+  filterChipActive:     { backgroundColor: theme.colors.controlSelectedSurface, borderColor: theme.colors.controlSelectedBorder },
   filterChipInactive:   { backgroundColor: theme.colors.subtleFill, borderColor: theme.colors.border },
-  filterChipTxtActive:  { color: '#FFFFFF', fontSize: 13, fontWeight: '700' },
+  filterChipTxtActive:  { color: theme.colors.controlSelectedText, fontSize: 13, fontWeight: '700' },
   filterChipTxtInactive:{ color: theme.colors.textSecondary, fontSize: 13, fontWeight: '500' },
 
   // Queue
@@ -70,7 +78,7 @@ const useStyles = makeStyles((theme) => ({
   queueItemRow:     { flexDirection: 'row', alignItems: 'center' },
   queueItemNum: {
     width: 32, textAlign: 'center',
-    color: 'rgba(139,92,246,0.50)', fontSize: 11, fontWeight: '700',
+    color: theme.colors.text_accent, opacity: 0.7, fontSize: 11, fontWeight: '700',
   },
   queueItemFill:    { flex: 1 },
 
@@ -121,6 +129,7 @@ const FILTERS: { id: AudioFilter; label: string; icon: React.ComponentProps<type
 
 function FilterChips({ active, onChange }: { active: AudioFilter; onChange: (_f: AudioFilter) => void }) {
   const styles = useStyles();
+  const theme = useAppTheme();
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 2 }}>
       {FILTERS.map((f) => {
@@ -132,7 +141,7 @@ function FilterChips({ active, onChange }: { active: AudioFilter; onChange: (_f:
             showFocusBorder={false}
             style={[styles.filterChipBase, isActive ? styles.filterChipActive : styles.filterChipInactive]}
           >
-            <MaterialIcons name={f.icon} size={14} color={isActive ? '#FFFFFF' : undefined} style={isActive ? undefined : { opacity: 0.6 }} />
+            <MaterialIcons name={f.icon} size={14} color={isActive ? theme.colors.controlSelectedText : theme.colors.textSecondary} style={isActive ? undefined : { opacity: 0.6 }} />
             <CustomText style={isActive ? styles.filterChipTxtActive : styles.filterChipTxtInactive}>
               {f.label}
             </CustomText>
@@ -165,6 +174,12 @@ export default function PlaySection() {
   const { checkIsFavorited, toggleFavorite, recordHistory } = useLocalContent();
   const [shuffleEnabled, setShuffleEnabled] = useState(false);
   const [repeatMode, setRepeatMode] = useState<RepeatMode>('off');
+  const [autoplayEnabled, setAutoplayEnabled] = useState(true);
+  useFocusEffect(useCallback(() => {
+    let active = true;
+    void getPreference('autoplayEnabled', true).then((value) => { if (active) setAutoplayEnabled(value); });
+    return () => { active = false; };
+  }, []));
 
   const playerSections = useMemo(() => getPlayerLayoutSections(appConfig), [appConfig]);
   const sectionItems = useMemo(
@@ -257,6 +272,14 @@ export default function PlaySection() {
 
   const upNext = filteredQueue.filter((item) => item.id !== active?.id).slice(0, 8);
 
+  if (error && !allQueue.length) {
+    return (
+      <PremiumPage title="Music" eyebrow="Listen" noBack refreshing={loading} onRefresh={refresh}>
+        <ErrorState variant="page" title="Music could not be loaded" message={error} supportingText="Your saved content remains available in Library while we reconnect." onRetry={() => void refresh()} />
+      </PremiumPage>
+    );
+  }
+
   return (
     <PremiumPage
       title="Music"
@@ -278,6 +301,7 @@ export default function PlaySection() {
       {/* ── Now Playing card ─────────────────────────────────────────────── */}
       {active && hasInlineAudio && isYouTubeAudioItem(active) && active.youtubeVideoId ? (
         <View style={styles.nowPlayingCard}>
+          <View style={styles.stageHeader}><View style={styles.stageHeading}><CustomText variant="caption" style={styles.stageEyebrow}>Now playing</CustomText><CustomText variant="heading" style={styles.stageTitle}>Your worship player</CustomText></View><View style={styles.stageStatus}><View style={styles.stageStatusDot} /><CustomText variant="caption" style={styles.stageStatusText}>Ready</CustomText></View></View>
           <YouTubeAudioPlayer
             track={{ id: active.id, title: active.title, artist: active.subtitle, youtubeVideoId: active.youtubeVideoId, duration: active.duration, imageUrl: active.imageUrl }}
             onPrevious={goPrevious}
@@ -288,10 +312,12 @@ export default function PlaySection() {
             onFavoriteToggle={() => { void handleFavoriteToggle(); }}
             currentTrackNumber={activeIndex >= 0 ? activeIndex + 1 : undefined}
             totalTracks={allQueue.length}
+            advanceOnFinish={autoplayEnabled && canGoNext}
           />
         </View>
       ) : active && hasInlineAudio && active.mediaUrl ? (
         <View style={styles.nowPlayingCard}>
+          <View style={styles.stageHeader}><View style={styles.stageHeading}><CustomText variant="caption" style={styles.stageEyebrow}>Now playing</CustomText><CustomText variant="heading" style={styles.stageTitle}>Your worship player</CustomText></View><View style={styles.stageStatus}><View style={styles.stageStatusDot} /><CustomText variant="caption" style={styles.stageStatusText}>Ready</CustomText></View></View>
           <AudioPlayer
             track={{ id: active.id, title: active.title, artist: active.subtitle, uri: active.mediaUrl, duration: active.duration, imageUrl: active.imageUrl }}
             onPrevious={goPrevious}
@@ -306,6 +332,7 @@ export default function PlaySection() {
             onToggleShuffle={allQueue.length > 1 ? toggleShuffle : undefined}
             repeatMode={repeatMode}
             onCycleRepeat={allQueue.length > 0 ? cycleRepeat : undefined}
+            advanceOnFinish={autoplayEnabled && canGoNext && repeatMode === 'off'}
           />
         </View>
       ) : (
@@ -320,7 +347,7 @@ export default function PlaySection() {
         />
       )}
 
-      {error ? <InlineErrorBanner message={error} onRetry={() => void refresh()} /> : null}
+      {error ? <ErrorState message={error} onRetry={() => void refresh()} /> : null}
 
       {/* ── Worship Together live count ───────────────────────────────────── */}
       {active ? <WorshipTogetherBar contentId={active.id} /> : null}

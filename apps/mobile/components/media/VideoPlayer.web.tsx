@@ -3,6 +3,7 @@ import { View } from 'react-native';
 import { CustomText } from '../CustomText';
 import { makeStyles } from '../../styles/makeStyles';
 import { isHostedVideoUrl } from '../../util/playerRoute';
+import { mediaTokens } from '../../constants/color';
 
 const useStyles = makeStyles((theme) => ({
   container: {
@@ -86,7 +87,7 @@ export function VideoPlayer({
             style: {
               width: '100%',
               height,
-              backgroundColor: '#000000',
+              backgroundColor: mediaTokens.canvas,
               display: 'block',
               border: 'none',
             },
@@ -101,7 +102,7 @@ export function VideoPlayer({
             style: {
               width: '100%',
               height,
-              backgroundColor: '#000000',
+              backgroundColor: mediaTokens.canvas,
               display: 'block',
             },
           })}

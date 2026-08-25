@@ -300,6 +300,16 @@ async function fetchMeRecommendations(): Promise<FeedCardItem[]> {
   }
 }
 
+async function fetchInstallationRecommendations(): Promise<FeedCardItem[]> {
+  try {
+    const response = await apiFetch<EngagementFeedResponse>('/v1/mobile/recommendations?limit=12');
+    return response.items.map(normalizeFeedItem);
+  } catch (error) {
+    reportException(error, { tags: { flow: 'installation-recommendations' } });
+    return [];
+  }
+}
+
 function dedupe(items: FeedCardItem[]): FeedCardItem[] {
   const seen = new Set<string>();
   const result: FeedCardItem[] = [];
@@ -474,7 +484,7 @@ export async function fetchFeedBundle(): Promise<FeedBundle> {
         fetchMeMostPlayed(),
         fetchMeRecommendations(),
       ])
-    : [[], [], []];
+    : [[], [], await fetchInstallationRecommendations()];
 
   return {
     ...baseBundle,

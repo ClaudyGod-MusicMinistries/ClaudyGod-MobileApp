@@ -3,7 +3,7 @@ WORKDIR /app
 
 COPY package.json yarn.lock ./
 COPY scripts ./scripts
-RUN CI=true yarn install --frozen-lockfile || CI=true yarn install
+RUN CI=true yarn install --frozen-lockfile
 
 COPY . .
 

@@ -1,3 +1,24 @@
+// Scheme-independent colors used only over photos/video. Keeping them here
+// prevents media controls from inventing local rgba/hex values while ensuring
+// identical contrast in light and dark application themes.
+export const mediaTokens = {
+  canvas: '#000000',
+  text: '#FFFFFF',
+  textMuted: 'rgba(255,255,255,0.85)',
+  textSubtle: 'rgba(255,255,255,0.70)',
+  overlayFaint: 'rgba(0,0,0,0.15)',
+  overlaySoft: 'rgba(0,0,0,0.36)',
+  overlay: 'rgba(0,0,0,0.60)',
+  overlayStrong: 'rgba(0,0,0,0.88)',
+  control: 'rgba(0,0,0,0.52)',
+  controlLight: 'rgba(255,255,255,0.20)',
+  progressTrack: 'rgba(255,255,255,0.24)',
+  border: 'rgba(255,255,255,0.14)',
+  borderStrong: 'rgba(255,255,255,0.35)',
+  seekFlash: 'rgba(139,92,246,0.22)',
+  youtube: '#FF0000',
+} as const;
+
 export const colors = {
   light: {
     // ── Backgrounds ──────────────────────────────────────────────────────────
@@ -47,6 +68,17 @@ export const colors = {
     textInverse:    '#FFFFFF',
     onPrimary:      '#FFFFFF',
 
+    // ── Interactive controls ────────────────────────────────────────────────
+    // These are deliberately separate from the decorative brand palette.
+    // Form selection must retain WCAG-readable foreground/background contrast.
+    controlSurface:            '#FFFFFF',
+    controlBorder:             'rgba(0,0,0,0.16)',
+    controlText:               '#4A4A4A',
+    controlSelectedSurface:    '#6D28D9',
+    controlSelectedBorder:     '#6D28D9',
+    controlSelectedText:       '#FFFFFF',
+    controlSelectedIconSurface:'rgba(255,255,255,0.16)',
+
     // ── Brand / semantic ──────────────────────────────────────────────────────
     primary:      '#7C3AED',
     secondary:    '#5B51E8',
@@ -57,6 +89,7 @@ export const colors = {
     warning:      '#D97706',
     danger:       '#DC2626',
     info:         '#2563EB',
+    providerGoogle: '#4285F4',
 
     // ── Primary tints ─────────────────────────────────────────────────────────
     primarySurface:     'rgba(124,58,237,0.07)',
@@ -130,6 +163,15 @@ export const colors = {
     textInverse:    '#111114',
     onPrimary:      '#FFFFFF',
 
+    // ── Interactive controls ────────────────────────────────────────────────
+    controlSurface:            '#121216',
+    controlBorder:             'rgba(255,255,255,0.18)',
+    controlText:               '#FAFAFA',
+    controlSelectedSurface:    '#6D28D9',
+    controlSelectedBorder:     '#A78BFA',
+    controlSelectedText:       '#FFFFFF',
+    controlSelectedIconSurface:'rgba(255,255,255,0.16)',
+
     // ── Brand / semantic ──────────────────────────────────────────────────────
     primary:      '#8B5CF6',
     secondary:    '#A78BFA',
@@ -140,6 +182,7 @@ export const colors = {
     warning:      '#F59E0B',
     danger:       '#F43F5E',
     info:         '#60A5FA',
+    providerGoogle: '#4285F4',
 
     // ── Primary tints ─────────────────────────────────────────────────────────
     primarySurface:     'rgba(139,92,246,0.07)',

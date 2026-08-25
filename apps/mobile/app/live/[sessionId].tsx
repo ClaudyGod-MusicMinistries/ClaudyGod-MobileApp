@@ -76,7 +76,7 @@ const useStyles = makeStyles((theme) => ({
   kindBase:       { borderRadius: 999, paddingHorizontal: 14, paddingVertical: 9, borderWidth: 1 },
   kindActive:     { backgroundColor: theme.colors.primary, borderColor: 'transparent' },
   kindInactive:   { backgroundColor: theme.colors.subtleFill, borderColor: theme.colors.border },
-  kindTxtActive:  { color: '#FFFFFF', fontWeight: '700' },
+  kindTxtActive:  { color: theme.colors.controlSelectedText, fontWeight: '700' },
   kindTxtInactive: { color: theme.colors.textSecondary, fontWeight: '500' },
   chatInput: {
     minHeight: 88, borderRadius: 18, borderWidth: 1,
@@ -420,7 +420,7 @@ export default function LiveSessionScreen() {
             resizeMode="cover"
           />
           <LinearGradient
-            colors={['transparent', 'rgba(7,5,12,0.6)']}
+            colors={['transparent', theme.colors.mediaScrim]}
             style={styles.gradientBar}
           />
         </View>
@@ -486,7 +486,7 @@ export default function LiveSessionScreen() {
                 <MaterialIcons name="error-outline" size={24} color={theme.colors.danger} />
                 <CustomText variant="subtitle" style={styles.errorTitle}>Unable to open this session</CustomText>
                 <CustomText variant="caption" style={styles.errorBody}>{error}</CustomText>
-                <AppButton title="Try again" variant="secondary" onPress={() => void refresh()} />
+                <AppButton title="Try again" variant="gradient" size="lg" fullWidth onPress={() => void refresh()} />
               </SurfaceCard>
             ) : null}
 

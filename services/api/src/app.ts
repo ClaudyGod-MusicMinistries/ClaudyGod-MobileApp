@@ -19,7 +19,7 @@ import { adminAdsRouter } from './modules/ads/ads.routes';
 import { adminAppConfigRouter, mobileAppConfigRouter } from './modules/appConfig/appConfig.routes';
 import { authRouter } from './modules/auth/auth.routes';
 import { mfaRouter } from './modules/auth/mfa.routes';
-import { oauthRouter } from './modules/auth/oauth.routes';
+import { oauthBrokerRouter } from './modules/auth/oauthBroker.routes';
 import { biometricRouter } from './modules/auth/biometric.routes';
 import { accountSecurityRouter } from './modules/auth/accountSecurity.routes';
 import { contentRouter } from './modules/content/content.routes';
@@ -136,6 +136,7 @@ export const createApp = () => {
       'X-Requested-With',
       'X-Claudy-Client-Platform',
       'X-Claudy-Client-Version',
+      'X-Installation-Token',
       'X-Request-ID',
     ],
     exposedHeaders: ['X-Request-ID', 'X-Correlation-ID'],
@@ -186,7 +187,7 @@ export const createApp = () => {
   app.use('/v1/auth', authRouter);
 
   // OAuth sign-in (Google + Apple)
-  app.use('/v1/auth/oauth', oauthRouter);
+  app.use('/v1/auth/oauth', oauthBrokerRouter);
 
   // MFA / TOTP management
   app.use('/v1/auth/mfa', mfaRouter);

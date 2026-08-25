@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { Share, View } from 'react-native';
+import { Image, Share, View } from 'react-native';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -14,7 +14,7 @@ import { makeStyles } from '../../styles/makeStyles';
 import { useContentFeed } from '../../hooks/useContentFeed';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import { getLibraryLayoutSections, deriveLayoutSectionItems } from '../../util/mobileLayout';
-import { InlineErrorBanner } from '../../components/ui/InlineErrorBanner';
+import { ErrorState } from '../../components/ui/ErrorState';
 import { useToast } from '../../context/ToastContext';
 import { useLocalContent } from '../../hooks/useLocalContent';
 import { useDownloads } from '../../context/DownloadsContext';
@@ -22,7 +22,7 @@ import type { FeedCardItem, ContentType } from '../../services/contentService';
 import { APP_ROUTES } from '../../util/appRoutes';
 import { buildPlayerRoute } from '../../util/playerRoute';
 import { trackPlayEvent } from '../../services/supabaseAnalytics';
-import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
+import { BRAND_LOGO_ASSET, DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
 import {
   ContentList,
   ContentRail,
@@ -44,44 +44,64 @@ const TABS: { id: LibTab; label: string; icon: React.ComponentProps<typeof Mater
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const useStyles = makeStyles((theme) => ({
-  tabBar: {
-    flexDirection: 'row', gap: 6, padding: 4,
-    borderRadius: 12, backgroundColor: theme.colors.subtleFill,
+  overviewCard: {
+    padding: theme.spacing.lg, gap: theme.spacing.lg,
+    borderColor: theme.colors.primaryBorder,
+    ...theme.shadows.md,
   },
-  tabBtn:         { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, paddingHorizontal: 10, borderRadius: 12 },
-  tabBtnActive:   { backgroundColor: theme.colors.elevated, borderWidth: 1, borderColor: theme.colors.border },
-  tabBtnInactive: { backgroundColor: 'transparent', borderWidth: 0 },
+  overviewTop: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: theme.spacing.md },
+  overviewIcon: {
+    width: 56, height: 56, borderRadius: theme.radius.xl,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: theme.colors.primarySurface,
+    borderWidth: 1, borderColor: theme.colors.primaryBorder,
+  },
+  overviewLogo: { width: 38, height: 38, borderRadius: theme.radius.lg },
+  overviewCopy: { flex: 1, minWidth: 0 },
+  overviewTitle: { color: theme.colors.text, marginTop: theme.spacing.xxs },
+  overviewSubtitle: { color: theme.colors.textSecondary, marginTop: theme.spacing.xs, lineHeight: 19 },
+  overviewStatus: {
+    flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs,
+    paddingHorizontal: theme.spacing.sm, paddingVertical: theme.spacing.xs,
+    borderRadius: theme.radius.pill, backgroundColor: theme.colors.successSurface,
+    borderWidth: 1, borderColor: theme.colors.successBorder,
+    marginLeft: 'auto',
+  },
+  overviewStatusDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: theme.colors.success },
+  overviewStatusText: { color: theme.colors.success, fontWeight: '700' },
+  tabBar: {
+    flexDirection: 'row', gap: theme.spacing.xs, padding: theme.spacing.xxs,
+    borderRadius: theme.radius.xl, backgroundColor: theme.colors.subtleFill,
+    borderWidth: 1, borderColor: theme.colors.border,
+  },
+  tabBtn:         { flex: 1, minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: theme.spacing.xs, paddingVertical: theme.spacing.sm, paddingHorizontal: theme.spacing.xs, borderRadius: theme.radius.lg, borderWidth: 1 },
+  tabBtnActive:   { backgroundColor: theme.colors.controlSelectedSurface, borderColor: theme.colors.controlSelectedBorder },
+  tabBtnInactive: { backgroundColor: 'transparent', borderColor: 'transparent' },
   tabLabel:       { fontSize: 12.5 },
-  tabLabelActive: { fontWeight: '700', color: theme.colors.text },
+  tabLabelActive: { fontWeight: '700', color: theme.colors.controlSelectedText },
   tabLabelInactive:{ fontWeight: '500', color: theme.colors.textMuted },
   badgeWrap:      { minWidth: 16, height: 16, borderRadius: 8, paddingHorizontal: 4, alignItems: 'center', justifyContent: 'center' },
-  badgeActive:    { backgroundColor: theme.colors.primary },
-  badgeInactive:  { backgroundColor: 'rgba(255,255,255,0.10)' },
+  badgeActive:    { backgroundColor: theme.colors.controlSelectedIconSurface },
+  badgeInactive:  { backgroundColor: theme.colors.subtleFillStrong },
   badgeText:      { fontSize: 9, fontWeight: '700' },
-  badgeTextActive:{ color: theme.colors.onPrimary },
+  badgeTextActive:{ color: theme.colors.controlSelectedText },
   badgeTextInactive: { color: theme.colors.primary },
   sectionGap:     { gap: 12 },
+  collectionSection: { gap: theme.layout.sectionGap },
 
   // Saved-tab empty state (ported from the former Favourites screen)
   emptyCard:         { padding: theme.spacing.xl, alignItems: 'center', gap: 18 },
   emptyIconBox: {
-    width: 80, height: 80, borderRadius: 40,
+    width: 72, height: 72, borderRadius: theme.radius.xxl,
     alignItems: 'center', justifyContent: 'center',
     backgroundColor: theme.colors.primarySurface,
     borderWidth: 1.5, borderColor: theme.colors.primaryBorder,
-    shadowColor: theme.colors.primary,
-    shadowOpacity: 0.28, shadowRadius: 18, shadowOffset: { width: 0, height: 7 },
-    elevation: 6,
   },
+  emptyLogo: { width: 48, height: 48, borderRadius: theme.radius.xl },
   emptyTextWrap:     { alignItems: 'center', gap: 8 },
   emptyTitle:        { color: theme.colors.text, textAlign: 'center' },
   emptyBody:         { color: theme.colors.textSecondary, textAlign: 'center', maxWidth: 360 },
-  emptyActions:      { alignItems: 'center', gap: 4, alignSelf: 'stretch' },
-  emptySecondaryLink: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingVertical: 10, paddingHorizontal: 12,
-  },
-  emptySecondaryLinkText: { color: theme.colors.primary, fontWeight: '600' },
+  emptyActions:      { gap: theme.spacing.sm, alignSelf: 'stretch' },
 
   // Saved-tab responsive grid
   gridWrap:     { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
@@ -115,8 +135,8 @@ function LibTabs({ active, onChange, counts }: { active: LibTab; onChange: (_t: 
           >
             <MaterialIcons
               name={tab.icon}
-              size={15}
-              color={isActive ? theme.colors.primary : theme.colors.textMuted}
+              size={17}
+              color={isActive ? theme.colors.controlSelectedText : theme.colors.textMuted}
             />
             <CustomText
               style={[styles.tabLabel, isActive ? styles.tabLabelActive : styles.tabLabelInactive]}
@@ -134,6 +154,26 @@ function LibTabs({ active, onChange, counts }: { active: LibTab; onChange: (_t: 
         );
       })}
     </View>
+  );
+}
+
+function LibraryOverview({ counts, loaded, children }: { counts: Record<LibTab, number>; loaded: boolean; children: React.ReactNode }) {
+  const styles = useStyles();
+  return (
+    <SurfaceCard tone="strong" style={styles.overviewCard}>
+      <View style={styles.overviewTop}>
+        <View style={styles.overviewIcon}><Image source={BRAND_LOGO_ASSET} resizeMode="cover" style={styles.overviewLogo} /></View>
+        <View style={styles.overviewCopy}>
+          <CustomText variant="heading" style={styles.overviewTitle}>Your library</CustomText>
+          <CustomText variant="body" style={styles.overviewSubtitle}>{counts.saved} saved · {counts.history} played · {counts.downloads} offline</CustomText>
+        </View>
+        <View style={styles.overviewStatus}>
+          <View style={styles.overviewStatusDot} />
+          <CustomText variant="caption" style={styles.overviewStatusText}>{loaded ? 'Ready' : 'Syncing'}</CustomText>
+        </View>
+      </View>
+      {children}
+    </SurfaceCard>
   );
 }
 
@@ -237,38 +277,44 @@ export default function LibraryScreen() {
         refreshing={loading || !loaded}
         onRefresh={() => Promise.all([refresh(), refreshLibrary(), refreshDownloads()]).then(() => undefined)}
       >
-        <LibTabs active={activeTab} onChange={setActiveTab} counts={counts} />
+        <LibraryOverview counts={counts} loaded={loaded}>
+          <LibTabs active={activeTab} onChange={setActiveTab} counts={counts} />
+        </LibraryOverview>
 
-
-        {error ? <InlineErrorBanner message={error} onRetry={() => void refresh()} /> : null}
-        {syncError ? <InlineErrorBanner message={syncError} onRetry={() => void refreshLibrary()} /> : null}
-        {downloadSyncError ? <InlineErrorBanner message={downloadSyncError} onRetry={() => void refreshDownloads()} /> : null}
+        {error ? <ErrorState message={error} onRetry={() => void refresh()} /> : null}
+        {syncError ? <ErrorState message={syncError} onRetry={() => void refreshLibrary()} /> : null}
+        {downloadSyncError ? <ErrorState message={downloadSyncError} onRetry={() => void refreshDownloads()} /> : null}
 
         {activeTab === 'saved' ? (
           <>
             {loaded && favorites.length === 0 ? (
               <SurfaceCard tone="strong" style={styles.emptyCard}>
                 <View style={styles.emptyIconBox}>
-                  <MaterialIcons name="favorite-border" size={34} color={theme.colors.primary} />
+                  <Image source={BRAND_LOGO_ASSET} resizeMode="cover" style={styles.emptyLogo} />
                 </View>
                 <View style={styles.emptyTextWrap}>
-                  <CustomText variant="heading" style={styles.emptyTitle}>No favourites yet</CustomText>
+                  <CustomText variant="heading" style={styles.emptyTitle}>Build your library</CustomText>
                   <CustomText variant="body" style={styles.emptyBody}>
-                    Tap the heart on songs, videos, and sessions to keep them here.
+                    Save songs, videos, and sessions you want to return to.
                   </CustomText>
                 </View>
                 <View style={styles.emptyActions}>
                   <AppButton
                     title="Discover content"
-                    size="md"
+                    size="lg"
+                    variant="gradient"
                     fullWidth
                     onPress={() => router.push(APP_ROUTES.tabs.search)}
-                    leftIcon={<MaterialIcons name="search" size={17} color={theme.colors.textInverse} />}
+                    leftIcon={<MaterialIcons name="search" size={18} color={theme.colors.onPrimary} />}
                   />
-                  <TVTouchable onPress={() => router.push(APP_ROUTES.tabs.player)} showFocusBorder={false} style={styles.emptySecondaryLink}>
-                    <MaterialIcons name="library-music" size={15} color={theme.colors.primary} />
-                    <CustomText variant="label" style={styles.emptySecondaryLinkText}>Or browse music</CustomText>
-                  </TVTouchable>
+                  <AppButton
+                    title="Browse music"
+                    size="lg"
+                    variant="secondary"
+                    fullWidth
+                    onPress={() => router.push(APP_ROUTES.tabs.player)}
+                    leftIcon={<MaterialIcons name="library-music" size={18} color={theme.colors.primary} />}
+                  />
                 </View>
               </SurfaceCard>
             ) : null}
@@ -287,14 +333,10 @@ export default function LibraryScreen() {
               </FadeIn>
             ) : null}
 
-            {favorites.length > 1 ? (
-              <FadeIn delay={110}>
-                <SectionLabel title="All favourites" accent={`${favorites.length} saved`} subtitle="Your complete favourites collection" />
-              </FadeIn>
-            ) : null}
-
             {gridItems.length > 0 ? (
-              <FadeIn delay={140}>
+              <FadeIn delay={110}>
+                <View style={styles.collectionSection}>
+                  <SectionLabel title="All favourites" accent={`${favorites.length} saved`} subtitle="Your complete favourites collection" />
                 <View style={styles.gridWrap}>
                   {gridItems.map((item) => (
                     <View key={item.id} style={[styles.gridItem, { width: colPercent }]}>
@@ -307,6 +349,7 @@ export default function LibraryScreen() {
                       />
                     </View>
                   ))}
+                </View>
                 </View>
               </FadeIn>
             ) : null}

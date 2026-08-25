@@ -1,5 +1,5 @@
 import { Worker } from 'bullmq';
-import { env } from '../config/env';
+import { bullmqConnection } from '../infra/bullmq';
 import { pool } from '../db/pool';
 import { getObjectStream, deleteObject } from '../infra/s3';
 import { scanStream } from '../infra/clamav';
@@ -48,5 +48,5 @@ export const startMediaWorker = (): Worker<MediaQueuePayload> => new Worker<Medi
       throw error;
     }
   },
-  { connection: { url: env.REDIS_URL, maxRetriesPerRequest: null, enableAutoPipelining: true }, concurrency: 2 },
+  { connection: bullmqConnection, concurrency: 2 },
 );

@@ -1,7 +1,7 @@
 import { Worker } from 'bullmq';
 import { pool } from '../db/pool';
 import { sendEmail } from '../infra/email';
-import { env } from '../config/env';
+import { bullmqConnection } from '../infra/bullmq';
 import { logger } from '../lib/logger';
 import { EMAIL_QUEUE_NAME, type EmailQueuePayload } from './emailQueue';
 
@@ -83,11 +83,7 @@ export const startEmailWorker = (): Worker<EmailQueuePayload> => {
       }
     },
     {
-      connection: {
-        url: env.REDIS_URL,
-        maxRetriesPerRequest: null,
-        enableAutoPipelining: true,
-      },
+      connection: bullmqConnection,
       concurrency: 4,
     },
   );

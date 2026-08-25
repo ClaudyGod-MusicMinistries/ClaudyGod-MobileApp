@@ -23,6 +23,7 @@ export const supabase = createClient(
       storage: authSessionStorage,
       persistSession: true,
       autoRefreshToken: true,
+      flowType: 'pkce',
       // Web email confirmation and recovery links arrive with auth state in the URL.
       detectSessionInUrl: Platform.OS === 'web',
       lock: Platform.OS === 'web' ? undefined : processLock,

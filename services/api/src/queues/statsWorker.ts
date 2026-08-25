@@ -1,6 +1,6 @@
 import { Worker } from 'bullmq';
 import { pool } from '../db/pool';
-import { env } from '../config/env';
+import { bullmqConnection } from '../infra/bullmq';
 import { createLogger } from '../lib/logger';
 import { STATS_QUEUE_NAME, type StatsQueuePayload } from './statsQueue';
 
@@ -73,11 +73,7 @@ export const startStatsWorker = (): Worker<StatsQueuePayload> => {
       }
     },
     {
-      connection: {
-        url: env.REDIS_URL,
-        maxRetriesPerRequest: null,
-        enableAutoPipelining: true,
-      },
+      connection: bullmqConnection,
       concurrency: 20,
     },
   );

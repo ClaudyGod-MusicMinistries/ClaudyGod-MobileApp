@@ -9,7 +9,7 @@ import { TVTouchable } from '../../components/ui/TVTouchable';
 import { AppIcon } from '../../components/ui/AppIcon';
 import { AppImage } from '../../components/ui/AppImage';
 import { SupportMinistryCard } from '../../components/ui/SupportMinistryCard';
-import { InlineErrorBanner } from '../../components/ui/InlineErrorBanner';
+import { ErrorState } from '../../components/ui/ErrorState';
 import { FadeIn } from '../../components/ui/FadeIn';
 import { useContentFeed } from '../../hooks/useContentFeed';
 import { useWordOfDay } from '../../hooks/useWordOfDay';
@@ -45,7 +45,7 @@ const useStyles = makeStyles((theme) => ({
     paddingHorizontal: 18, paddingVertical: 15,
     borderRadius: theme.radius.pill, backgroundColor: theme.colors.surface,
     borderWidth: 1, borderColor: theme.colors.border,
-    shadowColor: '#000000', shadowOpacity: 0.12, shadowRadius: 10, shadowOffset: { width: 0, height: 4 },
+    shadowColor: theme.colors.shadow, shadowOpacity: 0.12, shadowRadius: 10, shadowOffset: { width: 0, height: 4 },
     elevation: 2,
   },
   searchText:       { color: theme.colors.textMuted, fontSize: 15, flex: 1 },
@@ -57,7 +57,7 @@ const useStyles = makeStyles((theme) => ({
   // the inner view's overflow:hidden, which is what actually rounds the image.
   continueTileShadowWrap: {
     borderRadius: theme.radius.xxl,
-    shadowColor: '#000000', shadowOpacity: 0.18, shadowRadius: 10, shadowOffset: { width: 0, height: 6 },
+    shadowColor: theme.colors.shadow, shadowOpacity: 0.18, shadowRadius: 10, shadowOffset: { width: 0, height: 6 },
     elevation: 4,
   },
   continueTileImg: {
@@ -79,7 +79,7 @@ const useStyles = makeStyles((theme) => ({
   // continueTileShadowWrap above.
   bannerShadowWrap: {
     borderRadius: 22,
-    shadowColor: '#000000', shadowOpacity: 0.16, shadowRadius: 16, shadowOffset: { width: 0, height: 8 },
+    shadowColor: theme.colors.shadow, shadowOpacity: 0.16, shadowRadius: 16, shadowOffset: { width: 0, height: 8 },
     elevation: 5,
   },
   bannerCard: {
@@ -88,7 +88,7 @@ const useStyles = makeStyles((theme) => ({
   },
   bannerRow:        { flexDirection: 'row', alignItems: 'stretch' },
   bannerBadge:      { alignSelf: 'flex-start', borderRadius: theme.radius.pill, overflow: 'hidden', paddingHorizontal: 10, paddingVertical: 4 },
-  bannerBadgeText:  { color: '#FFFFFF', fontSize: 9.5, fontWeight: '800', letterSpacing: 1 },
+  bannerBadgeText:  { color: theme.colors.onPrimary, fontSize: 9.5, fontWeight: '800', letterSpacing: 1 },
   bannerSub:        { color: theme.colors.textSecondary, fontSize: 12 },
   bannerPlayRow:    { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 },
   // Same overflow:hidden-clips-shadow reason as continuePlayBtn above.
@@ -96,7 +96,7 @@ const useStyles = makeStyles((theme) => ({
     flexDirection: 'row', alignItems: 'center', gap: 5,
     borderRadius: theme.radius.pill, overflow: 'hidden', paddingHorizontal: 14, paddingVertical: 8,
   },
-  bannerPlayText:   { color: '#fff', fontSize: 12.5, fontWeight: '700' },
+  bannerPlayText:   { color: theme.colors.onPrimary, fontSize: 12.5, fontWeight: '700' },
   bannerDuration:   { color: theme.colors.textMuted },
   bannerTitleBase:  { color: theme.colors.text, fontWeight: '800', letterSpacing: -0.3 },
 
@@ -174,7 +174,7 @@ function ContinueRow({ items, onPress }: { items: FeedCardItem[]; onPress: (_ite
                 <View style={[styles.continueTileImg, StyleSheet.absoluteFillObject]}>
                   <AppImage uri={item.imageUrl} resizeMode="cover" style={StyleSheet.absoluteFillObject} />
                   <LinearGradient
-                    colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.62)']}
+                    colors={['transparent', theme.colors.mediaScrim]}
                     style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: tileSize * 0.5 }}
                   />
                   <View style={styles.continuePlayBtn}>
@@ -184,7 +184,7 @@ function ContinueRow({ items, onPress }: { items: FeedCardItem[]; onPress: (_ite
                       end={{ x: 1, y: 1 }}
                       style={StyleSheet.absoluteFillObject}
                     />
-                    <MaterialIcons name="play-arrow" size={17} color="#fff" />
+                    <MaterialIcons name="play-arrow" size={17} color={theme.colors.onPrimary} />
                   </View>
                 </View>
               </View>
@@ -240,7 +240,7 @@ function NewContentBanner({ item, onPress }: { item: FeedCardItem; onPress: () =
                   end={{ x: 1, y: 1 }}
                   style={StyleSheet.absoluteFillObject}
                 />
-                <MaterialIcons name="play-arrow" size={15} color="#fff" />
+                <MaterialIcons name="play-arrow" size={15} color={theme.colors.onPrimary} />
                 <CustomText style={styles.bannerPlayText}>
                   {item.type === 'video' ? 'Watch' : 'Play'}
                 </CustomText>
@@ -337,7 +337,7 @@ export default function HomeScreen() {
         <HomeSearchBar onPress={() => router.push(APP_ROUTES.tabs.search)} />
       </FadeIn>
 
-      {error ? <InlineErrorBanner message={error} onRetry={() => void refresh()} /> : null}
+      {error ? <ErrorState message={error} onRetry={() => void refresh()} /> : null}
 
       <PremiumHero
         item={featured}

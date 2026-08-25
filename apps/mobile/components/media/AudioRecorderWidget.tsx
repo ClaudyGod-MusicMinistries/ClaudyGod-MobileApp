@@ -14,7 +14,7 @@ const useStyles = makeStyles((theme) => ({
     backgroundColor: theme.colors.primary, marginHorizontal: 1.5,
   },
   wrapBase:     { borderRadius: theme.radius.xl, borderWidth: 1, padding: 20, gap: 16 },
-  wrapActive:   { borderColor: `${theme.colors.primary}40`, backgroundColor: `${theme.colors.primary}0A` },
+  wrapActive:   { borderColor: theme.colors.primaryFocusBorder, backgroundColor: theme.colors.primarySurface },
   wrapInactive: { borderColor: theme.colors.border, backgroundColor: theme.colors.surface },
   meteringRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: 36 },
   timerBase: {
@@ -31,8 +31,8 @@ const useStyles = makeStyles((theme) => ({
   },
   discardBtn: {
     width: 44, height: 44, borderRadius: 22,
-    backgroundColor: 'rgba(239,68,68,0.12)',
-    borderWidth: 1, borderColor: 'rgba(239,68,68,0.25)',
+    backgroundColor: theme.colors.dangerSurface,
+    borderWidth: 1, borderColor: theme.colors.dangerBorder,
     alignItems: 'center', justifyContent: 'center',
   },
   pauseBtn: {
@@ -42,8 +42,8 @@ const useStyles = makeStyles((theme) => ({
   },
   stopBtn: {
     width: 44, height: 44, borderRadius: 22,
-    backgroundColor: `${theme.colors.primary}18`,
-    borderWidth: 1, borderColor: `${theme.colors.primary}30`,
+    backgroundColor: theme.colors.primarySurface,
+    borderWidth: 1, borderColor: theme.colors.primaryBorder,
     alignItems: 'center', justifyContent: 'center',
   },
   statusCaption: { textAlign: 'center', color: theme.colors.textSecondary },
@@ -139,12 +139,12 @@ export function AudioRecorderWidget({
       <View style={styles.controlsRow}>
         {!isRecording && !isPaused ? (
           <TVTouchable onPress={onStart} showFocusBorder={false} style={styles.startBtn}>
-            <MaterialIcons name="mic" size={28} color="#FFFFFF" />
+            <MaterialIcons name="mic" size={28} color={theme.colors.onPrimary} />
           </TVTouchable>
         ) : (
           <>
             <TVTouchable onPress={onDiscard} showFocusBorder={false} style={styles.discardBtn}>
-              <MaterialIcons name="delete-outline" size={20} color="#EF4444" />
+              <MaterialIcons name="delete-outline" size={20} color={theme.colors.danger} />
             </TVTouchable>
 
             <TVTouchable
@@ -152,7 +152,7 @@ export function AudioRecorderWidget({
               showFocusBorder={false}
               style={styles.pauseBtn}
             >
-              <MaterialIcons name={isActive ? 'pause' : 'mic'} size={28} color="#FFFFFF" />
+              <MaterialIcons name={isActive ? 'pause' : 'mic'} size={28} color={theme.colors.onPrimary} />
             </TVTouchable>
 
             <TVTouchable

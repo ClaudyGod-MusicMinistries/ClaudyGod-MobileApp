@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -11,7 +11,7 @@ import { PasswordStrengthPanel } from '../../components/auth/PasswordStrengthPan
 import { AppButton } from '../../components/ui/AppButton';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { getEmailValidationMessage, getNameValidationMessage, getPasswordConfirmationMessage, getPasswordStrengthReport, isLikelyValidEmail, isPasswordCompliant, isValidDisplayName, normalizeEmail } from './authValidation';
-import { loginMobileUserWithGoogle, loginMobileUserWithFacebook, registerMobileUser } from '../../services/authService';
+import { fetchOAuthProviderAvailability, loginMobileUserWithGoogle, loginMobileUserWithApple, registerMobileUser } from '../../services/authService';
 import { useToast } from '../../context/ToastContext';
 import { useAppModal } from '../../context/AppModalContext';
 import { APP_ROUTES } from '../../util/appRoutes';
@@ -48,8 +48,10 @@ export default function SignUpScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [hidePassword, setHidePassword] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [socialLoading, setSocialLoading] = useState<'google' | 'facebook' | null>(null);
+  const [socialLoading, setSocialLoading] = useState<'google' | 'apple' | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
+  const [oauthProviders, setOauthProviders] = useState({ google: false, apple: false });
+  useEffect(() => { fetchOAuthProviderAvailability().then(({ providers }) => setOauthProviders(providers)).catch(() => undefined); }, []);
   const normalizedEmail = useMemo(() => normalizeEmail(email), [email]);
   const nameIsValid = useMemo(() => isValidDisplayName(name), [name]);
   const emailIsValid = useMemo(() => isLikelyValidEmail(normalizedEmail), [normalizedEmail]);
@@ -81,20 +83,20 @@ export default function SignUpScreen() {
 
   const anyLoading = submitting || socialLoading !== null;
 
-  const handleSocialSignUp = async (provider: 'google' | 'facebook') => {
+  const handleSocialSignUp = async (provider: 'google' | 'apple') => {
     setErrorMessage('');
     setSocialLoading(provider);
     try {
       if (provider === 'google') {
         await loginMobileUserWithGoogle();
       } else {
-        await loginMobileUserWithFacebook();
+        await loginMobileUserWithApple();
       }
       router.replace(APP_ROUTES.tabs.home);
     } catch (error) {
-      const message = error instanceof Error ? error.message : `Unable to continue with ${provider === 'google' ? 'Google' : 'Facebook'} right now.`;
+      const message = error instanceof Error ? error.message : `Unable to continue with ${provider === 'google' ? 'Google' : 'Apple'} right now.`;
       setErrorMessage(message);
-      showModal({ title: `${provider === 'google' ? 'Google' : 'Facebook'} sign-up unavailable`, message, tone: 'error' });
+      showModal({ title: `${provider === 'google' ? 'Google' : 'Apple'} sign-up unavailable`, message, tone: 'error' });
     } finally {
       setSocialLoading(null);
     }
@@ -200,6 +202,7 @@ export default function SignUpScreen() {
         style={{ marginTop: 16 }}
       />
 
+      {oauthProviders.google || oauthProviders.apple ? <>
       {/* Social auth */}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginVertical: 4, marginTop: 16 }}>
         <View style={{ flex: 1, height: 1, backgroundColor: theme.colors.divider }} />
@@ -207,6 +210,7 @@ export default function SignUpScreen() {
         <View style={{ flex: 1, height: 1, backgroundColor: theme.colors.divider }} />
       </View>
       <View style={{ flexDirection: 'row', gap: 12 }}>
+        {oauthProviders.google ? <>
         {/* Google */}
         <TVTouchable
           onPress={() => void handleSocialSignUp('google')}
@@ -223,18 +227,19 @@ export default function SignUpScreen() {
         >
           {socialLoading === 'google' ? (
             <View style={{ width: 20, height: 20, alignItems: 'center', justifyContent: 'center' }}>
-              <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: '#4285F4', opacity: 0.8 }} />
+              <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: theme.colors.primary, opacity: 0.8 }} />
             </View>
           ) : (
-            <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' }}>
-              <FontAwesome name="google" size={14} color="#4285F4" />
+            <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: theme.colors.controlSurface, alignItems: 'center', justifyContent: 'center' }}>
+              <FontAwesome name="google" size={14} color={theme.colors.text} />
             </View>
           )}
           <CustomText style={{ color: theme.colors.text, fontSize: 13, fontWeight: '600' }}>Google</CustomText>
-        </TVTouchable>
-        {/* Facebook */}
+        </TVTouchable></> : null}
+        {oauthProviders.apple ? <>
+        {/* Apple */}
         <TVTouchable
-          onPress={() => void handleSocialSignUp('facebook')}
+          onPress={() => void handleSocialSignUp('apple')}
           disabled={anyLoading}
           showFocusBorder={false}
           style={{
@@ -246,18 +251,18 @@ export default function SignUpScreen() {
             opacity: anyLoading ? 0.5 : 1,
           }}
         >
-          {socialLoading === 'facebook' ? (
+          {socialLoading === 'apple' ? (
             <View style={{ width: 20, height: 20, alignItems: 'center', justifyContent: 'center' }}>
-              <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: '#1877F2', opacity: 0.8 }} />
+              <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: theme.colors.primary, opacity: 0.8 }} />
             </View>
           ) : (
-            <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: '#1877F2', alignItems: 'center', justifyContent: 'center' }}>
-              <FontAwesome name="facebook-f" size={14} color="#FFFFFF" />
+            <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: theme.colors.controlSurface, alignItems: 'center', justifyContent: 'center' }}>
+              <FontAwesome name="apple" size={16} color={theme.colors.text} />
             </View>
           )}
-          <CustomText style={{ color: theme.colors.text, fontSize: 13, fontWeight: '600' }}>Facebook</CustomText>
-        </TVTouchable>
-      </View>
+          <CustomText style={{ color: theme.colors.text, fontSize: 13, fontWeight: '600' }}>Apple</CustomText>
+        </TVTouchable></> : null}
+      </View></> : null}
 
       {/* Already have account — stays on one line */}
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, marginTop: 20 }}>

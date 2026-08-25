@@ -19,6 +19,7 @@ import { ActionSheet, type ActionSheetAction } from '../ui/ActionSheet';
 import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
 import { useAppTheme } from '../../util/colorScheme';
 import { makeStyles } from '../../styles/makeStyles';
+import { useReducedMotion } from '../../hooks/useReducedMotion';
 
 export type RepeatMode = 'off' | 'all' | 'one';
 
@@ -53,6 +54,7 @@ interface AudioPlayerProps {
   onToggleShuffle?: () => void;
   repeatMode?: RepeatMode;
   onCycleRepeat?: () => void;
+  advanceOnFinish?: boolean;
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -128,7 +130,7 @@ const useStyles = makeStyles((theme) => ({
   timeLabel:           { fontSize: 11, fontWeight: '500', color: theme.colors.textMuted },
   progressThumb: {
     position: 'absolute', right: -7, width: 14, height: 14, borderRadius: 7,
-    backgroundColor: '#FFFFFF', shadowOpacity: 0.45, shadowRadius: 5, elevation: 5,
+    backgroundColor: theme.colors.mediaText, shadowOpacity: 0.45, shadowRadius: 5, elevation: 5,
   },
 }));
 
@@ -154,9 +156,11 @@ export function AudioPlayer({
   onToggleShuffle,
   repeatMode = 'off',
   onCycleRepeat,
+  advanceOnFinish = false,
 }: AudioPlayerProps) {
   const styles = useStyles();
   const theme  = useAppTheme();
+  const reduceMotion = useReducedMotion();
   const { width } = useWindowDimensions();
   const player = useAudioPlayer(track.uri, { updateInterval: 350 });
   const status = useAudioPlayerStatus(player);
@@ -191,6 +195,11 @@ export function AudioPlayer({
 
   // ── Artwork cross-fade on track change ───────────────────────────────────
   useEffect(() => {
+    if (reduceMotion) {
+      artOpacity.setValue(1);
+      artScale.setValue(1);
+      return;
+    }
     Animated.sequence([
       Animated.parallel([
         Animated.timing(artOpacity, { toValue: 0.22, duration: 110, useNativeDriver: USE_NATIVE_DRIVER }),
@@ -201,13 +210,12 @@ export function AudioPlayer({
         Animated.spring(artScale, { toValue: 1, useNativeDriver: USE_NATIVE_DRIVER, friction: 6, tension: 50 }),
       ]),
     ]).start();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [track.id]);
+  }, [artOpacity, artScale, reduceMotion, track.id]);
 
   // ── Glow pulse when playing ───────────────────────────────────────────────
   useEffect(() => {
     glowLoopRef.current?.stop();
-    if (isPlaying && !isCompact) {
+    if (isPlaying && !isCompact && !reduceMotion) {
       glowLoopRef.current = Animated.loop(
         Animated.sequence([
           Animated.parallel([
@@ -228,7 +236,7 @@ export function AudioPlayer({
       ]).start();
     }
     return () => { glowLoopRef.current?.stop(); };
-  }, [isPlaying, isCompact, glowOpacity, glowScale]);
+  }, [isPlaying, isCompact, glowOpacity, glowScale, reduceMotion]);
 
   // ── Audio setup ───────────────────────────────────────────────────────────
   useEffect(() => {
@@ -260,10 +268,10 @@ export function AudioPlayer({
   }, [player, repeatMode, track.uri]);
 
   useEffect(() => {
-    if (repeatMode === 'all' && status.didJustFinish) {
+    if ((repeatMode === 'all' || advanceOnFinish) && status.didJustFinish) {
       onNext?.();
     }
-  }, [status.didJustFinish, repeatMode, onNext]);
+  }, [advanceOnFinish, status.didJustFinish, repeatMode, onNext]);
 
   const statusError = (status as unknown as { error?: string }).error;
   useEffect(() => {

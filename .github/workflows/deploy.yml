@@ -65,7 +65,7 @@ jobs:
         run: yarn --cwd ./admin/web playwright install --with-deps chromium
 
       - name: Run full repository review
-        run: bash ./scripts/review-all.sh
+        run: bash ./scripts/prepush-all-checks.sh
 
       - name: Run admin browser workflows
         run: yarn --cwd ./admin/web test:e2e
@@ -88,12 +88,11 @@ jobs:
           EXPO_PUBLIC_API_URL: ${{ vars.EXPO_PUBLIC_API_URL }}
           EXPO_PUBLIC_SUPABASE_URL: ${{ vars.EXPO_PUBLIC_SUPABASE_URL }}
           EXPO_PUBLIC_SUPABASE_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_KEY }}
-          EXPO_PUBLIC_MOBILE_API_KEY: ${{ secrets.EXPO_PUBLIC_MOBILE_API_KEY }}
           EXPO_PUBLIC_SENTRY_DSN: ${{ vars.EXPO_PUBLIC_SENTRY_DSN }}
           EAS_PROJECT_ID: ${{ vars.EAS_PROJECT_ID }}
         run: |
           set -euo pipefail
-          for name in VITE_API_URL VITE_SENTRY_DSN VITE_MOBILE_PREVIEW_URL EXPO_PUBLIC_API_URL EXPO_PUBLIC_SUPABASE_URL EXPO_PUBLIC_SUPABASE_KEY EXPO_PUBLIC_MOBILE_API_KEY EXPO_PUBLIC_SENTRY_DSN EAS_PROJECT_ID; do
+          for name in VITE_API_URL VITE_SENTRY_DSN VITE_MOBILE_PREVIEW_URL EXPO_PUBLIC_API_URL EXPO_PUBLIC_SUPABASE_URL EXPO_PUBLIC_SUPABASE_KEY EXPO_PUBLIC_SENTRY_DSN EAS_PROJECT_ID; do
             value="${!name:-}"
             if [ -z "$value" ] || printf '%s' "$value" | grep -Eqi 'placeholder|your_|example|validation'; then
               echo "::error::$name is missing or contains a placeholder"
@@ -176,7 +175,6 @@ jobs:
             EXPO_PUBLIC_API_URL=${{ vars.EXPO_PUBLIC_API_URL }}
             EXPO_PUBLIC_SUPABASE_URL=${{ vars.EXPO_PUBLIC_SUPABASE_URL }}
             EXPO_PUBLIC_SUPABASE_KEY=${{ secrets.EXPO_PUBLIC_SUPABASE_KEY }}
-            EXPO_PUBLIC_MOBILE_API_KEY=${{ secrets.EXPO_PUBLIC_MOBILE_API_KEY }}
             EAS_PROJECT_ID=${{ vars.EAS_PROJECT_ID }}
             EXPO_PUBLIC_SENTRY_DSN=${{ vars.EXPO_PUBLIC_SENTRY_DSN }}
           tags: |
@@ -276,7 +274,10 @@ jobs:
               exit 1
             fi
 
-            previous_container=$(docker compose -f docker-compose.production.yml --env-file .env.production ps -q cgm-api)
+            # `docker compose ps` still interpolates the complete file. Supply
+            # the immutable candidate SHA even though this command only reads
+            # the currently running container.
+            previous_container=$(IMAGE_TAG="$DEPLOY_SHA" docker compose -f docker-compose.production.yml --env-file .env.production ps -q cgm-api)
             previous_tag=""
             if [ -n "$previous_container" ]; then
               previous_image=$(docker inspect --format '{{.Config.Image}}' "$previous_container")

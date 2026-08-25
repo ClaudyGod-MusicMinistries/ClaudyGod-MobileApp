@@ -79,6 +79,7 @@ interface SupportRow {
   user_id: string | null;
   display_name: string | null;
   email: string | null;
+  metadata: Record<string, unknown> | null;
 }
 
 interface SignupTrendRow {
@@ -1530,6 +1531,7 @@ export const listAdminSupportRequests = async (params: {
          s.priority,
          s.created_at,
          s.updated_at,
+         s.metadata,
          u.id AS user_id,
          u.display_name,
          u.email
@@ -1563,7 +1565,9 @@ export const listAdminSupportRequests = async (params: {
             displayName: row.display_name ?? 'Unknown user',
             email: row.email ?? '',
           }
-        : null,
+        : typeof row.metadata?.contactEmail === 'string'
+          ? { id: `guest:${row.id}`, displayName: 'Guest installation', email: row.metadata.contactEmail }
+          : null,
     })),
     total,
     page: params.page,

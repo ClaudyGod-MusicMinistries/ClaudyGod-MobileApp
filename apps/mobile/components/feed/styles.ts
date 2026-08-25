@@ -7,6 +7,7 @@ export const useFeedStyles = makeStyles((theme) => ({
   // PremiumPage
   pageScroll:         { flex: 1, backgroundColor: 'transparent' },
   pageContent:        { paddingTop: theme.layout.headerVerticalPadding, gap: 24 },
+  pageSections:       { gap: theme.layout.sectionGap },
   headerLeft:         { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 },
   headerEyebrow:      { color: theme.colors.primary, fontSize: 10.5, fontWeight: '700', letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 1 },
   headerTitle:        { color: theme.colors.text, fontWeight: '700', letterSpacing: 0 },
@@ -49,8 +50,8 @@ export const useFeedStyles = makeStyles((theme) => ({
     paddingVertical: 32,
     paddingHorizontal: 24,
   },
-  heroEmptyCircle1: { position: 'absolute', top: -50, right: -50, width: 200, height: 200, borderRadius: 100, backgroundColor: `${theme.colors.primary}16` },
-  heroEmptyCircle2: { position: 'absolute', bottom: -60, left: -40, width: 160, height: 160, borderRadius: 80, backgroundColor: `${theme.colors.primary}0D` },
+  heroEmptyCircle1: { position: 'absolute', top: -50, right: -50, width: 200, height: 200, borderRadius: 100, backgroundColor: theme.colors.primaryBorder },
+  heroEmptyCircle2: { position: 'absolute', bottom: -60, left: -40, width: 160, height: 160, borderRadius: 80, backgroundColor: theme.colors.primarySurface },
   // Shadow on the outer wrap, gradient-clip on the inner circle — same
   // overflow:hidden-clips-shadow reason as artworkShadowWrap above.
   heroEmptyIconShadowWrap: {
@@ -248,14 +249,14 @@ export const useFeedStyles = makeStyles((theme) => ({
     flexDirection: 'row', alignItems: 'center', gap: 5,
     borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5,
   },
-  featuredLiveDot:  { width: 6, height: 6, borderRadius: 3, backgroundColor: '#fff' },
-  featuredLiveText: { color: '#fff', fontSize: 10, fontWeight: '700', letterSpacing: 0.5 },
+  featuredLiveDot:  { width: 6, height: 6, borderRadius: 3, backgroundColor: theme.colors.mediaText },
+  featuredLiveText: { color: theme.colors.mediaText, fontSize: 10, fontWeight: '700', letterSpacing: 0.5 },
   featuredPlayRow:  { flexDirection: 'row', alignItems: 'center', gap: 10 },
   featuredPlayBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8,
   },
-  featuredSubText:  { color: 'rgba(255,255,255,0.55)', fontSize: 12 },
+  featuredSubText:  { color: theme.colors.mediaTextSubtle, fontSize: 12 },
 
   // StreamingBanner
   streamingCard: {

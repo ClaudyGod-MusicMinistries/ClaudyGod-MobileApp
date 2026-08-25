@@ -33,8 +33,8 @@ const useStyles = makeStyles((theme) => ({
   scrollContent: { paddingBottom: 124 },
   innerPad:      { paddingTop: theme.layout.headerVerticalPadding, gap: theme.layout.sectionGap },
   cardPad:       { paddingVertical: theme.spacing.md, paddingHorizontal: theme.spacing.md },
-  headerCircle1: { position: 'absolute', top: -26, right: -26, width: 100, height: 100, borderRadius: 50, backgroundColor: `${theme.colors.primary}0F` },
-  headerCircle2: { position: 'absolute', bottom: -34, right: 40, width: 70, height: 70, borderRadius: 35, backgroundColor: `${theme.colors.primary}0A` },
+  headerCircle1: { position: 'absolute', top: -26, right: -26, width: 100, height: 100, borderRadius: 50, backgroundColor: theme.colors.primarySurface },
+  headerCircle2: { position: 'absolute', bottom: -34, right: 40, width: 70, height: 70, borderRadius: 35, backgroundColor: theme.colors.primarySurface },
   headerRow:     { flexDirection: 'row', alignItems: 'center', gap: 10 },
   headerIconBox: {
     width: 40, height: 40, borderRadius: 13,
@@ -46,7 +46,7 @@ const useStyles = makeStyles((theme) => ({
   backBtn: {
     width: 38, height: 38, borderRadius: 19,
     alignItems: 'center', justifyContent: 'center',
-    backgroundColor: theme.scheme === 'dark' ? 'rgba(255,255,255,0.08)' : theme.colors.surfaceAlt,
+    backgroundColor: theme.colors.subtleFillMed,
     borderWidth: 1, borderColor: theme.colors.border,
   },
   headerFill:   { flex: 1, minWidth: 0 },
@@ -55,8 +55,8 @@ const useStyles = makeStyles((theme) => ({
   subtitleText: { color: theme.colors.textSecondary, marginTop: 2 },
   heroWrap:     { marginTop: -2 },
   backdropBase: { position: 'absolute', top: 0, left: 0, right: 0, overflow: 'hidden' },
-  backdropCircle1: { position: 'absolute', top: -60, right: -50, width: 220, height: 220, borderRadius: 110, backgroundColor: `${theme.colors.primary}1C` },
-  backdropCircle2: { position: 'absolute', top: 40, left: -70, width: 180, height: 180, borderRadius: 90, backgroundColor: `${theme.colors.primary}12` },
+  backdropCircle1: { position: 'absolute', top: -60, right: -50, width: 220, height: 220, borderRadius: 110, backgroundColor: theme.colors.primaryBorder },
+  backdropCircle2: { position: 'absolute', top: 40, left: -70, width: 180, height: 180, borderRadius: 90, backgroundColor: theme.colors.primarySurface },
 }));
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -78,11 +78,7 @@ export function SettingsScaffold({ title, subtitle, icon, children, hero, backRo
 
       <View style={[styles.backdropBase, { height: compact ? 220 : 280 }]}>
         <LinearGradient
-          colors={
-            theme.scheme === 'dark'
-              ? ['rgba(124,58,237,0.22)', 'rgba(6,4,12,0.55)', theme.colors.background]
-              : ['rgba(124,58,237,0.14)', 'rgba(250,247,255,0.75)', theme.colors.background]
-          }
+          colors={[theme.colors.primaryBorder, theme.colors.glass, theme.colors.background]}
           start={{ x: 0, y: 0 }}
           end={{ x: 0.86, y: 1 }}
           style={styles.gradientFill}

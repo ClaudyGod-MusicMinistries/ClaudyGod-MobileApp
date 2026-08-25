@@ -8,7 +8,7 @@ import { AppButton } from '../../components/ui/AppButton';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { FadeIn } from '../../components/ui/FadeIn';
-import { InlineErrorBanner } from '../../components/ui/InlineErrorBanner';
+import { ErrorState } from '../../components/ui/ErrorState';
 import { CustomText } from '../../components/CustomText';
 import { useAppTheme } from '../../util/colorScheme';
 import { useDeviceClass } from '../../util/deviceClassConfig';
@@ -41,16 +41,16 @@ const useStyles = makeStyles((theme) => ({
   pulseRow:          { flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' },
   liveBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: 'rgba(239,68,68,0.12)', borderRadius: 999,
-    borderWidth: 1, borderColor: 'rgba(239,68,68,0.30)',
+    backgroundColor: theme.colors.dangerSurface, borderRadius: 999,
+    borderWidth: 1, borderColor: theme.colors.dangerBorder,
     paddingHorizontal: 12, paddingVertical: 6,
   },
   liveDot:           { width: 7, height: 7, borderRadius: 3.5, backgroundColor: theme.colors.danger },
   liveLabel:         { color: theme.colors.danger, fontWeight: '700', letterSpacing: 0.6 },
   viewerPill: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
-    backgroundColor: `${theme.colors.primary}12`, borderRadius: 999,
-    borderWidth: 1, borderColor: `${theme.colors.primary}28`,
+    backgroundColor: theme.colors.primarySurface, borderRadius: 999,
+    borderWidth: 1, borderColor: theme.colors.primaryBorder,
     paddingHorizontal: 12, paddingVertical: 6,
   },
   viewerText:        { color: theme.colors.primary, fontWeight: '600' },
@@ -60,16 +60,16 @@ const useStyles = makeStyles((theme) => ({
   scheduleIconBox: {
     width: 48, height: 48, borderRadius: 24,
     alignItems: 'center', justifyContent: 'center',
-    backgroundColor: `${theme.colors.primary}12`,
-    borderWidth: 1, borderColor: `${theme.colors.primary}28`,
+    backgroundColor: theme.colors.primarySurface,
+    borderWidth: 1, borderColor: theme.colors.primaryBorder,
   },
   scheduleFill:      { flex: 1, minWidth: 0 },
   scheduleTitle:     { color: theme.colors.text },
   scheduleSubtitle:  { color: theme.colors.textSecondary, marginTop: 3 },
   notifyBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: `${theme.colors.primary}12`, borderRadius: 999,
-    borderWidth: 1, borderColor: `${theme.colors.primary}28`,
+    backgroundColor: theme.colors.primarySurface, borderRadius: 999,
+    borderWidth: 1, borderColor: theme.colors.primaryBorder,
     paddingHorizontal: 12, paddingVertical: 8,
   },
   notifyText:        { color: theme.colors.primary, fontWeight: '600' },
@@ -237,7 +237,7 @@ export default function LiveScreen() {
         </FadeIn>
       ) : null}
 
-      {errorMessage ? <InlineErrorBanner message={errorMessage} onRetry={() => void refresh()} /> : null}
+      {errorMessage ? <ErrorState message={errorMessage} onRetry={() => void refresh()} /> : null}
 
       {/* Featured hero */}
       <PremiumHero

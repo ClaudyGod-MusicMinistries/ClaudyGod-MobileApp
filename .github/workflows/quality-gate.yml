@@ -2,6 +2,10 @@ name: Quality Gate
 
 on:
   workflow_dispatch:
+  schedule:
+    # Re-run the complete gate even when code is idle so registry advisories,
+    # browser/runtime drift, and Docker base-image regressions are detected.
+    - cron: '17 4 * * 1'
   pull_request:
     branches: [main, develop]
   push:
@@ -60,7 +64,7 @@ jobs:
         run: yarn --cwd ./apps/mobile install --frozen-lockfile
 
       - name: Run full repository review
-        run: bash ./scripts/review-all.sh
+        run: bash ./scripts/prepush-all-checks.sh
 
       - name: Validate recovery automation syntax
         run: bash -n ./scripts/backup-database.sh ./scripts/verify-database-restore.sh
@@ -84,6 +88,10 @@ jobs:
         run: bash ./scripts/setup-ci-env.sh
 
       - name: Validate production compose config
+        env:
+          # Compose intentionally has no `latest` fallback. A real workflow SHA
+          # proves interpolation while keeping production image tags immutable.
+          IMAGE_TAG: ${{ github.sha }}
         run: |
           docker compose \
             --env-file .env.production \
@@ -112,7 +120,6 @@ jobs:
             --build-arg EXPO_PUBLIC_API_URL=https://apimobile.claudygod.org \
             --build-arg EXPO_PUBLIC_SUPABASE_URL=https://gjqqajeavzucvafersio.supabase.co \
             --build-arg EXPO_PUBLIC_SUPABASE_KEY=sb_publishable_ci_placeholder \
-            --build-arg EXPO_PUBLIC_MOBILE_API_KEY=ci-mobile-api-key-placeholder-minimum-length \
             --build-arg EAS_PROJECT_ID=00000000-0000-0000-0000-000000000000 \
             -t claudygod-mobile:ci \
             ./apps/mobile

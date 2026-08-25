@@ -35,11 +35,11 @@ export function TabScreenWrapper({
   const resolvedBackgroundHeight = isDesktop ? Math.max(backgroundHeight, 380) : backgroundHeight;
   const sidebarWidth = getSidebarWidth(width);
 
-  const overlayColors: GradientColorStops =
-    backgroundOverlayColors ??
-    (isDark
-      ? ['rgba(8,7,14,0.10)', 'rgba(8,7,14,0.66)', theme.colors.background]
-      : ['rgba(76,29,149,0.08)', 'rgba(249,247,254,0.56)', theme.colors.background]);
+  const overlayColors: GradientColorStops = backgroundOverlayColors ?? [
+    theme.colors.primarySurface,
+    theme.colors.glass,
+    theme.colors.background,
+  ];
 
   return (
     <View style={styles.root}>

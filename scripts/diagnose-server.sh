@@ -127,7 +127,7 @@ check_cors() {
     -X OPTIONS "$url" \
     -H "Origin: $origin" \
     -H "Access-Control-Request-Method: POST" \
-    -H "Access-Control-Request-Headers: Authorization,Content-Type,X-Mobile-Api-Key" \
+    -H "Access-Control-Request-Headers: Authorization,Content-Type" \
     --max-time 10 2>/dev/null)
 
   local headers
@@ -135,7 +135,7 @@ check_cors() {
     -X OPTIONS "$url" \
     -H "Origin: $origin" \
     -H "Access-Control-Request-Method: POST" \
-    -H "Access-Control-Request-Headers: Authorization,Content-Type,X-Mobile-Api-Key" \
+    -H "Access-Control-Request-Headers: Authorization,Content-Type" \
     --max-time 10 2>/dev/null)
 
   local acao

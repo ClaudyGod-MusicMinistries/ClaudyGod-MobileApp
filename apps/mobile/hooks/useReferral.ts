@@ -1,22 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Share } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAppContext } from '../context/AppContext';
 import { apiFetch } from '../services/apiClient';
 
-const STORAGE_KEY_CODE = 'claudygod.referral.code';
-const STORAGE_KEY_COUNT = 'claudygod.referral.count';
-const SHARE_BASE_URL = 'https://claudygod.com/join';
-
-function deriveCodeFromDeviceId(deviceId: string): string {
-  const clean = deviceId.replace(/-/g, '').toUpperCase();
-  return `CG${clean.slice(0, 6)}`;
-}
+const SHARE_BASE_URL = 'https://claudygod.org/join';
 
 export interface ReferralState {
   code: string | null;
   referralCount: number;
+  shareCount: number;
   shareUrl: string | null;
   isLoading: boolean;
   share: () => Promise<void>;
@@ -24,19 +17,13 @@ export interface ReferralState {
   isCopied: boolean;
 }
 
-async function fetchReferralCount(): Promise<number> {
-  try {
-    const res = await apiFetch<{ count: number }>('/v1/mobile/referral-count');
-    return res.count ?? 0;
-  } catch {
-    return 0;
-  }
-}
+type ReferralProfile = { referral: { code: string; shareCount: number; joinedCount: number } };
 
 export function useReferral(): ReferralState {
   const { deviceId } = useAppContext();
   const [code, setCode] = useState<string | null>(null);
   const [referralCount, setReferralCount] = useState(0);
+  const [shareCount, setShareCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isCopied, setIsCopied] = useState(false);
 
@@ -47,31 +34,13 @@ export function useReferral(): ReferralState {
     const load = async () => {
       setIsLoading(true);
       try {
-        const stored = await AsyncStorage.getItem(STORAGE_KEY_CODE);
-        const derived = deriveCodeFromDeviceId(deviceId);
-        const resolved = stored ?? derived;
-
-        if (!stored) {
-          await AsyncStorage.setItem(STORAGE_KEY_CODE, resolved);
-        }
-
-        // Fetch live count from backend, fall back to cached count
-        const [liveCount, cachedRaw] = await Promise.allSettled([
-          fetchReferralCount(),
-          AsyncStorage.getItem(STORAGE_KEY_COUNT),
-        ]);
-
-        let count = 0;
-        if (liveCount.status === 'fulfilled') {
-          count = liveCount.value;
-          await AsyncStorage.setItem(STORAGE_KEY_COUNT, String(count));
-        } else if (cachedRaw.status === 'fulfilled' && cachedRaw.value) {
-          count = parseInt(cachedRaw.value, 10) || 0;
-        }
-
+        const result = await apiFetch<ReferralProfile>('/v1/mobile/referrals/profile', {
+          method: 'POST', body: JSON.stringify({}),
+        });
         if (active) {
-          setCode(resolved);
-          setReferralCount(count);
+          setCode(result.referral.code);
+          setReferralCount(result.referral.joinedCount);
+          setShareCount(result.referral.shareCount);
         }
       } catch {
         // referral not critical — silent
@@ -89,12 +58,19 @@ export function useReferral(): ReferralState {
   const share = useCallback(async () => {
     if (!code || !shareUrl) return;
     try {
-      await Share.share({
+      const result = await Share.share({
         title: 'Join me on ClaudyGod',
         message:
           `I'm listening to worship music and sermons on ClaudyGod — join me! Use my code ${code} to get started.\n\n${shareUrl}`,
         url: shareUrl,
       });
+      if (result.action === Share.sharedAction) {
+        const updated = await apiFetch<ReferralProfile>('/v1/mobile/referrals/share', {
+          method: 'POST', body: JSON.stringify({}),
+        });
+        setShareCount(updated.referral.shareCount);
+        setReferralCount(updated.referral.joinedCount);
+      }
     } catch {
       // user cancelled or share not available — silent
     }
@@ -107,5 +83,5 @@ export function useReferral(): ReferralState {
     setTimeout(() => setIsCopied(false), 2000);
   }, [code]);
 
-  return { code, referralCount, shareUrl, isLoading, share, copyCode, isCopied };
+  return { code, referralCount, shareCount, shareUrl, isLoading, share, copyCode, isCopied };
 }

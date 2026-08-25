@@ -3,6 +3,7 @@ import type { TextInputProps } from 'react-native';
 import { Animated, Easing, Platform, Pressable, TextInput, View, useWindowDimensions } from 'react-native';
 import { CustomText } from '../CustomText';
 import { makeStyles } from '../../styles/makeStyles';
+import { useAppTheme } from '../../util/colorScheme';
 
 interface AuthOtpInputProps {
   label?: string;
@@ -21,22 +22,22 @@ const sanitizeOtp = (value: string, length: number): string =>
 
 const useStyles = makeStyles((theme) => ({
   labelText: {
-    color: 'rgba(226,219,242,0.76)', marginBottom: 7,
+    color: theme.colors.textSecondary, marginBottom: 7,
     textTransform: 'uppercase', letterSpacing: 0.58,
   },
   fieldBase: {
     borderRadius: 20, borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.10)',
-    backgroundColor: 'rgba(255,255,255,0.028)', overflow: 'hidden',
+    borderColor: theme.colors.controlBorder,
+    backgroundColor: theme.colors.inputBg, overflow: 'hidden',
   },
   hiddenInput: { position: 'absolute', width: 1, height: 1, opacity: 0 },
   slotRow:     { flexDirection: 'row', justifyContent: 'space-between' },
   slotBase: {
     flex: 1, borderWidth: 1,
-    backgroundColor: 'rgba(255,255,255,0.02)',
+    backgroundColor: theme.colors.controlSurface,
     alignItems: 'center', justifyContent: 'center',
   },
-  helperText:  { color: 'rgba(202,196,220,0.58)', marginTop: 9 },
+  helperText:  { color: theme.colors.textMuted, marginTop: 9 },
   accentBar: {
     position: 'absolute', left: 14, right: 14, bottom: 0,
     height: 2, borderRadius: 999,
@@ -56,6 +57,7 @@ export function AuthOtpInput({
   onSubmitEditing,
 }: AuthOtpInputProps) {
   const styles = useStyles();
+  const theme = useAppTheme();
   const inputRef = useRef<TextInput | null>(null);
   const [isFocused, setIsFocused] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
@@ -156,8 +158,8 @@ export function AuthOtpInput({
                     {
                       minWidth: slotSize, height: slotSize,
                       borderRadius: slotRadius,
-                      borderColor: slotActive || slotFilled ? 'rgba(156,125,255,0.86)' : 'rgba(255,255,255,0.10)',
-                      shadowColor: slotActive ? '#9C7DFF' : '#120F1F',
+                      borderColor: slotActive || slotFilled ? theme.colors.primaryFocusBorder : theme.colors.controlBorder,
+                      shadowColor: slotActive ? theme.colors.primary : theme.colors.shadow,
                       shadowOpacity: slotActive ? 0.18 : 0.06,
                       shadowRadius: slotActive ? 16 : 10,
                       shadowOffset: { width: 0, height: slotActive ? 8 : 4 },
@@ -167,7 +169,7 @@ export function AuthOtpInput({
                   <CustomText
                     variant="title"
                     style={{
-                      color: slotFilled ? '#F8F7FC' : 'rgba(248,247,252,0.24)',
+                      color: slotFilled ? theme.colors.text : theme.colors.textMuted,
                       fontSize: digitFontSize,
                       lineHeight: digitFontSize + 2,
                       textAlign: 'center',

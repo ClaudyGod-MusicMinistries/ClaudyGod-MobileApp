@@ -20,7 +20,7 @@ const useStyles = makeStyles((theme) => ({
   outerWrap: { alignItems: 'center', paddingVertical: 8 },
   pill: {
     flexDirection: 'row', alignItems: 'center', gap: 7,
-    backgroundColor: `${theme.colors.primary}14`,
+    backgroundColor: theme.colors.primarySurface,
     borderWidth: 1, borderColor: theme.colors.primaryBorder,
     borderRadius: 999, paddingHorizontal: 14, paddingVertical: 7,
   },

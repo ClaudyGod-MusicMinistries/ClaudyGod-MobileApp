@@ -3,8 +3,7 @@ import { type Request, type Response, Router } from 'express';
 import { pool } from '../../db/pool';
 import { asyncHandler } from '../../lib/asyncHandler';
 import { UnauthorizedError } from '../../lib/errors';
-import { validateSchema } from '../../lib/validation';
-import { validateBody } from '../../lib/validationMiddleware';
+import { validateBody, validateSchema } from '../../lib/validation';
 import {
   authLimiter,
   passwordResetLimiter,

@@ -10,8 +10,9 @@ ADMIN_DIR   := admin/web
 # ── GHCR / CI-CD config ───────────────────────────────────────────────────────
 GHCR_OWNER   ?= claudygod-musicministries
 REGISTRY     := ghcr.io/$(GHCR_OWNER)
-GIT_SHA      := $(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
-IMAGE_TAG    ?= latest
+GIT_SHA      := $(shell git rev-parse HEAD 2>/dev/null || echo unknown)
+IMAGE_TAG    ?= $(GIT_SHA)
+export IMAGE_TAG
 
 API_IMAGE    := $(REGISTRY)/claudygod-api
 ADMIN_IMAGE  := $(REGISTRY)/claudygod-admin
@@ -175,7 +176,7 @@ hooks-install:
 
 review:
 	@printf "$(BOLD)$(BLUE)Running full repo review (same gate as pre-push)...$(NC)\n"
-	bash ./scripts/review-all.sh
+	bash ./scripts/prepush-all-checks.sh
 
 review-logs:
 	@printf "$(CYAN)Recent hook logs:$(NC)\n"

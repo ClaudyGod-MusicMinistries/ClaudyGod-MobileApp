@@ -34,7 +34,7 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
         icon: 'forum',
         title: 'WhatsApp support',
         desc: 'Message the ministry support desk',
-        actionUrl: 'https://wa.me/08188346382',
+        actionUrl: 'https://wa.me/18002528394',
       },
       {
         id: 'phone',
@@ -177,15 +177,15 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
     ],
   },
   rate: {
-    iosStoreUrl: 'https://apps.apple.com/app/idYOUR_APP_ID',
+    iosStoreUrl: '',
     androidStoreUrl: 'https://play.google.com/store/apps/details?id=com.claudygod.app',
     feedbackRoute: '/settingsPage/help',
   },
   referral: {
     howItWorks: [
       { icon: 'share', title: 'Share your link', body: 'Send your unique referral link to friends and family.' },
-      { icon: 'person-add', title: 'Friend joins free', body: 'They create a free ClaudyGod account — no payment needed.' },
-      { icon: 'stars', title: 'Both of you benefit', body: 'You both unlock early access to exclusive worship content.' },
+      { icon: 'mobile-friendly', title: 'They open ClaudyGod', body: 'Your friend can explore the guest-first experience without being forced to create an account.' },
+      { icon: 'verified', title: 'Attribution stays accurate', body: 'The backend records eligible joins against your unique invitation code.' },
     ],
     rewardTiers: [
       { icon: 'library-music', threshold: 1, reward: 'Early access to new albums' },
@@ -277,6 +277,17 @@ export const DEFAULT_MOBILE_APP_CONFIG: MobileAppConfig = {
           { id: 'referral', icon: 'card-giftcard', label: 'Invite friends', hint: 'Earn rewards together', destination: 'settings.referral' },
           { id: 'help', icon: 'help-outline', label: 'Help', hint: 'Get support', destination: 'settings.help' },
           { id: 'donate', icon: 'volunteer-activism', label: 'Support', hint: 'Give or donate', destination: 'settings.donate' },
+        ],
+      },
+      {
+        id: 'product-legal',
+        title: 'Product & legal',
+        items: [
+          { id: 'privacy-controls', icon: 'privacy-tip', label: 'Privacy & security', hint: 'Manage privacy controls', destination: 'settings.privacy' },
+          { id: 'privacy-policy', icon: 'policy', label: 'Privacy Policy', hint: 'How ClaudyGod handles data', destination: 'settings.privacyPolicy' },
+          { id: 'terms', icon: 'gavel', label: 'Terms of Service', hint: 'Rules for using ClaudyGod', destination: 'settings.terms' },
+          { id: 'about', icon: 'info-outline', label: 'About', hint: 'Product and ministry information', destination: 'settings.about' },
+          { id: 'rate', icon: 'star-outline', label: 'Rate the app', hint: 'Share product feedback', destination: 'settings.rate' },
         ],
       },
     ],
