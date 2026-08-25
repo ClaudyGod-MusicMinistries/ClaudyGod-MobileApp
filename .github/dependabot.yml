@@ -1,0 +1,81 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '03:20'
+      timezone: Africa/Lagos
+    open-pull-requests-limit: 5
+    groups:
+      root-development-dependencies:
+        dependency-type: development
+
+  - package-ecosystem: npm
+    directory: /services/api
+    schedule:
+      interval: weekly
+      day: monday
+      time: '03:30'
+      timezone: Africa/Lagos
+    open-pull-requests-limit: 5
+    groups:
+      api-production-dependencies:
+        dependency-type: production
+      api-development-dependencies:
+        dependency-type: development
+
+  - package-ecosystem: npm
+    directory: /admin/web
+    schedule:
+      interval: weekly
+      day: monday
+      time: '03:40'
+      timezone: Africa/Lagos
+    open-pull-requests-limit: 5
+    groups:
+      admin-production-dependencies:
+        dependency-type: production
+      admin-development-dependencies:
+        dependency-type: development
+
+  - package-ecosystem: npm
+    directory: /apps/mobile
+    schedule:
+      interval: weekly
+      day: monday
+      time: '03:50'
+      timezone: Africa/Lagos
+    open-pull-requests-limit: 5
+    groups:
+      expo-sdk:
+        patterns:
+          - expo
+          - expo-*
+          - '@expo/*'
+          - react-native
+          - react-native-*
+      mobile-production-dependencies:
+        dependency-type: production
+        exclude-patterns:
+          - expo
+          - expo-*
+          - '@expo/*'
+          - react-native
+          - react-native-*
+      mobile-development-dependencies:
+        dependency-type: development
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '04:00'
+      timezone: Africa/Lagos
+    open-pull-requests-limit: 5
+    groups:
+      github-actions:
+        patterns:
+          - '*'

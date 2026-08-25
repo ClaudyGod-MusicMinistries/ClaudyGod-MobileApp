@@ -2,6 +2,10 @@ name: Quality Gate
 
 on:
   workflow_dispatch:
+  schedule:
+    # Re-run the complete gate even when code is idle so registry advisories,
+    # browser/runtime drift, and Docker base-image regressions are detected.
+    - cron: '17 4 * * 1'
   pull_request:
     branches: [main, develop]
   push:
