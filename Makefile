@@ -12,6 +12,9 @@ GHCR_OWNER   ?= claudygod-musicministries
 REGISTRY     := ghcr.io/$(GHCR_OWNER)
 GIT_SHA      := $(shell git rev-parse HEAD 2>/dev/null || echo unknown)
 IMAGE_TAG    ?= $(GIT_SHA)
+ifeq ($(strip $(IMAGE_TAG)),)
+IMAGE_TAG    := $(GIT_SHA)
+endif
 export IMAGE_TAG
 
 API_IMAGE    := $(REGISTRY)/claudygod-api
@@ -50,6 +53,7 @@ NC     := \033[0m
 	docker-build docker-build-api docker-build-admin docker-build-mobile docker-build-postfix \
 	docker-push release \
 	deploy deploy-pull deploy-migrate deploy-up deploy-down \
+	require-image-tag \
 	deploy-logs deploy-status rollback update \
 	logs clean-legacy setup-admin certify-integrations
 
@@ -480,19 +484,23 @@ deploy: deploy-pull deploy-migrate deploy-up
 	@printf "$(BOLD)$(GREEN)✓ Deploy complete$(NC)\n"
 
 # Pull latest images from GHCR (does NOT restart running containers yet)
-deploy-pull:
+require-image-tag:
+	@printf '%s' "$(IMAGE_TAG)" | grep -Eq '^[0-9a-f]{40}$$' || \
+		(printf "$(RED)IMAGE_TAG must be the immutable 40-character Git commit SHA; received '%s'.$(NC)\n" "$(IMAGE_TAG)" && exit 1)
+
+deploy-pull: require-image-tag
 	@printf "$(BLUE)Pulling latest images from GHCR...$(NC)\n"
-	$(COMPOSE_PROD) pull --ignore-pull-failures cgm-api worker admin-web mobile-web postfix-relay
+	IMAGE_TAG="$(IMAGE_TAG)" $(COMPOSE_PROD) pull --ignore-pull-failures cgm-api worker admin-web mobile-web postfix-relay
 
 # Run any pending database migrations
-deploy-migrate:
+deploy-migrate: require-image-tag
 	@printf "$(BLUE)Running database migrations...$(NC)\n"
-	$(COMPOSE_PROD) run --rm --remove-orphans migrate
+	IMAGE_TAG="$(IMAGE_TAG)" $(COMPOSE_PROD) run --rm --remove-orphans migrate
 
 # Start / restart containers with the newly pulled images
-deploy-up:
+deploy-up: require-image-tag
 	@printf "$(BLUE)Starting production stack (detached)...$(NC)\n"
-	$(COMPOSE_PROD) up -d --remove-orphans --wait
+	IMAGE_TAG="$(IMAGE_TAG)" $(COMPOSE_PROD) up -d --remove-orphans --wait
 
 # Stop all containers
 deploy-down:
