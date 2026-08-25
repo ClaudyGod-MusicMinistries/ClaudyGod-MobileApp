@@ -15,7 +15,7 @@ import { useFeedStyles } from './styles';
 import { cleanFeedText, isValidDuration } from './utils';
 
 export function ContentList({ title, items, onPressItem, onMorePress }: {
-  title: string;
+  title?: string;
   items: FeedCardItem[];
   onPressItem: (_item: FeedCardItem) => void;
   onMorePress?: (_item: FeedCardItem) => void;
@@ -27,16 +27,15 @@ export function ContentList({ title, items, onPressItem, onMorePress }: {
 
   const useGrid  = device.isDesktop || device.isTV;
   const numCols  = device.isTV ? 3 : 2;
-  const maxItems = useGrid ? 12 : 10;
 
   return (
     <FadeIn delay={120}>
       <View>
-        <CustomText variant="title" style={styles.listTitle}>{title}</CustomText>
+        {title ? <CustomText variant="title" style={styles.listTitle}>{title}</CustomText> : null}
         <View style={useGrid ? { flexDirection: 'row', flexWrap: 'wrap', gap: 10 } : { gap: 0 }}>
-          {items.slice(0, maxItems).map((item, index) => (
+          {items.map((item, index) => (
             <TVTouchable
-              key={`${title}-${item.id}`}
+              key={`${title ?? 'content'}-${item.id}`}
               onPress={() => onPressItem(item)}
               showFocusBorder={false}
               style={useGrid ? { width: `${Math.floor(100 / numCols) - 1}%` } : undefined}

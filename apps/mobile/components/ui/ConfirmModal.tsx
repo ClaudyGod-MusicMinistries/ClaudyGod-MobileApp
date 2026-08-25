@@ -56,7 +56,7 @@ const useStyles = makeStyles((theme) => ({
   },
   iconCenter:  { alignItems: 'center' },
   iconRingBase: {
-    width: 68, height: 68, borderRadius: 34,
+    width: 68, height: 68, borderRadius: theme.radius.xl,
     alignItems: 'center', justifyContent: 'center', borderWidth: 1.5,
   },
   brandLogoFrame: {

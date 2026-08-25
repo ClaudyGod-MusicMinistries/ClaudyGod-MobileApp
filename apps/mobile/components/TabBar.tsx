@@ -425,14 +425,15 @@ function BottomPillTabBar({
       >
         {footerItems.map((item) => {
           const sharedProps = {
-            key: item.key,
             item,
             focused: currentRouteName === item.routeName,
             compact,
             onPress: () => navigateTo(item),
             onLongPress: () => longPress(item),
           };
-          return item.center ? <CenterPlayerTab {...sharedProps} /> : <TabItem {...sharedProps} />;
+          return item.center
+            ? <CenterPlayerTab key={item.key} {...sharedProps} />
+            : <TabItem key={item.key} {...sharedProps} />;
         })}
       </View>
     </View>

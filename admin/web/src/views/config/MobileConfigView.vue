@@ -87,7 +87,14 @@
               <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <AppInput v-model="section.actionLabel" label="Action label" placeholder="Open" />
                 <AppSelect v-model="section.destinationTab" label="Destination tab" :options="MOBILE_TAB_DESTINATION_OPTIONS_ARR" />
-                <AppInput v-model.number="section.maxItems" type="number" label="Max items" min="1" max="24" />
+                <AppInput
+                  v-model.number="section.maxItems"
+                  type="number"
+                  label="Items shown in section rail"
+                  hint="Additional eligible items remain available through See all."
+                  min="1"
+                  max="24"
+                />
               </div>
 
               <p class="text-[11px] text-ink-muted">

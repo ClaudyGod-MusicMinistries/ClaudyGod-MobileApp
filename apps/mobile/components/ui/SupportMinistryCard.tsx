@@ -14,14 +14,9 @@ const useStyles = makeStyles((theme) => ({
     overflow: 'hidden', justifyContent: 'center',
     backgroundColor: theme.colors.primary,
   },
-  decoCircle: {
-    position: 'absolute', right: -22, top: -18,
-    width: 104, height: 104, borderRadius: 52,
-    backgroundColor: theme.colors.controlSelectedIconSurface,
-  },
   row:      { flexDirection: 'row', alignItems: 'center', gap: 12 },
   iconBox: {
-    width: 42, height: 42, borderRadius: 21,
+    width: 42, height: 42, borderRadius: theme.radius.md,
     alignItems: 'center', justifyContent: 'center',
     backgroundColor: theme.colors.controlSelectedIconSurface,
     borderWidth: 1, borderColor: theme.colors.mediaBorder,
@@ -61,8 +56,6 @@ export function SupportMinistryCard({ onPress }: SupportCardProps) {
       accessibilityLabel="Partner with the ministry — give support"
     >
       <View style={styles.card}>
-        <View style={styles.decoCircle} />
-
         <View style={styles.row}>
           <View style={styles.iconBox}>
             <AppIcon name="volunteer-activism" size={20} color={theme.colors.onPrimary} />

@@ -13,7 +13,7 @@ import { useDeviceClass } from '../../util/deviceClassConfig';
 import { makeStyles } from '../../styles/makeStyles';
 import { useContentFeed } from '../../hooks/useContentFeed';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
-import { getLibraryLayoutSections, deriveLayoutSectionItems } from '../../util/mobileLayout';
+import { getLibraryLayoutSections, deriveLayoutSectionItems, deriveLayoutSectionOverflowCount } from '../../util/mobileLayout';
 import { ErrorState } from '../../components/ui/ErrorState';
 import { useToast } from '../../context/ToastContext';
 import { useLocalContent } from '../../hooks/useLocalContent';
@@ -359,7 +359,11 @@ export default function LibraryScreen() {
 
   const librarySections = useMemo(() => getLibraryLayoutSections(appConfig), [appConfig]);
   const sectionItems = useMemo(
-    () => librarySections.map((section) => ({ section, items: deriveLayoutSectionItems(feed, section, 'library') })),
+    () => librarySections.map((section) => ({
+      section,
+      items: deriveLayoutSectionItems(feed, section, 'library'),
+      overflowCount: deriveLayoutSectionOverflowCount(feed, section, 'library'),
+    })),
     [librarySections, feed],
   );
 
@@ -549,14 +553,16 @@ export default function LibraryScreen() {
             ) : null}
 
             {loaded && sectionItems.some(({ items }) => items.length > 0) ? (
-              sectionItems.map(({ section, items }) => (
+              sectionItems.map(({ section, items, overflowCount }) => (
                 items.length > 0 ? (
-                  <ContentList
-                    key={section.id}
-                    title={section.title}
-                    items={items}
-                    onPressItem={(item) => void openItem(item, `library_${section.id}`)}
-                  />
+                  <View key={section.id} style={styles.collectionSection}>
+                    <SectionLabel
+                      title={section.title}
+                      actionLabel={overflowCount > 0 ? (section.actionLabel || 'See all') : undefined}
+                      onAction={overflowCount > 0 ? () => router.push({ pathname: APP_ROUTES.section.detail, params: { sectionId: section.id, screen: 'library', title: section.title } } as never) : undefined}
+                    />
+                    <ContentList items={items} onPressItem={(item) => void openItem(item, `library_${section.id}`)} />
+                  </View>
                 ) : null
               ))
             ) : loaded && recommendedFallback.length > 0 ? (

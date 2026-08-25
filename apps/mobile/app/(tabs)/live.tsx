@@ -61,7 +61,7 @@ const useStyles = makeStyles((theme) => ({
   // ScheduleCard
   scheduleCard:      { padding: theme.spacing.md, flexDirection: 'row', alignItems: 'center', gap: 14 },
   scheduleIconBox: {
-    width: 48, height: 48, borderRadius: 24,
+    width: 48, height: 48, borderRadius: theme.radius.lg,
     alignItems: 'center', justifyContent: 'center',
     backgroundColor: theme.colors.primarySurface,
     borderWidth: 1, borderColor: theme.colors.primaryBorder,

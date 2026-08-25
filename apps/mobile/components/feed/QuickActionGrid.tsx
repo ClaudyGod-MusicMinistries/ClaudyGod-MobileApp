@@ -77,7 +77,7 @@ export function QuickActionGrid({ actions }: { actions: QuickAction[] }) {
               accessibilityLabel={action.hint ? `${action.label}. ${action.hint}` : action.label}
             >
               <View style={styles.quickWideCard}>
-                <View style={{ width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: `${accent}1A` }}>
+                <View style={{ width: 38, height: 38, borderRadius: theme.radius.md, alignItems: 'center', justifyContent: 'center', backgroundColor: `${accent}1A` }}>
                   <AppIcon name={action.icon} size={19} color={accent} />
                 </View>
                 <View style={common.flex1}>

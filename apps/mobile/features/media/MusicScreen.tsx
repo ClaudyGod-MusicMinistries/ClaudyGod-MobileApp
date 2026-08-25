@@ -12,7 +12,7 @@ import { useAppTheme } from '../../util/colorScheme';
 import { useContentFeed } from '../../hooks/useContentFeed';
 import { useLocalContent } from '../../hooks/useLocalContent';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
-import { getPlayerLayoutSections, deriveLayoutSectionItems } from '../../util/mobileLayout';
+import { getPlayerLayoutSections, deriveLayoutSectionItems, deriveLayoutSectionOverflowCount } from '../../util/mobileLayout';
 import { ErrorState } from '../../components/ui/ErrorState';
 import { makeStyles } from '../../styles/makeStyles';
 import type { FeedCardItem } from '../../services/contentService';
@@ -183,7 +183,11 @@ export default function PlaySection() {
 
   const playerSections = useMemo(() => getPlayerLayoutSections(appConfig), [appConfig]);
   const sectionItems = useMemo(
-    () => playerSections.map((section) => ({ section, items: deriveLayoutSectionItems(feed, section, 'player') })),
+    () => playerSections.map((section) => ({
+      section,
+      items: deriveLayoutSectionItems(feed, section, 'player'),
+      overflowCount: deriveLayoutSectionOverflowCount(feed, section, 'player'),
+    })),
     [playerSections, feed],
   );
   const hasSectionItems = sectionItems.some(({ items }) => items.length > 0);
@@ -400,16 +404,16 @@ export default function PlaySection() {
       {/* ── Configured content sections ──────────────────────────────────── */}
       {hasSectionItems ? (
         <View style={styles.sectionsGap}>
-          {sectionItems.map(({ section, items }, index) => (
+          {sectionItems.map(({ section, items, overflowCount }, index) => (
             items.length > 0 ? (
               <View key={section.id} style={styles.sectionRow}>
                 <SectionLabel
                   title={section.title}
-                  actionLabel={section.actionLabel}
-                  onAction={() => router.push({
+                  actionLabel={overflowCount > 0 ? (section.actionLabel || 'See all') : undefined}
+                  onAction={overflowCount > 0 ? () => router.push({
                     pathname: APP_ROUTES.section.detail,
                     params: { sectionId: section.id, screen: 'player', title: section.title },
-                  } as never)}
+                  } as never) : undefined}
                 />
                 <ContentRail
                   title=""

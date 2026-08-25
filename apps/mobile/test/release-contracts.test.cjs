@@ -304,6 +304,44 @@ test('settings capabilities describe and control real playback and privacy behav
   assert.match(pushBackend, /mobile_installation_push_tokens/);
 });
 
+test('settings and music use distinct supported professional icons', () => {
+  const icons = fs.readFileSync(path.join(root, 'components/ui/AppIcon.tsx'), 'utf8');
+  const settings = fs.readFileSync(path.join(root, 'app/(tabs)/settings.tsx'), 'utf8');
+  const music = fs.readFileSync(path.join(root, 'features/media/MusicScreen.tsx'), 'utf8');
+
+  assert.match(settings, /icon: 'policy'.*Privacy Policy/);
+  assert.match(settings, /icon: 'gavel'.*Terms of Service/);
+  assert.match(settings, /icon: 'info-outline'.*About/);
+  assert.match(settings, /icon: 'star-outline'.*Rate the app/);
+  assert.match(icons, /policy: 'file-text'/);
+  assert.match(icons, /gavel: 'clipboard'/);
+  assert.match(icons, /'info-outline': 'info'/);
+  assert.match(icons, /'star-outline': 'star'/);
+  assert.match(icons, /'library-music': 'disc'/);
+  assert.match(icons, /'queue-music': 'list'/);
+  assert.match(icons, /'open-in-new': 'external-link'/);
+  assert.match(music, /primaryIcon=\{active\?\.mediaUrl \? 'open-in-new' : 'queue-music'\}/);
+});
+
+test('section rendering never silently truncates assigned content and exposes rail overflow', () => {
+  const list = fs.readFileSync(path.join(root, 'components/feed/ContentList.tsx'), 'utf8');
+  const home = fs.readFileSync(path.join(root, 'app/(tabs)/home.tsx'), 'utf8');
+  const music = fs.readFileSync(path.join(root, 'features/media/MusicScreen.tsx'), 'utf8');
+  const videos = fs.readFileSync(path.join(root, 'app/(tabs)/videos.tsx'), 'utf8');
+  const library = fs.readFileSync(path.join(root, 'app/(tabs)/library.tsx'), 'utf8');
+  const mobileApi = fs.readFileSync(path.resolve(root, '../../services/api/src/modules/mobile/mobile.service.ts'), 'utf8');
+
+  assert.match(list, /\{items\.map\(\(item, index\)/);
+  assert.doesNotMatch(list, /items\.slice\(0, maxItems\)/);
+  for (const screen of [home, music, videos, library]) {
+    assert.match(screen, /deriveLayoutSectionOverflowCount/);
+    assert.match(screen, /overflowCount > 0/);
+  }
+  assert.match(mobileApi, /loadContentTaggedIntoSections\(sectionTokens\)/);
+  assert.match(mobileApi, /overflowCount: Math\.max\(0, sectionPool\.length - section\.maxItems\)/);
+  assert.match(mobileApi, /total: sectionPool\.length/);
+});
+
 test('bottom navigation is an opaque token-driven dock with native tab events', () => {
   const tabBar = fs.readFileSync(path.join(root, 'components/TabBar.tsx'), 'utf8');
   const colors = fs.readFileSync(path.join(root, 'constants/color.ts'), 'utf8');
@@ -314,7 +352,7 @@ test('bottom navigation is an opaque token-driven dock with native tab events', 
   assert.match(tabBar, /type: 'tabPress'.*canPreventDefault: true/);
   assert.match(tabBar, /type: 'tabLongPress'/);
   assert.match(tabBar, /player:\s+\{ icon: 'play-arrow', label: 'Player', center: true \}/);
-  assert.match(tabBar, /item\.center \? <CenterPlayerTab/);
+  assert.match(tabBar, /item\.center\s*\?\s*<CenterPlayerTab/);
   assert.match(tabBar, /accessibilityLabel="Open player"/);
   assert.match(tabBar, /useReducedMotion/);
   assert.match(tabBar, /withTiming\(focused \? 1 : 0/);
@@ -326,6 +364,9 @@ test('bottom navigation is an opaque token-driven dock with native tab events', 
   assert.match(tokens, /tabBarContentPadding:\s+112/);
   assert.match(tokens, /tabBarActionLift:\s+18/);
   assert.match(tokens, /tabBarPlayIconOpticalOffset:\s+1\.5/);
+  assert.doesNotMatch(tabBar, /const sharedProps = \{\s*key:/);
+  assert.match(tabBar, /<CenterPlayerTab key=\{item\.key\} \{\.\.\.sharedProps\}/);
+  assert.match(tabBar, /<TabItem key=\{item\.key\} \{\.\.\.sharedProps\}/);
 });
 
 test('guest recommendations use verified installation history and enforce opt-out', () => {

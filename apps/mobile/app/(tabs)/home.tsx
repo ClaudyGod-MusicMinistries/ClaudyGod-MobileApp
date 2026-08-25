@@ -15,7 +15,7 @@ import { useContentFeed } from '../../hooks/useContentFeed';
 import { useWordOfDay } from '../../hooks/useWordOfDay';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import { useUserAccount } from '../../context/UserAccountContext';
-import { getHomeLayoutSections, deriveLayoutSectionItems } from '../../util/mobileLayout';
+import { getHomeLayoutSections, deriveLayoutSectionItems, deriveLayoutSectionOverflowCount } from '../../util/mobileLayout';
 import { useAppTheme } from '../../util/colorScheme';
 import { makeStyles } from '../../styles/makeStyles';
 import { APP_ROUTES } from '../../util/appRoutes';
@@ -291,7 +291,11 @@ export default function HomeScreen() {
 
   const homeSections = useMemo(() => getHomeLayoutSections(appConfig), [appConfig]);
   const sectionItems = useMemo(
-    () => homeSections.map((section) => ({ section, items: deriveLayoutSectionItems(feed, section, 'home') })),
+    () => homeSections.map((section) => ({
+      section,
+      items: deriveLayoutSectionItems(feed, section, 'home'),
+      overflowCount: deriveLayoutSectionOverflowCount(feed, section, 'home'),
+    })),
     [homeSections, feed],
   );
 
@@ -372,17 +376,17 @@ export default function HomeScreen() {
       ) : null}
 
       <View style={styles.sectionsGap}>
-        {sectionItems.map(({ section, items }) => (
+        {sectionItems.map(({ section, items, overflowCount }) => (
           (loading || items.length > 0) ? (
             <FadeIn key={section.id} replayKey={contentReadyKey} delay={nextEntranceDelay()}>
               <View style={styles.sectionRow}>
                 <SectionLabel
                   title={section.title}
-                  actionLabel={section.actionLabel}
-                  onAction={() => router.push({
+                  actionLabel={overflowCount > 0 ? (section.actionLabel || 'See all') : undefined}
+                  onAction={overflowCount > 0 ? () => router.push({
                     pathname: APP_ROUTES.section.detail,
                     params: { sectionId: section.id, screen: 'home', title: section.title },
-                  } as never)}
+                  } as never) : undefined}
                 />
                 <ContentRail
                   title=""
