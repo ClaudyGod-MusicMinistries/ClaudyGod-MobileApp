@@ -151,22 +151,24 @@ test('shared buttons, typography, and recovery states enforce professional layou
   assert.doesNotMatch(button, /btnMd:\s*\{\s*height:/);
   assert.doesNotMatch(text, /variantLineDefaults/);
   assert.match(text, /maxFontSizeMultiplier\s*\?\?\s*1\.3/);
-  assert.match(page, /<FadeIn delay=\{50\} from=\{6\} duration=\{280\}>/);
+  assert.match(page, /styles\.pageSections/);
+  assert.match(page, /compact \? theme\.layout\.sectionGap : theme\.layout\.sectionGapLarge/);
   assert.match(boundary, /title="Try again" variant="gradient" size="lg" fullWidth/);
   assert.doesNotMatch(boundary, /TouchableOpacity/);
 });
 
 test('music and video failures use premium full-width recovery while players respect reduced motion', () => {
-  const music = fs.readFileSync(path.join(root, 'app/(tabs)/PlaySection.tsx'), 'utf8');
+  const music = fs.readFileSync(path.join(root, 'features/media/MusicScreen.tsx'), 'utf8');
   const videos = fs.readFileSync(path.join(root, 'app/(tabs)/videos.tsx'), 'utf8');
-  const failure = fs.readFileSync(path.join(root, 'components/ui/FullPageErrorState.tsx'), 'utf8');
+  const failure = fs.readFileSync(path.join(root, 'components/ui/ErrorState.tsx'), 'utf8');
   const audioPlayer = fs.readFileSync(path.join(root, 'components/media/AudioPlayer.tsx'), 'utf8');
   const videoPlayer = fs.readFileSync(path.join(root, 'components/media/VideoPlayer.tsx'), 'utf8');
   assert.match(music, /error && !allQueue\.length/);
   assert.match(videos, /error && !allQueue\.length/);
   assert.match(music, /Your worship player/);
   assert.match(videos, /Now watching/);
-  assert.match(failure, /title="Try again" variant="gradient" size="lg" fullWidth/);
+  assert.match(failure, /variant=\{isPage \? 'gradient' : 'secondary'\}/);
+  assert.match(failure, /size=\{isPage \? 'lg' : 'md'\} fullWidth/);
   assert.match(audioPlayer, /useReducedMotion/);
   assert.match(audioPlayer, /!reduceMotion/);
   assert.match(videoPlayer, /title="Open on YouTube" variant="gradient" size="lg" fullWidth/);

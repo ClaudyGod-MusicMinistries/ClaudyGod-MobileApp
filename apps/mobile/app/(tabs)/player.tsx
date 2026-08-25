@@ -1,1 +1,1 @@
-export { default } from './PlaySection';
+export { default } from '../../features/media/MusicScreen';

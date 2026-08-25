@@ -51,7 +51,7 @@ const useStyles = makeStyles((theme) => ({
 
   // PrivacyAction sub-component
   actionRow:     { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 },
-  actionIconBox: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: `${theme.colors.primary}1A` },
+  actionIconBox: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.primarySurface },
   actionTextWrap:{ flex: 1 },
   actionTitle:   { color: theme.colors.text },
   actionDesc:    { color: theme.colors.textSecondary, marginTop: 3 },

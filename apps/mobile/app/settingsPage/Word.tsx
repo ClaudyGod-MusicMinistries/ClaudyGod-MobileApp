@@ -23,8 +23,8 @@ const useStyles = makeStyles((theme) => ({
   sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   sectionIconBox: {
     width: 32, height: 32, borderRadius: 10,
-    backgroundColor: `${theme.colors.primary}14`,
-    borderWidth: 1, borderColor: `${theme.colors.primary}28`,
+    backgroundColor: theme.colors.primarySurface,
+    borderWidth: 1, borderColor: theme.colors.primaryBorder,
     alignItems: 'center', justifyContent: 'center',
   },
   sectionLabel:    { color: theme.colors.primary, textTransform: 'uppercase', letterSpacing: 0.8, fontWeight: '700' },
@@ -44,8 +44,8 @@ const useStyles = makeStyles((theme) => ({
   heroIconBox: {
     width: 56, height: 56, borderRadius: 28,
     alignItems: 'center', justifyContent: 'center',
-    backgroundColor: `${theme.colors.primary}14`,
-    borderWidth: 1, borderColor: `${theme.colors.primary}28`,
+    backgroundColor: theme.colors.primarySurface,
+    borderWidth: 1, borderColor: theme.colors.primaryBorder,
   },
   heroRight:     { flex: 1, minWidth: 0 },
   heroEyebrow:   { color: theme.colors.primary, textTransform: 'uppercase', letterSpacing: 0.72 },

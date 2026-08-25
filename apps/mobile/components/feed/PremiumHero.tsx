@@ -71,7 +71,7 @@ export function PremiumHero({
       <FadeIn key="hero-empty" delay={30} duration={400}>
         <View style={styles.heroEmptyCard}>
           <LinearGradient
-            colors={[`${theme.colors.primary}14`, 'transparent']}
+            colors={[theme.colors.primarySurface, 'transparent']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={common.fill}

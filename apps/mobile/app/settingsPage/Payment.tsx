@@ -23,7 +23,7 @@ const useStyles = makeStyles((theme) => ({
   heroIconBox: {
     width: 62, height: 62, borderRadius: 31,
     alignItems: 'center', justifyContent: 'center',
-    backgroundColor: `${theme.colors.primary}1A`,
+    backgroundColor: theme.colors.primarySurface,
   },
   heroFill:       { flex: 1 },
   heroEyebrow:    { color: theme.colors.primary, textTransform: 'uppercase', letterSpacing: 0.9 },

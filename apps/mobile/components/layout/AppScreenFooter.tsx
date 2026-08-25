@@ -25,7 +25,7 @@ const useStyles = makeStyles((theme) => ({
   spacer14:    { height: 14 },
   wrapBase: {
     marginTop: 'auto', borderTopWidth: 1,
-    borderTopColor: 'rgba(185,148,255,0.10)',
+    borderTopColor: theme.colors.primaryBorder,
   },
   innerRow: {
     flexDirection: 'row', alignItems: 'center',
@@ -39,7 +39,7 @@ const useStyles = makeStyles((theme) => ({
   linksRow:     { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
   linkBtn: {
     minHeight: 30, borderRadius: theme.radius.pill, borderWidth: 1,
-    borderColor: 'rgba(185,148,255,0.13)', backgroundColor: 'rgba(255,255,255,0.035)',
+    borderColor: theme.colors.primaryBorder, backgroundColor: theme.colors.subtleFill,
     paddingHorizontal: 10, alignItems: 'center', justifyContent: 'center',
     flexDirection: 'row', gap: 5,
   },

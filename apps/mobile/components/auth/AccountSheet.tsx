@@ -56,9 +56,9 @@ const useStyles = makeStyles((theme) => ({
 
   errorBanner: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 8,
-    backgroundColor: `${theme.colors.danger}12`,
+    backgroundColor: theme.colors.dangerSurface,
     borderRadius: theme.radius.card,
-    borderWidth: 1, borderColor: `${theme.colors.danger}28`,
+    borderWidth: 1, borderColor: theme.colors.dangerBorder,
     padding: 12, marginBottom: 14,
   },
   errorIconShift: { marginTop: 1 },
@@ -81,10 +81,10 @@ const useStyles = makeStyles((theme) => ({
   },
   googleCircle: {
     width: 24, height: 24, borderRadius: 12,
-    backgroundColor: '#4285F4',
+    backgroundColor: theme.colors.providerGoogle,
     alignItems: 'center', justifyContent: 'center',
   },
-  googleLetter:  { color: '#FFFFFF', fontSize: 13, fontWeight: '800', lineHeight: 16 },
+  googleLetter:  { color: theme.colors.onPrimary, fontSize: 13, fontWeight: '800', lineHeight: 16 },
   googleLabel:   { color: theme.colors.text, fontSize: 15, fontWeight: '600' },
   dividerRow:    { flexDirection: 'row', alignItems: 'center', gap: 10 },
   dividerLine:   { flex: 1, height: 1, backgroundColor: theme.colors.border },
@@ -128,8 +128,8 @@ function SuccessState({ displayName }: { displayName?: string }) {
   return (
     <View style={styles.successContainer}>
       <View style={[styles.successIcon, {
-        backgroundColor: `${theme.colors.success}16`,
-        borderWidth: 1, borderColor: `${theme.colors.success}28`,
+        backgroundColor: theme.colors.successSurface,
+        borderWidth: 1, borderColor: theme.colors.successBorder,
       }]}>
         <MaterialIcons name="check" size={32} color={theme.colors.success} />
       </View>
@@ -325,7 +325,7 @@ function EmailForm({
           fullWidth
           onPress={onSubmit}
           disabled={loading}
-          leftIcon={loading ? <ActivityIndicator size="small" color="#FFFFFF" /> : undefined}
+          leftIcon={loading ? <ActivityIndicator size="small" color={theme.colors.onPrimary} /> : undefined}
         />
       </View>
 

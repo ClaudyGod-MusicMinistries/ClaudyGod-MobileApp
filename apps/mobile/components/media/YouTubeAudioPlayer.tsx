@@ -17,6 +17,7 @@ import { TVTouchable } from '../ui/TVTouchable';
 import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
 import { useAppTheme } from '../../util/colorScheme';
 import { makeStyles } from '../../styles/makeStyles';
+import { mediaTokens } from '../../constants/color';
 
 export interface YouTubeAudioTrack {
   id: string;
@@ -52,7 +53,7 @@ function buildYouTubeHtml(videoId: string, autoplay: boolean): string {
 <head>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <style>
-  * { margin:0; padding:0; background:#000; }
+  * { margin:0; padding:0; background:${mediaTokens.canvas}; }
   body { width:1px; height:1px; overflow:hidden; }
   #player { width:1px; height:1px; position:absolute; left:-9999px; }
 </style>
@@ -347,7 +348,7 @@ export function YouTubeAudioPlayer({
             </TVTouchable>
           )}
           <TVTouchable onPress={togglePlay} style={[ss.playBtn, styles.playBtnBg]}>
-            <MaterialIcons name={isPlaying ? 'pause' : 'play-arrow'} size={22} color="#fff" />
+            <MaterialIcons name={isPlaying ? 'pause' : 'play-arrow'} size={22} color={mediaTokens.text} />
           </TVTouchable>
           {canGoNext && (
             <TVTouchable onPress={onNext} style={ss.iconBtn}>
@@ -408,7 +409,7 @@ export function YouTubeAudioPlayer({
           resizeMode="cover"
         />
         {/* YouTube badge over artwork */}
-        <View style={[ss.ytOverlayBadge, { backgroundColor: '#FF0000' }]}>
+        <View style={[ss.ytOverlayBadge, { backgroundColor: mediaTokens.youtube }]}>
           <CustomText style={ss.ytOverlayText}>YouTube Audio</CustomText>
         </View>
       </View>
@@ -522,7 +523,7 @@ export function YouTubeAudioPlayer({
           onPress={togglePlay}
           style={[ss.mainPlayBtn, styles.mainPlayBtnBg]}
         >
-          <MaterialIcons name={isPlaying ? 'pause' : 'play-arrow'} size={38} color="#fff" />
+          <MaterialIcons name={isPlaying ? 'pause' : 'play-arrow'} size={38} color={mediaTokens.text} />
         </TVTouchable>
 
         {/* Next */}
@@ -552,7 +553,7 @@ const useStyles = makeStyles((theme) => ({
   compactSurface:     { backgroundColor: theme.colors.surface },
   compactTitle:       { color: theme.colors.text },
   compactArtist:      { color: theme.colors.textSecondary },
-  ytBadgeBg:          { backgroundColor: `${theme.colors.primary}20` },
+  ytBadgeBg:          { backgroundColor: theme.colors.primaryBorder },
   ytBadgeColor:       { color: theme.colors.primary },
   playBtnBg:          { backgroundColor: theme.colors.primary },
   // Full
@@ -625,7 +626,7 @@ const ss = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: 6,
   },
-  ytOverlayText: { fontSize: 9, fontWeight: '700', color: '#fff' },
+  ytOverlayText: { fontSize: 9, fontWeight: '700', color: mediaTokens.text },
   errorRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 },
   errorText: { fontSize: 11 },
   metaBlock: { width: '100%', marginBottom: 20, gap: 4 },

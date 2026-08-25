@@ -23,7 +23,7 @@ const useStyles = makeStyles((theme) => ({
   playBtnFill:       { flex: 1 },
   iconBtn:           { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
   iconBtnDefault:    { backgroundColor: theme.colors.subtleFill, borderColor: theme.colors.border },
-  iconBtnRemoving:   { backgroundColor: 'rgba(239,68,68,0.08)', borderColor: theme.colors.danger },
+  iconBtnRemoving:   { backgroundColor: theme.colors.dangerSurface, borderColor: theme.colors.dangerBorder },
   typeBadge:    { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 4 },
   typeBadgeText:{ fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.4 },
 }));
@@ -31,15 +31,15 @@ const useStyles = makeStyles((theme) => ({
 function TypeBadge({ type }: { type: string }) {
   const styles = useStyles();
   const theme  = useAppTheme();
-  const map: Record<string, { icon: React.ComponentProps<typeof MaterialIcons>['name']; color: string }> = {
-    audio:    { icon: 'music-note',    color: theme.colors.primary },
-    video:    { icon: 'smart-display', color: theme.colors.info    },
-    live:     { icon: 'live-tv',       color: theme.colors.danger  },
-    playlist: { icon: 'queue-music',   color: theme.colors.warning },
+  const map: Record<string, { icon: React.ComponentProps<typeof MaterialIcons>['name']; color: string; surface: string }> = {
+    audio:    { icon: 'music-note',    color: theme.colors.primary, surface: theme.colors.primarySurface },
+    video:    { icon: 'smart-display', color: theme.colors.info, surface: theme.colors.infoSurface },
+    live:     { icon: 'live-tv',       color: theme.colors.danger, surface: theme.colors.dangerSurface },
+    playlist: { icon: 'queue-music',   color: theme.colors.warning, surface: theme.colors.warningSurface },
   };
-  const entry = map[type] ?? { icon: 'star' as const, color: theme.colors.primary };
+  const entry = map[type] ?? { icon: 'star' as const, color: theme.colors.primary, surface: theme.colors.primarySurface };
   return (
-    <View style={[styles.typeBadge, { backgroundColor: `${entry.color}14` }]}>
+    <View style={[styles.typeBadge, { backgroundColor: entry.surface }]}>
       <MaterialIcons name={entry.icon} size={11} color={entry.color} />
       <CustomText variant="caption" style={[styles.typeBadgeText, { color: entry.color }]}>
         {type}
@@ -80,7 +80,7 @@ export const FavoriteCard = React.memo(function FavoriteCard({
       <View style={styles.favActions}>
         <AppButton
           title="Play" size="sm" onPress={onPlay} style={styles.playBtnFill}
-          leftIcon={<MaterialIcons name="play-arrow" size={16} color="#FFFFFF" />}
+          leftIcon={<MaterialIcons name="play-arrow" size={16} color={theme.colors.onPrimary} />}
         />
         <TVTouchable onPress={onShare} showFocusBorder={false} style={[styles.iconBtn, styles.iconBtnDefault]}>
           <MaterialIcons name="ios-share" size={15} color={theme.colors.textSecondary} />
