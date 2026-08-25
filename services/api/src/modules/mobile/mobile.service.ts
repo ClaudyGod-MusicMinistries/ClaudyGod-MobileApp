@@ -547,6 +547,56 @@ const loadUnifiedContentPool = async (sectionTokens: string[] = []): Promise<Uni
   return { pool, ranked, trending };
 };
 
+export const getInstallationRecommendations = async (installationId: string, limit = 12) => {
+  const preferenceResult = await pool.query<{ personalization_enabled: boolean }>(
+    `SELECT personalization_enabled FROM mobile_installations WHERE id = $1`,
+    [installationId],
+  );
+  if (preferenceResult.rows[0]?.personalization_enabled === false) {
+    return { items: [] as MobileFeedItem[], algorithm: 'installation_affinity_v1', signalCount: 0, disabled: true };
+  }
+
+  const signalResult = await pool.query<{ content_id: string; content_type: string | null; tags: string[] | null; app_sections: string[] | null }>(
+    `SELECT e.content_id, e.content_type, c.tags, c.app_sections
+       FROM mobile_installation_events e
+       LEFT JOIN content_items c ON c.id::text = e.content_id
+      WHERE e.installation_id = $1 AND e.content_id IS NOT NULL
+      ORDER BY e.created_at DESC
+      LIMIT 200`,
+    [installationId],
+  );
+  if (!signalResult.rows.length) {
+    return { items: [] as MobileFeedItem[], algorithm: 'installation_affinity_v1', signalCount: 0, disabled: false };
+  }
+
+  const playedIds = new Set(signalResult.rows.map((row) => row.content_id));
+  const tagWeights = new Map<string, number>();
+  const sectionWeights = new Map<string, number>();
+  const typeWeights = new Map<string, number>();
+  for (const row of signalResult.rows) {
+    for (const tag of normalizeTextList(row.tags)) tagWeights.set(tag, (tagWeights.get(tag) ?? 0) + 1);
+    for (const section of normalizeTextList(row.app_sections)) sectionWeights.set(section, (sectionWeights.get(section) ?? 0) + 1);
+    if (row.content_type) typeWeights.set(row.content_type, (typeWeights.get(row.content_type) ?? 0) + 1);
+  }
+
+  const config = await getMobileAppConfig();
+  const { ranked } = await loadUnifiedContentPool(collectSectionTokens(config.config));
+  const score = (item: MobileFeedItem) =>
+    item.tags.reduce((total, tag) => total + (tagWeights.get(tag) ?? 0) * 4, 0) +
+    item.appSections.reduce((total, section) => total + (sectionWeights.get(section) ?? 0) * 3, 0) +
+    (typeWeights.get(item.type) ?? 0) * 5;
+
+  const candidates = ranked
+    .filter((item) => item.type !== 'ad' && !playedIds.has(item.id))
+    .map((item, index) => ({ item, affinity: score(item), baseRank: index }))
+    .filter(({ affinity }) => affinity > 0)
+    .sort((left, right) => right.affinity - left.affinity || left.baseRank - right.baseRank)
+    .slice(0, limit)
+    .map(({ item }) => item);
+
+  return { items: candidates, algorithm: 'installation_affinity_v1', signalCount: signalResult.rows.length, disabled: false };
+};
+
 export const buildMobileFeed = async (): Promise<MobileFeedResponse> => {
   const mobileConfigResult = await getMobileAppConfig();
   const sectionTokens = collectSectionTokens(mobileConfigResult.config);

@@ -14,7 +14,6 @@ import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import { createAppRating } from '../../services/userFlowService';
 import { useToast } from '../../context/ToastContext';
 import { openExternalUrl } from '../../util/externalLinks';
-import { useAppContext } from '../../context/AppContext';
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
@@ -56,7 +55,6 @@ export default function Rate() {
   const theme = useAppTheme();
   const router = useRouter();
   const { showToast } = useToast();
-  const { deviceId } = useAppContext();
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -79,7 +77,7 @@ export default function Rate() {
     if (rating <= 0) return false;
     setSubmitting(true);
     try {
-      await createAppRating({ rating, deviceId, channel: 'mobile', comment: comment.trim() || undefined });
+      await createAppRating({ rating, channel: 'mobile', comment: comment.trim() || undefined });
       showToast({ title: 'Thank you', message: 'Your feedback has been saved.', tone: 'success' });
       setSubmitting(false);
       return true;

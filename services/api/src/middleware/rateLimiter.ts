@@ -161,8 +161,7 @@ export const guestSupportLimiter = rateLimit({
   handler: rejectionHandler('guest-support'),
   skip: (_req: Request) => process.env.NODE_ENV === 'development',
   keyGenerator: (req: Request) => {
-    const body = req.body as { deviceId?: unknown };
-    return `${req.ip ?? 'unknown'}-${typeof body.deviceId === 'string' ? body.deviceId : 'unknown'}`;
+    return `${req.ip ?? 'unknown'}-${req.installation?.id ?? 'unverified'}`;
   },
 });
 
@@ -176,8 +175,7 @@ export const guestFeedbackLimiter = rateLimit({
   handler: rejectionHandler('guest-feedback'),
   skip: (_req: Request) => process.env.NODE_ENV === 'development',
   keyGenerator: (req: Request) => {
-    const body = req.body as { deviceId?: unknown };
-    return `${req.ip ?? 'unknown'}-${typeof body.deviceId === 'string' ? body.deviceId : 'unknown'}`;
+    return `${req.ip ?? 'unknown'}-${req.installation?.id ?? 'unverified'}`;
   },
 });
 
@@ -191,7 +189,6 @@ export const referralLimiter = rateLimit({
   handler: rejectionHandler('mobile-referral'),
   skip: (_req: Request) => process.env.NODE_ENV === 'development',
   keyGenerator: (req: Request) => {
-    const body = req.body as { deviceId?: unknown };
-    return `${req.ip ?? 'unknown'}-${typeof body.deviceId === 'string' ? body.deviceId : 'unknown'}`;
+    return `${req.ip ?? 'unknown'}-${req.installation?.id ?? 'unverified'}`;
   },
 });

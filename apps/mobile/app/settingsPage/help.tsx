@@ -63,14 +63,14 @@ export default function Help() {
   const contacts = useMemo(() => config?.help.contact ?? [], [config]); const faqs = useMemo(() => config?.help.faqs ?? [], [config]);
   const subjectValid = subject.trim().length >= 4 && subject.trim().length <= 120; const messageValid = message.trim().length >= 12 && message.trim().length <= 4000; const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail.trim());
 
-  const loadTickets = useCallback(async (items: GuestSupportCredential[]) => { if (!deviceId || !items.length) { setTickets([]); return; } setLoadingTickets(true); try { setTickets((await fetchGuestSupportRequestStatuses({ deviceId, tickets: items })).tickets); } catch { setTickets([]); } finally { setLoadingTickets(false); } }, [deviceId]);
+  const loadTickets = useCallback(async (items: GuestSupportCredential[]) => { if (!deviceId || !items.length) { setTickets([]); return; } setLoadingTickets(true); try { setTickets((await fetchGuestSupportRequestStatuses({ tickets: items })).tickets); } catch { setTickets([]); } finally { setLoadingTickets(false); } }, [deviceId]);
   useEffect(() => { void getGuestSupportState().then((state) => { setContactEmail(state.contactEmail); setCredentials(state.tickets); void loadTickets(state.tickets); }); }, [deviceId, loadTickets]);
 
   const submit = async () => {
     if (!isReady || !deviceId || !emailValid || !subjectValid || !messageValid || submitting) return;
     setSubmitting(true);
     try {
-      const response = await createGuestSupportRequest({ deviceId, contactEmail: contactEmail.trim().toLowerCase(), category, subject: subject.trim(), message: message.trim() });
+      const response = await createGuestSupportRequest({ contactEmail: contactEmail.trim().toLowerCase(), category, subject: subject.trim(), message: message.trim() });
       const nextCredentials = [{ id: response.ticket.id, trackingToken: response.ticket.trackingToken }, ...credentials.filter((item) => item.id !== response.ticket.id)].slice(0, 10);
       setCredentials(nextCredentials); await saveGuestSupportState({ contactEmail: contactEmail.trim().toLowerCase(), tickets: nextCredentials });
       setSubject(''); setMessage(''); await loadTickets(nextCredentials);

@@ -1,7 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { AudioPlayer, type RepeatMode } from '../../components/media/AudioPlayer';
 import { YouTubeAudioPlayer } from '../../components/media/YouTubeAudioPlayer';
 import { CustomText } from '../../components/CustomText';
@@ -33,6 +33,7 @@ import {
   dedupeFeedItems,
 } from '../../components/feed';
 import { WorshipTogetherBar } from '../../components/worship/WorshipTogetherBar';
+import { getPreference } from '../../lib/localUserStorage';
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
@@ -173,6 +174,12 @@ export default function PlaySection() {
   const { checkIsFavorited, toggleFavorite, recordHistory } = useLocalContent();
   const [shuffleEnabled, setShuffleEnabled] = useState(false);
   const [repeatMode, setRepeatMode] = useState<RepeatMode>('off');
+  const [autoplayEnabled, setAutoplayEnabled] = useState(true);
+  useFocusEffect(useCallback(() => {
+    let active = true;
+    void getPreference('autoplayEnabled', true).then((value) => { if (active) setAutoplayEnabled(value); });
+    return () => { active = false; };
+  }, []));
 
   const playerSections = useMemo(() => getPlayerLayoutSections(appConfig), [appConfig]);
   const sectionItems = useMemo(
@@ -305,6 +312,7 @@ export default function PlaySection() {
             onFavoriteToggle={() => { void handleFavoriteToggle(); }}
             currentTrackNumber={activeIndex >= 0 ? activeIndex + 1 : undefined}
             totalTracks={allQueue.length}
+            advanceOnFinish={autoplayEnabled && canGoNext}
           />
         </View>
       ) : active && hasInlineAudio && active.mediaUrl ? (
@@ -324,6 +332,7 @@ export default function PlaySection() {
             onToggleShuffle={allQueue.length > 1 ? toggleShuffle : undefined}
             repeatMode={repeatMode}
             onCycleRepeat={allQueue.length > 0 ? cycleRepeat : undefined}
+            advanceOnFinish={autoplayEnabled && canGoNext && repeatMode === 'off'}
           />
         </View>
       ) : (

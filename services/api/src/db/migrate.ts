@@ -239,6 +239,35 @@ const migrationStatements = [
   `CREATE INDEX IF NOT EXISTS idx_app_ratings_guest_device ON app_ratings ((metadata->>'deviceId'), created_at DESC) WHERE user_id IS NULL`,
 
   // ============ INSTALLATION REFERRALS ============
+  `CREATE TABLE IF NOT EXISTS mobile_installations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    legacy_device_id UUID UNIQUE,
+    token_hash TEXT NOT NULL UNIQUE,
+    platform TEXT NOT NULL CHECK (platform IN ('ios', 'android', 'web', 'unknown')),
+    app_version TEXT,
+    personalization_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'revoked')),
+    first_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    activated_at TIMESTAMPTZ
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_mobile_installations_last_seen ON mobile_installations (last_seen_at DESC)`,
+  `ALTER TABLE mobile_installations ADD COLUMN IF NOT EXISTS personalization_enabled BOOLEAN NOT NULL DEFAULT TRUE`,
+  `CREATE TABLE IF NOT EXISTS mobile_installation_events (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    installation_id UUID NOT NULL REFERENCES mobile_installations(id) ON DELETE CASCADE,
+    event_type TEXT NOT NULL CHECK (event_type IN ('onboarding_completed', 'playback_milestone')),
+    content_id TEXT,
+    content_type TEXT,
+    source TEXT,
+    idempotency_key TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (installation_id, idempotency_key)
+  )`,
+  `ALTER TABLE mobile_installation_events ADD COLUMN IF NOT EXISTS content_id TEXT`,
+  `ALTER TABLE mobile_installation_events ADD COLUMN IF NOT EXISTS content_type TEXT`,
+  `ALTER TABLE mobile_installation_events ADD COLUMN IF NOT EXISTS source TEXT`,
+  `CREATE INDEX IF NOT EXISTS idx_mobile_installation_events_content ON mobile_installation_events (installation_id, created_at DESC) WHERE content_id IS NOT NULL`,
   `CREATE TABLE IF NOT EXISTS mobile_referrals (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     device_id UUID NOT NULL UNIQUE,
@@ -253,8 +282,12 @@ const migrationStatements = [
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     referral_id UUID NOT NULL REFERENCES mobile_referrals(id) ON DELETE CASCADE,
     joined_device_id UUID NOT NULL UNIQUE,
+    status TEXT NOT NULL DEFAULT 'attributed' CHECK (status IN ('attributed', 'activated', 'rejected')),
+    activated_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`,
+  `ALTER TABLE mobile_referral_attributions ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'attributed'`,
+  `ALTER TABLE mobile_referral_attributions ADD COLUMN IF NOT EXISTS activated_at TIMESTAMPTZ`,
   `CREATE INDEX IF NOT EXISTS idx_mobile_referral_attributions_referral ON mobile_referral_attributions (referral_id, created_at DESC)`,
 ];
 

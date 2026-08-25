@@ -2,16 +2,19 @@ import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { emptyFeedBundle, fetchFeedBundle, type FeedBundle } from '../services/contentService';
 import { useLocalContent } from './useLocalContent';
+import { useAppContext } from '../context/AppContext';
 
 async function loadFeed(): Promise<FeedBundle> {
   return fetchFeedBundle();
 }
 
 export function useContentFeed() {
+  const { deviceId, isReady } = useAppContext();
   const { history } = useLocalContent();
   const { data, isLoading, isRefetching, error, refetch } = useQuery({
-    queryKey: ['feed'],
+    queryKey: ['feed', deviceId],
     queryFn: loadFeed,
+    enabled: isReady && Boolean(deviceId),
   });
 
   const feed = useMemo(() => {
@@ -27,7 +30,7 @@ export function useContentFeed() {
 
   return {
     feed,
-    loading: isLoading,
+    loading: !isReady || !deviceId || isLoading,
     // Distinct from `loading` (first load, drives content skeletons) —
     // React Query's `isLoading` is false on every refetch after the first
     // success, so binding a RefreshControl's `refreshing` prop to it means

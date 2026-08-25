@@ -136,6 +136,7 @@ export const createApp = () => {
       'X-Requested-With',
       'X-Claudy-Client-Platform',
       'X-Claudy-Client-Version',
+      'X-Installation-Token',
       'X-Request-ID',
     ],
     exposedHeaders: ['X-Request-ID', 'X-Correlation-ID'],

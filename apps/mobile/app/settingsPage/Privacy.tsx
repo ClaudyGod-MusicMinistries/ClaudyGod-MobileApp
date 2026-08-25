@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { TextInput, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { PremiumPage } from '../../components/feed';
 import { CustomText } from '../../components/CustomText';
@@ -19,6 +20,7 @@ import {
   fetchMePrivacyOverview,
   requestPrivacyDataExport,
   requestPrivacyDeleteAccount,
+  resetInstallationRecommendationHistory,
   resetRecommendationHistory,
 } from '../../services/userFlowService';
 import { openExternalUrl } from '../../util/externalLinks';
@@ -108,6 +110,7 @@ export default function Privacy() {
   const { config } = useMobileAppConfig();
   const { showModal } = useAppModal();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { isAuthenticated, user } = useAuth();
   const [loading,           setLoading]           = useState(true);
   const [overviewError,     setOverviewError]     = useState(false);
@@ -149,7 +152,8 @@ export default function Privacy() {
 
   const performResetHistory = async () => {
     try {
-      const response = await resetRecommendationHistory();
+      const response = isAuthenticated ? await resetRecommendationHistory() : await resetInstallationRecommendationHistory();
+      await queryClient.invalidateQueries({ queryKey: ['feed'] });
       showModal({ title: 'Recommendations reset', message: `Cleared ${response.clearedPlayEvents} playback event(s).`, tone: 'success', primaryAction: { label: 'Done' } });
       void refreshPrivacy();
     } catch (error) {
@@ -206,7 +210,7 @@ export default function Privacy() {
             <CustomText variant="caption" style={styles.heroEyebrow}>Privacy controls</CustomText>
             <CustomText variant="display" style={styles.heroDisplay}>{isAuthenticated ? 'Your data. Your decisions.' : 'Privacy starts before sign-in.'}</CustomText>
             <CustomText variant="body" style={styles.heroBody}>
-              {isAuthenticated ? `Signed in as ${user?.email ?? 'your account'}. Manage exports, recommendations, and deletion requests here.` : 'Browse as a guest with device-local activity, or sign in to synchronize data and use account privacy controls.'}
+              {isAuthenticated ? `Signed in as ${user?.email ?? 'your account'}. Manage exports, recommendations, and deletion requests here.` : 'Guest recommendations use this installation’s playback signals. You can reset them here without creating an account.'}
             </CustomText>
           </SurfaceCard>
         </FadeIn>
@@ -229,7 +233,10 @@ export default function Privacy() {
               <PrivacyAction icon="verified-user" title="Authenticated account" description="Account privacy operations require your secure session." onPress={() => showModal({ title: 'Account protected', message: 'Export, recommendation reset, and deletion requests are submitted through your authenticated backend session.', tone: 'success', primaryAction: { label: 'Done' } })} />
               <PrivacyAction icon="download" title="Export my data" description="Create a tracked account-data export request." onPress={() => void requestExport()} />
               <PrivacyAction icon="history-toggle-off" title="Reset recommendations" description="Clear server activity used for recommendations." onPress={resetHistory} />
-            </> : <PrivacyAction icon="login" title="Sign in for account controls" description="Securely access exports, synchronized preferences, and deletion requests." onPress={() => router.push(APP_ROUTES.auth.signIn)} />}
+            </> : <>
+              <PrivacyAction icon="history-toggle-off" title="Reset recommendations" description="Clear playback signals associated with this installation." onPress={resetHistory} />
+              <PrivacyAction icon="login" title="Optional account controls" description="Connect a profile only if you want exports and cross-device synchronization." onPress={() => router.push(APP_ROUTES.auth.signIn)} />
+            </>}
             <PrivacyAction icon="email"             title="Contact privacy team"    description={contactEmail}                                   onPress={() => void openExternalUrl(`mailto:${contactEmail}`)} />
           </View>
         </SurfaceCard>

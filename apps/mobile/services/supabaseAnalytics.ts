@@ -5,6 +5,9 @@ import {
 } from './userFlowService';
 import { getStoredMobileSession } from './authService';
 import { reportException, reportBreadcrumb } from '../lib/sentry';
+import { apiFetch } from './apiClient';
+import { getPreference } from '../lib/localUserStorage';
+import { queryClient } from '../lib/queryClient';
 
 export interface PlayEventInput {
   contentId: string;
@@ -20,7 +23,26 @@ export async function trackPlayEvent(input: PlayEventInput): Promise<void> {
   // request (silently caught here, but still a real network call and a visible
   // console error for every anonymous listener, the majority of traffic).
   const { user } = await getStoredMobileSession();
-  if (!user) return;
+  if (!user) {
+    try {
+      const personalizationEnabled = await getPreference('personalizationEnabled', true);
+      await apiFetch('/v1/mobile/installations/events', {
+        method: 'POST',
+        body: JSON.stringify({
+          event: 'playback_milestone',
+          idempotencyKey: personalizationEnabled ? `recommendation-play:${input.contentId}` : 'activation:first-play',
+          ...(personalizationEnabled ? { contentId: input.contentId, contentType: normalizeContentType(input.contentType), source: input.source ?? 'unknown' } : {}),
+        }),
+      });
+      if (personalizationEnabled) {
+        await queryClient.invalidateQueries({ queryKey: ['feed'] });
+      }
+      reportBreadcrumb({ category: 'engagement', message: 'guest playback milestone recorded', level: 'info', data: { source: input.source } });
+    } catch (error) {
+      reportException(error, { tags: { flow: 'guest-playback-milestone' } });
+    }
+    return;
+  }
 
   try {
     await trackMePlayEvent({

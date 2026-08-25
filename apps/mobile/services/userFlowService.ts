@@ -49,6 +49,16 @@ export interface MeMetrics {
   liveSubscriptions: number;
 }
 
+export async function fetchInstallationPreferences() {
+  return apiFetch<{ preferences: { personalizationEnabled: boolean } }>('/v1/mobile/installations/preferences');
+}
+
+export async function updateInstallationPersonalization(personalizationEnabled: boolean) {
+  return apiFetch<{ preferences: { personalizationEnabled: boolean } }>('/v1/mobile/installations/preferences', {
+    method: 'PATCH', body: JSON.stringify({ personalizationEnabled }),
+  });
+}
+
 export interface MobileAppExperienceConfig {
   version: number;
   privacy: {
@@ -403,6 +413,12 @@ export async function resetRecommendationHistory() {
   });
 }
 
+export async function resetInstallationRecommendationHistory() {
+  return apiFetch<{ clearedPlayEvents: number }>('/v1/mobile/recommendations/reset', {
+    method: 'POST', body: JSON.stringify({}),
+  });
+}
+
 export async function createSupportRequest(input: {
   category: string;
   subject: string;
@@ -433,7 +449,7 @@ export async function fetchMeSupportRequests() {
 }
 
 export async function createGuestSupportRequest(input: {
-  deviceId: string; contactEmail: string; category: string; subject: string; message: string;
+  contactEmail: string; category: string; subject: string; message: string;
 }) {
   return apiFetch<{ ticket: { id: string; status: string; createdAt: string; trackingToken: string } }>('/v1/mobile/support-requests', {
     method: 'POST', body: JSON.stringify(input),
@@ -441,7 +457,7 @@ export async function createGuestSupportRequest(input: {
 }
 
 export async function fetchGuestSupportRequestStatuses(input: {
-  deviceId: string; tickets: { id: string; trackingToken: string }[];
+  tickets: { id: string; trackingToken: string }[];
 }) {
   return apiFetch<{ tickets: SupportTicketSummary[] }>('/v1/mobile/support-requests/status', {
     method: 'POST', body: JSON.stringify(input),
@@ -450,7 +466,6 @@ export async function fetchGuestSupportRequestStatuses(input: {
 
 export async function createAppRating(input: {
   rating: number;
-  deviceId: string;
   comment?: string;
   channel?: 'mobile' | 'admin' | 'web';
   metadata?: JsonRecord;

@@ -64,6 +64,8 @@ test('premium product-information screens share the giving flow and guest-safe b
   const referral = fs.readFileSync(path.join(root, 'hooks/useReferral.ts'), 'utf8');
   const flows = fs.readFileSync(path.join(root, 'services/userFlowService.ts'), 'utf8');
   const mobileApi = fs.readFileSync(path.resolve(root, '../../services/api/src/modules/mobile/mobile.routes.ts'), 'utf8');
+  const installationAuth = fs.readFileSync(path.resolve(root, '../../services/api/src/middleware/authenticateInstallation.ts'), 'utf8');
+  const installationStore = fs.readFileSync(path.join(root, 'lib/installationSessionStorage.ts'), 'utf8');
   assert.match(legal, /PremiumPage/);
   assert.match(legal, /title="Try again" variant="gradient" size="lg" fullWidth/);
   assert.match(referral, /\/v1\/mobile\/referrals\/profile/);
@@ -71,6 +73,12 @@ test('premium product-information screens share the giving flow and guest-safe b
   assert.match(flows, /\/v1\/mobile\/ratings/);
   assert.match(mobileApi, /guestFeedbackLimiter/);
   assert.match(mobileApi, /\/referrals\/attribute/);
+  assert.match(mobileApi, /authenticateInstallation/);
+  assert.match(mobileApi, /\/installations\/events/);
+  assert.doesNotMatch(referral, /JSON\.stringify\(\{ deviceId \}\)/);
+  assert.match(installationAuth, /resolveInstallationCredential/);
+  assert.match(installationStore, /SecureStore\.WHEN_UNLOCKED_THIS_DEVICE_ONLY/);
+  assert.doesNotMatch(installationStore, /AsyncStorage\.setItem/);
 });
 
 test('help support is guest-capable, trackable, backend-configured, and token driven', () => {
@@ -219,6 +227,39 @@ test('authenticated settings require backend acknowledgement and retain a local 
   assert.match(settings, /updateMePreferences\(/);
   assert.match(settings, /getStoredMobileSession\(\)/);
   assert.match(settings, /setPreference\(/);
+});
+
+test('settings capabilities describe and control real playback and privacy behavior', () => {
+  const settings = fs.readFileSync(path.join(root, 'app/(tabs)/settings.tsx'), 'utf8');
+  const music = fs.readFileSync(path.join(root, 'features/media/MusicScreen.tsx'), 'utf8');
+  const audio = fs.readFileSync(path.join(root, 'components/media/AudioPlayer.tsx'), 'utf8');
+  const youtube = fs.readFileSync(path.join(root, 'components/media/YouTubeAudioPlayer.tsx'), 'utf8');
+  assert.match(settings, /label: 'Audio quality'[\s\S]*statusLabel: 'Adaptive'/);
+  assert.doesNotMatch(settings, /label: 'High quality audio'/);
+  assert.match(settings, /label: 'Recommendations'[\s\S]*installation’s playback history/);
+  assert.match(settings, /updateInstallationPersonalization/);
+  assert.match(settings, /label: 'Crash diagnostics'/);
+  assert.match(music, /getPreference\('autoplayEnabled'/);
+  assert.match(music, /advanceOnFinish=\{autoplayEnabled/);
+  assert.match(audio, /advanceOnFinish/);
+  assert.match(youtube, /msg\.state === 0 && advanceOnFinish/);
+});
+
+test('guest recommendations use verified installation history and enforce opt-out', () => {
+  const feed = fs.readFileSync(path.join(root, 'services/contentService.ts'), 'utf8');
+  const analytics = fs.readFileSync(path.join(root, 'services/supabaseAnalytics.ts'), 'utf8');
+  const mobileApi = fs.readFileSync(path.resolve(root, '../../services/api/src/modules/mobile/mobile.routes.ts'), 'utf8');
+  const mobileService = fs.readFileSync(path.resolve(root, '../../services/api/src/modules/mobile/mobile.service.ts'), 'utf8');
+  const installation = fs.readFileSync(path.resolve(root, '../../services/api/src/modules/mobile/installation.service.ts'), 'utf8');
+  assert.match(feed, /\/v1\/mobile\/recommendations\?limit=12/);
+  assert.match(analytics, /getPreference\('personalizationEnabled'/);
+  assert.match(analytics, /contentId: input\.contentId/);
+  assert.match(mobileApi, /getInstallationRecommendations\(req\.installation!\.id/);
+  assert.match(mobileService, /installation_affinity_v1/);
+  assert.match(mobileService, /affinity > 0/);
+  assert.match(mobileService, /!playedIds\.has\(item\.id\)/);
+  assert.match(installation, /DELETE FROM mobile_installation_events WHERE installation_id = \$1 AND content_id IS NOT NULL/);
+  assert.match(installation, /mayPersonalize \? input\.contentId/);
 });
 
 test('store builds declare every sensitive native permission with purpose-specific copy', () => {

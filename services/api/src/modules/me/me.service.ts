@@ -1449,23 +1449,17 @@ export const recordGuestReferralShare = async (deviceId: string) => {
 };
 
 export const attributeGuestReferral = async (input: { deviceId: string; code: string }) => {
-  const result = await pool.query<{ joined_count: number }>(
+  const result = await pool.query<{ referral_id: string }>(
     `WITH matching_referral AS (
        SELECT id FROM mobile_referrals WHERE code = $1 AND device_id <> $2
-     ), recorded AS (
-       INSERT INTO mobile_referral_attributions (referral_id, joined_device_id)
-       SELECT id, $2 FROM matching_referral
-       ON CONFLICT (joined_device_id) DO NOTHING
-       RETURNING referral_id
      )
-     UPDATE mobile_referrals r
-        SET joined_count = joined_count + 1, updated_at = NOW()
-       FROM recorded
-      WHERE r.id = recorded.referral_id
-      RETURNING r.joined_count`,
+     INSERT INTO mobile_referral_attributions (referral_id, joined_device_id, status)
+     SELECT id, $2, 'attributed' FROM matching_referral
+     ON CONFLICT (joined_device_id) DO NOTHING
+     RETURNING referral_id`,
     [input.code, input.deviceId],
   );
-  return { attributed: (result.rowCount ?? 0) > 0, joinedCount: result.rows[0]?.joined_count ?? null };
+  return { attributed: (result.rowCount ?? 0) > 0, status: result.rows[0] ? 'attributed' : null };
 };
 
 const parseAmountToCents = (amount: string): number => {

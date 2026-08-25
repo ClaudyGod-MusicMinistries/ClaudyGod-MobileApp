@@ -54,6 +54,7 @@ interface AudioPlayerProps {
   onToggleShuffle?: () => void;
   repeatMode?: RepeatMode;
   onCycleRepeat?: () => void;
+  advanceOnFinish?: boolean;
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -155,6 +156,7 @@ export function AudioPlayer({
   onToggleShuffle,
   repeatMode = 'off',
   onCycleRepeat,
+  advanceOnFinish = false,
 }: AudioPlayerProps) {
   const styles = useStyles();
   const theme  = useAppTheme();
@@ -266,10 +268,10 @@ export function AudioPlayer({
   }, [player, repeatMode, track.uri]);
 
   useEffect(() => {
-    if (repeatMode === 'all' && status.didJustFinish) {
+    if ((repeatMode === 'all' || advanceOnFinish) && status.didJustFinish) {
       onNext?.();
     }
-  }, [status.didJustFinish, repeatMode, onNext]);
+  }, [advanceOnFinish, status.didJustFinish, repeatMode, onNext]);
 
   const statusError = (status as unknown as { error?: string }).error;
   useEffect(() => {

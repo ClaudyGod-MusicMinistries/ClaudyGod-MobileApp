@@ -19,8 +19,9 @@ import { getPreference, setPreference } from '../../lib/localUserStorage';
 import { setDiagnosticsAllowed } from '../../lib/sentry';
 import { PremiumPage } from '../../components/feed';
 import { getStoredMobileSession } from '../../services/authService';
-import { fetchMePreferences, updateMePreferences, type MePreferences } from '../../services/userFlowService';
+import { fetchInstallationPreferences, fetchMePreferences, updateInstallationPersonalization, updateMePreferences, type MePreferences } from '../../services/userFlowService';
 import { BRAND_LOGO_ASSET } from '../../util/brandAssets';
+import { useQueryClient } from '@tanstack/react-query';
 
 type TogglePreferenceKey = 'notificationsEnabled' | 'autoplayEnabled' | 'highQualityEnabled' | 'personalizationEnabled' | 'diagnosticsEnabled';
 
@@ -70,13 +71,24 @@ const DEFAULT_QUICK_ACCESS_SECTIONS: {
 
 type ThemePreference = 'system' | 'light' | 'dark';
 
-type SettingItem = {
+type ToggleSettingItem = {
+  kind: 'toggle';
   icon: AppIconName;
   label: string;
   hint?: string;
   value: boolean;
   onToggle: (_value: boolean) => void;
 };
+
+type StatusSettingItem = {
+  kind: 'status';
+  icon: AppIconName;
+  label: string;
+  hint: string;
+  statusLabel: string;
+};
+
+type SettingItem = ToggleSettingItem | StatusSettingItem;
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
@@ -91,6 +103,8 @@ const useStyles = makeStyles((theme) => ({
   settingTextWrap:  { flex: 1 },
   settingLabel:     { color: theme.colors.text, fontWeight: '600' },
   settingHint:      { color: theme.colors.textMuted, marginTop: 3, lineHeight: 16 },
+  settingStatus: { paddingHorizontal: theme.spacing.sm, paddingVertical: theme.spacing.xs, borderRadius: theme.radius.pill, backgroundColor: theme.colors.infoSurface, borderWidth: 1, borderColor: theme.colors.infoBorder },
+  settingStatusText: { color: theme.colors.info, fontWeight: '700' },
 
   sectionShell: {
     borderRadius: theme.radius.xl, overflow: 'hidden',
@@ -145,16 +159,18 @@ function SettingRow({ item }: { item: SettingItem }) {
   const device = useDeviceClass();
   const accentColor = theme.colors.primary;
 
+  const isToggle = item.kind === 'toggle';
+  const isEnabled = isToggle && item.value;
   return (
     <TVTouchable
-      onPress={() => item.onToggle(!item.value)}
+      onPress={isToggle ? () => item.onToggle(!item.value) : undefined}
       style={[styles.settingRowTouch, { paddingVertical: device.isTV ? 14 : 10 }]}
       showFocusBorder={false}
-      accessibilityRole="switch"
-      accessibilityState={{ checked: item.value }}
+      accessibilityRole={isToggle ? 'switch' : 'text'}
+      accessibilityState={isToggle ? { checked: item.value } : undefined}
     >
-      <View style={[styles.settingIcon, item.value ? { backgroundColor: theme.colors.primarySurface, borderColor: theme.colors.primaryBorder } : null]}>
-        <AppIcon name={item.icon} size={device.isTV ? 20 : 18} color={item.value ? accentColor : theme.colors.textMuted} />
+      <View style={[styles.settingIcon, isEnabled ? { backgroundColor: theme.colors.primarySurface, borderColor: theme.colors.primaryBorder } : null]}>
+        <AppIcon name={item.icon} size={device.isTV ? 20 : 18} color={isToggle ? (item.value ? accentColor : theme.colors.textMuted) : theme.colors.info} />
       </View>
       <View style={styles.settingTextWrap}>
         <CustomText style={[styles.settingLabel, { fontSize: device.isTV ? 15.5 : 14 }]}>
@@ -166,13 +182,17 @@ function SettingRow({ item }: { item: SettingItem }) {
           </CustomText>
         ) : null}
       </View>
-      <Switch
-        value={item.value}
-        onValueChange={item.onToggle}
-        thumbColor={item.value ? theme.colors.onPrimary : theme.colors.textMuted}
-        trackColor={{ false: theme.colors.subtleFillMed, true: accentColor }}
-        ios_backgroundColor={theme.colors.border}
-      />
+      {isToggle ? (
+        <Switch
+          value={item.value}
+          onValueChange={item.onToggle}
+          thumbColor={item.value ? theme.colors.onPrimary : theme.colors.textMuted}
+          trackColor={{ false: theme.colors.subtleFillMed, true: accentColor }}
+          ios_backgroundColor={theme.colors.border}
+        />
+      ) : (
+        <View style={styles.settingStatus}><CustomText variant="caption" style={styles.settingStatusText}>{item.statusLabel}</CustomText></View>
+      )}
     </TVTouchable>
   );
 }
@@ -270,6 +290,7 @@ export default function SettingsScreen() {
   const device = useDeviceClass();
   const { themePreference, setThemePreference } = useThemeContext();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { showModal } = useAppModal();
   const { config: appConfig } = useMobileAppConfig();
   const { toggleNotifications, hasPermission: pushPermissionGranted, isLoading: pushLoading } = usePushNotifications();
@@ -281,9 +302,9 @@ export default function SettingsScreen() {
 
   const [notifications,   setNotifications]   = useState(true);
   const [autoPlay,        setAutoPlay]         = useState(true);
-  const [highQuality,     setHighQuality]      = useState(false);
   const [personalization, setPersonalization]  = useState(true);
   const [diagnostics,      setDiagnostics]     = useState(true);
+  const [accountConnected, setAccountConnected] = useState(false);
   const [awaitingPushPermission, setAwaitingPushPermission] = useState(false);
 
   // The mobile app has no public account system. Preferences are device-local.
@@ -294,7 +315,6 @@ export default function SettingsScreen() {
       if (cancelled) return;
       setNotifications(prefs.notificationsEnabled);
       setAutoPlay(prefs.autoplayEnabled);
-      setHighQuality(prefs.highQualityEnabled);
       setPersonalization(prefs.personalizationEnabled);
       setDiagnostics(prefs.diagnosticsEnabled);
       setDiagnosticsAllowed(prefs.diagnosticsEnabled);
@@ -309,8 +329,16 @@ export default function SettingsScreen() {
       );
       const localPreferences = Object.fromEntries(entries) as Record<TogglePreferenceKey, boolean>;
       const { user } = await getStoredMobileSession();
+      if (!cancelled) setAccountConnected(Boolean(user));
       if (!user) {
-        applyValues(localPreferences);
+        try {
+          const installation = await fetchInstallationPreferences();
+          const resolved = { ...localPreferences, personalizationEnabled: installation.preferences.personalizationEnabled };
+          applyValues(resolved);
+          await setPreference('personalizationEnabled', resolved.personalizationEnabled);
+        } catch {
+          applyValues(localPreferences);
+        }
         return;
       }
 
@@ -338,6 +366,8 @@ export default function SettingsScreen() {
     const { user } = await getStoredMobileSession();
     if (user) {
       await updateMePreferences({ [key]: value } as Partial<MePreferences>);
+    } else if (key === 'personalizationEnabled') {
+      await updateInstallationPersonalization(value);
     }
     // Keep an offline cache after the authoritative server write succeeds.
     await setPreference(key, value);
@@ -397,6 +427,7 @@ export default function SettingsScreen() {
 
   const playbackSettings: SettingItem[] = useMemo(() => [
     {
+      kind: 'toggle',
       icon: 'play-circle-outline',
       label: 'Auto-play',
       hint: 'Continue to the next song or message automatically.',
@@ -404,16 +435,17 @@ export default function SettingsScreen() {
       onToggle: makeToggleHandler('autoplayEnabled', setAutoPlay, { title: 'Playback updated', on: 'Auto-play is on.', off: 'Auto-play is off.', icon: 'play-circle-outline' }),
     },
     {
+      kind: 'status',
       icon: 'high-quality',
-      label: 'High quality audio',
-      hint: 'Use more data for richer listening when available.',
-      value: highQuality,
-      onToggle: makeToggleHandler('highQualityEnabled', setHighQuality, { title: 'Audio quality updated', on: 'Higher quality audio is enabled.', off: 'Standard quality audio is enabled.', icon: 'high-quality' }),
+      label: 'Audio quality',
+      hint: 'Uses the publisher’s source quality. YouTube streams adapt automatically to the connection.',
+      statusLabel: 'Adaptive',
     },
-  ], [autoPlay, highQuality, makeToggleHandler]);
+  ], [autoPlay, makeToggleHandler]);
 
   const experienceSettings: SettingItem[] = useMemo(() => [
     {
+      kind: 'toggle',
       icon: 'notifications-none',
       label: 'Notifications',
       hint: 'Receive live alerts and release reminders.',
@@ -425,20 +457,33 @@ export default function SettingsScreen() {
       },
     },
     {
+      kind: 'toggle',
       icon: 'auto-awesome',
       label: 'Recommendations',
-      hint: 'Use listening activity to improve suggestions.',
+      hint: accountConnected ? 'Use listening activity to improve suggestions.' : 'Use this installation’s playback history to rank relevant ministry content.',
       value: personalization,
-      onToggle: makeToggleHandler('personalizationEnabled', setPersonalization, { title: 'Recommendations updated', on: 'Recommendations are personalized.', off: 'Personalization is off.', icon: 'auto-awesome' }),
+      onToggle: (value: boolean) => {
+        setPersonalization(value);
+        persistPreference('personalizationEnabled', value)
+          .then(() => {
+            void queryClient.invalidateQueries({ queryKey: ['feed'] });
+            showModal({ title: 'Recommendations updated', message: value ? 'Installation-based recommendations are on.' : 'Recommendation tracking is off.', tone: 'info', icon: 'auto-awesome' });
+          })
+          .catch(() => {
+            setPersonalization(!value);
+            showModal({ title: 'Update failed', message: 'Could not save this setting. Please try again.', tone: 'error', icon: 'auto-awesome' });
+          });
+      },
     },
     {
+      kind: 'toggle',
       icon: 'bug-report',
-      label: 'Diagnostics',
-      hint: 'Share crash and error reports to help us fix problems faster.',
+      label: 'Crash diagnostics',
+      hint: 'Controls whether unexpected errors are sent to the configured diagnostics service.',
       value: diagnostics,
       onToggle: makeToggleHandler('diagnosticsEnabled', setDiagnostics, { title: 'Diagnostics updated', on: 'Crash reports are shared.', off: 'Crash reports are off.', icon: 'bug-report' }),
     },
-  ], [notifications, personalization, diagnostics, makeToggleHandler, toggleNotifications]);
+  ], [accountConnected, diagnostics, makeToggleHandler, notifications, persistPreference, personalization, queryClient, showModal, toggleNotifications]);
 
   const isWideLayout = device.isDesktop || device.isTV;
   const quickItems = settingsHubSections.flatMap((section) => section.items);

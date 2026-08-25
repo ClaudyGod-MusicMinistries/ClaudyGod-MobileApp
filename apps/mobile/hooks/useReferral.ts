@@ -35,7 +35,7 @@ export function useReferral(): ReferralState {
       setIsLoading(true);
       try {
         const result = await apiFetch<ReferralProfile>('/v1/mobile/referrals/profile', {
-          method: 'POST', body: JSON.stringify({ deviceId }),
+          method: 'POST', body: JSON.stringify({}),
         });
         if (active) {
           setCode(result.referral.code);
@@ -66,7 +66,7 @@ export function useReferral(): ReferralState {
       });
       if (result.action === Share.sharedAction) {
         const updated = await apiFetch<ReferralProfile>('/v1/mobile/referrals/share', {
-          method: 'POST', body: JSON.stringify({ deviceId }),
+          method: 'POST', body: JSON.stringify({}),
         });
         setShareCount(updated.referral.shareCount);
         setReferralCount(updated.referral.joinedCount);
@@ -74,7 +74,7 @@ export function useReferral(): ReferralState {
     } catch {
       // user cancelled or share not available — silent
     }
-  }, [code, deviceId, shareUrl]);
+  }, [code, shareUrl]);
 
   const copyCode = useCallback(() => {
     if (!code) return;

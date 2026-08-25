@@ -1,10 +1,11 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { Platform } from 'react-native';
 import * as Linking from 'expo-linking';
+import Constants from 'expo-constants';
 import { apiFetch } from '../services/apiClient';
+import { clearInstallationSession, getInstallationSession, saveInstallationSession } from '../lib/installationSessionStorage';
 
-const DEVICE_ID_KEY = 'claudygod.device.id';
-const REFERRAL_ATTRIBUTION_KEY = 'claudygod.referral.attributed';
+const attributedCodes = new Set<string>();
 
 function referralCodeFromUrl(url: string | null): string | null {
   if (!url) return null;
@@ -18,23 +19,14 @@ function referralCodeFromUrl(url: string | null): string | null {
   }
 }
 
-async function attributeReferralFromUrl(url: string | null, deviceId: string) {
+async function attributeReferralFromUrl(url: string | null) {
   const code = referralCodeFromUrl(url);
   if (!code) return;
-  const recorded = await AsyncStorage.getItem(REFERRAL_ATTRIBUTION_KEY);
-  if (recorded) return;
+  if (attributedCodes.has(code)) return;
   const response = await apiFetch<{ attributed: boolean }>('/v1/mobile/referrals/attribute', {
-    method: 'POST', body: JSON.stringify({ deviceId, code }),
+    method: 'POST', body: JSON.stringify({ code }),
   });
-  if (response.attributed) await AsyncStorage.setItem(REFERRAL_ATTRIBUTION_KEY, code);
-}
-
-function generateUUID(): string {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    const v = c === 'x' ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  });
+  if (response.attributed) attributedCodes.add(code);
 }
 
 interface AppContextValue {
@@ -50,30 +42,64 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let active = true;
-    AsyncStorage.getItem(DEVICE_ID_KEY)
-      .then(async (stored) => {
-        if (!active) return;
-        const id = stored ?? generateUUID();
-        if (!stored) await AsyncStorage.setItem(DEVICE_ID_KEY, id);
-        setDeviceId(id);
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
+    const establishInstallation = async () => {
+      let session = await getInstallationSession();
+      if (session) {
+        try {
+          const verified = await apiFetch<{ installation: { id: string } }>('/v1/mobile/installations/session');
+          session = { ...session, installationId: verified.installation.id };
+        } catch {
+          await clearInstallationSession();
+          session = null;
+        }
+      }
+      if (!session && Platform.OS === 'web') {
+        try {
+          const verified = await apiFetch<{ installation: { id: string } }>('/v1/mobile/installations/session');
+          if (active) {
+            setDeviceId(verified.installation.id);
+            setIsReady(true);
+            void Linking.getInitialURL().then((url) => attributeReferralFromUrl(url)).catch(() => undefined);
+          }
+          return;
+        } catch {
+          // No HttpOnly installation session yet; registration below creates it.
+        }
+      }
+      if (!session) {
+        const result = await apiFetch<{ installation: { id: string }; credential: string }>('/v1/mobile/installations/register', {
+          method: 'POST',
+          body: JSON.stringify({ platform: Platform.OS === 'ios' || Platform.OS === 'android' || Platform.OS === 'web' ? Platform.OS : 'unknown', appVersion: Constants.expoConfig?.version ?? undefined }),
+        });
+        session = { installationId: result.installation.id, credential: result.credential };
+        await saveInstallationSession(session);
+      }
+      if (active) {
+        setDeviceId(session.installationId);
         setIsReady(true);
-        void Linking.getInitialURL().then((url) => attributeReferralFromUrl(url, id)).catch(() => undefined);
-      })
-      .catch(() => {
+        void Linking.getInitialURL().then((url) => attributeReferralFromUrl(url)).catch(() => undefined);
+      }
+    };
+    const attemptInstallation = () => {
+      void establishInstallation().catch(() => {
         if (active) {
-          setDeviceId(generateUUID());
           setIsReady(true);
+          retryTimer = setTimeout(attemptInstallation, 15_000);
         }
       });
+    };
+    attemptInstallation();
     return () => {
       active = false;
+      if (retryTimer) clearTimeout(retryTimer);
     };
   }, []);
 
   useEffect(() => {
     if (!deviceId) return undefined;
     const subscription = Linking.addEventListener('url', ({ url }) => {
-      void attributeReferralFromUrl(url, deviceId).catch(() => undefined);
+      void attributeReferralFromUrl(url).catch(() => undefined);
     });
     return () => subscription.remove();
   }, [deviceId]);

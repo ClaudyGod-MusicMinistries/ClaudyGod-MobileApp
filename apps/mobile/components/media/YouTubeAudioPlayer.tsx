@@ -44,6 +44,7 @@ interface YouTubeAudioPlayerProps {
   onFavoriteToggle?: () => void;
   currentTrackNumber?: number;
   totalTracks?: number;
+  advanceOnFinish?: boolean;
 }
 
 // YouTube IFrame API HTML — muted=0 for audio, autoplay based on prop
@@ -166,6 +167,7 @@ export function YouTubeAudioPlayer({
   onFavoriteToggle,
   currentTrackNumber,
   totalTracks,
+  advanceOnFinish = false,
 }: YouTubeAudioPlayerProps) {
   const styles = useStyles();
   const theme  = useAppTheme();
@@ -252,6 +254,7 @@ export function YouTubeAudioPlayer({
         const playing = msg.state === 1 || msg.state === 3;
         setIsPlaying(playing);
         onPlayStateChange?.(playing);
+        if (msg.state === 0 && advanceOnFinish) onNext?.();
 
         Animated.spring(artScale, {
           toValue: playing ? 1.04 : 1,
@@ -265,7 +268,7 @@ export function YouTubeAudioPlayer({
         setPlayerError(true);
       }
     } catch { /* ignore parse errors */ }
-  }, [isSeeking, onProgress, onPlayStateChange, artScale]);
+  }, [advanceOnFinish, isSeeking, onNext, onProgress, onPlayStateChange, artScale]);
 
   const togglePlay = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
