@@ -1,5 +1,6 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Image, Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
+import Animated, { Easing, interpolateColor, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
@@ -11,6 +12,7 @@ import { TVTouchable } from './ui/TVTouchable';
 import { CustomText } from './CustomText';
 import { BRAND_LOGO_ASSET } from '../util/brandAssets';
 import { AppIcon, type AppIconName } from './ui/AppIcon';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 
 // layout.tabBarContentPadding is a structural constant (not theme-varying).
 // It must live at module level so non-component code can import it without hooks.
@@ -26,12 +28,12 @@ type FooterItem = {
   center?: boolean;
 };
 
-const FOOTER_ORDER: TabRouteName[] = ['home', 'player', 'videos', 'library', 'settings'];
+const FOOTER_ORDER: TabRouteName[] = ['home', 'videos', 'player', 'library', 'settings'];
 
 const FOOTER_CONFIG: Record<TabRouteName, Omit<FooterItem, 'routeName' | 'key'>> = {
   home:     { icon: 'home', label: 'Home' },
-  player:   { icon: 'headphones', label: 'Music' },
-  videos:   { icon: 'smart-display', label: 'Videos', center: true },
+  player:   { icon: 'play-arrow', label: 'Player', center: true },
+  videos:   { icon: 'smart-display', label: 'Videos' },
   library:  { icon: 'library-music', label: 'Library' },
   settings: { icon: 'tune', label: 'Settings' },
 };
@@ -182,42 +184,68 @@ function TabItem({
   focused,
   compact,
   onPress,
+  onLongPress,
 }: {
   item: FooterItem;
   focused: boolean;
   compact: boolean;
   onPress: () => void;
+  onLongPress: () => void;
 }) {
   const theme = useAppTheme();
+  const reduceMotion = useReducedMotion();
+  const focusProgress = useSharedValue(focused ? 1 : 0);
+
+  useEffect(() => {
+    focusProgress.value = withTiming(focused ? 1 : 0, {
+      duration: reduceMotion ? 0 : theme.timing.base,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [focusProgress, focused, reduceMotion, theme.timing.base]);
+
+  const capsuleStyle = useAnimatedStyle(() => ({
+    backgroundColor: interpolateColor(
+      focusProgress.value,
+      [0, 1],
+      ['transparent', theme.colors.tabBarActiveSurface],
+    ),
+    borderColor: interpolateColor(
+      focusProgress.value,
+      [0, 1],
+      ['transparent', theme.colors.tabBarActiveBorder],
+    ),
+    transform: [{ scale: 1 + focusProgress.value * 0.04 }],
+  }));
 
   return (
     <TVTouchable
       key={item.key}
-      accessibilityRole="button"
+      accessibilityRole="tab"
       accessibilityLabel={item.label}
       accessibilityState={{ selected: focused }}
       onPress={onPress}
-      style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 6, gap: 3 }}
+      onLongPress={onLongPress}
+      style={{ flex: 1, minHeight: 48, alignItems: 'center', justifyContent: 'center', paddingVertical: 5, gap: 2 }}
       showFocusBorder={false}
     >
-      <View
-        style={{
-          width: focused ? (compact ? 42 : 46) : (compact ? 32 : 36),
+      <Animated.View
+        style={[{
+          width: focused ? (compact ? 44 : 48) : (compact ? 36 : 40),
           height: compact ? 28 : 30,
           borderRadius: theme.radius.pill,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: focused ? theme.colors.primaryBorder : 'transparent',
-        }}
+          borderWidth: 1,
+        }, capsuleStyle]}
       >
         <AppIcon
           name={item.icon}
           size={focused ? (compact ? 20 : 22) : (compact ? 18 : 20)}
-          color={focused ? theme.colors.primary : theme.colors.textMuted}
+          color={focused ? theme.colors.tabBarTextActive : theme.colors.tabBarText}
         />
-      </View>
+      </Animated.View>
       <CustomText
-        style={{ color: focused ? theme.colors.text : theme.colors.textMuted, fontSize: compact ? 9 : 10, lineHeight: 12, fontWeight: focused ? '700' : '500' }}
+        style={{ color: focused ? theme.colors.tabBarTextActive : theme.colors.tabBarText, fontSize: compact ? 9 : 10, lineHeight: 12, fontWeight: focused ? '700' : '500' }}
         numberOfLines={1}
       >
         {item.label}
@@ -226,7 +254,115 @@ function TabItem({
   );
 }
 
-// ─── Floating curvy bottom tab bar (phone / tablet) ───────────────────────────
+function CenterPlayerTab({
+  item,
+  focused,
+  compact,
+  onPress,
+  onLongPress,
+}: {
+  item: FooterItem;
+  focused: boolean;
+  compact: boolean;
+  onPress: () => void;
+  onLongPress: () => void;
+}) {
+  const theme = useAppTheme();
+  const reduceMotion = useReducedMotion();
+  const actionSize = compact ? layout.tabBarActionCompactSize : layout.tabBarActionSize;
+  const focusProgress = useSharedValue(focused ? 1 : 0);
+
+  useEffect(() => {
+    focusProgress.value = withTiming(focused ? 1 : 0, {
+      duration: reduceMotion ? 0 : theme.timing.moderate,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [focusProgress, focused, reduceMotion, theme.timing.moderate]);
+
+  const cradleStyle = useAnimatedStyle(() => ({
+    borderColor: interpolateColor(
+      focusProgress.value,
+      [0, 1],
+      [theme.colors.tabBarBorder, theme.colors.tabBarActionActiveRing],
+    ),
+    transform: [
+      { translateY: -focusProgress.value * layout.tabBarActionActiveLift },
+      { scale: 1 + focusProgress.value * 0.035 },
+    ],
+  }));
+
+  const actionStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: 1 + focusProgress.value * 0.045 }],
+  }));
+
+  const labelStyle = useAnimatedStyle(() => ({
+    opacity: 0.76 + focusProgress.value * 0.24,
+    transform: [{ translateY: -focusProgress.value }],
+  }));
+
+  return (
+    <TVTouchable
+      accessibilityRole="tab"
+      accessibilityLabel="Open player"
+      accessibilityHint="Opens the music player"
+      accessibilityState={{ selected: focused }}
+      onPress={onPress}
+      onLongPress={onLongPress}
+      showFocusBorder={false}
+      style={{
+        flex: 1,
+        height: layout.tabBarHeight + layout.tabBarActionLift,
+        marginTop: -layout.tabBarActionLift,
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+      }}
+    >
+      <Animated.View
+        style={[{
+          width: actionSize + layout.tabBarActionRingWidth * 2,
+          height: actionSize + layout.tabBarActionRingWidth * 2,
+          borderRadius: theme.radius.pill,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: theme.colors.tabBarBg,
+          borderWidth: 1,
+        }, cradleStyle]}
+      >
+        <Animated.View
+          style={[{
+            width: actionSize,
+            height: actionSize,
+            borderRadius: theme.radius.pill,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: theme.colors.tabBarActionSurface,
+            ...theme.shadows.lg,
+          }, actionStyle]}
+        >
+          <View style={{ transform: [{ translateX: layout.tabBarPlayIconOpticalOffset }] }}>
+            <AppIcon name={item.icon} size={compact ? 24 : 27} color={theme.colors.tabBarActionIcon} />
+          </View>
+        </Animated.View>
+      </Animated.View>
+      <Animated.View style={labelStyle}>
+        <CustomText
+          numberOfLines={1}
+          style={{
+            color: focused ? theme.colors.tabBarTextActive : theme.colors.tabBarText,
+            fontSize: compact ? 9 : 10,
+            lineHeight: 12,
+            fontWeight: focused ? '700' : '600',
+            marginTop: 1,
+          }}
+        >
+          {item.label}
+        </CustomText>
+      </Animated.View>
+    </TVTouchable>
+  );
+}
+
+// ─── Opaque bottom navigation dock (phone / tablet) ──────────────────────────
 
 function BottomPillTabBar({
   state,
@@ -244,17 +380,23 @@ function BottomPillTabBar({
   const insets = useSafeAreaInsets();
   const isTablet = width >= 768;
 
-  const BAR_HEIGHT   = compact ? 64 : 70;
-  const BAR_MARGIN_H = isTablet ? Math.max(16, (width - Math.min(680, width - 32)) / 2) : 16;
-  const BOTTOM_INSET = Math.max(insets.bottom, 10);
+  const barHeight = compact ? layout.tabBarCompactHeight : layout.tabBarHeight;
+  const contentWidth = isTablet ? Math.min(layout.tabBarMaxWidth, width) : width;
+  const horizontalInset = Math.max(0, (width - contentWidth) / 2);
 
   const currentRouteName = state.routes[state.index]?.name;
 
   const navigateTo = (item: FooterItem) => {
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (routeExists(state.routes, item.routeName) || item.routeName === 'settings') {
+    const focused = currentRouteName === item.routeName;
+    const event = navigation.emit({ type: 'tabPress', target: item.key, canPreventDefault: true });
+    if (!focused && !event.defaultPrevented && (routeExists(state.routes, item.routeName) || item.routeName === 'settings')) {
+      void Haptics.selectionAsync();
       navigation.navigate(item.routeName as never);
     }
+  };
+
+  const longPress = (item: FooterItem) => {
+    navigation.emit({ type: 'tabLongPress', target: item.key });
   };
 
   return (
@@ -262,38 +404,36 @@ function BottomPillTabBar({
       style={{
         position: 'absolute',
         left: 0, right: 0, bottom: 0,
-        height: BOTTOM_INSET + BAR_HEIGHT + 8,
-        pointerEvents: 'box-none',
+        height: insets.bottom + barHeight,
+        backgroundColor: theme.colors.tabBarBg,
+        borderTopWidth: StyleSheet.hairlineWidth,
+        borderTopColor: theme.colors.tabBarBorder,
+        ...theme.shadows.md,
       }}
     >
-      {/* ── Pill bar ────────────────────────────────────────────────────── */}
       <View
         style={{
           position: 'absolute',
-          left: BAR_MARGIN_H,
-          right: BAR_MARGIN_H,
-          bottom: BOTTOM_INSET,
-          height: BAR_HEIGHT,
-          borderRadius: theme.radius.xl,
-          backgroundColor: theme.colors.tabBarBg,
-          borderWidth: 1,
-          borderColor: theme.colors.primaryBorder,
-          ...theme.shadows.lg,
+          left: horizontalInset,
+          right: horizontalInset,
+          top: 0,
+          height: barHeight,
           flexDirection: 'row',
           alignItems: 'center',
-          paddingHorizontal: 6,
-          overflow: 'hidden',
+          paddingHorizontal: compact ? 4 : 8,
         }}
       >
-        {footerItems.map((item) => (
-          <TabItem
-            key={item.key}
-            item={item}
-            focused={currentRouteName === item.routeName}
-            compact={compact}
-            onPress={() => navigateTo(item)}
-          />
-        ))}
+        {footerItems.map((item) => {
+          const sharedProps = {
+            key: item.key,
+            item,
+            focused: currentRouteName === item.routeName,
+            compact,
+            onPress: () => navigateTo(item),
+            onLongPress: () => longPress(item),
+          };
+          return item.center ? <CenterPlayerTab {...sharedProps} /> : <TabItem {...sharedProps} />;
+        })}
       </View>
     </View>
   );
