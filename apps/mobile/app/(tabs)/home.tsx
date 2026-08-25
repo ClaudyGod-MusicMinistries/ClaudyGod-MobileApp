@@ -14,7 +14,7 @@ import { FadeIn } from '../../components/ui/FadeIn';
 import { useContentFeed } from '../../hooks/useContentFeed';
 import { useWordOfDay } from '../../hooks/useWordOfDay';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
-import { useUserAccount } from '../../context/UserAccountContext';
+import { useAuth } from '../../features/auth/AuthContext';
 import { getHomeLayoutSections, deriveLayoutSectionItems, deriveLayoutSectionOverflowCount } from '../../util/mobileLayout';
 import { useAppTheme } from '../../util/colorScheme';
 import { makeStyles } from '../../styles/makeStyles';
@@ -272,7 +272,7 @@ export default function HomeScreen() {
   const { feed, loading, refreshing, error, refresh } = useContentFeed();
   const { bibleVerse, adminWord }  = useWordOfDay();
   const { config: appConfig } = useMobileAppConfig();
-  const { account } = useUserAccount();
+  const { user: account } = useAuth();
 
   const featured = feed.featured ?? null;
 

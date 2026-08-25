@@ -13,7 +13,7 @@ import { CustomText } from '../../components/CustomText';
 import { useAppTheme } from '../../util/colorScheme';
 import { useDeviceClass } from '../../util/deviceClassConfig';
 import { APP_ROUTES } from '../../util/appRoutes';
-import { useUserAccount } from '../../context/UserAccountContext';
+import { useAuth } from './AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { clearMobileSession } from '../../services/authService';
 import {
@@ -100,7 +100,7 @@ export default function AccountSecurity() {
   const router = useRouter();
   const device = useDeviceClass();
   const params = useLocalSearchParams<{ token?: string; action?: string }>();
-  const { account: user, isSignedIn } = useUserAccount();
+  const { user, isAuthenticated: isSignedIn } = useAuth();
   const { showToast } = useToast();
 
   useEffect(() => {

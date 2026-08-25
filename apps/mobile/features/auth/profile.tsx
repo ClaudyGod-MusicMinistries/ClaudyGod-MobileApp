@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
-  Image,
   Platform,
   StyleSheet,
   View,
@@ -17,12 +16,9 @@ import { useDeviceClass } from '../../util/deviceClassConfig';
 import { FadeIn } from '../../components/ui/FadeIn';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { ConfirmModal } from '../../components/ui/ConfirmModal';
-import { ActionSheet } from '../../components/ui/ActionSheet';
 import { fetchUserProfileMetrics } from '../../services/supabaseAnalytics';
 import { clearMobileSession } from '../../services/authService';
 import { useRequireMobileSession } from './useRequireMobileSession';
-import { useMediaPicker } from '../../hooks/useMediaPicker';
-import { useContentUpload } from '../../hooks/useContentUpload';
 import { APP_ROUTES } from '../../util/appRoutes';
 import { useToast } from '../../context/ToastContext';
 import type { AppTheme } from '../../theme';
@@ -147,10 +143,6 @@ export default function Profile() {
   });
   const [isLogoutSheetVisible, setIsLogoutSheetVisible] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
-  const [isAvatarSheetVisible, setIsAvatarSheetVisible] = useState(false);
-  const [avatarUri, setAvatarUri] = useState<string | null>(null);
-  const { pickFromGallery, captureFromCamera } = useMediaPicker();
-  const { upload: uploadAvatar, status: avatarUploadStatus } = useContentUpload();
 
   const scrollY = useRef(new Animated.Value(0)).current;
   const glowPulse = useRef(new Animated.Value(0.5)).current;
@@ -193,22 +185,6 @@ export default function Profile() {
     setIsLogoutSheetVisible(false);
     showToast({ title: 'Signed out', message: 'Your session has been closed.', tone: 'info' });
     router.replace(APP_ROUTES.auth.signIn);
-  };
-
-  const pickAvatar = async (source: 'gallery' | 'camera') => {
-    setIsAvatarSheetVisible(false);
-    const picked = source === 'gallery'
-      ? await pickFromGallery('image')
-      : await captureFromCamera('image');
-    if (!picked) return;
-    setAvatarUri(picked.uri);
-    const result = await uploadAvatar(picked);
-    if (result) {
-      showToast({ title: 'Photo updated', tone: 'info' });
-    } else {
-      setAvatarUri(null);
-      showToast({ title: 'Upload failed', message: 'Could not update your photo.', tone: 'warning' });
-    }
   };
 
   if (!isAuthorized) {
@@ -274,11 +250,7 @@ export default function Profile() {
           <FadeIn>
             <View style={[styles.hero, { paddingHorizontal: gutter }]}>
               {/* Avatar with pulsing glow ring */}
-              <TVTouchable
-                onPress={() => setIsAvatarSheetVisible(true)}
-                showFocusBorder={false}
-                style={styles.avatarWrapper}
-              >
+              <View style={styles.avatarWrapper}>
                 <Animated.View
                   style={[
                     styles.avatarGlow,
@@ -294,21 +266,9 @@ export default function Profile() {
                     },
                   ]}
                 >
-                  {avatarUri ? (
-                    <Image source={{ uri: avatarUri }} style={StyleSheet.absoluteFill} resizeMode="cover" />
-                  ) : (
-                    <CustomText style={[styles.avatarInitial, { color: theme.colors.text }]}>{initial}</CustomText>
-                  )}
-                  {avatarUploadStatus === 'uploading' ? (
-                    <View style={[StyleSheet.absoluteFill as object, styles.avatarOverlay]}>
-                      <MaterialIcons name="cloud-upload" size={26} color={theme.colors.textInverse} />
-                    </View>
-                  ) : null}
+                  <CustomText style={[styles.avatarInitial, { color: theme.colors.text }]}>{initial}</CustomText>
                 </View>
-                <View style={[styles.cameraBadge, { backgroundColor: theme.colors.primary, borderColor: theme.colors.background }]}>
-                  <MaterialIcons name="photo-camera" size={13} color={theme.colors.textInverse} />
-                </View>
-              </TVTouchable>
+              </View>
 
               {/* Name + email */}
               <CustomText style={[styles.displayName, { color: theme.colors.text }]} numberOfLines={2}>
@@ -391,28 +351,6 @@ export default function Profile() {
         </Animated.ScrollView>
       </SafeAreaView>
 
-      <ActionSheet
-        visible={isAvatarSheetVisible}
-        title="Change profile photo"
-        actions={[
-          {
-            key: 'gallery',
-            label: 'Choose from library',
-            icon: 'photo-library',
-            tone: 'accent',
-            onPress: () => { void pickAvatar('gallery'); },
-          },
-          {
-            key: 'camera',
-            label: 'Take a new photo',
-            icon: 'photo-camera',
-            tone: 'default',
-            onPress: () => { void pickAvatar('camera'); },
-          },
-        ]}
-        onClose={() => setIsAvatarSheetVisible(false)}
-      />
-
       <ConfirmModal
         visible={isLogoutSheetVisible}
         icon="logout"
@@ -493,22 +431,6 @@ const styles = StyleSheet.create({
     fontSize: 44,
     fontWeight: '700',
     lineHeight: 52,
-  },
-  avatarOverlay: {
-    backgroundColor: 'rgba(0,0,0,0.48)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cameraBadge: {
-    position: 'absolute',
-    bottom: 2,
-    right: 2,
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
   },
   displayName: {
     fontSize: 24,

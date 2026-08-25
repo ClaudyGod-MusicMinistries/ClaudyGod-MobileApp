@@ -26,7 +26,8 @@ interface BottomSheetProps {
   // Fires once the exit animation has actually finished and the Modal has
   // unmounted — lets a caller that needs to hand off to another sheet do so
   // without hardcoding a second copy of this component's exit duration to
-  // guess when it's safe (see AccountSheet.tsx's TrustDeviceSheet handoff).
+    // Consumers wait for the close animation to finish before presenting the
+    // next surface, avoiding overlapping sheets and timing guesses.
   onClosed?: () => void;
 }
 

@@ -43,11 +43,16 @@ if (exploitRegression.error || exploitRegression.signal || exploitRegression.sta
 
 const packageRoots = ['services/api', 'admin/web', 'apps/mobile'];
 const events = packageRoots.flatMap((packageRoot) => {
-  const audit = spawnSync(
-    'corepack',
-    ['yarn', 'audit', '--groups', 'dependencies', '--level', 'high', '--json'],
-    { cwd: path.join(root, packageRoot), encoding: 'utf8', maxBuffer: 20 * 1024 * 1024 },
-  );
+  const options = { cwd: path.join(root, packageRoot), encoding: 'utf8', maxBuffer: 20 * 1024 * 1024 };
+  const yarnCommand = process.platform === 'win32' ? 'yarn.cmd' : 'yarn';
+  let audit = spawnSync(yarnCommand, ['audit', '--groups', 'dependencies', '--level', 'high', '--json'], options);
+  if (audit.error?.code === 'ENOENT') {
+    audit = spawnSync(
+      'corepack',
+      ['yarn', 'audit', '--groups', 'dependencies', '--level', 'high', '--json'],
+      options,
+    );
+  }
   if (audit.error || audit.status === null) {
     fail(`${packageRoot} registry audit could not run: ${audit.error?.message || 'unknown process failure'}`);
   }
@@ -83,7 +88,10 @@ for (const { packageRoot, event } of blocking) {
     findings.every((finding) =>
       finding.version === '1.2.1' &&
       finding.paths?.length > 0 &&
-      finding.paths.every((dependencyPath) => dependencyPath.startsWith('claudygod-mobile>expo>')),
+      finding.paths.every((dependencyPath) => {
+        const segments = dependencyPath.split('>');
+        return segments[0] === 'expo' && segments.at(-1) === 'image-size';
+      }),
     );
 
   if (!exactMitigation) {
