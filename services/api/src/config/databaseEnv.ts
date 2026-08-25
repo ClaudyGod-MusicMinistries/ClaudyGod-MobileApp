@@ -18,13 +18,16 @@ const toBoolean = (fallback: boolean) =>
 const databaseEnvSchema = z.object({
   DATABASE_URL: z.string().trim().min(1).refine((value) => {
     try {
-      return ['postgres:', 'postgresql:'].includes(new URL(value).protocol);
+      const parsed = new URL(value);
+      return ['postgres:', 'postgresql:'].includes(parsed.protocol)
+        && !/(?:your-project|example|placeholder|validation)/i.test(parsed.hostname);
     } catch {
       return false;
     }
-  }, 'DATABASE_URL must be a valid postgres:// or postgresql:// URL'),
+  }, 'DATABASE_URL must be a real postgres:// or postgresql:// URL without placeholder hosts'),
   DATABASE_SSL: toBoolean(false),
   DATABASE_SSL_REJECT_UNAUTHORIZED: toBoolean(true),
+  DATABASE_SSL_CA_BASE64: z.string().trim().optional().default(''),
 });
 
 const parsed = databaseEnvSchema.safeParse(process.env);
