@@ -246,6 +246,28 @@ jobs:
           fi
           echo "All required deployment secrets/variables are present."
 
+      - name: Validate SSH private key material
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_SSH_KEY_PASSPHRASE: ${{ secrets.VPS_SSH_KEY_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          key_file="${RUNNER_TEMP}/claudygod-deploy-key"
+          public_key_file="${key_file}.pub"
+          trap 'rm -f "$key_file" "$public_key_file"' EXIT
+          printf '%s\n' "$VPS_SSH_KEY" > "$key_file"
+          chmod 600 "$key_file"
+
+          if ! head -n 1 "$key_file" | grep -Eq '^-----BEGIN (OPENSSH|RSA|EC|DSA) PRIVATE KEY-----$'; then
+            echo "::error::VPS_SSH_KEY is not plain OpenSSH private-key text. Store the private key, not the .pub key, path, or base64 wrapper."
+            exit 1
+          fi
+          if ! ssh-keygen -y -P "$VPS_SSH_KEY_PASSPHRASE" -f "$key_file" > "$public_key_file"; then
+            echo "::error::VPS_SSH_KEY could not be decrypted. Replace it with a valid private key or configure VPS_SSH_KEY_PASSPHRASE."
+            exit 1
+          fi
+          echo "Deploy public-key fingerprint: $(ssh-keygen -lf "$public_key_file" | awk '{print $2}')"
+
       # appleboy/ssh-action accepts the private key directly via `key:` and handles
       # writing it to disk internally — no manual decode step, no encoding convention
       # for anyone to get wrong on the next rotation. Paste VPS_SSH_KEY as the plain
@@ -262,6 +284,7 @@ jobs:
           host:     ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key:      ${{ secrets.VPS_SSH_KEY }}
+          passphrase: ${{ secrets.VPS_SSH_KEY_PASSPHRASE }}
           port:     ${{ secrets.VPS_PORT }}
           envs:     GHCR_DEPLOY_TOKEN,DEPLOY_SHA,API_DOMAIN
           script_stop: true
