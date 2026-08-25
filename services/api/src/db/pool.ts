@@ -24,12 +24,28 @@ const normalizeConnectionString = (value: string): string => {
 
 const useSsl = databaseEnv.DATABASE_SSL || /supabase\./i.test(databaseEnv.DATABASE_URL);
 
+const decodeDatabaseCa = (): string | undefined => {
+  if (!databaseEnv.DATABASE_SSL_CA_BASE64) return undefined;
+  const decoded = Buffer.from(databaseEnv.DATABASE_SSL_CA_BASE64, 'base64').toString('utf8').trim();
+  if (!/^-----BEGIN CERTIFICATE-----[\s\S]+-----END CERTIFICATE-----$/.test(decoded)) {
+    throw new Error('DATABASE_SSL_CA_BASE64 must decode to a PEM certificate chain.');
+  }
+  return decoded;
+};
+
+const databaseCa = decodeDatabaseCa();
+
 export const pool = new Pool({
   connectionString: normalizeConnectionString(databaseEnv.DATABASE_URL),
   max: 20,
   connectionTimeoutMillis: 5000,
   idleTimeoutMillis: 30000,
-  ssl: useSsl ? { rejectUnauthorized: databaseEnv.DATABASE_SSL_REJECT_UNAUTHORIZED } : undefined,
+  ssl: useSsl
+    ? {
+        rejectUnauthorized: databaseEnv.DATABASE_SSL_REJECT_UNAUTHORIZED,
+        ...(databaseCa ? { ca: databaseCa } : {}),
+      }
+    : undefined,
 });
 
 export const closePool = async (): Promise<void> => {

@@ -132,6 +132,7 @@ const envSchema = z
     DATABASE_URL: z.string().trim().min(1),
     DATABASE_SSL: toBoolean(false),
     DATABASE_SSL_REJECT_UNAUTHORIZED: toBoolean(true),
+    DATABASE_SSL_CA_BASE64: z.string().trim().optional().default(''),
 
     REDIS_URL: z.string().trim().min(1),
 
