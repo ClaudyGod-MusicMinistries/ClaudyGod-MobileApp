@@ -110,6 +110,12 @@ const buildCorsOrigin = (): CorsOptions['origin'] => {
       return;
     }
 
+    // ===== ALLOW MOBILE ADMIN SUBDOMAIN =====
+    if (origin === 'https://mobileadmin.claudygod.org') {
+      callback(null, true);
+      return;
+    }
+
     if (Array.isArray(allowed) && allowed.includes(origin)) {
       callback(null, true);
       return;
@@ -153,10 +159,115 @@ export const createApp = () => {
   // Disable server signature
   app.disable('x-powered-by');
 
-  // Security headers
-  app.use(helmet());
+  // ===== SECURITY HEADERS WITH PROFESSIONAL CSP =====
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+
+          // Script sources
+          scriptSrc: [
+            "'self'",
+            "'unsafe-inline'", // Needed for Vite HMR and inline scripts
+            "'unsafe-eval'", // Needed for Vite development
+            "https://*.googleapis.com",
+            "https://*.sentry.io",
+          ],
+
+          // Style sources
+          styleSrc: [
+            "'self'",
+            "'unsafe-inline'", // Needed for styled-components and CSS-in-JS
+            "https://*.googleapis.com",
+            "https://*.sentry.io",
+          ],
+
+          // Image sources
+          imgSrc: [
+            "'self'",
+            "data:",
+            "https:",
+            "blob:",
+            "https://*.supabase.co",
+            "https://*.googleapis.com",
+            "https://*.sentry.io",
+          ],
+
+          // Connection sources (APIs, WebSockets)
+          connectSrc: [
+            "'self'",
+            "https://apimobile.claudygod.org",
+            "https://api.claudygod.org",
+            "https://*.supabase.co",
+            "wss://*.supabase.co",
+            "https://*.googleapis.com",
+            "https://*.sentry.io",
+            "https://*.stripe.com",
+          ],
+
+          // Font sources
+          fontSrc: [
+            "'self'",
+            "data:",
+            "https:",
+            "https://*.googleapis.com",
+            "https://*.gstatic.com",
+          ],
+
+          // Object sources
+          objectSrc: ["'none'"],
+
+          // Base URI
+          baseUri: ["'self'"],
+
+          // Form actions
+          formAction: ["'self'"],
+
+          // Frame ancestors (prevent clickjacking)
+          frameAncestors: ["'none'"],
+
+          // Upgrade insecure requests
+          upgradeInsecureRequests: [],
+
+          // Manifest sources
+          manifestSrc: ["'self'"],
+        },
+      },
+      // Disable these to allow cross-origin resource sharing
+      crossOriginEmbedderPolicy: false,
+      crossOriginOpenerPolicy: false,
+      crossOriginResourcePolicy: { policy: "cross-origin" },
+
+      // DNS prefetch control
+      dnsPrefetchControl: { allow: true },
+
+      // Referrer policy
+      referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+
+      // HSTS (HTTP Strict Transport Security)
+      hsts: {
+        maxAge: 31536000,
+        includeSubDomains: true,
+        preload: false,
+      },
+
+      // X-Content-Type-Options
+      noSniff: true,
+
+      // X-Download-Options
+      xDownloadOptions: true,
+
+      // X-Permitted-Cross-Domain-Policies
+      permittedCrossDomainPolicies: { permittedPolicies: 'none' },
+    })
+  );
+
+  // Additional security headers
   app.use((_req, res, next) => {
     res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
     next();
   });
 
@@ -180,22 +291,14 @@ export const createApp = () => {
   // Health check (no auth needed)
   app.use('/', healthRouter);
 
-  // Public legal pages (no auth needed) — required for App Store/Play Store submission.
+  // Public legal pages (no auth needed)
   app.use('/', legalRouter);
 
-  // Auth routes (have their own rate limiting)
+  // Auth routes
   app.use('/v1/auth', authRouter);
-
-  // OAuth sign-in (Google + Apple)
   app.use('/v1/auth/oauth', oauthBrokerRouter);
-
-  // MFA / TOTP management
   app.use('/v1/auth/mfa', mfaRouter);
-
-  // Biometric registration + verification
   app.use('/v1/auth/biometric', biometricRouter);
-
-  // Account security dashboard
   app.use('/v1/me/security', accountSecurityRouter);
 
   // Protected routes
