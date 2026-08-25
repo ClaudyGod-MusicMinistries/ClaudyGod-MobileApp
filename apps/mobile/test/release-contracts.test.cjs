@@ -245,6 +245,30 @@ test('settings capabilities describe and control real playback and privacy behav
   assert.match(youtube, /msg\.state === 0 && advanceOnFinish/);
 });
 
+test('bottom navigation is an opaque token-driven dock with native tab events', () => {
+  const tabBar = fs.readFileSync(path.join(root, 'components/TabBar.tsx'), 'utf8');
+  const colors = fs.readFileSync(path.join(root, 'constants/color.ts'), 'utf8');
+  const tokens = fs.readFileSync(path.join(root, 'styles/designTokens.ts'), 'utf8');
+  assert.match(tabBar, /backgroundColor: theme\.colors\.tabBarBg/);
+  assert.match(tabBar, /borderTopColor: theme\.colors\.tabBarBorder/);
+  assert.match(tabBar, /accessibilityRole="tab"/);
+  assert.match(tabBar, /type: 'tabPress'.*canPreventDefault: true/);
+  assert.match(tabBar, /type: 'tabLongPress'/);
+  assert.match(tabBar, /player:\s+\{ icon: 'play-arrow', label: 'Player', center: true \}/);
+  assert.match(tabBar, /item\.center \? <CenterPlayerTab/);
+  assert.match(tabBar, /accessibilityLabel="Open player"/);
+  assert.match(tabBar, /useReducedMotion/);
+  assert.match(tabBar, /withTiming\(focused \? 1 : 0/);
+  assert.match(tabBar, /translateX: layout\.tabBarPlayIconOpticalOffset/);
+  assert.doesNotMatch(tabBar, /pointerEvents: 'box-none'/);
+  assert.ok((colors.match(/tabBarTextActive:/g) ?? []).length === 2, 'Both color schemes need explicit active tab text');
+  assert.ok((colors.match(/tabBarActiveSurface:/g) ?? []).length === 2, 'Both color schemes need explicit active surfaces');
+  assert.ok((colors.match(/tabBarActionSurface:/g) ?? []).length === 2, 'Both color schemes need an explicit player action surface');
+  assert.match(tokens, /tabBarContentPadding:\s+112/);
+  assert.match(tokens, /tabBarActionLift:\s+18/);
+  assert.match(tokens, /tabBarPlayIconOpticalOffset:\s+1\.5/);
+});
+
 test('guest recommendations use verified installation history and enforce opt-out', () => {
   const feed = fs.readFileSync(path.join(root, 'services/contentService.ts'), 'utf8');
   const analytics = fs.readFileSync(path.join(root, 'services/supabaseAnalytics.ts'), 'utf8');

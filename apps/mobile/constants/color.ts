@@ -107,7 +107,15 @@ export const colors = {
     infoBorder:  'rgba(37,99,235,0.20)',
 
     // ── Tab bar ───────────────────────────────────────────────────────────────
-    tabBarBg: 'rgba(28,18,48,0.97)',
+    tabBarBg:            '#FFFFFF',
+    tabBarBorder:        'rgba(0,0,0,0.09)',
+    tabBarText:          '#5A5A65',
+    tabBarTextActive:    '#6D28D9',
+    tabBarActiveSurface: 'rgba(124,58,237,0.10)',
+    tabBarActiveBorder:  'rgba(124,58,237,0.18)',
+    tabBarActionSurface: '#6D28D9',
+    tabBarActionIcon:    '#FFFFFF',
+    tabBarActionActiveRing: 'rgba(109,40,217,0.36)',
 
     // ── Player ───────────────────────────────────────────────────────────────
     playerGlass: 'rgba(255,255,255,0.94)',
@@ -200,7 +208,15 @@ export const colors = {
     infoBorder:  'rgba(96,165,250,0.24)',
 
     // ── Tab bar ───────────────────────────────────────────────────────────────
-    tabBarBg: 'rgba(20,20,24,0.98)',
+    tabBarBg:            '#121216',
+    tabBarBorder:        'rgba(255,255,255,0.10)',
+    tabBarText:          '#A0A0AC',
+    tabBarTextActive:    '#C4B5FD',
+    tabBarActiveSurface: 'rgba(139,92,246,0.14)',
+    tabBarActiveBorder:  'rgba(167,139,250,0.22)',
+    tabBarActionSurface: '#7C3AED',
+    tabBarActionIcon:    '#FFFFFF',
+    tabBarActionActiveRing: 'rgba(167,139,250,0.42)',
 
     // ── Player ───────────────────────────────────────────────────────────────
     playerGlass: 'rgba(18,18,22,0.94)',
