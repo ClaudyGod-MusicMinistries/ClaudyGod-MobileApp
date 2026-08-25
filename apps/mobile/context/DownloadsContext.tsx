@@ -16,6 +16,7 @@ interface DownloadState {
   subtitle?: string;
   description?: string;
   duration?: string;
+  savedAt?: string;
 }
 
 interface DownloadsContextValue {
@@ -79,6 +80,7 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
           subtitle: d.subtitle,
           description: d.description,
           duration: d.duration,
+          savedAt: d.savedAt,
         };
       });
       setDownloads(initial);
@@ -167,6 +169,7 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
         throw new Error('The downloaded file was incomplete.');
       }
 
+      const savedAt = new Date().toISOString();
       await saveDownload({
         contentId: item.id,
         title: item.title,
@@ -176,7 +179,7 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
         subtitle: item.subtitle,
         description: item.description,
         duration: item.duration,
-        savedAt: new Date().toISOString(),
+        savedAt,
       });
 
       setDownloads((prev) => ({
@@ -185,6 +188,7 @@ export function DownloadsProvider({ children }: { children: ReactNode }) {
           status: 'done', progress: 100, localUri: destination.uri,
           title: item.title, imageUrl: item.imageUrl, contentType: item.type,
           subtitle: item.subtitle, description: item.description, duration: item.duration,
+          savedAt,
         },
       }));
       partialFile = null;

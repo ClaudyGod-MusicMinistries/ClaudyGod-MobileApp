@@ -14,7 +14,7 @@ import { BrandLoader } from '../../components/branding/BrandLoader';
 import { useAppTheme } from '../../util/colorScheme';
 import { makeStyles } from '../../styles/makeStyles';
 import { buildPlayerRoute, routeParamToString } from '../../util/playerRoute';
-import { trackPlayEvent } from '../../services/supabaseAnalytics';
+import { trackContentPlay } from '../../services/supabaseAnalytics';
 import {
   fetchMobileSectionDetail,
   type FeedCardItem,
@@ -96,7 +96,7 @@ export default function SectionDetailScreen() {
   useEffect(() => { void load(1); }, [load]);
 
   const openItem = async (item: FeedCardItem) => {
-    await trackPlayEvent({ contentId: item.id, contentType: item.type, title: item.title, source: `section_${sectionId}` });
+    await trackContentPlay(item, `section_${sectionId}`);
     router.push(buildPlayerRoute(item) as never);
   };
 

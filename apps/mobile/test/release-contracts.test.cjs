@@ -206,6 +206,11 @@ test('modal presentation is restricted to approved design-system primitives', ()
 test('library uses authenticated backend state with a guest and offline device cache', () => {
   const libraryContext = fs.readFileSync(path.join(root, 'context/LocalContentContext.tsx'), 'utf8');
   const downloadsContext = fs.readFileSync(path.join(root, 'context/DownloadsContext.tsx'), 'utf8');
+  const libraryScreen = fs.readFileSync(path.join(root, 'app/(tabs)/library.tsx'), 'utf8');
+  const analytics = fs.readFileSync(path.join(root, 'services/supabaseAnalytics.ts'), 'utf8');
+  const mobileApi = fs.readFileSync(path.resolve(root, '../../services/api/src/modules/mobile/mobile.routes.ts'), 'utf8');
+  const installationService = fs.readFileSync(path.resolve(root, '../../services/api/src/modules/mobile/installation.service.ts'), 'utf8');
+  const migrations = fs.readFileSync(path.resolve(root, '../../services/api/src/db/migrate.ts'), 'utf8');
   assert.match(libraryContext, /getStoredMobileSession\(\)/);
   assert.match(libraryContext, /fetchMeLibrary\(\)/);
   assert.match(libraryContext, /fetchMeRecentlyPlayed\(100\)/);
@@ -216,6 +221,22 @@ test('library uses authenticated backend state with a guest and offline device c
   assert.match(libraryContext, /addFavorite\(item\)/);
   assert.match(libraryContext, /addHistory\(item\)/);
   assert.match(downloadsContext, /getDownloads\(\)/);
+  assert.match(downloadsContext, /exists: file\.exists/);
+  assert.match(downloadsContext, /if \(file\.exists\) file\.delete\(\)/);
+  assert.match(downloadsContext, /savedAt/);
+  assert.match(libraryScreen, /function CollectionHeader/);
+  assert.match(libraryScreen, /function LibraryMediaList/);
+  assert.match(libraryScreen, /await deleteDownload\(item\.id\)/);
+  assert.match(libraryScreen, /Device verified/);
+  assert.doesNotMatch(libraryScreen, /<ContentRail/);
+  assert.match(migrations, /CREATE TABLE IF NOT EXISTS mobile_installation_history/);
+  assert.match(installationService, /ON CONFLICT \(installation_id, content_id\) DO UPDATE/);
+  assert.match(installationService, /ORDER BY last_played_at DESC/);
+  assert.match(mobileApi, /get\('\/installations\/history', authenticateInstallation/);
+  assert.match(mobileApi, /delete\('\/installations\/history', authenticateInstallation/);
+  assert.match(analytics, /export function trackContentPlay/);
+  assert.match(libraryContext, /fetchInstallationRecentlyPlayed\(100\)/);
+  assert.match(libraryScreen, /await clearInstallationPlaybackHistory\(\)/);
   // Physical file URIs are sandbox-local and must never be persisted as if
   // another device or the backend could access them.
   assert.doesNotMatch(downloadsContext, /saveMeLibraryItem|removeMeLibraryItem/);

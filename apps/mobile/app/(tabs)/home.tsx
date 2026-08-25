@@ -21,7 +21,7 @@ import { makeStyles } from '../../styles/makeStyles';
 import { APP_ROUTES } from '../../util/appRoutes';
 import { buildPlayerRoute } from '../../util/playerRoute';
 import type { FeedCardItem } from '../../services/contentService';
-import { trackPlayEvent } from '../../services/supabaseAnalytics';
+import { trackContentPlay } from '../../services/supabaseAnalytics';
 import {
   ContentRail,
   dedupeFeedItems,
@@ -313,7 +313,7 @@ export default function HomeScreen() {
   // Awaiting it (a SecureStore read + network POST) used to make every card
   // tap on Home wait on a round-trip before the player even opened.
   const openItem = (item: FeedCardItem, source: string) => {
-    void trackPlayEvent({ contentId: item.id, contentType: item.type, title: item.title, source });
+    void trackContentPlay(item, source);
     router.push(buildPlayerRoute(item));
   };
 

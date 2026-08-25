@@ -14,7 +14,7 @@ import { getVideoLayoutSections, deriveLayoutSectionItems, deriveLayoutSectionOv
 import { ErrorState } from '../../components/ui/ErrorState';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import type { FeedCardItem } from '../../services/contentService';
-import { trackPlayEvent } from '../../services/supabaseAnalytics';
+import { trackContentPlay } from '../../services/supabaseAnalytics';
 import { APP_ROUTES } from '../../util/appRoutes';
 import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
 import { isDirectPlayableVideoUrl, isHostedVideoUrl, routeParamToString, shouldOpenVideoScreen } from '../../util/playerRoute';
@@ -190,7 +190,7 @@ export default function VideosScreen() {
       return;
     }
     setActiveId(item.id);
-    await trackPlayEvent({ contentId: item.id, contentType: item.type, title: item.title, source });
+    await trackContentPlay(item, source);
   };
 
   if (error && !allQueue.length) {

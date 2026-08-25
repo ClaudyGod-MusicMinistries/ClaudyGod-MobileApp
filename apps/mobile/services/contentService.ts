@@ -276,6 +276,16 @@ export async function fetchMeRecentlyPlayed(limit = 12): Promise<FeedCardItem[]>
   }
 }
 
+export async function fetchInstallationRecentlyPlayed(limit = 100): Promise<FeedCardItem[]> {
+  try {
+    const response = await apiFetch<EngagementFeedResponse>(`/v1/mobile/installations/history?limit=${limit}`);
+    return response.items.map(normalizeFeedItem);
+  } catch (error) {
+    reportException(error, { tags: { flow: 'installation-recently-played' } });
+    throw error;
+  }
+}
+
 async function fetchMeMostPlayed(): Promise<FeedCardItem[]> {
   try {
     const response = await apiFetchWithMobileSession<EngagementFeedResponse>(

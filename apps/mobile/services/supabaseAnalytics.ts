@@ -8,12 +8,18 @@ import { reportException, reportBreadcrumb } from '../lib/sentry';
 import { apiFetch } from './apiClient';
 import { getPreference } from '../lib/localUserStorage';
 import { queryClient } from '../lib/queryClient';
+import type { FeedCardItem } from './contentService';
 
 export interface PlayEventInput {
   contentId: string;
   contentType: string;
   title: string;
   source?: string;
+  subtitle?: string;
+  description?: string;
+  duration?: string;
+  imageUrl?: string;
+  mediaUrl?: string;
 }
 
 export async function trackPlayEvent(input: PlayEventInput): Promise<void> {
@@ -31,7 +37,15 @@ export async function trackPlayEvent(input: PlayEventInput): Promise<void> {
         body: JSON.stringify({
           event: 'playback_milestone',
           idempotencyKey: personalizationEnabled ? `recommendation-play:${input.contentId}` : 'activation:first-play',
-          ...(personalizationEnabled ? { contentId: input.contentId, contentType: normalizeContentType(input.contentType), source: input.source ?? 'unknown' } : {}),
+          contentId: input.contentId,
+          contentType: normalizeContentType(input.contentType),
+          title: input.title,
+          subtitle: input.subtitle,
+          description: input.description,
+          duration: input.duration,
+          imageUrl: input.imageUrl,
+          mediaUrl: input.mediaUrl?.startsWith('http') ? input.mediaUrl : undefined,
+          source: input.source ?? 'unknown',
         }),
       });
       if (personalizationEnabled) {
@@ -61,6 +75,14 @@ export async function trackPlayEvent(input: PlayEventInput): Promise<void> {
     // to tell why. Reporting it is what makes that distinguishable.
     reportException(error, { tags: { flow: 'play-event' } });
   }
+}
+
+export function trackContentPlay(item: FeedCardItem, source: string): Promise<void> {
+  return trackPlayEvent({
+    contentId: item.id, contentType: item.type, title: item.title, source,
+    subtitle: item.subtitle, description: item.description, duration: item.duration,
+    imageUrl: item.imageUrl, mediaUrl: item.mediaUrl,
+  });
 }
 
 export async function subscribeToLiveAlerts(channelId: string): Promise<void> {

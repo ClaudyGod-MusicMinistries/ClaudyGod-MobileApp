@@ -268,6 +268,23 @@ const migrationStatements = [
   `ALTER TABLE mobile_installation_events ADD COLUMN IF NOT EXISTS content_type TEXT`,
   `ALTER TABLE mobile_installation_events ADD COLUMN IF NOT EXISTS source TEXT`,
   `CREATE INDEX IF NOT EXISTS idx_mobile_installation_events_content ON mobile_installation_events (installation_id, created_at DESC) WHERE content_id IS NOT NULL`,
+  `CREATE TABLE IF NOT EXISTS mobile_installation_history (
+    installation_id UUID NOT NULL REFERENCES mobile_installations(id) ON DELETE CASCADE,
+    content_id TEXT NOT NULL,
+    content_type TEXT NOT NULL CHECK (content_type IN ('audio', 'video', 'playlist', 'announcement', 'live')),
+    title TEXT NOT NULL,
+    subtitle TEXT,
+    description TEXT,
+    duration TEXT,
+    image_url TEXT,
+    media_url TEXT,
+    source TEXT,
+    play_count INTEGER NOT NULL DEFAULT 1 CHECK (play_count > 0),
+    first_played_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    last_played_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (installation_id, content_id)
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_mobile_installation_history_recent ON mobile_installation_history (installation_id, last_played_at DESC)`,
   `CREATE TABLE IF NOT EXISTS mobile_referrals (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     device_id UUID NOT NULL UNIQUE,

@@ -15,7 +15,7 @@ import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import { useDeviceClass } from '../../util/deviceClassConfig';
 import { makeStyles } from '../../styles/makeStyles';
 import { fetchSearchResults, fetchTrendingSearches, type ContentType, type FeedCardItem } from '../../services/contentService';
-import { trackPlayEvent } from '../../services/supabaseAnalytics';
+import { trackContentPlay } from '../../services/supabaseAnalytics';
 import { buildPlayerRoute } from '../../util/playerRoute';
 import { APP_ROUTES } from '../../util/appRoutes';
 import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
@@ -278,7 +278,7 @@ export default function Search() {
   }, []);
 
   const openResult = async (item: FeedCardItem) => {
-    await trackPlayEvent({ contentId: item.id, contentType: item.type, title: item.title, source: 'search' });
+    await trackContentPlay(item, 'search');
     router.push(buildPlayerRoute(item));
   };
 

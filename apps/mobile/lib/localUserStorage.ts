@@ -71,6 +71,10 @@ export async function addHistory(item: FeedCardItem): Promise<void> {
   await updateJSON<FeedCardItem[]>(KEYS.history, [], (current) => [item, ...current.filter((entry) => entry.id !== item.id)].slice(0, MAX_HISTORY));
 }
 
+export async function clearHistory(): Promise<void> {
+  await AsyncStorage.removeItem(KEYS.history);
+}
+
 // ── Preferences ────────────────────────────────────────────────────────────
 
 export async function getPreference<T>(key: string, fallback: T): Promise<T> {

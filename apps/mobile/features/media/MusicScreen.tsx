@@ -16,7 +16,7 @@ import { getPlayerLayoutSections, deriveLayoutSectionItems } from '../../util/mo
 import { ErrorState } from '../../components/ui/ErrorState';
 import { makeStyles } from '../../styles/makeStyles';
 import type { FeedCardItem } from '../../services/contentService';
-import { trackPlayEvent } from '../../services/supabaseAnalytics';
+import { trackContentPlay } from '../../services/supabaseAnalytics';
 import { APP_ROUTES } from '../../util/appRoutes';
 import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
 import { buildPlayerRoute, isDirectPlayableAudioUrl, isYouTubeAudioItem, routeParamToString, shouldOpenVideoScreen } from '../../util/playerRoute';
@@ -233,7 +233,7 @@ export default function PlaySection() {
     if (isYouTubeAudioItem(item)) {
       setActiveId(item.id);
       await recordHistory(item);
-      await trackPlayEvent({ contentId: item.id, contentType: item.type, title: item.title, source });
+      await trackContentPlay(item, source);
       return;
     }
     if (!item.mediaUrl) {
@@ -247,7 +247,7 @@ export default function PlaySection() {
     }
     setActiveId(item.id);
     await recordHistory(item);
-    await trackPlayEvent({ contentId: item.id, contentType: item.type, title: item.title, source });
+    await trackContentPlay(item, source);
   };
 
   const pickRandomOther = () => {

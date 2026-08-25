@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
-import { fetchMeRecentlyPlayed, type FeedCardItem } from '../services/contentService';
-import { addFavorite, addHistory, getFavorites, getHistory, removeFavorite } from '../lib/localUserStorage';
+import { fetchInstallationRecentlyPlayed, fetchMeRecentlyPlayed, type FeedCardItem } from '../services/contentService';
+import { addFavorite, addHistory, clearHistory, getFavorites, getHistory, removeFavorite } from '../lib/localUserStorage';
 import { getStoredMobileSession, subscribeToMobileAuthStateChange } from '../services/authService';
 import { fetchMeLibrary, removeMeLibraryItem, saveMeLibraryItem, type MeLibraryItem } from '../services/userFlowService';
 
@@ -15,6 +15,7 @@ interface LocalContentValue {
   removeFromFavorites: (_contentId: string) => Promise<void>;
   toggleFavorite: (_item: FeedCardItem) => Promise<void>;
   recordHistory: (_item: FeedCardItem) => Promise<void>;
+  clearPlaybackHistory: () => Promise<void>;
 }
 
 const LocalContentContext = createContext<LocalContentValue | null>(null);
@@ -75,6 +76,23 @@ export function LocalContentProvider({ children }: { children: ReactNode }) {
           ].slice(0, 100);
         } catch (error) {
           serverSyncError = error instanceof Error ? error.message : 'Account library synchronization failed.';
+        }
+      } else {
+        try {
+          const installationHistory = await fetchInstallationRecentlyPlayed(100);
+          serverHistory = [
+            ...installationHistory.map((server) => {
+              const cached = localHistory.find((local) => local.id === server.id);
+              return cached ? { ...server, ...cached, createdAt: server.createdAt } : server;
+            }),
+            ...localHistory.filter((local) => !installationHistory.some((server) => server.id === local.id)),
+          ].slice(0, 100);
+        } catch (error) {
+          // A populated device cache remains a valid offline history. Surface
+          // the backend failure only when there is no cached collection to use.
+          if (localHistory.length === 0) {
+            serverSyncError = error instanceof Error ? error.message : 'Installation history synchronization failed.';
+          }
         }
       }
       if (generation !== loadGeneration.current) return;
@@ -143,6 +161,11 @@ export function LocalContentProvider({ children }: { children: ReactNode }) {
     setHistory((current) => [item, ...current.filter((entry) => entry.id !== item.id)].slice(0, 100));
   }, []);
 
+  const clearPlaybackHistory = useCallback(async () => {
+    await clearHistory();
+    setHistory([]);
+  }, []);
+
   const checkIsFavorited = useCallback(
     (contentId: string) => favorites.some((entry) => entry.id === contentId),
     [favorites],
@@ -160,6 +183,7 @@ export function LocalContentProvider({ children }: { children: ReactNode }) {
       removeFromFavorites,
       toggleFavorite,
       recordHistory,
+      clearPlaybackHistory,
     }}>
       {children}
     </LocalContentContext.Provider>

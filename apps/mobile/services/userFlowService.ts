@@ -419,6 +419,10 @@ export async function resetInstallationRecommendationHistory() {
   });
 }
 
+export async function clearInstallationPlaybackHistory(): Promise<{ clearedHistoryItems: number }> {
+  return apiFetch<{ clearedHistoryItems: number }>('/v1/mobile/installations/history', { method: 'DELETE' });
+}
+
 export async function createSupportRequest(input: {
   category: string;
   subject: string;

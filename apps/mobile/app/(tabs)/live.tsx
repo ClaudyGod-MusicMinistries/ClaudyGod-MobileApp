@@ -16,7 +16,7 @@ import { useContentFeed } from '../../hooks/useContentFeed';
 import { makeStyles } from '../../styles/makeStyles';
 import { APP_ROUTES } from '../../util/appRoutes';
 import { buildPlayerRoute } from '../../util/playerRoute';
-import { trackPlayEvent } from '../../services/supabaseAnalytics';
+import { trackContentPlay } from '../../services/supabaseAnalytics';
 import { fetchLiveSessions, type LiveSessionSummary } from '../../services/liveService';
 import type { FeedCardItem } from '../../services/contentService';
 import { useToast } from '../../context/ToastContext';
@@ -192,7 +192,7 @@ export default function LiveScreen() {
       showToast({ title: 'Session unavailable', message: 'This session is not ready to watch yet.', tone: 'warning' });
       return;
     }
-    await trackPlayEvent({ contentId: item.id, contentType: item.type, title: item.title, source });
+    await trackContentPlay(item, source);
     router.push(buildPlayerRoute(item));
   };
 

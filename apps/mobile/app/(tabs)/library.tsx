@@ -21,11 +21,12 @@ import { useDownloads } from '../../context/DownloadsContext';
 import type { FeedCardItem, ContentType } from '../../services/contentService';
 import { APP_ROUTES } from '../../util/appRoutes';
 import { buildPlayerRoute } from '../../util/playerRoute';
-import { trackPlayEvent } from '../../services/supabaseAnalytics';
+import { trackContentPlay } from '../../services/supabaseAnalytics';
 import { BRAND_LOGO_ASSET, DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
+import { useAuth } from '../../features/auth/AuthContext';
+import { clearInstallationPlaybackHistory, resetRecommendationHistory } from '../../services/userFlowService';
 import {
   ContentList,
-  ContentRail,
   FavoriteCard,
   PremiumHero,
   PremiumPage,
@@ -115,6 +116,55 @@ const useStyles = makeStyles((theme) => ({
   downloadingPct:  { color: theme.colors.textMuted },
   progressTrack:   { height: 4, borderRadius: 2, backgroundColor: theme.colors.subtleFill, overflow: 'hidden' },
   progressFill:    { height: 4, borderRadius: 2, backgroundColor: theme.colors.primary },
+  collectionHero: {
+    padding: theme.spacing.lg, gap: theme.spacing.md,
+    borderColor: theme.colors.primaryBorder,
+    ...theme.shadows.sm,
+  },
+  collectionHeroTop: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md },
+  collectionHeroIcon: {
+    width: 48, height: 48, borderRadius: theme.radius.xl,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: theme.colors.primarySurface,
+    borderWidth: 1, borderColor: theme.colors.primaryBorder,
+  },
+  collectionHeroCopy: { flex: 1, minWidth: 0 },
+  collectionEyebrow: { color: theme.colors.primary, textTransform: 'uppercase', letterSpacing: 0.8, fontWeight: '700' },
+  collectionTitle: { color: theme.colors.text, marginTop: theme.spacing.xxs },
+  collectionBody: { color: theme.colors.textSecondary, marginTop: theme.spacing.xs, lineHeight: 19 },
+  collectionMetaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.xs },
+  collectionMeta: {
+    flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs,
+    paddingHorizontal: theme.spacing.sm, paddingVertical: theme.spacing.xs,
+    borderRadius: theme.radius.pill, backgroundColor: theme.colors.subtleFill,
+    borderWidth: 1, borderColor: theme.colors.border,
+  },
+  collectionMetaText: { color: theme.colors.textSecondary, fontWeight: '600' },
+  dangerMetaText: { color: theme.colors.danger },
+  mediaList: { gap: theme.spacing.sm },
+  mediaRow: { padding: theme.spacing.sm, flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
+  mediaArtwork: { width: 76, height: 76, borderRadius: theme.radius.lg, overflow: 'hidden', backgroundColor: theme.colors.surfaceAlt },
+  mediaImage: { width: '100%', height: '100%' },
+  mediaPlay: {
+    position: 'absolute', right: 6, bottom: 6,
+    width: 28, height: 28, borderRadius: theme.radius.pill,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: theme.colors.mediaControl,
+    borderWidth: 1, borderColor: theme.colors.mediaBorder,
+  },
+  mediaCopy: { flex: 1, minWidth: 0 },
+  mediaTypeRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs, marginBottom: theme.spacing.xxs },
+  mediaType: { color: theme.colors.primary, textTransform: 'uppercase', letterSpacing: 0.6, fontWeight: '700' },
+  mediaTitle: { color: theme.colors.text },
+  mediaSubtitle: { color: theme.colors.textSecondary, marginTop: theme.spacing.xxs },
+  mediaDuration: { color: theme.colors.textMuted, marginTop: theme.spacing.xxs },
+  mediaActions: { alignItems: 'center', gap: theme.spacing.xs },
+  mediaAction: {
+    width: 38, height: 38, borderRadius: theme.radius.pill,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: theme.colors.subtleFill, borderWidth: 1, borderColor: theme.colors.border,
+  },
+  offlineBadge: { color: theme.colors.success },
 }));
 
 // ─── LibTabs ──────────────────────────────────────────────────────────────────
@@ -177,6 +227,114 @@ function LibraryOverview({ counts, loaded, children }: { counts: Record<LibTab, 
   );
 }
 
+function CollectionHeader({
+  kind,
+  count,
+  onClear,
+}: {
+  kind: 'history' | 'downloads';
+  count: number;
+  onClear?: () => void;
+}) {
+  const styles = useStyles();
+  const theme = useAppTheme();
+  const isHistory = kind === 'history';
+  return (
+    <FadeIn>
+      <SurfaceCard tone="strong" style={styles.collectionHero}>
+        <View style={styles.collectionHeroTop}>
+          <View style={styles.collectionHeroIcon}>
+            <MaterialIcons name={isHistory ? 'history' : 'offline-pin'} size={24} color={theme.colors.primary} />
+          </View>
+          <View style={styles.collectionHeroCopy}>
+            <CustomText variant="caption" style={styles.collectionEyebrow}>{isHistory ? 'Listening activity' : 'Offline collection'}</CustomText>
+            <CustomText variant="heading" style={styles.collectionTitle}>{isHistory ? 'Pick up where you left off' : 'Ready wherever you are'}</CustomText>
+            <CustomText variant="body" style={styles.collectionBody}>
+              {isHistory
+                ? 'Your real recently played items, ordered by your latest activity.'
+                : 'Completed downloads are checked against files on this device before they appear here.'}
+            </CustomText>
+          </View>
+        </View>
+        <View style={styles.collectionMetaRow}>
+          <View style={styles.collectionMeta}>
+            <MaterialIcons name={isHistory ? 'play-circle-outline' : 'download-done'} size={15} color={theme.colors.primary} />
+            <CustomText variant="caption" style={styles.collectionMetaText}>{count} {isHistory ? 'recently played' : 'available offline'}</CustomText>
+          </View>
+          {!isHistory ? (
+            <View style={styles.collectionMeta}>
+              <MaterialIcons name="verified" size={15} color={theme.colors.success} />
+              <CustomText variant="caption" style={[styles.collectionMetaText, styles.offlineBadge]}>Device verified</CustomText>
+            </View>
+          ) : null}
+          {isHistory && count > 0 && onClear ? (
+            <TVTouchable onPress={onClear} showFocusBorder={false} style={styles.collectionMeta} accessibilityLabel="Clear playback history">
+              <MaterialIcons name="delete-sweep" size={15} color={theme.colors.danger} />
+              <CustomText variant="caption" style={[styles.collectionMetaText, styles.dangerMetaText]}>Clear history</CustomText>
+            </TVTouchable>
+          ) : null}
+        </View>
+      </SurfaceCard>
+    </FadeIn>
+  );
+}
+
+function LibraryMediaList({
+  items,
+  kind,
+  onPlay,
+  onRemove,
+}: {
+  items: FeedCardItem[];
+  kind: 'history' | 'downloads';
+  onPlay: (_item: FeedCardItem) => void;
+  onRemove?: (_item: FeedCardItem) => void;
+}) {
+  const styles = useStyles();
+  const theme = useAppTheme();
+  return (
+    <FadeIn delay={70}>
+      <View style={styles.mediaList}>
+      {items.map((item) => (
+          <SurfaceCard key={`${kind}-${item.id}`} tone="default" style={styles.mediaRow}>
+            <TVTouchable
+              onPress={() => onPlay(item)}
+              showFocusBorder={false}
+              style={styles.mediaArtwork}
+              accessibilityRole="button"
+              accessibilityLabel={`${item.type === 'video' ? 'Watch' : 'Play'} ${item.title}`}
+            >
+              <Image source={{ uri: item.imageUrl || DEFAULT_CONTENT_IMAGE_URI }} resizeMode="cover" style={styles.mediaImage} />
+              <View style={styles.mediaPlay}>
+                <MaterialIcons name="play-arrow" size={18} color={theme.colors.mediaText} />
+              </View>
+            </TVTouchable>
+            <TVTouchable onPress={() => onPlay(item)} showFocusBorder={false} style={styles.mediaCopy}>
+              <View style={styles.mediaTypeRow}>
+                <MaterialIcons name={item.type === 'video' ? 'videocam' : 'music-note'} size={13} color={theme.colors.primary} />
+                <CustomText variant="caption" style={styles.mediaType}>{item.type}</CustomText>
+              </View>
+              <CustomText variant="label" style={styles.mediaTitle} numberOfLines={2}>{item.title}</CustomText>
+              {item.subtitle ? <CustomText variant="caption" style={styles.mediaSubtitle} numberOfLines={1}>{item.subtitle}</CustomText> : null}
+              <CustomText variant="caption" style={styles.mediaDuration}>{kind === 'downloads' ? 'Available offline' : 'Recently played'}{item.duration ? ` · ${item.duration}` : ''}</CustomText>
+            </TVTouchable>
+            <View style={styles.mediaActions}>
+              <TVTouchable onPress={() => onPlay(item)} showFocusBorder={false} style={styles.mediaAction} accessibilityLabel={`Play ${item.title}`}>
+                <MaterialIcons name="play-arrow" size={20} color={theme.colors.primary} />
+              </TVTouchable>
+              {kind === 'downloads' && onRemove ? (
+                <TVTouchable onPress={() => onRemove(item)} showFocusBorder={false} style={styles.mediaAction} accessibilityLabel={`Remove download ${item.title}`}>
+                  <MaterialIcons name="delete-outline" size={19} color={theme.colors.danger} />
+                </TVTouchable>
+              ) : null}
+            </View>
+          </SurfaceCard>
+      ))}
+      </View>
+    </FadeIn>
+  );
+}
+
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function LibraryScreen() {
@@ -187,12 +345,17 @@ export default function LibraryScreen() {
   const { showToast } = useToast();
   const { feed, loading, error, refresh } = useContentFeed();
   const { config: appConfig } = useMobileAppConfig();
-  const { favorites, history, loaded, syncError, refreshLibrary, removeFromFavorites } = useLocalContent();
-  const { downloads, syncError: downloadSyncError, refreshDownloads } = useDownloads();
+  const { favorites, history, loaded, syncError, refreshLibrary, removeFromFavorites, clearPlaybackHistory } = useLocalContent();
+  const { isAuthenticated } = useAuth();
+  const { downloads, syncError: downloadSyncError, refreshDownloads, deleteDownload } = useDownloads();
   const [activeTab, setActiveTab] = useState<LibTab>('saved');
   const [removingId, setRemovingId]     = useState<string | null>(null);
   const [removeTarget, setRemoveTarget] = useState<FeedCardItem | null>(null);
   const [isRemoving, setIsRemoving]     = useState(false);
+  const [downloadRemoveTarget, setDownloadRemoveTarget] = useState<FeedCardItem | null>(null);
+  const [isDeletingDownload, setIsDeletingDownload] = useState(false);
+  const [historyClearOpen, setHistoryClearOpen] = useState(false);
+  const [isClearingHistory, setIsClearingHistory] = useState(false);
 
   const librarySections = useMemo(() => getLibraryLayoutSections(appConfig), [appConfig]);
   const sectionItems = useMemo(
@@ -217,6 +380,7 @@ export default function LibraryScreen() {
         imageUrl: d.imageUrl ?? DEFAULT_CONTENT_IMAGE_URI,
         mediaUrl: d.localUri ?? undefined,
         type: (d.contentType ?? 'audio') as ContentType,
+        createdAt: d.savedAt,
       })),
     [downloads],
   );
@@ -236,7 +400,7 @@ export default function LibraryScreen() {
   const gridItems  = useMemo(() => favorites.slice(featured ? 1 : 0), [favorites, featured]);
 
   const openItem = async (item: FeedCardItem, source: string) => {
-    await trackPlayEvent({ contentId: item.id, contentType: item.type, title: item.title, source });
+    await trackContentPlay(item, source);
     router.push(buildPlayerRoute(item));
   };
 
@@ -266,6 +430,36 @@ export default function LibraryScreen() {
     setIsRemoving(false);
     setRemovingId(null);
     setRemoveTarget(null);
+  };
+
+  const removeDownloadedItem = async () => {
+    if (!downloadRemoveTarget) return;
+    const item = downloadRemoveTarget;
+    setIsDeletingDownload(true);
+    try {
+      await deleteDownload(item.id);
+      showToast({ title: 'Download removed', message: `${item.title} is no longer stored offline.`, tone: 'info' });
+      setDownloadRemoveTarget(null);
+    } catch {
+      showToast({ title: 'Could not remove download', message: 'The file could not be removed. Please try again.', tone: 'warning' });
+    } finally {
+      setIsDeletingDownload(false);
+    }
+  };
+
+  const clearHistoryCollection = async () => {
+    setIsClearingHistory(true);
+    try {
+      if (isAuthenticated) await resetRecommendationHistory();
+      else await clearInstallationPlaybackHistory();
+      await clearPlaybackHistory();
+      setHistoryClearOpen(false);
+      showToast({ title: 'History cleared', message: 'Your playback history has been removed.', tone: 'success' });
+    } catch {
+      showToast({ title: 'Could not clear history', message: 'Nothing was removed. Please try again.', tone: 'warning' });
+    } finally {
+      setIsClearingHistory(false);
+    }
   };
 
   return (
@@ -376,23 +570,34 @@ export default function LibraryScreen() {
         ) : null}
 
         {activeTab === 'history' ? (
-          <View style={styles.sectionGap}>
-            <SectionLabel title="Recently played" accent="History" />
-            <ContentRail
-              title=""
-              items={history}
-              loading={!loaded}
-              onPressItem={(item) => void openItem(item, 'library_history')}
-              emptyTitle="No history yet"
-              emptyMessage="Your recently played tracks will appear here."
-            />
+          <View style={styles.collectionSection}>
+            <CollectionHeader kind="history" count={history.length} onClear={() => setHistoryClearOpen(true)} />
+            {loaded && history.length > 0 ? (
+              <View style={styles.sectionGap}>
+                <SectionLabel title="Recently played" accent={`${history.length} items`} subtitle="Most recent activity first" />
+                <LibraryMediaList items={history} kind="history" onPlay={(item) => void openItem(item, 'library_history')} />
+              </View>
+            ) : loaded ? (
+              <SurfaceCard tone="strong" style={styles.emptyCard}>
+                <View style={styles.emptyIconBox}><Image source={BRAND_LOGO_ASSET} resizeMode="cover" style={styles.emptyLogo} /></View>
+                <View style={styles.emptyTextWrap}>
+                  <CustomText variant="heading" style={styles.emptyTitle}>Your listening journey starts here</CustomText>
+                  <CustomText variant="body" style={styles.emptyBody}>Play a song, video, or live session and it will appear here automatically.</CustomText>
+                </View>
+                <View style={styles.emptyActions}>
+                  <AppButton title="Discover something to play" size="lg" variant="gradient" fullWidth onPress={() => router.push(APP_ROUTES.tabs.search)} leftIcon={<MaterialIcons name="explore" size={18} color={theme.colors.onPrimary} />} />
+                </View>
+              </SurfaceCard>
+            ) : null}
           </View>
         ) : null}
 
         {activeTab === 'downloads' ? (
-          <View style={styles.sectionGap}>
+          <View style={styles.collectionSection}>
+            <CollectionHeader kind="downloads" count={downloadedItems.length} />
             {downloadingItems.length > 0 ? (
               <SurfaceCard tone="subtle" style={styles.downloadingCard}>
+                <SectionLabel title="Downloading" accent={`${downloadingItems.length} active`} subtitle="Keep the app open until each item is complete" />
                 {downloadingItems.map((item) => (
                   <View key={item.contentId} style={styles.downloadingRow}>
                     <View style={styles.downloadingTop}>
@@ -407,14 +612,28 @@ export default function LibraryScreen() {
               </SurfaceCard>
             ) : null}
 
-            <SectionLabel title="Downloaded" accent="Offline" subtitle="Available without a connection" />
-            <ContentRail
-              title=""
-              items={downloadedItems}
-              onPressItem={(item) => void openItem(item, 'library_downloads')}
-              emptyTitle="No downloads yet"
-              emptyMessage="Download songs and videos to watch or listen offline."
-            />
+            {downloadedItems.length > 0 ? (
+              <View style={styles.sectionGap}>
+                <SectionLabel title="Downloaded" accent={`${downloadedItems.length} offline`} subtitle="Stored and verified on this device" />
+                <LibraryMediaList
+                  items={downloadedItems}
+                  kind="downloads"
+                  onPlay={(item) => void openItem(item, 'library_downloads')}
+                  onRemove={setDownloadRemoveTarget}
+                />
+              </View>
+            ) : downloadingItems.length === 0 ? (
+              <SurfaceCard tone="strong" style={styles.emptyCard}>
+                <View style={styles.emptyIconBox}><Image source={BRAND_LOGO_ASSET} resizeMode="cover" style={styles.emptyLogo} /></View>
+                <View style={styles.emptyTextWrap}>
+                  <CustomText variant="heading" style={styles.emptyTitle}>Take worship with you</CustomText>
+                  <CustomText variant="body" style={styles.emptyBody}>Use Download on available songs and videos, then play them here without a connection.</CustomText>
+                </View>
+                <View style={styles.emptyActions}>
+                  <AppButton title="Browse downloadable content" size="lg" variant="gradient" fullWidth onPress={() => router.push(APP_ROUTES.tabs.player)} leftIcon={<MaterialIcons name="download" size={18} color={theme.colors.onPrimary} />} />
+                </View>
+              </SurfaceCard>
+            ) : null}
           </View>
         ) : null}
       </PremiumPage>
@@ -430,6 +649,30 @@ export default function LibraryScreen() {
         loading={isRemoving}
         onPrimary={() => { void removeItem(); }}
         onDismiss={() => { if (!isRemoving) setRemoveTarget(null); }}
+      />
+      <ConfirmModal
+        visible={historyClearOpen}
+        icon="delete-sweep"
+        title="Clear playback history?"
+        body="This removes the activity shown in History. Saved items and downloaded files will stay intact."
+        primaryLabel="Clear history"
+        primaryTone="danger"
+        secondaryLabel="Keep history"
+        loading={isClearingHistory}
+        onPrimary={() => { void clearHistoryCollection(); }}
+        onDismiss={() => { if (!isClearingHistory) setHistoryClearOpen(false); }}
+      />
+      <ConfirmModal
+        visible={Boolean(downloadRemoveTarget)}
+        icon="delete-outline"
+        title="Remove this download?"
+        body={downloadRemoveTarget ? `"${downloadRemoveTarget.title}" will be deleted from this device. You can download it again later.` : undefined}
+        primaryLabel="Remove download"
+        primaryTone="danger"
+        secondaryLabel="Keep offline"
+        loading={isDeletingDownload}
+        onPrimary={() => { void removeDownloadedItem(); }}
+        onDismiss={() => { if (!isDeletingDownload) setDownloadRemoveTarget(null); }}
       />
     </>
   );
