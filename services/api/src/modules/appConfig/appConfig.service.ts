@@ -3,7 +3,7 @@ import { isMissingDatabaseStructureError } from '../../lib/postgres';
 import { BadRequestError } from '../../lib/errors';
 import type { PoolClient, QueryResult } from 'pg';
 import { DEFAULT_MOBILE_APP_CONFIG } from './appConfig.defaults';
-import { mobileAppConfigSchema, type MobileAppConfig } from './appConfig.schema';
+import { MOBILE_SECTION_RAIL_MIN_ITEMS, mobileAppConfigSchema, type MobileAppConfig } from './appConfig.schema';
 
 const MOBILE_APP_CONFIG_KEY = 'mobile_app_experience';
 
@@ -154,6 +154,11 @@ function mergeWithDefaults(value: unknown): MobileAppConfig {
   const input = value && typeof value === 'object' ? (value as Partial<MobileAppConfig>) : {};
   const nonEmptyArray = <T>(items: T[] | undefined, fallback: T[]): T[] =>
     Array.isArray(items) && items.length > 0 ? items : fallback;
+  const normalizeLayoutSections = (sections: MobileAppConfig['layout']['homeSections']) =>
+    sections.map((section) => ({
+      ...section,
+      maxItems: Math.max(MOBILE_SECTION_RAIL_MIN_ITEMS, Number(section.maxItems) || MOBILE_SECTION_RAIL_MIN_ITEMS),
+    }));
 
   return mobileAppConfigSchema.parse({
     ...DEFAULT_MOBILE_APP_CONFIG,
@@ -185,10 +190,10 @@ function mergeWithDefaults(value: unknown): MobileAppConfig {
     layout: {
       ...DEFAULT_MOBILE_APP_CONFIG.layout,
       ...(input.layout ?? {}),
-      homeSections: nonEmptyArray(input.layout?.homeSections, DEFAULT_MOBILE_APP_CONFIG.layout.homeSections),
-      videoSections: nonEmptyArray(input.layout?.videoSections, DEFAULT_MOBILE_APP_CONFIG.layout.videoSections),
-      playerSections: nonEmptyArray(input.layout?.playerSections, DEFAULT_MOBILE_APP_CONFIG.layout.playerSections),
-      librarySections: nonEmptyArray(input.layout?.librarySections, DEFAULT_MOBILE_APP_CONFIG.layout.librarySections),
+      homeSections: normalizeLayoutSections(nonEmptyArray(input.layout?.homeSections, DEFAULT_MOBILE_APP_CONFIG.layout.homeSections)),
+      videoSections: normalizeLayoutSections(nonEmptyArray(input.layout?.videoSections, DEFAULT_MOBILE_APP_CONFIG.layout.videoSections)),
+      playerSections: normalizeLayoutSections(nonEmptyArray(input.layout?.playerSections, DEFAULT_MOBILE_APP_CONFIG.layout.playerSections)),
+      librarySections: normalizeLayoutSections(nonEmptyArray(input.layout?.librarySections, DEFAULT_MOBILE_APP_CONFIG.layout.librarySections)),
     },
     navigation: {
       ...DEFAULT_MOBILE_APP_CONFIG.navigation,

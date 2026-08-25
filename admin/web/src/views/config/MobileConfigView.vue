@@ -92,14 +92,32 @@
                   type="number"
                   label="Items shown in section rail"
                   hint="Additional eligible items remain available through See all."
-                  min="1"
+                  :min="MOBILE_SECTION_RAIL_MIN_ITEMS"
                   max="24"
                 />
               </div>
 
-              <p class="text-[11px] text-ink-muted">
-                Tag content into this section with: <span class="font-mono text-ink">{{ section.title || section.id }}</span>
-              </p>
+              <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <p class="text-[11px] text-ink-muted">
+                  Tag content into this section with: <span class="font-mono text-ink">{{ section.title || section.id }}</span>
+                </p>
+                <div class="flex items-center gap-2">
+                  <span
+                    v-if="sectionDiagnostics[diagnosticKey(group.key, section.id)]"
+                    class="text-xs font-semibold text-ink"
+                  >
+                    {{ sectionDeliverySummary(group.key, section) }}
+                  </span>
+                  <AppButton
+                    variant="secondary"
+                    size="xs"
+                    :loading="diagnosticLoadingKey === diagnosticKey(group.key, section.id)"
+                    @click="verifySection(group.key, section.id)"
+                  >
+                    Verify published content
+                  </AppButton>
+                </div>
+              </div>
             </AppCard>
 
             <AppButton variant="secondary" size="sm" @click="addSection(group.key)">+ Add section</AppButton>
@@ -559,12 +577,14 @@
 import { ref, computed, onMounted } from 'vue';
 import { useConfigStore } from '@/stores/config.store';
 import { useUiStore } from '@/stores/ui.store';
+import { getMobileSectionDiagnostic, type MobileSectionDiagnostic } from '@/api/config';
 import type {
   AppConfig, MobileContentType, MobileLayoutSection, SettingsHubItem, ReferralStep, ReferralRewardTier,
   HelpContact, Faq, DonateMethod, DonatePlan,
 } from '@/api/types';
 import {
   MOBILE_CONTENT_TYPE_OPTIONS,
+  MOBILE_SECTION_RAIL_MIN_ITEMS,
   MOBILE_TAB_DESTINATION_OPTIONS,
   DISCOVERY_CATEGORY_OPTIONS,
   AD_PLACEMENT_SCREEN_OPTIONS,
@@ -605,6 +625,8 @@ const store = useConfigStore();
 const ui = useUiStore();
 const activeTab = ref('layout');
 const previewOpen = ref(false);
+const sectionDiagnostics = ref<Record<string, MobileSectionDiagnostic>>({});
+const diagnosticLoadingKey = ref<string | null>(null);
 
 const tabs = [
   { id: 'layout', label: 'Layout sections' },
@@ -651,10 +673,45 @@ async function onSave(): Promise<void> {
   if (!config.value) return;
   try {
     await store.saveAppConfig(config.value);
+    sectionDiagnostics.value = {};
     ui.addToast({ tone: 'success', title: 'Mobile config saved' });
   } catch (e) {
     ui.addToast({ tone: 'danger', title: e instanceof Error ? e.message : 'Save failed' });
   }
+}
+
+const groupScreen: Record<keyof AppConfig['layout'], 'home' | 'videos' | 'player' | 'library'> = {
+  homeSections: 'home',
+  videoSections: 'videos',
+  playerSections: 'player',
+  librarySections: 'library',
+};
+
+function diagnosticKey(groupKey: keyof AppConfig['layout'], sectionId: string): string {
+  return `${groupKey}:${sectionId}`;
+}
+
+async function verifySection(groupKey: keyof AppConfig['layout'], sectionId: string): Promise<void> {
+  const key = diagnosticKey(groupKey, sectionId);
+  diagnosticLoadingKey.value = key;
+  try {
+    sectionDiagnostics.value[key] = await getMobileSectionDiagnostic(sectionId, groupScreen[groupKey]);
+  } catch (error) {
+    ui.addToast({
+      tone: 'danger',
+      title: error instanceof Error ? error.message : 'Could not verify this section',
+    });
+  } finally {
+    diagnosticLoadingKey.value = null;
+  }
+}
+
+function sectionDeliverySummary(groupKey: keyof AppConfig['layout'], section: MobileLayoutSection): string {
+  const diagnostic = sectionDiagnostics.value[diagnosticKey(groupKey, section.id)];
+  if (!diagnostic) return '';
+  const shown = Math.min(diagnostic.total, Math.max(MOBILE_SECTION_RAIL_MIN_ITEMS, section.maxItems));
+  const paginated = Math.max(0, diagnostic.total - shown);
+  return `${diagnostic.total} published · ${shown} in rail · ${paginated} in See all`;
 }
 
 function addSection(groupKey: keyof AppConfig['layout']): void {

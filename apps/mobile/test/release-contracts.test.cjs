@@ -330,6 +330,8 @@ test('section rendering never silently truncates assigned content and exposes ra
   const videos = fs.readFileSync(path.join(root, 'app/(tabs)/videos.tsx'), 'utf8');
   const library = fs.readFileSync(path.join(root, 'app/(tabs)/library.tsx'), 'utf8');
   const mobileApi = fs.readFileSync(path.resolve(root, '../../services/api/src/modules/mobile/mobile.service.ts'), 'utf8');
+  const detail = fs.readFileSync(path.join(root, 'app/section/[sectionId].tsx'), 'utf8');
+  const adminConfig = fs.readFileSync(path.resolve(root, '../../admin/web/src/views/config/MobileConfigView.vue'), 'utf8');
 
   assert.match(list, /\{items\.map\(\(item, index\)/);
   assert.doesNotMatch(list, /items\.slice\(0, maxItems\)/);
@@ -339,7 +341,19 @@ test('section rendering never silently truncates assigned content and exposes ra
   }
   assert.match(mobileApi, /loadContentTaggedIntoSections\(sectionTokens\)/);
   assert.match(mobileApi, /overflowCount: Math\.max\(0, sectionPool\.length - section\.maxItems\)/);
-  assert.match(mobileApi, /total: sectionPool\.length/);
+  assert.match(mobileApi, /WITH section_items AS/);
+  assert.match(mobileApi, /UNION ALL/);
+  assert.match(mobileApi, /SELECT COUNT\(\*\)::text AS count FROM section_items/);
+  assert.match(mobileApi, /ORDER BY sort_order NULLS LAST, updated_at DESC, created_at DESC, item_kind ASC, id DESC/);
+  assert.match(mobileApi, /app_sections && \$3::text\[\]/);
+  assert.match(mobileApi, /LIMIT \$4 OFFSET \$5/);
+  assert.match(detail, /setItems\(result\.items\)/);
+  assert.doesNotMatch(detail, /\.\.\.current, \.\.\.result\.items/);
+  assert.match(detail, /Page \{detail\.page\} of \{Math\.ceil\(detail\.total \/ detail\.limit\)\}/);
+  assert.match(adminConfig, /Verify published content/);
+  assert.match(adminConfig, /published · \$\{shown\} in rail · \$\{paginated\} in See all/);
+  assert.match(mobileApi, /content_section_assignments assignment/);
+  assert.match(adminConfig, /MOBILE_SECTION_RAIL_MIN_ITEMS/);
 });
 
 test('bottom navigation is an opaque token-driven dock with native tab events', () => {

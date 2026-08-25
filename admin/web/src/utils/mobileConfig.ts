@@ -1,4 +1,5 @@
 export const MOBILE_CONTENT_TYPE_OPTIONS = ['audio', 'video', 'playlist', 'announcement', 'live'] as const;
+export const MOBILE_SECTION_RAIL_MIN_ITEMS = 6;
 
 export const MOBILE_TAB_DESTINATION_OPTIONS = [
   { value: 'home', label: 'Home' },

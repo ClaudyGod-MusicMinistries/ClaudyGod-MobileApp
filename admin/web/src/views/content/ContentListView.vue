@@ -176,7 +176,13 @@
         <template #cell-appSections="{ value }">
           <div class="flex flex-wrap gap-1 max-w-48">
             <AppBadge v-for="section in (value as string[]).slice(0, 2)" :key="section" tone="neutral">{{ section }}</AppBadge>
-            <span v-if="(value as string[]).length > 2" class="text-[11px] text-ink-muted">+{{ (value as string[]).length - 2 }}</span>
+            <span
+              v-if="(value as string[]).length > 2"
+              class="text-[11px] font-medium text-ink-muted"
+              :title="`${(value as string[]).slice(2).join(', ')}`"
+            >
+              +{{ (value as string[]).length - 2 }} more
+            </span>
             <span v-if="!(value as string[]).length" class="text-xs text-ink-muted">Unassigned</span>
           </div>
         </template>

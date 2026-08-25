@@ -81,6 +81,85 @@ const migrationStatements = [
   `ALTER TABLE content_items ADD COLUMN IF NOT EXISTS tags TEXT[] NOT NULL DEFAULT '{}'`,
   `ALTER TABLE content_items ADD COLUMN IF NOT EXISTS metadata JSONB NOT NULL DEFAULT '{}'::jsonb`,
   `ALTER TABLE content_items ADD COLUMN IF NOT EXISTS search_vector TSVECTOR`,
+  `ALTER TABLE content_items ADD COLUMN IF NOT EXISTS is_featured BOOLEAN NOT NULL DEFAULT FALSE`,
+  `ALTER TABLE content_items ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ`,
+  `ALTER TABLE content_items ADD COLUMN IF NOT EXISTS sort_order INTEGER`,
+  `CREATE INDEX IF NOT EXISTS idx_content_items_app_sections ON content_items USING GIN (app_sections)`,
+  `CREATE INDEX IF NOT EXISTS idx_content_items_published_order
+    ON content_items (sort_order NULLS LAST, updated_at DESC, created_at DESC, id DESC)
+    WHERE visibility = 'published' AND deleted_at IS NULL`,
+  `CREATE TABLE IF NOT EXISTS app_config_store (
+    config_key TEXT PRIMARY KEY,
+    config_value JSONB NOT NULL,
+    updated_by UUID REFERENCES app_users(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  `CREATE TABLE IF NOT EXISTS mobile_sections (
+    section_id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    content_types TEXT[] NOT NULL,
+    screens TEXT[] NOT NULL,
+    active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  `CREATE TABLE IF NOT EXISTS content_section_assignments (
+    content_id UUID NOT NULL REFERENCES content_items(id) ON DELETE CASCADE,
+    section_id TEXT NOT NULL REFERENCES mobile_sections(section_id) ON DELETE RESTRICT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (content_id, section_id)
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_content_section_assignments_section
+    ON content_section_assignments (section_id, content_id)`,
+  `WITH configured_sections AS (
+     SELECT 'home'::text AS screen, section
+       FROM app_config_store store
+       CROSS JOIN LATERAL jsonb_array_elements(COALESCE(store.config_value #> '{layout,homeSections}', '[]'::jsonb)) section
+      WHERE store.config_key = 'mobile_app_experience'
+     UNION ALL
+     SELECT 'videos', section
+       FROM app_config_store store
+       CROSS JOIN LATERAL jsonb_array_elements(COALESCE(store.config_value #> '{layout,videoSections}', '[]'::jsonb)) section
+      WHERE store.config_key = 'mobile_app_experience'
+     UNION ALL
+     SELECT 'player', section
+       FROM app_config_store store
+       CROSS JOIN LATERAL jsonb_array_elements(COALESCE(store.config_value #> '{layout,playerSections}', '[]'::jsonb)) section
+      WHERE store.config_key = 'mobile_app_experience'
+     UNION ALL
+     SELECT 'library', section
+       FROM app_config_store store
+       CROSS JOIN LATERAL jsonb_array_elements(COALESCE(store.config_value #> '{layout,librarySections}', '[]'::jsonb)) section
+      WHERE store.config_key = 'mobile_app_experience'
+   ), catalog AS (
+     SELECT
+       section->>'id' AS section_id,
+       MAX(section->>'title') AS title,
+       ARRAY_AGG(DISTINCT content_type.value) AS content_types,
+       ARRAY_AGG(DISTINCT screen) AS screens
+     FROM configured_sections
+     CROSS JOIN LATERAL jsonb_array_elements_text(COALESCE(section->'contentTypes', '[]'::jsonb)) content_type(value)
+     WHERE NULLIF(trim(section->>'id'), '') IS NOT NULL
+     GROUP BY section->>'id'
+   )
+   INSERT INTO mobile_sections (section_id, title, content_types, screens, active)
+   SELECT section_id, COALESCE(NULLIF(title, ''), section_id), content_types, screens, TRUE
+   FROM catalog
+   ON CONFLICT (section_id) DO UPDATE SET
+     title = EXCLUDED.title,
+     content_types = EXCLUDED.content_types,
+     screens = EXCLUDED.screens,
+     active = TRUE,
+     updated_at = NOW()`,
+  `INSERT INTO content_section_assignments (content_id, section_id)
+   SELECT DISTINCT c.id, section.section_id
+   FROM content_items c
+   CROSS JOIN LATERAL unnest(c.app_sections) assigned_section(section_id)
+   JOIN mobile_sections section
+     ON lower(trim(section.section_id)) = lower(trim(assigned_section.section_id))
+     OR lower(trim(section.title)) = lower(trim(assigned_section.section_id))
+   ON CONFLICT (content_id, section_id) DO NOTHING`,
 
   // ============ LIVE SESSIONS ============
   `CREATE TABLE IF NOT EXISTS live_sessions (
@@ -107,6 +186,10 @@ const migrationStatements = [
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`,
   `ALTER TABLE live_sessions ADD COLUMN IF NOT EXISTS search_vector TSVECTOR`,
+  `CREATE INDEX IF NOT EXISTS idx_live_sessions_app_sections ON live_sessions USING GIN (app_sections)`,
+  `CREATE INDEX IF NOT EXISTS idx_live_sessions_section_order
+    ON live_sessions (updated_at DESC, created_at DESC, id DESC)
+    WHERE status IN ('live', 'scheduled', 'ended')`,
 
   // ============ USER SEARCH EVENTS ============
   `CREATE TABLE IF NOT EXISTS user_search_events (

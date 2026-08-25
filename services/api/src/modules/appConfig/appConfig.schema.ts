@@ -76,6 +76,7 @@ const referralRewardTierSchema = z
   .strict();
 
 const mobileLayoutContentTypeSchema = z.enum(['audio', 'video', 'playlist', 'announcement', 'live']);
+export const MOBILE_SECTION_RAIL_MIN_ITEMS = 6;
 const adPlacementScreenSchema = z.enum(['landing', 'home', 'videos', 'player', 'live', 'library', 'search']);
 
 const mobileLayoutSectionSchema = z
@@ -91,7 +92,7 @@ const mobileLayoutSectionSchema = z
     contentTypes: z.array(mobileLayoutContentTypeSchema).min(1).max(5),
     actionLabel: z.string().trim().min(1).max(40).default('Open'),
     destinationTab: z.enum(['home', 'videos', 'player', 'live', 'library', 'search']).default('home'),
-    maxItems: z.coerce.number().int().min(1).max(24).default(8),
+    maxItems: z.coerce.number().int().min(MOBILE_SECTION_RAIL_MIN_ITEMS).max(24).default(8),
   })
   .strict();
 
