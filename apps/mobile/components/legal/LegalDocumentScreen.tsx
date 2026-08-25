@@ -9,8 +9,7 @@ import { fetchLegalDocument, type LegalDocument } from '../../services/userFlowS
 import { useAppTheme } from '../../util/colorScheme';
 import { makeStyles } from '../../styles/makeStyles';
 import { openExternalUrl } from '../../util/externalLinks';
-import { SettingsScaffold } from '../layout/SettingsScaffold';
-import { PremiumSettingsHero } from '../layout/PremiumSettingsHero';
+import { PremiumPage } from '../feed';
 import { FadeIn } from '../ui/FadeIn';
 
 const useStyles = makeStyles((theme) => ({
@@ -45,27 +44,20 @@ export function LegalDocumentScreen({ documentId }: { documentId: LegalDocument[
   const icon = documentId === 'privacy' ? 'policy' : 'gavel';
 
   return (
-    <SettingsScaffold
-      title={title}
-      subtitle="Current, verified product policy"
-      icon={icon}
-      hero={query.data ? (
+    <PremiumPage title={title} eyebrow="ClaudyGod legal" subtitle="Current, verified product policy" refreshing={query.isRefetching} onRefresh={() => void query.refetch()}>
+      {query.data ? (
         <FadeIn>
-          <PremiumSettingsHero
-            eyebrow="ClaudyGod legal"
-            kicker={documentId === 'privacy' ? 'Your data and choices' : 'Clear terms for a trusted experience'}
-            title={query.data.title}
-            description={query.data.summary}
-            badge="Current verified document"
-          >
+          <SurfaceCard tone="strong" style={styles.intro}>
+            <CustomText variant="caption" style={styles.eyebrow}>{documentId === 'privacy' ? 'Your data and choices' : 'Clear terms for a trusted experience'}</CustomText>
+            <CustomText variant="display">{query.data.title}</CustomText>
+            <CustomText variant="body" style={styles.summary}>{query.data.summary}</CustomText>
             <View style={styles.documentMeta}>
               <View style={styles.metaPill}><MaterialIcons name="event" size={14} color={theme.colors.primary} /><CustomText variant="caption" style={styles.meta}>Effective {query.data.effectiveDate}</CustomText></View>
               <View style={styles.metaPill}><MaterialIcons name="history" size={14} color={theme.colors.primary} /><CustomText variant="caption" style={styles.meta}>Version {query.data.version}</CustomText></View>
             </View>
-          </PremiumSettingsHero>
+          </SurfaceCard>
         </FadeIn>
-      ) : undefined}
-    >
+      ) : null}
       {query.isLoading ? (
         <View style={styles.state}><ActivityIndicator color={theme.colors.primary} /><CustomText style={styles.stateText}>Loading the current document…</CustomText></View>
       ) : query.isError || !query.data ? (
@@ -73,7 +65,7 @@ export function LegalDocumentScreen({ documentId }: { documentId: LegalDocument[
           <MaterialIcons name="cloud-off" size={26} color={theme.colors.textMuted} />
           <CustomText variant="heading">Document unavailable</CustomText>
           <CustomText style={styles.stateText}>We could not verify the current policy version. Reconnect and try again so you do not receive outdated legal information.</CustomText>
-          <AppButton title="Try again" onPress={() => void query.refetch()} />
+          <AppButton title="Try again" variant="gradient" size="lg" fullWidth onPress={() => void query.refetch()} />
         </SurfaceCard>
       ) : (
         <>
@@ -92,10 +84,13 @@ export function LegalDocumentScreen({ documentId }: { documentId: LegalDocument[
               <View style={styles.contactIcon}><MaterialIcons name="support-agent" size={20} color={theme.colors.primary} /></View>
               <View style={styles.contactCopy}><CustomText variant="label">Questions about this document?</CustomText><CustomText variant="caption" style={styles.contactBody}>Contact the policy team and keep a record in your email.</CustomText></View>
             </View>
-            <AppButton title={`Email ${query.data.contactEmail}`} variant="secondary" fullWidth onPress={() => void openExternalUrl(`mailto:${query.data.contactEmail}`)} />
+            <AppButton title={`Email ${query.data.contactEmail}`} variant="gradient" size="lg" fullWidth onPress={() => void openExternalUrl(`mailto:${query.data.contactEmail}`)} />
           </SurfaceCard>
         </>
       )}
-    </SettingsScaffold>
+    </PremiumPage>
   );
 }
+  intro: { padding: theme.spacing.xl, gap: 10 },
+  eyebrow: { color: theme.colors.primary, textTransform: 'uppercase', letterSpacing: 1 },
+  summary: { color: theme.colors.textSecondary, lineHeight: 22 },

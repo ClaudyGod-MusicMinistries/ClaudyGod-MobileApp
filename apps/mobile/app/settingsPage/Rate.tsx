@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { TextInput, View } from 'react-native';
+import { Platform, TextInput, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
@@ -97,7 +97,7 @@ export default function Rate() {
       return;
     }
 
-    const storeUrl = iosStoreUrl || androidStoreUrl;
+    const storeUrl = Platform.select({ ios: iosStoreUrl, android: androidStoreUrl, default: '' });
     if (storeUrl) {
       void openExternalUrl(storeUrl);
       return;

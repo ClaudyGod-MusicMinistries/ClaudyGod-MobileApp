@@ -191,6 +191,7 @@ module.exports = {
       bundleIdentifier: iosBundleId,
       buildNumber: iosBuildNumber,
       icon: appIconAssetPath,
+      associatedDomains: ['applinks:claudygod.org'],
       // Required since 2024 for App Store Connect uploads. Declares this app's own
       // "required reason" API usage; installed Expo/RN modules (async-storage,
       // secure-store, etc.) ship their own manifest fragments that autolinking
@@ -213,6 +214,14 @@ module.exports = {
         backgroundColor: androidAdaptiveIconBgColor,
       },
       edgeToEdgeEnabled: androidEdgeToEdge,
+      intentFilters: [
+        {
+          action: 'VIEW',
+          autoVerify: true,
+          data: [{ scheme: 'https', host: 'claudygod.org', pathPrefix: '/join' }],
+          category: ['BROWSABLE', 'DEFAULT'],
+        },
+      ],
     },
     web: {
       favicon: appFaviconAssetPath,
