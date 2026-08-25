@@ -151,7 +151,9 @@ export function PremiumPage({
       >
         <Screen>
           <View style={[styles.pageContent, { paddingTop: theme.spacing.lg }]}>
-            {children}
+            <FadeIn delay={50} from={6} duration={280}>
+              {children}
+            </FadeIn>
             {showFooter ? <AppScreenFooter /> : null}
           </View>
         </Screen>

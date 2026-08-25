@@ -124,6 +124,32 @@ function normalizeNavigationTabs(
   });
 }
 
+function normalizeSettingsHub(
+  sections?: MobileAppConfig['settingsHub']['sections'],
+): MobileAppConfig['settingsHub']['sections'] {
+  const configured = Array.isArray(sections) && sections.length
+    ? sections.map((section) => ({ ...section, items: [...section.items] }))
+    : DEFAULT_MOBILE_APP_CONFIG.settingsHub.sections.map((section) => ({ ...section, items: [...section.items] }));
+  const required = DEFAULT_MOBILE_APP_CONFIG.settingsHub.sections.find((section) => section.id === 'product-legal');
+  if (!required) return configured;
+  const destinations = new Set(configured.flatMap((section) => section.items.map((item) => item.destination)));
+  const missing = required.items.filter((item) => !destinations.has(item.destination));
+  if (!missing.length) return configured;
+  const target = configured.find((section) => section.id === required.id)
+    ?? configured.find((section) => section.items.length + missing.length <= 12);
+  if (target && target.items.length + missing.length <= 12) {
+    target.items.push(...missing);
+    return configured;
+  }
+  if (configured.length < 10) return [...configured, { ...required, items: missing }];
+  for (const item of missing) {
+    const available = configured.find((section) => section.items.length < 12);
+    if (!available) throw new BadRequestError('Settings navigation has no capacity for required legal routes', 'SETTINGS_LEGAL_ROUTES_REQUIRED');
+    available.items.push(item);
+  }
+  return configured;
+}
+
 function mergeWithDefaults(value: unknown): MobileAppConfig {
   const input = value && typeof value === 'object' ? (value as Partial<MobileAppConfig>) : {};
   const nonEmptyArray = <T>(items: T[] | undefined, fallback: T[]): T[] =>
@@ -178,7 +204,7 @@ function mergeWithDefaults(value: unknown): MobileAppConfig {
     settingsHub: {
       ...DEFAULT_MOBILE_APP_CONFIG.settingsHub,
       ...(input.settingsHub ?? {}),
-      sections: nonEmptyArray(input.settingsHub?.sections, DEFAULT_MOBILE_APP_CONFIG.settingsHub.sections),
+      sections: normalizeSettingsHub(input.settingsHub?.sections),
     },
     monetization: {
       ...DEFAULT_MOBILE_APP_CONFIG.monetization,

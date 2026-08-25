@@ -204,6 +204,58 @@ const migrationStatements = [
     BEFORE INSERT OR UPDATE ON live_sessions
     FOR EACH ROW EXECUTE FUNCTION live_sessions_search_vector_update()`,
   `CREATE INDEX IF NOT EXISTS idx_live_sessions_search_vector ON live_sessions USING GIN (search_vector)`,
+
+  // ============ SUPPORT REQUESTS (ACCOUNT + GUEST INSTALLATIONS) ============
+  `CREATE TABLE IF NOT EXISTS support_requests (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES app_users(id) ON DELETE SET NULL,
+    category TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    message TEXT NOT NULL,
+    priority TEXT NOT NULL DEFAULT 'normal' CHECK (priority IN ('low', 'normal', 'high', 'urgent')),
+    status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'in_progress', 'resolved', 'closed')),
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  `ALTER TABLE support_requests ALTER COLUMN user_id DROP NOT NULL`,
+  `ALTER TABLE support_requests ADD COLUMN IF NOT EXISTS metadata JSONB NOT NULL DEFAULT '{}'::jsonb`,
+  `CREATE INDEX IF NOT EXISTS idx_support_requests_user_created_at ON support_requests (user_id, created_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_support_requests_guest_device ON support_requests ((metadata->>'deviceId'), created_at DESC) WHERE user_id IS NULL`,
+
+  // ============ PRODUCT RATINGS (ACCOUNT + GUEST INSTALLATIONS) ============
+  `CREATE TABLE IF NOT EXISTS app_ratings (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES app_users(id) ON DELETE SET NULL,
+    rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
+    channel TEXT NOT NULL DEFAULT 'mobile' CHECK (channel IN ('mobile', 'admin', 'web')),
+    comment TEXT,
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  `ALTER TABLE app_ratings ALTER COLUMN user_id DROP NOT NULL`,
+  `ALTER TABLE app_ratings ADD COLUMN IF NOT EXISTS metadata JSONB NOT NULL DEFAULT '{}'::jsonb`,
+  `CREATE INDEX IF NOT EXISTS idx_app_ratings_created_at ON app_ratings (created_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_app_ratings_guest_device ON app_ratings ((metadata->>'deviceId'), created_at DESC) WHERE user_id IS NULL`,
+
+  // ============ INSTALLATION REFERRALS ============
+  `CREATE TABLE IF NOT EXISTS mobile_referrals (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    device_id UUID NOT NULL UNIQUE,
+    code TEXT NOT NULL UNIQUE CHECK (code ~ '^CG[A-F0-9]{8}$'),
+    share_count INTEGER NOT NULL DEFAULT 0 CHECK (share_count >= 0),
+    joined_count INTEGER NOT NULL DEFAULT 0 CHECK (joined_count >= 0),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS idx_mobile_referrals_code ON mobile_referrals (code)`,
+  `CREATE TABLE IF NOT EXISTS mobile_referral_attributions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    referral_id UUID NOT NULL REFERENCES mobile_referrals(id) ON DELETE CASCADE,
+    joined_device_id UUID NOT NULL UNIQUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_mobile_referral_attributions_referral ON mobile_referral_attributions (referral_id, created_at DESC)`,
 ];
 
 const MIGRATION_LOCK_ID = 7246130001;

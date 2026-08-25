@@ -141,6 +141,37 @@ test('shared entrance motion honors reduced-motion preferences', () => {
   assert.match(source, /if \(reduceMotion\)/);
 });
 
+test('shared buttons, typography, and recovery states enforce professional layout contracts', () => {
+  const button = fs.readFileSync(path.join(root, 'components/ui/AppButton.tsx'), 'utf8');
+  const text = fs.readFileSync(path.join(root, 'components/CustomText.tsx'), 'utf8');
+  const page = fs.readFileSync(path.join(root, 'components/feed/PremiumPage.tsx'), 'utf8');
+  const boundary = fs.readFileSync(path.join(root, 'components/ErrorBoundary.tsx'), 'utf8');
+  assert.match(button, /btnStretch:\s*\{[^}]*width:\s*'100%'/);
+  assert.match(button, /replayKey=\{loading \? 'loading' : 'ready'\}/);
+  assert.doesNotMatch(button, /btnMd:\s*\{\s*height:/);
+  assert.doesNotMatch(text, /variantLineDefaults/);
+  assert.match(text, /maxFontSizeMultiplier\s*\?\?\s*1\.3/);
+  assert.match(page, /<FadeIn delay=\{50\} from=\{6\} duration=\{280\}>/);
+  assert.match(boundary, /title="Try again" variant="gradient" size="lg" fullWidth/);
+  assert.doesNotMatch(boundary, /TouchableOpacity/);
+});
+
+test('music and video failures use premium full-width recovery while players respect reduced motion', () => {
+  const music = fs.readFileSync(path.join(root, 'app/(tabs)/PlaySection.tsx'), 'utf8');
+  const videos = fs.readFileSync(path.join(root, 'app/(tabs)/videos.tsx'), 'utf8');
+  const failure = fs.readFileSync(path.join(root, 'components/ui/FullPageErrorState.tsx'), 'utf8');
+  const audioPlayer = fs.readFileSync(path.join(root, 'components/media/AudioPlayer.tsx'), 'utf8');
+  const videoPlayer = fs.readFileSync(path.join(root, 'components/media/VideoPlayer.tsx'), 'utf8');
+  assert.match(music, /error && !allQueue\.length/);
+  assert.match(videos, /error && !allQueue\.length/);
+  assert.match(music, /Your worship player/);
+  assert.match(videos, /Now watching/);
+  assert.match(failure, /title="Try again" variant="gradient" size="lg" fullWidth/);
+  assert.match(audioPlayer, /useReducedMotion/);
+  assert.match(audioPlayer, /!reduceMotion/);
+  assert.match(videoPlayer, /title="Open on YouTube" variant="gradient" size="lg" fullWidth/);
+});
+
 test('modal presentation is restricted to approved design-system primitives', () => {
   const approved = new Set([
     'components/ui/BottomSheet.tsx',

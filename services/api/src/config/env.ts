@@ -228,14 +228,6 @@ const envSchema = z
     OTEL_EXPORTER_OTLP_ENDPOINT: z.string().optional().default(''),
     SENTRY_DSN: z.string().optional().default(''),
 
-    GOOGLE_CLIENT_ID: z.string().optional().default(''),
-    GOOGLE_CLIENT_SECRET: z.string().optional().default(''),
-
-    APPLE_CLIENT_ID: z.string().optional().default(''),
-    APPLE_TEAM_ID: z.string().optional().default(''),
-    APPLE_KEY_ID: z.string().optional().default(''),
-    APPLE_PRIVATE_KEY: z.string().optional().default(''),
-
     MFA_ISSUER: z.string().trim().min(1).max(80).default('ClaudyGod'),
     MFA_BACKUP_CODES_COUNT: z.coerce.number().int().min(6).max(20).default(10),
 

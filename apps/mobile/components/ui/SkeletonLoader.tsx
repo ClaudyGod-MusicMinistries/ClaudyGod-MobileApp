@@ -68,7 +68,7 @@ function SkeletonLoaderComponent({
     inputRange: [0, 1],
     outputRange: [-sweepWidth, Math.max(measuredWidth, sweepWidth)],
   });
-  const highlightColor = theme.scheme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.55)';
+  const highlightColor = theme.colors.subtleFillStrong;
 
   return (
     <View

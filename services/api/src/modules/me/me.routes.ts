@@ -39,6 +39,7 @@ import {
   getMeProfile,
   getMeRecentlyPlayed,
   getMeRecommendations,
+  getMeSupportRequests,
   confirmMeEmailChange,
   requestMeEmailChange,
   requestMePasswordChange,
@@ -291,6 +292,13 @@ meRouter.post(
     const payload = validateSchema(createSupportRequestSchema, req.body);
     const result = await createMeSupportRequest(requireUser(req), payload);
     res.status(201).json(result);
+  }),
+);
+
+meRouter.get(
+  '/support-requests',
+  asyncHandler(async (req, res) => {
+    res.status(200).json(await getMeSupportRequests(requireUser(req)));
   }),
 );
 

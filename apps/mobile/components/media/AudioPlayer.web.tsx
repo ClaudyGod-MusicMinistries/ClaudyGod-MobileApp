@@ -29,7 +29,7 @@ const useStyles = makeStyles((theme) => ({
   },
   artworkBox: {
     overflow: 'hidden', borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: theme.colors.border,
     backgroundColor: theme.colors.surfaceAlt,
   },
   pillsRow:       { flexDirection: 'row', alignItems: 'center', gap: 10 },

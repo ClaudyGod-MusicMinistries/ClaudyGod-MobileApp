@@ -2,6 +2,7 @@ import React from 'react';
 import { View } from 'react-native';
 import { CustomText } from '../CustomText';
 import { makeStyles } from '../../styles/makeStyles';
+import { useAppTheme } from '../../util/colorScheme';
 
 interface AuthFeedbackBannerProps {
   message: string;
@@ -24,13 +25,14 @@ export function AuthFeedbackBanner({
   tone = 'info',
 }: AuthFeedbackBannerProps) {
   const styles = useStyles();
+  const theme = useAppTheme();
 
   const palette =
     tone === 'error'
-      ? { borderColor: 'rgba(255,120,120,0.22)', backgroundColor: 'rgba(255,80,80,0.08)',   textColor: '#FFD6D6' }
+      ? { borderColor: theme.colors.dangerBorder, backgroundColor: theme.colors.dangerSurface, textColor: theme.colors.danger }
       : tone === 'success'
-        ? { borderColor: 'rgba(122,230,166,0.30)', backgroundColor: 'rgba(56,170,104,0.14)',  textColor: '#D4FFE4' }
-        : { borderColor: 'rgba(156,125,255,0.24)', backgroundColor: 'rgba(107,79,188,0.12)', textColor: '#E4D8FF' };
+        ? { borderColor: theme.colors.successBorder, backgroundColor: theme.colors.successSurface, textColor: theme.colors.success }
+        : { borderColor: theme.colors.infoBorder, backgroundColor: theme.colors.infoSurface, textColor: theme.colors.info };
 
   return (
     <View style={[styles.bannerBase, { borderColor: palette.borderColor, backgroundColor: palette.backgroundColor }]}>

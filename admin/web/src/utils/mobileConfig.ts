@@ -20,6 +20,8 @@ export const SETTINGS_DESTINATION_OPTIONS = [
   { value: 'tabs.search', label: 'Search tab' },
   { value: 'tabs.settings', label: 'Settings tab' },
   { value: 'settings.privacy', label: 'Privacy' },
+  { value: 'settings.privacyPolicy', label: 'Privacy Policy' },
+  { value: 'settings.terms', label: 'Terms of Service' },
   { value: 'settings.donate', label: 'Donate' },
   { value: 'settings.help', label: 'Help' },
   { value: 'settings.about', label: 'About' },

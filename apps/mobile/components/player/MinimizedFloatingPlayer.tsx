@@ -23,7 +23,7 @@ const useStyles = makeStyles((theme) => ({
   floatingWrap: {
     position: 'absolute', bottom: 94, left: 12, right: 12, minHeight: 64,
     borderRadius: theme.radius.xl, overflow: 'hidden', zIndex: 100,
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1, borderColor: theme.colors.border,
     ...theme.shadows.lg,
   },
   innerRow: {
@@ -33,7 +33,7 @@ const useStyles = makeStyles((theme) => ({
   },
   progressTrack: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
-    height: 2, backgroundColor: 'rgba(247,242,255,0.08)',
+    height: 2, backgroundColor: theme.colors.subtleFillMed,
   },
   progressFillBase: {
     position: 'absolute', bottom: 0, left: 0,

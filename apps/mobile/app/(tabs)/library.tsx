@@ -14,7 +14,7 @@ import { makeStyles } from '../../styles/makeStyles';
 import { useContentFeed } from '../../hooks/useContentFeed';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import { getLibraryLayoutSections, deriveLayoutSectionItems } from '../../util/mobileLayout';
-import { InlineErrorBanner } from '../../components/ui/InlineErrorBanner';
+import { ErrorState } from '../../components/ui/ErrorState';
 import { useToast } from '../../context/ToastContext';
 import { useLocalContent } from '../../hooks/useLocalContent';
 import { useDownloads } from '../../context/DownloadsContext';
@@ -56,7 +56,7 @@ const useStyles = makeStyles((theme) => ({
   tabLabelInactive:{ fontWeight: '500', color: theme.colors.textMuted },
   badgeWrap:      { minWidth: 16, height: 16, borderRadius: 8, paddingHorizontal: 4, alignItems: 'center', justifyContent: 'center' },
   badgeActive:    { backgroundColor: theme.colors.primary },
-  badgeInactive:  { backgroundColor: 'rgba(255,255,255,0.10)' },
+  badgeInactive:  { backgroundColor: theme.colors.subtleFillStrong },
   badgeText:      { fontSize: 9, fontWeight: '700' },
   badgeTextActive:{ color: theme.colors.onPrimary },
   badgeTextInactive: { color: theme.colors.primary },
@@ -240,9 +240,9 @@ export default function LibraryScreen() {
         <LibTabs active={activeTab} onChange={setActiveTab} counts={counts} />
 
 
-        {error ? <InlineErrorBanner message={error} onRetry={() => void refresh()} /> : null}
-        {syncError ? <InlineErrorBanner message={syncError} onRetry={() => void refreshLibrary()} /> : null}
-        {downloadSyncError ? <InlineErrorBanner message={downloadSyncError} onRetry={() => void refreshDownloads()} /> : null}
+        {error ? <ErrorState message={error} onRetry={() => void refresh()} /> : null}
+        {syncError ? <ErrorState message={syncError} onRetry={() => void refreshLibrary()} /> : null}
+        {downloadSyncError ? <ErrorState message={downloadSyncError} onRetry={() => void refreshDownloads()} /> : null}
 
         {activeTab === 'saved' ? (
           <>

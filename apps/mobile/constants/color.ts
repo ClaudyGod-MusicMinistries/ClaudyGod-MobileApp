@@ -1,3 +1,24 @@
+// Scheme-independent colors used only over photos/video. Keeping them here
+// prevents media controls from inventing local rgba/hex values while ensuring
+// identical contrast in light and dark application themes.
+export const mediaTokens = {
+  canvas: '#000000',
+  text: '#FFFFFF',
+  textMuted: 'rgba(255,255,255,0.85)',
+  textSubtle: 'rgba(255,255,255,0.70)',
+  overlayFaint: 'rgba(0,0,0,0.15)',
+  overlaySoft: 'rgba(0,0,0,0.36)',
+  overlay: 'rgba(0,0,0,0.60)',
+  overlayStrong: 'rgba(0,0,0,0.88)',
+  control: 'rgba(0,0,0,0.52)',
+  controlLight: 'rgba(255,255,255,0.20)',
+  progressTrack: 'rgba(255,255,255,0.24)',
+  border: 'rgba(255,255,255,0.14)',
+  borderStrong: 'rgba(255,255,255,0.35)',
+  seekFlash: 'rgba(139,92,246,0.22)',
+  youtube: '#FF0000',
+} as const;
+
 export const colors = {
   light: {
     // ── Backgrounds ──────────────────────────────────────────────────────────
@@ -68,6 +89,7 @@ export const colors = {
     warning:      '#D97706',
     danger:       '#DC2626',
     info:         '#2563EB',
+    providerGoogle: '#4285F4',
 
     // ── Primary tints ─────────────────────────────────────────────────────────
     primarySurface:     'rgba(124,58,237,0.07)',
@@ -160,6 +182,7 @@ export const colors = {
     warning:      '#F59E0B',
     danger:       '#F43F5E',
     info:         '#60A5FA',
+    providerGoogle: '#4285F4',
 
     // ── Primary tints ─────────────────────────────────────────────────────────
     primarySurface:     'rgba(139,92,246,0.07)',

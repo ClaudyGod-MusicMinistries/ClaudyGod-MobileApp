@@ -26,11 +26,11 @@ const useStyles = makeStyles((theme) => ({
   heroImage:   { width: '100%', height: 210 },
   gradient:    { position: 'absolute', left: 0, right: 0, bottom: 0, height: 140 },
   contentWrap: { position: 'absolute', left: 16, right: 16, bottom: 16 },
-  titleText:   { color: '#FFFFFF' },
-  subtitleText: { color: '#E5E7EB', marginTop: 6 },
+  titleText:   { color: theme.colors.mediaText },
+  subtitleText: { color: theme.colors.mediaTextMuted, marginTop: 6 },
   btnRow:      { flexDirection: 'row', marginTop: 12 },
   playBtnStyle: { marginRight: 10 },
-  saveBtnStyle: { borderColor: 'rgba(255,255,255,0.3)', backgroundColor: 'rgba(0,0,0,0.35)' },
+  saveBtnStyle: { borderColor: theme.colors.mediaBorder, backgroundColor: theme.colors.mediaControl },
 }));
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -43,7 +43,7 @@ export function HeroBanner({ imageUrl, title, subtitle, onPlay, onSave }: HeroBa
     <View style={styles.card}>
       <Image source={{ uri: imageUrl }} style={styles.heroImage} resizeMode="cover" />
       <LinearGradient
-        colors={['rgba(0,0,0,0.0)', 'rgba(0,0,0,0.8)']}
+        colors={['transparent', theme.colors.mediaScrimStrong]}
         style={styles.gradient}
       />
       <View style={styles.contentWrap}>
@@ -63,8 +63,8 @@ export function HeroBanner({ imageUrl, title, subtitle, onPlay, onSave }: HeroBa
             variant="outline"
             size="sm"
             onPress={onSave}
-            leftIcon={<MaterialIcons name="add" size={18} color="#FFFFFF" />}
-            textColor="#FFFFFF"
+            leftIcon={<MaterialIcons name="add" size={18} color={theme.colors.mediaText} />}
+            textColor={theme.colors.mediaText}
             style={styles.saveBtnStyle}
           />
         </View>

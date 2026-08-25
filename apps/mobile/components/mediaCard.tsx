@@ -5,6 +5,7 @@ import { TVTouchable } from './ui/TVTouchable';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { makeStyles } from '../styles/makeStyles';
+import { mediaTokens } from '../constants/color';
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
@@ -21,36 +22,36 @@ const useStyles = makeStyles((theme) => ({
   overlayCenter: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
   playCircle: {
     width: 48, height: 48, borderRadius: 24,
-    backgroundColor: 'rgba(10,10,15,0.82)', borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: mediaTokens.overlay, borderWidth: 1,
+    borderColor: mediaTokens.border, alignItems: 'center', justifyContent: 'center',
   },
   moreBtn: {
     position: 'absolute', right: 8, top: 8,
     width: 32, height: 32, borderRadius: 16,
-    backgroundColor: 'rgba(10,10,15,0.75)', borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center', zIndex: 4,
+    backgroundColor: mediaTokens.overlay, borderWidth: 1,
+    borderColor: mediaTokens.border, alignItems: 'center', justifyContent: 'center', zIndex: 4,
   },
   viewCount: {
     position: 'absolute', right: 8, bottom: 56,
     paddingHorizontal: 8, paddingVertical: 4, borderRadius: theme.radius.sm,
-    backgroundColor: 'rgba(10,10,15,0.7)', borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: mediaTokens.overlay, borderWidth: 1,
+    borderColor: mediaTokens.border,
   },
-  viewCountText: { color: 'rgba(255,255,255,0.8)', fontSize: 10 },
+  viewCountText: { color: mediaTokens.textMuted, fontSize: 10 },
   titleWrap: {
     position: 'absolute', left: 0, right: 0, bottom: 0,
     paddingHorizontal: 10, paddingBottom: 10, paddingTop: 24,
   },
-  titleText:     { color: '#FFFFFF', fontSize: 12.5, fontWeight: '600', lineHeight: 16 },
-  metaText:      { color: 'rgba(255,255,255,0.7)', marginTop: 3, fontSize: 10.5, lineHeight: 14 },
+  titleText:     { color: mediaTokens.text, fontSize: 12.5, fontWeight: '600', lineHeight: 16 },
+  metaText:      { color: mediaTokens.textSubtle, marginTop: 3, fontSize: 10.5, lineHeight: 14 },
   badgeBase: {
     position: 'absolute', top: 8, left: 8,
     paddingHorizontal: 8, paddingVertical: 4,
     borderRadius: theme.radius.sm, borderWidth: 1,
   },
-  badgeLive:    { backgroundColor: 'rgba(239,68,68,0.95)', borderColor: 'rgba(255,100,100,0.5)' },
+  badgeLive:    { backgroundColor: theme.colors.liveSurface, borderColor: theme.colors.dangerBorder },
   badgeDefault: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primaryBorder },
-  badgeText:    { color: '#FFFFFF', fontSize: 9, fontWeight: '700', letterSpacing: 0.5 },
+  badgeText:    { color: mediaTokens.text, fontSize: 9, fontWeight: '700', letterSpacing: 0.5 },
 }));
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -100,7 +101,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
         </View>
 
         <LinearGradient
-          colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.15)', 'rgba(0,0,0,0.86)']}
+          colors={['transparent', mediaTokens.overlayFaint, mediaTokens.overlayStrong]}
           locations={[0, 0.55, 1]}
           style={StyleSheet.absoluteFillObject}
         />
@@ -116,14 +117,14 @@ export const MediaCard: React.FC<MediaCardProps> = ({
         {!isLive ? (
           <View style={styles.overlayCenter}>
             <View style={styles.playCircle}>
-              <MaterialIcons name="play-arrow" size={24} color="#FFFFFF" />
+              <MaterialIcons name="play-arrow" size={24} color={mediaTokens.text} />
             </View>
           </View>
         ) : null}
 
         {showMore && onMorePress ? (
           <Pressable onPress={onMorePress} style={styles.moreBtn}>
-            <MaterialIcons name="more-vert" size={18} color="#FFFFFF" />
+            <MaterialIcons name="more-vert" size={18} color={mediaTokens.text} />
           </Pressable>
         ) : null}
 

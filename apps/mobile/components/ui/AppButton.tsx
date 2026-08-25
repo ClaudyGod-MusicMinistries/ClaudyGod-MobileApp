@@ -12,12 +12,13 @@ import { CustomText } from '../CustomText';
 import { useAppTheme } from '../../util/colorScheme';
 import { makeStyles } from '../../styles/makeStyles';
 import { TVTouchable } from './TVTouchable';
+import { FadeIn } from './FadeIn';
 
 // ─── Static styles (no theme) ─────────────────────────────────────────────────
 
 const ss = StyleSheet.create({
   iconWrap:   { width: 18, height: 18, alignItems: 'center', justifyContent: 'center' },
-  contentRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  contentRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', maxWidth: '100%' },
 });
 
 // ─── Theme styles ─────────────────────────────────────────────────────────────
@@ -31,9 +32,9 @@ const useStyles = makeStyles((theme) => ({
     overflow: 'hidden',
   },
   // Size variants
-  btnSm:  { minHeight: 44, paddingHorizontal: 14 },
-  btnMd:  { height: 44, paddingHorizontal: 18 },
-  btnLg:  { height: 50, paddingHorizontal: 22 },
+  btnSm:  { minHeight: 44, paddingHorizontal: 14, paddingVertical: 10 },
+  btnMd:  { minHeight: 48, paddingHorizontal: 18, paddingVertical: 12 },
+  btnLg:  { minHeight: 54, paddingHorizontal: 22, paddingVertical: 14 },
   // Color variants
   btnPrimary:   { backgroundColor: theme.colors.primary },
   btnSecondary: { backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border },
@@ -57,8 +58,8 @@ const useStyles = makeStyles((theme) => ({
     elevation: 6,
   },
   // States
-  btnDisabled:  { opacity: 0.5 },
-  btnStretch:   { alignSelf: 'stretch' },
+  btnDisabled:  { opacity: 0.52 },
+  btnStretch:   { alignSelf: 'stretch', width: '100%' },
   btnFlex:      { alignSelf: 'flex-start' },
   // Text
   btnTextBase: {
@@ -67,8 +68,9 @@ const useStyles = makeStyles((theme) => ({
   },
   btnTextSm:  { fontSize: 12, lineHeight: 16.8 },
   btnTextMd:  { fontSize: 13, lineHeight: 18.2 },
-  btnTextLg:  { fontSize: 14, lineHeight: 19.6 },
+  btnTextLg:  { fontSize: 14.5, lineHeight: 20.3 },
   loadingRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
+  contentTransition: { alignItems: 'center', justifyContent: 'center', maxWidth: '100%' },
 }));
 
 // ─── AppButton ────────────────────────────────────────────────────────────────
@@ -126,7 +128,7 @@ export function AppButton({
   const handlePressIn = useCallback(() => {
     void Haptics.impactAsync(
       isPrimary || isGradient ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light,
-    );
+    ).catch(() => undefined);
   }, [isPrimary, isGradient]);
 
   const resolvedTextColor =
@@ -146,7 +148,7 @@ export function AppButton({
       return (
         <View style={styles.loadingRow}>
           <ActivityIndicator size="small" color={resolvedTextColor} />
-          <CustomText variant="label" numberOfLines={1} style={[styles.btnTextBase, textSizeStyle, { color: resolvedTextColor }]}>
+          <CustomText variant="label" numberOfLines={2} style={[styles.btnTextBase, textSizeStyle, { color: resolvedTextColor }]}>
             {loadingLabel || title}
           </CustomText>
         </View>
@@ -161,7 +163,7 @@ export function AppButton({
         {hasTitle ? (
           <CustomText
             variant="label"
-            numberOfLines={1}
+            numberOfLines={2}
             style={[styles.btnTextBase, textSizeStyle, { color: resolvedTextColor }, textStyle]}
           >
             {title}
@@ -200,7 +202,7 @@ export function AppButton({
         sizeStyle,
         variantStyle,
         isDisabled ? styles.btnDisabled : null,
-        !isGradient ? (fullWidth ? styles.btnStretch : styles.btnFlex) : null,
+        fullWidth ? styles.btnStretch : styles.btnFlex,
         style,
       ]}
       showFocusBorder={false}
@@ -213,7 +215,9 @@ export function AppButton({
           style={StyleSheet.absoluteFill}
         />
       ) : null}
-      {content}
+      <FadeIn replayKey={loading ? 'loading' : 'ready'} from={2} duration={180} style={styles.contentTransition}>
+        {content}
+      </FadeIn>
     </TVTouchable>
   );
 

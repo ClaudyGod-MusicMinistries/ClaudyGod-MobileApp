@@ -113,7 +113,7 @@ function SidebarTabBar({
                   paddingVertical: isTV ? 13 : 11,
                   paddingHorizontal: isTV ? 14 : 12,
                   borderRadius: theme.radius.md,
-                  backgroundColor: focused ? `rgba(${theme.colors.accentRgba},0.12)` : 'transparent',
+                  backgroundColor: focused ? theme.colors.primarySurface : 'transparent',
                   borderWidth: focused ? 1 : 0,
                   borderColor: focused ? theme.colors.primaryBorder : 'transparent',
                 }}
@@ -122,7 +122,7 @@ function SidebarTabBar({
                   width: isTV ? 36 : 30, height: isTV ? 36 : 30, borderRadius: theme.radius.md,
                   alignItems: 'center', justifyContent: 'center',
                   backgroundColor: focused
-                    ? `rgba(${theme.colors.accentRgba},0.15)`
+                    ? theme.colors.primaryBorder
                     : 'transparent',
                 }}>
                   <AppIcon
@@ -158,7 +158,7 @@ function SidebarTabBar({
               paddingHorizontal: isTV ? 14 : 12,
               borderRadius: theme.radius.xl,
               backgroundColor: currentRouteName === 'settings'
-                ? `rgba(${theme.colors.accentRgba},0.10)`
+                ? theme.colors.primarySurface
                 : 'transparent',
             }}
           >
@@ -207,7 +207,7 @@ function TabItem({
           borderRadius: theme.radius.pill,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: focused ? `rgba(${theme.colors.accentRgba},0.18)` : 'transparent',
+          backgroundColor: focused ? theme.colors.primaryBorder : 'transparent',
         }}
       >
         <AppIcon

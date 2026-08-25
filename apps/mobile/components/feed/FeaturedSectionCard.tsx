@@ -67,7 +67,7 @@ export function FeaturedSectionCard({ sectionTitle, item, onPress, onSeeAll, loa
         <TVTouchable onPress={onPress} showFocusBorder={false}>
           <View style={[styles.featuredCardShell, { height: cardHeight }]}>
             <Image source={{ uri: item.imageUrl || DEFAULT_CONTENT_IMAGE_URI }} resizeMode="cover" style={StyleSheet.absoluteFillObject} />
-            <LinearGradient colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.75)']} style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: Math.round(cardHeight * 0.6) }} />
+            <LinearGradient colors={['transparent', theme.colors.mediaScrimStrong]} style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: Math.round(cardHeight * 0.6) }} />
 
             {isLive ? (
               <View style={[styles.featuredLiveBadge, { backgroundColor: theme.colors.danger }]}>
@@ -77,13 +77,13 @@ export function FeaturedSectionCard({ sectionTitle, item, onPress, onSeeAll, loa
             ) : null}
 
             <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: compact ? 14 : 18, gap: 8 }}>
-              <CustomText style={{ color: '#FFFFFF', fontSize: compact ? 15 : 17, fontWeight: '700', letterSpacing: -0.3, lineHeight: compact ? 21 : 24 }} numberOfLines={2}>
+              <CustomText style={{ color: theme.colors.mediaText, fontSize: compact ? 15 : 17, fontWeight: '700', letterSpacing: -0.3, lineHeight: compact ? 21 : 24 }} numberOfLines={2}>
                 {cleanFeedText(item.title)}
               </CustomText>
               <View style={styles.featuredPlayRow}>
                 <View style={[styles.featuredPlayBtn, { backgroundColor: isLive ? theme.colors.danger : theme.colors.primary }]}>
-                  <MaterialIcons name={playIcon} size={15} color="#fff" />
-                  <CustomText style={{ color: '#fff', fontSize: 12.5, fontWeight: '700' }}>{playLabel}</CustomText>
+                  <MaterialIcons name={playIcon} size={15} color={theme.colors.onPrimary} />
+                  <CustomText style={{ color: theme.colors.onPrimary, fontSize: 12.5, fontWeight: '700' }}>{playLabel}</CustomText>
                 </View>
                 {isValidDuration(item.duration) && !isLive ? <CustomText style={styles.featuredSubText}>{item.duration}</CustomText> : null}
                 {item.subtitle ? <CustomText style={[styles.featuredSubText, { flex: 1 }]} numberOfLines={1}>{cleanFeedText(item.subtitle)}</CustomText> : null}

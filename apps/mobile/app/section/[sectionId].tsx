@@ -145,7 +145,7 @@ export default function SectionDetailScreen() {
                 <MaterialIcons name="error-outline" size={24} color={theme.colors.danger} />
                 <CustomText variant="subtitle" style={styles.errorTitle}>Unable to open this section</CustomText>
                 <CustomText variant="caption" style={styles.errorBody}>{error}</CustomText>
-                <AppButton title="Try again" variant="secondary" onPress={() => void load(1)} />
+                <AppButton title="Try again" variant="gradient" size="lg" fullWidth onPress={() => void load(1)} />
               </SurfaceCard>
             ) : null}
 

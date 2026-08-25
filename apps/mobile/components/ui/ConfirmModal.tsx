@@ -205,7 +205,7 @@ export function ConfirmModal({
                   disabled={loading}
                   onPress={handlePrimary}
                   style={isDanger ? styles.dangerBtn : undefined}
-                  textColor="#FFFFFF"
+                  textColor={theme.colors.onPrimary}
                 />
                 {secondaryLabel ? (
                   <AppButton
