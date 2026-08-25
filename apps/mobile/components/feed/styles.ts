@@ -138,6 +138,24 @@ export const useFeedStyles = makeStyles((theme) => ({
   railSubtitle:    { color: theme.colors.textMuted, marginTop: 3, fontSize: 12.5 },
   railActionBtn:   { flexDirection: 'row', alignItems: 'center', gap: 3, paddingVertical: 6, paddingLeft: 12 },
   railActionText:  { color: theme.colors.primary, fontSize: 12.5, fontWeight: '600' },
+  railPaginationOverlay: {
+    alignSelf: 'flex-end', marginTop: theme.spacing.xs, marginRight: theme.spacing.md,
+    flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm,
+    paddingLeft: 10, paddingRight: 4, paddingVertical: 4,
+    borderRadius: theme.radius.pill,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1, borderColor: theme.colors.border,
+    shadowColor: theme.colors.shadow, shadowOpacity: 0.14, shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 }, elevation: 3,
+  },
+  railPaginationText: { color: theme.colors.textSecondary, fontWeight: '600', minWidth: 58, textAlign: 'center' },
+  railPaginationActions: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  railPaginationButton: {
+    width: 38, height: 38, borderRadius: theme.radius.pill,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: theme.colors.subtleFill,
+  },
+  railPaginationButtonDisabled: { opacity: 0.35 },
 
   // InlineEmpty
   inlineEmpty: {

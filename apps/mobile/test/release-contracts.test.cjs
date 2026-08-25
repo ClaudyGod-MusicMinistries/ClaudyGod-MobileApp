@@ -332,6 +332,7 @@ test('section rendering never silently truncates assigned content and exposes ra
   const mobileApi = fs.readFileSync(path.resolve(root, '../../services/api/src/modules/mobile/mobile.service.ts'), 'utf8');
   const detail = fs.readFileSync(path.join(root, 'app/section/[sectionId].tsx'), 'utf8');
   const adminConfig = fs.readFileSync(path.resolve(root, '../../admin/web/src/views/config/MobileConfigView.vue'), 'utf8');
+  const contentRail = fs.readFileSync(path.join(root, 'components/feed/ContentRail.tsx'), 'utf8');
 
   assert.match(list, /\{items\.map\(\(item, index\)/);
   assert.doesNotMatch(list, /items\.slice\(0, maxItems\)/);
@@ -354,6 +355,10 @@ test('section rendering never silently truncates assigned content and exposes ra
   assert.match(adminConfig, /published · \$\{shown\} in rail · \$\{paginated\} in See all/);
   assert.match(mobileApi, /content_section_assignments assignment/);
   assert.match(adminConfig, /MOBILE_SECTION_RAIL_MIN_ITEMS/);
+  assert.match(contentRail, /onViewableItemsChanged/);
+  assert.match(contentRail, /Previous \$\{title \|\| 'content'\} items/);
+  assert.match(contentRail, /Next \$\{title \|\| 'content'\} items/);
+  assert.match(contentRail, /of \{items\.length\}/);
 });
 
 test('bottom navigation is an opaque token-driven dock with native tab events', () => {
