@@ -95,12 +95,40 @@
         <!-- Reflection -->
         <AppTextarea
           v-model="form.reflection"
-          label="Devotional reflection"
-          placeholder="Write a message that will inspire and encourage your community for this day..."
-          :rows="6"
+          label="Teaching introduction"
+          placeholder="Introduce the central truth and context for today’s teaching..."
+          :rows="4"
           :max-length="1200"
           required
         />
+
+        <AppTextarea
+          v-model="form.teaching"
+          label="Teaching"
+          placeholder="Explain the passage faithfully and clearly. This is the main teaching shown in the app."
+          :rows="8"
+          :max-length="6000"
+          required
+        />
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <AppTextarea
+            v-model="form.application"
+            label="Practical application"
+            placeholder="Give users a clear and actionable response for today..."
+            :rows="5"
+            :max-length="3000"
+            required
+          />
+          <AppTextarea
+            v-model="form.prayer"
+            label="Guided prayer"
+            placeholder="Write the prayer that closes this teaching..."
+            :rows="5"
+            :max-length="3000"
+            required
+          />
+        </div>
 
         <!-- Form error -->
         <p v-if="formError" class="text-xs text-danger">{{ formError }}</p>
@@ -340,6 +368,9 @@ interface FormState {
   passage:     string;
   verse:       string;
   reflection:  string;
+  teaching:    string;
+  application: string;
+  prayer:      string;
   messageDate: string;
   status:      'draft' | 'published';
 }
@@ -354,6 +385,9 @@ const emptyForm = (): FormState => ({
   passage:     '',
   verse:       '',
   reflection:  '',
+  teaching:    '',
+  application: '',
+  prayer:      '',
   messageDate: today,
   status:      'published',
 });
@@ -374,6 +408,9 @@ function openEditForm(entry: WordOfDay) {
     passage:     entry.passage,
     verse:       entry.verse,
     reflection:  entry.reflection,
+    teaching:    entry.teaching ?? '',
+    application: entry.application ?? '',
+    prayer:      entry.prayer ?? '',
     messageDate: entry.messageDate,
     status:      entry.status === 'draft' ? 'draft' : 'published',
   };
@@ -388,12 +425,15 @@ function closeForm() {
 }
 
 async function onSave() {
-  const { title, passage, verse, reflection, messageDate, status } = form.value;
+  const { title, passage, verse, reflection, teaching, application, prayer, messageDate, status } = form.value;
 
   if (!title.trim())        { formError.value = 'Word or title is required.'; return; }
   if (!passage.trim())      { formError.value = 'Scripture reference is required.'; return; }
   if (!verse.trim())        { formError.value = 'Scripture text is required.'; return; }
   if (!reflection.trim())   { formError.value = 'Reflection is required.'; return; }
+  if (!teaching.trim())     { formError.value = 'Teaching is required.'; return; }
+  if (!application.trim())  { formError.value = 'Practical application is required.'; return; }
+  if (!prayer.trim())       { formError.value = 'Guided prayer is required.'; return; }
   if (!messageDate)         { formError.value = 'Publish date is required.'; return; }
 
   formError.value = '';
@@ -404,6 +444,9 @@ async function onSave() {
     passage:     passage.trim(),
     verse:       verse.trim(),
     reflection:  reflection.trim(),
+    teaching:    teaching.trim(),
+    application: application.trim(),
+    prayer:      prayer.trim(),
     messageDate,
     status,
   };

@@ -149,6 +149,27 @@ test('shared entrance motion honors reduced-motion preferences', () => {
   assert.match(source, /if \(reduceMotion\)/);
 });
 
+test('search shortcuts execute backend search and daily teaching exposes retryable structured guidance', () => {
+  const search = fs.readFileSync(path.join(root, 'app/(tabs)/search.tsx'), 'utf8');
+  const word = fs.readFileSync(path.join(root, 'app/settingsPage/Word.tsx'), 'utf8');
+  const context = fs.readFileSync(path.join(root, 'context/WordOfDayContext.tsx'), 'utf8');
+  const modal = fs.readFileSync(path.join(root, 'components/modals/WordOfDayModal.tsx'), 'utf8');
+  const apiWord = fs.readFileSync(path.resolve(root, '../../services/api/src/modules/wordOfDay/wordOfDay.service.ts'), 'utf8');
+
+  assert.match(search, /fetchSearchResults\(normalized, type\)/);
+  assert.match(search, /runSearch\(shortcut\.query, resolvedCategory\)/);
+  assert.match(search, /runSearch\(term, 'All'\)/);
+  assert.match(word, /adminWord\.teaching/);
+  assert.match(word, /adminWord\.application/);
+  assert.match(word, /adminWord\.prayer/);
+  assert.doesNotMatch(word, /Read the passage slowly|Choose one practical response|Turn what you have learned/);
+  assert.match(word, /ErrorState message=\{error\}/);
+  assert.match(context, /refresh: load/);
+  assert.match(modal, /useReducedMotion/);
+  assert.match(modal, /title="Open guided teaching"/);
+  assert.match(apiWord, /message_date <= CURRENT_DATE/);
+});
+
 test('shared buttons, typography, and recovery states enforce professional layout contracts', () => {
   const button = fs.readFileSync(path.join(root, 'components/ui/AppButton.tsx'), 'utf8');
   const text = fs.readFileSync(path.join(root, 'components/CustomText.tsx'), 'utf8');
@@ -255,6 +276,11 @@ test('settings capabilities describe and control real playback and privacy behav
   const music = fs.readFileSync(path.join(root, 'features/media/MusicScreen.tsx'), 'utf8');
   const audio = fs.readFileSync(path.join(root, 'components/media/AudioPlayer.tsx'), 'utf8');
   const youtube = fs.readFileSync(path.join(root, 'components/media/YouTubeAudioPlayer.tsx'), 'utf8');
+  const pushService = fs.readFileSync(path.join(root, 'services/pushNotificationService.ts'), 'utf8');
+  const pushHook = fs.readFileSync(path.join(root, 'hooks/usePushNotify.ts'), 'utf8');
+  const mobileApi = fs.readFileSync(path.resolve(root, '../../services/api/src/modules/mobile/mobile.routes.ts'), 'utf8');
+  const pushBackend = fs.readFileSync(path.resolve(root, '../../services/api/src/infra/push.ts'), 'utf8');
+  const migrations = fs.readFileSync(path.resolve(root, '../../services/api/src/db/migrate.ts'), 'utf8');
   assert.match(settings, /label: 'Audio quality'[\s\S]*statusLabel: 'Adaptive'/);
   assert.doesNotMatch(settings, /label: 'High quality audio'/);
   assert.match(settings, /label: 'Recommendations'[\s\S]*installation’s playback history/);
@@ -264,6 +290,18 @@ test('settings capabilities describe and control real playback and privacy behav
   assert.match(music, /advanceOnFinish=\{autoplayEnabled/);
   assert.match(audio, /advanceOnFinish/);
   assert.match(youtube, /msg\.state === 0 && advanceOnFinish/);
+  assert.match(settings, /await toggleNotifications\(value\)/);
+  assert.match(settings, /await persistPreference\('notificationsEnabled', value\)/);
+  assert.match(settings, /label: 'Email delivery'/);
+  assert.match(pushService, /saveInstallationPushToken/);
+  assert.match(pushService, /removeInstallationPushToken/);
+  assert.match(pushHook, /Promise<boolean>/);
+  assert.match(migrations, /CREATE TABLE IF NOT EXISTS mobile_installation_push_tokens/);
+  assert.match(migrations, /CREATE TABLE IF NOT EXISTS mobile_installation_live_subscriptions/);
+  assert.match(mobileApi, /post\('\/installations\/push-token', authenticateInstallation/);
+  assert.match(mobileApi, /post\('\/installations\/live-subscriptions', authenticateInstallation/);
+  assert.match(pushBackend, /mobile_installation_live_subscriptions/);
+  assert.match(pushBackend, /mobile_installation_push_tokens/);
 });
 
 test('bottom navigation is an opaque token-driven dock with native tab events', () => {

@@ -7,7 +7,7 @@ import type {
   NotificationContentInput,
 } from 'expo-notifications';
 import { ENV } from './config';
-import { removeDevicePushToken, saveDevicePushToken } from './userFlowService';
+import { removeDevicePushToken, removeInstallationPushToken, saveDevicePushToken, saveInstallationPushToken } from './userFlowService';
 import { getStoredMobileSession } from './authService';
 
 type NotificationsModule = typeof import('expo-notifications');
@@ -33,14 +33,9 @@ async function getNotificationsModule(): Promise<NotificationsModule | null> {
         const behavior: NotificationBehavior = {
           shouldPlaySound: true,
           shouldSetBadge: true,
-          shouldShowBanner: false,
-          shouldShowList: false,
+          shouldShowBanner: true,
+          shouldShowList: true,
         };
-
-        if (Platform.OS === 'ios') {
-          behavior.shouldShowBanner = true;
-          behavior.shouldShowList = true;
-        }
 
         return behavior;
       },
@@ -124,14 +119,14 @@ export class PushNotificationService {
     // solely on a session cookie — with no signed-in check here, every guest
     // who grants notification permission fires a doomed 401 on every app launch.
     const { user } = await getStoredMobileSession();
-    if (!user) return;
-
-    try {
+    if (user) {
       await saveDevicePushToken({
         expoPushToken: token,
         deviceType: Platform.OS,
       });
-    } catch {}
+    } else {
+      await saveInstallationPushToken({ expoPushToken: token, deviceType: Platform.OS });
+    }
   }
 
   // Schedule local notification with proper typing
@@ -215,18 +210,15 @@ export class PushNotificationService {
   async removePushToken(): Promise<void> {
     try {
       const { user } = await getStoredMobileSession();
-      if (!user) return;
-
       const token = await this.getPushToken();
       if (!token) {
         return;
       }
 
-      await removeDevicePushToken({
-        expoPushToken: token,
-        deviceType: Platform.OS,
-      });
-    } catch {}
+      if (user) await removeDevicePushToken({ expoPushToken: token, deviceType: Platform.OS });
+      else await removeInstallationPushToken({ expoPushToken: token, deviceType: Platform.OS });
+      this.isInitialized = false;
+    } catch (error) { throw error; }
   }
 }
 

@@ -50,13 +50,31 @@ export interface MeMetrics {
 }
 
 export async function fetchInstallationPreferences() {
-  return apiFetch<{ preferences: { personalizationEnabled: boolean } }>('/v1/mobile/installations/preferences');
+  return apiFetch<{ preferences: { personalizationEnabled: boolean; notificationsEnabled: boolean } }>('/v1/mobile/installations/preferences');
 }
 
 export async function updateInstallationPersonalization(personalizationEnabled: boolean) {
-  return apiFetch<{ preferences: { personalizationEnabled: boolean } }>('/v1/mobile/installations/preferences', {
+  return apiFetch<{ preferences: { personalizationEnabled: boolean; notificationsEnabled: boolean } }>('/v1/mobile/installations/preferences', {
     method: 'PATCH', body: JSON.stringify({ personalizationEnabled }),
   });
+}
+
+export async function updateInstallationNotifications(notificationsEnabled: boolean) {
+  return apiFetch<{ preferences: { personalizationEnabled: boolean; notificationsEnabled: boolean } }>('/v1/mobile/installations/preferences', {
+    method: 'PATCH', body: JSON.stringify({ notificationsEnabled }),
+  });
+}
+
+export async function saveInstallationPushToken(input: { expoPushToken: string; deviceType?: string }): Promise<void> {
+  await apiFetch('/v1/mobile/installations/push-token', { method: 'POST', body: JSON.stringify(input) });
+}
+
+export async function removeInstallationPushToken(input: { expoPushToken: string; deviceType?: string }): Promise<void> {
+  await apiFetch('/v1/mobile/installations/push-token', { method: 'DELETE', body: JSON.stringify(input) });
+}
+
+export async function subscribeInstallationLiveAlerts(channelId: string, label?: string): Promise<void> {
+  await apiFetch('/v1/mobile/installations/live-subscriptions', { method: 'POST', body: JSON.stringify({ channelId, label }) });
 }
 
 export interface MobileAppExperienceConfig {

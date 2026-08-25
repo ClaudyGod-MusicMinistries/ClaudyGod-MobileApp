@@ -24,7 +24,7 @@ interface ExpoPushBatchResponse {
 
 export interface PushDeliverySummary {
   attempted: number;
-  delivered: number;
+  accepted: number;
   invalidTokens: number;
 }
 
@@ -47,11 +47,10 @@ async function deleteInvalidPushTokens(tokens: string[]): Promise<void> {
     return;
   }
 
-  await pool.query(
-    `DELETE FROM user_push_tokens
-     WHERE expo_push_token = ANY($1::text[])`,
-    [tokens],
-  );
+  await Promise.all([
+    pool.query(`DELETE FROM user_push_tokens WHERE expo_push_token = ANY($1::text[])`, [tokens]),
+    pool.query(`DELETE FROM mobile_installation_push_tokens WHERE expo_push_token = ANY($1::text[])`, [tokens]),
+  ]);
 }
 
 async function sendExpoPushBatch(messages: ExpoPushMessage[]): Promise<ExpoPushResponseItem[]> {
@@ -79,14 +78,22 @@ export async function sendLiveStartPushNotifications(input: {
   body: string;
 }): Promise<PushDeliverySummary> {
   const subscriptions = await pool.query<{ expo_push_token: string }>(
-    `SELECT DISTINCT upt.expo_push_token
+    `SELECT DISTINCT recipients.expo_push_token FROM (
+     SELECT upt.expo_push_token
      FROM live_subscriptions ls
      INNER JOIN user_push_tokens upt ON upt.user_id = ls.user_id
      INNER JOIN app_users u ON u.id = ls.user_id
      LEFT JOIN user_preferences pref ON pref.user_id = ls.user_id
      WHERE ls.channel_id = $1
        AND u.is_active = TRUE
-       AND COALESCE(pref.notifications_enabled, TRUE) = TRUE`,
+       AND COALESCE(pref.notifications_enabled, TRUE) = TRUE
+     UNION
+     SELECT mpt.expo_push_token
+       FROM mobile_installation_live_subscriptions mils
+       INNER JOIN mobile_installation_push_tokens mpt ON mpt.installation_id = mils.installation_id
+       INNER JOIN mobile_installations mi ON mi.id = mils.installation_id
+      WHERE mils.channel_id = $1 AND mi.status = 'active' AND mi.notifications_enabled = TRUE
+     ) recipients`,
     [input.channelId],
   );
 
@@ -94,12 +101,12 @@ export async function sendLiveStartPushNotifications(input: {
   if (tokens.length === 0) {
     return {
       attempted: 0,
-      delivered: 0,
+      accepted: 0,
       invalidTokens: 0,
     };
   }
 
-  let delivered = 0;
+  let accepted = 0;
   const invalidTokens = new Set<string>();
 
   for (const group of chunk(tokens, EXPO_BATCH_SIZE)) {
@@ -120,7 +127,7 @@ export async function sendLiveStartPushNotifications(input: {
     const results = await sendExpoPushBatch(messages);
     results.forEach((result, index) => {
       if (result.status === 'ok') {
-        delivered += 1;
+        accepted += 1;
         return;
       }
 
@@ -136,7 +143,7 @@ export async function sendLiveStartPushNotifications(input: {
 
   return {
     attempted: tokens.length,
-    delivered,
+    accepted,
     invalidTokens: invalidTokens.size,
   };
 }

@@ -49,6 +49,7 @@ const ICON_ALIASES: Record<string, FeatherName> = {
   'favorite-border': 'heart',
   notifications: 'bell',
   'notifications-active': 'bell',
+  email: 'mail',
   explore: 'compass',
   person: 'user',
   account: 'user',

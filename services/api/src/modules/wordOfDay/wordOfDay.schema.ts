@@ -18,6 +18,9 @@ export const upsertWordOfDaySchema = z
     passage: z.string().trim().min(2).max(120),
     verse: z.string().trim().min(3).max(6000),
     reflection: z.string().trim().min(3).max(6000),
+    teaching: z.string().trim().min(3).max(12000),
+    application: z.string().trim().min(3).max(6000),
+    prayer: z.string().trim().min(3).max(6000),
     messageDate: z.preprocess(
       (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
       z.string().date().optional(),

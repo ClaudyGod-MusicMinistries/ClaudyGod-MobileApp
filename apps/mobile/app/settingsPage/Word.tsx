@@ -9,6 +9,7 @@ import { FadeIn } from '../../components/ui/FadeIn';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { AppButton } from '../../components/ui/AppButton';
 import { BrandLoader } from '../../components/branding/BrandLoader';
+import { ErrorState } from '../../components/ui/ErrorState';
 import { useWordOfDay } from '../../hooks/useWordOfDay';
 import { useAppTheme } from '../../util/colorScheme';
 import { makeStyles } from '../../styles/makeStyles';
@@ -37,6 +38,17 @@ const useStyles = makeStyles((theme) => ({
   reflectionHeader:{ flexDirection: 'row', alignItems: 'center', gap: 6 },
   reflectionLabel: { color: theme.colors.primary, textTransform: 'uppercase', letterSpacing: 0.6, fontWeight: '700' },
   reflectionBody:  { color: theme.colors.textSecondary },
+  teachingSteps:   { gap: theme.spacing.md },
+  teachingStep:    { flexDirection: 'row', alignItems: 'flex-start', gap: theme.spacing.md },
+  teachingNumber: {
+    width: 34, height: 34, borderRadius: theme.radius.pill,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: theme.colors.primarySurface, borderWidth: 1, borderColor: theme.colors.primaryBorder,
+  },
+  teachingNumberText: { color: theme.colors.primary, fontWeight: '800' },
+  teachingCopy:       { flex: 1, gap: theme.spacing.xs },
+  teachingTitle:      { color: theme.colors.text },
+  teachingBody:       { color: theme.colors.textSecondary },
 
   // Hero
   heroPad:       { padding: theme.spacing.xl, marginBottom: theme.spacing.lg, overflow: 'hidden' },
@@ -157,9 +169,16 @@ export default function WordForTodayScreen() {
   const styles = useStyles();
   const theme  = useAppTheme();
   const router = useRouter();
-  const { bibleVerse, adminWord, loading, hasContent } = useWordOfDay();
+  const { bibleVerse, adminWord, loading, hasContent, error, refresh } = useWordOfDay();
 
   const primaryWord = adminWord ?? bibleVerse;
+  const teachingSections = adminWord
+    ? [
+        { number: '01', title: 'Teaching', body: adminWord.teaching },
+        { number: '02', title: 'Practical application', body: adminWord.application },
+        { number: '03', title: 'Guided prayer', body: adminWord.prayer },
+      ].filter((section): section is { number: string; title: string; body: string } => Boolean(section.body?.trim()))
+    : [];
 
   return (
     <SettingsScaffold
@@ -197,6 +216,8 @@ export default function WordForTodayScreen() {
         </SurfaceCard>
       ) : null}
 
+      {!loading && error ? <ErrorState message={error} onRetry={() => void refresh()} /> : null}
+
       {!loading && bibleVerse ? (
         <WordSection
           word={bibleVerse}
@@ -215,8 +236,32 @@ export default function WordForTodayScreen() {
         />
       ) : null}
 
+      {!loading && teachingSections.length > 0 ? (
+        <FadeIn delay={160}>
+          <SurfaceCard tone="subtle" style={styles.wordCardPad}>
+            <View style={styles.sectionHeaderRow}>
+              <View style={styles.sectionIconBox}>
+                <MaterialIcons name="school" size={16} color={theme.colors.primary} />
+              </View>
+              <CustomText variant="caption" style={styles.sectionLabel}>Today&apos;s teaching journey</CustomText>
+            </View>
+            <View style={styles.teachingSteps}>
+              {teachingSections.map((section) => (
+                <View key={section.number} style={styles.teachingStep}>
+                  <View style={styles.teachingNumber}><CustomText style={styles.teachingNumberText}>{section.number}</CustomText></View>
+                  <View style={styles.teachingCopy}>
+                    <CustomText variant="heading" style={styles.teachingTitle}>{section.title}</CustomText>
+                    <CustomText variant="body" style={styles.teachingBody}>{section.body}</CustomText>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </SurfaceCard>
+        </FadeIn>
+      ) : null}
+
       {!loading && hasContent ? (
-        <FadeIn delay={180}>
+        <FadeIn delay={220}>
           <View style={styles.actionsRow}>
             <AppButton
               title="Explore music"
@@ -233,7 +278,7 @@ export default function WordForTodayScreen() {
         </FadeIn>
       ) : null}
 
-      {!loading && !hasContent ? (
+      {!loading && !hasContent && !error ? (
         <FadeIn delay={80}>
           <SurfaceCard tone="subtle" style={styles.emptyPad}>
             <View style={styles.emptyRow}>

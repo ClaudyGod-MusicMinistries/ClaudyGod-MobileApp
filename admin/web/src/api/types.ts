@@ -397,6 +397,9 @@ export interface WordOfDay {
   passage: string;
   verse: string;
   reflection: string;
+  teaching: string | null;
+  application: string | null;
+  prayer: string | null;
   messageDate: string;
   status: 'draft' | 'published' | 'archived';
   notifyEmail: boolean;
@@ -411,6 +414,9 @@ export interface WordOfDayInput {
   passage: string;
   verse: string;
   reflection: string;
+  teaching: string;
+  application: string;
+  prayer: string;
   messageDate?: string;
   status: 'draft' | 'published';
   notifySubscribers?: boolean;

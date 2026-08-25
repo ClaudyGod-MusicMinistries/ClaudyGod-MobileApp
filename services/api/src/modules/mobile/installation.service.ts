@@ -128,29 +128,55 @@ export async function clearInstallationHistory(installationId: string) {
 }
 
 export async function getInstallationPreferences(installationId: string) {
-  const result = await pool.query<{ personalization_enabled: boolean }>(`SELECT personalization_enabled FROM mobile_installations WHERE id = $1`, [installationId]);
-  return { preferences: { personalizationEnabled: result.rows[0]?.personalization_enabled ?? true } };
+  const result = await pool.query<{ personalization_enabled: boolean; notifications_enabled: boolean }>(`SELECT personalization_enabled, notifications_enabled FROM mobile_installations WHERE id = $1`, [installationId]);
+  return { preferences: { personalizationEnabled: result.rows[0]?.personalization_enabled ?? true, notificationsEnabled: result.rows[0]?.notifications_enabled ?? false } };
 }
 
-export async function updateInstallationPreferences(installationId: string, input: { personalizationEnabled: boolean }) {
+export async function updateInstallationPreferences(installationId: string, input: { personalizationEnabled?: boolean; notificationsEnabled?: boolean }) {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    const result = await client.query<{ personalization_enabled: boolean }>(
-      `UPDATE mobile_installations SET personalization_enabled = $2, last_seen_at = NOW() WHERE id = $1 RETURNING personalization_enabled`,
-      [installationId, input.personalizationEnabled],
+    const result = await client.query<{ personalization_enabled: boolean; notifications_enabled: boolean }>(
+      `UPDATE mobile_installations SET personalization_enabled = COALESCE($2, personalization_enabled), notifications_enabled = COALESCE($3, notifications_enabled), last_seen_at = NOW() WHERE id = $1 RETURNING personalization_enabled, notifications_enabled`,
+      [installationId, input.personalizationEnabled ?? null, input.notificationsEnabled ?? null],
     );
-    if (!input.personalizationEnabled) {
+    if (input.personalizationEnabled === false) {
       await client.query(`DELETE FROM mobile_installation_events WHERE installation_id = $1 AND content_id IS NOT NULL`, [installationId]);
     }
+    if (input.notificationsEnabled === false) {
+      await client.query(`DELETE FROM mobile_installation_push_tokens WHERE installation_id = $1`, [installationId]);
+    }
     await client.query('COMMIT');
-    return { preferences: { personalizationEnabled: result.rows[0]?.personalization_enabled ?? input.personalizationEnabled } };
+    return { preferences: { personalizationEnabled: result.rows[0]?.personalization_enabled ?? true, notificationsEnabled: result.rows[0]?.notifications_enabled ?? false } };
   } catch (error) {
     await client.query('ROLLBACK');
     throw error;
   } finally {
     client.release();
   }
+}
+
+export async function saveInstallationPushToken(installationId: string, input: { expoPushToken: string; deviceType?: string }) {
+  await pool.query(
+    `INSERT INTO mobile_installation_push_tokens (installation_id, expo_push_token, device_type)
+     VALUES ($1,$2,$3) ON CONFLICT (expo_push_token) DO UPDATE SET installation_id = EXCLUDED.installation_id, device_type = EXCLUDED.device_type, updated_at = NOW()`,
+    [installationId, input.expoPushToken, input.deviceType ?? null],
+  );
+  return { registered: true };
+}
+
+export async function removeInstallationPushToken(installationId: string, expoPushToken: string) {
+  const result = await pool.query(`DELETE FROM mobile_installation_push_tokens WHERE installation_id = $1 AND expo_push_token = $2`, [installationId, expoPushToken]);
+  return { removed: (result.rowCount ?? 0) > 0 };
+}
+
+export async function subscribeInstallationToLive(installationId: string, input: { channelId: string; label?: string }) {
+  await pool.query(
+    `INSERT INTO mobile_installation_live_subscriptions (installation_id, channel_id, label)
+     VALUES ($1,$2,$3) ON CONFLICT (installation_id, channel_id) DO UPDATE SET label = EXCLUDED.label, updated_at = NOW()`,
+    [installationId, input.channelId, input.label ?? null],
+  );
+  return { subscribed: true };
 }
 
 export async function resetInstallationRecommendations(installationId: string) {

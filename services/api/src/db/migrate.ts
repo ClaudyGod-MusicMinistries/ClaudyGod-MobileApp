@@ -121,6 +121,31 @@ const migrationStatements = [
   `CREATE INDEX IF NOT EXISTS idx_user_search_events_searched_at_query ON user_search_events (searched_at DESC, query)`,
   `CREATE INDEX IF NOT EXISTS idx_user_search_events_query_lower_searched_at ON user_search_events (LOWER(query), searched_at DESC)`,
 
+  // ============ WORD FOR TODAY ==========
+  `CREATE TABLE IF NOT EXISTS word_of_day_entries (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title TEXT NOT NULL,
+    passage TEXT NOT NULL,
+    verse_text TEXT NOT NULL,
+    reflection_text TEXT NOT NULL,
+    teaching_text TEXT,
+    application_text TEXT,
+    prayer_text TEXT,
+    message_date DATE NOT NULL UNIQUE,
+    status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'published', 'archived')),
+    notify_email BOOLEAN NOT NULL DEFAULT FALSE,
+    published_at TIMESTAMPTZ,
+    notified_at TIMESTAMPTZ,
+    created_by UUID REFERENCES app_users(id) ON DELETE SET NULL,
+    updated_by UUID REFERENCES app_users(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  `ALTER TABLE word_of_day_entries ADD COLUMN IF NOT EXISTS teaching_text TEXT`,
+  `ALTER TABLE word_of_day_entries ADD COLUMN IF NOT EXISTS application_text TEXT`,
+  `ALTER TABLE word_of_day_entries ADD COLUMN IF NOT EXISTS prayer_text TEXT`,
+  `CREATE INDEX IF NOT EXISTS idx_word_of_day_publish_schedule ON word_of_day_entries (status, message_date DESC)`,
+
   // ============ USER PUSH TOKENS ============
   `CREATE TABLE IF NOT EXISTS user_push_tokens (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -246,6 +271,7 @@ const migrationStatements = [
     platform TEXT NOT NULL CHECK (platform IN ('ios', 'android', 'web', 'unknown')),
     app_version TEXT,
     personalization_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    notifications_enabled BOOLEAN NOT NULL DEFAULT FALSE,
     status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'revoked')),
     first_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -253,6 +279,24 @@ const migrationStatements = [
   )`,
   `CREATE INDEX IF NOT EXISTS idx_mobile_installations_last_seen ON mobile_installations (last_seen_at DESC)`,
   `ALTER TABLE mobile_installations ADD COLUMN IF NOT EXISTS personalization_enabled BOOLEAN NOT NULL DEFAULT TRUE`,
+  `ALTER TABLE mobile_installations ADD COLUMN IF NOT EXISTS notifications_enabled BOOLEAN NOT NULL DEFAULT FALSE`,
+  `CREATE TABLE IF NOT EXISTS mobile_installation_push_tokens (
+    installation_id UUID NOT NULL REFERENCES mobile_installations(id) ON DELETE CASCADE,
+    expo_push_token TEXT NOT NULL UNIQUE,
+    device_type TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (installation_id, expo_push_token)
+  )`,
+  `CREATE TABLE IF NOT EXISTS mobile_installation_live_subscriptions (
+    installation_id UUID NOT NULL REFERENCES mobile_installations(id) ON DELETE CASCADE,
+    channel_id TEXT NOT NULL,
+    label TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (installation_id, channel_id)
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_mobile_installation_live_channel ON mobile_installation_live_subscriptions (channel_id)`,
   `CREATE TABLE IF NOT EXISTS mobile_installation_events (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     installation_id UUID NOT NULL REFERENCES mobile_installations(id) ON DELETE CASCADE,

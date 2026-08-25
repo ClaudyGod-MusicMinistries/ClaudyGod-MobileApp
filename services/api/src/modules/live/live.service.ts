@@ -582,7 +582,9 @@ export const startLiveSession = async (actor: JwtClaims, sessionId: string): Pro
       notifiedSubscribers = emailResult.value;
     }
     if (pushResult.status === 'fulfilled') {
-      notifiedDevices = pushResult.value.delivered;
+      // Expo's immediate response confirms provider acceptance, not device receipt.
+      // Receipt reconciliation is not available in this synchronous operation.
+      notifiedDevices = pushResult.value.accepted;
       attemptedDevices = pushResult.value.attempted;
     }
   }

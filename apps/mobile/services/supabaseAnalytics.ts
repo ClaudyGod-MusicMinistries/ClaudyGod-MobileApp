@@ -1,6 +1,7 @@
 import {
   fetchMeMetrics,
   subscribeToLiveAlertsBackend,
+  subscribeInstallationLiveAlerts,
   trackMePlayEvent,
 } from './userFlowService';
 import { getStoredMobileSession } from './authService';
@@ -85,12 +86,15 @@ export function trackContentPlay(item: FeedCardItem, source: string): Promise<vo
   });
 }
 
-export async function subscribeToLiveAlerts(channelId: string): Promise<void> {
+export async function subscribeToLiveAlerts(channelId: string, label?: string): Promise<void> {
   const { user } = await getStoredMobileSession();
-  if (!user) return;
+  if (!user) {
+    await subscribeInstallationLiveAlerts(channelId, label);
+    return;
+  }
 
   try {
-    await subscribeToLiveAlertsBackend(channelId);
+    await subscribeToLiveAlertsBackend(channelId, label);
   } catch (error) {
     reportException(error, { tags: { flow: 'live-subscription' } });
   }
