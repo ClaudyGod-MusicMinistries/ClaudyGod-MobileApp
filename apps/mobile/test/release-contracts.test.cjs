@@ -15,7 +15,7 @@ test('every active static route has a matching Expo Router file', () => {
     'app/(tabs)/settings.tsx', 'app/(tabs)/library.tsx',
     'app/settingsPage/Privacy.tsx', 'app/settingsPage/Donate.tsx',
     'app/settingsPage/PrivacyPolicy.tsx', 'app/settingsPage/Terms.tsx',
-    'app/settingsPage/Payment.tsx', 'app/settingsPage/help.tsx',
+    'app/settingsPage/help.tsx',
     'app/settingsPage/About.tsx', 'app/settingsPage/Rate.tsx',
     'app/settingsPage/Word.tsx', 'app/settingsPage/Referral.tsx',
     'app/live/[sessionId].tsx', 'app/section/[sectionId].tsx',
@@ -23,6 +23,7 @@ test('every active static route has a matching Expo Router file', () => {
   for (const relativePath of expected) {
     assert.equal(fs.existsSync(path.join(root, relativePath)), true, `Missing route ${relativePath}`);
   }
+  assert.equal(fs.existsSync(path.join(root, 'app/settingsPage/Payment.tsx')), false, 'Unverified parameter-only payment route must stay removed');
 });
 
 test('giving and legal workflows are backend-authoritative', () => {
@@ -30,6 +31,8 @@ test('giving and legal workflows are backend-authoritative', () => {
   const privacy = fs.readFileSync(path.join(root, 'app/settingsPage/Privacy.tsx'), 'utf8');
   const legal = fs.readFileSync(path.join(root, 'components/legal/LegalDocumentScreen.tsx'), 'utf8');
   assert.match(giving, /createPublicDonationIntent\(/);
+  assert.match(giving, /clientReference/);
+  assert.match(giving, /GivingCalendar/);
   assert.match(giving, /A request is not a completed payment|not a completed payment/i);
   assert.doesNotMatch(giving, /All transactions are encrypted|impactBreakdown/);
   assert.match(privacy, /isAuthenticated/);
@@ -149,6 +152,27 @@ test('shared entrance motion honors reduced-motion preferences', () => {
   assert.match(source, /if \(reduceMotion\)/);
 });
 
+test('search shortcuts execute backend search and daily teaching exposes retryable structured guidance', () => {
+  const search = fs.readFileSync(path.join(root, 'app/(tabs)/search.tsx'), 'utf8');
+  const word = fs.readFileSync(path.join(root, 'app/settingsPage/Word.tsx'), 'utf8');
+  const context = fs.readFileSync(path.join(root, 'context/WordOfDayContext.tsx'), 'utf8');
+  const modal = fs.readFileSync(path.join(root, 'components/modals/WordOfDayModal.tsx'), 'utf8');
+  const apiWord = fs.readFileSync(path.resolve(root, '../../services/api/src/modules/wordOfDay/wordOfDay.service.ts'), 'utf8');
+
+  assert.match(search, /fetchSearchResults\(normalized, type\)/);
+  assert.match(search, /runSearch\(shortcut\.query, resolvedCategory\)/);
+  assert.match(search, /runSearch\(term, 'All'\)/);
+  assert.match(word, /adminWord\.teaching/);
+  assert.match(word, /adminWord\.application/);
+  assert.match(word, /adminWord\.prayer/);
+  assert.doesNotMatch(word, /Read the passage slowly|Choose one practical response|Turn what you have learned/);
+  assert.match(word, /ErrorState message=\{error\}/);
+  assert.match(context, /refresh: load/);
+  assert.match(modal, /useReducedMotion/);
+  assert.match(modal, /title="Open guided teaching"/);
+  assert.match(apiWord, /message_date <= CURRENT_DATE/);
+});
+
 test('shared buttons, typography, and recovery states enforce professional layout contracts', () => {
   const button = fs.readFileSync(path.join(root, 'components/ui/AppButton.tsx'), 'utf8');
   const text = fs.readFileSync(path.join(root, 'components/CustomText.tsx'), 'utf8');
@@ -206,6 +230,11 @@ test('modal presentation is restricted to approved design-system primitives', ()
 test('library uses authenticated backend state with a guest and offline device cache', () => {
   const libraryContext = fs.readFileSync(path.join(root, 'context/LocalContentContext.tsx'), 'utf8');
   const downloadsContext = fs.readFileSync(path.join(root, 'context/DownloadsContext.tsx'), 'utf8');
+  const libraryScreen = fs.readFileSync(path.join(root, 'app/(tabs)/library.tsx'), 'utf8');
+  const analytics = fs.readFileSync(path.join(root, 'services/supabaseAnalytics.ts'), 'utf8');
+  const mobileApi = fs.readFileSync(path.resolve(root, '../../services/api/src/modules/mobile/mobile.routes.ts'), 'utf8');
+  const installationService = fs.readFileSync(path.resolve(root, '../../services/api/src/modules/mobile/installation.service.ts'), 'utf8');
+  const migrations = fs.readFileSync(path.resolve(root, '../../services/api/src/db/migrate.ts'), 'utf8');
   assert.match(libraryContext, /getStoredMobileSession\(\)/);
   assert.match(libraryContext, /fetchMeLibrary\(\)/);
   assert.match(libraryContext, /fetchMeRecentlyPlayed\(100\)/);
@@ -216,6 +245,22 @@ test('library uses authenticated backend state with a guest and offline device c
   assert.match(libraryContext, /addFavorite\(item\)/);
   assert.match(libraryContext, /addHistory\(item\)/);
   assert.match(downloadsContext, /getDownloads\(\)/);
+  assert.match(downloadsContext, /exists: file\.exists/);
+  assert.match(downloadsContext, /if \(file\.exists\) file\.delete\(\)/);
+  assert.match(downloadsContext, /savedAt/);
+  assert.match(libraryScreen, /function CollectionHeader/);
+  assert.match(libraryScreen, /function LibraryMediaList/);
+  assert.match(libraryScreen, /await deleteDownload\(item\.id\)/);
+  assert.match(libraryScreen, /Device verified/);
+  assert.doesNotMatch(libraryScreen, /<ContentRail/);
+  assert.match(migrations, /CREATE TABLE IF NOT EXISTS mobile_installation_history/);
+  assert.match(installationService, /ON CONFLICT \(installation_id, content_id\) DO UPDATE/);
+  assert.match(installationService, /ORDER BY last_played_at DESC/);
+  assert.match(mobileApi, /get\('\/installations\/history', authenticateInstallation/);
+  assert.match(mobileApi, /delete\('\/installations\/history', authenticateInstallation/);
+  assert.match(analytics, /export function trackContentPlay/);
+  assert.match(libraryContext, /fetchInstallationRecentlyPlayed\(100\)/);
+  assert.match(libraryScreen, /await clearInstallationPlaybackHistory\(\)/);
   // Physical file URIs are sandbox-local and must never be persisted as if
   // another device or the backend could access them.
   assert.doesNotMatch(downloadsContext, /saveMeLibraryItem|removeMeLibraryItem/);
@@ -234,6 +279,11 @@ test('settings capabilities describe and control real playback and privacy behav
   const music = fs.readFileSync(path.join(root, 'features/media/MusicScreen.tsx'), 'utf8');
   const audio = fs.readFileSync(path.join(root, 'components/media/AudioPlayer.tsx'), 'utf8');
   const youtube = fs.readFileSync(path.join(root, 'components/media/YouTubeAudioPlayer.tsx'), 'utf8');
+  const pushService = fs.readFileSync(path.join(root, 'services/pushNotificationService.ts'), 'utf8');
+  const pushHook = fs.readFileSync(path.join(root, 'hooks/usePushNotify.ts'), 'utf8');
+  const mobileApi = fs.readFileSync(path.resolve(root, '../../services/api/src/modules/mobile/mobile.routes.ts'), 'utf8');
+  const pushBackend = fs.readFileSync(path.resolve(root, '../../services/api/src/infra/push.ts'), 'utf8');
+  const migrations = fs.readFileSync(path.resolve(root, '../../services/api/src/db/migrate.ts'), 'utf8');
   assert.match(settings, /label: 'Audio quality'[\s\S]*statusLabel: 'Adaptive'/);
   assert.doesNotMatch(settings, /label: 'High quality audio'/);
   assert.match(settings, /label: 'Recommendations'[\s\S]*installation’s playback history/);
@@ -243,6 +293,75 @@ test('settings capabilities describe and control real playback and privacy behav
   assert.match(music, /advanceOnFinish=\{autoplayEnabled/);
   assert.match(audio, /advanceOnFinish/);
   assert.match(youtube, /msg\.state === 0 && advanceOnFinish/);
+  assert.match(settings, /await toggleNotifications\(value\)/);
+  assert.match(settings, /await persistPreference\('notificationsEnabled', value\)/);
+  assert.match(settings, /label: 'Email delivery'/);
+  assert.match(pushService, /saveInstallationPushToken/);
+  assert.match(pushService, /removeInstallationPushToken/);
+  assert.match(pushHook, /Promise<boolean>/);
+  assert.match(migrations, /CREATE TABLE IF NOT EXISTS mobile_installation_push_tokens/);
+  assert.match(migrations, /CREATE TABLE IF NOT EXISTS mobile_installation_live_subscriptions/);
+  assert.match(mobileApi, /post\('\/installations\/push-token', authenticateInstallation/);
+  assert.match(mobileApi, /post\('\/installations\/live-subscriptions', authenticateInstallation/);
+  assert.match(pushBackend, /mobile_installation_live_subscriptions/);
+  assert.match(pushBackend, /mobile_installation_push_tokens/);
+});
+
+test('settings and music use distinct supported professional icons', () => {
+  const icons = fs.readFileSync(path.join(root, 'components/ui/AppIcon.tsx'), 'utf8');
+  const settings = fs.readFileSync(path.join(root, 'app/(tabs)/settings.tsx'), 'utf8');
+  const music = fs.readFileSync(path.join(root, 'features/media/MusicScreen.tsx'), 'utf8');
+
+  assert.match(settings, /icon: 'policy'.*Privacy Policy/);
+  assert.match(settings, /icon: 'gavel'.*Terms of Service/);
+  assert.match(settings, /icon: 'info-outline'.*About/);
+  assert.match(settings, /icon: 'star-outline'.*Rate the app/);
+  assert.match(icons, /policy: 'file-text'/);
+  assert.match(icons, /gavel: 'clipboard'/);
+  assert.match(icons, /'info-outline': 'info'/);
+  assert.match(icons, /'star-outline': 'star'/);
+  assert.match(icons, /'library-music': 'disc'/);
+  assert.match(icons, /'queue-music': 'list'/);
+  assert.match(icons, /'open-in-new': 'external-link'/);
+  assert.match(music, /primaryIcon=\{active\?\.mediaUrl \? 'open-in-new' : 'queue-music'\}/);
+});
+
+test('section rendering never silently truncates assigned content and exposes rail overflow', () => {
+  const list = fs.readFileSync(path.join(root, 'components/feed/ContentList.tsx'), 'utf8');
+  const home = fs.readFileSync(path.join(root, 'app/(tabs)/home.tsx'), 'utf8');
+  const music = fs.readFileSync(path.join(root, 'features/media/MusicScreen.tsx'), 'utf8');
+  const videos = fs.readFileSync(path.join(root, 'app/(tabs)/videos.tsx'), 'utf8');
+  const library = fs.readFileSync(path.join(root, 'app/(tabs)/library.tsx'), 'utf8');
+  const mobileApi = fs.readFileSync(path.resolve(root, '../../services/api/src/modules/mobile/mobile.service.ts'), 'utf8');
+  const detail = fs.readFileSync(path.join(root, 'app/section/[sectionId].tsx'), 'utf8');
+  const adminConfig = fs.readFileSync(path.resolve(root, '../../admin/web/src/views/config/MobileConfigView.vue'), 'utf8');
+  const contentRail = fs.readFileSync(path.join(root, 'components/feed/ContentRail.tsx'), 'utf8');
+
+  assert.match(list, /\{items\.map\(\(item, index\)/);
+  assert.doesNotMatch(list, /items\.slice\(0, maxItems\)/);
+  for (const screen of [home, music, videos, library]) {
+    assert.match(screen, /deriveLayoutSectionOverflowCount/);
+    assert.match(screen, /overflowCount > 0/);
+  }
+  assert.match(mobileApi, /loadContentTaggedIntoSections\(sectionTokens\)/);
+  assert.match(mobileApi, /overflowCount: Math\.max\(0, sectionPool\.length - section\.maxItems\)/);
+  assert.match(mobileApi, /WITH section_items AS/);
+  assert.match(mobileApi, /UNION ALL/);
+  assert.match(mobileApi, /SELECT COUNT\(\*\)::text AS count FROM section_items/);
+  assert.match(mobileApi, /ORDER BY sort_order NULLS LAST, updated_at DESC, created_at DESC, item_kind ASC, id DESC/);
+  assert.match(mobileApi, /app_sections && \$3::text\[\]/);
+  assert.match(mobileApi, /LIMIT \$4 OFFSET \$5/);
+  assert.match(detail, /setItems\(result\.items\)/);
+  assert.doesNotMatch(detail, /\.\.\.current, \.\.\.result\.items/);
+  assert.match(detail, /Page \{detail\.page\} of \{Math\.ceil\(detail\.total \/ detail\.limit\)\}/);
+  assert.match(adminConfig, /Verify published content/);
+  assert.match(adminConfig, /published · \$\{shown\} in rail · \$\{paginated\} in See all/);
+  assert.match(mobileApi, /content_section_assignments assignment/);
+  assert.match(adminConfig, /MOBILE_SECTION_RAIL_MIN_ITEMS/);
+  assert.match(contentRail, /onViewableItemsChanged/);
+  assert.match(contentRail, /Previous \$\{title \|\| 'content'\} items/);
+  assert.match(contentRail, /Next \$\{title \|\| 'content'\} items/);
+  assert.match(contentRail, /of \{items\.length\}/);
 });
 
 test('bottom navigation is an opaque token-driven dock with native tab events', () => {
@@ -255,7 +374,7 @@ test('bottom navigation is an opaque token-driven dock with native tab events', 
   assert.match(tabBar, /type: 'tabPress'.*canPreventDefault: true/);
   assert.match(tabBar, /type: 'tabLongPress'/);
   assert.match(tabBar, /player:\s+\{ icon: 'play-arrow', label: 'Player', center: true \}/);
-  assert.match(tabBar, /item\.center \? <CenterPlayerTab/);
+  assert.match(tabBar, /item\.center\s*\?\s*<CenterPlayerTab/);
   assert.match(tabBar, /accessibilityLabel="Open player"/);
   assert.match(tabBar, /useReducedMotion/);
   assert.match(tabBar, /withTiming\(focused \? 1 : 0/);
@@ -267,6 +386,9 @@ test('bottom navigation is an opaque token-driven dock with native tab events', 
   assert.match(tokens, /tabBarContentPadding:\s+112/);
   assert.match(tokens, /tabBarActionLift:\s+18/);
   assert.match(tokens, /tabBarPlayIconOpticalOffset:\s+1\.5/);
+  assert.doesNotMatch(tabBar, /const sharedProps = \{\s*key:/);
+  assert.match(tabBar, /<CenterPlayerTab key=\{item\.key\} \{\.\.\.sharedProps\}/);
+  assert.match(tabBar, /<TabItem key=\{item\.key\} \{\.\.\.sharedProps\}/);
 });
 
 test('guest recommendations use verified installation history and enforce opt-out', () => {

@@ -50,13 +50,31 @@ export interface MeMetrics {
 }
 
 export async function fetchInstallationPreferences() {
-  return apiFetch<{ preferences: { personalizationEnabled: boolean } }>('/v1/mobile/installations/preferences');
+  return apiFetch<{ preferences: { personalizationEnabled: boolean; notificationsEnabled: boolean } }>('/v1/mobile/installations/preferences');
 }
 
 export async function updateInstallationPersonalization(personalizationEnabled: boolean) {
-  return apiFetch<{ preferences: { personalizationEnabled: boolean } }>('/v1/mobile/installations/preferences', {
+  return apiFetch<{ preferences: { personalizationEnabled: boolean; notificationsEnabled: boolean } }>('/v1/mobile/installations/preferences', {
     method: 'PATCH', body: JSON.stringify({ personalizationEnabled }),
   });
+}
+
+export async function updateInstallationNotifications(notificationsEnabled: boolean) {
+  return apiFetch<{ preferences: { personalizationEnabled: boolean; notificationsEnabled: boolean } }>('/v1/mobile/installations/preferences', {
+    method: 'PATCH', body: JSON.stringify({ notificationsEnabled }),
+  });
+}
+
+export async function saveInstallationPushToken(input: { expoPushToken: string; deviceType?: string }): Promise<void> {
+  await apiFetch('/v1/mobile/installations/push-token', { method: 'POST', body: JSON.stringify(input) });
+}
+
+export async function removeInstallationPushToken(input: { expoPushToken: string; deviceType?: string }): Promise<void> {
+  await apiFetch('/v1/mobile/installations/push-token', { method: 'DELETE', body: JSON.stringify(input) });
+}
+
+export async function subscribeInstallationLiveAlerts(channelId: string, label?: string): Promise<void> {
+  await apiFetch('/v1/mobile/installations/live-subscriptions', { method: 'POST', body: JSON.stringify({ channelId, label }) });
 }
 
 export interface MobileAppExperienceConfig {
@@ -99,6 +117,7 @@ export interface MobileAppExperienceConfig {
       label: string;
       subtitle: string;
       badge?: string;
+      enabled: boolean;
     }[];
     plans: {
       id: string;
@@ -419,6 +438,10 @@ export async function resetInstallationRecommendationHistory() {
   });
 }
 
+export async function clearInstallationPlaybackHistory(): Promise<{ clearedHistoryItems: number }> {
+  return apiFetch<{ clearedHistoryItems: number }>('/v1/mobile/installations/history', { method: 'DELETE' });
+}
+
 export async function createSupportRequest(input: {
   category: string;
   subject: string;
@@ -482,8 +505,10 @@ export async function createDonationIntent(input: {
   amount: string;
   mode: 'once' | 'daily' | 'weekly' | 'monthly';
   methodId: string;
-  currency?: string;
+  currency: string;
+  clientReference: string;
   planId?: string;
+  schedule?: { startDate: string; timezone: string; recurrenceDay: number };
   metadata?: JsonRecord;
 }) {
   return apiFetchWithMobileSession<{
@@ -494,6 +519,7 @@ export async function createDonationIntent(input: {
       currency: string;
       mode: 'once' | 'daily' | 'weekly' | 'monthly';
       methodId: string;
+      schedule?: { startDate: string; timezone: string; recurrenceDay: number };
       createdAt: string;
       instructions?: {
         title: string;
@@ -512,8 +538,10 @@ export async function createPublicDonationIntent(input: {
   amount: string;
   mode: 'once' | 'daily' | 'weekly' | 'monthly';
   methodId: string;
-  currency?: string;
+  currency: string;
+  clientReference: string;
   planId?: string;
+  schedule?: { startDate: string; timezone: string; recurrenceDay: number };
   metadata?: JsonRecord;
 }) {
   return apiFetch<{
@@ -524,6 +552,7 @@ export async function createPublicDonationIntent(input: {
       currency: string;
       mode: 'once' | 'daily' | 'weekly' | 'monthly';
       methodId: string;
+      schedule?: { startDate: string; timezone: string; recurrenceDay: number };
       createdAt: string;
       instructions?: {
         title: string;

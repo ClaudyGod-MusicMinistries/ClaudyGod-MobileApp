@@ -1,8 +1,8 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, View, useWindowDimensions } from 'react-native';
 
 import { MaterialIcons } from '@expo/vector-icons';
-import { FlashList, type ListRenderItemInfo } from '@shopify/flash-list';
+import { FlashList, type FlashListRef, type ListRenderItemInfo } from '@shopify/flash-list';
 
 import { CustomText } from '../CustomText';
 import { TVTouchable } from '../ui/TVTouchable';
@@ -77,8 +77,35 @@ function ContentRailInner({ items, title, onPressItem, isCompact, cardVariant = 
   cardVariant?: CardVariant;
 }) {
   const device = useDeviceClass();
+  const styles = useFeedStyles();
+  const theme = useAppTheme();
   const sidebarWidth = getSidebarWidth(device.width);
   const mobileCardWidth = getContentCardWidth(device, isCompact);
+  const listRef = useRef<FlashListRef<FeedCardItem>>(null);
+  const [firstVisibleIndex, setFirstVisibleIndex] = useState(0);
+  const visibleCount = Math.max(
+    1,
+    Math.floor((device.width - device.contentGutter * 2 + 16) / (mobileCardWidth + 16)),
+  );
+  const lastPageStart = Math.max(0, items.length - visibleCount);
+  const itemIdentity = useMemo(() => items.map((item) => item.id).join('|'), [items]);
+
+  useEffect(() => {
+    setFirstVisibleIndex(0);
+  }, [itemIdentity]);
+
+  const onViewableItemsChanged = useCallback((event: { viewableItems: { index: number | null }[] }) => {
+    const indexes = event.viewableItems
+      .map((entry) => entry.index)
+      .filter((index): index is number => typeof index === 'number');
+    if (indexes.length) setFirstVisibleIndex(Math.min(...indexes));
+  }, []);
+
+  const movePage = useCallback((direction: -1 | 1) => {
+    const target = Math.max(0, Math.min(lastPageStart, firstVisibleIndex + direction * visibleCount));
+    void listRef.current?.scrollToIndex({ index: target, animated: true }).catch(() => undefined);
+    setFirstVisibleIndex(target);
+  }, [firstVisibleIndex, lastPageStart, visibleCount]);
 
   const renderItem = useCallback(
     ({ item }: ListRenderItemInfo<FeedCardItem>) => (
@@ -103,16 +130,50 @@ function ContentRailInner({ items, title, onPressItem, isCompact, cardVariant = 
   }
 
   return (
-    <View style={{ marginHorizontal: -device.contentGutter, height: railCardHeight(mobileCardWidth, cardVariant) }}>
-      <FlashList
-        data={items}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        keyExtractor={keyExtractor}
-        renderItem={renderItem}
-        ItemSeparatorComponent={() => <View style={{ width: 16 }} />}
-        contentContainerStyle={{ paddingLeft: device.contentGutter, paddingRight: device.contentGutter + 8 }}
-      />
+    <View style={{ marginHorizontal: -device.contentGutter }}>
+      <View style={{ height: railCardHeight(mobileCardWidth, cardVariant) }}>
+        <FlashList
+          ref={listRef}
+          data={items}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          keyExtractor={keyExtractor}
+          renderItem={renderItem}
+          ItemSeparatorComponent={() => <View style={{ width: 16 }} />}
+          contentContainerStyle={{ paddingLeft: device.contentGutter, paddingRight: device.contentGutter + 8 }}
+          onViewableItemsChanged={onViewableItemsChanged}
+          viewabilityConfig={{ itemVisiblePercentThreshold: 55 }}
+        />
+      </View>
+      {items.length > visibleCount ? (
+        <View style={styles.railPaginationOverlay}>
+          <CustomText variant="caption" style={styles.railPaginationText} accessibilityLiveRegion="polite">
+            {Math.min(firstVisibleIndex + 1, lastPageStart + 1)}–{Math.min(items.length, firstVisibleIndex + visibleCount)} of {items.length}
+          </CustomText>
+          <View style={styles.railPaginationActions}>
+            <TVTouchable
+              onPress={() => movePage(-1)}
+              disabled={firstVisibleIndex <= 0}
+              showFocusBorder={false}
+              style={[styles.railPaginationButton, firstVisibleIndex <= 0 ? styles.railPaginationButtonDisabled : null]}
+              accessibilityRole="button"
+              accessibilityLabel={`Previous ${title || 'content'} items`}
+            >
+              <MaterialIcons name="chevron-left" size={20} color={theme.colors.text} />
+            </TVTouchable>
+            <TVTouchable
+              onPress={() => movePage(1)}
+              disabled={firstVisibleIndex >= lastPageStart}
+              showFocusBorder={false}
+              style={[styles.railPaginationButton, firstVisibleIndex >= lastPageStart ? styles.railPaginationButtonDisabled : null]}
+              accessibilityRole="button"
+              accessibilityLabel={`Next ${title || 'content'} items`}
+            >
+              <MaterialIcons name="chevron-right" size={20} color={theme.colors.text} />
+            </TVTouchable>
+          </View>
+        </View>
+      ) : null}
     </View>
   );
 }

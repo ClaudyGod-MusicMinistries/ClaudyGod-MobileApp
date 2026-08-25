@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { RefreshControl, ScrollView, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -14,7 +14,7 @@ import { BrandLoader } from '../../components/branding/BrandLoader';
 import { useAppTheme } from '../../util/colorScheme';
 import { makeStyles } from '../../styles/makeStyles';
 import { buildPlayerRoute, routeParamToString } from '../../util/playerRoute';
-import { trackPlayEvent } from '../../services/supabaseAnalytics';
+import { trackContentPlay } from '../../services/supabaseAnalytics';
 import {
   fetchMobileSectionDetail,
   type FeedCardItem,
@@ -39,7 +39,10 @@ const useStyles = makeStyles((theme) => ({
   errorTitle: { color: theme.colors.text },
   errorBody: { color: theme.colors.textSecondary },
   outerPad: { gap: theme.spacing.lg, paddingTop: theme.layout.sectionGap },
-  loadMoreRow: { alignItems: 'center' },
+  paginationShell: { gap: theme.spacing.sm, paddingTop: theme.spacing.sm },
+  paginationMeta: { color: theme.colors.textSecondary, textAlign: 'center' },
+  paginationRow: { flexDirection: 'row', gap: theme.spacing.sm },
+  paginationButton: { flex: 1 },
   scrollFill: { flex: 1, backgroundColor: 'transparent' },
   scrollContent: { paddingBottom: theme.layout.tabBarContentPadding },
 }));
@@ -54,6 +57,8 @@ export default function SectionDetailScreen() {
   const styles = useStyles();
   const theme = useAppTheme();
   const router = useRouter();
+  const scrollRef = useRef<ScrollView>(null);
+  const requestSequence = useRef(0);
   const params = useLocalSearchParams<{
     sectionId?: string | string[];
     screen?: string | string[];
@@ -67,7 +72,7 @@ export default function SectionDetailScreen() {
   const [detail, setDetail] = useState<MobileSectionDetail | null>(null);
   const [items, setItems] = useState<FeedCardItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
+  const [pendingPage, setPendingPage] = useState<number | null>(1);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async (page: number) => {
@@ -77,26 +82,32 @@ export default function SectionDetailScreen() {
       return;
     }
 
-    if (page === 1) setLoading(true);
-    else setLoadingMore(true);
+    const requestId = ++requestSequence.current;
+    setLoading(true);
+    setPendingPage(page);
     setError(null);
 
     try {
       const result = await fetchMobileSectionDetail(sectionId, screen, page, 20);
+      if (requestId !== requestSequence.current) return;
       setDetail(result);
-      setItems((current) => (page === 1 ? result.items : [...current, ...result.items]));
+      setItems(result.items);
+      if (page > 1) scrollRef.current?.scrollTo({ y: 0, animated: true });
     } catch (err) {
+      if (requestId !== requestSequence.current) return;
       setError(err instanceof Error ? err.message : 'Unable to load this section');
     } finally {
-      setLoading(false);
-      setLoadingMore(false);
+      if (requestId === requestSequence.current) {
+        setLoading(false);
+        setPendingPage(null);
+      }
     }
   }, [sectionId, screen]);
 
   useEffect(() => { void load(1); }, [load]);
 
   const openItem = async (item: FeedCardItem) => {
-    await trackPlayEvent({ contentId: item.id, contentType: item.type, title: item.title, source: `section_${sectionId}` });
+    await trackContentPlay(item, `section_${sectionId}`);
     router.push(buildPlayerRoute(item) as never);
   };
 
@@ -105,12 +116,13 @@ export default function SectionDetailScreen() {
   return (
     <TabScreenWrapper>
       <ScrollView
+        ref={scrollRef}
         style={styles.scrollFill}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
-            refreshing={loading}
+            refreshing={loading && pendingPage === 1}
             onRefresh={() => void load(1)}
             tintColor={theme.colors.primary}
             colors={[theme.colors.primary]}
@@ -149,7 +161,7 @@ export default function SectionDetailScreen() {
               </SurfaceCard>
             ) : null}
 
-            {!loading && !error && items.length > 0 ? (
+            {!error && items.length > 0 ? (
               <ContentList
                 title={detail?.total ? `${detail.total} item${detail.total === 1 ? '' : 's'}` : 'All content'}
                 items={items}
@@ -164,21 +176,35 @@ export default function SectionDetailScreen() {
               />
             ) : null}
 
-            {detail?.hasMore ? (
-              <View style={styles.loadMoreRow}>
+            {detail && !error && detail.total > detail.limit ? (
+              <View style={styles.paginationShell}>
+                <CustomText variant="caption" style={styles.paginationMeta}>
+                  Page {detail.page} of {Math.ceil(detail.total / detail.limit)} · {detail.total} total items
+                </CustomText>
+                <View style={styles.paginationRow}>
                 <AppButton
-                  title={loadingMore ? 'Loading...' : 'Load more'}
-                  variant="outline"
+                  title="Previous"
+                  variant="secondary"
                   size="lg"
-                  loading={loadingMore}
-                  style={{ borderRadius: 999 }}
-                  rightIcon={
-                    loadingMore ? undefined : (
-                      <MaterialIcons name="expand-more" size={18} color={theme.colors.primary} />
-                    )
-                  }
-                  onPress={() => void load((detail.page ?? 1) + 1)}
+                  disabled={loading || detail.page <= 1}
+                  loading={pendingPage === detail.page - 1}
+                  loadingLabel="Loading"
+                  style={styles.paginationButton}
+                  leftIcon={<MaterialIcons name="chevron-left" size={18} color={theme.colors.text} />}
+                  onPress={() => void load(detail.page - 1)}
                 />
+                <AppButton
+                  title="Next"
+                  variant="primary"
+                  size="lg"
+                  disabled={loading || !detail.hasMore}
+                  loading={pendingPage === detail.page + 1}
+                  loadingLabel="Loading"
+                  style={styles.paginationButton}
+                  rightIcon={<MaterialIcons name="chevron-right" size={18} color={theme.colors.onPrimary} />}
+                  onPress={() => void load(detail.page + 1)}
+                />
+                </View>
               </View>
             ) : null}
           </View>

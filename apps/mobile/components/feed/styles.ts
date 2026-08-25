@@ -50,19 +50,17 @@ export const useFeedStyles = makeStyles((theme) => ({
     paddingVertical: 32,
     paddingHorizontal: 24,
   },
-  heroEmptyCircle1: { position: 'absolute', top: -50, right: -50, width: 200, height: 200, borderRadius: 100, backgroundColor: theme.colors.primaryBorder },
-  heroEmptyCircle2: { position: 'absolute', bottom: -60, left: -40, width: 160, height: 160, borderRadius: 80, backgroundColor: theme.colors.primarySurface },
-  // Shadow on the outer wrap, gradient-clip on the inner circle — same
+  // Shadow on the outer wrap, gradient-clip on the inner surface — same
   // overflow:hidden-clips-shadow reason as artworkShadowWrap above.
   heroEmptyIconShadowWrap: {
-    width: 72, height: 72, borderRadius: 36,
+    width: 72, height: 64, borderRadius: theme.radius.xl,
     marginBottom: 18,
     shadowColor: theme.colors.primary,
     shadowOpacity: 0.36, shadowRadius: 18, shadowOffset: { width: 0, height: 8 },
     elevation: 8,
   },
   heroEmptyIconBox: {
-    width: 72, height: 72, borderRadius: 36,
+    width: 72, height: 64, borderRadius: theme.radius.xl,
     alignItems: 'center', justifyContent: 'center',
     overflow: 'hidden',
   },
@@ -73,7 +71,7 @@ export const useFeedStyles = makeStyles((theme) => ({
   // QuickActionGrid
   quickCompactItem:  { alignItems: 'center', gap: 8, width: 68 },
   quickCompactCircle: {
-    width: 58, height: 58, borderRadius: 29,
+    width: 58, height: 58, borderRadius: theme.radius.lg,
     alignItems: 'center', justifyContent: 'center',
     backgroundColor: theme.colors.subtleFill,
     borderWidth: 1, borderColor: theme.colors.border,
@@ -140,6 +138,24 @@ export const useFeedStyles = makeStyles((theme) => ({
   railSubtitle:    { color: theme.colors.textMuted, marginTop: 3, fontSize: 12.5 },
   railActionBtn:   { flexDirection: 'row', alignItems: 'center', gap: 3, paddingVertical: 6, paddingLeft: 12 },
   railActionText:  { color: theme.colors.primary, fontSize: 12.5, fontWeight: '600' },
+  railPaginationOverlay: {
+    alignSelf: 'flex-end', marginTop: theme.spacing.xs, marginRight: theme.spacing.md,
+    flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm,
+    paddingLeft: 10, paddingRight: 4, paddingVertical: 4,
+    borderRadius: theme.radius.pill,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1, borderColor: theme.colors.border,
+    shadowColor: theme.colors.shadow, shadowOpacity: 0.14, shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 }, elevation: 3,
+  },
+  railPaginationText: { color: theme.colors.textSecondary, fontWeight: '600', minWidth: 58, textAlign: 'center' },
+  railPaginationActions: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  railPaginationButton: {
+    width: 38, height: 38, borderRadius: theme.radius.pill,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: theme.colors.subtleFill,
+  },
+  railPaginationButtonDisabled: { opacity: 0.35 },
 
   // InlineEmpty
   inlineEmpty: {
@@ -148,7 +164,7 @@ export const useFeedStyles = makeStyles((theme) => ({
     padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12,
   },
   inlineEmptyIcon: {
-    width: 36, height: 36, borderRadius: 18,
+    width: 36, height: 36, borderRadius: theme.radius.md,
     alignItems: 'center', justifyContent: 'center',
     backgroundColor: theme.colors.primarySurface,
   },
@@ -286,7 +302,7 @@ export const useFeedStyles = makeStyles((theme) => ({
   greetingTitle:     { color: theme.colors.text, fontSize: 23, fontWeight: '800', letterSpacing: 0, lineHeight: 30 },
   greetingDate:      { color: theme.colors.textMuted, fontSize: 13, fontWeight: '400', lineHeight: 19 },
   greetingNotifBtn: {
-    width: 40, height: 40, borderRadius: 20,
+    width: 40, height: 40, borderRadius: theme.radius.md,
     alignItems: 'center', justifyContent: 'center',
     backgroundColor: theme.colors.subtleFill,
     borderWidth: 1, borderColor: theme.colors.border,
@@ -301,7 +317,7 @@ export const useFeedStyles = makeStyles((theme) => ({
   liveCard:          { borderRadius: 12, overflow: 'hidden', backgroundColor: theme.colors.surface },
   liveBgImage:       { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0.10 },
   liveIndicator: {
-    width: 42, height: 42, borderRadius: 21,
+    width: 42, height: 42, borderRadius: theme.radius.md,
     alignItems: 'center', justifyContent: 'center',
     backgroundColor: theme.colors.dangerSurface,
     borderWidth: 1, borderColor: theme.colors.dangerBorder,

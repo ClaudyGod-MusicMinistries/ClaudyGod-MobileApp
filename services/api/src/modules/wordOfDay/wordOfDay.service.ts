@@ -12,6 +12,9 @@ interface WordRow {
   passage: string;
   verse_text: string;
   reflection_text: string;
+  teaching_text: string | null;
+  application_text: string | null;
+  prayer_text: string | null;
   message_date: string | Date;
   status: WordStatus;
   notify_email: boolean;
@@ -55,6 +58,9 @@ const mapWord = (row: WordRow) => ({
   passage: row.passage,
   verse: row.verse_text,
   reflection: row.reflection_text,
+  teaching: row.teaching_text,
+  application: row.application_text,
+  prayer: row.prayer_text,
   messageDate: toDateOnly(row.message_date),
   status: row.status,
   notifyEmail: row.notify_email,
@@ -98,12 +104,21 @@ async function enqueueWordOfDayEmailNotifications(word: ReturnType<typeof mapWor
         word.verse,
         '',
         word.reflection,
+        '',
+        'Teaching',
+        word.teaching || '',
+        '',
+        'Application',
+        word.application || '',
+        '',
+        'Prayer',
+        word.prayer || '',
       ].join('\n'),
       htmlBody: `<p><strong>${escapeHtml(word.title)}</strong></p><p><strong>${escapeHtml(
         word.passage,
       )}</strong></p><blockquote>${escapeHtml(word.verse)}</blockquote><p>${escapeHtml(
         word.reflection,
-      ).replace(/\n/g, '<br/>')}</p>`,
+      ).replace(/\n/g, '<br/>')}</p><h2>Teaching</h2><p>${escapeHtml(word.teaching || '').replace(/\n/g, '<br/>')}</p><h2>Application</h2><p>${escapeHtml(word.application || '').replace(/\n/g, '<br/>')}</p><h2>Prayer</h2><p>${escapeHtml(word.prayer || '').replace(/\n/g, '<br/>')}</p>`,
       jobType: 'word_of_day_published',
       templateKey: 'word-of-day.published',
       payload: {
@@ -131,6 +146,7 @@ export const getMobileWordOfDay = async (): Promise<{
       `SELECT *
        FROM word_of_day_entries
        WHERE status = 'published'
+         AND message_date <= CURRENT_DATE
        ORDER BY message_date DESC, updated_at DESC
        LIMIT 1`,
     );
@@ -185,6 +201,9 @@ export const upsertWordOfDayEntry = async (params: {
     passage: string;
     verse: string;
     reflection: string;
+    teaching: string;
+    application: string;
+    prayer: string;
     messageDate?: string;
     status: WordStatus;
     notifySubscribers: boolean;
@@ -198,13 +217,13 @@ export const upsertWordOfDayEntry = async (params: {
 
   const result = await pool.query<WordRow>(
     `INSERT INTO word_of_day_entries (
-       title, passage, verse_text, reflection_text, message_date, status, notify_email,
+       title, passage, verse_text, reflection_text, teaching_text, application_text, prayer_text, message_date, status, notify_email,
        published_at, created_by, updated_by
      )
      VALUES (
-       $1, $2, $3, $4, $5::date, $6, $7,
-       CASE WHEN $6 = 'published' THEN NOW() ELSE NULL END,
-       $8, $8
+       $1, $2, $3, $4, $5, $6, $7, $8::date, $9, $10,
+       CASE WHEN $9 = 'published' THEN NOW() ELSE NULL END,
+       $11, $11
      )
      ON CONFLICT (message_date)
      DO UPDATE SET
@@ -212,6 +231,9 @@ export const upsertWordOfDayEntry = async (params: {
        passage = EXCLUDED.passage,
        verse_text = EXCLUDED.verse_text,
        reflection_text = EXCLUDED.reflection_text,
+       teaching_text = EXCLUDED.teaching_text,
+       application_text = EXCLUDED.application_text,
+       prayer_text = EXCLUDED.prayer_text,
        status = EXCLUDED.status,
        notify_email = EXCLUDED.notify_email,
        published_at = CASE
@@ -226,6 +248,9 @@ export const upsertWordOfDayEntry = async (params: {
       params.input.passage.trim(),
       params.input.verse.trim(),
       params.input.reflection.trim(),
+      params.input.teaching.trim(),
+      params.input.application.trim(),
+      params.input.prayer.trim(),
       messageDate,
       params.input.status,
       params.input.notifySubscribers,
@@ -265,6 +290,9 @@ export const createWordOfDayEntry = async (params: {
     passage: string;
     verse: string;
     reflection: string;
+    teaching: string;
+    application: string;
+    prayer: string;
     messageDate?: string;
     status: WordStatus;
     notifySubscribers: boolean;
@@ -283,13 +311,13 @@ export const createWordOfDayEntry = async (params: {
 
   const result = await pool.query<WordRow>(
     `INSERT INTO word_of_day_entries (
-       title, passage, verse_text, reflection_text, message_date, status, notify_email,
+       title, passage, verse_text, reflection_text, teaching_text, application_text, prayer_text, message_date, status, notify_email,
        published_at, created_by, updated_by
      )
      VALUES (
-       $1, $2, $3, $4, $5::date, $6, $7,
-       CASE WHEN $6 = 'published' THEN NOW() ELSE NULL END,
-       $8, $8
+       $1, $2, $3, $4, $5, $6, $7, $8::date, $9, $10,
+       CASE WHEN $9 = 'published' THEN NOW() ELSE NULL END,
+       $11, $11
      )
      RETURNING *`,
     [
@@ -297,6 +325,9 @@ export const createWordOfDayEntry = async (params: {
       params.input.passage.trim(),
       params.input.verse.trim(),
       params.input.reflection.trim(),
+      params.input.teaching.trim(),
+      params.input.application.trim(),
+      params.input.prayer.trim(),
       messageDate,
       params.input.status,
       params.input.notifySubscribers,
@@ -315,6 +346,9 @@ export const updateWordOfDayEntryById = async (params: {
     passage: string;
     verse: string;
     reflection: string;
+    teaching: string;
+    application: string;
+    prayer: string;
     messageDate?: string;
     status: WordStatus;
     notifySubscribers: boolean;
@@ -338,14 +372,17 @@ export const updateWordOfDayEntryById = async (params: {
          passage = $3,
          verse_text = $4,
          reflection_text = $5,
-         message_date = COALESCE($6::date, message_date),
-         status = $7,
-         notify_email = $8,
+         teaching_text = $6,
+         application_text = $7,
+         prayer_text = $8,
+         message_date = COALESCE($9::date, message_date),
+         status = $10,
+         notify_email = $11,
          published_at = CASE
-           WHEN $7 = 'published' THEN COALESCE(published_at, NOW())
+           WHEN $10 = 'published' THEN COALESCE(published_at, NOW())
            ELSE published_at
          END,
-         updated_by = $9,
+         updated_by = $12,
          updated_at = NOW()
      WHERE id = $1
      RETURNING *`,
@@ -355,6 +392,9 @@ export const updateWordOfDayEntryById = async (params: {
       params.input.passage.trim(),
       params.input.verse.trim(),
       params.input.reflection.trim(),
+      params.input.teaching.trim(),
+      params.input.application.trim(),
+      params.input.prayer.trim(),
       params.input.messageDate ?? null,
       params.input.status,
       params.input.notifySubscribers,

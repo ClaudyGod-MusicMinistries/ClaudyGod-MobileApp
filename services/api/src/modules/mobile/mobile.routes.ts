@@ -13,7 +13,7 @@ import { youtubeListQuerySchema } from '../youtube/youtube.schema';
 import { fetchYouTubeVideos } from '../youtube/youtube.service';
 import { buildMobileFeed, getInstallationRecommendations, getMobileSectionDetail } from './mobile.service';
 import { authenticateInstallation } from '../../middleware/authenticateInstallation';
-import { getInstallationPreferences, recordInstallationActivation, registerInstallation, resetInstallationRecommendations, updateInstallationPreferences } from './installation.service';
+import { clearInstallationHistory, getInstallationHistory, getInstallationPreferences, recordInstallationActivation, registerInstallation, removeInstallationPushToken, resetInstallationRecommendations, saveInstallationPushToken, subscribeInstallationToLive, updateInstallationPreferences } from './installation.service';
 
 export const mobileRouter = Router();
 
@@ -40,12 +40,21 @@ const installationEventSchema = z.object({
   idempotencyKey: z.string().trim().min(8).max(120),
   contentId: z.string().trim().min(1).max(200).optional(),
   contentType: z.string().trim().min(1).max(40).optional(),
+  title: z.string().trim().min(1).max(240).optional(),
+  subtitle: z.string().trim().max(300).optional(),
+  description: z.string().trim().max(2000).optional(),
+  duration: z.string().trim().max(40).optional(),
+  imageUrl: z.string().trim().url().max(2000).optional(),
+  mediaUrl: z.string().trim().url().max(2000).optional(),
   source: z.string().trim().min(1).max(80).optional(),
 }).strict();
-const installationPreferencesSchema = z.object({ personalizationEnabled: z.boolean() }).strict();
+const installationPreferencesSchema = z.object({ personalizationEnabled: z.boolean().optional(), notificationsEnabled: z.boolean().optional() }).strict().refine((value) => Object.keys(value).length > 0);
+const installationPushTokenSchema = z.object({ expoPushToken: z.string().trim().min(8).max(255), deviceType: z.string().trim().max(32).optional() }).strict();
+const installationLiveSubscriptionSchema = z.object({ channelId: z.string().trim().min(1).max(160), label: z.string().trim().max(120).optional() }).strict();
 const recommendationQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(30).default(12),
 }).strict();
+const installationHistoryQuerySchema = z.object({ limit: z.coerce.number().int().min(1).max(100).default(100) }).strict();
 const guestReferralSchema = z.object({}).strict();
 const guestReferralAttributionSchema = z.object({
   code: z.string().trim().toUpperCase().regex(/^CG[A-F0-9]{8}$/),
@@ -82,6 +91,21 @@ mobileRouter.patch('/installations/preferences', authenticateInstallation, async
   res.status(200).json(await updateInstallationPreferences(req.installation!.id, payload));
 }));
 
+mobileRouter.post('/installations/push-token', authenticateInstallation, asyncHandler(async (req, res) => {
+  const payload = validateSchema(installationPushTokenSchema, req.body);
+  res.status(201).json(await saveInstallationPushToken(req.installation!.id, payload));
+}));
+
+mobileRouter.delete('/installations/push-token', authenticateInstallation, asyncHandler(async (req, res) => {
+  const payload = validateSchema(installationPushTokenSchema, req.body);
+  res.status(200).json(await removeInstallationPushToken(req.installation!.id, payload.expoPushToken));
+}));
+
+mobileRouter.post('/installations/live-subscriptions', authenticateInstallation, asyncHandler(async (req, res) => {
+  const payload = validateSchema(installationLiveSubscriptionSchema, req.body);
+  res.status(201).json(await subscribeInstallationToLive(req.installation!.id, payload));
+}));
+
 mobileRouter.get('/recommendations', authenticateInstallation, asyncHandler(async (req, res) => {
   const { limit } = validateSchema(recommendationQuerySchema, req.query);
   res.status(200).json(await getInstallationRecommendations(req.installation!.id, limit));
@@ -89,6 +113,15 @@ mobileRouter.get('/recommendations', authenticateInstallation, asyncHandler(asyn
 
 mobileRouter.post('/recommendations/reset', authenticateInstallation, asyncHandler(async (req, res) => {
   res.status(200).json(await resetInstallationRecommendations(req.installation!.id));
+}));
+
+mobileRouter.get('/installations/history', authenticateInstallation, asyncHandler(async (req, res) => {
+  const { limit } = validateSchema(installationHistoryQuerySchema, req.query);
+  res.status(200).json(await getInstallationHistory(req.installation!.id, limit));
+}));
+
+mobileRouter.delete('/installations/history', authenticateInstallation, asyncHandler(async (req, res) => {
+  res.status(200).json(await clearInstallationHistory(req.installation!.id));
 }));
 
 mobileRouter.post('/support-requests', authenticateInstallation, guestSupportLimiter, asyncHandler(async (req, res) => {

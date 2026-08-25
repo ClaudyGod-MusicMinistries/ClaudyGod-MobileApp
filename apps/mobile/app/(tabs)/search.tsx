@@ -15,7 +15,7 @@ import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import { useDeviceClass } from '../../util/deviceClassConfig';
 import { makeStyles } from '../../styles/makeStyles';
 import { fetchSearchResults, fetchTrendingSearches, type ContentType, type FeedCardItem } from '../../services/contentService';
-import { trackPlayEvent } from '../../services/supabaseAnalytics';
+import { trackContentPlay } from '../../services/supabaseAnalytics';
 import { buildPlayerRoute } from '../../util/playerRoute';
 import { APP_ROUTES } from '../../util/appRoutes';
 import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
@@ -32,7 +32,13 @@ import {
 
 const useStyles = makeStyles((theme) => ({
   // Search bar card
-  searchBarCard:       { padding: theme.spacing.md },
+  searchBarCard: { padding: theme.spacing.md },
+  searchIntro: { gap: theme.spacing.xs, marginBottom: theme.spacing.md },
+  searchEyebrow: { color: theme.colors.primary, textTransform: 'uppercase', letterSpacing: 1, fontWeight: '700' },
+  searchTitle: { color: theme.colors.text },
+  searchDescription: { color: theme.colors.textSecondary },
+  resultMeta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: theme.spacing.sm },
+  resultMetaText: { color: theme.colors.textSecondary },
 
   // Search input row (static part)
   searchInputBase: {
@@ -42,13 +48,13 @@ const useStyles = makeStyles((theme) => ({
   },
 
   // Clear button
-  clearBtn:            { padding: 6 },
+  clearBtn: { padding: 6 },
 
   // Submit button (static part)
-  searchSubmitBtn:     { alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.primary },
+  searchSubmitBtn: { alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.primary },
 
   // Category pills row
-  categoryPillRow:     { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
+  categoryPillRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
 
   // Static part of each category pill
   categoryPillBase: {
@@ -57,46 +63,46 @@ const useStyles = makeStyles((theme) => ({
   },
 
   // Shortcut section
-  shortcutGap:         { gap: 12 },
-  shortcutRow:         { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  shortcutGap: { gap: 12 },
+  shortcutRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   shortcutChip: {
     flexDirection: 'row', alignItems: 'center', gap: 7,
     borderRadius: theme.radius.pill, borderWidth: 1,
     borderColor: theme.colors.border, backgroundColor: theme.colors.subtleFill,
     paddingHorizontal: 14, paddingVertical: 8,
   },
-  shortcutText:        { color: theme.colors.textSecondary, fontSize: 12.5, fontWeight: '500' },
+  shortcutText: { color: theme.colors.textSecondary, fontSize: 12.5, fontWeight: '500' },
 
   // Discovery grid
-  discoveryGrid:       { gap: 12 },
-  discoveryRow:        { flexDirection: 'row', gap: 12 },
+  discoveryGrid: { gap: 12 },
+  discoveryRow: { flexDirection: 'row', gap: 12 },
 
   // DiscoveryItem
-  discoveryItemTouch:  { flex: 1, minWidth: 140 },
+  discoveryItemTouch: { flex: 1, minWidth: 140 },
   discoveryCard: {
     borderRadius: 10, overflow: 'hidden',
     backgroundColor: theme.colors.surfaceAlt,
     aspectRatio: 16 / 9,
   },
-  discoveryOverlay:    { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 10 },
+  discoveryOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 10 },
   discoveryTitlePill: {
     borderRadius: 999, backgroundColor: theme.colors.mediaControl,
     alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 3,
   },
-  discoveryTitleText:  { color: theme.colors.mediaText, fontSize: 11, fontWeight: '600' },
+  discoveryTitleText: { color: theme.colors.mediaText, fontSize: 11, fontWeight: '600' },
   discoveryLiveBadge: {
     position: 'absolute', top: 8, left: 8, borderRadius: 999,
     backgroundColor: theme.colors.liveSurface, paddingHorizontal: 7, paddingVertical: 3,
     flexDirection: 'row', alignItems: 'center', gap: 4,
   },
-  discoveryLiveDot:    { width: 5, height: 5, borderRadius: 2.5, backgroundColor: theme.colors.mediaText },
-  discoveryLiveText:   { color: theme.colors.mediaText, fontSize: 9.5, fontWeight: '700' },
+  discoveryLiveDot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: theme.colors.mediaText },
+  discoveryLiveText: { color: theme.colors.mediaText, fontSize: 9.5, fontWeight: '700' },
 
   // Section containers
-  sectionGap:          { gap: 12 },
+  sectionGap: { gap: 12 },
 
   // Search TextInput base
-  searchInput:         { flex: 1 },
+  searchInput: { flex: 1 },
 }));
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -130,11 +136,11 @@ const CATEGORY_ICONS: Partial<Record<SearchCategory, React.ComponentProps<typeof
 
 function getCategoryColor(category: SearchCategory, theme: ReturnType<typeof useAppTheme>): string {
   const map: Partial<Record<SearchCategory, string>> = {
-    All:          theme.colors.primary,
-    audio:        theme.colors.primary,
-    video:        theme.colors.info,
-    live:         theme.colors.danger,
-    playlist:     theme.colors.warning,
+    All: theme.colors.primary,
+    audio: theme.colors.primary,
+    video: theme.colors.info,
+    live: theme.colors.danger,
+    playlist: theme.colors.warning,
     announcement: theme.colors.success,
   };
   return map[category] ?? theme.colors.primary;
@@ -193,7 +199,7 @@ function DiscoveryGrid({ items, onPress }: { items: FeedCardItem[]; onPress: (_i
 
 export default function Search() {
   const styles = useStyles();
-  const theme  = useAppTheme();
+  const theme = useAppTheme();
   const router = useRouter();
   const device = useDeviceClass();
   const { showToast } = useToast();
@@ -211,7 +217,7 @@ export default function Search() {
   const queryClient = useQueryClient();
 
   const configuredCategories = config?.discovery?.categories;
-  const configuredShortcuts  = config?.discovery?.shortcuts;
+  const configuredShortcuts = config?.discovery?.shortcuts;
 
   const categories = useMemo<SearchCategory[]>(() => {
     const normalized = (configuredCategories ?? []).map((c) => normalizeCategory(c)).filter((c): c is SearchCategory => Boolean(c));
@@ -238,8 +244,8 @@ export default function Search() {
     });
   }, [activeCategory, allItems, query, remoteResults]);
 
-  const runSearch = useCallback(async () => {
-    const normalized = query.trim();
+  const runSearch = useCallback(async (requestedQuery = query, requestedCategory = activeCategory) => {
+    const normalized = requestedQuery.trim();
     if (!normalized) {
       setRemoteResults(null);
       showToast({ title: 'Search is empty', message: 'Enter a title, artist, or topic.', tone: 'warning' });
@@ -249,7 +255,7 @@ export default function Search() {
     setIsSearching(true);
     setSearchError(null);
     try {
-      const type = activeCategory === 'All' ? undefined : activeCategory;
+      const type = requestedCategory === 'All' ? undefined : requestedCategory;
       const results = await queryClient.fetchQuery({
         queryKey: ['search', normalized, type ?? 'All'],
         queryFn: () => fetchSearchResults(normalized, type),
@@ -278,15 +284,17 @@ export default function Search() {
   }, []);
 
   const openResult = async (item: FeedCardItem) => {
-    await trackPlayEvent({ contentId: item.id, contentType: item.type, title: item.title, source: 'search' });
+    await trackContentPlay(item, 'search');
     router.push(buildPlayerRoute(item));
   };
 
   const applyShortcut = (shortcut: NonNullable<typeof configuredShortcuts>[number]) => {
     const category = normalizeCategory(shortcut.category);
+    const resolvedCategory = category ?? 'All';
     setQuery(shortcut.query);
-    if (category) setActiveCategory(category);
+    setActiveCategory(resolvedCategory);
     invalidateSearch();
+    void runSearch(shortcut.query, resolvedCategory);
   };
 
   const hasQuery = query.trim().length > 0;
@@ -313,6 +321,7 @@ export default function Search() {
     setQuery(term);
     setActiveCategory('All');
     invalidateSearch();
+    void runSearch(term, 'All');
   };
 
   const animatedSearchStyle = {
@@ -325,6 +334,11 @@ export default function Search() {
     <PremiumPage title="Search" eyebrow="Discover" noBack refreshing={loading || isSearching} onRefresh={refresh}>
       {/* ── Search bar ── */}
       <SurfaceCard tone="strong" style={styles.searchBarCard}>
+        <View style={styles.searchIntro}>
+          <CustomText variant="caption" style={styles.searchEyebrow}>Search the full ministry library</CustomText>
+          <CustomText variant="heading" style={styles.searchTitle}>What would you like to hear today?</CustomText>
+          <CustomText variant="body" style={styles.searchDescription}>Find worship, teaching, video, playlists, and live sessions.</CustomText>
+        </View>
         <Animated.View
           style={[
             styles.searchInputBase,
@@ -370,8 +384,8 @@ export default function Search() {
         <View style={styles.categoryPillRow}>
           {categories.map((category) => {
             const active = category === activeCategory;
-            const color  = getCategoryColor(category, theme);
-            const icon   = CATEGORY_ICONS[category] ?? 'label';
+            const color = getCategoryColor(category, theme);
+            const icon = CATEGORY_ICONS[category] ?? 'label';
             return (
               <TVTouchable
                 key={category}
@@ -444,6 +458,12 @@ export default function Search() {
       {/* ── Results (when query active) ── */}
       {hasQuery ? (
         <>
+          <View style={styles.resultMeta}>
+            <CustomText variant="caption" style={styles.resultMetaText}>
+              {isSearching ? 'Searching the library…' : `${filtered.length} ${filtered.length === 1 ? 'result' : 'results'}`}
+            </CustomText>
+            <CustomText variant="caption" style={styles.resultMetaText}>{labelForCategory(activeCategory)}</CustomText>
+          </View>
           <ContentList title={`Results for "${query.trim()}"`} items={filtered} onPressItem={(item) => void openResult(item)} />
           {!loading && !isSearching && !searchError && !filtered.length ? (
             <EmptyState

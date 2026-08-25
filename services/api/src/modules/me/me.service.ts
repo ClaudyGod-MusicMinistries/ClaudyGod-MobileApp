@@ -1522,18 +1522,48 @@ const createDonationIntentCore = async (
     amount: string;
     mode: 'once' | 'daily' | 'weekly' | 'monthly';
     methodId: string;
-    currency?: string;
+    currency: string;
+    clientReference: string;
     planId?: string;
+    schedule?: { startDate: string; timezone: string; recurrenceDay: number };
     metadata?: Record<string, unknown>;
   },
 ) => {
   const amountCents = parseAmountToCents(input.amount);
-  const currency = (input.currency ?? 'USD').toUpperCase();
+  const currency = input.currency.toUpperCase();
+  const { config } = await getMobileAppConfig();
+  const configuredMethod = config.donate.methods.find((method) => method.id === input.methodId);
+  if (!configuredMethod?.enabled) {
+    throw new BadRequestError('The selected giving method is not currently available.', 'PAYMENT_METHOD_UNAVAILABLE');
+  }
   const instructions = buildDonationInstructions({ methodId: input.methodId, currency });
+  const requestFingerprint = createHash('sha256').update(JSON.stringify({
+    userId,
+    amountCents,
+    currency,
+    mode: input.mode,
+    methodId: input.methodId,
+    planId: input.planId ?? null,
+    schedule: input.schedule ?? null,
+  })).digest('hex');
+  const payload = {
+    amountLabel: input.amount,
+    planId: input.planId ?? null,
+    metadata: input.metadata ?? {},
+    schedule: input.schedule ?? null,
+    instructions,
+    requestFingerprint,
+  };
 
   const result = await pool.query<{ id: string; status: string; created_at: string | Date }>(
-    `INSERT INTO donation_intents (user_id, amount_cents, currency, mode, method_id, status, payload)
-     VALUES ($1, $2, $3, $4, $5, 'pending', $6::jsonb)
+    `INSERT INTO donation_intents (
+       user_id, amount_cents, currency, mode, method_id, status,
+       schedule_start_date, schedule_timezone, schedule_recurrence_day, client_reference, payload
+     )
+     VALUES ($1, $2, $3, $4, $5, 'pending', $6::date, $7, $8, $9, $10::jsonb)
+     ON CONFLICT (client_reference) WHERE client_reference IS NOT NULL
+     DO UPDATE SET client_reference = donation_intents.client_reference
+       WHERE donation_intents.payload->>'requestFingerprint' = EXCLUDED.payload->>'requestFingerprint'
      RETURNING id, status, created_at`,
     [
       userId,
@@ -1541,16 +1571,18 @@ const createDonationIntentCore = async (
       currency,
       input.mode,
       input.methodId,
-      JSON.stringify({
-        amountLabel: input.amount,
-        planId: input.planId ?? null,
-        metadata: input.metadata ?? {},
-        instructions,
-      }),
+      input.schedule?.startDate ?? null,
+      input.schedule?.timezone ?? null,
+      input.schedule?.recurrenceDay ?? null,
+      input.clientReference,
+      JSON.stringify(payload),
     ],
   );
 
-  const row = result.rows[0]!;
+  const row = result.rows[0];
+  if (!row) {
+    throw new ConflictError('This giving reference was already used for different details.', 'PAYMENT_IDEMPOTENCY_CONFLICT');
+  }
   return {
     donationIntent: {
       id: row.id,
@@ -1559,6 +1591,7 @@ const createDonationIntentCore = async (
       currency,
       mode: input.mode,
       methodId: input.methodId,
+      schedule: input.schedule,
       createdAt: toIso(row.created_at),
       instructions,
     },
@@ -1571,8 +1604,10 @@ export const createMeDonationIntent = async (
     amount: string;
     mode: 'once' | 'daily' | 'weekly' | 'monthly';
     methodId: string;
-    currency?: string;
+    currency: string;
+    clientReference: string;
     planId?: string;
+    schedule?: { startDate: string; timezone: string; recurrenceDay: number };
     metadata?: Record<string, unknown>;
   },
 ) => createDonationIntentCore(user.sub, input);
@@ -1581,8 +1616,10 @@ export const createPublicDonationIntent = async (input: {
   amount: string;
   mode: 'once' | 'daily' | 'weekly' | 'monthly';
   methodId: string;
-  currency?: string;
+  currency: string;
+  clientReference: string;
   planId?: string;
+  schedule?: { startDate: string; timezone: string; recurrenceDay: number };
   metadata?: Record<string, unknown>;
 }) => createDonationIntentCore(null, input);
 

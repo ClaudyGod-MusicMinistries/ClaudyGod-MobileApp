@@ -76,9 +76,6 @@ export function PremiumHero({
             end={{ x: 1, y: 1 }}
             style={common.fill}
           />
-          <View style={styles.heroEmptyCircle1} />
-          <View style={styles.heroEmptyCircle2} />
-
           <View style={styles.heroEmptyIconShadowWrap}>
             <View style={styles.heroEmptyIconBox}>
               <LinearGradient
@@ -115,7 +112,6 @@ export function PremiumHero({
                   variant="secondary"
                   size="lg"
                   onPress={secondaryAction}
-                  style={{ borderRadius: 999 }}
                   leftIcon={<AppIcon name={secondaryIcon} size={16} color={theme.colors.text} />}
                 />
               ) : null}

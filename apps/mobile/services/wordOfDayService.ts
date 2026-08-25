@@ -6,6 +6,9 @@ export interface WordOfDayItem {
   passage: string;
   verse: string;
   reflection: string;
+  teaching: string | null;
+  application: string | null;
+  prayer: string | null;
   messageDate: string;
   status: 'draft' | 'published' | 'archived';
   notifyEmail: boolean;

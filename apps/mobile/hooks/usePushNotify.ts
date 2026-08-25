@@ -7,7 +7,7 @@ export interface UsePushNotificationsReturn {
   isEnabled: boolean;
   hasPermission: boolean;
   isLoading: boolean;
-  toggleNotifications: (_enabled: boolean) => Promise<void>;
+  toggleNotifications: (_enabled: boolean) => Promise<boolean>;
   checkPermission: () => Promise<void>;
   scheduleTestNotification: () => Promise<void>;
 }
@@ -65,7 +65,7 @@ export const usePushNotifications = (): UsePushNotificationsReturn => {
     return () => subscription.remove();
   }, [handleAppStateChange]);
 
-  const toggleNotifications = async (enabled: boolean) => {
+  const toggleNotifications = async (enabled: boolean): Promise<boolean> => {
     try {
       setIsLoading(true);
 
@@ -76,16 +76,11 @@ export const usePushNotifications = (): UsePushNotificationsReturn => {
         if (success) {
           setIsEnabled(true);
           setHasPermission(true);
-          
-          // Send welcome notification
-          await pushNotificationService.scheduleLocalNotification(
-            'Welcome to ClaudyGod Music!',
-            'You will now receive important updates and notifications.',
-            { type: 'welcome' }
-          );
+          return true;
         } else {
           setIsEnabled(false);
           setHasPermission(false);
+          return false;
         }
       } else {
         // Disable notifications
@@ -95,8 +90,10 @@ export const usePushNotifications = (): UsePushNotificationsReturn => {
         
         // Note: We can't revoke permissions programmatically on iOS
         // User must manually disable in system settings
+        return true;
       }
     } catch {
+      return false;
     } finally {
       setIsLoading(false);
     }

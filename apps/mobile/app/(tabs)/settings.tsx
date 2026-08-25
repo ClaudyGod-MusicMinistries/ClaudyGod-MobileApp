@@ -19,14 +19,14 @@ import { getPreference, setPreference } from '../../lib/localUserStorage';
 import { setDiagnosticsAllowed } from '../../lib/sentry';
 import { PremiumPage } from '../../components/feed';
 import { getStoredMobileSession } from '../../services/authService';
-import { fetchInstallationPreferences, fetchMePreferences, updateInstallationPersonalization, updateMePreferences, type MePreferences } from '../../services/userFlowService';
+import { fetchInstallationPreferences, fetchMePreferences, updateInstallationNotifications, updateInstallationPersonalization, updateMePreferences, type MePreferences } from '../../services/userFlowService';
 import { BRAND_LOGO_ASSET } from '../../util/brandAssets';
 import { useQueryClient } from '@tanstack/react-query';
 
 type TogglePreferenceKey = 'notificationsEnabled' | 'autoplayEnabled' | 'highQualityEnabled' | 'personalizationEnabled' | 'diagnosticsEnabled';
 
 const DEVICE_DEFAULTS: Record<TogglePreferenceKey, boolean> = {
-  notificationsEnabled: true,
+  notificationsEnabled: false,
   autoplayEnabled: true,
   highQualityEnabled: false,
   personalizationEnabled: true,
@@ -305,7 +305,6 @@ export default function SettingsScreen() {
   const [personalization, setPersonalization]  = useState(true);
   const [diagnostics,      setDiagnostics]     = useState(true);
   const [accountConnected, setAccountConnected] = useState(false);
-  const [awaitingPushPermission, setAwaitingPushPermission] = useState(false);
 
   // The mobile app has no public account system. Preferences are device-local.
   useEffect(() => {
@@ -333,7 +332,7 @@ export default function SettingsScreen() {
       if (!user) {
         try {
           const installation = await fetchInstallationPreferences();
-          const resolved = { ...localPreferences, personalizationEnabled: installation.preferences.personalizationEnabled };
+          const resolved = { ...localPreferences, personalizationEnabled: installation.preferences.personalizationEnabled, notificationsEnabled: installation.preferences.notificationsEnabled };
           applyValues(resolved);
           await setPreference('personalizationEnabled', resolved.personalizationEnabled);
         } catch {
@@ -368,32 +367,42 @@ export default function SettingsScreen() {
       await updateMePreferences({ [key]: value } as Partial<MePreferences>);
     } else if (key === 'personalizationEnabled') {
       await updateInstallationPersonalization(value);
+    } else if (key === 'notificationsEnabled') {
+      await updateInstallationNotifications(value);
     }
     // Keep an offline cache after the authoritative server write succeeds.
     await setPreference(key, value);
     if (key === 'diagnosticsEnabled') setDiagnosticsAllowed(value);
   }, []);
 
-  // Fires only right after the user explicitly turns notifications on (armed by
-  // `awaitingPushPermission` in that toggle's handler below) — not a passive
-  // watcher, since `hasPermission` starts false for every fresh install until
-  // the OS prompt has actually been answered, and we don't want to silently
-  // flip a brand-new user's default-on preference back off before they've
-  // ever been asked.
-  useEffect(() => {
-    if (!awaitingPushPermission || pushLoading) return;
-    setAwaitingPushPermission(false);
-    if (!pushPermissionGranted) {
-      setNotifications(false);
-      void persistPreference('notificationsEnabled', false);
-      showModal({
-        title: 'Permission needed',
-        message: 'Enable notifications for ClaudyGod in your device settings to receive alerts.',
-        tone: 'warning',
-        icon: 'notifications-none',
-      });
-    }
-  }, [awaitingPushPermission, pushLoading, pushPermissionGranted, persistPreference, showModal]);
+  const handleNotificationsChange = useCallback((value: boolean) => {
+    if (pushLoading) return;
+    const previous = notifications;
+    void (async () => {
+      const providerReady = await toggleNotifications(value);
+      if (!providerReady) {
+        setNotifications(previous);
+        showModal({
+          title: 'Push notifications unavailable',
+          message: 'Use a ClaudyGod development or store build on a physical device and allow notifications in system settings.',
+          tone: 'warning', icon: 'notifications-none',
+        });
+        return;
+      }
+      try {
+        await persistPreference('notificationsEnabled', value);
+        setNotifications(value);
+        showModal({
+          title: value ? 'Push delivery active' : 'Push delivery stopped',
+          message: value ? 'This device is registered for enabled live and release alerts.' : 'This device was removed from push delivery.',
+          tone: 'success', icon: value ? 'notifications-active' : 'notifications-none',
+        });
+      } catch {
+        setNotifications(previous);
+        showModal({ title: 'Notification update failed', message: 'The backend did not confirm this change. Please try again.', tone: 'error', icon: 'notifications-none' });
+      }
+    })();
+  }, [notifications, persistPreference, pushLoading, showModal, toggleNotifications]);
 
   const handleAppearanceChange = useCallback((value: ThemePreference) => {
     const previous = themePreference;
@@ -448,13 +457,16 @@ export default function SettingsScreen() {
       kind: 'toggle',
       icon: 'notifications-none',
       label: 'Notifications',
-      hint: 'Receive live alerts and release reminders.',
+      hint: pushLoading ? 'Checking device and delivery registration…' : notifications && pushPermissionGranted ? 'Push delivery is active for this device.' : 'Register this device for live and release push alerts.',
       value: notifications,
-      onToggle: (value: boolean) => {
-        makeToggleHandler('notificationsEnabled', setNotifications, { title: 'Notifications updated', on: 'Alerts are on.', off: 'Alerts are off.', icon: 'notifications-none' })(value);
-        if (value) setAwaitingPushPermission(true);
-        void toggleNotifications(value);
-      },
+      onToggle: handleNotificationsChange,
+    },
+    {
+      kind: 'status',
+      icon: 'email',
+      label: 'Email delivery',
+      hint: accountConnected ? 'Verified account and security emails are delivered through the transactional email worker.' : 'Guest mode has no verified email address. Support replies use the email supplied with each request.',
+      statusLabel: accountConnected ? 'Verified account' : 'Guest workflow',
     },
     {
       kind: 'toggle',
@@ -483,7 +495,7 @@ export default function SettingsScreen() {
       value: diagnostics,
       onToggle: makeToggleHandler('diagnosticsEnabled', setDiagnostics, { title: 'Diagnostics updated', on: 'Crash reports are shared.', off: 'Crash reports are off.', icon: 'bug-report' }),
     },
-  ], [accountConnected, diagnostics, makeToggleHandler, notifications, persistPreference, personalization, queryClient, showModal, toggleNotifications]);
+  ], [accountConnected, diagnostics, handleNotificationsChange, makeToggleHandler, notifications, persistPreference, personalization, pushLoading, pushPermissionGranted, queryClient, showModal]);
 
   const isWideLayout = device.isDesktop || device.isTV;
   const quickItems = settingsHubSections.flatMap((section) => section.items);

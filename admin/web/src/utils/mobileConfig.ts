@@ -1,4 +1,5 @@
 export const MOBILE_CONTENT_TYPE_OPTIONS = ['audio', 'video', 'playlist', 'announcement', 'live'] as const;
+export const MOBILE_SECTION_RAIL_MIN_ITEMS = 6;
 
 export const MOBILE_TAB_DESTINATION_OPTIONS = [
   { value: 'home', label: 'Home' },
@@ -132,7 +133,7 @@ export function createCurrencyOption(): Record<string, unknown> {
 }
 
 export function createDonateMethod(): Record<string, unknown> {
-  return { id: makeId('method'), icon: 'payments', label: 'New payment method', subtitle: 'Describe this method.' };
+  return { id: makeId('method'), icon: 'payments', label: 'New payment method', subtitle: 'Describe this method.', enabled: false };
 }
 
 export function createDonatePlan(): Record<string, unknown> {

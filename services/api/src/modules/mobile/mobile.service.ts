@@ -56,6 +56,27 @@ interface LiveSessionFeedRow {
   host_display_name: string | null;
 }
 
+interface SectionDetailRow {
+  item_kind: 'content' | 'live';
+  id: string;
+  title: string;
+  description: string;
+  content_type: ContentType | 'live';
+  media_url: string | null;
+  thumbnail_url: string | null;
+  source_kind: ContentSourceKind;
+  channel_name: string | null;
+  duration_label: string | null;
+  app_sections: string[] | null;
+  tags: string[] | null;
+  created_at: string | Date;
+  updated_at: string | Date;
+  author_display_name: string | null;
+  live_status: LiveSessionStatus | null;
+  viewer_count: number | string | null;
+  sort_order: number | null;
+}
+
 const FALLBACK_IMAGE = null;
 
 const toIso = (value: string | Date): string => new Date(value).toISOString();
@@ -228,6 +249,32 @@ const toLiveFeedItem = (row: LiveSessionFeedRow): MobileFeedItem => ({
   notificationChannelId: row.channel_id || 'claudygod-live',
 });
 
+const toSectionDetailFeedItem = (row: SectionDetailRow): MobileFeedItem => {
+  if (row.item_kind === 'live') {
+    return toLiveFeedItem({
+      id: row.id,
+      title: row.title,
+      description: row.description,
+      status: row.live_status ?? 'ended',
+      channel_id: row.channel_name ?? 'claudygod-live',
+      cover_image_url: row.thumbnail_url,
+      stream_url: null,
+      playback_url: row.media_url,
+      viewer_count: row.viewer_count ?? 0,
+      app_sections: row.app_sections,
+      tags: row.tags,
+      scheduled_for: null,
+      started_at: row.created_at,
+      ended_at: null,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+      host_display_name: row.author_display_name,
+    });
+  }
+
+  return toMobileFeedItem({ ...row, content_type: row.content_type as ContentType });
+};
+
 const toAdFeedItem = (
   campaign: AdCampaign,
   placement: MobileAppConfig['monetization']['placements'][number],
@@ -318,9 +365,16 @@ const loadContentTaggedIntoSections = async (tokens: string[]): Promise<MobileFe
        FROM content_items c
        INNER JOIN app_users u ON u.id = c.author_id
        WHERE c.visibility = 'published' AND c.deleted_at IS NULL
-         AND EXISTS (
-           SELECT 1 FROM unnest(c.app_sections) AS tag
-           WHERE lower(trim(tag)) = ANY($1::text[])
+         AND (
+           EXISTS (
+             SELECT 1 FROM content_section_assignments assignment
+             WHERE assignment.content_id = c.id
+               AND lower(trim(assignment.section_id)) = ANY($1::text[])
+           )
+           OR EXISTS (
+             SELECT 1 FROM unnest(c.app_sections) AS tag
+             WHERE lower(trim(tag)) = ANY($1::text[])
+           )
          )
        ORDER BY c.sort_order NULLS LAST, c.updated_at DESC, c.created_at DESC`,
       [tokens],
@@ -661,15 +715,81 @@ export const getMobileSectionDetail = async (params: {
   if (!section) {
     return null;
   }
+  const offset = (params.page - 1) * params.limit;
+  const tokens = [normalizeSectionToken(section.id), normalizeSectionToken(section.title)];
+  const exactTokens = normalizeTextList([section.id, section.title]);
+  const contentTypes = section.contentTypes;
 
-  const { ranked } = await loadUnifiedContentPool([
-    normalizeSectionToken(section.id),
-    normalizeSectionToken(section.title),
+  const sectionItemsCte = `
+    WITH section_items AS (
+      SELECT
+        'content'::text AS item_kind,
+        c.id, c.title, c.description, c.content_type::text AS content_type,
+        c.media_url, c.thumbnail_url, c.source_kind::text AS source_kind,
+        c.channel_name, c.duration_label, c.app_sections, c.tags,
+        c.created_at, c.updated_at, u.display_name AS author_display_name,
+        NULL::text AS live_status, NULL::integer AS viewer_count, c.sort_order
+      FROM content_items c
+      INNER JOIN app_users u ON u.id = c.author_id
+      WHERE c.visibility = 'published'
+        AND c.deleted_at IS NULL
+        AND c.content_type::text = ANY($2::text[])
+        AND (
+          EXISTS (
+            SELECT 1 FROM content_section_assignments assignment
+            WHERE assignment.content_id = c.id
+              AND assignment.section_id = ANY($3::text[])
+          )
+          OR c.app_sections && $3::text[]
+          OR EXISTS (
+            SELECT 1 FROM unnest(c.app_sections) AS tag
+            WHERE lower(trim(tag)) = ANY($1::text[])
+          )
+        )
+
+      UNION ALL
+
+      SELECT
+        'live'::text AS item_kind,
+        ls.id, ls.title, ls.description, 'live'::text AS content_type,
+        COALESCE(ls.playback_url, ls.stream_url) AS media_url,
+        ls.cover_image_url AS thumbnail_url, 'external'::text AS source_kind,
+        ls.channel_id AS channel_name,
+        CASE ls.status WHEN 'live' THEN 'LIVE' WHEN 'scheduled' THEN 'Upcoming' ELSE 'Replay' END AS duration_label,
+        ls.app_sections, ls.tags, COALESCE(ls.started_at, ls.scheduled_for, ls.created_at) AS created_at,
+        ls.updated_at, host.display_name AS author_display_name,
+        ls.status::text AS live_status, ls.viewer_count, NULL::integer AS sort_order
+      FROM live_sessions ls
+      LEFT JOIN app_users host ON host.id = ls.created_by
+      WHERE 'live' = ANY($2::text[])
+        AND ls.status IN ('live', 'scheduled', 'ended')
+        AND (ls.status != 'ended' OR COALESCE(ls.ended_at, ls.updated_at) >= NOW() - INTERVAL '45 days')
+        AND (
+          ls.app_sections && $3::text[]
+          OR EXISTS (
+            SELECT 1 FROM unnest(ls.app_sections) AS tag
+            WHERE lower(trim(tag)) = ANY($1::text[])
+          )
+        )
+    )`;
+
+  const [contentResult, countResult] = await Promise.all([
+    pool.query<SectionDetailRow>(
+      `${sectionItemsCte}
+       SELECT * FROM section_items
+       ORDER BY sort_order NULLS LAST, updated_at DESC, created_at DESC, item_kind ASC, id DESC
+       LIMIT $4 OFFSET $5`,
+      [tokens, contentTypes, exactTokens, params.limit, offset],
+    ),
+    pool.query<{ count: string }>(
+      `${sectionItemsCte}
+       SELECT COUNT(*)::text AS count FROM section_items`,
+      [tokens, contentTypes, exactTokens],
+    ),
   ]);
 
-  const sectionPool = resolveConfiguredSectionPool(ranked, section);
-  const offset = (params.page - 1) * params.limit;
-  const items = sectionPool.slice(offset, offset + params.limit);
+  const items = contentResult.rows.map(toSectionDetailFeedItem);
+  const total = Number(countResult.rows[0]?.count ?? 0);
 
   return {
     section: {
@@ -683,7 +803,7 @@ export const getMobileSectionDetail = async (params: {
     items,
     page: params.page,
     limit: params.limit,
-    total: sectionPool.length,
-    hasMore: offset + items.length < sectionPool.length,
+    total,
+    hasMore: offset + items.length < total,
   };
 };

@@ -14,14 +14,14 @@ import { FadeIn } from '../../components/ui/FadeIn';
 import { useContentFeed } from '../../hooks/useContentFeed';
 import { useWordOfDay } from '../../hooks/useWordOfDay';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
-import { useUserAccount } from '../../context/UserAccountContext';
-import { getHomeLayoutSections, deriveLayoutSectionItems } from '../../util/mobileLayout';
+import { useAuth } from '../../features/auth/AuthContext';
+import { getHomeLayoutSections, deriveLayoutSectionItems, deriveLayoutSectionOverflowCount } from '../../util/mobileLayout';
 import { useAppTheme } from '../../util/colorScheme';
 import { makeStyles } from '../../styles/makeStyles';
 import { APP_ROUTES } from '../../util/appRoutes';
 import { buildPlayerRoute } from '../../util/playerRoute';
 import type { FeedCardItem } from '../../services/contentService';
-import { trackPlayEvent } from '../../services/supabaseAnalytics';
+import { trackContentPlay } from '../../services/supabaseAnalytics';
 import {
   ContentRail,
   dedupeFeedItems,
@@ -272,7 +272,7 @@ export default function HomeScreen() {
   const { feed, loading, refreshing, error, refresh } = useContentFeed();
   const { bibleVerse, adminWord }  = useWordOfDay();
   const { config: appConfig } = useMobileAppConfig();
-  const { account } = useUserAccount();
+  const { user: account } = useAuth();
 
   const featured = feed.featured ?? null;
 
@@ -291,7 +291,11 @@ export default function HomeScreen() {
 
   const homeSections = useMemo(() => getHomeLayoutSections(appConfig), [appConfig]);
   const sectionItems = useMemo(
-    () => homeSections.map((section) => ({ section, items: deriveLayoutSectionItems(feed, section, 'home') })),
+    () => homeSections.map((section) => ({
+      section,
+      items: deriveLayoutSectionItems(feed, section, 'home'),
+      overflowCount: deriveLayoutSectionOverflowCount(feed, section, 'home'),
+    })),
     [homeSections, feed],
   );
 
@@ -313,7 +317,7 @@ export default function HomeScreen() {
   // Awaiting it (a SecureStore read + network POST) used to make every card
   // tap on Home wait on a round-trip before the player even opened.
   const openItem = (item: FeedCardItem, source: string) => {
-    void trackPlayEvent({ contentId: item.id, contentType: item.type, title: item.title, source });
+    void trackContentPlay(item, source);
     router.push(buildPlayerRoute(item));
   };
 
@@ -372,17 +376,17 @@ export default function HomeScreen() {
       ) : null}
 
       <View style={styles.sectionsGap}>
-        {sectionItems.map(({ section, items }) => (
+        {sectionItems.map(({ section, items, overflowCount }) => (
           (loading || items.length > 0) ? (
             <FadeIn key={section.id} replayKey={contentReadyKey} delay={nextEntranceDelay()}>
               <View style={styles.sectionRow}>
                 <SectionLabel
                   title={section.title}
-                  actionLabel={section.actionLabel}
-                  onAction={() => router.push({
+                  actionLabel={overflowCount > 0 ? (section.actionLabel || 'See all') : undefined}
+                  onAction={overflowCount > 0 ? () => router.push({
                     pathname: APP_ROUTES.section.detail,
                     params: { sectionId: section.id, screen: 'home', title: section.title },
-                  } as never)}
+                  } as never) : undefined}
                 />
                 <ContentRail
                   title=""

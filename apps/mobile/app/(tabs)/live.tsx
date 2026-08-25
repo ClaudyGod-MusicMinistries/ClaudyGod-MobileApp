@@ -13,14 +13,17 @@ import { CustomText } from '../../components/CustomText';
 import { useAppTheme } from '../../util/colorScheme';
 import { useDeviceClass } from '../../util/deviceClassConfig';
 import { useContentFeed } from '../../hooks/useContentFeed';
+import { usePushNotifications } from '../../hooks/usePushNotify';
+import { setPreference } from '../../lib/localUserStorage';
 import { makeStyles } from '../../styles/makeStyles';
 import { APP_ROUTES } from '../../util/appRoutes';
 import { buildPlayerRoute } from '../../util/playerRoute';
-import { trackPlayEvent } from '../../services/supabaseAnalytics';
+import { subscribeToLiveAlerts, trackContentPlay } from '../../services/supabaseAnalytics';
+import { getStoredMobileSession } from '../../services/authService';
+import { updateInstallationNotifications, updateMePreferences } from '../../services/userFlowService';
 import { fetchLiveSessions, type LiveSessionSummary } from '../../services/liveService';
 import type { FeedCardItem } from '../../services/contentService';
 import { useToast } from '../../context/ToastContext';
-import { subscribeToLiveAlertsBackend } from '../../services/userFlowService';
 import {
   ContentList,
   ContentRail,
@@ -58,7 +61,7 @@ const useStyles = makeStyles((theme) => ({
   // ScheduleCard
   scheduleCard:      { padding: theme.spacing.md, flexDirection: 'row', alignItems: 'center', gap: 14 },
   scheduleIconBox: {
-    width: 48, height: 48, borderRadius: 24,
+    width: 48, height: 48, borderRadius: theme.radius.lg,
     alignItems: 'center', justifyContent: 'center',
     backgroundColor: theme.colors.primarySurface,
     borderWidth: 1, borderColor: theme.colors.primaryBorder,
@@ -163,6 +166,7 @@ export default function LiveScreen() {
   const router = useRouter();
   const device = useDeviceClass();
   const { showToast } = useToast();
+  const { toggleNotifications, isLoading: pushLoading } = usePushNotifications();
   const { feed } = useContentFeed();
   const { data, isLoading: loading, error, refetch } = useQuery({
     queryKey: ['liveSessions', 'all'],
@@ -192,13 +196,35 @@ export default function LiveScreen() {
       showToast({ title: 'Session unavailable', message: 'This session is not ready to watch yet.', tone: 'warning' });
       return;
     }
-    await trackPlayEvent({ contentId: item.id, contentType: item.type, title: item.title, source });
+    await trackContentPlay(item, source);
     router.push(buildPlayerRoute(item));
   };
 
   const followLive = async (item: FeedCardItem) => {
+    if (pushLoading) {
+      showToast({ title: 'Checking notifications', message: 'Device notification setup is still being verified.', tone: 'info' });
+      return;
+    }
+
     try {
-      await subscribeToLiveAlertsBackend(item.notificationChannelId || item.id, item.title);
+      const deviceReady = await toggleNotifications(true);
+      if (!deviceReady) {
+        showToast({
+          title: 'Notifications unavailable',
+          message: 'Allow notifications on a physical device using a development or store build, then try again.',
+          tone: 'warning',
+        });
+        return;
+      }
+
+      const { user } = await getStoredMobileSession();
+      if (user) {
+        await updateMePreferences({ notificationsEnabled: true });
+      } else {
+        await updateInstallationNotifications(true);
+      }
+      await setPreference('notificationsEnabled', true);
+      await subscribeToLiveAlerts(item.notificationChannelId || item.id, item.title);
       showToast({ title: 'Live alerts enabled', message: 'You will be notified before the session starts.', tone: 'success' });
     } catch {
       showToast({ title: 'Unable to enable alerts', message: 'Check notification permissions and try again.', tone: 'warning' });

@@ -1,7 +1,5 @@
 export const APP_ROUTES = {
   landing: '/',
-  // Reserved for the planned account release. These paths are not routable until
-  // matching files are intentionally added under app/ and the full flow is enabled.
   auth: {
     signIn: '/sign-in',
     signUp: '/sign-up',
@@ -32,7 +30,6 @@ export const APP_ROUTES = {
     privacyPolicy: '/settingsPage/PrivacyPolicy',
     terms: '/settingsPage/Terms',
     donate: '/settingsPage/Donate',
-    payment: '/settingsPage/Payment',
     help: '/settingsPage/help',
     about: '/settingsPage/About',
     rate: '/settingsPage/Rate',
@@ -55,7 +52,6 @@ export type AppRouteId =
   | 'settings.privacyPolicy'
   | 'settings.terms'
   | 'settings.donate'
-  | 'settings.payment'
   | 'settings.help'
   | 'settings.about'
   | 'settings.rate'
@@ -84,7 +80,6 @@ export const APP_ROUTE_BY_ID: Record<AppRouteId, string> = {
   'settings.privacyPolicy': APP_ROUTES.settingsPages.privacyPolicy,
   'settings.terms': APP_ROUTES.settingsPages.terms,
   'settings.donate': APP_ROUTES.settingsPages.donate,
-  'settings.payment': APP_ROUTES.settingsPages.payment,
   'settings.help': APP_ROUTES.settingsPages.help,
   'settings.about': APP_ROUTES.settingsPages.about,
   'settings.rate': APP_ROUTES.settingsPages.rate,

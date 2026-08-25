@@ -14,10 +14,11 @@ import { MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { CustomText } from '../CustomText';
-import { TVTouchable } from '../ui/TVTouchable';
+import { AppButton } from '../ui/AppButton';
 import { useAppTheme } from '../../util/colorScheme';
 import { makeStyles } from '../../styles/makeStyles';
 import { common, fillAbsolute } from '../../styles/commonStyles';
+import { useReducedMotion } from '../../hooks/useReducedMotion';
 import type { WordOfDayItem } from '../../services/wordOfDayService';
 
 const SHOWN_DATE_KEY = 'claudygod.word_modal.last_shown';
@@ -96,21 +97,7 @@ const useStyles = makeStyles((theme) => ({
     letterSpacing: 0.8, textTransform: 'uppercase',
   },
 
-  // Action buttons
-  actions:             { gap: 10, paddingTop: 4 },
-  btnPrimary: {
-    height: 52, borderRadius: theme.radius.xl,
-    backgroundColor: theme.colors.primary,
-    alignItems: 'center', justifyContent: 'center',
-    flexDirection: 'row', gap: 8,
-  },
-  btnPrimaryText:      { color: theme.colors.textInverse, fontSize: 15, fontWeight: '700' },
-  btnSecondary: {
-    height: 46, borderRadius: theme.radius.xl,
-    borderWidth: 1, borderColor: theme.colors.border,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  btnSecondaryText:    { color: theme.colors.textMuted, fontSize: 14, fontWeight: '600' },
+  actions:             { gap: theme.spacing.sm, paddingTop: theme.spacing.xs },
 
   // VerseBlock
   verseGap:            { gap: 10 },
@@ -216,6 +203,7 @@ export function WordOfDayModal({
 }: WordOfDayModalProps) {
   const styles = useStyles();
   const theme = useAppTheme();
+  const reduceMotion = useReducedMotion();
   const { width, height } = useWindowDimensions();
 
   const backdropOpacity = useRef(new Animated.Value(0)).current;
@@ -224,6 +212,12 @@ export function WordOfDayModal({
 
   useEffect(() => {
     let anim: Animated.CompositeAnimation;
+    if (reduceMotion) {
+      backdropOpacity.setValue(visible ? 1 : 0);
+      cardOpacity.setValue(visible ? 1 : 0);
+      cardScale.setValue(1);
+      return;
+    }
     if (visible) {
       anim = Animated.parallel([
         Animated.timing(backdropOpacity, { toValue: 1, duration: theme.timing.base, useNativeDriver: USE_NATIVE_DRIVER }),
@@ -239,7 +233,7 @@ export function WordOfDayModal({
     }
     anim.start();
     return () => anim.stop();
-  }, [visible, backdropOpacity, cardOpacity, cardScale, theme.motion.modalEnterDuration, theme.motion.modalExitDuration, theme.motion.modalInitialScale, theme.timing.base]);
+  }, [visible, backdropOpacity, cardOpacity, cardScale, reduceMotion, theme.motion.modalEnterDuration, theme.motion.modalExitDuration, theme.motion.modalInitialScale, theme.timing.base]);
 
   const handleReadMore = useCallback(() => {
     onClose();
@@ -304,14 +298,15 @@ export function WordOfDayModal({
             ) : null}
 
             <View style={styles.actions}>
-              <TVTouchable onPress={handleReadMore} showFocusBorder={false} style={styles.btnPrimary}>
-                <MaterialIcons name="menu-book" size={18} color={theme.colors.textInverse} />
-                <CustomText style={styles.btnPrimaryText}>Meditate on this</CustomText>
-              </TVTouchable>
-
-              <TVTouchable onPress={onClose} showFocusBorder={false} style={styles.btnSecondary}>
-                <CustomText style={styles.btnSecondaryText}>Read later</CustomText>
-              </TVTouchable>
+              <AppButton
+                title="Open guided teaching"
+                variant="gradient"
+                size="lg"
+                fullWidth
+                onPress={handleReadMore}
+                leftIcon={<MaterialIcons name="menu-book" size={18} color={theme.colors.onPrimary} />}
+              />
+              <AppButton title="Read later" variant="secondary" fullWidth onPress={onClose} />
             </View>
           </ScrollView>
         </Animated.View>

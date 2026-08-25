@@ -1,5 +1,6 @@
 import React from 'react';
 import { View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
@@ -9,6 +10,7 @@ import { FadeIn } from '../../components/ui/FadeIn';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { AppButton } from '../../components/ui/AppButton';
 import { BrandLoader } from '../../components/branding/BrandLoader';
+import { ErrorState } from '../../components/ui/ErrorState';
 import { useWordOfDay } from '../../hooks/useWordOfDay';
 import { useAppTheme } from '../../util/colorScheme';
 import { makeStyles } from '../../styles/makeStyles';
@@ -37,22 +39,39 @@ const useStyles = makeStyles((theme) => ({
   reflectionHeader:{ flexDirection: 'row', alignItems: 'center', gap: 6 },
   reflectionLabel: { color: theme.colors.primary, textTransform: 'uppercase', letterSpacing: 0.6, fontWeight: '700' },
   reflectionBody:  { color: theme.colors.textSecondary },
+  teachingSteps:   { gap: theme.spacing.md },
+  teachingStep:    { flexDirection: 'row', alignItems: 'flex-start', gap: theme.spacing.md },
+  teachingNumber: {
+    width: 38, height: 34, borderRadius: theme.radius.md,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: theme.colors.primarySurface, borderWidth: 1, borderColor: theme.colors.primaryBorder,
+  },
+  teachingNumberText: { color: theme.colors.primary, fontWeight: '800' },
+  teachingCopy:       { flex: 1, gap: theme.spacing.xs },
+  teachingTitle:      { color: theme.colors.text },
+  teachingBody:       { color: theme.colors.textSecondary },
 
   // Hero
-  heroPad:       { padding: theme.spacing.xl, marginBottom: theme.spacing.lg, overflow: 'hidden' },
-  heroRow:       { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  heroPad: {
+    padding: theme.spacing.xl, marginBottom: theme.spacing.sm, overflow: 'hidden',
+    borderRadius: theme.radius.xxl, minHeight: 230, justifyContent: 'space-between',
+    ...theme.shadows.lg,
+  },
+  heroRow:       { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md },
   heroIconBox: {
-    width: 56, height: 56, borderRadius: 28,
+    width: 56, height: 56, borderRadius: theme.radius.lg,
     alignItems: 'center', justifyContent: 'center',
-    backgroundColor: theme.colors.primarySurface,
+    backgroundColor: theme.colors.glass,
     borderWidth: 1, borderColor: theme.colors.primaryBorder,
   },
   heroRight:     { flex: 1, minWidth: 0 },
-  heroEyebrow:   { color: theme.colors.primary, textTransform: 'uppercase', letterSpacing: 0.72 },
+  heroEyebrow:   { color: theme.colors.onPrimary, textTransform: 'uppercase', letterSpacing: 1.2, fontWeight: '800' },
+  heroVerse:     { color: theme.colors.onPrimary, marginTop: theme.spacing.lg, lineHeight: 29 },
+  heroReference: { color: theme.colors.onPrimary, opacity: 0.82, marginTop: theme.spacing.md },
 
   // States
   loadingPad:    { padding: theme.spacing.xl, alignItems: 'center' },
-  actionsRow:    { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  actionsRow:    { gap: theme.spacing.sm },
   emptyPad:      { padding: theme.spacing.xl, gap: 14 },
   emptyRow:      { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   emptyTextWrap: { flex: 1 },
@@ -63,8 +82,7 @@ const useStyles = makeStyles((theme) => ({
   wordCardPad:    { padding: theme.spacing.xl, gap: 16 },
 
   // Hero body text
-  heroBodyTitle:   { color: theme.colors.text, marginTop: 4 },
-  heroBodyPassage: { color: theme.colors.textSecondary, marginTop: 2 },
+  heroBodyTitle:   { color: theme.colors.onPrimary, marginTop: 4 },
 
   // Offline state
   offlineHeading: { color: theme.colors.text },
@@ -76,11 +94,13 @@ function WordSection({
   word,
   sectionLabel,
   sectionIcon,
+  reflectionOnly = false,
   delay = 0,
 }: {
   word: WordOfDayItem;
   sectionLabel: string;
   sectionIcon: React.ComponentProps<typeof MaterialIcons>['name'];
+  reflectionOnly?: boolean;
   delay?: number;
 }) {
   const styles = useStyles();
@@ -89,7 +109,7 @@ function WordSection({
 
   return (
     <FadeIn delay={delay}>
-      <SurfaceCard tone="subtle" style={styles.wordCardPad}>
+      <SurfaceCard tone="strong" style={styles.wordCardPad}>
         <View style={styles.sectionHeaderRow}>
           <View style={styles.sectionIconBox}>
             <MaterialIcons name={sectionIcon} size={16} color={theme.colors.primary} />
@@ -99,7 +119,7 @@ function WordSection({
           </CustomText>
         </View>
 
-        {word.passage ? (
+        {!reflectionOnly && word.passage ? (
           <View style={styles.passageRow}>
             <View style={styles.passageBar} />
             <CustomText variant="caption" style={styles.passageText}>
@@ -108,13 +128,13 @@ function WordSection({
           </View>
         ) : null}
 
-        {word.title && word.title !== word.passage ? (
+        {!reflectionOnly && word.title && word.title !== word.passage ? (
           <CustomText variant="heading" style={styles.verseTitle}>
             {word.title}
           </CustomText>
         ) : null}
 
-        {word.verse ? (
+        {!reflectionOnly && word.verse ? (
           <CustomText
             variant="title"
             style={[
@@ -157,39 +177,54 @@ export default function WordForTodayScreen() {
   const styles = useStyles();
   const theme  = useAppTheme();
   const router = useRouter();
-  const { bibleVerse, adminWord, loading, hasContent } = useWordOfDay();
+  const { bibleVerse, adminWord, loading, hasContent, error, refresh } = useWordOfDay();
 
   const primaryWord = adminWord ?? bibleVerse;
+  const teachingSections = adminWord
+    ? [
+        { number: '01', title: 'Teaching', body: adminWord.teaching },
+        { number: '02', title: 'Practical application', body: adminWord.application },
+        { number: '03', title: 'Guided prayer', body: adminWord.prayer },
+      ].filter((section): section is { number: string; title: string; body: string } => Boolean(section.body?.trim()))
+    : [];
 
   return (
     <SettingsScaffold
       title="Word for Today"
       subtitle="A focused reflection for worship, prayer, and your day."
       icon="auto-stories"
-      hero={
+      hero={primaryWord ? (
         <FadeIn>
-          <SurfaceCard tone="strong" style={styles.heroPad}>
+          <LinearGradient
+            colors={[theme.colors.primary, theme.colors.secondary]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.heroPad}
+          >
             <View style={styles.heroRow}>
               <View style={styles.heroIconBox}>
-                <MaterialIcons name="auto-stories" size={26} color={theme.colors.primary} />
+                <MaterialIcons name="auto-stories" size={26} color={theme.colors.onPrimary} />
               </View>
               <View style={styles.heroRight}>
                 <CustomText variant="caption" style={styles.heroEyebrow}>
                   Daily reflection
                 </CustomText>
                 <CustomText variant="heading" style={styles.heroBodyTitle}>
-                  {loading ? 'Loading...' : (primaryWord?.title ?? primaryWord?.passage ?? 'Today\'s reflection')}
+                  {primaryWord.title || primaryWord.passage}
                 </CustomText>
-                {primaryWord?.passage ? (
-                  <CustomText variant="caption" style={styles.heroBodyPassage}>
-                    {primaryWord.passage}
-                  </CustomText>
-                ) : null}
               </View>
             </View>
-          </SurfaceCard>
+            {primaryWord?.verse ? (
+              <CustomText variant="title" style={styles.heroVerse} numberOfLines={6}>
+                {primaryWord.verse}
+              </CustomText>
+            ) : null}
+            {primaryWord?.passage ? (
+              <CustomText variant="caption" style={styles.heroReference}>{primaryWord.passage}</CustomText>
+            ) : null}
+          </LinearGradient>
         </FadeIn>
-      }
+      ) : undefined}
     >
       {loading ? (
         <SurfaceCard tone="subtle" style={styles.loadingPad}>
@@ -197,35 +232,58 @@ export default function WordForTodayScreen() {
         </SurfaceCard>
       ) : null}
 
-      {!loading && bibleVerse ? (
+      {!loading && error ? <ErrorState message={error} onRetry={() => void refresh()} /> : null}
+
+      {!loading && primaryWord?.reflection ? (
         <WordSection
-          word={bibleVerse}
-          sectionLabel="Daily Scripture"
-          sectionIcon="menu-book"
+          word={primaryWord}
+          sectionLabel="Today’s reflection"
+          sectionIcon="lightbulb-outline"
+          reflectionOnly
           delay={60}
         />
       ) : null}
 
-      {!loading && adminWord ? (
-        <WordSection
-          word={adminWord}
-          sectionLabel="ClaudyGod Message"
-          sectionIcon="church"
-          delay={120}
-        />
+      {!loading && teachingSections.length > 0 ? (
+        <FadeIn delay={160}>
+          <SurfaceCard tone="strong" style={styles.wordCardPad}>
+            <View style={styles.sectionHeaderRow}>
+              <View style={styles.sectionIconBox}>
+                <MaterialIcons name="school" size={16} color={theme.colors.primary} />
+              </View>
+              <CustomText variant="caption" style={styles.sectionLabel}>Today&apos;s teaching journey</CustomText>
+            </View>
+            <View style={styles.teachingSteps}>
+              {teachingSections.map((section) => (
+                <View key={section.number} style={styles.teachingStep}>
+                  <View style={styles.teachingNumber}><CustomText style={styles.teachingNumberText}>{section.number}</CustomText></View>
+                  <View style={styles.teachingCopy}>
+                    <CustomText variant="heading" style={styles.teachingTitle}>{section.title}</CustomText>
+                    <CustomText variant="body" style={styles.teachingBody}>{section.body}</CustomText>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </SurfaceCard>
+        </FadeIn>
       ) : null}
 
       {!loading && hasContent ? (
-        <FadeIn delay={180}>
+        <FadeIn delay={220}>
           <View style={styles.actionsRow}>
             <AppButton
               title="Explore music"
+              variant="gradient"
+              size="lg"
+              fullWidth
               onPress={() => router.push(APP_ROUTES.tabs.player)}
               leftIcon={<MaterialIcons name="graphic-eq" size={16} color={theme.colors.textInverse} />}
             />
             <AppButton
               title="Watch videos"
               variant="secondary"
+              size="lg"
+              fullWidth
               onPress={() => router.push(APP_ROUTES.tabs.videos)}
               leftIcon={<MaterialIcons name="smart-display" size={16} color={theme.colors.text} />}
             />
@@ -233,7 +291,7 @@ export default function WordForTodayScreen() {
         </FadeIn>
       ) : null}
 
-      {!loading && !hasContent ? (
+      {!loading && !hasContent && !error ? (
         <FadeIn delay={80}>
           <SurfaceCard tone="subtle" style={styles.emptyPad}>
             <View style={styles.emptyRow}>

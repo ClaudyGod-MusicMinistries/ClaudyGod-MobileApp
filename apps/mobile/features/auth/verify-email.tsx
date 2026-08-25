@@ -10,7 +10,7 @@ import { AuthTextField } from '../../components/auth/AuthTextField';
 import { AppButton } from '../../components/ui/AppButton';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { getEmailValidationMessage, isLikelyValidEmail, normalizeEmail } from './authValidation';
-import { useUserAccount } from '../../context/UserAccountContext';
+import { useAuth } from './AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { requestVerificationEmail, verifyMobileEmail } from '../../services/authService';
 import { APP_ROUTES } from '../../util/appRoutes';
@@ -19,7 +19,7 @@ const getParam = (value: string | string[] | undefined) => (Array.isArray(value)
 
 export default function VerifyEmailScreen() {
   const router = useRouter();
-  const { isSignedIn } = useUserAccount();
+  const { isAuthenticated: isSignedIn } = useAuth();
   const { showToast } = useToast();
   const params = useLocalSearchParams<{ email?: string | string[]; notice?: string | string[]; token?: string | string[]; token_hash?: string | string[] }>();
 
