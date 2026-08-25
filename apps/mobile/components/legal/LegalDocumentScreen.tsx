@@ -13,6 +13,9 @@ import { PremiumPage } from '../feed';
 import { FadeIn } from '../ui/FadeIn';
 
 const useStyles = makeStyles((theme) => ({
+  intro: { padding: theme.spacing.xl, gap: 10 },
+  eyebrow: { color: theme.colors.primary, textTransform: 'uppercase', letterSpacing: 1 },
+  summary: { color: theme.colors.textSecondary, lineHeight: 22 },
   documentMeta: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   metaPill: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 999, backgroundColor: theme.colors.subtleFill, borderWidth: 1, borderColor: theme.colors.border },
   meta: { color: theme.colors.textSecondary, fontWeight: '600' },
@@ -40,8 +43,6 @@ export function LegalDocumentScreen({ documentId }: { documentId: LegalDocument[
     staleTime: 5 * 60 * 1000,
   });
   const title = documentId === 'privacy' ? 'Privacy Policy' : 'Terms of Service';
-
-  const icon = documentId === 'privacy' ? 'policy' : 'gavel';
 
   return (
     <PremiumPage title={title} eyebrow="ClaudyGod legal" subtitle="Current, verified product policy" refreshing={query.isRefetching} onRefresh={() => void query.refetch()}>
@@ -91,6 +92,3 @@ export function LegalDocumentScreen({ documentId }: { documentId: LegalDocument[
     </PremiumPage>
   );
 }
-  intro: { padding: theme.spacing.xl, gap: 10 },
-  eyebrow: { color: theme.colors.primary, textTransform: 'uppercase', letterSpacing: 1 },
-  summary: { color: theme.colors.textSecondary, lineHeight: 22 },

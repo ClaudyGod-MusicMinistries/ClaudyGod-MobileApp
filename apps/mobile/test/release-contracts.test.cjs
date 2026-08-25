@@ -51,18 +51,21 @@ test('giving typography and controls are theme-token driven in both schemes', ()
   assert.match(typography, /color:\s*theme\.colors\.text/);
 });
 
-test('premium product-information screens share one branded system and guest-safe backend flows', () => {
+test('premium product-information screens share the giving flow and guest-safe backend services', () => {
   const screens = ['app/settingsPage/Referral.tsx', 'app/settingsPage/About.tsx', 'app/settingsPage/Rate.tsx'];
   for (const screen of screens) {
     const source = fs.readFileSync(path.join(root, screen), 'utf8');
-    assert.match(source, /PremiumSettingsHero/);
+    assert.match(source, /PremiumPage/);
+    assert.match(source, /variant="gradient"/);
+    assert.match(source, /fullWidth/);
     assert.doesNotMatch(source, /#[0-9a-f]{3,8}|rgba?\s*\(/i);
   }
   const legal = fs.readFileSync(path.join(root, 'components/legal/LegalDocumentScreen.tsx'), 'utf8');
   const referral = fs.readFileSync(path.join(root, 'hooks/useReferral.ts'), 'utf8');
   const flows = fs.readFileSync(path.join(root, 'services/userFlowService.ts'), 'utf8');
   const mobileApi = fs.readFileSync(path.resolve(root, '../../services/api/src/modules/mobile/mobile.routes.ts'), 'utf8');
-  assert.match(legal, /PremiumSettingsHero/);
+  assert.match(legal, /PremiumPage/);
+  assert.match(legal, /title="Try again" variant="gradient" size="lg" fullWidth/);
   assert.match(referral, /\/v1\/mobile\/referrals\/profile/);
   assert.match(referral, /\/v1\/mobile\/referrals\/share/);
   assert.match(flows, /\/v1\/mobile\/ratings/);

@@ -3,27 +3,29 @@ import { Platform, TextInput, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
-import { SettingsScaffold } from '../../components/layout/SettingsScaffold';
+import { PremiumPage } from '../../components/feed';
 import { CustomText } from '../../components/CustomText';
 import { useAppTheme } from '../../util/colorScheme';
 import { makeStyles } from '../../styles/makeStyles';
 import { AppButton } from '../../components/ui/AppButton';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
-import { FadeIn } from '../../components/ui/FadeIn';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import { createAppRating } from '../../services/userFlowService';
 import { useToast } from '../../context/ToastContext';
 import { openExternalUrl } from '../../util/externalLinks';
-import { PremiumSettingsHero } from '../../components/layout/PremiumSettingsHero';
-import { SectionLabel } from '../../components/feed';
 import { useAppContext } from '../../context/AppContext';
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const useStyles = makeStyles((theme) => ({
-  sectionGap:    { gap: theme.spacing.sm },
-  ratingCard:    { padding: theme.spacing.xl },
+  intro: { padding: theme.spacing.xl, gap: 10 },
+  eyebrow: { color: theme.colors.primary, textTransform: 'uppercase', letterSpacing: 1 },
+  introBody: { color: theme.colors.textSecondary, lineHeight: 22 },
+  steps: { flexDirection: 'row', gap: 8, marginTop: 4 },
+  step: { flex: 1, height: 3, borderRadius: 3, backgroundColor: theme.colors.border },
+  stepActive: { backgroundColor: theme.colors.primary },
+  ratingCard:    { padding: theme.spacing.lg, gap: 14 },
   ratingIntro:   { flexDirection: 'row', alignItems: 'center', gap: 12 },
   ratingIcon:    { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.warningSurface, borderWidth: 1, borderColor: theme.colors.warningBorder },
   ratingCopy:    { flex: 1 },
@@ -34,7 +36,7 @@ const useStyles = makeStyles((theme) => ({
   scoreRow:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 },
   scoreCaption:  { color: theme.colors.textSecondary },
   scoreValue:    { color: theme.colors.warning, fontWeight: '800' },
-  noteCard:      { padding: theme.spacing.lg },
+  noteCard:      { padding: theme.spacing.lg, gap: 14 },
   noteHeading:   { color: theme.colors.text },
   noteBody:      { color: theme.colors.textSecondary, marginTop: 6 },
   textInput: {
@@ -107,20 +109,15 @@ export default function Rate() {
   };
 
   return (
-    <SettingsScaffold
-      title="Rate & Review"
-      subtitle="Share your experience and help improve the app."
-      icon="star-rate"
-      hero={
-        <FadeIn>
-          <PremiumSettingsHero eyebrow="Your voice matters" kicker="Product feedback" title="Help shape a better worship experience." description="Your rating is recorded by the ClaudyGod product team and helps us improve playback, navigation, accessibility, and reliability." badge="Private product feedback" badgeIcon="lock" />
-        </FadeIn>
-      }
-    >
-      <FadeIn delay={70}>
-        <View style={styles.sectionGap}>
-        <SectionLabel title="Your rating" accent="One quick step" />
+    <PremiumPage title="Rate & Review" eyebrow="Your voice matters" subtitle="A private, verified product-feedback flow">
+      <SurfaceCard tone="strong" style={styles.intro}>
+        <CustomText variant="caption" style={styles.eyebrow}>Private product feedback</CustomText>
+        <CustomText variant="display">Help shape a better worship experience.</CustomText>
+        <CustomText variant="body" style={styles.introBody}>Your rating is recorded by the ClaudyGod product team and helps improve playback, navigation, accessibility, and reliability.</CustomText>
+        <View style={styles.steps}>{[true, rating > 0, comment.trim().length > 0].map((active, index) => <View key={index} style={[styles.step, active && styles.stepActive]} />)}</View>
+      </SurfaceCard>
         <SurfaceCard tone="subtle" style={styles.ratingCard}>
+          <CustomText variant="heading" style={styles.ratingHeading}>1. Select your rating</CustomText>
           <View style={styles.ratingIntro}>
             <View style={styles.ratingIcon}><MaterialIcons name="star" size={22} color={theme.colors.warning} /></View>
             <View style={styles.ratingCopy}><CustomText variant="heading" style={styles.ratingHeading}>How does ClaudyGod feel today?</CustomText><CustomText variant="caption" style={styles.scoreCaption}>Choose from 1 to 5 stars</CustomText></View>
@@ -138,14 +135,9 @@ export default function Rate() {
           </View>
           <View style={styles.scoreRow}><CustomText variant="caption" style={styles.scoreCaption}>{scoreLabel}</CustomText><CustomText variant="label" style={styles.scoreValue}>{rating ? `${rating}.0 / 5` : '— / 5'}</CustomText></View>
         </SurfaceCard>
-        </View>
-      </FadeIn>
 
-      <FadeIn delay={110}>
-        <View style={styles.sectionGap}>
-        <SectionLabel title="Add context" accent="Optional" />
         <SurfaceCard tone="subtle" style={styles.noteCard}>
-          <CustomText variant="heading" style={styles.noteHeading}>Optional note</CustomText>
+          <CustomText variant="heading" style={styles.noteHeading}>2. Add context</CustomText>
           <CustomText variant="body" style={styles.noteBody}>
             Share what worked well or what needs improvement.
           </CustomText>
@@ -163,6 +155,8 @@ export default function Rate() {
           <View style={styles.btnsGap}>
             <AppButton
               title="Continue"
+              variant="gradient"
+              size="lg"
               loading={submitting}
               loadingLabel="Saving"
               disabled={rating === 0 || submitting}
@@ -172,13 +166,12 @@ export default function Rate() {
             <AppButton
               title="Open support instead"
               variant="secondary"
+              size="lg"
               onPress={() => router.push(feedbackRoute as never)}
               fullWidth
             />
           </View>
         </SurfaceCard>
-        </View>
-      </FadeIn>
-    </SettingsScaffold>
+    </PremiumPage>
   );
 }

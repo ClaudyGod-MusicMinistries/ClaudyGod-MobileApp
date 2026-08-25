@@ -2,38 +2,41 @@ import React, { useMemo } from 'react';
 import { View, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 
-import { SettingsScaffold } from '../../components/layout/SettingsScaffold';
+import { PremiumPage } from '../../components/feed';
 import { CustomText } from '../../components/CustomText';
 import { useAppTheme } from '../../util/colorScheme';
 import { makeStyles } from '../../styles/makeStyles';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
-import { FadeIn } from '../../components/ui/FadeIn';
 import { TVTouchable } from '../../components/ui/TVTouchable';
 import { AppButton } from '../../components/ui/AppButton';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import { APP_ROUTES } from '../../util/appRoutes';
 import { useRouter } from 'expo-router';
 import { openExternalUrl } from '../../util/externalLinks';
-import { PremiumSettingsHero } from '../../components/layout/PremiumSettingsHero';
-import { SectionLabel } from '../../components/feed';
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const useStyles = makeStyles((theme) => ({
+  intro: { padding: theme.spacing.xl, gap: 10 },
+  eyebrow: { color: theme.colors.primary, textTransform: 'uppercase', letterSpacing: 1 },
+  introBody: { color: theme.colors.textSecondary, lineHeight: 22 },
   statsRow:      { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: theme.spacing.lg },
   statCard:      { borderRadius: theme.radius.lg, borderWidth: 1, borderColor: theme.colors.primaryBorder, backgroundColor: theme.colors.primarySurface, padding: theme.spacing.md },
   statValue:     { color: theme.colors.text },
   statLabel:     { color: theme.colors.textSecondary, marginTop: 2 },
 
+  card:          { padding: theme.spacing.lg, gap: 14 },
+  sectionTitle:  { color: theme.colors.text },
+  sectionBody:   { color: theme.colors.textSecondary, lineHeight: 20 },
   chipsRow:      { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   chipCard:      { padding: theme.spacing.md, flexDirection: 'row', alignItems: 'center', gap: 10 },
-  chipIconBox:   { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: `${theme.colors.primary}1A` },
+  chipIconBox:   { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.primarySurface },
   chipLabel:     { color: theme.colors.text, flex: 1 },
 
   focusPad:      { padding: theme.spacing.lg },
   focusHeading:  { color: theme.colors.text },
   focusBody:     { color: theme.colors.textSecondary, marginTop: 8 },
-  focusBtnRow:   { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 16 },
+  focusBtnRow:   { gap: 10, marginTop: 4 },
 
   teamGap:       { gap: theme.spacing.sm },
   teamHeading:   { color: theme.colors.text },
@@ -45,7 +48,7 @@ const useStyles = makeStyles((theme) => ({
   socialGap:     { gap: theme.spacing.sm },
   socialHeading: { color: theme.colors.text },
   socialCard:    { padding: theme.spacing.md, flexDirection: 'row', alignItems: 'center', gap: 12 },
-  socialIconBox: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: `${theme.colors.primary}1A` },
+  socialIconBox: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.primarySurface },
   socialLabel:   { color: theme.colors.text, flex: 1 },
 
   versionPad:    { padding: theme.spacing.md },
@@ -71,20 +74,11 @@ export default function About() {
   const versionLabel = aboutConfig?.versionLabel ?? '';
 
   return (
-    <SettingsScaffold
-      title="About ClaudyGod"
-      subtitle="The mission, experience, and ways to connect."
-      icon="info-outline"
-      hero={
-        <FadeIn>
-          <PremiumSettingsHero
-            eyebrow="Our ministry"
-            kicker="Purpose-led digital worship"
-            title="Worship, teaching, and live moments made simple."
-            description="ClaudyGod brings music, video, live broadcasts, saved content, and support into one thoughtful experience across mobile, web, tablet, and TV."
-            badge="Built for worship without limits"
-            badgeIcon="favorite"
-          >
+    <PremiumPage title="About ClaudyGod" eyebrow="Our ministry" subtitle="The mission, experience, and ways to connect">
+          <SurfaceCard tone="strong" style={styles.intro}>
+            <CustomText variant="caption" style={styles.eyebrow}>Purpose-led digital worship</CustomText>
+            <CustomText variant="display">Worship, teaching, and live moments made simple.</CustomText>
+            <CustomText variant="body" style={styles.introBody}>ClaudyGod brings music, video, live broadcasts, saved content, and support into one thoughtful experience across mobile, web, tablet, and TV.</CustomText>
             {stats.length ? (
               <View style={styles.statsRow}>
                 {stats.map((item) => (
@@ -102,13 +96,11 @@ export default function About() {
                 ))}
               </View>
             ) : null}
-          </PremiumSettingsHero>
-        </FadeIn>
-      }
-    >
+          </SurfaceCard>
       {chips.length ? (
-        <FadeIn delay={70}>
-          <SectionLabel title="The experience" accent="Designed for you" />
+        <SurfaceCard tone="subtle" style={styles.card}>
+          <CustomText variant="heading" style={styles.sectionTitle}>1. The experience</CustomText>
+          <CustomText variant="body" style={styles.sectionBody}>Designed around the ways people worship, watch, read, and stay connected.</CustomText>
           <View style={styles.chipsRow}>
             {chips.map((chip) => (
               <SurfaceCard
@@ -125,28 +117,25 @@ export default function About() {
               </SurfaceCard>
             ))}
           </View>
-        </FadeIn>
+        </SurfaceCard>
       ) : null}
 
-      <FadeIn delay={110}>
-        <SectionLabel title="Our focus" accent="Why we build" />
-        <SurfaceCard tone="subtle" style={styles.focusPad}>
+        <SurfaceCard tone="subtle" style={[styles.focusPad, styles.card]}>
+          <CustomText variant="heading" style={styles.sectionTitle}>2. Our focus</CustomText>
           <CustomText variant="body" style={styles.focusBody}>
             Make worship and ministry content easy to discover, easy to play, and easy to return to whenever users need it.
           </CustomText>
           <View style={styles.focusBtnRow}>
-            <AppButton title="Explore music" onPress={() => router.push(APP_ROUTES.tabs.player)} />
-            <AppButton title="Watch videos" variant="secondary" onPress={() => router.push(APP_ROUTES.tabs.videos)} />
+            <AppButton title="Explore music" variant="gradient" size="lg" fullWidth onPress={() => router.push(APP_ROUTES.tabs.player)} />
+            <AppButton title="Watch videos" variant="secondary" size="lg" fullWidth onPress={() => router.push(APP_ROUTES.tabs.videos)} />
           </View>
         </SurfaceCard>
-      </FadeIn>
 
       {team.length ? (
-        <FadeIn delay={150}>
-          <View style={styles.teamGap}>
-            <SectionLabel title="Team" accent="People behind the mission" />
+          <SurfaceCard tone="subtle" style={styles.card}>
+            <CustomText variant="heading" style={styles.sectionTitle}>3. People behind the mission</CustomText>
             {team.map((member) => (
-              <SurfaceCard key={member.name} tone="subtle" style={styles.memberPad}>
+              <View key={member.name} style={styles.memberPad}>
                 <CustomText variant="label" style={styles.memberName}>
                   {member.name}
                 </CustomText>
@@ -156,19 +145,18 @@ export default function About() {
                 <CustomText variant="caption" style={styles.memberDesc}>
                   {member.desc}
                 </CustomText>
-              </SurfaceCard>
+              </View>
             ))}
-          </View>
-        </FadeIn>
+          </SurfaceCard>
       ) : null}
 
       {socials.length ? (
-        <FadeIn delay={190}>
-          <View style={styles.socialGap}>
-            <SectionLabel title="Connect" accent="Stay close" />
+          <SurfaceCard tone="strong" style={styles.card}>
+            <CustomText variant="heading" style={styles.sectionTitle}>4. Connect with ClaudyGod</CustomText>
+            <CustomText variant="body" style={styles.sectionBody}>Open an official channel below.</CustomText>
             {socials.map((item) => (
               <TVTouchable key={item.label} onPress={() => void openExternalUrl(item.url)} showFocusBorder={false}>
-                <SurfaceCard tone="subtle" style={styles.socialCard}>
+                <View style={styles.socialCard}>
                   <View style={styles.socialIconBox}>
                     <MaterialIcons name={item.icon as React.ComponentProps<typeof MaterialIcons>['name']} size={18} color={theme.colors.primary} />
                   </View>
@@ -176,22 +164,19 @@ export default function About() {
                     {item.label}
                   </CustomText>
                   <MaterialIcons name="open-in-new" size={18} color={theme.colors.textSecondary} />
-                </SurfaceCard>
+                </View>
               </TVTouchable>
             ))}
-          </View>
-        </FadeIn>
+          </SurfaceCard>
       ) : null}
 
       {versionLabel ? (
-        <FadeIn delay={230}>
           <SurfaceCard tone="subtle" style={styles.versionPad}>
             <CustomText variant="caption" style={styles.versionText}>
               {versionLabel}
             </CustomText>
           </SurfaceCard>
-        </FadeIn>
       ) : null}
-    </SettingsScaffold>
+    </PremiumPage>
   );
 }
