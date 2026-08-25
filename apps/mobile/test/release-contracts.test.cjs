@@ -14,6 +14,7 @@ test('every active static route has a matching Expo Router file', () => {
     'app/(tabs)/videos.tsx', 'app/(tabs)/live.tsx', 'app/(tabs)/search.tsx',
     'app/(tabs)/settings.tsx', 'app/(tabs)/library.tsx',
     'app/settingsPage/Privacy.tsx', 'app/settingsPage/Donate.tsx',
+    'app/settingsPage/PrivacyPolicy.tsx', 'app/settingsPage/Terms.tsx',
     'app/settingsPage/Payment.tsx', 'app/settingsPage/help.tsx',
     'app/settingsPage/About.tsx', 'app/settingsPage/Rate.tsx',
     'app/settingsPage/Word.tsx', 'app/settingsPage/Referral.tsx',
@@ -24,11 +25,92 @@ test('every active static route has a matching Expo Router file', () => {
   }
 });
 
+test('giving and legal workflows are backend-authoritative', () => {
+  const giving = fs.readFileSync(path.join(root, 'app/settingsPage/Donate.tsx'), 'utf8');
+  const privacy = fs.readFileSync(path.join(root, 'app/settingsPage/Privacy.tsx'), 'utf8');
+  const legal = fs.readFileSync(path.join(root, 'components/legal/LegalDocumentScreen.tsx'), 'utf8');
+  assert.match(giving, /createPublicDonationIntent\(/);
+  assert.match(giving, /A request is not a completed payment|not a completed payment/i);
+  assert.doesNotMatch(giving, /All transactions are encrypted|impactBreakdown/);
+  assert.match(privacy, /isAuthenticated/);
+  assert.match(privacy, /APP_ROUTES\.settingsPages\.privacyPolicy/);
+  assert.match(privacy, /APP_ROUTES\.settingsPages\.terms/);
+  assert.doesNotMatch(privacy, /\/legal\/privacy|\/legal\/terms/);
+  assert.match(legal, /fetchLegalDocument\(documentId\)/);
+  assert.match(legal, /effectiveDate/);
+  assert.match(legal, /version/);
+});
+
+test('giving typography and controls are theme-token driven in both schemes', () => {
+  const giving = fs.readFileSync(path.join(root, 'app/settingsPage/Donate.tsx'), 'utf8');
+  const typography = fs.readFileSync(path.join(root, 'components/CustomText.tsx'), 'utf8');
+  assert.doesNotMatch(giving, /#[0-9a-f]{3,8}|rgba?\s*\(/i);
+  assert.match(giving, /controlSelectedSurface/);
+  assert.match(giving, /controlSelectedText/);
+  assert.match(giving, /controlSelectedBorder/);
+  assert.match(typography, /color:\s*theme\.colors\.text/);
+});
+
+test('help support is guest-capable, trackable, backend-configured, and token driven', () => {
+  const help = fs.readFileSync(path.join(root, 'app/settingsPage/help.tsx'), 'utf8');
+  assert.doesNotMatch(help, /isAuthenticated|Sign in to continue|useAuth/);
+  assert.match(help, /createGuestSupportRequest\(/);
+  assert.match(help, /fetchGuestSupportRequestStatuses\(/);
+  assert.match(help, /saveGuestSupportState\(/);
+  assert.match(help, /config\?\.help\.contact/);
+  assert.match(help, /config\?\.help\.faqs/);
+  assert.match(help, /controlSelectedSurface/);
+  assert.match(help, /response\.ticket\.id/);
+  assert.doesNotMatch(help, /#[0-9a-f]{3,8}|rgba?\s*\(/i);
+});
+
 test('root navigation does not force a launch delay or replace navigation offline', () => {
   const source = fs.readFileSync(path.join(root, 'app/_layout.tsx'), 'utf8');
   assert.doesNotMatch(source, /2200/);
   assert.doesNotMatch(source, /return\s+<OfflineScreen/);
   assert.match(source, /OfflineBanner/);
+});
+
+test('one root authentication provider covers every navigation branch', () => {
+  const rootLayout = fs.readFileSync(path.join(root, 'app/_layout.tsx'), 'utf8');
+  assert.equal((rootLayout.match(/<AuthProvider>/g) ?? []).length, 1);
+  assert.equal((rootLayout.match(/<\/AuthProvider>/g) ?? []).length, 1);
+  assert.ok(rootLayout.indexOf('<AuthProvider>') < rootLayout.indexOf('<RootLayoutInner />'));
+  assert.match(rootLayout, /import \{ AuthProvider \} from '\.\.\/features\/auth\/AuthContext'/);
+});
+
+test('settings route registry exposes native privacy policy and terms destinations', () => {
+  const routes = fs.readFileSync(path.join(root, 'util/appRoutes.ts'), 'utf8');
+  const service = fs.readFileSync(path.join(root, 'services/userFlowService.ts'), 'utf8');
+  assert.match(routes, /'settings\.privacyPolicy': APP_ROUTES\.settingsPages\.privacyPolicy/);
+  assert.match(routes, /'settings\.terms': APP_ROUTES\.settingsPages\.terms/);
+  assert.match(service, /'settings\.privacyPolicy'/);
+  assert.match(service, /'settings\.terms'/);
+  const settings = fs.readFileSync(path.join(root, 'app/(tabs)/settings.tsx'), 'utf8');
+  assert.match(settings, /destination: 'settings\.privacyPolicy'/);
+  assert.match(settings, /destination: 'settings\.terms'/);
+});
+
+test('OAuth has one brokered identity path and stores only ClaudyGod sessions', () => {
+  const authService = fs.readFileSync(path.join(root, 'services/authService.ts'), 'utf8');
+  const storage = fs.readFileSync(path.join(root, 'lib/authSessionStorage.ts'), 'utf8');
+  const supabaseClient = fs.readFileSync(path.join(root, 'lib/supabase.ts'), 'utf8');
+  const signIn = fs.readFileSync(path.join(root, 'features/auth/sign-in.tsx'), 'utf8');
+  const apiApp = fs.readFileSync(path.resolve(root, '../../services/api/src/app.ts'), 'utf8');
+  const broker = fs.readFileSync(path.resolve(root, '../../services/api/src/modules/auth/oauthBroker.routes.ts'), 'utf8');
+  assert.match(authService, /maybeCompleteAuthSession\(\)/);
+  assert.match(authService, /signInWithOAuth/);
+  assert.match(authService, /\/v1\/auth\/oauth\/exchange/);
+  assert.match(authService, /loginMobileUserWithApple/);
+  assert.doesNotMatch(authService, /facebook/i);
+  assert.match(storage, /SecureStore\.setItemAsync/);
+  assert.match(supabaseClient, /flowType:\s*'pkce'/);
+  assert.match(signIn, /fetchOAuthProviderAvailability/);
+  assert.match(signIn, /oauthProviders\.apple/);
+  assert.match(apiApp, /oauthBrokerRouter/);
+  assert.match(broker, /authenticate/);
+  assert.match(broker, /issueAuthSession/);
+  assert.equal(fs.existsSync(path.resolve(root, '../../services/api/src/modules/auth/oauth.service.ts')), false);
 });
 
 test('shared entrance motion honors reduced-motion preferences', () => {
@@ -37,17 +119,51 @@ test('shared entrance motion honors reduced-motion preferences', () => {
   assert.match(source, /if \(reduceMotion\)/);
 });
 
-test('library is explicitly device-local until authentication is implemented', () => {
-  const layout = fs.readFileSync(path.join(root, 'app/_layout.tsx'), 'utf8');
+test('modal presentation is restricted to approved design-system primitives', () => {
+  const approved = new Set([
+    'components/ui/BottomSheet.tsx',
+    'components/ui/ConfirmModal.tsx',
+    'components/modals/WordOfDayModal.tsx',
+  ]);
+  const sourceRoot = path.join(root, 'components');
+  const visit = (directory) => fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const absolute = path.join(directory, entry.name);
+    if (entry.isDirectory()) return visit(absolute);
+    if (!entry.name.endsWith('.tsx')) return [];
+    const source = fs.readFileSync(absolute, 'utf8');
+    return /<Modal\b/.test(source) ? [path.relative(root, absolute)] : [];
+  });
+  assert.deepEqual(new Set(visit(sourceRoot)), approved);
+
+  const provider = fs.readFileSync(path.join(root, 'context/AppModalContext.tsx'), 'utf8');
+  assert.match(provider, /<ConfirmModal/);
+  assert.match(provider, /brandMark/);
+});
+
+test('library uses authenticated backend state with a guest and offline device cache', () => {
   const libraryContext = fs.readFileSync(path.join(root, 'context/LocalContentContext.tsx'), 'utf8');
   const downloadsContext = fs.readFileSync(path.join(root, 'context/DownloadsContext.tsx'), 'utf8');
-  assert.doesNotMatch(layout, /<UserAccountProvider>/);
+  assert.match(libraryContext, /getStoredMobileSession\(\)/);
+  assert.match(libraryContext, /fetchMeLibrary\(\)/);
+  assert.match(libraryContext, /fetchMeRecentlyPlayed\(100\)/);
+  assert.match(libraryContext, /saveMeLibraryItem\(/);
+  assert.match(libraryContext, /removeMeLibraryItem\(/);
+  assert.match(libraryContext, /guestOnlyFavorites/);
   assert.match(libraryContext, /getFavorites\(\)/);
   assert.match(libraryContext, /addFavorite\(item\)/);
   assert.match(libraryContext, /addHistory\(item\)/);
-  assert.doesNotMatch(libraryContext, /fetchMeLibrary|saveMeLibraryItem|removeMeLibraryItem/);
   assert.match(downloadsContext, /getDownloads\(\)/);
+  // Physical file URIs are sandbox-local and must never be persisted as if
+  // another device or the backend could access them.
   assert.doesNotMatch(downloadsContext, /saveMeLibraryItem|removeMeLibraryItem/);
+});
+
+test('authenticated settings require backend acknowledgement and retain a local offline cache', () => {
+  const settings = fs.readFileSync(path.join(root, 'app/(tabs)/settings.tsx'), 'utf8');
+  assert.match(settings, /fetchMePreferences\(\)/);
+  assert.match(settings, /updateMePreferences\(/);
+  assert.match(settings, /getStoredMobileSession\(\)/);
+  assert.match(settings, /setPreference\(/);
 });
 
 test('store builds declare every sensitive native permission with purpose-specific copy', () => {

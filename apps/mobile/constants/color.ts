@@ -47,6 +47,17 @@ export const colors = {
     textInverse:    '#FFFFFF',
     onPrimary:      '#FFFFFF',
 
+    // ── Interactive controls ────────────────────────────────────────────────
+    // These are deliberately separate from the decorative brand palette.
+    // Form selection must retain WCAG-readable foreground/background contrast.
+    controlSurface:            '#FFFFFF',
+    controlBorder:             'rgba(0,0,0,0.16)',
+    controlText:               '#4A4A4A',
+    controlSelectedSurface:    '#6D28D9',
+    controlSelectedBorder:     '#6D28D9',
+    controlSelectedText:       '#FFFFFF',
+    controlSelectedIconSurface:'rgba(255,255,255,0.16)',
+
     // ── Brand / semantic ──────────────────────────────────────────────────────
     primary:      '#7C3AED',
     secondary:    '#5B51E8',
@@ -129,6 +140,15 @@ export const colors = {
     text_accent:    '#DDD3FF',
     textInverse:    '#111114',
     onPrimary:      '#FFFFFF',
+
+    // ── Interactive controls ────────────────────────────────────────────────
+    controlSurface:            '#121216',
+    controlBorder:             'rgba(255,255,255,0.18)',
+    controlText:               '#FAFAFA',
+    controlSelectedSurface:    '#6D28D9',
+    controlSelectedBorder:     '#A78BFA',
+    controlSelectedText:       '#FFFFFF',
+    controlSelectedIconSurface:'rgba(255,255,255,0.16)',
 
     // ── Brand / semantic ──────────────────────────────────────────────────────
     primary:      '#8B5CF6',

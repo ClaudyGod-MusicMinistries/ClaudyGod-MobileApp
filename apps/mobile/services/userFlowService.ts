@@ -3,6 +3,20 @@ import { apiFetchWithMobileSession } from './authService';
 
 type JsonRecord = Record<string, unknown>;
 
+export interface LegalDocument {
+  id: 'privacy' | 'terms';
+  title: string;
+  summary: string;
+  version: string;
+  effectiveDate: string;
+  contactEmail: string;
+  sections: { title: string; paragraphs: string[]; bullets?: string[] }[];
+}
+
+export async function fetchLegalDocument(documentId: LegalDocument['id']) {
+  return apiFetch<{ document: LegalDocument }>(`/v1/mobile/legal/${documentId}`);
+}
+
 export interface MeProfile {
   id: string;
   email: string;
@@ -175,6 +189,8 @@ export interface MobileAppExperienceConfig {
           | 'tabs.settings'
           | 'profile'
           | 'settings.privacy'
+          | 'settings.privacyPolicy'
+          | 'settings.terms'
           | 'settings.donate'
           | 'settings.help'
           | 'settings.about'
@@ -402,15 +418,46 @@ export async function createSupportRequest(input: {
   });
 }
 
+export type SupportTicketSummary = {
+  id: string;
+  category: string;
+  subject: string;
+  status: string;
+  priority: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export async function fetchMeSupportRequests() {
+  return apiFetchWithMobileSession<{ tickets: SupportTicketSummary[] }>('/v1/me/support-requests');
+}
+
+export async function createGuestSupportRequest(input: {
+  deviceId: string; contactEmail: string; category: string; subject: string; message: string;
+}) {
+  return apiFetch<{ ticket: { id: string; status: string; createdAt: string; trackingToken: string } }>('/v1/mobile/support-requests', {
+    method: 'POST', body: JSON.stringify(input),
+  });
+}
+
+export async function fetchGuestSupportRequestStatuses(input: {
+  deviceId: string; tickets: { id: string; trackingToken: string }[];
+}) {
+  return apiFetch<{ tickets: SupportTicketSummary[] }>('/v1/mobile/support-requests/status', {
+    method: 'POST', body: JSON.stringify(input),
+  });
+}
+
 export async function createAppRating(input: {
   rating: number;
+  deviceId: string;
   comment?: string;
   channel?: 'mobile' | 'admin' | 'web';
   metadata?: JsonRecord;
 }) {
-  return apiFetchWithMobileSession<{
+  return apiFetch<{
     rating: { id: string; value: number; createdAt: string };
-  }>('/v1/me/ratings', {
+  }>('/v1/mobile/ratings', {
     method: 'POST',
     body: JSON.stringify({ channel: 'mobile', ...input }),
   });

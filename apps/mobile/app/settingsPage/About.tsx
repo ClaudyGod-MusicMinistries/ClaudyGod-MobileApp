@@ -14,17 +14,14 @@ import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import { APP_ROUTES } from '../../util/appRoutes';
 import { useRouter } from 'expo-router';
 import { openExternalUrl } from '../../util/externalLinks';
+import { PremiumSettingsHero } from '../../components/layout/PremiumSettingsHero';
+import { SectionLabel } from '../../components/feed';
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const useStyles = makeStyles((theme) => ({
-  heroPad:       { padding: theme.spacing.xl, marginBottom: theme.spacing.lg },
-  heroMaxW:      { maxWidth: 720 },
-  heroEyebrow:   { color: theme.colors.primary, textTransform: 'uppercase', letterSpacing: 0.9 },
-  heroDisplay:   { color: theme.colors.text, marginTop: 8 },
-  heroBody:      { color: theme.colors.textSecondary, marginTop: 10 },
   statsRow:      { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: theme.spacing.lg },
-  statCard:      { borderRadius: theme.radius.lg, borderWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.surface, padding: theme.spacing.md },
+  statCard:      { borderRadius: theme.radius.lg, borderWidth: 1, borderColor: theme.colors.primaryBorder, backgroundColor: theme.colors.primarySurface, padding: theme.spacing.md },
   statValue:     { color: theme.colors.text },
   statLabel:     { color: theme.colors.textSecondary, marginTop: 2 },
 
@@ -80,19 +77,14 @@ export default function About() {
       icon="info-outline"
       hero={
         <FadeIn>
-          <SurfaceCard tone="strong" style={styles.heroPad}>
-            <View style={styles.heroMaxW}>
-              <CustomText variant="caption" style={styles.heroEyebrow}>
-                Ministry experience
-              </CustomText>
-              <CustomText variant="display" style={styles.heroDisplay}>
-                Worship, teaching, and live moments made simple.
-              </CustomText>
-              <CustomText variant="body" style={styles.heroBody}>
-                ClaudyGod brings music, video, live broadcasts, saved content, and support into one clear experience across mobile, web, tablet, and TV.
-              </CustomText>
-            </View>
-
+          <PremiumSettingsHero
+            eyebrow="Our ministry"
+            kicker="Purpose-led digital worship"
+            title="Worship, teaching, and live moments made simple."
+            description="ClaudyGod brings music, video, live broadcasts, saved content, and support into one thoughtful experience across mobile, web, tablet, and TV."
+            badge="Built for worship without limits"
+            badgeIcon="favorite"
+          >
             {stats.length ? (
               <View style={styles.statsRow}>
                 {stats.map((item) => (
@@ -110,12 +102,13 @@ export default function About() {
                 ))}
               </View>
             ) : null}
-          </SurfaceCard>
+          </PremiumSettingsHero>
         </FadeIn>
       }
     >
       {chips.length ? (
         <FadeIn delay={70}>
+          <SectionLabel title="The experience" accent="Designed for you" />
           <View style={styles.chipsRow}>
             {chips.map((chip) => (
               <SurfaceCard
@@ -136,10 +129,8 @@ export default function About() {
       ) : null}
 
       <FadeIn delay={110}>
+        <SectionLabel title="Our focus" accent="Why we build" />
         <SurfaceCard tone="subtle" style={styles.focusPad}>
-          <CustomText variant="heading" style={styles.focusHeading}>
-            Our focus
-          </CustomText>
           <CustomText variant="body" style={styles.focusBody}>
             Make worship and ministry content easy to discover, easy to play, and easy to return to whenever users need it.
           </CustomText>
@@ -153,9 +144,7 @@ export default function About() {
       {team.length ? (
         <FadeIn delay={150}>
           <View style={styles.teamGap}>
-            <CustomText variant="heading" style={styles.teamHeading}>
-              Team
-            </CustomText>
+            <SectionLabel title="Team" accent="People behind the mission" />
             {team.map((member) => (
               <SurfaceCard key={member.name} tone="subtle" style={styles.memberPad}>
                 <CustomText variant="label" style={styles.memberName}>
@@ -176,9 +165,7 @@ export default function About() {
       {socials.length ? (
         <FadeIn delay={190}>
           <View style={styles.socialGap}>
-            <CustomText variant="heading" style={styles.socialHeading}>
-              Connect
-            </CustomText>
+            <SectionLabel title="Connect" accent="Stay close" />
             {socials.map((item) => (
               <TVTouchable key={item.label} onPress={() => void openExternalUrl(item.url)} showFocusBorder={false}>
                 <SurfaceCard tone="subtle" style={styles.socialCard}>

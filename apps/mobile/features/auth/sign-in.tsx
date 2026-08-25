@@ -14,7 +14,8 @@ import { getEmailValidationMessage, isLikelyValidEmail, normalizeEmail } from '.
 import {
   loginMobileUser,
   loginMobileUserWithGoogle,
-  loginMobileUserWithFacebook,
+  loginMobileUserWithApple,
+  fetchOAuthProviderAvailability,
   signInWithTrustedDeviceToken,
 } from '../../services/authService';
 import {
@@ -33,7 +34,7 @@ function SocialButton({
   onPress,
   disabled,
 }: {
-  provider: 'google' | 'facebook';
+  provider: 'google' | 'apple';
   onPress: () => void;
   disabled: boolean;
 }) {
@@ -64,25 +65,25 @@ function SocialButton({
           style={{
             width: 26, height: 26, borderRadius: 13,
             alignItems: 'center', justifyContent: 'center',
-            backgroundColor: '#FFFFFF',
+            backgroundColor: theme.colors.controlSurface,
           }}
         >
-          <FontAwesome name="google" size={14} color="#4285F4" />
+          <FontAwesome name="google" size={14} color={theme.colors.text} />
         </View>
       ) : (
-        /* Facebook F */
+        /* Apple identity */
         <View
           style={{
             width: 26, height: 26, borderRadius: 13,
             alignItems: 'center', justifyContent: 'center',
-            backgroundColor: '#1877F2',
+            backgroundColor: theme.colors.controlSurface,
           }}
         >
-          <FontAwesome name="facebook-f" size={14} color="#FFFFFF" />
+          <FontAwesome name="apple" size={16} color={theme.colors.text} />
         </View>
       )}
       <CustomText style={{ color: theme.colors.text, fontSize: 13, fontWeight: '600' }}>
-        {isGoogle ? 'Google' : 'Facebook'}
+        {isGoogle ? 'Google' : 'Apple'}
       </CustomText>
     </TVTouchable>
   );
@@ -112,7 +113,7 @@ export default function SignInScreen() {
   const [password, setPassword] = useState('');
   const [hidePassword, setHidePassword] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [socialLoading, setSocialLoading] = useState<'google' | 'facebook' | null>(null);
+  const [socialLoading, setSocialLoading] = useState<'google' | 'apple' | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
   const [trustSheetVisible, setTrustSheetVisible] = useState(false);
   const [trustSheetAccessToken, setTrustSheetAccessToken] = useState('');
@@ -120,10 +121,12 @@ export default function SignInScreen() {
   const [biometricType, setBiometricType] = useState<'face' | 'fingerprint' | 'none'>('none');
   const [hasTrustedToken, setHasTrustedToken] = useState(false);
   const [biometricLoading, setBiometricLoading] = useState(false);
+  const [oauthProviders, setOauthProviders] = useState({ google: false, apple: false });
 
   useEffect(() => {
     getBiometricType().then(setBiometricType);
     getTrustedDeviceToken().then((t) => setHasTrustedToken(t !== null));
+    fetchOAuthProviderAvailability().then(({ providers }) => setOauthProviders(providers)).catch(() => undefined);
   }, []);
 
   const normalizedEmail = normalizeEmail(email);
@@ -192,23 +195,23 @@ export default function SignInScreen() {
     }
   };
 
-  const handleSocialSignIn = async (provider: 'google' | 'facebook') => {
+  const handleSocialSignIn = async (provider: 'google' | 'apple') => {
     setErrorMessage('');
     setSocialLoading(provider);
     try {
       const session = provider === 'google'
         ? await loginMobileUserWithGoogle()
-        : await loginMobileUserWithFacebook();
+        : await loginMobileUserWithApple();
       if (session?.accessToken && biometricType !== 'none' && !hasTrustedToken) {
         showTrustSheet(session.accessToken, session.user?.displayName ?? '');
       } else {
         router.replace(APP_ROUTES.tabs.home);
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : `Unable to continue with ${provider === 'google' ? 'Google' : 'Facebook'} right now.`;
+      const message = error instanceof Error ? error.message : `Unable to continue with ${provider === 'google' ? 'Google' : 'Apple'} right now.`;
       setErrorMessage(message);
       showModal({
-        title: `${provider === 'google' ? 'Google' : 'Facebook'} sign-in unavailable`,
+        title: `${provider === 'google' ? 'Google' : 'Apple'} sign-in unavailable`,
         message,
         tone: 'error',
       });
@@ -322,20 +325,22 @@ export default function SignInScreen() {
         style={{ marginTop: 16 }}
       />
 
-      {/* Social auth — always visible */}
-      <OrDivider label="or continue with" />
+      {/* OAuth providers are visible only after the API verifies Supabase configuration. */}
+      {oauthProviders.google || oauthProviders.apple ? <><OrDivider label="or continue with" />
       <View style={{ flexDirection: 'row', gap: 12 }}>
+        {oauthProviders.google ? (
         <SocialButton
           provider="google"
           onPress={() => void handleSocialSignIn('google')}
           disabled={anyLoading}
-        />
+        />) : null}
+        {oauthProviders.apple ? (
         <SocialButton
-          provider="facebook"
-          onPress={() => void handleSocialSignIn('facebook')}
+          provider="apple"
+          onPress={() => void handleSocialSignIn('apple')}
           disabled={anyLoading}
-        />
-      </View>
+        />) : null}
+      </View></> : null}
 
       {/* Sign in with email code (passwordless) */}
       <TVTouchable

@@ -13,16 +13,17 @@ import { useAppTheme } from '../../util/colorScheme';
 import { makeStyles } from '../../styles/makeStyles';
 import { useReferral } from '../../hooks/useReferral';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
+import { PremiumSettingsHero } from '../../components/layout/PremiumSettingsHero';
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const useStyles = makeStyles((theme) => ({
   // CodeDisplay
-  codeCenterWrap:  { alignItems: 'center', paddingVertical: 24, gap: 12 },
+  codeCenterWrap:  { alignItems: 'center', paddingVertical: 22, gap: 10 },
   codePill: {
     backgroundColor: theme.colors.primarySurface,
     borderWidth: 1.5, borderColor: theme.colors.primaryBorder,
-    borderRadius: 16, paddingVertical: 14, paddingHorizontal: 28,
+    borderRadius: 18, paddingVertical: 16, paddingHorizontal: 24, width: '100%', justifyContent: 'space-between',
     flexDirection: 'row', alignItems: 'center', gap: 12,
   },
   codeText: {
@@ -35,30 +36,19 @@ const useStyles = makeStyles((theme) => ({
   shareBtn:        { shadowColor: theme.colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.30, shadowRadius: 10, elevation: 8 },
 
 
-  // Hero card
-  heroCard:        { overflow: 'hidden' },
-  heroPad:         { paddingTop: 20, paddingHorizontal: 20, paddingBottom: 4 },
-  heroTopRow:      { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 6 },
-  heroIconBox: {
-    width: 36, height: 36, borderRadius: 11,
-    backgroundColor: theme.colors.primarySurface,
-    borderWidth: 1, borderColor: theme.colors.primaryBorder,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  heroBadge:       { color: theme.colors.primary, fontSize: 10, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase' },
-  heroTitle:       { color: theme.colors.text, fontSize: 15, fontWeight: '700', marginTop: 1 },
-  heroBody:        { color: theme.colors.textSecondary, lineHeight: 19, marginBottom: 16 },
-  countStrip: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    paddingHorizontal: 20, paddingVertical: 12,
-    backgroundColor: theme.colors.primarySurface,
-    borderTopWidth: 1, borderTopColor: theme.colors.primaryBorder,
-  },
-  countText:       { color: theme.colors.text, fontSize: 13, fontWeight: '600' },
+  metricsRow: { flexDirection: 'row', gap: 10 },
+  metric: { flex: 1, padding: 13, borderRadius: 16, backgroundColor: theme.colors.subtleFill, borderWidth: 1, borderColor: theme.colors.border },
+  metricValue: { color: theme.colors.text, fontSize: 22, fontWeight: '800' },
+  metricLabel: { color: theme.colors.textSecondary, marginTop: 2 },
 
   // Cards padding
   loadingPad:      { padding: 40, alignItems: 'center' },
-  codePadCard:     { paddingHorizontal: 20, paddingBottom: 20 },
+  codePadCard:     { padding: 20 },
+  codeHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  codeIcon: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.primarySurface, borderWidth: 1, borderColor: theme.colors.primaryBorder },
+  codeHeaderCopy: { flex: 1 },
+  codeHeading: { color: theme.colors.text },
+  codeBody: { color: theme.colors.textSecondary, marginTop: 3 },
 
   // How it works
   howGap:          { gap: 12 },
@@ -91,8 +81,8 @@ const useStyles = makeStyles((theme) => ({
 // Mirrors the same defaults now configurable via admin's Mobile config → Referral.
 const DEFAULT_HOW_IT_WORKS = [
   { icon: 'share',      title: 'Share your link',     body: 'Send your unique referral link to friends and family.' },
-  { icon: 'person-add', title: 'Friend joins free',   body: 'They create a free ClaudyGod account — no payment needed.' },
-  { icon: 'stars',      title: 'Both of you benefit', body: 'You both unlock early access to exclusive worship content.' },
+  { icon: 'mobile-friendly', title: 'They open ClaudyGod', body: 'Your friend can explore the guest-first experience without being forced to create an account.' },
+  { icon: 'verified', title: 'Attribution stays accurate', body: 'The backend records eligible joins against your unique invitation code.' },
 ];
 
 const DEFAULT_REWARD_TIERS = [
@@ -131,7 +121,7 @@ function CodeDisplay({ code, isCopied, onCopy }: { code: string; isCopied: boole
 export default function ReferralScreen() {
   const styles = useStyles();
   const theme  = useAppTheme();
-  const { code, referralCount, isLoading, share, copyCode, isCopied } = useReferral();
+  const { code, referralCount, shareCount, isLoading, share, copyCode, isCopied } = useReferral();
   const { config } = useMobileAppConfig();
 
   const howItWorks = useMemo(() => {
@@ -145,6 +135,7 @@ export default function ReferralScreen() {
     return tiers.map((tier, idx) => ({
       icon: tier.icon,
       color: theme.colors[REWARD_TIER_PALETTE_KEYS[idx % REWARD_TIER_PALETTE_KEYS.length]!],
+      threshold: tier.threshold,
       label: `${tier.threshold} referral${tier.threshold === 1 ? '' : 's'}`,
       reward: tier.reward,
     }));
@@ -157,31 +148,12 @@ export default function ReferralScreen() {
       icon="card-giftcard"
       hero={
         <FadeIn>
-          <SurfaceCard tone="strong" style={styles.heroCard}>
-            <View style={styles.heroPad}>
-              <View style={styles.heroTopRow}>
-                <View style={styles.heroIconBox}>
-                  <MaterialIcons name="card-giftcard" size={18} color={theme.colors.primary} />
-                </View>
-                <View>
-                  <CustomText style={styles.heroBadge}>Referral Program</CustomText>
-                  <CustomText style={styles.heroTitle}>Invite &amp; earn rewards</CustomText>
-                </View>
-              </View>
-              <CustomText variant="subtitle" style={styles.heroBody}>
-                Share ClaudyGod with the people in your life. Every friend you invite gets free access — and you both unlock exclusive rewards.
-              </CustomText>
+          <PremiumSettingsHero eyebrow="Share the experience" kicker="Invite friends" title="Worship is better when it is shared." description="Send a secure ClaudyGod invitation to friends and family. They can begin with guest access, while eligible joins are attributed by the backend." badge="No sign-in required to share" badgeIcon="verified-user">
+            <View style={styles.metricsRow}>
+              <View style={styles.metric}><CustomText style={styles.metricValue}>{shareCount}</CustomText><CustomText variant="caption" style={styles.metricLabel}>Invites shared</CustomText></View>
+              <View style={styles.metric}><CustomText style={styles.metricValue}>{referralCount}</CustomText><CustomText variant="caption" style={styles.metricLabel}>Friends joined</CustomText></View>
             </View>
-
-            <View style={styles.countStrip}>
-              <MaterialIcons name="group" size={16} color={theme.colors.primary} />
-              <CustomText style={styles.countText}>
-                {referralCount === 0
-                  ? 'No referrals yet — start sharing!'
-                  : `${referralCount} friend${referralCount === 1 ? '' : 's'} joined through your link`}
-              </CustomText>
-            </View>
-          </SurfaceCard>
+          </PremiumSettingsHero>
         </FadeIn>
       }
     >
@@ -191,13 +163,14 @@ export default function ReferralScreen() {
         </SurfaceCard>
       ) : code ? (
         <SurfaceCard tone="strong" style={styles.codePadCard}>
+          <View style={styles.codeHeader}><View style={styles.codeIcon}><MaterialIcons name="link" size={20} color={theme.colors.primary} /></View><View style={styles.codeHeaderCopy}><CustomText variant="heading" style={styles.codeHeading}>Your invitation code</CustomText><CustomText variant="caption" style={styles.codeBody}>Issued and tracked securely by ClaudyGod</CustomText></View></View>
           <CodeDisplay code={code} isCopied={isCopied} onCopy={copyCode} />
           <AppButton
             title="Share your invite link"
             size="lg"
             fullWidth
             onPress={() => void share()}
-            leftIcon={<MaterialIcons name="share" size={18} color="#FFFFFF" />}
+            leftIcon={<MaterialIcons name="share" size={18} color={theme.colors.onPrimary} />}
             style={styles.shareBtn}
           />
         </SurfaceCard>
@@ -232,7 +205,7 @@ export default function ReferralScreen() {
                 <CustomText style={styles.rewardTier}>{reward.label}</CustomText>
                 <CustomText style={styles.rewardName}>{reward.reward}</CustomText>
               </View>
-              <MaterialIcons name="lock-outline" size={16} color={theme.colors.textMuted} />
+              <MaterialIcons name={referralCount >= reward.threshold ? 'check-circle' : 'lock-outline'} size={17} color={referralCount >= reward.threshold ? theme.colors.success : theme.colors.textMuted} />
             </SurfaceCard>
           ))}
         </View>

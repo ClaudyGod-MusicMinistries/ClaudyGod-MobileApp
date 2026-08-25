@@ -27,6 +27,7 @@ import { usePushNotifications } from '../hooks/usePushNotify';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { OfflineBanner } from '../components/OfflineBanner';
 import { useReducedMotion } from '../hooks/useReducedMotion';
+import { AuthProvider } from '../features/auth/AuthContext';
 
 // Global unhandled JS error handler — active in production builds only.
 if (!__DEV__) {
@@ -124,19 +125,21 @@ function RootLayout() {
               <ErrorBoundary context="the app">
                 <ToastProvider>
                   <AppProvider>
-                    <LocalContentProvider>
-                      <DownloadsProvider>
-                        <PlayerProgressProvider>
-                        <PlayerProvider>
-                          <WordOfDayProvider>
-                            <AppModalProvider>
-                              <RootLayoutInner />
-                            </AppModalProvider>
-                          </WordOfDayProvider>
-                        </PlayerProvider>
-                        </PlayerProgressProvider>
-                      </DownloadsProvider>
-                    </LocalContentProvider>
+                    <AuthProvider>
+                      <LocalContentProvider>
+                        <DownloadsProvider>
+                          <PlayerProgressProvider>
+                          <PlayerProvider>
+                            <WordOfDayProvider>
+                              <AppModalProvider>
+                                <RootLayoutInner />
+                              </AppModalProvider>
+                            </WordOfDayProvider>
+                          </PlayerProvider>
+                          </PlayerProgressProvider>
+                        </DownloadsProvider>
+                      </LocalContentProvider>
+                    </AuthProvider>
                   </AppProvider>
                 </ToastProvider>
               </ErrorBoundary>

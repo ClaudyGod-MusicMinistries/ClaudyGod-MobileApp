@@ -18,6 +18,8 @@ import { getSettingsHubSections } from '../../util/mobileExperienceConfig';
 import { getPreference, setPreference } from '../../lib/localUserStorage';
 import { setDiagnosticsAllowed } from '../../lib/sentry';
 import { PremiumPage } from '../../components/feed';
+import { getStoredMobileSession } from '../../services/authService';
+import { fetchMePreferences, updateMePreferences, type MePreferences } from '../../services/userFlowService';
 
 type TogglePreferenceKey = 'notificationsEnabled' | 'autoplayEnabled' | 'highQualityEnabled' | 'personalizationEnabled' | 'diagnosticsEnabled';
 
@@ -49,6 +51,16 @@ const DEFAULT_QUICK_ACCESS_SECTIONS: {
       { id: 'referral', icon: 'card-giftcard', label: 'Invite friends', hint: 'Earn rewards together', destination: 'settings.referral' },
       { id: 'help', icon: 'help-outline', label: 'Help', hint: 'Get support', destination: 'settings.help' },
       { id: 'donate', icon: 'volunteer-activism', label: 'Support', hint: 'Give or donate', destination: 'settings.donate' },
+    ],
+  },
+  {
+    id: 'product-legal', title: '',
+    items: [
+      { id: 'privacy-controls', icon: 'privacy-tip', label: 'Privacy & security', hint: 'Manage privacy controls', destination: 'settings.privacy' },
+      { id: 'privacy-policy', icon: 'policy', label: 'Privacy Policy', hint: 'How ClaudyGod handles data', destination: 'settings.privacyPolicy' },
+      { id: 'terms', icon: 'gavel', label: 'Terms of Service', hint: 'Rules for using ClaudyGod', destination: 'settings.terms' },
+      { id: 'about', icon: 'info-outline', label: 'About', hint: 'Product and ministry information', destination: 'settings.about' },
+      { id: 'rate', icon: 'star-outline', label: 'Rate the app', hint: 'Share product feedback', destination: 'settings.rate' },
     ],
   },
 ];
@@ -274,19 +286,46 @@ export default function SettingsScreen() {
       setDiagnosticsAllowed(prefs.diagnosticsEnabled);
     };
 
-    Promise.all(
-      (Object.keys(DEVICE_DEFAULTS) as TogglePreferenceKey[]).map(async (key) => [
-        key,
-        await getPreference(key, DEVICE_DEFAULTS[key]),
-      ] as const),
-    ).then((entries) => applyValues(Object.fromEntries(entries) as Record<TogglePreferenceKey, boolean>));
+    const loadPreferences = async () => {
+      const entries = await Promise.all(
+        (Object.keys(DEVICE_DEFAULTS) as TogglePreferenceKey[]).map(async (key) => [
+          key,
+          await getPreference(key, DEVICE_DEFAULTS[key]),
+        ] as const),
+      );
+      const localPreferences = Object.fromEntries(entries) as Record<TogglePreferenceKey, boolean>;
+      const { user } = await getStoredMobileSession();
+      if (!user) {
+        applyValues(localPreferences);
+        return;
+      }
+
+      try {
+        const { preferences } = await fetchMePreferences();
+        applyValues(preferences);
+        setThemePreference(preferences.themePreference);
+        await Promise.all([
+          ...(Object.keys(DEVICE_DEFAULTS) as TogglePreferenceKey[])
+            .map((key) => setPreference(key, preferences[key])),
+          setPreference('themePreference', preferences.themePreference),
+        ]);
+      } catch {
+        // The device cache remains the offline fallback; authenticated writes
+        // still require a server acknowledgement before success is shown.
+        applyValues(localPreferences);
+      }
+    };
+    void loadPreferences();
 
     return () => { cancelled = true; };
-  }, []);
+  }, [setThemePreference]);
 
   const persistPreference = useCallback(async (key: TogglePreferenceKey, value: boolean) => {
-    // Mirrored to local storage regardless of account status, so lib/sentry.ts's
-    // boot-time read always has the latest value without needing an account.
+    const { user } = await getStoredMobileSession();
+    if (user) {
+      await updateMePreferences({ [key]: value } as Partial<MePreferences>);
+    }
+    // Keep an offline cache after the authoritative server write succeeds.
     await setPreference(key, value);
     if (key === 'diagnosticsEnabled') setDiagnosticsAllowed(value);
   }, []);
@@ -313,9 +352,20 @@ export default function SettingsScreen() {
   }, [awaitingPushPermission, pushLoading, pushPermissionGranted, persistPreference, showModal]);
 
   const handleAppearanceChange = useCallback((value: ThemePreference) => {
+    const previous = themePreference;
     setThemePreference(value);
-    showModal({ title: 'Appearance updated', message: value === 'system' ? 'Using your device setting.' : `Using ${value} mode.`, tone: 'success', icon: 'palette' });
-  }, [setThemePreference, showModal]);
+    void (async () => {
+      try {
+        const { user } = await getStoredMobileSession();
+        if (user) await updateMePreferences({ themePreference: value });
+        await setPreference('themePreference', value);
+        showModal({ title: 'Appearance updated', message: value === 'system' ? 'Using your device setting.' : `Using ${value} mode.`, tone: 'success' });
+      } catch {
+        setThemePreference(previous);
+        showModal({ title: 'Update failed', message: 'Your appearance preference could not be synchronized. Please try again.', tone: 'error' });
+      }
+    })();
+  }, [setThemePreference, showModal, themePreference]);
 
   const makeToggleHandler = useCallback(
     (key: TogglePreferenceKey, apply: (_value: boolean) => void, messages: { on: string; off: string; title: string; icon: React.ComponentProps<typeof MaterialIcons>['name'] }) =>

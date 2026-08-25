@@ -81,6 +81,7 @@ export function AppModalProvider({ children }: { children: ReactNode }) {
       {modal ? (
         <ConfirmModal
           visible
+          brandMark
           icon={resolveIcon(tone, modal.icon)}
           iconColor={resolveIconColor(tone, theme.colors)}
           title={modal.title}
@@ -90,9 +91,7 @@ export function AppModalProvider({ children }: { children: ReactNode }) {
           secondaryLabel={
             modal.secondaryAction
               ? modal.secondaryAction.label
-              : modal.dismissible !== false
-                ? 'Cancel'
-                : undefined
+              : undefined
           }
           onPrimary={() => runAction(modal.primaryAction)}
           onSecondary={

@@ -15,18 +15,25 @@ import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import { createAppRating } from '../../services/userFlowService';
 import { useToast } from '../../context/ToastContext';
 import { openExternalUrl } from '../../util/externalLinks';
+import { PremiumSettingsHero } from '../../components/layout/PremiumSettingsHero';
+import { SectionLabel } from '../../components/feed';
+import { useAppContext } from '../../context/AppContext';
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const useStyles = makeStyles((theme) => ({
-  heroCard:      { padding: theme.spacing.xl, marginBottom: theme.spacing.lg },
-  eyebrow:       { color: theme.colors.primary, textTransform: 'uppercase', letterSpacing: 0.9 },
-  displayText:   { color: theme.colors.text, marginTop: 8 },
-  bodyText:      { color: theme.colors.textSecondary, marginTop: 8 },
-  ratingCard:    { padding: theme.spacing.xl, alignItems: 'center' },
+  sectionGap:    { gap: theme.spacing.sm },
+  ratingCard:    { padding: theme.spacing.xl },
+  ratingIntro:   { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  ratingIcon:    { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.warningSurface, borderWidth: 1, borderColor: theme.colors.warningBorder },
+  ratingCopy:    { flex: 1 },
   ratingHeading: { color: theme.colors.text },
-  starsRow:      { flexDirection: 'row', marginTop: 16, gap: 8 },
-  scoreCaption:  { color: theme.colors.textSecondary, marginTop: 10 },
+  starsRow:      { flexDirection: 'row', marginTop: 20, gap: 8 },
+  starButton:    { flex: 1, minHeight: 54, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.controlSurface, borderWidth: 1, borderColor: theme.colors.controlBorder },
+  starButtonSelected: { backgroundColor: theme.colors.warningSurface, borderColor: theme.colors.warningBorder },
+  scoreRow:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 },
+  scoreCaption:  { color: theme.colors.textSecondary },
+  scoreValue:    { color: theme.colors.warning, fontWeight: '800' },
   noteCard:      { padding: theme.spacing.lg },
   noteHeading:   { color: theme.colors.text },
   noteBody:      { color: theme.colors.textSecondary, marginTop: 6 },
@@ -36,6 +43,8 @@ const useStyles = makeStyles((theme) => ({
     backgroundColor: theme.colors.surface, color: theme.colors.text,
   },
   btnsGap: { gap: 10, marginTop: 14 },
+  privacyNote: { flexDirection: 'row', gap: 8, alignItems: 'flex-start', marginTop: 12 },
+  privacyText: { flex: 1, color: theme.colors.textMuted, lineHeight: 18 },
 }));
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
@@ -45,6 +54,7 @@ export default function Rate() {
   const theme = useAppTheme();
   const router = useRouter();
   const { showToast } = useToast();
+  const { deviceId } = useAppContext();
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -67,7 +77,7 @@ export default function Rate() {
     if (rating <= 0) return false;
     setSubmitting(true);
     try {
-      await createAppRating({ rating, channel: 'mobile', comment: comment.trim() || undefined });
+      await createAppRating({ rating, deviceId, channel: 'mobile', comment: comment.trim() || undefined });
       showToast({ title: 'Thank you', message: 'Your feedback has been saved.', tone: 'success' });
       setSubmitting(false);
       return true;
@@ -103,41 +113,37 @@ export default function Rate() {
       icon="star-rate"
       hero={
         <FadeIn>
-          <SurfaceCard tone="strong" style={styles.heroCard}>
-            <CustomText variant="caption" style={styles.eyebrow}>
-              User feedback
-            </CustomText>
-            <CustomText variant="display" style={styles.displayText}>
-              Tell us how the experience feels.
-            </CustomText>
-            <CustomText variant="body" style={styles.bodyText}>
-              Your rating helps improve playback, navigation, and the worship experience across devices.
-            </CustomText>
-          </SurfaceCard>
+          <PremiumSettingsHero eyebrow="Your voice matters" kicker="Product feedback" title="Help shape a better worship experience." description="Your rating is recorded by the ClaudyGod product team and helps us improve playback, navigation, accessibility, and reliability." badge="Private product feedback" badgeIcon="lock" />
         </FadeIn>
       }
     >
       <FadeIn delay={70}>
+        <View style={styles.sectionGap}>
+        <SectionLabel title="Your rating" accent="One quick step" />
         <SurfaceCard tone="subtle" style={styles.ratingCard}>
-          <CustomText variant="heading" style={styles.ratingHeading}>
-            Select your rating
-          </CustomText>
+          <View style={styles.ratingIntro}>
+            <View style={styles.ratingIcon}><MaterialIcons name="star" size={22} color={theme.colors.warning} /></View>
+            <View style={styles.ratingCopy}><CustomText variant="heading" style={styles.ratingHeading}>How does ClaudyGod feel today?</CustomText><CustomText variant="caption" style={styles.scoreCaption}>Choose from 1 to 5 stars</CustomText></View>
+          </View>
           <View style={styles.starsRow}>
             {[1, 2, 3, 4, 5].map((star) => (
-              <TVTouchable key={star} onPress={() => setRating(star)} showFocusBorder={false}>
+              <TVTouchable key={star} onPress={() => setRating(star)} showFocusBorder={false} accessibilityRole="button" accessibilityLabel={`${star} star${star === 1 ? '' : 's'}`} accessibilityState={{ selected: rating === star }} style={[styles.starButton, rating >= star && styles.starButtonSelected]}>
                 <MaterialIcons
                   name={rating >= star ? 'star' : 'star-border'}
-                  size={38}
+                  size={26}
                   color={rating >= star ? theme.colors.warning : theme.colors.textSecondary}
                 />
               </TVTouchable>
             ))}
           </View>
-          <CustomText variant="caption" style={styles.scoreCaption}>{scoreLabel}</CustomText>
+          <View style={styles.scoreRow}><CustomText variant="caption" style={styles.scoreCaption}>{scoreLabel}</CustomText><CustomText variant="label" style={styles.scoreValue}>{rating ? `${rating}.0 / 5` : '— / 5'}</CustomText></View>
         </SurfaceCard>
+        </View>
       </FadeIn>
 
       <FadeIn delay={110}>
+        <View style={styles.sectionGap}>
+        <SectionLabel title="Add context" accent="Optional" />
         <SurfaceCard tone="subtle" style={styles.noteCard}>
           <CustomText variant="heading" style={styles.noteHeading}>Optional note</CustomText>
           <CustomText variant="body" style={styles.noteBody}>
@@ -149,9 +155,11 @@ export default function Rate() {
             placeholder="What stood out in your experience?"
             placeholderTextColor={theme.colors.textSecondary}
             multiline
+            maxLength={1000}
             textAlignVertical="top"
             style={styles.textInput}
           />
+          <View style={styles.privacyNote}><MaterialIcons name="privacy-tip" size={16} color={theme.colors.textMuted} /><CustomText variant="caption" style={styles.privacyText}>Feedback is linked to this installation so sign-in is not required. Do not include passwords or payment details.</CustomText></View>
           <View style={styles.btnsGap}>
             <AppButton
               title="Continue"
@@ -169,6 +177,7 @@ export default function Rate() {
             />
           </View>
         </SurfaceCard>
+        </View>
       </FadeIn>
     </SettingsScaffold>
   );

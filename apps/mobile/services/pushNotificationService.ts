@@ -1,34 +1,55 @@
-// services/pushNotificationService.ts - Alternative Type-Safe Version
-import * as Notifications from 'expo-notifications';
+// services/pushNotificationService.ts
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
+import type {
+  NotificationBehavior,
+  NotificationContentInput,
+} from 'expo-notifications';
 import { ENV } from './config';
 import { removeDevicePushToken, saveDevicePushToken } from './userFlowService';
 import { getStoredMobileSession } from './authService';
 
-// Type-safe notification handler
-const notificationHandler: Notifications.NotificationHandler = {
-  handleNotification: async (): Promise<Notifications.NotificationBehavior> => {
-    const behavior: Notifications.NotificationBehavior = {
-        shouldShowAlert: true,
-        shouldPlaySound: true,
-        shouldSetBadge: true,
-        shouldShowBanner: false,
-        shouldShowList: false
-    };
+type NotificationsModule = typeof import('expo-notifications');
+type NotificationPermissionStatus = 'denied' | 'granted' | 'undetermined';
 
-    // Add iOS-specific properties conditionally
-    if (Platform.OS === 'ios') {
-      behavior.shouldShowBanner = true;
-      behavior.shouldShowList = true;
-    }
+// Expo Go stopped supporting Android remote push notifications in SDK 53.
+// Importing expo-notifications there emits a red-screen console error before
+// application code can recover, so load the native module only in a build that
+// owns its native notification configuration (development/preview/store build).
+const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+let notificationsModulePromise: Promise<NotificationsModule> | null = null;
+let notificationHandlerConfigured = false;
 
-    return behavior;
-  },
-};
+async function getNotificationsModule(): Promise<NotificationsModule | null> {
+  if (isExpoGo) return null;
 
-// Set the notification handler
-Notifications.setNotificationHandler(notificationHandler);
+  notificationsModulePromise ??= import('expo-notifications');
+  const notifications = await notificationsModulePromise;
+
+  if (!notificationHandlerConfigured) {
+    notifications.setNotificationHandler({
+      handleNotification: async (): Promise<NotificationBehavior> => {
+        const behavior: NotificationBehavior = {
+          shouldPlaySound: true,
+          shouldSetBadge: true,
+          shouldShowBanner: false,
+          shouldShowList: false,
+        };
+
+        if (Platform.OS === 'ios') {
+          behavior.shouldShowBanner = true;
+          behavior.shouldShowList = true;
+        }
+
+        return behavior;
+      },
+    });
+    notificationHandlerConfigured = true;
+  }
+
+  return notifications;
+}
 
 export class PushNotificationService {
   private static instance: PushNotificationService;
@@ -47,11 +68,14 @@ export class PushNotificationService {
     if (this.isInitialized) return true;
 
     try {
-      const existingPermission = await Notifications.getPermissionsAsync();
+      const notifications = await getNotificationsModule();
+      if (!notifications) return false;
+
+      const existingPermission = await notifications.getPermissionsAsync();
       let isGranted = existingPermission.granted;
 
       if (!isGranted) {
-        const requestedPermission = await Notifications.requestPermissionsAsync();
+        const requestedPermission = await notifications.requestPermissionsAsync();
         isGranted = requestedPermission.granted;
       }
 
@@ -75,6 +99,9 @@ export class PushNotificationService {
 
   private async getPushToken(): Promise<string | null> {
     try {
+      const notifications = await getNotificationsModule();
+      if (!notifications) return null;
+
       if (!Device.isDevice) {
         return null;
       }
@@ -84,7 +111,7 @@ export class PushNotificationService {
         return null;
       }
 
-      const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+      const token = (await notifications.getExpoPushTokenAsync({ projectId })).data;
       return token;
     } catch {
       return null;
@@ -110,14 +137,19 @@ export class PushNotificationService {
   // Schedule local notification with proper typing
   async scheduleLocalNotification(title: string, body: string, data?: Record<string, unknown>): Promise<string> {
     try {
-      const notificationContent: Notifications.NotificationContentInput = {
+      const notifications = await getNotificationsModule();
+      if (!notifications) {
+        throw new Error('Notifications require a ClaudyGod development or store build.');
+      }
+
+      const notificationContent: NotificationContentInput = {
         title,
         body,
         data: data || {},
         sound: true, // Use boolean instead of string for better type safety
       };
 
-      const notificationId = await Notifications.scheduleNotificationAsync({
+      const notificationId = await notifications.scheduleNotificationAsync({
         content: notificationContent,
         trigger: null,
       });
@@ -135,17 +167,22 @@ export class PushNotificationService {
     data?: Record<string, unknown>
   ): Promise<string> {
     try {
-      const notificationContent: Notifications.NotificationContentInput = {
+      const notifications = await getNotificationsModule();
+      if (!notifications) {
+        throw new Error('Notifications require a ClaudyGod development or store build.');
+      }
+
+      const notificationContent: NotificationContentInput = {
         title,
         body,
         data: data || {},
         sound: true,
       };
 
-      const notificationId = await Notifications.scheduleNotificationAsync({
+      const notificationId = await notifications.scheduleNotificationAsync({
         content: notificationContent,
         trigger: {
-          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+          type: notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
           seconds: delayInSeconds,
           repeats: false,
         },
@@ -158,15 +195,20 @@ export class PushNotificationService {
   }
 
   async cancelNotification(notificationId: string): Promise<void> {
-    await Notifications.cancelScheduledNotificationAsync(notificationId);
+    const notifications = await getNotificationsModule();
+    await notifications?.cancelScheduledNotificationAsync(notificationId);
   }
 
   async cancelAllNotifications(): Promise<void> {
-    await Notifications.cancelAllScheduledNotificationsAsync();
+    const notifications = await getNotificationsModule();
+    await notifications?.cancelAllScheduledNotificationsAsync();
   }
 
-  async getPermissionStatus(): Promise<Notifications.PermissionStatus> {
-    const permissions = await Notifications.getPermissionsAsync();
+  async getPermissionStatus(): Promise<NotificationPermissionStatus> {
+    const notifications = await getNotificationsModule();
+    if (!notifications) return 'denied';
+
+    const permissions = await notifications.getPermissionsAsync();
     return permissions.status;
   }
 

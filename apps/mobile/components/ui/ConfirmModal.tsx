@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import {
   Animated,
   Easing,
+  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -17,6 +18,8 @@ import { CustomText } from '../CustomText';
 import { AppButton } from './AppButton';
 import { useAppTheme } from '../../util/colorScheme';
 import { makeStyles } from '../../styles/makeStyles';
+import { BRAND_LOGO_ASSET } from '../../util/brandAssets';
+import { useReducedMotion } from '../../hooks/useReducedMotion';
 
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
@@ -24,6 +27,8 @@ export interface ConfirmModalProps {
   visible: boolean;
   icon: React.ComponentProps<typeof MaterialIcons>['name'];
   iconColor?: string;
+  /** Use the ClaudyGod mark for app-level feedback instead of a generic glyph. */
+  brandMark?: boolean;
   title: string;
   body?: string;
   primaryLabel: string;
@@ -40,13 +45,13 @@ export interface ConfirmModalProps {
 
 const useStyles = makeStyles((theme) => ({
   backdrop:    { backgroundColor: theme.colors.scrim },
-  centerWrap:  { flex: 1, justifyContent: 'center', paddingHorizontal: 20 },
-  animContent: { width: '100%', maxWidth: 420, alignSelf: 'center' },
+  centerWrap:  { flex: 1, justifyContent: 'center', paddingHorizontal: 24 },
+  animContent: { width: '100%', maxWidth: 390, alignSelf: 'center' },
   card: {
     borderRadius: theme.radius.xxl, borderWidth: 1,
     borderColor: theme.colors.borderStrong,
     backgroundColor: theme.colors.elevated,
-    padding: theme.spacing.lg, gap: theme.spacing.lg,
+    paddingHorizontal: 24, paddingTop: 26, paddingBottom: 22, gap: 20,
     ...theme.shadows.xl,
   },
   iconCenter:  { alignItems: 'center' },
@@ -54,10 +59,22 @@ const useStyles = makeStyles((theme) => ({
     width: 68, height: 68, borderRadius: 34,
     alignItems: 'center', justifyContent: 'center', borderWidth: 1.5,
   },
+  brandLogoFrame: {
+    width: 76, height: 76, borderRadius: 24, padding: 4,
+    backgroundColor: theme.colors.primarySurface,
+    borderWidth: 1, borderColor: theme.colors.primaryBorder,
+    shadowColor: theme.colors.primary, shadowOpacity: 0.28,
+    shadowRadius: 18, shadowOffset: { width: 0, height: 8 }, elevation: 7,
+  },
+  brandLogo: { width: '100%', height: '100%', borderRadius: 20 },
+  brandLabel: {
+    color: theme.colors.primary, textTransform: 'uppercase', letterSpacing: 2.2,
+    fontSize: 10, fontWeight: '800', marginBottom: 2,
+  },
   textContent: { gap: 8, alignItems: 'center' },
-  titleText:   { color: theme.colors.text, textAlign: 'center' },
-  bodyText:    { color: theme.colors.textSecondary, textAlign: 'center', lineHeight: 22 },
-  btnsGap:     { gap: 10 },
+  titleText:   { color: theme.colors.text, textAlign: 'center', letterSpacing: -0.35 },
+  bodyText:    { color: theme.colors.textSecondary, textAlign: 'center', lineHeight: 21, maxWidth: 310 },
+  btnsGap:     { gap: 12, paddingTop: 2 },
   dangerBtn:   { backgroundColor: theme.colors.danger },
 }));
 
@@ -67,6 +84,7 @@ export function ConfirmModal({
   visible,
   icon,
   iconColor,
+  brandMark = false,
   title,
   body,
   primaryLabel,
@@ -81,6 +99,7 @@ export function ConfirmModal({
   const theme = useAppTheme();
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
+  const reduceMotion = useReducedMotion();
   const scale = useRef(new Animated.Value(theme.motion.modalInitialScale)).current;
   const opacity = useRef(new Animated.Value(0)).current;
 
@@ -88,6 +107,11 @@ export function ConfirmModal({
     if (!visible) {
       scale.setValue(theme.motion.modalInitialScale);
       opacity.setValue(0);
+      return;
+    }
+    if (reduceMotion) {
+      scale.setValue(1);
+      opacity.setValue(1);
       return;
     }
     Animated.parallel([
@@ -104,7 +128,7 @@ export function ConfirmModal({
         useNativeDriver: USE_NATIVE_DRIVER,
       }),
     ]).start();
-  }, [opacity, scale, theme.motion.modalEnterDuration, theme.motion.modalInitialScale, visible]);
+  }, [opacity, reduceMotion, scale, theme.motion.modalEnterDuration, theme.motion.modalInitialScale, visible]);
 
   const isDanger = primaryTone === 'danger';
   const accentColor = isDanger ? theme.colors.danger : theme.colors.primary;
@@ -144,20 +168,27 @@ export function ConfirmModal({
               keyboardShouldPersistTaps="handled"
             >
               <View style={styles.iconCenter}>
-                <View
-                  style={[
-                    styles.iconRingBase,
-                    {
-                      backgroundColor: `${resolvedIconColor}1A`,
-                      borderColor: `${resolvedIconColor}44`,
-                    },
-                  ]}
-                >
-                  <MaterialIcons name={icon} size={32} color={resolvedIconColor} />
-                </View>
+                {brandMark ? (
+                  <View style={styles.brandLogoFrame}>
+                    <Image source={BRAND_LOGO_ASSET} style={styles.brandLogo} resizeMode="cover" accessibilityLabel="ClaudyGod" />
+                  </View>
+                ) : (
+                  <View
+                    style={[
+                      styles.iconRingBase,
+                      {
+                        backgroundColor: `${resolvedIconColor}1A`,
+                        borderColor: `${resolvedIconColor}44`,
+                      },
+                    ]}
+                  >
+                    <MaterialIcons name={icon} size={30} color={resolvedIconColor} />
+                  </View>
+                )}
               </View>
 
               <View style={styles.textContent}>
+                {brandMark ? <CustomText style={styles.brandLabel}>ClaudyGod</CustomText> : null}
                 <CustomText variant="heading" style={styles.titleText}>{title}</CustomText>
                 {body ? (
                   <CustomText variant="body" style={styles.bodyText}>{body}</CustomText>
@@ -167,7 +198,7 @@ export function ConfirmModal({
               <View style={styles.btnsGap}>
                 <AppButton
                   title={primaryLabel}
-                  variant="primary"
+                  variant={isDanger ? 'primary' : 'gradient'}
                   size="lg"
                   fullWidth
                   loading={loading}
@@ -179,7 +210,7 @@ export function ConfirmModal({
                 {secondaryLabel ? (
                   <AppButton
                     title={secondaryLabel}
-                    variant="ghost"
+                    variant="secondary"
                     size="lg"
                     fullWidth
                     disabled={loading}

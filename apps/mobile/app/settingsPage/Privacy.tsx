@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { TextInput, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 
-import { SettingsScaffold } from '../../components/layout/SettingsScaffold';
+import { PremiumPage } from '../../components/feed';
 import { CustomText } from '../../components/CustomText';
 import { useAppTheme } from '../../util/colorScheme';
 import { makeStyles } from '../../styles/makeStyles';
@@ -12,7 +13,8 @@ import { TVTouchable } from '../../components/ui/TVTouchable';
 import { AppButton } from '../../components/ui/AppButton';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import { useAppModal } from '../../context/AppModalContext';
-import { ENV } from '../../services/config';
+import { useAuth } from '../../features/auth/AuthContext';
+import { APP_ROUTES } from '../../util/appRoutes';
 import {
   fetchMePrivacyOverview,
   requestPrivacyDataExport,
@@ -105,7 +107,10 @@ export default function Privacy() {
   const theme  = useAppTheme();
   const { config } = useMobileAppConfig();
   const { showModal } = useAppModal();
+  const router = useRouter();
+  const { isAuthenticated, user } = useAuth();
   const [loading,           setLoading]           = useState(true);
+  const [overviewError,     setOverviewError]     = useState(false);
   const [summary,           setSummary]           = useState<{ totalRequests: number; totalPlayEvents: number; totalLiveSubscriptions: number } | null>(null);
   const [deleteName,        setDeleteName]        = useState('');
   const [deletePhraseInput, setDeletePhraseInput] = useState('');
@@ -117,15 +122,18 @@ export default function Privacy() {
   const canDelete     = deleteName.trim().length >= 3 && deletePhraseInput.trim().toUpperCase() === deletePhrase.trim().toUpperCase();
 
   const refreshPrivacy = useCallback(async () => {
+    if (!isAuthenticated) { setSummary(null); setOverviewError(false); setLoading(false); return; }
     setLoading(true);
+    setOverviewError(false);
     try {
       const response = await fetchMePrivacyOverview();
       setSummary(response.privacy);
     } catch {
       setSummary(null);
+      setOverviewError(true);
     }
     setLoading(false);
-  }, []);
+  }, [isAuthenticated]);
 
   useEffect(() => { void refreshPrivacy(); }, [refreshPrivacy]);
 
@@ -186,37 +194,42 @@ export default function Privacy() {
   };
 
   return (
-    <SettingsScaffold
+    <PremiumPage
       title="Privacy & Security"
       subtitle="Clear controls for account data, activity, and safety."
-      icon="security"
-      hero={
+      eyebrow="Your account"
+      refreshing={loading}
+      onRefresh={() => void refreshPrivacy()}
+    >
         <FadeIn>
           <SurfaceCard tone="strong" style={styles.heroPad}>
             <CustomText variant="caption" style={styles.heroEyebrow}>Privacy controls</CustomText>
-            <CustomText variant="display" style={styles.heroDisplay}>Stay in control of your account.</CustomText>
+            <CustomText variant="display" style={styles.heroDisplay}>{isAuthenticated ? 'Your data. Your decisions.' : 'Privacy starts before sign-in.'}</CustomText>
             <CustomText variant="body" style={styles.heroBody}>
-              Manage account access, exports, recommendations, and deletion requests from one place.
+              {isAuthenticated ? `Signed in as ${user?.email ?? 'your account'}. Manage exports, recommendations, and deletion requests here.` : 'Browse as a guest with device-local activity, or sign in to synchronize data and use account privacy controls.'}
             </CustomText>
           </SurfaceCard>
         </FadeIn>
-      }
-    >
+
+      {isAuthenticated ? (
       <FadeIn delay={70}>
         <View style={styles.statsRow}>
-          <PrivacyStat label="Requests"   value={loading ? '—' : `${summary?.totalRequests ?? 0}`}          icon="assignment" />
-          <PrivacyStat label="Play events" value={loading ? '—' : `${summary?.totalPlayEvents ?? 0}`}        icon="history" />
-          <PrivacyStat label="Live alerts" value={loading ? '—' : `${summary?.totalLiveSubscriptions ?? 0}`} icon="notifications-active" />
+          <PrivacyStat label="Requests" value={loading ? '—' : overviewError ? 'Unavailable' : `${summary?.totalRequests ?? 0}`} icon="assignment" />
+          <PrivacyStat label="Play events" value={loading ? '—' : overviewError ? 'Unavailable' : `${summary?.totalPlayEvents ?? 0}`} icon="history" />
+          <PrivacyStat label="Live alerts" value={loading ? '—' : overviewError ? 'Unavailable' : `${summary?.totalLiveSubscriptions ?? 0}`} icon="notifications-active" />
         </View>
       </FadeIn>
+      ) : null}
 
       <FadeIn delay={110}>
         <SurfaceCard tone="subtle" style={styles.sectionPad}>
           <CustomText variant="heading" style={styles.sectionHead}>Account actions</CustomText>
           <View style={styles.actionsList}>
-            <PrivacyAction icon="password" title="Private access" description="Your current experience is available without account setup." onPress={() => showModal({ title: 'Private by design', message: 'For this release, activity and preferences remain on this device. Account synchronization can be enabled in a future release without changing how you use the app.', tone: 'info', primaryAction: { label: 'Got it' } })} />
-            <PrivacyAction icon="download"          title="Export my data"          description="Request a copy of account and activity data."   onPress={() => void requestExport()} />
-            <PrivacyAction icon="history-toggle-off" title="Reset recommendations"  description="Clear activity used for recommendations."       onPress={resetHistory} />
+            {isAuthenticated ? <>
+              <PrivacyAction icon="verified-user" title="Authenticated account" description="Account privacy operations require your secure session." onPress={() => showModal({ title: 'Account protected', message: 'Export, recommendation reset, and deletion requests are submitted through your authenticated backend session.', tone: 'success', primaryAction: { label: 'Done' } })} />
+              <PrivacyAction icon="download" title="Export my data" description="Create a tracked account-data export request." onPress={() => void requestExport()} />
+              <PrivacyAction icon="history-toggle-off" title="Reset recommendations" description="Clear server activity used for recommendations." onPress={resetHistory} />
+            </> : <PrivacyAction icon="login" title="Sign in for account controls" description="Securely access exports, synchronized preferences, and deletion requests." onPress={() => router.push(APP_ROUTES.auth.signIn)} />}
             <PrivacyAction icon="email"             title="Contact privacy team"    description={contactEmail}                                   onPress={() => void openExternalUrl(`mailto:${contactEmail}`)} />
           </View>
         </SurfaceCard>
@@ -226,8 +239,8 @@ export default function Privacy() {
         <SurfaceCard tone="subtle" style={styles.sectionPad}>
           <CustomText variant="heading" style={styles.sectionHead}>Legal</CustomText>
           <View style={styles.actionsList}>
-            <PrivacyAction icon="policy"    title="Privacy Policy"    description="How we collect and use your data." onPress={() => void openExternalUrl(`${ENV.apiUrl}/legal/privacy`)} />
-            <PrivacyAction icon="gavel"     title="Terms of Service"  description="The rules for using ClaudyGod."     onPress={() => void openExternalUrl(`${ENV.apiUrl}/legal/terms`)} />
+            <PrivacyAction icon="policy" title="Privacy Policy" description="Current version, loaded from the ClaudyGod legal service." onPress={() => router.push(APP_ROUTES.settingsPages.privacyPolicy)} />
+            <PrivacyAction icon="gavel" title="Terms of Service" description="Current terms and acceptable-use requirements." onPress={() => router.push(APP_ROUTES.settingsPages.terms)} />
           </View>
         </SurfaceCard>
       </FadeIn>
@@ -248,7 +261,7 @@ export default function Privacy() {
         </FadeIn>
       ) : null}
 
-      <FadeIn delay={190}>
+      {isAuthenticated ? <FadeIn delay={190}>
         <SurfaceCard tone="subtle" style={styles.deletePad}>
           <CustomText variant="heading" style={styles.sectionHead}>Delete account request</CustomText>
           <CustomText variant="body" style={styles.sectionBody}>
@@ -281,7 +294,7 @@ export default function Privacy() {
             style={styles.deleteBtn}
           />
         </SurfaceCard>
-      </FadeIn>
-    </SettingsScaffold>
+      </FadeIn> : null}
+    </PremiumPage>
   );
 }

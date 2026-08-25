@@ -77,7 +77,7 @@ export function TVTouchable({
     isWeb && isHovered && !disableHoverStyle && !props.disabled
       ? {
           transform: [{ translateY: -1 }],
-          shadowColor: '#000000',
+          shadowColor: theme.colors.shadow,
           shadowOpacity: 0.08,
           shadowRadius: 8,
           shadowOffset: { width: 0, height: 4 },

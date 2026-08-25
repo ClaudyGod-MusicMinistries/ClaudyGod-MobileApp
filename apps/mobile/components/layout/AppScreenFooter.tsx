@@ -14,6 +14,7 @@ type FooterVariant = 'app' | 'landing' | 'legal';
 const footerLinks = [
   { label: 'Support', icon: 'help-outline' as const, route: APP_ROUTES.settingsPages.help },
   { label: 'Privacy', icon: 'security' as const, route: APP_ROUTES.settingsPages.privacy },
+  { label: 'Terms', icon: 'gavel' as const, route: APP_ROUTES.settingsPages.terms },
   { label: 'Give', icon: 'volunteer-activism' as const, route: APP_ROUTES.settingsPages.donate },
 ];
 

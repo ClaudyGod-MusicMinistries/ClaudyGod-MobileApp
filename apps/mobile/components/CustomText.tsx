@@ -3,6 +3,7 @@ import React, { useContext, useMemo } from 'react';
 import { Platform, Text, TextProps, useWindowDimensions } from 'react-native';
 import { getResponsiveFontStyle, type FontVariantKey } from '../util/fonts';
 import { FontContext } from '../context/FontContext';
+import { useAppTheme } from '../util/colorScheme';
 
 const variantLineDefaults: Partial<Record<FontVariantKey, number>> = {
   hero: 2,
@@ -30,6 +31,7 @@ export const CustomText: React.FC<CustomTextProps> = ({
   ...props
 }) => {
   const { fontsLoaded } = useContext(FontContext);
+  const theme = useAppTheme();
   const { width } = useWindowDimensions();
   const variantStyle = useMemo(
     () => getResponsiveFontStyle(variant, width, Platform.isTV),
@@ -42,7 +44,7 @@ export const CustomText: React.FC<CustomTextProps> = ({
 
   return (
     <Text
-      style={[finalStyle, style]}
+      style={[{ color: theme.colors.text }, finalStyle, style]}
       numberOfLines={numberOfLinesProp ?? variantLineDefaults[variant]}
       ellipsizeMode={ellipsizeModeProp ?? 'tail'}
       allowFontScaling={props.allowFontScaling ?? true}

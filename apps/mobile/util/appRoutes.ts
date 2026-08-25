@@ -29,6 +29,8 @@ export const APP_ROUTES = {
   accountSecurity: '/account-security',
   settingsPages: {
     privacy: '/settingsPage/Privacy',
+    privacyPolicy: '/settingsPage/PrivacyPolicy',
+    terms: '/settingsPage/Terms',
     donate: '/settingsPage/Donate',
     payment: '/settingsPage/Payment',
     help: '/settingsPage/help',
@@ -50,6 +52,8 @@ export type AppRouteId =
   | 'tabs.settings'
   | 'profile'
   | 'settings.privacy'
+  | 'settings.privacyPolicy'
+  | 'settings.terms'
   | 'settings.donate'
   | 'settings.payment'
   | 'settings.help'
@@ -77,6 +81,8 @@ export const APP_ROUTE_BY_ID: Record<AppRouteId, string> = {
   'tabs.settings': APP_ROUTES.tabs.settings,
   profile: APP_ROUTES.tabs.settings,
   'settings.privacy': APP_ROUTES.settingsPages.privacy,
+  'settings.privacyPolicy': APP_ROUTES.settingsPages.privacyPolicy,
+  'settings.terms': APP_ROUTES.settingsPages.terms,
   'settings.donate': APP_ROUTES.settingsPages.donate,
   'settings.payment': APP_ROUTES.settingsPages.payment,
   'settings.help': APP_ROUTES.settingsPages.help,

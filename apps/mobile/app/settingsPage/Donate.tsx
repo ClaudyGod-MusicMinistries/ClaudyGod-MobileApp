@@ -1,11 +1,12 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Platform, View, useWindowDimensions } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { TextInput, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { TVTouchable } from '../../components/ui/TVTouchable';
+import { PremiumPage } from '../../components/feed';
 import { CustomText } from '../../components/CustomText';
+import { SurfaceCard } from '../../components/ui/SurfaceCard';
+import { TVTouchable } from '../../components/ui/TVTouchable';
 import { AppButton } from '../../components/ui/AppButton';
 import { ConfirmModal } from '../../components/ui/ConfirmModal';
-import { SettingsScaffold } from '../../components/layout/SettingsScaffold';
 import { useAppTheme } from '../../util/colorScheme';
 import { makeStyles } from '../../styles/makeStyles';
 import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
@@ -13,503 +14,146 @@ import { createPublicDonationIntent } from '../../services/userFlowService';
 import { useToast } from '../../context/ToastContext';
 import { openExternalUrl } from '../../util/externalLinks';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+type Frequency = 'once' | 'weekly' | 'monthly';
+type Method = { id: string; label: string; subtitle: string; icon: React.ComponentProps<typeof MaterialIcons>['name'] };
+type CreatedIntent = { id: string; status: string; title: string; message: string; actionLabel?: string; actionUrl?: string };
 
-type DonateFrequency = 'daily' | 'weekly' | 'monthly';
-
-type DonateMethod = {
-  id: string;
-  icon: React.ComponentProps<typeof MaterialIcons>['name'];
-  label: string;
-  subtitle: string;
-  badge?: string;
-};
-
-// ─── Defaults ────────────────────────────────────────────────────────────────
-
-const DEFAULT_AMOUNTS = ['10', '25', '50', '100', '250', '500'];
-
-const DEFAULT_CURRENCY_OPTIONS: { code: string; label: string; symbol?: string }[] = [
-  { code: 'USD', label: 'US Dollar',        symbol: '$' },
-  { code: 'NGN', label: 'Nigerian Naira',   symbol: '₦' },
-  { code: 'GBP', label: 'British Pound',    symbol: '£' },
-  { code: 'EUR', label: 'Euro',             symbol: '€' },
-];
-
-// Amounts scale very differently by currency (10 USD vs. 10 NGN are not
-// comparable) — give each default currency its own sensible quick-pick scale.
-const DEFAULT_AMOUNTS_BY_CURRENCY: Record<string, string[]> = {
-  USD: DEFAULT_AMOUNTS,
-  GBP: DEFAULT_AMOUNTS,
-  EUR: DEFAULT_AMOUNTS,
-  NGN: ['1000', '2500', '5000', '10000', '25000', '50000'],
-};
-
-const DEFAULT_METHODS: DonateMethod[] = [
-  { id: 'bank',   icon: 'account-balance', label: 'Bank Transfer',  subtitle: 'Direct to ministry account' },
-  { id: 'mobile', icon: 'phone-android',   label: 'Mobile Money',   subtitle: 'Fast & secure mobile transfer' },
-  { id: 'card',   icon: 'credit-card',     label: 'Card Payment',   subtitle: 'Visa, Mastercard, Verve', badge: 'Secure' },
-];
-
-const IMPACT_ITEMS = [
-  { icon: 'church'  as const, label: 'Ministry outreach', pct: 55 },
-  { icon: 'people'  as const, label: 'Community programs', pct: 25 },
-  { icon: 'movie'   as const, label: 'Media & content',   pct: 12 },
-  { icon: 'build'   as const, label: 'Operations',        pct: 8  },
-];
-
-// Fallback-only — used before admin config has loaded, or if it's ever empty.
-// Mirrors the same defaults now configurable via admin's Mobile config → Giving quotes.
-const DEFAULT_SCRIPTURES = [
-  '"Give, and it will be given to you." — Luke 6:38',
-  '"Each of you should give what you have decided in your heart to give." — 2 Cor 9:7',
-  '"Bring the whole tithe into the storehouse." — Malachi 3:10',
-];
-
-function frequencyLabel(v: DonateFrequency) {
-  return v === 'daily' ? 'Daily' : v === 'weekly' ? 'Weekly' : 'Monthly';
-}
-
-// ─── Styles ───────────────────────────────────────────────────────────────────
+const FALLBACK_CURRENCIES = [{ code: 'USD', label: 'US Dollar', symbol: '$' }, { code: 'NGN', label: 'Nigerian Naira', symbol: '₦' }];
+const FALLBACK_AMOUNTS: Record<string, string[]> = { USD: ['10', '25', '50', '100'], NGN: ['1000', '2500', '5000', '10000'] };
+const FALLBACK_METHODS: Method[] = [{ id: 'bank', label: 'Bank transfer', subtitle: 'Receive the ministry’s approved bank instructions', icon: 'account-balance' }];
 
 const useStyles = makeStyles((theme) => ({
-  // Hero
-  heroBg:           { backgroundColor: theme.colors.accent, borderRadius: 28, padding: 22, overflow: 'hidden' },
-  heroCircle1:      { position: 'absolute', top: -30, right: -30, width: 120, height: 120, borderRadius: 60, backgroundColor: 'rgba(255,255,255,0.07)' },
-  heroCircle2:      { position: 'absolute', bottom: -40, left: -20, width: 160, height: 160, borderRadius: 80, backgroundColor: 'rgba(255,255,255,0.05)' },
-  heroIconRow:      { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 18 },
-  heroIconCircle:   { width: 52, height: 52, borderRadius: 26, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
-  heroTitleWrap:    { flex: 1 },
-  heroLabel:        { color: 'rgba(255,255,255,0.75)', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.9 },
-  heroTitle:        { color: theme.colors.onPrimary, fontWeight: '800', marginTop: 3, letterSpacing: -0.3 },
-  pillRow:          { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
-  pill:             { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.16)', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7, flex: 1, minWidth: 80 },
-  pillText:         { color: theme.colors.onPrimary, fontSize: 11, fontWeight: '600', flex: 1 },
-  scriptureWrap:    { marginTop: 16, paddingTop: 14, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.15)' },
-  scriptureText:    { color: 'rgba(255,255,255,0.70)', fontSize: 12, fontStyle: 'italic', lineHeight: 18, textAlign: 'center' },
-
-  // SectionCard
-  card:             { backgroundColor: theme.colors.surface, borderRadius: 20, borderWidth: 1, borderColor: theme.colors.primaryBorder, padding: 18, gap: 14 },
-  cardHeader:       { gap: 3 },
-  cardTitle:        { color: theme.colors.text, fontSize: 14, fontWeight: '700' },
-  cardSubtitle:     { color: theme.colors.textMuted, fontSize: 12 },
-
-  // Currency
-  currencyRow:      { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  currencyBase:     { borderRadius: 999, paddingHorizontal: 16, paddingVertical: 10, borderWidth: 1.5, minWidth: 76, alignItems: 'center' },
-  currencyActive:   { backgroundColor: theme.colors.primary, borderColor: 'transparent', ...theme.shadows.sm },
-  currencyInactive: { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
-  currencyTxtActive:   { color: theme.colors.onPrimary, fontSize: 13.5, fontWeight: '700' },
-  currencyTxtInactive: { color: theme.colors.textSecondary, fontSize: 13.5, fontWeight: '600' },
-
-  // Amount
-  amountGrid:       { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  amountBase:       { minHeight: 72, borderRadius: 16, alignItems: 'center', justifyContent: 'center', gap: 2 },
-  amountActive:     { backgroundColor: theme.colors.primary, borderWidth: 1.5, borderColor: theme.colors.primary, ...theme.shadows.sm },
-  amountInactive:   { backgroundColor: theme.colors.surface,  borderWidth: 1.5, borderColor: theme.colors.border },
-  amountValActive:  { color: theme.colors.onPrimary,          fontSize: 21, fontWeight: '800' },
-  amountValInactive:{ color: theme.colors.text,               fontSize: 21, fontWeight: '800' },
-  amountCurActive:  { color: 'rgba(255,255,255,0.75)',         fontSize: 10.5, fontWeight: '700', letterSpacing: 0.4 },
-  amountCurInactive:{ color: theme.colors.textMuted,           fontSize: 10.5, fontWeight: '700', letterSpacing: 0.4 },
-
-  // Frequency
-  freqBase:         { flex: 1, minHeight: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center', gap: 3 },
-  freqActive:       { backgroundColor: theme.colors.primary, borderWidth: 1, borderColor: 'transparent' },
-  freqInactive:     { backgroundColor: theme.colors.surface,  borderWidth: 1, borderColor: theme.colors.border },
-  freqTxtActive:    { color: theme.colors.onPrimary,    fontSize: 13, fontWeight: '700' },
-  freqTxtInactive:  { color: theme.colors.textSecondary, fontSize: 13, fontWeight: '700' },
-
-  // Payment methods
-  methodsList:      { gap: 8 },
-  methodBase:       { flexDirection: 'row', alignItems: 'center', gap: 14, borderRadius: 14, borderWidth: 1, padding: 14 },
-  methodActive:     { backgroundColor: theme.colors.primarySurface, borderColor: theme.colors.primaryBorder },
-  methodInactive:   { backgroundColor: theme.colors.surface,         borderColor: theme.colors.border },
-  methodIconBase:   { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-  methodIconActive: { backgroundColor: theme.colors.primarySurface },
-  methodIconInactive:{ backgroundColor: theme.colors.surfaceAlt },
-  methodWrap:       { flex: 1 },
-  methodLabel:      { color: theme.colors.text,    fontSize: 14, fontWeight: '600' },
-  methodSub:        { color: theme.colors.textMuted, fontSize: 12, marginTop: 2 },
-  methodBadge:      { backgroundColor: theme.colors.primarySurface, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
-  methodBadgeText:  { color: theme.colors.secondary, fontSize: 10, fontWeight: '700' },
-
-  // Impact
-  impactGrid:       { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  impactCard:       { backgroundColor: theme.colors.primarySurface, borderRadius: 14, borderWidth: 1, borderColor: theme.colors.primaryBorder, padding: 14, gap: 8 },
-  impactRow:        { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  impactPct:        { color: theme.colors.primary, fontSize: 20, fontWeight: '800' },
-  impactLabel:      { color: theme.colors.textMuted, lineHeight: 16 },
-
-  // CTA
-  ctaWrap:          { gap: 10, paddingTop: 4 },
-  trustRow:         { flexDirection: 'row', alignItems: 'center', gap: 8, justifyContent: 'center', paddingTop: 4 },
-  trustText:        { color: theme.colors.textMuted, textAlign: 'center' },
-
-  // Coming-soon modal
-  modalOverlay:     { flex: 1, backgroundColor: 'rgba(0,0,0,0.65)', alignItems: 'center', justifyContent: 'center', padding: 24 },
-  modalCard:        { backgroundColor: theme.colors.surface, borderRadius: 24, borderWidth: 1, borderColor: theme.colors.border, padding: 28, alignItems: 'center', gap: 14, maxWidth: 340, width: '100%' },
-  modalIcon:        { width: 68, height: 68, borderRadius: 34, backgroundColor: theme.colors.primarySurface, borderWidth: 1, borderColor: theme.colors.primaryBorder, alignItems: 'center', justifyContent: 'center' },
-  modalTitle:       { color: theme.colors.text, fontSize: 20, fontWeight: '800', textAlign: 'center', letterSpacing: -0.3 },
-  modalSubtitle:    { color: theme.colors.textSecondary, textAlign: 'center' },
-  modalClose:       { paddingVertical: 6 },
-  modalCloseText:   { color: theme.colors.textMuted, fontWeight: '500' },
+  intro: { padding: theme.spacing.xl, gap: 10 },
+  eyebrow: { color: theme.colors.primary, textTransform: 'uppercase', letterSpacing: 1 },
+  introBody: { color: theme.colors.textSecondary, lineHeight: 22 },
+  steps: { flexDirection: 'row', gap: 8, marginTop: 4 },
+  step: { flex: 1, height: 3, borderRadius: 3, backgroundColor: theme.colors.border },
+  stepActive: { backgroundColor: theme.colors.primary },
+  card: { padding: theme.spacing.lg, gap: 14 },
+  title: { color: theme.colors.text },
+  description: { color: theme.colors.textSecondary, lineHeight: 20 },
+  fieldLabel: { color: theme.colors.text, fontWeight: '700' },
+  wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 9 },
+  currencyGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  currencyOption: { minWidth: 132, flexGrow: 1, flexBasis: 132, minHeight: 68, paddingHorizontal: 14, paddingVertical: 11, borderRadius: 16, borderWidth: 1, borderColor: theme.colors.controlBorder, backgroundColor: theme.colors.controlSurface, flexDirection: 'row', alignItems: 'center', gap: 11 },
+  currencyOptionActive: { borderColor: theme.colors.controlSelectedBorder, backgroundColor: theme.colors.controlSelectedSurface },
+  currencySymbol: { width: 36, height: 36, borderRadius: 11, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.surfaceAlt },
+  currencySymbolActive: { backgroundColor: theme.colors.controlSelectedIconSurface },
+  currencySymbolText: { color: theme.colors.text, fontWeight: '800' },
+  currencySymbolTextActive: { color: theme.colors.controlSelectedText },
+  currencyCopy: { flex: 1 },
+  currencyCode: { color: theme.colors.controlText, fontWeight: '800', letterSpacing: 0.5 },
+  currencyCodeActive: { color: theme.colors.controlSelectedText },
+  currencyName: { color: theme.colors.textMuted, marginTop: 2 },
+  currencyNameActive: { color: theme.colors.controlSelectedText },
+  chip: { minHeight: 44, paddingHorizontal: 15, borderRadius: 13, borderWidth: 1, borderColor: theme.colors.controlBorder, justifyContent: 'center', backgroundColor: theme.colors.controlSurface },
+  chipActive: { borderColor: theme.colors.controlSelectedBorder, backgroundColor: theme.colors.controlSelectedSurface },
+  chipText: { color: theme.colors.controlText, fontWeight: '600' },
+  chipTextActive: { color: theme.colors.controlSelectedText },
+  amountField: { minHeight: 72, borderRadius: 18, borderWidth: 1, borderColor: theme.colors.controlBorder, backgroundColor: theme.colors.controlSurface, flexDirection: 'row', alignItems: 'center', overflow: 'hidden' },
+  amountPrefix: { alignSelf: 'stretch', minWidth: 76, paddingHorizontal: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.surfaceAlt, borderRightWidth: 1, borderRightColor: theme.colors.controlBorder },
+  amountSymbol: { color: theme.colors.text, fontWeight: '800' },
+  amountCode: { color: theme.colors.textMuted, marginTop: 2, letterSpacing: 0.6 },
+  input: { flex: 1, minHeight: 70, color: theme.colors.text, paddingHorizontal: 16, fontSize: 24, fontWeight: '700' },
+  quickHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  quickHint: { color: theme.colors.textMuted },
+  error: { color: theme.colors.danger },
+  method: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderWidth: 1, borderColor: theme.colors.controlBorder, borderRadius: 16, backgroundColor: theme.colors.controlSurface },
+  methodActive: { borderColor: theme.colors.controlSelectedBorder, backgroundColor: theme.colors.controlSelectedSurface },
+  icon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.surfaceAlt },
+  methodCopy: { flex: 1 },
+  methodTitle: { color: theme.colors.controlText },
+  methodTitleActive: { color: theme.colors.controlSelectedText },
+  methodDescriptionActive: { color: theme.colors.controlSelectedText },
+  methodIconActive: { backgroundColor: theme.colors.controlSelectedIconSurface },
+  review: { padding: theme.spacing.lg, gap: 12 },
+  reviewRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 16 },
+  reviewLabel: { color: theme.colors.textMuted },
+  reviewValue: { color: theme.colors.text, flex: 1, textAlign: 'right', fontWeight: '700' },
+  notice: { flexDirection: 'row', alignItems: 'flex-start', gap: 9, paddingTop: 4 },
+  noticeText: { color: theme.colors.textSecondary, flex: 1, lineHeight: 19 },
 }));
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
-function HeroBanner({
-  selectedAmount,
-  selectedCurrency,
-  selectedFrequency,
-  selectedMethod,
-  scripture,
-}: {
-  selectedAmount: string;
-  selectedCurrency: string;
-  selectedFrequency: DonateFrequency;
-  selectedMethod: DonateMethod | null;
-  scripture: string;
-}) {
-  const styles = useStyles();
-  const theme  = useAppTheme();
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: Platform.OS !== 'web' }).start();
-  }, [fadeAnim]);
-
-  const pills = [
-    { icon: 'payments'    as const, label: selectedAmount ? `${selectedCurrency} ${selectedAmount}` : 'Select amount' },
-    { icon: 'repeat'      as const, label: frequencyLabel(selectedFrequency) },
-    { icon: 'credit-card' as const, label: selectedMethod?.label ?? 'Payment method' },
-  ];
-
-  return (
-    <Animated.View style={{ opacity: fadeAnim }}>
-      <View style={styles.heroBg}>
-        <View style={styles.heroCircle1} />
-        <View style={styles.heroCircle2} />
-
-        <View style={styles.heroIconRow}>
-          <View style={styles.heroIconCircle}>
-            <MaterialIcons name="volunteer-activism" size={26} color={theme.colors.onPrimary} />
-          </View>
-          <View style={styles.heroTitleWrap}>
-            <CustomText style={styles.heroLabel}>Support the ministry</CustomText>
-            <CustomText variant="heading" style={styles.heroTitle}>Give with purpose</CustomText>
-          </View>
-        </View>
-
-        <View style={styles.pillRow}>
-          {pills.map((pill) => (
-            <View key={pill.label} style={styles.pill}>
-              <MaterialIcons name={pill.icon} size={13} color="rgba(255,255,255,0.85)" />
-              <CustomText style={styles.pillText} numberOfLines={1}>{pill.label}</CustomText>
-            </View>
-          ))}
-        </View>
-
-        <View style={styles.scriptureWrap}>
-          <CustomText style={styles.scriptureText}>{scripture}</CustomText>
-        </View>
-      </View>
-    </Animated.View>
-  );
-}
-
-function SectionCard({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
-  const styles = useStyles();
-  return (
-    <View style={styles.card}>
-      <View style={styles.cardHeader}>
-        <CustomText style={styles.cardTitle}>{title}</CustomText>
-        {subtitle ? <CustomText style={styles.cardSubtitle}>{subtitle}</CustomText> : null}
-      </View>
-      {children}
-    </View>
-  );
-}
-
-// ─── Main screen ──────────────────────────────────────────────────────────────
-
 export default function Donate() {
-  const styles = useStyles();
-  const theme  = useAppTheme();
-  const { width } = useWindowDimensions();
-  const { config } = useMobileAppConfig();
-
-  const isCompact = width < 390;
-  const isTablet  = width >= 768;
-  const donateConfig = config?.donate;
-
-  const quickAmounts    = useMemo(() => donateConfig?.quickAmounts?.length ? donateConfig.quickAmounts : DEFAULT_AMOUNTS, [donateConfig]);
-  const quickByCurrency = useMemo(
-    () => ({ ...DEFAULT_AMOUNTS_BY_CURRENCY, ...(donateConfig?.quickAmountsByCurrency ?? {}) }),
-    [donateConfig],
-  );
-  const currencyOptions = useMemo(
-    () => (donateConfig?.currencyOptions?.length ? donateConfig.currencyOptions : DEFAULT_CURRENCY_OPTIONS),
-    [donateConfig],
-  );
-  const configMethods   = useMemo<DonateMethod[]>(() =>
-    donateConfig?.methods?.length
-      ? donateConfig.methods.map((m) => ({ id: m.id, icon: m.icon as DonateMethod['icon'], label: m.label, subtitle: m.subtitle, badge: m.badge }))
-      : DEFAULT_METHODS,
-    [donateConfig],
-  );
-  const impactBreakdown = useMemo(() =>
-    donateConfig?.impactBreakdown?.length
-      ? donateConfig.impactBreakdown.map((i) => ({ icon: i.icon as React.ComponentProps<typeof MaterialIcons>['name'], label: i.label, pct: i.value }))
-      : IMPACT_ITEMS,
-    [donateConfig],
-  );
-
-  const defaultCurrency = (donateConfig?.currency ?? 'USD').toUpperCase();
-  const [selectedCurrency,  setSelectedCurrency]  = useState(defaultCurrency);
-  const [selectedFrequency, setSelectedFrequency] = useState<DonateFrequency>('monthly');
-  const [selectedAmount,    setSelectedAmount]    = useState('');
-  const [selectedMethodId,  setSelectedMethodId]  = useState('');
-
-  const activeAmounts  = useMemo(() => quickByCurrency[selectedCurrency] ?? quickAmounts, [quickByCurrency, quickAmounts, selectedCurrency]);
-  const selectedMethod = useMemo(() => configMethods.find((m) => m.id === selectedMethodId) ?? configMethods[0] ?? null, [configMethods, selectedMethodId]);
-
-  const scriptures      = config?.donate?.scriptures?.length ? config.donate.scriptures : DEFAULT_SCRIPTURES;
-  const scriptureIndex  = useMemo(() => Math.floor(Date.now() / 86400000) % scriptures.length, [scriptures.length]);
-  const scripture       = scriptures[scriptureIndex] ?? scriptures[0]!;
-
-  const supportEmail   = config?.privacy?.contactEmail ?? 'support@claudygod.org';
+  const styles = useStyles(); const theme = useAppTheme();
+  const { config, loading: configLoading } = useMobileAppConfig();
   const { showToast } = useToast();
-  const [instructions, setInstructions] = useState<{ title: string; message: string; actionLabel?: string; actionUrl?: string } | null>(null);
-  const [isPreparing, setIsPreparing] = useState(false);
+  const donate = config?.donate;
+  const currencies = donate?.currencyOptions?.length ? donate.currencyOptions : FALLBACK_CURRENCIES;
+  const methods = useMemo<Method[]>(() => donate?.methods?.length ? donate.methods.map((method) => ({ ...method, icon: method.icon as Method['icon'] })) : FALLBACK_METHODS, [donate]);
+  const [currency, setCurrency] = useState('USD');
+  const [amount, setAmount] = useState('');
+  const [frequency, setFrequency] = useState<Frequency>('once');
+  const [methodId, setMethodId] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [intent, setIntent] = useState<CreatedIntent | null>(null);
+  const quickAmounts = donate?.quickAmountsByCurrency?.[currency] ?? FALLBACK_AMOUNTS[currency] ?? donate?.quickAmounts ?? [];
+  const selectedCurrency = currencies.find((item) => item.code === currency) ?? currencies[0];
+  const method = methods.find((item) => item.id === methodId) ?? null;
+  const normalizedAmount = amount.trim().replace(',', '.');
+  const amountValid = /^\d+(\.\d{1,2})?$/.test(normalizedAmount) && Number(normalizedAmount) > 0;
 
-  useEffect(() => { setSelectedCurrency(defaultCurrency); }, [defaultCurrency]);
+  useEffect(() => { const configured = (donate?.currency ?? currencies[0]?.code ?? 'USD').toUpperCase(); setCurrency(configured); }, [currencies, donate?.currency]);
+  useEffect(() => { if (!methods.some((item) => item.id === methodId)) setMethodId(methods[0]?.id ?? ''); }, [methods, methodId]);
 
-  useEffect(() => {
-    if (activeAmounts.length > 0 && !activeAmounts.includes(selectedAmount)) {
-      setSelectedAmount(activeAmounts[0] ?? '');
-    }
-  }, [activeAmounts, selectedAmount]);
-
-  useEffect(() => {
-    if (configMethods.length > 0 && !configMethods.some((m) => m.id === selectedMethodId)) {
-      setSelectedMethodId(configMethods[0]?.id ?? '');
-    }
-  }, [configMethods, selectedMethodId]);
-
-  const continueToReview = async () => {
-    if (!selectedAmount || !selectedMethod || isPreparing) return;
-    setIsPreparing(true);
+  const submit = async () => {
+    if (!amountValid || !method || submitting) return;
+    setSubmitting(true);
     try {
-      const result = await createPublicDonationIntent({
-        amount: selectedAmount,
-        currency: selectedCurrency,
-        mode: selectedFrequency,
-        methodId: selectedMethod.id,
-      });
-      setInstructions(result.donationIntent.instructions ?? {
-        title: 'Giving request created',
-        message: 'Contact the ministry giving team to receive the approved completion instructions.',
-        actionLabel: 'Contact giving team',
-        actionUrl: `mailto:${supportEmail}`,
-      });
+      const response = await createPublicDonationIntent({ amount: normalizedAmount, currency, mode: frequency, methodId: method.id, metadata: { source: 'mobile_giving_v2' } });
+      const created = response.donationIntent;
+      setIntent({ id: created.id, status: created.status, title: created.instructions?.title ?? 'Giving request ready', message: created.instructions?.message ?? 'Your request was recorded. Contact the giving team for the approved next step.', actionLabel: created.instructions?.actionLabel, actionUrl: created.instructions?.actionUrl });
     } catch (error) {
-      showToast({
-        title: 'Unable to prepare giving instructions',
-        message: error instanceof Error ? error.message : 'Please try again.',
-        tone: 'error',
-      });
-    } finally {
-      setIsPreparing(false);
-    }
+      showToast({ title: 'Giving request not created', message: error instanceof Error ? error.message : 'Please try again.', tone: 'error' });
+    } finally { setSubmitting(false); }
   };
 
-  const contactSupport = () => {
-    const subject = encodeURIComponent('Giving support request');
-    const body    = encodeURIComponent('Hello, I need help with giving on the ClaudyGod app.');
-    void openExternalUrl(`mailto:${supportEmail}?subject=${subject}&body=${body}`);
-  };
+  return <>
+    <ConfirmModal visible={Boolean(intent)} brandMark icon="volunteer-activism" title={intent?.title ?? 'Giving request'} body={`${intent?.message ?? ''}${intent ? `\n\nReference: ${intent.id.slice(0, 8)} · Status: ${intent.status}` : ''}`} primaryLabel={intent?.actionLabel ?? 'Done'} onPrimary={() => { const url = intent?.actionUrl; setIntent(null); if (url) void openExternalUrl(url); }} onDismiss={() => setIntent(null)} />
+    <PremiumPage title="Giving" eyebrow="Support the ministry" subtitle="A clear, verified path from request to completion">
+      <SurfaceCard tone="strong" style={styles.intro}>
+        <CustomText variant="caption" style={styles.eyebrow}>Secure giving request</CustomText>
+        <CustomText variant="display">Give with clarity.</CustomText>
+        <CustomText variant="body" style={styles.introBody}>Choose your amount and preferred route. The server validates the request and returns the currently approved completion instructions.</CustomText>
+        <View style={styles.steps}>{[true, amountValid, Boolean(method)].map((active, index) => <View key={index} style={[styles.step, active && styles.stepActive]} />)}</View>
+      </SurfaceCard>
 
-  const amountWidth = isCompact ? '47%' : isTablet ? '15%' : '30%';
-  const impactWidth = isCompact ? '100%' : isTablet ? '23%' : '47%';
+      <SurfaceCard tone="subtle" style={styles.card}>
+        <CustomText variant="heading" style={styles.title}>1. Amount</CustomText>
+        <CustomText variant="body" style={styles.description}>Choose the currency first, then enter the exact amount you intend to give.</CustomText>
 
-  return (
-    <>
-      <ConfirmModal
-        visible={Boolean(instructions)}
-        icon="volunteer-activism"
-        title={instructions?.title ?? 'Giving instructions'}
-        body={instructions?.message ?? ''}
-        primaryLabel={instructions?.actionLabel ?? 'Close'}
-        secondaryLabel="Not now"
-        onPrimary={() => {
-          const actionUrl = instructions?.actionUrl;
-          setInstructions(null);
-          if (actionUrl) void openExternalUrl(actionUrl);
-        }}
-        onSecondary={() => setInstructions(null)}
-        onDismiss={() => setInstructions(null)}
-      />
+        <CustomText variant="label" style={styles.fieldLabel}>Currency</CustomText>
+        <View style={styles.currencyGrid}>{currencies.map((item) => { const selected = currency === item.code; return <TVTouchable key={item.code} accessibilityRole="radio" accessibilityLabel={`${item.label}, ${item.code}`} accessibilityState={{ selected }} onPress={() => { setCurrency(item.code); setAmount(''); }} showFocusBorder={false} style={[styles.currencyOption, selected && styles.currencyOptionActive]}><View style={[styles.currencySymbol, selected && styles.currencySymbolActive]}><CustomText style={[styles.currencySymbolText, selected && styles.currencySymbolTextActive]}>{item.symbol ?? item.code.slice(0, 1)}</CustomText></View><View style={styles.currencyCopy}><CustomText variant="label" style={[styles.currencyCode, selected && styles.currencyCodeActive]}>{item.code}</CustomText><CustomText variant="caption" style={[styles.currencyName, selected && styles.currencyNameActive]} numberOfLines={1}>{item.label}</CustomText></View>{selected ? <MaterialIcons name="check-circle" size={19} color={theme.colors.controlSelectedText} /> : null}</TVTouchable>; })}</View>
 
-      <SettingsScaffold
-        title="Giving"
-        subtitle="Partner with the ministry"
-        icon="volunteer-activism"
-        hero={
-          <HeroBanner
-            selectedAmount={selectedAmount}
-            selectedCurrency={selectedCurrency}
-            selectedFrequency={selectedFrequency}
-            selectedMethod={selectedMethod}
-            scripture={scripture}
-          />
-        }
-      >
-        {/* Currency selector */}
-        {currencyOptions.length > 1 ? (
-          <SectionCard title="Currency">
-            <View style={styles.currencyRow}>
-              {currencyOptions.map((opt) => {
-                const active = selectedCurrency === opt.code;
-                return (
-                  <TVTouchable
-                    key={opt.code}
-                    onPress={() => setSelectedCurrency(opt.code)}
-                    showFocusBorder={false}
-                    style={[styles.currencyBase, active ? styles.currencyActive : styles.currencyInactive]}
-                  >
-                    <CustomText style={active ? styles.currencyTxtActive : styles.currencyTxtInactive}>
-                      {opt.code}{opt.symbol ? ` · ${opt.symbol}` : ''}
-                    </CustomText>
-                  </TVTouchable>
-                );
-              })}
-            </View>
-          </SectionCard>
-        ) : null}
-
-        {/* Amount selection */}
-        <SectionCard title="Choose amount" subtitle={`Select how much you'd like to give (${selectedCurrency})`}>
-          <View style={styles.amountGrid}>
-            {activeAmounts.map((amount) => {
-              const active = selectedAmount === amount;
-              return (
-                <TVTouchable
-                  key={`${selectedCurrency}-${amount}`}
-                  onPress={() => setSelectedAmount(amount)}
-                  showFocusBorder={false}
-                  style={[styles.amountBase, active ? styles.amountActive : styles.amountInactive, { width: amountWidth }]}
-                >
-                  <CustomText style={active ? styles.amountValActive : styles.amountValInactive}>
-                    {amount}
-                  </CustomText>
-                  <CustomText style={active ? styles.amountCurActive : styles.amountCurInactive}>
-                    {selectedCurrency}
-                  </CustomText>
-                </TVTouchable>
-              );
-            })}
-          </View>
-        </SectionCard>
-
-        {/* Giving frequency */}
-        <SectionCard title="Giving rhythm" subtitle="How often would you like to give?">
-          <View style={{ flexDirection: isCompact ? 'column' : 'row', gap: 10 }}>
-            {(['monthly', 'weekly', 'daily'] as DonateFrequency[]).map((freq) => {
-              const active = selectedFrequency === freq;
-              return (
-                <TVTouchable
-                  key={freq}
-                  onPress={() => setSelectedFrequency(freq)}
-                  showFocusBorder={false}
-                  style={[styles.freqBase, active ? styles.freqActive : styles.freqInactive]}
-                >
-                  <MaterialIcons
-                    name={freq === 'monthly' ? 'event-repeat' : freq === 'weekly' ? 'date-range' : 'today'}
-                    size={16}
-                    color={active ? theme.colors.onPrimary : theme.colors.textMuted}
-                  />
-                  <CustomText style={active ? styles.freqTxtActive : styles.freqTxtInactive}>
-                    {frequencyLabel(freq)}
-                  </CustomText>
-                </TVTouchable>
-              );
-            })}
-          </View>
-        </SectionCard>
-
-        {/* Giving routes — these collect a preference only; the server returns the
-            currently approved completion instructions and never claims a checkout exists. */}
-        <SectionCard title="Preferred giving route" subtitle="Choose the instructions you want to request">
-          <View style={styles.methodsList}>
-            {configMethods.map((method) => {
-              const active = selectedMethod?.id === method.id;
-              return (
-                <TVTouchable
-                  key={method.id}
-                  onPress={() => setSelectedMethodId(method.id)}
-                  showFocusBorder={false}
-                  style={[styles.methodBase, active ? styles.methodActive : styles.methodInactive]}
-                >
-                  <View style={[styles.methodIconBase, active ? styles.methodIconActive : styles.methodIconInactive]}>
-                    <MaterialIcons name={method.icon} size={20} color={active ? theme.colors.secondary : theme.colors.textMuted} />
-                  </View>
-                  <View style={styles.methodWrap}>
-                    <CustomText style={styles.methodLabel}>{method.label}</CustomText>
-                    <CustomText style={styles.methodSub}>{method.subtitle}</CustomText>
-                  </View>
-                  {method.badge ? (
-                    <View style={styles.methodBadge}>
-                      <CustomText style={styles.methodBadgeText}>{method.badge}</CustomText>
-                    </View>
-                  ) : null}
-                  {active ? <MaterialIcons name="check-circle" size={18} color={theme.colors.primary} /> : null}
-                </TVTouchable>
-              );
-            })}
-          </View>
-        </SectionCard>
-
-        {/* Ministry impact */}
-        <SectionCard title="Your impact" subtitle="How every gift is used to advance the kingdom">
-          <View style={styles.impactGrid}>
-            {impactBreakdown.slice(0, 4).map((item) => (
-              <View key={item.label} style={[styles.impactCard, { width: impactWidth }]}>
-                <View style={styles.impactRow}>
-                  <MaterialIcons name={item.icon} size={16} color={theme.colors.primary} />
-                  <CustomText style={styles.impactPct}>{item.pct}%</CustomText>
-                </View>
-                <CustomText variant="caption" style={styles.impactLabel}>{item.label}</CustomText>
-              </View>
-            ))}
-          </View>
-        </SectionCard>
-
-        {/* CTA */}
-        <View style={styles.ctaWrap}>
-          <AppButton
-            title={selectedAmount ? `Request instructions · ${selectedCurrency} ${selectedAmount}` : 'Select an amount to continue'}
-            size="lg"
-            fullWidth
-            disabled={!selectedAmount}
-            loading={isPreparing}
-            onPress={continueToReview}
-            leftIcon={<MaterialIcons name="contact-support" size={18} color={theme.colors.textInverse} />}
-          />
-          <AppButton
-            title="Need help giving?"
-            variant="secondary"
-            size="lg"
-            fullWidth
-            onPress={contactSupport}
-            leftIcon={<MaterialIcons name="support-agent" size={18} color={theme.colors.text} />}
-          />
+        <CustomText variant="label" style={styles.fieldLabel}>Amount</CustomText>
+        <View style={styles.amountField}>
+          <View style={styles.amountPrefix}><CustomText variant="heading" style={styles.amountSymbol}>{selectedCurrency?.symbol ?? currency}</CustomText><CustomText variant="caption" style={styles.amountCode}>{currency}</CustomText></View>
+          <TextInput accessibilityLabel={`Giving amount in ${currency}`} value={amount} onChangeText={(value) => setAmount(value.replace(/[^0-9.,]/g, ''))} keyboardType="decimal-pad" placeholder="0.00" placeholderTextColor={theme.colors.textMuted} selectionColor={theme.colors.primary} cursorColor={theme.colors.primary} style={styles.input} />
         </View>
+        {amount.length > 0 && !amountValid ? <CustomText variant="caption" style={styles.error}>Enter a positive amount with no more than two decimal places.</CustomText> : null}
 
-        <View style={styles.trustRow}>
-          <MaterialIcons name="verified-user" size={13} color={theme.colors.textMuted} />
-          <CustomText variant="caption" style={styles.trustText}>Secure giving • All transactions are encrypted</CustomText>
-        </View>
-      </SettingsScaffold>
-    </>
-  );
+        {quickAmounts.length ? <><View style={styles.quickHeader}><CustomText variant="label" style={styles.fieldLabel}>Quick amounts</CustomText><CustomText variant="caption" style={styles.quickHint}>Optional</CustomText></View><View style={styles.wrap}>{quickAmounts.map((value) => <TVTouchable key={value} accessibilityLabel={`${currency} ${value}`} onPress={() => setAmount(value)} showFocusBorder={false} style={[styles.chip, amount === value && styles.chipActive]}><CustomText style={[styles.chipText, amount === value && styles.chipTextActive]}>{selectedCurrency?.symbol ?? ''}{value}</CustomText></TVTouchable>)}</View></> : null}
+      </SurfaceCard>
+
+      <SurfaceCard tone="subtle" style={styles.card}>
+        <CustomText variant="heading" style={styles.title}>2. Giving schedule</CustomText>
+        <View style={styles.wrap}>{(['once', 'monthly', 'weekly'] as Frequency[]).map((value) => <TVTouchable key={value} accessibilityRole="radio" accessibilityState={{ selected: frequency === value }} onPress={() => setFrequency(value)} showFocusBorder={false} style={[styles.chip, frequency === value && styles.chipActive]}><CustomText style={[styles.chipText, frequency === value && styles.chipTextActive]}>{value === 'once' ? 'One time' : value[0]!.toUpperCase() + value.slice(1)}</CustomText></TVTouchable>)}</View>
+      </SurfaceCard>
+
+      <SurfaceCard tone="subtle" style={styles.card}>
+        <CustomText variant="heading" style={styles.title}>3. Completion route</CustomText>
+        <CustomText variant="body" style={styles.description}>These options come from the current mobile configuration. Final instructions are returned only after backend validation.</CustomText>
+        {methods.map((item) => { const selected = methodId === item.id; return <TVTouchable key={item.id} accessibilityRole="radio" accessibilityState={{ selected }} onPress={() => setMethodId(item.id)} showFocusBorder={false} style={[styles.method, selected && styles.methodActive]}><View style={[styles.icon, selected && styles.methodIconActive]}><MaterialIcons name={item.icon} size={20} color={selected ? theme.colors.controlSelectedText : theme.colors.primary} /></View><View style={styles.methodCopy}><CustomText variant="label" style={[styles.methodTitle, selected && styles.methodTitleActive]}>{item.label}</CustomText><CustomText variant="caption" style={[styles.description, selected && styles.methodDescriptionActive]}>{item.subtitle}</CustomText></View>{selected ? <MaterialIcons name="check-circle" size={20} color={theme.colors.controlSelectedText} /> : null}</TVTouchable>; })}
+      </SurfaceCard>
+
+      <SurfaceCard tone="strong" style={styles.review}>
+        <CustomText variant="heading">Review request</CustomText>
+        <View style={styles.reviewRow}><CustomText style={styles.reviewLabel}>Amount</CustomText><CustomText style={styles.reviewValue}>{amountValid ? `${currency} ${normalizedAmount}` : 'Not entered'}</CustomText></View>
+        <View style={styles.reviewRow}><CustomText style={styles.reviewLabel}>Schedule</CustomText><CustomText style={styles.reviewValue}>{frequency === 'once' ? 'One time' : frequency}</CustomText></View>
+        <View style={styles.reviewRow}><CustomText style={styles.reviewLabel}>Route</CustomText><CustomText style={styles.reviewValue}>{method?.label ?? 'Unavailable'}</CustomText></View>
+        <View style={styles.notice}><MaterialIcons name="info-outline" size={18} color={theme.colors.primary} /><CustomText variant="caption" style={styles.noticeText}>This creates a tracked giving intent, not a completed payment. Follow only the approved instructions returned by the server.</CustomText></View>
+        <AppButton title="Create giving request" variant="gradient" size="lg" fullWidth disabled={!amountValid || !method || configLoading} loading={submitting} loadingLabel="Validating request" onPress={() => void submit()} />
+      </SurfaceCard>
+    </PremiumPage>
+  </>;
 }

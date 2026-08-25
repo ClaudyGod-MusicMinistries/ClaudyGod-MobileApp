@@ -19,7 +19,6 @@ import { BottomSheet } from '../ui/BottomSheet';
 import { TrustDeviceSheet } from './TrustDeviceSheet';
 import {
   loginMobileUser,
-  loginMobileUserWithGoogle,
   registerMobileUser,
   signInWithTrustedDeviceToken,
 } from '../../services/authService';
@@ -190,9 +189,9 @@ function TrustedUnlock({
 // ─── ChooseMethod ─────────────────────────────────────────────────────────────
 
 function ChooseMethod({
-  onGoogle, onEmail, onOneTimeCode, onSkip, loading,
+  onOAuth, onEmail, onOneTimeCode, onSkip, loading,
 }: {
-  onGoogle: () => void;
+  onOAuth: () => void;
   onEmail: () => void;
   onOneTimeCode: () => void;
   onSkip: () => void;
@@ -204,7 +203,7 @@ function ChooseMethod({
   return (
     <View style={styles.chooseGap}>
       <TVTouchable
-        onPress={onGoogle}
+        onPress={onOAuth}
         disabled={loading}
         showFocusBorder={false}
         style={[styles.googleBtn, { opacity: loading ? 0.6 : 1 }]}
@@ -216,7 +215,7 @@ function ChooseMethod({
             <View style={styles.googleCircle}>
               <CustomText style={styles.googleLetter}>G</CustomText>
             </View>
-            <CustomText style={styles.googleLabel}>Continue with Google</CustomText>
+            <CustomText style={styles.googleLabel}>View secure sign-in options</CustomText>
           </>
         )}
       </TVTouchable>
@@ -438,19 +437,6 @@ export function AccountSheet() {
     }
   };
 
-  const handleGoogle = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const result = await loginMobileUserWithGoogle();
-      await finishSignIn(result.accessToken, result.user.displayName);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Google sign-in failed. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleEmailSubmit = async () => {
     if (!email.trim() || !password.trim()) { setError('Please fill in all fields.'); return; }
     if (mode === 'signup' && !name.trim()) { setError('Enter your name to create an account.'); return; }
@@ -554,7 +540,7 @@ export function AccountSheet() {
 
             {step === 'choose' ? (
               <ChooseMethod
-                onGoogle={() => void handleGoogle()}
+                onOAuth={() => { closeAccountSheet(); router.push(APP_ROUTES.auth.signIn); }}
                 onEmail={() => { setStep('email'); setMode('signin'); setError(''); }}
                 onOneTimeCode={goToOneTimeCode}
                 onSkip={dismiss}
