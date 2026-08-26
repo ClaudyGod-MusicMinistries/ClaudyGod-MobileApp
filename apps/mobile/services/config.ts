@@ -109,23 +109,7 @@ const derivedApiUrl = derivedExpoHost ? `http://${derivedExpoHost}:4000` : '';
 const derivedWebProductionApiUrl = ((): string => {
   if (runtimeMode !== 'production') return '';
   if (typeof window === 'undefined') return '';
-  try {
-    const { hostname } = window.location;
-    const parts = hostname.split('.');
-    if (parts.length >= 2) {
-      const first = parts[0] ?? '';
-      // Map known app subdomains to their API counterpart.
-      // mobileapp.* → apimobile.*   (ClaudyGod naming convention)
-      // app.*        → api.*         (generic fallback)
-      // anything else → api.*
-      const apiSubdomain =
-        first === 'mobileapp' ? 'apimobile' :
-        first === 'mobile'    ? 'apimobile' :
-        'api';
-      return `https://${[apiSubdomain, ...parts.slice(1)].join('.')}`;
-    }
-  } catch { /* ignore */ }
-  return '';
+  return '/api';
 })();
 
 const resolvedApiUrl = explicitApiUrl || derivedWebProductionApiUrl || derivedApiUrl;
@@ -152,8 +136,9 @@ const isPrivateOrLocalUrl = (value: string): boolean => {
 const isWebBrowser = typeof window !== 'undefined' && typeof document !== 'undefined';
 
 if (runtimeMode === 'production') {
-  // API URL is always required — derivedWebProductionApiUrl handles the web case.
-  if (!resolvedApiUrl || !/^https:\/\//i.test(resolvedApiUrl) || isPrivateOrLocalUrl(resolvedApiUrl)) {
+  // Native store builds require a public HTTPS endpoint. The browser build
+  // deliberately uses the same-origin /api gateway served by mobile Nginx.
+  if (!resolvedApiUrl || (!isWebBrowser && (!/^https:\/\//i.test(resolvedApiUrl) || isPrivateOrLocalUrl(resolvedApiUrl)))) {
     throw new Error('Production mobile builds require a public HTTPS API URL.');
   }
 
@@ -173,7 +158,9 @@ export const ENV = {
   apiUrl: resolvedApiUrl,
   apiUrlSource: explicitApiUrl
     ? ('env' as const)
-    : derivedApiUrl
+    : derivedWebProductionApiUrl
+      ? ('web-gateway' as const)
+      : derivedApiUrl
       ? ('expo-host' as const)
       : ('unset' as const),
   expoDevHost: derivedExpoHost,

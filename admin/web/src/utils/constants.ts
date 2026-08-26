@@ -113,7 +113,10 @@ function deriveSiblingOrigin(sub: string): string {
 export function resolveApiUrl(): string {
   const explicit = (import.meta.env.VITE_API_URL || '').trim();
   if (explicit) return explicit.replace(/\/+$/, '');
-  return deriveSiblingOrigin('apimobile');
+  // Production admin traffic is intentionally same-origin. This avoids a
+  // browser CORS dependency for authentication and keeps HttpOnly session
+  // cookies first-party. Local development can override this in .env.
+  return '/api';
 }
 
 export function normalizePublicUrl(value: string): string {

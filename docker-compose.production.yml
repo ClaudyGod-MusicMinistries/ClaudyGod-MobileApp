@@ -216,8 +216,10 @@ services:
       - 1.1.1.1
       - 8.8.8.8
     networks:
-      - edge
-      - internal
+      edge:
+        aliases:
+          - claudygod-mobile-api
+      internal:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=${TRAEFIK_PUBLIC_NETWORK:-traefik-public}"
@@ -389,7 +391,9 @@ services:
       context: ./admin/web
       dockerfile: Dockerfile
       args:
-        VITE_API_URL: ${VITE_API_URL:?VITE_API_URL is required}
+        # Admin authentication/API traffic stays same-origin and is proxied by
+        # admin Nginx to the private API alias on the edge network.
+        VITE_API_URL: /api
         VITE_GOOGLE_LOGIN_URL: ${VITE_GOOGLE_LOGIN_URL:-}
         VITE_MOBILE_PREVIEW_URL: ${VITE_MOBILE_PREVIEW_URL:-}
     restart: unless-stopped
@@ -438,7 +442,9 @@ services:
       dockerfile: Dockerfile.prod
       args:
         CLAUDYGOD_ENV: production
-        EXPO_PUBLIC_API_URL: ${EXPO_PUBLIC_API_URL:?EXPO_PUBLIC_API_URL is required}
+        # Web uses the same-origin private gateway. EAS store builds retain the
+        # public HTTPS API URL from mobile-store-release.yml.
+        EXPO_PUBLIC_API_URL: /api
         EXPO_PUBLIC_SUPABASE_URL: ${EXPO_PUBLIC_SUPABASE_URL:?EXPO_PUBLIC_SUPABASE_URL is required}
         EXPO_PUBLIC_SUPABASE_KEY: ${EXPO_PUBLIC_SUPABASE_KEY:?EXPO_PUBLIC_SUPABASE_KEY is required}
         EAS_PROJECT_ID: ${EAS_PROJECT_ID:-}
