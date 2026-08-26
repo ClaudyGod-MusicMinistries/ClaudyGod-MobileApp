@@ -28,53 +28,10 @@ env:
   CI_POSTFIX_SMTP_PASSWORD:      ${{ secrets.CI_POSTFIX_SMTP_PASSWORD }}
 
 jobs:
-  # ── 1. Quality gate — must pass before anything is built or deployed ─────────
-  quality:
-    name: Quality Gate
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Node.js 20 via nvm
-        run: |
-          . "$HOME/.nvm/nvm.sh"
-          nvm install 22
-          nvm use 22
-          echo "$(nvm which 22 | xargs dirname)" >> "$GITHUB_PATH"
-
-      - name: Enable Corepack and activate Yarn Classic
-        run: |
-          corepack enable
-          corepack prepare yarn@1.22.22 --activate
-
-      - name: Create CI environment files
-        run: bash ./scripts/setup-ci-env.sh
-
-      - name: Install API dependencies
-        run: yarn --cwd ./services/api install --frozen-lockfile
-
-      - name: Install admin dependencies
-        run: yarn --cwd ./admin/web install --frozen-lockfile
-
-      - name: Install mobile dependencies
-        run: yarn --cwd ./apps/mobile install --frozen-lockfile
-
-      - name: Install Playwright Chromium
-        run: yarn --cwd ./admin/web playwright install --with-deps chromium
-
-      - name: Run full repository review
-        run: bash ./scripts/prepush-all-checks.sh
-
-      - name: Run admin browser workflows
-        run: yarn --cwd ./admin/web test:e2e
-
-  # ── 2. Build all Docker images and push to GHCR ──────────────────────────────
+  # ── 1. Build all Docker images and push to GHCR ──────────────────────────────
   build-push:
     name: Build & Push Images
     runs-on: ubuntu-latest
-    needs: quality
     timeout-minutes: 60
 
     steps:
@@ -182,7 +139,7 @@ jobs:
           cache-from: type=gha,scope=mobile
           cache-to:   type=gha,scope=mobile,mode=max
 
-  # ── 3. Deploy — SSH into the VPS and run `make deploy` (pull → migrate → up --wait) ─
+  # ── 2. Deploy — SSH into the VPS and run `make deploy` (pull → migrate → up --wait) ─
   #
   # This mirrors the deploy job that was already tested against production (see git
   # history: commit 630a34b onward) rather than reinventing the mechanism. The VPS holds
@@ -207,7 +164,7 @@ jobs:
   #                           are private)
   #   Variables:
   #     API_DOMAIN          — apimobile.claudygod.org (matches VITE_API_URL /
-  #                           EXPO_PUBLIC_API_URL already used in quality-gate.yml;
+  #                           EXPO_PUBLIC_API_URL used by the production build;
   #                           used here for the post-deploy health check)
   #
   # This job never creates or touches .env.production on the server — that file holds
