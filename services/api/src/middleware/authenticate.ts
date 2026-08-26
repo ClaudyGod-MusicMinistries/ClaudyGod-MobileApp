@@ -16,7 +16,7 @@ const sessionUserToClaims = (user: SafeUser, mfaVerified: boolean): JwtClaims =>
   role: user.role,
   displayName: user.displayName,
   tier: user.tier,
-  mfaEnabled: user.mfaEnabled,
+  mfaEnabled: user.mfaEnabled || mfaVerified,
   mfaVerified,
 });
 

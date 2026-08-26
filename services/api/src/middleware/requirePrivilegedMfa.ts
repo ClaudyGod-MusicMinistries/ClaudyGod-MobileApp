@@ -4,11 +4,16 @@ import { hasMinRole } from './rbac';
 
 export const requirePrivilegedMfa: RequestHandler = (req, _res, next) => {
   if (!req.user) throw new UnauthorizedError('Authentication required', 'AUTH_REQUIRED');
-  if (hasMinRole(req.user.role, 'CREATOR') && !req.user.mfaEnabled) {
+  if (!hasMinRole(req.user.role, 'CREATOR')) {
+    next();
+    return;
+  }
+  if (req.user.mfaVerified) {
+    next();
+    return;
+  }
+  if (!req.user.mfaEnabled) {
     throw new ForbiddenError('Multi-factor authentication is required for privileged access', 'MFA_ENROLLMENT_REQUIRED');
   }
-  if (hasMinRole(req.user.role, 'CREATOR') && !req.user.mfaVerified) {
-    throw new ForbiddenError('Multi-factor verification is required for this session', 'MFA_VERIFICATION_REQUIRED');
-  }
-  next();
+  throw new ForbiddenError('Multi-factor verification is required for this session', 'MFA_VERIFICATION_REQUIRED');
 };

@@ -54,7 +54,7 @@ test('silent session refresh preserves MFA and authorization claims', () => {
   const sessions = read('services/api/src/modules/auth/authSession.service.ts');
   const mfaRoutes = read('services/api/src/modules/auth/mfa.routes.ts');
 
-  assert.match(authenticate, /const sessionUserToClaims[\s\S]*tier: user\.tier,[\s\S]*mfaEnabled: user\.mfaEnabled,[\s\S]*mfaVerified/);
+  assert.match(authenticate, /const sessionUserToClaims[\s\S]*tier: user\.tier,[\s\S]*mfaEnabled: user\.mfaEnabled \|\| mfaVerified,[\s\S]*mfaVerified/);
   assert.equal(
     (authenticate.match(/req\.user = sessionUserToClaims\(session\.user, session\.mfaVerified === true\)/g) ?? []).length,
     2,
