@@ -50,6 +50,7 @@ assert.match(read('services/api/src/infra/bullmq.ts'), /maxRetriesPerRequest:\s*
 assert.doesNotMatch(read('services/api/src/lib/logger.ts'), /process\.on\(/, 'Shared logger must not own process lifecycle');
 
 const deploy = read('.github/workflows/deploy.yml');
+const quality = read('.github/workflows/quality-gate.yml');
 const compose = read('docker-compose.production.yml');
 const makefile = read('Makefile');
 const position = (source, token) => {
@@ -61,8 +62,20 @@ const position = (source, token) => {
 const buildPush = position(deploy, '  build-push:');
 const deployJob = position(deploy, '  deploy:');
 assert.ok(buildPush < deployJob, 'Images must be built before deployment');
+assert.match(quality, /workflow_call:/, 'Quality gate must be reusable by production deployment');
+assert.match(quality, /push:[\s\S]*?branches:\s*\[develop\]/, 'Standalone quality pushes must be limited to develop');
+assert.match(quality, /Run admin browser workflows/, 'Reusable quality gate must retain browser coverage');
+assert.match(deploy, /quality:[\s\S]*?uses:\s*\.\/\.github\/workflows\/quality-gate\.yml[\s\S]*?secrets:\s*inherit/, 'Production must call the reusable quality gate');
+assert.match(deploy, /build-push:[\s\S]*?needs:\s*quality/, 'Image publication must wait for quality verification');
 assert.match(deploy, /deploy:[\s\S]*?needs:\s*build-push/, 'Deployment must wait for image publication');
-assert.equal(exists('.github/workflows/quality-gate.yml'), false, 'The removed duplicate quality-gate workflow must not return');
+assert.match(deploy, /for service in cgm-api worker admin-web mobile-web/, 'Release integrity must cover the background worker');
+assert.match(compose, /worker:[\s\S]*?healthcheck:[\s\S]*?claudygod-worker-ready/, 'Worker must publish a real readiness signal');
+const coreRollout = position(makefile, 'up -d --remove-orphans --wait cgm-api worker');
+const gatewayRollout = position(makefile, 'up -d --remove-orphans --wait admin-web mobile-web');
+assert.ok(coreRollout < gatewayRollout, 'API and worker readiness must precede web gateway replacement');
+const adminNginx = read('admin/web/nginx.conf');
+assert.match(adminNginx, /resolver 127\.0\.0\.11 valid=5s/, 'Admin gateway must promptly refresh Docker DNS');
+assert.match(adminNginx, /proxy_next_upstream error timeout http_502 http_503 http_504/, 'Admin gateway must retry transient upstream replacement failures');
 const capturePrevious = position(deploy, 'previous_image=$(docker inspect');
 const deployRelease = position(deploy, 'if ! IMAGE_TAG="$DEPLOY_SHA" make deploy');
 const certifyIntegrations = position(deploy, 'if ! IMAGE_TAG="$DEPLOY_SHA" make certify-integrations');

@@ -499,8 +499,10 @@ deploy-migrate: require-image-tag
 
 # Start / restart containers with the newly pulled images
 deploy-up: require-image-tag
-	@printf "$(BLUE)Starting production stack (detached)...$(NC)\n"
-	IMAGE_TAG="$(IMAGE_TAG)" $(COMPOSE_PROD) up -d --remove-orphans --wait
+	@printf "$(BLUE)Starting core API and workers, waiting for readiness...$(NC)\n"
+	IMAGE_TAG="$(IMAGE_TAG)" $(COMPOSE_PROD) up -d --remove-orphans --wait cgm-api worker
+	@printf "$(BLUE)Starting web gateways after the API is healthy...$(NC)\n"
+	IMAGE_TAG="$(IMAGE_TAG)" $(COMPOSE_PROD) up -d --remove-orphans --wait admin-web mobile-web prometheus cgm-grafana
 
 # Stop all containers
 deploy-down:
@@ -520,7 +522,8 @@ rollback:
 	@[ -n "$(SHA)" ] || (printf "$(RED)Usage: make rollback SHA=<git-sha>$(NC)\n" && exit 1)
 	@printf "$(YELLOW)Rolling back all services to SHA=$(SHA)...$(NC)\n"
 	IMAGE_TAG=$(SHA) $(COMPOSE_PROD) pull --ignore-pull-failures cgm-api worker admin-web mobile-web postfix-relay
-	IMAGE_TAG=$(SHA) $(COMPOSE_PROD) up -d --remove-orphans --wait
+	IMAGE_TAG=$(SHA) $(COMPOSE_PROD) up -d --remove-orphans --wait cgm-api worker
+	IMAGE_TAG=$(SHA) $(COMPOSE_PROD) up -d --remove-orphans --wait admin-web mobile-web prometheus cgm-grafana
 	@printf "$(GREEN)✓ Rolled back to $(SHA)$(NC)\n"
 
 # git pull + full deploy — one command to update the server

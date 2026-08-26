@@ -1,3 +1,4 @@
+import { rmSync, writeFileSync } from 'node:fs';
 import { env } from './config/env';
 import { closePool } from './db/pool';
 import { emailTransportInfo, verifyEmailTransport } from './infra/email';
@@ -16,6 +17,11 @@ import { startMediaWorker } from './queues/mediaWorker';
 import { reconcilePendingMediaJobs } from './queues/mediaOutbox';
 
 const log = createLogger('worker');
+const WORKER_READY_FILE = '/tmp/claudygod-worker-ready.json';
+
+const clearWorkerReadiness = (): void => {
+  rmSync(WORKER_READY_FILE, { force: true });
+};
 
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -53,6 +59,7 @@ const waitForEmailTransport = async (
 };
 
 const bootWorker = async (): Promise<void> => {
+  clearWorkerReadiness();
   const bootStart = Date.now();
   log.info('Starting workers', { env: env.NODE_ENV });
 
@@ -70,6 +77,7 @@ const bootWorker = async (): Promise<void> => {
   await reconcilePendingEmailJobs();
   await reconcileExpiredAdminUploads();
   await reconcilePendingMediaJobs();
+  writeFileSync(WORKER_READY_FILE, JSON.stringify({ pid: process.pid, readyAt: new Date().toISOString() }));
   const outboxTimer = setInterval(() => {
     void reconcilePendingContentJobs().catch((error) => {
       log.error('Content outbox reconciliation failed', { error: error instanceof Error ? error.message : String(error) });
@@ -92,6 +100,7 @@ const bootWorker = async (): Promise<void> => {
   log.info('Workers ready', { workers: ['content', 'email', 'stats', 'trending', 'media-security'], bootMs: Date.now() - bootStart });
 
   const shutdown = async (signal: string, error?: unknown): Promise<void> => {
+    clearWorkerReadiness();
     clearInterval(outboxTimer);
     clearInterval(uploadReconciliationTimer);
     clearInterval(emailOutboxTimer);
@@ -124,6 +133,7 @@ const bootWorker = async (): Promise<void> => {
 };
 
 bootWorker().catch(async (error) => {
+  clearWorkerReadiness();
   log.error('Fatal worker startup error', {
     error: error instanceof Error ? error.message : String(error),
     stack: error instanceof Error ? error.stack : undefined,

@@ -32,5 +32,5 @@ test('health checks and private API proxy return within bounded time', () => {
   assert.match(health, /withTimeout\(emailQueue\.getJobCounts\(\), 1_500/);
   assert.match(nginx, /proxy_connect_timeout 3s/);
   assert.match(nginx, /error_page 502 503 504 = @api_unavailable/);
-  assert.match(nginx, /"code":"API_UPSTREAM_UNAVAILABLE"/);
+  assert.match(nginx, /"code":"SERVICE_UNAVAILABLE"/);
 });
