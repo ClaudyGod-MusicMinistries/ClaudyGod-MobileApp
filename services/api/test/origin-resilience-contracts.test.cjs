@@ -34,3 +34,17 @@ test('health checks and private API proxy return within bounded time', () => {
   assert.match(nginx, /error_page 502 503 504 = @api_unavailable/);
   assert.match(nginx, /"code":"SERVICE_UNAVAILABLE"/);
 });
+
+test('metrics failures are handled and upload security schema is fully migrated', () => {
+  const app = read('services/api/src/app.ts');
+  const migrate = read('services/api/src/db/migrate.ts');
+  const index = read('services/api/src/index.ts');
+
+  assert.match(app, /app\.get\('\/metrics', asyncHandler\(async/);
+  for (const column of ['file_size_bytes', 'trust_status', 'scan_result', 'scan_error', 'scanned_at', 'attached_at']) {
+    assert.match(migrate, new RegExp(`ALTER TABLE upload_sessions ADD COLUMN IF NOT EXISTS ${column}`));
+  }
+  assert.match(migrate, /upload_sessions_trust_status_check/);
+  assert.match(index, /process\.on\('uncaughtException'/);
+  assert.match(index, /process\.on\('unhandledRejection'/);
+});

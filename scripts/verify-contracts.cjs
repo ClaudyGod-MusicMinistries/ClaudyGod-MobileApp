@@ -81,6 +81,8 @@ assert.match(compose, /source\.includes\('claudygod-worker-ready\.json'\)[\s\S]*
 const coreRollout = position(makefile, 'up -d --remove-orphans --wait cgm-api worker');
 const gatewayRollout = position(makefile, 'up -d --remove-orphans --wait admin-web mobile-web');
 assert.ok(coreRollout < gatewayRollout, 'API and worker readiness must precede web gateway replacement');
+assert.match(makefile, /deploy-up:[\s\S]*?deploy-diagnostics/, 'Failed rollouts must print actionable diagnostics');
+assert.match(compose, /if\(!r\.ok\)console\.error\(body\)/, 'API health failures must preserve their response in Docker health logs');
 const adminNginx = read('admin/web/nginx.conf');
 assert.match(adminNginx, /resolver 127\.0\.0\.11 valid=5s/, 'Admin gateway must promptly refresh Docker DNS');
 assert.match(adminNginx, /proxy_next_upstream error timeout http_502 http_503 http_504/, 'Admin gateway must retry transient upstream replacement failures');
