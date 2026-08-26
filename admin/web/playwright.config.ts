@@ -13,7 +13,9 @@ export default defineConfig({
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
-    command: 'yarn build && yarn preview',
+    // Exercise the same-origin production gateway contract in CI. Network
+    // routes are mocked by the tests, but their URLs must still use /api.
+    command: 'VITE_API_URL=/api yarn build && yarn preview',
     url: 'http://127.0.0.1:4173',
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

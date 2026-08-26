@@ -210,14 +210,14 @@ done
 # ── Summary ───────────────────────────────────────────────────────────────────
 section "Summary"
 printf "
-  If section 6 shows ${CYAN}api.claudygod.org${NC} inside the admin bundle:
-    → The admin image was built with the wrong VITE_API_URL.
-    → Fix: update GitHub Variable VITE_API_URL to https://${API_DOMAIN:-apimobile.claudygod.org}
-      and re-run the deploy workflow (or rebuild locally).
+  If section 6 shows any absolute API hostname inside the admin bundle:
+    → The admin image is stale or was built with the old cross-origin API URL.
+    → Fix: rebuild and deploy admin-web from the current source. Production
+      admin images use VITE_API_URL=/api and proxy privately to cgm-api.
 
-  If section 5 shows CORS FAIL for the old domain api.claudygod.org:
-    → Traefik has no route for that domain. Requests return no CORS headers.
-    → Same fix as above — rebuild the admin image with the correct URL.
+  If the admin browser still requests apimobile.claudygod.org:
+    → Purge the admin site's cached HTML and redeploy admin-web. Browser
+      authentication requests must target mobileadmin.claudygod.org/api/*.
 
   If section 5 shows CORS FAIL for the correct domain:
     → Check CORS_ORIGIN in .env.production includes the admin domain.

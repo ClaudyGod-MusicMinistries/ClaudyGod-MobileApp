@@ -429,9 +429,9 @@ docker-build-api:
 	@printf "$(GREEN)✓ API image built$(NC)\n"
 
 docker-build-admin:
-	@printf "$(BLUE)Building admin-web image (VITE_API_URL=$(VITE_API_URL))...$(NC)\n"
+	@printf "$(BLUE)Building admin-web image with same-origin /api gateway...$(NC)\n"
 	docker build --platform linux/amd64 \
-		--build-arg VITE_API_URL="$(VITE_API_URL)" \
+		--build-arg VITE_API_URL="/api" \
 		--build-arg VITE_GOOGLE_LOGIN_URL="$(VITE_GOOGLE_LOGIN_URL)" \
 		--build-arg VITE_MOBILE_PREVIEW_URL="$(VITE_MOBILE_PREVIEW_URL)" \
 		-t $(ADMIN_IMAGE):$(IMAGE_TAG) \

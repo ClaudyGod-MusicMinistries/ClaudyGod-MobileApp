@@ -107,7 +107,7 @@ jobs:
       - name: Build admin-web image
         run: |
           docker build --platform linux/amd64 \
-            --build-arg VITE_API_URL=https://apimobile.claudygod.org \
+            --build-arg VITE_API_URL=/api \
             --build-arg VITE_GOOGLE_LOGIN_URL=https://apimobile.claudygod.org/v1/auth/google/start \
             --build-arg VITE_MOBILE_PREVIEW_URL=https://mobileapp.claudygod.org \
             -t claudygod-admin:ci \

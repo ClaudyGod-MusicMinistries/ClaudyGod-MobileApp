@@ -82,7 +82,6 @@ jobs:
 
       - name: Verify production public build configuration
         env:
-          VITE_API_URL: ${{ vars.VITE_API_URL || secrets.VITE_API_URL }}
           VITE_SENTRY_DSN: ${{ vars.VITE_SENTRY_DSN || secrets.VITE_SENTRY_DSN }}
           VITE_MOBILE_PREVIEW_URL: ${{ vars.VITE_MOBILE_PREVIEW_URL || secrets.VITE_MOBILE_PREVIEW_URL }}
           EXPO_PUBLIC_API_URL: ${{ vars.EXPO_PUBLIC_API_URL || secrets.EXPO_PUBLIC_API_URL }}
@@ -92,14 +91,14 @@ jobs:
           EAS_PROJECT_ID: ${{ vars.EAS_PROJECT_ID || secrets.EAS_PROJECT_ID }}
         run: |
           set -euo pipefail
-          for name in VITE_API_URL VITE_SENTRY_DSN VITE_MOBILE_PREVIEW_URL EXPO_PUBLIC_API_URL EXPO_PUBLIC_SUPABASE_URL EXPO_PUBLIC_SUPABASE_KEY EXPO_PUBLIC_SENTRY_DSN EAS_PROJECT_ID; do
+          for name in VITE_SENTRY_DSN VITE_MOBILE_PREVIEW_URL EXPO_PUBLIC_API_URL EXPO_PUBLIC_SUPABASE_URL EXPO_PUBLIC_SUPABASE_KEY EXPO_PUBLIC_SENTRY_DSN EAS_PROJECT_ID; do
             value="${!name:-}"
             if [ -z "$value" ] || printf '%s' "$value" | grep -Eqi 'placeholder|your_|example|validation'; then
               echo "::error::$name is missing or contains a placeholder"
               exit 1
             fi
           done
-          for name in VITE_API_URL VITE_SENTRY_DSN VITE_MOBILE_PREVIEW_URL EXPO_PUBLIC_API_URL EXPO_PUBLIC_SUPABASE_URL EXPO_PUBLIC_SENTRY_DSN; do
+          for name in VITE_SENTRY_DSN VITE_MOBILE_PREVIEW_URL EXPO_PUBLIC_API_URL EXPO_PUBLIC_SUPABASE_URL EXPO_PUBLIC_SENTRY_DSN; do
             value="${!name}"
             case "$value" in https://*) ;; *) echo "::error::$name must use HTTPS"; exit 1;; esac
           done
@@ -153,7 +152,7 @@ jobs:
           platforms:  linux/amd64
           push:       true
           build-args: |
-            VITE_API_URL=${{ vars.VITE_API_URL || secrets.VITE_API_URL }}
+            VITE_API_URL=/api
             VITE_GOOGLE_LOGIN_URL=${{ vars.VITE_GOOGLE_LOGIN_URL || secrets.VITE_GOOGLE_LOGIN_URL }}
             VITE_MOBILE_PREVIEW_URL=${{ vars.VITE_MOBILE_PREVIEW_URL || secrets.VITE_MOBILE_PREVIEW_URL }}
             VITE_SENTRY_DSN=${{ vars.VITE_SENTRY_DSN || secrets.VITE_SENTRY_DSN }}

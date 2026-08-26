@@ -216,8 +216,10 @@ services:
       - 1.1.1.1
       - 8.8.8.8
     networks:
-      - edge
-      - internal
+      edge:
+        aliases:
+          - claudygod-mobile-api
+      internal:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=${TRAEFIK_PUBLIC_NETWORK:-traefik-public}"
@@ -389,7 +391,9 @@ services:
       context: ./admin/web
       dockerfile: Dockerfile
       args:
-        VITE_API_URL: ${VITE_API_URL:?VITE_API_URL is required}
+        # Admin authentication/API traffic stays same-origin and is proxied by
+        # admin Nginx to the private API alias on the edge network.
+        VITE_API_URL: /api
         VITE_GOOGLE_LOGIN_URL: ${VITE_GOOGLE_LOGIN_URL:-}
         VITE_MOBILE_PREVIEW_URL: ${VITE_MOBILE_PREVIEW_URL:-}
     restart: unless-stopped
