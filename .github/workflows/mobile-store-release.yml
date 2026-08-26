@@ -38,15 +38,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: yarn
-
-      - name: Enable Yarn Classic
-        run: |
-          corepack enable
-          corepack prepare yarn@1.22.22 --activate
+      - name: Set up approved Node and Yarn toolchain
+        run: bash ./scripts/setup-node-ci.sh
 
       - name: Verify store credentials
         run: |
