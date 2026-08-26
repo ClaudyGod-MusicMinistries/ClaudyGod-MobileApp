@@ -293,7 +293,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "node -e \"const fs=require('fs');const state=JSON.parse(fs.readFileSync('/tmp/claudygod-worker-ready.json','utf8'));process.kill(state.pid,0)\""
+          "node -e \"const fs=require('fs');const source=fs.readFileSync('dist/worker.js','utf8');if(source.includes('claudygod-worker-ready.json')){const state=JSON.parse(fs.readFileSync('/tmp/claudygod-worker-ready.json','utf8'));process.kill(state.pid,0)}else{const zero=String.fromCharCode(0);const alive=fs.readdirSync('/proc').filter(p=>/^\\d+$/.test(p)).some(p=>{try{const args=fs.readFileSync('/proc/'+p+'/cmdline','utf8').split(zero);return args[0]==='node'&&args[1]==='dist/worker.js'}catch{return false}});if(!alive)process.exit(1)}\""
         ]
       interval: 30s
       timeout: 5s
