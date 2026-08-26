@@ -102,7 +102,9 @@ const buildAccessToken = (user: SafeUser, mfaVerified: boolean): string =>
     role: user.role,
     displayName: user.displayName,
     tier: user.tier,
-    mfaEnabled: user.mfaEnabled,
+    // A verified session is stronger evidence than the denormalized enrollment
+    // flag. Never issue the contradictory { enabled: false, verified: true }.
+    mfaEnabled: user.mfaEnabled || mfaVerified,
     mfaVerified,
   });
 
