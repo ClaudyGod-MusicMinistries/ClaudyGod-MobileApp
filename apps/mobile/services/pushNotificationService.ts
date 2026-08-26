@@ -22,7 +22,13 @@ let notificationsModulePromise: Promise<NotificationsModule> | null = null;
 let notificationHandlerConfigured = false;
 
 async function getNotificationsModule(): Promise<NotificationsModule | null> {
-  if (isExpoGo) return null;
+  // expo-notifications does not implement remote push registration on web.
+  // Importing it just to query permission initializes its web emitter and logs
+  // an unsupported push-token listener warning. Browser notification delivery
+  // requires a separate Web Push service-worker/VAPID implementation; until
+  // that provider exists, expose the capability as unavailable rather than
+  // pretending Expo's native transport works in a browser.
+  if (isExpoGo || Platform.OS === 'web') return null;
 
   notificationsModulePromise ??= import('expo-notifications');
   const notifications = await notificationsModulePromise;

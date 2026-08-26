@@ -62,6 +62,54 @@ test('admin authentication requires MFA before workspace access', async ({ page 
   await expect(page.getByRole('heading', { name: 'Which workspace do you need?' })).toBeVisible();
 });
 
+test('workspace chooser routes independently to mobile and web studios', async ({ page }) => {
+  await mockAuthenticatedSession(page);
+  await page.goto('/choose-workspace');
+
+  await page.getByRole('button', { name: /Mobile Studio/ }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page.getByRole('link', { name: 'Switch workspace' })).toBeVisible();
+
+  await page.getByRole('link', { name: 'Switch workspace' }).click();
+  await page.getByRole('button', { name: /Web Studio/ }).click();
+  await expect(page).toHaveURL(/\/web\/dashboard$/);
+  await expect(page.getByRole('link', { name: 'Switch workspace' })).toBeVisible();
+});
+
+test('session discovery avoids preflight-only headers and MFA setup submits once', async ({ page }) => {
+  const enrollingAdmin = { ...admin, mfaEnabled: false, mfaVerified: false };
+  let sessionHeaders: Record<string, string> = {};
+  let verificationRequests = 0;
+
+  await page.route('**/v1/**', async (route) => {
+    const path = new URL(route.request().url()).pathname;
+    if (path.endsWith('/v1/auth/session')) {
+      sessionHeaders = route.request().headers();
+      return json(route, { authenticated: true, user: enrollingAdmin });
+    }
+    if (path.endsWith('/v1/auth/mfa/setup')) {
+      return json(route, { secret: 'TESTSECRET', otpauthUrl: 'otpauth://totp/test', qrDataUrl: '' });
+    }
+    if (path.endsWith('/v1/auth/mfa/verify-setup')) {
+      verificationRequests += 1;
+      return json(route, { codes: ['A1B2C3D4'] });
+    }
+    if (path.endsWith('/v1/auth/refresh')) return json(route, { user: admin });
+    return json(route, {});
+  });
+
+  await page.goto('/security');
+  expect(sessionHeaders['content-type']).toBeUndefined();
+  expect(sessionHeaders['x-request-id']).toBeUndefined();
+  expect(sessionHeaders['x-claudy-client-platform']).toBeUndefined();
+
+  await page.getByRole('button', { name: 'Begin secure setup' }).click();
+  await page.getByLabel('Verification code').fill('123456');
+  await page.getByRole('button', { name: 'Verify and enable MFA' }).click();
+  await expect(page.getByText('A1B2C3D4')).toBeVisible();
+  expect(verificationRequests).toBe(1);
+});
+
 test('super admin can see and retry a failed media security job', async ({ page }) => {
   await mockAuthenticatedSession(page);
   await page.goto('/system');

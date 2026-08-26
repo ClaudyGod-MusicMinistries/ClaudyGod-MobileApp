@@ -35,12 +35,13 @@ const props = withDefaults(defineProps<{
   tag?: string;
   tooltip?: string;
   ariaLabel?: string;
+  type?: 'button' | 'submit' | 'reset';
 }>(), { variant: 'primary', size: 'md' });
 
 defineEmits<{ (e: 'click', evt: MouseEvent): void }>();
 
 const tag = computed(() => props.href ? 'a' : (props.tag || 'button'));
-const tagProps = computed(() => props.href ? { href: props.href } : { type: 'button' });
+const tagProps = computed(() => props.href ? { href: props.href } : { type: props.type ?? 'button' });
 
 const sizeClass = computed(() => ({
   xs: 'h-8 px-2.5 text-xs rounded-[var(--radius-control)]',

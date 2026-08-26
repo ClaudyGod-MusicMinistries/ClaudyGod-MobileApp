@@ -22,7 +22,7 @@
         <form class="space-y-3" @submit.prevent="verify">
           <label class="block space-y-1.5"><span class="text-xs font-medium text-ink-muted">Verification code</span><input v-model.trim="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" class="h-11 w-full max-w-xs rounded-xl border border-border bg-bg-1 px-3 font-mono text-lg tracking-[0.3em] text-ink outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20" /></label>
           <p v-if="error" class="text-xs text-danger" role="alert">{{ error }}</p>
-          <AppButton :loading="loading" :disabled="code.length !== 6" @click="verify">Verify and enable MFA</AppButton>
+          <AppButton type="submit" :loading="loading" :disabled="code.length !== 6">Verify and enable MFA</AppButton>
         </form>
       </div>
 
