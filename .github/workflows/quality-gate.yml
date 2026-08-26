@@ -9,7 +9,11 @@ on:
   pull_request:
     branches: [main, develop]
   push:
-    branches: [main, develop]
+    # `deploy.yml` owns main pushes and already runs the same full quality gate
+    # before building and deploying. Starting this workflow too requested
+    # duplicate hosted runners for one production commit and made runner
+    # capacity incidents substantially worse.
+    branches: [develop]
 
 concurrency:
   group: quality-gate-${{ github.ref }}
