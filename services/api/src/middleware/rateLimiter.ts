@@ -1,4 +1,5 @@
 import rateLimit from 'express-rate-limit';
+import { createHash } from 'node:crypto';
 import type { Options as RateLimitOptions } from 'express-rate-limit';
 import { RedisStore, type RedisReply } from 'rate-limit-redis';
 import type { Request, Response, NextFunction } from 'express';
@@ -89,6 +90,30 @@ export const authLimiter = rateLimit({
     const body = req.body as Record<string, unknown>;
     const email = typeof body?.email === 'string' ? body.email : 'unknown';
     return `${req.ip}-${email.toLowerCase()}`;
+  },
+});
+
+// MFA challenges are already bound to a short-lived, one-time action token.
+// Keep their attempt budget separate from password sign-in so verification and
+// resend requests do not consume (or share) the generic "IP + unknown email"
+// bucket used by endpoints whose body does not contain an email address.
+export const mfaChallengeLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: 'Too many verification attempts. Wait before trying this challenge again.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: redisStore('mfa-challenge'),
+  passOnStoreError,
+  handler: rejectionHandler('mfa-challenge'),
+  skip: (_req: Request) => process.env.NODE_ENV === 'development',
+  keyGenerator: (req: Request) => {
+    const body = req.body as Record<string, unknown>;
+    const token = typeof body?.mfaToken === 'string' ? body.mfaToken : '';
+    const challengeKey = token
+      ? createHash('sha256').update(token).digest('hex')
+      : 'missing';
+    return `${req.ip ?? 'unknown'}-${challengeKey}`;
   },
 });
 

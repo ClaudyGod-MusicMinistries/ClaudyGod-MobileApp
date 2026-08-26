@@ -213,6 +213,7 @@ import type { ComponentPublicInstance } from 'vue';
 import { useRoute, useRouter, RouterLink } from 'vue-router';
 import { ArrowLeft, ShieldCheck } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/auth.store';
+import { normalizeApiError } from '@/api/apiError';
 import { GOOGLE_LOGIN_URL, FACEBOOK_LOGIN_URL, resendMfaCode } from '@/api/auth';
 import AuthPageLayout from '@/components/layout/AuthPageLayout.vue';
 import AppInput from '@/components/ui/AppInput.vue';
@@ -238,8 +239,8 @@ let autoSubmittingCode = '';
 const googleLoginUrl = GOOGLE_LOGIN_URL || null;
 const facebookLoginUrl = FACEBOOK_LOGIN_URL || null;
 
-function startResendCooldown(): void {
-  resendCooldown.value = 30;
+function startResendCooldown(seconds = 30): void {
+  resendCooldown.value = Math.max(1, Math.ceil(seconds));
   if (resendTimer) clearInterval(resendTimer);
   resendTimer = setInterval(() => {
     resendCooldown.value = Math.max(0, resendCooldown.value - 1);
@@ -334,9 +335,10 @@ async function resendCode(): Promise<void> {
     const result = await resendMfaCode(mfaToken.value);
     mfaMessage.value = result.message;
     startResendCooldown();
-  } catch {
-    // The shared API error is displayed by the next verification attempt; keep
-    // the current challenge usable instead of clearing the login state.
+  } catch (error) {
+    const apiError = normalizeApiError(error);
+    mfaMessage.value = apiError.message;
+    if (apiError.retryAfterSeconds) startResendCooldown(apiError.retryAfterSeconds);
   } finally {
     resendLoading.value = false;
   }

@@ -43,6 +43,17 @@ export class UnprocessableError extends HttpError {
   }
 }
 
+export class TooManyRequestsError extends HttpError {
+  public readonly retryAfterSeconds: number;
+
+  constructor(message: string, retryAfterSeconds: number, code = 'RATE_LIMITED') {
+    const normalizedRetryAfter = Math.max(1, Math.ceil(retryAfterSeconds));
+    super(429, message, { retryAfterSeconds: normalizedRetryAfter }, code);
+    this.name = 'TooManyRequestsError';
+    this.retryAfterSeconds = normalizedRetryAfter;
+  }
+}
+
 export class InternalError extends HttpError {
   constructor(message = 'Internal server error', code?: string) {
     super(500, message, undefined, code ?? 'INTERNAL_ERROR');

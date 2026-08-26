@@ -6,6 +6,7 @@ import { UnauthorizedError } from '../../lib/errors';
 import { validateBody, validateSchema } from '../../lib/validation';
 import {
   authLimiter,
+  mfaChallengeLimiter,
   passwordResetLimiter,
   emailVerificationLimiter,
   inviteLimiter,
@@ -182,7 +183,7 @@ const mfaVerifyLoginSchema = z.object({
 
 authRouter.post(
   '/mfa/verify',
-  authLimiter,
+  mfaChallengeLimiter,
   asyncHandler(async (req, res) => {
     const { mfaToken, code } = validateSchema(mfaVerifyLoginSchema, req.body);
     const result = await verifyMfaLogin({ mfaToken, code }, getAuthRequestContext(req));
@@ -193,7 +194,7 @@ authRouter.post(
 
 authRouter.post(
   '/mfa/resend',
-  authLimiter,
+  mfaChallengeLimiter,
   asyncHandler(async (req, res) => {
     const { mfaToken } = validateSchema(z.object({ mfaToken: z.string().min(32, 'Invalid MFA token') }), req.body);
     const result = await resendMfaLoginCode(mfaToken, getAuthRequestContext(req));

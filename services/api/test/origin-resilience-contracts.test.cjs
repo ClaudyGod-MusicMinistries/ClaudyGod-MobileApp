@@ -63,3 +63,23 @@ test('silent session refresh preserves MFA and authorization claims', () => {
   assert.match(sessions, /mfa_verified = TRUE[\s\S]*refresh_token_hash = \$3/);
   assert.match(mfaRoutes, /verifyMfaSetup[\s\S]*markRefreshSessionMfaVerified/);
 });
+
+test('OTP throttling uses HTTP 429 with an exact server-driven retry window', () => {
+  const otp = read('services/api/src/modules/auth/emailOtp.service.ts');
+  const errors = read('services/api/src/lib/errors.ts');
+  const errorHandler = read('services/api/src/middleware/errorHandler.ts');
+  const apiError = read('admin/web/src/api/apiError.ts');
+  const login = read('admin/web/src/views/auth/LoginView.vue');
+  const limiter = read('services/api/src/middleware/rateLimiter.ts');
+  const authRoutes = read('services/api/src/modules/auth/auth.routes.ts');
+
+  assert.match(errors, /class TooManyRequestsError[\s\S]*super\(429/);
+  assert.match(otp, /MIN\(created_at\) AS first_created_at/);
+  assert.match(otp, /throw new TooManyRequestsError/);
+  assert.match(errorHandler, /setHeader\('Retry-After'/);
+  assert.match(apiError, /retryAfterSeconds/);
+  assert.match(login, /startResendCooldown\(apiError\.retryAfterSeconds\)/);
+  assert.match(limiter, /mfaChallengeLimiter[\s\S]*createHash\('sha256'\)/);
+  assert.match(authRoutes, /'\/mfa\/verify',[\s\S]*mfaChallengeLimiter/);
+  assert.match(authRoutes, /'\/mfa\/resend',[\s\S]*mfaChallengeLimiter/);
+});

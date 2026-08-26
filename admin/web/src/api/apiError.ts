@@ -11,6 +11,7 @@ export interface ApiProblem {
   error?: string;
   requestId?: string;
   correlationId?: string;
+  details?: { retryAfterSeconds?: number };
 }
 
 export class ApiError extends Error {
@@ -18,6 +19,7 @@ export class ApiError extends Error {
   readonly code?: string;
   readonly requestId?: string;
   readonly retryable: boolean;
+  readonly retryAfterSeconds?: number;
   readonly cause: unknown;
 
   constructor(message: string, options: {
@@ -25,6 +27,7 @@ export class ApiError extends Error {
     code?: string;
     requestId?: string;
     retryable?: boolean;
+    retryAfterSeconds?: number;
     cause?: unknown;
   } = {}) {
     super(message);
@@ -33,6 +36,7 @@ export class ApiError extends Error {
     this.code = options.code;
     this.requestId = options.requestId;
     this.retryable = options.retryable ?? false;
+    this.retryAfterSeconds = options.retryAfterSeconds;
     this.cause = options.cause;
   }
 }
@@ -47,6 +51,11 @@ export function normalizeApiError(error: unknown): ApiError {
   if (axios.isAxiosError<ApiProblem>(error)) {
     const problem = error.response?.data;
     const status = error.response?.status;
+    const retryAfterHeader = Number(error.response?.headers?.['retry-after']);
+    const retryAfterDetail = Number(problem?.details?.retryAfterSeconds);
+    const retryAfterSeconds = Number.isFinite(retryAfterHeader) && retryAfterHeader > 0
+      ? Math.ceil(retryAfterHeader)
+      : Number.isFinite(retryAfterDetail) && retryAfterDetail > 0 ? Math.ceil(retryAfterDetail) : undefined;
     const isServiceUnavailable = status === 502 || status === 503 || status === 504;
     const gatewayMessage = isServiceUnavailable
       ? 'We could not complete verification because the sign-in service is unavailable. Please try again shortly.'
@@ -66,6 +75,7 @@ export function normalizeApiError(error: unknown): ApiError {
         ?? text(problem?.correlationId)
         ?? text(error.response?.headers?.['x-request-id']),
       retryable: !status || status === 408 || status === 429 || status >= 500,
+      retryAfterSeconds,
       cause: error,
     });
   }
