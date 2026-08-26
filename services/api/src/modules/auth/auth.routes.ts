@@ -38,6 +38,7 @@ import {
   resetPassword,
   verifyEmail,
   verifyMfaLogin,
+  resendMfaLoginCode,
   createAccessRequest,
 } from './auth.service';
 import { requestEmailOtp, verifyEmailOtp } from './emailOtp.service';
@@ -183,6 +184,16 @@ authRouter.post(
     const result = await verifyMfaLogin({ mfaToken, code }, getAuthRequestContext(req));
     const session = await buildSessionPayload(result, req);
     respondWithAuthSession(req, res, session, 200);
+  }),
+);
+
+authRouter.post(
+  '/mfa/resend',
+  authLimiter,
+  asyncHandler(async (req, res) => {
+    const { mfaToken } = validateSchema(z.object({ mfaToken: z.string().min(32, 'Invalid MFA token') }), req.body);
+    const result = await resendMfaLoginCode(mfaToken, getAuthRequestContext(req));
+    res.status(202).json(result);
   }),
 );
 

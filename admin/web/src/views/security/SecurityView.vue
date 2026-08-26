@@ -10,19 +10,18 @@
 
     <AppCard v-else class="max-w-2xl p-6">
       <div v-if="!setup" class="space-y-4">
-        <h2 class="text-sm font-semibold text-ink">Add an authenticator</h2>
-        <p class="text-sm leading-6 text-ink-muted">Use Google Authenticator, Microsoft Authenticator, 1Password, Authy, or another TOTP-compatible application.</p>
-        <AppButton :loading="loading" @click="beginSetup">Begin secure setup</AppButton>
+        <h2 class="text-sm font-semibold text-ink">Protect your account with email verification</h2>
+        <p class="text-sm leading-6 text-ink-muted">We will send a short-lived six-digit security code to your registered administrator email whenever additional verification is required.</p>
+        <AppButton :loading="loading" @click="beginSetup">Send verification code</AppButton>
       </div>
 
       <div v-else-if="!backupCodes.length" class="space-y-5">
-        <div><h2 class="text-sm font-semibold text-ink">Scan and verify</h2><p class="mt-1 text-sm text-ink-muted">Scan the QR code, then enter the current six-digit code.</p></div>
-        <img v-if="setup.qrDataUrl" :src="setup.qrDataUrl" alt="Authenticator setup QR code" class="h-48 w-48 rounded-xl border border-border bg-white p-2" />
-        <details class="rounded-xl border border-border bg-bg-1 p-3 text-xs text-ink-muted"><summary class="cursor-pointer font-medium text-ink-soft">Cannot scan the QR code?</summary><code class="mt-2 block break-all select-all">{{ setup.secret }}</code></details>
+        <div><h2 class="text-sm font-semibold text-ink">Check your email</h2><p class="mt-1 text-sm text-ink-muted">Enter the six-digit code sent to <strong class="text-ink-soft">{{ setup.maskedEmail }}</strong>. It expires in {{ setup.expiresInMinutes }} minutes.</p></div>
         <form class="space-y-3" @submit.prevent="verify">
           <label class="block space-y-1.5"><span class="text-xs font-medium text-ink-muted">Verification code</span><input v-model.trim="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" class="h-11 w-full max-w-xs rounded-xl border border-border bg-bg-1 px-3 font-mono text-lg tracking-[0.3em] text-ink outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20" /></label>
           <p v-if="error" class="text-xs text-danger" role="alert">{{ error }}</p>
-          <AppButton :loading="loading" :disabled="code.length !== 6" @click="verify">Verify and enable MFA</AppButton>
+          <AppButton type="submit" :loading="loading" :disabled="code.length !== 6">Verify and enable MFA</AppButton>
+          <AppButton type="button" variant="ghost" :loading="loading" @click="beginSetup">Send a new code</AppButton>
         </form>
       </div>
 
@@ -47,7 +46,7 @@ import AppCard from '@/components/ui/AppCard.vue';
 import AppButton from '@/components/ui/AppButton.vue';
 
 const auth = useAuthStore();
-const setup = ref<{ secret: string; otpauthUrl: string; qrDataUrl: string } | null>(null);
+const setup = ref<{ delivery: 'email'; maskedEmail: string; expiresInMinutes: number } | null>(null);
 const code = ref('');
 const backupCodes = ref<string[]>([]);
 const saved = ref(false);

@@ -23,15 +23,23 @@ const sessionRequest = async <T>(path: string, method: 'GET' | 'POST'): Promise<
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), 15_000);
   try {
+    // Session discovery is a credentialed, read-only GET. Keep it a CORS
+    // safelisted request so the login page does not depend on an avoidable
+    // preflight before it can determine authentication state. Mutating refresh
+    // requests retain JSON and observability headers.
+    const headers: HeadersInit = method === 'GET'
+      ? { Accept: 'application/json' }
+      : {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          'X-Claudy-Client-Platform': 'web',
+          'X-Request-ID': crypto.randomUUID(),
+        };
+
     const response = await fetch(`${API_URL}${path}`, {
       method,
       credentials: 'include',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-        'X-Claudy-Client-Platform': 'web',
-        'X-Request-ID': crypto.randomUUID(),
-      },
+      headers,
       body: method === 'POST' ? '{}' : undefined,
       signal: controller.signal,
     });

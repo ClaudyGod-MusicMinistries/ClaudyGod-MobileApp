@@ -122,7 +122,7 @@
           <ShieldCheck class="w-6 h-6 text-primary-soft" />
         </div>
         <h2 class="text-xl font-black text-ink tracking-tight">Verification code</h2>
-        <p class="text-sm text-ink-soft mt-1">Enter the 6-digit security code from your authenticator app.</p>
+        <p class="text-sm text-ink-soft mt-1">{{ mfaMessage || 'Enter the 6-digit security code sent to your registered email address.' }}</p>
       </div>
 
       <div v-if="auth.error"
@@ -139,11 +139,12 @@
         type="text"
         placeholder="· · · · · ·"
         required
-        maxlength="6"
+        maxlength="8"
         autocomplete="one-time-code"
         inputmode="numeric"
         id="mfa-code"
       />
+      <p class="-mt-3 text-xs text-ink-muted">You may also enter one of your eight-character recovery codes.</p>
 
       <AppButton
         type="submit"
@@ -153,6 +154,17 @@
         :full-width="true"
       >
         {{ auth.isLoading ? 'Verifying…' : 'Verify' }}
+      </AppButton>
+
+      <AppButton
+        type="button"
+        variant="ghost"
+        :full-width="true"
+        :loading="resendLoading"
+        :disabled="resendCooldown > 0"
+        @click="resendCode"
+      >
+        {{ resendCooldown > 0 ? `Send a new code in ${resendCooldown}s` : 'Send a new code' }}
       </AppButton>
 
       <button
@@ -168,11 +180,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { onUnmounted, ref } from 'vue';
 import { useRoute, useRouter, RouterLink } from 'vue-router';
 import { ArrowLeft, ShieldCheck } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/auth.store';
-import { GOOGLE_LOGIN_URL, FACEBOOK_LOGIN_URL } from '@/api/auth';
+import { GOOGLE_LOGIN_URL, FACEBOOK_LOGIN_URL, resendMfaCode } from '@/api/auth';
 import AuthPageLayout from '@/components/layout/AuthPageLayout.vue';
 import AppInput from '@/components/ui/AppInput.vue';
 import AppButton from '@/components/ui/AppButton.vue';
@@ -186,15 +198,35 @@ const password = ref('');
 const mfaCode = ref('');
 const mfaRequired = ref(false);
 const mfaToken = ref('');
+const mfaMessage = ref('');
+const resendLoading = ref(false);
+const resendCooldown = ref(0);
+let resendTimer: ReturnType<typeof setInterval> | null = null;
 const googleLoginUrl = GOOGLE_LOGIN_URL || null;
 const facebookLoginUrl = FACEBOOK_LOGIN_URL || null;
+
+function startResendCooldown(): void {
+  resendCooldown.value = 30;
+  if (resendTimer) clearInterval(resendTimer);
+  resendTimer = setInterval(() => {
+    resendCooldown.value = Math.max(0, resendCooldown.value - 1);
+    if (resendCooldown.value === 0 && resendTimer) {
+      clearInterval(resendTimer);
+      resendTimer = null;
+    }
+  }, 1000);
+}
+
+onUnmounted(() => { if (resendTimer) clearInterval(resendTimer); });
 
 async function onLogin(): Promise<void> {
   try {
     const res = await auth.login(email.value, password.value);
     if (res.mfaRequired) {
       mfaToken.value = res.mfaToken;
+      mfaMessage.value = res.message || '';
       mfaRequired.value = true;
+      startResendCooldown();
       return;
     }
     // Every fresh login lands on the workspace chooser now — Mobile Studio and
@@ -205,6 +237,21 @@ async function onLogin(): Promise<void> {
     await router.push('/choose-workspace');
   } catch {
     // auth.error is set by the store — the template already displays it
+  }
+}
+
+async function resendCode(): Promise<void> {
+  if (!mfaToken.value || resendLoading.value || resendCooldown.value > 0) return;
+  resendLoading.value = true;
+  try {
+    const result = await resendMfaCode(mfaToken.value);
+    mfaMessage.value = result.message;
+    startResendCooldown();
+  } catch {
+    // The shared API error is displayed by the next verification attempt; keep
+    // the current challenge usable instead of clearing the login state.
+  } finally {
+    resendLoading.value = false;
   }
 }
 

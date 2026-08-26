@@ -411,21 +411,24 @@ export const buildAccountEmailChangeTemplate = (input: {
 export const buildOtpTemplate = (input: {
   code: string;
   expiresInMinutes: number;
+  context?: 'sign_in' | 'sign_up' | 'mfa_setup' | 'mfa_login' | 'mfa_action';
 }): RenderedEmailTemplate => {
-  const subject = `Your ${brandName} sign-in code: ${input.code}`;
+  const isSecurityVerification = input.context === 'mfa_setup' || input.context === 'mfa_login' || input.context === 'mfa_action';
+  const action = isSecurityVerification ? 'security verification' : 'sign-in';
+  const subject = `Your ${brandName} ${action} code: ${input.code}`;
   const text = toTextBlock([
-    `Your ${brandName} sign-in code is: ${input.code}`,
+    `Your ${brandName} ${action} code is: ${input.code}`,
     '',
     `This code expires in ${input.expiresInMinutes} minutes.`,
     'Never share this code with anyone — our team will never ask for it.',
     supportFooter,
   ]);
   const html = renderShell({
-    preview: `Your ${brandName} sign-in code is ${input.code}`,
-    eyebrow: 'Sign-in code',
+    preview: `Your ${brandName} ${action} code is ${input.code}`,
+    eyebrow: isSecurityVerification ? 'Security verification' : 'Sign-in code',
     title: 'Your verification code',
     greeting: 'Hi,',
-    bodyHtml: `<p style="margin: 0 0 20px 0;">Use the code below to sign in to your ${escapeHtml(brandName)} account. It expires in <strong>${escapeHtml(String(input.expiresInMinutes))} minutes</strong>.</p>
+    bodyHtml: `<p style="margin: 0 0 20px 0;">Use the code below to ${isSecurityVerification ? 'complete security verification for' : 'sign in to'} your ${escapeHtml(brandName)} account. It expires in <strong>${escapeHtml(String(input.expiresInMinutes))} minutes</strong>.</p>
     <div style="background:#f3f0ff;border:1px solid #d4c8ff;border-radius:16px;padding:24px 32px;text-align:center;margin:0 0 20px 0;">
       <div style="font-size:36px;font-weight:800;letter-spacing:0.25em;color:#6d28d9;font-family:monospace;">${escapeHtml(input.code)}</div>
     </div>

@@ -837,7 +837,7 @@ const migrationStatements = [
   `CREATE TABLE IF NOT EXISTS user_mfa_factors (
      id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
      user_id      UUID        NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,
-     factor_type  TEXT        NOT NULL DEFAULT 'totp' CHECK (factor_type IN ('totp')),
+     factor_type  TEXT        NOT NULL DEFAULT 'email' CHECK (factor_type IN ('totp', 'email')),
      secret       TEXT        NOT NULL,
      is_verified  BOOLEAN     NOT NULL DEFAULT FALSE,
      is_active    BOOLEAN     NOT NULL DEFAULT TRUE,
@@ -847,6 +847,9 @@ const migrationStatements = [
    )`,
   `CREATE INDEX IF NOT EXISTS idx_user_mfa_factors_user_active
      ON user_mfa_factors (user_id) WHERE is_active = TRUE`,
+  `ALTER TABLE user_mfa_factors DROP CONSTRAINT IF EXISTS user_mfa_factors_factor_type_check`,
+  `ALTER TABLE user_mfa_factors ADD CONSTRAINT user_mfa_factors_factor_type_check
+     CHECK (factor_type IN ('totp', 'email'))`,
 
   `CREATE TABLE IF NOT EXISTS user_backup_codes (
      id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -994,7 +997,7 @@ const migrationStatements = [
      email        TEXT        NOT NULL,
      code_hash    TEXT        NOT NULL,
      purpose      TEXT        NOT NULL DEFAULT 'sign_in'
-                  CHECK (purpose IN ('sign_in', 'sign_up')),
+                  CHECK (purpose IN ('sign_in', 'sign_up', 'mfa_setup', 'mfa_login', 'mfa_action')),
      expires_at   TIMESTAMPTZ NOT NULL,
      used_at      TIMESTAMPTZ,
      created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -1002,6 +1005,9 @@ const migrationStatements = [
   `CREATE INDEX IF NOT EXISTS idx_email_otps_email_purpose
      ON email_otps (email, purpose)
      WHERE used_at IS NULL`,
+  `ALTER TABLE email_otps DROP CONSTRAINT IF EXISTS email_otps_purpose_check`,
+  `ALTER TABLE email_otps ADD CONSTRAINT email_otps_purpose_check
+     CHECK (purpose IN ('sign_in', 'sign_up', 'mfa_setup', 'mfa_login', 'mfa_action'))`,
 
   /* ── Trusted device tokens (long-lived, gate on biometric at client) ─────── */
   `CREATE TABLE IF NOT EXISTS trusted_device_tokens (

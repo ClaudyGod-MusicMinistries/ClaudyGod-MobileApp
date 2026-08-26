@@ -28,6 +28,11 @@ export async function loginWithMfa(mfaToken: string, code: string): Promise<Logi
   return data;
 }
 
+export async function resendMfaCode(mfaToken: string): Promise<{ message: string }> {
+  const { data } = await client.post<{ message: string }>('/v1/auth/mfa/resend', { mfaToken });
+  return data;
+}
+
 export async function logout(): Promise<void> {
   await client.post('/v1/auth/logout', {});
 }
@@ -37,7 +42,7 @@ export async function getMe(): Promise<AdminUser> {
   return data;
 }
 
-export async function setupMfa(): Promise<{ secret: string; otpauthUrl: string; qrDataUrl: string }> {
+export async function setupMfa(): Promise<{ delivery: 'email'; maskedEmail: string; expiresInMinutes: number }> {
   const { data } = await client.post('/v1/auth/mfa/setup', {});
   return data;
 }

@@ -41,6 +41,23 @@
       </Transition>
     </div>
 
+    <!-- Keep workspace navigation symmetrical: administrators must be able to
+         reach Web Studio without signing out or manually editing the URL. -->
+    <RouterLink
+      to="/choose-workspace"
+      :class="[
+        'flex items-center gap-3 mx-2 mt-3 px-2.5 py-2 rounded-md text-xs font-medium text-ink-soft hover:bg-surface-hover hover:text-ink transition-colors border border-border',
+        !showExpanded && 'justify-center',
+      ]"
+      :aria-label="!showExpanded ? 'Switch workspace' : undefined"
+      :data-tooltip="!showExpanded ? 'Switch workspace' : undefined"
+      data-tooltip-side="right"
+      @click="ui.closeMobileDrawer()"
+    >
+      <ArrowLeftRight class="w-4 h-4 flex-shrink-0" />
+      <Transition name="fade"><span v-if="showExpanded">Switch workspace</span></Transition>
+    </RouterLink>
+
     <!-- Navigation -->
     <nav class="flex-1 overflow-y-auto py-3 space-y-0.5 px-2">
       <template v-for="group in NAV_GROUPS" :key="group.label">
@@ -108,7 +125,7 @@ import { useRoute, useRouter } from 'vue-router';
 import {
   LayoutDashboard, FileText, Inbox, KeyRound, Radio, Settings, BookOpen,
   Smartphone, Trash2, Megaphone, Users, BarChart3, Youtube, Server,
-  PanelLeftClose, PanelLeft, LogOut,
+  PanelLeftClose, PanelLeft, LogOut, ArrowLeftRight,
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/auth.store';
 import { useUiStore } from '@/stores/ui.store';

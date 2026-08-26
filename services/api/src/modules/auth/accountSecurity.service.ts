@@ -9,6 +9,7 @@ export type SecurityEvent =
   | 'login_success'
   | 'login_failed'
   | 'login_mfa_failed'
+  | 'login_mfa_code_resent'
   | 'login_blocked'
   | 'logout'
   | 'password_changed'
