@@ -1,7 +1,7 @@
 import type { ErrorRequestHandler } from 'express';
 import { ZodError } from 'zod';
 import { env } from '../config/env';
-import { HttpError } from '../lib/errors';
+import { HttpError, TooManyRequestsError } from '../lib/errors';
 import { logger } from '../lib/logger';
 import { Sentry } from '../lib/sentry';
 
@@ -40,6 +40,10 @@ export const errorHandler: ErrorRequestHandler = (error, req, res, _next) => {
     Sentry.captureException(error, {
       contexts: { request: { requestId: req.id, method: req.method, path: req.path } },
     });
+  }
+
+  if (error instanceof TooManyRequestsError) {
+    res.setHeader('Retry-After', String(error.retryAfterSeconds));
   }
 
   res.status(statusCode).json({

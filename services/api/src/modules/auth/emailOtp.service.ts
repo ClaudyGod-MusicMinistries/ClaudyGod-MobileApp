@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from 'crypto';
 import { pool } from '../../db/pool';
-import { BadRequestError } from '../../lib/errors';
+import { BadRequestError, TooManyRequestsError } from '../../lib/errors';
 import { createLogger } from '../../lib/logger';
 import { queueOtpEmail } from '../../infra/transactionalEmails';
 
@@ -24,22 +24,34 @@ export async function requestEmailOtp(email: string, purpose: EmailOtpPurpose = 
   const normalizedEmail = email.trim().toLowerCase();
 
   // Rate limit: max 5 OTPs per email per hour
-  const recentCount = await pool.query<{ count: string; last_created_at: string | null }>(
-    `SELECT COUNT(*) AS count, MAX(created_at) AS last_created_at FROM email_otps
+  const recentCount = await pool.query<{ count: string; first_created_at: string | null; last_created_at: string | null }>(
+    `SELECT COUNT(*) AS count, MIN(created_at) AS first_created_at, MAX(created_at) AS last_created_at FROM email_otps
      WHERE email = $1 AND purpose = $2
        AND created_at > NOW() - INTERVAL '1 hour'`,
     [normalizedEmail, purpose],
   );
+  const now = Date.now();
   if (parseInt(recentCount.rows[0]?.count ?? '0', 10) >= OTP_MAX_ATTEMPTS_PER_HOUR) {
-    throw new BadRequestError(
-      'Too many code requests. Wait a moment before requesting another.',
+    const firstCreatedAt = recentCount.rows[0]?.first_created_at;
+    const retryAfterSeconds = firstCreatedAt
+      ? Math.max(1, Math.ceil((new Date(firstCreatedAt).getTime() + 60 * 60 * 1000 - now) / 1000))
+      : 60 * 60;
+    throw new TooManyRequestsError(
+      `Too many code requests. Try again in ${Math.ceil(retryAfterSeconds / 60)} minute${retryAfterSeconds > 60 ? 's' : ''}.`,
+      retryAfterSeconds,
       'OTP_RATE_LIMITED',
     );
   }
   const lastCreatedAt = recentCount.rows[0]?.last_created_at;
-  if (lastCreatedAt && Date.now() - new Date(lastCreatedAt).getTime() < OTP_RESEND_COOLDOWN_SECONDS * 1000) {
-    throw new BadRequestError(
-      `Wait ${OTP_RESEND_COOLDOWN_SECONDS} seconds before requesting another code.`,
+  const elapsedSinceLastRequestMs = lastCreatedAt ? now - new Date(lastCreatedAt).getTime() : Number.POSITIVE_INFINITY;
+  if (elapsedSinceLastRequestMs < OTP_RESEND_COOLDOWN_SECONDS * 1000) {
+    const retryAfterSeconds = Math.max(
+      1,
+      Math.ceil((OTP_RESEND_COOLDOWN_SECONDS * 1000 - elapsedSinceLastRequestMs) / 1000),
+    );
+    throw new TooManyRequestsError(
+      `Wait ${retryAfterSeconds} second${retryAfterSeconds === 1 ? '' : 's'} before requesting another code.`,
+      retryAfterSeconds,
       'OTP_RESEND_COOLDOWN',
     );
   }
