@@ -1,7 +1,7 @@
 import { Worker } from 'bullmq';
 import { pool } from '../db/pool';
 import { sendEmail } from '../infra/email';
-import { bullmqConnection } from '../infra/bullmq';
+import { bullmqWorkerConnection } from '../infra/bullmq';
 import { logger } from '../lib/logger';
 import { EMAIL_QUEUE_NAME, type EmailQueuePayload } from './emailQueue';
 
@@ -83,7 +83,7 @@ export const startEmailWorker = (): Worker<EmailQueuePayload> => {
       }
     },
     {
-      connection: bullmqConnection,
+      connection: bullmqWorkerConnection,
       concurrency: 4,
     },
   );

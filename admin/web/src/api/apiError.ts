@@ -47,7 +47,11 @@ export function normalizeApiError(error: unknown): ApiError {
   if (axios.isAxiosError<ApiProblem>(error)) {
     const problem = error.response?.data;
     const status = error.response?.status;
-    const message = text(problem?.detail)
+    const gatewayMessage = status === 502
+      ? 'The sign-in service is temporarily unavailable. Your code was not accepted; please wait a moment and request a new code.'
+      : undefined;
+    const message = gatewayMessage
+      ?? text(problem?.detail)
       ?? text(problem?.message)
       ?? text(problem?.error)
       ?? text(problem?.title)

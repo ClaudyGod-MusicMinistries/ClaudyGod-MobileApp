@@ -35,6 +35,12 @@ const redisStore = (prefix: string): RedisStore | undefined =>
         prefix: `rl:${prefix}:`,
       });
 
+// Authentication remains available during a brief Redis interruption. The
+// database-backed account lockout and OTP attempt limits still apply, while a
+// rate-limit store error is logged by express-rate-limit instead of hanging or
+// turning a dependency outage into an edge-proxy 502.
+const passOnStoreError = true;
+
 // Exempts logged-in admin-portal staff (MODERATOR+) from the general public-facing
 // limiter below — the limiter exists to blunt abuse from anonymous/public traffic
 // (the mobile app's public endpoints), not to throttle a human admin's own dashboard,
@@ -61,6 +67,7 @@ export const apiLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   store: redisStore('api'),
+  passOnStoreError,
   handler: rejectionHandler('api'),
   skip: async (req: Request) =>
     process.env.NODE_ENV === 'development' || isStaffSession(req),
@@ -74,6 +81,7 @@ export const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   store: redisStore('auth'),
+  passOnStoreError,
   handler: rejectionHandler('auth'),
   skip: (_req: Request) => process.env.NODE_ENV === 'development',
   keyGenerator: (req: Request) => {
@@ -92,6 +100,7 @@ export const passwordResetLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   store: redisStore('password-reset'),
+  passOnStoreError,
   handler: rejectionHandler('password-reset'),
   skip: (_req: Request) => process.env.NODE_ENV === 'development',
 });
@@ -104,6 +113,7 @@ export const emailVerificationLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   store: redisStore('email-verify'),
+  passOnStoreError,
   handler: rejectionHandler('email-verify'),
   skip: (_req: Request) => process.env.NODE_ENV === 'development',
 });
@@ -119,6 +129,7 @@ export const inviteLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   store: redisStore('invite'),
+  passOnStoreError,
   handler: rejectionHandler('invite'),
   skip: (_req: Request) => process.env.NODE_ENV === 'development',
 });
@@ -131,6 +142,7 @@ export const accessRequestLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   store: redisStore('access-request'),
+  passOnStoreError,
   handler: rejectionHandler('access-request'),
   skip: (_req: Request) => process.env.NODE_ENV === 'development',
 });
@@ -143,6 +155,7 @@ export const contentRequestLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   store: redisStore('content-request'),
+  passOnStoreError,
   handler: rejectionHandler('content-request'),
   skip: (_req: Request) => process.env.NODE_ENV === 'development',
   keyGenerator: (req: Request) => {
@@ -158,6 +171,7 @@ export const guestSupportLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   store: redisStore('guest-support'),
+  passOnStoreError,
   handler: rejectionHandler('guest-support'),
   skip: (_req: Request) => process.env.NODE_ENV === 'development',
   keyGenerator: (req: Request) => {
@@ -172,6 +186,7 @@ export const guestFeedbackLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   store: redisStore('guest-feedback'),
+  passOnStoreError,
   handler: rejectionHandler('guest-feedback'),
   skip: (_req: Request) => process.env.NODE_ENV === 'development',
   keyGenerator: (req: Request) => {

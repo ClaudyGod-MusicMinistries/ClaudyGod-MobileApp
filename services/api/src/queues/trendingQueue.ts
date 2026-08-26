@@ -1,5 +1,5 @@
 import { Queue } from 'bullmq';
-import { bullmqConnection } from '../infra/bullmq';
+import { bullmqConnection, observeQueueErrors } from '../infra/bullmq';
 
 export const TRENDING_QUEUE_NAME = 'trending-scores';
 
@@ -20,6 +20,8 @@ export const trendingQueue = new Queue<TrendingQueuePayload>(TRENDING_QUEUE_NAME
     removeOnFail: 50,
   },
 });
+
+observeQueueErrors(trendingQueue, TRENDING_QUEUE_NAME);
 
 export const scheduleTrendingJobs = async (): Promise<void> => {
   await trendingQueue.upsertJobScheduler(

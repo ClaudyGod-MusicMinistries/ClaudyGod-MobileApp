@@ -1,5 +1,5 @@
 import { Queue } from 'bullmq';
-import { bullmqConnection } from '../infra/bullmq';
+import { bullmqConnection, observeQueueErrors } from '../infra/bullmq';
 
 export const STATS_QUEUE_NAME = 'content-stats';
 
@@ -25,3 +25,5 @@ export const statsQueue = new Queue<StatsQueuePayload>(STATS_QUEUE_NAME, {
     removeOnFail: 1000,
   },
 });
+
+observeQueueErrors(statsQueue, STATS_QUEUE_NAME);
