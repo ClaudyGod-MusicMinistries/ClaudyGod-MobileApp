@@ -143,6 +143,7 @@ const buildAccessToken = (user: SafeUser): string =>
     displayName: user.displayName,
     tier: user.tier,
     mfaEnabled: user.mfaEnabled,
+    mfaVerified: false,
   });
 
 const buildPendingRegisterResponse = (email: string, message = PENDING_VERIFICATION_MESSAGE): RegisterResponse => ({
@@ -789,13 +790,14 @@ export const loginUser = async (input: LoginInput, context: AuthRequestContext =
   return {
     accessToken: buildAccessToken(safeUser),
     user: safeUser,
+    mfaVerified: safeUser.mfaEnabled,
   };
 };
 
 export const verifyMfaLogin = async (
   input: { mfaToken: string; code: string },
   context: AuthRequestContext = {},
-): Promise<Pick<AuthResponse, 'user' | 'message'>> => {
+): Promise<Pick<AuthResponse, 'user' | 'message' | 'mfaVerified'>> => {
   const { user_id: userId } = await resolveAuthActionToken({
     rawToken: input.mfaToken,
     tokenType: 'mfa_step_up',
@@ -829,7 +831,7 @@ export const verifyMfaLogin = async (
     }),
   ]);
 
-  return { user: safeUser };
+  return { user: safeUser, mfaVerified: true };
 };
 
 export const resendMfaLoginCode = async (

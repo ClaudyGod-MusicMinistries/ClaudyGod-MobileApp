@@ -70,11 +70,15 @@ interface DeviceIdentityInput {
 }
 
 const buildSessionPayload = async (
-  authPayload: Pick<AuthResponse, 'user' | 'message'>,
+  authPayload: Pick<AuthResponse, 'user' | 'message' | 'mfaVerified'>,
   req: Request,
   device?: DeviceIdentityInput,
 ): Promise<AuthResponse> => {
-  const session = await issueAuthSession(authPayload.user, getAuthRequestContext(req, device));
+  const session = await issueAuthSession(
+    authPayload.user,
+    getAuthRequestContext(req, device),
+    { mfaVerified: authPayload.mfaVerified === true },
+  );
   return {
     ...session,
     message: authPayload.message,

@@ -48,3 +48,18 @@ test('metrics failures are handled and upload security schema is fully migrated'
   assert.match(index, /process\.on\('uncaughtException'/);
   assert.match(index, /process\.on\('unhandledRejection'/);
 });
+
+test('silent session refresh preserves MFA and authorization claims', () => {
+  const authenticate = read('services/api/src/middleware/authenticate.ts');
+  const sessions = read('services/api/src/modules/auth/authSession.service.ts');
+  const mfaRoutes = read('services/api/src/modules/auth/mfa.routes.ts');
+
+  assert.match(authenticate, /const sessionUserToClaims[\s\S]*tier: user\.tier,[\s\S]*mfaEnabled: user\.mfaEnabled,[\s\S]*mfaVerified/);
+  assert.equal(
+    (authenticate.match(/req\.user = sessionUserToClaims\(session\.user, session\.mfaVerified === true\)/g) ?? []).length,
+    2,
+  );
+  assert.doesNotMatch(authenticate, /req\.user = \{[\s\S]*?session\.user\.displayName/);
+  assert.match(sessions, /mfa_verified = TRUE[\s\S]*refresh_token_hash = \$3/);
+  assert.match(mfaRoutes, /verifyMfaSetup[\s\S]*markRefreshSessionMfaVerified/);
+});

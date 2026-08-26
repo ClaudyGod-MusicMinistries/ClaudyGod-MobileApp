@@ -10,6 +10,7 @@ export interface JwtClaims {
   displayName: string;
   tier?: 'free' | 'premium' | 'vip';
   mfaEnabled?: boolean;
+  mfaVerified?: boolean;
 }
 
 export interface RefreshJwtClaims {
@@ -27,6 +28,7 @@ const decodedJwtClaimsSchema = z
     displayName: z.string().trim().min(1).max(120),
     tier: z.enum(['free', 'premium', 'vip']).optional().default('free'),
     mfaEnabled: z.boolean().optional().default(false),
+    mfaVerified: z.boolean().optional().default(false),
   })
   .passthrough();
 

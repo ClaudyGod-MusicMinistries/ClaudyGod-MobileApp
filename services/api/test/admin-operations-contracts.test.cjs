@@ -19,9 +19,13 @@ test('operational job inputs are bounded and reject unknown fields', () => {
 test('privileged access requires a verified MFA claim', () => {
   const next = () => undefined;
   assert.throws(
-    () => requirePrivilegedMfa({ user: { role: 'ADMIN', mfaEnabled: false } }, {}, next),
+    () => requirePrivilegedMfa({ user: { role: 'ADMIN', mfaEnabled: false, mfaVerified: false } }, {}, next),
     (error) => error?.code === 'MFA_ENROLLMENT_REQUIRED',
   );
-  assert.doesNotThrow(() => requirePrivilegedMfa({ user: { role: 'ADMIN', mfaEnabled: true } }, {}, next));
+  assert.throws(
+    () => requirePrivilegedMfa({ user: { role: 'ADMIN', mfaEnabled: true, mfaVerified: false } }, {}, next),
+    (error) => error?.code === 'MFA_VERIFICATION_REQUIRED',
+  );
+  assert.doesNotThrow(() => requirePrivilegedMfa({ user: { role: 'ADMIN', mfaEnabled: true, mfaVerified: true } }, {}, next));
   assert.doesNotThrow(() => requirePrivilegedMfa({ user: { role: 'CLIENT', mfaEnabled: false } }, {}, next));
 });
