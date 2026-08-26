@@ -7,6 +7,18 @@ import {
 } from '../modules/auth/authSessionCookie';
 import { refreshAuthSession } from '../modules/auth/authSession.service';
 import { resolveAuthenticatedUser } from '../modules/auth/authIdentity.service';
+import type { SafeUser } from '../modules/auth/auth.types';
+import type { JwtClaims } from '../utils/jwt';
+
+const sessionUserToClaims = (user: SafeUser, mfaVerified: boolean): JwtClaims => ({
+  sub: user.id,
+  email: user.email,
+  role: user.role,
+  displayName: user.displayName,
+  tier: user.tier,
+  mfaEnabled: user.mfaEnabled,
+  mfaVerified,
+});
 
 export const authenticate: RequestHandler = async (req, _res, next) => {
   const authorization = req.header('authorization');
@@ -29,12 +41,7 @@ export const authenticate: RequestHandler = async (req, _res, next) => {
         userAgent: req.header('user-agent') || undefined,
       });
       applyAuthSessionCookies(_res, session);
-      req.user = {
-        sub: session.user.id,
-        email: session.user.email,
-        role: session.user.role,
-        displayName: session.user.displayName,
-      };
+      req.user = sessionUserToClaims(session.user, session.mfaVerified === true);
       next();
     } catch {
       next(new UnauthorizedError('Missing authentication session', 'AUTH_SESSION_MISSING'));
@@ -57,12 +64,7 @@ export const authenticate: RequestHandler = async (req, _res, next) => {
         userAgent: req.header('user-agent') || undefined,
       });
       applyAuthSessionCookies(_res, session);
-      req.user = {
-        sub: session.user.id,
-        email: session.user.email,
-        role: session.user.role,
-        displayName: session.user.displayName,
-      };
+      req.user = sessionUserToClaims(session.user, session.mfaVerified === true);
       next();
     } catch {
       next(new UnauthorizedError('Invalid or expired token', 'AUTH_TOKEN_INVALID'));

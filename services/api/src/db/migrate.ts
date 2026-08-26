@@ -1070,8 +1070,17 @@ const migrationStatements = [
   /* ── Device/session unification — links a refresh session to the device
          that created it, so "revoke a device" can actually invalidate that
          device's session instead of only marking user_devices as revoked
-         while the session keeps working. MUST stay the last entry. */
+         while the session keeps working. Session-assurance fields are kept in
+         this same reconciliation block. */
   `ALTER TABLE auth_refresh_sessions ADD COLUMN IF NOT EXISTS device_id UUID REFERENCES user_devices(id) ON DELETE SET NULL`,
+  `ALTER TABLE auth_refresh_sessions ADD COLUMN IF NOT EXISTS mfa_verified BOOLEAN NOT NULL DEFAULT FALSE`,
+  `UPDATE app_users u
+    SET mfa_enabled = TRUE, updated_at = NOW()
+    WHERE mfa_enabled = FALSE
+      AND EXISTS (
+        SELECT 1 FROM user_mfa_factors f
+        WHERE f.user_id = u.id AND f.is_verified = TRUE AND f.is_active = TRUE
+      )`,
   `CREATE INDEX IF NOT EXISTS idx_auth_refresh_sessions_device_id
      ON auth_refresh_sessions (device_id)
      WHERE revoked_at IS NULL`,

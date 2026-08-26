@@ -32,6 +32,7 @@ interface RefreshSessionRow {
   revoked_at: string | Date | null;
   expires_at: string | Date;
   device_id: string | null;
+  mfa_verified: boolean;
 }
 
 export interface AuthSessionContext {
@@ -94,7 +95,7 @@ const loadSessionUser = async (
   return toSafeUser(user);
 };
 
-const buildAccessToken = (user: SafeUser): string =>
+const buildAccessToken = (user: SafeUser, mfaVerified: boolean): string =>
   signAccessToken({
     sub: user.id,
     email: user.email,
@@ -102,6 +103,7 @@ const buildAccessToken = (user: SafeUser): string =>
     displayName: user.displayName,
     tier: user.tier,
     mfaEnabled: user.mfaEnabled,
+    mfaVerified,
   });
 
 const insertRefreshSession = async ({
@@ -111,6 +113,7 @@ const insertRefreshSession = async ({
   sessionFamilyId,
   rotatedFromSessionId,
   carriedDeviceId,
+  mfaVerified,
   runner = pool,
 }: {
   user: SafeUser;
@@ -123,6 +126,7 @@ const insertRefreshSession = async ({
   // link would silently drop on every single token refresh instead of only
   // being resolved once at initial sign-in.
   carriedDeviceId?: string | null;
+  mfaVerified: boolean;
   runner?: QueryRunner;
 }): Promise<AuthResponse> => {
   const nextSessionId = sessionId ?? randomUUID();
@@ -163,9 +167,10 @@ const insertRefreshSession = async ({
        last_used_ip,
        last_used_user_agent,
        last_used_at,
-       device_id
+       device_id,
+       mfa_verified
      )
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $7, $8, NOW(), $9)`,
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $7, $8, NOW(), $9, $10)`,
     [
       nextSessionId,
       user.id,
@@ -176,13 +181,15 @@ const insertRefreshSession = async ({
       context?.requestIp ?? null,
       context?.userAgent ?? null,
       deviceId,
+      mfaVerified,
     ],
   );
 
   return {
-    accessToken: buildAccessToken(user),
+    accessToken: buildAccessToken(user, mfaVerified),
     refreshToken,
     user,
+    mfaVerified,
     requiresEmailVerification: false,
   };
 };
@@ -204,8 +211,13 @@ const revokeRefreshSessionFamily = async (
 export const issueAuthSession = async (
   user: SafeUser,
   context: AuthSessionContext = {},
+  assurance: { mfaVerified?: boolean } = {},
 ): Promise<AuthResponse> => {
-  const session = await insertRefreshSession({ user, context });
+  const session = await insertRefreshSession({
+    user,
+    context,
+    mfaVerified: assurance.mfaVerified === true,
+  });
 
   // Fire-and-forget login notification email on new sign-in.
   // "New" = this IP or user-agent hasn't been seen for this user in the last 30 days.
@@ -254,7 +266,7 @@ export const refreshAuthSession = async (
     await client.query('BEGIN');
 
     const sessionResult = await client.query<RefreshSessionRow>(
-      `SELECT id, user_id, session_family_id, refresh_token_hash, revoked_at, expires_at, device_id
+      `SELECT id, user_id, session_family_id, refresh_token_hash, revoked_at, expires_at, device_id, mfa_verified
        FROM auth_refresh_sessions
        WHERE id = $1
        LIMIT 1
@@ -296,6 +308,7 @@ export const refreshAuthSession = async (
       sessionFamilyId: session.session_family_id,
       rotatedFromSessionId: session.id,
       carriedDeviceId: session.device_id,
+      mfaVerified: session.mfa_verified,
       runner: client,
     });
 
@@ -321,6 +334,33 @@ export const revokeRefreshSession = async (rawRefreshToken: string): Promise<voi
     );
   } catch {
     // Ignore invalid refresh tokens during logout.
+  }
+};
+
+export const markRefreshSessionMfaVerified = async (
+  rawRefreshToken: string,
+  userId: string,
+): Promise<void> => {
+  let claims;
+  try {
+    claims = verifyRefreshToken(rawRefreshToken);
+  } catch {
+    throw new UnauthorizedError('Session expired. Sign in again.', 'AUTH_SESSION_EXPIRED');
+  }
+
+  const result = await pool.query(
+    `UPDATE auth_refresh_sessions
+     SET mfa_verified = TRUE, updated_at = NOW()
+     WHERE id = $1
+       AND user_id = $2
+       AND refresh_token_hash = $3
+       AND revoked_at IS NULL
+       AND expires_at > NOW()`,
+    [claims.sessionId, userId, tokenHash(rawRefreshToken)],
+  );
+
+  if (result.rowCount !== 1) {
+    throw new UnauthorizedError('Session expired. Sign in again.', 'AUTH_SESSION_EXPIRED');
   }
 };
 

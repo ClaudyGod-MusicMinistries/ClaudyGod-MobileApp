@@ -7,5 +7,8 @@ export const requirePrivilegedMfa: RequestHandler = (req, _res, next) => {
   if (hasMinRole(req.user.role, 'CREATOR') && !req.user.mfaEnabled) {
     throw new ForbiddenError('Multi-factor authentication is required for privileged access', 'MFA_ENROLLMENT_REQUIRED');
   }
+  if (hasMinRole(req.user.role, 'CREATOR') && !req.user.mfaVerified) {
+    throw new ForbiddenError('Multi-factor verification is required for this session', 'MFA_VERIFICATION_REQUIRED');
+  }
   next();
 };

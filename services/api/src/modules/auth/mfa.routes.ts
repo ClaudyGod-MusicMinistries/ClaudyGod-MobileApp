@@ -3,6 +3,8 @@ import { asyncHandler } from '../../lib/asyncHandler';
 import { validateSchema } from '../../lib/validation';
 import { authenticate } from '../../middleware/authenticate';
 import { UnauthorizedError } from '../../lib/errors';
+import { getRefreshTokenFromRequest } from './authSessionCookie';
+import { markRefreshSessionMfaVerified } from './authSession.service';
 import {
   setupMfa,
   verifyMfaSetup,
@@ -34,6 +36,10 @@ mfaRouter.post(
     if (!req.user) throw new UnauthorizedError('Unauthorized', 'AUTH_REQUIRED');
     const { code } = validateSchema(mfaCodeSchema, req.body);
     const result = await verifyMfaSetup(req.user, code);
+    const refreshToken = getRefreshTokenFromRequest(req);
+    if (refreshToken) {
+      await markRefreshSessionMfaVerified(refreshToken, req.user.sub);
+    }
     res.status(200).json(result);
   }),
 );

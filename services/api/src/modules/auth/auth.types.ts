@@ -46,6 +46,8 @@ export interface AuthResponse {
   requiresEmailVerification?: boolean;
   mfaRequired?: boolean;
   mfaToken?: string;
+  /** Internal session assurance; never supplied by the client. */
+  mfaVerified?: boolean;
   message?: string;
 }
 
