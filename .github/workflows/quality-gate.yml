@@ -117,7 +117,7 @@ jobs:
         run: |
           docker build --platform linux/amd64 \
             --file ./apps/mobile/Dockerfile.prod \
-            --build-arg EXPO_PUBLIC_API_URL=https://apimobile.claudygod.org \
+            --build-arg EXPO_PUBLIC_API_URL=/api \
             --build-arg EXPO_PUBLIC_SUPABASE_URL=https://gjqqajeavzucvafersio.supabase.co \
             --build-arg EXPO_PUBLIC_SUPABASE_KEY=sb_publishable_ci_placeholder \
             --build-arg EAS_PROJECT_ID=00000000-0000-0000-0000-000000000000 \

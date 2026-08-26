@@ -442,7 +442,9 @@ services:
       dockerfile: Dockerfile.prod
       args:
         CLAUDYGOD_ENV: production
-        EXPO_PUBLIC_API_URL: ${EXPO_PUBLIC_API_URL:?EXPO_PUBLIC_API_URL is required}
+        # Web uses the same-origin private gateway. EAS store builds retain the
+        # public HTTPS API URL from mobile-store-release.yml.
+        EXPO_PUBLIC_API_URL: /api
         EXPO_PUBLIC_SUPABASE_URL: ${EXPO_PUBLIC_SUPABASE_URL:?EXPO_PUBLIC_SUPABASE_URL is required}
         EXPO_PUBLIC_SUPABASE_KEY: ${EXPO_PUBLIC_SUPABASE_KEY:?EXPO_PUBLIC_SUPABASE_KEY is required}
         EAS_PROJECT_ID: ${EAS_PROJECT_ID:-}

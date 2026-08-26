@@ -441,9 +441,9 @@ docker-build-admin:
 	@printf "$(GREEN)✓ Admin image built$(NC)\n"
 
 docker-build-mobile:
-	@printf "$(BLUE)Building mobile-web image (EXPO_PUBLIC_API_URL=$(EXPO_PUBLIC_API_URL))...$(NC)\n"
+	@printf "$(BLUE)Building mobile-web image with same-origin /api gateway...$(NC)\n"
 	docker build --platform linux/amd64 \
-		--build-arg EXPO_PUBLIC_API_URL="$(EXPO_PUBLIC_API_URL)" \
+		--build-arg EXPO_PUBLIC_API_URL="/api" \
 		--build-arg EXPO_PUBLIC_SUPABASE_URL="$(EXPO_PUBLIC_SUPABASE_URL)" \
 		--build-arg EXPO_PUBLIC_SUPABASE_KEY="$(EXPO_PUBLIC_SUPABASE_KEY)" \
 		-t $(MOBILE_IMAGE):$(IMAGE_TAG) \
