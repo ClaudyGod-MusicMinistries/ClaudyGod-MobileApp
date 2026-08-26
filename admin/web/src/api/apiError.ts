@@ -47,8 +47,9 @@ export function normalizeApiError(error: unknown): ApiError {
   if (axios.isAxiosError<ApiProblem>(error)) {
     const problem = error.response?.data;
     const status = error.response?.status;
-    const gatewayMessage = status === 502
-      ? 'The sign-in service is temporarily unavailable. Your code was not accepted; please wait a moment and request a new code.'
+    const isServiceUnavailable = status === 502 || status === 503 || status === 504;
+    const gatewayMessage = isServiceUnavailable
+      ? 'We could not complete verification because the sign-in service is unavailable. Please try again shortly.'
       : undefined;
     const message = gatewayMessage
       ?? text(problem?.detail)
@@ -60,7 +61,7 @@ export function normalizeApiError(error: unknown): ApiError {
 
     return new ApiError(message, {
       status,
-      code: text(problem?.code) ?? error.code,
+      code: isServiceUnavailable ? 'AUTH_SERVICE_UNAVAILABLE' : text(problem?.code) ?? error.code,
       requestId: text(problem?.requestId)
         ?? text(problem?.correlationId)
         ?? text(error.response?.headers?.['x-request-id']),

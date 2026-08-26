@@ -28,10 +28,18 @@ env:
   CI_POSTFIX_SMTP_PASSWORD:      ${{ secrets.CI_POSTFIX_SMTP_PASSWORD }}
 
 jobs:
+  # The same reusable gate protects develop/PRs and production. There is one
+  # implementation and main does not trigger a second, duplicate workflow.
+  quality:
+    name: Quality Gate
+    uses: ./.github/workflows/quality-gate.yml
+    secrets: inherit
+
   # ── 1. Build all Docker images and push to GHCR ──────────────────────────────
   build-push:
     name: Build & Push Images
     runs-on: ubuntu-latest
+    needs: quality
     timeout-minutes: 60
 
     steps:
@@ -82,7 +90,6 @@ jobs:
           platforms:  linux/amd64
           push:       true
           tags: |
-            ghcr.io/${{ env.GHCR_OWNER }}/claudygod-api:latest
             ghcr.io/${{ env.GHCR_OWNER }}/claudygod-api:${{ github.sha }}
           cache-from: type=gha,scope=api
           cache-to:   type=gha,scope=api,mode=max
@@ -95,7 +102,6 @@ jobs:
           platforms:  linux/amd64
           push:       true
           tags: |
-            ghcr.io/${{ env.GHCR_OWNER }}/claudygod-postfix:latest
             ghcr.io/${{ env.GHCR_OWNER }}/claudygod-postfix:${{ github.sha }}
           cache-from: type=gha,scope=postfix
           cache-to:   type=gha,scope=postfix,mode=max
@@ -114,7 +120,6 @@ jobs:
             VITE_MOBILE_PREVIEW_URL=${{ vars.VITE_MOBILE_PREVIEW_URL || secrets.VITE_MOBILE_PREVIEW_URL }}
             VITE_SENTRY_DSN=${{ vars.VITE_SENTRY_DSN || secrets.VITE_SENTRY_DSN }}
           tags: |
-            ghcr.io/${{ env.GHCR_OWNER }}/claudygod-admin:latest
             ghcr.io/${{ env.GHCR_OWNER }}/claudygod-admin:${{ github.sha }}
           cache-from: type=gha,scope=admin
           cache-to:   type=gha,scope=admin,mode=max
@@ -134,7 +139,6 @@ jobs:
             EAS_PROJECT_ID=${{ vars.EAS_PROJECT_ID || secrets.EAS_PROJECT_ID }}
             EXPO_PUBLIC_SENTRY_DSN=${{ vars.EXPO_PUBLIC_SENTRY_DSN || secrets.EXPO_PUBLIC_SENTRY_DSN }}
           tags: |
-            ghcr.io/${{ env.GHCR_OWNER }}/claudygod-mobile:latest
             ghcr.io/${{ env.GHCR_OWNER }}/claudygod-mobile:${{ github.sha }}
           cache-from: type=gha,scope=mobile
           cache-to:   type=gha,scope=mobile,mode=max
@@ -264,6 +268,9 @@ jobs:
             fi
 
             rollback_previous_release() {
+              echo "Candidate release diagnostics:"
+              IMAGE_TAG="$DEPLOY_SHA" docker compose -f docker-compose.production.yml --env-file .env.production ps || true
+              IMAGE_TAG="$DEPLOY_SHA" docker compose -f docker-compose.production.yml --env-file .env.production logs --tail=120 cgm-api worker redis admin-web || true
               if printf '%s' "$previous_tag" | grep -Eq '^[0-9a-f]{40}$'; then
                 echo "Deployment verification failed; restoring immutable release $previous_tag"
                 IMAGE_TAG="$previous_tag" make rollback SHA="$previous_tag"
@@ -287,7 +294,7 @@ jobs:
             verify_release_integrity() {
               expected_suffix=":$DEPLOY_SHA"
 
-              for service in cgm-api admin-web mobile-web; do
+              for service in cgm-api worker admin-web mobile-web; do
                 container_id=$(IMAGE_TAG="$DEPLOY_SHA" docker compose -f docker-compose.production.yml --env-file .env.production ps -q "$service")
                 if [ -z "$container_id" ]; then
                   echo "::error::$service has no running container"
@@ -301,6 +308,11 @@ jobs:
                     return 1
                     ;;
                 esac
+                health=$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}missing{{end}}' "$container_id")
+                if [ "$health" != "healthy" ]; then
+                  echo "::error::$service health is $health, expected healthy"
+                  return 1
+                fi
               done
 
               admin_container=$(IMAGE_TAG="$DEPLOY_SHA" docker compose -f docker-compose.production.yml --env-file .env.production ps -q admin-web)

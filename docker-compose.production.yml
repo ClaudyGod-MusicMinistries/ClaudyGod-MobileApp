@@ -290,7 +290,15 @@ services:
       clamav:
         condition: service_healthy
     healthcheck:
-      disable: true
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"const fs=require('fs');const state=JSON.parse(fs.readFileSync('/tmp/claudygod-worker-ready.json','utf8'));process.kill(state.pid,0)\""
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
     dns:
       - 1.1.1.1
       - 8.8.8.8
