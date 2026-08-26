@@ -1230,6 +1230,23 @@ const migrationStatements = [
   `CREATE INDEX IF NOT EXISTS idx_mobile_referral_attributions_referral ON mobile_referral_attributions (referral_id, created_at DESC)`,
 
   // ============ UPLOAD SECURITY PROCESSING ============
+  `ALTER TABLE upload_sessions ADD COLUMN IF NOT EXISTS file_size_bytes BIGINT`,
+  `ALTER TABLE upload_sessions ADD COLUMN IF NOT EXISTS trust_status TEXT DEFAULT 'legacy_unverified'`,
+  `ALTER TABLE upload_sessions ADD COLUMN IF NOT EXISTS scan_result JSONB`,
+  `ALTER TABLE upload_sessions ADD COLUMN IF NOT EXISTS scan_error TEXT`,
+  `ALTER TABLE upload_sessions ADD COLUMN IF NOT EXISTS scanned_at TIMESTAMPTZ`,
+  `ALTER TABLE upload_sessions ADD COLUMN IF NOT EXISTS attached_at TIMESTAMPTZ`,
+  `UPDATE upload_sessions SET trust_status = 'legacy_unverified' WHERE trust_status IS NULL`,
+  `ALTER TABLE upload_sessions ALTER COLUMN trust_status SET DEFAULT 'legacy_unverified'`,
+  `ALTER TABLE upload_sessions ALTER COLUMN trust_status SET NOT NULL`,
+  `ALTER TABLE upload_sessions DROP CONSTRAINT IF EXISTS upload_sessions_trust_status_check`,
+  `ALTER TABLE upload_sessions ADD CONSTRAINT upload_sessions_trust_status_check
+    CHECK (trust_status IN ('pending', 'scanning', 'clean', 'quarantined', 'error', 'legacy_unverified')) NOT VALID`,
+  `ALTER TABLE upload_sessions VALIDATE CONSTRAINT upload_sessions_trust_status_check`,
+  `CREATE INDEX IF NOT EXISTS idx_upload_sessions_trust_status
+    ON upload_sessions (trust_status, created_at DESC) WHERE channel = 'admin'`,
+  `CREATE INDEX IF NOT EXISTS idx_upload_sessions_attached_at
+    ON upload_sessions (attached_at) WHERE attached_at IS NOT NULL`,
   `CREATE TABLE IF NOT EXISTS media_processing_jobs (
     id BIGSERIAL PRIMARY KEY,
     upload_session_id UUID NOT NULL UNIQUE REFERENCES upload_sessions(id) ON DELETE CASCADE,

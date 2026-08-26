@@ -43,8 +43,20 @@ const boot = async (): Promise<void> => {
     broadcastViewerCount(sessionId, count);
   });
 
-  const shutdown = async (signal: string): Promise<void> => {
-    log.info('Shutdown initiated', { signal });
+  let shutdownStarted = false;
+  const shutdown = async (signal: string, error?: unknown): Promise<void> => {
+    if (shutdownStarted) return;
+    shutdownStarted = true;
+
+    if (error) {
+      log.error('API shutdown triggered by unhandled error', {
+        signal,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+    } else {
+      log.info('Shutdown initiated', { signal });
+    }
 
     server.close(async () => {
       log.info('HTTP server closed — draining queues and connections');
@@ -62,7 +74,7 @@ const boot = async (): Promise<void> => {
         }
       }
       log.info('Shutdown complete');
-      process.exit(0);
+      process.exit(error ? 1 : 0);
     });
 
     // Force-kill if graceful shutdown stalls beyond 10 seconds.
@@ -75,6 +87,8 @@ const boot = async (): Promise<void> => {
 
   process.on('SIGINT', () => { void shutdown('SIGINT'); });
   process.on('SIGTERM', () => { void shutdown('SIGTERM'); });
+  process.on('uncaughtException', (err) => { void shutdown('uncaughtException', err); });
+  process.on('unhandledRejection', (reason) => { void shutdown('unhandledRejection', reason); });
 };
 
 boot().catch(async (error) => {

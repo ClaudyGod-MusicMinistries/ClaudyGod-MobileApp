@@ -53,6 +53,7 @@ NC     := \033[0m
 	docker-build docker-build-api docker-build-admin docker-build-mobile docker-build-postfix \
 	docker-push release \
 	deploy deploy-pull deploy-migrate deploy-up deploy-down \
+	deploy-diagnostics \
 	require-image-tag \
 	deploy-logs deploy-status rollback update \
 	logs clean-legacy setup-admin certify-integrations
@@ -492,9 +493,22 @@ deploy-migrate: require-image-tag
 # Start / restart containers with the newly pulled images
 deploy-up: require-image-tag
 	@printf "$(BLUE)Starting core API and workers, waiting for readiness...$(NC)\n"
-	IMAGE_TAG="$(IMAGE_TAG)" $(COMPOSE_PROD) up -d --remove-orphans --wait cgm-api worker
+	@IMAGE_TAG="$(IMAGE_TAG)" $(COMPOSE_PROD) up -d --remove-orphans --wait cgm-api worker || \
+		{ $(MAKE) --no-print-directory deploy-diagnostics IMAGE_TAG="$(IMAGE_TAG)"; exit 1; }
 	@printf "$(BLUE)Starting web gateways after the API is healthy...$(NC)\n"
-	IMAGE_TAG="$(IMAGE_TAG)" $(COMPOSE_PROD) up -d --remove-orphans --wait admin-web mobile-web prometheus cgm-grafana
+	@IMAGE_TAG="$(IMAGE_TAG)" $(COMPOSE_PROD) up -d --remove-orphans --wait admin-web mobile-web prometheus cgm-grafana || \
+		{ $(MAKE) --no-print-directory deploy-diagnostics IMAGE_TAG="$(IMAGE_TAG)"; exit 1; }
+
+deploy-diagnostics: require-image-tag
+	@printf "$(YELLOW)Deployment diagnostics for IMAGE_TAG=$(IMAGE_TAG)$(NC)\n"
+	@IMAGE_TAG="$(IMAGE_TAG)" $(COMPOSE_PROD) ps || true
+	@container_id=$$(IMAGE_TAG="$(IMAGE_TAG)" $(COMPOSE_PROD) ps -q cgm-api); \
+		if [ -n "$$container_id" ]; then \
+			printf "$(YELLOW)API health-check output:$(NC)\n"; \
+			docker inspect --format '{{range .State.Health.Log}}{{println .Output}}{{end}}' "$$container_id" || true; \
+		fi
+	@printf "$(YELLOW)Recent API and worker logs:$(NC)\n"
+	@IMAGE_TAG="$(IMAGE_TAG)" $(COMPOSE_PROD) logs --tail=160 cgm-api worker redis postfix-relay || true
 
 # Stop all containers
 deploy-down:

@@ -36,6 +36,7 @@ import engagementRouter from './modules/engagement/engagement.routes';
 import { searchRouter } from './modules/search/search.routes';
 import { devicesRouter } from './modules/devices/devices.routes';
 import { collectOperationalMetrics, getMetricsOutput, metricsContentType } from './lib/metrics';
+import { asyncHandler } from './lib/asyncHandler';
 
 const parseCorsOrigin = (): true | string[] => {
   const origins = env.CORS_ORIGINS;
@@ -324,7 +325,7 @@ export const createApp = () => {
   app.use('/v1/me/devices', devicesRouter);
 
   // Prometheus metrics (protected by token in production)
-  app.get('/metrics', async (req: Request, res: Response) => {
+  app.get('/metrics', asyncHandler(async (req: Request, res: Response) => {
     const token = env.METRICS_TOKEN;
     if (token) {
       const auth = req.header('authorization');
@@ -337,7 +338,7 @@ export const createApp = () => {
     const output = await getMetricsOutput();
     res.setHeader('Content-Type', metricsContentType);
     res.status(200).send(output);
-  });
+  }));
 
   // Error handlers (MUST be last)
   app.use(notFoundHandler);
