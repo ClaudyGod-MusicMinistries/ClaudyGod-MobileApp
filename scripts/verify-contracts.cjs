@@ -77,6 +77,7 @@ assert.match(deploy, /build-push:[\s\S]*?needs:\s*quality/, 'Image publication m
 assert.match(deploy, /deploy:[\s\S]*?needs:\s*build-push/, 'Deployment must wait for image publication');
 assert.match(deploy, /for service in cgm-api worker admin-web mobile-web/, 'Release integrity must cover the background worker');
 assert.match(compose, /worker:[\s\S]*?healthcheck:[\s\S]*?claudygod-worker-ready/, 'Worker must publish a real readiness signal');
+assert.match(compose, /source\.includes\('claudygod-worker-ready\.json'\)[\s\S]*?args\[1\]===\u0027dist\/worker\.js\u0027/, 'Worker health must remain compatible with immutable rollback images');
 const coreRollout = position(makefile, 'up -d --remove-orphans --wait cgm-api worker');
 const gatewayRollout = position(makefile, 'up -d --remove-orphans --wait admin-web mobile-web');
 assert.ok(coreRollout < gatewayRollout, 'API and worker readiness must precede web gateway replacement');
