@@ -51,6 +51,7 @@ assert.doesNotMatch(read('services/api/src/lib/logger.ts'), /process\.on\(/, 'Sh
 
 const deploy = read('.github/workflows/deploy.yml');
 const quality = read('.github/workflows/quality-gate.yml');
+const mobileRelease = read('.github/workflows/mobile-store-release.yml');
 const compose = read('docker-compose.production.yml');
 const makefile = read('Makefile');
 const position = (source, token) => {
@@ -65,6 +66,12 @@ assert.ok(buildPush < deployJob, 'Images must be built before deployment');
 assert.match(quality, /workflow_call:/, 'Quality gate must be reusable by production deployment');
 assert.match(quality, /push:[\s\S]*?branches:\s*\[develop\]/, 'Standalone quality pushes must be limited to develop');
 assert.match(quality, /Run admin browser workflows/, 'Reusable quality gate must retain browser coverage');
+for (const workflow of [quality, mobileRelease]) {
+  assert.doesNotMatch(workflow, /actions\/setup-node/, 'Workflows must respect the organization action allowlist');
+  assert.match(workflow, /bash \.\/scripts\/setup-node-ci\.sh/, 'Workflows must share the repository-owned Node setup');
+}
+assert.doesNotMatch(mobileRelease, /expo\/expo-github-action/, 'Mobile release must respect the organization action allowlist');
+assert.match(mobileRelease, /npm install --global eas-cli@\d+\.\d+\.\d+/, 'Mobile release must pin its EAS CLI');
 assert.match(deploy, /quality:[\s\S]*?uses:\s*\.\/\.github\/workflows\/quality-gate\.yml[\s\S]*?secrets:\s*inherit/, 'Production must call the reusable quality gate');
 assert.match(deploy, /build-push:[\s\S]*?needs:\s*quality/, 'Image publication must wait for quality verification');
 assert.match(deploy, /deploy:[\s\S]*?needs:\s*build-push/, 'Deployment must wait for image publication');

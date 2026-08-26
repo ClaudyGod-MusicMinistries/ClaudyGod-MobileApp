@@ -38,15 +38,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: yarn
-
-      - name: Enable Yarn Classic
-        run: |
-          corepack enable
-          corepack prepare yarn@1.22.22 --activate
+      - name: Set up approved Node and Yarn toolchain
+        run: bash ./scripts/setup-node-ci.sh
 
       - name: Verify store credentials
         run: |
@@ -72,10 +65,8 @@ jobs:
       - name: Certify store evidence and production manifest
         run: yarn --cwd ./apps/mobile release:certify
 
-      - uses: expo/expo-github-action@v8
-        with:
-          eas-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
+      - name: Install pinned EAS CLI
+        run: npm install --global eas-cli@22.2.0
 
       - name: Start immutable production build
         working-directory: apps/mobile
