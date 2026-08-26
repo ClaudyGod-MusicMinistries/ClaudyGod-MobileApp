@@ -1,5 +1,5 @@
 import { Queue } from 'bullmq';
-import { bullmqConnection } from '../infra/bullmq';
+import { bullmqConnection, observeQueueErrors } from '../infra/bullmq';
 
 export const CONTENT_QUEUE_NAME = 'content-events';
 
@@ -29,3 +29,5 @@ export const contentQueue = new Queue<ContentQueuePayload>(CONTENT_QUEUE_NAME, {
     removeOnFail: 500,
   },
 });
+
+observeQueueErrors(contentQueue, CONTENT_QUEUE_NAME);

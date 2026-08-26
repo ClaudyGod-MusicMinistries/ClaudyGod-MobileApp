@@ -109,10 +109,10 @@ healthRouter.get('/health', async (_req, res, next) => {
     };
 
     const [contentCounts, emailCounts, statsCounts, trendingCounts] = await Promise.allSettled([
-      contentQueue.getJobCounts(),
-      emailQueue.getJobCounts(),
-      statsQueue.getJobCounts(),
-      trendingQueue.getJobCounts(),
+      withTimeout(contentQueue.getJobCounts(), 1_500, 'Content queue health check timed out'),
+      withTimeout(emailQueue.getJobCounts(), 1_500, 'Email queue health check timed out'),
+      withTimeout(statsQueue.getJobCounts(), 1_500, 'Stats queue health check timed out'),
+      withTimeout(trendingQueue.getJobCounts(), 1_500, 'Trending queue health check timed out'),
     ]);
 
     const queueDepths = {

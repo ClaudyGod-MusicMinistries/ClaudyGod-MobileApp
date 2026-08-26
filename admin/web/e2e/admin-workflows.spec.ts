@@ -56,8 +56,9 @@ test('admin authentication requires MFA before workspace access', async ({ page 
   await page.getByLabel('Password').fill('correct-horse-battery-staple');
   await page.getByRole('button', { name: 'Sign in' }).click();
   await expect(page.getByRole('heading', { name: 'Verification code' })).toBeVisible();
-  await page.getByLabel('Security code').fill('123456');
-  await page.getByRole('button', { name: 'Verify' }).click();
+  for (const [index, digit] of [...'123456'].entries()) {
+    await page.getByLabel(`Digit ${index + 1} of 6`).fill(digit);
+  }
   await expect(page).toHaveURL(/\/choose-workspace$/);
   await expect(page.getByRole('heading', { name: 'Which workspace do you need?' })).toBeVisible();
 });

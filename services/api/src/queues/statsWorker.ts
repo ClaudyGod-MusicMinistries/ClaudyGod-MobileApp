@@ -1,6 +1,6 @@
 import { Worker } from 'bullmq';
 import { pool } from '../db/pool';
-import { bullmqConnection } from '../infra/bullmq';
+import { bullmqWorkerConnection } from '../infra/bullmq';
 import { createLogger } from '../lib/logger';
 import { STATS_QUEUE_NAME, type StatsQueuePayload } from './statsQueue';
 
@@ -73,7 +73,7 @@ export const startStatsWorker = (): Worker<StatsQueuePayload> => {
       }
     },
     {
-      connection: bullmqConnection,
+      connection: bullmqWorkerConnection,
       concurrency: 20,
     },
   );

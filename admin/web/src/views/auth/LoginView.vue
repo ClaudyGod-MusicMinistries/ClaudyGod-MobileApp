@@ -133,24 +133,52 @@
         {{ auth.error }}
       </div>
 
+      <fieldset v-if="!useRecoveryCode" class="space-y-2">
+        <legend class="text-xs font-medium text-ink-soft">Security code<span class="text-danger ml-0.5">*</span></legend>
+        <div class="flex justify-center gap-2" role="group" aria-label="Security code">
+          <input
+            v-for="(_, index) in mfaDigits"
+            :key="index"
+            :ref="(element) => setDigitInput(element, index)"
+            :value="mfaDigits[index]"
+            :aria-label="`Digit ${index + 1} of 6`"
+            class="h-12 w-11 rounded-xl border border-border bg-surface-strong text-center text-xl font-bold text-ink outline-none transition-base focus:border-primary/60 focus:ring-2 focus:ring-primary/15 disabled:cursor-not-allowed disabled:opacity-60"
+            type="text"
+            inputmode="numeric"
+            pattern="[0-9]*"
+            maxlength="1"
+            autocomplete="one-time-code"
+            :disabled="auth.isLoading"
+            @input="onDigitInput($event, index)"
+            @keydown="onDigitKeydown($event, index)"
+            @paste.prevent="onDigitPaste"
+          />
+        </div>
+        <p class="text-center text-xs text-ink-muted">Verification starts automatically after the sixth digit.</p>
+      </fieldset>
+
       <AppInput
+        v-else
         v-model="mfaCode"
-        label="Security code"
+        label="Recovery code"
         type="text"
-        placeholder="· · · · · ·"
+        placeholder="A1B2C3D4"
         required
         maxlength="8"
-        autocomplete="one-time-code"
-        inputmode="numeric"
-        id="mfa-code"
+        autocomplete="off"
+        id="mfa-recovery-code"
       />
-      <p class="-mt-3 text-xs text-ink-muted">You may also enter one of your eight-character recovery codes.</p>
+
+      <button type="button" class="w-full text-xs font-semibold text-primary-soft hover:text-primary" @click="toggleRecoveryCode">
+        {{ useRecoveryCode ? 'Use the 6-digit email code' : 'Use an eight-character recovery code' }}
+      </button>
 
       <AppButton
         type="submit"
         variant="gradient"
         size="lg"
         :loading="auth.isLoading"
+        :disabled="useRecoveryCode ? mfaCode.trim().length !== 8 : mfaCode.length !== 6"
         :full-width="true"
       >
         {{ auth.isLoading ? 'Verifying…' : 'Verify' }}
@@ -180,7 +208,8 @@
 </template>
 
 <script setup lang="ts">
-import { onUnmounted, ref } from 'vue';
+import { nextTick, onUnmounted, ref } from 'vue';
+import type { ComponentPublicInstance } from 'vue';
 import { useRoute, useRouter, RouterLink } from 'vue-router';
 import { ArrowLeft, ShieldCheck } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/auth.store';
@@ -196,12 +225,16 @@ const router = useRouter();
 const email = ref(typeof route.query.email === 'string' ? route.query.email : '');
 const password = ref('');
 const mfaCode = ref('');
+const mfaDigits = ref<string[]>(Array.from({ length: 6 }, () => ''));
+const digitInputs = ref<Array<HTMLInputElement | null>>([]);
+const useRecoveryCode = ref(false);
 const mfaRequired = ref(false);
 const mfaToken = ref('');
 const mfaMessage = ref('');
 const resendLoading = ref(false);
 const resendCooldown = ref(0);
 let resendTimer: ReturnType<typeof setInterval> | null = null;
+let autoSubmittingCode = '';
 const googleLoginUrl = GOOGLE_LOGIN_URL || null;
 const facebookLoginUrl = FACEBOOK_LOGIN_URL || null;
 
@@ -218,6 +251,60 @@ function startResendCooldown(): void {
 }
 
 onUnmounted(() => { if (resendTimer) clearInterval(resendTimer); });
+
+function setDigitInput(element: Element | ComponentPublicInstance | null, index: number): void {
+  digitInputs.value[index] = element instanceof HTMLInputElement ? element : null;
+}
+
+function applyMfaDigits(value: string): void {
+  const digits = value.replace(/\D/g, '').slice(0, 6).split('');
+  mfaDigits.value = Array.from({ length: 6 }, (_, index) => digits[index] ?? '');
+  mfaCode.value = digits.join('');
+  const focusIndex = Math.min(digits.length, 5);
+  void nextTick(() => digitInputs.value[focusIndex]?.focus());
+  if (mfaCode.value.length === 6 && autoSubmittingCode !== mfaCode.value) {
+    autoSubmittingCode = mfaCode.value;
+    void onMfa();
+  }
+}
+
+function onDigitInput(event: Event, index: number): void {
+  const input = event.target as HTMLInputElement;
+  const entered = input.value.replace(/\D/g, '');
+  if (entered.length > 1) {
+    applyMfaDigits(entered);
+    return;
+  }
+  mfaDigits.value[index] = entered;
+  mfaCode.value = mfaDigits.value.join('');
+  if (entered && index < 5) digitInputs.value[index + 1]?.focus();
+  if (mfaCode.value.length === 6 && autoSubmittingCode !== mfaCode.value) {
+    autoSubmittingCode = mfaCode.value;
+    void onMfa();
+  }
+}
+
+function onDigitKeydown(event: KeyboardEvent, index: number): void {
+  if (event.key === 'Backspace' && !mfaDigits.value[index] && index > 0) {
+    mfaDigits.value[index - 1] = '';
+    mfaCode.value = mfaDigits.value.join('');
+    digitInputs.value[index - 1]?.focus();
+  }
+  if (event.key === 'ArrowLeft' && index > 0) digitInputs.value[index - 1]?.focus();
+  if (event.key === 'ArrowRight' && index < 5) digitInputs.value[index + 1]?.focus();
+}
+
+function onDigitPaste(event: ClipboardEvent): void {
+  applyMfaDigits(event.clipboardData?.getData('text') ?? '');
+}
+
+function toggleRecoveryCode(): void {
+  useRecoveryCode.value = !useRecoveryCode.value;
+  mfaCode.value = '';
+  mfaDigits.value = Array.from({ length: 6 }, () => '');
+  autoSubmittingCode = '';
+  if (!useRecoveryCode.value) void nextTick(() => digitInputs.value[0]?.focus());
+}
 
 async function onLogin(): Promise<void> {
   try {
@@ -256,11 +343,19 @@ async function resendCode(): Promise<void> {
 }
 
 async function onMfa(): Promise<void> {
+  const code = mfaCode.value.trim();
+  if (auth.isLoading || (useRecoveryCode.value ? code.length !== 8 : code.length !== 6)) return;
   try {
-    await auth.completeMfa(mfaToken.value, mfaCode.value);
+    await auth.completeMfa(mfaToken.value, code);
     await router.push('/choose-workspace');
   } catch {
     // auth.error is set by the store — the template already displays it
+    if (!useRecoveryCode.value) {
+      autoSubmittingCode = '';
+      mfaDigits.value = Array.from({ length: 6 }, () => '');
+      mfaCode.value = '';
+      void nextTick(() => digitInputs.value[0]?.focus());
+    }
   }
 }
 </script>

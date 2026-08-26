@@ -1,6 +1,6 @@
 import { Worker } from 'bullmq';
 import { pool } from '../db/pool';
-import { bullmqConnection } from '../infra/bullmq';
+import { bullmqWorkerConnection } from '../infra/bullmq';
 import { createLogger } from '../lib/logger';
 import { TRENDING_QUEUE_NAME, type TrendingQueuePayload, type TrendingPeriod } from './trendingQueue';
 import { pruneExpiredSearchEvents } from '../modules/search/search.service';
@@ -81,7 +81,7 @@ export const startTrendingWorker = (): Worker<TrendingQueuePayload> => {
       }
     },
     {
-      connection: bullmqConnection,
+      connection: bullmqWorkerConnection,
       concurrency: 1,
     },
   );

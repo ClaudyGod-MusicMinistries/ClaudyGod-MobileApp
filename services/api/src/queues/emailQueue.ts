@@ -1,5 +1,5 @@
 import { Queue } from 'bullmq';
-import { bullmqConnection } from '../infra/bullmq';
+import { bullmqConnection, observeQueueErrors } from '../infra/bullmq';
 
 export const EMAIL_QUEUE_NAME = 'email-events';
 
@@ -19,3 +19,5 @@ export const emailQueue = new Queue<EmailQueuePayload>(EMAIL_QUEUE_NAME, {
     removeOnFail: 500,
   },
 });
+
+observeQueueErrors(emailQueue, EMAIL_QUEUE_NAME);
