@@ -58,7 +58,11 @@ const position = (source, token) => {
   return index;
 };
 
-assert.ok(position(deploy, 'Run admin browser workflows') < position(deploy, 'build-push:'), 'Browser workflows must precede publication');
+const buildPush = position(deploy, '  build-push:');
+const deployJob = position(deploy, '  deploy:');
+assert.ok(buildPush < deployJob, 'Images must be built before deployment');
+assert.match(deploy, /deploy:[\s\S]*?needs:\s*build-push/, 'Deployment must wait for image publication');
+assert.equal(exists('.github/workflows/quality-gate.yml'), false, 'The removed duplicate quality-gate workflow must not return');
 const capturePrevious = position(deploy, 'previous_image=$(docker inspect');
 const deployRelease = position(deploy, 'if ! IMAGE_TAG="$DEPLOY_SHA" make deploy');
 const certifyIntegrations = position(deploy, 'if ! IMAGE_TAG="$DEPLOY_SHA" make certify-integrations');
