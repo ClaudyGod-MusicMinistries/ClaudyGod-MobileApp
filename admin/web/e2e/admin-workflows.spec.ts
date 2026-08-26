@@ -63,6 +63,24 @@ test('admin authentication requires MFA before workspace access', async ({ page 
   await expect(page.getByRole('heading', { name: 'Which workspace do you need?' })).toBeVisible();
 });
 
+test('the account-security page never interrupts authenticated workspace routing', async ({ page }) => {
+  const unenrolledAdmin = { ...admin, mfaEnabled: false, mfaVerified: false };
+  await page.route('**/v1/**', async (route) => {
+    const path = new URL(route.request().url()).pathname;
+    if (path.endsWith('/v1/auth/session')) {
+      return json(route, { authenticated: true, user: unenrolledAdmin });
+    }
+    return json(route, {});
+  });
+
+  await page.goto('/choose-workspace');
+  await expect(page.getByRole('heading', { name: 'Which workspace do you need?' })).toBeVisible();
+
+  await page.getByRole('button', { name: /Mobile Studio/ }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page.getByRole('heading', { name: 'Secure your administrator account' })).not.toBeVisible();
+});
+
 test('workspace chooser routes independently to mobile and web studios', async ({ page }) => {
   await mockAuthenticatedSession(page);
   await page.goto('/choose-workspace');
