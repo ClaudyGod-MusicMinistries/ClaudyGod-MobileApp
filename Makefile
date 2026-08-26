@@ -417,13 +417,12 @@ ghcr-login:
 #   set -a && source .env.production && set +d && make docker-build
 
 docker-build: docker-build-api docker-build-admin docker-build-mobile docker-build-postfix
-	@printf "$(BOLD)$(GREEN)✓ All images built — $(REGISTRY)/*:$(IMAGE_TAG) + :$(GIT_SHA)$(NC)\n"
+	@printf "$(BOLD)$(GREEN)✓ All images built — $(REGISTRY)/*:$(IMAGE_TAG)$(NC)\n"
 
 docker-build-api:
 	@printf "$(BLUE)Building API image...$(NC)\n"
 	docker build --platform linux/amd64 \
 		-t $(API_IMAGE):$(IMAGE_TAG) \
-		-t $(API_IMAGE):$(GIT_SHA) \
 		-f $(API_DIR)/Dockerfile \
 		$(API_DIR)
 	@printf "$(GREEN)✓ API image built$(NC)\n"
@@ -435,7 +434,6 @@ docker-build-admin:
 		--build-arg VITE_GOOGLE_LOGIN_URL="$(VITE_GOOGLE_LOGIN_URL)" \
 		--build-arg VITE_MOBILE_PREVIEW_URL="$(VITE_MOBILE_PREVIEW_URL)" \
 		-t $(ADMIN_IMAGE):$(IMAGE_TAG) \
-		-t $(ADMIN_IMAGE):$(GIT_SHA) \
 		-f $(ADMIN_DIR)/Dockerfile \
 		$(ADMIN_DIR)
 	@printf "$(GREEN)✓ Admin image built$(NC)\n"
@@ -447,7 +445,6 @@ docker-build-mobile:
 		--build-arg EXPO_PUBLIC_SUPABASE_URL="$(EXPO_PUBLIC_SUPABASE_URL)" \
 		--build-arg EXPO_PUBLIC_SUPABASE_KEY="$(EXPO_PUBLIC_SUPABASE_KEY)" \
 		-t $(MOBILE_IMAGE):$(IMAGE_TAG) \
-		-t $(MOBILE_IMAGE):$(GIT_SHA) \
 		-f $(MOBILE_DIR)/Dockerfile.prod \
 		$(MOBILE_DIR)
 	@printf "$(GREEN)✓ Mobile image built$(NC)\n"
@@ -456,7 +453,6 @@ docker-build-postfix:
 	@printf "$(BLUE)Building postfix-relay image...$(NC)\n"
 	docker build --platform linux/amd64 \
 		-t $(POSTFIX_IMAGE):$(IMAGE_TAG) \
-		-t $(POSTFIX_IMAGE):$(GIT_SHA) \
 		ops/postfix
 	@printf "$(GREEN)✓ Postfix image built$(NC)\n"
 
@@ -465,13 +461,9 @@ docker-build-postfix:
 docker-push:
 	@printf "$(BLUE)Pushing images to $(REGISTRY)...$(NC)\n"
 	docker push $(API_IMAGE):$(IMAGE_TAG)
-	docker push $(API_IMAGE):$(GIT_SHA)
 	docker push $(ADMIN_IMAGE):$(IMAGE_TAG)
-	docker push $(ADMIN_IMAGE):$(GIT_SHA)
 	docker push $(MOBILE_IMAGE):$(IMAGE_TAG)
-	docker push $(MOBILE_IMAGE):$(GIT_SHA)
 	docker push $(POSTFIX_IMAGE):$(IMAGE_TAG)
-	docker push $(POSTFIX_IMAGE):$(GIT_SHA)
 	@printf "$(BOLD)$(GREEN)✓ All images pushed to $(REGISTRY)$(NC)\n"
 
 # Build + push in one step (use this in CI)

@@ -84,6 +84,9 @@ assert.ok(capturePrevious < deployRelease && deployRelease < certifyIntegrations
 assert.match(deploy, /\^\[0-9a-f\]\{40\}\$/, 'Rollback tags must be full immutable Git SHAs');
 assert.ok((deploy.match(/rollback_previous_release/g) || []).length >= 4, 'Deployment failures must invoke rollback');
 assert.match(deploy, /envs:\s+GHCR_DEPLOY_TOKEN,DEPLOY_SHA,API_DOMAIN/);
+assert.doesNotMatch(deploy, /claudygod-(?:api|admin|mobile|postfix):latest/, 'Production must publish only immutable SHA images');
+assert.doesNotMatch(makefile, /-t \$\([A-Z_]+IMAGE\):\$\(GIT_SHA\)/, 'Local release builds must not add a duplicate SHA tag');
+assert.doesNotMatch(makefile, /docker push .*\$\(GIT_SHA\)/, 'Local releases must not push duplicate image tags');
 
 assert.match(compose, /cgm-api:[\s\S]*?healthcheck:[\s\S]*?\/health/);
 assert.match(compose, /claudygod-api:\$\{IMAGE_TAG:\?IMAGE_TAG is required\}/);
