@@ -88,7 +88,7 @@ test('session discovery avoids preflight-only headers and MFA setup submits once
       return json(route, { authenticated: true, user: enrollingAdmin });
     }
     if (path.endsWith('/v1/auth/mfa/setup')) {
-      return json(route, { secret: 'TESTSECRET', otpauthUrl: 'otpauth://totp/test', qrDataUrl: '' });
+      return json(route, { delivery: 'email', maskedEmail: 'ow***@claudygod.test', expiresInMinutes: 10 });
     }
     if (path.endsWith('/v1/auth/mfa/verify-setup')) {
       verificationRequests += 1;
@@ -103,7 +103,8 @@ test('session discovery avoids preflight-only headers and MFA setup submits once
   expect(sessionHeaders['x-request-id']).toBeUndefined();
   expect(sessionHeaders['x-claudy-client-platform']).toBeUndefined();
 
-  await page.getByRole('button', { name: 'Begin secure setup' }).click();
+  await page.getByRole('button', { name: 'Send verification code' }).click();
+  await expect(page.getByText(/ow\*\*\*@claudygod\.test/)).toBeVisible();
   await page.getByLabel('Verification code').fill('123456');
   await page.getByRole('button', { name: 'Verify and enable MFA' }).click();
   await expect(page.getByText('A1B2C3D4')).toBeVisible();

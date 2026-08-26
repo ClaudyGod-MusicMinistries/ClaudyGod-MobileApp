@@ -30,6 +30,7 @@ import {
   recordSecurityEvent,
 } from './accountSecurity.service';
 import { validateMfaCode } from './mfa.service';
+import { requestEmailOtp, verifyEmailOtp } from './emailOtp.service';
 import type {
   AuthActionResponse,
   AuthResponse,
@@ -242,6 +243,26 @@ const consumeAuthActionToken = async ({
   }
 
   return result.rows[0]!;
+};
+
+const resolveAuthActionToken = async ({
+  rawToken,
+  tokenType,
+}: {
+  rawToken: string;
+  tokenType: AuthTokenType;
+}): Promise<AuthTokenRow> => {
+  const result = await pool.query<AuthTokenRow>(
+    `SELECT id, user_id FROM auth_action_tokens
+     WHERE token_hash = $1 AND token_type = $2
+       AND used_at IS NULL AND expires_at > NOW()
+     LIMIT 1`,
+    [tokenHash(rawToken), tokenType],
+  );
+  if (!result.rows[0]) {
+    throw new BadRequestError('Invalid or expired token', 'AUTH_TOKEN_INVALID', 'token');
+  }
+  return result.rows[0];
 };
 
 const createLocalUser = async ({
@@ -726,18 +747,19 @@ export const loginUser = async (input: LoginInput, context: AuthRequestContext =
 
   if (safeUser.mfaEnabled) {
     if (!input.mfaCode) {
-      const mfaToken = randomBytes(32).toString('hex');
-      await pool.query(
-        `INSERT INTO auth_action_tokens (user_id, token_hash, token_type, expires_at)
-         VALUES ($1, $2, 'mfa_step_up', NOW() + INTERVAL '10 minutes')`,
-        [safeUser.id, tokenHash(mfaToken)],
-      );
+      const { rawToken: mfaToken } = await issueAuthActionToken({
+        userId: safeUser.id,
+        tokenType: 'mfa_step_up',
+        ttlMinutes: 10,
+        requestIp: context.requestIp,
+      });
+      await requestEmailOtp(safeUser.email, 'mfa_login');
       return {
         accessToken: '',
         user: safeUser,
         mfaRequired: true,
         mfaToken,
-        message: 'MFA verification required',
+        message: 'A 6-digit security code was sent to your registered email address.',
       };
     }
 
@@ -774,20 +796,25 @@ export const verifyMfaLogin = async (
   input: { mfaToken: string; code: string },
   context: AuthRequestContext = {},
 ): Promise<Pick<AuthResponse, 'user' | 'message'>> => {
-  const { user_id: userId } = await consumeAuthActionToken({
+  const { user_id: userId } = await resolveAuthActionToken({
     rawToken: input.mfaToken,
     tokenType: 'mfa_step_up',
   });
-
-  const isMfaValid = await validateMfaCode(userId, input.code);
-  if (!isMfaValid) {
+  const safeUser = await getUserById(userId);
+  try {
+    if (input.code.trim().length === 8) {
+      const validRecoveryCode = await validateMfaCode(userId, input.code);
+      if (!validRecoveryCode) throw new UnauthorizedError('Invalid recovery code', 'MFA_INVALID_CODE');
+    } else {
+      await verifyEmailOtp(safeUser.email, input.code, 'mfa_login');
+    }
+  } catch (error) {
     await recordSecurityEvent(userId, 'login_mfa_failed', {
       ip: context.requestIp, userAgent: context.userAgent,
     });
-    throw new UnauthorizedError('Invalid MFA code', 'MFA_INVALID_CODE');
+    throw error;
   }
-
-  const safeUser = await getUserById(userId);
+  await consumeAuthActionToken({ rawToken: input.mfaToken, tokenType: 'mfa_step_up' });
 
   await Promise.all([
     clearFailedLogins(userId),
@@ -803,6 +830,19 @@ export const verifyMfaLogin = async (
   ]);
 
   return { user: safeUser };
+};
+
+export const resendMfaLoginCode = async (
+  mfaToken: string,
+  context: AuthRequestContext = {},
+): Promise<{ message: string }> => {
+  const { user_id: userId } = await resolveAuthActionToken({ rawToken: mfaToken, tokenType: 'mfa_step_up' });
+  const safeUser = await getUserById(userId);
+  await requestEmailOtp(safeUser.email, 'mfa_login');
+  await recordSecurityEvent(userId, 'login_mfa_code_resent', {
+    ip: context.requestIp, userAgent: context.userAgent,
+  });
+  return { message: 'A new security code was sent to your registered email address.' };
 };
 
 export const verifyEmail = async (input: VerifyEmailInput, context: AuthRequestContext = {}): Promise<AuthResponse> => {

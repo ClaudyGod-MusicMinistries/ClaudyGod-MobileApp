@@ -260,8 +260,9 @@ export const queueOtpEmail = async (input: {
   toEmail: string;
   code: string;
   expiresInMinutes: number;
+  context?: 'sign_in' | 'sign_up' | 'mfa_setup' | 'mfa_login' | 'mfa_action';
 }): Promise<void> => {
-  const template = buildOtpTemplate({ code: input.code, expiresInMinutes: input.expiresInMinutes });
+  const template = buildOtpTemplate({ code: input.code, expiresInMinutes: input.expiresInMinutes, context: input.context });
   await queueEmailJob({
     recipients: [input.toEmail],
     subject: template.subject,
@@ -269,7 +270,7 @@ export const queueOtpEmail = async (input: {
     htmlBody: template.html,
     jobType: 'otp',
     templateKey: 'auth.otp',
-    payload: { email: input.toEmail, type: 'otp' },
+    payload: { email: input.toEmail, type: 'otp', context: input.context ?? 'sign_in' },
   });
 };
 
