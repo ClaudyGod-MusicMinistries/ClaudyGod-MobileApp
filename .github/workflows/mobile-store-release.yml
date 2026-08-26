@@ -65,10 +65,8 @@ jobs:
       - name: Certify store evidence and production manifest
         run: yarn --cwd ./apps/mobile release:certify
 
-      - uses: expo/expo-github-action@v8
-        with:
-          eas-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
+      - name: Install pinned EAS CLI
+        run: npm install --global eas-cli@22.2.0
 
       - name: Start immutable production build
         working-directory: apps/mobile

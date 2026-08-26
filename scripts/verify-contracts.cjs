@@ -70,6 +70,8 @@ for (const workflow of [quality, mobileRelease]) {
   assert.doesNotMatch(workflow, /actions\/setup-node/, 'Workflows must respect the organization action allowlist');
   assert.match(workflow, /bash \.\/scripts\/setup-node-ci\.sh/, 'Workflows must share the repository-owned Node setup');
 }
+assert.doesNotMatch(mobileRelease, /expo\/expo-github-action/, 'Mobile release must respect the organization action allowlist');
+assert.match(mobileRelease, /npm install --global eas-cli@\d+\.\d+\.\d+/, 'Mobile release must pin its EAS CLI');
 assert.match(deploy, /quality:[\s\S]*?uses:\s*\.\/\.github\/workflows\/quality-gate\.yml[\s\S]*?secrets:\s*inherit/, 'Production must call the reusable quality gate');
 assert.match(deploy, /build-push:[\s\S]*?needs:\s*quality/, 'Image publication must wait for quality verification');
 assert.match(deploy, /deploy:[\s\S]*?needs:\s*build-push/, 'Deployment must wait for image publication');
