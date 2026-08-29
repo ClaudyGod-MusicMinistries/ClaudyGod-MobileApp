@@ -111,8 +111,9 @@ const buildCorsOrigin = (): CorsOptions['origin'] => {
       return;
     }
 
-    // ===== ALLOW MOBILE ADMIN SUBDOMAIN =====
-    if (origin === 'https://mobileadmin.claudygod.org') {
+    // Extra allowed browser origins (e.g. the mobile-admin subdomain) — configured
+    // via CORS_EXTRA_ORIGINS, not hard-coded here.
+    if (env.CORS_EXTRA_ORIGINS_LIST.includes(origin)) {
       callback(null, true);
       return;
     }
@@ -198,8 +199,7 @@ export const createApp = () => {
           // Connection sources (APIs, WebSockets)
           connectSrc: [
             "'self'",
-            "https://apimobile.claudygod.org",
-            "https://api.claudygod.org",
+            ...env.API_PUBLIC_ORIGINS_LIST,
             "https://*.supabase.co",
             "wss://*.supabase.co",
             "https://*.googleapis.com",

@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import { ENV } from './config';
+import { CLIENT_VERSION, HTTP } from '../config/constants';
 import { reportBreadcrumb } from '../lib/sentry';
 import { getInstallationSession } from '../lib/installationSessionStorage';
 
@@ -17,7 +18,7 @@ export class ApiError extends Error {
   }
 }
 
-const DEFAULT_TIMEOUT = 30000;
+const DEFAULT_TIMEOUT = HTTP.defaultTimeoutMs;
 
 const generateRequestId = (): string =>
   typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
@@ -69,7 +70,7 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
       headers: {
         'Content-Type': 'application/json',
         'X-Claudy-Client-Platform': Platform.OS,
-        'X-Claudy-Client-Version': '1.0.0',
+        'X-Claudy-Client-Version': CLIENT_VERSION,
         'x-request-id': generateRequestId(),
         ...(installationSession ? { 'X-Installation-Token': installationSession.credential } : {}),
         ...(init?.headers ?? {}),

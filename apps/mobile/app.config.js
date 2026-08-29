@@ -54,12 +54,26 @@ const resolvedSupabaseAnonKey =
   fileEnv.EXPO_PUBLIC_SUPABASE_ANON_KEY ||
   process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ||
   publicSupabaseKey;
-const resolvedEasProjectId =
-  fileEnv.EXPO_PUBLIC_EAS_PROJECT_ID ||
-  fileEnv.EAS_PROJECT_ID ||
-  process.env.EXPO_PUBLIC_EAS_PROJECT_ID ||
-  process.env.EAS_PROJECT_ID ||
-  'fdb18cc3-e1d9-40e9-9a60-34b4a3b244b7'; // EAS project ID — not a secret
+// Canonical EAS project ID — the single source of truth (also mirrored in the
+// repo-root app.json). Not a secret. Override per-environment with
+// EAS_PROJECT_ID / EXPO_PUBLIC_EAS_PROJECT_ID only if this app is ever pointed
+// at a different Expo project.
+const DEFAULT_EAS_PROJECT_ID = '724c1b43-4438-46c0-a215-4de7705bffaf';
+// Treat the all-zeros null UUID (used as a placeholder in .env templates) as unset.
+const NULL_UUID = '00000000-0000-0000-0000-000000000000';
+const firstRealProjectId = (...candidates) => {
+  for (const candidate of candidates) {
+    const value = String(candidate || '').trim();
+    if (value && value !== NULL_UUID) return value;
+  }
+  return DEFAULT_EAS_PROJECT_ID;
+};
+const resolvedEasProjectId = firstRealProjectId(
+  fileEnv.EXPO_PUBLIC_EAS_PROJECT_ID,
+  fileEnv.EAS_PROJECT_ID,
+  process.env.EXPO_PUBLIC_EAS_PROJECT_ID,
+  process.env.EAS_PROJECT_ID,
+);
 const resolvedExpoOwner =
   fileEnv.EXPO_ACCOUNT_OWNER || process.env.EXPO_ACCOUNT_OWNER || 'peter4tech';
 const appIconAssetPath = './assets/icon.png';
@@ -192,6 +206,12 @@ module.exports = {
       buildNumber: iosBuildNumber,
       icon: appIconAssetPath,
       associatedDomains: ['applinks:claudygod.org'],
+      infoPlist: {
+        // Keep worship audio / sermons playing when the screen locks or the user
+        // leaves the app — table stakes for a streaming app. Lock-screen transport
+        // controls arrive with the dedicated playback service (Phase 1).
+        UIBackgroundModes: ['audio'],
+      },
       // Required since 2024 for App Store Connect uploads. Declares this app's own
       // "required reason" API usage; installed Expo/RN modules (async-storage,
       // secure-store, etc.) ship their own manifest fragments that autolinking

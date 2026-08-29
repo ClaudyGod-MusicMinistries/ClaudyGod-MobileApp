@@ -243,7 +243,10 @@ export function AudioPlayer({
     void setAudioModeAsync({
       allowsRecording: false,
       playsInSilentMode: true,
-      shouldPlayInBackground: false,
+      // Music and sermons keep playing when the app backgrounds or the screen
+      // locks (iOS UIBackgroundModes: ['audio'] is declared in app.config.js).
+      // Full lock-screen transport controls come with the Phase 1 playback service.
+      shouldPlayInBackground: true,
       interruptionMode: 'duckOthers',
     });
   }, []);

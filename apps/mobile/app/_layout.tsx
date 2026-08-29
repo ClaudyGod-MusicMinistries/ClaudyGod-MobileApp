@@ -14,12 +14,9 @@ import { FontProvider, FontContext } from '../context/FontContext';
 import { AppProvider } from '../context/AppContext';
 import { DownloadsProvider } from '../context/DownloadsContext';
 import { LocalContentProvider } from '../context/LocalContentContext';
-import { PlayerProvider, usePlayer } from '../context/PlayerContext';
-import { PlayerProgressProvider } from '../context/PlayerProgressContext';
 import { ToastProvider } from '../context/ToastContext';
 import { AppModalProvider } from '../context/AppModalContext';
 import { ToastViewport } from '../components/ui/ToastViewport';
-import { MinimizedFloatingPlayer } from '../components/player/MinimizedFloatingPlayer';
 import { WordOfDayProvider } from '../context/WordOfDayContext';
 import { AppLoadingScreen } from '../components/Exp/AppLoading';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
@@ -70,8 +67,6 @@ function RootLayoutInner() {
   // the failure to the user.
   usePushNotifications();
 
-  usePlayer(); // Subscribes so this layout re-renders on player identity changes (not progress ticks).
-
   if (!fontsLoaded) {
     return <AppLoadingScreen />;
   }
@@ -109,7 +104,6 @@ function RootLayoutInner() {
         />
       </Stack>
 
-      <MinimizedFloatingPlayer />
       {isOffline ? <OfflineBanner onRetry={recheck} /> : null}
     </ThemedLayout>
   );
@@ -128,15 +122,11 @@ function RootLayout() {
                     <AuthProvider>
                       <LocalContentProvider>
                         <DownloadsProvider>
-                          <PlayerProgressProvider>
-                          <PlayerProvider>
-                            <WordOfDayProvider>
-                              <AppModalProvider>
-                                <RootLayoutInner />
-                              </AppModalProvider>
-                            </WordOfDayProvider>
-                          </PlayerProvider>
-                          </PlayerProgressProvider>
+                          <WordOfDayProvider>
+                            <AppModalProvider>
+                              <RootLayoutInner />
+                            </AppModalProvider>
+                          </WordOfDayProvider>
                         </DownloadsProvider>
                       </LocalContentProvider>
                     </AuthProvider>
