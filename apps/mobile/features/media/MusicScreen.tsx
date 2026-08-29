@@ -3,7 +3,6 @@ import { ScrollView, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { AudioPlayer, type RepeatMode } from '../../components/media/AudioPlayer';
-import { YouTubeAudioPlayer } from '../../components/media/YouTubeAudioPlayer';
 import { CustomText } from '../../components/CustomText';
 import { AppButton } from '../../components/ui/AppButton';
 import { TVTouchable } from '../../components/ui/TVTouchable';
@@ -19,7 +18,7 @@ import type { FeedCardItem } from '../../services/contentService';
 import { trackContentPlay } from '../../services/supabaseAnalytics';
 import { APP_ROUTES } from '../../util/appRoutes';
 import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
-import { buildPlayerRoute, isDirectPlayableAudioUrl, isYouTubeAudioItem, routeParamToString, shouldOpenVideoScreen } from '../../util/playerRoute';
+import { buildPlayerRoute, isDirectPlayableAudioUrl, routeParamToString, shouldOpenVideoScreen } from '../../util/playerRoute';
 import { openExternalUrl } from '../../util/externalLinks';
 import {
   CompactContentRow,
@@ -195,7 +194,7 @@ export default function PlaySection() {
   const routeItem = useMemo(() => parseRouteItem(params), [params]);
   const allQueue = useMemo(
     () => dedupeFeedItems([...(routeItem ? [routeItem] : []), ...feed.music, ...feed.mostPlayed, ...feed.recommendations, ...feed.playlists, ...feed.recent])
-      .filter((item) => isYouTubeAudioItem(item) || !shouldOpenVideoScreen(item)),
+      .filter((item) => !shouldOpenVideoScreen(item)),
     [feed, routeItem],
   );
 
@@ -213,10 +212,7 @@ export default function PlaySection() {
   const canWrapQueue = (repeatMode === 'all' || shuffleEnabled) && allQueue.length > 1;
   const canGoPrevious = activeIndex > 0 || canWrapQueue;
   const canGoNext = (activeIndex >= 0 && activeIndex < allQueue.length - 1) || canWrapQueue;
-  const hasInlineAudio = Boolean(active && (
-    (active.mediaUrl && isDirectPlayableAudioUrl(active.mediaUrl)) ||
-    isYouTubeAudioItem(active)
-  ));
+  const hasInlineAudio = Boolean(active && active.mediaUrl && isDirectPlayableAudioUrl(active.mediaUrl));
   const isFavorite = active ? checkIsFavorited(active.id) : false;
 
   const handleFavoriteToggle = async () => {
@@ -234,12 +230,6 @@ export default function PlaySection() {
   };
 
   const openItem = async (item: FeedCardItem, source: string) => {
-    if (isYouTubeAudioItem(item)) {
-      setActiveId(item.id);
-      await recordHistory(item);
-      await trackContentPlay(item, source);
-      return;
-    }
     if (!item.mediaUrl) {
       showToast({ title: 'Playback unavailable', message: 'This item is not ready to play yet.', tone: 'warning' });
       return;
@@ -303,23 +293,7 @@ export default function PlaySection() {
       }
     >
       {/* ── Now Playing card ─────────────────────────────────────────────── */}
-      {active && hasInlineAudio && isYouTubeAudioItem(active) && active.youtubeVideoId ? (
-        <View style={styles.nowPlayingCard}>
-          <View style={styles.stageHeader}><View style={styles.stageHeading}><CustomText variant="caption" style={styles.stageEyebrow}>Now playing</CustomText><CustomText variant="heading" style={styles.stageTitle}>Your worship player</CustomText></View><View style={styles.stageStatus}><View style={styles.stageStatusDot} /><CustomText variant="caption" style={styles.stageStatusText}>Ready</CustomText></View></View>
-          <YouTubeAudioPlayer
-            track={{ id: active.id, title: active.title, artist: active.subtitle, youtubeVideoId: active.youtubeVideoId, duration: active.duration, imageUrl: active.imageUrl }}
-            onPrevious={goPrevious}
-            onNext={goNext}
-            canGoPrevious={canGoPrevious}
-            canGoNext={canGoNext}
-            isFavorite={isFavorite}
-            onFavoriteToggle={() => { void handleFavoriteToggle(); }}
-            currentTrackNumber={activeIndex >= 0 ? activeIndex + 1 : undefined}
-            totalTracks={allQueue.length}
-            advanceOnFinish={autoplayEnabled && canGoNext}
-          />
-        </View>
-      ) : active && hasInlineAudio && active.mediaUrl ? (
+      {active && hasInlineAudio && active.mediaUrl ? (
         <View style={styles.nowPlayingCard}>
           <View style={styles.stageHeader}><View style={styles.stageHeading}><CustomText variant="caption" style={styles.stageEyebrow}>Now playing</CustomText><CustomText variant="heading" style={styles.stageTitle}>Your worship player</CustomText></View><View style={styles.stageStatus}><View style={styles.stageStatusDot} /><CustomText variant="caption" style={styles.stageStatusText}>Ready</CustomText></View></View>
           <AudioPlayer

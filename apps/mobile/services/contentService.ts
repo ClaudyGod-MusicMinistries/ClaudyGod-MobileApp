@@ -88,8 +88,6 @@ export interface FeedCardItem {
   sponsorName?: string;
   placement?: string;
   campaignId?: string;
-  youtubeVideoId?: string;
-  playAsAudio?: boolean;
 }
 
 export interface FeedLayoutSection {
@@ -187,8 +185,6 @@ function normalizeFeedItem(item: MobileFeedApiItem): FeedCardItem {
     sponsorName: item.sponsorName,
     placement: item.placement,
     campaignId: item.campaignId,
-    youtubeVideoId: item.youtubeVideoId,
-    playAsAudio: item.playAsAudio,
   };
 }
 

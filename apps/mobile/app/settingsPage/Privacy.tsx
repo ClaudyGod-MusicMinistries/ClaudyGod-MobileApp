@@ -17,11 +17,13 @@ import { useAppModal } from '../../context/AppModalContext';
 import { useAuth } from '../../features/auth/AuthContext';
 import { APP_ROUTES } from '../../util/appRoutes';
 import {
+  cancelPrivacyDeleteAccount,
   fetchMePrivacyOverview,
   requestPrivacyDataExport,
   requestPrivacyDeleteAccount,
   resetInstallationRecommendationHistory,
   resetRecommendationHistory,
+  type PendingAccountDeletion,
 } from '../../services/userFlowService';
 import { openExternalUrl } from '../../util/externalLinks';
 
@@ -114,7 +116,8 @@ export default function Privacy() {
   const { isAuthenticated, user } = useAuth();
   const [loading,           setLoading]           = useState(true);
   const [overviewError,     setOverviewError]     = useState(false);
-  const [summary,           setSummary]           = useState<{ totalRequests: number; totalPlayEvents: number; totalLiveSubscriptions: number } | null>(null);
+  const [summary,           setSummary]           = useState<{ totalRequests: number; totalPlayEvents: number; totalLiveSubscriptions: number; pendingDeletion: PendingAccountDeletion | null } | null>(null);
+  const [cancellingDelete,  setCancellingDelete]  = useState(false);
   const [deleteName,        setDeleteName]        = useState('');
   const [deletePhraseInput, setDeletePhraseInput] = useState('');
   const [submittingDelete,  setSubmittingDelete]  = useState(false);
@@ -171,6 +174,11 @@ export default function Privacy() {
     });
   };
 
+  const pendingDeletion = summary?.pendingDeletion ?? null;
+  const deletionScheduledDate = pendingDeletion
+    ? new Date(pendingDeletion.scheduledFor).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })
+    : '';
+
   const performDeleteRequest = async () => {
     if (!canDelete) return;
     setSubmittingDelete(true);
@@ -178,7 +186,13 @@ export default function Privacy() {
       const response = await requestPrivacyDeleteAccount({ fullName: deleteName.trim(), confirmText: deletePhraseInput.trim() });
       setDeleteName('');
       setDeletePhraseInput('');
-      showModal({ title: 'Delete request submitted', message: `Request ${response.request.id.slice(0, 8)} has been received.`, tone: 'success', primaryAction: { label: 'Done' } });
+      const when = new Date(response.deletion.scheduledFor).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+      showModal({
+        title: 'Account deletion scheduled',
+        message: `Your account and all associated data will be permanently deleted on ${when}. We've emailed you a confirmation. You can cancel any time before that date from this screen.`,
+        tone: 'success',
+        primaryAction: { label: 'Done' },
+      });
       void refreshPrivacy();
     } catch (error) {
       showModal({ title: 'Request failed', message: error instanceof Error ? error.message : 'Please try again.', tone: 'error', primaryAction: { label: 'Try again' } });
@@ -186,14 +200,33 @@ export default function Privacy() {
     setSubmittingDelete(false);
   };
 
+  const performCancelDeletion = async () => {
+    setCancellingDelete(true);
+    try {
+      const response = await cancelPrivacyDeleteAccount();
+      showModal({
+        title: response.cancelled ? 'Deletion cancelled' : 'Nothing to cancel',
+        message: response.cancelled
+          ? 'Your account will not be deleted. Welcome back.'
+          : 'This account has no pending deletion, or the deletion has already run.',
+        tone: response.cancelled ? 'success' : 'warning',
+        primaryAction: { label: 'Done' },
+      });
+      void refreshPrivacy();
+    } catch (error) {
+      showModal({ title: 'Could not cancel', message: error instanceof Error ? error.message : 'Please try again.', tone: 'error', primaryAction: { label: 'Try again' } });
+    }
+    setCancellingDelete(false);
+  };
+
   const submitDeleteRequest = () => {
     if (!canDelete) return;
     showModal({
-      title: 'Submit delete request?',
-      message: 'This sends your account deletion request for review. You can still contact privacy support if you need help.',
+      title: 'Delete your account?',
+      message: `Your account and all associated data (library, listening history, requests) will be permanently deleted after a grace period of about 30 days. You'll get an email confirmation and can cancel any time before then. After deletion this cannot be undone.`,
       tone: 'danger',
-      primaryAction: { label: 'Submit', onPress: () => void performDeleteRequest() },
-      secondaryAction: { label: 'Cancel', variant: 'secondary' },
+      primaryAction: { label: 'Schedule deletion', onPress: () => void performDeleteRequest() },
+      secondaryAction: { label: 'Keep my account', variant: 'secondary' },
     });
   };
 
@@ -268,11 +301,32 @@ export default function Privacy() {
         </FadeIn>
       ) : null}
 
-      {isAuthenticated ? <FadeIn delay={190}>
+      {isAuthenticated && pendingDeletion ? <FadeIn delay={190}>
         <SurfaceCard tone="subtle" style={styles.deletePad}>
-          <CustomText variant="heading" style={styles.sectionHead}>Delete account request</CustomText>
+          <CustomText variant="heading" style={styles.sectionHead}>Account deletion scheduled</CustomText>
           <CustomText variant="body" style={styles.sectionBody}>
-            This sends a deletion request for review. Type the required phrase to confirm your intent.
+            {`Your account and all associated data will be permanently deleted on ${deletionScheduledDate}` +
+              `${pendingDeletion.daysRemaining > 0 ? ` — about ${pendingDeletion.daysRemaining} day${pendingDeletion.daysRemaining === 1 ? '' : 's'} from now` : ''}. ` +
+              `Cancel below to keep your account. After deletion this cannot be undone.`}
+          </CustomText>
+          <AppButton
+            title="Cancel deletion"
+            variant="gradient"
+            fullWidth
+            disabled={cancellingDelete}
+            loading={cancellingDelete}
+            loadingLabel="Cancelling"
+            onPress={() => void performCancelDeletion()}
+            style={styles.deleteBtn}
+          />
+        </SurfaceCard>
+      </FadeIn> : isAuthenticated ? <FadeIn delay={190}>
+        <SurfaceCard tone="subtle" style={styles.deletePad}>
+          <CustomText variant="heading" style={styles.sectionHead}>Delete account</CustomText>
+          <CustomText variant="body" style={styles.sectionBody}>
+            Permanently deletes your account and all associated data after a grace period of about 30 days.
+            You&rsquo;ll get an email confirmation and can cancel any time before then. Type your name and the
+            confirmation phrase to continue.
           </CustomText>
           <TextInput
             value={deleteName}
@@ -290,12 +344,12 @@ export default function Privacy() {
             style={[styles.deleteInput, styles.deleteInputSecond]}
           />
           <AppButton
-            title="Submit delete request"
+            title="Delete my account"
             variant="outline"
             fullWidth
             disabled={!canDelete || submittingDelete}
             loading={submittingDelete}
-            loadingLabel="Submitting request"
+            loadingLabel="Scheduling deletion"
             onPress={submitDeleteRequest}
             textColor={theme.colors.danger}
             style={styles.deleteBtn}

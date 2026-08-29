@@ -15,6 +15,7 @@ import { reconcilePendingEmailJobs } from './queues/emailOutbox';
 import { reconcileExpiredAdminUploads } from './modules/admin/storage.service';
 import { startMediaWorker } from './queues/mediaWorker';
 import { reconcilePendingMediaJobs } from './queues/mediaOutbox';
+import { processDueAccountDeletions } from './modules/me/accountDeletion.service';
 
 const log = createLogger('worker');
 const WORKER_READY_FILE = '/tmp/claudygod-worker-ready.json';
@@ -77,6 +78,9 @@ const bootWorker = async (): Promise<void> => {
   await reconcilePendingEmailJobs();
   await reconcileExpiredAdminUploads();
   await reconcilePendingMediaJobs();
+  await processDueAccountDeletions().catch((error) => {
+    log.error('Account deletion sweep failed on boot', { error: error instanceof Error ? error.message : String(error) });
+  });
   writeFileSync(WORKER_READY_FILE, JSON.stringify({ pid: process.pid, readyAt: new Date().toISOString() }));
   const outboxTimer = setInterval(() => {
     void reconcilePendingContentJobs().catch((error) => {
@@ -96,8 +100,14 @@ const bootWorker = async (): Promise<void> => {
   const mediaOutboxTimer = setInterval(() => {
     void reconcilePendingMediaJobs().catch((error) => log.error('Media outbox reconciliation failed', { error: String(error) }));
   }, 30_000);
+  // Permanently purge accounts whose deletion grace period has elapsed (App Store 5.1.1(v)).
+  const accountDeletionTimer = setInterval(() => {
+    void processDueAccountDeletions().catch((error) => {
+      log.error('Account deletion sweep failed', { error: error instanceof Error ? error.message : String(error) });
+    });
+  }, 60 * 60_000);
 
-  log.info('Workers ready', { workers: ['content', 'email', 'stats', 'trending', 'media-security'], bootMs: Date.now() - bootStart });
+  log.info('Workers ready', { workers: ['content', 'email', 'stats', 'trending', 'media-security', 'account-deletion'], bootMs: Date.now() - bootStart });
 
   const shutdown = async (signal: string, error?: unknown): Promise<void> => {
     clearWorkerReadiness();
@@ -105,6 +115,7 @@ const bootWorker = async (): Promise<void> => {
     clearInterval(uploadReconciliationTimer);
     clearInterval(emailOutboxTimer);
     clearInterval(mediaOutboxTimer);
+    clearInterval(accountDeletionTimer);
     if (error) {
       log.error('Worker shutdown triggered by unhandled error', {
         signal,

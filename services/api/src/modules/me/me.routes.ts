@@ -26,6 +26,7 @@ import {
 } from './me.schema';
 import {
   createMeDonationIntent,
+  cancelMePrivacyDeleteRequest,
   createMePrivacyDeleteRequest,
   createMePrivacyExportRequest,
   createMeRating,
@@ -211,6 +212,14 @@ meRouter.post(
     const payload = validateSchema(createPrivacyDeleteRequestSchema, req.body);
     const result = await createMePrivacyDeleteRequest(requireUser(req), payload);
     res.status(201).json(result);
+  }),
+);
+
+meRouter.post(
+  '/privacy/delete-request/cancel',
+  asyncHandler(async (req, res) => {
+    const result = await cancelMePrivacyDeleteRequest(requireUser(req));
+    res.status(200).json(result);
   }),
 );
 

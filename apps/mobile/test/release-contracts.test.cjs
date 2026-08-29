@@ -278,7 +278,6 @@ test('settings capabilities describe and control real playback and privacy behav
   const settings = fs.readFileSync(path.join(root, 'app/(tabs)/settings.tsx'), 'utf8');
   const music = fs.readFileSync(path.join(root, 'features/media/MusicScreen.tsx'), 'utf8');
   const audio = fs.readFileSync(path.join(root, 'components/media/AudioPlayer.tsx'), 'utf8');
-  const youtube = fs.readFileSync(path.join(root, 'components/media/YouTubeAudioPlayer.tsx'), 'utf8');
   const pushService = fs.readFileSync(path.join(root, 'services/pushNotificationService.ts'), 'utf8');
   const pushHook = fs.readFileSync(path.join(root, 'hooks/usePushNotify.ts'), 'utf8');
   const mobileApi = fs.readFileSync(path.resolve(root, '../../services/api/src/modules/mobile/mobile.routes.ts'), 'utf8');
@@ -292,7 +291,10 @@ test('settings capabilities describe and control real playback and privacy behav
   assert.match(music, /getPreference\('autoplayEnabled'/);
   assert.match(music, /advanceOnFinish=\{autoplayEnabled/);
   assert.match(audio, /advanceOnFinish/);
-  assert.match(youtube, /msg\.state === 0 && advanceOnFinish/);
+  // YouTube-as-audio (hidden WebView) was removed for YouTube ToS compliance —
+  // YouTube content now plays as visible video via the official embed player.
+  assert.equal(fs.existsSync(path.join(root, 'components/media/YouTubeAudioPlayer.tsx')), false);
+  assert.doesNotMatch(music, /YouTubeAudioPlayer|isYouTubeAudioItem|playAsAudio/);
   assert.match(settings, /await toggleNotifications\(value\)/);
   assert.match(settings, /await persistPreference\('notificationsEnabled', value\)/);
   assert.match(settings, /label: 'Email delivery'/);
@@ -408,20 +410,32 @@ test('guest recommendations use verified installation history and enforce opt-ou
   assert.match(installation, /mayPersonalize \? input\.contentId/);
 });
 
-test('store builds declare every sensitive native permission with purpose-specific copy', () => {
+test('the build declares no sensitive permission the app cannot exercise', () => {
   process.env.CLAUDYGOD_ENV = 'production';
   const configPath = path.join(root, 'app.config.js');
   delete require.cache[require.resolve(configPath)];
   const config = require(configPath).expo;
   const plugins = new Map(config.plugins.filter(Array.isArray).map(([name, options]) => [name, options]));
-  const picker = plugins.get('expo-image-picker');
+  const configJson = JSON.stringify(config);
+
+  // The app has no camera / photo-library / media-capture feature, so it must not
+  // pull in the packages that inject those permission strings (App Store 5.1.1,
+  // Google Play data-safety). If media upload is added later, add the feature and
+  // its specific purpose string together.
+  const deps = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')).dependencies;
+  for (const forbidden of ['expo-camera', 'expo-image-picker', 'expo-document-picker']) {
+    assert.equal(forbidden in deps, false, `${forbidden} must not be a dependency — no feature uses it`);
+    assert.equal(plugins.has(forbidden), false);
+  }
+
+  // expo-audio is playback-only; it must not request the microphone.
   const audio = plugins.get('expo-audio');
+  assert.ok(audio, 'expo-audio plugin config is present');
+  assert.equal(audio.recordAudioAndroid, false);
+  assert.equal('microphonePermission' in audio, false);
+  assert.doesNotMatch(configJson, /NSCameraUsageDescription|NSMicrophoneUsageDescription/);
+
   const notifications = plugins.get('expo-notifications');
-  assert.match(picker.photosPermission, /select.*you choose/i);
-  assert.match(picker.cameraPermission, /only when you choose/i);
-  assert.match(picker.microphonePermission, /only when you choose/i);
-  assert.match(audio.microphonePermission, /only when you choose/i);
-  assert.equal(audio.recordAudioAndroid, true);
   assert.equal(notifications.defaultChannel, 'default');
   assert.equal(notifications.enableBackgroundRemoteNotifications, false);
 });

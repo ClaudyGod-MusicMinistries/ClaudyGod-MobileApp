@@ -310,6 +310,25 @@ const migrationStatements = [
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`,
+  // Account-deletion grace period + automated purge (App Store 5.1.1(v)).
+  `ALTER TABLE privacy_requests ADD COLUMN IF NOT EXISTS scheduled_for TIMESTAMPTZ`,
+  `ALTER TABLE privacy_requests ADD COLUMN IF NOT EXISTS processed_at TIMESTAMPTZ`,
+  `ALTER TABLE privacy_requests DROP CONSTRAINT IF EXISTS privacy_requests_status_check`,
+  `ALTER TABLE privacy_requests ADD CONSTRAINT privacy_requests_status_check
+     CHECK (status IN ('submitted', 'scheduled', 'processing', 'completed', 'rejected', 'cancelled'))`,
+  `CREATE INDEX IF NOT EXISTS idx_privacy_requests_deletion_due
+     ON privacy_requests (scheduled_for)
+     WHERE request_type = 'delete' AND status = 'scheduled' AND processed_at IS NULL`,
+  // Tamper-evident record that a deletion completed, kept after the user row is gone
+  // (no FK back to app_users, so it survives the cascade). Holds no personal data
+  // beyond the opaque prior user id.
+  `CREATE TABLE IF NOT EXISTS account_deletion_audit (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    privacy_request_id UUID,
+    prior_user_id UUID NOT NULL,
+    requested_at TIMESTAMPTZ NOT NULL,
+    completed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
   `CREATE TABLE IF NOT EXISTS support_requests (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES app_users(id) ON DELETE SET NULL,

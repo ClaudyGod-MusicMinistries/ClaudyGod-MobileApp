@@ -240,6 +240,11 @@ const envSchema = z
 
     ACCOUNT_LOCKOUT_ATTEMPTS: z.coerce.number().int().min(3).max(20).default(5),
     ACCOUNT_LOCKOUT_DURATION_MINUTES: z.coerce.number().int().min(5).max(1440).default(30),
+
+    // Grace period between a user requesting account deletion and the account
+    // being permanently purged. The user can cancel within this window; a worker
+    // job performs the actual deletion once it elapses (App Store 5.1.1(v)).
+    ACCOUNT_DELETION_GRACE_DAYS: z.coerce.number().int().min(0).max(90).default(30),
   })
   .superRefine((value, ctx) => {
     if (looksLikeJwtToken(value.JWT_ACCESS_SECRET)) {

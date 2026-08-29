@@ -100,7 +100,10 @@ const splashBgColor = getFileOrEnv('EXPO_SPLASH_BG_COLOR', BRAND_DARK);
 const androidAdaptiveIconBgColor = getFileOrEnv('EXPO_ANDROID_ADAPTIVE_ICON_BG_COLOR', BRAND_DARK);
 const iosBundleId = getFileOrEnv('EXPO_IOS_BUNDLE_ID', 'com.claudygod.app');
 const iosBuildNumber = getFileOrEnv('EXPO_IOS_BUILD_NUMBER', '1');
-const iosSupportsTablet = getFileOrEnv('EXPO_IOS_SUPPORTS_TABLET', 'true') !== 'false';
+// iPhone-only for the first release. Declaring iPad support commits to a working
+// iPad layout and a full set of iPad screenshots at review time; that is a
+// separate QA pass. Set EXPO_IOS_SUPPORTS_TABLET=true once iPad is in scope.
+const iosSupportsTablet = getFileOrEnv('EXPO_IOS_SUPPORTS_TABLET', 'false') === 'true';
 const androidPackage = getFileOrEnv('EXPO_ANDROID_PACKAGE', 'com.claudygod.app');
 const androidVersionCode = parseInt(getFileOrEnv('EXPO_ANDROID_VERSION_CODE', '1'), 10);
 const androidEdgeToEdge = getFileOrEnv('EXPO_ANDROID_EDGE_TO_EDGE', 'true') !== 'false';
@@ -284,19 +287,14 @@ module.exports = {
           enableBackgroundRemoteNotifications: false,
         },
       ],
-      [
-        'expo-image-picker',
-        {
-          photosPermission: 'Allow ClaudyGod to select worship media and profile images you choose to upload.',
-          cameraPermission: 'Allow ClaudyGod to use the camera only when you choose to capture media for an upload.',
-          microphonePermission: 'Allow ClaudyGod to record sound only when you choose to capture a video with audio.',
-        },
-      ],
+      // expo-audio is used for playback only — the app has no recording feature, so it
+      // must not request the microphone (App Store 5.1.1 / Play data-safety: never
+      // declare a sensitive permission the app can't exercise). If audio capture is
+      // ever added, re-enable `recordAudioAndroid` and add a specific purpose string.
       [
         'expo-audio',
         {
-          microphonePermission: 'Allow ClaudyGod to use the microphone only when you choose to record audio.',
-          recordAudioAndroid: true,
+          recordAudioAndroid: false,
         },
       ],
       'expo-updates',
