@@ -249,7 +249,7 @@ export default function Donate() {
         <View style={styles.reviewRow}><CustomText style={styles.reviewLabel}>Amount</CustomText><CustomText style={styles.reviewValue}>{amountValid ? `${currency} ${normalizedAmount}` : 'Not entered'}</CustomText></View>
         <View style={styles.reviewRow}><CustomText style={styles.reviewLabel}>Schedule</CustomText><CustomText style={styles.reviewValue}>{scheduleLabel}</CustomText></View>
         <View style={styles.reviewRow}><CustomText style={styles.reviewLabel}>Route</CustomText><CustomText style={styles.reviewValue}>{method?.label ?? 'Unavailable'}</CustomText></View>
-        <View style={styles.notice}><MaterialIcons name="info-outline" size={18} color={theme.colors.primary} /><CustomText variant="caption" style={styles.noticeText}>This creates a tracked giving intent and requested schedule, not a completed payment or active charge mandate. Recurring charges begin only after an approved provider confirms authorization.</CustomText></View>
+        <View style={styles.notice}><MaterialIcons name="info-outline" size={18} color={theme.colors.primary} /><CustomText variant="caption" style={styles.noticeText}>Giving is optional. This creates a tracked giving request — not a completed payment. Your gift is completed and processed by ClaudyGod Music Ministries outside the app using the instructions we send you; no charge is made here.</CustomText></View>
         <AppButton title="Create giving request" variant="gradient" size="lg" fullWidth disabled={!amountValid || !method || configLoading} loading={submitting} loadingLabel="Validating request" onPress={() => void submit()} />
       </SurfaceCard>
     </PremiumPage>
