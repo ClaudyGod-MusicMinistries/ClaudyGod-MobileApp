@@ -35,7 +35,9 @@
     "lint:strict": "eslint . --max-warnings=0",
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc --noEmit",
-    "test": "node --test test/*.test.cjs",
+    "test": "node --test test/*.test.cjs && vitest run",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest",
     "release:certify": "node ./scripts/certify-release.js",
     "postinstall": "node ./scripts/postinstall.js"
   },
@@ -103,7 +105,8 @@
     "eslint-config-expo": "~10.0.0",
     "react-refresh": "^0.17.0",
     "sharp": "^0.35.2",
-    "typescript": "~5.9.2"
+    "typescript": "~5.9.2",
+    "vitest": "^2"
   },
   "private": true
 }
