@@ -1216,6 +1216,12 @@ const migrationStatements = [
     PRIMARY KEY (installation_id, content_id)
   )`,
   `CREATE INDEX IF NOT EXISTS idx_mobile_installation_history_recent ON mobile_installation_history (installation_id, last_played_at DESC)`,
+  // Playback resume (Phase 1 / PB-5): "put me back where I left off" for the
+  // account-free installation model. Position lives on the existing history row.
+  `ALTER TABLE mobile_installation_history ADD COLUMN IF NOT EXISTS resume_position_ms INTEGER CHECK (resume_position_ms IS NULL OR resume_position_ms >= 0)`,
+  `ALTER TABLE mobile_installation_history ADD COLUMN IF NOT EXISTS resume_duration_ms INTEGER CHECK (resume_duration_ms IS NULL OR resume_duration_ms >= 0)`,
+  `ALTER TABLE mobile_installation_history ADD COLUMN IF NOT EXISTS resume_updated_at TIMESTAMPTZ`,
+  `CREATE INDEX IF NOT EXISTS idx_mobile_installation_history_resume ON mobile_installation_history (installation_id, resume_updated_at DESC) WHERE resume_position_ms IS NOT NULL`,
   `CREATE TABLE IF NOT EXISTS mobile_referrals (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     device_id UUID NOT NULL UNIQUE,
