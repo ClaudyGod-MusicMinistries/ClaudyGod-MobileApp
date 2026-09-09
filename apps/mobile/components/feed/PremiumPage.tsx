@@ -17,6 +17,8 @@ import { APP_ROUTES } from '../../util/appRoutes';
 import { BRAND_LOGO_ASSET } from '../../util/brandAssets';
 import { useFeedStyles } from './styles';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
+import { usePlaybackVisible } from '../../playback';
+import { MINI_PLAYER_HEIGHT } from '../player/MiniPlayer';
 
 type PremiumPageProps = {
   title: string;
@@ -63,7 +65,10 @@ export function PremiumPage({
   const isSidebarMode = getSidebarWidth(width) > 0;
   const reduceMotion = useReducedMotion();
   const showBack = !noBack && title !== 'ClaudyGod' && router.canGoBack();
-  const bottomPadding = isSidebarMode ? 40 : theme.layout.tabBarContentPadding;
+  const playbackVisible = usePlaybackVisible();
+  const bottomPadding =
+    (isSidebarMode ? 40 : theme.layout.tabBarContentPadding) +
+    (playbackVisible ? MINI_PLAYER_HEIGHT : 0);
 
   const scrollRef = useRef<ScrollView>(null);
 

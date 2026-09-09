@@ -2,7 +2,7 @@ import { isSentryEnabled, reportException, Sentry } from '../lib/sentry';
 import { Stack } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { useContext, type ReactNode } from 'react';
+import { useContext, useEffect, type ReactNode } from 'react';
 import { StatusBar, View } from 'react-native';
 import { QueryClientProvider } from '@tanstack/react-query';
 
@@ -23,8 +23,10 @@ import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { usePushNotifications } from '../hooks/usePushNotify';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { OfflineBanner } from '../components/OfflineBanner';
+import { MiniPlayer } from '../components/player/MiniPlayer';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import { AuthProvider } from '../features/auth/AuthContext';
+import { initPlaybackService } from '../playback';
 
 // Global unhandled JS error handler — active in production builds only.
 if (!__DEV__) {
@@ -67,6 +69,12 @@ function RootLayoutInner() {
   // the failure to the user.
   usePushNotifications();
 
+  // One app-level audio engine that outlives navigation — owns background
+  // playback, lock-screen / notification transport, and resume-on-launch.
+  useEffect(() => {
+    void initPlaybackService();
+  }, []);
+
   if (!fontsLoaded) {
     return <AppLoadingScreen />;
   }
@@ -103,6 +111,8 @@ function RootLayoutInner() {
           options={{ animation: 'slide_from_right' }}
         />
       </Stack>
+
+      <MiniPlayer />
 
       {isOffline ? <OfflineBanner onRetry={recheck} /> : null}
     </ThemedLayout>
