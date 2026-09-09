@@ -1,6 +1,11 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { pool } from '../../db/pool';
 import { ConflictError, UnauthorizedError } from '../../lib/errors';
+import {
+  RESUME_MIN_POSITION_MS,
+  resolveResumePoint,
+  type InstallationPlaybackPositionInput,
+} from './installation.contracts';
 
 export type MobileInstallation = {
   id: string;
@@ -106,8 +111,10 @@ export async function getInstallationHistory(installationId: string, limit: numb
     content_id: string; content_type: string; title: string; subtitle: string | null;
     description: string | null; duration: string | null; image_url: string | null;
     media_url: string | null; last_played_at: Date | string;
+    resume_position_ms: number | null; resume_duration_ms: number | null;
   }>(
-    `SELECT content_id, content_type, title, subtitle, description, duration, image_url, media_url, last_played_at
+    `SELECT content_id, content_type, title, subtitle, description, duration, image_url, media_url,
+            last_played_at, resume_position_ms, resume_duration_ms
        FROM mobile_installation_history
       WHERE installation_id = $1
       ORDER BY last_played_at DESC
@@ -119,7 +126,66 @@ export async function getInstallationHistory(installationId: string, limit: numb
     subtitle: row.subtitle ?? '', description: row.description ?? '', duration: row.duration ?? '',
     imageUrl: row.image_url ?? '', mediaUrl: row.media_url ?? undefined,
     createdAt: new Date(row.last_played_at).toISOString(),
+    resumePositionMs: row.resume_position_ms ?? null,
+    resumeDurationMs: row.resume_duration_ms ?? null,
   })) };
+}
+
+/**
+ * Upsert the resume position for a piece of content the installation is playing.
+ * Position is written onto the existing history row; if that row does not exist
+ * yet (the `playback_milestone` event that creates it has not landed), this is a
+ * no-op and the next heartbeat after the milestone will stick.
+ */
+export async function saveInstallationPlaybackPosition(
+  installationId: string,
+  input: InstallationPlaybackPositionInput,
+) {
+  const resume = resolveResumePoint(input.positionMs, input.durationMs);
+  const result = await pool.query(
+    `UPDATE mobile_installation_history
+        SET resume_position_ms = $3,
+            resume_duration_ms  = CASE WHEN $4 > 0 THEN $4 ELSE resume_duration_ms END,
+            resume_updated_at   = NOW()
+      WHERE installation_id = $1 AND content_id = $2`,
+    [installationId, input.contentId, resume, input.durationMs],
+  );
+  return { recorded: (result.rowCount ?? 0) > 0, resumePositionMs: resume };
+}
+
+/** The single most-recently-played item that still has somewhere to resume to. */
+export async function getInstallationResumeTarget(installationId: string) {
+  const result = await pool.query<{
+    content_id: string; content_type: string; title: string; subtitle: string | null;
+    image_url: string | null; media_url: string | null; duration: string | null;
+    resume_position_ms: number; resume_duration_ms: number | null; resume_updated_at: Date | string;
+  }>(
+    `SELECT content_id, content_type, title, subtitle, image_url, media_url, duration,
+            resume_position_ms, resume_duration_ms, resume_updated_at
+       FROM mobile_installation_history
+      WHERE installation_id = $1
+        AND resume_position_ms IS NOT NULL
+        AND resume_position_ms >= $2
+      ORDER BY resume_updated_at DESC NULLS LAST
+      LIMIT 1`,
+    [installationId, RESUME_MIN_POSITION_MS],
+  );
+  const row = result.rows[0];
+  if (!row) return { resume: null };
+  return {
+    resume: {
+      id: row.content_id,
+      type: row.content_type,
+      title: row.title,
+      subtitle: row.subtitle ?? '',
+      imageUrl: row.image_url ?? '',
+      mediaUrl: row.media_url ?? undefined,
+      duration: row.duration ?? '',
+      resumePositionMs: row.resume_position_ms,
+      resumeDurationMs: row.resume_duration_ms ?? null,
+      updatedAt: new Date(row.resume_updated_at).toISOString(),
+    },
+  };
 }
 
 export async function clearInstallationHistory(installationId: string) {

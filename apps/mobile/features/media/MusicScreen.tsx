@@ -1,9 +1,16 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { AudioPlayer, type RepeatMode } from '../../components/media/AudioPlayer';
-import { YouTubeAudioPlayer } from '../../components/media/YouTubeAudioPlayer';
+import { FullPlayer } from '../../components/player/FullPlayer';
+import { activeOrder } from '../../playback/queue';
+import {
+  playFrom,
+  setAutoplayEnabled,
+  usePlayback,
+  type PlaybackItem,
+} from '../../playback';
+import { feedItemToPlaybackItem } from '../../playback/metadata';
 import { CustomText } from '../../components/CustomText';
 import { AppButton } from '../../components/ui/AppButton';
 import { TVTouchable } from '../../components/ui/TVTouchable';
@@ -19,7 +26,7 @@ import type { FeedCardItem } from '../../services/contentService';
 import { trackContentPlay } from '../../services/supabaseAnalytics';
 import { APP_ROUTES } from '../../util/appRoutes';
 import { DEFAULT_CONTENT_IMAGE_URI } from '../../util/brandAssets';
-import { buildPlayerRoute, isDirectPlayableAudioUrl, isYouTubeAudioItem, routeParamToString, shouldOpenVideoScreen } from '../../util/playerRoute';
+import { buildPlayerRoute, isDirectPlayableAudioUrl, routeParamToString, shouldOpenVideoScreen } from '../../util/playerRoute';
 import { openExternalUrl } from '../../util/externalLinks';
 import {
   CompactContentRow,
@@ -172,12 +179,13 @@ export default function PlaySection() {
   const { config: appConfig } = useMobileAppConfig();
   const [filter, setFilter] = useState<AudioFilter>('all');
   const { checkIsFavorited, toggleFavorite, recordHistory } = useLocalContent();
-  const [shuffleEnabled, setShuffleEnabled] = useState(false);
-  const [repeatMode, setRepeatMode] = useState<RepeatMode>('off');
-  const [autoplayEnabled, setAutoplayEnabled] = useState(true);
+  const { nowPlaying, queue: playbackQueue } = usePlayback();
+
   useFocusEffect(useCallback(() => {
     let active = true;
-    void getPreference('autoplayEnabled', true).then((value) => { if (active) setAutoplayEnabled(value); });
+    void getPreference('autoplayEnabled', true).then((value) => {
+      if (active) setAutoplayEnabled(value);
+    });
     return () => { active = false; };
   }, []));
 
@@ -195,7 +203,7 @@ export default function PlaySection() {
   const routeItem = useMemo(() => parseRouteItem(params), [params]);
   const allQueue = useMemo(
     () => dedupeFeedItems([...(routeItem ? [routeItem] : []), ...feed.music, ...feed.mostPlayed, ...feed.recommendations, ...feed.playlists, ...feed.recent])
-      .filter((item) => isYouTubeAudioItem(item) || !shouldOpenVideoScreen(item)),
+      .filter((item) => !shouldOpenVideoScreen(item)),
     [feed, routeItem],
   );
 
@@ -207,25 +215,64 @@ export default function PlaySection() {
     return allQueue;
   }, [allQueue, filter]);
 
-  const [activeId, setActiveId] = useState(routeItem?.id ?? allQueue[0]?.id ?? '');
-  const active = allQueue.find((item) => item.id === activeId) ?? routeItem ?? allQueue[0] ?? null;
-  const activeIndex = active ? allQueue.findIndex((item) => item.id === active.id) : -1;
-  const canWrapQueue = (repeatMode === 'all' || shuffleEnabled) && allQueue.length > 1;
-  const canGoPrevious = activeIndex > 0 || canWrapQueue;
-  const canGoNext = (activeIndex >= 0 && activeIndex < allQueue.length - 1) || canWrapQueue;
-  const hasInlineAudio = Boolean(active && (
-    (active.mediaUrl && isDirectPlayableAudioUrl(active.mediaUrl)) ||
-    isYouTubeAudioItem(active)
-  ));
-  const isFavorite = active ? checkIsFavorited(active.id) : false;
+  // Map every playable feed card to a PlaybackItem once; the playback store owns
+  // order, shuffle, repeat and now-playing from here.
+  const playbackByFeedId = useMemo(() => {
+    const map = new Map<string, PlaybackItem>();
+    for (const card of allQueue) {
+      const item = feedItemToPlaybackItem(card);
+      if (item && item.source.kind !== 'youtube') map.set(card.id, item);
+    }
+    return map;
+  }, [allQueue]);
+  const feedById = useMemo(() => new Map(allQueue.map((card) => [card.id, card])), [allQueue]);
+  const firstPlayable = useMemo(
+    () => filteredQueue.find((card) => playbackByFeedId.has(card.id)) ?? null,
+    [filteredQueue, playbackByFeedId],
+  );
 
+  const playItem = useCallback(async (item: FeedCardItem, source: string) => {
+    if (!item.mediaUrl) {
+      showToast({ title: 'Playback unavailable', message: 'This item is not ready to play yet.', tone: 'warning' });
+      return;
+    }
+    if (shouldOpenVideoScreen(item)) { router.push(buildPlayerRoute(item)); return; }
+    if (!isDirectPlayableAudioUrl(item.mediaUrl)) { await openExternalUrl(item.mediaUrl); return; }
+
+    const startItem = playbackByFeedId.get(item.id) ?? feedItemToPlaybackItem(item);
+    if (!startItem || startItem.source.kind === 'youtube') return;
+
+    const items = filteredQueue
+      .map((card) => playbackByFeedId.get(card.id))
+      .filter((entry): entry is PlaybackItem => Boolean(entry));
+    if (!items.some((entry) => entry.id === startItem.id)) items.unshift(startItem);
+
+    playFrom({ origin: { kind: 'feed-rail', id: filter, label: 'Music' }, items, startId: startItem.id });
+    await recordHistory(item);
+    await trackContentPlay(item, source);
+  }, [filter, filteredQueue, playbackByFeedId, recordHistory, router, showToast]);
+
+  const openItem = playItem;
+
+  // Deep link into a specific track: start it once, only if nothing is playing.
+  const handledRouteId = useRef<string | null>(null);
+  useEffect(() => {
+    const id = routeItem?.id;
+    if (!id || handledRouteId.current === id || !routeItem?.mediaUrl) return;
+    if (nowPlaying && nowPlaying.id !== id) return;
+    handledRouteId.current = id;
+    void playItem(routeItem, 'music_deeplink');
+  }, [routeItem, nowPlaying, playItem]);
+
+  const favoriteActive = nowPlaying ? checkIsFavorited(nowPlaying.id) : false;
   const handleFavoriteToggle = async () => {
-    if (!active) return;
+    const card = nowPlaying ? feedById.get(nowPlaying.id) : null;
+    if (!card) return;
     try {
-      await toggleFavorite(active);
+      await toggleFavorite(card);
       showToast({
-        title: isFavorite ? 'Removed from saved' : 'Saved to Library',
-        message: active.title,
+        title: favoriteActive ? 'Removed from saved' : 'Saved to Library',
+        message: card.title,
         tone: 'info',
       });
     } catch {
@@ -233,48 +280,18 @@ export default function PlaySection() {
     }
   };
 
-  const openItem = async (item: FeedCardItem, source: string) => {
-    if (isYouTubeAudioItem(item)) {
-      setActiveId(item.id);
-      await recordHistory(item);
-      await trackContentPlay(item, source);
-      return;
+  const upNext = useMemo<FeedCardItem[]>(() => {
+    if (!nowPlaying) {
+      return filteredQueue.filter((card) => playbackByFeedId.has(card.id) && card.id !== firstPlayable?.id).slice(0, 8);
     }
-    if (!item.mediaUrl) {
-      showToast({ title: 'Playback unavailable', message: 'This item is not ready to play yet.', tone: 'warning' });
-      return;
-    }
-    if (!isDirectPlayableAudioUrl(item.mediaUrl)) {
-      if (shouldOpenVideoScreen(item)) router.push(buildPlayerRoute(item));
-      else await openExternalUrl(item.mediaUrl);
-      return;
-    }
-    setActiveId(item.id);
-    await recordHistory(item);
-    await trackContentPlay(item, source);
-  };
-
-  const pickRandomOther = () => {
-    const candidates = allQueue.filter((item) => item.id !== active?.id);
-    if (candidates.length === 0) return null;
-    return candidates[Math.floor(Math.random() * candidates.length)] ?? null;
-  };
-
-  const goPrevious = () => {
-    if (!canGoPrevious || allQueue.length === 0) return;
-    const prev = shuffleEnabled ? pickRandomOther() : allQueue[(activeIndex - 1 + allQueue.length) % allQueue.length];
-    if (prev) void openItem(prev, 'music_prev');
-  };
-  const goNext = () => {
-    if (!canGoNext || allQueue.length === 0) return;
-    const next = shuffleEnabled ? pickRandomOther() : allQueue[(activeIndex + 1) % allQueue.length];
-    if (next) void openItem(next, 'music_next');
-  };
-
-  const toggleShuffle = () => setShuffleEnabled((v) => !v);
-  const cycleRepeat = () => setRepeatMode((m) => (m === 'off' ? 'all' : m === 'all' ? 'one' : 'off'));
-
-  const upNext = filteredQueue.filter((item) => item.id !== active?.id).slice(0, 8);
+    const order = activeOrder(playbackQueue);
+    const upcoming = order.slice(playbackQueue.contextCursor + 1).map((idx) => playbackQueue.contextItems[idx]);
+    const ids = [...playbackQueue.userQueue, ...upcoming].map((entry) => entry.id);
+    return ids
+      .map((id) => feedById.get(id))
+      .filter((card): card is FeedCardItem => Boolean(card))
+      .slice(0, 12);
+  }, [nowPlaying, filteredQueue, playbackByFeedId, firstPlayable, playbackQueue, feedById]);
 
   if (error && !allQueue.length) {
     return (
@@ -303,58 +320,33 @@ export default function PlaySection() {
       }
     >
       {/* ── Now Playing card ─────────────────────────────────────────────── */}
-      {active && hasInlineAudio && isYouTubeAudioItem(active) && active.youtubeVideoId ? (
+      {nowPlaying ? (
         <View style={styles.nowPlayingCard}>
           <View style={styles.stageHeader}><View style={styles.stageHeading}><CustomText variant="caption" style={styles.stageEyebrow}>Now playing</CustomText><CustomText variant="heading" style={styles.stageTitle}>Your worship player</CustomText></View><View style={styles.stageStatus}><View style={styles.stageStatusDot} /><CustomText variant="caption" style={styles.stageStatusText}>Ready</CustomText></View></View>
-          <YouTubeAudioPlayer
-            track={{ id: active.id, title: active.title, artist: active.subtitle, youtubeVideoId: active.youtubeVideoId, duration: active.duration, imageUrl: active.imageUrl }}
-            onPrevious={goPrevious}
-            onNext={goNext}
-            canGoPrevious={canGoPrevious}
-            canGoNext={canGoNext}
-            isFavorite={isFavorite}
-            onFavoriteToggle={() => { void handleFavoriteToggle(); }}
-            currentTrackNumber={activeIndex >= 0 ? activeIndex + 1 : undefined}
-            totalTracks={allQueue.length}
-            advanceOnFinish={autoplayEnabled && canGoNext}
-          />
-        </View>
-      ) : active && hasInlineAudio && active.mediaUrl ? (
-        <View style={styles.nowPlayingCard}>
-          <View style={styles.stageHeader}><View style={styles.stageHeading}><CustomText variant="caption" style={styles.stageEyebrow}>Now playing</CustomText><CustomText variant="heading" style={styles.stageTitle}>Your worship player</CustomText></View><View style={styles.stageStatus}><View style={styles.stageStatusDot} /><CustomText variant="caption" style={styles.stageStatusText}>Ready</CustomText></View></View>
-          <AudioPlayer
-            track={{ id: active.id, title: active.title, artist: active.subtitle, uri: active.mediaUrl, duration: active.duration, imageUrl: active.imageUrl }}
-            onPrevious={goPrevious}
-            onNext={goNext}
-            canGoPrevious={canGoPrevious}
-            canGoNext={canGoNext}
-            isFavorite={isFavorite}
-            onFavoriteToggle={() => { void handleFavoriteToggle(); }}
-            currentTrackNumber={activeIndex >= 0 ? activeIndex + 1 : undefined}
-            totalTracks={allQueue.length}
-            shuffleEnabled={shuffleEnabled}
-            onToggleShuffle={allQueue.length > 1 ? toggleShuffle : undefined}
-            repeatMode={repeatMode}
-            onCycleRepeat={allQueue.length > 0 ? cycleRepeat : undefined}
-            advanceOnFinish={autoplayEnabled && canGoNext && repeatMode === 'off'}
+          <FullPlayer
+            favorite={
+              feedById.has(nowPlaying.id)
+                ? { active: favoriteActive, onToggle: () => { void handleFavoriteToggle(); } }
+                : undefined
+            }
           />
         </View>
       ) : (
         <PremiumHero
-          item={active}
-          title={active?.title ?? 'Choose something to play'}
-          subtitle={active?.description || 'Select a song, message, or playlist to begin listening.'}
+          item={firstPlayable}
+          title={firstPlayable?.title ?? 'Choose something to play'}
+          subtitle={firstPlayable?.description || 'Select a song, message, or playlist to begin listening.'}
           emptyIcon="library-music"
-          primaryLabel={active?.mediaUrl ? 'Open' : 'Browse music'}
-          primaryIcon={active?.mediaUrl ? 'open-in-new' : 'queue-music'}
-          onPrimary={() => (active ? void openItem(active, 'music_hero') : undefined)}
+          primaryLabel={firstPlayable ? 'Play' : 'Browse music'}
+          primaryIcon={firstPlayable ? 'play-arrow' : 'queue-music'}
+          onPrimary={() => (firstPlayable ? void playItem(firstPlayable, 'music_hero') : undefined)}
         />
       )}
 
       {error ? <ErrorState message={error} onRetry={() => void refresh()} /> : null}
 
       {/* ── Worship Together live count ───────────────────────────────────── */}
-      {active ? <WorshipTogetherBar contentId={active.id} /> : null}
+      {nowPlaying ? <WorshipTogetherBar contentId={nowPlaying.id} /> : null}
 
       {/* ── Filter chips ─────────────────────────────────────────────────── */}
       <FilterChips active={filter} onChange={setFilter} />
@@ -381,7 +373,7 @@ export default function PlaySection() {
             <View key={item.id} style={styles.queueItemCard}>
               <View style={styles.queueItemRow}>
                 <CustomText style={styles.queueItemNum}>
-                  {(activeIndex >= 0 ? activeIndex + 1 : 0) + index + 1}
+                  {index + 1}
                 </CustomText>
                 <View style={styles.queueItemFill}>
                   <CompactContentRow item={item} onPress={() => void openItem(item, 'music_queue')} />

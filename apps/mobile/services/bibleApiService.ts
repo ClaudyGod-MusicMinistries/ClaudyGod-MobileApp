@@ -10,10 +10,11 @@
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { WordOfDayItem } from "./wordOfDayService";
+import { HTTP, THIRD_PARTY } from "../config/constants";
 
 const CACHE_KEY = "claudygod.word_of_day.bible_cache";
-const BIBLE_API_BASE = "https://bible-api.com";
-const TRANSLATION = "kjv";
+const BIBLE_API_BASE = THIRD_PARTY.bibleApiBaseUrl;
+const TRANSLATION = THIRD_PARTY.bibleTranslation;
 
 // ─── Curated daily plan ──────────────────────────────────────────────────────
 // 52 verses — cycled by day of year.
@@ -137,7 +138,7 @@ interface BibleApiResponse {
   verses: { book_name: string; chapter: number; verse: number; text: string }[];
 }
 
-const FETCH_TIMEOUT_MS = 15_000;
+const FETCH_TIMEOUT_MS = HTTP.bibleTimeoutMs;
 
 async function fetchVerseFromApi(ref: string): Promise<string> {
   const encoded = encodeURIComponent(ref);

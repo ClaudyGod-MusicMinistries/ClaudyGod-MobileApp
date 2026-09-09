@@ -13,7 +13,8 @@ import { youtubeListQuerySchema } from '../youtube/youtube.schema';
 import { fetchYouTubeVideos } from '../youtube/youtube.service';
 import { buildMobileFeed, getInstallationRecommendations, getMobileSectionDetail } from './mobile.service';
 import { authenticateInstallation } from '../../middleware/authenticateInstallation';
-import { clearInstallationHistory, getInstallationHistory, getInstallationPreferences, recordInstallationActivation, registerInstallation, removeInstallationPushToken, resetInstallationRecommendations, saveInstallationPushToken, subscribeInstallationToLive, updateInstallationPreferences } from './installation.service';
+import { clearInstallationHistory, getInstallationHistory, getInstallationPreferences, getInstallationResumeTarget, recordInstallationActivation, registerInstallation, removeInstallationPushToken, resetInstallationRecommendations, saveInstallationPlaybackPosition, saveInstallationPushToken, subscribeInstallationToLive, updateInstallationPreferences } from './installation.service';
+import { installationPlaybackPositionSchema } from './installation.contracts';
 
 export const mobileRouter = Router();
 
@@ -122,6 +123,16 @@ mobileRouter.get('/installations/history', authenticateInstallation, asyncHandle
 
 mobileRouter.delete('/installations/history', authenticateInstallation, asyncHandler(async (req, res) => {
   res.status(200).json(await clearInstallationHistory(req.installation!.id));
+}));
+
+// Playback resume — "put me back where I left off" for the account-free app (PB-5).
+mobileRouter.put('/installations/playback-position', authenticateInstallation, asyncHandler(async (req, res) => {
+  const payload = validateSchema(installationPlaybackPositionSchema, req.body);
+  res.status(200).json(await saveInstallationPlaybackPosition(req.installation!.id, payload));
+}));
+
+mobileRouter.get('/installations/playback-position', authenticateInstallation, asyncHandler(async (req, res) => {
+  res.status(200).json(await getInstallationResumeTarget(req.installation!.id));
 }));
 
 mobileRouter.post('/support-requests', authenticateInstallation, guestSupportLimiter, asyncHandler(async (req, res) => {

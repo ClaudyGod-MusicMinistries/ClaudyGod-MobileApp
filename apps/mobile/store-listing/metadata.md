@@ -46,24 +46,31 @@ Secondary: Lifestyle
 
 ## Content rating
 
-No user-generated content is visible to other users; all content is published by
-ClaudyGod administrators. Rate as "Everyone" / 4+ pending final content-catalog review.
+Rate **4+ / Everyone**. All catalogue content is published by ClaudyGod administrators;
+the only user input visible to anyone is moderated live-session chat. Full questionnaire
+answers: `store-listing/evidence/content-rating.md`.
 
 ## Support & legal URLs
 
-- Support: https://claudygod.org (in-app Help screen also submits support requests directly)
-- Privacy Policy: https://claudygod.org/legal/privacy — served by `services/api`'s
-  `legal.routes.ts`; confirm the production domain routes `/legal/privacy` to the API
-  before submitting (see `docs/RUNBOOK.md`).
-- Terms of Service: https://claudygod.org/legal/terms
+- Support: https://claudygod.org (in-app Help screen also files tracked support requests)
+- Privacy Policy: https://claudygod.org/legal/privacy — **verified live (HTTP 200), real
+  policy page**, 2026-08-29.
+- Terms of Service: https://claudygod.org/legal/terms — **verified live (HTTP 200)**,
+  2026-08-29.
+- Account deletion: in-app (Settings → Privacy & Security → "Delete my account"). No
+  external URL needed.
+
+## Device support
+
+iPhone-only for v1 (`EXPO_IOS_SUPPORTS_TABLET=false`). No iPad screenshots required.
+Android phone only.
 
 ## Screenshots
 
-Not yet captured — capture after the design-system consolidation pass (card component
-dedup, styling migration) lands, so screenshots reflect the shipped UI rather than a
-version that's about to change. Required sizes:
+Capture from the production candidate build — see `store-listing/screenshots/README.md`
+for exact sizes, filenames, and the capture procedure. `yarn release:certify` checks for
+`ios-6.7/{home,player,library}.png` and `android-phone/{home,player,library}.png`.
 
-- iOS: 6.7" (1290×2796), 6.5" (1284×2778), and iPad 12.9" (2048×2732) since
-  `ios.supportsTablet` is enabled.
-- Android: phone (min 320px, max 3840px on the long edge) and, optionally, a 7"/10"
-  tablet set.
+- iOS: 6.7" (1290×2796) required; 6.5" (1284×2778) for the console upload.
+- Android: phone, ~1080×2340.
+- **No iPad set** (tablet support is off for v1).

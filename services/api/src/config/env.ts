@@ -143,6 +143,12 @@ const envSchema = z
 
     BCRYPT_ROUNDS: z.coerce.number().int().min(10).max(15).default(12),
     CORS_ORIGIN: z.string().trim().default(''),
+    // Extra browser origins allowed through CORS on top of CORS_ORIGIN — e.g. a
+    // mobile-admin subdomain that shares this API. Comma-separated, exact scheme+host.
+    CORS_EXTRA_ORIGINS: z.string().trim().default(''),
+    // Public HTTPS URL(s) this API is served at. Fed into the CSP `connect-src`
+    // for the HTML pages the API renders (legal pages). Comma-separated.
+    API_PUBLIC_ORIGINS: z.string().trim().default(''),
 
     AUTH_PUBLIC_BASE_URL: optionalUrl(),
     AUTH_VERIFY_EMAIL_PATH: pathSegment('AUTH_VERIFY_EMAIL_PATH', '/verify-email'),
@@ -234,6 +240,11 @@ const envSchema = z
 
     ACCOUNT_LOCKOUT_ATTEMPTS: z.coerce.number().int().min(3).max(20).default(5),
     ACCOUNT_LOCKOUT_DURATION_MINUTES: z.coerce.number().int().min(5).max(1440).default(30),
+
+    // Grace period between a user requesting account deletion and the account
+    // being permanently purged. The user can cancel within this window; a worker
+    // job performs the actual deletion once it elapses (App Store 5.1.1(v)).
+    ACCOUNT_DELETION_GRACE_DAYS: z.coerce.number().int().min(0).max(90).default(30),
   })
   .superRefine((value, ctx) => {
     if (looksLikeJwtToken(value.JWT_ACCESS_SECRET)) {
@@ -569,9 +580,29 @@ const smtpEnabled =
       ? Boolean(raw.SMTP_HOST)
       : Boolean(raw.SMTP_HOST);
 
+// Transitional fallback: the production API has historically hard-coded these
+// origins in app.ts. They now come from env (CORS_EXTRA_ORIGINS / API_PUBLIC_ORIGINS);
+// this keeps behaviour identical until the deployed server env sets them, after
+// which this constant can be deleted.
+const LEGACY_CLAUDYGOD_API_ORIGINS = [
+  'https://apimobile.claudygod.org',
+  'https://api.claudygod.org',
+];
+const LEGACY_CLAUDYGOD_ADMIN_ORIGINS = ['https://mobileadmin.claudygod.org'];
+
+const dedupe = (values: string[]): string[] => [...new Set(values.filter(Boolean))];
+
 export const env = {
   ...raw,
   CORS_ORIGINS: splitCsv(raw.CORS_ORIGIN),
+  CORS_EXTRA_ORIGINS_LIST: dedupe([
+    ...splitCsv(raw.CORS_EXTRA_ORIGINS),
+    ...(splitCsv(raw.CORS_EXTRA_ORIGINS).length === 0 ? LEGACY_CLAUDYGOD_ADMIN_ORIGINS : []),
+  ]),
+  API_PUBLIC_ORIGINS_LIST: dedupe([
+    ...splitCsv(raw.API_PUBLIC_ORIGINS),
+    ...(splitCsv(raw.API_PUBLIC_ORIGINS).length === 0 ? LEGACY_CLAUDYGOD_API_ORIGINS : []),
+  ]),
   ADMIN_ALERT_EMAILS_LIST: splitCsv(raw.ADMIN_ALERT_EMAILS),
   SUPABASE_ENABLED: Boolean(raw.SUPABASE_URL && raw.SUPABASE_SERVICE_ROLE_KEY),
   S3_ENABLED: Boolean(

@@ -104,16 +104,10 @@ export function isHostedVideoUrl(url?: string): boolean {
   );
 }
 
-export function isYouTubeAudioItem(item: Pick<FeedCardItem, 'youtubeVideoId' | 'playAsAudio'>): boolean {
-  return Boolean(item.playAsAudio && item.youtubeVideoId);
-}
-
-export function shouldOpenVideoScreen(item: Pick<FeedCardItem, 'type' | 'mediaUrl' | 'isLive' | 'youtubeVideoId' | 'playAsAudio'>): boolean {
-  // YouTube videos marked as audio stay in the audio player, not the video screen
-  if (isYouTubeAudioItem(item)) {
-    return false;
-  }
-
+export function shouldOpenVideoScreen(item: Pick<FeedCardItem, 'type' | 'mediaUrl' | 'isLive'>): boolean {
+  // YouTube / Vimeo content always plays as visible video via the official embed
+  // player (VideoPlayer → YouTubeIframePlayer). Audio-only extraction from a hidden
+  // WebView was removed — it violated YouTube's Terms of Service.
   if (item.isLive || item.type === 'video' || item.type === 'live') {
     return true;
   }

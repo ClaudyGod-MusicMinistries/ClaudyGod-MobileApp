@@ -6,6 +6,12 @@ import { queueAccountEmailChangeEmail, queueProfileUpdatedEmail } from '../../in
 import { BadRequestError, ConflictError, ForbiddenError, NotFoundError } from '../../lib/errors';
 import { ensureUserScaffold } from '../../lib/userScaffold';
 import { createLogger } from '../../lib/logger';
+import {
+  cancelAccountDeletion,
+  getPendingAccountDeletion,
+  scheduleAccountDeletion,
+} from './accountDeletion.service';
+import type { PendingAccountDeletion } from './accountDeletion.contracts';
 import { isDatabaseConnectivityError, isMissingDatabaseStructureError } from '../../lib/postgres';
 import { verifyPassword } from '../../utils/password';
 import { listMostPlayedContent } from '../analytics/analytics.service';
@@ -1206,9 +1212,10 @@ export const getMePrivacyOverview = async (user: JwtClaims): Promise<{
     latestRequests: Array<{ id: string; type: 'export' | 'delete'; status: string; createdAt: string }>;
     totalPlayEvents: number;
     totalLiveSubscriptions: number;
+    pendingDeletion: PendingAccountDeletion | null;
   };
 }> => {
-  const [requests, playCount, liveCount] = await Promise.all([
+  const [requests, playCount, liveCount, pendingDeletion] = await Promise.all([
     pool.query<PrivacyRequestRow>(
       `SELECT id, request_type, status, created_at
        FROM privacy_requests
@@ -1219,10 +1226,12 @@ export const getMePrivacyOverview = async (user: JwtClaims): Promise<{
     ),
     pool.query<CountRow>(`SELECT COUNT(*)::text AS count FROM user_play_events WHERE user_id = $1`, [user.sub]),
     pool.query<CountRow>(`SELECT COUNT(*)::text AS count FROM live_subscriptions WHERE user_id = $1`, [user.sub]),
+    getPendingAccountDeletion(user.sub),
   ]);
 
   return {
     privacy: {
+      pendingDeletion,
       totalRequests: requests.rowCount ?? requests.rows.length,
       latestRequests: requests.rows.map((row) => ({
         id: row.id,
@@ -1263,7 +1272,10 @@ export const resetMeRecommendationSignals = async (user: JwtClaims): Promise<{ c
 export const createMePrivacyDeleteRequest = async (
   user: JwtClaims,
   input: { fullName: string; confirmText: string; notes?: string },
-): Promise<{ request: { id: string; type: 'delete'; status: string; createdAt: string } }> => {
+): Promise<{
+  request: { id: string; type: 'delete'; status: string; createdAt: string };
+  deletion: PendingAccountDeletion;
+}> => {
   const profile = await readProfile(user.sub);
   const { config } = await getMobileAppConfig();
   const expectedPhrase = config.privacy.deleteConfirmPhrase.trim().toUpperCase();
@@ -1276,23 +1288,25 @@ export const createMePrivacyDeleteRequest = async (
     throw new BadRequestError('Full name does not match account profile', 'ACCOUNT_DELETE_NAME_MISMATCH');
   }
 
-  const result = await pool.query<{ id: string; status: string; created_at: string | Date }>(
-    `INSERT INTO privacy_requests (user_id, request_type, status, payload)
-     VALUES ($1, 'delete', 'submitted', $2::jsonb)
-     RETURNING id, status, created_at`,
-    [user.sub, JSON.stringify({ notes: input.notes ?? '', fullName: input.fullName })],
-  );
+  const deletion = await scheduleAccountDeletion(user.sub, profile.email, {
+    fullName: input.fullName,
+    notes: input.notes,
+  });
 
-  const row = result.rows[0]!;
   return {
     request: {
-      id: row.id,
+      id: deletion.requestId,
       type: 'delete',
-      status: row.status,
-      createdAt: toIso(row.created_at),
+      status: deletion.status,
+      createdAt: deletion.requestedAt,
     },
+    deletion,
   };
 };
+
+export const cancelMePrivacyDeleteRequest = async (
+  user: JwtClaims,
+): Promise<{ cancelled: boolean }> => cancelAccountDeletion(user.sub);
 
 export const createMeSupportRequest = async (
   user: JwtClaims,

@@ -3,8 +3,7 @@ import { Share } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { useAppContext } from '../context/AppContext';
 import { apiFetch } from '../services/apiClient';
-
-const SHARE_BASE_URL = 'https://claudygod.org/join';
+import { REFERRAL_SHARE_BASE_URL } from '../config/constants';
 
 export interface ReferralState {
   code: string | null;
@@ -53,7 +52,7 @@ export function useReferral(): ReferralState {
     return () => { active = false; };
   }, [deviceId]);
 
-  const shareUrl = code ? `${SHARE_BASE_URL}?ref=${code}` : null;
+  const shareUrl = code ? `${REFERRAL_SHARE_BASE_URL}?ref=${code}` : null;
 
   const share = useCallback(async () => {
     if (!code || !shareUrl) return;

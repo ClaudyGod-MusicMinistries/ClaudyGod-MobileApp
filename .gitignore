@@ -59,8 +59,6 @@ web_modules/
 # Optional npm cache directory
 .npm
 
-md
-
 # Optional eslint cache
 .eslintcache
 
@@ -170,3 +168,21 @@ dockerSetup.ini
 
 # AI Code agent worktrees — never commit these as submodule gitlinks
 .ai/worktrees/
+
+# AI assistant working files — never commit
+.claude/
+**/.claude/
+CLAUDE.md
+**/CLAUDE.md
+MEMORY.md
+**/MEMORY.md
+.cursor/
+.aider*
+.windsurfrules
+.github/copilot-instructions.md
+
+# Locally generated review / report artifacts (not tracked; canonical copies are
+# published as Artifacts). Curated docs under docs/ are unaffected.
+/reports/
+*.local.md
+*.local.html

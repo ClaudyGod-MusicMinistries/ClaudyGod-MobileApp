@@ -392,6 +392,15 @@ export async function removeDevicePushToken(input: {
   });
 }
 
+export interface PendingAccountDeletion {
+  requestId: string;
+  status: 'scheduled' | 'processing' | 'completed' | 'cancelled';
+  requestedAt: string;
+  scheduledFor: string;
+  daysRemaining: number;
+  graceDays: number;
+}
+
 export async function fetchMePrivacyOverview() {
   return apiFetchWithMobileSession<{
     privacy: {
@@ -399,6 +408,7 @@ export async function fetchMePrivacyOverview() {
       latestRequests: { id: string; type: 'export' | 'delete'; status: string; createdAt: string }[];
       totalPlayEvents: number;
       totalLiveSubscriptions: number;
+      pendingDeletion: PendingAccountDeletion | null;
     };
   }>('/v1/me/privacy');
 }
@@ -419,9 +429,17 @@ export async function requestPrivacyDeleteAccount(input: {
 }) {
   return apiFetchWithMobileSession<{
     request: { id: string; type: 'delete'; status: string; createdAt: string };
+    deletion: PendingAccountDeletion;
   }>('/v1/me/privacy/delete-request', {
     method: 'POST',
     body: JSON.stringify(input),
+  });
+}
+
+export async function cancelPrivacyDeleteAccount() {
+  return apiFetchWithMobileSession<{ cancelled: boolean }>('/v1/me/privacy/delete-request/cancel', {
+    method: 'POST',
+    body: JSON.stringify({}),
   });
 }
 
