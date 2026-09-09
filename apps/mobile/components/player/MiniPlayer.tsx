@@ -73,7 +73,6 @@ export function MiniPlayer() {
 
   const visible = usePlaybackVisible();
   const { status, nowPlaying, queue, resumeTarget } = usePlayback();
-  const { positionMs, durationMs } = usePlaybackProgress();
 
   const onPlayerScreen = pathname?.startsWith('/player') || pathname === APP_ROUTES.tabs.player;
   const sidebarWidth = getSidebarWidth(width);
@@ -116,15 +115,11 @@ export function MiniPlayer() {
   if (!visible || !nowPlaying) return null;
 
   const isPlaying = status === 'playing' || status === 'buffering' || status === 'loading';
-  const effectiveDuration = durationMs > 0 ? durationMs : (nowPlaying.durationMs ?? 0);
-  const progress = effectiveDuration > 0 ? Math.min(1, positionMs / effectiveDuration) : 0;
   const canGoNext = peekNext(queue, 'user') !== null;
 
   return (
     <View style={[styles.wrap, { left: sidebarWidth, bottom }]}>
-      <View style={styles.progressTrack}>
-        <View style={[styles.progressFill, { width: `${Math.round(progress * 100)}%` }]} />
-      </View>
+      <MiniProgressBar fallbackDurationMs={nowPlaying.durationMs ?? 0} />
       <View style={styles.row}>
         <TVTouchable
           style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}
@@ -163,6 +158,19 @@ export function MiniPlayer() {
           <MaterialIcons name="skip-next" size={26} color={theme.colors.text} />
         </TVTouchable>
       </View>
+    </View>
+  );
+}
+
+/** Isolated so the ~4×/s progress tick never re-renders the row above it. */
+function MiniProgressBar({ fallbackDurationMs }: { fallbackDurationMs: number }) {
+  const styles = useStyles();
+  const { positionMs, durationMs } = usePlaybackProgress();
+  const total = durationMs > 0 ? durationMs : fallbackDurationMs;
+  const progress = total > 0 ? Math.min(1, positionMs / total) : 0;
+  return (
+    <View style={styles.progressTrack}>
+      <View style={[styles.progressFill, { width: `${Math.round(progress * 100)}%` }]} />
     </View>
   );
 }

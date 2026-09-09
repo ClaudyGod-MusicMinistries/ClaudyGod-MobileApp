@@ -187,6 +187,7 @@ function commitQueue(nextQueue: QueueState, options: { autoplay: boolean }): voi
     status: nowPlaying ? 'loading' : 'idle',
     error: null,
   });
+  progress.set({ positionMs: 0, durationMs: nowPlaying?.durationMs ?? 0 });
   if (nowPlaying && nowPlaying.source.kind !== 'youtube') {
     engine?.load(nowPlaying, { autoplay: options.autoplay });
     engine?.syncMetadata(nowPlaying);

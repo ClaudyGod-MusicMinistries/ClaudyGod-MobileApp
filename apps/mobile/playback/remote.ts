@@ -2,12 +2,10 @@
  * Thin API client for playback resume (Phase 1 / PB-5).
  *
  * The account-free app is installation-scoped: `apiFetch` attaches the
- * `X-Installation-Token` automatically, so these calls need no auth wiring. The
- * PlaybackService (rollout step 3) owns the throttling — it calls
- * `savePlaybackPosition` on a ~15s heartbeat and on pause/stop, and
- * `fetchResumeTarget` once on launch.
- *
- * Nothing imports this yet.
+ * `X-Installation-Token` automatically, so these calls need no auth wiring.
+ * `playback/service.ts` owns the throttling — it calls `savePlaybackPosition`
+ * on a ~15s heartbeat and on pause/stop/finish, and `fetchResumeTarget` once
+ * on launch.
  */
 
 import { apiFetch } from '../services/apiClient';

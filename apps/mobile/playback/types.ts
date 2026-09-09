@@ -1,10 +1,10 @@
 /**
  * Playback domain types — Phase 1 of the platform plan.
  *
- * This module is intentionally free of React and of react-native-track-player.
- * `queue.ts` is a pure reducer over `QueueState`; the RNTP-aware service and the
- * Zustand store are thin layers added on top once the queue semantics are locked.
- * Nothing imports this module yet — it is inert until the service is wired.
+ * This module is intentionally free of React and of any native audio import.
+ * `queue.ts` is a pure reducer over `QueueState`; `store.ts` and `service.ts`
+ * are the thin layers on top (the service drives expo-audio via an injected
+ * adapter, so it stays unit-testable).
  */
 
 export type RepeatMode = 'off' | 'context' | 'one';
