@@ -46,7 +46,7 @@ NC     := \033[0m
 	docker-local-up docker-local-down docker-local-logs \
 	docker-local-mobile-web docker-local-mobile-native \
 	docker-prod-up docker-prod-down docker-prod-logs docker-validate \
-	eas-build-android eas-build-ios eas-update \
+	eas-build-android eas-build-ios eas-build-dev-android eas-build-dev-ios eas-update \
 	clean clean-all \
 	status pull push \
 	ghcr-login \
@@ -118,6 +118,8 @@ help:
 	@printf "$(CYAN)$(BOLD)EAS (Expo Application Services)$(NC)\n"
 	@printf "  $(GREEN)%-30s$(NC) %s\n" "make eas-build-android"   "EAS build for Android"
 	@printf "  $(GREEN)%-30s$(NC) %s\n" "make eas-build-ios"       "EAS build for iOS"
+	@printf "  $(GREEN)%-30s$(NC) %s\n" "make eas-build-dev-android" "EAS dev-client build for Android"
+	@printf "  $(GREEN)%-30s$(NC) %s\n" "make eas-build-dev-ios"   "EAS dev-client build for iOS"
 	@printf "  $(GREEN)%-30s$(NC) %s\n" "make eas-update"          "Publish OTA update via EAS"
 	@printf "\n"
 	@printf "$(CYAN)$(BOLD)Clean$(NC)\n"
@@ -363,6 +365,14 @@ eas-build-android:
 eas-build-ios:
 	@printf "$(BLUE)EAS build: iOS...$(NC)\n"
 	yarn --cwd $(MOBILE_DIR) eas build --platform ios
+
+eas-build-dev-android:
+	@printf "$(BLUE)EAS build: Android dev client...$(NC)\n"
+	yarn --cwd $(MOBILE_DIR) eas build --profile development --platform android
+
+eas-build-dev-ios:
+	@printf "$(BLUE)EAS build: iOS dev client...$(NC)\n"
+	yarn --cwd $(MOBILE_DIR) eas build --profile development --platform ios
 
 eas-update:
 	@printf "$(BLUE)Publishing EAS OTA update...$(NC)\n"
