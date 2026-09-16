@@ -279,6 +279,9 @@ module.exports = {
       'expo-font',
       'expo-router',
       'expo-web-browser',
+      // No config passed — expo-asset's plugin is a no-op without an `assets` list,
+      // but Expo now requires it registered in `plugins` for any package that ships one.
+      'expo-asset',
       [
         'expo-notifications',
         {
