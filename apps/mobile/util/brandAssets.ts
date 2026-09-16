@@ -6,6 +6,9 @@ export const BRAND_COVER_ASSET = require('../assets/images/music4.webp');
 export const LANDING_BG_ASSET = require('../assets/images/landing4.jpg');
 export const BRAND_WORSHIP_ASSET = require('../assets/images/manBack.webp');
 export const BRAND_MUSIC_ASSET = require('../assets/images/music4.webp');
+// Founder/host portrait used as the landing-page hero — swap the source file
+// in place to update the photo without touching app/index.tsx.
+export const BRAND_PORTRAIT_ASSET = require('../assets/images/brand-portrait.jpg');
 
 function resolveBrandAssetUri(moduleId: number): string {
   try {
