@@ -4571,6 +4571,11 @@ expo-audio@~1.1.1:
   resolved "https://registry.npmjs.org/expo-audio/-/expo-audio-1.1.1.tgz"
   integrity sha512-CPCpJ+0AEHdzWROc0f00Zh6e+irLSl2ALos/LPvxEeIcJw1APfBa4DuHPkL4CQCWsVe7EnUjFpdwpqsEUWcP0g==
 
+expo-blur@~15.0.8:
+  version "15.0.8"
+  resolved "https://registry.npmjs.org/expo-blur/-/expo-blur-15.0.8.tgz#846cea275a6644639c5c338987b4cca54cf93eca"
+  integrity sha512-rWyE1NBRZEu9WD+X+5l7gyPRszw7n12cW3IRNAb5i6KFzaBp8cxqT5oeaphJapqURvcqhkOZn2k5EtBSbsuU7w==
+
 expo-clipboard@~8.0.8:
   version "8.0.8"
   resolved "https://registry.npmjs.org/expo-clipboard/-/expo-clipboard-8.0.8.tgz#5e52054a4bbaebef090ec6fe5eaa200072ff94f7"

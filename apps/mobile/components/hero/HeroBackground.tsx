@@ -184,7 +184,12 @@ export function HeroBackground({ width, height, reduceMotion, videoSource }: Her
   const theme = useAppTheme();
 
   return (
-    <View style={{ width, height, overflow: 'hidden', backgroundColor: theme.colors.background }}>
+    <View
+      style={[
+        StyleSheet.absoluteFillObject,
+        { width, height, overflow: 'hidden', backgroundColor: theme.colors.background },
+      ]}
+    >
       <View style={StyleSheet.absoluteFillObject}>
         <AuroraBlob
           size={width * 1.1}
