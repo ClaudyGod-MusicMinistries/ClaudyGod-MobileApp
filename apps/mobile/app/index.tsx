@@ -2,31 +2,21 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Platform,
-  StyleSheet,
   View,
   useWindowDimensions,
 } from 'react-native';
 import { Redirect, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
-import Reanimated, {
-  Easing as ReanimatedEasing,
-  useAnimatedStyle,
-  useSharedValue,
-  withDelay,
-  withRepeat,
-  withSequence,
-  withTiming,
-} from 'react-native-reanimated';
 
 import { CustomText } from '../components/CustomText';
 import { AppButton } from '../components/ui/AppButton';
 import { AppLoadingScreen } from '../components/Exp/AppLoading';
+import { HeroBackground } from '../components/hero/HeroBackground';
 import { useAppTheme } from '../util/colorScheme';
 import { makeStyles } from '../styles/makeStyles';
 import { APP_ROUTES } from '../util/appRoutes';
-import { BRAND_PORTRAIT_ASSET } from '../util/brandAssets';
+import { BRAND_HERO_VIDEO_ASSET } from '../util/brandAssets';
 import { useDeviceClass } from '../util/deviceClassConfig';
 import { getPreference, setPreference } from '../lib/localUserStorage';
 import { useReducedMotion } from '../hooks/useReducedMotion';
@@ -82,122 +72,6 @@ function FeatureChip({ icon, label }: { icon: React.ComponentProps<typeof Materi
   );
 }
 
-// ─── Hero motion (cinematic reveal + slow Ken Burns drift) ────────────────────
-//
-// Reads as a video opening rather than a static photo: the image sweeps into
-// frame and settles into a slow, looping zoom/drift, with a single light
-// sweep across it on first paint. Disabled entirely under reduced-motion.
-
-function KenBurnsHeroImage({
-  source,
-  width,
-  height,
-  reduceMotion,
-}: {
-  source: number;
-  width: number;
-  height: number;
-  reduceMotion: boolean;
-}) {
-  const opacity = useSharedValue(reduceMotion ? 1 : 0);
-  const scale = useSharedValue(reduceMotion ? 1 : 1.18);
-  const translateY = useSharedValue(0);
-
-  useEffect(() => {
-    if (reduceMotion) {
-      opacity.value = 1;
-      scale.value = 1;
-      translateY.value = 0;
-      return;
-    }
-
-    opacity.value = withTiming(1, {
-      duration: 900,
-      easing: ReanimatedEasing.out(ReanimatedEasing.cubic),
-    });
-
-    scale.value = withSequence(
-      withTiming(1.05, { duration: 1400, easing: ReanimatedEasing.out(ReanimatedEasing.cubic) }),
-      withRepeat(
-        withTiming(1.14, { duration: 9000, easing: ReanimatedEasing.inOut(ReanimatedEasing.sin) }),
-        -1,
-        true,
-      ),
-    );
-
-    translateY.value = withDelay(
-      1400,
-      withRepeat(
-        withTiming(-14, { duration: 9000, easing: ReanimatedEasing.inOut(ReanimatedEasing.sin) }),
-        -1,
-        true,
-      ),
-    );
-  }, [opacity, reduceMotion, scale, translateY]);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-    transform: [{ scale: scale.value }, { translateY: translateY.value }],
-  }));
-
-  return (
-    <Reanimated.Image
-      source={source}
-      resizeMode="cover"
-      style={[{ position: 'absolute', top: 0, left: 0, width, height }, animatedStyle]}
-    />
-  );
-}
-
-function HeroLightSweep({
-  width,
-  height,
-  reduceMotion,
-}: {
-  width: number;
-  height: number;
-  reduceMotion: boolean;
-}) {
-  const bandWidth = Math.max(width, height) * 0.6;
-  const travel = width + height; // covers the diagonal at any aspect ratio
-  const translateX = useSharedValue(-travel);
-  const sweepOpacity = useSharedValue(reduceMotion ? 0 : 1);
-
-  useEffect(() => {
-    if (reduceMotion) return;
-    translateX.value = withDelay(
-      250,
-      withTiming(travel, { duration: 1100, easing: ReanimatedEasing.out(ReanimatedEasing.cubic) }),
-    );
-    sweepOpacity.value = withDelay(1200, withTiming(0, { duration: 300 }));
-  }, [reduceMotion, sweepOpacity, translateX, travel]);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    opacity: sweepOpacity.value,
-    transform: [{ translateX: translateX.value }, { rotate: '18deg' }],
-  }));
-
-  if (reduceMotion) return null;
-
-  return (
-    <View pointerEvents="none" style={[StyleSheet.absoluteFillObject, { overflow: 'hidden' }]}>
-      <Reanimated.View
-        style={[
-          { position: 'absolute', top: -height * 0.5, width: bandWidth, height: height * 2 },
-          animatedStyle,
-        ]}
-      >
-        <LinearGradient
-          colors={['transparent', 'rgba(255,255,255,0.22)', 'transparent']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={StyleSheet.absoluteFillObject}
-        />
-      </Reanimated.View>
-    </View>
-  );
-}
-
 // ─── Brand intro (shared by the web landing page and native first-launch onboarding) ──
 
 function BrandIntroScreen({
@@ -236,18 +110,11 @@ function BrandIntroScreen({
 
   return (
     <View style={{ width, height, backgroundColor: theme.colors.background, overflow: 'hidden' }}>
-      <KenBurnsHeroImage
-        source={BRAND_PORTRAIT_ASSET}
+      <HeroBackground
         width={width}
         height={height}
         reduceMotion={reduceMotion}
-      />
-      <HeroLightSweep width={width} height={height} reduceMotion={reduceMotion} />
-
-      <LinearGradient
-        colors={['transparent', theme.colors.mediaScrim, theme.colors.mediaScrimStrong]}
-        locations={[0, 0.45, 1]}
-        style={StyleSheet.absoluteFillObject}
+        videoSource={BRAND_HERO_VIDEO_ASSET}
       />
 
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom', 'left', 'right']}>

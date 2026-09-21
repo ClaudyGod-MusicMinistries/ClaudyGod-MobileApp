@@ -6,9 +6,14 @@ export const BRAND_COVER_ASSET = require('../assets/images/music4.webp');
 export const LANDING_BG_ASSET = require('../assets/images/landing4.jpg');
 export const BRAND_WORSHIP_ASSET = require('../assets/images/manBack.webp');
 export const BRAND_MUSIC_ASSET = require('../assets/images/music4.webp');
-// Founder/host portrait used as the landing-page hero — swap the source file
-// in place to update the photo without touching app/index.tsx.
-export const BRAND_PORTRAIT_ASSET = require('../assets/images/brand-portrait.jpeg');
+
+// Optional looping background clip for the landing-page hero (HeroBackground).
+// It's decorative only — muted/autoplay/loop — and sits under an aurora
+// gradient + blur, so the hero looks intentional with or without it. To
+// activate: add a short (~10-20s), seamlessly-loopable, portrait-friendly
+// clip at assets/videos/hero-loop.mp4 and uncomment the require below.
+// export const BRAND_HERO_VIDEO_ASSET = require('../assets/videos/hero-loop.mp4');
+export const BRAND_HERO_VIDEO_ASSET: number | undefined = undefined;
 
 function resolveBrandAssetUri(moduleId: number): string {
   try {
