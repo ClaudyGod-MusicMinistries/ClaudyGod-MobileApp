@@ -63,12 +63,18 @@ export function LocalContentProvider({ children }: { children: ReactNode }) {
             (local) => !accountFavorites.some((server) => server.id === local.id),
           );
           // Signing in must not silently discard items saved as a guest. Migrate
-          // them once, then treat the server as the cross-device source of truth.
-          await Promise.all(guestOnlyFavorites.map((item) => saveMeLibraryItem({
-            bucket: 'liked', contentId: item.id, contentType: item.type,
-            title: item.title, subtitle: item.subtitle, description: item.description,
-            imageUrl: item.imageUrl, mediaUrl: item.mediaUrl, duration: item.duration,
-          })));
+          // them best-effort, via allSettled rather than all: a single failed
+          // item must not throw into the catch below and roll the account data
+          // already fetched above back to a local-only view for this cycle. A
+          // failed item just stays in local storage and is retried on the next
+          // refresh, since we never remove it unless the save actually succeeds.
+          if (guestOnlyFavorites.length > 0) {
+            await Promise.allSettled(guestOnlyFavorites.map((item) => saveMeLibraryItem({
+              bucket: 'liked', contentId: item.id, contentType: item.type,
+              title: item.title, subtitle: item.subtitle, description: item.description,
+              imageUrl: item.imageUrl, mediaUrl: item.mediaUrl, duration: item.duration,
+            })));
+          }
           serverFavorites = [...guestOnlyFavorites, ...accountFavorites];
           serverHistory = [
             ...accountHistory,

@@ -26,7 +26,7 @@ export function WordOfDayCard({ word, onPress, label = 'Word for today' }: { wor
           <View style={styles.wordAccentBar} />
           <View style={styles.wordContent}>
             <View style={styles.wordLabelRow}>
-              <AppIcon name="auto-stories" size={15} color={theme.colors.warning} />
+              <AppIcon name="auto-stories" size={15} color={theme.colors.editorial} />
               <CustomText variant="caption" style={styles.wordLabel}>{label}</CustomText>
             </View>
             <CustomText variant="title" style={styles.wordTitle} numberOfLines={2}>{word.title ?? word.passage}</CustomText>

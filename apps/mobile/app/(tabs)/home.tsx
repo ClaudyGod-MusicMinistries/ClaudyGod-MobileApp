@@ -17,6 +17,7 @@ import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import { useAuth } from '../../features/auth/AuthContext';
 import { getHomeLayoutSections, deriveLayoutSectionItems, deriveLayoutSectionOverflowCount } from '../../util/mobileLayout';
 import { useAppTheme } from '../../util/colorScheme';
+import { useDeviceClass } from '../../util/deviceClassConfig';
 import { makeStyles } from '../../styles/makeStyles';
 import { APP_ROUTES } from '../../util/appRoutes';
 import { buildPlayerRoute } from '../../util/playerRoute';
@@ -103,6 +104,13 @@ const useStyles = makeStyles((theme) => ({
   // Section containers
   sectionsGap:      { gap: 36 },
   sectionRow:       { gap: 14 },
+
+  // Word-of-day + support cards — stacked full-width on phone, paired
+  // side-by-side on desktop/TV so a wide viewport doesn't leave both cards
+  // stranded at phone-width with acres of empty space to their right.
+  bottomCardsColumn: { gap: 16 },
+  bottomCardsRow:    { flexDirection: 'row', gap: 16, alignItems: 'stretch' },
+  bottomCardHalf:    { flex: 1, minWidth: 0 },
 }));
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -269,6 +277,8 @@ function NewContentBanner({ item, onPress }: { item: FeedCardItem; onPress: () =
 export default function HomeScreen() {
   const styles = useStyles();
   const router = useRouter();
+  const device = useDeviceClass();
+  const wideCards = device.isDesktop || device.isTV;
   const { feed, loading, refreshing, error, refresh } = useContentFeed();
   const { bibleVerse, adminWord }  = useWordOfDay();
   const { config: appConfig } = useMobileAppConfig();
@@ -432,15 +442,21 @@ export default function HomeScreen() {
         />
       ) : null}
 
-      {adminWord ?? bibleVerse ? (
-        <WordOfDayCard
-          word={(adminWord ?? bibleVerse)!}
-          label={adminWord ? 'ClaudyGod Message' : 'Daily Scripture'}
-          onPress={() => router.push(APP_ROUTES.settingsPages.word)}
-        />
-      ) : null}
+      <View style={wideCards ? styles.bottomCardsRow : styles.bottomCardsColumn}>
+        {adminWord ?? bibleVerse ? (
+          <View style={wideCards ? styles.bottomCardHalf : undefined}>
+            <WordOfDayCard
+              word={(adminWord ?? bibleVerse)!}
+              label={adminWord ? 'ClaudyGod Message' : 'Daily Scripture'}
+              onPress={() => router.push(APP_ROUTES.settingsPages.word)}
+            />
+          </View>
+        ) : null}
 
-      <SupportMinistryCard onPress={() => router.push(APP_ROUTES.settingsPages.donate)} />
+        <View style={wideCards ? styles.bottomCardHalf : undefined}>
+          <SupportMinistryCard onPress={() => router.push(APP_ROUTES.settingsPages.donate)} />
+        </View>
+      </View>
 
     </PremiumPage>
   );

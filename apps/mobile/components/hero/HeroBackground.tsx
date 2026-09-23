@@ -17,10 +17,27 @@ import { useAppTheme } from '../../util/colorScheme';
 
 // ─── Aurora blob layer ──────────────────────────────────────────────────────
 //
-// Three oversized color fields drifting on independent loops, softened by the
-// BlurView below into a "mesh gradient" wash. This is the hero's base layer —
-// it needs no photography or footage, looks intentional on its own, and is
-// what any optional background video (HeroVideoLayer) sits on top of.
+// Three oversized glows drifting on independent loops. This is the hero's
+// base layer — it needs no photography or footage, looks intentional on its
+// own, and is what any optional background video (HeroVideoLayer) sits on
+// top of.
+//
+// Each "blob" is several concentric, low-opacity circles rather than one
+// solid-fill circle — a solid circle has a hard geometric edge the moment it
+// hits its own border radius, which reads as a sharp ring rather than a
+// glow (BlurView's native backdrop blur can soften that, but has no effect
+// on web, where this needs to look right on its own). Stacking rings that
+// shrink in size and *rise* in opacity toward the center fades the color out
+// to nothing well before the outer boundary, so there's no edge to see.
+
+const GLOW_RINGS = [
+  { scale: 1.00, opacity: 0.05 },
+  { scale: 0.80, opacity: 0.07 },
+  { scale: 0.62, opacity: 0.10 },
+  { scale: 0.46, opacity: 0.14 },
+  { scale: 0.32, opacity: 0.20 },
+  { scale: 0.20, opacity: 0.28 },
+] as const;
 
 function AuroraBlob({
   size,
@@ -73,17 +90,26 @@ function AuroraBlob({
 
   return (
     <Reanimated.View
-      style={[
-        { position: 'absolute', top, left, width: size, height: size, borderRadius: size / 2, overflow: 'hidden' },
-        animatedStyle,
-      ]}
+      style={[{ position: 'absolute', top, left, width: size, height: size }, animatedStyle]}
     >
-      <LinearGradient
-        colors={colors}
-        start={{ x: 0.2, y: 0.1 }}
-        end={{ x: 0.9, y: 0.9 }}
-        style={StyleSheet.absoluteFillObject}
-      />
+      {GLOW_RINGS.map((ring, index) => {
+        const ringSize = size * ring.scale;
+        return (
+          <View
+            key={ring.scale}
+            style={{
+              position: 'absolute',
+              top: (size - ringSize) / 2,
+              left: (size - ringSize) / 2,
+              width: ringSize,
+              height: ringSize,
+              borderRadius: ringSize / 2,
+              opacity: ring.opacity,
+              backgroundColor: index % 2 === 0 ? colors[0] : colors[1],
+            }}
+          />
+        );
+      })}
     </Reanimated.View>
   );
 }
@@ -187,7 +213,7 @@ export function HeroBackground({ width, height, reduceMotion, videoSource }: Her
     <View
       style={[
         StyleSheet.absoluteFillObject,
-        { width, height, overflow: 'hidden', backgroundColor: theme.colors.background },
+        { overflow: 'hidden', backgroundColor: theme.colors.background },
       ]}
     >
       <View style={StyleSheet.absoluteFillObject}>

@@ -336,13 +336,13 @@ export const useFeedStyles = makeStyles((theme) => ({
   // WordOfDayCard
   wordCard: {
     borderRadius: theme.radius.xl, overflow: 'hidden', borderWidth: 1,
-    borderColor: theme.colors.warningBorder,
-    backgroundColor: theme.colors.warningSurface,
+    borderColor: theme.colors.editorialBorder,
+    backgroundColor: theme.colors.editorialSurface,
   },
-  wordAccentBar:     { position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, backgroundColor: theme.colors.warning },
+  wordAccentBar:     { position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, backgroundColor: theme.colors.editorial },
   wordContent:       { padding: 18, paddingLeft: 20 },
   wordLabelRow:      { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 10 },
-  wordLabel:         { color: theme.colors.warning, fontWeight: '700', letterSpacing: 0.9, textTransform: 'uppercase', fontSize: 10 },
+  wordLabel:         { color: theme.colors.editorial, fontWeight: '700', letterSpacing: 0.9, textTransform: 'uppercase', fontSize: 10 },
   wordTitle:         { color: theme.colors.text, fontWeight: '700', fontSize: 16, lineHeight: 23 },
   wordBody:          { color: theme.colors.textSecondary, marginTop: 8, lineHeight: 19, fontSize: 13 },
   wordReadMore:      { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 12 },

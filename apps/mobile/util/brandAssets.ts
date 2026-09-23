@@ -1,11 +1,16 @@
 import { Asset } from 'expo-asset';
 
 export const BRAND_LOGO_ASSET = require('../assets/images/logo.png');
-export const BRAND_HERO_ASSET = require('../assets/images/music4.webp');
-export const BRAND_COVER_ASSET = require('../assets/images/music4.webp');
-export const LANDING_BG_ASSET = require('../assets/images/landing4.jpg');
-export const BRAND_WORSHIP_ASSET = require('../assets/images/manBack.webp');
-export const BRAND_MUSIC_ASSET = require('../assets/images/music4.webp');
+// Fallback artwork for content with no image of its own (missing/errored
+// thumbnails across AppImage, PremiumHero, StreamingBanner, library/search/
+// videos lists, etc). Deliberately the brand mark on its own tile rather than
+// a photo — a photo of a person as "no artwork" filler reads as a stray
+// personal snapshot the moment real content sits next to it; the logo reads
+// as an intentional placeholder, the way Spotify/Apple Music use a plain
+// tile for missing art.
+export const BRAND_HERO_ASSET = require('../assets/images/logo.png');
+export const BRAND_COVER_ASSET = require('../assets/images/logo.png');
+export const BRAND_MUSIC_ASSET = require('../assets/images/logo.png');
 
 // Optional looping background clip for the landing-page hero (HeroBackground).
 // It's decorative only — muted/autoplay/loop — and sits under an aurora
@@ -26,5 +31,4 @@ function resolveBrandAssetUri(moduleId: number): string {
 export const BRAND_LOGO_URI = resolveBrandAssetUri(BRAND_LOGO_ASSET);
 export const BRAND_HERO_URI = resolveBrandAssetUri(BRAND_HERO_ASSET);
 export const BRAND_COVER_URI = resolveBrandAssetUri(BRAND_COVER_ASSET);
-export const LANDING_BG_URI = resolveBrandAssetUri(LANDING_BG_ASSET);
 export const DEFAULT_CONTENT_IMAGE_URI = BRAND_COVER_URI || BRAND_HERO_URI || BRAND_LOGO_URI;
