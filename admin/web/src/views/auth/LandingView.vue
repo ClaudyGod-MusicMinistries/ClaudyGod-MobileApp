@@ -56,33 +56,25 @@
               </span>
             </h1>
 
-            <p class="text-base leading-relaxed mb-12 text-ink-soft max-w-[400px]">
-              Publish music, sermons, and videos. Manage live sessions, grow your audience, and configure the mobile app — all from one secure workspace.
+            <p class="text-base leading-relaxed mb-10 text-ink-soft max-w-[400px]">
+              Publish content, run live sessions, and configure the mobile app — all from one workspace.
             </p>
 
-            <!-- Feature grid -->
-            <div class="grid grid-cols-2 gap-3">
-              <div v-for="feat in FEATURES" :key="feat.label"
-                class="auth-pill flex items-start gap-2.5 p-3.5 rounded-2xl">
-                <span class="auth-logo mt-0.5 w-5 h-5 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <component :is="feat.icon" class="w-2.5 h-2.5 text-primary-soft" />
-                </span>
-                <div>
-                  <p class="text-xs font-semibold text-ink leading-none">{{ feat.label }}</p>
-                  <p class="text-[11px] text-ink-muted mt-0.5 leading-snug">{{ feat.desc }}</p>
-                </div>
-              </div>
+            <!-- Feature pills — a light touch, not an enumerated feature list -->
+            <div class="flex flex-wrap gap-2">
+              <span v-for="feat in FEATURES" :key="feat.label"
+                class="auth-pill inline-flex items-center gap-2 px-3.5 py-2 rounded-full">
+                <component :is="feat.icon" class="w-3.5 h-3.5 text-primary-soft" />
+                <span class="text-xs font-semibold text-ink-soft">{{ feat.label }}</span>
+              </span>
             </div>
           </div>
         </div>
 
-        <!-- Stats footer -->
-        <div class="flex items-center gap-10 pt-7 border-t border-border">
-          <div v-for="s in STATS" :key="s.label">
-            <p class="text-lg font-black text-ink">{{ s.value }}</p>
-            <p class="text-[10px] uppercase tracking-widest mt-0.5 text-ink-muted">{{ s.label }}</p>
-          </div>
-        </div>
+        <!-- Trust line — one honest sentence, not fabricated metrics -->
+        <p class="pt-7 border-t border-border text-xs text-ink-muted tracking-wide">
+          Two-factor authentication · Role-based permissions · Full audit trail
+        </p>
       </div>
 
       <!-- ── RIGHT: Auth options panel ────────────────────────────────────── -->
@@ -104,21 +96,18 @@
           <div class="mb-8 text-center lg:text-left">
             <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-ink-muted mb-2">Secure access</p>
             <h2 class="text-2xl xl:text-3xl font-black text-ink leading-tight tracking-tight">
-              Ministry<br class="hidden lg:block"/>
-              <span class="text-brand-gradient">
-                command centre.
-              </span>
+              Welcome to the <span class="text-brand-gradient">command centre.</span>
             </h2>
             <p class="mt-3 text-sm text-ink-soft leading-relaxed">
-              Sign in to manage your content, audience,<br class="hidden lg:block"/> and mobile app configuration.
+              Sign in to continue.
             </p>
           </div>
 
-          <!-- Feature pills (mobile only) -->
+          <!-- Feature pills (mobile only — desktop shows these on the left panel instead) -->
           <div class="flex lg:hidden flex-wrap gap-2 justify-center mb-8">
-            <span v-for="pill in PILLS" :key="pill"
+            <span v-for="feat in FEATURES" :key="feat.label"
               class="auth-pill inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium text-ink-soft">
-              {{ pill }}
+              {{ feat.label }}
             </span>
           </div>
 
@@ -175,32 +164,20 @@
 
 <script setup lang="ts">
 import { RouterLink } from 'vue-router';
-import {
-  Music, Radio, BarChart2, Users, Megaphone, Video, Settings, Shield,
-} from 'lucide-vue-next';
+import { Music, Radio, BarChart2, Users, Video, Shield } from 'lucide-vue-next';
 import { BRAND_LOGO_URL } from '@/utils/constants';
 
 const year = new Date().getFullYear();
 
+// Single source for both the desktop icon-pills and the mobile label-only
+// pills below — was two separately hand-maintained lists (FEATURES + PILLS)
+// that had already drifted out of sync with each other.
 const FEATURES = [
-  { label: 'Content publishing',   desc: 'Music, sermons & videos',    icon: Music      },
-  { label: 'Live sessions',         desc: 'Stream & replay control',    icon: Radio      },
-  { label: 'Audience analytics',    desc: 'Real-time engagement data',  icon: BarChart2  },
-  { label: 'User management',       desc: 'Roles & trust levels',       icon: Users      },
-  { label: 'Ad campaigns',          desc: 'AI-powered monetisation',    icon: Megaphone  },
-  { label: 'YouTube import',        desc: 'Browse & import directly',   icon: Video      },
-  { label: 'Mobile config',         desc: 'App appearance & settings',  icon: Settings   },
-  { label: 'Role-based access',     desc: 'Granular permissions',       icon: Shield     },
-];
-
-const STATS = [
-  { value: 'Protected', label: 'Your data' },
-  { value: 'Safer sign-in', label: 'Your account' },
-  { value: 'Role-based', label: 'Your access' },
-];
-
-const PILLS = [
-  'Content publishing', 'Live sessions', 'Analytics',
-  'YouTube import', 'Mobile config', 'Role-based access',
+  { label: 'Content publishing', icon: Music     },
+  { label: 'Live sessions',      icon: Radio     },
+  { label: 'Audience analytics', icon: BarChart2 },
+  { label: 'User management',    icon: Users     },
+  { label: 'YouTube import',     icon: Video     },
+  { label: 'Role-based access',  icon: Shield    },
 ];
 </script>
