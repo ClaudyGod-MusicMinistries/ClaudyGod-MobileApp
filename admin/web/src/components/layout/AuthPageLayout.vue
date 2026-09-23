@@ -68,14 +68,6 @@
             </div>
           </slot>
         </div>
-
-        <!-- Stats bar -->
-        <div class="flex items-center gap-10 pt-8 border-t border-border">
-          <div v-for="s in stats" :key="s.label">
-            <p class="text-base font-black text-ink">{{ s.value }}</p>
-            <p class="text-[11px] uppercase tracking-wider mt-0.5 text-ink-muted">{{ s.label }}</p>
-          </div>
-        </div>
       </div>
     </div>
 
@@ -100,9 +92,9 @@
         <slot />
       </div>
 
-      <!-- Footer trust line -->
+      <!-- Footer trust line — the one place this is stated on this page -->
       <p class="mt-6 text-[11px] text-ink-muted/60 text-center tracking-wide">
-        Protected account · Access based on your role · Secure sign-in
+        Two-factor authentication · Role-based permissions · Full audit trail
       </p>
     </div>
 
@@ -122,11 +114,5 @@ const defaultFeatures = [
   'Real-time analytics and community engagement',
   'User roles, trust levels, and support triage',
   'AI-powered ad campaigns and monetisation tools',
-];
-
-const stats = [
-  { value: 'Protected', label: 'Your data' },
-  { value: 'Safer sign-in', label: 'Your account' },
-  { value: 'Role-based', label: 'Your access' },
 ];
 </script>

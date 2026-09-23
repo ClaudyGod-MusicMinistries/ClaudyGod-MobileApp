@@ -90,6 +90,12 @@ export const colors = {
     danger:       '#DC2626',
     info:         '#2563EB',
     providerGoogle: '#4285F4',
+    // Warm accent for devotional/editorial content (Word of Day) — visually
+    // distinct from the semantic `warning` role so a real validation/warning
+    // banner never shares its exact color identity with a scripture card.
+    // Same hue as `warning` today; kept as its own token so the two can
+    // diverge without one accidentally restyling the other.
+    editorial:      '#D97706',
 
     // ── Primary tints ─────────────────────────────────────────────────────────
     primarySurface:     'rgba(124,58,237,0.07)',
@@ -103,6 +109,8 @@ export const colors = {
     successBorder:  'rgba(22,163,74,0.22)',
     warningSurface: 'rgba(217,119,6,0.06)',
     warningBorder:  'rgba(180,83,9,0.16)',
+    editorialSurface: 'rgba(217,119,6,0.06)',
+    editorialBorder:  'rgba(180,83,9,0.16)',
     infoSurface: 'rgba(37,99,235,0.08)',
     infoBorder:  'rgba(37,99,235,0.20)',
 
@@ -191,6 +199,7 @@ export const colors = {
     danger:       '#F43F5E',
     info:         '#60A5FA',
     providerGoogle: '#4285F4',
+    editorial:      '#F59E0B',
 
     // ── Primary tints ─────────────────────────────────────────────────────────
     primarySurface:     'rgba(139,92,246,0.07)',
@@ -204,6 +213,8 @@ export const colors = {
     successBorder:  'rgba(34,197,94,0.26)',
     warningSurface: 'rgba(245,158,11,0.06)',
     warningBorder:  'rgba(251,191,36,0.18)',
+    editorialSurface: 'rgba(245,158,11,0.06)',
+    editorialBorder:  'rgba(251,191,36,0.18)',
     infoSurface: 'rgba(96,165,250,0.10)',
     infoBorder:  'rgba(96,165,250,0.24)',
 

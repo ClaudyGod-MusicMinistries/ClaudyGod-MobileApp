@@ -64,12 +64,18 @@ const useStyles = makeStyles((theme) => ({
   overviewStatus: {
     flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs,
     paddingHorizontal: theme.spacing.sm, paddingVertical: theme.spacing.xs,
-    borderRadius: theme.radius.pill, backgroundColor: theme.colors.successSurface,
-    borderWidth: 1, borderColor: theme.colors.successBorder,
+    borderRadius: theme.radius.pill,
+    borderWidth: 1,
     marginLeft: 'auto',
   },
-  overviewStatusDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: theme.colors.success },
-  overviewStatusText: { color: theme.colors.success, fontWeight: '700' },
+  overviewStatusReady:   { backgroundColor: theme.colors.successSurface, borderColor: theme.colors.successBorder },
+  overviewStatusSyncing: { backgroundColor: theme.colors.infoSurface, borderColor: theme.colors.infoBorder },
+  overviewStatusDot:       { width: 7, height: 7, borderRadius: 4 },
+  overviewStatusDotReady:  { backgroundColor: theme.colors.success },
+  overviewStatusDotSyncing:{ backgroundColor: theme.colors.info },
+  overviewStatusText:        { fontWeight: '700' },
+  overviewStatusTextReady:   { color: theme.colors.success },
+  overviewStatusTextSyncing: { color: theme.colors.info },
   tabBar: {
     flexDirection: 'row', gap: theme.spacing.xs, padding: theme.spacing.xxs,
     borderRadius: theme.radius.xl, backgroundColor: theme.colors.subtleFill,
@@ -217,9 +223,14 @@ function LibraryOverview({ counts, loaded, children }: { counts: Record<LibTab, 
           <CustomText variant="heading" style={styles.overviewTitle}>Your library</CustomText>
           <CustomText variant="body" style={styles.overviewSubtitle}>{counts.saved} saved · {counts.history} played · {counts.downloads} offline</CustomText>
         </View>
-        <View style={styles.overviewStatus}>
-          <View style={styles.overviewStatusDot} />
-          <CustomText variant="caption" style={styles.overviewStatusText}>{loaded ? 'Ready' : 'Syncing'}</CustomText>
+        <View style={[styles.overviewStatus, loaded ? styles.overviewStatusReady : styles.overviewStatusSyncing]}>
+          <View style={[styles.overviewStatusDot, loaded ? styles.overviewStatusDotReady : styles.overviewStatusDotSyncing]} />
+          <CustomText
+            variant="caption"
+            style={[styles.overviewStatusText, loaded ? styles.overviewStatusTextReady : styles.overviewStatusTextSyncing]}
+          >
+            {loaded ? 'Ready' : 'Syncing'}
+          </CustomText>
         </View>
       </View>
       {children}
@@ -403,8 +414,11 @@ export default function LibraryScreen() {
   const colPercent = `${Math.floor(100 / numCols) - 1}%` as const;
   const gridItems  = useMemo(() => favorites.slice(featured ? 1 : 0), [favorites, featured]);
 
-  const openItem = async (item: FeedCardItem, source: string) => {
-    await trackContentPlay(item, source);
+  // Fire-and-forget, same as Home's openItem — awaiting this (a SecureStore
+  // read + network POST) made every tap here wait on a round-trip before the
+  // player even opened.
+  const openItem = (item: FeedCardItem, source: string) => {
+    void trackContentPlay(item, source);
     router.push(buildPlayerRoute(item));
   };
 

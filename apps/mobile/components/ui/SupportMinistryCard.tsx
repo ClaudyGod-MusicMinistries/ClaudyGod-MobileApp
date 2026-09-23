@@ -44,7 +44,10 @@ export function SupportMinistryCard({ onPress }: SupportCardProps) {
   const styles = useStyles();
   const theme = useAppTheme();
   const { width } = useWindowDimensions();
-  const compact = width < 390;
+  // Below this, the icon + full "Give support" pill leave too little width for
+  // the title to fit on one line — it was truncating mid-word ("Partner with
+  // the mini…"). 420 covers the common ~375-414px phone widths that 390 missed.
+  const compact = width < 420;
 
   return (
     <TVTouchable
@@ -63,7 +66,10 @@ export function SupportMinistryCard({ onPress }: SupportCardProps) {
 
           <View style={styles.textFill}>
             <CustomText variant="caption" style={styles.eyebrow}>Support</CustomText>
-            <CustomText variant="title" style={styles.titleText} numberOfLines={1}>
+            {/* 2 lines as a safety net: numberOfLines=1 was truncating mid-word
+                ("Partner with the mini…") at widths right around the compact
+                cutoff above, where the CTA pill still eats most of the row. */}
+            <CustomText variant="title" style={styles.titleText} numberOfLines={2}>
               Partner with the ministry
             </CustomText>
             <CustomText variant="caption" style={styles.bodyText} numberOfLines={2}>

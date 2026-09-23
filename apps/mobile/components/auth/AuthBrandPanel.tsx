@@ -1,10 +1,12 @@
-import React from 'react';
-import { Image, View } from 'react-native';
+import React, { useState } from 'react';
+import { Image, View, type LayoutChangeEvent } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { CustomText } from '../CustomText';
-import { BRAND_LOGO_ASSET, BRAND_WORSHIP_ASSET } from '../../util/brandAssets';
+import { HeroBackground } from '../hero/HeroBackground';
+import { BRAND_LOGO_ASSET } from '../../util/brandAssets';
 import { useDeviceClass } from '../../util/deviceClassConfig';
 import { useAppTheme } from '../../util/colorScheme';
+import { useReducedMotion } from '../../hooks/useReducedMotion';
 import { makeStyles } from '../../styles/makeStyles';
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -12,7 +14,6 @@ import { makeStyles } from '../../styles/makeStyles';
 const useStyles = makeStyles((theme) => ({
   // Full variant panel
   panelBase:  { flex: 1, overflow: 'hidden', backgroundColor: theme.colors.background },
-  bgImg:      { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, opacity: 0.55 },
   gradient:   { position: 'absolute', left: 0, right: 0, bottom: 0, height: '65%' },
   innerFill:  { flex: 1, justifyContent: 'space-between' },
 
@@ -49,6 +50,8 @@ export function AuthBrandPanel({ salutation, description, compact = false }: Aut
   const styles = useStyles();
   const device = useDeviceClass();
   const theme  = useAppTheme();
+  const reduceMotion = useReducedMotion();
+  const [panelSize, setPanelSize] = useState({ width: device.width, height: 440 });
 
   if (compact) {
     return (
@@ -70,8 +73,14 @@ export function AuthBrandPanel({ salutation, description, compact = false }: Aut
   const titleSize = device.isTV ? 40 : device.isDesktop ? 33 : 28;
 
   return (
-    <View style={[styles.panelBase, { minHeight, borderRadius: device.isTV ? 32 : 24 }]}>
-      <Image source={BRAND_WORSHIP_ASSET} resizeMode="cover" style={styles.bgImg} />
+    <View
+      style={[styles.panelBase, { minHeight, borderRadius: device.isTV ? 32 : 24 }]}
+      onLayout={(e: LayoutChangeEvent) => setPanelSize({
+        width: e.nativeEvent.layout.width,
+        height: e.nativeEvent.layout.height,
+      })}
+    >
+      <HeroBackground width={panelSize.width} height={panelSize.height} reduceMotion={reduceMotion} />
 
       <LinearGradient
         colors={['transparent', theme.colors.mediaScrim, theme.colors.mediaScrimStrong]}
