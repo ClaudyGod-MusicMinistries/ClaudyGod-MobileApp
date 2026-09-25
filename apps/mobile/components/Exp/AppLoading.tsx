@@ -1,9 +1,15 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, Image, Platform, StatusBar, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAppTheme } from '../../util/colorScheme';
 import { makeStyles } from '../../styles/makeStyles';
 import { BRAND_LOGO_ASSET } from '../../util/brandAssets';
+import { colors as palette, mediaTokens } from '../../constants/color';
+
+// Always dark, never theme-aware: this screen sits between the (dark) native
+// splash and the (dark) landing, and a light-mode user used to get a white
+// screen here — a jarring flash in the middle of the brand sequence, plus
+// light status-bar icons (barStyle below) drawn on white, i.e. invisible.
+const LOADING = palette.dark;
 
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
@@ -19,26 +25,25 @@ const ss = StyleSheet.create({
 
 // ─── Theme styles ─────────────────────────────────────────────────────────────
 
-const useStyles = makeStyles((theme) => ({
-  rootBg:    { backgroundColor: theme.colors.background },
+const useStyles = makeStyles(() => ({
+  rootBg:    { backgroundColor: mediaTokens.brandCanvas },
   brandName: {
-    color: theme.colors.text, fontWeight: '700', letterSpacing: -0.6,
+    color: LOADING.text, fontWeight: '700', letterSpacing: -0.6,
     fontFamily: 'PlusJakartaSans_700Bold', textAlign: 'center',
   },
   taglineBase: {
-    color: theme.colors.primary, fontSize: 10, letterSpacing: 3.4,
+    color: LOADING.primary, fontSize: 10, letterSpacing: 3.4,
     textTransform: 'uppercase', fontFamily: 'PlusJakartaSans_400Regular',
     textAlign: 'center', marginTop: 10,
   },
-  glowPrimary: { backgroundColor: theme.colors.primary },
-  dotFill:     { backgroundColor: theme.colors.primary },
+  glowPrimary: { backgroundColor: LOADING.primary },
+  dotFill:     { backgroundColor: LOADING.primary },
 }));
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function AppLoadingScreen() {
   const styles = useStyles();
-  const theme  = useAppTheme();
   const { width, height } = useWindowDimensions();
 
   const glowPulse       = useRef(new Animated.Value(0.5)).current;
@@ -178,7 +183,7 @@ export function AppLoadingScreen() {
                 width: logoSize, height: logoSize, borderRadius: logoRadius,
                 overflow: 'hidden', opacity: logoOpacity,
                 transform: [{ scale: logoScale }],
-                shadowColor: theme.colors.primary, shadowOffset: { width: 0, height: 0 },
+                shadowColor: LOADING.primary, shadowOffset: { width: 0, height: 0 },
                 shadowRadius: 16, shadowOpacity: 0.14, elevation: 6,
               }}
             >
