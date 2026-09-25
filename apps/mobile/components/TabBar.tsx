@@ -89,7 +89,10 @@ function SidebarTabBar({
         {/* Logo */}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 8, marginBottom: isTV ? 32 : 24 }}>
           <View style={{ width: isTV ? 44 : 38, height: isTV ? 44 : 38, borderRadius: 12, overflow: 'hidden', backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.primaryBorder }}>
-            <Image source={BRAND_LOGO_ASSET} resizeMode="cover" style={StyleSheet.absoluteFillObject} />
+            {/* Explicit 100% size, not absoluteFill: React Native Web sizes a bundled-asset
+                Image to its intrinsic 512×512 even under absoluteFill, so this tile only ever
+                showed the logo's top-left corner (plain violet, no flame). */}
+            <Image source={BRAND_LOGO_ASSET} resizeMode="cover" style={{ width: '100%', height: '100%' }} />
           </View>
           <View style={{ flex: 1, minWidth: 0 }}>
             <CustomText style={{ color: theme.colors.text, fontSize: isTV ? 16 : 14, fontWeight: '700', letterSpacing: -0.3 }} numberOfLines={1}>ClaudyGod</CustomText>

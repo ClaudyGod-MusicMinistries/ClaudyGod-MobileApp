@@ -1,7 +1,7 @@
 // context/FontContext.tsx
-import React, { createContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useState, useEffect, useLayoutEffect, ReactNode } from 'react';
 import { Platform } from 'react-native';
-import { loadFonts } from '../util/fonts';
+import { injectWebFonts, loadFonts } from '../util/fonts';
 
 interface FontContextType {
   fontsLoaded: boolean;
@@ -16,9 +16,15 @@ interface FontProviderProps {
 }
 
 export const FontProvider: React.FC<FontProviderProps> = ({ children }) => {
-  // On web, fonts are injected by +html.tsx via @font-face/font-display:swap — no JS loading needed.
-  // Calling Font.loadAsync on web triggers a 6000ms internal timeout and font-loading warnings.
+  // On web the @font-face rules are injected straight into <head> (font-display:
+  // swap, so the UI never blocks on them) — Font.loadAsync on web triggers a
+  // 6000ms internal timeout and font-loading warnings, so it isn't used there.
   const [fontsLoaded, setFontsLoaded] = useState(Platform.OS === 'web');
+
+  // Layout effect so the rules are in the document before the first paint.
+  useLayoutEffect(() => {
+    if (Platform.OS === 'web') injectWebFonts();
+  }, []);
 
   useEffect(() => {
     if (Platform.OS === 'web') return;

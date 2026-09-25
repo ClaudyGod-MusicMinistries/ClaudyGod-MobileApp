@@ -13,7 +13,13 @@ import Reanimated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { useAppTheme } from '../../util/colorScheme';
+import { colors as palette, mediaTokens } from '../../constants/color';
+
+// The hero is always a dark, cinematic surface with white copy on top of it, so
+// its ground and glow colors come from the dark palette regardless of the user's
+// light/dark theme. Reading theme.colors.background here painted a white base
+// under the aurora in light mode, which washed the glow out to a muddy grey.
+const HERO = palette.dark;
 
 // ─── Aurora blob layer ──────────────────────────────────────────────────────
 //
@@ -207,13 +213,11 @@ export interface HeroBackgroundProps {
 }
 
 export function HeroBackground({ width, height, reduceMotion, videoSource }: HeroBackgroundProps) {
-  const theme = useAppTheme();
-
   return (
     <View
       style={[
         StyleSheet.absoluteFillObject,
-        { overflow: 'hidden', backgroundColor: theme.colors.background },
+        { overflow: 'hidden', backgroundColor: mediaTokens.brandCanvas },
       ]}
     >
       <View style={StyleSheet.absoluteFillObject}>
@@ -221,7 +225,7 @@ export function HeroBackground({ width, height, reduceMotion, videoSource }: Her
           size={width * 1.1}
           top={-height * 0.15}
           left={-width * 0.25}
-          colors={[theme.colors.primary, theme.colors.secondary]}
+          colors={[HERO.primary, HERO.secondary]}
           duration={9000}
           reduceMotion={reduceMotion}
         />
@@ -229,7 +233,7 @@ export function HeroBackground({ width, height, reduceMotion, videoSource }: Her
           size={width * 1.3}
           top={height * 0.32}
           left={width * 0.25}
-          colors={[theme.colors.accent, theme.colors.secondary]}
+          colors={[HERO.accent, HERO.secondary]}
           duration={11000}
           reduceMotion={reduceMotion}
         />
@@ -237,7 +241,7 @@ export function HeroBackground({ width, height, reduceMotion, videoSource }: Her
           size={width * 0.9}
           top={height * 0.55}
           left={-width * 0.3}
-          colors={[theme.colors.accentAlt, theme.colors.primary]}
+          colors={[HERO.accentAlt, HERO.primary]}
           duration={13000}
           reduceMotion={reduceMotion}
         />
@@ -255,7 +259,7 @@ export function HeroBackground({ width, height, reduceMotion, videoSource }: Her
 
       {/* Brand tint + bottom scrim, so copy stays legible over any of the above */}
       <LinearGradient
-        colors={['rgba(124,58,237,0.28)', theme.colors.mediaScrim, theme.colors.mediaScrimStrong]}
+        colors={['rgba(124,58,237,0.28)', HERO.mediaScrim, HERO.mediaScrimStrong]}
         locations={[0, 0.5, 1]}
         style={StyleSheet.absoluteFillObject}
       />
