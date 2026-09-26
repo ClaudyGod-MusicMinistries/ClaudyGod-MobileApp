@@ -34,8 +34,8 @@
         "CLAUDYGOD_ENV": "production",
         "EXPO_PUBLIC_API_URL": "https://apimobile.claudygod.org",
         "EXPO_PUBLIC_SENTRY_DSN": "https://fb04ac990143558c70b61d39e0576334@o4512137329442816.ingest.de.sentry.io/4512137347203152",
-        "EXPO_PUBLIC_SUPABASE_URL": "__FILL_FROM_ENV_PRODUCTION__",
-        "EXPO_PUBLIC_SUPABASE_KEY": "__FILL_FROM_ENV_PRODUCTION__"
+        "EXPO_PUBLIC_SUPABASE_URL": "https://gjqqajeavzucvafersio.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_KEY": "sb_publishable_9q-2dOo-Cd9DdxnxtV96sg_I4UWi_2S"
       }
     },
     "production-apk": {

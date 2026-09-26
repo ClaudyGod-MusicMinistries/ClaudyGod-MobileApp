@@ -72,6 +72,51 @@ function verifyEasProjectLinked() {
 
 verifyEasProjectLinked();
 
+// Catches a second real incident from the same release (2026-09-26): the app
+// crashed on every real device launch with "Production mobile builds require
+// a public HTTPS API URL" even though app.config.js/.env.production looked
+// correct. Cause: EAS Build evaluates the remote build against eas.json's own
+// `build.<profile>.env` block (plus EAS's cloud Environment Variables) — not
+// against whatever a local .env.production file happens to contain. Nothing
+// above this point reads eas.json at all, so it could not have caught this;
+// the crash was the first thing to notice, on a physical device, after a full
+// build had already completed. This checks the actual file EAS Build reads.
+function verifyEasJsonProductionEnv() {
+  const easJsonPath = path.join(root, 'eas.json');
+  let easJson;
+  try {
+    easJson = JSON.parse(fs.readFileSync(easJsonPath, 'utf8'));
+  } catch (error) {
+    fail(`eas.json could not be read: ${error.message}`);
+    return;
+  }
+
+  const env = easJson.build?.production?.env;
+  if (!env) {
+    fail('eas.json build.production.env is missing — the production build has no way to resolve EXPO_PUBLIC_ values remotely.');
+    return;
+  }
+
+  const requireHttpsIn = (label, value) => {
+    if (!value) return fail(`eas.json build.production.env.${label} is missing`);
+    try {
+      const parsed = new URL(value);
+      if (parsed.protocol !== 'https:' || /localhost|example|validation/i.test(parsed.hostname)) {
+        fail(`eas.json build.production.env.${label} must be a real HTTPS production URL`);
+      }
+    } catch { fail(`eas.json build.production.env.${label} is not a valid URL`); }
+  };
+
+  requireHttpsIn('EXPO_PUBLIC_API_URL', env.EXPO_PUBLIC_API_URL);
+  requireHttpsIn('EXPO_PUBLIC_SUPABASE_URL', env.EXPO_PUBLIC_SUPABASE_URL);
+  requireHttpsIn('EXPO_PUBLIC_SENTRY_DSN', env.EXPO_PUBLIC_SENTRY_DSN);
+  if (!env.EXPO_PUBLIC_SUPABASE_KEY || /placeholder|your_|FILL_FROM/i.test(env.EXPO_PUBLIC_SUPABASE_KEY)) {
+    fail('eas.json build.production.env.EXPO_PUBLIC_SUPABASE_KEY is missing or a placeholder');
+  }
+}
+
+verifyEasJsonProductionEnv();
+
 const requiredScreenshots = [
   'ios-6.7/home.png', 'ios-6.7/player.png', 'ios-6.7/library.png',
   'android-phone/home.png', 'android-phone/player.png', 'android-phone/library.png',
