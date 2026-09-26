@@ -58,7 +58,10 @@ const resolvedSupabaseAnonKey =
 // repo-root app.json). Not a secret. Override per-environment with
 // EAS_PROJECT_ID / EXPO_PUBLIC_EAS_PROJECT_ID only if this app is ever pointed
 // at a different Expo project.
-const DEFAULT_EAS_PROJECT_ID = '724c1b43-4438-46c0-a215-4de7705bffaf';
+//
+// expo.dev/accounts/peter4tech/projects/claudygodmobile — confirmed live
+// 2026-09-26 (replaces a prior id that no longer resolved on this account).
+const DEFAULT_EAS_PROJECT_ID = '8434f51d-f5d3-4b4d-96f6-de3e4d00b0dc';
 // Treat the all-zeros null UUID (used as a placeholder in .env templates) as unset.
 const NULL_UUID = '00000000-0000-0000-0000-000000000000';
 const firstRealProjectId = (...candidates) => {
@@ -85,7 +88,10 @@ const getFileOrEnv = (key, fallback = '') =>
   fileEnv[key] || process.env[key] || fallback;
 
 const appName = getFileOrEnv('EXPO_APP_NAME', 'ClaudyGod');
-const appSlug = getFileOrEnv('EXPO_APP_SLUG', 'claudygod');
+// Must exactly match the slug of the linked EAS project (expo.dev/accounts/
+// peter4tech/projects/claudygodmobile) — a mismatch here is what caused
+// "Experience with id '...' does not exist" earlier.
+const appSlug = getFileOrEnv('EXPO_APP_SLUG', 'claudygodmobile');
 const appScheme = getFileOrEnv('EXPO_APP_SCHEME', 'claudygod');
 const appVersion = getFileOrEnv('EXPO_APP_VERSION', '1.0.0');
 const appDescription = getFileOrEnv(
