@@ -8,6 +8,9 @@ The gate verifies:
 - non-placeholder public Supabase credentials;
 - matching approved iOS and Android application identity;
 - deterministic runtime version and EAS Updates configuration;
+- the configured EAS project id actually exists on the authenticated account
+  (best-effort — skipped with a warning if `eas-cli` isn't installed/logged in
+  where this runs; run it again somewhere it succeeds before a real build);
 - 1024×1024 PNG release artwork;
 - real-device screenshots for the required core journeys;
 - recorded privacy, content-rating, and release smoke-test evidence.
