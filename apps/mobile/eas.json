@@ -33,6 +33,12 @@
       "env": {
         "CLAUDYGOD_ENV": "production"
       }
+    },
+    "production-apk": {
+      "extends": "production",
+      "android": {
+        "buildType": "apk"
+      }
     }
   },
   "submit": {
