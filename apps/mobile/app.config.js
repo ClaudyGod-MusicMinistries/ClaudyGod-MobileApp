@@ -138,6 +138,22 @@ const seedEnv = (key, value) => {
     case 'EXPO_PUBLIC_SENTRY_DSN':
       process.env.EXPO_PUBLIC_SENTRY_DSN = value;
       break;
+    // Read below by the '@sentry/react-native/expo' plugin entry (via
+    // process.env, not this file's own getEnv) to fill in sentry.properties for
+    // source-map upload during the Android/iOS Gradle/Xcode build. Missing from
+    // this whitelist caused a real incident (2026-09-26): both were present in
+    // .env.production, but never reached process.env, so the plugin always saw
+    // them as unset and every build failed source-map upload with "An
+    // organization ID or slug is required".
+    case 'SENTRY_ORG':
+      process.env.SENTRY_ORG = value;
+      break;
+    case 'SENTRY_PROJECT':
+      process.env.SENTRY_PROJECT = value;
+      break;
+    case 'SENTRY_AUTH_TOKEN':
+      process.env.SENTRY_AUTH_TOKEN = value;
+      break;
     case 'CLAUDYGOD_ENV':
       process.env.CLAUDYGOD_ENV = value;
       break;
@@ -157,6 +173,9 @@ seedEnv('EXPO_PUBLIC_EAS_PROJECT_ID', resolvedEasProjectId);
 seedEnv('EXPO_PUBLIC_SENTRY_DSN', fileEnv.EXPO_PUBLIC_SENTRY_DSN);
 seedEnv('CLAUDYGOD_ENV', fileEnv.CLAUDYGOD_ENV);
 seedEnv('NODE_ENV', fileEnv.NODE_ENV);
+seedEnv('SENTRY_ORG', fileEnv.SENTRY_ORG);
+seedEnv('SENTRY_PROJECT', fileEnv.SENTRY_PROJECT);
+seedEnv('SENTRY_AUTH_TOKEN', fileEnv.SENTRY_AUTH_TOKEN);
 
 const getEnv = (keys, fallback = '') => {
   const candidates = Array.isArray(keys) ? keys : [keys];
