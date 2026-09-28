@@ -585,7 +585,13 @@ function YouTubeIframePlayer({
       <Pressable style={{ height }} onPress={bringUpControls}>
         <WebView
           ref={webviewRef}
-          source={{ html }}
+          // A raw `source={{ html }}` with no baseUrl loads as an opaque/about:blank
+          // origin on Android. YouTube's IFrame Player API does its own origin
+          // checks internally and can silently error out of that origin — this is
+          // what actually produced the "Could not load video" fallback, confirmed
+          // by the same video's oEmbed endpoint (a real embeddability check)
+          // returning success. A real HTTPS origin we control fixes it.
+          source={{ html, baseUrl: 'https://claudygod.org' }}
           style={{ width: '100%', height, backgroundColor: mediaTokens.canvas }}
           allowsFullscreenVideo
           allowsInlineMediaPlayback
