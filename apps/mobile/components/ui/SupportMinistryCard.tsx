@@ -54,7 +54,6 @@ export function SupportMinistryCard({ onPress }: SupportCardProps) {
       onPress={onPress}
       showFocusBorder={false}
       pressScale={0.98}
-      haptics
       accessibilityRole="button"
       accessibilityLabel="Partner with the ministry — give support"
     >

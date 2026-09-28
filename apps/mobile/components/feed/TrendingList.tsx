@@ -44,7 +44,7 @@ export function TrendingList({ title, items, onPressItem, actionLabel, onAction 
             const rank   = index + 1;
             const isTop3 = rank <= 3;
             return (
-              <TVTouchable key={`trending-${item.id}`} onPress={() => onPressItem(item)} showFocusBorder={false} pressScale={0.98} haptics>
+              <TVTouchable key={`trending-${item.id}`} onPress={() => onPressItem(item)} showFocusBorder={false} pressScale={0.98}>
                 <View style={[styles.trendingRow, index === 0 && styles.trendingFirstRow]}>
                   <CustomText variant="display" style={{
                     width: 30,

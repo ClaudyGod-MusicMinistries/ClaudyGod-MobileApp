@@ -62,7 +62,6 @@ export const ContentCard = React.memo(function ContentCard({ item, onPress, comp
     <TVTouchable
       onPress={onPress}
       pressScale={0.96}
-      haptics
       showFocusBorder={false}
       style={{ width: cardWidth }}
       accessibilityRole="button"

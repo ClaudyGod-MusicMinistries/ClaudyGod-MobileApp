@@ -147,7 +147,7 @@ function HomeSearchBar({ onPress }: { onPress: () => void }) {
   const styles = useStyles();
   const theme  = useAppTheme();
   return (
-    <TVTouchable onPress={onPress} showFocusBorder={false} pressScale={0.98} haptics>
+    <TVTouchable onPress={onPress} showFocusBorder={false} pressScale={0.98}>
       <View style={styles.searchBar}>
         <AppIcon name="search" size={19} color={theme.colors.textMuted} />
         <CustomText style={styles.searchText}>Search songs, videos, messages...</CustomText>
@@ -176,7 +176,7 @@ function ContinueRow({ items, onPress }: { items: FeedCardItem[]; onPress: (_ite
         contentContainerStyle={styles.continueScrollContent}
       >
         {items.slice(0, 8).map((item) => (
-          <TVTouchable key={item.id} onPress={() => onPress(item)} showFocusBorder={false} pressScale={0.97} haptics>
+          <TVTouchable key={item.id} onPress={() => onPress(item)} showFocusBorder={false} pressScale={0.97}>
             <View style={{ width: tileSize, gap: 8 }}>
               <View style={[styles.continueTileShadowWrap, { width: tileSize, height: tileSize }]}>
                 <View style={[styles.continueTileImg, StyleSheet.absoluteFillObject]}>
@@ -217,7 +217,7 @@ function NewContentBanner({ item, onPress }: { item: FeedCardItem; onPress: () =
   const artSize = compact ? 108 : 128;
 
   return (
-    <TVTouchable onPress={onPress} showFocusBorder={false} pressScale={0.98} haptics>
+    <TVTouchable onPress={onPress} showFocusBorder={false} pressScale={0.98}>
       <View style={styles.bannerShadowWrap}>
       <View style={styles.bannerCard}>
         <View style={styles.bannerRow}>

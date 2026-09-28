@@ -3,7 +3,6 @@ import { Image, Platform, StyleSheet, View, useWindowDimensions } from 'react-na
 import Animated, { Easing, interpolateColor, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as Haptics from 'expo-haptics';
 import { useAppTheme } from '../util/colorScheme';
 import { layout } from '../styles/designTokens';
 import { useMobileAppConfig } from '../hooks/useMobileAppConfig';
@@ -64,7 +63,10 @@ function SidebarTabBar({
   const settingsItem = footerItems.find((item) => item.routeName === 'settings');
 
   const navigateTo = (item: FooterItem) => {
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    // No haptic here deliberately — tab switching is the single highest-frequency
+    // interaction in the app (every screen change). Buzzing on every one of those
+    // reads as cheap rather than premium; haptics are reserved for confirming a
+    // meaningful action (a CTA, a playback control), not routine navigation.
     const canNavigate = routeExists(state.routes, item.routeName) || item.routeName === 'settings';
     if (canNavigate) navigation.navigate(item.routeName as never);
   };
@@ -393,7 +395,6 @@ function BottomPillTabBar({
     const focused = currentRouteName === item.routeName;
     const event = navigation.emit({ type: 'tabPress', target: item.key, canPreventDefault: true });
     if (!focused && !event.defaultPrevented && (routeExists(state.routes, item.routeName) || item.routeName === 'settings')) {
-      void Haptics.selectionAsync();
       navigation.navigate(item.routeName as never);
     }
   };
