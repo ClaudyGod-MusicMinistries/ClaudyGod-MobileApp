@@ -28,7 +28,6 @@ export function GreetingBanner({ name, onPreferencesPress }: { name?: string | n
         <TVTouchable
           onPress={onPreferencesPress}
           showFocusBorder={false}
-          haptics
           style={styles.greetingNotifBtn}
           accessibilityRole="button"
           accessibilityLabel="Open preferences"

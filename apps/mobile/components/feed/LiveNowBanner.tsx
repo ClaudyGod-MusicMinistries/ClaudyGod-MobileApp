@@ -20,7 +20,7 @@ export function LiveNowBanner({ item, onPress }: { item: FeedCardItem; onPress: 
 
   return (
     <FadeIn delay={40}>
-      <TVTouchable onPress={onPress} showFocusBorder={false} pressScale={0.98} haptics>
+      <TVTouchable onPress={onPress} showFocusBorder={false} pressScale={0.98}>
         <View style={styles.liveCard}>
           <AppImage uri={item.imageUrl} resizeMode="cover" style={styles.liveBgImage} showSkeleton={false} />
           <View style={{ flexDirection: 'row', alignItems: 'center', padding: compact ? 16 : 20, gap: 16 }}>
