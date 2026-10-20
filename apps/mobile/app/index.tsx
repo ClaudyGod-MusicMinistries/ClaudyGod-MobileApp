@@ -18,6 +18,7 @@ import { useAppTheme } from '../util/colorScheme';
 import { makeStyles } from '../styles/makeStyles';
 import { APP_ROUTES } from '../util/appRoutes';
 import { BRAND_HERO_VIDEO_ASSET, BRAND_LOGO_ASSET } from '../util/brandAssets';
+import { BrandWordmark } from '../components/branding';
 import { useDeviceClass } from '../util/deviceClassConfig';
 import { getPreference, setPreference } from '../lib/localUserStorage';
 import { useReducedMotion } from '../hooks/useReducedMotion';
@@ -141,16 +142,23 @@ function BrandIntroScreen({
                   height: compact ? 42 : 52,
                   borderRadius: theme.radius.md,
                   alignSelf: isPhone ? 'center' : 'flex-start',
-                  marginBottom: 4,
+                  marginBottom: 6,
                 }}
                 resizeMode="contain"
               />
 
-              <CustomText
-                style={[styles.brandLabel, { textAlign: isPhone ? 'center' : 'left' }]}
-              >
-                ClaudyGod
-              </CustomText>
+              <BrandWordmark
+                size={compact ? 'sm' : 'md'}
+                tone="light"
+                showDot
+                showSubtitle
+                subtitleText="MUSIC & MINISTRIES"
+                align={isPhone ? 'center' : 'left'}
+                style={{
+                  alignSelf: isPhone ? 'center' : 'flex-start',
+                  marginBottom: 4,
+                }}
+              />
 
               <CustomText
                 variant="display"

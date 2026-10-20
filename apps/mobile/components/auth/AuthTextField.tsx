@@ -36,7 +36,7 @@ const useStyles = makeStyles(() => ({
   labelBase:     { marginBottom: 6, fontWeight: '400' },
   fieldRow:      { overflow: 'hidden', flexDirection: 'row', alignItems: 'center', paddingVertical: 0 },
   leadingWrap:   { marginRight: 10, justifyContent: 'center' },
-  inputBase:     { paddingHorizontal: 0, fontFamily: 'PlusJakartaSans_400Regular' },
+  inputBase:     { paddingHorizontal: 0, fontFamily: 'Poppins_400Regular' },
   trailingWrap:  { marginLeft: 10 },
 }));
 

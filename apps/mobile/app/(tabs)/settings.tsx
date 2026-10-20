@@ -18,6 +18,7 @@ import { getSettingsHubSections } from '../../util/mobileExperienceConfig';
 import { getPreference, setPreference } from '../../lib/localUserStorage';
 import { setDiagnosticsAllowed } from '../../lib/sentry';
 import { PremiumPage } from '../../components/feed';
+import { BrandWordmark } from '../../components/branding';
 import { getStoredMobileSession } from '../../services/authService';
 import { fetchInstallationPreferences, fetchMePreferences, updateInstallationNotifications, updateInstallationPersonalization, updateMePreferences, type MePreferences } from '../../services/userFlowService';
 import { useQueryClient } from '@tanstack/react-query';

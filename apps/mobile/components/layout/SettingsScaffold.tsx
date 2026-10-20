@@ -96,7 +96,7 @@ export function SettingsScaffold({ title, subtitle, icon, children, hero, backRo
 
                   <View style={styles.headerFill}>
                     <CustomText variant="caption" style={styles.eyebrow} numberOfLines={1}>
-                      ClaudyGod
+                      claudyGod<CustomText style={{ color: theme.colors.primary }}>.</CustomText>
                     </CustomText>
                     <CustomText variant="heading" style={styles.titleText} numberOfLines={1}>
                       {title}

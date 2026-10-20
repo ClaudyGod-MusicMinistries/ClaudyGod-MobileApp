@@ -3,6 +3,7 @@ import { Image, View, type LayoutChangeEvent } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { CustomText } from '../CustomText';
 import { HeroBackground } from '../hero/HeroBackground';
+import { BrandWordmark } from '../branding';
 import { BRAND_LOGO_ASSET } from '../../util/brandAssets';
 import { useDeviceClass } from '../../util/deviceClassConfig';
 import { useAppTheme } from '../../util/colorScheme';
@@ -60,10 +61,7 @@ export function AuthBrandPanel({ salutation, description, compact = false }: Aut
           <Image source={BRAND_LOGO_ASSET} resizeMode="cover" style={styles.compactLogoImg} />
         </View>
         <View style={styles.compactTextFill}>
-          <CustomText variant="caption" style={styles.compactBrandName}>ClaudyGod</CustomText>
-          <CustomText variant="label" style={styles.compactTagline} numberOfLines={1}>
-            Music · Worship · Live Ministry
-          </CustomText>
+          <BrandWordmark size="xs" showDot showSubtitle subtitleText="MUSIC & MINISTRIES" />
         </View>
       </View>
     );

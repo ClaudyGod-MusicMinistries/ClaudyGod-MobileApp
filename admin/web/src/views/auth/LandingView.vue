@@ -34,8 +34,12 @@
             <img :src="BRAND_LOGO_URL" alt="ClaudyGod" class="w-7 h-7 rounded-xl object-contain" />
           </div>
           <div>
-            <p class="text-[11px] font-black uppercase tracking-[0.24em] text-primary-soft">ClaudyGod</p>
-            <p class="text-xs font-medium text-ink-muted">Ministry Studio</p>
+            <p class="font-display text-sm font-bold text-ink leading-tight tracking-tight">
+              claudyGod<span class="text-primary font-black">.</span>
+            </p>
+            <p class="font-brand text-[9px] font-bold text-ink-muted uppercase tracking-[0.22em]">
+              Ministry Studio
+            </p>
           </div>
         </div>
 
@@ -85,8 +89,12 @@
           <div class="auth-logo w-14 h-14 rounded-2xl flex items-center justify-center">
             <img :src="BRAND_LOGO_URL" alt="ClaudyGod" class="w-9 h-9 rounded-xl object-contain" />
           </div>
-          <p class="text-base font-black text-ink tracking-tight">ClaudyGod</p>
-          <p class="text-xs text-ink-muted">Admin Studio</p>
+          <p class="font-display text-base font-bold text-ink tracking-tight">
+            claudyGod<span class="text-primary font-black">.</span>
+          </p>
+          <p class="font-brand text-[10px] font-bold text-ink-muted uppercase tracking-[0.22em]">
+            Admin Studio
+          </p>
         </div>
 
         <!-- Auth card -->

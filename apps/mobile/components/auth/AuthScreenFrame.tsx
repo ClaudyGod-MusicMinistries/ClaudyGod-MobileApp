@@ -8,6 +8,7 @@ import { Screen } from '../layout/Screen';
 import { FadeIn } from '../ui/FadeIn';
 import { TVTouchable } from '../ui/TVTouchable';
 import { AuthBrandPanel } from './AuthBrandPanel';
+import { BrandWordmark } from '../branding';
 import { BRAND_LOGO_ASSET } from '../../util/brandAssets';
 import { useDeviceClass } from '../../util/deviceClassConfig';
 import { useAppTheme } from '../../util/colorScheme';
@@ -113,7 +114,14 @@ export function AuthScreenFrame({ backPath, salutation, description, title, subt
                 <View style={styles.logoBox}>
                   <Image source={BRAND_LOGO_ASSET} resizeMode="cover" style={styles.logoImg} />
                 </View>
-                <CustomText variant="caption" style={styles.phoneAppName}>ClaudyGod</CustomText>
+                <BrandWordmark
+                  size="sm"
+                  showDot
+                  showSubtitle
+                  subtitleText="MUSIC & MINISTRIES"
+                  align="center"
+                  style={{ marginTop: 10, marginBottom: 8 }}
+                />
                 <CustomText variant="display" style={styles.phoneTitle}>{title}</CustomText>
                 <CustomText variant="body" style={styles.phoneSubtitle}>{subtitle}</CustomText>
               </View>
