@@ -46,8 +46,9 @@ export default {
         '3xl': '22px',
       },
       fontFamily: {
-        sans: ['"Aptos"', '"Segoe UI Variable"', '"SF Pro Text"', 'Inter', 'system-ui', 'sans-serif'],
-        display: ['"Aptos Display"', '"Aptos"', '"Segoe UI Variable"', 'system-ui', 'sans-serif'],
+        sans: ['"Poppins"', '"Montserrat"', '"Aptos"', '"SF Pro Text"', 'Inter', 'system-ui', 'sans-serif'],
+        display: ['"Poppins"', '"Montserrat"', '"Aptos Display"', 'system-ui', 'sans-serif'],
+        brand: ['"Montserrat"', '"Poppins"', 'sans-serif'],
       },
       boxShadow: {
         panel: '0 24px 70px rgba(0,0,0,0.32)',

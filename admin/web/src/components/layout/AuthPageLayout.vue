@@ -32,8 +32,12 @@
             <img :src="BRAND_LOGO_URL" alt="ClaudyGod" class="w-6 h-6 object-contain" />
           </div>
           <div>
-            <p class="text-[11px] font-black uppercase tracking-[0.22em] text-primary-soft">ClaudyGod</p>
-            <p class="text-xs font-medium text-ink-muted">Ministry Studio</p>
+            <p class="font-display text-sm font-bold text-ink leading-tight tracking-tight">
+              claudyGod<span class="text-primary font-black">.</span>
+            </p>
+            <p class="font-brand text-[9px] font-bold text-ink-muted uppercase tracking-[0.22em]">
+              Ministry Studio
+            </p>
           </div>
         </div>
 
@@ -79,7 +83,9 @@
         <div class="auth-logo w-12 h-12 rounded-2xl flex items-center justify-center">
           <img :src="BRAND_LOGO_URL" alt="ClaudyGod" class="w-8 h-8 object-contain" />
         </div>
-        <p class="text-sm font-black text-ink tracking-tight">ClaudyGod Admin</p>
+        <p class="font-display text-sm font-bold text-ink tracking-tight">
+          claudyGod<span class="text-primary font-black">.</span> Admin
+        </p>
       </div>
 
       <!-- Desktop eyebrow -->

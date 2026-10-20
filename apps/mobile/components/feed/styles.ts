@@ -9,9 +9,9 @@ export const useFeedStyles = makeStyles((theme) => ({
   pageContent:        { paddingTop: theme.layout.headerVerticalPadding, gap: 24 },
   pageSections:       { gap: theme.layout.sectionGap },
   headerLeft:         { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 },
-  headerEyebrow:      { color: theme.colors.primary, fontSize: 10.5, fontWeight: '700', letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 1 },
-  headerTitle:        { color: theme.colors.text, fontWeight: '700', letterSpacing: 0 },
-  headerSubtitle:     { color: theme.colors.textSecondary, marginTop: 2, maxWidth: 720, fontSize: 12 },
+  headerEyebrow:      { color: theme.colors.primary, fontSize: 9.5, fontFamily: 'Montserrat_700Bold', fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 1 },
+  headerTitle:        { color: theme.colors.text, fontFamily: 'Poppins_600SemiBold', fontWeight: '600', letterSpacing: -0.2 },
+  headerSubtitle:     { color: theme.colors.textSecondary, marginTop: 1, maxWidth: 720, fontSize: 11, lineHeight: 14 },
   headerRight:        { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0 },
 
   // NavIconButton

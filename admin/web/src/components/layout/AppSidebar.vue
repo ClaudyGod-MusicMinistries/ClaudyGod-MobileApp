@@ -24,8 +24,12 @@
       <img :src="BRAND_LOGO_URL" alt="ClaudyGod" class="w-9 h-9 rounded-md flex-shrink-0 object-contain border border-border" />
       <Transition name="fade">
         <div v-if="showExpanded" class="overflow-hidden">
-          <p class="text-[10px] font-semibold text-ink-muted uppercase tracking-widest">ClaudyGod</p>
-          <p class="text-sm font-semibold text-ink leading-tight">Admin Studio</p>
+          <p class="font-display text-sm font-bold text-ink leading-tight tracking-tight">
+            claudyGod<span class="text-primary font-black">.</span>
+          </p>
+          <p class="font-brand text-[9px] font-bold text-ink-muted uppercase tracking-[0.22em]">
+            Admin Studio
+          </p>
         </div>
       </Transition>
     </div>

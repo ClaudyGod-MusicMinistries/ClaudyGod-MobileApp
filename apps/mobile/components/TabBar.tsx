@@ -9,6 +9,7 @@ import { useMobileAppConfig } from '../hooks/useMobileAppConfig';
 import { getSidebarWidth } from '../util/sidebarConfig';
 import { TVTouchable } from './ui/TVTouchable';
 import { CustomText } from './CustomText';
+import { BrandWordmark } from './branding';
 import { BRAND_LOGO_ASSET } from '../util/brandAssets';
 import { AppIcon, type AppIconName } from './ui/AppIcon';
 import { useReducedMotion } from '../hooks/useReducedMotion';
@@ -97,8 +98,7 @@ function SidebarTabBar({
             <Image source={BRAND_LOGO_ASSET} resizeMode="cover" style={{ width: '100%', height: '100%' }} />
           </View>
           <View style={{ flex: 1, minWidth: 0 }}>
-            <CustomText style={{ color: theme.colors.text, fontSize: isTV ? 16 : 14, fontWeight: '700', letterSpacing: -0.3 }} numberOfLines={1}>ClaudyGod</CustomText>
-            <CustomText style={{ color: theme.colors.textMuted, fontSize: isTV ? 11 : 10, marginTop: 1 }} numberOfLines={1}>Worship & Ministry</CustomText>
+            <BrandWordmark size={isTV ? 'md' : 'sm'} showDot showSubtitle subtitleText="MUSIC & MINISTRIES" />
           </View>
         </View>
 

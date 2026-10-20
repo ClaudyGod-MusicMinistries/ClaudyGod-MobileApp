@@ -1,11 +1,11 @@
-// Regenerates every raster brand asset from the two SVG masters in this directory.
+// Regenerates every raster brand asset from the SVG masters in this directory.
 // Run from repo root: `node brand/generate-assets.mjs` (requires `sharp`, a devDependency
 // of apps/mobile — run via `yarn --cwd apps/mobile exec node ../../brand/generate-assets.mjs`
 // if `sharp` isn't hoisted to the root node_modules in your install).
 //
 // Never hand-edit the generated PNGs — change logo-master.svg / logo-mark-transparent.svg
 // and re-run this script instead, so every consumer stays derived from one source of truth.
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
@@ -15,8 +15,11 @@ const repoRoot = path.resolve(here, '..');
 
 const masterSvg = readFileSync(path.join(here, 'logo-master.svg'));
 const transparentSvg = readFileSync(path.join(here, 'logo-mark-transparent.svg'));
+const lockupSvgPath = path.join(here, 'logo-lockup.svg');
+const lockupSvg = existsSync(lockupSvgPath) ? readFileSync(lockupSvgPath) : null;
 
-const ICON_BG = '#1C1230';
+// Canonical brand dark background — matches brand/logo-master.svg and constants/color.ts
+const ICON_BG = '#16131C';
 
 const targets = [
   // iOS App Store icon: opaque, no alpha channel (Apple rejects icons with alpha).
@@ -60,6 +63,19 @@ const targets = [
     out: 'services/api/src/assets/ClaudyGoLogo.png',
     size: 512,
   },
+  // Full brand lockups for marketing, headers, and store presentation
+  ...(lockupSvg ? [
+    {
+      src: lockupSvg,
+      out: 'apps/mobile/assets/images/brand-lockup.png',
+      size: 1024,
+    },
+    {
+      src: lockupSvg,
+      out: 'admin/web/public/brand/brand-lockup.png',
+      size: 1024,
+    },
+  ] : []),
 ];
 
 for (const target of targets) {

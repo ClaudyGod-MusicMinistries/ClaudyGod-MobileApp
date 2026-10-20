@@ -78,7 +78,7 @@ export function AppScreenFooter({
       <View style={styles.innerRow}>
         <View style={styles.brandFill}>
           <CustomText variant="label" style={styles.brandName} numberOfLines={1}>
-            ClaudyGod Music Ministries
+            claudyGod<CustomText style={{ color: theme.colors.primary }}>.</CustomText> Music Ministries
           </CustomText>
           <CustomText variant="caption" style={styles.copyright} numberOfLines={2}>
             © {year} · Worship, messages, live ministry, and support.

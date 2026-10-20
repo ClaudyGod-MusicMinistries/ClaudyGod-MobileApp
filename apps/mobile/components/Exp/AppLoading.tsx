@@ -29,11 +29,11 @@ const useStyles = makeStyles(() => ({
   rootBg:    { backgroundColor: mediaTokens.brandCanvas },
   brandName: {
     color: LOADING.text, fontWeight: '700', letterSpacing: -0.6,
-    fontFamily: 'PlusJakartaSans_700Bold', textAlign: 'center',
+    fontFamily: 'Poppins_700Bold', textAlign: 'center',
   },
   taglineBase: {
-    color: LOADING.primary, fontSize: 10, letterSpacing: 3.4,
-    textTransform: 'uppercase', fontFamily: 'PlusJakartaSans_400Regular',
+    color: LOADING.primary, fontSize: 11, letterSpacing: 3.4,
+    textTransform: 'uppercase', fontFamily: 'Montserrat_700Bold',
     textAlign: 'center', marginTop: 10,
   },
   glowPrimary: { backgroundColor: LOADING.primary },
@@ -199,7 +199,8 @@ export function AppLoadingScreen() {
             }}
           >
             <Animated.Text style={[styles.brandName, { fontSize: isCompact ? 26 : 30 }]}>
-              ClaudyGod
+              claudyGod
+              <Animated.Text style={{ color: LOADING.primary }}>.</Animated.Text>
             </Animated.Text>
           </Animated.View>
 
@@ -210,7 +211,7 @@ export function AppLoadingScreen() {
             }}
           >
             <Animated.Text style={[styles.taglineBase, { opacity: shimmer }]}>
-              Worship · Music · Ministry
+              MUSIC &amp; MINISTRIES
             </Animated.Text>
           </Animated.View>
         </View>

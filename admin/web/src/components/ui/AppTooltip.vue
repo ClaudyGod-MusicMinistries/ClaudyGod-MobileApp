@@ -24,6 +24,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
+import { generateUUID } from '@/utils/uuid';
 
 const props = withDefaults(defineProps<{
   text: string;
@@ -32,7 +33,7 @@ const props = withDefaults(defineProps<{
 
 const open = ref(false);
 const trigger = ref<HTMLElement | null>(null);
-const tooltipId = `tooltip-${crypto.randomUUID()}`;
+const tooltipId = `tooltip-${generateUUID()}`;
 
 onMounted(() => {
   const target = trigger.value?.firstElementChild;

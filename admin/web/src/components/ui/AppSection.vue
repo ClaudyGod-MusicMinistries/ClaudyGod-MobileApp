@@ -14,7 +14,9 @@
 </template>
 
 <script setup lang="ts">
+import { generateUUID } from '@/utils/uuid';
+
 const props = withDefaults(defineProps<{ title?: string; description?: string; padded?: boolean }>(), { padded: false });
-const headingId = `section-${crypto.randomUUID()}`;
+const headingId = `section-${generateUUID()}`;
 void props;
 </script>

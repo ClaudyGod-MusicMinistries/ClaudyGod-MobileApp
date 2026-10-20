@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Image, Switch, View } from 'react-native';
+import { Switch, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
@@ -18,9 +18,9 @@ import { getSettingsHubSections } from '../../util/mobileExperienceConfig';
 import { getPreference, setPreference } from '../../lib/localUserStorage';
 import { setDiagnosticsAllowed } from '../../lib/sentry';
 import { PremiumPage } from '../../components/feed';
+import { BrandWordmark } from '../../components/branding';
 import { getStoredMobileSession } from '../../services/authService';
 import { fetchInstallationPreferences, fetchMePreferences, updateInstallationNotifications, updateInstallationPersonalization, updateMePreferences, type MePreferences } from '../../services/userFlowService';
-import { BRAND_LOGO_ASSET } from '../../util/brandAssets';
 import { useQueryClient } from '@tanstack/react-query';
 
 type TogglePreferenceKey = 'notificationsEnabled' | 'autoplayEnabled' | 'highQualityEnabled' | 'personalizationEnabled' | 'diagnosticsEnabled';
@@ -34,31 +34,32 @@ const DEVICE_DEFAULTS: Record<TogglePreferenceKey, boolean> = {
 };
 
 // Fallback-only — used before admin config has loaded, or if it's ever empty.
-// Mirrors the same defaults now configurable via admin's Mobile config → Settings hub.
+// Grouped into clean, professional categories (Data & Privacy, Ministry, About & Legal).
 const DEFAULT_QUICK_ACCESS_SECTIONS: {
   id: string;
   title: string;
   items: { id: string; icon: string; label: string; hint: string; destination: AppRouteId }[];
 }[] = [
   {
-    id: 'quick-access', title: '',
+    id: 'privacy-data',
+    title: 'Data & Privacy',
     items: [
-      { id: 'library', icon: 'library-music', label: 'Library', hint: 'Saved content', destination: 'tabs.library' },
-      { id: 'search', icon: 'search', label: 'Search', hint: 'Find songs, videos, and live', destination: 'tabs.search' },
+      { id: 'privacy-controls', icon: 'security', label: 'Data & Privacy Controls', hint: 'Manage data, exports, recommendations & deletion', destination: 'settings.privacy' },
     ],
   },
   {
-    id: 'support', title: '',
+    id: 'support',
+    title: 'Ministry & Support',
     items: [
-      { id: 'referral', icon: 'card-giftcard', label: 'Invite friends', hint: 'Earn rewards together', destination: 'settings.referral' },
-      { id: 'help', icon: 'help-outline', label: 'Help', hint: 'Get support', destination: 'settings.help' },
-      { id: 'donate', icon: 'volunteer-activism', label: 'Support', hint: 'Give or donate', destination: 'settings.donate' },
+      { id: 'donate', icon: 'volunteer-activism', label: 'Support & Giving', hint: 'Partner with ClaudyGod Ministries', destination: 'settings.donate' },
+      { id: 'help', icon: 'help-outline', label: 'Help & Support', hint: 'FAQs, contact, and prayer support', destination: 'settings.help' },
+      { id: 'referral', icon: 'card-giftcard', label: 'Invite friends', hint: 'Share worship with friends & family', destination: 'settings.referral' },
     ],
   },
   {
-    id: 'product-legal', title: '',
+    id: 'product-legal',
+    title: 'About & Legal',
     items: [
-      { id: 'privacy-controls', icon: 'privacy-tip', label: 'Privacy & security', hint: 'Manage privacy controls', destination: 'settings.privacy' },
       { id: 'privacy-policy', icon: 'policy', label: 'Privacy Policy', hint: 'How ClaudyGod handles data', destination: 'settings.privacyPolicy' },
       { id: 'terms', icon: 'gavel', label: 'Terms of Service', hint: 'Rules for using ClaudyGod', destination: 'settings.terms' },
       { id: 'about', icon: 'info-outline', label: 'About', hint: 'Product and ministry information', destination: 'settings.about' },
@@ -93,48 +94,187 @@ type SettingItem = ToggleSettingItem | StatusSettingItem;
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const useStyles = makeStyles((theme) => ({
-  settingRowTouch:  { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 68 },
-  settingIcon: {
-    width: 40, height: 40, borderRadius: theme.radius.lg,
-    alignItems: 'center', justifyContent: 'center',
-    backgroundColor: theme.colors.subtleFill,
-    borderWidth: 1, borderColor: theme.colors.border,
+  settingRowTouch: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 13,
+    paddingHorizontal: 16,
+    paddingVertical: 13,
+    minHeight: 52,
   },
-  settingTextWrap:  { flex: 1 },
-  settingLabel:     { color: theme.colors.text, fontWeight: '600' },
-  settingHint:      { color: theme.colors.textMuted, marginTop: 3, lineHeight: 16 },
-  settingStatus: { paddingHorizontal: theme.spacing.sm, paddingVertical: theme.spacing.xs, borderRadius: theme.radius.pill, backgroundColor: theme.colors.infoSurface, borderWidth: 1, borderColor: theme.colors.infoBorder },
-  settingStatusText: { color: theme.colors.info, fontWeight: '700' },
+  settingIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.subtleFillMed,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  settingIconActive: {
+    backgroundColor: theme.colors.primarySurface,
+    borderColor: theme.colors.primaryBorder,
+  },
+  settingTextWrap: { flex: 1, minWidth: 0 },
+  settingLabel: {
+    color: theme.colors.text,
+    fontFamily: 'Poppins_500Medium',
+    fontSize: 13.5,
+    lineHeight: 18,
+    fontWeight: '500',
+  },
+  settingHint: {
+    color: theme.colors.textSecondary,
+    fontFamily: 'Poppins_400Regular',
+    fontSize: 11,
+    lineHeight: 14,
+    marginTop: 2,
+  },
+  settingStatus: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: theme.radius.pill,
+    backgroundColor: theme.colors.primarySurface,
+    borderWidth: 1,
+    borderColor: theme.colors.primaryBorder,
+  },
+  settingStatusText: {
+    color: theme.colors.primary,
+    fontFamily: 'Montserrat_600SemiBold',
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.3,
+  },
 
   sectionShell: {
-    borderRadius: theme.radius.xl, overflow: 'hidden',
-    borderWidth: 1, borderColor: theme.colors.border,
+    borderRadius: theme.radius.xl,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: theme.colors.border,
     backgroundColor: theme.colors.elevated,
     ...theme.shadows.sm,
   },
-  sectionHeader: { paddingHorizontal: theme.spacing.md, paddingTop: theme.spacing.md, paddingBottom: theme.spacing.sm },
-  sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
+  sectionHeader: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 13,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.divider,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
   sectionHeaderIcon: {
-    width: 38, height: 38, borderRadius: theme.radius.lg,
-    alignItems: 'center', justifyContent: 'center',
+    width: 32,
+    height: 32,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: theme.colors.primarySurface,
-    borderWidth: 1, borderColor: theme.colors.primaryBorder,
+    borderWidth: 1,
+    borderColor: theme.colors.primaryBorder,
   },
   sectionHeaderCopy: { flex: 1, minWidth: 0 },
-  sectionTitle: { color: theme.colors.text, fontSize: 14, fontWeight: '700' },
-  sectionSubtitle: { color: theme.colors.textMuted, fontSize: 11.5, marginTop: 3 },
-  sectionBody: { paddingHorizontal: 16 },
+  sectionTitle: {
+    color: theme.colors.text,
+    fontFamily: 'Poppins_600SemiBold',
+    fontSize: 14,
+    lineHeight: 18,
+    fontWeight: '600',
+  },
+  sectionSubtitle: {
+    color: theme.colors.textSecondary,
+    fontFamily: 'Poppins_400Regular',
+    fontSize: 11,
+    lineHeight: 14,
+    marginTop: 2,
+  },
+  sectionBody: {
+    paddingHorizontal: 0,
+  },
 
-  appearanceRow: { flexDirection: 'row', gap: theme.spacing.xs, padding: theme.spacing.sm, borderTopWidth: 1, borderTopColor: theme.colors.border },
-  appearanceOption: { flex: 1, minHeight: 92, alignItems: 'center', justifyContent: 'center', gap: theme.spacing.xs, padding: theme.spacing.sm, borderRadius: theme.radius.lg, borderWidth: 1, borderColor: theme.colors.border },
-  appearanceOptionBorder: { borderLeftWidth: 1, borderLeftColor: theme.colors.border },
-  appearanceIndicator: { position: 'absolute', left: theme.spacing.sm, right: theme.spacing.sm, bottom: theme.spacing.xs, height: 3, borderRadius: 2, backgroundColor: theme.colors.primary },
+  appearanceRow: {
+    flexDirection: 'row',
+    gap: 10,
+    padding: 12,
+  },
+  appearanceOption: {
+    flex: 1,
+    minHeight: 74,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.subtleFill,
+  },
+  appearanceOptionActive: {
+    backgroundColor: theme.colors.primarySurface,
+    borderColor: theme.colors.primaryBorder,
+  },
+  appearanceLabel: {
+    color: theme.colors.textSecondary,
+    fontFamily: 'Poppins_600SemiBold',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  appearanceLabelActive: {
+    color: theme.colors.text,
+  },
+  appearanceHint: {
+    color: theme.colors.textMuted,
+    fontFamily: 'Montserrat_500Medium',
+    fontSize: 9.5,
+    letterSpacing: 0.2,
+    textAlign: 'center',
+  },
+  appearanceIndicator: {
+    position: 'absolute',
+    left: 14,
+    right: 14,
+    bottom: 4,
+    height: 2.5,
+    borderRadius: 2,
+    backgroundColor: theme.colors.primary,
+  },
 
-  linkRow:          { flexDirection: 'row', alignItems: 'center', gap: 11, minHeight: 62, paddingHorizontal: 14 },
-  linkIcon: { width: 38, height: 38, borderRadius: theme.radius.lg, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
-  linkLabelWrap:    { flex: 1, minWidth: 0 },
-  linkLabel:        { color: theme.colors.text, fontWeight: '600' },
-  linkHint:         { color: theme.colors.textMuted, marginTop: 2 },
+  linkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 13,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    minHeight: 52,
+  },
+  linkIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  linkLabelWrap: { flex: 1, minWidth: 0 },
+  linkLabel: {
+    color: theme.colors.text,
+    fontFamily: 'Poppins_500Medium',
+    fontSize: 13.5,
+    lineHeight: 18,
+    fontWeight: '500',
+  },
+  linkHint: {
+    color: theme.colors.textSecondary,
+    fontFamily: 'Poppins_400Regular',
+    fontSize: 11,
+    lineHeight: 14,
+    marginTop: 2,
+  },
 
   introCard: { padding: theme.spacing.lg, gap: theme.spacing.lg, borderColor: theme.colors.primaryBorder, ...theme.shadows.md },
   intro: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md },
@@ -143,12 +283,78 @@ const useStyles = makeStyles((theme) => ({
   introCopy: { flex: 1, minWidth: 0 },
   introTitle: { color: theme.colors.text, fontWeight: '800', fontSize: 19, marginTop: theme.spacing.xxs },
   introSubtitle: { color: theme.colors.textSecondary, fontSize: 13, marginTop: theme.spacing.xs, lineHeight: 19 },
+  accountCard: {
+    padding: 16,
+    borderRadius: theme.radius.xl,
+    backgroundColor: theme.colors.elevated,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    ...theme.shadows.sm,
+  },
+  accountRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  accountAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.primarySurface,
+    borderWidth: 1,
+    borderColor: theme.colors.primaryBorder,
+  },
+  accountMeta: { flex: 1, minWidth: 0 },
+  accountBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: theme.radius.pill,
+    backgroundColor: theme.colors.primarySurface,
+    borderWidth: 1,
+    borderColor: theme.colors.primaryBorder,
+    marginBottom: 4,
+  },
+  accountBadgeText: {
+    color: theme.colors.primary,
+    fontFamily: 'Montserrat_700Bold',
+    fontSize: 9.5,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  accountTitle: {
+    color: theme.colors.text,
+    fontFamily: 'Poppins_600SemiBold',
+    fontSize: 14,
+    lineHeight: 18,
+    fontWeight: '600',
+  },
+  accountSubtitle: {
+    color: theme.colors.textSecondary,
+    fontFamily: 'Poppins_400Regular',
+    fontSize: 11,
+    lineHeight: 14,
+    marginTop: 2,
+  },
   quickGrid: { flexDirection: 'row', flexWrap: 'wrap', borderTopWidth: 1, borderTopColor: theme.colors.border },
   quickCell: { borderBottomWidth: 1, borderBottomColor: theme.colors.border },
-  rowDivider:       { borderTopColor: theme.colors.border },
-  settingsGroupsRow:{ gap: 12 },
-  homeBtn:          { minWidth: 40, paddingHorizontal: 10 },
+  rowDivider: {
+    borderTopColor: theme.colors.divider,
+  },
+  settingsGroupsRow: { gap: 14 },
+  homeBtn: { minWidth: 40, paddingHorizontal: 10 },
   settingsGroupCard: { flex: 1 },
+  versionFooter: {
+    alignItems: 'center',
+    paddingVertical: theme.spacing.xl,
+    gap: 8,
+  },
+  versionLabel: {
+    color: theme.colors.textSecondary,
+    fontFamily: 'Poppins_400Regular',
+    fontSize: 11,
+    lineHeight: 14,
+    marginTop: 2,
+  },
 }));
 
 // ─── SettingRow ───────────────────────────────────────────────────────────────
@@ -164,20 +370,24 @@ function SettingRow({ item }: { item: SettingItem }) {
   return (
     <TVTouchable
       onPress={isToggle ? () => item.onToggle(!item.value) : undefined}
-      style={[styles.settingRowTouch, { paddingVertical: device.isTV ? 14 : 10 }]}
+      style={styles.settingRowTouch}
       showFocusBorder={false}
       accessibilityRole={isToggle ? 'switch' : 'text'}
       accessibilityState={isToggle ? { checked: item.value } : undefined}
     >
-      <View style={[styles.settingIcon, isEnabled ? { backgroundColor: theme.colors.primarySurface, borderColor: theme.colors.primaryBorder } : null]}>
-        <AppIcon name={item.icon} size={device.isTV ? 20 : 18} color={isToggle ? (item.value ? accentColor : theme.colors.textMuted) : theme.colors.info} />
+      <View style={[styles.settingIcon, isEnabled ? styles.settingIconActive : null]}>
+        <AppIcon
+          name={item.icon}
+          size={device.isTV ? 19 : 17}
+          color={isToggle ? (item.value ? accentColor : theme.colors.textSecondary) : theme.colors.primary}
+        />
       </View>
       <View style={styles.settingTextWrap}>
-        <CustomText style={[styles.settingLabel, { fontSize: device.isTV ? 15.5 : 14 }]}>
+        <CustomText variant="body" style={styles.settingLabel}>
           {item.label}
         </CustomText>
         {item.hint ? (
-          <CustomText style={[styles.settingHint, { fontSize: device.isTV ? 13 : 12 }]}>
+          <CustomText variant="caption" style={styles.settingHint}>
             {item.hint}
           </CustomText>
         ) : null}
@@ -191,7 +401,9 @@ function SettingRow({ item }: { item: SettingItem }) {
           ios_backgroundColor={theme.colors.border}
         />
       ) : (
-        <View style={styles.settingStatus}><CustomText variant="caption" style={styles.settingStatusText}>{item.statusLabel}</CustomText></View>
+        <View style={styles.settingStatus}>
+          <CustomText style={styles.settingStatusText}>{item.statusLabel}</CustomText>
+        </View>
       )}
     </TVTouchable>
   );
@@ -205,7 +417,7 @@ function AppearanceCard({ value, onChange }: { value: ThemePreference; onChange:
   const device = useDeviceClass();
 
   const options: { value: ThemePreference; label: string; icon: AppIconName; hint: string }[] = [
-    { value: 'system', label: 'System', icon: 'devices', hint: 'Device' },
+    { value: 'system', label: 'System', icon: 'devices', hint: 'Automatic' },
     { value: 'light', label: 'Light', icon: 'sun', hint: 'Light mode' },
     { value: 'dark', label: 'Dark', icon: 'moon', hint: 'Dark mode' },
   ];
@@ -213,10 +425,12 @@ function AppearanceCard({ value, onChange }: { value: ThemePreference; onChange:
   return (
     <View style={styles.sectionShell}>
       <View style={[styles.sectionHeader, styles.sectionHeaderRow]}>
-        <View style={styles.sectionHeaderIcon}><AppIcon name="palette" size={19} color={theme.colors.primary} /></View>
+        <View style={styles.sectionHeaderIcon}>
+          <AppIcon name="palette" size={17} color={theme.colors.primary} />
+        </View>
         <View style={styles.sectionHeaderCopy}>
-          <CustomText style={styles.sectionTitle}>Appearance</CustomText>
-          <CustomText style={styles.sectionSubtitle}>Choose how ClaudyGod looks on this device</CustomText>
+          <CustomText variant="title" style={styles.sectionTitle}>Appearance</CustomText>
+          <CustomText variant="caption" style={styles.sectionSubtitle}>Choose how ClaudyGod looks on this device</CustomText>
         </View>
       </View>
       <View style={styles.appearanceRow}>
@@ -226,22 +440,21 @@ function AppearanceCard({ value, onChange }: { value: ThemePreference; onChange:
             <TVTouchable
               key={option.value}
               onPress={() => onChange(option.value)}
-              style={[styles.appearanceOption, active ? { backgroundColor: theme.colors.primarySurface, borderColor: theme.colors.primaryFocusBorder } : null]}
+              style={[styles.appearanceOption, active ? styles.appearanceOptionActive : null]}
               showFocusBorder={false}
               accessibilityRole="button"
               accessibilityState={{ selected: active }}
             >
-              <AppIcon name={option.icon} size={device.isTV ? 22 : 19} color={active ? theme.colors.primary : theme.colors.textSecondary} />
+              <AppIcon name={option.icon} size={device.isTV ? 20 : 18} color={active ? theme.colors.primary : theme.colors.textSecondary} />
               <CustomText
-                style={{
-                  color: active ? theme.colors.text : theme.colors.textSecondary,
-                  fontSize: device.isTV ? 14 : 12.5,
-                  fontWeight: active ? '700' : '600',
-                }}
+                style={[
+                  styles.appearanceLabel,
+                  active ? styles.appearanceLabelActive : null,
+                ]}
               >
                 {option.label}
               </CustomText>
-              <CustomText style={{ color: theme.colors.textMuted, fontSize: device.isTV ? 11 : 10, textAlign: 'center' }}>
+              <CustomText style={styles.appearanceHint}>
                 {option.hint}
               </CustomText>
               {active ? <View style={styles.appearanceIndicator} /> : null}
@@ -262,21 +475,21 @@ function QuickLinkRow({ icon, label, hint, color, surface, border, onPress }: { 
 
   return (
     <TVTouchable onPress={onPress} showFocusBorder={false}>
-      <View style={[styles.linkRow, { paddingVertical: device.isTV ? 12 : 8 }]}> 
+      <View style={styles.linkRow}> 
         <View style={[styles.linkIcon, { backgroundColor: surface, borderColor: border }]}>
-          <AppIcon name={icon} size={device.isTV ? 20 : 17} color={color} />
+          <AppIcon name={icon} size={device.isTV ? 19 : 17} color={color} />
         </View>
         <View style={styles.linkLabelWrap}>
-          <CustomText style={[styles.linkLabel, { fontSize: device.isTV ? 15.5 : 14 }]}>
+          <CustomText variant="body" style={styles.linkLabel}>
             {label}
           </CustomText>
           {hint ? (
-            <CustomText style={[styles.linkHint, { fontSize: device.isTV ? 13 : 12 }]}>
+            <CustomText variant="caption" style={styles.linkHint}>
               {hint}
             </CustomText>
           ) : null}
         </View>
-        <AppIcon name="chevron-right" size={17} color={theme.colors.textMuted} />
+        <AppIcon name="chevron-right" size={18} color={theme.colors.textMuted} />
       </View>
     </TVTouchable>
   );
@@ -305,6 +518,7 @@ export default function SettingsScreen() {
   const [personalization, setPersonalization]  = useState(true);
   const [diagnostics,      setDiagnostics]     = useState(true);
   const [accountConnected, setAccountConnected] = useState(false);
+  const [userEmail,        setUserEmail]        = useState<string | null>(null);
 
   // The mobile app has no public account system. Preferences are device-local.
   useEffect(() => {
@@ -328,7 +542,10 @@ export default function SettingsScreen() {
       );
       const localPreferences = Object.fromEntries(entries) as Record<TogglePreferenceKey, boolean>;
       const { user } = await getStoredMobileSession();
-      if (!cancelled) setAccountConnected(Boolean(user));
+      if (!cancelled) {
+        setAccountConnected(Boolean(user));
+        setUserEmail(user?.email ?? null);
+      }
       if (!user) {
         try {
           const installation = await fetchInstallationPreferences();
@@ -498,20 +715,11 @@ export default function SettingsScreen() {
   ], [accountConnected, diagnostics, handleNotificationsChange, makeToggleHandler, notifications, persistPreference, personalization, pushLoading, pushPermissionGranted, queryClient, showModal]);
 
   const isWideLayout = device.isDesktop || device.isTV;
-  const quickItems = settingsHubSections.flatMap((section) => section.items);
-  const quickColumns = isWideLayout ? Math.min(3, Math.max(2, quickItems.length)) : 1;
-  const quickCellWidth = `${100 / quickColumns}%` as `${number}%`;
-  const quickTones = [
-    { color: theme.colors.primary, surface: theme.colors.primarySurface, border: theme.colors.primaryBorder },
-    { color: theme.colors.success, surface: theme.colors.successSurface, border: theme.colors.successBorder },
-    { color: theme.colors.info, surface: theme.colors.infoSurface, border: theme.colors.infoBorder },
-    { color: theme.colors.danger, surface: theme.colors.dangerSurface, border: theme.colors.dangerBorder },
-  ] as const;
 
   return (
     <PremiumPage
       title="Settings"
-      eyebrow="Your app"
+      eyebrow="Preferences"
       noBack
       rightAction={
         <AppButton
@@ -524,27 +732,50 @@ export default function SettingsScreen() {
         />
       }
     >
-      <View style={[styles.sectionShell, styles.introCard]}>
-        <View style={styles.intro}>
-          <View style={styles.introIcon}>
-            <Image source={BRAND_LOGO_ASSET} resizeMode="cover" style={styles.introLogo} />
+      {/* ─── Profile / Account Card ─── */}
+      <View style={styles.accountCard}>
+        <TVTouchable
+          onPress={() => router.push(accountConnected ? APP_ROUTES.accountSecurity : APP_ROUTES.auth.signIn)}
+          showFocusBorder={false}
+          accessibilityRole="button"
+        >
+          <View style={styles.accountRow}>
+            <View style={styles.accountAvatar}>
+              <AppIcon
+                name={accountConnected ? 'person' : 'person-outline'}
+                size={22}
+                color={theme.colors.primary}
+              />
+            </View>
+            <View style={styles.accountMeta}>
+              <View style={styles.accountBadge}>
+                <CustomText style={styles.accountBadgeText}>
+                  {accountConnected ? 'Connected Account' : 'Guest Mode'}
+                </CustomText>
+              </View>
+              <CustomText variant="title" style={styles.accountTitle} numberOfLines={1}>
+                {accountConnected ? (userEmail ?? 'ClaudyGod Member') : 'Listening Locally'}
+              </CustomText>
+              <CustomText variant="caption" style={styles.accountSubtitle} numberOfLines={1}>
+                {accountConnected ? 'Manage profile, security & sessions' : 'Sign in to sync favorites across devices'}
+              </CustomText>
+            </View>
+            <AppIcon name="chevron-right" size={20} color={theme.colors.textMuted} />
           </View>
-          <View style={styles.introCopy}>
-            <CustomText style={styles.introTitle}>Your experience</CustomText>
-            <CustomText style={styles.introSubtitle}>Manage how the app looks, plays, notifies you, and handles your privacy.</CustomText>
-          </View>
-        </View>
+        </TVTouchable>
       </View>
 
+      {/* ─── Appearance ─── */}
       <AppearanceCard value={themePreference} onChange={handleAppearanceChange} />
 
+      {/* ─── Playback & Experience Toggles ─── */}
       <View style={[styles.settingsGroupsRow, { flexDirection: isWideLayout ? 'row' : 'column', alignItems: isWideLayout ? 'flex-start' : 'stretch' }]}> 
         <View style={[styles.sectionShell, styles.settingsGroupCard]}>
           <View style={[styles.sectionHeader, styles.sectionHeaderRow]}>
-            <View style={styles.sectionHeaderIcon}><AppIcon name="play-circle-outline" size={19} color={theme.colors.primary} /></View>
+            <View style={styles.sectionHeaderIcon}><AppIcon name="play-circle-outline" size={17} color={theme.colors.primary} /></View>
             <View style={styles.sectionHeaderCopy}>
-              <CustomText style={styles.sectionTitle}>Playback</CustomText>
-              <CustomText style={styles.sectionSubtitle}>Listening quality and queue behavior</CustomText>
+              <CustomText variant="title" style={styles.sectionTitle}>Playback</CustomText>
+              <CustomText variant="caption" style={styles.sectionSubtitle}>Listening quality and queue behavior</CustomText>
             </View>
           </View>
           <View style={styles.sectionBody}>
@@ -556,10 +787,10 @@ export default function SettingsScreen() {
 
         <View style={[styles.sectionShell, styles.settingsGroupCard]}>
           <View style={[styles.sectionHeader, styles.sectionHeaderRow]}>
-            <View style={styles.sectionHeaderIcon}><AppIcon name="security" size={19} color={theme.colors.primary} /></View>
+            <View style={styles.sectionHeaderIcon}><AppIcon name="security" size={17} color={theme.colors.primary} /></View>
             <View style={styles.sectionHeaderCopy}>
-              <CustomText style={styles.sectionTitle}>Experience & privacy</CustomText>
-              <CustomText style={styles.sectionSubtitle}>Alerts, personalization, and diagnostics</CustomText>
+              <CustomText variant="title" style={styles.sectionTitle}>Experience & privacy</CustomText>
+              <CustomText variant="caption" style={styles.sectionSubtitle}>Alerts, personalization, and diagnostics</CustomText>
             </View>
           </View>
           <View style={styles.sectionBody}>
@@ -570,36 +801,67 @@ export default function SettingsScreen() {
         </View>
       </View>
 
-      <View style={styles.sectionShell}>
-        <View style={[styles.sectionHeader, styles.sectionHeaderRow]}>
-          <View style={styles.sectionHeaderIcon}><AppIcon name="grid" size={19} color={theme.colors.primary} /></View>
-          <View style={styles.sectionHeaderCopy}>
-            <CustomText style={styles.sectionTitle}>Services & information</CustomText>
-            <CustomText style={styles.sectionSubtitle}>Library, support, giving, legal, and product destinations</CustomText>
-          </View>
-        </View>
-        <View style={styles.quickGrid}>
-          {quickItems.map((item, idx) => (
-            <View
-              key={item.id}
-              style={[
-                styles.quickCell,
-                { width: quickCellWidth },
-                isWideLayout && idx % quickColumns !== 0 ? { borderLeftWidth: 1, borderLeftColor: theme.colors.border } : null,
-              ]}
-            >
-              <QuickLinkRow
-                icon={item.icon}
-                label={item.label}
-                hint={item.hint}
-                color={quickTones[idx % quickTones.length]!.color}
-                surface={quickTones[idx % quickTones.length]!.surface}
-                border={quickTones[idx % quickTones.length]!.border}
-                onPress={() => router.push((APP_ROUTE_BY_ID[item.destination as AppRouteId] ?? APP_ROUTES.tabs.settings) as never)}
-              />
+      {/* ─── Grouped Service Sections ─── */}
+      {settingsHubSections.map((section) => {
+        const title = section.title?.trim()
+          ? section.title
+          : section.id.includes('privacy')
+          ? 'Data & Privacy'
+          : section.id.includes('support')
+          ? 'Ministry & Community'
+          : 'About & Legal';
+
+        const subtitle = section.id.includes('privacy')
+          ? 'Manage your personal data, exports, and account deletion'
+          : section.id.includes('support')
+          ? 'Partner with us, get support, and share worship'
+          : 'Official policies, terms, and ministry information';
+
+        const icon: AppIconName = section.id.includes('privacy')
+          ? 'security'
+          : section.id.includes('support')
+          ? 'volunteer-activism'
+          : 'info-outline';
+
+        return (
+          <View key={section.id} style={styles.sectionShell}>
+            <View style={[styles.sectionHeader, styles.sectionHeaderRow]}>
+              <View style={styles.sectionHeaderIcon}>
+                <AppIcon name={icon} size={17} color={theme.colors.primary} />
+              </View>
+              <View style={styles.sectionHeaderCopy}>
+                <CustomText variant="title" style={styles.sectionTitle}>{title}</CustomText>
+                <CustomText variant="caption" style={styles.sectionSubtitle}>{subtitle}</CustomText>
+              </View>
             </View>
-          ))}
-        </View>
+            <View style={styles.sectionBody}>
+              {section.items.map((item, idx) => (
+                <View
+                  key={item.id}
+                  style={[styles.rowDivider, idx > 0 ? { borderTopWidth: 1 } : null]}
+                >
+                  <QuickLinkRow
+                    icon={item.icon as AppIconName}
+                    label={item.label}
+                    hint={item.hint}
+                    color={theme.colors.primary}
+                    surface={theme.colors.primarySurface}
+                    border={theme.colors.primaryBorder}
+                    onPress={() => router.push((APP_ROUTE_BY_ID[item.destination as AppRouteId] ?? APP_ROUTES.tabs.settings) as never)}
+                  />
+                </View>
+              ))}
+            </View>
+          </View>
+        );
+      })}
+
+      {/* ─── App Version Footer ─── */}
+      <View style={styles.versionFooter}>
+        <BrandWordmark size="xs" showDot showSubtitle subtitleText="MUSIC & MINISTRIES" align="center" />
+        <CustomText variant="caption" style={styles.versionLabel}>
+          ClaudyGod v1.0.0 · Worship without limits
+        </CustomText>
       </View>
     </PremiumPage>
   );

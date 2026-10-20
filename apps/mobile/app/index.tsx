@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
+  Image,
   Platform,
   View,
   useWindowDimensions,
@@ -16,7 +17,8 @@ import { HeroBackground } from '../components/hero/HeroBackground';
 import { useAppTheme } from '../util/colorScheme';
 import { makeStyles } from '../styles/makeStyles';
 import { APP_ROUTES } from '../util/appRoutes';
-import { BRAND_HERO_VIDEO_ASSET } from '../util/brandAssets';
+import { BRAND_HERO_VIDEO_ASSET, BRAND_LOGO_ASSET } from '../util/brandAssets';
+import { BrandWordmark } from '../components/branding';
 import { useDeviceClass } from '../util/deviceClassConfig';
 import { getPreference, setPreference } from '../lib/localUserStorage';
 import { useReducedMotion } from '../hooks/useReducedMotion';
@@ -109,7 +111,7 @@ function BrandIntroScreen({
   }, [fadeAnim, reduceMotion, slideAnim, theme.timing.moderate]);
 
   return (
-    <View style={{ width, height, backgroundColor: theme.colors.background, overflow: 'hidden' }}>
+    <View style={{ flex: 1, width: '100%', height: '100%', backgroundColor: theme.colors.background, overflow: 'hidden' }}>
       <HeroBackground
         width={width}
         height={height}
@@ -133,11 +135,30 @@ function BrandIntroScreen({
             }}
           >
             <View style={styles.copyGroup}>
-              <CustomText
-                style={[styles.brandLabel, { textAlign: isPhone ? 'center' : 'left' }]}
-              >
-                ClaudyGod
-              </CustomText>
+              <Image
+                source={BRAND_LOGO_ASSET}
+                style={{
+                  width: compact ? 42 : 52,
+                  height: compact ? 42 : 52,
+                  borderRadius: theme.radius.md,
+                  alignSelf: isPhone ? 'center' : 'flex-start',
+                  marginBottom: 6,
+                }}
+                resizeMode="contain"
+              />
+
+              <BrandWordmark
+                size={compact ? 'sm' : 'md'}
+                tone="light"
+                showDot
+                showSubtitle
+                subtitleText="MUSIC & MINISTRIES"
+                align={isPhone ? 'center' : 'left'}
+                style={{
+                  alignSelf: isPhone ? 'center' : 'flex-start',
+                  marginBottom: 4,
+                }}
+              />
 
               <CustomText
                 variant="display"
@@ -211,9 +232,13 @@ function NativeEntry() {
 
   useEffect(() => {
     let cancelled = false;
-    getPreference(ONBOARDING_SEEN_KEY, false).then((seen) => {
-      if (!cancelled) setStatus(seen ? 'done' : 'show');
-    });
+    getPreference(ONBOARDING_SEEN_KEY, false)
+      .then((seen) => {
+        if (!cancelled) setStatus(seen ? 'done' : 'show');
+      })
+      .catch(() => {
+        if (!cancelled) setStatus('show');
+      });
     return () => {
       cancelled = true;
     };

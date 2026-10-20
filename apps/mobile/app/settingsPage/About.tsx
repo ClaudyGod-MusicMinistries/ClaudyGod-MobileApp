@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, useWindowDimensions } from 'react-native';
+import { Image, View, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 
 import { PremiumPage } from '../../components/feed';
@@ -13,6 +13,8 @@ import { useMobileAppConfig } from '../../hooks/useMobileAppConfig';
 import { APP_ROUTES } from '../../util/appRoutes';
 import { useRouter } from 'expo-router';
 import { openExternalUrl } from '../../util/externalLinks';
+import { BRAND_LOGO_ASSET } from '../../util/brandAssets';
+import { BrandWordmark } from '../../components/branding';
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
@@ -76,6 +78,19 @@ export default function About() {
   return (
     <PremiumPage title="About ClaudyGod" eyebrow="Our ministry" subtitle="The mission, experience, and ways to connect">
           <SurfaceCard tone="strong" style={styles.intro}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 6 }}>
+              <Image
+                source={BRAND_LOGO_ASSET}
+                style={{ width: 44, height: 44, borderRadius: 12 }}
+                resizeMode="contain"
+              />
+              <BrandWordmark
+                size="md"
+                showDot
+                showSubtitle
+                subtitleText="MUSIC & MINISTRIES"
+              />
+            </View>
             <CustomText variant="caption" style={styles.eyebrow}>Purpose-led digital worship</CustomText>
             <CustomText variant="display">Worship, teaching, and live moments made simple.</CustomText>
             <CustomText variant="body" style={styles.introBody}>ClaudyGod brings music, video, live broadcasts, saved content, and support into one thoughtful experience across mobile, web, tablet, and TV.</CustomText>

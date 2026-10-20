@@ -232,8 +232,8 @@ export default function Privacy() {
 
   return (
     <PremiumPage
-      title="Privacy & Security"
-      subtitle="Clear controls for account data, activity, and safety."
+      title="Data & Privacy Controls"
+      subtitle="Manage your personal data, exports, recommendations, and account deletion."
       eyebrow="Your account"
       refreshing={loading}
       onRefresh={() => void refreshPrivacy()}
@@ -277,9 +277,9 @@ export default function Privacy() {
 
       <FadeIn delay={130}>
         <SurfaceCard tone="subtle" style={styles.sectionPad}>
-          <CustomText variant="heading" style={styles.sectionHead}>Legal</CustomText>
+          <CustomText variant="heading" style={styles.sectionHead}>Related legal policies</CustomText>
           <View style={styles.actionsList}>
-            <PrivacyAction icon="policy" title="Privacy Policy" description="Current version, loaded from the ClaudyGod legal service." onPress={() => router.push(APP_ROUTES.settingsPages.privacyPolicy)} />
+            <PrivacyAction icon="policy" title="Privacy Policy" description="Read our full legal privacy policy document." onPress={() => router.push(APP_ROUTES.settingsPages.privacyPolicy)} />
             <PrivacyAction icon="gavel" title="Terms of Service" description="Current terms and acceptable-use requirements." onPress={() => router.push(APP_ROUTES.settingsPages.terms)} />
           </View>
         </SurfaceCard>
